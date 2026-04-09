@@ -14,8 +14,6 @@ src/
 ├── types/      # 전역 타입
 ```
 
----
-
 ## 아키텍처 원칙
 
 ### 1. 데이터 흐름
@@ -29,8 +27,6 @@ Screen → Hook → API → Server
 * Screen에서 API 직접 호출 금지
 * Component에 비즈니스 로직 작성 금지
 * 데이터 처리 및 로직은 Hook에서만 수행
-
----
 
 ### 2. 상태 관리
 
@@ -47,8 +43,6 @@ Screen → Hook → API → Server
 
 * 서버 데이터 저장 (장소 리스트, 기록 등)
 
----
-
 ### 3. API 규칙
 
 * axios는 `api` 계층에서만 사용합니다.
@@ -62,7 +56,6 @@ createRecord()
 login()
 ```
 
----
 
 ### 4. 네이밍 규칙
 
@@ -73,7 +66,6 @@ login()
 | Screen    | XXXScreen |
 | Component | XXXCard   |
 
----
 
 ## 브랜치 전략
 
@@ -87,9 +79,8 @@ login()
 * feature/place-list
 * feature/record-upload
 
----
 
-## 💬 커밋 컨벤션
+## 커밋 컨벤션
 
 커밋 메시지는 다음 형식을 따릅니다.
 
@@ -118,7 +109,6 @@ Fix: 로그인 토큰 저장 오류 수정
 Refactor: record hook 구조 개선
 ```
 
----
 
 ## 협업 규칙
 
@@ -127,7 +117,6 @@ Refactor: record hook 구조 개선
 * 공통 파일 수정 시 반드시 팀원과 사전 공유합니다.
 * PR은 최소 1명 이상의 리뷰 후 merge합니다.
 
----
 
 ## 금지 사항
 
@@ -135,10 +124,4 @@ Refactor: record hook 구조 개선
 * Zustand에 서버 데이터 저장
 * shared 폴더에 기능 로직 추가
 * axios 직접 호출
-
----
-
-## 한 줄 원칙
-
-핑덤 프론트엔드는
-**“기능 단위로 나누고, 로직은 Hook에 두며, 상태는 최소화한다”**를 원칙으로 합니다.
+]
