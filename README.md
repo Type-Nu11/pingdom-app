@@ -1,127 +1,59 @@
-# Pingdum Frontend Convention
+# PingDom App
 
-## 프로젝트 구조
-
-핑덤 프론트엔드는 **Feature 기반 아키텍처**를 사용합니다.
-기능 단위로 코드를 분리하여 확장성과 유지보수를 고려합니다.
-
-```bash
-src/
-├── app/        # 전역 설정 (navigation, store)
-├── features/   # 핵심 기능 (auth, place, record, map)
-├── shared/     # 공통 컴포넌트, 훅, 유틸
-├── services/   # 외부 로직 (api, storage, location)
-├── types/      # 전역 타입
-```
-
-## 아키텍처 원칙
-
-### 1. 데이터 흐름
-
-모든 데이터는 아래 흐름을 따릅니다.
+고령자의 일상생활 문제를 해결하기 위한 도움 매칭 플랫폼 앱입니다.
 
 ```
-Screen → Hook → API → Server
-```
-
-* Screen에서 API 직접 호출 금지
-* Component에 비즈니스 로직 작성 금지
-* 데이터 처리 및 로직은 Hook에서만 수행
-
-### 2. 상태 관리
-
-* 상태 관리는 Zustand를 사용합니다.
-* 전역 상태는 최소한으로 유지합니다.
-
-#### 허용
-
-* 로그인 상태
-* 선택된 장소
-* UI 상태 (모달, 필터 등)
-
-#### 금지
-
-* 서버 데이터 저장 (장소 리스트, 기록 등)
-
-### 3. API 규칙
-
-* axios는 `api` 계층에서만 사용합니다.
-* 모든 API 요청은 함수 형태로 정의합니다.
-
-예:
-
-```ts
-getPlaces()
-createRecord()
-login()
-```
-
-
-### 4. 네이밍 규칙
-
-| 대상        | 규칙        |
-| --------- | --------- |
-| Hook      | useXXX    |
-| API       | xxxApi    |
-| Screen    | XXXScreen |
-| Component | XXXCard   |
-
+### 디렉터리 설명
+- `api`: 서버 통신 관련 함수 모음입니다. 인증, 요청, 사용자 정보 API를 분리하여 관리합니다.
+- `assets`: 이미지, 아이콘 등 정적 리소스를 보관합니다.
+- `components`: 여러 화면에서 재사용되는 UI 컴포넌트를 관리합니다.
+- `common`: 공통 버튼, 입력창, 헤더 등 범용 컴포넌트
+- `request`: 도움 요청 관련 UI 컴포넌트
+- `user`: 사용자 정보 및 타입 표시 컴포넌트
+- `constants`: 색상, 폰트, 간격, 사용자 타입 등 고정값을 관리합니다.
+- `hooks`: 인증, 요청 데이터, 위치 정보 등 커스텀 훅을 관리합니다.
+- `navigation`: 사용자 유형별 네비게이션 구조를 정의합니다.
+- `screens`: 실제 화면 단위를 관리합니다.
+- `auth`: 사용자 유형 선택 및 로그인 화면
+- `senior`: 고령자용 화면
+- `worker`: 도움 제공자용 화면
+- `guardian`: 보호자용 화면
+- `common`: 공통 화면
+- `store`: 전역 상태를 관리합니다.
+- `styles`: 테마 및 전역 스타일을 정의합니다.
+- `types`: TypeScript 타입 정의를 관리합니다.
+- `utils`: 포맷팅, 검증, 로컬 저장소, 로깅 등 공통 유틸 함수입니다.
 
 ## 브랜치 전략
+- `main`: 배포/안정 브랜치
+- `develop`: 통합 개발 브랜치
+- `feature/<기능명>`: 기능 개발 브랜치
 
-* `main`: 배포용 (직접 push 금지)
-* `develop`: 통합 개발 브랜치
-* `feature/<기능명>`: 기능 개발 브랜치
-
-예:
-
-* feature/auth-login
-* feature/place-list
-* feature/record-upload
-
+예시:
+- `feature/login`
+- `feature/request-create`
+- `feature/worker-home`
+- `feature/payment`
 
 ## 커밋 컨벤션
-
-커밋 메시지는 다음 형식을 따릅니다.
-
-```
-타입: 내용
-```
-
-### 타입 목록
-
-* Feat: 새로운 기능 추가
-* Fix: 버그 수정
-* Docs: 문서 수정
-* Style: 코드 포맷 변경
-* Refactor: 코드 리팩토링
-* Test: 테스트 코드
-* Chore: 설정 변경
-* Design: UI 변경
-* Rename: 파일/폴더 이름 변경
-* Remove: 파일 삭제
-
-### 예시
-
-```
-Feat: 장소 리스트 조회 API 연결
-Fix: 로그인 토큰 저장 오류 수정
-Refactor: record hook 구조 개선
-```
-
+- `주의`: 커밋 메시지는 `타입: 내용` 형식으로 작성합니다.
+- `Feat`: 새로운 기능 추가
+- `Fix`: 버그 수정
+- `Docs`: 문서 작업
+- `Style`: 코드 포맷 변경, 세미콜론 누락, 코드 변경이 없는 경우
+- `Refactor`: 프로덕션 코드 리팩토링
+- `Test`: 테스트 코드 추가, 수정
+- `Chore`: 빌드 업무 수정, 패키지 매니저 수정, 패키지 관리자 구성 등 업데이트, 프로덕션 코드 변경 없음
+- `Create`: 새로운 파일, 폴더 추가
+- `Comment`: 주석 추가 및 변경
+- `Design`: CSS 등 사용자 UI 디자인 변경
+- `Rename`: 파일 혹은 폴더명을 수정하거나 옮기는 작업만 수행
+- `Remove`: 파일을 삭제하는 작업만 수행
 
 ## 협업 규칙
-
-* main 브랜치에 직접 push 하지 않습니다.
-* feature 브랜치에서 작업 후 PR을 통해 병합합니다.
-* 공통 파일 수정 시 반드시 팀원과 사전 공유합니다.
-* PR은 최소 1명 이상의 리뷰 후 merge합니다.
-
-
-## 금지 사항
-
-* Component에서 API 호출
-* Zustand에 서버 데이터 저장
-* shared 폴더에 기능 로직 추가
-* axios 직접 호출
-]
+- `main` 브랜치에 직접 push 하지 않습니다.
+- 각자 `feature` 브랜치에서 작업 후 병합합니다.
+- 작업 전 담당 기능을 공유합니다.
+- 공통 파일 수정 시 팀원과 먼저 상의합니다.
+- 커밋 메시지는 규칙에 맞춰 작성합니다.
+```
