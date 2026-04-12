@@ -1,5 +1,5 @@
 {
-  "name": "navi_app",
+  "name": "pingdom_app",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
