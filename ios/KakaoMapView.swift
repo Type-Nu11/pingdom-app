@@ -7,6 +7,8 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     private var controller: KMController?
     private var observersAdded = false
     private var didAddMap = false
+    private var requestedAddMap = false
+    private var canAddMapView = false
     @objc var centerLat: NSNumber? {
         didSet { tryAddMapViewIfPossible() }
     }
@@ -82,11 +84,12 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     // MARK: - MapControllerDelegate
 
     @objc func addViews() {
+        canAddMapView = true
         tryAddMapViewIfPossible()
     }
 
     private func tryAddMapViewIfPossible() {
-        guard !didAddMap else { return }
+        guard canAddMapView, !didAddMap, !requestedAddMap else { return }
         guard let lat = centerLat?.doubleValue, let lng = centerLng?.doubleValue else {
             return
         }
@@ -99,14 +102,16 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         )
 
         controller?.addView(mapviewInfo)
-        didAddMap = true
+        requestedAddMap = true
     }
 
     func addViewSucceeded(_ viewName: String, viewInfoName: String) {
+        didAddMap = true
         print("Kakao map added: \(viewName), \(viewInfoName)")
     }
 
     func addViewFailed(_ viewName: String, viewInfoName: String) {
+        requestedAddMap = false
         print("Kakao map failed: \(viewName), \(viewInfoName)")
     }
 
