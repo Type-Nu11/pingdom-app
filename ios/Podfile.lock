@@ -71,6 +71,7 @@ PODS:
   - hermes-engine (0.14.1):
     - hermes-engine/Pre-built (= 0.14.1)
   - hermes-engine/Pre-built (0.14.1)
+  - KakaoMapsSDK (2.12.10)
   - RCTDeprecation (0.83.2)
   - RCTRequired (0.83.2)
   - RCTSwiftUI (0.83.2)
@@ -1863,6 +1864,7 @@ DEPENDENCIES:
   - ExpoModulesJSI (from `../node_modules/expo-modules-core`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
+  - KakaoMapsSDK
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
   - RCTRequired (from `../node_modules/react-native/Libraries/Required`)
   - RCTSwiftUI (from `../node_modules/react-native/ReactApple/RCTSwiftUI`)
@@ -1935,6 +1937,10 @@ DEPENDENCIES:
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
+
+SPEC REPOS:
+  trunk:
+    - KakaoMapsSDK
 
 EXTERNAL SOURCES:
   EXConstants:
@@ -2118,6 +2124,7 @@ SPEC CHECKSUMS:
   ExpoModulesJSI: 92eafb9de39b11d73eec5c0f10a04198e01d41c4
   FBLazyVector: 32e9ed0301d0fcbc1b2b341dd7fcbf291f51eb83
   hermes-engine: 7974cc7ec07a95d41a8ee8f2cd8bdb2ce29a01b4
+  KakaoMapsSDK: 32040e6268df2447c3f56dc4acada339d8eb8f32
   RCTDeprecation: a522c536d2c7be8f518dd834883cf6dce1d4f545
   RCTRequired: 44337def23abb244c025e9e7ab58f9cd3d63ec7d
   RCTSwiftUI: b2f0c2f2761631b8cd605767536cbb1cbf8d020f
@@ -2190,6 +2197,6 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: b8822139dea09d95d7fb8a18c312b806a6ee1558
   Yoga: dd994d8c85dca5cc9b10f5df8c01f9ef1d0da191
 
-PODFILE CHECKSUM: 4303c488615624d2aa62a2304e3c88a75809e9bb
+PODFILE CHECKSUM: c057305d25a318febc50efb3c3a99315e5a47fd8
 
 COCOAPODS: 1.16.2

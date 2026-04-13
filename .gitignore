@@ -31,16 +31,6 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-# env
 .env
 .env*.local
 
@@ -53,6 +43,7 @@ yarn-error.*
 # android
 android/app/debug.keystore
 android/.gradle/
+android/app/.cxx/
 android/app/build/
 android/build/
 
