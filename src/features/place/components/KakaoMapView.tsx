@@ -1,5 +1,11 @@
 import { requireNativeComponent, ViewProps } from 'react-native';
 
-const NativeKakaoMapView = requireNativeComponent<ViewProps>('KakaoMapView');
+type KakaoMapViewProps = ViewProps & {
+  centerLat: number;
+  centerLng: number;
+  zoomLevel?: number;
+};
+
+const NativeKakaoMapView = requireNativeComponent<KakaoMapViewProps>('KakaoMapView');
 
 export default NativeKakaoMapView;

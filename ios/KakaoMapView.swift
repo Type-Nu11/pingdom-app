@@ -7,6 +7,13 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     private var controller: KMController?
     private var observersAdded = false
     private var didAddMap = false
+    @objc var centerLat: NSNumber? {
+        didSet { tryAddMapViewIfPossible() }
+    }
+    @objc var centerLng: NSNumber? {
+        didSet { tryAddMapViewIfPossible() }
+    }
+    @objc var zoomLevel: NSNumber?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -75,14 +82,20 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     // MARK: - MapControllerDelegate
 
     @objc func addViews() {
-        guard !didAddMap else { return }
+        tryAddMapViewIfPossible()
+    }
 
-        let defaultPosition = MapPoint(longitude: 127.108678, latitude: 37.402001)
+    private func tryAddMapViewIfPossible() {
+        guard !didAddMap else { return }
+        guard let lat = centerLat?.doubleValue, let lng = centerLng?.doubleValue else {
+            return
+        }
+
         let mapviewInfo = MapviewInfo(
-        viewName: "mapview",
-        viewInfoName: "map",
-        defaultPosition: defaultPosition,
-        defaultLevel: 7
+            viewName: "mapview",
+            viewInfoName: "map",
+            defaultPosition: MapPoint(longitude: lng, latitude: lat),
+            defaultLevel: zoomLevel?.intValue ?? 7
         )
 
         controller?.addView(mapviewInfo)
