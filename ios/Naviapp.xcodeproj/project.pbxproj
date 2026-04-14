@@ -8,25 +8,33 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		18F18D4B72B9A7A81763F655 /* libPods-Naviapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E3FF17AF4F129098A9E6EF94 /* libPods-Naviapp.a */; };
-		1ABFDBF58EE980395A87654B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 341B73FFCA977DE2BECABDDC /* PrivacyInfo.xcprivacy */; };
-		2A6B779024DD9FDE5BC0C802 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1206C460169FFDD4763C6E3E /* ExpoModulesProvider.swift */; };
+		141E64EF2F8CAED80066590E /* KakaoMapViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */; };
+		141E64F12F8CAEE20066590E /* KakaoMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141E64F02F8CAEE20066590E /* KakaoMapView.swift */; };
+		141E64F32F8CAEEC0066590E /* KakaoMapViewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		76D32FCE9C026EBD3AC8B2C4 /* libPods-Naviapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 11020DC6118E4AA4D211D86E /* libPods-Naviapp.a */; };
+		77C8FBC2CC737EDBC8206BEA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		C36EA07CF57F33A5B0C2BCF6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0EE19F0AB583E35603991857 /* Pods-Naviapp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Naviapp.release.xcconfig"; path = "Target Support Files/Pods-Naviapp/Pods-Naviapp.release.xcconfig"; sourceTree = "<group>"; };
-		1206C460169FFDD4763C6E3E /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Naviapp/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		11020DC6118E4AA4D211D86E /* libPods-Naviapp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Naviapp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07F961A680F5B00A75B9A /* Naviapp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Naviapp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Naviapp/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Naviapp/Info.plist; sourceTree = "<group>"; };
-		1839352F0E18955935E6F11A /* Pods-Naviapp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Naviapp.debug.xcconfig"; path = "Target Support Files/Pods-Naviapp/Pods-Naviapp.debug.xcconfig"; sourceTree = "<group>"; };
-		341B73FFCA977DE2BECABDDC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Naviapp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KakaoMapViewManager.m; sourceTree = "<group>"; };
+		141E64F02F8CAEE20066590E /* KakaoMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KakaoMapView.swift; sourceTree = "<group>"; };
+		141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KakaoMapViewManager.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5D /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Naviapp/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		84FF0E2D0DB9224FD3B8C2CC /* Pods-Naviapp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Naviapp.debug.xcconfig"; path = "Target Support Files/Pods-Naviapp/Pods-Naviapp.debug.xcconfig"; sourceTree = "<group>"; };
+		879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Naviapp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		9AC6FEAFD537F849A219296B /* Pods-Naviapp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Naviapp.release.xcconfig"; path = "Target Support Files/Pods-Naviapp/Pods-Naviapp.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Naviapp/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		E3FF17AF4F129098A9E6EF94 /* libPods-Naviapp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Naviapp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Naviapp/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Naviapp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Naviapp-Bridging-Header.h"; path = "Naviapp/Naviapp-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,23 +45,34 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				18F18D4B72B9A7A81763F655 /* libPods-Naviapp.a in Frameworks */,
+				76D32FCE9C026EBD3AC8B2C4 /* libPods-Naviapp.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		06E6A97DC040B1CE5318ED4B /* Naviapp */ = {
+			isa = PBXGroup;
+			children = (
+				6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */,
+			);
+			name = Naviapp;
+			sourceTree = "<group>";
+		};
 		13B07FAE1A68108700A75B9A /* Naviapp */ = {
 			isa = PBXGroup;
 			children = (
+				141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */,
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
+				141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */,
+				141E64F02F8CAEE20066590E /* KakaoMapView.swift */,
 				F11748442D0722820044C1D9 /* Naviapp-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				341B73FFCA977DE2BECABDDC /* PrivacyInfo.xcprivacy */,
+				879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Naviapp;
 			sourceTree = "<group>";
@@ -62,25 +81,35 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				E3FF17AF4F129098A9E6EF94 /* libPods-Naviapp.a */,
+				11020DC6118E4AA4D211D86E /* libPods-Naviapp.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		4AC99AE57994ED3D1DFDFC9F /* ExpoModulesProviders */ = {
+		A1B2C3D4E5F60718293A4B5E /* Config */ = {
 			isa = PBXGroup;
 			children = (
-				6FD337CD29EA08B1FD48AB9A /* Naviapp */,
+				A1B2C3D4E5F60718293A4B5C /* Debug.xcconfig */,
+				A1B2C3D4E5F60718293A4B5D /* Release.xcconfig */,
 			);
-			name = ExpoModulesProviders;
+			path = Config;
 			sourceTree = "<group>";
 		};
-		6FD337CD29EA08B1FD48AB9A /* Naviapp */ = {
+		5434C0B1FD37466A9E41A5E2 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				1206C460169FFDD4763C6E3E /* ExpoModulesProvider.swift */,
+				84FF0E2D0DB9224FD3B8C2CC /* Pods-Naviapp.debug.xcconfig */,
+				9AC6FEAFD537F849A219296B /* Pods-Naviapp.release.xcconfig */,
 			);
-			name = Naviapp;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		66EF9C04B6727F09AF1343B6 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				06E6A97DC040B1CE5318ED4B /* Naviapp */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -97,8 +126,9 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				E1E43D3D443C54AB5AADF014 /* Pods */,
-				4AC99AE57994ED3D1DFDFC9F /* ExpoModulesProviders */,
+				A1B2C3D4E5F60718293A4B5E /* Config */,
+				5434C0B1FD37466A9E41A5E2 /* Pods */,
+				66EF9C04B6727F09AF1343B6 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -122,16 +152,6 @@
 			path = Naviapp/Supporting;
 			sourceTree = "<group>";
 		};
-		E1E43D3D443C54AB5AADF014 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				1839352F0E18955935E6F11A /* Pods-Naviapp.debug.xcconfig */,
-				0EE19F0AB583E35603991857 /* Pods-Naviapp.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -140,13 +160,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Naviapp" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				FC3DFBD30D3FF5DE9DB0FB17 /* [Expo] Configure project */,
+				1BE8A8AFD37CC5B5D6D6B499 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				D5C820DC20DFC749F1C958B4 /* [CP] Embed Pods Frameworks */,
+				6B77D1909106B41C65D9316C /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +216,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				1ABFDBF58EE980395A87654B /* PrivacyInfo.xcprivacy in Resources */,
+				77C8FBC2CC737EDBC8206BEA /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,55 +262,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-resources.sh",
-				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		D5C820DC20DFC749F1C958B4 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		FC3DFBD30D3FF5DE9DB0FB17 /* [Expo] Configure project */ = {
+		1BE8A8AFD37CC5B5D6D6B499 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -314,6 +286,58 @@
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Naviapp/expo-configure-project.sh\"\n";
 		};
+		6B77D1909106B41C65D9316C /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/KakaoMapsSDK/KakaoMapsSDK.framework/KakaoMapsSDK",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/KakaoMapsSDK.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
+				"${PODS_ROOT}/KakaoMapsSDK/KakaoMapsSDKBundle.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/KakaoMapsSDKBundle.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -321,8 +345,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				141E64EF2F8CAED80066590E /* KakaoMapViewManager.m in Sources */,
+				141E64F12F8CAEE20066590E /* KakaoMapView.swift in Sources */,
+				141E64F32F8CAEEC0066590E /* KakaoMapViewManager.swift in Sources */,
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				2A6B779024DD9FDE5BC0C802 /* ExpoModulesProvider.swift in Sources */,
+				C36EA07CF57F33A5B0C2BCF6 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -331,7 +358,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1839352F0E18955935E6F11A /* Pods-Naviapp.debug.xcconfig */;
+			baseConfigurationReference = A1B2C3D4E5F60718293A4B5C /* Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -367,7 +394,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0EE19F0AB583E35603991857 /* Pods-Naviapp.release.xcconfig */;
+			baseConfigurationReference = A1B2C3D4E5F60718293A4B5D /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

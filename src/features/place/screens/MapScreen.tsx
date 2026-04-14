@@ -1,31 +1,17 @@
+// screens/MapScreen.tsx
 import React from 'react';
-import { View, StyleSheet, requireNativeComponent, Platform, Text, ViewProps } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import KakaoMapView from '../components/KakaoMapView';
 
-const KakaoMapView = requireNativeComponent<ViewProps>('KakaoMapView');
-const MapScreen = () => {
-  if (Platform.OS !== 'android') {
-    return (
-      <View style={styles.fallbackContainer}>
-        <Text>KakaoMapView is currently Android-only.</Text>
-      </View>
-    );
-  }
-
+export default function MapScreen() {
   return (
     <View style={styles.container}>
-      <KakaoMapView style={styles.map} />
+      <KakaoMapView style={styles.map} centerLat={37.402001} centerLng={127.108678} zoomLevel={7} />
     </View>
   );
-};
-
-export default MapScreen;
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  fallbackContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

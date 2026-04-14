@@ -31,11 +31,26 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
 *.tsbuildinfo
 
-.env
+# IDE
 .idea/
+
+# android
 android/app/debug.keystore
+android/.gradle/
+android/app/.cxx/
+android/app/build/
+android/build/
+
+# ios
+ios/build/
+ios/Pods/
+ios/Naviapp.xcworkspace/
+
+# native secrets
+ios/Config/Secrets.xcconfig
