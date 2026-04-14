@@ -1,7 +1,13 @@
 // screens/MapScreen.tsx
 import React from 'react';
+import { Language } from '../../../shared/i18n';
 import { StyleSheet, View } from 'react-native';
 import KakaoMapView from '../components/KakaoMapView';
+
+// MapScreen.tsx
+type Props = {
+  language: Language;
+};
 
 export default function MapScreen() {
   return (
@@ -10,6 +16,7 @@ export default function MapScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
