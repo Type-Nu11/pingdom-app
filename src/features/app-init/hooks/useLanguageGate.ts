@@ -4,7 +4,7 @@ import { i18n,Language } from "../../../shared/i18n";
 
 const LANGUAGE_STORAGE_KEY = 'language';
 
-export function useLanguagGate() {
+export function useLanguageGate() {
     const [language, setLanguage] = useState<Language>('en'); //언어 넣는곳
     const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(true);//모달 보여주는 여부
     const [isBootstrapping, setIsBootstrapping] = useState(true);//부스트랩핑(앱 초기화) 여부
