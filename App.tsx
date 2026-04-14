@@ -10,7 +10,7 @@ export default function App() {
 
   return (
     <>
-      <MapScreen language={language} />
+      <MapScreen />
       <LanguageGateModal visible={isLanguageModalVisible} onSelectLanguage={selectLanguage} />
     </>
   );
