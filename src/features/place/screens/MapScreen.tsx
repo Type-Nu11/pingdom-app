@@ -1,19 +1,15 @@
+// screens/MapScreen.tsx
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import KakaoMap from '../components/KakaoMapView';
+import KakaoMapView from '../components/KakaoMapView';
 
-const MapScreen = () => {
-  const centerLat = 37.402001;
-  const centerLng = 127.108678;
-
+export default function MapScreen() {
   return (
     <View style={styles.container}>
-      <KakaoMap style={styles.map} centerLat={centerLat} centerLng={centerLng} zoomLevel={7} />
+      <KakaoMapView style={styles.map} centerLat={37.402001} centerLng={127.108678} zoomLevel={7} />
     </View>
   );
-};
-
-export default MapScreen;
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
