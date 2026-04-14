@@ -1,12 +1,12 @@
 // screens/MapScreen.tsx
 import React from 'react';
-
+import { Language } from '../../../shared/i18n';
 import { StyleSheet, View } from 'react-native';
 import KakaoMapView from '../components/KakaoMapView';
 
 // MapScreen.tsx
 type Props = {
-  language: 'en' | 'ko';
+  language: Language;
 };
 
 export default function MapScreen() {
