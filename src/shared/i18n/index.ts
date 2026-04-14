@@ -1,5 +1,7 @@
 import { I18n } from 'i18n-js';
 
+export type Language = 'en' | 'ko';
+
 export const i18n = new I18n({
     
     en: {

@@ -1,6 +1,6 @@
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
-import { i18n } from '../../../shared/i18n';
-type Language = 'en' | 'ko';
+import { i18n,Language } from '../../../shared/i18n';
+
 
 type Props = {
     visible: boolean;
