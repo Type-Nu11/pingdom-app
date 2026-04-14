@@ -17,3 +17,7 @@ export const i18n = new I18n({
         languageSelectedBody: '한국어가 선택되었습니다.',
     },
 });
+
+i18n.defaultLocale = 'en';
+i18n.locale = 'en';
+i18n.enableFallback = true;

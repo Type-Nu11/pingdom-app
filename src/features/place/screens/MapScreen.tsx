@@ -4,14 +4,12 @@ import React,{useState} from 'react';
 import { Alert,StyleSheet, View } from 'react-native';
 import KakaoMapView from '../components/KakaoMapView';
 import LanguageGateModal from '../../app-init/components/LanguageGateModal';
-import { i18n } from '../../../shared/i18n/index';
+import { i18n } from '../../../shared/i18n';
 
 export default function MapScreen() {
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(true); //모달 상태
 
-  const [language, setLanguage] = useState<'en' | 'ko'>('en');
   const handleCloseLanguageModal = (selected: 'en' | 'ko') => {
-    setLanguage(selected);
     i18n.locale = selected;
     setIsLanguageModalVisible(false);
     Alert.alert(i18n.t('languageSelectedTitle'), i18n.t('languageSelectedBody'));

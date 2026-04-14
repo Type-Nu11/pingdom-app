@@ -49,9 +49,4 @@ const styles = StyleSheet.create({
         backgroundColor: '#f2f2f2',
         borderRadius: 10,
     },
-    closeButton: {
-        marginTop: 8,
-        padding: 12,
-        alignItems: 'center',
-    },
 });
