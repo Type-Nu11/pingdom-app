@@ -1,14 +1,25 @@
 // screens/MapScreen.tsx
-import React from 'react';
+import React,{useEffect} from 'react';
 import { Language } from '../../../shared/i18n';
 import { StyleSheet, View } from 'react-native';
 import KakaoMapView from '../components/KakaoMapView';
+import * as Location from 'expo-location';
 
 // MapScreen.tsx
 type Props = {
   language: Language;
 };
-
+useEffect(() => {
+  const requestPermission = async () => {
+    const {status} = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      console.log('위치 권한 거부')
+      return;
+    }
+    console.log('위치 권한 허용도')
+  }
+  requestPermission();
+})
 export default function MapScreen() {
   return (
     <View style={styles.container}>
