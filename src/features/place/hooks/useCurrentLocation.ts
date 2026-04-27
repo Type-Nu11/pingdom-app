@@ -51,5 +51,5 @@ export const useCurrentLocation = () => {
             subscription?.remove();
         };
     },[]);
-    return center;
+    return {center,userLat: center.lat,userLng: center.lng,followUser: true};
 };
