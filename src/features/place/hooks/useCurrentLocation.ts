@@ -30,20 +30,26 @@ export const useCurrentLocation = () => {
             lng: current.coords.longitude,
             });
 
-            subscription = await Location.watchPositionAsync(
+            const sub = await Location.watchPositionAsync(
             {
                 accuracy: Location.Accuracy.Balanced,
                 timeInterval: 5000,
                 distanceInterval: 10,
-            },
-            (loc) => {
-                if (!mounted) return;
-                setCenter({
-                lat: loc.coords.latitude,
-                lng: loc.coords.longitude,
+                },
+                (loc) => {
+                    if (!mounted) return;
+                    setCenter({
+                    lat: loc.coords.latitude,
+                    lng: loc.coords.longitude,
                 });
             }
             );
+
+            if (!mounted) {
+            sub.remove();
+            } else {
+            subscription = sub;
+            }
         } catch {
             if (mounted) setCenter(FALLBACK_COORD);
         }
