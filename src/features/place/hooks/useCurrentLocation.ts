@@ -15,8 +15,13 @@ export const useCurrentLocation = () => {
             // 위치 권한 요청
             const { status } = await Location.requestForegroundPermissionsAsync();
             // 실패/거부 시 fallback
-            if (status !== 'granted') {
+            if (status === 'denied') {
+            console.log('사용자가 위치 권한 거부');
             if (mounted) setCenter(FALLBACK_COORD);
+            return;
+            }
+
+            if (status !== 'granted') {
             return;
             }
 
