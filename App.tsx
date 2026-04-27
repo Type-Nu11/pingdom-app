@@ -1,7 +1,7 @@
 // App.tsx
 import React from 'react';
 import MapScreen from './src/features/place/screens/MapScreen';
-import LanguageGateModal from './src/features/app-init/components/LanguageGateModal';
+import LanguageGateCard from './src/features/app-init/components/LanguageGateCard';
 import { useLanguageGate } from './src/features/app-init/hooks/useLanguageGate';
 
 export default function App() {
@@ -11,7 +11,7 @@ export default function App() {
   return (
     <>
       <MapScreen />
-      <LanguageGateModal visible={isLanguageModalVisible} onSelectLanguage={selectLanguage} />
+      <LanguageGateCard visible={isLanguageModalVisible} onSelectLanguage={selectLanguage} />
     </>
   );
 }

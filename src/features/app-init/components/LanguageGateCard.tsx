@@ -8,7 +8,7 @@ type Props = {
 };
  // 언어 선택 모달 컴포넌트
 
-export default function LanguageGateModal({visible,onSelectLanguage}:Props) { //visivle,on.. 같은 props을 부모한테서 받아옴
+export default function LanguageGateCard({visible,onSelectLanguage}:Props) { //visivle,on.. 같은 props을 부모한테서 받아옴
     return (
         <Modal visible={visible} transparent={true} animationType="fade">
         <View style={styles.overlay}>

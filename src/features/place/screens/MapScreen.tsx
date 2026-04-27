@@ -1,14 +1,14 @@
 // screens/MapScreen.tsx
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import KakaoMapView from '../components/KakaoMapView';
+import KakaoMapCard from '../components/KakaoMapCard';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
 export default function MapScreen() {
   const center = useCurrentLocation();
   return (
     <View style={styles.container}>
-      <KakaoMapView style={styles.map} centerLat={center.lat} centerLng={center.lng} zoomLevel={7} />
+      <KakaoMapCard style={styles.map} centerLat={center.lat} centerLng={center.lng} zoomLevel={7} />
     </View>
   );
 }
