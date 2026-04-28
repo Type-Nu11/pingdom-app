@@ -26,4 +26,18 @@ class KakaoMapViewManager : SimpleViewManager<KakaoMapView>() {
     fun setZoomLevel(view: KakaoMapView, zoomLevel: Int) {
         // iOS bridge uses this prop. Android support can be added later.
     }
+    @ReactProp(name = "userLat")
+    fun setUserLat(view: KakaoMapView, userLat: Double) {
+        view.setUserLat(userLat)
+    }
+
+    @ReactProp(name = "userLng")
+    fun setUserLng(view: KakaoMapView, userLng: Double) {
+        view.setUserLng(userLng)
+    }
+
+    @ReactProp(name = "followUser", defaultBoolean = true)
+    fun setFollowUser(view: KakaoMapView, followUser: Boolean) {
+        view.setFollowUser(followUser)
+    }
 }
