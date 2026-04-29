@@ -73,6 +73,9 @@ class KakaoMapView(
 
     fun setFollowUser(value: Boolean) {
         followUser = value
+        if (value) {
+            updateUserLocationIfReady()
+        }
     }
     private fun updateUserLocationIfReady() {
         val map = kakaoMap ?: return
