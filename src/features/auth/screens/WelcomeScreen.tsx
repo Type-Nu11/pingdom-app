@@ -19,17 +19,17 @@ export default function WelcomeScreen({
                 style={styles.logo}
                 resizeMode="contain"
             />
-            <Text>외국인 옆에 핑덤</Text>
+            <Text style={styles.throtext}>외국인 옆에 핑덤</Text>
+            <Text style={styles.wkrdmsthro}>당신만 아는 장소를</Text>
+            <Text style={styles.wkrdmsthro}>외국인들에게 공유해주세요!</Text>
         </View>
-
-        <Button title='시작하기' onPress={onStart}></Button>
-
         <View style={styles.loginRow}>
             <Text style={styles.loginText}>이미 계정이 있다면? </Text>
             <Pressable onPress={onLogin}>
             <Text style={styles.loginLink}>로그인</Text>
             </Pressable>
         </View>
+        <Button title='시작하기' onPress={onStart}></Button>
         </View>
     );
 }
@@ -41,6 +41,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 28,
         backgroundColor: '#fff',
+    },
+    throtext: {
+        fontSize: 24,
+    },
+    wkrdmsthro: {
+        fontSize: 14
     },
     logo: {
         width: 247,
@@ -55,6 +61,7 @@ const styles = StyleSheet.create({
     loginRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginBottom: 12,
     },
     loginText: {
         fontSize: 14,

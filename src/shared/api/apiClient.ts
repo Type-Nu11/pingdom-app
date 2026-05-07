@@ -35,7 +35,7 @@ type RetryableRequestConfig = InternalAxiosRequestConfig & {
     _retry?: boolean;
 };
 
-// 토큰 갱신 API(/auth/refresh)의 응답 타입
+// 토큰 갱신 API(/auth/token/refresh)의 응답 타입
 type RefreshResponse = {
     accessToken: string;
     refreshToken: string;
@@ -108,7 +108,7 @@ async function fetchNewTokens(): Promise<string> {
     }
 
     const { data } = await refreshClient.post<RefreshResponse>(
-        '/auth/refresh',
+        '/auth/token/refresh',
         { refreshToken: tokens.refreshToken }
     );
 
@@ -178,7 +178,7 @@ api.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as RetryableRequestConfig | undefined;
         const status = error.response?.status;
-        const isRefreshRequest = originalRequest?.url?.includes('/auth/refresh');
+        const isRefreshRequest = originalRequest?.url?.includes('/auth/token/refresh');
 
         const shouldSkipRetry =
             !originalRequest ||

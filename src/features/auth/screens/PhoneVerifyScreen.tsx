@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import useLogin from '../hooks/useLogin';
 import useSignup from '../hooks/useSignup';
 import Button from '../components/Button';
 import Input from '../components/Input';
@@ -21,9 +22,22 @@ export default function PhoneVerifyScreen({ onBack }: PhoneVerifyScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const { signup, isSubmitting, errorMessage, clearError } = useSignup();
+  const {
+    signup,
+    isSubmitting: isSignupSubmitting,
+    errorMessage: signupErrorMessage,
+    clearError: clearSignupError,
+  } = useSignup();
+  const {
+    login,
+    isSubmitting: isLoginSubmitting,
+    errorMessage: loginErrorMessage,
+    clearError: clearLoginError,
+  } = useLogin();
 
   const handleSignup = async () => {
+    const isSubmitting = isSignupSubmitting || isLoginSubmitting;
+
     if (
       !username.trim() ||
       !name.trim() ||
@@ -41,21 +55,37 @@ export default function PhoneVerifyScreen({ onBack }: PhoneVerifyScreenProps) {
       return;
     }
 
-    clearError();
-    const result = await signup({
+    clearSignupError();
+    clearLoginError();
+
+    const signupResult = await signup({
       username: username.trim(),
       name: name.trim(),
       email: email.trim(),
       password,
     });
 
-    if (result) {
-      console.log('회원가입 됨');
+    if (!signupResult) {
+      console.log('회원가입 안됨');
       return;
     }
 
-    console.log('회원가입 안됨');
+    const loginResult = await login({
+      username: username.trim(),
+      password,
+    });
+
+    if (loginResult) {
+      console.log('회원가입 됨');
+      console.log('로그인 됨');
+      return;
+    }
+
+    console.log('로그인 안됨');
   };
+
+  const isSubmitting = isSignupSubmitting || isLoginSubmitting;
+  const errorMessage = signupErrorMessage ?? loginErrorMessage;
 
   return (
     <KeyboardAvoidingView
