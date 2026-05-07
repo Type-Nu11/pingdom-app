@@ -95,6 +95,7 @@ login()
 * Docs: 문서 수정
 * Style: 코드 포맷 변경
 * Refactor: 코드 리팩토링
+* Design: 디자인 변경
 * Test: 테스트 코드
 * Chore: 설정 변경
 * Design: UI 변경
