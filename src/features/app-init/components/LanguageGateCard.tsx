@@ -1,8 +1,8 @@
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { i18n,Language } from '../../../shared/i18n';
-import { colors } from '../../../shared/constants/colors';
-import { radius } from '../../../shared/constants/radius';
-import { spacing } from '../../../shared/constants/spacing';
+import { colors } from '../../../styles/colors';
+import { radius } from '../../../styles/radius';
+import { spacing } from '../../../styles/spacing';
 
 
 type Props = {

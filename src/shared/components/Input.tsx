@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors } from '../constants/colors';
-import { spacing } from '../constants/spacing';
+import { colors } from '../../styles/colors';
+import { spacing } from '../../styles/spacing';
 
 type InputProps = {
   label: string;

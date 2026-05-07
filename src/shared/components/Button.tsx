@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { colors } from '../constants/colors';
-import { spacing } from '../constants/spacing';
+import { colors } from '../../styles/colors';
+import { spacing } from '../../styles/spacing';
 
 type ButtonProps = {
   label: string;
