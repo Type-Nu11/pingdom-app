@@ -1,24 +1,49 @@
-// App.tsx
-import React,{useEffect} from 'react';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import LanguageGateScreen from './src/features/auth/screens/LanguageGateScreen';
+import LoginScreen from './src/features/auth/screens/LoginScreen';
+import useAuth from './src/features/auth/hooks/useAuth';
 import MapScreen from './src/features/place/screens/MapScreen';
-import LanguageGateCard from './src/features/app-init/components/LanguageGateCard';
-import { useLanguageGate } from './src/features/app-init/hooks/useLanguageGate';
-import { hydrateAccessToken } from './src/shared/api/authTokens';
+import Button from './src/shared/components/Button';
+
+type AuthScreen = 'language-gate' | 'login';
 
 export default function App() {
-  const { language, isLanguageModalVisible, isBootstrapping, selectLanguage } = useLanguageGate();
+  const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
+  const [authScreen, setAuthScreen] = useState<AuthScreen>('language-gate');
+
   useEffect(() => {
-    // 앱이 처음 실행 될때 키체인에서 accessToken을 읽어와서
-    // 메모리 캐시에 채워주는 초기화 작업,
-    // 간단하게 로그인 저장 상태 유지 용도
-    void hydrateAccessToken();
-  });
-  if (isBootstrapping) return null;
+    void bootstrapAuth();
+  }, [bootstrapAuth]);
+
+  if (isHydrating) return null;
 
   return (
     <>
-      <MapScreen />
-      <LanguageGateCard visible={isLanguageModalVisible} onSelectLanguage={selectLanguage} />
+      {isLoggedIn ? (
+        <View style={styles.container}>
+          <MapScreen />
+          <View style={styles.logoutButton}>
+            <Button label="로그아웃" onPress={() => void logout()} />
+          </View>
+        </View>
+      ) : authScreen === 'language-gate' ? (
+        <LanguageGateScreen onSubmit={() => setAuthScreen('login')} />
+      ) : (
+        <LoginScreen />
+      )}
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  logoutButton: {
+    position: 'absolute',
+    right: 16,
+    top: 56,
+    width: 120,
+  },
+});

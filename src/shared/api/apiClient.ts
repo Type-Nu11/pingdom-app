@@ -14,7 +14,13 @@ import {
 // 상수
 // ─────────────────────────────────────────────
 
-const API_BASE_URL = 'https://api.example.com'; // TODO: env로 분리
+const rawApiBaseUrl =
+    process.env.EXPO_PUBLIC_API_BASE_URL ??
+    process.env.API_BASE_URL ??
+    'http://10.80.161.80';
+const API_BASE_URL = /^https?:\/\//i.test(rawApiBaseUrl)
+    ? rawApiBaseUrl
+    : `http://${rawApiBaseUrl}`;
 const REQUEST_TIMEOUT = 10000;
 
 // ─────────────────────────────────────────────

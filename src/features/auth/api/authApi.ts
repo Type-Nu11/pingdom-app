@@ -1,5 +1,35 @@
+import { api } from '../../../shared/api/apiClient';
+import type { LoginRequest, LoginResponse } from '../model/auth.types';
+
+type RawLoginResponse =
+  | LoginResponse
+  | {
+      data?: LoginResponse;
+      accessToken?: string;
+      refreshToken?: string;
+    };
+
+function toLoginResponse(response: RawLoginResponse): LoginResponse {
+  if ('data' in response && response.data?.accessToken) {
+    return {
+      accessToken: response.data.accessToken,
+      refreshToken: response.data.refreshToken ?? '',
+    };
+  }
+
+  if ('accessToken' in response && response.accessToken) {
+    return {
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken ?? '',
+    };
+  }
+
+  throw new Error('로그인 응답에 accessToken이 없습니다.');
+}
+
 export const authApi = {
-  login: async () => {
-    return { accessToken: 'mock-token' };
+  login: async (payload: LoginRequest): Promise<LoginResponse> => {
+    const { data } = await api.post<RawLoginResponse>('/auth/login', payload);
+    return toLoginResponse(data);
   },
 };
