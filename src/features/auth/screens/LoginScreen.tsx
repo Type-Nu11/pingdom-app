@@ -8,18 +8,27 @@ import {
   View,
 } from 'react-native';
 import useLogin from '../hooks/useLogin';
-import Button from '../../../shared/components/Button';
-import Input from '../../../shared/components/Input';
+import Button from '../components/Button';
+import Input from '../components/Input';
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+type LoginScreenProps = {
+  onBack?: () => void;
+};
+
+export default function LoginScreen({ onBack }: LoginScreenProps) {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { login, isSubmitting, errorMessage, clearError } = useLogin();
 
   const handleLogin = async () => {
+    if (!username.trim() || !password.trim() || isSubmitting) {
+      console.log('로그인 안됨');
+      return;
+    }
+
     clearError();
     const result = await login({
-      email: email.trim(),
+      username: username.trim(),
       password,
     });
 
@@ -36,7 +45,7 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Pressable style={styles.back}>
+      <Pressable style={styles.back} onPress={onBack}>
         <Text style={styles.backText}>‹ 돌아가기</Text>
       </Pressable>
 
@@ -45,16 +54,12 @@ export default function LoginScreen() {
       </Text>
 
       <Input
-        label="이메일"
-        placeholder="이메일"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
+        placeholder="아이디"
+        value={username}
+        onChangeText={setUsername}
       />
 
       <Input
-        label="비밀번호"
         placeholder="비밀번호"
         value={password}
         onChangeText={setPassword}
@@ -63,10 +68,8 @@ export default function LoginScreen() {
 
       <View style={styles.loginButton}>
         <Button
-          label="로그인"
+          title={isSubmitting ? '로그인 중...' : '로그인'}
           onPress={() => void handleLogin()}
-          loading={isSubmitting}
-          disabled={!email.trim() || !password.trim()}
         />
       </View>
 

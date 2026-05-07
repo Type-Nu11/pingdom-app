@@ -34,12 +34,12 @@ const styles = StyleSheet.create({
     input: {
         width: '100%',
         height: 62,
-        backgroundColor: '#fff',
         borderWidth: 2,
         borderColor: '#000',
         borderRadius: 20,
         paddingHorizontal: 20,
         fontSize: 18,
+        marginBottom: 20,
         color: '#000',
     },
 });
