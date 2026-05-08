@@ -3,6 +3,9 @@ import {
     TextInput,
     StyleSheet,
 } from 'react-native';
+import { colors } from '../../../styles/colors';
+import { radius } from '../../../styles/radius';
+import { spacing } from '../../../styles/spacing';
 
 type InputProps = {
     value: string;
@@ -25,7 +28,7 @@ export default function Input({
         onChangeText={onChangeText}
         placeholder={placeholder}
         secureTextEntry={secureTextEntry}
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textMuted}
         />
     );
 }
@@ -35,11 +38,12 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 62,
         borderWidth: 2,
-        borderColor: '#000',
-        borderRadius: 20,
-        paddingHorizontal: 20,
+        borderColor: colors.border,
+        borderRadius: radius.md + spacing.xs,
+        paddingHorizontal: spacing.md + spacing.xs,
         fontSize: 18,
-        marginBottom: 20,
-        color: '#000',
+        marginBottom: spacing.md + spacing.xs,
+        color: colors.border,
+        backgroundColor: colors.background,
     },
 });
