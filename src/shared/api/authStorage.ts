@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Keychain from 'react-native-keychain';
 
-const STORAGE_KEY = 'pingdom-auth-tokens';
+const SERVICE_NAME = 'com.pingdom.auth';
 
 // accessToken : 실제 API 요청 시 매번 첨부하는 인증표냥 (유효기간 짧음)
 // refreshToken: accessToken이 만료됐을 때 새로 발급받기 위한 갱신표냥 (유효기간 김)
@@ -18,7 +18,11 @@ export type AuthTokens = {
  *   - 토큰 객체를 JSON 문자열로 직렬화해 저장합니다
  */
 export async function saveTokens(tokens: AuthTokens): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
+    await Keychain.setGenericPassword(
+        'tokens',
+        JSON.stringify(tokens),
+        { service:SERVICE_NAME }
+    )
 }
 
 /**
@@ -33,11 +37,11 @@ export async function saveTokens(tokens: AuthTokens): Promise<void> {
  *   4. 변환 중 오류(데이터 손상 등)가 나도 null 반환 (앱이 터지지 않도록)
  */
 export async function getTokens(): Promise<AuthTokens | null> {
-    const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
+    const redentials = await Keychain.getGenericPassword({service:SERVICE_NAME})
+    if (!redentials) return null;
 
     try {
-        return JSON.parse(stored) as AuthTokens;
+        return JSON.parse(redentials.password) as AuthTokens;
     } catch {
         return null;
     }
@@ -50,5 +54,5 @@ export async function getTokens(): Promise<AuthTokens | null> {
  * 이걸 빠뜨리면 로그아웃 후에도 토큰이 남아있어 보안 문제가 생깁니다
  */
 export async function clearTokens(): Promise<void> {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    await Keychain.resetGenericPassword({service : SERVICE_NAME});
 }
