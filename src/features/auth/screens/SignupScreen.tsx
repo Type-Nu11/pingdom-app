@@ -41,9 +41,7 @@ export default function SignupScreen({ onBack, onLogin, onComplete }: SignupScre
             </View>
         <Pressable
           style={styles.verifyButton}
-          onPress={() => {
-            console.log('인증 요청');
-          }}
+          onPress={() => {}}
         >
           <Text style={styles.verifyButtonText}>인증</Text>
         </Pressable>
@@ -58,7 +56,6 @@ export default function SignupScreen({ onBack, onLogin, onComplete }: SignupScre
       <Button
         title="완료"
         onPress={() => {
-          console.log('회원가입 입력 단계로 이동');
           onComplete?.();
         }}
       />

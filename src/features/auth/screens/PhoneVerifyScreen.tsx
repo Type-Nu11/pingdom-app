@@ -46,12 +46,10 @@ export default function PhoneVerifyScreen({ onBack }: PhoneVerifyScreenProps) {
       !passwordConfirm.trim() ||
       isSubmitting
     ) {
-      console.log('회원가입 안됨');
       return;
     }
 
     if (password !== passwordConfirm) {
-      console.log('회원가입 안됨');
       return;
     }
 
@@ -66,7 +64,6 @@ export default function PhoneVerifyScreen({ onBack }: PhoneVerifyScreenProps) {
     });
 
     if (!signupResult) {
-      console.log('회원가입 안됨');
       return;
     }
 
@@ -76,12 +73,8 @@ export default function PhoneVerifyScreen({ onBack }: PhoneVerifyScreenProps) {
     });
 
     if (loginResult) {
-      console.log('회원가입 됨');
-      console.log('로그인 됨');
       return;
     }
-
-    console.log('로그인 안됨');
   };
 
   const isSubmitting = isSignupSubmitting || isLoginSubmitting;

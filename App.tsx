@@ -30,23 +30,16 @@ export default function App() {
             <Button label="로그아웃" onPress={() => void logout()} />
           </View>
         </View>
-      ) : authScreen === 'language-gate' ? (
-        <LanguageGateScreen onSubmit={() => setAuthScreen('welcome')} />
-      ) : authScreen === 'welcome' ? (
-        <WelcomeScreen
-          onStart={() => setAuthScreen('signup')}
-          onLogin={() => setAuthScreen('login')}
-        />
-      ) : authScreen === 'login' ? (
-        <LoginScreen onBack={() => setAuthScreen('welcome')} />
-      ) : authScreen === 'signup' ? (
-        <SignupScreen
-          onBack={() => setAuthScreen('welcome')}
-          onLogin={() => setAuthScreen('login')}
-          onComplete={() => setAuthScreen('phone-verify')}
-        />
       ) : (
-        <PhoneVerifyScreen onBack={() => setAuthScreen('signup')} />
+        (() => {
+          switch (authScreen) {
+            case 'language-gate': return <LanguageGateScreen onSubmit={() => setAuthScreen('welcome')} />;
+            case 'welcome': return <WelcomeScreen onStart={() => setAuthScreen('signup')} onLogin={() => setAuthScreen('login')} />;
+            case 'login': return <LoginScreen onBack={() => setAuthScreen('welcome')} />;
+            case 'signup': return <SignupScreen onBack={() => setAuthScreen('welcome')} onLogin={() => setAuthScreen('login')} onComplete={() => setAuthScreen('phone-verify')} />;
+            default: return <PhoneVerifyScreen onBack={() => setAuthScreen('signup')} />;
+          }
+        })()
       )}
     </>
   );

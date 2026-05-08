@@ -22,7 +22,6 @@ export default function LoginScreen({ onBack }: LoginScreenProps) {
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim() || isSubmitting) {
-      console.log('로그인 안됨');
       return;
     }
 
@@ -33,11 +32,8 @@ export default function LoginScreen({ onBack }: LoginScreenProps) {
     });
 
     if (result) {
-      console.log('로그인 됨');
       return;
     }
-
-    console.log('로그인 안됨');
   };
 
   return (

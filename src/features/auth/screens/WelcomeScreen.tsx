@@ -8,8 +8,8 @@ type WelcomeScreenProps = {
 };
 
 export default function WelcomeScreen({
-    onStart = () => console.log('회원가입 화면으로 이동'),
-    onLogin = () => console.log('로그인 화면으로 이동'),
+    onStart = () => {},
+    onLogin = () => {},
     }: WelcomeScreenProps) {
     return (
         <View style={styles.container}>
