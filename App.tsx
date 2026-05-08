@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import LanguageGateScreen from './src/features/auth/screens/LanguageGateScreen';
 import LoginScreen from './src/features/auth/screens/LoginScreen';
-import PhoneVerifyScreen from './src/features/auth/screens/PhoneVerifyScreen';
+import PhoneVerifyScreen from './src/features/auth/screens/SignupDetailsScreen';
 import SignupScreen from './src/features/auth/screens/SignupScreen';
 import WelcomeScreen from './src/features/auth/screens/WelcomeScreen';
 import useAuth from './src/features/auth/hooks/useAuth';

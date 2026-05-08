@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { colors } from '../../../styles/colors';
+import { radius } from '../../../styles/radius';
+import { spacing } from '../../../styles/spacing';
 
 type SignupScreenProps = {
   onBack?: () => void;
@@ -73,27 +76,27 @@ export default function SignupScreen({ onBack, onLogin, onComplete }: SignupScre
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
-        paddingHorizontal: 28,
-        paddingTop: 84,
+        backgroundColor: colors.background,
+        paddingHorizontal: spacing.lg + spacing.xs,
+        paddingTop: spacing.xl * 2 + spacing.lg - spacing.xs,
     },
     back: {
-        marginBottom: 28,
+        marginBottom: spacing.lg + spacing.xs,
     },
     backText: {
         fontSize: 20,
         fontWeight: '700',
-        color: '#000',
+        color: colors.border,
     },
     title: {
         fontSize: 30,
         fontWeight: '900',
-        color: '#000',
-        marginBottom: 28,
+        color: colors.border,
+        marginBottom: spacing.lg + spacing.xs,
     },
     phoneRow: {
         position: 'relative',
-        marginBottom: 20,
+        marginBottom: spacing.md + spacing.xs,
     },
     phoneInputWrap: {
         paddingRight: 96,
@@ -105,30 +108,30 @@ const styles = StyleSheet.create({
         height: 42,
         minWidth: 62,
         borderWidth: 2,
-        borderColor: '#000',
-        borderRadius: 14,
+        borderColor: colors.border,
+        borderRadius: radius.md - 2,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 14,
-        backgroundColor: '#fff',
+        backgroundColor: colors.background,
     },
     verifyButtonText: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#000',
+        color: colors.border,
     },
     loginRow: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 72,
+        marginTop: spacing.xl * 2 + spacing.sm,
     },
     loginText: {
         fontSize: 16,
-        color: '#555',
+        color: colors.textMuted,
     },
     loginLink: {
         fontSize: 16,
-        color: '#ff2b6d',
+        color: colors.accent,
         textDecorationLine: 'underline',
     },
 });

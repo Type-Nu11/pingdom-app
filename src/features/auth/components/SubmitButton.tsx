@@ -1,5 +1,7 @@
 import React from 'react';
 import { StyleSheet,Pressable,Text } from 'react-native';
+import { colors } from '../../../styles/colors';
+import { spacing } from '../../../styles/spacing';
 
 type SubmitButtonProps = {
     onPress?: () => void;
@@ -17,10 +19,10 @@ const styles = StyleSheet.create({
         width: 104,
         height: 38,
         borderWidth: 2,
-        borderColor: '#000',
+        borderColor: colors.border,
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 'auto',
-        marginBottom: 34,
+        marginBottom: spacing.xl + 2,
     },
 })
