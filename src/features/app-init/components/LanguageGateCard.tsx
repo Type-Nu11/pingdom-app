@@ -1,5 +1,8 @@
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { i18n,Language } from '../../../shared/i18n';
+import { colors } from '../../../styles/colors';
+import { radius } from '../../../styles/radius';
+import { spacing } from '../../../styles/spacing';
 
 
 type Props = {
@@ -29,24 +32,25 @@ export default function LanguageGateCard({visible,onSelectLanguage}:Props) { //v
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
+        backgroundColor: colors.overlay,
         justifyContent: 'center',
         alignItems: 'center',
     },
     modal: {
         width: 300,
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 16,
-        gap: 12,
+        backgroundColor: colors.background,
+        padding: spacing.md + spacing.xs,
+        borderRadius: radius.md,
+        gap: spacing.sm + spacing.xs,
     },
     title: {
         fontSize: 18,
         fontWeight: '600',
+        color: colors.text,
     },
     button: {
-        padding: 14,
-        backgroundColor: '#f2f2f2',
-        borderRadius: 10,
+        padding: spacing.sm + 6,
+        backgroundColor: colors.surfaceMuted,
+        borderRadius: radius.sm,
     },
 });
