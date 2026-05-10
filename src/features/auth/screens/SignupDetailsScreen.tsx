@@ -12,11 +12,11 @@ import useSignup from '../hooks/useSignup';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
-type PhoneVerifyScreenProps = {
+type SignupDetailsScreenProps = {
   onBack?: () => void;
 };
 
-export default function PhoneVerifyScreen({ onBack }: PhoneVerifyScreenProps) {
+export default function SignupDetailsScreen({ onBack }: SignupDetailsScreenProps) {
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

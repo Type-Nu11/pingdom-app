@@ -37,11 +37,11 @@ export async function saveTokens(tokens: AuthTokens): Promise<void> {
  *   4. 변환 중 오류(데이터 손상 등)가 나도 null 반환 (앱이 터지지 않도록)
  */
 export async function getTokens(): Promise<AuthTokens | null> {
-    const redentials = await Keychain.getGenericPassword({service:SERVICE_NAME})
-    if (!redentials) return null;
+    const credentials = await Keychain.getGenericPassword({service:SERVICE_NAME})
+    if (!credentials) return null;
 
     try {
-        return JSON.parse(redentials.password) as AuthTokens;
+        return JSON.parse(credentials.password) as AuthTokens;
     } catch {
         return null;
     }

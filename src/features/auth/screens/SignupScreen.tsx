@@ -13,13 +13,13 @@ import { colors } from '../../../styles/colors';
 import { radius } from '../../../styles/radius';
 import { spacing } from '../../../styles/spacing';
 
-type SignupScreenProps = {
+type PhoneVerifyScreenProps = {
   onBack?: () => void;
   onLogin?: () => void;
   onComplete?: () => void;
 };
 
-export default function SignupScreen({ onBack, onLogin, onComplete }: SignupScreenProps) {
+export default function PhoneVerifyScreen({ onBack, onLogin, onComplete }: PhoneVerifyScreenProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
 

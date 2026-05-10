@@ -4,6 +4,9 @@ import {
     Text,
     StyleSheet,
 } from 'react-native';
+import { colors } from '../../../styles/colors';
+import { radius } from '../../../styles/radius';
+import { spacing } from '../../../styles/spacing';
 
 type ButtonProps = {
     title: string;
@@ -31,16 +34,16 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 62,
         borderWidth: 2,
-        borderColor: '#000',
-        backgroundColor: '#FFF',
-        borderRadius: 20,
+        borderColor: colors.border,
+        backgroundColor: colors.background,
+        borderRadius: radius.md + spacing.xs,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom:24,
+        marginBottom: spacing.lg,
     },
     text: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#000',
+        color: colors.border,
     },
 });

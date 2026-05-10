@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import Slider from '@react-native-community/slider';
 import SubmitButton from '../components/SubmitButton';
+import { colors } from '../../../styles/colors';
+import { spacing } from '../../../styles/spacing';
 
 type LanguageGateScreenProps = {
   onSubmit?: () => void;
@@ -71,9 +73,9 @@ export default function LanguageGateScreen({ onSubmit }: LanguageGateScreenProps
           maximumValue={100}
           step={1}
           value={age}
-          minimumTrackTintColor="#ff2b6d"
-          maximumTrackTintColor="#000"
-          thumbTintColor="#ff2b6d"
+          minimumTrackTintColor={colors.accent}
+          maximumTrackTintColor={colors.border}
+          thumbTintColor={colors.accent}
           onValueChange={setAge}
         />
         <Text>100+</Text>
@@ -86,39 +88,39 @@ export default function LanguageGateScreen({ onSubmit }: LanguageGateScreenProps
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 28,
-    paddingTop: 64,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.lg + spacing.xs,
+    paddingTop: spacing.xl * 2,
   },
   title: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#000',
-    marginBottom: 46,
+    color: colors.border,
+    marginBottom: spacing.xl + spacing.md - spacing.xs + 2,
   },
   label: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000',
-    marginBottom: 14,
+    color: colors.border,
+    marginBottom: spacing.sm + spacing.xs + 2,
   },
   dropdown: {
     width: 220,
     height: 38,
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: colors.border,
     paddingHorizontal: 12,
-    backgroundColor: '#fff',
-    marginBottom: 44,
+    backgroundColor: colors.background,
+    marginBottom: spacing.xl + spacing.md - spacing.xs,
   },
   dropdownText: {
     fontSize: 16,
-    color: '#000',
+    color: colors.border,
   },
   radioRow: {
     flexDirection: 'row',
     gap: 18,
-    marginBottom: 44,
+    marginBottom: spacing.xl + spacing.md - spacing.xs,
   },
   radioItem: {
     flexDirection: 'row',
@@ -130,31 +132,31 @@ const styles = StyleSheet.create({
     height: 15,
     borderRadius: 99,
     borderWidth: 1,
-    borderColor: '#bbb',
+    borderColor: colors.textMuted,
   },
   radioActive: {
     borderWidth: 4,
-    borderColor: '#ff2b6d',
+    borderColor: colors.accent,
   },
   activeText: {
-    color: '#ff2b6d',
+    color: colors.accent,
     fontSize: 14,
   },
   inactiveText: {
-    color: '#aaa',
+    color: colors.textMuted,
     fontSize: 14,
   },
   ageValue: {
     alignSelf: 'center',
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: colors.border,
     paddingHorizontal: 8,
     marginBottom: 2,
   },
   sliderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 80,
+    marginBottom: spacing.xl * 2 + spacing.md,
   },
   slider: {
     flex: 1,
@@ -162,6 +164,6 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontSize: 15,
-    color: '#000',
+    color: colors.border,
   },
 });

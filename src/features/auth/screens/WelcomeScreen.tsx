@@ -20,8 +20,8 @@ export default function WelcomeScreen({
                 resizeMode="contain"
             />
             <Text style={styles.throtext}>외국인 옆에 핑덤</Text>
-            <Text style={styles.wkrdmsthro}>당신만 아는 장소를</Text>
-            <Text style={styles.wkrdmsthro}>외국인들에게 공유해주세요!</Text>
+            <Text style={styles.introDescription}>당신만 아는 장소를</Text>
+            <Text style={styles.introDescription}>외국인들에게 공유해주세요!</Text>
         </View>
         <View style={styles.loginRow}>
             <Text style={styles.loginText}>이미 계정이 있다면? </Text>
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     throtext: {
         fontSize: 24,
     },
-    wkrdmsthro: {
+    introDescription: {
         fontSize: 14
     },
     logo: {
