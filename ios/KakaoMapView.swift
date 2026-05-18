@@ -3,6 +3,11 @@ import KakaoMapsSDK
 
 @objc(KakaoMapView)
 final class KakaoMapView: UIView, MapControllerDelegate {
+    private enum MarkerConfig {
+        static let layerID = "pingdom_markers"
+        static let styleID = "pingdom_marker_style"
+    }
+
     private let container = KMViewContainer()
     private var controller: KMController?
     private var observersAdded = false
@@ -10,6 +15,7 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     private var requestedAddMap = false
     private var canAddMapView = false
     private var lastApplied: (lat: Double, lng: Double, zoom: Int)?
+    private var didRegisterMarkerStyle = false
 
     @objc var centerLat: NSNumber? {
         didSet {
@@ -28,6 +34,12 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     @objc var zoomLevel: NSNumber? {
         didSet {
             applyCameraIfNeeded()
+        }
+    }
+
+    @objc var markers: NSArray? {
+        didSet {
+            applyMarkersIfNeeded()
         }
     }
 
@@ -121,6 +133,7 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         didAddMap = true
         requestedAddMap = false
         applyCameraIfNeeded()
+        applyMarkersIfNeeded()
         print("Kakao map added: \(viewName), \(viewInfoName)")
     }
 
@@ -163,5 +176,113 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         )
         mapView.moveCamera(update)
         lastApplied = (lat, lng, zoom)
+    }
+
+    private func applyMarkersIfNeeded() {
+        guard didAddMap else { return }
+        guard let mapView = controller?.getView("mapview") as? KakaoMap else { return }
+
+        let manager = mapView.getLabelManager()
+        registerMarkerStyleIfNeeded(manager: manager)
+
+        let layer = manager.getLabelLayer(layerID: MarkerConfig.layerID) ?? manager.addLabelLayer(
+            option: LabelLayerOptions(
+                layerID: MarkerConfig.layerID,
+                competitionType: CompetitionType(rawValue: 0)!,
+                competitionUnit: CompetitionUnit(rawValue: 0)!,
+                orderType: OrderingType(rawValue: 0)!,
+                zOrder: 10
+            )
+        )
+
+        guard let layer else { return }
+        layer.clearAllItems()
+
+        guard let markers else { return }
+
+        for case let marker as NSDictionary in markers {
+            guard
+                let lat = marker["lat"] as? Double,
+                let lng = marker["lng"] as? Double
+            else {
+                continue
+            }
+
+            let id = marker["id"] as? String ?? UUID().uuidString
+            let options = PoiOptions(styleID: MarkerConfig.styleID, poiID: id)
+            layer.addPoi(
+                option: options,
+                at: MapPoint(longitude: lng, latitude: lat)
+            )
+        }
+    }
+
+    private func registerMarkerStyleIfNeeded(manager: LabelManager) {
+        guard !didRegisterMarkerStyle else { return }
+
+        let transition = PoiTransition(
+            entrance: TransitionType(rawValue: 0)!,
+            exit: TransitionType(rawValue: 0)!
+        )
+        let iconStyle = PoiIconStyle(
+            symbol: makeMarkerImage(),
+            anchorPoint: CGPoint(x: 0.5, y: 1.0),
+            transition: transition,
+            enableEntranceTransition: false,
+            enableExitTransition: false,
+            badges: nil
+        )
+        let perLevelStyle = PerLevelPoiStyle(iconStyle: iconStyle, padding: 0, level: 0)
+        let style = PoiStyle(styleID: MarkerConfig.styleID, styles: [perLevelStyle])
+
+        manager.addPoiStyle(style)
+        didRegisterMarkerStyle = true
+    }
+
+    private func makeMarkerImage() -> UIImage {
+        let size = CGSize(width: 44, height: 56)
+        let renderer = UIGraphicsImageRenderer(size: size)
+
+        return renderer.image { context in
+            let cgContext = context.cgContext
+            let pink = UIColor(red: 1.0, green: 0.290, blue: 0.459, alpha: 1.0)
+            let white = UIColor.white
+            let center = CGPoint(x: size.width / 2, y: 21)
+
+            let tipPath = UIBezierPath()
+            tipPath.move(to: CGPoint(x: center.x, y: 48))
+            tipPath.addLine(to: CGPoint(x: center.x - 10, y: 34))
+            tipPath.addLine(to: CGPoint(x: center.x + 10, y: 34))
+            tipPath.close()
+
+            pink.setFill()
+            white.setStroke()
+            tipPath.lineWidth = 2.5
+            tipPath.fill()
+            tipPath.stroke()
+
+            let circleRect = CGRect(x: center.x - 17, y: center.y - 17, width: 34, height: 34)
+            let circlePath = UIBezierPath(ovalIn: circleRect)
+            circlePath.lineWidth = 2.5
+            circlePath.fill()
+            circlePath.stroke()
+
+            let note = "♪" as NSString
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: 25),
+                .foregroundColor: white,
+            ]
+            let noteSize = note.size(withAttributes: attributes)
+            let noteRect = CGRect(
+                x: center.x - noteSize.width / 2,
+                y: center.y - noteSize.height / 2 - 1,
+                width: noteSize.width,
+                height: noteSize.height
+            )
+
+            cgContext.saveGState()
+            note.draw(in: noteRect, withAttributes: attributes)
+            cgContext.restoreGState()
+        }
     }
 }

@@ -10,6 +10,7 @@ import {
 import useLogin from '../hooks/useLogin';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { loginWithGoogle } from '../../../app/store/authStore';
 
 type LoginScreenProps = {
   onBack?: () => void;
@@ -77,7 +78,7 @@ export default function LoginScreen({ onBack }: LoginScreenProps) {
 
       <View style={styles.divider} />
 
-      <Pressable style={styles.googleButton}>
+      <Pressable style={styles.googleButton} onPress={loginWithGoogle}>
         <Text style={styles.googleButtonText}>구글로 계속</Text>
       </Pressable>
 

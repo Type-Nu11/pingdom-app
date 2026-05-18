@@ -1,6 +1,7 @@
 // android/app/src/main/java/com/rmdka/pingdomapp/KakaoMapViewManager.kt
 package com.rmdka.pingdomapp
 
+import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -39,5 +40,10 @@ class KakaoMapViewManager : SimpleViewManager<KakaoMapView>() {
     @ReactProp(name = "followUser", defaultBoolean = true)
     fun setFollowUser(view: KakaoMapView, followUser: Boolean) {
         view.setFollowUser(followUser)
+    }
+
+    @ReactProp(name = "markers")
+    fun setMarkers(view: KakaoMapView, markers: ReadableArray?) {
+        view.setMarkers(markers)
     }
 }

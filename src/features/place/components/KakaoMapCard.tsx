@@ -9,6 +9,11 @@ export type KakaoMapCardProps = ViewProps & {
   userLat?: number;
   userLng?: number;
   followUser?: boolean;
+  markers?: Array<{
+    id: string;
+    lat: number;
+    lng: number;
+  }>;
 };
 
 export default requireNativeComponent<KakaoMapCardProps>('KakaoMapView');

@@ -4,4 +4,5 @@
 RCT_EXPORT_VIEW_PROPERTY(centerLat, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(centerLng, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(zoomLevel, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(markers, NSArray)
 @end

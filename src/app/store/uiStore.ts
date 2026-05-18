@@ -1,7 +1,16 @@
+import { create } from 'zustand';
+
 export type UiState = {
   isLoading: boolean;
 };
 
-export const uiStore: UiState = {
-  isLoading: false,
+type UiActions = {
+  setLoading: (isLoading: boolean) => void;
 };
+
+export type UiStore = UiState & UiActions;
+
+export const useUiStore = create<UiStore>((set) => ({
+  isLoading: false,
+  setLoading: (isLoading) => set({ isLoading }),
+}));
