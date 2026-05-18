@@ -1,7 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   PanResponder,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -9,8 +10,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import LikedIcon from '../../../assets/icons/Home/Liked.svg';
+import PlaceRecommendIcon from '../../../assets/icons/Home/Home/placeRecommend.svg';
+import SavedIcon from '../../../assets/icons/Home/Saved.svg';
 import KakaoMapCard from '../components/KakaoMapCard';
 import PlaceCard from '../components/PlaceCard';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
@@ -37,19 +42,43 @@ const mapMarkers = [
   { id: 'music-6', lat: 35.66318, lng: 128.41355 },
 ];
 
-const SHEET_EXPANDED_HEIGHT = 386;
-const SHEET_COLLAPSED_VISIBLE_HEIGHT = 154;
-const SHEET_COLLAPSED_TRANSLATE_Y = SHEET_EXPANDED_HEIGHT - SHEET_COLLAPSED_VISIBLE_HEIGHT;
+const BASE_SCREEN_WIDTH = 430;
+const BASE_SCREEN_HEIGHT = 932;
+const BASE_SHEET_EXPANDED_HEIGHT = 386;
+const BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT = 154;
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 export default function MapScreen() {
+  const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
-  const sheetTranslateY = useRef(new Animated.Value(SHEET_COLLAPSED_TRANSLATE_Y)).current;
-  const sheetOffsetY = useRef(SHEET_COLLAPSED_TRANSLATE_Y);
+  const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
+  const sheetExpandedHeight = Math.round(
+    clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.44), 250, BASE_SHEET_EXPANDED_HEIGHT)
+  );
+  const sheetCollapsedVisibleHeight = Math.round(
+    clamp(BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT * uiScale, 104, BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT)
+  );
+  const sheetCollapsedTranslateY = Math.max(0, sheetExpandedHeight - sheetCollapsedVisibleHeight);
+  const smallActionWidth = Math.round(clamp(38 * uiScale, 30, 38));
+  const smallActionHeight = Math.round(clamp(44 * uiScale, 35, 44));
+  const addIconSize = Math.round(clamp(21 * uiScale, 17, 21));
+  const addTextSize = Math.round(clamp(17 * uiScale, 14, 17));
+  const sideGap = Math.round(clamp(42 * uiScale, 16, 42));
+  const rightGap = Math.round(clamp(36 * uiScale, 16, 36));
+  const actionBottomGap = 15;
+  const topPaddingX = Math.round(clamp(22 * uiScale, 16, 22));
+  const topPaddingTop = Math.round(clamp(44 * uiScale, 24, 44));
+  const searchHeight = Math.round(clamp(64 * uiScale, 44, 64));
+  const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
+  const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
+  const sheetTranslateY = useRef(new Animated.Value(sheetCollapsedTranslateY)).current;
+  const sheetOffsetY = useRef(sheetCollapsedTranslateY);
   const sheetExpandedRef = useRef(false);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
   const snapSheet = (expanded: boolean) => {
-    const nextValue = expanded ? 0 : SHEET_COLLAPSED_TRANSLATE_Y;
+    const nextValue = expanded ? 0 : sheetCollapsedTranslateY;
 
     sheetOffsetY.current = nextValue;
     sheetExpandedRef.current = expanded;
@@ -64,36 +93,41 @@ export default function MapScreen() {
     }).start();
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) =>
-        Math.abs(gesture.dy) > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
-      onPanResponderGrant: () => {
-        sheetTranslateY.stopAnimation((value) => {
-          sheetOffsetY.current = value;
-        });
-      },
-      onPanResponderMove: (_, gesture) => {
-        const nextValue = Math.min(
-          Math.max(sheetOffsetY.current + gesture.dy, 0),
-          SHEET_COLLAPSED_TRANSLATE_Y
-        );
+  useEffect(() => {
+    const nextValue = sheetExpandedRef.current ? 0 : sheetCollapsedTranslateY;
 
-        sheetTranslateY.setValue(nextValue);
-      },
-      onPanResponderRelease: (_, gesture) => {
-        const currentValue = sheetOffsetY.current + gesture.dy;
-        const shouldExpand =
-          gesture.vy < -0.35 ||
-          (gesture.vy <= 0.35 && currentValue < SHEET_COLLAPSED_TRANSLATE_Y / 2);
+    sheetOffsetY.current = nextValue;
+    sheetTranslateY.setValue(nextValue);
+  }, [sheetCollapsedTranslateY, sheetTranslateY]);
 
-        snapSheet(shouldExpand);
-      },
-      onPanResponderTerminate: () => {
-        snapSheet(sheetExpandedRef.current);
-      },
-    })
-  ).current;
+  const panResponder = PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) =>
+      Math.abs(gesture.dy) > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+    onPanResponderGrant: () => {
+      sheetTranslateY.stopAnimation((value) => {
+        sheetOffsetY.current = value;
+      });
+    },
+    onPanResponderMove: (_, gesture) => {
+      const nextValue = Math.min(
+        Math.max(sheetOffsetY.current + gesture.dy, 0),
+        sheetCollapsedTranslateY
+      );
+
+      sheetTranslateY.setValue(nextValue);
+    },
+    onPanResponderRelease: (_, gesture) => {
+      const currentValue = sheetOffsetY.current + gesture.dy;
+      const shouldExpand =
+        gesture.vy < -0.35 ||
+        (gesture.vy <= 0.35 && currentValue < sheetCollapsedTranslateY / 2);
+
+      snapSheet(shouldExpand);
+    },
+    onPanResponderTerminate: () => {
+      snapSheet(sheetExpandedRef.current);
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -112,42 +146,166 @@ export default function MapScreen() {
 
       <View style={styles.mapTint} pointerEvents="none" />
       <SafeAreaView style={styles.safeArea} pointerEvents="box-none">
-        <View style={styles.topPanel} pointerEvents="box-none">
-          <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}>⌕</Text>
+        <View
+          style={[
+            styles.topPanel,
+            { paddingHorizontal: topPaddingX, paddingTop: topPaddingTop },
+          ]}
+          pointerEvents="box-none"
+        >
+          <View
+            style={[
+              styles.searchBar,
+              {
+                borderRadius: Math.round(clamp(18 * uiScale, 14, 18)),
+                height: searchHeight,
+                paddingLeft: Math.round(clamp(18 * uiScale, 12, 18)),
+                paddingRight: Math.round(clamp(12 * uiScale, 8, 12)),
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.searchIcon,
+                {
+                  fontSize: Math.round(clamp(36 * uiScale, 25, 36)),
+                  lineHeight: Math.round(clamp(39 * uiScale, 28, 39)),
+                  marginRight: Math.round(clamp(8 * uiScale, 5, 8)),
+                },
+              ]}
+            >
+              ⌕
+            </Text>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { fontSize: Math.round(clamp(25 * uiScale, 17, 25)) }]}
               placeholder="Search..."
               placeholderTextColor="#81828c"
               returnKeyType="search"
             />
-            <Pressable style={styles.profileButton}>
-              <View style={styles.profileHead} />
-              <View style={styles.profileBody} />
+            <Pressable
+              style={[
+                styles.profileButton,
+                {
+                  borderRadius: profileSize / 2,
+                  borderWidth: Math.round(clamp(4 * uiScale, 3, 4)),
+                  height: profileSize,
+                  width: profileSize,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.profileHead,
+                  {
+                    borderRadius: Math.round(clamp(8 * uiScale, 6, 8)),
+                    height: Math.round(clamp(15 * uiScale, 11, 15)),
+                    width: Math.round(clamp(15 * uiScale, 11, 15)),
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.profileBody,
+                  {
+                    height: Math.round(clamp(19 * uiScale, 14, 19)),
+                    width: Math.round(clamp(30 * uiScale, 23, 30)),
+                  },
+                ]}
+              />
             </Pressable>
           </View>
 
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryList}
+            contentContainerStyle={[
+              styles.categoryList,
+              {
+                gap: Math.round(clamp(12 * uiScale, 8, 12)),
+                paddingRight: topPaddingX,
+                paddingTop: Math.round(clamp(20 * uiScale, 12, 20)),
+              },
+            ]}
           >
             {categories.map((category) => (
-              <Pressable key={category.id} style={styles.categoryChip}>
-                <Text style={styles.categoryIcon}>{category.icon}</Text>
-                <Text style={styles.categoryText}>{category.label}</Text>
+              <Pressable
+                key={category.id}
+                style={[
+                  styles.categoryChip,
+                  {
+                    borderRadius: chipHeight / 2,
+                    height: chipHeight,
+                    paddingHorizontal: Math.round(clamp(18 * uiScale, 12, 18)),
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.categoryIcon,
+                    {
+                      fontSize: Math.round(clamp(24 * uiScale, 17, 24)),
+                      marginRight: Math.round(clamp(8 * uiScale, 5, 8)),
+                    },
+                  ]}
+                >
+                  {category.icon}
+                </Text>
+                <Text style={[styles.categoryText, { fontSize: Math.round(clamp(19 * uiScale, 14, 19)) }]}>
+                  {category.label}
+                </Text>
               </Pressable>
             ))}
           </ScrollView>
         </View>
       </SafeAreaView>
 
-      <Animated.View style={[styles.quickActions, { transform: [{ translateY: sheetTranslateY }] }]}>
-        <Pressable style={styles.quickActionButton}>
-          <Text style={styles.quickActionText}>♥</Text>
-        </Pressable>
-        <Pressable style={styles.quickActionButton}>
-          <Text style={styles.quickActionText}>▰</Text>
+      <Animated.View
+        style={[
+          styles.quickActions,
+          {
+            bottom: sheetExpandedHeight + actionBottomGap,
+            left: sideGap,
+            right: rightGap,
+            transform: [{ translateY: sheetTranslateY }],
+          },
+        ]}
+      >
+        <View style={styles.quickActionGroup}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="좋아요 장소 보기"
+            hitSlop={8}
+            style={styles.quickActionButton}
+          >
+            <LikedIcon height={smallActionHeight} width={smallActionWidth} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="저장한 장소 보기"
+            hitSlop={8}
+            style={styles.quickActionButton}
+          >
+            <SavedIcon height={smallActionHeight} width={smallActionWidth} />
+          </Pressable>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="장소 추가"
+          hitSlop={8}
+          style={[
+            styles.addPlaceButton,
+            {
+              borderRadius: 100,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+            },
+          ]}
+        >
+          <PlaceRecommendIcon height={addIconSize} width={addIconSize} />
+          <Text style={[styles.addPlaceText, { fontSize: addTextSize, lineHeight: addTextSize + 4 }]}>
+            장소 게시
+          </Text>
         </Pressable>
       </Animated.View>
 
@@ -155,7 +313,7 @@ export default function MapScreen() {
         style={[
           styles.bottomSheet,
           {
-            height: SHEET_EXPANDED_HEIGHT,
+            height: sheetExpandedHeight,
             transform: [{ translateY: sheetTranslateY }],
           },
         ]}
@@ -169,17 +327,20 @@ export default function MapScreen() {
         >
           <View style={styles.handle} />
         </Pressable>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.placeList}
-        >
-          <PlaceCard />
-          <PlaceCard />
-          <PlaceCard />
-          <PlaceCard />
-          <PlaceCard dimmed />
-        </ScrollView>
+        <View style={styles.placeRail}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.placeScroller}
+            contentContainerStyle={styles.placeList}
+          >
+            <PlaceCard />
+            <PlaceCard />
+            <PlaceCard />
+            <PlaceCard />
+            <PlaceCard dimmed />
+          </ScrollView>
+        </View>
 
         <View style={styles.hotSection}>
           <Text style={styles.hotTitle}>
@@ -309,28 +470,42 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   quickActions: {
-    bottom: SHEET_EXPANDED_HEIGHT + 18,
+    alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
-    left: 42,
+    justifyContent: 'space-between',
     position: 'absolute',
+  },
+  quickActionGroup: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
   },
   quickActionButton: {
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    height: 42,
     justifyContent: 'center',
-    shadowColor: '#151920',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
-    shadowRadius: 6,
-    width: 42,
   },
-  quickActionText: {
-    color: '#ff2f70',
-    fontSize: 26,
+  addPlaceButton: {
+    alignItems: 'center',
+    backgroundColor: '#ff4a75',
+    borderColor: '#f8f8f8',
+    borderWidth: 2,
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.09,
+    shadowRadius: 2,
+    ...Platform.select({
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  addPlaceText: {
+    color: '#fff',
     fontWeight: '900',
+    includeFontPadding: false,
   },
   bottomSheet: {
     backgroundColor: '#fdfdfd',
@@ -357,13 +532,22 @@ const styles = StyleSheet.create({
     height: 4,
     width: 58,
   },
-  placeList: {
+  placeRail: {
     borderColor: '#e5e6eb',
     borderRadius: 18,
     borderWidth: 1,
+    height: 94,
+    justifyContent: 'center',
     marginHorizontal: 22,
+    overflow: 'hidden',
+  },
+  placeScroller: {
+    flexGrow: 0,
+  },
+  placeList: {
+    alignItems: 'center',
+    minHeight: 72,
     paddingHorizontal: 12,
-    paddingVertical: 10,
   },
   hotSection: {
     paddingTop: 22,
