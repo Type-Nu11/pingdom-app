@@ -3,15 +3,17 @@ import KakaoMapsSDK
 
 private struct MapMarker {
     let id: String
+    let category: String
     let lat: Double
     let lng: Double
+    let markerType: String
 }
 
 @objc(KakaoMapView)
 final class KakaoMapView: UIView, MapControllerDelegate {
     private enum MarkerConfig {
         static let layerID = "pingdom_markers"
-        static let styleID = "pingdom_marker_style"
+        static let styleIDPrefix = "pingdom_hot_marker_style"
         static let userLocationLayerID = "pingdom_user_location"
         static let userLocationStyleID = "pingdom_user_location_style"
         static let userLocationPoiID = "pingdom_user_location_poi"
@@ -26,7 +28,7 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     private var requestedAddMap = false
     private var canAddMapView = false
     private var lastApplied: (lat: Double, lng: Double, zoom: Int)?
-    private var didRegisterMarkerStyle = false
+    private var registeredMarkerStyleIDs = Set<String>()
     private var didRegisterUserLocationStyle = false
 
     @objc var centerLat: NSNumber? {
@@ -214,12 +216,11 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         guard let mapView = controller?.getView("mapview") as? KakaoMap else { return }
 
         let manager = mapView.getLabelManager()
-        registerMarkerStyleIfNeeded(manager: manager)
         let layer = markerLayer(manager: manager)
         guard let layer else { return }
 
         layer.clearAllItems()
-        addPlaceMarkers(to: layer)
+        addPlaceMarkers(to: layer, manager: manager)
     }
 
     private func applyUserLocationIfNeeded() {
@@ -276,15 +277,19 @@ final class KakaoMapView: UIView, MapControllerDelegate {
 
             return MapMarker(
                 id: marker["id"] as? String ?? UUID().uuidString,
+                category: normalizeMarkerCategory(marker["category"] as? String),
                 lat: lat,
-                lng: lng
+                lng: lng,
+                markerType: normalizeMarkerType(marker["markerType"] as? String)
             )
         }
     }
 
-    private func addPlaceMarkers(to layer: LabelLayer) {
+    private func addPlaceMarkers(to layer: LabelLayer, manager: LabelManager) {
         for marker in parsedMarkers() {
-            let options = PoiOptions(styleID: MarkerConfig.styleID, poiID: marker.id)
+            let styleID = markerStyleID(category: marker.category, markerType: marker.markerType)
+            registerMarkerStyleIfNeeded(manager: manager, category: marker.category, markerType: marker.markerType)
+            let options = PoiOptions(styleID: styleID, poiID: marker.id)
             layer.addPoi(
                 option: options,
                 at: MapPoint(longitude: marker.lng, latitude: marker.lat)
@@ -311,17 +316,40 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         mapView.moveCamera(update)
     }
 
-    private func registerMarkerStyleIfNeeded(manager: LabelManager) {
-        guard !didRegisterMarkerStyle else { return }
+    private func registerMarkerStyleIfNeeded(manager: LabelManager, category: String, markerType: String) {
+        let styleID = markerStyleID(category: category, markerType: markerType)
+        guard !registeredMarkerStyleIDs.contains(styleID) else { return }
 
         manager.addPoiStyle(
             makePoiStyle(
-                styleID: MarkerConfig.styleID,
-                image: makeMarkerImage(),
-                anchorPoint: CGPoint(x: 0.5, y: 1.0)
+                styleID: styleID,
+                image: makePlaceMarkerImage(category: category, markerType: markerType),
+                anchorPoint: markerType == "hot" ? CGPoint(x: 0.5, y: 0.62) : CGPoint(x: 0.5, y: 0.95)
             )
         )
-        didRegisterMarkerStyle = true
+        registeredMarkerStyleIDs.insert(styleID)
+    }
+
+    private func markerStyleID(category: String, markerType: String) -> String {
+        return "\(MarkerConfig.styleIDPrefix)_\(markerType)_\(category)"
+    }
+
+    private func normalizeMarkerCategory(_ value: String?) -> String {
+        switch value {
+        case "fashion", "food", "game", "music":
+            return value ?? "music"
+        default:
+            return "music"
+        }
+    }
+
+    private func normalizeMarkerType(_ value: String?) -> String {
+        switch value {
+        case "default", "hot":
+            return value ?? "default"
+        default:
+            return "default"
+        }
     }
 
     private func registerUserLocationStyleIfNeeded(manager: LabelManager) {
@@ -358,51 +386,219 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         )
     }
 
-    private func makeMarkerImage() -> UIImage {
-        let size = CGSize(width: 44, height: 56)
+    private func makePlaceMarkerImage(category: String, markerType: String) -> UIImage {
+        if markerType == "hot" {
+            return makeHotMarkerImage(category: category)
+        }
+
+        return makeDefaultMarkerImage(category: category)
+    }
+
+    private func makeDefaultMarkerImage(category: String) -> UIImage {
+        let size = CGSize(width: 32, height: 37)
         let renderer = UIGraphicsImageRenderer(size: size)
 
         return renderer.image { context in
             let cgContext = context.cgContext
             let pink = UIColor(red: 1.0, green: 0.290, blue: 0.459, alpha: 1.0)
-            let white = UIColor.white
-            let center = CGPoint(x: size.width / 2, y: 21)
-
-            let tipPath = UIBezierPath()
-            tipPath.move(to: CGPoint(x: center.x, y: 48))
-            tipPath.addLine(to: CGPoint(x: center.x - 10, y: 34))
-            tipPath.addLine(to: CGPoint(x: center.x + 10, y: 34))
-            tipPath.close()
+            let stroke = UIColor(red: 0.965, green: 0.965, blue: 0.969, alpha: 1.0)
+            let markerPath = makeDefaultMarkerPath()
 
             pink.setFill()
-            white.setStroke()
-            tipPath.lineWidth = 2.5
-            tipPath.fill()
-            tipPath.stroke()
-
-            let circleRect = CGRect(x: center.x - 17, y: center.y - 17, width: 34, height: 34)
-            let circlePath = UIBezierPath(ovalIn: circleRect)
-            circlePath.lineWidth = 2.5
-            circlePath.fill()
-            circlePath.stroke()
-
-            let note = "♪" as NSString
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: 25),
-                .foregroundColor: white,
-            ]
-            let noteSize = note.size(withAttributes: attributes)
-            let noteRect = CGRect(
-                x: center.x - noteSize.width / 2,
-                y: center.y - noteSize.height / 2 - 1,
-                width: noteSize.width,
-                height: noteSize.height
-            )
+            markerPath.fill()
+            stroke.setStroke()
+            markerPath.lineWidth = 2
+            markerPath.lineJoinStyle = .round
+            markerPath.stroke()
 
             cgContext.saveGState()
-            note.draw(in: noteRect, withAttributes: attributes)
+            cgContext.translateBy(x: -13.5, y: -7)
+            cgContext.scaleBy(x: 0.86, y: 0.86)
+            drawHotMarkerIcon(category: category)
             cgContext.restoreGState()
         }
+    }
+
+    private func makeDefaultMarkerPath() -> UIBezierPath {
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: 5.3937, y: 5.3278))
+        path.addCurve(to: CGPoint(x: 16.0002, y: 1), controlPoint1: CGPoint(x: 8.2067, y: 2.5567), controlPoint2: CGPoint(x: 12.022, y: 1))
+        path.addCurve(to: CGPoint(x: 26.6066, y: 5.3278), controlPoint1: CGPoint(x: 19.9784, y: 1), controlPoint2: CGPoint(x: 23.7936, y: 2.5567))
+        path.addCurve(to: CGPoint(x: 31, y: 15.7759), controlPoint1: CGPoint(x: 29.4197, y: 8.0988), controlPoint2: CGPoint(x: 31, y: 11.8571))
+        path.addCurve(to: CGPoint(x: 26.6066, y: 26.224), controlPoint1: CGPoint(x: 31, y: 19.6947), controlPoint2: CGPoint(x: 29.4197, y: 23.453))
+        path.addLine(to: CGPoint(x: 16.0002, y: 35))
+        path.addLine(to: CGPoint(x: 5.3937, y: 26.224))
+        path.addCurve(to: CGPoint(x: 2.1419, y: 21.4304), controlPoint1: CGPoint(x: 4.0007, y: 24.852), controlPoint2: CGPoint(x: 2.8958, y: 23.2231))
+        path.addCurve(to: CGPoint(x: 1, y: 15.7759), controlPoint1: CGPoint(x: 1.388, y: 19.6377), controlPoint2: CGPoint(x: 1, y: 17.7163))
+        path.addCurve(to: CGPoint(x: 2.1419, y: 10.1213), controlPoint1: CGPoint(x: 1, y: 13.8355), controlPoint2: CGPoint(x: 1.388, y: 11.914))
+        path.addCurve(to: CGPoint(x: 5.3937, y: 5.3278), controlPoint1: CGPoint(x: 2.8958, y: 8.3286), controlPoint2: CGPoint(x: 4.0007, y: 6.6998))
+        path.close()
+
+        return path
+    }
+
+    private func makeHotMarkerImage(category: String) -> UIImage {
+        let size = CGSize(width: 59, height: 81)
+        let renderer = UIGraphicsImageRenderer(size: size)
+
+        return renderer.image { context in
+            let cgContext = context.cgContext
+            let pink = UIColor(red: 1.0, green: 0.098, blue: 0.337, alpha: 1.0)
+            let stroke = UIColor(red: 0.965, green: 0.965, blue: 0.969, alpha: 1.0)
+            let markerPath = makeHotMarkerPath()
+
+            [
+                (offsetY: CGFloat(1), alpha: CGFloat(0.10)),
+                (offsetY: CGFloat(6), alpha: CGFloat(0.09)),
+                (offsetY: CGFloat(12), alpha: CGFloat(0.05)),
+                (offsetY: CGFloat(22), alpha: CGFloat(0.01)),
+            ].forEach { shadow in
+                cgContext.saveGState()
+                cgContext.translateBy(x: 0, y: shadow.offsetY)
+                pink.withAlphaComponent(shadow.alpha).setFill()
+                markerPath.fill()
+                cgContext.restoreGState()
+            }
+
+            pink.setFill()
+            markerPath.fill()
+            stroke.setStroke()
+            markerPath.lineWidth = 2
+            markerPath.lineJoinStyle = .round
+            markerPath.lineCapStyle = .round
+            markerPath.stroke()
+
+            drawHotMarkerIcon(category: category)
+        }
+    }
+
+    private func makeHotMarkerPath() -> UIBezierPath {
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: 20.3071, y: 3))
+        path.addCurve(to: CGPoint(x: 22.0249, y: 3.5147), controlPoint1: CGPoint(x: 20.9178, y: 3.01), controlPoint2: CGPoint(x: 21.5119, y: 3.1895))
+        path.addLine(to: CGPoint(x: 22.2397, y: 3.6621))
+        path.addLine(to: CGPoint(x: 22.2749, y: 3.6895))
+        path.addCurve(to: CGPoint(x: 22.6899, y: 3.9736), controlPoint1: CGPoint(x: 22.4121, y: 3.7859), controlPoint2: CGPoint(x: 22.5504, y: 3.8808))
+        path.addLine(to: CGPoint(x: 23.1704, y: 4.2832))
+        path.addLine(to: CGPoint(x: 23.1821, y: 4.291))
+        path.addCurve(to: CGPoint(x: 31.0952, y: 10.9512), controlPoint1: CGPoint(x: 24.9371, y: 5.4211), controlPoint2: CGPoint(x: 28.3342, y: 7.6003))
+        path.addCurve(to: CGPoint(x: 32.6538, y: 12.7979), controlPoint1: CGPoint(x: 32.3707, y: 12.4976), controlPoint2: CGPoint(x: 32.3489, y: 12.4709))
+        path.addCurve(to: CGPoint(x: 35.4683, y: 15.9434), controlPoint1: CGPoint(x: 32.957, y: 13.1229), controlPoint2: CGPoint(x: 33.5195, y: 13.7283))
+        path.addCurve(to: CGPoint(x: 37.5435, y: 14.1797), controlPoint1: CGPoint(x: 36.1481, y: 15.1914), controlPoint2: CGPoint(x: 36.886, y: 14.6046))
+        path.addCurve(to: CGPoint(x: 38.8062, y: 13.4971), controlPoint1: CGPoint(x: 38.0061, y: 13.8807), controlPoint2: CGPoint(x: 38.4418, y: 13.6519))
+        path.addCurve(to: CGPoint(x: 39.3257, y: 13.3115), controlPoint1: CGPoint(x: 38.9874, y: 13.4201), controlPoint2: CGPoint(x: 39.164, y: 13.3563))
+        path.addCurve(to: CGPoint(x: 39.9321, y: 13.2422), controlPoint1: CGPoint(x: 39.4529, y: 13.2763), controlPoint2: CGPoint(x: 39.686, y: 13.2183))
+        path.addCurve(to: CGPoint(x: 41.3979, y: 13.751), controlPoint1: CGPoint(x: 40.4551, y: 13.2932), controlPoint2: CGPoint(x: 40.9574, y: 13.4685))
+        path.addLine(to: CGPoint(x: 41.5835, y: 13.8779))
+        path.addLine(to: CGPoint(x: 41.5845, y: 13.8789))
+        path.addCurve(to: CGPoint(x: 47.9692, y: 23.8789), controlPoint1: CGPoint(x: 43.939, y: 15.6292), controlPoint2: CGPoint(x: 46.576, y: 19.4564))
+        path.addLine(to: CGPoint(x: 48.1001, y: 24.3086))
+        path.addCurve(to: CGPoint(x: 46.5171, y: 39.6045), controlPoint1: CGPoint(x: 49.42, y: 28.7852), controlPoint2: CGPoint(x: 49.6116, y: 34.3637))
+        path.addLine(to: CGPoint(x: 46.5112, y: 39.6143))
+        path.addLine(to: CGPoint(x: 46.5044, y: 39.624))
+        path.addCurve(to: CGPoint(x: 39.105, y: 46.6055), controlPoint1: CGPoint(x: 44.6811, y: 42.5517), controlPoint2: CGPoint(x: 42.132, y: 44.9568))
+        path.addLine(to: CGPoint(x: 39.105, y: 46.6064))
+        path.addCurve(to: CGPoint(x: 29.4097, y: 48.9854), controlPoint1: CGPoint(x: 36.1319, y: 48.2226), controlPoint2: CGPoint(x: 32.792, y: 49.0418))
+        path.addCurve(to: CGPoint(x: 20.77, y: 47.2207), controlPoint1: CGPoint(x: 26.4273, y: 49.0999), controlPoint2: CGPoint(x: 23.464, y: 48.4942))
+        path.addLine(to: CGPoint(x: 20.2329, y: 46.9561))
+        path.addCurve(to: CGPoint(x: 13.1118, y: 40.5938), controlPoint1: CGPoint(x: 17.354, y: 45.4813), controlPoint2: CGPoint(x: 14.9021, y: 43.2902))
+        path.addLine(to: CGPoint(x: 13.1011, y: 40.5781))
+        path.addLine(to: CGPoint(x: 13.0913, y: 40.5625))
+        path.addLine(to: CGPoint(x: 13.022, y: 40.4482))
+        path.addLine(to: CGPoint(x: 13.0171, y: 40.4404))
+        path.addLine(to: CGPoint(x: 13.0122, y: 40.4316))
+        path.addCurve(to: CGPoint(x: 15.2427, y: 14.417), controlPoint1: CGPoint(x: 5.6863, y: 27.8864), controlPoint2: CGPoint(x: 13.869, y: 16.3029))
+        path.addCurve(to: CGPoint(x: 15.4946, y: 14.1094), controlPoint1: CGPoint(x: 15.3204, y: 14.3095), controlPoint2: CGPoint(x: 15.4046, y: 14.2068))
+        path.addLine(to: CGPoint(x: 15.4976, y: 14.1055))
+        path.addCurve(to: CGPoint(x: 17.1968, y: 10.915), controlPoint1: CGPoint(x: 16.3335, y: 13.2098), controlPoint2: CGPoint(x: 16.9196, y: 12.1096))
+        path.addLine(to: CGPoint(x: 17.2456, y: 10.6895))
+        path.addCurve(to: CGPoint(x: 17.0815, y: 7.2715), controlPoint1: CGPoint(x: 17.4696, y: 9.5549), controlPoint2: CGPoint(x: 17.4136, y: 8.3815))
+        path.addCurve(to: CGPoint(x: 17.1235, y: 5.2295), controlPoint1: CGPoint(x: 16.8807, y: 6.6035), controlPoint2: CGPoint(x: 16.8953, y: 5.8887))
+        path.addCurve(to: CGPoint(x: 18.354, y: 3.5986), controlPoint1: CGPoint(x: 17.3519, y: 4.57), controlPoint2: CGPoint(x: 17.7824, y: 3.999))
+        path.addCurve(to: CGPoint(x: 20.3071, y: 3), controlPoint1: CGPoint(x: 18.9256, y: 3.1982), controlPoint2: CGPoint(x: 19.6093, y: 2.9886))
+        path.close()
+
+        return path
+    }
+
+    private func drawHotMarkerIcon(category: String) {
+        switch category {
+        case "food":
+            drawFoodIcon()
+        case "game":
+            drawGameIcon()
+        case "fashion":
+            drawFashionIcon()
+        default:
+            drawMusicIcon()
+        }
+    }
+
+    private func drawMusicIcon() {
+        let note = "♪" as NSString
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.boldSystemFont(ofSize: 30),
+            .foregroundColor: UIColor.white,
+        ]
+        let noteSize = note.size(withAttributes: attributes)
+        note.draw(
+            in: CGRect(x: 29.5 - noteSize.width / 2, y: 20, width: noteSize.width, height: noteSize.height),
+            withAttributes: attributes
+        )
+    }
+
+    private func drawFoodIcon() {
+        let path = UIBezierPath()
+        path.lineWidth = 2.7
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        path.move(to: CGPoint(x: 22, y: 19))
+        path.addLine(to: CGPoint(x: 22, y: 39))
+        path.move(to: CGPoint(x: 18, y: 19))
+        path.addLine(to: CGPoint(x: 18, y: 28))
+        path.move(to: CGPoint(x: 26, y: 19))
+        path.addLine(to: CGPoint(x: 26, y: 28))
+        path.move(to: CGPoint(x: 18, y: 28))
+        path.addLine(to: CGPoint(x: 26, y: 28))
+        path.move(to: CGPoint(x: 37, y: 19))
+        path.addCurve(to: CGPoint(x: 36, y: 31), controlPoint1: CGPoint(x: 33, y: 23), controlPoint2: CGPoint(x: 33, y: 29))
+        path.addLine(to: CGPoint(x: 36, y: 39))
+        UIColor.white.setStroke()
+        path.stroke()
+    }
+
+    private func drawGameIcon() {
+        let path = UIBezierPath(roundedRect: CGRect(x: 16, y: 23, width: 27, height: 15), cornerRadius: 8)
+        path.lineWidth = 2.6
+        UIColor.white.setStroke()
+        path.stroke()
+
+        let detail = UIBezierPath()
+        detail.lineWidth = 2.6
+        detail.lineCapStyle = .round
+        detail.move(to: CGPoint(x: 22, y: 28))
+        detail.addLine(to: CGPoint(x: 22, y: 34))
+        detail.move(to: CGPoint(x: 19, y: 31))
+        detail.addLine(to: CGPoint(x: 25, y: 31))
+        detail.stroke()
+
+        UIBezierPath(ovalIn: CGRect(x: 33.2, y: 27.2, width: 3.6, height: 3.6)).stroke()
+        UIBezierPath(ovalIn: CGRect(x: 36.7, y: 31.2, width: 3.6, height: 3.6)).stroke()
+    }
+
+    private func drawFashionIcon() {
+        let path = UIBezierPath()
+        path.lineWidth = 2.8
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        path.move(to: CGPoint(x: 29.5, y: 19))
+        path.addCurve(to: CGPoint(x: 29.5, y: 25), controlPoint1: CGPoint(x: 34, y: 19), controlPoint2: CGPoint(x: 34, y: 25))
+        path.addLine(to: CGPoint(x: 29.5, y: 28))
+        path.addLine(to: CGPoint(x: 16, y: 37))
+        path.addLine(to: CGPoint(x: 43, y: 37))
+        path.addLine(to: CGPoint(x: 29.5, y: 28))
+        UIColor.white.setStroke()
+        path.stroke()
     }
 
     private func makeUserLocationImage() -> UIImage {

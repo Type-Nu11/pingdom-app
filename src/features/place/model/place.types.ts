@@ -6,9 +6,11 @@ export type Place = {
 };
 
 export type MapMarker = {
+  category: 'fashion' | 'food' | 'game' | 'music';
   id: string;
   lat: number;
   lng: number;
+  markerType?: 'default' | 'hot';
 };
 
 export type HotPlace = {

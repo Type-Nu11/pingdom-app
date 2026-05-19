@@ -26,10 +26,10 @@ export const hotPlaceFixtures: HotPlace[] = [
 ];
 
 export const mapMarkerFixtures: MapMarker[] = [
-  { id: 'music-1', lat: 35.6643, lng: 128.4137 },
-  { id: 'music-2', lat: 35.66455, lng: 128.41425 },
-  { id: 'music-3', lat: 35.66405, lng: 128.4147 },
-  { id: 'music-4', lat: 35.66372, lng: 128.41385 },
-  { id: 'music-5', lat: 35.66352, lng: 128.41435 },
-  { id: 'music-6', lat: 35.66318, lng: 128.41355 },
+  { id: 'music-1', category: 'music', markerType: 'hot', lat: 35.6643, lng: 128.4137 },
+  { id: 'food-1', category: 'food', markerType: 'hot', lat: 35.66455, lng: 128.41425 },
+  { id: 'game-1', category: 'game', markerType: 'hot', lat: 35.66405, lng: 128.4147 },
+  { id: 'fashion-1', category: 'fashion', markerType: 'default', lat: 35.66372, lng: 128.41385 },
+  { id: 'music-2', category: 'music', markerType: 'default', lat: 35.66352, lng: 128.41435 },
+  { id: 'food-2', category: 'food', markerType: 'default', lat: 35.66318, lng: 128.41355 },
 ];

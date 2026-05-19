@@ -10,9 +10,11 @@ export type KakaoMapCardProps = ViewProps & {
   userLng?: number;
   followUser?: boolean;
   markers?: Array<{
+    category: 'fashion' | 'food' | 'game' | 'music';
     id: string;
     lat: number;
     lng: number;
+    markerType?: 'default' | 'hot';
   }>;
 };
 

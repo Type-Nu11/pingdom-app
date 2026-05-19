@@ -27,15 +27,21 @@ const CategoryChips = ({
   topPaddingX,
   uiScale,
 }: CategoryChipsProps) => {
+  const shadowGutter = Math.round(clamp(12 * uiScale, 8, 12));
+
   return (
     <ScrollView
       horizontal
+      removeClippedSubviews={false}
       showsHorizontalScrollIndicator={false}
+      style={[styles.categoryScroll, { marginHorizontal: -shadowGutter }]}
       contentContainerStyle={[
         styles.categoryList,
         {
           gap: Math.round(clamp(12 * uiScale, 8, 12)),
-          paddingRight: topPaddingX,
+          paddingBottom: Math.round(clamp(14 * uiScale, 10, 14)),
+          paddingLeft: shadowGutter,
+          paddingRight: topPaddingX + shadowGutter,
           paddingTop: Math.round(clamp(20 * uiScale, 12, 20)),
         },
       ]}
@@ -56,7 +62,15 @@ const CategoryChips = ({
             height={Math.round(category.iconHeight * categoryIconScale)}
             width={Math.round(category.iconWidth * categoryIconScale)}
           />
-          <Text style={[styles.categoryText, { fontSize: Math.round(clamp(19 * uiScale, 14, 19)) }]}>
+          <Text
+            style={[
+              styles.categoryText,
+              {
+                fontSize: Math.round(clamp(19 * uiScale, 14, 19)),
+                lineHeight: Math.round(clamp(23 * uiScale, 18, 23)),
+              },
+            ]}
+          >
             {category.label}
           </Text>
         </Pressable>
@@ -66,27 +80,34 @@ const CategoryChips = ({
 };
 
 const styles = StyleSheet.create({
+  categoryScroll: {
+    overflow: 'visible',
+  },
   categoryList: {
     gap: 12,
+    paddingBottom: 14,
+    paddingLeft: 12,
     paddingRight: 22,
     paddingTop: 20,
   },
   categoryChip: {
     alignItems: 'center',
-    backgroundColor: '#f9fafc',
+    backgroundColor: '#fcfcfd',
     borderRadius: 16,
     flexDirection: 'row',
     height: 46,
     paddingHorizontal: 18,
-    shadowColor: '#243041',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.13,
-    shadowRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 5,
+    elevation: 4,
   },
   categoryText: {
-    color: '#757780',
+    color: '#5f626d',
     fontSize: 19,
     fontWeight: '800',
+    includeFontPadding: false,
   },
 });
 
