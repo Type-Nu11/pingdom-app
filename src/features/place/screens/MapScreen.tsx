@@ -13,24 +13,45 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import type { SvgProps } from 'react-native-svg';
+import FashionIcon from '../../../assets/icons/Home/fashion.svg';
+import FoodIcon from '../../../assets/icons/Home/food.svg';
+import GameIcon from '../../../assets/icons/Home/game.svg';
+import HotPlaceIcon from '../../../assets/icons/Home/hotplace.svg';
 import LikedIcon from '../../../assets/icons/Home/Liked.svg';
+import MusicIcon from '../../../assets/icons/Home/music.svg';
 import PlaceRecommendIcon from '../../../assets/icons/Home/Home/placeRecommend.svg';
 import SavedIcon from '../../../assets/icons/Home/Saved.svg';
 import KakaoMapCard from '../components/KakaoMapCard';
 import PlaceCard from '../components/PlaceCard';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
-const categories = [
-  { id: 'food', label: 'Food', icon: '▥' },
-  { id: 'music', label: 'Music', icon: '♪' },
-  { id: 'fashion', label: 'Fashion', icon: '⌁' },
-  { id: 'game', label: 'Game', icon: '⊙' },
+type Category = {
+  Icon: React.FC<SvgProps>;
+  iconHeight: number;
+  iconWidth: number;
+  id: string;
+  label: string;
+};
+
+const categories: Category[] = [
+  { id: 'food', label: 'Food', Icon: FoodIcon, iconWidth: 15, iconHeight: 18 },
+  { id: 'music', label: 'Music', Icon: MusicIcon, iconWidth: 13, iconHeight: 17 },
+  { id: 'fashion', label: 'Fashion', Icon: FashionIcon, iconWidth: 24, iconHeight: 18 },
+  { id: 'game', label: 'Game', Icon: GameIcon, iconWidth: 22, iconHeight: 19 },
 ];
 
 const hotPlaces = [
   { id: 'hot-1', rank: 1, location: 'Seoul', username: 'woo._sm' },
   { id: 'hot-2', rank: 2, location: 'Seoul', username: 'woo._sm' },
   { id: 'hot-3', rank: 3, location: 'Seoul', username: 'woo._sm' },
+  { id: 'hot-4', rank: 4, location: 'Seoul', username: 'woo._sm' },
+  { id: 'hot-5', rank: 5, location: 'Seoul', username: 'woo._sm' },
+  { id: 'hot-6', rank: 6, location: 'Seoul', username: 'woo._sm' },
+  { id: 'hot-7', rank: 7, location: 'Seoul', username: 'woo._sm' },
+  { id: 'hot-8', rank: 8, location: 'Seoul', username: 'woo._sm' },
+  { id: 'hot-9', rank: 9, location: 'Seoul', username: 'woo._sm' },
+  { id: 'hot-10', rank: 10, location: 'Seoul', username: 'woo._sm' },
 ];
 
 const mapMarkers = [
@@ -44,7 +65,7 @@ const mapMarkers = [
 
 const BASE_SCREEN_WIDTH = 430;
 const BASE_SCREEN_HEIGHT = 932;
-const BASE_SHEET_EXPANDED_HEIGHT = 386;
+const BASE_SHEET_EXPANDED_HEIGHT = 650;
 const BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT = 154;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
@@ -54,7 +75,7 @@ export default function MapScreen() {
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
-    clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.44), 250, BASE_SHEET_EXPANDED_HEIGHT)
+    clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
   );
   const sheetCollapsedVisibleHeight = Math.round(
     clamp(BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT * uiScale, 104, BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT)
@@ -72,6 +93,7 @@ export default function MapScreen() {
   const searchHeight = Math.round(clamp(64 * uiScale, 44, 64));
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
   const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
+  const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
   const sheetTranslateY = useRef(new Animated.Value(sheetCollapsedTranslateY)).current;
   const sheetOffsetY = useRef(sheetCollapsedTranslateY);
   const sheetExpandedRef = useRef(false);
@@ -101,8 +123,9 @@ export default function MapScreen() {
   }, [sheetCollapsedTranslateY, sheetTranslateY]);
 
   const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: (_, gesture) =>
-      Math.abs(gesture.dy) > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+      Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
     onPanResponderGrant: () => {
       sheetTranslateY.stopAnimation((value) => {
         sheetOffsetY.current = value;
@@ -117,6 +140,11 @@ export default function MapScreen() {
       sheetTranslateY.setValue(nextValue);
     },
     onPanResponderRelease: (_, gesture) => {
+      if (Math.abs(gesture.dy) < 3 && Math.abs(gesture.dx) < 3) {
+        snapSheet(!sheetExpandedRef.current);
+        return;
+      }
+
       const currentValue = sheetOffsetY.current + gesture.dy;
       const shouldExpand =
         gesture.vy < -0.35 ||
@@ -157,7 +185,7 @@ export default function MapScreen() {
             style={[
               styles.searchBar,
               {
-                borderRadius: Math.round(clamp(18 * uiScale, 14, 18)),
+                borderRadius: 16,
                 height: searchHeight,
                 paddingLeft: Math.round(clamp(18 * uiScale, 12, 18)),
                 paddingRight: Math.round(clamp(12 * uiScale, 8, 12)),
@@ -233,23 +261,17 @@ export default function MapScreen() {
                 style={[
                   styles.categoryChip,
                   {
-                    borderRadius: chipHeight / 2,
+                    borderRadius: 16,
+                    gap: Math.round(clamp(8 * uiScale, 5, 8)),
                     height: chipHeight,
                     paddingHorizontal: Math.round(clamp(18 * uiScale, 12, 18)),
                   },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.categoryIcon,
-                    {
-                      fontSize: Math.round(clamp(24 * uiScale, 17, 24)),
-                      marginRight: Math.round(clamp(8 * uiScale, 5, 8)),
-                    },
-                  ]}
-                >
-                  {category.icon}
-                </Text>
+                <category.Icon
+                  height={Math.round(category.iconHeight * categoryIconScale)}
+                  width={Math.round(category.iconWidth * categoryIconScale)}
+                />
                 <Text style={[styles.categoryText, { fontSize: Math.round(clamp(19 * uiScale, 14, 19)) }]}>
                   {category.label}
                 </Text>
@@ -317,54 +339,64 @@ export default function MapScreen() {
             transform: [{ translateY: sheetTranslateY }],
           },
         ]}
-        {...panResponder.panHandlers}
       >
-        <Pressable
+        <View
           accessibilityRole="button"
           accessibilityLabel={isSheetExpanded ? '장소 목록 닫기' : '장소 목록 열기'}
-          onPress={() => snapSheet(!isSheetExpanded)}
           style={styles.handleArea}
+          {...panResponder.panHandlers}
         >
-          <View style={styles.handle} />
-        </Pressable>
-        <View style={styles.placeRail}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.placeScroller}
-            contentContainerStyle={styles.placeList}
-          >
-            <PlaceCard />
-            <PlaceCard />
-            <PlaceCard />
-            <PlaceCard />
-            <PlaceCard dimmed />
-          </ScrollView>
+          <Pressable onPress={() => snapSheet(!isSheetExpanded)} hitSlop={14}>
+            <View style={styles.handle} />
+          </Pressable>
         </View>
+        <ScrollView
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+          style={styles.sheetScroll}
+          contentContainerStyle={styles.sheetContent}
+        >
+          <View style={styles.placeRail}>
+            <ScrollView
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+              style={styles.placeScroller}
+              contentContainerStyle={styles.placeList}
+            >
+              <PlaceCard />
+              <PlaceCard />
+              <PlaceCard />
+              <PlaceCard />
+              <PlaceCard dimmed />
+            </ScrollView>
+          </View>
 
-        <View style={styles.hotSection}>
-          <Text style={styles.hotTitle}>
-            <Text style={styles.hotTitleIcon}>●</Text> Hot Place
-          </Text>
-
-          {hotPlaces.map((place) => (
-            <View key={place.id} style={styles.hotRow}>
-              <View style={[styles.rankBadge, place.rank !== 1 && styles.rankBadgeMuted]}>
-                <Text style={[styles.rankText, place.rank !== 1 && styles.rankTextMuted]}>
-                  {place.rank}
-                </Text>
-              </View>
-              <View style={styles.avatar}>
-                <View style={styles.avatarHead} />
-                <View style={styles.avatarBody} />
-              </View>
-              <View>
-                <Text style={styles.hotLocation}>{place.location}</Text>
-                <Text style={styles.hotUsername}>{place.username}</Text>
-              </View>
+          <View style={styles.hotSection}>
+            <View style={styles.hotTitleRow}>
+              <HotPlaceIcon height={24} width={20} />
+              <Text style={styles.hotTitle}>Hot Place</Text>
             </View>
-          ))}
-        </View>
+
+            {hotPlaces.map((place) => (
+              <View key={place.id} style={styles.hotRow}>
+                <View style={[styles.rankBadge, place.rank !== 1 && styles.rankBadgeMuted]}>
+                  <Text style={[styles.rankText, place.rank !== 1 && styles.rankTextMuted]}>
+                    {place.rank}
+                  </Text>
+                </View>
+                <View style={styles.avatar}>
+                  <View style={styles.avatarHead} />
+                  <View style={styles.avatarBody} />
+                </View>
+                <View>
+                  <Text style={styles.hotLocation}>{place.location}</Text>
+                  <Text style={styles.hotUsername}>{place.username}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </Animated.View>
     </View>
   );
@@ -392,7 +424,7 @@ const styles = StyleSheet.create({
   searchBar: {
     alignItems: 'center',
     backgroundColor: '#fbfbfd',
-    borderRadius: 18,
+    borderRadius: 16,
     flexDirection: 'row',
     height: 64,
     paddingLeft: 18,
@@ -449,7 +481,7 @@ const styles = StyleSheet.create({
   categoryChip: {
     alignItems: 'center',
     backgroundColor: '#f9fafc',
-    borderRadius: 18,
+    borderRadius: 16,
     flexDirection: 'row',
     height: 46,
     paddingHorizontal: 18,
@@ -457,12 +489,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.13,
     shadowRadius: 8,
-  },
-  categoryIcon: {
-    color: '#ff3f7b',
-    fontSize: 24,
-    fontWeight: '900',
-    marginRight: 8,
   },
   categoryText: {
     color: '#757780',
@@ -523,14 +549,20 @@ const styles = StyleSheet.create({
   },
   handleArea: {
     alignItems: 'center',
-    paddingBottom: 18,
-    paddingTop: 11,
+    height: 42,
+    justifyContent: 'center',
   },
   handle: {
     backgroundColor: '#dedfe5',
     borderRadius: 2,
     height: 4,
     width: 58,
+  },
+  sheetScroll: {
+    flex: 1,
+  },
+  sheetContent: {
+    paddingBottom: 28,
   },
   placeRail: {
     borderColor: '#e5e6eb',
@@ -552,15 +584,17 @@ const styles = StyleSheet.create({
   hotSection: {
     paddingTop: 22,
   },
+  hotTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 13,
+    paddingHorizontal: 42,
+  },
   hotTitle: {
     color: '#3a3b43',
     fontSize: 25,
     fontWeight: '900',
-    marginBottom: 13,
-    paddingHorizontal: 42,
-  },
-  hotTitleIcon: {
-    color: '#ff2f70',
   },
   hotRow: {
     alignItems: 'center',

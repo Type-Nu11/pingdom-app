@@ -42,6 +42,8 @@ class KakaoMapView(
         private const val TAG = "KakaoMapView"
         private const val MARKER_LAYER_ID = "pingdom_markers"
         private const val MARKER_STYLE_ID = "pingdom_marker_style"
+        private const val USER_LOCATION_STYLE_ID = "pingdom_user_location_style"
+        private const val USER_LOCATION_LABEL_ID = "pingdom_user_location_label"
     }
 
     private val mapView = MapView(reactContext)
@@ -145,8 +147,6 @@ class KakaoMapView(
         markerLayer = layer
         layer.removeAll()
 
-        if (markers.isEmpty()) return
-
         val styles = manager.getLabelStyles(MARKER_STYLE_ID)
             ?: manager.addLabelStyles(
                 LabelStyles.from(
@@ -162,6 +162,8 @@ class KakaoMapView(
                     .setStyles(styles)
             )
         }
+
+        addUserLocationLabelIfReady(layer, manager)
     }
 
     private fun createMarkerBitmap(): Bitmap {
@@ -213,13 +215,80 @@ class KakaoMapView(
         val lat = userLat ?: return
         val lng = userLng ?: return
 
-        // TODO: 실제 사용자 위치 마커(네이티브 오버레이) 추가/갱신
-        // 현재는 최소 동작으로 followUser=true일 때 카메라만 사용자 위치로 이동
+        updateMarkersIfReady()
+
         if (followUser) {
             val target = LatLng.from(lat, lng)
             val update = CameraUpdateFactory.newCenterPosition(target, map.zoomLevel)
             map.moveCamera(update, CameraAnimation.from(300))
         }
+    }
+
+    private fun addUserLocationLabelIfReady(layer: LabelLayer, manager: com.kakao.vectormap.label.LabelManager) {
+        val lat = userLat ?: return
+        val lng = userLng ?: return
+        val styles = manager.getLabelStyles(USER_LOCATION_STYLE_ID)
+            ?: manager.addLabelStyles(
+                LabelStyles.from(
+                    USER_LOCATION_STYLE_ID,
+                    LabelStyle.from(createUserLocationBitmap())
+                        .setAnchorPoint(PointF(0.5f, 0.72f))
+                        .setApplyDpScale(false)
+                )
+            )
+
+        layer.addLabel(
+            LabelOptions
+                .from(USER_LOCATION_LABEL_ID, LatLng.from(lat, lng))
+                .setStyles(styles)
+        )
+    }
+
+    private fun createUserLocationBitmap(): Bitmap {
+        val scale = resources.displayMetrics.density
+        val width = (64 * scale).toInt()
+        val height = (84 * scale).toInt()
+        val centerX = width / 2f
+        val circleCenterY = 56 * scale
+        val circleRadius = 22 * scale
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val pink = Color.rgb(255, 25, 86)
+
+        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(45, 0, 0, 0)
+            style = Paint.Style.FILL
+        }
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = pink
+            style = Paint.Style.FILL
+        }
+        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.STROKE
+            strokeJoin = Paint.Join.ROUND
+            strokeCap = Paint.Cap.ROUND
+            strokeWidth = 5f * scale
+        }
+
+        val arrowPath = Path().apply {
+            moveTo(centerX, 6 * scale)
+            lineTo(centerX - 20 * scale, 34 * scale)
+            lineTo(centerX + 20 * scale, 34 * scale)
+            close()
+        }
+
+        canvas.drawCircle(centerX, circleCenterY + 2 * scale, circleRadius + 5 * scale, shadowPaint)
+        canvas.drawPath(arrowPath, strokePaint)
+        canvas.drawPath(arrowPath, fillPaint)
+        canvas.drawCircle(centerX, circleCenterY, circleRadius + 5 * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.FILL
+        })
+        canvas.drawCircle(centerX, circleCenterY, circleRadius, fillPaint)
+
+        return bitmap
     }
 
     override fun onHostResume() {

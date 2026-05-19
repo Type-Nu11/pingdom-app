@@ -6,6 +6,9 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     private enum MarkerConfig {
         static let layerID = "pingdom_markers"
         static let styleID = "pingdom_marker_style"
+        static let userLocationLayerID = "pingdom_user_location"
+        static let userLocationStyleID = "pingdom_user_location_style"
+        static let userLocationPoiID = "pingdom_user_location_poi"
     }
 
     private let container = KMViewContainer()
@@ -16,6 +19,7 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     private var canAddMapView = false
     private var lastApplied: (lat: Double, lng: Double, zoom: Int)?
     private var didRegisterMarkerStyle = false
+    private var didRegisterUserLocationStyle = false
 
     @objc var centerLat: NSNumber? {
         didSet {
@@ -40,6 +44,24 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     @objc var markers: NSArray? {
         didSet {
             applyMarkersIfNeeded()
+        }
+    }
+
+    @objc var userLat: NSNumber? {
+        didSet {
+            applyUserLocationIfNeeded()
+        }
+    }
+
+    @objc var userLng: NSNumber? {
+        didSet {
+            applyUserLocationIfNeeded()
+        }
+    }
+
+    @objc var followUser = true {
+        didSet {
+            applyUserLocationIfNeeded()
         }
     }
 
@@ -134,6 +156,7 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         requestedAddMap = false
         applyCameraIfNeeded()
         applyMarkersIfNeeded()
+        applyUserLocationIfNeeded()
         print("Kakao map added: \(viewName), \(viewInfoName)")
     }
 
@@ -217,6 +240,43 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         }
     }
 
+    private func applyUserLocationIfNeeded() {
+        guard didAddMap else { return }
+        guard let mapView = controller?.getView("mapview") as? KakaoMap else { return }
+        guard let lat = userLat?.doubleValue, let lng = userLng?.doubleValue else { return }
+
+        let manager = mapView.getLabelManager()
+        registerUserLocationStyleIfNeeded(manager: manager)
+
+        let layer = manager.getLabelLayer(layerID: MarkerConfig.userLocationLayerID) ?? manager.addLabelLayer(
+            option: LabelLayerOptions(
+                layerID: MarkerConfig.userLocationLayerID,
+                competitionType: CompetitionType(rawValue: 0)!,
+                competitionUnit: CompetitionUnit(rawValue: 0)!,
+                orderType: OrderingType(rawValue: 0)!,
+                zOrder: 20
+            )
+        )
+
+        guard let layer else { return }
+        layer.clearAllItems()
+
+        let options = PoiOptions(styleID: MarkerConfig.userLocationStyleID, poiID: MarkerConfig.userLocationPoiID)
+        layer.addPoi(
+            option: options,
+            at: MapPoint(longitude: lng, latitude: lat)
+        )
+
+        if followUser {
+            let update = CameraUpdate.make(
+                target: MapPoint(longitude: lng, latitude: lat),
+                zoomLevel: zoomLevel?.intValue ?? 7,
+                mapView: mapView
+            )
+            mapView.moveCamera(update)
+        }
+    }
+
     private func registerMarkerStyleIfNeeded(manager: LabelManager) {
         guard !didRegisterMarkerStyle else { return }
 
@@ -237,6 +297,28 @@ final class KakaoMapView: UIView, MapControllerDelegate {
 
         manager.addPoiStyle(style)
         didRegisterMarkerStyle = true
+    }
+
+    private func registerUserLocationStyleIfNeeded(manager: LabelManager) {
+        guard !didRegisterUserLocationStyle else { return }
+
+        let transition = PoiTransition(
+            entrance: TransitionType(rawValue: 0)!,
+            exit: TransitionType(rawValue: 0)!
+        )
+        let iconStyle = PoiIconStyle(
+            symbol: makeUserLocationImage(),
+            anchorPoint: CGPoint(x: 0.5, y: 0.72),
+            transition: transition,
+            enableEntranceTransition: false,
+            enableExitTransition: false,
+            badges: nil
+        )
+        let perLevelStyle = PerLevelPoiStyle(iconStyle: iconStyle, padding: 0, level: 0)
+        let style = PoiStyle(styleID: MarkerConfig.userLocationStyleID, styles: [perLevelStyle])
+
+        manager.addPoiStyle(style)
+        didRegisterUserLocationStyle = true
     }
 
     private func makeMarkerImage() -> UIImage {
@@ -283,6 +365,55 @@ final class KakaoMapView: UIView, MapControllerDelegate {
             cgContext.saveGState()
             note.draw(in: noteRect, withAttributes: attributes)
             cgContext.restoreGState()
+        }
+    }
+
+    private func makeUserLocationImage() -> UIImage {
+        let size = CGSize(width: 64, height: 84)
+        let renderer = UIGraphicsImageRenderer(size: size)
+
+        return renderer.image { context in
+            let cgContext = context.cgContext
+            let pink = UIColor(red: 1.0, green: 0.098, blue: 0.337, alpha: 1.0)
+            let white = UIColor.white
+            let centerX = size.width / 2
+            let circleCenter = CGPoint(x: centerX, y: 56)
+
+            let arrowPath = UIBezierPath()
+            arrowPath.move(to: CGPoint(x: centerX, y: 6))
+            arrowPath.addLine(to: CGPoint(x: centerX - 20, y: 34))
+            arrowPath.addLine(to: CGPoint(x: centerX + 20, y: 34))
+            arrowPath.close()
+
+            white.setStroke()
+            pink.setFill()
+            arrowPath.lineWidth = 5
+            arrowPath.lineJoinStyle = .round
+            arrowPath.stroke()
+            arrowPath.fill()
+
+            cgContext.saveGState()
+            cgContext.setShadow(offset: CGSize(width: 0, height: 3), blur: 8, color: UIColor.black.withAlphaComponent(0.18).cgColor)
+            white.setFill()
+            UIBezierPath(
+                ovalIn: CGRect(
+                    x: circleCenter.x - 27,
+                    y: circleCenter.y - 27,
+                    width: 54,
+                    height: 54
+                )
+            ).fill()
+            cgContext.restoreGState()
+
+            pink.setFill()
+            UIBezierPath(
+                ovalIn: CGRect(
+                    x: circleCenter.x - 22,
+                    y: circleCenter.y - 22,
+                    width: 44,
+                    height: 44
+                )
+            ).fill()
         }
     }
 }
