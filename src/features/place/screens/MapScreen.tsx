@@ -1,7 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import {
-  Animated,
-  PanResponder,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -22,6 +20,7 @@ import {
   BASE_SHEET_EXPANDED_HEIGHT,
   clamp,
 } from '../constants/mapLayout';
+import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
 export default function MapScreen() {
@@ -47,67 +46,8 @@ export default function MapScreen() {
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
   const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
   const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
-  const sheetTranslateY = useRef(new Animated.Value(sheetCollapsedTranslateY)).current;
-  const sheetOffsetY = useRef(sheetCollapsedTranslateY);
-  const sheetExpandedRef = useRef(false);
-  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
-
-  const snapSheet = (expanded: boolean) => {
-    const nextValue = expanded ? 0 : sheetCollapsedTranslateY;
-
-    sheetOffsetY.current = nextValue;
-    sheetExpandedRef.current = expanded;
-    setIsSheetExpanded(expanded);
-
-    Animated.spring(sheetTranslateY, {
-      toValue: nextValue,
-      damping: 24,
-      stiffness: 230,
-      mass: 0.8,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  useEffect(() => {
-    const nextValue = sheetExpandedRef.current ? 0 : sheetCollapsedTranslateY;
-
-    sheetOffsetY.current = nextValue;
-    sheetTranslateY.setValue(nextValue);
-  }, [sheetCollapsedTranslateY, sheetTranslateY]);
-
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, gesture) =>
-      Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
-    onPanResponderGrant: () => {
-      sheetTranslateY.stopAnimation((value) => {
-        sheetOffsetY.current = value;
-      });
-    },
-    onPanResponderMove: (_, gesture) => {
-      const nextValue = Math.min(
-        Math.max(sheetOffsetY.current + gesture.dy, 0),
-        sheetCollapsedTranslateY
-      );
-
-      sheetTranslateY.setValue(nextValue);
-    },
-    onPanResponderRelease: (_, gesture) => {
-      if (Math.abs(gesture.dy) < 3 && Math.abs(gesture.dx) < 3) {
-        snapSheet(!sheetExpandedRef.current);
-        return;
-      }
-
-      const currentValue = sheetOffsetY.current + gesture.dy;
-      const shouldExpand =
-        gesture.vy < -0.35 ||
-        (gesture.vy <= 0.35 && currentValue < sheetCollapsedTranslateY / 2);
-
-      snapSheet(shouldExpand);
-    },
-    onPanResponderTerminate: () => {
-      snapSheet(sheetExpandedRef.current);
-    },
+  const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
+    collapsedTranslateY: sheetCollapsedTranslateY,
   });
 
   return (
@@ -158,9 +98,9 @@ export default function MapScreen() {
 
       <MapBottomSheet
         height={sheetExpandedHeight}
-        isExpanded={isSheetExpanded}
-        onToggle={() => snapSheet(!isSheetExpanded)}
-        panHandlers={panResponder.panHandlers}
+        isExpanded={isExpanded}
+        onToggle={toggleSheet}
+        panHandlers={panHandlers}
         places={hotPlaceFixtures}
         sheetTranslateY={sheetTranslateY}
       />
