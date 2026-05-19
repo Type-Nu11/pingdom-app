@@ -1,7 +1,7 @@
 import React from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import LikedIcon from '../../../assets/icons/Home/Liked.svg';
-import PlaceRecommendIcon from '../../../assets/icons/Home/Home/placeRecommend.svg';
+import PlaceRecommendIcon from '../../../assets/icons/Home/placeRecommend.svg';
 import SavedIcon from '../../../assets/icons/Home/Saved.svg';
 
 type MapActionButtonsProps = {
