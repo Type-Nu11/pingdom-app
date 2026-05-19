@@ -22,6 +22,7 @@ import com.kakao.vectormap.camera.CameraAnimation
 import com.kakao.vectormap.camera.CameraUpdateFactory
 import com.kakao.vectormap.label.CompetitionType
 import com.kakao.vectormap.label.CompetitionUnit
+import com.kakao.vectormap.label.LabelManager
 import com.kakao.vectormap.label.LabelLayer
 import com.kakao.vectormap.label.LabelLayerOptions
 import com.kakao.vectormap.label.LabelOptions
@@ -44,6 +45,9 @@ class KakaoMapView(
         private const val MARKER_STYLE_ID = "pingdom_marker_style"
         private const val USER_LOCATION_STYLE_ID = "pingdom_user_location_style"
         private const val USER_LOCATION_LABEL_ID = "pingdom_user_location_label"
+        private const val MARKER_LAYER_Z_ORDER = 10
+        private const val PLACE_MARKER_COLOR = 0xFFFF4A75.toInt()
+        private const val USER_LOCATION_COLOR = 0xFFFF1956.toInt()
     }
 
     private val mapView = MapView(reactContext)
@@ -77,9 +81,6 @@ class KakaoMapView(
         },
         object : KakaoMapReadyCallback() {
             override fun onMapReady(kakaoMap: KakaoMap) {
-                // 원래 코드:
-                // Log.d(TAG, "onMapReady: Kakao map is ready")
-                // Toast.makeText(reactContext, "KakaoMap ready", Toast.LENGTH_SHORT).show()
                 this@KakaoMapView.kakaoMap = kakaoMap
                 Log.d(TAG, "onMapReady: Kakao map is ready")
                 Toast.makeText(reactContext, "KakaoMap ready", Toast.LENGTH_SHORT).show()
@@ -133,6 +134,14 @@ class KakaoMapView(
     private fun updateMarkersIfReady() {
         val map = kakaoMap ?: return
         val manager = map.labelManager ?: return
+        val layer = getMarkerLayer(manager) ?: return
+
+        layer.removeAll()
+        addPlaceMarkerLabels(layer, manager)
+        addUserLocationLabelIfReady(layer, manager)
+    }
+
+    private fun getMarkerLayer(manager: LabelManager): LabelLayer? {
         val layer = markerLayer
             ?: manager.getLayer(MARKER_LAYER_ID)
             ?: manager.addLayer(
@@ -140,20 +149,15 @@ class KakaoMapView(
                     .setCompetitionType(CompetitionType.None)
                     .setCompetitionUnit(CompetitionUnit.IconFirst)
                     .setOrderingType(OrderingType.Rank)
-                    .setZOrder(10)
+                    .setZOrder(MARKER_LAYER_Z_ORDER)
             )
-            ?: return
 
         markerLayer = layer
-        layer.removeAll()
+        return layer
+    }
 
-        val styles = manager.getLabelStyles(MARKER_STYLE_ID)
-            ?: manager.addLabelStyles(
-                LabelStyles.from(
-                    MARKER_STYLE_ID,
-                    LabelStyle.from(createMarkerBitmap()).setAnchorPoint(PointF(0.5f, 1.0f))
-                )
-            )
+    private fun addPlaceMarkerLabels(layer: LabelLayer, manager: LabelManager) {
+        val styles = getPlaceMarkerStyles(manager) ?: return
 
         markers.forEach { marker ->
             layer.addLabel(
@@ -162,8 +166,16 @@ class KakaoMapView(
                     .setStyles(styles)
             )
         }
+    }
 
-        addUserLocationLabelIfReady(layer, manager)
+    private fun getPlaceMarkerStyles(manager: LabelManager): LabelStyles? {
+        return manager.getLabelStyles(MARKER_STYLE_ID)
+            ?: manager.addLabelStyles(
+                LabelStyles.from(
+                    MARKER_STYLE_ID,
+                    LabelStyle.from(createMarkerBitmap()).setAnchorPoint(PointF(0.5f, 1.0f))
+                )
+            )
     }
 
     private fun createMarkerBitmap(): Bitmap {
@@ -178,7 +190,7 @@ class KakaoMapView(
         val canvas = Canvas(bitmap)
 
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(255,74,117)
+            color = PLACE_MARKER_COLOR
             style = Paint.Style.FILL
         }
         val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -224,10 +236,20 @@ class KakaoMapView(
         }
     }
 
-    private fun addUserLocationLabelIfReady(layer: LabelLayer, manager: com.kakao.vectormap.label.LabelManager) {
+    private fun addUserLocationLabelIfReady(layer: LabelLayer, manager: LabelManager) {
         val lat = userLat ?: return
         val lng = userLng ?: return
-        val styles = manager.getLabelStyles(USER_LOCATION_STYLE_ID)
+        val styles = getUserLocationStyles(manager) ?: return
+
+        layer.addLabel(
+            LabelOptions
+                .from(USER_LOCATION_LABEL_ID, LatLng.from(lat, lng))
+                .setStyles(styles)
+        )
+    }
+
+    private fun getUserLocationStyles(manager: LabelManager): LabelStyles? {
+        return manager.getLabelStyles(USER_LOCATION_STYLE_ID)
             ?: manager.addLabelStyles(
                 LabelStyles.from(
                     USER_LOCATION_STYLE_ID,
@@ -236,12 +258,6 @@ class KakaoMapView(
                         .setApplyDpScale(false)
                 )
             )
-
-        layer.addLabel(
-            LabelOptions
-                .from(USER_LOCATION_LABEL_ID, LatLng.from(lat, lng))
-                .setStyles(styles)
-        )
     }
 
     private fun createUserLocationBitmap(): Bitmap {
@@ -254,14 +270,13 @@ class KakaoMapView(
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val pink = Color.rgb(255, 25, 86)
 
         val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.argb(45, 0, 0, 0)
             style = Paint.Style.FILL
         }
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = pink
+            color = USER_LOCATION_COLOR
             style = Paint.Style.FILL
         }
         val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

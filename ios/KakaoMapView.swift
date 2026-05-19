@@ -1,6 +1,12 @@
 import UIKit
 import KakaoMapsSDK
 
+private struct MapMarker {
+    let id: String
+    let lat: Double
+    let lng: Double
+}
+
 @objc(KakaoMapView)
 final class KakaoMapView: UIView, MapControllerDelegate {
     private enum MarkerConfig {
@@ -9,6 +15,8 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         static let userLocationLayerID = "pingdom_user_location"
         static let userLocationStyleID = "pingdom_user_location_style"
         static let userLocationPoiID = "pingdom_user_location_poi"
+        static let markerLayerZOrder = 10
+        static let userLocationLayerZOrder = 20
     }
 
     private let container = KMViewContainer()
@@ -207,37 +215,11 @@ final class KakaoMapView: UIView, MapControllerDelegate {
 
         let manager = mapView.getLabelManager()
         registerMarkerStyleIfNeeded(manager: manager)
-
-        let layer = manager.getLabelLayer(layerID: MarkerConfig.layerID) ?? manager.addLabelLayer(
-            option: LabelLayerOptions(
-                layerID: MarkerConfig.layerID,
-                competitionType: CompetitionType(rawValue: 0)!,
-                competitionUnit: CompetitionUnit(rawValue: 0)!,
-                orderType: OrderingType(rawValue: 0)!,
-                zOrder: 10
-            )
-        )
-
+        let layer = markerLayer(manager: manager)
         guard let layer else { return }
+
         layer.clearAllItems()
-
-        guard let markers else { return }
-
-        for case let marker as NSDictionary in markers {
-            guard
-                let lat = marker["lat"] as? Double,
-                let lng = marker["lng"] as? Double
-            else {
-                continue
-            }
-
-            let id = marker["id"] as? String ?? UUID().uuidString
-            let options = PoiOptions(styleID: MarkerConfig.styleID, poiID: id)
-            layer.addPoi(
-                option: options,
-                at: MapPoint(longitude: lng, latitude: lat)
-            )
-        }
+        addPlaceMarkers(to: layer)
     }
 
     private func applyUserLocationIfNeeded() {
@@ -247,78 +229,133 @@ final class KakaoMapView: UIView, MapControllerDelegate {
 
         let manager = mapView.getLabelManager()
         registerUserLocationStyleIfNeeded(manager: manager)
+        let layer = userLocationLayer(manager: manager)
+        guard let layer else { return }
 
-        let layer = manager.getLabelLayer(layerID: MarkerConfig.userLocationLayerID) ?? manager.addLabelLayer(
+        layer.clearAllItems()
+        addUserLocationMarker(to: layer, lat: lat, lng: lng)
+
+        moveCameraToUserLocationIfNeeded(mapView: mapView, lat: lat, lng: lng)
+    }
+
+    private func markerLayer(manager: LabelManager) -> LabelLayer? {
+        return manager.getLabelLayer(layerID: MarkerConfig.layerID) ?? manager.addLabelLayer(
+            option: LabelLayerOptions(
+                layerID: MarkerConfig.layerID,
+                competitionType: CompetitionType(rawValue: 0)!,
+                competitionUnit: CompetitionUnit(rawValue: 0)!,
+                orderType: OrderingType(rawValue: 0)!,
+                zOrder: MarkerConfig.markerLayerZOrder
+            )
+        )
+    }
+
+    private func userLocationLayer(manager: LabelManager) -> LabelLayer? {
+        return manager.getLabelLayer(layerID: MarkerConfig.userLocationLayerID) ?? manager.addLabelLayer(
             option: LabelLayerOptions(
                 layerID: MarkerConfig.userLocationLayerID,
                 competitionType: CompetitionType(rawValue: 0)!,
                 competitionUnit: CompetitionUnit(rawValue: 0)!,
                 orderType: OrderingType(rawValue: 0)!,
-                zOrder: 20
+                zOrder: MarkerConfig.userLocationLayerZOrder
             )
         )
+    }
 
-        guard let layer else { return }
-        layer.clearAllItems()
+    private func parsedMarkers() -> [MapMarker] {
+        guard let markers else { return [] }
 
+        return markers.compactMap { item in
+            guard
+                let marker = item as? NSDictionary,
+                let lat = marker["lat"] as? Double,
+                let lng = marker["lng"] as? Double
+            else {
+                return nil
+            }
+
+            return MapMarker(
+                id: marker["id"] as? String ?? UUID().uuidString,
+                lat: lat,
+                lng: lng
+            )
+        }
+    }
+
+    private func addPlaceMarkers(to layer: LabelLayer) {
+        for marker in parsedMarkers() {
+            let options = PoiOptions(styleID: MarkerConfig.styleID, poiID: marker.id)
+            layer.addPoi(
+                option: options,
+                at: MapPoint(longitude: marker.lng, latitude: marker.lat)
+            )
+        }
+    }
+
+    private func addUserLocationMarker(to layer: LabelLayer, lat: Double, lng: Double) {
         let options = PoiOptions(styleID: MarkerConfig.userLocationStyleID, poiID: MarkerConfig.userLocationPoiID)
         layer.addPoi(
             option: options,
             at: MapPoint(longitude: lng, latitude: lat)
         )
+    }
 
-        if followUser {
-            let update = CameraUpdate.make(
-                target: MapPoint(longitude: lng, latitude: lat),
-                zoomLevel: zoomLevel?.intValue ?? 7,
-                mapView: mapView
-            )
-            mapView.moveCamera(update)
-        }
+    private func moveCameraToUserLocationIfNeeded(mapView: KakaoMap, lat: Double, lng: Double) {
+        guard followUser else { return }
+
+        let update = CameraUpdate.make(
+            target: MapPoint(longitude: lng, latitude: lat),
+            zoomLevel: zoomLevel?.intValue ?? 7,
+            mapView: mapView
+        )
+        mapView.moveCamera(update)
     }
 
     private func registerMarkerStyleIfNeeded(manager: LabelManager) {
         guard !didRegisterMarkerStyle else { return }
 
-        let transition = PoiTransition(
-            entrance: TransitionType(rawValue: 0)!,
-            exit: TransitionType(rawValue: 0)!
+        manager.addPoiStyle(
+            makePoiStyle(
+                styleID: MarkerConfig.styleID,
+                image: makeMarkerImage(),
+                anchorPoint: CGPoint(x: 0.5, y: 1.0)
+            )
         )
-        let iconStyle = PoiIconStyle(
-            symbol: makeMarkerImage(),
-            anchorPoint: CGPoint(x: 0.5, y: 1.0),
-            transition: transition,
-            enableEntranceTransition: false,
-            enableExitTransition: false,
-            badges: nil
-        )
-        let perLevelStyle = PerLevelPoiStyle(iconStyle: iconStyle, padding: 0, level: 0)
-        let style = PoiStyle(styleID: MarkerConfig.styleID, styles: [perLevelStyle])
-
-        manager.addPoiStyle(style)
         didRegisterMarkerStyle = true
     }
 
     private func registerUserLocationStyleIfNeeded(manager: LabelManager) {
         guard !didRegisterUserLocationStyle else { return }
 
-        let transition = PoiTransition(
-            entrance: TransitionType(rawValue: 0)!,
-            exit: TransitionType(rawValue: 0)!
+        manager.addPoiStyle(
+            makePoiStyle(
+                styleID: MarkerConfig.userLocationStyleID,
+                image: makeUserLocationImage(),
+                anchorPoint: CGPoint(x: 0.5, y: 0.72)
+            )
         )
+        didRegisterUserLocationStyle = true
+    }
+
+    private func makePoiStyle(styleID: String, image: UIImage, anchorPoint: CGPoint) -> PoiStyle {
         let iconStyle = PoiIconStyle(
-            symbol: makeUserLocationImage(),
-            anchorPoint: CGPoint(x: 0.5, y: 0.72),
-            transition: transition,
+            symbol: image,
+            anchorPoint: anchorPoint,
+            transition: makePoiTransition(),
             enableEntranceTransition: false,
             enableExitTransition: false,
             badges: nil
         )
         let perLevelStyle = PerLevelPoiStyle(iconStyle: iconStyle, padding: 0, level: 0)
-        let style = PoiStyle(styleID: MarkerConfig.userLocationStyleID, styles: [perLevelStyle])
 
-        manager.addPoiStyle(style)
-        didRegisterUserLocationStyle = true
+        return PoiStyle(styleID: styleID, styles: [perLevelStyle])
+    }
+
+    private func makePoiTransition() -> PoiTransition {
+        return PoiTransition(
+            entrance: TransitionType(rawValue: 0)!,
+            exit: TransitionType(rawValue: 0)!
+        )
     }
 
     private func makeMarkerImage() -> UIImage {
