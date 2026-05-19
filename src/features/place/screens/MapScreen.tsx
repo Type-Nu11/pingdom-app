@@ -23,7 +23,11 @@ import {
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
-export default function MapScreen() {
+type MapScreenProps = {
+  onCreatePlace?: () => void;
+};
+
+export default function MapScreen({ onCreatePlace }: MapScreenProps) {
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
@@ -90,6 +94,7 @@ export default function MapScreen() {
         addTextSize={addTextSize}
         bottom={sheetExpandedHeight + ACTION_BOTTOM_GAP}
         left={sideGap}
+        onAddPlace={onCreatePlace}
         right={rightGap}
         sheetTranslateY={sheetTranslateY}
         smallActionHeight={smallActionHeight}

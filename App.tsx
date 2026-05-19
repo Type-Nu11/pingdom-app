@@ -6,12 +6,15 @@ import SignupScreen from './src/features/auth/screens/SignupScreen';
 import WelcomeScreen from './src/features/auth/screens/WelcomeScreen';
 import useAuth from './src/features/auth/hooks/useAuth';
 import MapScreen from './src/features/place/screens/MapScreen';
+import PlaceCreateFlowScreen from './src/features/place/screens/PlaceCreateFlowScreen';
 
 type AuthScreen = 'language-gate' | 'welcome' | 'login' | 'signup' | 'phone-verify';
+type MainScreen = 'map' | 'place-create';
 
 export default function App() {
   const { bootstrapAuth, isHydrating, isLoggedIn } = useAuth();
   const [authScreen, setAuthScreen] = useState<AuthScreen>('language-gate');
+  const [mainScreen, setMainScreen] = useState<MainScreen>('map');
 
   useEffect(() => {
     void bootstrapAuth();
@@ -22,7 +25,11 @@ export default function App() {
   return (
     <>
       {isLoggedIn ? (
-        <MapScreen />
+        mainScreen === 'place-create' ? (
+          <PlaceCreateFlowScreen onClose={() => setMainScreen('map')} />
+        ) : (
+          <MapScreen onCreatePlace={() => setMainScreen('place-create')} />
+        )
       ) : (
         (() => {
           switch (authScreen) {

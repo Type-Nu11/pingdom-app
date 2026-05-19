@@ -324,7 +324,7 @@ final class KakaoMapView: UIView, MapControllerDelegate {
             makePoiStyle(
                 styleID: styleID,
                 image: makePlaceMarkerImage(category: category, markerType: markerType),
-                anchorPoint: markerType == "hot" ? CGPoint(x: 0.5, y: 0.62) : CGPoint(x: 0.5, y: 0.95)
+                anchorPoint: CGPoint(x: 0.5, y: 0.62)
             )
         )
         registeredMarkerStyleIDs.insert(styleID)
@@ -387,11 +387,19 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     }
 
     private func makePlaceMarkerImage(category: String, markerType: String) -> UIImage {
+        if let image = UIImage(named: markerImageName(category: category, markerType: markerType)) {
+            return image
+        }
+
         if markerType == "hot" {
             return makeHotMarkerImage(category: category)
         }
 
         return makeDefaultMarkerImage(category: category)
+    }
+
+    private func markerImageName(category: String, markerType: String) -> String {
+        return "map_marker_\(markerType)_\(category)"
     }
 
     private func makeDefaultMarkerImage(category: String) -> UIImage {
@@ -412,9 +420,9 @@ final class KakaoMapView: UIView, MapControllerDelegate {
             markerPath.stroke()
 
             cgContext.saveGState()
-            cgContext.translateBy(x: -13.5, y: -7)
-            cgContext.scaleBy(x: 0.86, y: 0.86)
-            drawHotMarkerIcon(category: category)
+            cgContext.translateBy(x: 16, y: 15.5)
+            cgContext.scaleBy(x: 0.66, y: 0.66)
+            drawPlaceMarkerIcon(category: category)
             cgContext.restoreGState()
         }
     }
@@ -468,7 +476,11 @@ final class KakaoMapView: UIView, MapControllerDelegate {
             markerPath.lineCapStyle = .round
             markerPath.stroke()
 
-            drawHotMarkerIcon(category: category)
+            cgContext.saveGState()
+            cgContext.translateBy(x: 29.5, y: 28)
+            cgContext.scaleBy(x: 1.02, y: 1.02)
+            drawPlaceMarkerIcon(category: category)
+            cgContext.restoreGState()
         }
     }
 
@@ -521,7 +533,7 @@ final class KakaoMapView: UIView, MapControllerDelegate {
         return path
     }
 
-    private func drawHotMarkerIcon(category: String) {
+    private func drawPlaceMarkerIcon(category: String) {
         switch category {
         case "food":
             drawFoodIcon()
@@ -537,72 +549,72 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     private func drawMusicIcon() {
         let note = "♪" as NSString
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.boldSystemFont(ofSize: 30),
+            .font: UIFont.boldSystemFont(ofSize: 27),
             .foregroundColor: UIColor.white,
         ]
         let noteSize = note.size(withAttributes: attributes)
         note.draw(
-            in: CGRect(x: 29.5 - noteSize.width / 2, y: 20, width: noteSize.width, height: noteSize.height),
+            in: CGRect(x: -noteSize.width / 2, y: -15, width: noteSize.width, height: noteSize.height),
             withAttributes: attributes
         )
     }
 
     private func drawFoodIcon() {
         let path = UIBezierPath()
-        path.lineWidth = 2.7
+        path.lineWidth = 2.5
         path.lineCapStyle = .round
         path.lineJoinStyle = .round
-        path.move(to: CGPoint(x: 22, y: 19))
-        path.addLine(to: CGPoint(x: 22, y: 39))
-        path.move(to: CGPoint(x: 18, y: 19))
-        path.addLine(to: CGPoint(x: 18, y: 28))
-        path.move(to: CGPoint(x: 26, y: 19))
-        path.addLine(to: CGPoint(x: 26, y: 28))
-        path.move(to: CGPoint(x: 18, y: 28))
-        path.addLine(to: CGPoint(x: 26, y: 28))
-        path.move(to: CGPoint(x: 37, y: 19))
-        path.addCurve(to: CGPoint(x: 36, y: 31), controlPoint1: CGPoint(x: 33, y: 23), controlPoint2: CGPoint(x: 33, y: 29))
-        path.addLine(to: CGPoint(x: 36, y: 39))
+        path.move(to: CGPoint(x: -7, y: -10))
+        path.addLine(to: CGPoint(x: -7, y: 10))
+        path.move(to: CGPoint(x: -11, y: -10))
+        path.addLine(to: CGPoint(x: -11, y: -1))
+        path.move(to: CGPoint(x: -3, y: -10))
+        path.addLine(to: CGPoint(x: -3, y: -1))
+        path.move(to: CGPoint(x: -11, y: -1))
+        path.addLine(to: CGPoint(x: -3, y: -1))
+        path.move(to: CGPoint(x: 10, y: -10))
+        path.addCurve(to: CGPoint(x: 9, y: 2), controlPoint1: CGPoint(x: 5, y: -6), controlPoint2: CGPoint(x: 5, y: 0))
+        path.addLine(to: CGPoint(x: 9, y: 10))
         UIColor.white.setStroke()
         path.stroke()
     }
 
     private func drawGameIcon() {
-        let path = UIBezierPath(roundedRect: CGRect(x: 16, y: 23, width: 27, height: 15), cornerRadius: 8)
-        path.lineWidth = 2.6
+        let path = UIBezierPath(roundedRect: CGRect(x: -14, y: -8, width: 28, height: 16), cornerRadius: 8)
+        path.lineWidth = 2.5
         UIColor.white.setStroke()
         path.stroke()
 
         let detail = UIBezierPath()
-        detail.lineWidth = 2.6
+        detail.lineWidth = 2.5
         detail.lineCapStyle = .round
-        detail.move(to: CGPoint(x: 22, y: 28))
-        detail.addLine(to: CGPoint(x: 22, y: 34))
-        detail.move(to: CGPoint(x: 19, y: 31))
-        detail.addLine(to: CGPoint(x: 25, y: 31))
+        detail.move(to: CGPoint(x: -8, y: -3))
+        detail.addLine(to: CGPoint(x: -8, y: 4))
+        detail.move(to: CGPoint(x: -11.5, y: 0.5))
+        detail.addLine(to: CGPoint(x: -4.5, y: 0.5))
         detail.stroke()
 
-        UIBezierPath(ovalIn: CGRect(x: 33.2, y: 27.2, width: 3.6, height: 3.6)).stroke()
-        UIBezierPath(ovalIn: CGRect(x: 36.7, y: 31.2, width: 3.6, height: 3.6)).stroke()
+        UIBezierPath(ovalIn: CGRect(x: 3.9, y: -3.6, width: 3.2, height: 3.2)).stroke()
+        UIBezierPath(ovalIn: CGRect(x: 7.9, y: 0.9, width: 3.2, height: 3.2)).stroke()
     }
 
     private func drawFashionIcon() {
         let path = UIBezierPath()
-        path.lineWidth = 2.8
+        path.lineWidth = 2.6
         path.lineCapStyle = .round
         path.lineJoinStyle = .round
-        path.move(to: CGPoint(x: 29.5, y: 19))
-        path.addCurve(to: CGPoint(x: 29.5, y: 25), controlPoint1: CGPoint(x: 34, y: 19), controlPoint2: CGPoint(x: 34, y: 25))
-        path.addLine(to: CGPoint(x: 29.5, y: 28))
-        path.addLine(to: CGPoint(x: 16, y: 37))
-        path.addLine(to: CGPoint(x: 43, y: 37))
-        path.addLine(to: CGPoint(x: 29.5, y: 28))
+        path.move(to: CGPoint(x: 0, y: -11))
+        path.addCurve(to: CGPoint(x: 0, y: -5), controlPoint1: CGPoint(x: 5, y: -11), controlPoint2: CGPoint(x: 5, y: -5))
+        path.addLine(to: CGPoint(x: 0, y: -2))
+        path.addLine(to: CGPoint(x: -14, y: 8))
+        path.addLine(to: CGPoint(x: 14, y: 8))
+        path.addLine(to: CGPoint(x: 0, y: -2))
         UIColor.white.setStroke()
         path.stroke()
     }
 
     private func makeUserLocationImage() -> UIImage {
-        let size = CGSize(width: 64, height: 84)
+        let size = CGSize(width: 48, height: 63)
         let renderer = UIGraphicsImageRenderer(size: size)
 
         return renderer.image { context in
@@ -610,17 +622,17 @@ final class KakaoMapView: UIView, MapControllerDelegate {
             let pink = UIColor(red: 1.0, green: 0.098, blue: 0.337, alpha: 1.0)
             let white = UIColor.white
             let centerX = size.width / 2
-            let circleCenter = CGPoint(x: centerX, y: 56)
+            let circleCenter = CGPoint(x: centerX, y: 42)
 
             let arrowPath = UIBezierPath()
-            arrowPath.move(to: CGPoint(x: centerX, y: 6))
-            arrowPath.addLine(to: CGPoint(x: centerX - 20, y: 34))
-            arrowPath.addLine(to: CGPoint(x: centerX + 20, y: 34))
+            arrowPath.move(to: CGPoint(x: centerX, y: 4.5))
+            arrowPath.addLine(to: CGPoint(x: centerX - 15.5, y: 25.5))
+            arrowPath.addLine(to: CGPoint(x: centerX + 15.5, y: 25.5))
             arrowPath.close()
 
             white.setStroke()
             pink.setFill()
-            arrowPath.lineWidth = 5
+            arrowPath.lineWidth = 4
             arrowPath.lineJoinStyle = .round
             arrowPath.stroke()
             arrowPath.fill()
@@ -630,10 +642,10 @@ final class KakaoMapView: UIView, MapControllerDelegate {
             white.setFill()
             UIBezierPath(
                 ovalIn: CGRect(
-                    x: circleCenter.x - 27,
-                    y: circleCenter.y - 27,
-                    width: 54,
-                    height: 54
+                    x: circleCenter.x - 20.5,
+                    y: circleCenter.y - 20.5,
+                    width: 41,
+                    height: 41
                 )
             ).fill()
             cgContext.restoreGState()
@@ -641,10 +653,10 @@ final class KakaoMapView: UIView, MapControllerDelegate {
             pink.setFill()
             UIBezierPath(
                 ovalIn: CGRect(
-                    x: circleCenter.x - 22,
-                    y: circleCenter.y - 22,
-                    width: 44,
-                    height: 44
+                    x: circleCenter.x - 16.5,
+                    y: circleCenter.y - 16.5,
+                    width: 33,
+                    height: 33
                 )
             ).fill()
         }

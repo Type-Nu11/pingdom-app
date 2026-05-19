@@ -1,6 +1,5 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import HotPlaceIcon from '../../../assets/icons/Home/hotplace.svg';
 
 export type HotPlaceItem = {
   id: string;
@@ -17,7 +16,7 @@ const HotPlaceList = ({ places }: HotPlaceListProps) => {
   return (
     <View style={styles.hotSection}>
       <View style={styles.hotTitleRow}>
-        <HotPlaceIcon height={24} width={20} />
+        <View style={styles.hotIcon} />
         <Text style={styles.hotTitle}>Hot Place</Text>
       </View>
 
@@ -52,6 +51,12 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 13,
     paddingHorizontal: 42,
+  },
+  hotIcon: {
+    backgroundColor: '#ff1956',
+    borderRadius: 12,
+    height: 24,
+    width: 24,
   },
   hotTitle: {
     color: '#3a3b43',

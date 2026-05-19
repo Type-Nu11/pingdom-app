@@ -2,6 +2,7 @@
 package com.rmdka.pingdomapp
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -184,7 +185,7 @@ class KakaoMapView(
                     styleID,
                     LabelStyle
                         .from(createPlaceMarkerBitmap(category, markerType))
-                        .setAnchorPoint(if (markerType == "hot") PointF(0.5f, 0.62f) else PointF(0.5f, 0.95f))
+                        .setAnchorPoint(PointF(0.5f, 0.62f))
                 )
             )
     }
@@ -204,11 +205,23 @@ class KakaoMapView(
     }
 
     private fun createPlaceMarkerBitmap(category: String, markerType: String): Bitmap {
-        return if (markerType == "hot") {
-            createHotMarkerBitmap(category)
-        } else {
-            createDefaultMarkerBitmap(category)
+        val resourceName = "map_marker_${markerType}_$category"
+        val resourceId = resources.getIdentifier(resourceName, "drawable", reactContext.packageName)
+        val sourceBitmap = if (resourceId != 0) BitmapFactory.decodeResource(resources, resourceId) else null
+
+        if (sourceBitmap != null) {
+            val scale = resources.displayMetrics.density
+            val widthDp = if (markerType == "hot") 59 else 44
+            val heightDp = if (markerType == "hot") 81 else 59
+            return Bitmap.createScaledBitmap(
+                sourceBitmap,
+                (widthDp * scale).toInt(),
+                (heightDp * scale).toInt(),
+                true
+            )
         }
+
+        return if (markerType == "hot") createHotMarkerBitmap(category) else createDefaultMarkerBitmap(category)
     }
 
     private fun createDefaultMarkerBitmap(category: String): Bitmap {
@@ -248,9 +261,9 @@ class KakaoMapView(
         canvas.drawPath(markerPath, fillPaint)
         canvas.drawPath(markerPath, strokePaint)
         canvas.save()
-        canvas.translate(-13.5f, -7f)
-        canvas.scale(0.86f, 0.86f, 29.5f, 29.5f)
-        drawHotMarkerIcon(canvas, category)
+        canvas.translate(16f, 15.5f)
+        canvas.scale(0.66f, 0.66f)
+        drawPlaceMarkerIcon(canvas, category)
         canvas.restore()
 
         return bitmap
@@ -281,7 +294,11 @@ class KakaoMapView(
         drawHotMarkerShadow(canvas, markerPath)
         canvas.drawPath(markerPath, fillPaint)
         canvas.drawPath(markerPath, strokePaint)
-        drawHotMarkerIcon(canvas, category)
+        canvas.save()
+        canvas.translate(29.5f, 28f)
+        canvas.scale(1.02f, 1.02f)
+        drawPlaceMarkerIcon(canvas, category)
+        canvas.restore()
 
         return bitmap
     }
@@ -354,7 +371,7 @@ class KakaoMapView(
         }
     }
 
-    private fun drawHotMarkerIcon(canvas: Canvas, category: String) {
+    private fun drawPlaceMarkerIcon(canvas: Canvas, category: String) {
         when (category) {
             "food" -> drawFoodIcon(canvas)
             "game" -> drawGameIcon(canvas)
@@ -367,10 +384,10 @@ class KakaoMapView(
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
-            textSize = 30f
+            textSize = 27f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
         }
-        canvas.drawText("♪", 29.5f, 36f, paint)
+        canvas.drawText("♪", 0f, 8f, paint)
     }
 
     private fun drawFoodIcon(canvas: Canvas) {
@@ -378,20 +395,20 @@ class KakaoMapView(
             color = Color.WHITE
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
-            strokeWidth = 2.7f
+            strokeWidth = 2.5f
             style = Paint.Style.STROKE
         }
 
-        canvas.drawLine(22f, 19f, 22f, 39f, paint)
-        canvas.drawLine(18f, 19f, 18f, 28f, paint)
-        canvas.drawLine(22f, 19f, 22f, 28f, paint)
-        canvas.drawLine(26f, 19f, 26f, 28f, paint)
-        canvas.drawLine(18f, 28f, 26f, 28f, paint)
+        canvas.drawLine(-7f, -10f, -7f, 10f, paint)
+        canvas.drawLine(-11f, -10f, -11f, -1f, paint)
+        canvas.drawLine(-7f, -10f, -7f, -1f, paint)
+        canvas.drawLine(-3f, -10f, -3f, -1f, paint)
+        canvas.drawLine(-11f, -1f, -3f, -1f, paint)
 
         val knifePath = Path().apply {
-            moveTo(37f, 19f)
-            cubicTo(33f, 23f, 33f, 29f, 36f, 31f)
-            lineTo(36f, 39f)
+            moveTo(10f, -10f)
+            cubicTo(5f, -6f, 5f, 0f, 9f, 2f)
+            lineTo(9f, 10f)
         }
         canvas.drawPath(knifePath, paint)
     }
@@ -401,14 +418,14 @@ class KakaoMapView(
             color = Color.WHITE
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
-            strokeWidth = 2.6f
+            strokeWidth = 2.5f
             style = Paint.Style.STROKE
         }
-        canvas.drawRoundRect(RectF(16f, 23f, 43f, 38f), 8f, 8f, paint)
-        canvas.drawLine(22f, 28f, 22f, 34f, paint)
-        canvas.drawLine(19f, 31f, 25f, 31f, paint)
-        canvas.drawCircle(35f, 29f, 1.8f, paint)
-        canvas.drawCircle(38.5f, 33f, 1.8f, paint)
+        canvas.drawRoundRect(RectF(-14f, -8f, 14f, 8f), 8f, 8f, paint)
+        canvas.drawLine(-8f, -3f, -8f, 4f, paint)
+        canvas.drawLine(-11.5f, 0.5f, -4.5f, 0.5f, paint)
+        canvas.drawCircle(5.5f, -2f, 1.6f, paint)
+        canvas.drawCircle(9.5f, 2.5f, 1.6f, paint)
     }
 
     private fun drawFashionIcon(canvas: Canvas) {
@@ -416,16 +433,16 @@ class KakaoMapView(
             color = Color.WHITE
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
-            strokeWidth = 2.8f
+            strokeWidth = 2.6f
             style = Paint.Style.STROKE
         }
         val hangerPath = Path().apply {
-            moveTo(29.5f, 19f)
-            cubicTo(34f, 19f, 34f, 25f, 29.5f, 25f)
-            lineTo(29.5f, 28f)
-            lineTo(16f, 37f)
-            lineTo(43f, 37f)
-            lineTo(29.5f, 28f)
+            moveTo(0f, -11f)
+            cubicTo(5f, -11f, 5f, -5f, 0f, -5f)
+            lineTo(0f, -2f)
+            lineTo(-14f, 8f)
+            lineTo(14f, 8f)
+            lineTo(0f, -2f)
         }
         canvas.drawPath(hangerPath, paint)
     }
@@ -470,11 +487,11 @@ class KakaoMapView(
 
     private fun createUserLocationBitmap(): Bitmap {
         val scale = resources.displayMetrics.density
-        val width = (64 * scale).toInt()
-        val height = (84 * scale).toInt()
+        val width = (48 * scale).toInt()
+        val height = (63 * scale).toInt()
         val centerX = width / 2f
-        val circleCenterY = 56 * scale
-        val circleRadius = 22 * scale
+        val circleCenterY = 42 * scale
+        val circleRadius = 16.5f * scale
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -492,20 +509,20 @@ class KakaoMapView(
             style = Paint.Style.STROKE
             strokeJoin = Paint.Join.ROUND
             strokeCap = Paint.Cap.ROUND
-            strokeWidth = 5f * scale
+            strokeWidth = 4f * scale
         }
 
         val arrowPath = Path().apply {
-            moveTo(centerX, 6 * scale)
-            lineTo(centerX - 20 * scale, 34 * scale)
-            lineTo(centerX + 20 * scale, 34 * scale)
+            moveTo(centerX, 4.5f * scale)
+            lineTo(centerX - 15.5f * scale, 25.5f * scale)
+            lineTo(centerX + 15.5f * scale, 25.5f * scale)
             close()
         }
 
-        canvas.drawCircle(centerX, circleCenterY + 2 * scale, circleRadius + 5 * scale, shadowPaint)
+        canvas.drawCircle(centerX, circleCenterY + 1.5f * scale, circleRadius + 4 * scale, shadowPaint)
         canvas.drawPath(arrowPath, strokePaint)
         canvas.drawPath(arrowPath, fillPaint)
-        canvas.drawCircle(centerX, circleCenterY, circleRadius + 5 * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        canvas.drawCircle(centerX, circleCenterY, circleRadius + 4 * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             style = Paint.Style.FILL
         })

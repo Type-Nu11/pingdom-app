@@ -9,6 +9,7 @@ type MapActionButtonsProps = {
   addTextSize: number;
   bottom: number;
   left: number;
+  onAddPlace?: () => void;
   right: number;
   sheetTranslateY: Animated.Value;
   smallActionHeight: number;
@@ -20,6 +21,7 @@ const MapActionButtons = ({
   addTextSize,
   bottom,
   left,
+  onAddPlace,
   right,
   sheetTranslateY,
   smallActionHeight,
@@ -60,6 +62,7 @@ const MapActionButtons = ({
         accessibilityRole="button"
         accessibilityLabel="장소 추가"
         hitSlop={8}
+        onPress={onAddPlace}
         style={styles.addPlaceButton}
       >
         <PlaceRecommendIcon height={addIconSize} width={addIconSize} />
