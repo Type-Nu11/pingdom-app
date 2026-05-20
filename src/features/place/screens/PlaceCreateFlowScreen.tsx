@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as Location from 'expo-location';
+import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -12,9 +13,9 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import KakaoMapCard from '../components/KakaoMapCard';
+import MypingIcon from '../../../assets/icons/Myping.svg';
+import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../components/KakaoMapCard';
 import { clamp } from '../constants/mapLayout';
-import { MapMarker } from '../model/place.types';
 
 type PlaceCreateFlowScreenProps = {
   onClose: () => void;
@@ -29,15 +30,21 @@ const SELECTED_PLACE = {
   name: '고양종합운동장',
 };
 
-const selectedMarker: MapMarker[] = [
-  {
-    id: 'selected-place',
-    category: 'music',
-    lat: SELECTED_PLACE.lat,
-    lng: SELECTED_PLACE.lng,
-    markerType: 'default',
-  },
-];
+const formatAddress = (address: Location.LocationGeocodedAddress | undefined) => {
+  if (!address) {
+    return '';
+  }
+
+  return [
+    address.region,
+    address.city ?? address.subregion,
+    address.district,
+    address.street,
+    address.streetNumber,
+  ]
+    .filter(Boolean)
+    .join(' ');
+};
 
 const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [step, setStep] = useState<Step>(1);
@@ -129,36 +136,82 @@ type LocationStepProps = {
 };
 
 const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => (
-  <View style={styles.stepBody}>
-    <Text style={styles.title}>새로 게시할 장소의{'\n'}위치를 선택해 주세요</Text>
-    <View style={styles.searchBox}>
-      <Text style={styles.searchIcon}>⌕</Text>
-      <Text style={styles.searchPlaceholder}>검색어를 입력하세요...</Text>
-    </View>
-    <View style={[styles.mapPreview, { height: mapHeight }]}>
-      <KakaoMapCard
-        style={styles.map}
-        centerLat={SELECTED_PLACE.lat}
-        centerLng={SELECTED_PLACE.lng}
-        zoomLevel={17}
-        followUser={false}
-        markers={selectedMarker}
-      />
-      <View style={styles.mapFade} pointerEvents="none" />
-    </View>
-    <View style={styles.locationPanel}>
-      <Text style={styles.addressText}>{SELECTED_PLACE.address}</Text>
-      <TextInput
-        style={styles.detailInput}
-        placeholder="(선택) 상세 주소 입력"
-        placeholderTextColor="#777a84"
-      />
-      <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={onNext}>
-        <Text style={styles.primaryButtonText}>선택</Text>
-      </Pressable>
-    </View>
-  </View>
+  <LocationStepContent mapHeight={mapHeight} onNext={onNext} />
 );
+
+const LocationStepContent = ({ mapHeight, onNext }: LocationStepProps) => {
+  const [addressQuery, setAddressQuery] = useState('');
+  const [selectedAddress, setSelectedAddress] = useState(SELECTED_PLACE.address);
+  const [detailAddress, setDetailAddress] = useState('');
+  const geocodeRequestIdRef = useRef(0);
+
+  const handleCameraIdle = async (event: KakaoMapCameraIdleEvent) => {
+    const { lat, lng } = event.nativeEvent;
+    const requestId = ++geocodeRequestIdRef.current;
+
+    try {
+      const addresses = await Location.reverseGeocodeAsync({
+        latitude: lat,
+        longitude: lng,
+      });
+      const nextAddress = formatAddress(addresses[0]);
+
+      if (requestId === geocodeRequestIdRef.current && nextAddress) {
+        setSelectedAddress(nextAddress);
+      }
+    } catch {
+      if (requestId === geocodeRequestIdRef.current) {
+        setSelectedAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      }
+    }
+  };
+
+  return (
+    <View style={styles.stepBody}>
+      <Text style={styles.title}>새로 게시할 장소의{'\n'}위치를 선택해 주세요</Text>
+      <View style={styles.searchBox}>
+        <Text style={styles.searchIcon}>⌕</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="주소를 입력하세요..."
+          placeholderTextColor="#777a84"
+          value={addressQuery}
+          onChangeText={setAddressQuery}
+        />
+      </View>
+      <View style={[styles.mapPreview, { height: mapHeight }]}>
+        <KakaoMapCard
+          style={styles.map}
+          centerLat={SELECTED_PLACE.lat}
+          centerLng={SELECTED_PLACE.lng}
+          zoomLevel={17}
+          followUser={false}
+          onCameraIdle={handleCameraIdle}
+        />
+        <View style={styles.mapFade} pointerEvents="none" />
+        <MypingIcon
+          height={71}
+          pointerEvents="none"
+          style={styles.selectedMarker}
+          width={55}
+        />
+      </View>
+      <View style={styles.locationPanel}>
+        <TextInput editable={false} style={styles.addressInput} value={selectedAddress} />
+        <TextInput
+          style={styles.detailInput}
+          placeholder="(선택) 상세 주소 입력"
+          placeholderTextColor="#777a84"
+          value={detailAddress}
+          onChangeText={setDetailAddress}
+        />
+        <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={onNext}>
+          <Text style={styles.primaryButtonText}>선택</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
 
 const PhotoSelectStep = () => (
   <ScrollView style={styles.photoScroll} contentContainerStyle={styles.photoContent}>
@@ -278,7 +331,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#3e414b',
     fontSize: 26,
-    fontWeight: '700',
+    fontWeight: '500',
     lineHeight: 34,
     paddingHorizontal: 34,
     paddingTop: 18,
@@ -299,10 +352,12 @@ const styles = StyleSheet.create({
     fontSize: 31,
     lineHeight: 34,
   },
-  searchPlaceholder: {
+  searchInput: {
     color: '#777a84',
+    flex: 1,
     fontSize: 19,
-    fontWeight: '700',
+    fontWeight: '500',
+    padding: 0,
   },
   mapPreview: {
     marginTop: 18,
@@ -315,16 +370,23 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(248, 250, 252, 0.18)',
   },
+  selectedMarker: {
+    left: '50%',
+    position: 'absolute',
+    top: '50%',
+    transform: [{ translateX: -27.5 }, { translateY: -35.5 }],
+  },
   locationPanel: {
     backgroundColor: '#fafafa',
     paddingHorizontal: 34,
     paddingTop: 22,
   },
-  addressText: {
+  addressInput: {
     color: '#20232c',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 14,
+    padding: 0,
   },
   detailInput: {
     borderColor: '#dedfe4',
@@ -332,7 +394,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: '#1d2028',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '500',
     height: 54,
     paddingHorizontal: 20,
   },

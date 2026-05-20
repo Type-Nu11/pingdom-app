@@ -12,9 +12,11 @@ import android.graphics.RectF
 import android.util.Log
 import android.widget.FrameLayout
 import android.widget.Toast
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.KakaoMapReadyCallback
 import com.kakao.vectormap.LatLng
@@ -85,6 +87,10 @@ class KakaoMapView(
         object : KakaoMapReadyCallback() {
             override fun onMapReady(kakaoMap: KakaoMap) {
                 this@KakaoMapView.kakaoMap = kakaoMap
+                kakaoMap.setOnCameraMoveEndListener { _, cameraPosition, _ ->
+                    val position = cameraPosition.position
+                    emitCameraIdle(position.latitude, position.longitude)
+                }
                 Log.d(TAG, "onMapReady: Kakao map is ready")
                 Toast.makeText(reactContext, "KakaoMap ready", Toast.LENGTH_SHORT).show()
                 updateUserLocationIfReady()
@@ -113,6 +119,17 @@ class KakaoMapView(
     fun setMarkers(value: ReadableArray?) {
         markers = parseMarkers(value)
         updateMarkersIfReady()
+    }
+
+    private fun emitCameraIdle(lat: Double, lng: Double) {
+        val event = Arguments.createMap().apply {
+            putDouble("lat", lat)
+            putDouble("lng", lng)
+        }
+
+        reactContext
+            .getJSModule(RCTEventEmitter::class.java)
+            .receiveEvent(id, "onCameraIdle", event)
     }
 
     private fun parseMarkers(value: ReadableArray?): List<MapMarker> {

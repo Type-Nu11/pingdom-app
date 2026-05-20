@@ -1,5 +1,6 @@
 import UIKit
 import KakaoMapsSDK
+import React
 
 private struct MapMarker {
     let id: String
@@ -10,7 +11,7 @@ private struct MapMarker {
 }
 
 @objc(KakaoMapView)
-final class KakaoMapView: UIView, MapControllerDelegate {
+final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
     private enum MarkerConfig {
         static let layerID = "pingdom_markers"
         static let styleIDPrefix = "pingdom_hot_marker_style"
@@ -56,6 +57,8 @@ final class KakaoMapView: UIView, MapControllerDelegate {
             applyMarkersIfNeeded()
         }
     }
+
+    @objc var onCameraIdle: RCTDirectEventBlock?
 
     @objc var userLat: NSNumber? {
         didSet {
@@ -164,10 +167,23 @@ final class KakaoMapView: UIView, MapControllerDelegate {
     func addViewSucceeded(_ viewName: String, viewInfoName: String) {
         didAddMap = true
         requestedAddMap = false
+        if let mapView = controller?.getView("mapview") as? KakaoMap {
+            mapView.eventDelegate = self
+        }
         applyCameraIfNeeded()
         applyMarkersIfNeeded()
         applyUserLocationIfNeeded()
         print("Kakao map added: \(viewName), \(viewInfoName)")
+    }
+
+    func cameraDidStopped(kakaoMap: KakaoMap, by: MoveBy) {
+        let centerPoint = CGPoint(x: bounds.midX, y: bounds.midY)
+        let position = kakaoMap.getPosition(centerPoint).wgsCoord
+
+        onCameraIdle?([
+            "lat": position.latitude,
+            "lng": position.longitude,
+        ])
     }
 
     func addViewFailed(_ viewName: String, viewInfoName: String) {

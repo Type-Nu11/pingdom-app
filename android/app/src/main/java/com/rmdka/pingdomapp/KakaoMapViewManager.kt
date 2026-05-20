@@ -2,6 +2,7 @@
 package com.rmdka.pingdomapp
 
 import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -11,6 +12,13 @@ class KakaoMapViewManager : SimpleViewManager<KakaoMapView>() {
 
     override fun createViewInstance(reactContext: ThemedReactContext): KakaoMapView {
         return KakaoMapView(reactContext)
+    }
+
+    override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> {
+        return MapBuilder.of(
+            "onCameraIdle",
+            MapBuilder.of("registrationName", "onCameraIdle")
+        )
     }
 
     @ReactProp(name = "centerLat")

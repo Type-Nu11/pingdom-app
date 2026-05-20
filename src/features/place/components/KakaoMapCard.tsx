@@ -1,5 +1,10 @@
 // components/KakaoMapCard.tsx
-import { requireNativeComponent, ViewProps } from 'react-native';
+import { NativeSyntheticEvent, requireNativeComponent, ViewProps } from 'react-native';
+
+export type KakaoMapCameraIdleEvent = NativeSyntheticEvent<{
+  lat: number;
+  lng: number;
+}>;
 
 export type KakaoMapCardProps = ViewProps & {
   centerLat: number;
@@ -9,6 +14,7 @@ export type KakaoMapCardProps = ViewProps & {
   userLat?: number;
   userLng?: number;
   followUser?: boolean;
+  onCameraIdle?: (event: KakaoMapCameraIdleEvent) => void;
   markers?: Array<{
     category: 'fashion' | 'food' | 'game' | 'music';
     id: string;
