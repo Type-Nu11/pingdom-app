@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import MypingIcon from '../../../../assets/icons/Myping.svg';
-import { getAddressFromCoordinate, searchAddressOrPlace } from '../../api/kakaoLocalApi';
+import { getAddressFromCoordinate } from '../../api/kakaoLocalApi';
+import { placeApi } from '../../api/placeApi';
 import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../KakaoMapCard';
 import { SELECTED_PLACE } from './constants';
 
@@ -41,7 +42,8 @@ const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => {
     const requestId = ++geocodeRequestIdRef.current;
 
     try {
-      const result = await searchAddressOrPlace(addressQuery);
+      const places = await placeApi.searchPlaces(addressQuery);
+      const result = places[0];
 
       if (requestId !== geocodeRequestIdRef.current) {
         return;
@@ -53,9 +55,10 @@ const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => {
       }
 
       Keyboard.dismiss();
-      setAddressQuery(result.address);
+      const nextAddress = result.roadAddress || result.address;
+      setAddressQuery(nextAddress);
       setMapCenter({ lat: result.lat, lng: result.lng });
-      setSelectedAddress(result.address);
+      setSelectedAddress(nextAddress);
     } catch {
       if (requestId === geocodeRequestIdRef.current) {
         setSelectedAddress('주소 검색에 실패했습니다');

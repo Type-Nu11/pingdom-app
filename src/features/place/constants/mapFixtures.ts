@@ -23,6 +23,7 @@ export const hotPlaceFixtures: HotPlace[] = [
 ];
 
 export const mapMarkerFixtures: MapMarker[] = [
+  { id: 'kakao-hq-food-1', category: 'food', markerType: 'default', lat: 37.40235, lng: 127.10905 },
   { id: 'music-1', category: 'music', markerType: 'hot', lat: 35.6643, lng: 128.4137 },
   { id: 'food-1', category: 'food', markerType: 'hot', lat: 35.66455, lng: 128.41425 },
   { id: 'game-1', category: 'game', markerType: 'hot', lat: 35.66405, lng: 128.4147 },

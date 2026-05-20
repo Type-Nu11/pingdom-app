@@ -102,6 +102,17 @@ class KakaoMapView(
                     emitMarkerPress(markerId)
                     true
                 }
+                kakaoMap.setOnMapClickListener { map, _, point, poi ->
+                    if (poi?.layerId == MARKER_LAYER_ID && poi.poiId.isNotBlank()) {
+                        emitMarkerPress(poi.poiId)
+                        return@setOnMapClickListener
+                    }
+
+                    emitNearestMarkerPress(map, point)
+                }
+                kakaoMap.setOnTerrainClickListener { map, _, point ->
+                    emitNearestMarkerPress(map, point)
+                }
                 Log.d(TAG, "onMapReady: Kakao map is ready")
                 Toast.makeText(reactContext, "KakaoMap ready", Toast.LENGTH_SHORT).show()
                 applyCameraIfReady()
@@ -198,6 +209,31 @@ class KakaoMapView(
             ?.dispatchEvent(MapDirectEvent("topMarkerPress", UIManagerHelper.getSurfaceId(this), viewId, event))
     }
 
+    private fun emitNearestMarkerPress(map: KakaoMap, point: PointF) {
+        val markerId = findNearestMarkerId(map, point) ?: return
+        emitMarkerPress(markerId)
+    }
+
+    private fun findNearestMarkerId(map: KakaoMap, point: PointF): String? {
+        val clickTolerance = 54f * resources.displayMetrics.density
+        var nearestMarkerId: String? = null
+        var nearestDistance = Float.MAX_VALUE
+
+        markers.forEach { marker ->
+            val markerPoint = map.toScreenPoint(LatLng.from(marker.lat, marker.lng)) ?: return@forEach
+            val dx = markerPoint.x - point.x
+            val dy = markerPoint.y - point.y
+            val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+
+            if (distance <= clickTolerance && distance < nearestDistance) {
+                nearestMarkerId = marker.id
+                nearestDistance = distance
+            }
+        }
+
+        return nearestMarkerId
+    }
+
     private fun parseMarkers(value: ReadableArray?): List<MapMarker> {
         if (value == null) return emptyList()
 
@@ -242,8 +278,10 @@ class KakaoMapView(
                     .setCompetitionUnit(CompetitionUnit.IconFirst)
                     .setOrderingType(OrderingType.Rank)
                     .setZOrder(MARKER_LAYER_Z_ORDER)
+                    .setClickable(true)
             )
 
+        layer?.setClickable(true)
         markerLayer = layer
         return layer
     }
@@ -251,13 +289,15 @@ class KakaoMapView(
     private fun addPlaceMarkerLabels(layer: LabelLayer, manager: LabelManager) {
         markers.forEach { marker ->
             val styles = getPlaceMarkerStyles(manager, marker.category, marker.markerType) ?: return@forEach
-            layer.addLabel(
+            val label = layer.addLabel(
                 LabelOptions
                     .from(marker.id, LatLng.from(marker.lat, marker.lng))
                     .setStyles(styles)
                     .setClickable(true)
                     .setTag(marker.id)
             )
+            label?.setClickable(true)
+            label?.setTag(marker.id)
         }
     }
 

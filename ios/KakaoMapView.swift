@@ -187,6 +187,23 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
         ])
     }
 
+    func poiDidTapped(kakaoMap: KakaoMap, layerID: String, poiID: String, position: MapPoint) {
+        guard layerID == MarkerConfig.layerID else { return }
+
+        onMarkerPress?([
+            "markerId": poiID,
+        ])
+    }
+
+    func kakaoMapDidTapped(kakaoMap: KakaoMap, point: CGPoint) {
+        let position = kakaoMap.getPosition(point).wgsCoord
+        guard let markerId = nearestMarkerId(toLatitude: position.latitude, lng: position.longitude) else { return }
+
+        onMarkerPress?([
+            "markerId": markerId,
+        ])
+    }
+
     func addViewFailed(_ viewName: String, viewInfoName: String) {
         requestedAddMap = false
         print("Kakao map failed: \(viewName), \(viewInfoName)")
@@ -303,15 +320,37 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
     }
 
     private func addPlaceMarkers(to layer: LabelLayer, manager: LabelManager) {
+        layer.setClickable(true)
+
         for marker in parsedMarkers() {
             let styleID = markerStyleID(category: marker.category, markerType: marker.markerType)
             registerMarkerStyleIfNeeded(manager: manager, category: marker.category, markerType: marker.markerType)
             let options = PoiOptions(styleID: styleID, poiID: marker.id)
+            options.clickable = true
             layer.addPoi(
                 option: options,
                 at: MapPoint(longitude: marker.lng, latitude: marker.lat)
             )
         }
+    }
+
+    private func nearestMarkerId(toLatitude lat: Double, lng: Double) -> String? {
+        let clickToleranceMeters = 80.0
+
+        return parsedMarkers()
+            .map { marker in
+                (marker.id, distanceMeters(fromLatitude: lat, lng: lng, toLatitude: marker.lat, toLng: marker.lng))
+            }
+            .filter { $0.1 <= clickToleranceMeters }
+            .min { $0.1 < $1.1 }?
+            .0
+    }
+
+    private func distanceMeters(fromLatitude fromLat: Double, lng fromLng: Double, toLatitude toLat: Double, toLng: Double) -> Double {
+        let latDelta = (toLat - fromLat) * 111_320.0
+        let lngDelta = (toLng - fromLng) * 111_320.0 * cos(fromLat * .pi / 180.0)
+
+        return sqrt(latDelta * latDelta + lngDelta * lngDelta)
     }
 
     private func addUserLocationMarker(to layer: LabelLayer, lat: Double, lng: Double) {
