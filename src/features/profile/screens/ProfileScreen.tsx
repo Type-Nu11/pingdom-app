@@ -55,7 +55,7 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
         </Pressable>
 
         {mode === 'archive-detail' ? (
-          <ArchiveDetail contentWidth={maxContentWidth} onOpenLikes={() => setLikesOpen(true)} />
+          <ArchiveDetail onOpenLikes={() => setLikesOpen(true)} />
         ) : (
           <>
             <View style={[styles.header, mode === 'archive' && styles.archiveHeader]}>
@@ -135,9 +135,7 @@ const ProfileMini = () => (
   </View>
 );
 
-const ArchiveDetail = ({ contentWidth, onOpenLikes }: { contentWidth: number; onOpenLikes: () => void }) => {
-  const imageSize = Math.min(contentWidth, 341);
-
+const ArchiveDetail = ({ onOpenLikes }: { onOpenLikes: () => void }) => {
   return (
     <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={styles.detailScroll}>
       <View style={styles.detailHeader}>
@@ -148,8 +146,8 @@ const ArchiveDetail = ({ contentWidth, onOpenLikes }: { contentWidth: number; on
       <View style={styles.detailImageFrame}>
         <Image
           source={profileImageSource}
-          resizeMode="contain"
-          style={[styles.detailImage, { height: imageSize, width: imageSize }]}
+          resizeMode="cover"
+          style={styles.detailImage}
         />
       </View>
 
@@ -172,8 +170,8 @@ const ArchiveDetail = ({ contentWidth, onOpenLikes }: { contentWidth: number; on
       <View style={styles.detailImageFrame}>
         <Image
           source={profileImageSource}
-          resizeMode="contain"
-          style={[styles.detailImage, { height: imageSize, width: imageSize }]}
+          resizeMode="cover"
+          style={styles.detailImage}
         />
       </View>
     </ScrollView>
@@ -231,7 +229,11 @@ const styles = StyleSheet.create({
     lineHeight: 50,
   },
   dateBadge: {
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderRadius: 8,
     left: 18,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
     position: 'absolute',
     top: 10,
   },
@@ -285,11 +287,13 @@ const styles = StyleSheet.create({
     top: 82,
   },
   detailImage: {
+    aspectRatio: 1,
     backgroundColor: '#05070d',
+    width: '100%',
   },
   detailImageFrame: {
-    alignItems: 'center',
-    backgroundColor: '#fafafa',
+    backgroundColor: '#05070d',
+    overflow: 'hidden',
     width: '100%',
   },
   detailLikeRow: {
