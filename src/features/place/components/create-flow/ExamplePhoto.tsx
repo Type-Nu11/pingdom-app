@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     borderColor: '#f1f1f4',
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-    width: '33.3333%',
+    width: '100%',
   },
   examplePhotoLarge: {
     borderWidth: 0,
