@@ -16,7 +16,7 @@ class KakaoMapViewManager : SimpleViewManager<KakaoMapView>() {
 
     override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> {
         return MapBuilder.of(
-            "onCameraIdle",
+            "topCameraIdle",
             MapBuilder.of("registrationName", "onCameraIdle")
         )
     }

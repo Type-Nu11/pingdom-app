@@ -13,10 +13,12 @@ import android.util.Log
 import android.widget.FrameLayout
 import android.widget.Toast
 import com.facebook.react.bridge.Arguments
-import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.LifecycleEventListener
+import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.ThemedReactContext
-import com.facebook.react.uimanager.events.RCTEventEmitter
+import com.facebook.react.uimanager.UIManagerHelper
+import com.facebook.react.uimanager.events.Event
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.KakaoMapReadyCallback
 import com.kakao.vectormap.LatLng
@@ -122,14 +124,20 @@ class KakaoMapView(
     }
 
     private fun emitCameraIdle(lat: Double, lng: Double) {
+        val viewId = id
+        if (viewId == NO_ID) {
+            Log.w(TAG, "emitCameraIdle skipped: view id is not assigned")
+            return
+        }
+
         val event = Arguments.createMap().apply {
             putDouble("lat", lat)
             putDouble("lng", lng)
         }
 
-        reactContext
-            .getJSModule(RCTEventEmitter::class.java)
-            .receiveEvent(id, "onCameraIdle", event)
+        UIManagerHelper
+            .getEventDispatcherForReactTag(reactContext, viewId)
+            ?.dispatchEvent(CameraIdleEvent(UIManagerHelper.getSurfaceId(this), viewId, event))
     }
 
     private fun parseMarkers(value: ReadableArray?): List<MapMarker> {
@@ -562,4 +570,16 @@ class KakaoMapView(
         reactContext.removeLifecycleEventListener(this)
     }
 
+}
+
+private class CameraIdleEvent(
+    surfaceId: Int,
+    viewId: Int,
+    private val eventData: WritableMap
+) : Event<CameraIdleEvent>(surfaceId, viewId) {
+    override fun getEventName(): String = "topCameraIdle"
+
+    override fun canCoalesce(): Boolean = false
+
+    override fun getEventData(): WritableMap = eventData
 }
