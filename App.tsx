@@ -7,9 +7,10 @@ import WelcomeScreen from './src/features/auth/screens/WelcomeScreen';
 import useAuth from './src/features/auth/hooks/useAuth';
 import MapScreen from './src/features/place/screens/MapScreen';
 import PlaceCreateFlowScreen from './src/features/place/screens/PlaceCreateFlowScreen';
+import ProfileScreen from './src/features/profile/screens/ProfileScreen';
 
 type AuthScreen = 'language-gate' | 'welcome' | 'login' | 'signup' | 'phone-verify';
-type MainScreen = 'map' | 'place-create';
+type MainScreen = 'map' | 'place-create' | 'profile';
 
 export default function App() {
   const { bootstrapAuth, isHydrating, isLoggedIn } = useAuth();
@@ -27,8 +28,13 @@ export default function App() {
       {isLoggedIn ? (
         mainScreen === 'place-create' ? (
           <PlaceCreateFlowScreen onClose={() => setMainScreen('map')} />
+        ) : mainScreen === 'profile' ? (
+          <ProfileScreen onBack={() => setMainScreen('map')} />
         ) : (
-          <MapScreen onCreatePlace={() => setMainScreen('place-create')} />
+          <MapScreen
+            onCreatePlace={() => setMainScreen('place-create')}
+            onOpenProfile={() => setMainScreen('profile')}
+          />
         )
       ) : (
         (() => {

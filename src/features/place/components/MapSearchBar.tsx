@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 type MapSearchBarProps = {
+  onProfilePress?: () => void;
   profileSize: number;
   searchHeight: number;
   uiScale: number;
@@ -9,7 +10,7 @@ type MapSearchBarProps = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
-const MapSearchBar = ({ profileSize, searchHeight, uiScale }: MapSearchBarProps) => {
+const MapSearchBar = ({ onProfilePress, profileSize, searchHeight, uiScale }: MapSearchBarProps) => {
   return (
     <View
       style={[
@@ -40,6 +41,8 @@ const MapSearchBar = ({ profileSize, searchHeight, uiScale }: MapSearchBarProps)
         returnKeyType="search"
       />
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="프로필 열기"
         style={[
           styles.profileButton,
           {
@@ -49,6 +52,7 @@ const MapSearchBar = ({ profileSize, searchHeight, uiScale }: MapSearchBarProps)
             width: profileSize,
           },
         ]}
+        onPress={onProfilePress}
       >
         <View
           style={[

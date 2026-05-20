@@ -27,9 +27,10 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
 type MapScreenProps = {
   onCreatePlace?: () => void;
+  onOpenProfile?: () => void;
 };
 
-export default function MapScreen({ onCreatePlace }: MapScreenProps) {
+export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenProps) {
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
@@ -53,7 +54,7 @@ export default function MapScreen({ onCreatePlace }: MapScreenProps) {
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
   const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
   const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
-  const markerCardWidth = Math.round(clamp(width - 76, 300, 338));
+  const markerCardWidth = Math.round(clamp(width - 44, 338, 380));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
@@ -86,7 +87,12 @@ export default function MapScreen({ onCreatePlace }: MapScreenProps) {
           ]}
           pointerEvents="box-none"
         >
-          <MapSearchBar profileSize={profileSize} searchHeight={searchHeight} uiScale={uiScale} />
+          <MapSearchBar
+            onProfilePress={onOpenProfile}
+            profileSize={profileSize}
+            searchHeight={searchHeight}
+            uiScale={uiScale}
+          />
           <CategoryChips
             categories={mapCategories}
             categoryIconScale={categoryIconScale}
@@ -119,7 +125,13 @@ export default function MapScreen({ onCreatePlace }: MapScreenProps) {
       />
 
       {selectedMarkerId && (
-        <View style={styles.markerPreviewLayer} pointerEvents="box-none">
+        <View
+          style={[
+            styles.markerPreviewLayer,
+            { paddingHorizontal: Math.round(clamp(22 * uiScale, 14, 22)) },
+          ]}
+          pointerEvents="box-none"
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="마커 카드 닫기"
@@ -151,9 +163,10 @@ const styles = StyleSheet.create({
   markerPreviewLayer: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 38,
-    zIndex: 40,
+    elevation: 100,
+    justifyContent: 'flex-start',
+    paddingTop: 62,
+    zIndex: 100,
   },
   markerPreviewBackdrop: {
     ...StyleSheet.absoluteFillObject,

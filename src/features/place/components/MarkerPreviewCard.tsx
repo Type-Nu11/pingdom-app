@@ -105,26 +105,28 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
                 >
                   <Text style={styles.moreText}>...</Text>
                 </Pressable>
+
+                {isMenuOpen && (
+                  <View style={styles.menuCard}>
+                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                      <Text style={styles.menuIcon}>⊕</Text>
+                      <Text style={styles.menuText}>관심 있음</Text>
+                    </Pressable>
+                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                      <Text style={styles.menuIcon}>⊖</Text>
+                      <Text style={styles.menuText}>관심 없음</Text>
+                    </Pressable>
+                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                      <ReportIcon width={16} height={16} />
+                      <Text style={styles.reportText}>핑 신고</Text>
+                    </Pressable>
+                  </View>
+                )}
               </View>
 
-              {isMenuOpen && (
-                <View style={styles.menuCard}>
-                  <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                    <Text style={styles.menuIcon}>⊕</Text>
-                    <Text style={styles.menuText}>관심 있음</Text>
-                  </Pressable>
-                  <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                    <Text style={styles.menuIcon}>⊖</Text>
-                    <Text style={styles.menuText}>관심 없음</Text>
-                  </Pressable>
-                  <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                    <ReportIcon width={16} height={16} />
-                    <Text style={styles.reportText}>핑 신고</Text>
-                  </Pressable>
-                </View>
-              )}
-
-              <Image source={previewImageSource} resizeMode="cover" style={styles.feedImage} />
+              <View style={styles.imageFrame}>
+                <Image source={previewImageSource} resizeMode="contain" style={styles.feedImage} />
+              </View>
 
               <View style={styles.indicatorRow}>
                 <View style={styles.indicatorActive} />
@@ -222,8 +224,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 24,
-    elevation: 18,
-    maxHeight: '82%',
+    elevation: 120,
+    maxHeight: '90%',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 38 },
@@ -234,7 +236,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 17,
     top: 13,
-    zIndex: 6,
+    zIndex: 12,
   },
   closeText: {
     color: '#5e5e66',
@@ -243,8 +245,7 @@ const styles = StyleSheet.create({
     lineHeight: 39,
   },
   feedImage: {
-    aspectRatio: 1,
-    backgroundColor: '#05070d',
+    height: '100%',
     width: '100%',
   },
   feedItem: {
@@ -254,6 +255,13 @@ const styles = StyleSheet.create({
   },
   feedList: {
     paddingTop: 42,
+  },
+  imageFrame: {
+    alignItems: 'center',
+    aspectRatio: 1,
+    backgroundColor: '#05070d',
+    justifyContent: 'center',
+    width: '100%',
   },
   indicator: {
     backgroundColor: '#bfc1c1',
@@ -288,17 +296,15 @@ const styles = StyleSheet.create({
   },
   menuCard: {
     backgroundColor: '#fff',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    borderTopLeftRadius: 24,
+    borderRadius: 16,
     elevation: 16,
     gap: 12,
     paddingHorizontal: 22,
     paddingVertical: 18,
     position: 'absolute',
-    right: 22,
-    top: 116,
-    zIndex: 5,
+    right: 16,
+    top: 48,
+    zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.14,
