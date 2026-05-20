@@ -59,6 +59,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
     }
 
     @objc var onCameraIdle: RCTDirectEventBlock?
+    @objc var onMarkerPress: RCTDirectEventBlock?
 
     @objc var userLat: NSNumber? {
         didSet {

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Pressable,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -7,9 +8,10 @@ import {
   View,
 } from 'react-native';
 import CategoryChips from '../components/CategoryChips';
-import KakaoMapCard from '../components/KakaoMapCard';
+import KakaoMapCard, { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import MapActionButtons from '../components/MapActionButtons';
 import MapBottomSheet from '../components/MapBottomSheet';
+import MarkerPreviewCard from '../components/MarkerPreviewCard';
 import MapSearchBar from '../components/MapSearchBar';
 import { hotPlaceFixtures, mapCategories, mapMarkerFixtures } from '../constants/mapFixtures';
 import {
@@ -28,6 +30,7 @@ type MapScreenProps = {
 };
 
 export default function MapScreen({ onCreatePlace }: MapScreenProps) {
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
@@ -50,9 +53,13 @@ export default function MapScreen({ onCreatePlace }: MapScreenProps) {
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
   const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
   const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
+  const markerCardWidth = Math.round(clamp(width - 76, 300, 338));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
+  const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
+    setSelectedMarkerId(event.nativeEvent.markerId);
+  };
 
   return (
     <View style={styles.container}>
@@ -67,6 +74,7 @@ export default function MapScreen({ onCreatePlace }: MapScreenProps) {
         userLng={userLng}
         followUser={followUser}
         markers={mapMarkerFixtures}
+        onMarkerPress={handleMarkerPress}
       />
 
       <View style={styles.mapTint} pointerEvents="none" />
@@ -109,6 +117,21 @@ export default function MapScreen({ onCreatePlace }: MapScreenProps) {
         places={hotPlaceFixtures}
         sheetTranslateY={sheetTranslateY}
       />
+
+      {selectedMarkerId && (
+        <View style={styles.markerPreviewLayer} pointerEvents="box-none">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="마커 카드 닫기"
+            style={styles.markerPreviewBackdrop}
+            onPress={() => setSelectedMarkerId(null)}
+          />
+          <MarkerPreviewCard
+            width={markerCardWidth}
+            onClose={() => setSelectedMarkerId(null)}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -124,6 +147,17 @@ const styles = StyleSheet.create({
   mapTint: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(248, 250, 252, 0.26)',
+  },
+  markerPreviewLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 38,
+    zIndex: 40,
+  },
+  markerPreviewBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
   },
   safeArea: {
     ...StyleSheet.absoluteFillObject,

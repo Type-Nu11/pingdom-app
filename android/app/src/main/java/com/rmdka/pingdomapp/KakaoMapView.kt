@@ -61,9 +61,13 @@ class KakaoMapView(
     private var userLat: Double? = null
     private var userLng: Double? = null
     private var followUser: Boolean = true
+    private var centerLat: Double? = null
+    private var centerLng: Double? = null
+    private var zoomLevel: Int = 7
     private var kakaoMap: KakaoMap? = null
     private var markerLayer: LabelLayer? = null
     private var markers: List<MapMarker> = emptyList()
+    private var lastAppliedCamera: Triple<Double, Double, Int>? = null
 
     init {
         Log.d(TAG, "init: creating Kakao MapView")
@@ -93,14 +97,36 @@ class KakaoMapView(
                     val position = cameraPosition.position
                     emitCameraIdle(position.latitude, position.longitude)
                 }
+                kakaoMap.setOnLabelClickListener { _, _, label ->
+                    val markerId = label.tag as? String ?: return@setOnLabelClickListener false
+                    emitMarkerPress(markerId)
+                    true
+                }
                 Log.d(TAG, "onMapReady: Kakao map is ready")
                 Toast.makeText(reactContext, "KakaoMap ready", Toast.LENGTH_SHORT).show()
+                applyCameraIfReady()
                 updateUserLocationIfReady()
                 updateMarkersIfReady()
             }
         }
         )
     }
+
+    fun setCenterLat(value: Double) {
+        centerLat = value
+        applyCameraIfReady()
+    }
+
+    fun setCenterLng(value: Double) {
+        centerLng = value
+        applyCameraIfReady()
+    }
+
+    fun setZoomLevel(value: Int) {
+        zoomLevel = value
+        applyCameraIfReady()
+    }
+
     fun setUserLat(value: Double) {
         userLat = value
         updateUserLocationIfReady()
@@ -123,6 +149,22 @@ class KakaoMapView(
         updateMarkersIfReady()
     }
 
+    private fun applyCameraIfReady() {
+        val map = kakaoMap ?: return
+        val lat = centerLat ?: return
+        val lng = centerLng ?: return
+        val nextCamera = Triple(lat, lng, zoomLevel)
+
+        if (lastAppliedCamera == nextCamera) {
+            return
+        }
+
+        lastAppliedCamera = nextCamera
+        val target = LatLng.from(lat, lng)
+        val update = CameraUpdateFactory.newCenterPosition(target, zoomLevel)
+        map.moveCamera(update, CameraAnimation.from(300))
+    }
+
     private fun emitCameraIdle(lat: Double, lng: Double) {
         val viewId = id
         if (viewId == NO_ID) {
@@ -138,6 +180,22 @@ class KakaoMapView(
         UIManagerHelper
             .getEventDispatcherForReactTag(reactContext, viewId)
             ?.dispatchEvent(CameraIdleEvent(UIManagerHelper.getSurfaceId(this), viewId, event))
+    }
+
+    private fun emitMarkerPress(markerId: String) {
+        val viewId = id
+        if (viewId == NO_ID) {
+            Log.w(TAG, "emitMarkerPress skipped: view id is not assigned")
+            return
+        }
+
+        val event = Arguments.createMap().apply {
+            putString("markerId", markerId)
+        }
+
+        UIManagerHelper
+            .getEventDispatcherForReactTag(reactContext, viewId)
+            ?.dispatchEvent(MapDirectEvent("topMarkerPress", UIManagerHelper.getSurfaceId(this), viewId, event))
     }
 
     private fun parseMarkers(value: ReadableArray?): List<MapMarker> {
@@ -197,6 +255,8 @@ class KakaoMapView(
                 LabelOptions
                     .from(marker.id, LatLng.from(marker.lat, marker.lng))
                     .setStyles(styles)
+                    .setClickable(true)
+                    .setTag(marker.id)
             )
         }
     }
@@ -578,6 +638,19 @@ private class CameraIdleEvent(
     private val eventData: WritableMap
 ) : Event<CameraIdleEvent>(surfaceId, viewId) {
     override fun getEventName(): String = "topCameraIdle"
+
+    override fun canCoalesce(): Boolean = false
+
+    override fun getEventData(): WritableMap = eventData
+}
+
+private class MapDirectEvent(
+    private val name: String,
+    surfaceId: Int,
+    viewId: Int,
+    private val eventData: WritableMap
+) : Event<MapDirectEvent>(surfaceId, viewId) {
+    override fun getEventName(): String = name
 
     override fun canCoalesce(): Boolean = false
 

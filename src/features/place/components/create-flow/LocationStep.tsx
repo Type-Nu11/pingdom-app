@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import MypingIcon from '../../../../assets/icons/Myping.svg';
-import { getAddressFromCoordinate } from '../../api/kakaoLocalApi';
+import { getAddressFromCoordinate, searchAddressOrPlace } from '../../api/kakaoLocalApi';
 import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../KakaoMapCard';
 import { SELECTED_PLACE } from './constants';
 
@@ -14,6 +14,10 @@ const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => {
   const [addressQuery, setAddressQuery] = useState('');
   const [selectedAddress, setSelectedAddress] = useState(SELECTED_PLACE.address);
   const [detailAddress, setDetailAddress] = useState('');
+  const [mapCenter, setMapCenter] = useState({
+    lat: SELECTED_PLACE.lat,
+    lng: SELECTED_PLACE.lng,
+  });
   const geocodeRequestIdRef = useRef(0);
 
   const handleCameraIdle = async (event: KakaoMapCameraIdleEvent) => {
@@ -33,24 +37,59 @@ const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => {
     }
   };
 
+  const handleSearchAddress = async () => {
+    const requestId = ++geocodeRequestIdRef.current;
+
+    try {
+      const result = await searchAddressOrPlace(addressQuery);
+
+      if (requestId !== geocodeRequestIdRef.current) {
+        return;
+      }
+
+      if (!result) {
+        setSelectedAddress('검색 결과가 없습니다');
+        return;
+      }
+
+      Keyboard.dismiss();
+      setAddressQuery(result.address);
+      setMapCenter({ lat: result.lat, lng: result.lng });
+      setSelectedAddress(result.address);
+    } catch {
+      if (requestId === geocodeRequestIdRef.current) {
+        setSelectedAddress('주소 검색에 실패했습니다');
+      }
+    }
+  };
+
   return (
     <View style={styles.stepBody}>
       <Text style={styles.title}>새로 게시할 장소의{'\n'}위치를 선택해 주세요</Text>
       <View style={styles.searchBox}>
-        <Text style={styles.searchIcon}>⌕</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="주소 검색"
+          hitSlop={8}
+          onPress={handleSearchAddress}
+        >
+          <Text style={styles.searchIcon}>⌕</Text>
+        </Pressable>
         <TextInput
           style={styles.searchInput}
           placeholder="주소를 입력하세요..."
           placeholderTextColor="#777a84"
+          returnKeyType="search"
           value={addressQuery}
           onChangeText={setAddressQuery}
+          onSubmitEditing={handleSearchAddress}
         />
       </View>
       <View style={[styles.mapPreview, { height: mapHeight }]}>
         <KakaoMapCard
           style={styles.map}
-          centerLat={SELECTED_PLACE.lat}
-          centerLng={SELECTED_PLACE.lng}
+          centerLat={mapCenter.lat}
+          centerLng={mapCenter.lng}
           zoomLevel={17}
           followUser={false}
           onCameraIdle={handleCameraIdle}

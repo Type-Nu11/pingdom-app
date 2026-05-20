@@ -12,7 +12,9 @@ const PlaceCreateHeader = ({ onBack, onNext, step }: PlaceCreateHeaderProps) => 
     <Pressable accessibilityRole="button" accessibilityLabel="뒤로가기" hitSlop={12} onPress={onBack}>
       <Text style={styles.backText}>{'<'}</Text>
     </Pressable>
-    <ProgressDots step={step} />
+    <View pointerEvents="none" style={styles.progressCenter}>
+      <ProgressDots step={step} />
+    </View>
     {onNext ? (
       <Pressable accessibilityRole="button" accessibilityLabel="다음" hitSlop={12} onPress={onNext}>
         <Text style={styles.nextText}>다음</Text>
@@ -46,6 +48,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 28,
     paddingTop: 14,
+    position: 'relative',
   },
   backText: {
     color: '#050505',
@@ -60,6 +63,13 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 36,
+  },
+  progressCenter: {
+    alignItems: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 36,
   },
   progressRow: {
     alignItems: 'center',

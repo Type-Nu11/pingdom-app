@@ -6,6 +6,10 @@ export type KakaoMapCameraIdleEvent = NativeSyntheticEvent<{
   lng: number;
 }>;
 
+export type KakaoMapMarkerPressEvent = NativeSyntheticEvent<{
+  markerId: string;
+}>;
+
 export type KakaoMapCardProps = ViewProps & {
   centerLat: number;
   centerLng: number;
@@ -15,6 +19,7 @@ export type KakaoMapCardProps = ViewProps & {
   userLng?: number;
   followUser?: boolean;
   onCameraIdle?: (event: KakaoMapCameraIdleEvent) => void;
+  onMarkerPress?: (event: KakaoMapMarkerPressEvent) => void;
   markers?: Array<{
     category: 'fashion' | 'food' | 'game' | 'music';
     id: string;

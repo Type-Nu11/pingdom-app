@@ -9,4 +9,5 @@ RCT_EXPORT_VIEW_PROPERTY(userLat, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(userLng, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(followUser, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(onCameraIdle, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onMarkerPress, RCTDirectEventBlock)
 @end

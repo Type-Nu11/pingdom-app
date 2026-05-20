@@ -17,23 +17,25 @@ class KakaoMapViewManager : SimpleViewManager<KakaoMapView>() {
     override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> {
         return MapBuilder.of(
             "topCameraIdle",
-            MapBuilder.of("registrationName", "onCameraIdle")
+            MapBuilder.of("registrationName", "onCameraIdle"),
+            "topMarkerPress",
+            MapBuilder.of("registrationName", "onMarkerPress")
         )
     }
 
     @ReactProp(name = "centerLat")
     fun setCenterLat(view: KakaoMapView, centerLat: Double) {
-        // iOS bridge uses this prop. Android support can be added later.
+        view.setCenterLat(centerLat)
     }
 
     @ReactProp(name = "centerLng")
     fun setCenterLng(view: KakaoMapView, centerLng: Double) {
-        // iOS bridge uses this prop. Android support can be added later.
+        view.setCenterLng(centerLng)
     }
 
     @ReactProp(name = "zoomLevel", defaultInt = 7)
     fun setZoomLevel(view: KakaoMapView, zoomLevel: Int) {
-        // iOS bridge uses this prop. Android support can be added later.
+        view.setZoomLevel(zoomLevel)
     }
     @ReactProp(name = "userLat")
     fun setUserLat(view: KakaoMapView, userLat: Double) {
