@@ -11,7 +11,7 @@ export type AuthState = {
 type AuthActions = {
   bootstrapAuth: () => Promise<void>;
   login: (tokens: AuthTokens) => Promise<void>;
-  loginWithGoogle: () => void;
+  loginWithGoogle: (tokens: AuthTokens) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -50,9 +50,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
     });
   },
 
-  loginWithGoogle: () => {
+  loginWithGoogle: async (tokens: AuthTokens) => {
+    await persistTokens(tokens);
     set({
-      accessToken: null,
+      accessToken: tokens.accessToken,
       isLoggedIn: true,
       isHydrating: false,
     });
@@ -85,8 +86,8 @@ export async function loginWithTokens(tokens: AuthTokens): Promise<void> {
   return useAuthStore.getState().login(tokens);
 }
 
-export function loginWithGoogle(): void {
-  useAuthStore.getState().loginWithGoogle();
+export async function loginWithGoogle(tokens: AuthTokens): Promise<void> {
+  return useAuthStore.getState().loginWithGoogle(tokens);
 }
 
 export async function logout(): Promise<void> {
