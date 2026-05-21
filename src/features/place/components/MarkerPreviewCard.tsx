@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import LikeIcon from '../../../assets/icons/Like.svg';
-import SavedIcon from '../../../assets/icons/Saved.svg';
-import ShareIcon from '../../../assets/icons/share.svg';
-import ReportIcon from '../../../assets/icons/tlsrh.svg';
+import LikeIcon from '../../../assets/icons/actions/Like.svg';
+import SavedIcon from '../../../assets/icons/actions/Saved.svg';
+import ShareIcon from '../../../assets/icons/actions/share.svg';
+import ReportIcon from '../../../assets/icons/actions/tlsrh.svg';
 
-const previewImageSource = require('../../../assets/Home/spki.webp');
+const previewImageSource = require('../../../assets/images/spki.webp');
 
 type MarkerPreviewCardProps = {
   onClose: () => void;

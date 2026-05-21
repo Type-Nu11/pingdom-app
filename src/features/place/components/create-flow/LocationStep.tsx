@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import MypingIcon from '../../../../assets/icons/Myping.svg';
+import MypingIcon from '../../../../assets/icons/map/Myping.svg';
 import { getAddressFromCoordinate } from '../../api/kakaoLocalApi';
 import { placeApi } from '../../api/placeApi';
 import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../KakaoMapCard';

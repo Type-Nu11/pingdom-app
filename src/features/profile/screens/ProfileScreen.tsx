@@ -1,15 +1,17 @@
-import { useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import LikeIcon from '../../../assets/icons/Like.svg';
-import SavedIcon from '../../../assets/icons/Saved.svg';
+import { useRef, useState } from 'react';
+import { Animated, Image, PanResponder, Pressable, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import LikeIcon from '../../../assets/icons/actions/Like.svg';
+import SavedIcon from '../../../assets/icons/actions/Saved.svg';
+import ImageIcon from '../../../assets/icons/edit/image.svg';
+import PencilIcon from '../../../assets/icons/edit/peril.svg';
 
-const profileImageSource = require('../../../assets/Home/spki.webp');
+const profileImageSource = require('../../../assets/images/spki.webp');
 
 type ProfileScreenProps = {
   onBack: () => void;
 };
 
-type ProfileMode = 'profile' | 'archive' | 'archive-detail';
+type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
 
 const galleryItems = Array.from({ length: 18 }, (_, index) => `profile-post-${index}`);
 const likeUsers = Array.from({ length: 8 }, (_, index) => `like-user-${index}`);
@@ -37,6 +39,11 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
       return;
     }
 
+    if (mode === 'profile-edit') {
+      setMode('profile');
+      return;
+    }
+
     onBack();
   };
 
@@ -54,7 +61,9 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
           <Text style={styles.backText}>‹</Text>
         </Pressable>
 
-        {mode === 'archive-detail' ? (
+        {mode === 'profile-edit' ? (
+          <ProfileEditScreen />
+        ) : mode === 'archive-detail' ? (
           <ArchiveDetail onOpenLikes={() => setLikesOpen(true)} />
         ) : (
           <>
@@ -64,7 +73,7 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
 
               {mode === 'profile' && (
                 <View style={styles.profileActions}>
-                  <Pressable style={styles.profileActionButton}>
+                  <Pressable style={styles.profileActionButton} onPress={() => setMode('profile-edit')}>
                     <Text style={styles.profileActionText}>프로필 편집</Text>
                   </Pressable>
                   <Pressable style={styles.profileActionButton} onPress={() => setMode('archive')}>
@@ -135,68 +144,125 @@ const ProfileMini = () => (
   </View>
 );
 
+const ProfileEditScreen = () => (
+  <View style={styles.editScreen}>
+    <View style={styles.editAvatarWrap}>
+      <Image source={profileImageSource} resizeMode="cover" style={styles.editAvatar} />
+      <View style={styles.editCameraBadge}>
+        <ImageIcon width={18} height={18} />
+      </View>
+    </View>
+
+    <View style={styles.editForm}>
+      <Text style={styles.editLabel}>이름</Text>
+      <View style={styles.editInputWrap}>
+        <TextInput
+          placeholder="이름 입력하세요."
+          placeholderTextColor="#767680"
+          style={styles.editInput}
+        />
+        <PencilIcon width={22} height={22} />
+      </View>
+    </View>
+  </View>
+);
+
 const ArchiveDetail = ({ onOpenLikes }: { onOpenLikes: () => void }) => {
   return (
     <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={styles.detailScroll}>
-      <View style={styles.detailHeader}>
-        <ProfileMini />
-        <Text style={styles.detailDate}>2025. 10. 21</Text>
-      </View>
-
-      <View style={styles.detailImageFrame}>
-        <Image
-          source={profileImageSource}
-          resizeMode="cover"
-          style={styles.detailImage}
-        />
-      </View>
-
-      <View style={styles.detailContent}>
-        <Pressable style={styles.detailLikeRow} onPress={onOpenLikes}>
-          <LikeIcon color="#5e5e66" fill="none" width={20} height={18} />
-          <Text style={styles.detailLikeText}>1.2K</Text>
-        </Pressable>
-
-        <Text style={styles.detailCaption}>
-          <Text style={styles.detailCaptionAuthor}>woo._sm </Text>
-          돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~
-        </Text>
-      </View>
-
-      <View style={styles.nextPostHeader}>
-        <ProfileMini />
-        <Text style={styles.detailDate}>2025. 10. 21</Text>
-      </View>
-      <View style={styles.detailImageFrame}>
-        <Image
-          source={profileImageSource}
-          resizeMode="cover"
-          style={styles.detailImage}
-        />
-      </View>
+      <ArchiveFeedItem isFirst onOpenLikes={onOpenLikes} />
+      <ArchiveFeedItem onOpenLikes={onOpenLikes} />
     </ScrollView>
   );
 };
 
-const LikesSheet = ({ onClose }: { onClose: () => void }) => (
-  <View style={styles.likesOverlay}>
-    <Pressable style={styles.likesBackdrop} onPress={onClose} />
-    <View style={styles.likesSheet}>
-      <View style={styles.likesHeader}>
-        <View style={styles.likesHandle} />
-        <Text style={styles.likesTitle}>좋아요</Text>
-      </View>
-      <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={styles.likesList}>
-        {likeUsers.map((item) => (
-          <View key={item} style={styles.likeUserRow}>
-            <Image source={profileImageSource} resizeMode="cover" style={styles.likeUserAvatar} />
-            <Text style={styles.likeUserName}>woo._sm</Text>
-          </View>
-        ))}
-      </ScrollView>
+const ArchiveFeedItem = ({
+  isFirst = false,
+  onOpenLikes,
+}: {
+  isFirst?: boolean;
+  onOpenLikes: () => void;
+}) => (
+  <View>
+    <View style={[styles.detailHeader, !isFirst && styles.nextPostHeader]}>
+      <ProfileMini />
+      <Text style={styles.detailDate}>2025. 10. 21</Text>
+    </View>
+
+    <View style={styles.detailImageFrame}>
+      <Image
+        source={profileImageSource}
+        resizeMode="cover"
+        style={styles.detailImage}
+      />
+    </View>
+
+    <View style={styles.detailContent}>
+      <Pressable style={styles.detailLikeRow} onPress={onOpenLikes}>
+        <LikeIcon color="#5e5e66" fill="none" width={20} height={18} />
+        <Text style={styles.detailLikeText}>1.2K</Text>
+      </Pressable>
+
+      <Text style={styles.detailCaption}>
+        <Text style={styles.detailCaptionAuthor}>woo._sm </Text>
+        돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~돌아갈래~
+      </Text>
     </View>
   </View>
 );
+
+const LikesSheet = ({ onClose }: { onClose: () => void }) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          translateY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 90 || gestureState.vy > 0.8) {
+          Animated.timing(translateY, {
+            duration: 180,
+            toValue: 390,
+            useNativeDriver: true,
+          }).start(onClose);
+          return;
+        }
+
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      },
+    }),
+  ).current;
+
+  return (
+    <View style={styles.likesOverlay}>
+      <Pressable style={styles.likesBackdrop} onPress={onClose} />
+      <Animated.View
+        style={[styles.likesSheet, { transform: [{ translateY }] }]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.likesHeader}>
+          <View style={styles.likesHandle} />
+          <Text style={styles.likesTitle}>좋아요</Text>
+        </View>
+        <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={styles.likesList}>
+          {likeUsers.map((item) => (
+            <View key={item} style={styles.likeUserRow}>
+              <Image source={profileImageSource} resizeMode="cover" style={styles.likeUserAvatar} />
+              <Text style={styles.likeUserName}>woo._sm</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </Animated.View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   activeTabLine: {
@@ -280,19 +346,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingBottom: 18,
-    paddingHorizontal: 36,
-    paddingTop: 134,
+    paddingHorizontal: 24,
+    paddingTop: 114,
   },
   detailBackButton: {
-    top: 82,
+    left: 24,
+    top: 54,
   },
   detailImage: {
-    aspectRatio: 1,
     backgroundColor: '#05070d',
+    height: '100%',
     width: '100%',
   },
   detailImageFrame: {
+    alignItems: 'center',
+    aspectRatio: 1,
     backgroundColor: '#05070d',
+    justifyContent: 'center',
     overflow: 'hidden',
     width: '100%',
   },
@@ -326,6 +396,60 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 14,
+  },
+  editAvatar: {
+    borderRadius: 54,
+    height: 108,
+    width: 108,
+  },
+  editAvatarWrap: {
+    alignSelf: 'center',
+    marginTop: 132,
+    position: 'relative',
+  },
+  editCameraBadge: {
+    alignItems: 'center',
+    backgroundColor: '#d9d9de',
+    borderColor: '#fafafa',
+    borderRadius: 12,
+    borderWidth: 3,
+    bottom: 0,
+    height: 28,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 0,
+    width: 28,
+  },
+  editForm: {
+    gap: 14,
+    marginTop: 72,
+    paddingHorizontal: 44,
+  },
+  editInput: {
+    color: '#3b3b40',
+    flex: 1,
+    fontSize: 22,
+    fontWeight: '500',
+    lineHeight: 29,
+    padding: 0,
+  },
+  editInputWrap: {
+    alignItems: 'center',
+    borderColor: '#767680',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    height: 58,
+    paddingHorizontal: 14,
+  },
+  editLabel: {
+    color: '#3b3b40',
+    fontSize: 17,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  editScreen: {
+    flex: 1,
   },
   gallery: {
     flexDirection: 'row',
@@ -402,11 +526,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   nextPostHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 22,
-    paddingVertical: 18,
+    paddingTop: 28,
   },
   profileActionButton: {
     alignItems: 'center',
