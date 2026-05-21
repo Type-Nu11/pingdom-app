@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 import LanguageGateScreen from './src/features/auth/screens/LanguageGateScreen';
 import LoginScreen from './src/features/auth/screens/LoginScreen';
 import PhoneVerifyScreen from './src/features/auth/screens/SignupDetailsScreen';
@@ -7,13 +6,16 @@ import SignupScreen from './src/features/auth/screens/SignupScreen';
 import WelcomeScreen from './src/features/auth/screens/WelcomeScreen';
 import useAuth from './src/features/auth/hooks/useAuth';
 import MapScreen from './src/features/place/screens/MapScreen';
-import Button from './src/shared/components/Button';
+import PlaceCreateFlowScreen from './src/features/place/screens/PlaceCreateFlowScreen';
+import ProfileScreen from './src/features/profile/screens/ProfileScreen';
 
 type AuthScreen = 'language-gate' | 'welcome' | 'login' | 'signup' | 'phone-verify';
+type MainScreen = 'map' | 'place-create' | 'profile';
 
 export default function App() {
-  const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
+  const { bootstrapAuth, isHydrating, isLoggedIn } = useAuth();
   const [authScreen, setAuthScreen] = useState<AuthScreen>('language-gate');
+  const [mainScreen, setMainScreen] = useState<MainScreen>('map');
 
   useEffect(() => {
     void bootstrapAuth();
@@ -24,12 +26,16 @@ export default function App() {
   return (
     <>
       {isLoggedIn ? (
-        <View style={styles.container}>
-          <MapScreen />
-          <View style={styles.logoutButton}>
-            <Button label="로그아웃" onPress={() => void logout()} />
-          </View>
-        </View>
+        mainScreen === 'place-create' ? (
+          <PlaceCreateFlowScreen onClose={() => setMainScreen('map')} />
+        ) : mainScreen === 'profile' ? (
+          <ProfileScreen onBack={() => setMainScreen('map')} />
+        ) : (
+          <MapScreen
+            onCreatePlace={() => setMainScreen('place-create')}
+            onOpenProfile={() => setMainScreen('profile')}
+          />
+        )
       ) : (
         (() => {
           switch (authScreen) {
@@ -44,15 +50,3 @@ export default function App() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  logoutButton: {
-    position: 'absolute',
-    right: 16,
-    top: 56,
-    width: 120,
-  },
-});

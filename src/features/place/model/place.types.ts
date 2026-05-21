@@ -4,3 +4,18 @@ export type Place = {
   lat: number;
   lng: number;
 };
+
+export type MapMarker = {
+  category: 'fashion' | 'food' | 'game' | 'music';
+  id: string;
+  lat: number;
+  lng: number;
+  markerType?: 'default' | 'hot';
+};
+
+export type HotPlace = {
+  id: string;
+  location: string;
+  rank: number;
+  username: string;
+};

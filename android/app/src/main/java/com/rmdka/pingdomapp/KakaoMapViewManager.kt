@@ -1,6 +1,8 @@
 // android/app/src/main/java/com/rmdka/pingdomapp/KakaoMapViewManager.kt
 package com.rmdka.pingdomapp
 
+import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -12,19 +14,28 @@ class KakaoMapViewManager : SimpleViewManager<KakaoMapView>() {
         return KakaoMapView(reactContext)
     }
 
+    override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> {
+        return MapBuilder.of(
+            "topCameraIdle",
+            MapBuilder.of("registrationName", "onCameraIdle"),
+            "topMarkerPress",
+            MapBuilder.of("registrationName", "onMarkerPress")
+        )
+    }
+
     @ReactProp(name = "centerLat")
     fun setCenterLat(view: KakaoMapView, centerLat: Double) {
-        // iOS bridge uses this prop. Android support can be added later.
+        view.setCenterLat(centerLat)
     }
 
     @ReactProp(name = "centerLng")
     fun setCenterLng(view: KakaoMapView, centerLng: Double) {
-        // iOS bridge uses this prop. Android support can be added later.
+        view.setCenterLng(centerLng)
     }
 
     @ReactProp(name = "zoomLevel", defaultInt = 7)
     fun setZoomLevel(view: KakaoMapView, zoomLevel: Int) {
-        // iOS bridge uses this prop. Android support can be added later.
+        view.setZoomLevel(zoomLevel)
     }
     @ReactProp(name = "userLat")
     fun setUserLat(view: KakaoMapView, userLat: Double) {
@@ -39,5 +50,10 @@ class KakaoMapViewManager : SimpleViewManager<KakaoMapView>() {
     @ReactProp(name = "followUser", defaultBoolean = true)
     fun setFollowUser(view: KakaoMapView, followUser: Boolean) {
         view.setFollowUser(followUser)
+    }
+
+    @ReactProp(name = "markers")
+    fun setMarkers(view: KakaoMapView, markers: ReadableArray?) {
+        view.setMarkers(markers)
     }
 }

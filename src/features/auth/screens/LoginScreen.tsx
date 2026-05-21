@@ -18,6 +18,7 @@ type LoginScreenProps = {
 export default function LoginScreen({ onBack }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [googleErrorMessage, setGoogleErrorMessage] = useState<string | null>(null);
   const { login, isSubmitting, errorMessage, clearError } = useLogin();
 
   const handleLogin = async () => {
@@ -26,6 +27,7 @@ export default function LoginScreen({ onBack }: LoginScreenProps) {
     }
 
     clearError();
+    setGoogleErrorMessage(null);
     const result = await login({
       username: username.trim(),
       password,
@@ -34,6 +36,10 @@ export default function LoginScreen({ onBack }: LoginScreenProps) {
     if (result) {
       return;
     }
+  };
+
+  const handleGoogleLogin = () => {
+    setGoogleErrorMessage('구글 로그인은 서버 토큰 연동 후 사용할 수 있습니다.');
   };
 
   return (
@@ -70,6 +76,7 @@ export default function LoginScreen({ onBack }: LoginScreenProps) {
       </View>
 
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {googleErrorMessage ? <Text style={styles.errorText}>{googleErrorMessage}</Text> : null}
 
       <Pressable style={styles.forgot}>
         <Text style={styles.forgotText}>비밀번호를 잊어버리셨나요?</Text>
@@ -77,7 +84,7 @@ export default function LoginScreen({ onBack }: LoginScreenProps) {
 
       <View style={styles.divider} />
 
-      <Pressable style={styles.googleButton}>
+      <Pressable style={styles.googleButton} onPress={handleGoogleLogin}>
         <Text style={styles.googleButtonText}>구글로 계속</Text>
       </Pressable>
 
