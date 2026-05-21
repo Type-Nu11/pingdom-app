@@ -4,14 +4,18 @@ import SavedIcon from '../../../assets/icons/actions/Saved.svg';
 import { PROFILE_USERNAME, profileImageSource } from '../constants/profileMock';
 
 type ProfileHeaderProps = {
+  activeTab: 'liked' | 'saved';
   isArchive: boolean;
+  onChangeTab: (tab: 'liked' | 'saved') => void;
   onOpenArchive: () => void;
   onOpenEdit: () => void;
   showTabs: boolean;
 };
 
 const ProfileHeader = ({
+  activeTab,
   isArchive,
+  onChangeTab,
   onOpenArchive,
   onOpenEdit,
   showTabs,
@@ -35,13 +39,24 @@ const ProfileHeader = ({
 
     {showTabs && (
       <View style={styles.tabBar}>
-        <View style={styles.tabItem}>
-          <LikeIcon color="#ff1956" fill="#ff1956" width={40} height={36} />
-          <View style={styles.activeTabLine} />
-        </View>
-        <View style={styles.tabItem}>
-          <SavedIcon color="#c7c8cc" fill="none" width={34} height={40} />
-        </View>
+        <Pressable style={styles.tabItem} onPress={() => onChangeTab('liked')}>
+          <LikeIcon
+            color={activeTab === 'liked' ? '#ff1956' : '#c7c8cc'}
+            fill={activeTab === 'liked' ? '#ff1956' : 'none'}
+            width={40}
+            height={36}
+          />
+          {activeTab === 'liked' && <View style={styles.activeTabLine} />}
+        </Pressable>
+        <Pressable style={styles.tabItem} onPress={() => onChangeTab('saved')}>
+          <SavedIcon
+            color={activeTab === 'saved' ? '#ff1956' : '#c7c8cc'}
+            fill={activeTab === 'saved' ? '#ff1956' : 'none'}
+            width={34}
+            height={40}
+          />
+          {activeTab === 'saved' && <View style={styles.activeTabLine} />}
+        </Pressable>
       </View>
     )}
   </>

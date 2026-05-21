@@ -5,16 +5,19 @@ import LikesBottomSheet from '../components/LikesBottomSheet';
 import ProfileEditView from '../components/ProfileEditView';
 import ProfileGallery from '../components/ProfileGallery';
 import ProfileHeader from '../components/ProfileHeader';
+import { profileImageSource, savedProfileImageSource } from '../constants/profileMock';
 
 type ProfileScreenProps = {
   onBack: () => void;
 };
 
 type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
+type ProfileTab = 'liked' | 'saved';
 
 const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
   const [mode, setMode] = useState<ProfileMode>('profile');
+  const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
   const [likesOpen, setLikesOpen] = useState(false);
   const maxContentWidth = Math.min(width, 560);
   const gridItemSize = Math.floor(maxContentWidth / 3);
@@ -62,12 +65,15 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
           <>
             <ProfileHeader
               isArchive={mode === 'archive'}
+              activeTab={activeTab}
+              onChangeTab={setActiveTab}
               onOpenArchive={() => setMode('archive')}
               onOpenEdit={() => setMode('profile-edit')}
               showTabs={mode === 'profile'}
             />
             <ProfileGallery
               isArchive={mode === 'archive'}
+              imageSource={activeTab === 'saved' ? savedProfileImageSource : profileImageSource}
               itemSize={gridItemSize}
               onArchiveItemPress={() => setMode('archive-detail')}
             />

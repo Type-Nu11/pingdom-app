@@ -1,4 +1,5 @@
 export const profileImageSource = require('../../../assets/images/spki.webp');
+export const savedProfileImageSource = require('../../../assets/images/spki2.webp');
 
 export const PROFILE_USERNAME = 'woo._sm';
 export const PROFILE_PLACE = '고양종합운동장';

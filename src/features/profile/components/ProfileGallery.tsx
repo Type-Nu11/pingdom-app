@@ -1,13 +1,19 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { galleryItems, profileImageSource } from '../constants/profileMock';
+import { Image, ImageSourcePropType, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { galleryItems } from '../constants/profileMock';
 
 type ProfileGalleryProps = {
+  imageSource: ImageSourcePropType;
   isArchive: boolean;
   itemSize: number;
   onArchiveItemPress: () => void;
 };
 
-const ProfileGallery = ({ isArchive, itemSize, onArchiveItemPress }: ProfileGalleryProps) => (
+const ProfileGallery = ({
+  imageSource,
+  isArchive,
+  itemSize,
+  onArchiveItemPress,
+}: ProfileGalleryProps) => (
   <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
     <View style={styles.gallery}>
       {galleryItems.map((item) => (
@@ -17,7 +23,7 @@ const ProfileGallery = ({ isArchive, itemSize, onArchiveItemPress }: ProfileGall
           onPress={onArchiveItemPress}
         >
           <Image
-            source={profileImageSource}
+            source={imageSource}
             resizeMode={isArchive ? 'contain' : 'cover'}
             style={{
               backgroundColor: '#fff',

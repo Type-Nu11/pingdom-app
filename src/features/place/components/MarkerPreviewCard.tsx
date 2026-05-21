@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/icons/actions/Saved.svg';
 import ShareIcon from '../../../assets/icons/actions/share.svg';
 import ReportIcon from '../../../assets/icons/actions/tlsrh.svg';
 
 const previewImageSource = require('../../../assets/images/spki.webp');
+const secondPreviewImageSource = require('../../../assets/images/spki2.webp');
+const previewImages = [previewImageSource, secondPreviewImageSource];
 
 type MarkerPreviewCardProps = {
   onClose: () => void;
@@ -50,6 +52,7 @@ const defaultReaction = {
 
 const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
   const [reactions, setReactions] = useState<FeedReactionState>({});
 
   const toggleReaction = (feedId: string, key: keyof FeedReactionState[string]) => {
@@ -60,6 +63,18 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
         ...prev[feedId],
         [key]: !prev[feedId]?.[key],
       },
+    }));
+  };
+
+  const handleImageScrollEnd = (
+    feedId: string,
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    const pageIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+
+    setActiveImageIndexes((prev) => ({
+      ...prev,
+      [feedId]: pageIndex,
     }));
   };
 
@@ -82,6 +97,7 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
         showsVerticalScrollIndicator={false}
       >
         {feedItems.map((item) => {
+          const activeImageIndex = activeImageIndexes[item.id] ?? 0;
           const reaction = reactions[item.id] ?? defaultReaction;
           const isMenuOpen = openMenuId === item.id;
 
@@ -125,12 +141,32 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
               </View>
 
               <View style={styles.imageFrame}>
-                <Image source={previewImageSource} resizeMode="contain" style={styles.feedImage} />
+                <ScrollView
+                  bounces={false}
+                  horizontal
+                  nestedScrollEnabled
+                  onMomentumScrollEnd={(event) => handleImageScrollEnd(item.id, event)}
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                >
+                  {previewImages.map((imageSource, index) => (
+                    <Image
+                      key={`${item.id}-preview-${index}`}
+                      source={imageSource}
+                      resizeMode="contain"
+                      style={[styles.feedImage, { width }]}
+                    />
+                  ))}
+                </ScrollView>
               </View>
 
               <View style={styles.indicatorRow}>
-                <View style={styles.indicatorActive} />
-                <View style={styles.indicator} />
+                {previewImages.map((_, index) => (
+                  <View
+                    key={`${item.id}-indicator-${index}`}
+                    style={activeImageIndex === index ? styles.indicatorActive : styles.indicator}
+                  />
+                ))}
               </View>
 
               <View style={styles.actionRow}>
