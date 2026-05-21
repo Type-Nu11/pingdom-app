@@ -29,6 +29,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
     private var requestedAddMap = false
     private var canAddMapView = false
     private var lastApplied: (lat: Double, lng: Double, zoom: Int)?
+    private var parsedMarkersCache: [MapMarker] = []
     private var registeredMarkerStyleIDs = Set<String>()
     private var didRegisterUserLocationStyle = false
 
@@ -54,6 +55,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
 
     @objc var markers: NSArray? {
         didSet {
+            parsedMarkersCache = parseMarkers(markers)
             applyMarkersIfNeeded()
         }
     }
@@ -297,10 +299,10 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
         )
     }
 
-    private func parsedMarkers() -> [MapMarker] {
+    private func parseMarkers(_ markers: NSArray?) -> [MapMarker] {
         guard let markers else { return [] }
 
-        return markers.compactMap { item in
+        return markers.enumerated().compactMap { index, item in
             guard
                 let marker = item as? NSDictionary,
                 let lat = marker["lat"] as? Double,
@@ -310,7 +312,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
             }
 
             return MapMarker(
-                id: marker["id"] as? String ?? UUID().uuidString,
+                id: marker["id"] as? String ?? "marker-\(index)",
                 category: normalizeMarkerCategory(marker["category"] as? String),
                 lat: lat,
                 lng: lng,
@@ -322,7 +324,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
     private func addPlaceMarkers(to layer: LabelLayer, manager: LabelManager) {
         layer.setClickable(true)
 
-        for marker in parsedMarkers() {
+        for marker in parsedMarkersCache {
             let styleID = markerStyleID(category: marker.category, markerType: marker.markerType)
             registerMarkerStyleIfNeeded(manager: manager, category: marker.category, markerType: marker.markerType)
             let options = PoiOptions(styleID: styleID, poiID: marker.id)
@@ -337,7 +339,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
     private func nearestMarkerId(toLatitude lat: Double, lng: Double) -> String? {
         let clickToleranceMeters = 80.0
 
-        return parsedMarkers()
+        return parsedMarkersCache
             .map { marker in
                 (marker.id, distanceMeters(fromLatitude: lat, lng: lng, toLatitude: marker.lat, toLng: marker.lng))
             }
