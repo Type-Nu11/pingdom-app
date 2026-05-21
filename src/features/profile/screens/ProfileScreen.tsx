@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   editForm: {
     gap: 14,
     marginTop: 72,
-    paddingHorizontal: 44,
+    paddingHorizontal: 24,
   },
   editInput: {
     color: '#3b3b40',
