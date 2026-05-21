@@ -19,10 +19,13 @@
     "react": "19.2.0",
     "react-native": "0.83.2",
     "react-native-element-dropdown": "^2.12.4",
-    "react-native-keychain": "^10.0.0"
+    "react-native-keychain": "^10.0.0",
+    "react-native-svg": "^15.15.5",
+    "expo-font": "~55.0.7"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "react-native-svg-transformer": "^1.5.3",
     "typescript": "~5.9.2"
   },
   "private": true

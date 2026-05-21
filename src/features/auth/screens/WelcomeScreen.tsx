@@ -15,7 +15,7 @@ export default function WelcomeScreen({
         <View style={styles.container}>
         <View style={styles.logogroup}>
             <Image
-                source={require('../../../assets/Logo.png')}
+                source={require('../../../assets/images/pingDomLogo.png')}
                 style={styles.logo}
                 resizeMode="contain"
             />
