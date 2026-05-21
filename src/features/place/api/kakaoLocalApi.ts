@@ -27,18 +27,23 @@ export const getAddressFromCoordinate = async (lat: number, lng: number) => {
     y: String(lat),
   });
 
-  const response = await fetch(`https://dapi.kakao.com/v2/local/geo/coord2address.json?${params}`, {
-    headers: {
-      Authorization: `KakaoAK ${KAKAO_REST_API_KEY}`,
-    },
-  });
+  try {
+    const response = await fetch(`https://dapi.kakao.com/v2/local/geo/coord2address.json?${params}`, {
+      headers: {
+        Authorization: `KakaoAK ${KAKAO_REST_API_KEY}`,
+      },
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return '';
+    }
+
+    const data = await response.json() as KakaoCoordToAddressResponse;
+    const address = data.documents?.[0];
+
+    return address?.road_address?.address_name ?? address?.address?.address_name ?? '';
+  } catch (error) {
+    console.error('좌표 → 주소 변환 실패', error);
     return '';
   }
-
-  const data = await response.json() as KakaoCoordToAddressResponse;
-  const address = data.documents?.[0];
-
-  return address?.road_address?.address_name ?? address?.address?.address_name ?? '';
 };
