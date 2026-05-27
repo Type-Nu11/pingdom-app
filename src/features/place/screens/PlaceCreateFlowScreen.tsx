@@ -149,7 +149,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       if (axios.isAxiosError<ApiFieldErrorResponse | ApiTokenErrorResponse | UploadErrorResponse>(error)) {
         const status = error.response?.status;
         const responseData = error.response?.data;
-        const fieldErrorMessage = responseData && 'errors' in responseData && responseData.errors
+        const fieldErrorMessage = responseData && typeof responseData === 'object' && 'errors' in responseData && responseData.errors
           ? Object.values(responseData.errors)[0]
           : undefined;
 

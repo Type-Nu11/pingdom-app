@@ -59,11 +59,7 @@ function buildPictureUploadFormData(file: UploadPictureFile) {
 export const pictureApi = {
   createPicture: async (file: UploadPictureFile): Promise<CreatePictureResponse> => {
     const formData = buildPictureUploadFormData(file);
-    const { data } = await api.post<CreatePictureResponse>('/map/pictures/create', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const { data } = await api.post<CreatePictureResponse>('/map/pictures/create', formData);
 
     return data;
   },
