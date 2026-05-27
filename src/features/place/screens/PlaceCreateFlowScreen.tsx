@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,8 +16,14 @@ import CaptionStep from '../components/create-flow/CaptionStep';
 import PlaceCreateHeader from '../components/create-flow/PlaceCreateHeader';
 import LocationStep from '../components/create-flow/LocationStep';
 import PhotoSelectStep from '../components/create-flow/PhotoSelectStep';
-import { pictureApi } from '../api/pictureApi';
-import type { PlaceUploadPhoto } from '../model/place.types';
+import {
+  type ApiFieldErrorResponse,
+  type ApiTokenErrorResponse,
+  placeApi,
+  type CreatePlaceResponse,
+} from '../api/placeApi';
+import { pictureApi, type UploadErrorResponse } from '../api/pictureApi';
+import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
 
@@ -26,7 +33,9 @@ type PlaceCreateFlowScreenProps = {
 
 const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [step, setStep] = useState<PlaceCreateStep>(1);
+  const [selectedPlaceDraft, setSelectedPlaceDraft] = useState<PlaceCreateDraft | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
+  const [createdPlace, setCreatedPlace] = useState<CreatePlaceResponse | null>(null);
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { width, height } = useWindowDimensions();
@@ -53,6 +62,12 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     }
 
     setStep((currentStep) => (currentStep + 1) as PlaceCreateStep);
+  };
+
+  const handleSelectLocation = (draft: PlaceCreateDraft) => {
+    setSelectedPlaceDraft(draft);
+    setCreatedPlace(null);
+    setStep(2);
   };
 
   const handlePickPhoto = async () => {
@@ -113,19 +128,43 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   };
 
   const handleUpload = async () => {
-    if (!selectedPhoto || isUploading) {
+    if (!selectedPlaceDraft || !selectedPhoto || isUploading) {
       return;
     }
 
     setIsUploading(true);
 
     try {
-      await pictureApi.createPicture(selectedPhoto);
-      Alert.alert('업로드 완료', '선택한 사진을 성공적으로 업로드했어요.', [
+      const place = createdPlace ?? (await placeApi.createPlace(selectedPlaceDraft));
+
+      if (!createdPlace) {
+        setCreatedPlace(place);
+      }
+
+      const picture = await pictureApi.createPicture(selectedPhoto);
+      Alert.alert('업로드 완료', `${place.name} 장소를 등록하고 사진 업로드까지 완료했어요.\n${picture.message}`, [
         { text: '확인', onPress: onClose },
       ]);
-    } catch {
-      Alert.alert('업로드에 실패했어요', '네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
+    } catch (error) {
+      if (axios.isAxiosError<ApiFieldErrorResponse | ApiTokenErrorResponse | UploadErrorResponse>(error)) {
+        const status = error.response?.status;
+        const responseData = error.response?.data;
+        const fieldErrorMessage = responseData && 'errors' in responseData && responseData.errors
+          ? Object.values(responseData.errors)[0]
+          : undefined;
+
+        if (status === 400) {
+          Alert.alert('입력값을 확인해 주세요', fieldErrorMessage ?? responseData?.message ?? '입력값이 올바르지 않습니다.');
+        } else if (status === 401) {
+          Alert.alert('로그인이 필요해요', responseData?.message ?? '토큰이 유효하지 않아 다시 로그인해야 합니다.');
+        } else if (status === 500) {
+          Alert.alert('사진 업로드에 실패했어요', responseData?.message ?? '업로드 과정에서 오류가 발생했습니다.');
+        } else {
+          Alert.alert('업로드에 실패했어요', responseData?.message ?? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
+        }
+      } else {
+        Alert.alert('업로드에 실패했어요', '네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
+      }
     } finally {
       setIsUploading(false);
     }
@@ -147,7 +186,11 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
           />
 
           {step === 1 ? (
-            <LocationStep mapHeight={mapHeight} onNext={goNext} />
+            <LocationStep
+              initialValue={selectedPlaceDraft}
+              mapHeight={mapHeight}
+              onNext={handleSelectLocation}
+            />
           ) : step === 2 ? (
             <PhotoSelectStep
               isPickingPhoto={isPickingPhoto}
@@ -157,6 +200,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
           ) : (
             <CaptionStep
               isUploading={isUploading}
+              placeName={selectedPlaceDraft?.name ?? ''}
               selectedPhoto={selectedPhoto}
               onUpload={handleUpload}
             />

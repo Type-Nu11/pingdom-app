@@ -5,6 +5,13 @@ export type Place = {
   lng: number;
 };
 
+export type PlaceCreateDraft = {
+  address: string;
+  latitude: number;
+  longitude: number;
+  name: string;
+};
+
 export type PlaceUploadPhoto = {
   name?: string;
   type?: string;

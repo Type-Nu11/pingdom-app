@@ -3,6 +3,17 @@ import type { PlaceUploadPhoto } from '../model/place.types';
 
 export type UploadPictureFile = PlaceUploadPhoto;
 
+export type CreatePictureResponse = {
+  id: number;
+  message: string;
+};
+
+export type UploadErrorResponse = {
+  code?: 'INVALID_TOKEN' | 'UPLOAD_ERROR';
+  errors?: Record<string, string>;
+  message: string;
+};
+
 const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
   gif: 'image/gif',
   heic: 'image/heic',
@@ -46,9 +57,9 @@ function buildPictureUploadFormData(file: UploadPictureFile) {
 }
 
 export const pictureApi = {
-  createPicture: async (file: UploadPictureFile): Promise<unknown> => {
+  createPicture: async (file: UploadPictureFile): Promise<CreatePictureResponse> => {
     const formData = buildPictureUploadFormData(file);
-    const { data } = await api.post('/map/pictures/create', formData, {
+    const { data } = await api.post<CreatePictureResponse>('/map/pictures/create', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

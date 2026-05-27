@@ -23,10 +23,20 @@ export type CreatePlaceRequest = {
 
 export type CreatePlaceResponse = {
   address: string;
-  id: string;
+  id: number;
   latitude: number;
   longitude: number;
   name: string;
+};
+
+export type ApiFieldErrorResponse = {
+  errors?: Record<string, string>;
+  message: string;
+};
+
+export type ApiTokenErrorResponse = {
+  code: 'INVALID_TOKEN';
+  message: string;
 };
 
 export const placeApi = {

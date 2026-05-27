@@ -1,16 +1,16 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import Button from '../../../../shared/components/Button';
 import type { PlaceUploadPhoto } from '../../model/place.types';
-import { SELECTED_PLACE } from './constants';
 import ExamplePhoto from './ExamplePhoto';
 
 type CaptionStepProps = {
   isUploading?: boolean;
   onUpload: () => void;
+  placeName: string;
   selectedPhoto: PlaceUploadPhoto | null;
 };
 
-const CaptionStep = ({ isUploading = false, onUpload, selectedPhoto }: CaptionStepProps) => (
+const CaptionStep = ({ isUploading = false, onUpload, placeName, selectedPhoto }: CaptionStepProps) => (
   <View style={styles.captionBody}>
     <View style={styles.authorRow}>
       <View style={styles.profileCircle}>
@@ -19,7 +19,7 @@ const CaptionStep = ({ isUploading = false, onUpload, selectedPhoto }: CaptionSt
       </View>
       <View>
         <Text style={styles.username}>woo._sm</Text>
-        <Text style={styles.placeName}>{SELECTED_PLACE.name}</Text>
+        <Text style={styles.placeName}>{placeName}</Text>
       </View>
     </View>
     <View style={styles.heroPhoto}>
