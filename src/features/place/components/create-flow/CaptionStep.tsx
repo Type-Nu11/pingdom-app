@@ -1,13 +1,16 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import Button from '../../../../shared/components/Button';
+import type { PlaceUploadPhoto } from '../../model/place.types';
 import { SELECTED_PLACE } from './constants';
 import ExamplePhoto from './ExamplePhoto';
 
 type CaptionStepProps = {
+  isUploading?: boolean;
   onUpload: () => void;
+  selectedPhoto: PlaceUploadPhoto | null;
 };
 
-const CaptionStep = ({ onUpload }: CaptionStepProps) => (
+const CaptionStep = ({ isUploading = false, onUpload, selectedPhoto }: CaptionStepProps) => (
   <View style={styles.captionBody}>
     <View style={styles.authorRow}>
       <View style={styles.profileCircle}>
@@ -20,7 +23,7 @@ const CaptionStep = ({ onUpload }: CaptionStepProps) => (
       </View>
     </View>
     <View style={styles.heroPhoto}>
-      <ExamplePhoto large />
+      <ExamplePhoto large uri={selectedPhoto?.uri} />
     </View>
     <TextInput
       multiline
@@ -29,8 +32,10 @@ const CaptionStep = ({ onUpload }: CaptionStepProps) => (
       placeholderTextColor="#111"
     />
     <Button
+      disabled={!selectedPhoto}
       label="업로드"
       labelStyle={styles.uploadText}
+      loading={isUploading}
       style={styles.uploadButton}
       onPress={onUpload}
     />

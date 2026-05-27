@@ -80,7 +80,29 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
  * this variant is about 6MiB larger per architecture than default.
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
-def kakaoNativeAppKey = System.getenv("KAKAO_NATIVE_APP_KEY") ?: ""
+
+def readEnvValue(String key) {
+    def envFile = new File(rootProject.projectDir, "../.env")
+    if (!envFile.exists()) {
+        return null
+    }
+
+    def prefix = "${key}="
+    def resolvedValue = null
+
+    envFile.eachLine { line ->
+        def trimmed = line.trim()
+        if (resolvedValue != null || !trimmed || trimmed.startsWith("#") || !trimmed.startsWith(prefix)) {
+            return
+        }
+
+        resolvedValue = trimmed.substring(prefix.length()).trim()
+    }
+
+    return resolvedValue
+}
+
+def kakaoNativeAppKey = System.getenv("KAKAO_NATIVE_APP_KEY") ?: readEnvValue("KAKAO_NATIVE_APP_KEY") ?: ""
 
 android {
     ndkVersion rootProject.ext.ndkVersion

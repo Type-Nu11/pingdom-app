@@ -1,10 +1,7 @@
 import { api } from '../../../shared/api/apiClient';
+import type { PlaceUploadPhoto } from '../model/place.types';
 
-export type UploadPictureFile = {
-  name?: string;
-  type?: string;
-  uri: string;
-};
+export type UploadPictureFile = PlaceUploadPhoto;
 
 const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
   gif: 'image/gif',

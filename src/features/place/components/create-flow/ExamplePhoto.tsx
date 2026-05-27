@@ -4,12 +4,13 @@ const examplePhotoSource = require('../../../../assets/images/spki.webp');
 
 type ExamplePhotoProps = {
   large?: boolean;
+  uri?: string | null;
 };
 
-const ExamplePhoto = ({ large = false }: ExamplePhotoProps) => (
+const ExamplePhoto = ({ large = false, uri }: ExamplePhotoProps) => (
   <View style={[styles.examplePhoto, large && styles.examplePhotoLarge]}>
     <Image
-      source={examplePhotoSource}
+      source={uri ? { uri } : examplePhotoSource}
       resizeMode={large ? 'contain' : 'cover'}
       style={styles.image}
     />

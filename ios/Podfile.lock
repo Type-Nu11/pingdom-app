@@ -1,7 +1,7 @@
 PODS:
-  - EXConstants (55.0.8):
+  - EXConstants (55.0.16):
     - ExpoModulesCore
-  - Expo (55.0.7):
+  - Expo (55.0.26):
     - ExpoModulesCore
     - hermes-engine
     - RCTRequired
@@ -26,21 +26,23 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - ExpoAsset (55.0.9):
+  - ExpoAsset (55.0.17):
     - ExpoModulesCore
-  - ExpoDomWebView (55.0.3):
+  - ExpoDomWebView (55.0.6):
     - ExpoModulesCore
-  - ExpoFileSystem (55.0.11):
+  - ExpoFileSystem (55.0.22):
     - ExpoModulesCore
-  - ExpoFont (55.0.4):
+  - ExpoFont (55.0.8):
     - ExpoModulesCore
-  - ExpoKeepAwake (55.0.4):
+  - ExpoImagePicker (55.0.20):
+    - ExpoModulesCore
+  - ExpoKeepAwake (55.0.8):
     - ExpoModulesCore
   - ExpoLocation (55.1.8):
     - ExpoModulesCore
-  - ExpoLogBox (55.0.7):
+  - ExpoLogBox (55.0.12):
     - React-Core
-  - ExpoModulesCore (55.0.16):
+  - ExpoModulesCore (55.0.25):
     - ExpoModulesJSI
     - hermes-engine
     - RCTRequired
@@ -64,7 +66,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - ExpoModulesJSI (55.0.16):
+  - ExpoModulesJSI (55.0.25):
     - hermes-engine
     - React-Core
     - React-runtimescheduler
@@ -1940,6 +1942,51 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNSVG (15.15.3):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - RNSVG/common (= 15.15.3)
+    - Yoga
+  - RNSVG/common (15.15.3):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -1949,6 +1996,7 @@ DEPENDENCIES:
   - "ExpoDomWebView (from `../node_modules/expo/node_modules/@expo/log-box/node_modules/@expo/dom-webview/ios`)"
   - ExpoFileSystem (from `../node_modules/expo/node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo/node_modules/expo-font/ios`)
+  - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo/node_modules/expo-keep-awake/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
   - "ExpoLogBox (from `../node_modules/expo/node_modules/@expo/log-box`)"
@@ -2031,6 +2079,7 @@ DEPENDENCIES:
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - RNKeychain (from `../node_modules/react-native-keychain`)
+  - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -2050,6 +2099,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo/node_modules/expo-file-system/ios"
   ExpoFont:
     :path: "../node_modules/expo/node_modules/expo-font/ios"
+  ExpoImagePicker:
+    :path: "../node_modules/expo-image-picker/ios"
   ExpoKeepAwake:
     :path: "../node_modules/expo/node_modules/expo-keep-awake/ios"
   ExpoLocation:
@@ -2211,21 +2262,24 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNKeychain:
     :path: "../node_modules/react-native-keychain"
+  RNSVG:
+    :path: "../node_modules/react-native-svg"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  EXConstants: 1a973af2ba18c645c9bd7e49fb32147b63c0a137
-  Expo: 781105cc299c6a2932b256e5e328feea97624a87
-  ExpoAsset: ee2489d3eb226584a017ae3667911bd2ad0e9a8d
-  ExpoDomWebView: d4f2ed3c3fa31d0ce89e79501a0c041c2f233189
-  ExpoFileSystem: 81a923e4253da87f00ea08f36e123046d7416f60
-  ExpoFont: 4d2a6dedce012c4793532cb38d561d3da95eaafd
-  ExpoKeepAwake: 55711a70fe88a41e793bbe28543c93cb47ff265d
+  EXConstants: 255fd9f72f94bfccaed1d161edac04a552baa8d9
+  Expo: ea98ca15b0f07634bbfc6ee60080a627b276d70a
+  ExpoAsset: 9d035bcc19d8688e9ddb2c579c50c8f83824188e
+  ExpoDomWebView: 317a0d188cfdb850fc6fd2a43a2fc132dfd171ee
+  ExpoFileSystem: ce9db64ae67e6dcc8db42365e499f9fcc4fbe8ec
+  ExpoFont: 21550be2946ea5bbf50f1a20b31facd19ba4150c
+  ExpoImagePicker: 31deec6605ac794d0455d7ccd03ba9cedd475c71
+  ExpoKeepAwake: 45e456e29335bbd400554646a2f29e628c24072e
   ExpoLocation: e3367a4274fff89fdd5ea70e166484fa9fd6d333
-  ExpoLogBox: 35febda08748ff213ea133f51acf976ba8c44b2c
-  ExpoModulesCore: 8ef188a2da14d64fa5728a64aedaeaae7fb9f7e3
-  ExpoModulesJSI: 92eafb9de39b11d73eec5c0f10a04198e01d41c4
+  ExpoLogBox: 81d123959f6f1fc9926e4298bbc439c31b1b07ad
+  ExpoModulesCore: 78d42c809becc85798b5d102af2673e054cd796b
+  ExpoModulesJSI: 52db434b6c7f626a4613974b2bd05f9816c07224
   FBLazyVector: 32e9ed0301d0fcbc1b2b341dd7fcbf291f51eb83
   hermes-engine: 7974cc7ec07a95d41a8ee8f2cd8bdb2ce29a01b4
   KakaoMapsSDK: 32040e6268df2447c3f56dc4acada339d8eb8f32
@@ -2302,6 +2356,7 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: b8822139dea09d95d7fb8a18c312b806a6ee1558
   RNCAsyncStorage: e85a99325df9eb0191a6ee2b2a842644c7eb29f4
   RNKeychain: 91be81cd32b30c7d4c2569dcad29b472d9b93982
+  RNSVG: b5bd4454de003a99d3130a3c6a1b1c949c89d37d
   Yoga: dd994d8c85dca5cc9b10f5df8c01f9ef1d0da191
 
 PODFILE CHECKSUM: 445c650b59fc7682f631415639374fd7a7583971

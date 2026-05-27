@@ -5,6 +5,12 @@ export type Place = {
   lng: number;
 };
 
+export type PlaceUploadPhoto = {
+  name?: string;
+  type?: string;
+  uri: string;
+};
+
 export type MapMarker = {
   category: 'fashion' | 'food' | 'game' | 'music';
   id: string;
