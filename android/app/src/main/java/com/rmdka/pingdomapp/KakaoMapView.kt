@@ -370,7 +370,10 @@ class KakaoMapView(
             bottomSafePaddingPx = bottomSafePaddingPx
         )
         val anchorY = originalBitmap.height / canvasBitmap.height.toFloat()
-
+        
+        if (originalBitmap != canvasBitmap) {
+            originalBitmap.recycle()
+        }
         Log.d(
             TAG,
             "placeMarkerBitmap type=$markerType originalSize=${originalBitmap.width}x${originalBitmap.height} canvasSize=${canvasBitmap.width}x${canvasBitmap.height} anchorY=$anchorY"

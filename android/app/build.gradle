@@ -96,7 +96,12 @@ def readEnvValue(String key) {
             return
         }
 
-        resolvedValue = trimmed.substring(prefix.length()).trim()
+        def rawValue = trimmed.substring(prefix.length()).trim()
+        if ((rawValue.startsWith('"') && rawValue.endsWith('"'))||(rawValue.startsWith('"') && rawValue.endsWith('"'))){
+            resolvedValue = rawValue.substring(1, rawValue.length - 1)
+        } else {
+            resolvedValue = rawValue
+        }
     }
 
     return resolvedValue
