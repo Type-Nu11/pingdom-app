@@ -314,6 +314,11 @@ class KakaoMapView(
 
     private fun getPlaceMarkerStyles(manager: LabelManager, category: String, markerType: String): LabelStyles? {
         val styleID = "${MARKER_STYLE_ID_PREFIX}_${markerType}_$category"
+        val cachedStyles = manager.getLabelStyles(styleID)
+        if (cachedStyles != null) {
+            return cachedStyles
+        }
+
         val markerBitmapSpec = createPlaceMarkerBitmapSpec(category, markerType)
 
         Log.d(
@@ -321,16 +326,15 @@ class KakaoMapView(
             "placeMarker style=$styleID type=$markerType size=${markerBitmapSpec.bitmap.width}x${markerBitmapSpec.bitmap.height} anchor=(${markerBitmapSpec.anchorX},${markerBitmapSpec.anchorY})"
         )
 
-        return manager.getLabelStyles(styleID)
-            ?: manager.addLabelStyles(
-                LabelStyles.from(
-                    styleID,
-                    LabelStyle
-                        .from(markerBitmapSpec.bitmap)
-                        .setAnchorPoint(PointF(markerBitmapSpec.anchorX, markerBitmapSpec.anchorY))
-                        .setApplyDpScale(false)
-                )
+        return manager.addLabelStyles(
+            LabelStyles.from(
+                styleID,
+                LabelStyle
+                    .from(markerBitmapSpec.bitmap)
+                    .setAnchorPoint(PointF(markerBitmapSpec.anchorX, markerBitmapSpec.anchorY))
+                    .setApplyDpScale(false)
             )
+        )
     }
 
     private fun normalizeMarkerCategory(value: String?): String {
