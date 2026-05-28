@@ -1,0 +1,29 @@
+{
+    "project_info": {
+        "project_number": "83878079735",
+        "project_id": "pingdom-ab6d8",
+        "storage_bucket": "pingdom-ab6d8.firebasestorage.app"
+    },
+    "client": [
+        {
+        "client_info": {
+            "mobilesdk_app_id": "1:83878079735:android:21bb1d2e726cbf4b9c77f2",
+            "android_client_info": {
+            "package_name": "com.rmdka.pingdomapp"
+            }
+        },
+        "oauth_client": [],
+        "api_key": [
+            {
+            "current_key": "AIzaSyC4srUzAotk5gJxGxlAnCkhhYBiLvhyeeQ"
+            }
+        ],
+        "services": {
+            "appinvite_service": {
+            "other_platform_oauth_client": []
+            }
+        }
+        }
+    ],
+    "configuration_version": "1"
+}
