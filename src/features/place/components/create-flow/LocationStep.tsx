@@ -81,13 +81,12 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
   const handleSelectLocation = () => {
     const trimmedName = placeName.trim();
     const trimmedDetailAddress = detailAddress.trim();
-
-    if (!trimmedName) {
+    const isAddressInvalid = selectedAddress === '검색 결과가 없습니다' || selectedAddress === '주소 검색에 실패했습니다';
+    if (!trimmedName || isAddressInvalid) {
       return;
     }
-
     onNext({
-      address: trimmedDetailAddress ? `${selectedAddress} ${trimmedDetailAddress}` : selectedAddress,
+      address: trimmedDetailAddress ? selectedAddress + ' ' + trimmedDetailAddress : selectedAddress,
       latitude: selectedCoordinate.lat,
       longitude: selectedCoordinate.lng,
       name: trimmedName,
