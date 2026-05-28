@@ -1,11 +1,12 @@
 import { registerRootComponent } from 'expo';
-import messaging from '@react-native-firebase/messaging';
+import { getApp } from '@react-native-firebase/app';
+import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 
 import App from './App';
 import { parseNotificationRoute } from './src/features/firebase/utils/notificationPayload';
 import { saveLastBackgroundNotification } from './src/features/firebase/utils/notificationStorage';
 
-messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+setBackgroundMessageHandler(getMessaging(getApp()), async (remoteMessage) => {
   try {
     const route = parseNotificationRoute(remoteMessage, 'background-message');
     await saveLastBackgroundNotification(route);

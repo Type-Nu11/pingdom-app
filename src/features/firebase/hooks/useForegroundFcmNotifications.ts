@@ -1,10 +1,13 @@
-import messaging from '@react-native-firebase/messaging';
+import { getApp } from '@react-native-firebase/app';
+import { getMessaging, onMessage } from '@react-native-firebase/messaging';
 import { useEffect } from 'react';
 import {
   configureForegroundNotifications,
   presentForegroundNotification,
 } from '../utils/foregroundNotification';
 import { ensureNotificationPermission } from '../utils/notificationPermission';
+
+const messagingInstance = getMessaging(getApp());
 
 export function useForegroundFcmNotifications(isLoggedIn: boolean): void {
   useEffect(() => {
@@ -30,7 +33,7 @@ export function useForegroundFcmNotifications(isLoggedIn: boolean): void {
 
     void prepareNotifications();
 
-    const unsubscribe = messaging().onMessage((remoteMessage) => {
+    const unsubscribe = onMessage(messagingInstance, (remoteMessage) => {
       if (!canPresentNotification) {
         return;
       }

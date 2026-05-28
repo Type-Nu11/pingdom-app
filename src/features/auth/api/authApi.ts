@@ -5,6 +5,7 @@ import type {
   LoginRequest,
   LoginResponse,
   SignupRequest,
+  SignupResponse,
 } from '../model/auth.types';
 
 type RawLoginResponse =
@@ -45,7 +46,8 @@ export const authApi = {
     const { data } = await api.post<RawLoginResponse>('/auth/login', payload);
     return toLoginResponse(data);
   },
-  signup: async (payload: SignupRequest): Promise<void> => {
-    await api.post('/auth/signup', payload);
+  signup: async (payload: SignupRequest): Promise<SignupResponse> => {
+    const { data } = await api.post<SignupResponse>('/auth/signup', payload);
+    return data;
   },
 };

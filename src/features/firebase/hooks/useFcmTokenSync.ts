@@ -1,14 +1,21 @@
-import messaging from '@react-native-firebase/messaging';
+import { getApp } from '@react-native-firebase/app';
+import {
+  getMessaging,
+  getToken,
+  onTokenRefresh,
+  registerDeviceForRemoteMessages,
+} from '@react-native-firebase/messaging';
 import { useEffect } from 'react';
 import { updateFcmToken } from '../api/firebaseApi';
 import { ensureNotificationPermission } from '../utils/notificationPermission';
+
+const messagingInstance = getMessaging(getApp());
 
 async function syncFcmToken(token: string): Promise<void> {
   await updateFcmToken({ token });
 }
 
 async function getCurrentFcmToken(): Promise<string | null> {
-  const messagingInstance = messaging();
   const hasPermission = await ensureNotificationPermission();
 
   if (!hasPermission) {
@@ -16,12 +23,12 @@ async function getCurrentFcmToken(): Promise<string | null> {
   }
 
   try {
-    await messagingInstance.registerDeviceForRemoteMessages();
+    await registerDeviceForRemoteMessages(messagingInstance);
   } catch {
     // 이미 등록된 기기에서는 예외가 날 수 있어 무시합니다.
   }
 
-  const token = await messagingInstance.getToken();
+  const token = await getToken(messagingInstance);
   return token || null;
 }
 
@@ -49,7 +56,7 @@ export function useFcmTokenSync(isLoggedIn: boolean): void {
 
     void syncCurrentToken();
 
-    const unsubscribe = messaging().onTokenRefresh((token) => {
+    const unsubscribe = onTokenRefresh(messagingInstance, (token) => {
       void syncFcmToken(token).catch((error) => {
         console.warn('FCM token refresh sync failed:', error);
       });

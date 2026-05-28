@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+    type KeyboardTypeOptions,
     TextInput,
     StyleSheet,
 } from 'react-native';
@@ -13,6 +14,9 @@ type InputProps = {
 
     placeholder?: string;
     secureTextEntry?: boolean;
+    keyboardType?: KeyboardTypeOptions;
+    autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+    autoCorrect?: boolean;
 };
 
 export default function Input({
@@ -20,6 +24,9 @@ export default function Input({
     onChangeText,
     placeholder,
     secureTextEntry = false,
+    keyboardType,
+    autoCapitalize = 'sentences',
+    autoCorrect = false,
     }: InputProps) {
     return (
         <TextInput
@@ -28,6 +35,9 @@ export default function Input({
         onChangeText={onChangeText}
         placeholder={placeholder}
         secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
         placeholderTextColor={colors.textMuted}
         />
     );
