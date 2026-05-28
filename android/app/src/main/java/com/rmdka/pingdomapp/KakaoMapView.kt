@@ -35,6 +35,7 @@ import com.kakao.vectormap.label.LabelOptions
 import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
 import com.kakao.vectormap.label.OrderingType
+import kotlin.math.roundToInt
 
 private data class MapMarker(
     val id: String,
@@ -42,6 +43,12 @@ private data class MapMarker(
     val lat: Double,
     val lng: Double,
     val markerType: String
+)
+
+private data class PlaceMarkerBitmapSpec(
+    val bitmap: Bitmap,
+    val anchorX: Float,
+    val anchorY: Float
 )
 
 class KakaoMapView(
@@ -55,6 +62,10 @@ class KakaoMapView(
         private const val USER_LOCATION_LABEL_ID = "pingdom_user_location_label"
         private const val MARKER_LAYER_Z_ORDER = 10
         private const val USER_LOCATION_COLOR = 0xFFFF1956.toInt()
+        private const val PLACE_MARKER_ANCHOR_X = 0.5f
+        private const val PLACE_MARKER_SIDE_SAFE_PADDING_PX = 12
+        private const val NORMAL_MARKER_BOTTOM_SAFE_PADDING_PX = 20
+        private const val HOT_MARKER_BOTTOM_SAFE_PADDING_PX = 20
     }
 
     private val mapView = MapView(reactContext)
@@ -303,16 +314,27 @@ class KakaoMapView(
 
     private fun getPlaceMarkerStyles(manager: LabelManager, category: String, markerType: String): LabelStyles? {
         val styleID = "${MARKER_STYLE_ID_PREFIX}_${markerType}_$category"
+        val cachedStyles = manager.getLabelStyles(styleID)
+        if (cachedStyles != null) {
+            return cachedStyles
+        }
 
-        return manager.getLabelStyles(styleID)
-            ?: manager.addLabelStyles(
-                LabelStyles.from(
-                    styleID,
-                    LabelStyle
-                        .from(createPlaceMarkerBitmap(category, markerType))
-                        .setAnchorPoint(PointF(0.5f, 0.62f))
-                )
+        val markerBitmapSpec = createPlaceMarkerBitmapSpec(category, markerType)
+
+        Log.d(
+            TAG,
+            "placeMarker style=$styleID type=$markerType size=${markerBitmapSpec.bitmap.width}x${markerBitmapSpec.bitmap.height} anchor=(${markerBitmapSpec.anchorX},${markerBitmapSpec.anchorY})"
+        )
+
+        return manager.addLabelStyles(
+            LabelStyles.from(
+                styleID,
+                LabelStyle
+                    .from(markerBitmapSpec.bitmap)
+                    .setAnchorPoint(PointF(markerBitmapSpec.anchorX, markerBitmapSpec.anchorY))
+                    .setApplyDpScale(false)
             )
+        )
     }
 
     private fun normalizeMarkerCategory(value: String?): String {
@@ -329,24 +351,53 @@ class KakaoMapView(
         }
     }
 
-    private fun createPlaceMarkerBitmap(category: String, markerType: String): Bitmap {
+    private fun createPlaceMarkerBitmapSpec(category: String, markerType: String): PlaceMarkerBitmapSpec {
         val resourceName = "map_marker_${markerType}_$category"
         val resourceId = resources.getIdentifier(resourceName, "drawable", reactContext.packageName)
         val sourceBitmap = if (resourceId != 0) BitmapFactory.decodeResource(resources, resourceId) else null
-
-        if (sourceBitmap != null) {
-            val scale = resources.displayMetrics.density
-            val widthDp = if (markerType == "hot") 59 else 44
-            val heightDp = if (markerType == "hot") 81 else 59
-            return Bitmap.createScaledBitmap(
-                sourceBitmap,
-                (widthDp * scale).toInt(),
-                (heightDp * scale).toInt(),
-                true
-            )
+        val originalBitmap = if (sourceBitmap != null) {
+            sourceBitmap
+        } else {
+            val fallbackBitmap =
+                if (markerType == "hot") createHotMarkerBitmap(category) else createDefaultMarkerBitmap(category)
+            fallbackBitmap
         }
+        val bottomSafePaddingPx =
+            if (markerType == "hot") HOT_MARKER_BOTTOM_SAFE_PADDING_PX else NORMAL_MARKER_BOTTOM_SAFE_PADDING_PX
+        val canvasBitmap = createMarkerCanvasBitmap(
+            source = originalBitmap,
+            sideSafePaddingPx = PLACE_MARKER_SIDE_SAFE_PADDING_PX,
+            bottomSafePaddingPx = bottomSafePaddingPx
+        )
+        val anchorY = originalBitmap.height / canvasBitmap.height.toFloat()
+        
+        if (originalBitmap != canvasBitmap) {
+            originalBitmap.recycle()
+        }
+        Log.d(
+            TAG,
+            "placeMarkerBitmap type=$markerType originalSize=${originalBitmap.width}x${originalBitmap.height} canvasSize=${canvasBitmap.width}x${canvasBitmap.height} anchorY=$anchorY"
+        )
 
-        return if (markerType == "hot") createHotMarkerBitmap(category) else createDefaultMarkerBitmap(category)
+        return PlaceMarkerBitmapSpec(
+            bitmap = canvasBitmap,
+            anchorX = PLACE_MARKER_ANCHOR_X,
+            anchorY = anchorY
+        )
+    }
+
+    private fun createMarkerCanvasBitmap(
+        source: Bitmap,
+        sideSafePaddingPx: Int,
+        bottomSafePaddingPx: Int
+    ): Bitmap {
+        val canvasWidth = source.width + sideSafePaddingPx * 2
+        val canvasHeight = source.height + bottomSafePaddingPx
+        val canvasBitmap = Bitmap.createBitmap(canvasWidth, canvasHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(canvasBitmap)
+        val left = ((canvasWidth - source.width) / 2f)
+        canvas.drawBitmap(source, left, 0f, null)
+        return canvasBitmap
     }
 
     private fun createDefaultMarkerBitmap(category: String): Bitmap {
@@ -599,12 +650,22 @@ class KakaoMapView(
     }
 
     private fun getUserLocationStyles(manager: LabelManager): LabelStyles? {
+        val scale = resources.displayMetrics.density
+        val topPaddingPx = (3f * scale).roundToInt()
+        val bottomPaddingPx = scale.roundToInt()
+        val anchorY = computePaddedAnchorY(
+            rawHeightPx = (63 * scale).roundToInt(),
+            rawAnchorY = 0.72f,
+            topPaddingPx = topPaddingPx,
+            bottomPaddingPx = bottomPaddingPx
+        )
+
         return manager.getLabelStyles(USER_LOCATION_STYLE_ID)
             ?: manager.addLabelStyles(
                 LabelStyles.from(
                     USER_LOCATION_STYLE_ID,
                     LabelStyle.from(createUserLocationBitmap())
-                        .setAnchorPoint(PointF(0.5f, 0.72f))
+                        .setAnchorPoint(PointF(0.5f, anchorY))
                         .setApplyDpScale(false)
                 )
             )
@@ -653,7 +714,42 @@ class KakaoMapView(
         })
         canvas.drawCircle(centerX, circleCenterY, circleRadius, fillPaint)
 
-        return bitmap
+        return withBitmapPadding(
+            source = bitmap,
+            topPaddingPx = (3f * scale).roundToInt(),
+            bottomPaddingPx = scale.roundToInt(),
+            sidePaddingPx = scale.roundToInt()
+        )
+    }
+
+    private fun withBitmapPadding(
+        source: Bitmap,
+        topPaddingPx: Int = 0,
+        bottomPaddingPx: Int = 0,
+        sidePaddingPx: Int = 0
+    ): Bitmap {
+        if (topPaddingPx == 0 && bottomPaddingPx == 0 && sidePaddingPx == 0) {
+            return source
+        }
+
+        val paddedBitmap = Bitmap.createBitmap(
+            source.width + sidePaddingPx * 2,
+            source.height + topPaddingPx + bottomPaddingPx,
+            Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(paddedBitmap)
+        canvas.drawBitmap(source, sidePaddingPx.toFloat(), topPaddingPx.toFloat(), null)
+        return paddedBitmap
+    }
+
+    private fun computePaddedAnchorY(
+        rawHeightPx: Int,
+        rawAnchorY: Float,
+        topPaddingPx: Int,
+        bottomPaddingPx: Int
+    ): Float {
+        val paddedHeight = rawHeightPx + topPaddingPx + bottomPaddingPx
+        return (topPaddingPx + rawHeightPx * rawAnchorY) / paddedHeight.toFloat()
     }
 
     override fun onHostResume() {

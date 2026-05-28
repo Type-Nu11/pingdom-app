@@ -4,10 +4,11 @@ import { PlaceCreateStep } from './types';
 type PlaceCreateHeaderProps = {
   onBack: () => void;
   onNext?: () => void;
+  nextDisabled?: boolean;
   step: PlaceCreateStep;
 };
 
-const PlaceCreateHeader = ({ onBack, onNext, step }: PlaceCreateHeaderProps) => (
+const PlaceCreateHeader = ({ onBack, onNext, nextDisabled = false, step }: PlaceCreateHeaderProps) => (
   <View style={styles.header}>
     <Pressable accessibilityRole="button" accessibilityLabel="뒤로가기" hitSlop={12} onPress={onBack}>
       <Text style={styles.backText}>{'<'}</Text>
@@ -16,8 +17,14 @@ const PlaceCreateHeader = ({ onBack, onNext, step }: PlaceCreateHeaderProps) => 
       <ProgressDots step={step} />
     </View>
     {onNext ? (
-      <Pressable accessibilityRole="button" accessibilityLabel="다음" hitSlop={12} onPress={onNext}>
-        <Text style={styles.nextText}>다음</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="다음"
+        disabled={nextDisabled}
+        hitSlop={12}
+        onPress={onNext}
+      >
+        <Text style={[styles.nextText, nextDisabled && styles.nextTextDisabled]}>다음</Text>
       </Pressable>
     ) : (
       <View style={styles.headerSpacer} />
@@ -60,6 +67,9 @@ const styles = StyleSheet.create({
     color: '#ff1956',
     fontSize: 21,
     fontWeight: '700',
+  },
+  nextTextDisabled: {
+    color: '#c8cad2',
   },
   headerSpacer: {
     width: 36,

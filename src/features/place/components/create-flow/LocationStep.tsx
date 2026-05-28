@@ -3,27 +3,37 @@ import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import MypingIcon from '../../../../assets/icons/map/Myping.svg';
 import { getAddressFromCoordinate } from '../../api/kakaoLocalApi';
 import { placeApi } from '../../api/placeApi';
+import type { PlaceCreateDraft } from '../../model/place.types';
 import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../KakaoMapCard';
 import { SELECTED_PLACE } from './constants';
 
 type LocationStepProps = {
+  initialValue: PlaceCreateDraft | null;
   mapHeight: number;
-  onNext: () => void;
+  onNext: (draft: PlaceCreateDraft) => void;
 };
 
-const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => {
+const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) => {
   const [addressQuery, setAddressQuery] = useState('');
-  const [selectedAddress, setSelectedAddress] = useState(SELECTED_PLACE.address);
+  const [placeName, setPlaceName] = useState(initialValue?.name ?? SELECTED_PLACE.name);
+  const [selectedAddress, setSelectedAddress] = useState(
+    initialValue?.address ?? SELECTED_PLACE.address
+  );
   const [detailAddress, setDetailAddress] = useState('');
   const [mapCenter, setMapCenter] = useState({
-    lat: SELECTED_PLACE.lat,
-    lng: SELECTED_PLACE.lng,
+    lat: initialValue?.latitude ?? SELECTED_PLACE.lat,
+    lng: initialValue?.longitude ?? SELECTED_PLACE.lng,
+  });
+  const [selectedCoordinate, setSelectedCoordinate] = useState({
+    lat: initialValue?.latitude ?? SELECTED_PLACE.lat,
+    lng: initialValue?.longitude ?? SELECTED_PLACE.lng,
   });
   const geocodeRequestIdRef = useRef(0);
 
   const handleCameraIdle = async (event: KakaoMapCameraIdleEvent) => {
     const { lat, lng } = event.nativeEvent;
     const requestId = ++geocodeRequestIdRef.current;
+    setSelectedCoordinate({ lat, lng });
 
     try {
       const nextAddress = await getAddressFromCoordinate(lat, lng);
@@ -58,12 +68,29 @@ const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => {
       const nextAddress = result.roadAddress || result.address;
       setAddressQuery(nextAddress);
       setMapCenter({ lat: result.lat, lng: result.lng });
+      setSelectedCoordinate({ lat: result.lat, lng: result.lng });
       setSelectedAddress(nextAddress);
+      setPlaceName(result.name || nextAddress);
     } catch {
       if (requestId === geocodeRequestIdRef.current) {
         setSelectedAddress('주소 검색에 실패했습니다');
       }
     }
+  };
+
+  const handleSelectLocation = () => {
+    const trimmedName = placeName.trim();
+    const trimmedDetailAddress = detailAddress.trim();
+    const isAddressInvalid = selectedAddress === '검색 결과가 없습니다' || selectedAddress === '주소 검색에 실패했습니다';
+    if (!trimmedName || isAddressInvalid) {
+      return;
+    }
+    onNext({
+      address: trimmedDetailAddress ? selectedAddress + ' ' + trimmedDetailAddress : selectedAddress,
+      latitude: selectedCoordinate.lat,
+      longitude: selectedCoordinate.lng,
+      name: trimmedName,
+    });
   };
 
   return (
@@ -106,6 +133,13 @@ const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => {
         />
       </View>
       <View style={styles.locationPanel}>
+        <TextInput
+          style={styles.placeNameInput}
+          placeholder="장소 이름을 입력해 주세요"
+          placeholderTextColor="#777a84"
+          value={placeName}
+          onChangeText={setPlaceName}
+        />
         <TextInput editable={false} style={styles.addressInput} value={selectedAddress} />
         <TextInput
           style={styles.detailInput}
@@ -114,7 +148,12 @@ const LocationStep = ({ mapHeight, onNext }: LocationStepProps) => {
           value={detailAddress}
           onChangeText={setDetailAddress}
         />
-        <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={onNext}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={!placeName.trim()}
+          style={[styles.primaryButton, !placeName.trim() && styles.primaryButtonDisabled]}
+          onPress={handleSelectLocation}
+        >
           <Text style={styles.primaryButtonText}>선택</Text>
         </Pressable>
       </View>
@@ -179,6 +218,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 34,
     paddingTop: 22,
   },
+  placeNameInput: {
+    borderColor: '#dedfe4',
+    borderRadius: 13,
+    borderWidth: 1,
+    color: '#1d2028',
+    fontSize: 17,
+    fontWeight: '700',
+    height: 54,
+    marginBottom: 12,
+    paddingHorizontal: 20,
+  },
   addressInput: {
     color: '#20232c',
     fontSize: 17,
@@ -203,6 +253,9 @@ const styles = StyleSheet.create({
     height: 54,
     justifyContent: 'center',
     marginTop: 14,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.55,
   },
   primaryButtonText: {
     color: '#fff',

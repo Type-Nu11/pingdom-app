@@ -1,13 +1,16 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import Button from '../../../../shared/components/Button';
-import { SELECTED_PLACE } from './constants';
+import type { PlaceUploadPhoto } from '../../model/place.types';
 import ExamplePhoto from './ExamplePhoto';
 
 type CaptionStepProps = {
+  isUploading?: boolean;
   onUpload: () => void;
+  placeName: string;
+  selectedPhoto: PlaceUploadPhoto | null;
 };
 
-const CaptionStep = ({ onUpload }: CaptionStepProps) => (
+const CaptionStep = ({ isUploading = false, onUpload, placeName, selectedPhoto }: CaptionStepProps) => (
   <View style={styles.captionBody}>
     <View style={styles.authorRow}>
       <View style={styles.profileCircle}>
@@ -16,11 +19,11 @@ const CaptionStep = ({ onUpload }: CaptionStepProps) => (
       </View>
       <View>
         <Text style={styles.username}>woo._sm</Text>
-        <Text style={styles.placeName}>{SELECTED_PLACE.name}</Text>
+        <Text style={styles.placeName}>{placeName}</Text>
       </View>
     </View>
     <View style={styles.heroPhoto}>
-      <ExamplePhoto large />
+      <ExamplePhoto large uri={selectedPhoto?.uri} />
     </View>
     <TextInput
       multiline
@@ -29,8 +32,10 @@ const CaptionStep = ({ onUpload }: CaptionStepProps) => (
       placeholderTextColor="#111"
     />
     <Button
+      disabled={!selectedPhoto}
       label="업로드"
       labelStyle={styles.uploadText}
+      loading={isUploading}
       style={styles.uploadButton}
       onPress={onUpload}
     />
