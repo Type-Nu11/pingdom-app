@@ -3,3 +3,9 @@ export type RecordItem = {
   placeId: string;
   memo: string;
 };
+
+export type RecordUploadFile = {
+  name?: string;
+  type?: string;
+  uri: string;
+};
