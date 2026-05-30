@@ -1,5 +1,11 @@
 import { api } from '../../../shared/api/apiClient';
-import type { LoginRequest, LoginResponse, SignupRequest } from '../model/auth.types';
+import type {
+  ChangePasswordRequest,
+  ChangeUsernameRequest,
+  LoginRequest,
+  LoginResponse,
+  SignupRequest,
+} from '../model/auth.types';
 
 type RawLoginResponse =
   | LoginResponse
@@ -28,6 +34,14 @@ function toLoginResponse(response: RawLoginResponse): LoginResponse {
 }
 
 export const authApi = {
+  changePassword: async (payload: ChangePasswordRequest): Promise<string> => {
+    const { data } = await api.post<string>('/users/change-pw', payload);
+    return data;
+  },
+  changeUsername: async (payload: ChangeUsernameRequest): Promise<string> => {
+    const { data } = await api.post<string>('/users/change-id', payload);
+    return data;
+  },
   login: async (payload: LoginRequest): Promise<LoginResponse> => {
     const { data } = await api.post<RawLoginResponse>('/auth/login', payload);
     return toLoginResponse(data);
