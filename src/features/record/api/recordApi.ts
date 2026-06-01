@@ -59,12 +59,11 @@ function getFileNameFromUri(uri: string) {
 }
 
 function getMimeType(fileName: string) {
-  const extension = fileName.split('.').pop()?.toLowerCase();
-
+  const parts = fileName.split('.');
+  const extension = parts.length > 1 ? parts.pop()?.toLowerCase() : undefined;
   if (!extension) {
     return 'image/jpeg';
   }
-
   return MIME_TYPE_BY_EXTENSION[extension] ?? 'image/jpeg';
 }
 
