@@ -51,7 +51,7 @@ export type RecordApiErrorResponse = ApiCodeErrorResponse<RecordApiErrorCode>;
 export type RecordValidationErrorResponse = ApiFieldErrorResponse;
 
 function getFileNameFromUri(uri: string) {
-  const sanitizedUri = uri.split('?')[0] ?? uri;
+  const sanitizedUri = uri.split('?')[0];
   const segments = sanitizedUri.split('/');
   const lastSegment = segments[segments.length - 1];
 
