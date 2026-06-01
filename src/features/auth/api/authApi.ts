@@ -34,13 +34,12 @@ function toLoginResponse(response: RawLoginResponse): LoginResponse {
 }
 
 export const authApi = {
-  changePassword: async (payload: ChangePasswordRequest): Promise<string> => {
-    const { data } = await api.post<string>('/users/change-pw', payload);
-    return data;
+  changePassword: async (payload: ChangePasswordRequest): Promise<void> => {
+    // api.post 뒤의 <string>을 지우거나 <any>로 둡니다.
+    await api.post('/users/change-pw', payload);
   },
-  changeUsername: async (payload: ChangeUsernameRequest): Promise<string> => {
-    const { data } = await api.post<string>('/users/change-id', payload);
-    return data;
+  changeUsername: async (payload: ChangeUsernameRequest): Promise<void> => {
+    await api.post('/users/change-id', payload);
   },
   login: async (payload: LoginRequest): Promise<LoginResponse> => {
     const { data } = await api.post<RawLoginResponse>('/auth/login', payload);
