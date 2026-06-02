@@ -1,5 +1,11 @@
 import { api } from '../../../shared/api/apiClient';
-import type { LoginRequest, LoginResponse, SignupRequest } from '../model/auth.types';
+import type {
+  ChangePasswordRequest,
+  ChangeUsernameRequest,
+  LoginRequest,
+  LoginResponse,
+  SignupRequest,
+} from '../model/auth.types';
 
 type RawLoginResponse =
   | LoginResponse
@@ -28,6 +34,13 @@ function toLoginResponse(response: RawLoginResponse): LoginResponse {
 }
 
 export const authApi = {
+  changePassword: async (payload: ChangePasswordRequest): Promise<void> => {
+    // api.post 뒤의 <string>을 지우거나 <any>로 둡니다.
+    await api.post('/users/change-pw', payload);
+  },
+  changeUsername: async (payload: ChangeUsernameRequest): Promise<void> => {
+    await api.post('/users/change-id', payload);
+  },
   login: async (payload: LoginRequest): Promise<LoginResponse> => {
     const { data } = await api.post<RawLoginResponse>('/auth/login', payload);
     return toLoginResponse(data);

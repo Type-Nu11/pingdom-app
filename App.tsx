@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AppProvider from './src/app/providers/AppProvider';
 import LanguageGateScreen from './src/features/auth/screens/LanguageGateScreen';
 import LoginScreen from './src/features/auth/screens/LoginScreen';
 import PhoneVerifyScreen from './src/features/auth/screens/SignupDetailsScreen';
@@ -12,7 +13,7 @@ import ProfileScreen from './src/features/profile/screens/ProfileScreen';
 type AuthScreen = 'language-gate' | 'welcome' | 'login' | 'signup' | 'phone-verify';
 type MainScreen = 'map' | 'place-create' | 'profile';
 
-export default function App() {
+function AppContent() {
   const { bootstrapAuth, isHydrating, isLoggedIn } = useAuth();
   const [authScreen, setAuthScreen] = useState<AuthScreen>('language-gate');
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
@@ -48,5 +49,13 @@ export default function App() {
         })()
       )}
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }

@@ -14,3 +14,13 @@ export type SignupRequest = {
   email: string;
   password: string;
 };
+
+export type ChangePasswordRequest = {
+  confirmPassword: string;
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type ChangeUsernameRequest = {
+  newUsername: string;
+};
