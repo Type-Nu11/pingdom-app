@@ -9,14 +9,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import LikeIcon from '../../../assets/icons/actions/Like.svg';
-import SavedIcon from '../../../assets/icons/actions/Saved.svg';
-import ShareIcon from '../../../assets/icons/actions/share.svg';
-import ReportIcon from '../../../assets/icons/actions/tlsrh.svg';
-import type { MarkerPreview } from '../model/place.types';
+import LikeIcon from '../../../../assets/icons/actions/Like.svg';
+import SavedIcon from '../../../../assets/icons/actions/Saved.svg';
+import ShareIcon from '../../../../assets/icons/actions/share.svg';
+import ReportIcon from '../../../../assets/icons/actions/tlsrh.svg';
+import type { MarkerPreview } from '../../model/place.types';
 
-const previewImageSource = require('../../../assets/images/spki.webp');
-const secondPreviewImageSource = require('../../../assets/images/spki2.webp');
+const previewImageSource = require('../../../../assets/images/spki.webp');
+const secondPreviewImageSource = require('../../../../assets/images/spki2.webp');
 const previewImages = [previewImageSource, secondPreviewImageSource];
 
 type MarkerPreviewCardProps = {

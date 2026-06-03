@@ -4,7 +4,7 @@ import MypingIcon from '../../../../assets/icons/map/Myping.svg';
 import { getAddressFromCoordinate } from '../../api/kakaoLocalApi';
 import { placeApi } from '../../api/placeApi';
 import type { PlaceCreateDraft } from '../../model/place.types';
-import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../KakaoMapCard';
+import { KakaoMapCard, type KakaoMapCameraIdleEvent } from '../map';
 import { SELECTED_PLACE } from './constants';
 
 type LocationStepProps = {

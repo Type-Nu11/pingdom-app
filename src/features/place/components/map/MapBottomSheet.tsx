@@ -7,8 +7,8 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import HotPlaceList, { HotPlaceItem } from './HotPlaceList';
-import PlaceRail from './PlaceRail';
+import HotPlaceList, { HotPlaceItem } from './bottom-sheet/HotPlaceList';
+import PlaceRail from './bottom-sheet/PlaceRail';
 
 type MapBottomSheetProps = {
   height: number;

@@ -7,12 +7,15 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import CategoryChips from '../components/CategoryChips';
-import KakaoMapCard, { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
-import MapActionButtons from '../components/MapActionButtons';
-import MapBottomSheet from '../components/MapBottomSheet';
-import MarkerPreviewCard from '../components/MarkerPreviewCard';
-import MapSearchBar from '../components/MapSearchBar';
+import {
+  CategoryChips,
+  KakaoMapCard,
+  type KakaoMapMarkerPressEvent,
+  MapActionButtons,
+  MapBottomSheet,
+  MapSearchBar,
+  MarkerPreviewCard,
+} from '../components/map';
 import {
   hotPlaceFixtures,
   mapCategories,

@@ -1,5 +1,10 @@
-import { CategoryChipItem } from '../components/CategoryChips';
-import { FashionGlyph, FoodGlyph, GameGlyph, MusicGlyph } from '../components/CategoryGlyphs';
+import {
+  type CategoryChipItem,
+  FashionGlyph,
+  FoodGlyph,
+  GameGlyph,
+  MusicGlyph,
+} from '../components/map';
 import { HotPlace, MapMarker, MarkerPreview } from '../model/place.types';
 
 export const mapCategories: CategoryChipItem[] = [
