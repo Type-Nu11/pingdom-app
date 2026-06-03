@@ -32,3 +32,21 @@ export type HotPlace = {
   rank: number;
   username: string;
 };
+
+export type MarkerPreviewFeedItem = {
+  caption: string;
+  id: string;
+  likeCount: string;
+  placeName: string;
+  postedAt: string;
+  username: string;
+};
+
+export type MarkerPreview = {
+  firstRegistrant: string;
+  feeds: MarkerPreviewFeedItem[];
+  id: string;
+  locationLabel: string;
+  title: string;
+  updates: string[];
+};

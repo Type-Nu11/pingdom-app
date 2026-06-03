@@ -13,7 +13,12 @@ import MapActionButtons from '../components/MapActionButtons';
 import MapBottomSheet from '../components/MapBottomSheet';
 import MarkerPreviewCard from '../components/MarkerPreviewCard';
 import MapSearchBar from '../components/MapSearchBar';
-import { hotPlaceFixtures, mapCategories, mapMarkerFixtures } from '../constants/mapFixtures';
+import {
+  hotPlaceFixtures,
+  mapCategories,
+  mapMarkerFixtures,
+  markerPreviewFixtures,
+} from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
   BASE_SCREEN_HEIGHT,
@@ -54,7 +59,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
   const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
   const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
-  const markerCardWidth = Math.round(clamp(width - 44, 338, 380));
+  const markerCardWidth = Math.round(clamp(width - 72, 312, 372));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
@@ -128,7 +133,10 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
         <View
           style={[
             styles.markerPreviewLayer,
-            { paddingHorizontal: Math.round(clamp(22 * uiScale, 14, 22)) },
+            {
+              paddingBottom: Math.round(clamp(26 * uiScale, 18, 26)),
+              paddingTop: Math.round(clamp(54 * uiScale, 42, 54)),
+            },
           ]}
           pointerEvents="box-none"
         >
@@ -139,8 +147,12 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
-            width={markerCardWidth}
+            cardWidth={markerCardWidth}
+            items={markerPreviewFixtures}
             onClose={() => setSelectedMarkerId(null)}
+            onSelectMarker={setSelectedMarkerId}
+            selectedMarkerId={selectedMarkerId}
+            viewportWidth={width}
           />
         </View>
       )}
@@ -162,10 +174,8 @@ const styles = StyleSheet.create({
   },
   markerPreviewLayer: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
     elevation: 100,
     justifyContent: 'flex-start',
-    paddingTop: 62,
     zIndex: 100,
   },
   markerPreviewBackdrop: {

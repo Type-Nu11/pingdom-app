@@ -1,17 +1,31 @@
-import { useState } from 'react';
-import { Image, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/icons/actions/Saved.svg';
 import ShareIcon from '../../../assets/icons/actions/share.svg';
 import ReportIcon from '../../../assets/icons/actions/tlsrh.svg';
+import type { MarkerPreview } from '../model/place.types';
 
 const previewImageSource = require('../../../assets/images/spki.webp');
 const secondPreviewImageSource = require('../../../assets/images/spki2.webp');
 const previewImages = [previewImageSource, secondPreviewImageSource];
 
 type MarkerPreviewCardProps = {
+  cardWidth: number;
+  items: MarkerPreview[];
   onClose: () => void;
-  width: number;
+  onSelectMarker: (markerId: string) => void;
+  selectedMarkerId: string;
+  viewportWidth: number;
 };
 
 type FeedReactionState = Record<string, {
@@ -20,40 +34,39 @@ type FeedReactionState = Record<string, {
   shared: boolean;
 }>;
 
-const feedItems = [
-  {
-    id: 'feed-1',
-    caption: 'You ain’t ever gonna burn my heart out So Sally can wait she knows it’s too late as we’re walkin’ on by',
-    likeCount: '1.2K',
-    placeName: '고양종합운동장',
-    username: 'woo._sm',
-  },
-  {
-    id: 'feed-2',
-    caption: '오늘의 핫플 기록. 사진은 예시 이미지로 먼저 채워둘게요.',
-    likeCount: '948',
-    placeName: '고양종합운동장',
-    username: 'woo._sm',
-  },
-  {
-    id: 'feed-3',
-    caption: '다른 핑도 아래로 스크롤해서 이어서 볼 수 있게 연결했습니다.',
-    likeCount: '837',
-    placeName: '고양종합운동장',
-    username: 'woo._sm',
-  },
-];
-
 const defaultReaction = {
   liked: false,
   saved: false,
   shared: false,
 };
 
-const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
+const MarkerPreviewCard = ({
+  cardWidth,
+  items,
+  onClose,
+  onSelectMarker,
+  selectedMarkerId,
+  viewportWidth,
+}: MarkerPreviewCardProps) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
   const [reactions, setReactions] = useState<FeedReactionState>({});
+  const scrollRef = useRef<ScrollView>(null);
+  const hasAlignedInitialCard = useRef(false);
+
+  useEffect(() => {
+    const selectedIndex = items.findIndex((item) => item.id === selectedMarkerId);
+
+    if (selectedIndex < 0) {
+      return;
+    }
+
+    scrollRef.current?.scrollTo({
+      x: selectedIndex * viewportWidth,
+      animated: hasAlignedInitialCard.current,
+    });
+    hasAlignedInitialCard.current = true;
+  }, [items, selectedMarkerId, viewportWidth]);
 
   const toggleReaction = (feedId: string, key: keyof FeedReactionState[string]) => {
     setReactions((prev) => ({
@@ -70,7 +83,7 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
     feedId: string,
     event: NativeSyntheticEvent<NativeScrollEvent>,
   ) => {
-    const pageIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+    const pageIndex = Math.round(event.nativeEvent.contentOffset.x / cardWidth);
 
     setActiveImageIndexes((prev) => ({
       ...prev,
@@ -78,159 +91,223 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
     }));
   };
 
+  const handleMarkerSwipeEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / viewportWidth);
+    const nextMarker = items[nextIndex];
+
+    if (nextMarker && nextMarker.id !== selectedMarkerId) {
+      onSelectMarker(nextMarker.id);
+    }
+  };
+
+  if (items.length === 0) {
+    return null;
+  }
+
   return (
-    <View style={[styles.card, { width }]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="닫기"
-        hitSlop={10}
-        style={styles.closeButton}
-        onPress={onClose}
-      >
-        <Text style={styles.closeText}>×</Text>
-      </Pressable>
-
+    <View style={styles.root}>
       <ScrollView
+        ref={scrollRef}
         bounces={false}
-        contentContainerStyle={styles.feedList}
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={false}
+        decelerationRate="fast"
+        directionalLockEnabled
+        horizontal
+        onMomentumScrollEnd={handleMarkerSwipeEnd}
+        pagingEnabled
+        scrollEventThrottle={16}
+        showsHorizontalScrollIndicator={false}
+        style={styles.pager}
       >
-        {feedItems.map((item) => {
-          const activeImageIndex = activeImageIndexes[item.id] ?? 0;
-          const reaction = reactions[item.id] ?? defaultReaction;
-          const isMenuOpen = openMenuId === item.id;
-
-          return (
-            <View key={item.id} style={styles.feedItem}>
-              <View style={styles.profileRow}>
-                <View style={styles.profileIcon}>
-                  <View style={styles.profileHead} />
-                  <View style={styles.profileBody} />
-                </View>
-                <View style={styles.profileTextGroup}>
-                  <Text style={styles.username}>{item.username}</Text>
-                  <Text style={styles.placeName}>{item.placeName}</Text>
+        {items.map((marker) => (
+          <View key={marker.id} style={[styles.page, { width: viewportWidth }]}>
+            <View style={[styles.card, { width: cardWidth }]}>
+              <View style={styles.cardHeader}>
+                <View style={styles.headerTextGroup}>
+                  <Text style={styles.cardTitle}>{marker.title}</Text>
+                  <Text style={styles.cardMeta}>
+                    최초 등록자 : <Text style={styles.cardMetaAccent}>{marker.firstRegistrant}</Text>
+                  </Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="피드 메뉴 열기"
+                  accessibilityLabel="닫기"
                   hitSlop={10}
-                  style={styles.moreButton}
-                  onPress={() => setOpenMenuId(isMenuOpen ? null : item.id)}
+                  style={styles.closeButton}
+                  onPress={onClose}
                 >
-                  <Text style={styles.moreText}>...</Text>
+                  <Text style={styles.closeText}>×</Text>
                 </Pressable>
+              </View>
 
-                {isMenuOpen && (
-                  <View style={styles.menuCard}>
-                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                      <Text style={styles.menuIcon}>⊕</Text>
-                      <Text style={styles.menuText}>관심 있음</Text>
-                    </Pressable>
-                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                      <Text style={styles.menuIcon}>⊖</Text>
-                      <Text style={styles.menuText}>관심 없음</Text>
-                    </Pressable>
-                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                      <ReportIcon width={16} height={16} />
-                      <Text style={styles.reportText}>핑 신고</Text>
-                    </Pressable>
+              <View style={styles.infoStrip}>
+                <View style={styles.infoLabel}>
+                  <Text style={styles.infoLabelText}>위치</Text>
+                  <Text style={styles.infoValueText}>{marker.locationLabel}</Text>
+                </View>
+                <View style={styles.updateBlock}>
+                  <Text style={styles.updateTitle}>최근 변경점</Text>
+                  <View style={styles.updateChipRow}>
+                    {marker.updates.map((update) => (
+                      <View key={`${marker.id}-${update}`} style={styles.updateChip}>
+                        <Text style={styles.updateChipText}>{update}</Text>
+                      </View>
+                    ))}
                   </View>
-                )}
-              </View>
-
-              <View style={styles.imageFrame}>
-                <ScrollView
-                  bounces={false}
-                  horizontal
-                  nestedScrollEnabled
-                  onMomentumScrollEnd={(event) => handleImageScrollEnd(item.id, event)}
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                >
-                  {previewImages.map((imageSource, index) => (
-                    <Image
-                      key={`${item.id}-preview-${index}`}
-                      source={imageSource}
-                      resizeMode="contain"
-                      style={[styles.feedImage, { width }]}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-
-              <View style={styles.indicatorRow}>
-                {previewImages.map((_, index) => (
-                  <View
-                    key={`${item.id}-indicator-${index}`}
-                    style={activeImageIndex === index ? styles.indicatorActive : styles.indicator}
-                  />
-                ))}
-              </View>
-
-              <View style={styles.actionRow}>
-                <View style={styles.leftActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="좋아요"
-                    hitSlop={10}
-                    style={styles.actionButton}
-                    onPress={() => toggleReaction(item.id, 'liked')}
-                  >
-                    <LikeIcon
-                      color={reaction.liked ? '#ff1956' : '#5e5e66'}
-                      fill={reaction.liked ? '#ff1956' : 'none'}
-                      width={20}
-                      height={18}
-                    />
-                  </Pressable>
-                  <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>{item.likeCount}</Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="공유"
-                    hitSlop={10}
-                    style={styles.actionButton}
-                    onPress={() => toggleReaction(item.id, 'shared')}
-                  >
-                    <ShareIcon
-                      color={reaction.shared ? '#ff1956' : '#5e5e66'}
-                      fill="none"
-                      width={23}
-                      height={20}
-                    />
-                  </Pressable>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="저장"
-                  hitSlop={10}
-                  style={styles.actionButton}
-                  onPress={() => toggleReaction(item.id, 'saved')}
-                >
-                  <SavedIcon
-                    color={reaction.saved ? '#ff1956' : '#5e5e66'}
-                    fill={reaction.saved ? '#ff1956' : 'none'}
-                    width={18}
-                    height={21}
-                  />
-                </Pressable>
               </View>
 
-              <Text style={styles.caption}>
-                <Text style={styles.captionAuthor}>{item.username} </Text>
-                {item.caption}
-              </Text>
-              <Text style={styles.timeText}>1시간 전 • 번역 보기</Text>
+              <ScrollView
+                bounces={false}
+                contentContainerStyle={styles.feedList}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+                style={styles.feedScroller}
+              >
+                {marker.feeds.map((item, feedIndex) => {
+                  const activeImageIndex = activeImageIndexes[item.id] ?? 0;
+                  const reaction = reactions[item.id] ?? defaultReaction;
+                  const isMenuOpen = openMenuId === item.id;
+
+                  return (
+                    <View
+                      key={item.id}
+                      style={[styles.feedItem, feedIndex > 0 && styles.feedItemDivider]}
+                    >
+                      <View style={styles.profileRow}>
+                        <View style={styles.profileIcon}>
+                          <View style={styles.profileHead} />
+                          <View style={styles.profileBody} />
+                        </View>
+                        <View style={styles.profileTextGroup}>
+                          <Text style={styles.username}>{item.username}</Text>
+                          <Text style={styles.placeName}>{item.placeName}</Text>
+                        </View>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="피드 메뉴 열기"
+                          hitSlop={10}
+                          style={styles.moreButton}
+                          onPress={() => setOpenMenuId(isMenuOpen ? null : item.id)}
+                        >
+                          <Text style={styles.moreText}>•••</Text>
+                        </Pressable>
+
+                        {isMenuOpen && (
+                          <View style={styles.menuCard}>
+                            <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                              <Text style={styles.menuIcon}>⊖</Text>
+                              <Text style={styles.menuText}>관심 없음</Text>
+                            </Pressable>
+                            <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                              <ReportIcon width={16} height={16} />
+                              <Text style={styles.reportText}>핑 신고</Text>
+                            </Pressable>
+                          </View>
+                        )}
+                      </View>
+
+                      <View style={styles.imageFrame}>
+                        <ScrollView
+                          bounces={false}
+                          directionalLockEnabled
+                          horizontal
+                          nestedScrollEnabled
+                          onMomentumScrollEnd={(event) => handleImageScrollEnd(item.id, event)}
+                          pagingEnabled
+                          showsHorizontalScrollIndicator={false}
+                        >
+                          {previewImages.map((imageSource, index) => (
+                            <Image
+                              key={`${item.id}-preview-${index}`}
+                              source={imageSource}
+                              resizeMode="cover"
+                              style={[styles.feedImage, { width: cardWidth }]}
+                            />
+                          ))}
+                        </ScrollView>
+                      </View>
+
+                      <View style={styles.indicatorRow}>
+                        {previewImages.map((_, index) => (
+                          <View
+                            key={`${item.id}-indicator-${index}`}
+                            style={activeImageIndex === index ? styles.indicatorActive : styles.indicator}
+                          />
+                        ))}
+                      </View>
+
+                      <View style={styles.actionRow}>
+                        <View style={styles.leftActions}>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="좋아요"
+                            hitSlop={10}
+                            style={styles.actionButton}
+                            onPress={() => toggleReaction(item.id, 'liked')}
+                          >
+                            <LikeIcon
+                              color={reaction.liked ? '#ff1956' : '#5e5e66'}
+                              fill={reaction.liked ? '#ff1956' : 'none'}
+                              width={20}
+                              height={18}
+                            />
+                          </Pressable>
+                          <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>
+                            {item.likeCount}
+                          </Text>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="공유"
+                            hitSlop={10}
+                            style={styles.actionButton}
+                            onPress={() => toggleReaction(item.id, 'shared')}
+                          >
+                            <ShareIcon
+                              color={reaction.shared ? '#ff1956' : '#5e5e66'}
+                              fill="none"
+                              width={23}
+                              height={20}
+                            />
+                          </Pressable>
+                        </View>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="저장"
+                          hitSlop={10}
+                          style={styles.actionButton}
+                          onPress={() => toggleReaction(item.id, 'saved')}
+                        >
+                          <SavedIcon
+                            color={reaction.saved ? '#ff1956' : '#5e5e66'}
+                            fill={reaction.saved ? '#ff1956' : 'none'}
+                            width={18}
+                            height={21}
+                          />
+                        </Pressable>
+                      </View>
+
+                      <Text style={styles.caption}>
+                        <Text style={styles.captionAuthor}>{item.username} </Text>
+                        {item.caption}
+                      </Text>
+                      <Text style={styles.timeText}>{item.postedAt} • 번역 보기</Text>
+                    </View>
+                  );
+                })}
+              </ScrollView>
             </View>
-          );
-        })}
+          </View>
+        ))}
       </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    width: '100%',
+  },
   actionButton: {
     alignItems: 'center',
     minHeight: 24,
@@ -259,44 +336,85 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 24,
+    borderRadius: 28,
     elevation: 120,
-    maxHeight: '90%',
+    height: '100%',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 38 },
     shadowOpacity: 0.16,
     shadowRadius: 38,
   },
+  cardHeader: {
+    alignItems: 'center',
+    borderBottomColor: '#ece6ea',
+    borderBottomWidth: 1,
+    minHeight: 96,
+    justifyContent: 'center',
+    paddingBottom: 14,
+    paddingHorizontal: 64,
+    paddingTop: 20,
+    position: 'relative',
+  },
+  cardMeta: {
+    color: '#4f4d55',
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  cardMetaAccent: {
+    color: '#ff1956',
+    fontWeight: '700',
+  },
+  cardTitle: {
+    color: '#17161b',
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 31,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
   closeButton: {
     position: 'absolute',
-    right: 17,
-    top: 13,
+    right: 20,
+    top: 18,
     zIndex: 12,
   },
   closeText: {
     color: '#5e5e66',
-    fontSize: 39,
+    fontSize: 38,
     fontWeight: '300',
-    lineHeight: 39,
+    lineHeight: 38,
   },
   feedImage: {
     height: '100%',
-    width: '100%',
   },
   feedItem: {
     backgroundColor: '#fff',
     overflow: 'visible',
     paddingBottom: 24,
   },
+  feedItemDivider: {
+    borderTopColor: '#efedf0',
+    borderTopWidth: 1,
+    paddingTop: 12,
+  },
   feedList: {
-    paddingTop: 42,
+    paddingBottom: 32,
+  },
+  feedScroller: {
+    flex: 1,
+  },
+  headerTextGroup: {
+    gap: 2,
   },
   imageFrame: {
     alignItems: 'center',
-    aspectRatio: 1,
+    aspectRatio: 0.98,
     backgroundColor: '#05070d',
     justifyContent: 'center',
+    overflow: 'hidden',
     width: '100%',
   },
   indicator: {
@@ -315,8 +433,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    height: 26,
+    height: 30,
     justifyContent: 'center',
+  },
+  infoLabel: {
+    gap: 4,
+  },
+  infoLabelText: {
+    color: '#8f6b7b',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    lineHeight: 15,
+  },
+  infoStrip: {
+    backgroundColor: '#fff7fa',
+    borderBottomColor: '#f1d9e3',
+    borderBottomWidth: 1,
+    gap: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  infoValueText: {
+    color: '#241f26',
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 20,
   },
   leftActions: {
     alignItems: 'center',
@@ -334,9 +476,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     elevation: 16,
-    gap: 12,
-    paddingHorizontal: 22,
-    paddingVertical: 18,
+    gap: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     position: 'absolute',
     right: 16,
     top: 48,
@@ -371,11 +513,19 @@ const styles = StyleSheet.create({
   },
   moreText: {
     color: '#3b3b40',
-    fontSize: 25,
+    fontSize: 17,
     fontWeight: '800',
-    letterSpacing: 1,
-    lineHeight: 20,
-    marginBottom: 13,
+    letterSpacing: 1.8,
+    lineHeight: 18,
+    marginTop: -4,
+  },
+  page: {
+    alignItems: 'center',
+    height: '100%',
+    paddingBottom: 12,
+  },
+  pager: {
+    flex: 1,
   },
   placeName: {
     color: '#0c0c0d',
@@ -413,6 +563,7 @@ const styles = StyleSheet.create({
     gap: 12,
     height: 60,
     paddingHorizontal: 16,
+    paddingTop: 8,
   },
   profileTextGroup: {
     flex: 1,
@@ -430,6 +581,35 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     paddingHorizontal: 16,
     paddingTop: 10,
+  },
+  updateBlock: {
+    gap: 8,
+  },
+  updateChip: {
+    backgroundColor: '#fff',
+    borderColor: '#f2c9d9',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  updateChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  updateChipText: {
+    color: '#5c3e4c',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+  },
+  updateTitle: {
+    color: '#8f6b7b',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    lineHeight: 15,
   },
   username: {
     color: '#3b3b40',
