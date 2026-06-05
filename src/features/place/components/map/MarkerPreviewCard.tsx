@@ -361,9 +361,9 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: '#17161b',
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 31,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
     marginBottom: 4,
     textAlign: 'center',
   },
