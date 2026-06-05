@@ -44,6 +44,9 @@ PODS:
     - ExpoModulesCore
   - ExpoLogBox (55.0.12):
     - React-Core
+  - ExpoMediaLibrary (18.2.1):
+    - ExpoModulesCore
+    - React-Core
   - ExpoModulesCore (55.0.25):
     - ExpoModulesJSI
     - hermes-engine
@@ -2129,6 +2132,7 @@ DEPENDENCIES:
   - ExpoKeepAwake (from `../node_modules/expo/node_modules/expo-keep-awake/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
   - "ExpoLogBox (from `../node_modules/expo/node_modules/@expo/log-box`)"
+  - ExpoMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoModulesJSI (from `../node_modules/expo-modules-core`)
   - ExpoNotifications (from `../node_modules/expo-notifications/ios`)
@@ -2252,6 +2256,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-location/ios"
   ExpoLogBox:
     :path: "../node_modules/expo/node_modules/@expo/log-box"
+  ExpoMediaLibrary:
+    :path: "../node_modules/expo-media-library/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoModulesJSI:
@@ -2430,6 +2436,7 @@ SPEC CHECKSUMS:
   ExpoKeepAwake: 45e456e29335bbd400554646a2f29e628c24072e
   ExpoLocation: e3367a4274fff89fdd5ea70e166484fa9fd6d333
   ExpoLogBox: 81d123959f6f1fc9926e4298bbc439c31b1b07ad
+  ExpoMediaLibrary: ee1cf07104fbcc533618d3800c489636d17b3347
   ExpoModulesCore: 78d42c809becc85798b5d102af2673e054cd796b
   ExpoModulesJSI: 52db434b6c7f626a4613974b2bd05f9816c07224
   ExpoNotifications: 46b51dab5457ef72d90fafed40b67cbf54789a20
@@ -2519,7 +2526,7 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: b8822139dea09d95d7fb8a18c312b806a6ee1558
   RNCAsyncStorage: e85a99325df9eb0191a6ee2b2a842644c7eb29f4
   RNFBApp: 36eb434d58b125bdc63797c78ca67d2648f9cdb2
-  RNFBMessaging: 0b04592f48e374bb77b9b7ca965ddc2711c76409
+  RNFBMessaging: 0ac8a847413357bdc88c277ca8772db2874af077
   RNKeychain: 91be81cd32b30c7d4c2569dcad29b472d9b93982
   RNSVG: b5bd4454de003a99d3130a3c6a1b1c949c89d37d
   Yoga: dd994d8c85dca5cc9b10f5df8c01f9ef1d0da191
