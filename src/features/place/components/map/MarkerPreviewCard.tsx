@@ -53,6 +53,10 @@ const MarkerPreviewCard = ({
   const [reactions, setReactions] = useState<FeedReactionState>({});
   const scrollRef = useRef<ScrollView>(null);
   const hasAlignedInitialCard = useRef(false);
+  const pageGap = 16;
+  const sidePeekInset = Math.max(0, Math.round((viewportWidth - cardWidth) / 2) - 6);
+  const contentRightInset = Math.max(0, sidePeekInset - pageGap + 6);
+  const snapInterval = cardWidth + pageGap;
 
   useEffect(() => {
     const selectedIndex = items.findIndex((item) => item.id === selectedMarkerId);
@@ -62,11 +66,11 @@ const MarkerPreviewCard = ({
     }
 
     scrollRef.current?.scrollTo({
-      x: selectedIndex * viewportWidth,
+      x: selectedIndex * snapInterval,
       animated: hasAlignedInitialCard.current,
     });
     hasAlignedInitialCard.current = true;
-  }, [items, selectedMarkerId, viewportWidth]);
+  }, [items, selectedMarkerId, snapInterval]);
 
   const toggleReaction = (feedId: string, key: keyof FeedReactionState[string]) => {
     setReactions((prev) => ({
@@ -92,7 +96,7 @@ const MarkerPreviewCard = ({
   };
 
   const handleMarkerSwipeEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / viewportWidth);
+    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / snapInterval);
     const nextMarker = items[nextIndex];
 
     if (nextMarker && nextMarker.id !== selectedMarkerId) {
@@ -109,17 +113,22 @@ const MarkerPreviewCard = ({
       <ScrollView
         ref={scrollRef}
         bounces={false}
+        contentContainerStyle={[
+          styles.pagerContent,
+          { paddingHorizontal: sidePeekInset, paddingRight: contentRightInset },
+        ]}
         decelerationRate="fast"
         directionalLockEnabled
         horizontal
         onMomentumScrollEnd={handleMarkerSwipeEnd}
-        pagingEnabled
         scrollEventThrottle={16}
         showsHorizontalScrollIndicator={false}
+        snapToAlignment="start"
+        snapToInterval={snapInterval}
         style={styles.pager}
       >
         {items.map((marker) => (
-          <View key={marker.id} style={[styles.page, { width: viewportWidth }]}>
+          <View key={marker.id} style={[styles.page, { marginRight: pageGap, width: cardWidth }]}>
             <View style={[styles.card, { width: cardWidth }]}>
               <View style={styles.cardHeader}>
                 <View style={styles.headerTextGroup}>
@@ -137,23 +146,6 @@ const MarkerPreviewCard = ({
                 >
                   <Text style={styles.closeText}>×</Text>
                 </Pressable>
-              </View>
-
-              <View style={styles.infoStrip}>
-                <View style={styles.infoLabel}>
-                  <Text style={styles.infoLabelText}>위치</Text>
-                  <Text style={styles.infoValueText}>{marker.locationLabel}</Text>
-                </View>
-                <View style={styles.updateBlock}>
-                  <Text style={styles.updateTitle}>최근 변경점</Text>
-                  <View style={styles.updateChipRow}>
-                    {marker.updates.map((update) => (
-                      <View key={`${marker.id}-${update}`} style={styles.updateChip}>
-                        <Text style={styles.updateChipText}>{update}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
               </View>
 
               <ScrollView
@@ -180,7 +172,7 @@ const MarkerPreviewCard = ({
                         </View>
                         <View style={styles.profileTextGroup}>
                           <Text style={styles.username}>{item.username}</Text>
-                          <Text style={styles.placeName}>{item.placeName}</Text>
+                          <Text style={styles.placeName}>{marker.title}</Text>
                         </View>
                         <Pressable
                           accessibilityRole="button"
@@ -337,23 +329,23 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 28,
-    elevation: 120,
+    elevation: 32,
     height: '100%',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 38 },
+    shadowOffset: { width: 0, height: 18 },
     shadowOpacity: 0.16,
-    shadowRadius: 38,
+    shadowRadius: 26,
   },
   cardHeader: {
     alignItems: 'center',
     borderBottomColor: '#ece6ea',
     borderBottomWidth: 1,
-    minHeight: 96,
+    minHeight: 92,
     justifyContent: 'center',
-    paddingBottom: 14,
+    paddingBottom: 12,
     paddingHorizontal: 64,
-    paddingTop: 20,
+    paddingTop: 18,
     position: 'relative',
   },
   cardMeta: {
@@ -378,14 +370,14 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     right: 20,
-    top: 18,
+    top: 16,
     zIndex: 12,
   },
   closeText: {
     color: '#5e5e66',
-    fontSize: 38,
+    fontSize: 34,
     fontWeight: '300',
-    lineHeight: 38,
+    lineHeight: 34,
   },
   feedImage: {
     height: '100%',
@@ -393,12 +385,12 @@ const styles = StyleSheet.create({
   feedItem: {
     backgroundColor: '#fff',
     overflow: 'visible',
-    paddingBottom: 24,
+    paddingBottom: 22,
   },
   feedItemDivider: {
     borderTopColor: '#efedf0',
     borderTopWidth: 1,
-    paddingTop: 12,
+    paddingTop: 10,
   },
   feedList: {
     paddingBottom: 32,
@@ -435,30 +427,6 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 30,
     justifyContent: 'center',
-  },
-  infoLabel: {
-    gap: 4,
-  },
-  infoLabelText: {
-    color: '#8f6b7b',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    lineHeight: 15,
-  },
-  infoStrip: {
-    backgroundColor: '#fff7fa',
-    borderBottomColor: '#f1d9e3',
-    borderBottomWidth: 1,
-    gap: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-  },
-  infoValueText: {
-    color: '#241f26',
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 20,
   },
   leftActions: {
     alignItems: 'center',
@@ -520,12 +488,14 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   page: {
-    alignItems: 'center',
     height: '100%',
     paddingBottom: 12,
   },
   pager: {
     flex: 1,
+  },
+  pagerContent: {
+    alignItems: 'stretch',
   },
   placeName: {
     color: '#0c0c0d',
@@ -581,35 +551,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     paddingHorizontal: 16,
     paddingTop: 10,
-  },
-  updateBlock: {
-    gap: 8,
-  },
-  updateChip: {
-    backgroundColor: '#fff',
-    borderColor: '#f2c9d9',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  updateChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  updateChipText: {
-    color: '#5c3e4c',
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 16,
-  },
-  updateTitle: {
-    color: '#8f6b7b',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    lineHeight: 15,
   },
   username: {
     color: '#3b3b40',
