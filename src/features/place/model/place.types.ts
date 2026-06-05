@@ -13,8 +13,15 @@ export type PlaceCreateDraft = {
 };
 
 export type PlaceUploadPhoto = {
+  assetId?: string;
   name?: string;
   type?: string;
+  uri: string;
+};
+
+export type PlaceLibraryPhoto = {
+  filename: string;
+  id: string;
   uri: string;
 };
 

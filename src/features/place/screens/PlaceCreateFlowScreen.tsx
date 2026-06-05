@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
+import * as MediaLibrary from 'expo-media-library';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -23,7 +23,7 @@ import {
   type CreatePlaceResponse,
 } from '../api/placeApi';
 import { pictureApi, type UploadErrorResponse } from '../api/pictureApi';
-import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
+import type { PlaceCreateDraft, PlaceLibraryPhoto, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
 
@@ -31,12 +31,20 @@ type PlaceCreateFlowScreenProps = {
   onClose: () => void;
 };
 
+const PHOTO_PAGE_SIZE = 60;
+
 const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [step, setStep] = useState<PlaceCreateStep>(1);
   const [selectedPlaceDraft, setSelectedPlaceDraft] = useState<PlaceCreateDraft | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
   const [createdPlace, setCreatedPlace] = useState<CreatePlaceResponse | null>(null);
-  const [isPickingPhoto, setIsPickingPhoto] = useState(false);
+  const [photoLibraryPermission, setPhotoLibraryPermission] = useState<MediaLibrary.PermissionResponse | null>(null);
+  const [photoLibraryAssets, setPhotoLibraryAssets] = useState<PlaceLibraryPhoto[]>([]);
+  const [isLoadingPhotoLibrary, setIsLoadingPhotoLibrary] = useState(false);
+  const [isLoadingMorePhotoLibrary, setIsLoadingMorePhotoLibrary] = useState(false);
+  const [isPreparingSelectedPhoto, setIsPreparingSelectedPhoto] = useState(false);
+  const [photoLibraryCursor, setPhotoLibraryCursor] = useState<string | null>(null);
+  const [photoLibraryHasNextPage, setPhotoLibraryHasNextPage] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { width, height } = useWindowDimensions();
   const maxContentWidth = Math.min(width, 560);
@@ -70,62 +78,143 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     setStep(2);
   };
 
-  const handlePickPhoto = async () => {
-    if (isPickingPhoto) {
-      return;
-    }
+  const loadPhotoLibrary = async (after?: string) => {
+    const result = await MediaLibrary.getAssetsAsync({
+      after,
+      first: PHOTO_PAGE_SIZE,
+      mediaType: MediaLibrary.MediaType.photo,
+      sortBy: [[MediaLibrary.SortBy.creationTime, false]],
+    });
 
-    setIsPickingPhoto(true);
+    const mappedAssets = result.assets.map<PlaceLibraryPhoto>((asset) => ({
+      filename: asset.filename,
+      id: asset.id,
+      uri: asset.uri,
+    }));
 
+    setPhotoLibraryAssets((currentAssets) => (after ? [...currentAssets, ...mappedAssets] : mappedAssets));
+    setPhotoLibraryCursor(result.endCursor || null);
+    setPhotoLibraryHasNextPage(result.hasNextPage);
+  };
+
+  const requestPhotoPermissionAndLoad = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission = await MediaLibrary.requestPermissionsAsync(false, ['photo']);
+      setPhotoLibraryPermission(permission);
 
       if (!permission.granted) {
+        setPhotoLibraryAssets([]);
+        setPhotoLibraryCursor(null);
+        setPhotoLibraryHasNextPage(false);
+
         if (!permission.canAskAgain) {
           Alert.alert(
             '사진 권한이 꺼져 있어요',
-            '내 사진을 올리려면 설정에서 사진 접근 권한을 허용해 주세요.',
+            '이 화면에서 사진을 바로 보려면 설정에서 사진 접근 권한을 허용해 주세요.',
             [
               { text: '취소', style: 'cancel' },
               { text: '설정 열기', onPress: () => void Linking.openSettings() },
             ]
           );
-        } else {
-          Alert.alert('사진 권한이 필요해요', '사진함에서 사진을 불러오려면 접근 권한을 허용해 주세요.');
         }
 
+        return false;
+      }
+
+      setIsLoadingPhotoLibrary(true);
+      await loadPhotoLibrary();
+      return true;
+    } catch {
+      Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해 주세요.');
+      return false;
+    } finally {
+      setIsLoadingPhotoLibrary(false);
+    }
+  };
+
+  const refreshPhotoLibrary = async () => {
+    try {
+      const permission = await MediaLibrary.getPermissionsAsync(false, ['photo']);
+      setPhotoLibraryPermission(permission);
+
+      if (!permission.granted) {
+        await requestPhotoPermissionAndLoad();
         return;
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        mediaTypes: ['images'],
-        quality: 0.9,
-      });
+      setIsLoadingPhotoLibrary(true);
+      await loadPhotoLibrary();
+    } catch {
+      Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해 주세요.');
+    } finally {
+      setIsLoadingPhotoLibrary(false);
+    }
+  };
 
-      if (result.canceled) {
-        return;
-      }
+  const handleLoadMorePhotos = async () => {
+    if (!photoLibraryHasNextPage || !photoLibraryCursor || isLoadingMorePhotoLibrary) {
+      return;
+    }
 
-      const asset = result.assets[0];
+    setIsLoadingMorePhotoLibrary(true);
 
-      if (!asset?.uri) {
+    try {
+      await loadPhotoLibrary(photoLibraryCursor);
+    } catch {
+      Alert.alert('사진을 더 불러오지 못했어요', '잠시 후 다시 시도해 주세요.');
+    } finally {
+      setIsLoadingMorePhotoLibrary(false);
+    }
+  };
+
+  const handleSelectPhoto = async (asset: PlaceLibraryPhoto) => {
+    if (isPreparingSelectedPhoto) {
+      return;
+    }
+
+    setIsPreparingSelectedPhoto(true);
+
+    try {
+      const assetInfo = await MediaLibrary.getAssetInfoAsync(asset.id);
+      const resolvedUri = assetInfo.localUri ?? asset.uri;
+
+      if (!resolvedUri) {
         Alert.alert('사진 선택에 실패했어요', '선택한 사진 정보를 읽지 못했습니다. 다시 시도해 주세요.');
         return;
       }
 
       setSelectedPhoto({
-        name: asset.fileName ?? undefined,
-        type: asset.mimeType ?? undefined,
-        uri: asset.uri,
+        assetId: asset.id,
+        name: asset.filename,
+        uri: resolvedUri,
       });
     } catch {
-      Alert.alert('사진함을 열지 못했어요', '잠시 후 다시 시도해 주세요.');
+      Alert.alert('사진 선택에 실패했어요', '선택한 사진 정보를 읽지 못했습니다. 다시 시도해 주세요.');
     } finally {
-      setIsPickingPhoto(false);
+      setIsPreparingSelectedPhoto(false);
     }
   };
+
+  const handleOpenPhotoSettings = () => {
+    void Linking.openSettings();
+  };
+
+  const handleShowLimitedLibraryPicker = async () => {
+    try {
+      await MediaLibrary.presentPermissionsPickerAsync(['photo']);
+      await refreshPhotoLibrary();
+    } catch {
+      Alert.alert('권한 화면을 열지 못했어요', '설정에서 사진 접근 범위를 다시 선택해 주세요.');
+    }
+  };
+
+  useEffect(() => {
+    if (step !== 2) {
+      return;
+    }
+
+    void refreshPhotoLibrary();
+  }, [step]);
 
   const handleUpload = async () => {
     if (!selectedPlaceDraft || !selectedPhoto || isUploading) {
@@ -193,9 +282,23 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
             />
           ) : step === 2 ? (
             <PhotoSelectStep
-              isPickingPhoto={isPickingPhoto}
+              hasNextPage={photoLibraryHasNextPage}
+              isLoadingMorePhotos={isLoadingMorePhotoLibrary}
+              isLoadingPhotos={isLoadingPhotoLibrary || isPreparingSelectedPhoto}
+              onLoadMorePhotos={handleLoadMorePhotos}
+              onOpenSettings={handleOpenPhotoSettings}
+              onRequestPermission={() => {
+                void requestPhotoPermissionAndLoad();
+              }}
+              onSelectPhoto={handleSelectPhoto}
+              onShowLimitedLibraryPicker={() => {
+                void handleShowLimitedLibraryPicker();
+              }}
+              permissionCanAskAgain={photoLibraryPermission?.canAskAgain ?? true}
+              permissionGranted={photoLibraryPermission?.granted ?? false}
+              photoAccessPrivileges={photoLibraryPermission?.accessPrivileges}
+              photos={photoLibraryAssets}
               selectedPhoto={selectedPhoto}
-              onPickPhoto={handlePickPhoto}
             />
           ) : (
             <CaptionStep
