@@ -13,6 +13,7 @@ import MapActionButtons from '../components/MapActionButtons';
 import MapBottomSheet from '../components/MapBottomSheet';
 import MarkerPreviewCard from '../components/MarkerPreviewCard';
 import MapSearchBar from '../components/MapSearchBar';
+import { useRecordLikes } from '../../record/hooks/useRecordLikes';
 import { hotPlaceFixtures, mapCategories, mapMarkerFixtures } from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
@@ -34,6 +35,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
+  const { isRecordLiked, isRecordLikePending, toggleRecordLike } = useRecordLikes();
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -139,8 +141,11 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
+            isRecordLiked={isRecordLiked}
+            isRecordLikePending={isRecordLikePending}
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
+            onToggleRecordLike={toggleRecordLike}
           />
         </View>
       )}

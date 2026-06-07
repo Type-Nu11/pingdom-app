@@ -10,12 +10,14 @@ const secondPreviewImageSource = require('../../../assets/images/spki2.webp');
 const previewImages = [previewImageSource, secondPreviewImageSource];
 
 type MarkerPreviewCardProps = {
+  isRecordLiked: (mapImageId: number) => boolean;
+  isRecordLikePending: (mapImageId: number) => boolean;
   onClose: () => void;
+  onToggleRecordLike: (mapImageId: number) => void;
   width: number;
 };
 
 type FeedReactionState = Record<string, {
-  liked: boolean;
   saved: boolean;
   shared: boolean;
 }>;
@@ -25,6 +27,7 @@ const feedItems = [
     id: 'feed-1',
     caption: 'You ain’t ever gonna burn my heart out So Sally can wait she knows it’s too late as we’re walkin’ on by',
     likeCount: '1.2K',
+    mapImageId: 1,
     placeName: '고양종합운동장',
     username: 'woo._sm',
   },
@@ -32,6 +35,7 @@ const feedItems = [
     id: 'feed-2',
     caption: '오늘의 핫플 기록. 사진은 예시 이미지로 먼저 채워둘게요.',
     likeCount: '948',
+    mapImageId: 2,
     placeName: '고양종합운동장',
     username: 'woo._sm',
   },
@@ -39,18 +43,24 @@ const feedItems = [
     id: 'feed-3',
     caption: '다른 핑도 아래로 스크롤해서 이어서 볼 수 있게 연결했습니다.',
     likeCount: '837',
+    mapImageId: 3,
     placeName: '고양종합운동장',
     username: 'woo._sm',
   },
 ];
 
 const defaultReaction = {
-  liked: false,
   saved: false,
   shared: false,
 };
 
-const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
+const MarkerPreviewCard = ({
+  isRecordLiked,
+  isRecordLikePending,
+  onClose,
+  onToggleRecordLike,
+  width,
+}: MarkerPreviewCardProps) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
   const [reactions, setReactions] = useState<FeedReactionState>({});
@@ -99,6 +109,8 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
         {feedItems.map((item) => {
           const activeImageIndex = activeImageIndexes[item.id] ?? 0;
           const reaction = reactions[item.id] ?? defaultReaction;
+          const isLiked = isRecordLiked(item.mapImageId);
+          const isLikePending = isRecordLikePending(item.mapImageId);
           const isMenuOpen = openMenuId === item.id;
 
           return (
@@ -174,18 +186,19 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="좋아요"
+                    disabled={isLikePending}
                     hitSlop={10}
-                    style={styles.actionButton}
-                    onPress={() => toggleReaction(item.id, 'liked')}
+                    style={[styles.actionButton, isLikePending && styles.disabledActionButton]}
+                    onPress={() => onToggleRecordLike(item.mapImageId)}
                   >
                     <LikeIcon
-                      color={reaction.liked ? '#ff1956' : '#5e5e66'}
-                      fill={reaction.liked ? '#ff1956' : 'none'}
+                      color={isLiked ? '#ff1956' : '#5e5e66'}
+                      fill={isLiked ? '#ff1956' : 'none'}
                       width={20}
                       height={18}
                     />
                   </Pressable>
-                  <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>{item.likeCount}</Text>
+                  <Text style={[styles.likeCount, isLiked && styles.activeText]}>{item.likeCount}</Text>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="공유"
@@ -283,6 +296,9 @@ const styles = StyleSheet.create({
   feedImage: {
     height: '100%',
     width: '100%',
+  },
+  disabledActionButton: {
+    opacity: 0.5,
   },
   feedItem: {
     backgroundColor: '#fff',

@@ -102,6 +102,10 @@ export const recordApi = {
     const { data } = await api.post<RecordLikeResponse>('/map/like', payload);
     return data;
   },
+  toggleRecordLike: async (payload: RecordLikeRequest): Promise<RecordLikeResponse> => {
+    const { data } = await api.post<RecordLikeResponse>('/map/like', payload);
+    return data;
+  },
   reportRecord: async (id: number, payload: ReportPostRequest): Promise<string> => {
     const { data } = await api.post<string>(`/map/post/${id}/report`, payload);
     return data;
