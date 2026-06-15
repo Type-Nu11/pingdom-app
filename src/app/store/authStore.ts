@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { hydrateAccessToken, persistTokens, removeTokens } from '../../shared/api/authTokens';
-import type { AuthTokens } from '../../shared/api/authStorage';
+import { normalizeAuthTokens, type AuthTokens } from '../../shared/api/authStorage';
 
 export type AuthState = {
   accessToken: string | null;
@@ -42,18 +42,22 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   login: async (tokens: AuthTokens) => {
-    await persistTokens(tokens);
+    const normalizedTokens = normalizeAuthTokens(tokens);
+
+    await persistTokens(normalizedTokens);
     set({
-      accessToken: tokens.accessToken,
+      accessToken: normalizedTokens.accessToken,
       isLoggedIn: true,
       isHydrating: false,
     });
   },
 
   loginWithGoogle: async (tokens: AuthTokens) => {
-    await persistTokens(tokens);
+    const normalizedTokens = normalizeAuthTokens(tokens);
+
+    await persistTokens(normalizedTokens);
     set({
-      accessToken: tokens.accessToken,
+      accessToken: normalizedTokens.accessToken,
       isLoggedIn: true,
       isHydrating: false,
     });

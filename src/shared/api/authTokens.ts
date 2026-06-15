@@ -2,7 +2,14 @@
 
 // authStorage: 기기 키체인(영구 저장소) 접근 담당
 // 이 파일은 그 위에서 '메모리 캐시 + 키체인'을 함께 관리하는 중간 계층입니다
-import { clearTokens, getTokens, saveTokens, type AuthTokens } from './authStorage';
+import {
+    clearTokens,
+    getTokens,
+    normalizeAuthToken,
+    normalizeAuthTokens,
+    saveTokens,
+    type AuthTokens,
+} from './authStorage';
 
 // ─────────────────────────────────────────────
 // 메모리 캐시 변수
@@ -44,7 +51,7 @@ export function getCachedAccessToken(): string | null {
  * @param token - 저장할 토큰 문자열, 또는 null (캐시 초기화)
  */
 export function setCachedAccessToken(token: string | null): void {
-    accessTokenCache = token;
+    accessTokenCache = token ? normalizeAuthToken(token) : null;
 }
 
 // ─────────────────────────────────────────────
@@ -76,8 +83,10 @@ export async function hydrateAccessToken(): Promise<string | null> {
  * @param tokens - 새로 발급받은 accessToken + refreshToken 쌍
  */
 export async function persistTokens(tokens: AuthTokens): Promise<void> {
-    accessTokenCache = tokens.accessToken;  // 메모리 캐시 즉시 갱신 (다음 요청부터 바로 사용)
-    await saveTokens(tokens);              // 키체인에 영구 저장 (앱 재시작 후에도 유지)
+    const normalizedTokens = normalizeAuthTokens(tokens);
+
+    accessTokenCache = normalizedTokens.accessToken;  // 메모리 캐시 즉시 갱신 (다음 요청부터 바로 사용)
+    await saveTokens(normalizedTokens);              // 키체인에 영구 저장 (앱 재시작 후에도 유지)
 }
 
 /**
