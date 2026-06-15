@@ -28,7 +28,7 @@ export async function configureForegroundNotifications(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#0EA5E9',
-    sound: 'default',
+    sound: null,
   });
 }
 
@@ -52,7 +52,7 @@ export async function presentForegroundNotification(message: RemoteMessage): Pro
         ...message.data,
         messageId: message.messageId ?? '',
       },
-      sound: 'default',
+      sound: true,
     },
     trigger: null,
   });
