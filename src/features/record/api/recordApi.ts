@@ -17,8 +17,10 @@ const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
 export type CreateRecordRequest = {
   description?: string;
   file: RecordUploadFile;
-  placeId: number;
+  kakaoPlaceId?: string;
+  placeId?: number;
   title: string;
+  validPlace?: boolean;
 };
 
 export type CreateRecordResponse = {
@@ -72,11 +74,22 @@ function buildCreateRecordFormData(payload: CreateRecordRequest) {
   const fileName = payload.file.name ?? getFileNameFromUri(payload.file.uri);
   const mimeType = payload.file.type ?? getMimeType(fileName);
 
-  formData.append('placeId', String(payload.placeId));
   formData.append('title', payload.title);
 
   if (payload.description) {
     formData.append('description', payload.description);
+  }
+
+  if (payload.kakaoPlaceId) {
+    formData.append('kakaoPlaceId', payload.kakaoPlaceId);
+  }
+
+  if (payload.placeId !== undefined) {
+    formData.append('placeId', String(payload.placeId));
+  }
+
+  if (payload.validPlace !== undefined) {
+    formData.append('validPlace', String(payload.validPlace));
   }
 
   formData.append('file', {
@@ -91,7 +104,9 @@ function buildCreateRecordFormData(payload: CreateRecordRequest) {
 export const recordApi = {
   createRecord: async (payload: CreateRecordRequest): Promise<CreateRecordResponse> => {
     const formData = buildCreateRecordFormData(payload);
-    const { data } = await api.post<CreateRecordResponse>('/map/post/create', formData);
+    const { data } = await api.post<CreateRecordResponse>('/map/post/create', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return data;
   },
   deleteRecord: async (id: number): Promise<string> => {

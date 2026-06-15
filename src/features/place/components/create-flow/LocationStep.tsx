@@ -19,6 +19,7 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
   const [selectedAddress, setSelectedAddress] = useState(
     initialValue?.address ?? SELECTED_PLACE.address
   );
+  const [selectedKakaoPlaceId, setSelectedKakaoPlaceId] = useState(initialValue?.kakaoPlaceId);
   const [detailAddress, setDetailAddress] = useState('');
   const [mapCenter, setMapCenter] = useState({
     lat: initialValue?.latitude ?? SELECTED_PLACE.lat,
@@ -45,6 +46,7 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
     setMapCenter({ lat: result.lat, lng: result.lng });
     setSelectedCoordinate({ lat: result.lat, lng: result.lng });
     setSelectedAddress(nextAddress);
+    setSelectedKakaoPlaceId(result.kakaoPlaceId);
     setPlaceName(result.name || nextAddress);
     clearSearchResults();
   };
@@ -76,6 +78,7 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
     }
     onNext({
       address: trimmedDetailAddress ? selectedAddress + ' ' + trimmedDetailAddress : selectedAddress,
+      kakaoPlaceId: selectedKakaoPlaceId,
       latitude: selectedCoordinate.lat,
       longitude: selectedCoordinate.lng,
       name: trimmedName,

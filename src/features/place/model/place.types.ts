@@ -7,6 +7,7 @@ export type Place = {
 
 export type PlaceCreateDraft = {
   address: string;
+  kakaoPlaceId?: string;
   latitude: number;
   longitude: number;
   name: string;

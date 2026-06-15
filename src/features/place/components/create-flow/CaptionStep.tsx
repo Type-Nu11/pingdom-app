@@ -4,13 +4,22 @@ import type { PlaceUploadPhoto } from '../../model/place.types';
 import ExamplePhoto from './ExamplePhoto';
 
 type CaptionStepProps = {
+  caption: string;
   isUploading?: boolean;
+  onChangeCaption: (caption: string) => void;
   onUpload: () => void;
   placeName: string;
   selectedPhoto: PlaceUploadPhoto | null;
 };
 
-const CaptionStep = ({ isUploading = false, onUpload, placeName, selectedPhoto }: CaptionStepProps) => (
+const CaptionStep = ({
+  caption,
+  isUploading = false,
+  onChangeCaption,
+  onUpload,
+  placeName,
+  selectedPhoto,
+}: CaptionStepProps) => (
   <View style={styles.captionBody}>
     <View style={styles.authorRow}>
       <View style={styles.profileCircle}>
@@ -30,6 +39,8 @@ const CaptionStep = ({ isUploading = false, onUpload, placeName, selectedPhoto }
       style={styles.captionInput}
       placeholder="캡션을 입력하세요..."
       placeholderTextColor="#111"
+      value={caption}
+      onChangeText={onChangeCaption}
     />
     <Button
       disabled={!selectedPhoto}

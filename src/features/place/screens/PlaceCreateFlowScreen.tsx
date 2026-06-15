@@ -19,10 +19,12 @@ import PhotoSelectStep from '../components/create-flow/PhotoSelectStep';
 import {
   type ApiFieldErrorResponse,
   type ApiTokenErrorResponse,
-  placeApi,
-  type CreatePlaceResponse,
 } from '../api/placeApi';
-import { pictureApi, type UploadErrorResponse } from '../api/pictureApi';
+import {
+  recordApi,
+  type RecordApiErrorResponse,
+  type RecordValidationErrorResponse,
+} from '../../record/api/recordApi';
 import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
@@ -35,7 +37,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [step, setStep] = useState<PlaceCreateStep>(1);
   const [selectedPlaceDraft, setSelectedPlaceDraft] = useState<PlaceCreateDraft | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
-  const [createdPlace, setCreatedPlace] = useState<CreatePlaceResponse | null>(null);
+  const [caption, setCaption] = useState('');
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { width, height } = useWindowDimensions();
@@ -66,7 +68,6 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
 
   const handleSelectLocation = (draft: PlaceCreateDraft) => {
     setSelectedPlaceDraft(draft);
-    setCreatedPlace(null);
     setStep(2);
   };
 
@@ -127,6 +128,32 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     }
   };
 
+  const getUploadErrorMessage = (error: unknown, fallbackMessage: string) => {
+    if (!axios.isAxiosError<
+      | ApiFieldErrorResponse
+      | ApiTokenErrorResponse
+      | RecordApiErrorResponse
+      | RecordValidationErrorResponse
+    >(error)) {
+      return fallbackMessage;
+    }
+
+    const status = error.response?.status;
+    const responseData = error.response?.data;
+    const fieldErrorMessage = responseData && typeof responseData === 'object' && 'errors' in responseData && responseData.errors
+      ? Object.values(responseData.errors)[0]
+      : undefined;
+    const serverMessage = responseData && typeof responseData === 'object' && 'message' in responseData
+      ? responseData.message
+      : undefined;
+
+    if (!status) {
+      return '서버에 연결하지 못했어요. API 서버가 켜져 있는지 확인해 주세요.';
+    }
+
+    return fieldErrorMessage ?? serverMessage ?? fallbackMessage;
+  };
+
   const handleUpload = async () => {
     if (!selectedPlaceDraft || !selectedPhoto || isUploading) {
       return;
@@ -135,39 +162,25 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     setIsUploading(true);
 
     try {
-      const place = createdPlace ?? (await placeApi.createPlace(selectedPlaceDraft));
-
-      if (!createdPlace) {
-        setCreatedPlace(place);
+      if (!selectedPlaceDraft.kakaoPlaceId) {
+        Alert.alert('장소를 다시 선택해 주세요', '카카오 검색 결과에서 장소를 선택해야 게시글을 업로드할 수 있어요.');
+        return;
       }
 
-      const picture = await pictureApi.createPicture({
+      const description = caption.trim();
+      const record = await recordApi.createRecord({
+        description: description || undefined,
         file: selectedPhoto,
-        placeId: place.id,
+        kakaoPlaceId: selectedPlaceDraft.kakaoPlaceId,
+        title: selectedPlaceDraft.name,
+        validPlace: true,
       });
-      Alert.alert('업로드 완료', `${place.name} 장소를 등록하고 사진 업로드까지 완료했어요.\n${picture.message}`, [
+
+      Alert.alert('업로드 완료', `${selectedPlaceDraft.name} 게시물 업로드를 완료했어요.\n${record.message}`, [
         { text: '확인', onPress: onClose },
       ]);
     } catch (error) {
-      if (axios.isAxiosError<ApiFieldErrorResponse | ApiTokenErrorResponse | UploadErrorResponse>(error)) {
-        const status = error.response?.status;
-        const responseData = error.response?.data;
-        const fieldErrorMessage = responseData && typeof responseData === 'object' && 'errors' in responseData && responseData.errors
-          ? Object.values(responseData.errors)[0]
-          : undefined;
-
-        if (status === 400) {
-          Alert.alert('입력값을 확인해 주세요', fieldErrorMessage ?? responseData?.message ?? '입력값이 올바르지 않습니다.');
-        } else if (status === 401) {
-          Alert.alert('로그인이 필요해요', responseData?.message ?? '토큰이 유효하지 않아 다시 로그인해야 합니다.');
-        } else if (status === 500) {
-          Alert.alert('사진 업로드에 실패했어요', responseData?.message ?? '업로드 과정에서 오류가 발생했습니다.');
-        } else {
-          Alert.alert('업로드에 실패했어요', responseData?.message ?? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
-        }
-      } else {
-        Alert.alert('업로드에 실패했어요', '네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
-      }
+      Alert.alert('사진 업로드에 실패했어요', getUploadErrorMessage(error, '사진을 서버에 저장하지 못했습니다.'));
     } finally {
       setIsUploading(false);
     }
@@ -202,9 +215,11 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
             />
           ) : (
             <CaptionStep
+              caption={caption}
               isUploading={isUploading}
               placeName={selectedPlaceDraft?.name ?? ''}
               selectedPhoto={selectedPhoto}
+              onChangeCaption={setCaption}
               onUpload={handleUpload}
             />
           )}

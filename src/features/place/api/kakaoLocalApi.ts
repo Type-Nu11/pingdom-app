@@ -47,6 +47,7 @@ export type KakaoLocalSearchItem = {
   address: string;
   category?: string;
   id: string;
+  kakaoPlaceId?: string;
   lat: number;
   lng: number;
   name: string;
@@ -162,6 +163,7 @@ const searchKakaoKeywordPlaces = async (
       address,
       category: document.category_name,
       id: document.id ?? `keyword-${lat}-${lng}-${name}`,
+      kakaoPlaceId: document.id,
       lat,
       lng,
       name,
