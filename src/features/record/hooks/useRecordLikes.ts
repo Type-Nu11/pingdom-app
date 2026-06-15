@@ -84,16 +84,24 @@ export const useRecordLikes = () => {
     }
 
     const previousLikes = likedByIdRef.current;
-    const nextLikes = {
-      ...previousLikes,
-      [key]: !previousLikes[key],
-    };
+    const wasLiked = Boolean(previousLikes[key]);
+    const nextLikes = { ...previousLikes };
+
+    if (wasLiked) {
+      delete nextLikes[key];
+    } else {
+      nextLikes[key] = true;
+    }
 
     setPendingById((prev) => ({ ...prev, [key]: true }));
     setLikedById(nextLikes);
 
     try {
-      await recordApi.toggleRecordLike({ mapImageId });
+      if (wasLiked) {
+        await recordApi.unlikeRecord(mapImageId);
+      } else {
+        await recordApi.likeRecord({ mapImageId });
+      }
       await persistLikes(nextLikes);
     } catch (error) {
       setLikedById(previousLikes);
