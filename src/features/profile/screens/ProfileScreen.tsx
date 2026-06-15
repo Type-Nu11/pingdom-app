@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, SafeAreaView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import ArchiveDetailView from '../components/ArchiveDetailView';
 import LikesBottomSheet from '../components/LikesBottomSheet';
 import ProfileEditView from '../components/ProfileEditView';
@@ -9,12 +9,13 @@ import { profileImageSource, savedProfileImageSource } from '../constants/profil
 
 type ProfileScreenProps = {
   onBack: () => void;
+  onLogout: () => Promise<void>;
 };
 
 type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
 type ProfileTab = 'liked' | 'saved';
 
-const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
+const ProfileScreen = ({ onBack, onLogout }: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
   const [mode, setMode] = useState<ProfileMode>('profile');
   const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
@@ -39,6 +40,19 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
     }
 
     onBack();
+  };
+
+  const handleLogout = () => {
+    Alert.alert('로그아웃할까요?', '다시 이용하려면 로그인해야 합니다.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        style: 'destructive',
+        onPress: () => {
+          void onLogout();
+        },
+      },
+    ]);
   };
 
   const isArchiveDetail = mode === 'archive-detail';
@@ -69,6 +83,7 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
               onChangeTab={setActiveTab}
               onOpenArchive={() => setMode('archive')}
               onOpenEdit={() => setMode('profile-edit')}
+              onLogout={handleLogout}
               showTabs={mode === 'profile'}
             />
             <ProfileGallery
