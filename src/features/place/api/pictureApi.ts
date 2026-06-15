@@ -8,6 +8,11 @@ export type CreatePictureResponse = {
   message: string;
 };
 
+export type CreatePictureRequest = {
+  file: UploadPictureFile;
+  placeId: number;
+};
+
 export type UploadErrorResponse = {
   code?: 'INVALID_TOKEN' | 'UPLOAD_ERROR';
   errors?: Record<string, string>;
@@ -41,25 +46,29 @@ function getMimeType(fileName: string) {
   return MIME_TYPE_BY_EXTENSION[extension] ?? 'image/jpeg';
 }
 
-function buildPictureUploadFormData(file: UploadPictureFile) {
+function buildPictureUploadFormData(payload: CreatePictureRequest) {
   const formData = new FormData();
-  const fileName = file.name ?? getFileNameFromUri(file.uri);
-  const mimeType = file.type ?? getMimeType(fileName);
+  const fileName = payload.file.name ?? getFileNameFromUri(payload.file.uri);
+  const mimeType = payload.file.type ?? getMimeType(fileName);
+
+  formData.append('placeId', String(payload.placeId));
 
   // React Native uses a uri/name/type object for file parts even though DOM typings do not model it.
   formData.append('file', {
     name: fileName,
     type: mimeType,
-    uri: file.uri,
+    uri: payload.file.uri,
   } as any);
 
   return formData;
 }
 
 export const pictureApi = {
-  createPicture: async (file: UploadPictureFile): Promise<CreatePictureResponse> => {
-    const formData = buildPictureUploadFormData(file);
-    const { data } = await api.post<CreatePictureResponse>('/map/pictures/create', formData);
+  createPicture: async (payload: CreatePictureRequest): Promise<CreatePictureResponse> => {
+    const formData = buildPictureUploadFormData(payload);
+    const { data } = await api.post<CreatePictureResponse>('/map/pictures/create', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
 
     return data;
   },

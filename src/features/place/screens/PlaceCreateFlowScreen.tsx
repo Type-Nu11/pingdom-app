@@ -141,7 +141,10 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
         setCreatedPlace(place);
       }
 
-      const picture = await pictureApi.createPicture(selectedPhoto);
+      const picture = await pictureApi.createPicture({
+        file: selectedPhoto,
+        placeId: place.id,
+      });
       Alert.alert('업로드 완료', `${place.name} 장소를 등록하고 사진 업로드까지 완료했어요.\n${picture.message}`, [
         { text: '확인', onPress: onClose },
       ]);
