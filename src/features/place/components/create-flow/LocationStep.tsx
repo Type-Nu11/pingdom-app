@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
-import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import MypingIcon from '../../../../assets/icons/map/Myping.svg';
-import { getAddressFromCoordinate } from '../../api/kakaoLocalApi';
-import { placeApi } from '../../api/placeApi';
+import type { KakaoLocalSearchItem } from '../../api/kakaoLocalApi';
+import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
 import type { PlaceCreateDraft } from '../../model/place.types';
 import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../KakaoMapCard';
 import { SELECTED_PLACE } from './constants';
@@ -28,54 +28,43 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
     lat: initialValue?.latitude ?? SELECTED_PLACE.lat,
     lng: initialValue?.longitude ?? SELECTED_PLACE.lng,
   });
-  const geocodeRequestIdRef = useRef(0);
+  const {
+    clearSearchResults,
+    isSearchingAddress,
+    resolveAddressFromCoordinate,
+    searchPlaces,
+    searchResults,
+    searchStatusMessage,
+  } = useKakaoLocalSearch();
+
+  const applySearchResult = (result: KakaoLocalSearchItem) => {
+    const nextAddress = result.roadAddress || result.address;
+
+    Keyboard.dismiss();
+    setAddressQuery(result.name);
+    setMapCenter({ lat: result.lat, lng: result.lng });
+    setSelectedCoordinate({ lat: result.lat, lng: result.lng });
+    setSelectedAddress(nextAddress);
+    setPlaceName(result.name || nextAddress);
+    clearSearchResults();
+  };
 
   const handleCameraIdle = async (event: KakaoMapCameraIdleEvent) => {
     const { lat, lng } = event.nativeEvent;
-    const requestId = ++geocodeRequestIdRef.current;
     setSelectedCoordinate({ lat, lng });
 
-    try {
-      const nextAddress = await getAddressFromCoordinate(lat, lng);
+    const nextAddress = await resolveAddressFromCoordinate(lat, lng);
 
-      if (requestId === geocodeRequestIdRef.current) {
-        setSelectedAddress(nextAddress || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-      }
-    } catch {
-      if (requestId === geocodeRequestIdRef.current) {
-        setSelectedAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-      }
+    if (nextAddress) {
+      setSelectedAddress(nextAddress);
     }
   };
 
   const handleSearchAddress = async () => {
-    const requestId = ++geocodeRequestIdRef.current;
-
-    try {
-      const places = await placeApi.searchPlaces(addressQuery);
-      const result = places[0];
-
-      if (requestId !== geocodeRequestIdRef.current) {
-        return;
-      }
-
-      if (!result) {
-        setSelectedAddress('검색 결과가 없습니다');
-        return;
-      }
-
-      Keyboard.dismiss();
-      const nextAddress = result.roadAddress || result.address;
-      setAddressQuery(nextAddress);
-      setMapCenter({ lat: result.lat, lng: result.lng });
-      setSelectedCoordinate({ lat: result.lat, lng: result.lng });
-      setSelectedAddress(nextAddress);
-      setPlaceName(result.name || nextAddress);
-    } catch {
-      if (requestId === geocodeRequestIdRef.current) {
-        setSelectedAddress('주소 검색에 실패했습니다');
-      }
-    }
+    await searchPlaces(addressQuery, {
+      centerLat: selectedCoordinate.lat,
+      centerLng: selectedCoordinate.lng,
+    });
   };
 
   const handleSelectLocation = () => {
@@ -100,6 +89,7 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="주소 검색"
+          disabled={isSearchingAddress}
           hitSlop={8}
           onPress={handleSearchAddress}
         >
@@ -115,6 +105,36 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
           onSubmitEditing={handleSearchAddress}
         />
       </View>
+      {isSearchingAddress ? (
+        <View style={styles.searchStatusRow}>
+          <ActivityIndicator color="#ff1956" size="small" />
+          <Text style={styles.searchStatusInlineText}>주소를 찾고 있어요</Text>
+        </View>
+      ) : searchStatusMessage ? (
+        <Text style={styles.searchStatusText}>{searchStatusMessage}</Text>
+      ) : null}
+      {searchResults.length > 0 ? (
+        <View style={styles.searchResultList}>
+          {searchResults.slice(0, 5).map((result) => {
+            const resultAddress = result.roadAddress || result.address;
+
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={result.id}
+                style={styles.searchResultItem}
+                onPress={() => applySearchResult(result)}
+              >
+                <Text numberOfLines={1} style={styles.searchResultName}>{result.name}</Text>
+                <Text numberOfLines={1} style={styles.searchResultAddress}>{resultAddress}</Text>
+                {result.category ? (
+                  <Text numberOfLines={1} style={styles.searchResultCategory}>{result.category}</Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       <View style={[styles.mapPreview, { height: mapHeight }]}>
         <KakaoMapCard
           style={styles.map}
@@ -195,6 +215,57 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '500',
     padding: 0,
+  },
+  searchStatusRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: 34,
+    marginTop: 10,
+  },
+  searchStatusText: {
+    color: '#777a84',
+    fontSize: 14,
+    fontWeight: '600',
+    marginHorizontal: 34,
+    marginTop: 10,
+  },
+  searchStatusInlineText: {
+    color: '#777a84',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  searchResultList: {
+    backgroundColor: '#fff',
+    borderColor: '#ececf0',
+    borderRadius: 14,
+    borderWidth: 1,
+    marginHorizontal: 34,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    borderBottomColor: '#f0f0f3',
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchResultName: {
+    color: '#1d2028',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  searchResultAddress: {
+    color: '#555965',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  searchResultCategory: {
+    color: '#9b9da7',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 3,
   },
   mapPreview: {
     marginTop: 18,
