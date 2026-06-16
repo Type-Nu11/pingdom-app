@@ -17,6 +17,7 @@ export type PlacesPage = {
 
 export type PlaceCreateDraft = {
   address: string;
+  coordinateToken?: string;
   kakaoPlaceId?: string;
   latitude: number;
   longitude: number;

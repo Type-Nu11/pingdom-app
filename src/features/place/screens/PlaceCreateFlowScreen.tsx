@@ -24,7 +24,8 @@ import {
   type RecordApiErrorResponse,
   type RecordValidationErrorResponse,
 } from '../../record/api/recordApi';
-import { useCreateRecord } from '../../record/hooks/useCreateRecord';
+import { useCreatePlaceCoordinateToken } from '../hooks/useCreatePlaceCoordinateToken';
+import { useCreatePlaceRecord } from '../hooks/useCreatePlaceRecord';
 import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
@@ -39,7 +40,11 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
   const [caption, setCaption] = useState('');
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
-  const { createRecord, isUploading } = useCreateRecord();
+  const {
+    createCoordinateToken,
+    isCreatingCoordinateToken,
+  } = useCreatePlaceCoordinateToken();
+  const { createPlaceRecord, isUploading } = useCreatePlaceRecord();
   const { width, height } = useWindowDimensions();
   const maxContentWidth = Math.min(width, 560);
   const mapHeight = Math.round(clamp(height * 0.46, 310, 430));
@@ -66,9 +71,31 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     setStep((currentStep) => (currentStep + 1) as PlaceCreateStep);
   };
 
-  const handleSelectLocation = (draft: PlaceCreateDraft) => {
-    setSelectedPlaceDraft(draft);
-    setStep(2);
+  const handleSelectLocation = async (draft: PlaceCreateDraft) => {
+    if (!draft.kakaoPlaceId) {
+      Alert.alert('장소를 다시 선택해 주세요', '카카오 검색 결과에서 장소를 선택해야 업로드할 수 있어요.');
+      return;
+    }
+
+    try {
+      const coordinate = await createCoordinateToken({
+        baseLatitude: draft.latitude,
+        baseLongitude: draft.longitude,
+        kakaoPlaceId: draft.kakaoPlaceId,
+      });
+
+      setSelectedPlaceDraft({
+        ...draft,
+        coordinateToken: coordinate.coordinateToken,
+        kakaoPlaceId: coordinate.kakaoPlaceId ?? draft.kakaoPlaceId,
+      });
+      setStep(2);
+    } catch (error) {
+      Alert.alert(
+        '장소 좌표 확인에 실패했어요',
+        getUploadErrorMessage(error, '장소 좌표 토큰을 발급받지 못했습니다.')
+      );
+    }
   };
 
   const handlePickPhoto = async () => {
@@ -165,16 +192,13 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
         return;
       }
 
-      const description = caption.trim();
-      const record = await createRecord({
-        description: description || undefined,
-        file: selectedPhoto,
-        kakaoPlaceId: selectedPlaceDraft.kakaoPlaceId,
-        title: selectedPlaceDraft.name,
-        validPlace: true,
+      const result = await createPlaceRecord({
+        caption,
+        draft: selectedPlaceDraft,
+        photo: selectedPhoto,
       });
 
-      Alert.alert('업로드 완료', `${selectedPlaceDraft.name} 게시물 업로드를 완료했어요.\n${record.message}`, [
+      Alert.alert('업로드 완료', `${selectedPlaceDraft.name} 게시물 업로드를 완료했어요.\n${result.record.message}`, [
         { text: '확인', onPress: onClose },
       ]);
     } catch (error) {
@@ -200,6 +224,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
           {step === 1 ? (
             <LocationStep
               initialValue={selectedPlaceDraft}
+              isSubmitting={isCreatingCoordinateToken}
               mapHeight={mapHeight}
               onNext={handleSelectLocation}
             />

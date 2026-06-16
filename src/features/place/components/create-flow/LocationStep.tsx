@@ -9,11 +9,17 @@ import { SELECTED_PLACE } from './constants';
 
 type LocationStepProps = {
   initialValue: PlaceCreateDraft | null;
+  isSubmitting?: boolean;
   mapHeight: number;
-  onNext: (draft: PlaceCreateDraft) => void;
+  onNext: (draft: PlaceCreateDraft) => void | Promise<void>;
 };
 
-const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) => {
+const LocationStep = ({
+  initialValue,
+  isSubmitting = false,
+  mapHeight,
+  onNext,
+}: LocationStepProps) => {
   const [addressQuery, setAddressQuery] = useState('');
   const [placeName, setPlaceName] = useState(initialValue?.name ?? SELECTED_PLACE.name);
   const [selectedAddress, setSelectedAddress] = useState(
@@ -73,10 +79,10 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
     const trimmedName = placeName.trim();
     const trimmedDetailAddress = detailAddress.trim();
     const isAddressInvalid = selectedAddress === '검색 결과가 없습니다' || selectedAddress === '주소 검색에 실패했습니다';
-    if (!trimmedName || isAddressInvalid) {
+    if (!trimmedName || isAddressInvalid || isSubmitting) {
       return;
     }
-    onNext({
+    void onNext({
       address: trimmedDetailAddress ? selectedAddress + ' ' + trimmedDetailAddress : selectedAddress,
       kakaoPlaceId: selectedKakaoPlaceId,
       latitude: selectedCoordinate.lat,
@@ -173,11 +179,14 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
         />
         <Pressable
           accessibilityRole="button"
-          disabled={!placeName.trim()}
-          style={[styles.primaryButton, !placeName.trim() && styles.primaryButtonDisabled]}
+          disabled={!placeName.trim() || isSubmitting}
+          style={[
+            styles.primaryButton,
+            (!placeName.trim() || isSubmitting) && styles.primaryButtonDisabled,
+          ]}
           onPress={handleSelectLocation}
         >
-          <Text style={styles.primaryButtonText}>선택</Text>
+          <Text style={styles.primaryButtonText}>{isSubmitting ? '확인 중...' : '선택'}</Text>
         </Pressable>
       </View>
     </View>
