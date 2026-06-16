@@ -4,6 +4,7 @@ import {
   SafeAreaView,
   StatusBar,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -13,7 +14,7 @@ import MapActionButtons from '../components/MapActionButtons';
 import MapBottomSheet from '../components/MapBottomSheet';
 import MarkerPreviewCard from '../components/MarkerPreviewCard';
 import MapSearchBar from '../components/MapSearchBar';
-import { hotPlaceFixtures, mapCategories, mapMarkerFixtures } from '../constants/mapFixtures';
+import { hotPlaceFixtures, mapCategories } from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
   BASE_SCREEN_HEIGHT,
@@ -24,6 +25,7 @@ import {
 } from '../constants/mapLayout';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
+import { usePlaces } from '../hooks/usePlaces';
 
 type MapScreenProps = {
   onCreatePlace?: () => void;
@@ -34,6 +36,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
+  const { isError: isPlacesError, markers } = usePlaces();
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -74,7 +77,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
         userLat={userLat}
         userLng={userLng}
         followUser={followUser}
-        markers={mapMarkerFixtures}
+        markers={markers}
         onMarkerPress={handleMarkerPress}
       />
 
@@ -100,6 +103,11 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             topPaddingX={topPaddingX}
             uiScale={uiScale}
           />
+          {isPlacesError ? (
+            <View style={styles.mapStatusPill}>
+              <Text style={styles.mapStatusText}>장소를 불러오지 못했어요</Text>
+            </View>
+          ) : null}
         </View>
       </SafeAreaView>
 
@@ -171,6 +179,26 @@ const styles = StyleSheet.create({
   markerPreviewBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.22)',
+  },
+  mapStatusPill: {
+    alignSelf: 'center',
+    backgroundColor: '#fff',
+    borderColor: '#ececf0',
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  mapStatusText: {
+    color: '#555965',
+    fontSize: 13,
+    fontWeight: '700',
   },
   safeArea: {
     ...StyleSheet.absoluteFillObject,

@@ -1,8 +1,18 @@
 export type Place = {
-  id: string;
+  address: string;
+  id: number;
+  latitude: number;
+  longitude: number;
   name: string;
-  lat: number;
-  lng: number;
+};
+
+export type PlacesPage = {
+  hasNext: boolean;
+  limit: number;
+  page: number;
+  places: Place[];
+  totalCount: number;
+  totalPages: number;
 };
 
 export type PlaceCreateDraft = {

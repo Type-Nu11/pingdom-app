@@ -3,6 +3,7 @@ import type {
   ApiCodeErrorResponse as CommonApiCodeErrorResponse,
   ApiFieldErrorResponse as CommonApiFieldErrorResponse,
 } from '../../../types/api.types';
+import type { PlacesPage } from '../model/place.types';
 
 export type PlaceSearchItem = {
   address: string;
@@ -16,6 +17,12 @@ export type PlaceSearchItem = {
 
 type PlaceSearchResponse = {
   places: PlaceSearchItem[];
+};
+
+export type GetPlacesRequest = {
+  keyword?: string;
+  limit?: number;
+  page?: number;
 };
 
 export type CreatePlaceRequest = {
@@ -88,8 +95,16 @@ export const placeApi = {
     const { data } = await api.delete<string>(`/map/places/${id}/delete`);
     return data;
   },
-  getPlaces: async () => {
-    return [];
+  getPlaces: async (params: GetPlacesRequest = {}): Promise<PlacesPage> => {
+    const { data } = await api.get<PlacesPage>('/place', {
+      params: {
+        limit: params.limit ?? 100,
+        page: params.page ?? 1,
+        ...(params.keyword ? { keyword: params.keyword } : {}),
+      },
+    });
+
+    return data;
   },
   searchPlaces: async (query: string) => {
     const { data } = await api.get<PlaceSearchResponse>('/places/search', {
