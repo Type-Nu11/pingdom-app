@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RecommendedPlace } from '../model/place.types';
 
 type HotPlaceListProps = {
   isError?: boolean;
   isLoading?: boolean;
+  onPlacePress?: (place: RecommendedPlace) => void;
   places: RecommendedPlace[];
 };
 
@@ -19,6 +20,7 @@ function formatDistance(distanceMeters: number) {
 const HotPlaceList = ({
   isError = false,
   isLoading = false,
+  onPlacePress,
   places,
 }: HotPlaceListProps) => {
   const stateText = isLoading
@@ -44,7 +46,13 @@ const HotPlaceList = ({
         const rank = index + 1;
 
         return (
-          <View key={place.id} style={styles.hotRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${place.name} 추천 장소 보기`}
+            key={place.id}
+            style={styles.hotRow}
+            onPress={() => onPlacePress?.(place)}
+          >
             <View style={[styles.rankBadge, rank !== 1 && styles.rankBadgeMuted]}>
               <Text style={[styles.rankText, rank !== 1 && styles.rankTextMuted]}>
                 {rank}
@@ -60,7 +68,7 @@ const HotPlaceList = ({
                 {formatDistance(place.distanceMeters)} · {place.reason}
               </Text>
             </View>
-          </View>
+          </Pressable>
         );
       })}
     </View>

@@ -16,6 +16,7 @@ type MapBottomSheetProps = {
   isExpanded: boolean;
   isRecommendationsError?: boolean;
   isRecommendationsLoading?: boolean;
+  onPlacePress?: (place: RecommendedPlace) => void;
   onToggle: () => void;
   panHandlers: GestureResponderHandlers;
   places: RecommendedPlace[];
@@ -27,6 +28,7 @@ const MapBottomSheet = ({
   isExpanded,
   isRecommendationsError = false,
   isRecommendationsLoading = false,
+  onPlacePress,
   onToggle,
   panHandlers,
   places,
@@ -58,10 +60,15 @@ const MapBottomSheet = ({
         style={styles.sheetScroll}
         contentContainerStyle={styles.sheetContent}
       >
-        <PlaceRail isLoading={isRecommendationsLoading} places={places} />
+        <PlaceRail
+          isLoading={isRecommendationsLoading}
+          places={places}
+          onPlacePress={onPlacePress}
+        />
         <HotPlaceList
           isError={isRecommendationsError}
           isLoading={isRecommendationsLoading}
+          onPlacePress={onPlacePress}
           places={places}
         />
       </ScrollView>

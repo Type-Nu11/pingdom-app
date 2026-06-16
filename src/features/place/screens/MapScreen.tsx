@@ -29,6 +29,8 @@ import { usePlaces } from '../hooks/usePlaces';
 import { usePostLike } from '../../record/hooks/usePostLike';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
+import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
+import type { RecommendedPlace } from '../model/place.types';
 
 type MapScreenProps = {
   onCreatePlace?: () => void;
@@ -44,14 +46,20 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
     places: recommendedPlaces,
+    recommendationVersion,
   } = usePlaceRecommendations({
     latitude: userLat,
     longitude: userLng,
   });
+  const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
   const { togglePostLike } = usePostLike();
   const selectedPlace = useMemo(
-    () => places.find((place) => String(place.id) === selectedMarkerId) ?? null,
-    [places, selectedMarkerId]
+    () => (
+      places.find((place) => String(place.id) === selectedMarkerId)
+      ?? recommendedPlaces.find((place) => String(place.id) === selectedMarkerId)
+      ?? null
+    ),
+    [places, recommendedPlaces, selectedMarkerId]
   );
   const {
     isError: isPostsError,
@@ -85,6 +93,14 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   });
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
     setSelectedMarkerId(event.nativeEvent.markerId);
+  };
+  const handleRecommendedPlacePress = (place: RecommendedPlace) => {
+    setSelectedMarkerId(String(place.id));
+
+    void recordRecommendationClick({
+      placeId: place.id,
+      recommendationVersion: recommendationVersion ?? 'place-rec-v1',
+    });
   };
 
   return (
@@ -150,6 +166,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
         isExpanded={isExpanded}
         isRecommendationsError={isRecommendationsError}
         isRecommendationsLoading={isRecommendationsLoading}
+        onPlacePress={handleRecommendedPlacePress}
         onToggle={toggleSheet}
         panHandlers={panHandlers}
         places={recommendedPlaces}

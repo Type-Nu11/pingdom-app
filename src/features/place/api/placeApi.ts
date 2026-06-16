@@ -78,6 +78,16 @@ export type FavoritePlaceResponse = {
   placeId: number;
 };
 
+export type RecordRecommendationClickRequest = {
+  placeId: number;
+  recommendationVersion: string;
+};
+
+export type RecordRecommendationClickResponse = {
+  message: string;
+  placeId: number;
+};
+
 export type ApiFieldErrorResponse = CommonApiFieldErrorResponse;
 
 export type ApiTokenErrorResponse = CommonApiCodeErrorResponse<'INVALID_TOKEN'>;
@@ -128,6 +138,16 @@ export const placeApi = {
         radiusKm: params.radiusKm ?? 5,
       },
     });
+
+    return data;
+  },
+  recordRecommendationClick: async (
+    payload: RecordRecommendationClickRequest
+  ): Promise<RecordRecommendationClickResponse> => {
+    const { data } = await api.post<RecordRecommendationClickResponse>(
+      '/place/recommendations/click',
+      payload
+    );
 
     return data;
   },
