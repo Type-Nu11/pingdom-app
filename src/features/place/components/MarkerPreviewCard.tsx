@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/icons/actions/Saved.svg';
 import ShareIcon from '../../../assets/icons/actions/share.svg';
@@ -11,6 +20,7 @@ type MarkerPreviewCardProps = {
   isLoading?: boolean;
   onClose: () => void;
   onRetry?: () => void;
+  onToggleLike?: (postId: number, nextLiked: boolean) => Promise<void>;
   placeName?: string;
   posts: Post[];
   width: number;
@@ -60,22 +70,50 @@ const MarkerPreviewCard = ({
   isLoading = false,
   onClose,
   onRetry,
+  onToggleLike,
   placeName,
   posts,
   width,
 }: MarkerPreviewCardProps) => {
+  const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [reactions, setReactions] = useState<FeedReactionState>({});
 
-  const toggleReaction = (feedId: string, key: keyof FeedReactionState[string]) => {
+  const setReaction = (
+    feedId: string,
+    key: keyof FeedReactionState[string],
+    nextValue?: boolean
+  ) => {
     setReactions((prev) => ({
       ...prev,
       [feedId]: {
         ...defaultReaction,
         ...prev[feedId],
-        [key]: !prev[feedId]?.[key],
+        [key]: nextValue ?? !prev[feedId]?.[key],
       },
     }));
+  };
+
+  const handleLikePress = async (item: Post) => {
+    const feedId = String(item.id);
+    const currentLiked = reactions[feedId]?.liked ?? defaultReaction.liked;
+    const nextLiked = !currentLiked;
+
+    if (likePendingById[feedId]) {
+      return;
+    }
+
+    setLikePendingById((prev) => ({ ...prev, [feedId]: true }));
+    setReaction(feedId, 'liked', nextLiked);
+
+    try {
+      await onToggleLike?.(item.id, nextLiked);
+    } catch {
+      setReaction(feedId, 'liked', currentLiked);
+      Alert.alert('좋아요에 실패했어요', '잠시 후 다시 시도해 주세요.');
+    } finally {
+      setLikePendingById((prev) => ({ ...prev, [feedId]: false }));
+    }
   };
 
   return (
@@ -172,9 +210,10 @@ const MarkerPreviewCard = ({
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="좋아요"
+                    disabled={likePendingById[feedId]}
                     hitSlop={10}
                     style={styles.actionButton}
-                    onPress={() => toggleReaction(feedId, 'liked')}
+                    onPress={() => void handleLikePress(item)}
                   >
                     <LikeIcon
                       color={reaction.liked ? '#ff1956' : '#5e5e66'}
@@ -191,7 +230,7 @@ const MarkerPreviewCard = ({
                     accessibilityLabel="공유"
                     hitSlop={10}
                     style={styles.actionButton}
-                    onPress={() => toggleReaction(feedId, 'shared')}
+                    onPress={() => setReaction(feedId, 'shared')}
                   >
                     <ShareIcon
                       color={reaction.shared ? '#ff1956' : '#5e5e66'}
@@ -206,7 +245,7 @@ const MarkerPreviewCard = ({
                   accessibilityLabel="저장"
                   hitSlop={10}
                   style={styles.actionButton}
-                  onPress={() => toggleReaction(feedId, 'saved')}
+                  onPress={() => setReaction(feedId, 'saved')}
                 >
                   <SavedIcon
                     color={reaction.saved ? '#ff1956' : '#5e5e66'}

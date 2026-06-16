@@ -42,9 +42,12 @@ export type RecordLikeRequest = {
 };
 
 export type RecordLikeResponse = {
+  message?: string;
   mapImageId: number;
   userId: number;
 };
+
+export type PostLikeResponse = RecordLikeResponse;
 
 export type RecordApiErrorCode =
   | 'ALREADY_REPORTED_IMAGE'
@@ -130,6 +133,16 @@ export const recordApi = {
   },
   likeRecord: async (payload: RecordLikeRequest): Promise<RecordLikeResponse> => {
     const { data } = await api.post<RecordLikeResponse>('/map/like', payload);
+    return data;
+  },
+  likePost: async (postId: number): Promise<PostLikeResponse> => {
+    const { data } = await api.post<PostLikeResponse>('/map/like', {
+      mapImageId: postId,
+    });
+    return data;
+  },
+  unlikePost: async (postId: number): Promise<PostLikeResponse> => {
+    const { data } = await api.delete<PostLikeResponse>(`/map/like/${postId}`);
     return data;
   },
   reportRecord: async (id: number, payload: ReportPostRequest): Promise<string> => {

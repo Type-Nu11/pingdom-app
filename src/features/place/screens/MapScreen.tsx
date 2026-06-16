@@ -26,6 +26,7 @@ import {
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
+import { usePostLike } from '../../record/hooks/usePostLike';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 
 type MapScreenProps = {
@@ -38,6 +39,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const { isError: isPlacesError, markers, places } = usePlaces();
+  const { togglePostLike } = usePostLike();
   const selectedPlace = useMemo(
     () => places.find((place) => String(place.id) === selectedMarkerId) ?? null,
     [places, selectedMarkerId]
@@ -165,6 +167,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
             onRetry={() => void refetchSelectedPlacePosts()}
+            onToggleLike={togglePostLike}
           />
         </View>
       )}
