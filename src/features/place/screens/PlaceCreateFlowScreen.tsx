@@ -21,10 +21,10 @@ import {
   type ApiTokenErrorResponse,
 } from '../api/placeApi';
 import {
-  recordApi,
   type RecordApiErrorResponse,
   type RecordValidationErrorResponse,
 } from '../../record/api/recordApi';
+import { useCreateRecord } from '../../record/hooks/useCreateRecord';
 import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
@@ -39,7 +39,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
   const [caption, setCaption] = useState('');
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const { createRecord, isUploading } = useCreateRecord();
   const { width, height } = useWindowDimensions();
   const maxContentWidth = Math.min(width, 560);
   const mapHeight = Math.round(clamp(height * 0.46, 310, 430));
@@ -159,8 +159,6 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       return;
     }
 
-    setIsUploading(true);
-
     try {
       if (!selectedPlaceDraft.kakaoPlaceId) {
         Alert.alert('장소를 다시 선택해 주세요', '카카오 검색 결과에서 장소를 선택해야 게시글을 업로드할 수 있어요.');
@@ -168,7 +166,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       }
 
       const description = caption.trim();
-      const record = await recordApi.createRecord({
+      const record = await createRecord({
         description: description || undefined,
         file: selectedPhoto,
         kakaoPlaceId: selectedPlaceDraft.kakaoPlaceId,
@@ -181,8 +179,6 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       ]);
     } catch (error) {
       Alert.alert('사진 업로드에 실패했어요', getUploadErrorMessage(error, '사진을 서버에 저장하지 못했습니다.'));
-    } finally {
-      setIsUploading(false);
     }
   };
 
