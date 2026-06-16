@@ -2,10 +2,30 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 type PlaceCardProps = {
+  address?: string;
   dimmed?: boolean;
+  distanceMeters?: number;
+  name?: string;
 };
 
-const PlaceCard = ({ dimmed = false }: PlaceCardProps) => {
+function formatDistance(distanceMeters?: number) {
+  if (distanceMeters === undefined) {
+    return '';
+  }
+
+  if (distanceMeters >= 1000) {
+    return `${(distanceMeters / 1000).toFixed(1)}km`;
+  }
+
+  return `${Math.round(distanceMeters)}m`;
+}
+
+const PlaceCard = ({
+  address,
+  dimmed = false,
+  distanceMeters,
+  name,
+}: PlaceCardProps) => {
   return (
     <View style={[styles.card, dimmed && styles.dimmedCard]}>
       <View style={styles.skyline}>
@@ -20,6 +40,14 @@ const PlaceCard = ({ dimmed = false }: PlaceCardProps) => {
         <View style={styles.dot} />
         <View style={styles.dot} />
       </View>
+      {name ? (
+        <View style={styles.textOverlay}>
+          <Text numberOfLines={1} style={styles.name}>{name}</Text>
+          <Text numberOfLines={1} style={styles.meta}>
+            {formatDistance(distanceMeters) || address}
+          </Text>
+        </View>
+      ) : null}
       {dimmed ? <Text style={styles.moreText}>•••</Text> : null}
     </View>
   );
@@ -35,6 +63,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 9,
     width: 78,
+  },
+  name: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  meta: {
+    color: 'rgba(255, 255, 255, 0.78)',
+    fontSize: 9,
+    fontWeight: '700',
+    marginTop: 1,
   },
   dimmedCard: {
     opacity: 0.72,
@@ -81,6 +120,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     position: 'absolute',
     right: 12,
+  },
+  textOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.42)',
+    bottom: 0,
+    left: 0,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    position: 'absolute',
+    right: 0,
   },
 });
 

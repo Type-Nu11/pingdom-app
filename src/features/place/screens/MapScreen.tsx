@@ -14,7 +14,7 @@ import MapActionButtons from '../components/MapActionButtons';
 import MapBottomSheet from '../components/MapBottomSheet';
 import MarkerPreviewCard from '../components/MarkerPreviewCard';
 import MapSearchBar from '../components/MapSearchBar';
-import { hotPlaceFixtures, mapCategories } from '../constants/mapFixtures';
+import { mapCategories } from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
   BASE_SCREEN_HEIGHT,
@@ -28,6 +28,7 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePostLike } from '../../record/hooks/usePostLike';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
+import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 
 type MapScreenProps = {
   onCreatePlace?: () => void;
@@ -39,6 +40,14 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const { isError: isPlacesError, markers, places } = usePlaces();
+  const {
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    places: recommendedPlaces,
+  } = usePlaceRecommendations({
+    latitude: userLat,
+    longitude: userLng,
+  });
   const { togglePostLike } = usePostLike();
   const selectedPlace = useMemo(
     () => places.find((place) => String(place.id) === selectedMarkerId) ?? null,
@@ -139,9 +148,11 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
       <MapBottomSheet
         height={sheetExpandedHeight}
         isExpanded={isExpanded}
+        isRecommendationsError={isRecommendationsError}
+        isRecommendationsLoading={isRecommendationsLoading}
         onToggle={toggleSheet}
         panHandlers={panHandlers}
-        places={hotPlaceFixtures}
+        places={recommendedPlaces}
         sheetTranslateY={sheetTranslateY}
       />
 

@@ -1,8 +1,16 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { RecommendedPlace } from '../model/place.types';
 import PlaceCard from './PlaceCard';
 
-const PlaceRail = () => {
+type PlaceRailProps = {
+  isLoading?: boolean;
+  places: RecommendedPlace[];
+};
+
+const PlaceRail = ({ isLoading = false, places }: PlaceRailProps) => {
+  const visiblePlaces = places.slice(0, 5);
+
   return (
     <View style={styles.placeRail}>
       <ScrollView
@@ -12,11 +20,21 @@ const PlaceRail = () => {
         style={styles.placeScroller}
         contentContainerStyle={styles.placeList}
       >
-        <PlaceCard />
-        <PlaceCard />
-        <PlaceCard />
-        <PlaceCard />
-        <PlaceCard dimmed />
+        {isLoading ? (
+          <Text style={styles.stateText}>추천 장소를 불러오고 있어요</Text>
+        ) : visiblePlaces.length === 0 ? (
+          <Text style={styles.stateText}>추천 장소가 아직 없어요</Text>
+        ) : (
+          visiblePlaces.map((place, index) => (
+            <PlaceCard
+              address={place.address}
+              dimmed={index === 4 && places.length > 5}
+              distanceMeters={place.distanceMeters}
+              key={place.id}
+              name={place.name}
+            />
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -39,6 +57,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 72,
     paddingHorizontal: 12,
+  },
+  stateText: {
+    color: '#747681',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });
 

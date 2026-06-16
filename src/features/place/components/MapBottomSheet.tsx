@@ -7,21 +7,26 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import HotPlaceList, { HotPlaceItem } from './HotPlaceList';
+import type { RecommendedPlace } from '../model/place.types';
+import HotPlaceList from './HotPlaceList';
 import PlaceRail from './PlaceRail';
 
 type MapBottomSheetProps = {
   height: number;
   isExpanded: boolean;
+  isRecommendationsError?: boolean;
+  isRecommendationsLoading?: boolean;
   onToggle: () => void;
   panHandlers: GestureResponderHandlers;
-  places: HotPlaceItem[];
+  places: RecommendedPlace[];
   sheetTranslateY: Animated.Value;
 };
 
 const MapBottomSheet = ({
   height,
   isExpanded,
+  isRecommendationsError = false,
+  isRecommendationsLoading = false,
   onToggle,
   panHandlers,
   places,
@@ -53,8 +58,12 @@ const MapBottomSheet = ({
         style={styles.sheetScroll}
         contentContainerStyle={styles.sheetContent}
       >
-        <PlaceRail />
-        <HotPlaceList places={places} />
+        <PlaceRail isLoading={isRecommendationsLoading} places={places} />
+        <HotPlaceList
+          isError={isRecommendationsError}
+          isLoading={isRecommendationsLoading}
+          places={places}
+        />
       </ScrollView>
     </Animated.View>
   );

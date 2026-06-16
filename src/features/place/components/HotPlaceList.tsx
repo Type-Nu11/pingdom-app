@@ -1,18 +1,34 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-
-export type HotPlaceItem = {
-  id: string;
-  location: string;
-  rank: number;
-  username: string;
-};
+import type { RecommendedPlace } from '../model/place.types';
 
 type HotPlaceListProps = {
-  places: HotPlaceItem[];
+  isError?: boolean;
+  isLoading?: boolean;
+  places: RecommendedPlace[];
 };
 
-const HotPlaceList = ({ places }: HotPlaceListProps) => {
+function formatDistance(distanceMeters: number) {
+  if (distanceMeters >= 1000) {
+    return `${(distanceMeters / 1000).toFixed(1)}km`;
+  }
+
+  return `${Math.round(distanceMeters)}m`;
+}
+
+const HotPlaceList = ({
+  isError = false,
+  isLoading = false,
+  places,
+}: HotPlaceListProps) => {
+  const stateText = isLoading
+    ? '추천 장소를 불러오고 있어요'
+    : isError
+      ? '추천 장소를 불러오지 못했어요'
+      : places.length === 0
+        ? '주변 추천 장소가 아직 없어요'
+        : null;
+
   return (
     <View style={styles.hotSection}>
       <View style={styles.hotTitleRow}>
@@ -20,23 +36,33 @@ const HotPlaceList = ({ places }: HotPlaceListProps) => {
         <Text style={styles.hotTitle}>Hot Place</Text>
       </View>
 
-      {places.map((place) => (
-        <View key={place.id} style={styles.hotRow}>
-          <View style={[styles.rankBadge, place.rank !== 1 && styles.rankBadgeMuted]}>
-            <Text style={[styles.rankText, place.rank !== 1 && styles.rankTextMuted]}>
-              {place.rank}
-            </Text>
-          </View>
-          <View style={styles.avatar}>
-            <View style={styles.avatarHead} />
-            <View style={styles.avatarBody} />
-          </View>
-          <View>
-            <Text style={styles.hotLocation}>{place.location}</Text>
-            <Text style={styles.hotUsername}>{place.username}</Text>
-          </View>
+      {stateText ? (
+        <View style={styles.stateRow}>
+          <Text style={styles.stateText}>{stateText}</Text>
         </View>
-      ))}
+      ) : places.map((place, index) => {
+        const rank = index + 1;
+
+        return (
+          <View key={place.id} style={styles.hotRow}>
+            <View style={[styles.rankBadge, rank !== 1 && styles.rankBadgeMuted]}>
+              <Text style={[styles.rankText, rank !== 1 && styles.rankTextMuted]}>
+                {rank}
+              </Text>
+            </View>
+            <View style={styles.avatar}>
+              <View style={styles.avatarHead} />
+              <View style={styles.avatarBody} />
+            </View>
+            <View style={styles.hotTextGroup}>
+              <Text numberOfLines={1} style={styles.hotLocation}>{place.name}</Text>
+              <Text numberOfLines={1} style={styles.hotUsername}>
+                {formatDistance(place.distanceMeters)} · {place.reason}
+              </Text>
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 };
@@ -70,6 +96,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: 73,
     paddingHorizontal: 43,
+  },
+  hotTextGroup: {
+    flex: 1,
   },
   rankBadge: {
     alignItems: 'center',
@@ -128,6 +157,18 @@ const styles = StyleSheet.create({
   hotUsername: {
     color: '#111217',
     fontSize: 12,
+    fontWeight: '800',
+  },
+  stateRow: {
+    borderTopColor: '#ececf0',
+    borderTopWidth: 1,
+    minHeight: 73,
+    justifyContent: 'center',
+    paddingHorizontal: 43,
+  },
+  stateText: {
+    color: '#747681',
+    fontSize: 14,
     fontWeight: '800',
   },
 });

@@ -3,7 +3,7 @@ import type {
   ApiCodeErrorResponse as CommonApiCodeErrorResponse,
   ApiFieldErrorResponse as CommonApiFieldErrorResponse,
 } from '../../../types/api.types';
-import type { PlacesPage } from '../model/place.types';
+import type { PlaceRecommendations, PlacesPage } from '../model/place.types';
 
 export type PlaceSearchItem = {
   address: string;
@@ -23,6 +23,13 @@ export type GetPlacesRequest = {
   keyword?: string;
   limit?: number;
   page?: number;
+};
+
+export type GetPlaceRecommendationsRequest = {
+  latitude: number;
+  limit?: number;
+  longitude: number;
+  radiusKm?: number;
 };
 
 export type CreatePlaceRequest = {
@@ -105,6 +112,20 @@ export const placeApi = {
         limit: params.limit ?? 100,
         page: params.page ?? 1,
         ...(params.keyword ? { keyword: params.keyword } : {}),
+      },
+    });
+
+    return data;
+  },
+  getRecommendations: async (
+    params: GetPlaceRecommendationsRequest
+  ): Promise<PlaceRecommendations> => {
+    const { data } = await api.get<PlaceRecommendations>('/place/recommendations', {
+      params: {
+        latitude: params.latitude,
+        limit: params.limit ?? 10,
+        longitude: params.longitude,
+        radiusKm: params.radiusKm ?? 5,
       },
     });
 

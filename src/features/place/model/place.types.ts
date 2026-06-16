@@ -15,6 +15,29 @@ export type PlacesPage = {
   totalPages: number;
 };
 
+export type PlaceGrowth = {
+  currentLevelMinPhotoCount: number;
+  level: number;
+  nextLevelMinPhotoCount: number;
+  photoCount: number;
+  progressPercent: number;
+};
+
+export type RecommendedPlace = Place & {
+  distanceMeters: number;
+  placeGrowth: PlaceGrowth;
+  reason: string;
+};
+
+export type PlaceRecommendations = {
+  appliedRadiusKm: number;
+  limit: number;
+  places: RecommendedPlace[];
+  recommendedCount: number;
+  recommendationVersion: string;
+  requestedRadiusKm: number;
+};
+
 export type PlaceCreateDraft = {
   address: string;
   coordinateToken?: string;
@@ -36,11 +59,4 @@ export type MapMarker = {
   lat: number;
   lng: number;
   markerType?: 'default' | 'hot';
-};
-
-export type HotPlace = {
-  id: string;
-  location: string;
-  rank: number;
-  username: string;
 };
