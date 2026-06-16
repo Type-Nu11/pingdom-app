@@ -3,7 +3,7 @@ import type {
   ApiCodeErrorResponse,
   ApiFieldErrorResponse,
 } from '../../../types/api.types';
-import type { RecordUploadFile } from '../model/record.types';
+import type { PostsPage, RecordUploadFile } from '../model/record.types';
 
 const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
   gif: 'image/gif',
@@ -26,6 +26,11 @@ export type CreateRecordRequest = {
 export type CreateRecordResponse = {
   id: number;
   message: string;
+};
+
+export type GetPostsRequest = {
+  limit?: number;
+  page?: number;
 };
 
 export type ReportPostRequest = {
@@ -111,6 +116,16 @@ export const recordApi = {
   },
   deleteRecord: async (id: number): Promise<string> => {
     const { data } = await api.delete<string>(`/map/post/${id}/delete`);
+    return data;
+  },
+  getPosts: async (params: GetPostsRequest = {}): Promise<PostsPage> => {
+    const { data } = await api.get<PostsPage>('/map/posts', {
+      params: {
+        limit: params.limit ?? 100,
+        page: params.page ?? 1,
+      },
+    });
+
     return data;
   },
   likeRecord: async (payload: RecordLikeRequest): Promise<RecordLikeResponse> => {

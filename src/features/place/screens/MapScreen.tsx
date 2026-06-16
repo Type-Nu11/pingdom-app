@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Pressable,
   SafeAreaView,
@@ -26,6 +26,7 @@ import {
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
+import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 
 type MapScreenProps = {
   onCreatePlace?: () => void;
@@ -36,7 +37,17 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
-  const { isError: isPlacesError, markers } = usePlaces();
+  const { isError: isPlacesError, markers, places } = usePlaces();
+  const selectedPlace = useMemo(
+    () => places.find((place) => String(place.id) === selectedMarkerId) ?? null,
+    [places, selectedMarkerId]
+  );
+  const {
+    isError: isPostsError,
+    isLoading: isPostsLoading,
+    posts: selectedPlacePosts,
+    refetch: refetchSelectedPlacePosts,
+  } = usePlacePosts(selectedPlace?.id ?? null);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -147,8 +158,13 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
+            isError={isPostsError}
+            isLoading={isPostsLoading}
+            placeName={selectedPlace?.name}
+            posts={selectedPlacePosts}
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
+            onRetry={() => void refetchSelectedPlacePosts()}
           />
         </View>
       )}
