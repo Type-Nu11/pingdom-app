@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import axios from 'axios';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,14 +15,7 @@ import CaptionStep from '../components/create-flow/CaptionStep';
 import PlaceCreateHeader from '../components/create-flow/PlaceCreateHeader';
 import LocationStep from '../components/create-flow/LocationStep';
 import PhotoSelectStep from '../components/create-flow/PhotoSelectStep';
-import {
-  type ApiFieldErrorResponse,
-  type ApiTokenErrorResponse,
-} from '../api/placeApi';
-import {
-  type RecordApiErrorResponse,
-  type RecordValidationErrorResponse,
-} from '../../record/api/recordApi';
+import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useCreatePlaceCoordinateToken } from '../hooks/useCreatePlaceCoordinateToken';
 import { useCreatePlaceRecord } from '../hooks/useCreatePlaceRecord';
 import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
@@ -93,7 +85,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     } catch (error) {
       Alert.alert(
         '장소 좌표 확인에 실패했어요',
-        getUploadErrorMessage(error, '장소 좌표 토큰을 발급받지 못했습니다.')
+        getApiErrorMessage(error, '장소 좌표 토큰을 발급받지 못했습니다.')
       );
     }
   };
@@ -155,32 +147,6 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     }
   };
 
-  const getUploadErrorMessage = (error: unknown, fallbackMessage: string) => {
-    if (!axios.isAxiosError<
-      | ApiFieldErrorResponse
-      | ApiTokenErrorResponse
-      | RecordApiErrorResponse
-      | RecordValidationErrorResponse
-    >(error)) {
-      return fallbackMessage;
-    }
-
-    const status = error.response?.status;
-    const responseData = error.response?.data;
-    const fieldErrorMessage = responseData && typeof responseData === 'object' && 'errors' in responseData && responseData.errors
-      ? Object.values(responseData.errors)[0]
-      : undefined;
-    const serverMessage = responseData && typeof responseData === 'object' && 'message' in responseData
-      ? responseData.message
-      : undefined;
-
-    if (!status) {
-      return '서버에 연결하지 못했어요. API 서버가 켜져 있는지 확인해 주세요.';
-    }
-
-    return fieldErrorMessage ?? serverMessage ?? fallbackMessage;
-  };
-
   const handleUpload = async () => {
     if (!selectedPlaceDraft || !selectedPhoto || isUploading) {
       return;
@@ -202,7 +168,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
         { text: '확인', onPress: onClose },
       ]);
     } catch (error) {
-      Alert.alert('사진 업로드에 실패했어요', getUploadErrorMessage(error, '사진을 서버에 저장하지 못했습니다.'));
+      Alert.alert('사진 업로드에 실패했어요', getApiErrorMessage(error, '사진을 서버에 저장하지 못했습니다.'));
     }
   };
 

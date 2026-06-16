@@ -100,7 +100,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
     void recordRecommendationClick({
       placeId: place.id,
       recommendationVersion: recommendationVersion ?? 'place-rec-v1',
-    });
+    }).catch(() => undefined);
   };
 
   return (

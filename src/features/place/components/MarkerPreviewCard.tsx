@@ -13,6 +13,7 @@ import LikeIcon from '../../../assets/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/icons/actions/Saved.svg';
 import ShareIcon from '../../../assets/icons/actions/share.svg';
 import ReportIcon from '../../../assets/icons/actions/tlsrh.svg';
+import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { Post } from '../../record/model/record.types';
 
 type MarkerPreviewCardProps = {
@@ -108,9 +109,12 @@ const MarkerPreviewCard = ({
 
     try {
       await onToggleLike?.(item.id, nextLiked);
-    } catch {
+    } catch (error) {
       setReaction(feedId, 'liked', currentLiked);
-      Alert.alert('좋아요에 실패했어요', '잠시 후 다시 시도해 주세요.');
+      Alert.alert(
+        '좋아요에 실패했어요',
+        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.')
+      );
     } finally {
       setLikePendingById((prev) => ({ ...prev, [feedId]: false }));
     }

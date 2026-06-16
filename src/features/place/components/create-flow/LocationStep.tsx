@@ -5,7 +5,7 @@ import type { KakaoLocalSearchItem } from '../../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
 import type { PlaceCreateDraft } from '../../model/place.types';
 import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../KakaoMapCard';
-import { SELECTED_PLACE } from './constants';
+import { DEFAULT_PLACE_COORDINATE } from './constants';
 
 type LocationStepProps = {
   initialValue: PlaceCreateDraft | null;
@@ -21,19 +21,19 @@ const LocationStep = ({
   onNext,
 }: LocationStepProps) => {
   const [addressQuery, setAddressQuery] = useState('');
-  const [placeName, setPlaceName] = useState(initialValue?.name ?? SELECTED_PLACE.name);
+  const [placeName, setPlaceName] = useState(initialValue?.name ?? '');
   const [selectedAddress, setSelectedAddress] = useState(
-    initialValue?.address ?? SELECTED_PLACE.address
+    initialValue?.address ?? '장소를 검색해 선택해 주세요'
   );
   const [selectedKakaoPlaceId, setSelectedKakaoPlaceId] = useState(initialValue?.kakaoPlaceId);
   const [detailAddress, setDetailAddress] = useState('');
   const [mapCenter, setMapCenter] = useState({
-    lat: initialValue?.latitude ?? SELECTED_PLACE.lat,
-    lng: initialValue?.longitude ?? SELECTED_PLACE.lng,
+    lat: initialValue?.latitude ?? DEFAULT_PLACE_COORDINATE.lat,
+    lng: initialValue?.longitude ?? DEFAULT_PLACE_COORDINATE.lng,
   });
   const [selectedCoordinate, setSelectedCoordinate] = useState({
-    lat: initialValue?.latitude ?? SELECTED_PLACE.lat,
-    lng: initialValue?.longitude ?? SELECTED_PLACE.lng,
+    lat: initialValue?.latitude ?? DEFAULT_PLACE_COORDINATE.lat,
+    lng: initialValue?.longitude ?? DEFAULT_PLACE_COORDINATE.lng,
   });
   const {
     clearSearchResults,
@@ -43,6 +43,13 @@ const LocationStep = ({
     searchResults,
     searchStatusMessage,
   } = useKakaoLocalSearch();
+  const isSelectedAddressInvalid = selectedAddress === '검색 결과가 없습니다'
+    || selectedAddress === '주소 검색에 실패했습니다'
+    || selectedAddress === '장소를 검색해 선택해 주세요';
+  const isSelectionDisabled = !placeName.trim()
+    || !selectedKakaoPlaceId
+    || isSelectedAddressInvalid
+    || isSubmitting;
 
   const applySearchResult = (result: KakaoLocalSearchItem) => {
     const nextAddress = result.roadAddress || result.address;
@@ -78,8 +85,7 @@ const LocationStep = ({
   const handleSelectLocation = () => {
     const trimmedName = placeName.trim();
     const trimmedDetailAddress = detailAddress.trim();
-    const isAddressInvalid = selectedAddress === '검색 결과가 없습니다' || selectedAddress === '주소 검색에 실패했습니다';
-    if (!trimmedName || isAddressInvalid || isSubmitting) {
+    if (!trimmedName || isSelectionDisabled) {
       return;
     }
     void onNext({
@@ -179,10 +185,10 @@ const LocationStep = ({
         />
         <Pressable
           accessibilityRole="button"
-          disabled={!placeName.trim() || isSubmitting}
+          disabled={isSelectionDisabled}
           style={[
             styles.primaryButton,
-            (!placeName.trim() || isSubmitting) && styles.primaryButtonDisabled,
+            isSelectionDisabled && styles.primaryButtonDisabled,
           ]}
           onPress={handleSelectLocation}
         >
