@@ -17,7 +17,10 @@ import LocationStep from '../components/create-flow/LocationStep';
 import PhotoSelectStep from '../components/create-flow/PhotoSelectStep';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useCreatePlaceCoordinateToken } from '../hooks/useCreatePlaceCoordinateToken';
-import { useCreatePlaceRecord } from '../hooks/useCreatePlaceRecord';
+import {
+  PLACE_POST_ALREADY_EXISTS_ERROR,
+  useCreatePlaceRecord,
+} from '../hooks/useCreatePlaceRecord';
 import type { PlaceCategory, PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
@@ -166,7 +169,11 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
         { text: '확인', onPress: onClose },
       ]);
     } catch (error) {
-      Alert.alert('사진 업로드에 실패했어요', getApiErrorMessage(error, '사진을 서버에 저장하지 못했습니다.'));
+      const errorMessage = error instanceof Error && error.message === PLACE_POST_ALREADY_EXISTS_ERROR
+        ? '이미 이 장소에 게시글을 올렸어요.'
+        : getApiErrorMessage(error, '사진을 서버에 저장하지 못했습니다.');
+
+      Alert.alert('사진 업로드에 실패했어요', errorMessage);
     }
   };
 

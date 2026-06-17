@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -78,16 +76,20 @@ const MarkerPreviewCard = ({
   posts,
   width,
 }: MarkerPreviewCardProps) => {
-  const [activePostIndex, setActivePostIndex] = useState(0);
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [reactions, setReactions] = useState<FeedReactionState>({});
-
-  useEffect(() => {
-    if (activePostIndex >= posts.length) {
-      setActivePostIndex(Math.max(posts.length - 1, 0));
+  const placeDisplayName = placeName ?? posts[0]?.placeName ?? '이 장소';
+  const firstPost = posts.reduce<Post | null>((oldestPost, post) => {
+    if (!oldestPost) {
+      return post;
     }
-  }, [activePostIndex, posts.length]);
+
+    return new Date(post.createdAt).getTime() < new Date(oldestPost.createdAt).getTime()
+      ? post
+      : oldestPost;
+  }, null);
+  const firstUploaderName = firstPost?.username;
 
   const setReaction = (
     feedId: string,
@@ -129,14 +131,6 @@ const MarkerPreviewCard = ({
     }
   };
 
-  const handlePostScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-    const clampedIndex = Math.min(Math.max(nextIndex, 0), Math.max(posts.length - 1, 0));
-
-    setActivePostIndex(clampedIndex);
-    setOpenMenuId(null);
-  };
-
   return (
     <View style={[styles.card, { width }]}>
       <Pressable
@@ -149,15 +143,27 @@ const MarkerPreviewCard = ({
         <Text style={styles.closeText}>×</Text>
       </Pressable>
 
-      {isLoading ? (
-        <View style={styles.feedList}>
+      <ScrollView
+        bounces={false}
+        contentContainerStyle={styles.feedList}
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.placeHeader}>
+          <Text numberOfLines={1} style={styles.placeHeaderTitle}>{placeDisplayName}</Text>
+          {firstUploaderName ? (
+            <Text numberOfLines={1} style={styles.placeHeaderMeta}>
+              최초 등록자 : <Text style={styles.placeHeaderAuthor}>{firstUploaderName}</Text>
+            </Text>
+          ) : null}
+        </View>
+
+        {isLoading ? (
           <View style={styles.stateContainer}>
             <ActivityIndicator color="#ff1956" />
             <Text style={styles.stateText}>게시글을 불러오고 있어요</Text>
           </View>
-        </View>
-      ) : isError ? (
-        <View style={styles.feedList}>
+        ) : isError ? (
           <View style={styles.stateContainer}>
             <Text style={styles.stateTitle}>게시글을 불러오지 못했어요</Text>
             {onRetry ? (
@@ -166,154 +172,123 @@ const MarkerPreviewCard = ({
               </Pressable>
             ) : null}
           </View>
-        </View>
-      ) : posts.length === 0 ? (
-        <View style={styles.feedList}>
+        ) : posts.length === 0 ? (
           <View style={styles.stateContainer}>
-            <Text style={styles.stateTitle}>{placeName ?? '이 장소'}에 아직 게시글이 없어요</Text>
+            <Text style={styles.stateTitle}>{placeDisplayName}에 아직 게시글이 없어요</Text>
             <Text style={styles.stateText}>첫 사진을 올려 장소를 채워보세요</Text>
           </View>
-        </View>
-      ) : (
-        <>
-          <ScrollView
-            bounces={false}
-            decelerationRate="fast"
-            horizontal
-            nestedScrollEnabled
-            pagingEnabled
-            scrollEventThrottle={16}
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handlePostScrollEnd}
-          >
-            {posts.map((item, index) => {
-              const feedId = String(item.id);
-              const reaction = reactions[feedId] ?? defaultReaction;
-              const isMenuOpen = openMenuId === feedId;
+        ) : posts.map((item) => {
+          const feedId = String(item.id);
+          const reaction = reactions[feedId] ?? defaultReaction;
+          const isMenuOpen = openMenuId === feedId;
 
-              return (
-                <View
-                  key={item.id}
-                  accessibilityLabel={`게시글 ${index + 1}/${posts.length}`}
-                  style={[styles.feedItem, { width }]}
-                >
-                  <View style={styles.profileRow}>
-                    <View style={styles.profileIcon}>
-                      <View style={styles.profileHead} />
-                      <View style={styles.profileBody} />
-                    </View>
-                    <View style={styles.profileTextGroup}>
-                      <Text style={styles.username}>{item.username}</Text>
-                      <Text style={styles.placeName}>{item.placeName}</Text>
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="피드 메뉴 열기"
-                      hitSlop={10}
-                      style={styles.moreButton}
-                      onPress={() => setOpenMenuId(isMenuOpen ? null : feedId)}
-                    >
-                      <Text style={styles.moreText}>...</Text>
-                    </Pressable>
-
-                    {isMenuOpen && (
-                      <View style={styles.menuCard}>
-                        <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                          <Text style={styles.menuIcon}>⊕</Text>
-                          <Text style={styles.menuText}>관심 있음</Text>
-                        </Pressable>
-                        <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                          <Text style={styles.menuIcon}>⊖</Text>
-                          <Text style={styles.menuText}>관심 없음</Text>
-                        </Pressable>
-                        <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
-                          <ReportIcon width={16} height={16} />
-                          <Text style={styles.reportText}>핑 신고</Text>
-                        </Pressable>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.imageFrame}>
-                    <Image
-                      source={{ uri: item.imageUrl }}
-                      resizeMode="contain"
-                      style={styles.feedImage}
-                    />
-                  </View>
-
-                  <View style={styles.actionRow}>
-                    <View style={styles.leftActions}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="좋아요"
-                        disabled={likePendingById[feedId]}
-                        hitSlop={10}
-                        style={styles.actionButton}
-                        onPress={() => void handleLikePress(item)}
-                      >
-                        <LikeIcon
-                          color={reaction.liked ? '#ff1956' : '#5e5e66'}
-                          fill={reaction.liked ? '#ff1956' : 'none'}
-                          width={20}
-                          height={18}
-                        />
-                      </Pressable>
-                      <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>
-                        {formatLikeCount(item.likeCount + (reaction.liked ? 1 : 0))}
-                      </Text>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="공유"
-                        hitSlop={10}
-                        style={styles.actionButton}
-                        onPress={() => setReaction(feedId, 'shared')}
-                      >
-                        <ShareIcon
-                          color={reaction.shared ? '#ff1956' : '#5e5e66'}
-                          fill="none"
-                          width={23}
-                          height={20}
-                        />
-                      </Pressable>
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="저장"
-                      hitSlop={10}
-                      style={styles.actionButton}
-                      onPress={() => setReaction(feedId, 'saved')}
-                    >
-                      <SavedIcon
-                        color={reaction.saved ? '#ff1956' : '#5e5e66'}
-                        fill={reaction.saved ? '#ff1956' : 'none'}
-                        width={18}
-                        height={21}
-                      />
-                    </Pressable>
-                  </View>
-
-                  <Text style={styles.caption}>
-                    <Text style={styles.captionAuthor}>{item.username} </Text>
-                    {item.description || item.title}
-                  </Text>
-                  <Text style={styles.timeText}>{formatPostTime(item.createdAt)} • 번역 보기</Text>
+          return (
+            <View key={item.id} style={styles.feedItem}>
+              <View style={styles.profileRow}>
+                <View style={styles.profileIcon}>
+                  <View style={styles.profileHead} />
+                  <View style={styles.profileBody} />
                 </View>
-              );
-            })}
-          </ScrollView>
-          {posts.length > 1 ? (
-            <View style={styles.pagerDots}>
-              {posts.map((item, index) => (
-                <View
-                  key={item.id}
-                  style={[styles.pagerDot, index === activePostIndex && styles.pagerDotActive]}
+                <View style={styles.profileTextGroup}>
+                  <Text style={styles.username}>{item.username}</Text>
+                  <Text style={styles.placeName}>{item.placeName}</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="피드 메뉴 열기"
+                  hitSlop={10}
+                  style={styles.moreButton}
+                  onPress={() => setOpenMenuId(isMenuOpen ? null : feedId)}
+                >
+                  <Text style={styles.moreText}>...</Text>
+                </Pressable>
+
+                {isMenuOpen && (
+                  <View style={styles.menuCard}>
+                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                      <Text style={styles.menuIcon}>⊕</Text>
+                      <Text style={styles.menuText}>관심 있음</Text>
+                    </Pressable>
+                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                      <Text style={styles.menuIcon}>⊖</Text>
+                      <Text style={styles.menuText}>관심 없음</Text>
+                    </Pressable>
+                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                      <ReportIcon width={16} height={16} />
+                      <Text style={styles.reportText}>핑 신고</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.imageFrame}>
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  resizeMode="contain"
+                  style={styles.feedImage}
                 />
-              ))}
+              </View>
+
+              <View style={styles.actionRow}>
+                <View style={styles.leftActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="좋아요"
+                    disabled={likePendingById[feedId]}
+                    hitSlop={10}
+                    style={styles.actionButton}
+                    onPress={() => void handleLikePress(item)}
+                  >
+                    <LikeIcon
+                      color={reaction.liked ? '#ff1956' : '#5e5e66'}
+                      fill={reaction.liked ? '#ff1956' : 'none'}
+                      width={20}
+                      height={18}
+                    />
+                  </Pressable>
+                  <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>
+                    {formatLikeCount(item.likeCount + (reaction.liked ? 1 : 0))}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="공유"
+                    hitSlop={10}
+                    style={styles.actionButton}
+                    onPress={() => setReaction(feedId, 'shared')}
+                  >
+                    <ShareIcon
+                      color={reaction.shared ? '#ff1956' : '#5e5e66'}
+                      fill="none"
+                      width={23}
+                      height={20}
+                    />
+                  </Pressable>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="저장"
+                  hitSlop={10}
+                  style={styles.actionButton}
+                  onPress={() => setReaction(feedId, 'saved')}
+                >
+                  <SavedIcon
+                    color={reaction.saved ? '#ff1956' : '#5e5e66'}
+                    fill={reaction.saved ? '#ff1956' : 'none'}
+                    width={18}
+                    height={21}
+                  />
+                </Pressable>
+              </View>
+
+              <Text style={styles.caption}>
+                <Text style={styles.captionAuthor}>{item.username} </Text>
+                {item.description || item.title}
+              </Text>
+              <Text style={styles.timeText}>{formatPostTime(item.createdAt)} • 번역 보기</Text>
             </View>
-          ) : null}
-        </>
-      )}
+          );
+        })}
+      </ScrollView>
     </View>
   );
 };
@@ -374,12 +349,13 @@ const styles = StyleSheet.create({
   },
   feedItem: {
     backgroundColor: '#fff',
+    borderBottomColor: '#f1f1f4',
+    borderBottomWidth: 1,
     overflow: 'visible',
     paddingBottom: 24,
-    paddingTop: 42,
   },
   feedList: {
-    paddingTop: 42,
+    paddingBottom: 10,
   },
   imageFrame: {
     alignItems: 'center',
@@ -453,23 +429,32 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 18,
   },
-  pagerDot: {
-    backgroundColor: '#d7d8df',
-    borderRadius: 3,
-    height: 6,
-    width: 6,
-  },
-  pagerDotActive: {
-    backgroundColor: '#ff1956',
-    width: 18,
-  },
-  pagerDots: {
+  placeHeader: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
+    backgroundColor: '#f8f8fa',
+    borderBottomColor: '#ececf0',
+    borderBottomWidth: 1,
+    minHeight: 68,
     justifyContent: 'center',
-    paddingBottom: 14,
-    paddingTop: 2,
+    paddingHorizontal: 58,
+    paddingVertical: 12,
+  },
+  placeHeaderAuthor: {
+    color: '#ff1956',
+    fontWeight: '800',
+  },
+  placeHeaderMeta: {
+    color: '#555965',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  placeHeaderTitle: {
+    color: '#15171d',
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
   },
   profileBody: {
     backgroundColor: '#5e5e66',

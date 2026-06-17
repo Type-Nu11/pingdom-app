@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { profileApi } from '../../profile/api/profileApi';
 import { recordApi, type CreateRecordResponse } from '../../record/api/recordApi';
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
 import { placeApi, type CreatePlaceResponse } from '../api/placeApi';
@@ -31,6 +32,9 @@ export const useCreatePlaceRecord = () => {
         validPlace,
       } = await resolvePlaceForRecord({ category, draft, photo });
       const description = caption.trim();
+
+      await assertUserCanUploadPlacePost(place.id);
+
       const record = await recordApi.createRecord({
         description: description || undefined,
         file: photo,
@@ -64,6 +68,8 @@ type CreateKakaoPlaceParams = {
 
 const PLACE_SEARCH_LIMIT = 100;
 const PLACE_SEARCH_MAX_PAGES = 5;
+const MAX_POSTS_PER_USER_PER_PLACE = 1;
+export const PLACE_POST_ALREADY_EXISTS_ERROR = 'PLACE_POST_ALREADY_EXISTS';
 
 type ResolvePlaceForRecordParams = CreateKakaoPlaceParams;
 
@@ -139,6 +145,24 @@ async function resolvePlaceForRecord({
       name: draft.name,
     }),
   };
+}
+
+async function assertUserCanUploadPlacePost(placeId: number) {
+  const [profile, postsPage] = await Promise.all([
+    profileApi.getProfile(),
+    recordApi.getPosts({
+      limit: 100,
+      page: 1,
+      placeId,
+    }),
+  ]);
+  const userPostCount = postsPage.posts.filter((post) => (
+    Number(post.placeId) === placeId && post.userId === profile.id
+  )).length;
+
+  if (userPostCount >= MAX_POSTS_PER_USER_PER_PLACE) {
+    throw new Error(PLACE_POST_ALREADY_EXISTS_ERROR);
+  }
 }
 
 async function createKakaoPlace({ category, draft, photo }: CreateKakaoPlaceParams) {
