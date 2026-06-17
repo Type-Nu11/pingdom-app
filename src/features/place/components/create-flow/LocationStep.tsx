@@ -68,6 +68,7 @@ const LocationStep = ({
     || !selectedKakaoPlaceId
     || isSelectedAddressInvalid
     || isSubmitting;
+  const selectedAddressInputValue = isSelectedAddressInvalid ? '' : selectedAddress;
   const selectableSearchResults = searchResults.filter((result) => result.kakaoPlaceId);
 
   const applySearchResult = (result: KakaoLocalSearchItem) => {
@@ -218,13 +219,20 @@ const LocationStep = ({
       </View>
       <View style={styles.locationPanel}>
         <TextInput
+          editable={false}
+          multiline
+          style={styles.selectedAddressInput}
+          placeholder="주소를 선택해 주세요"
+          placeholderTextColor="#777a84"
+          value={selectedAddressInputValue}
+        />
+        <TextInput
           style={styles.placeNameInput}
           placeholder="장소 이름을 입력해 주세요"
           placeholderTextColor="#777a84"
           value={placeName}
           onChangeText={setPlaceName}
         />
-        <TextInput editable={false} style={styles.addressInput} value={selectedAddress} />
         <TextInput
           style={styles.detailInput}
           placeholder="(선택) 상세 주소 입력"
@@ -367,13 +375,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 20,
   },
-  addressInput: {
-    color: '#20232c',
-    fontSize: 17,
-    fontWeight: '500',
-    marginBottom: 14,
-    padding: 0,
-  },
   detailInput: {
     borderColor: '#dedfe4',
     borderRadius: 13,
@@ -383,6 +384,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     height: 54,
     paddingHorizontal: 20,
+  },
+  selectedAddressInput: {
+    borderColor: '#dedfe4',
+    borderRadius: 13,
+    borderWidth: 1,
+    color: '#1d2028',
+    fontSize: 16,
+    fontWeight: '700',
+    minHeight: 54,
+    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   primaryButton: {
     alignItems: 'center',
