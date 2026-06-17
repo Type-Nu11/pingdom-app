@@ -155,11 +155,6 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     }
 
     try {
-      if (!selectedPlaceDraft.kakaoPlaceId) {
-        Alert.alert('장소를 다시 선택해 주세요', '카카오 검색 결과에서 장소를 선택해야 게시글을 업로드할 수 있어요.');
-        return;
-      }
-
       const result = await createPlaceRecord({
         caption,
         category: selectedCategory,
