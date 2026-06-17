@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { recordApi, type CreateRecordResponse } from '../../record/api/recordApi';
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
 import { placeApi, type CreatePlaceResponse } from '../api/placeApi';
-import type { PlaceCategory, PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
+import type { Place, PlaceCategory, PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { placeQueryKeys } from './usePlaces';
 
 type CreatePlaceRecordRequest = {
@@ -25,23 +25,19 @@ export const useCreatePlaceRecord = () => {
     CreatePlaceRecordRequest
   >({
     mutationFn: async ({ caption, category, draft, photo }) => {
-      const place = draft.kakaoPlaceId
-        ? await createKakaoPlace({ category, draft, photo })
-        : await placeApi.createPlace({
-          address: draft.address,
-          category,
-          latitude: draft.latitude,
-          longitude: draft.longitude,
-          name: draft.name,
-        });
+      const {
+        kakaoPlaceId,
+        place,
+        validPlace,
+      } = await resolvePlaceForRecord({ category, draft, photo });
       const description = caption.trim();
       const record = await recordApi.createRecord({
         description: description || undefined,
         file: photo,
-        kakaoPlaceId: draft.kakaoPlaceId,
+        kakaoPlaceId,
         placeId: place.id,
         title: draft.name,
-        validPlace: draft.kakaoPlaceId ? true : undefined,
+        validPlace,
       });
 
       return { place, record };
@@ -65,6 +61,85 @@ type CreateKakaoPlaceParams = {
   draft: PlaceCreateDraft;
   photo: PlaceUploadPhoto;
 };
+
+const PLACE_SEARCH_LIMIT = 100;
+const PLACE_SEARCH_MAX_PAGES = 5;
+
+type ResolvePlaceForRecordParams = CreateKakaoPlaceParams;
+
+type ResolvedPlaceForRecord = {
+  kakaoPlaceId?: string;
+  place: CreatePlaceResponse;
+  validPlace?: true;
+};
+
+function normalizeAddress(address: string) {
+  return address.replace(/\s+/g, ' ').trim();
+}
+
+function getPlaceAddressMatch(places: Place[], address: string) {
+  const normalizedAddress = normalizeAddress(address);
+
+  return places.find((place) => normalizeAddress(place.address) === normalizedAddress) ?? null;
+}
+
+async function findExistingPlaceByAddress(draft: PlaceCreateDraft) {
+  const queries = Array.from(new Set([
+    normalizeAddress(draft.address),
+    normalizeAddress(draft.name),
+  ].filter(Boolean)));
+
+  for (const keyword of [...queries, undefined]) {
+    for (let page = 1; page <= PLACE_SEARCH_MAX_PAGES; page += 1) {
+      const placesPage = await placeApi.getPlaces({
+        ...(keyword ? { keyword } : {}),
+        limit: PLACE_SEARCH_LIMIT,
+        page,
+      });
+      const existingPlace = getPlaceAddressMatch(placesPage.places, draft.address);
+
+      if (existingPlace) {
+        return existingPlace;
+      }
+
+      if (!placesPage.hasNext) {
+        break;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function resolvePlaceForRecord({
+  category,
+  draft,
+  photo,
+}: ResolvePlaceForRecordParams): Promise<ResolvedPlaceForRecord> {
+  const existingPlace = await findExistingPlaceByAddress(draft);
+
+  if (existingPlace) {
+    return { place: existingPlace };
+  }
+
+  if (draft.kakaoPlaceId) {
+    return {
+      kakaoPlaceId: draft.kakaoPlaceId,
+      place: await createKakaoPlace({ category, draft, photo }),
+      validPlace: true,
+    };
+  }
+
+  return {
+    place: await placeApi.createPlace({
+      address: draft.address,
+      category,
+      latitude: draft.latitude,
+      longitude: draft.longitude,
+      name: draft.name,
+    }),
+  };
+}
 
 async function createKakaoPlace({ category, draft, photo }: CreateKakaoPlaceParams) {
   if (!draft.kakaoPlaceId) {
