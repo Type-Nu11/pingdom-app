@@ -11,14 +11,14 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import CaptionStep, { type PostCategory } from '../components/create-flow/CaptionStep';
+import CaptionStep from '../components/create-flow/CaptionStep';
 import PlaceCreateHeader from '../components/create-flow/PlaceCreateHeader';
 import LocationStep from '../components/create-flow/LocationStep';
 import PhotoSelectStep from '../components/create-flow/PhotoSelectStep';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useCreatePlaceCoordinateToken } from '../hooks/useCreatePlaceCoordinateToken';
 import { useCreatePlaceRecord } from '../hooks/useCreatePlaceRecord';
-import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
+import type { PlaceCategory, PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
 
@@ -30,7 +30,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [step, setStep] = useState<PlaceCreateStep>(1);
   const [selectedPlaceDraft, setSelectedPlaceDraft] = useState<PlaceCreateDraft | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<PostCategory>('food');
+  const [selectedCategory, setSelectedCategory] = useState<PlaceCategory>('food');
   const [caption, setCaption] = useState('');
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const {
@@ -161,6 +161,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
 
       const result = await createPlaceRecord({
         caption,
+        category: selectedCategory,
         draft: selectedPlaceDraft,
         photo: selectedPhoto,
       });

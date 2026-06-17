@@ -2,11 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { recordApi, type CreateRecordResponse } from '../../record/api/recordApi';
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
 import { placeApi, type CreatePlaceResponse } from '../api/placeApi';
-import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
+import type { PlaceCategory, PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { placeQueryKeys } from './usePlaces';
 
 type CreatePlaceRecordRequest = {
   caption: string;
+  category: PlaceCategory;
   draft: PlaceCreateDraft;
   photo: PlaceUploadPhoto;
 };
@@ -23,7 +24,7 @@ export const useCreatePlaceRecord = () => {
     Error,
     CreatePlaceRecordRequest
   >({
-    mutationFn: async ({ caption, draft, photo }) => {
+    mutationFn: async ({ caption, category, draft, photo }) => {
       if (!draft.kakaoPlaceId) {
         throw new Error('KAKAO_PLACE_ID_REQUIRED');
       }
@@ -38,6 +39,7 @@ export const useCreatePlaceRecord = () => {
 
       const place = await placeApi.createPlaceWithCoordinateToken({
         address: draft.address,
+        category,
         coordinateToken,
         imageUrl: photo.uri,
         kakaoPlaceId: draft.kakaoPlaceId,

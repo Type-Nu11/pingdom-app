@@ -1,12 +1,10 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Button from '../../../../shared/components/Button';
-import type { PlaceUploadPhoto } from '../../model/place.types';
+import type { PlaceCategory, PlaceUploadPhoto } from '../../model/place.types';
 import ExamplePhoto from './ExamplePhoto';
 
-export type PostCategory = 'food' | 'music' | 'fashion' | 'game';
-
 const POST_CATEGORY_OPTIONS: Array<{
-  id: PostCategory;
+  id: PlaceCategory;
   label: string;
 }> = [
   { id: 'food', label: 'Food' },
@@ -19,10 +17,10 @@ type CaptionStepProps = {
   caption: string;
   isUploading?: boolean;
   onChangeCaption: (caption: string) => void;
-  onChangeCategory: (category: PostCategory) => void;
+  onChangeCategory: (category: PlaceCategory) => void;
   onUpload: () => void;
   placeName: string;
-  selectedCategory: PostCategory;
+  selectedCategory: PlaceCategory;
   selectedPhoto: PlaceUploadPhoto | null;
 };
 

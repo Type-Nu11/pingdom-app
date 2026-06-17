@@ -53,8 +53,10 @@ export type PlaceUploadPhoto = {
   uri: string;
 };
 
+export type PlaceCategory = 'fashion' | 'food' | 'game' | 'music';
+
 export type MapMarker = {
-  category: 'fashion' | 'food' | 'game' | 'music';
+  category: PlaceCategory;
   id: string;
   lat: number;
   lng: number;
