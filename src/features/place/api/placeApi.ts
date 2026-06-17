@@ -34,6 +34,7 @@ export type GetPlaceRecommendationsRequest = {
 
 export type CreatePlaceRequest = {
   address: string;
+  category?: string;
   latitude: number;
   longitude: number;
   name: string;

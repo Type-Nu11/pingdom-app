@@ -65,7 +65,6 @@ const LocationStep = ({
     || selectedAddress === '주소 검색에 실패했습니다'
     || selectedAddress === '장소를 검색해 선택해 주세요';
   const isSelectionDisabled = !placeName.trim()
-    || !selectedKakaoPlaceId
     || isSelectedAddressInvalid
     || isSubmitting;
   const selectedAddressInputValue = isSelectedAddressInvalid ? '' : selectedAddress;

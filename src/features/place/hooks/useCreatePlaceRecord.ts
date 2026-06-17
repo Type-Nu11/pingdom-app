@@ -25,26 +25,15 @@ export const useCreatePlaceRecord = () => {
     CreatePlaceRecordRequest
   >({
     mutationFn: async ({ caption, category, draft, photo }) => {
-      if (!draft.kakaoPlaceId) {
-        throw new Error('KAKAO_PLACE_ID_REQUIRED');
-      }
-
-      const coordinateToken = draft.coordinateToken ?? (
-        await placeApi.createPlaceCoordinates({
-          baseLatitude: draft.latitude,
-          baseLongitude: draft.longitude,
-          kakaoPlaceId: draft.kakaoPlaceId,
-        })
-      ).coordinateToken;
-
-      const place = await placeApi.createPlaceWithCoordinateToken({
-        address: draft.address,
-        category,
-        coordinateToken,
-        imageUrl: photo.uri,
-        kakaoPlaceId: draft.kakaoPlaceId,
-        name: draft.name,
-      });
+      const place = draft.kakaoPlaceId
+        ? await createKakaoPlace({ category, draft, photo })
+        : await placeApi.createPlace({
+          address: draft.address,
+          category,
+          latitude: draft.latitude,
+          longitude: draft.longitude,
+          name: draft.name,
+        });
       const description = caption.trim();
       const record = await recordApi.createRecord({
         description: description || undefined,
@@ -52,7 +41,7 @@ export const useCreatePlaceRecord = () => {
         kakaoPlaceId: draft.kakaoPlaceId,
         placeId: place.id,
         title: draft.name,
-        validPlace: true,
+        validPlace: Boolean(draft.kakaoPlaceId),
       });
 
       return { place, record };
@@ -70,5 +59,34 @@ export const useCreatePlaceRecord = () => {
     isUploading: createPlaceRecordMutation.isPending,
   };
 };
+
+type CreateKakaoPlaceParams = {
+  category: PlaceCategory;
+  draft: PlaceCreateDraft;
+  photo: PlaceUploadPhoto;
+};
+
+async function createKakaoPlace({ category, draft, photo }: CreateKakaoPlaceParams) {
+  if (!draft.kakaoPlaceId) {
+    throw new Error('KAKAO_PLACE_ID_REQUIRED');
+  }
+
+  const coordinateToken = draft.coordinateToken ?? (
+    await placeApi.createPlaceCoordinates({
+      baseLatitude: draft.latitude,
+      baseLongitude: draft.longitude,
+      kakaoPlaceId: draft.kakaoPlaceId,
+    })
+  ).coordinateToken;
+
+  return placeApi.createPlaceWithCoordinateToken({
+    address: draft.address,
+    category,
+    coordinateToken,
+    imageUrl: photo.uri,
+    kakaoPlaceId: draft.kakaoPlaceId,
+    name: draft.name,
+  });
+}
 
 export default useCreatePlaceRecord;
