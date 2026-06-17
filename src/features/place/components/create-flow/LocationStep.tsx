@@ -67,7 +67,6 @@ const LocationStep = ({
   const isSelectionDisabled = !placeName.trim()
     || isSelectedAddressInvalid
     || isSubmitting;
-  const selectedAddressInputValue = isSelectedAddressInvalid ? '' : selectedAddress;
   const selectableSearchResults = searchResults.filter((result) => result.kakaoPlaceId);
 
   const applySearchResult = (result: KakaoLocalSearchItem) => {
@@ -93,6 +92,7 @@ const LocationStep = ({
   const handleCameraIdle = async (event: KakaoMapCameraIdleEvent) => {
     const { lat, lng } = event.nativeEvent;
     const nextCoordinate = { lat, lng };
+    let shouldUseAddressAsPlaceName = !selectedKakaoPlaceId;
 
     setSelectedCoordinate(nextCoordinate);
 
@@ -105,17 +105,22 @@ const LocationStep = ({
 
       pendingSearchResultCoordinateRef.current = null;
       setSelectedPlaceCoordinate(pendingSearchResultCoordinate);
+      shouldUseAddressAsPlaceName = false;
     } else if (selectedPlaceCoordinate && !isSameCoordinate(nextCoordinate, selectedPlaceCoordinate)) {
       setAddressQuery('');
-      setPlaceName('');
       setSelectedKakaoPlaceId(undefined);
       setSelectedPlaceCoordinate(null);
+      shouldUseAddressAsPlaceName = true;
     }
 
     const nextAddress = await resolveAddressFromCoordinate(lat, lng);
 
     if (nextAddress) {
       setSelectedAddress(nextAddress);
+
+      if (shouldUseAddressAsPlaceName) {
+        setPlaceName(nextAddress);
+      }
     }
   };
 
@@ -217,14 +222,6 @@ const LocationStep = ({
         />
       </View>
       <View style={styles.locationPanel}>
-        <TextInput
-          editable={false}
-          multiline
-          style={styles.selectedAddressInput}
-          placeholder="주소를 선택해 주세요"
-          placeholderTextColor="#777a84"
-          value={selectedAddressInputValue}
-        />
         <TextInput
           style={styles.placeNameInput}
           placeholder="장소 이름을 입력해 주세요"
@@ -383,18 +380,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     height: 54,
     paddingHorizontal: 20,
-  },
-  selectedAddressInput: {
-    borderColor: '#dedfe4',
-    borderRadius: 13,
-    borderWidth: 1,
-    color: '#1d2028',
-    fontSize: 16,
-    fontWeight: '700',
-    minHeight: 54,
-    marginBottom: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
   },
   primaryButton: {
     alignItems: 'center',
