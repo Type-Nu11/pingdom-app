@@ -19,7 +19,7 @@ type Coordinate = {
   lng: number;
 };
 
-const COORDINATE_MATCH_THRESHOLD = 0.00005;
+const COORDINATE_MATCH_THRESHOLD = 0.0001;
 
 function isSameCoordinate(a: Coordinate, b: Coordinate) {
   return (
