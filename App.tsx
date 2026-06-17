@@ -20,7 +20,7 @@ type AuthScreen = 'language-gate' | 'welcome' | 'login' | 'signup' | 'phone-veri
 type MainScreen = 'map' | 'place-create' | 'place-detail' | 'profile';
 
 function AppContent() {
-  const { bootstrapAuth, isHydrating, isLoggedIn } = useAuth();
+  const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
   const { pendingRoute, consumePendingNotificationRoute } = useNotificationState();
   const [authScreen, setAuthScreen] = useState<AuthScreen>('language-gate');
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
@@ -59,6 +59,13 @@ function AppContent() {
     setOpenedNotificationRoute(null);
   }, [isLoggedIn]);
 
+  const handleLogout = async () => {
+    await logout();
+    setAuthScreen('login');
+    setMainScreen('map');
+    setOpenedNotificationRoute(null);
+  };
+
   if (isHydrating) return null;
 
   return (
@@ -74,7 +81,7 @@ function AppContent() {
             onBack={() => setMainScreen('map')}
           />
         ) : mainScreen === 'profile' ? (
-          <ProfileScreen onBack={() => setMainScreen('map')} />
+          <ProfileScreen onBack={() => setMainScreen('map')} onLogout={handleLogout} />
         ) : (
           <MapScreen
             onCreatePlace={() => setMainScreen('place-create')}

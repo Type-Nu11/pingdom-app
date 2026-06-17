@@ -1,12 +1,47 @@
 export type Place = {
-  id: string;
+  address: string;
+  id: number;
+  latitude: number;
+  longitude: number;
   name: string;
-  lat: number;
-  lng: number;
+};
+
+export type PlacesPage = {
+  hasNext: boolean;
+  limit: number;
+  page: number;
+  places: Place[];
+  totalCount: number;
+  totalPages: number;
+};
+
+export type PlaceGrowth = {
+  currentLevelMinPhotoCount: number;
+  level: number;
+  nextLevelMinPhotoCount: number;
+  photoCount: number;
+  progressPercent: number;
+};
+
+export type RecommendedPlace = Place & {
+  distanceMeters: number;
+  placeGrowth: PlaceGrowth;
+  reason: string;
+};
+
+export type PlaceRecommendations = {
+  appliedRadiusKm: number;
+  limit: number;
+  places: RecommendedPlace[];
+  recommendedCount: number;
+  recommendationVersion: string;
+  requestedRadiusKm: number;
 };
 
 export type PlaceCreateDraft = {
   address: string;
+  coordinateToken?: string;
+  kakaoPlaceId?: string;
   latitude: number;
   longitude: number;
   name: string;
@@ -18,17 +53,12 @@ export type PlaceUploadPhoto = {
   uri: string;
 };
 
+export type PlaceCategory = 'fashion' | 'food' | 'game' | 'music';
+
 export type MapMarker = {
-  category: 'fashion' | 'food' | 'game' | 'music';
+  category: PlaceCategory;
   id: string;
   lat: number;
   lng: number;
   markerType?: 'default' | 'hot';
-};
-
-export type HotPlace = {
-  id: string;
-  location: string;
-  rank: number;
-  username: string;
 };

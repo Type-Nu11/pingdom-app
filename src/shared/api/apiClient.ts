@@ -1,5 +1,6 @@
 // src/shared/api/apiClient.ts
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import { logout } from '../../app/store/authStore';
 import { getTokens } from './authStorage';
 import {
     getCachedAccessToken,
@@ -40,6 +41,14 @@ type RefreshResponse = {
     accessToken: string;
     refreshToken: string;
 };
+
+type RawRefreshResponse =
+    | RefreshResponse
+    | {
+        data?: RefreshResponse;
+        accessToken?: string;
+        refreshToken?: string;
+    };
 
 // ─────────────────────────────────────────────
 // Axios 인스턴스
@@ -84,6 +93,44 @@ function isAllowedUrl(url?: string): boolean {
     }
 }
 
+function getRequestPath(url?: string): string {
+    if (!url) return '';
+
+    try {
+        if (/^https?:\/\//i.test(url)) {
+            return new URL(url).pathname;
+        }
+    } catch {
+        return url;
+    }
+
+    return url.split('?')[0] ?? url;
+}
+
+function isPublicAuthUrl(url?: string): boolean {
+    const path = getRequestPath(url);
+
+    return path === '/auth/login' || path === '/auth/signup' || path === '/auth/token/refresh';
+}
+
+function toRefreshResponse(response: RawRefreshResponse): RefreshResponse {
+    if ('data' in response && response.data?.accessToken) {
+        return {
+            accessToken: response.data.accessToken,
+            refreshToken: response.data.refreshToken ?? '',
+        };
+    }
+
+    if ('accessToken' in response && response.accessToken) {
+        return {
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken ?? '',
+        };
+    }
+
+    throw new Error('토큰 갱신 응답에 accessToken이 없습니다.');
+}
+
 // ─────────────────────────────────────────────
 // 토큰 유틸
 // ─────────────────────────────────────────────
@@ -107,13 +154,15 @@ async function fetchNewTokens(): Promise<string> {
         throw new Error('refreshToken 없음');
     }
 
-    const { data } = await refreshClient.post<RefreshResponse>(
+    const { data } = await refreshClient.post<RawRefreshResponse>(
         '/auth/token/refresh',
         { refreshToken: tokens.refreshToken }
     );
 
-    await persistTokens(data);
-    return data.accessToken;
+    const nextTokens = toRefreshResponse(data);
+
+    await persistTokens(nextTokens);
+    return nextTokens.accessToken;
 }
 
 // 중복 갱신 방지 + 갱신 호출 조율
@@ -124,7 +173,7 @@ async function refreshAccessToken(): Promise<string | null> {
     if (inFlight) return inFlight;
 
     const promise = fetchNewTokens().catch(async () => {
-        await removeTokens();
+        await logout();
         return null;
     });
 
@@ -150,6 +199,11 @@ api.interceptors.request.use(
     async (config) => {
         if (!isAllowedUrl(config.url)) {
             throw new Error('허용되지 않은 절대 URL 요청입니다.');
+        }
+
+        if (isPublicAuthUrl(config.url)) {
+            config.headers.delete('Authorization');
+            return config;
         }
 
         const token = await resolveAccessToken();
@@ -187,6 +241,10 @@ api.interceptors.response.use(
             isRefreshRequest;
 
         if (shouldSkipRetry) {
+            if (status === 401 && originalRequest && !isPublicAuthUrl(originalRequest.url)) {
+                await logout();
+            }
+
             return Promise.reject(error);
         }
 

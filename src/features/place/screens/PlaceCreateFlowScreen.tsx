@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import axios from 'axios';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,14 +15,13 @@ import CaptionStep from '../components/create-flow/CaptionStep';
 import PlaceCreateHeader from '../components/create-flow/PlaceCreateHeader';
 import LocationStep from '../components/create-flow/LocationStep';
 import PhotoSelectStep from '../components/create-flow/PhotoSelectStep';
+import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
+import { useCreatePlaceCoordinateToken } from '../hooks/useCreatePlaceCoordinateToken';
 import {
-  type ApiFieldErrorResponse,
-  type ApiTokenErrorResponse,
-  placeApi,
-  type CreatePlaceResponse,
-} from '../api/placeApi';
-import { pictureApi, type UploadErrorResponse } from '../api/pictureApi';
-import type { PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
+  PLACE_POST_ALREADY_EXISTS_ERROR,
+  useCreatePlaceRecord,
+} from '../hooks/useCreatePlaceRecord';
+import type { PlaceCategory, PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
 
@@ -35,9 +33,14 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [step, setStep] = useState<PlaceCreateStep>(1);
   const [selectedPlaceDraft, setSelectedPlaceDraft] = useState<PlaceCreateDraft | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
-  const [createdPlace, setCreatedPlace] = useState<CreatePlaceResponse | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<PlaceCategory>('food');
+  const [caption, setCaption] = useState('');
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const {
+    createCoordinateToken,
+    isCreatingCoordinateToken,
+  } = useCreatePlaceCoordinateToken();
+  const { createPlaceRecord, isUploading } = useCreatePlaceRecord();
   const { width, height } = useWindowDimensions();
   const maxContentWidth = Math.min(width, 560);
   const mapHeight = Math.round(clamp(height * 0.46, 310, 430));
@@ -64,10 +67,32 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     setStep((currentStep) => (currentStep + 1) as PlaceCreateStep);
   };
 
-  const handleSelectLocation = (draft: PlaceCreateDraft) => {
-    setSelectedPlaceDraft(draft);
-    setCreatedPlace(null);
-    setStep(2);
+  const handleSelectLocation = async (draft: PlaceCreateDraft) => {
+    if (!draft.kakaoPlaceId) {
+      setSelectedPlaceDraft(draft);
+      setStep(2);
+      return;
+    }
+
+    try {
+      const coordinate = await createCoordinateToken({
+        baseLatitude: draft.latitude,
+        baseLongitude: draft.longitude,
+        kakaoPlaceId: draft.kakaoPlaceId,
+      });
+
+      setSelectedPlaceDraft({
+        ...draft,
+        coordinateToken: coordinate.coordinateToken,
+        kakaoPlaceId: coordinate.kakaoPlaceId ?? draft.kakaoPlaceId,
+      });
+      setStep(2);
+    } catch (error) {
+      Alert.alert(
+        '장소 좌표 확인에 실패했어요',
+        getApiErrorMessage(error, '장소 좌표 토큰을 발급받지 못했습니다.')
+      );
+    }
   };
 
   const handlePickPhoto = async () => {
@@ -132,41 +157,23 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       return;
     }
 
-    setIsUploading(true);
-
     try {
-      const place = createdPlace ?? (await placeApi.createPlace(selectedPlaceDraft));
+      const result = await createPlaceRecord({
+        caption,
+        category: selectedCategory,
+        draft: selectedPlaceDraft,
+        photo: selectedPhoto,
+      });
 
-      if (!createdPlace) {
-        setCreatedPlace(place);
-      }
-
-      const picture = await pictureApi.createPicture(selectedPhoto);
-      Alert.alert('업로드 완료', `${place.name} 장소를 등록하고 사진 업로드까지 완료했어요.\n${picture.message}`, [
+      Alert.alert('업로드 완료', `${selectedPlaceDraft.name} 게시물 업로드를 완료했어요.\n${result.record.message}`, [
         { text: '확인', onPress: onClose },
       ]);
     } catch (error) {
-      if (axios.isAxiosError<ApiFieldErrorResponse | ApiTokenErrorResponse | UploadErrorResponse>(error)) {
-        const status = error.response?.status;
-        const responseData = error.response?.data;
-        const fieldErrorMessage = responseData && typeof responseData === 'object' && 'errors' in responseData && responseData.errors
-          ? Object.values(responseData.errors)[0]
-          : undefined;
+      const errorMessage = error instanceof Error && error.message === PLACE_POST_ALREADY_EXISTS_ERROR
+        ? '이미 이 장소에 게시글을 올렸어요.'
+        : getApiErrorMessage(error, '사진을 서버에 저장하지 못했습니다.');
 
-        if (status === 400) {
-          Alert.alert('입력값을 확인해 주세요', fieldErrorMessage ?? responseData?.message ?? '입력값이 올바르지 않습니다.');
-        } else if (status === 401) {
-          Alert.alert('로그인이 필요해요', responseData?.message ?? '토큰이 유효하지 않아 다시 로그인해야 합니다.');
-        } else if (status === 500) {
-          Alert.alert('사진 업로드에 실패했어요', responseData?.message ?? '업로드 과정에서 오류가 발생했습니다.');
-        } else {
-          Alert.alert('업로드에 실패했어요', responseData?.message ?? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
-        }
-      } else {
-        Alert.alert('업로드에 실패했어요', '네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
-      }
-    } finally {
-      setIsUploading(false);
+      Alert.alert('사진 업로드에 실패했어요', errorMessage);
     }
   };
 
@@ -188,6 +195,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
           {step === 1 ? (
             <LocationStep
               initialValue={selectedPlaceDraft}
+              isSubmitting={isCreatingCoordinateToken}
               mapHeight={mapHeight}
               onNext={handleSelectLocation}
             />
@@ -199,9 +207,13 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
             />
           ) : (
             <CaptionStep
+              caption={caption}
               isUploading={isUploading}
               placeName={selectedPlaceDraft?.name ?? ''}
+              selectedCategory={selectedCategory}
               selectedPhoto={selectedPhoto}
+              onChangeCaption={setCaption}
+              onChangeCategory={setSelectedCategory}
               onUpload={handleUpload}
             />
           )}

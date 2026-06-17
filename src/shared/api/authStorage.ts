@@ -9,6 +9,17 @@ export type AuthTokens = {
     refreshToken: string;
 };
 
+export function normalizeAuthToken(token: string): string {
+    return token.replace(/^Bearer\s+/i, '').trim();
+}
+
+export function normalizeAuthTokens(tokens: AuthTokens): AuthTokens {
+    return {
+        accessToken: normalizeAuthToken(tokens.accessToken),
+        refreshToken: normalizeAuthToken(tokens.refreshToken),
+    };
+}
+
 /**
  * 로그인 성공 후 서버에서 받은 토큰을 기기 저장소에 저장합니다
  * 
@@ -18,9 +29,11 @@ export type AuthTokens = {
  *   - 토큰 객체를 JSON 문자열로 직렬화해 저장합니다
  */
 export async function saveTokens(tokens: AuthTokens): Promise<void> {
+    const normalizedTokens = normalizeAuthTokens(tokens);
+
     await Keychain.setGenericPassword(
         'tokens',
-        JSON.stringify(tokens),
+        JSON.stringify(normalizedTokens),
         { service:SERVICE_NAME }
     )
 }
@@ -41,7 +54,7 @@ export async function getTokens(): Promise<AuthTokens | null> {
     if (!credentials) return null;
 
     try {
-        return JSON.parse(credentials.password) as AuthTokens;
+        return normalizeAuthTokens(JSON.parse(credentials.password) as AuthTokens);
     } catch {
         return null;
     }

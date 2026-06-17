@@ -1,24 +1,19 @@
-import { getApp } from '@react-native-firebase/app';
-import {
-  getInitialNotification,
-  getMessaging,
-  onNotificationOpenedApp,
-} from '@react-native-firebase/messaging';
 import { useEffect } from 'react';
 import {
   setLastBackgroundNotificationRoute,
   setPendingNotificationRoute,
 } from '../../../app/store/notificationStore';
+import { getFirebaseMessagingRuntime } from '../utils/firebaseMessaging';
 import { parseNotificationRoute } from '../utils/notificationPayload';
 import {
   clearLastBackgroundNotification,
   getLastBackgroundNotification,
 } from '../utils/notificationStorage';
 
-const messagingInstance = getMessaging(getApp());
-
 export function useNotificationOpenSync(): void {
   useEffect(() => {
+    const firebaseMessaging = getFirebaseMessagingRuntime();
+
     const hydrateBackgroundRoute = async () => {
       try {
         const backgroundRoute = await getLastBackgroundNotification();
@@ -35,8 +30,14 @@ export function useNotificationOpenSync(): void {
     };
 
     const hydrateInitialNotification = async () => {
+      if (!firebaseMessaging) {
+        return;
+      }
+
       try {
-        const initialMessage = await getInitialNotification(messagingInstance);
+        const initialMessage = await firebaseMessaging.getInitialNotification(
+          firebaseMessaging.messaging
+        );
 
         if (!initialMessage) {
           return;
@@ -51,7 +52,11 @@ export function useNotificationOpenSync(): void {
     void hydrateBackgroundRoute();
     void hydrateInitialNotification();
 
-    const unsubscribe = onNotificationOpenedApp(messagingInstance, (remoteMessage) => {
+    if (!firebaseMessaging) {
+      return undefined;
+    }
+
+    const unsubscribe = firebaseMessaging.onNotificationOpenedApp(firebaseMessaging.messaging, (remoteMessage) => {
       setPendingNotificationRoute(parseNotificationRoute(remoteMessage, 'background-open'));
     });
 

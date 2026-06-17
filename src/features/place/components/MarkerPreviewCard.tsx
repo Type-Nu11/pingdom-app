@@ -1,16 +1,29 @@
 import { useState } from 'react';
-import { Image, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/icons/actions/Saved.svg';
 import ShareIcon from '../../../assets/icons/actions/share.svg';
 import ReportIcon from '../../../assets/icons/actions/tlsrh.svg';
-
-const previewImageSource = require('../../../assets/images/spki.webp');
-const secondPreviewImageSource = require('../../../assets/images/spki2.webp');
-const previewImages = [previewImageSource, secondPreviewImageSource];
+import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
+import type { Post } from '../../record/model/record.types';
 
 type MarkerPreviewCardProps = {
+  isError?: boolean;
+  isLoading?: boolean;
   onClose: () => void;
+  onRetry?: () => void;
+  onToggleLike?: (postId: number, nextLiked: boolean) => Promise<void>;
+  placeName?: string;
+  posts: Post[];
   width: number;
 };
 
@@ -20,62 +33,102 @@ type FeedReactionState = Record<string, {
   shared: boolean;
 }>;
 
-const feedItems = [
-  {
-    id: 'feed-1',
-    caption: 'You ain’t ever gonna burn my heart out So Sally can wait she knows it’s too late as we’re walkin’ on by',
-    likeCount: '1.2K',
-    placeName: '고양종합운동장',
-    username: 'woo._sm',
-  },
-  {
-    id: 'feed-2',
-    caption: '오늘의 핫플 기록. 사진은 예시 이미지로 먼저 채워둘게요.',
-    likeCount: '948',
-    placeName: '고양종합운동장',
-    username: 'woo._sm',
-  },
-  {
-    id: 'feed-3',
-    caption: '다른 핑도 아래로 스크롤해서 이어서 볼 수 있게 연결했습니다.',
-    likeCount: '837',
-    placeName: '고양종합운동장',
-    username: 'woo._sm',
-  },
-];
-
 const defaultReaction = {
   liked: false,
   saved: false,
   shared: false,
 };
 
-const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
-  const [reactions, setReactions] = useState<FeedReactionState>({});
+function formatLikeCount(count: number) {
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}K`;
+  }
 
-  const toggleReaction = (feedId: string, key: keyof FeedReactionState[string]) => {
+  return String(count);
+}
+
+function formatPostTime(createdAt: string) {
+  const createdTime = new Date(createdAt).getTime();
+
+  if (Number.isNaN(createdTime)) {
+    return '방금 전';
+  }
+
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - createdTime) / 60000));
+
+  if (diffMinutes < 1) return '방금 전';
+  if (diffMinutes < 60) return `${diffMinutes}분 전`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}시간 전`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}일 전`;
+}
+
+const MarkerPreviewCard = ({
+  isError = false,
+  isLoading = false,
+  onClose,
+  onRetry,
+  onToggleLike,
+  placeName,
+  posts,
+  width,
+}: MarkerPreviewCardProps) => {
+  const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [reactions, setReactions] = useState<FeedReactionState>({});
+  const placeDisplayName = placeName ?? posts[0]?.placeName ?? '이 장소';
+  const firstPost = posts.reduce<Post | null>((oldestPost, post) => {
+    if (!oldestPost) {
+      return post;
+    }
+
+    return new Date(post.createdAt).getTime() < new Date(oldestPost.createdAt).getTime()
+      ? post
+      : oldestPost;
+  }, null);
+  const firstUploaderName = firstPost?.username;
+
+  const setReaction = (
+    feedId: string,
+    key: keyof FeedReactionState[string],
+    nextValue?: boolean
+  ) => {
     setReactions((prev) => ({
       ...prev,
       [feedId]: {
         ...defaultReaction,
         ...prev[feedId],
-        [key]: !prev[feedId]?.[key],
+        [key]: nextValue ?? !prev[feedId]?.[key],
       },
     }));
   };
 
-  const handleImageScrollEnd = (
-    feedId: string,
-    event: NativeSyntheticEvent<NativeScrollEvent>,
-  ) => {
-    const pageIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+  const handleLikePress = async (item: Post) => {
+    const feedId = String(item.id);
+    const currentLiked = reactions[feedId]?.liked ?? defaultReaction.liked;
+    const nextLiked = !currentLiked;
 
-    setActiveImageIndexes((prev) => ({
-      ...prev,
-      [feedId]: pageIndex,
-    }));
+    if (likePendingById[feedId]) {
+      return;
+    }
+
+    setLikePendingById((prev) => ({ ...prev, [feedId]: true }));
+    setReaction(feedId, 'liked', nextLiked);
+
+    try {
+      await onToggleLike?.(item.id, nextLiked);
+    } catch (error) {
+      setReaction(feedId, 'liked', currentLiked);
+      Alert.alert(
+        '좋아요에 실패했어요',
+        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.')
+      );
+    } finally {
+      setLikePendingById((prev) => ({ ...prev, [feedId]: false }));
+    }
   };
 
   return (
@@ -96,10 +149,38 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
       >
-        {feedItems.map((item) => {
-          const activeImageIndex = activeImageIndexes[item.id] ?? 0;
-          const reaction = reactions[item.id] ?? defaultReaction;
-          const isMenuOpen = openMenuId === item.id;
+        <View style={styles.placeHeader}>
+          <Text numberOfLines={1} style={styles.placeHeaderTitle}>{placeDisplayName}</Text>
+          {firstUploaderName ? (
+            <Text numberOfLines={1} style={styles.placeHeaderMeta}>
+              최초 등록자 : <Text style={styles.placeHeaderAuthor}>{firstUploaderName}</Text>
+            </Text>
+          ) : null}
+        </View>
+
+        {isLoading ? (
+          <View style={styles.stateContainer}>
+            <ActivityIndicator color="#ff1956" />
+            <Text style={styles.stateText}>게시글을 불러오고 있어요</Text>
+          </View>
+        ) : isError ? (
+          <View style={styles.stateContainer}>
+            <Text style={styles.stateTitle}>게시글을 불러오지 못했어요</Text>
+            {onRetry ? (
+              <Pressable accessibilityRole="button" style={styles.retryButton} onPress={onRetry}>
+                <Text style={styles.retryText}>다시 시도</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : posts.length === 0 ? (
+          <View style={styles.stateContainer}>
+            <Text style={styles.stateTitle}>{placeDisplayName}에 아직 게시글이 없어요</Text>
+            <Text style={styles.stateText}>첫 사진을 올려 장소를 채워보세요</Text>
+          </View>
+        ) : posts.map((item) => {
+          const feedId = String(item.id);
+          const reaction = reactions[feedId] ?? defaultReaction;
+          const isMenuOpen = openMenuId === feedId;
 
           return (
             <View key={item.id} style={styles.feedItem}>
@@ -117,7 +198,7 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
                   accessibilityLabel="피드 메뉴 열기"
                   hitSlop={10}
                   style={styles.moreButton}
-                  onPress={() => setOpenMenuId(isMenuOpen ? null : item.id)}
+                  onPress={() => setOpenMenuId(isMenuOpen ? null : feedId)}
                 >
                   <Text style={styles.moreText}>...</Text>
                 </Pressable>
@@ -141,32 +222,11 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
               </View>
 
               <View style={styles.imageFrame}>
-                <ScrollView
-                  bounces={false}
-                  horizontal
-                  nestedScrollEnabled
-                  onMomentumScrollEnd={(event) => handleImageScrollEnd(item.id, event)}
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                >
-                  {previewImages.map((imageSource, index) => (
-                    <Image
-                      key={`${item.id}-preview-${index}`}
-                      source={imageSource}
-                      resizeMode="contain"
-                      style={[styles.feedImage, { width }]}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-
-              <View style={styles.indicatorRow}>
-                {previewImages.map((_, index) => (
-                  <View
-                    key={`${item.id}-indicator-${index}`}
-                    style={activeImageIndex === index ? styles.indicatorActive : styles.indicator}
-                  />
-                ))}
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  resizeMode="contain"
+                  style={styles.feedImage}
+                />
               </View>
 
               <View style={styles.actionRow}>
@@ -174,9 +234,10 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="좋아요"
+                    disabled={likePendingById[feedId]}
                     hitSlop={10}
                     style={styles.actionButton}
-                    onPress={() => toggleReaction(item.id, 'liked')}
+                    onPress={() => void handleLikePress(item)}
                   >
                     <LikeIcon
                       color={reaction.liked ? '#ff1956' : '#5e5e66'}
@@ -185,13 +246,15 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
                       height={18}
                     />
                   </Pressable>
-                  <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>{item.likeCount}</Text>
+                  <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>
+                    {formatLikeCount(item.likeCount + (reaction.liked ? 1 : 0))}
+                  </Text>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="공유"
                     hitSlop={10}
                     style={styles.actionButton}
-                    onPress={() => toggleReaction(item.id, 'shared')}
+                    onPress={() => setReaction(feedId, 'shared')}
                   >
                     <ShareIcon
                       color={reaction.shared ? '#ff1956' : '#5e5e66'}
@@ -206,7 +269,7 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
                   accessibilityLabel="저장"
                   hitSlop={10}
                   style={styles.actionButton}
-                  onPress={() => toggleReaction(item.id, 'saved')}
+                  onPress={() => setReaction(feedId, 'saved')}
                 >
                   <SavedIcon
                     color={reaction.saved ? '#ff1956' : '#5e5e66'}
@@ -219,9 +282,9 @@ const MarkerPreviewCard = ({ onClose, width }: MarkerPreviewCardProps) => {
 
               <Text style={styles.caption}>
                 <Text style={styles.captionAuthor}>{item.username} </Text>
-                {item.caption}
+                {item.description || item.title}
               </Text>
-              <Text style={styles.timeText}>1시간 전 • 번역 보기</Text>
+              <Text style={styles.timeText}>{formatPostTime(item.createdAt)} • 번역 보기</Text>
             </View>
           );
         })}
@@ -286,11 +349,13 @@ const styles = StyleSheet.create({
   },
   feedItem: {
     backgroundColor: '#fff',
+    borderBottomColor: '#f1f1f4',
+    borderBottomWidth: 1,
     overflow: 'visible',
     paddingBottom: 24,
   },
   feedList: {
-    paddingTop: 42,
+    paddingBottom: 10,
   },
   imageFrame: {
     alignItems: 'center',
@@ -298,25 +363,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#05070d',
     justifyContent: 'center',
     width: '100%',
-  },
-  indicator: {
-    backgroundColor: '#bfc1c1',
-    borderRadius: 3,
-    height: 6,
-    width: 6,
-  },
-  indicatorActive: {
-    backgroundColor: '#ff1956',
-    borderRadius: 3,
-    height: 6,
-    width: 6,
-  },
-  indicatorRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    height: 26,
-    justifyContent: 'center',
   },
   leftActions: {
     alignItems: 'center',
@@ -383,6 +429,33 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 18,
   },
+  placeHeader: {
+    alignItems: 'center',
+    backgroundColor: '#f8f8fa',
+    borderBottomColor: '#ececf0',
+    borderBottomWidth: 1,
+    minHeight: 68,
+    justifyContent: 'center',
+    paddingHorizontal: 58,
+    paddingVertical: 12,
+  },
+  placeHeaderAuthor: {
+    color: '#ff1956',
+    fontWeight: '800',
+  },
+  placeHeaderMeta: {
+    color: '#555965',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  placeHeaderTitle: {
+    color: '#15171d',
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
   profileBody: {
     backgroundColor: '#5e5e66',
     borderTopLeftRadius: 11,
@@ -422,6 +495,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
+  },
+  retryButton: {
+    alignItems: 'center',
+    backgroundColor: '#ff1956',
+    borderRadius: 12,
+    height: 42,
+    justifyContent: 'center',
+    marginTop: 14,
+    paddingHorizontal: 18,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  stateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 220,
+    paddingHorizontal: 28,
+  },
+  stateText: {
+    color: '#767680',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  stateTitle: {
+    color: '#3b3b40',
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 22,
+    textAlign: 'center',
   },
   timeText: {
     color: '#767680',

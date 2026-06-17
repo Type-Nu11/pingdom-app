@@ -1,4 +1,4 @@
-import type { RemoteMessage } from '@react-native-firebase/messaging';
+import type { FirebaseRemoteMessage } from './firebaseMessaging';
 import type { NotificationRoute, NotificationRouteSource } from '../model/notification.types';
 
 function toStringValue(value: unknown): string | undefined {
@@ -6,7 +6,7 @@ function toStringValue(value: unknown): string | undefined {
 }
 
 export function parseNotificationRoute(
-  message: RemoteMessage,
+  message: FirebaseRemoteMessage,
   source: NotificationRouteSource
 ): NotificationRoute {
   const placeId = toStringValue(message.data?.placeId) ?? toStringValue(message.data?.targetId);

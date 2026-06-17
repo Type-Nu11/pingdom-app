@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Pressable,
   SafeAreaView,
   StatusBar,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -13,7 +14,7 @@ import MapActionButtons from '../components/MapActionButtons';
 import MapBottomSheet from '../components/MapBottomSheet';
 import MarkerPreviewCard from '../components/MarkerPreviewCard';
 import MapSearchBar from '../components/MapSearchBar';
-import { hotPlaceFixtures, mapCategories, mapMarkerFixtures } from '../constants/mapFixtures';
+import { mapCategories } from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
   BASE_SCREEN_HEIGHT,
@@ -24,6 +25,12 @@ import {
 } from '../constants/mapLayout';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
+import { usePlaces } from '../hooks/usePlaces';
+import { usePostLike } from '../../record/hooks/usePostLike';
+import { usePlacePosts } from '../../record/hooks/usePlacePosts';
+import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
+import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
+import type { RecommendedPlace } from '../model/place.types';
 
 type MapScreenProps = {
   onCreatePlace?: () => void;
@@ -34,6 +41,32 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
+  const { isError: isPlacesError, markers, places } = usePlaces();
+  const {
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    places: recommendedPlaces,
+    recommendationVersion,
+  } = usePlaceRecommendations({
+    latitude: userLat,
+    longitude: userLng,
+  });
+  const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const { togglePostLike } = usePostLike();
+  const selectedPlace = useMemo(
+    () => (
+      places.find((place) => String(place.id) === selectedMarkerId)
+      ?? recommendedPlaces.find((place) => String(place.id) === selectedMarkerId)
+      ?? null
+    ),
+    [places, recommendedPlaces, selectedMarkerId]
+  );
+  const {
+    isError: isPostsError,
+    isLoading: isPostsLoading,
+    posts: selectedPlacePosts,
+    refetch: refetchSelectedPlacePosts,
+  } = usePlacePosts(selectedPlace?.id ?? null);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -61,6 +94,14 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
     setSelectedMarkerId(event.nativeEvent.markerId);
   };
+  const handleRecommendedPlacePress = (place: RecommendedPlace) => {
+    setSelectedMarkerId(String(place.id));
+
+    void recordRecommendationClick({
+      placeId: place.id,
+      recommendationVersion: recommendationVersion ?? 'place-rec-v1',
+    }).catch(() => undefined);
+  };
 
   return (
     <View style={styles.container}>
@@ -74,7 +115,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
         userLat={userLat}
         userLng={userLng}
         followUser={followUser}
-        markers={mapMarkerFixtures}
+        markers={markers}
         onMarkerPress={handleMarkerPress}
       />
 
@@ -100,6 +141,11 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             topPaddingX={topPaddingX}
             uiScale={uiScale}
           />
+          {isPlacesError ? (
+            <View style={styles.mapStatusPill}>
+              <Text style={styles.mapStatusText}>장소를 불러오지 못했어요</Text>
+            </View>
+          ) : null}
         </View>
       </SafeAreaView>
 
@@ -118,9 +164,12 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
       <MapBottomSheet
         height={sheetExpandedHeight}
         isExpanded={isExpanded}
+        isRecommendationsError={isRecommendationsError}
+        isRecommendationsLoading={isRecommendationsLoading}
+        onPlacePress={handleRecommendedPlacePress}
         onToggle={toggleSheet}
         panHandlers={panHandlers}
-        places={hotPlaceFixtures}
+        places={recommendedPlaces}
         sheetTranslateY={sheetTranslateY}
       />
 
@@ -139,8 +188,14 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
+            isError={isPostsError}
+            isLoading={isPostsLoading}
+            placeName={selectedPlace?.name}
+            posts={selectedPlacePosts}
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
+            onRetry={() => void refetchSelectedPlacePosts()}
+            onToggleLike={togglePostLike}
           />
         </View>
       )}
@@ -171,6 +226,26 @@ const styles = StyleSheet.create({
   markerPreviewBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.22)',
+  },
+  mapStatusPill: {
+    alignSelf: 'center',
+    backgroundColor: '#fff',
+    borderColor: '#ececf0',
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  mapStatusText: {
+    color: '#555965',
+    fontSize: 13,
+    fontWeight: '700',
   },
   safeArea: {
     ...StyleSheet.absoluteFillObject,

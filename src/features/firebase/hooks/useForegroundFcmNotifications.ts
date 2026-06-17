@@ -1,13 +1,10 @@
-import { getApp } from '@react-native-firebase/app';
-import { getMessaging, onMessage } from '@react-native-firebase/messaging';
 import { useEffect, useState } from 'react';
 import {
   configureForegroundNotifications,
   presentForegroundNotification,
 } from '../utils/foregroundNotification';
+import { getFirebaseMessagingRuntime } from '../utils/firebaseMessaging';
 import { ensureNotificationPermission } from '../utils/notificationPermission';
-
-const messagingInstance = getMessaging(getApp());
 
 export function useForegroundFcmNotifications(isLoggedIn: boolean): void {
   const [canPresentNotification, setCanPresentNotification] = useState(false);
@@ -52,7 +49,13 @@ export function useForegroundFcmNotifications(isLoggedIn: boolean): void {
       return;
     }
 
-    const unsubscribe = onMessage(messagingInstance, (remoteMessage) => {
+    const firebaseMessaging = getFirebaseMessagingRuntime();
+
+    if (!firebaseMessaging) {
+      return;
+    }
+
+    const unsubscribe = firebaseMessaging.onMessage(firebaseMessaging.messaging, (remoteMessage) => {
       void presentForegroundNotification(remoteMessage).catch((error) => {
         console.warn('Foreground notification present failed:', error);
       });

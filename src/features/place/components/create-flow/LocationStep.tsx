@@ -1,92 +1,145 @@
 import { useRef, useState } from 'react';
-import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import MypingIcon from '../../../../assets/icons/map/Myping.svg';
-import { getAddressFromCoordinate } from '../../api/kakaoLocalApi';
-import { placeApi } from '../../api/placeApi';
+import type { KakaoLocalSearchItem } from '../../api/kakaoLocalApi';
+import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
 import type { PlaceCreateDraft } from '../../model/place.types';
 import KakaoMapCard, { KakaoMapCameraIdleEvent } from '../KakaoMapCard';
-import { SELECTED_PLACE } from './constants';
+import { DEFAULT_PLACE_COORDINATE } from './constants';
 
 type LocationStepProps = {
   initialValue: PlaceCreateDraft | null;
+  isSubmitting?: boolean;
   mapHeight: number;
-  onNext: (draft: PlaceCreateDraft) => void;
+  onNext: (draft: PlaceCreateDraft) => void | Promise<void>;
 };
 
-const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) => {
+type Coordinate = {
+  lat: number;
+  lng: number;
+};
+
+const COORDINATE_MATCH_THRESHOLD = 0.0001;
+
+function isSameCoordinate(a: Coordinate, b: Coordinate) {
+  return (
+    Math.abs(a.lat - b.lat) <= COORDINATE_MATCH_THRESHOLD
+    && Math.abs(a.lng - b.lng) <= COORDINATE_MATCH_THRESHOLD
+  );
+}
+
+const LocationStep = ({
+  initialValue,
+  isSubmitting = false,
+  mapHeight,
+  onNext,
+}: LocationStepProps) => {
+  const pendingSearchResultCoordinateRef = useRef<Coordinate | null>(null);
   const [addressQuery, setAddressQuery] = useState('');
-  const [placeName, setPlaceName] = useState(initialValue?.name ?? SELECTED_PLACE.name);
+  const [placeName, setPlaceName] = useState(initialValue?.name ?? '');
   const [selectedAddress, setSelectedAddress] = useState(
-    initialValue?.address ?? SELECTED_PLACE.address
+    initialValue?.address ?? '장소를 검색해 선택해 주세요'
+  );
+  const [selectedKakaoPlaceId, setSelectedKakaoPlaceId] = useState(initialValue?.kakaoPlaceId);
+  const [selectedPlaceCoordinate, setSelectedPlaceCoordinate] = useState<Coordinate | null>(
+    initialValue ? { lat: initialValue.latitude, lng: initialValue.longitude } : null
   );
   const [detailAddress, setDetailAddress] = useState('');
   const [mapCenter, setMapCenter] = useState({
-    lat: initialValue?.latitude ?? SELECTED_PLACE.lat,
-    lng: initialValue?.longitude ?? SELECTED_PLACE.lng,
+    lat: initialValue?.latitude ?? DEFAULT_PLACE_COORDINATE.lat,
+    lng: initialValue?.longitude ?? DEFAULT_PLACE_COORDINATE.lng,
   });
   const [selectedCoordinate, setSelectedCoordinate] = useState({
-    lat: initialValue?.latitude ?? SELECTED_PLACE.lat,
-    lng: initialValue?.longitude ?? SELECTED_PLACE.lng,
+    lat: initialValue?.latitude ?? DEFAULT_PLACE_COORDINATE.lat,
+    lng: initialValue?.longitude ?? DEFAULT_PLACE_COORDINATE.lng,
   });
-  const geocodeRequestIdRef = useRef(0);
+  const {
+    clearSearchResults,
+    isSearchingAddress,
+    resolveAddressFromCoordinate,
+    searchPlaces,
+    searchResults,
+    searchStatusMessage,
+  } = useKakaoLocalSearch();
+  const isSelectedAddressInvalid = selectedAddress === '검색 결과가 없습니다'
+    || selectedAddress === '주소 검색에 실패했습니다'
+    || selectedAddress === '장소를 검색해 선택해 주세요';
+  const isSelectionDisabled = !placeName.trim()
+    || isSelectedAddressInvalid
+    || isSubmitting;
+  const selectableSearchResults = searchResults.filter((result) => result.kakaoPlaceId);
+
+  const applySearchResult = (result: KakaoLocalSearchItem) => {
+    if (!result.kakaoPlaceId) {
+      return;
+    }
+
+    const nextAddress = result.roadAddress || result.address;
+    const nextCoordinate = { lat: result.lat, lng: result.lng };
+
+    Keyboard.dismiss();
+    pendingSearchResultCoordinateRef.current = nextCoordinate;
+    setAddressQuery(result.name);
+    setMapCenter(nextCoordinate);
+    setSelectedCoordinate(nextCoordinate);
+    setSelectedPlaceCoordinate(nextCoordinate);
+    setSelectedAddress(nextAddress);
+    setSelectedKakaoPlaceId(result.kakaoPlaceId);
+    setPlaceName(result.name || nextAddress);
+    clearSearchResults();
+  };
 
   const handleCameraIdle = async (event: KakaoMapCameraIdleEvent) => {
     const { lat, lng } = event.nativeEvent;
-    const requestId = ++geocodeRequestIdRef.current;
-    setSelectedCoordinate({ lat, lng });
+    const nextCoordinate = { lat, lng };
+    let shouldUseAddressAsPlaceName = !selectedKakaoPlaceId;
 
-    try {
-      const nextAddress = await getAddressFromCoordinate(lat, lng);
+    setSelectedCoordinate(nextCoordinate);
 
-      if (requestId === geocodeRequestIdRef.current) {
-        setSelectedAddress(nextAddress || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    const pendingSearchResultCoordinate = pendingSearchResultCoordinateRef.current;
+
+    if (pendingSearchResultCoordinate) {
+      if (!isSameCoordinate(nextCoordinate, pendingSearchResultCoordinate)) {
+        return;
       }
-    } catch {
-      if (requestId === geocodeRequestIdRef.current) {
-        setSelectedAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+
+      pendingSearchResultCoordinateRef.current = null;
+      setSelectedPlaceCoordinate(pendingSearchResultCoordinate);
+      shouldUseAddressAsPlaceName = false;
+    } else if (selectedPlaceCoordinate && !isSameCoordinate(nextCoordinate, selectedPlaceCoordinate)) {
+      setAddressQuery('');
+      setSelectedKakaoPlaceId(undefined);
+      setSelectedPlaceCoordinate(null);
+      shouldUseAddressAsPlaceName = true;
+    }
+
+    const nextAddress = await resolveAddressFromCoordinate(lat, lng);
+
+    if (nextAddress) {
+      setSelectedAddress(nextAddress);
+
+      if (shouldUseAddressAsPlaceName) {
+        setPlaceName(nextAddress);
       }
     }
   };
 
   const handleSearchAddress = async () => {
-    const requestId = ++geocodeRequestIdRef.current;
-
-    try {
-      const places = await placeApi.searchPlaces(addressQuery);
-      const result = places[0];
-
-      if (requestId !== geocodeRequestIdRef.current) {
-        return;
-      }
-
-      if (!result) {
-        setSelectedAddress('검색 결과가 없습니다');
-        return;
-      }
-
-      Keyboard.dismiss();
-      const nextAddress = result.roadAddress || result.address;
-      setAddressQuery(nextAddress);
-      setMapCenter({ lat: result.lat, lng: result.lng });
-      setSelectedCoordinate({ lat: result.lat, lng: result.lng });
-      setSelectedAddress(nextAddress);
-      setPlaceName(result.name || nextAddress);
-    } catch {
-      if (requestId === geocodeRequestIdRef.current) {
-        setSelectedAddress('주소 검색에 실패했습니다');
-      }
-    }
+    await searchPlaces(addressQuery, {
+      centerLat: selectedCoordinate.lat,
+      centerLng: selectedCoordinate.lng,
+    });
   };
 
   const handleSelectLocation = () => {
     const trimmedName = placeName.trim();
     const trimmedDetailAddress = detailAddress.trim();
-    const isAddressInvalid = selectedAddress === '검색 결과가 없습니다' || selectedAddress === '주소 검색에 실패했습니다';
-    if (!trimmedName || isAddressInvalid) {
+    if (!trimmedName || isSelectionDisabled) {
       return;
     }
-    onNext({
+    void onNext({
       address: trimmedDetailAddress ? selectedAddress + ' ' + trimmedDetailAddress : selectedAddress,
+      kakaoPlaceId: selectedKakaoPlaceId,
       latitude: selectedCoordinate.lat,
       longitude: selectedCoordinate.lng,
       name: trimmedName,
@@ -100,6 +153,7 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="주소 검색"
+          disabled={isSearchingAddress}
           hitSlop={8}
           onPress={handleSearchAddress}
         >
@@ -115,6 +169,41 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
           onSubmitEditing={handleSearchAddress}
         />
       </View>
+      {isSearchingAddress ? (
+        <View style={styles.searchStatusRow}>
+          <ActivityIndicator color="#ff1956" size="small" />
+          <Text style={styles.searchStatusInlineText}>주소를 찾고 있어요</Text>
+        </View>
+      ) : searchStatusMessage ? (
+        <Text style={styles.searchStatusText}>{searchStatusMessage}</Text>
+      ) : null}
+      {searchResults.length > 0 ? (
+        <View style={styles.searchResultList}>
+          {selectableSearchResults.length === 0 ? (
+            <View style={styles.searchResultItem}>
+              <Text style={styles.searchResultName}>선택 가능한 장소 결과가 없어요</Text>
+              <Text style={styles.searchResultAddress}>상호명이나 건물명을 조금 더 구체적으로 입력해 주세요.</Text>
+            </View>
+          ) : selectableSearchResults.slice(0, 5).map((result) => {
+            const resultAddress = result.roadAddress || result.address;
+
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={result.id}
+                style={styles.searchResultItem}
+                onPress={() => applySearchResult(result)}
+              >
+                <Text numberOfLines={1} style={styles.searchResultName}>{result.name}</Text>
+                <Text numberOfLines={1} style={styles.searchResultAddress}>{resultAddress}</Text>
+                {result.category ? (
+                  <Text numberOfLines={1} style={styles.searchResultCategory}>{result.category}</Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       <View style={[styles.mapPreview, { height: mapHeight }]}>
         <KakaoMapCard
           style={styles.map}
@@ -140,7 +229,6 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
           value={placeName}
           onChangeText={setPlaceName}
         />
-        <TextInput editable={false} style={styles.addressInput} value={selectedAddress} />
         <TextInput
           style={styles.detailInput}
           placeholder="(선택) 상세 주소 입력"
@@ -150,11 +238,14 @@ const LocationStep = ({ initialValue, mapHeight, onNext }: LocationStepProps) =>
         />
         <Pressable
           accessibilityRole="button"
-          disabled={!placeName.trim()}
-          style={[styles.primaryButton, !placeName.trim() && styles.primaryButtonDisabled]}
+          disabled={isSelectionDisabled}
+          style={[
+            styles.primaryButton,
+            isSelectionDisabled && styles.primaryButtonDisabled,
+          ]}
           onPress={handleSelectLocation}
         >
-          <Text style={styles.primaryButtonText}>선택</Text>
+          <Text style={styles.primaryButtonText}>{isSubmitting ? '확인 중...' : '선택'}</Text>
         </Pressable>
       </View>
     </View>
@@ -196,6 +287,57 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     padding: 0,
   },
+  searchStatusRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: 34,
+    marginTop: 10,
+  },
+  searchStatusText: {
+    color: '#777a84',
+    fontSize: 14,
+    fontWeight: '600',
+    marginHorizontal: 34,
+    marginTop: 10,
+  },
+  searchStatusInlineText: {
+    color: '#777a84',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  searchResultList: {
+    backgroundColor: '#fff',
+    borderColor: '#ececf0',
+    borderRadius: 14,
+    borderWidth: 1,
+    marginHorizontal: 34,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    borderBottomColor: '#f0f0f3',
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchResultName: {
+    color: '#1d2028',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  searchResultAddress: {
+    color: '#555965',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  searchResultCategory: {
+    color: '#9b9da7',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 3,
+  },
   mapPreview: {
     marginTop: 18,
     overflow: 'hidden',
@@ -228,13 +370,6 @@ const styles = StyleSheet.create({
     height: 54,
     marginBottom: 12,
     paddingHorizontal: 20,
-  },
-  addressInput: {
-    color: '#20232c',
-    fontSize: 17,
-    fontWeight: '500',
-    marginBottom: 14,
-    padding: 0,
   },
   detailInput: {
     borderColor: '#dedfe4',
