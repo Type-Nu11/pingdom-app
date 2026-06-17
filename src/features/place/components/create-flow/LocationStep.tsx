@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import MypingIcon from '../../../../assets/icons/map/Myping.svg';
 import type { KakaoLocalSearchItem } from '../../api/kakaoLocalApi';
@@ -34,6 +34,7 @@ const LocationStep = ({
   mapHeight,
   onNext,
 }: LocationStepProps) => {
+  const pendingSearchResultCoordinateRef = useRef<Coordinate | null>(null);
   const [addressQuery, setAddressQuery] = useState('');
   const [placeName, setPlaceName] = useState(initialValue?.name ?? '');
   const [selectedAddress, setSelectedAddress] = useState(
@@ -67,15 +68,22 @@ const LocationStep = ({
     || !selectedKakaoPlaceId
     || isSelectedAddressInvalid
     || isSubmitting;
+  const selectableSearchResults = searchResults.filter((result) => result.kakaoPlaceId);
 
   const applySearchResult = (result: KakaoLocalSearchItem) => {
+    if (!result.kakaoPlaceId) {
+      return;
+    }
+
     const nextAddress = result.roadAddress || result.address;
+    const nextCoordinate = { lat: result.lat, lng: result.lng };
 
     Keyboard.dismiss();
+    pendingSearchResultCoordinateRef.current = nextCoordinate;
     setAddressQuery(result.name);
-    setMapCenter({ lat: result.lat, lng: result.lng });
-    setSelectedCoordinate({ lat: result.lat, lng: result.lng });
-    setSelectedPlaceCoordinate({ lat: result.lat, lng: result.lng });
+    setMapCenter(nextCoordinate);
+    setSelectedCoordinate(nextCoordinate);
+    setSelectedPlaceCoordinate(nextCoordinate);
     setSelectedAddress(nextAddress);
     setSelectedKakaoPlaceId(result.kakaoPlaceId);
     setPlaceName(result.name || nextAddress);
@@ -88,7 +96,16 @@ const LocationStep = ({
 
     setSelectedCoordinate(nextCoordinate);
 
-    if (selectedPlaceCoordinate && !isSameCoordinate(nextCoordinate, selectedPlaceCoordinate)) {
+    const pendingSearchResultCoordinate = pendingSearchResultCoordinateRef.current;
+
+    if (pendingSearchResultCoordinate) {
+      if (!isSameCoordinate(nextCoordinate, pendingSearchResultCoordinate)) {
+        return;
+      }
+
+      pendingSearchResultCoordinateRef.current = null;
+      setSelectedPlaceCoordinate(pendingSearchResultCoordinate);
+    } else if (selectedPlaceCoordinate && !isSameCoordinate(nextCoordinate, selectedPlaceCoordinate)) {
       setAddressQuery('');
       setPlaceName('');
       setSelectedKakaoPlaceId(undefined);
@@ -157,7 +174,12 @@ const LocationStep = ({
       ) : null}
       {searchResults.length > 0 ? (
         <View style={styles.searchResultList}>
-          {searchResults.slice(0, 5).map((result) => {
+          {selectableSearchResults.length === 0 ? (
+            <View style={styles.searchResultItem}>
+              <Text style={styles.searchResultName}>선택 가능한 장소 결과가 없어요</Text>
+              <Text style={styles.searchResultAddress}>상호명이나 건물명을 조금 더 구체적으로 입력해 주세요.</Text>
+            </View>
+          ) : selectableSearchResults.slice(0, 5).map((result) => {
             const resultAddress = result.roadAddress || result.address;
 
             return (
