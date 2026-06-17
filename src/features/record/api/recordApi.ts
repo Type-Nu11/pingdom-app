@@ -31,6 +31,7 @@ export type CreateRecordResponse = {
 export type GetPostsRequest = {
   limit?: number;
   page?: number;
+  placeId?: number;
 };
 
 export type ReportPostRequest = {
@@ -126,6 +127,7 @@ export const recordApi = {
       params: {
         limit: params.limit ?? 100,
         page: params.page ?? 1,
+        ...(params.placeId !== undefined ? { placeId: params.placeId } : {}),
       },
     });
 
