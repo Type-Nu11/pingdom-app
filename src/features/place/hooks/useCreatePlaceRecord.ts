@@ -41,7 +41,7 @@ export const useCreatePlaceRecord = () => {
         kakaoPlaceId: draft.kakaoPlaceId,
         placeId: place.id,
         title: draft.name,
-        validPlace: Boolean(draft.kakaoPlaceId),
+        validPlace: draft.kakaoPlaceId ? true : undefined,
       });
 
       return { place, record };

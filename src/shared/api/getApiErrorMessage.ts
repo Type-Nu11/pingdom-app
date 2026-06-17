@@ -20,7 +20,9 @@ export function getApiErrorMessage(error: unknown, fallbackMessage: string) {
   }
 
   if (status === 401) {
-    return serverMessage ?? '로그인이 만료됐어요. 다시 로그인해 주세요.';
+    return responseData && 'code' in responseData && responseData.code === 'INVALID_TOKEN'
+      ? '로그인이 만료됐어요. 다시 로그인해 주세요.'
+      : serverMessage ?? '로그인이 만료됐어요. 다시 로그인해 주세요.';
   }
 
   return fieldErrorMessage ?? serverMessage ?? fallbackMessage;
