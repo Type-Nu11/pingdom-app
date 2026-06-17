@@ -1,14 +1,28 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Button from '../../../../shared/components/Button';
 import type { PlaceUploadPhoto } from '../../model/place.types';
 import ExamplePhoto from './ExamplePhoto';
+
+export type PostCategory = 'food' | 'music' | 'fashion' | 'game';
+
+const POST_CATEGORY_OPTIONS: Array<{
+  id: PostCategory;
+  label: string;
+}> = [
+  { id: 'food', label: 'Food' },
+  { id: 'music', label: 'Music' },
+  { id: 'fashion', label: 'Fashion' },
+  { id: 'game', label: 'Game' },
+];
 
 type CaptionStepProps = {
   caption: string;
   isUploading?: boolean;
   onChangeCaption: (caption: string) => void;
+  onChangeCategory: (category: PostCategory) => void;
   onUpload: () => void;
   placeName: string;
+  selectedCategory: PostCategory;
   selectedPhoto: PlaceUploadPhoto | null;
 };
 
@@ -16,8 +30,10 @@ const CaptionStep = ({
   caption,
   isUploading = false,
   onChangeCaption,
+  onChangeCategory,
   onUpload,
   placeName,
+  selectedCategory,
   selectedPhoto,
 }: CaptionStepProps) => (
   <View style={styles.captionBody}>
@@ -33,6 +49,28 @@ const CaptionStep = ({
     </View>
     <View style={styles.heroPhoto}>
       <ExamplePhoto large uri={selectedPhoto?.uri} />
+    </View>
+    <View style={styles.categorySection}>
+      <Text style={styles.categoryTitle}>카테고리</Text>
+      <View style={styles.categoryList}>
+        {POST_CATEGORY_OPTIONS.map((category) => {
+          const isSelected = selectedCategory === category.id;
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              key={category.id}
+              style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+              onPress={() => onChangeCategory(category.id)}
+            >
+              <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
+                {category.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
     <TextInput
       multiline
@@ -56,6 +94,42 @@ const CaptionStep = ({
 const styles = StyleSheet.create({
   captionBody: {
     flex: 1,
+  },
+  categoryChip: {
+    alignItems: 'center',
+    borderColor: '#dedfe4',
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  categoryChipSelected: {
+    backgroundColor: '#ff1956',
+    borderColor: '#ff1956',
+  },
+  categoryList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 9,
+    marginTop: 12,
+  },
+  categorySection: {
+    paddingHorizontal: 34,
+    paddingTop: 18,
+  },
+  categoryText: {
+    color: '#626674',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  categoryTextSelected: {
+    color: '#fff',
+  },
+  categoryTitle: {
+    color: '#30333c',
+    fontSize: 15,
+    fontWeight: '900',
   },
   authorRow: {
     alignItems: 'center',
@@ -112,9 +186,9 @@ const styles = StyleSheet.create({
     color: '#111',
     fontSize: 16,
     fontWeight: '700',
-    minHeight: 120,
+    minHeight: 96,
     paddingHorizontal: 34,
-    paddingTop: 22,
+    paddingTop: 18,
     textAlignVertical: 'top',
   },
   uploadButton: {

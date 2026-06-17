@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import CaptionStep from '../components/create-flow/CaptionStep';
+import CaptionStep, { type PostCategory } from '../components/create-flow/CaptionStep';
 import PlaceCreateHeader from '../components/create-flow/PlaceCreateHeader';
 import LocationStep from '../components/create-flow/LocationStep';
 import PhotoSelectStep from '../components/create-flow/PhotoSelectStep';
@@ -30,6 +30,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [step, setStep] = useState<PlaceCreateStep>(1);
   const [selectedPlaceDraft, setSelectedPlaceDraft] = useState<PlaceCreateDraft | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<PostCategory>('food');
   const [caption, setCaption] = useState('');
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const {
@@ -205,8 +206,10 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
               caption={caption}
               isUploading={isUploading}
               placeName={selectedPlaceDraft?.name ?? ''}
+              selectedCategory={selectedCategory}
               selectedPhoto={selectedPhoto}
               onChangeCaption={setCaption}
+              onChangeCategory={setSelectedCategory}
               onUpload={handleUpload}
             />
           )}
