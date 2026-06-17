@@ -14,6 +14,20 @@ type LocationStepProps = {
   onNext: (draft: PlaceCreateDraft) => void | Promise<void>;
 };
 
+type Coordinate = {
+  lat: number;
+  lng: number;
+};
+
+const COORDINATE_MATCH_THRESHOLD = 0.00005;
+
+function isSameCoordinate(a: Coordinate, b: Coordinate) {
+  return (
+    Math.abs(a.lat - b.lat) <= COORDINATE_MATCH_THRESHOLD
+    && Math.abs(a.lng - b.lng) <= COORDINATE_MATCH_THRESHOLD
+  );
+}
+
 const LocationStep = ({
   initialValue,
   isSubmitting = false,
@@ -26,6 +40,9 @@ const LocationStep = ({
     initialValue?.address ?? '장소를 검색해 선택해 주세요'
   );
   const [selectedKakaoPlaceId, setSelectedKakaoPlaceId] = useState(initialValue?.kakaoPlaceId);
+  const [selectedPlaceCoordinate, setSelectedPlaceCoordinate] = useState<Coordinate | null>(
+    initialValue ? { lat: initialValue.latitude, lng: initialValue.longitude } : null
+  );
   const [detailAddress, setDetailAddress] = useState('');
   const [mapCenter, setMapCenter] = useState({
     lat: initialValue?.latitude ?? DEFAULT_PLACE_COORDINATE.lat,
@@ -58,6 +75,7 @@ const LocationStep = ({
     setAddressQuery(result.name);
     setMapCenter({ lat: result.lat, lng: result.lng });
     setSelectedCoordinate({ lat: result.lat, lng: result.lng });
+    setSelectedPlaceCoordinate({ lat: result.lat, lng: result.lng });
     setSelectedAddress(nextAddress);
     setSelectedKakaoPlaceId(result.kakaoPlaceId);
     setPlaceName(result.name || nextAddress);
@@ -66,7 +84,16 @@ const LocationStep = ({
 
   const handleCameraIdle = async (event: KakaoMapCameraIdleEvent) => {
     const { lat, lng } = event.nativeEvent;
-    setSelectedCoordinate({ lat, lng });
+    const nextCoordinate = { lat, lng };
+
+    setSelectedCoordinate(nextCoordinate);
+
+    if (selectedPlaceCoordinate && !isSameCoordinate(nextCoordinate, selectedPlaceCoordinate)) {
+      setAddressQuery('');
+      setPlaceName('');
+      setSelectedKakaoPlaceId(undefined);
+      setSelectedPlaceCoordinate(null);
+    }
 
     const nextAddress = await resolveAddressFromCoordinate(lat, lng);
 
