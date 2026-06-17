@@ -1,3 +1,6 @@
+<img width="7680" height="4320" alt="image" src="https://github.com/user-attachments/assets/a789ec07-981f-4d2b-a11b-f75d8d6694b6" />
+
+
 # Pingdum Frontend Convention
 
 ## 프로젝트 구조
