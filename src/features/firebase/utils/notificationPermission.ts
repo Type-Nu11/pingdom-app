@@ -1,12 +1,5 @@
-import { getApp } from '@react-native-firebase/app';
-import {
-  AuthorizationStatus,
-  getMessaging,
-  requestPermission,
-} from '@react-native-firebase/messaging';
 import { PermissionsAndroid, Platform } from 'react-native';
-
-const messagingInstance = getMessaging(getApp());
+import { getFirebaseMessagingRuntime } from './firebaseMessaging';
 
 export async function ensureNotificationPermission(): Promise<boolean> {
   if (Platform.OS === 'android' && Platform.Version >= 33) {
@@ -22,11 +15,19 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   }
 
   try {
-    const authorizationStatus = await requestPermission(messagingInstance);
+    const firebaseMessaging = getFirebaseMessagingRuntime();
+
+    if (!firebaseMessaging) {
+      return false;
+    }
+
+    const authorizationStatus = await firebaseMessaging.requestPermission(
+      firebaseMessaging.messaging
+    );
 
     return (
-      authorizationStatus === AuthorizationStatus.AUTHORIZED ||
-      authorizationStatus === AuthorizationStatus.PROVISIONAL
+      authorizationStatus === firebaseMessaging.AuthorizationStatus.AUTHORIZED ||
+      authorizationStatus === firebaseMessaging.AuthorizationStatus.PROVISIONAL
     );
   } catch {
     return false;

@@ -1,6 +1,6 @@
-import type { RemoteMessage } from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import type { FirebaseRemoteMessage } from './firebaseMessaging';
 
 const FOREGROUND_CHANNEL_ID = 'foreground-fcm';
 const DEFAULT_NOTIFICATION_TITLE = '새 알림';
@@ -32,7 +32,7 @@ export async function configureForegroundNotifications(): Promise<void> {
   });
 }
 
-export async function presentForegroundNotification(message: RemoteMessage): Promise<void> {
+export async function presentForegroundNotification(message: FirebaseRemoteMessage): Promise<void> {
   const title =
     toNotificationText(message.notification?.title) ||
     toNotificationText(message.data?.title, DEFAULT_NOTIFICATION_TITLE);
