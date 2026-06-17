@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { recordApi, type GetPostsRequest } from '../api/recordApi';
 
@@ -22,12 +23,21 @@ export const usePlacePosts = (placeId: number | null, params: GetPostsRequest = 
     queryKey: postQueryKeys.place(placeId, queryParams),
     queryFn: () => recordApi.getPosts(queryParams),
   });
+  const posts = useMemo(() => {
+    const fetchedPosts = postsQuery.data?.posts ?? [];
+
+    if (placeId === null) {
+      return [];
+    }
+
+    return fetchedPosts.filter((post) => Number(post.placeId) === placeId);
+  }, [placeId, postsQuery.data?.posts]);
 
   return {
     error: postsQuery.error,
     isError: postsQuery.isError,
     isLoading: postsQuery.isLoading,
-    posts: postsQuery.data?.posts ?? [],
+    posts,
     refetch: postsQuery.refetch,
   };
 };
