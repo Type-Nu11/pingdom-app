@@ -137,6 +137,9 @@ export const recordApi = {
     const { data } = await api.post<RecordLikeResponse>('/map/like', payload);
     return data;
   },
+  unlikeRecord: async (postId: number): Promise<void> => {
+    await api.delete(`/map/like/${postId}`);
+  },
   likePost: async (postId: number): Promise<PostLikeResponse> => {
     const { data } = await api.post<PostLikeResponse>('/map/like', {
       mapImageId: postId,

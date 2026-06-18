@@ -94,7 +94,7 @@ const MarkerPreviewCard = ({
   const setReaction = (
     feedId: string,
     key: keyof FeedReactionState[string],
-    nextValue?: boolean
+    nextValue?: boolean,
   ) => {
     setReactions((prev) => ({
       ...prev,
@@ -124,7 +124,7 @@ const MarkerPreviewCard = ({
       setReaction(feedId, 'liked', currentLiked);
       Alert.alert(
         '좋아요에 실패했어요',
-        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.')
+        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.'),
       );
     } finally {
       setLikePendingById((prev) => ({ ...prev, [feedId]: false }));
@@ -236,7 +236,7 @@ const MarkerPreviewCard = ({
                     accessibilityLabel="좋아요"
                     disabled={likePendingById[feedId]}
                     hitSlop={10}
-                    style={styles.actionButton}
+                    style={[styles.actionButton, likePendingById[feedId] && styles.disabledActionButton]}
                     onPress={() => void handleLikePress(item)}
                   >
                     <LikeIcon
@@ -343,6 +343,9 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     lineHeight: 39,
   },
+  disabledActionButton: {
+    opacity: 0.5,
+  },
   feedImage: {
     height: '100%',
     width: '100%',
@@ -423,12 +426,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 13,
   },
-  placeName: {
-    color: '#0c0c0d',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 18,
-  },
   placeHeader: {
     alignItems: 'center',
     backgroundColor: '#f8f8fa',
@@ -455,6 +452,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     lineHeight: 20,
+  },
+  placeName: {
+    color: '#0c0c0d',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
   },
   profileBody: {
     backgroundColor: '#5e5e66',
