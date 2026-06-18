@@ -1,20 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import LoginScreen from './src/features/auth/screens/LoginScreen';
-import PhoneVerifyScreen from './src/features/auth/screens/SignupDetailsScreen';
-import SignupScreen from './src/features/auth/screens/SignupScreen';
 import KoreanOnboardingFlow from './src/features/auth/screens/InformationSelect/KoreanOnboardingFlow';
+import {
+  SignUpWelcomeScreen,
+  SignUpPhoneScreen,
+  SignUpCertificationScreen,
+  SignUpDetailsScreen,
+} from './src/features/auth/screens/signup';
 import useAuth from './src/features/auth/hooks/useAuth';
 import MapScreen from './src/features/place/screens/MapScreen';
 import Button from './src/shared/components/Button';
 import { usePretendardFont } from './src/shared/fonts';
 
-type AuthScreen = 'korean-onboarding' | 'login' | 'signup' | 'phone-verify';
+type AuthScreen =
+  | 'korean-onboarding'
+  | 'login'
+  | 'signup-welcome'
+  | 'signup-phone'
+  | 'signup-certification'
+  | 'signup-details';
 
 export default function App() {
   const fontsLoaded = usePretendardFont();
   const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
-  const [authScreen, setAuthScreen] = useState<AuthScreen>('korean-onboarding');
+  const [authScreen, setAuthScreen] = useState<AuthScreen>('signup-phone');
+  const [pendingPhone, setPendingPhone] = useState('');
 
   useEffect(() => {
     void bootstrapAuth();
@@ -34,10 +45,37 @@ export default function App() {
       ) : (
         (() => {
           switch (authScreen) {
-            case 'korean-onboarding': return <KoreanOnboardingFlow onComplete={() => setAuthScreen('signup')} />;
-            case 'login': return <LoginScreen onBack={() => setAuthScreen('signup')} />;
-            case 'signup': return <SignupScreen onBack={() => setAuthScreen('korean-onboarding')} onLogin={() => setAuthScreen('login')} onComplete={() => setAuthScreen('phone-verify')} />;
-            default: return <PhoneVerifyScreen onBack={() => setAuthScreen('signup')} />;
+            case 'korean-onboarding':
+              return <KoreanOnboardingFlow onComplete={() => setAuthScreen('signup-welcome')} />;
+            case 'login':
+              return <LoginScreen onBack={() => setAuthScreen('signup-welcome')} />;
+            case 'signup-welcome':
+              return (
+                <SignUpWelcomeScreen
+                  onStart={() => setAuthScreen('signup-phone')}
+                  onLogin={() => setAuthScreen('login')}
+                />
+              );
+            case 'signup-phone':
+              return (
+                <SignUpPhoneScreen
+                  onBack={() => setAuthScreen('signup-welcome')}
+                  onNext={(phone) => {
+                    setPendingPhone(phone);
+                    setAuthScreen('signup-certification');
+                  }}
+                />
+              );
+            case 'signup-certification':
+              return (
+                <SignUpCertificationScreen
+                  phoneNumber={pendingPhone}
+                  onBack={() => setAuthScreen('signup-phone')}
+                  onVerified={() => setAuthScreen('signup-details')}
+                />
+              );
+            default:
+              return <SignUpDetailsScreen onBack={() => setAuthScreen('signup-certification')} />;
           }
         })()
       )}

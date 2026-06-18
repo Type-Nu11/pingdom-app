@@ -18,41 +18,31 @@ export type AuthTokens = {
  *   - 토큰 객체를 JSON 문자열로 직렬화해 저장합니다
  */
 export async function saveTokens(tokens: AuthTokens): Promise<void> {
-    await Keychain.setGenericPassword(
-        'tokens',
-        JSON.stringify(tokens),
-        { service:SERVICE_NAME }
-    )
+    try {
+        await Keychain.setGenericPassword(
+            'tokens',
+            JSON.stringify(tokens),
+            { service: SERVICE_NAME }
+        );
+    } catch {
+        // 네이티브 모듈 미사용 환경(Expo Go 등)에서는 저장 생략
+    }
 }
 
-/**
- * 저장된 토큰을 꺼내옵니다
- * 
- * @returns 저장된 토큰이 있으면 AuthTokens 반환, 없거나 오류면 null 반환
- * 
- * 흐름:
- *   1. 키체인에서 값을 읽어옴
- *   2. 값이 없으면(비로그인 상태) null 반환
- *   3. 있으면 JSON 문자열 → 객체로 변환해서 반환
- *   4. 변환 중 오류(데이터 손상 등)가 나도 null 반환 (앱이 터지지 않도록)
- */
 export async function getTokens(): Promise<AuthTokens | null> {
-    const credentials = await Keychain.getGenericPassword({service:SERVICE_NAME})
-    if (!credentials) return null;
-
     try {
+        const credentials = await Keychain.getGenericPassword({ service: SERVICE_NAME });
+        if (!credentials) return null;
         return JSON.parse(credentials.password) as AuthTokens;
     } catch {
         return null;
     }
 }
 
-/**
- * 저장소에서 토큰을 완전히 삭제합니다
- * 로그아웃 시 반드시 호출해야 합니다
- * 
- * 이걸 빠뜨리면 로그아웃 후에도 토큰이 남아있어 보안 문제가 생깁니다
- */
 export async function clearTokens(): Promise<void> {
-    await Keychain.resetGenericPassword({service : SERVICE_NAME});
+    try {
+        await Keychain.resetGenericPassword({ service: SERVICE_NAME });
+    } catch {
+        // 네이티브 모듈 미사용 환경에서는 무시
+    }
 }

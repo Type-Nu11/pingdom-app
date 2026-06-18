@@ -14,12 +14,12 @@ type KoreanAgeScreenProps = {
 export default function KoreanAgeScreen({ value, onChange, onBack, onNext }: KoreanAgeScreenProps) {
   return (
     <KoreanOnboardingScaffold
-      footerLabel="계속하기"
+      footerLabel="Continue"
       onBack={onBack}
       onFooterPress={onNext}
       step={4}
-      subtitle="최고의 장소를 알려주세요!"
-      title="나이 선택"
+      subtitle="We'll tell you the best route!"
+      title="Select Birth Year"
     >
       <View style={styles.card}>
         {YEARS.map((year) => {
@@ -48,7 +48,7 @@ export default function KoreanAgeScreen({ value, onChange, onBack, onNext }: Kor
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#F6F6F7',
+    backgroundColor: '#EBEBEB',
     borderRadius: 18,
     marginTop: 4,
     paddingHorizontal: 14,
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 15,
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 56,
     paddingHorizontal: 18,
   },
   yearRowSelected: {
@@ -67,13 +67,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   yearLabel: {
-    color: '#6B6B75',
+    color: '#9E9EA8',
     fontSize: 20,
     fontWeight: '700',
   },
   yearLabelSelected: {
     color: '#FF1F5C',
-    fontSize: 23,
+    fontSize: 24,
     fontWeight: '800',
   },
   pressed: {

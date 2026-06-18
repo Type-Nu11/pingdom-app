@@ -18,10 +18,17 @@ type LoginScreenProps = {
 export default function LoginScreen({ onBack }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isSubmitting, errorMessage, clearError } = useLogin();
+  const { login, isSubmitting, errorMessage, clearError, setError } = useLogin();
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim() || isSubmitting) {
+    if (isSubmitting) return;
+
+    if (!username.trim()) {
+      setError('아이디를 입력해 주세요.');
+      return;
+    }
+    if (!password.trim()) {
+      setError('비밀번호를 입력해 주세요.');
       return;
     }
 

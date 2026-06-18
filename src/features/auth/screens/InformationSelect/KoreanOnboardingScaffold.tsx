@@ -61,8 +61,18 @@ export default function KoreanOnboardingScaffold({
             {Array.from({ length: totalSteps }, (_, index) => {
               const itemStep = index + 1;
               const isActive = itemStep === step;
+              const isPast = itemStep < step;
 
-              return <View key={itemStep} style={[styles.progressDot, isActive && styles.progressDotActive]} />;
+              return (
+                <View
+                  key={itemStep}
+                  style={[
+                    styles.progressDot,
+                    isPast && styles.progressDotPast,
+                    isActive && styles.progressDotActive,
+                  ]}
+                />
+              );
             })}
           </View>
 
@@ -96,19 +106,19 @@ export default function KoreanOnboardingScaffold({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
   },
   container: {
     flex: 1,
     paddingHorizontal: 22,
-    paddingTop: 80,
-    paddingBottom: 18,
+    paddingTop: 16,
+    paddingBottom: 52,
   },
   header: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 18,
+    marginBottom: 80,
     minHeight: 32,
   },
   backButton: {
@@ -137,6 +147,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     height: 6,
     width: 6,
+  },
+  progressDotPast: {
+    backgroundColor: '#FF1F5C',
   },
   progressDotActive: {
     backgroundColor: '#FF1F5C',
