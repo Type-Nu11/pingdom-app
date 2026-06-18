@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import {
   ActivityIndicator,
   Alert,
@@ -28,13 +29,17 @@ type MarkerPreviewCardProps = {
 };
 
 type FeedReactionState = Record<string, {
-  liked: boolean;
   saved: boolean;
   shared: boolean;
 }>;
 
+type LocalLikeOverride = {
+  baseLiked: boolean;
+  baseLikeCount: number;
+  liked: boolean;
+};
+
 const defaultReaction = {
-  liked: false,
   saved: false,
   shared: false,
 };
@@ -45,6 +50,32 @@ function formatLikeCount(count: number) {
   }
 
   return String(count);
+}
+
+function getServerLiked(post: Post) {
+  return Boolean(post.liked ?? post.isLiked ?? post.likedByMe);
+}
+
+function getDisplayLiked(post: Post, override?: LocalLikeOverride) {
+  return override?.liked ?? getServerLiked(post);
+}
+
+function getDisplayLikeCount(post: Post, override?: LocalLikeOverride) {
+  if (!override) {
+    return post.likeCount;
+  }
+
+  if (post.likeCount !== override.baseLikeCount) {
+    return Math.max(0, post.likeCount);
+  }
+
+  const delta = override.liked === override.baseLiked
+    ? 0
+    : override.liked
+      ? 1
+      : -1;
+
+  return Math.max(0, post.likeCount + delta);
 }
 
 function formatPostTime(createdAt: string) {
@@ -66,6 +97,23 @@ function formatPostTime(createdAt: string) {
   return `${diffDays}일 전`;
 }
 
+function isAlreadyLikedError(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return false;
+  }
+
+  const responseData = error.response?.data as { code?: unknown; message?: unknown } | undefined;
+  const code = String(responseData?.code ?? '').toUpperCase();
+  const message = String(responseData?.message ?? '');
+  const lowerMessage = message.toLowerCase();
+
+  return (
+    (code.includes('ALREADY') && code.includes('LIKE')) ||
+    message.includes('이미 좋아요') ||
+    (lowerMessage.includes('already') && lowerMessage.includes('like'))
+  );
+}
+
 const MarkerPreviewCard = ({
   isError = false,
   isLoading = false,
@@ -77,6 +125,7 @@ const MarkerPreviewCard = ({
   width,
 }: MarkerPreviewCardProps) => {
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
+  const [likeOverrides, setLikeOverrides] = useState<Record<string, LocalLikeOverride>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [reactions, setReactions] = useState<FeedReactionState>({});
   const placeDisplayName = placeName ?? posts[0]?.placeName ?? '이 장소';
@@ -108,7 +157,8 @@ const MarkerPreviewCard = ({
 
   const handleLikePress = async (item: Post) => {
     const feedId = String(item.id);
-    const currentLiked = reactions[feedId]?.liked ?? defaultReaction.liked;
+    const previousOverride = likeOverrides[feedId];
+    const currentLiked = getDisplayLiked(item, previousOverride);
     const nextLiked = !currentLiked;
 
     if (likePendingById[feedId]) {
@@ -116,12 +166,41 @@ const MarkerPreviewCard = ({
     }
 
     setLikePendingById((prev) => ({ ...prev, [feedId]: true }));
-    setReaction(feedId, 'liked', nextLiked);
+    setLikeOverrides((prev) => ({
+      ...prev,
+      [feedId]: {
+        baseLiked: currentLiked,
+        baseLikeCount: item.likeCount,
+        liked: nextLiked,
+      },
+    }));
 
     try {
       await onToggleLike?.(item.id, nextLiked);
     } catch (error) {
-      setReaction(feedId, 'liked', currentLiked);
+      if (nextLiked && isAlreadyLikedError(error)) {
+        setLikeOverrides((prev) => ({
+          ...prev,
+          [feedId]: {
+            baseLiked: true,
+            baseLikeCount: item.likeCount,
+            liked: true,
+          },
+        }));
+        return;
+      }
+
+      setLikeOverrides((prev) => {
+        const nextOverrides = { ...prev };
+
+        if (previousOverride) {
+          nextOverrides[feedId] = previousOverride;
+        } else {
+          delete nextOverrides[feedId];
+        }
+
+        return nextOverrides;
+      });
       Alert.alert(
         '좋아요에 실패했어요',
         getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.'),
@@ -180,6 +259,9 @@ const MarkerPreviewCard = ({
         ) : posts.map((item) => {
           const feedId = String(item.id);
           const reaction = reactions[feedId] ?? defaultReaction;
+          const likeOverride = likeOverrides[feedId];
+          const isLiked = getDisplayLiked(item, likeOverride);
+          const displayLikeCount = getDisplayLikeCount(item, likeOverride);
           const isMenuOpen = openMenuId === feedId;
 
           return (
@@ -240,14 +322,14 @@ const MarkerPreviewCard = ({
                     onPress={() => void handleLikePress(item)}
                   >
                     <LikeIcon
-                      color={reaction.liked ? '#ff1956' : '#5e5e66'}
-                      fill={reaction.liked ? '#ff1956' : 'none'}
+                      color={isLiked ? '#ff1956' : '#5e5e66'}
+                      fill={isLiked ? '#ff1956' : 'none'}
                       width={20}
                       height={18}
                     />
                   </Pressable>
-                  <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>
-                    {formatLikeCount(item.likeCount + (reaction.liked ? 1 : 0))}
+                  <Text style={[styles.likeCount, isLiked && styles.activeText]}>
+                    {formatLikeCount(displayLikeCount)}
                   </Text>
                   <Pressable
                     accessibilityRole="button"

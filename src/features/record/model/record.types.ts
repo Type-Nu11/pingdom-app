@@ -9,7 +9,10 @@ export type Post = {
   description?: string | null;
   id: number;
   imageUrl: string;
+  isLiked?: boolean;
   likeCount: number;
+  liked?: boolean;
+  likedByMe?: boolean;
   placeId: number;
   placeName: string;
   title: string;
