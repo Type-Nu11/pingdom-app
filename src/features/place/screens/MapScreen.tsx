@@ -16,12 +16,7 @@ import {
   MapSearchBar,
   MarkerPreviewCard,
 } from '../components/map';
-import {
-  hotPlaceFixtures,
-  mapCategories,
-  mapMarkerFixtures,
-  markerPreviewFixtures,
-} from '../constants/mapFixtures';
+import { mapCategories } from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
   BASE_SCREEN_HEIGHT,
@@ -32,6 +27,7 @@ import {
 } from '../constants/mapLayout';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
+import useMapPlacesData from '../hooks/useMapPlacesData';
 
 type MapScreenProps = {
   onCreatePlace?: () => void;
@@ -40,6 +36,7 @@ type MapScreenProps = {
 
 export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenProps) {
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const { hotPlaces, mapMarkers, nearbyMarkerPreviews } = useMapPlacesData(selectedMarkerId);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
@@ -62,7 +59,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
   const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
   const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
-  const markerCardWidth = Math.round(clamp(width - 72, 312, 372));
+  const markerCardWidth = Math.round(clamp(width - 64, 292, 338));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
@@ -82,7 +79,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
         userLat={userLat}
         userLng={userLng}
         followUser={followUser}
-        markers={mapMarkerFixtures}
+        markers={mapMarkers}
         onMarkerPress={handleMarkerPress}
       />
 
@@ -128,11 +125,11 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
         isExpanded={isExpanded}
         onToggle={toggleSheet}
         panHandlers={panHandlers}
-        places={hotPlaceFixtures}
+        places={hotPlaces}
         sheetTranslateY={sheetTranslateY}
       />
 
-      {selectedMarkerId && (
+      {selectedMarkerId && nearbyMarkerPreviews.length > 0 && (
         <View
           style={[
             styles.markerPreviewLayer,
@@ -151,7 +148,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
           />
           <MarkerPreviewCard
             cardWidth={markerCardWidth}
-            items={markerPreviewFixtures}
+            items={nearbyMarkerPreviews}
             onClose={() => setSelectedMarkerId(null)}
             onSelectMarker={setSelectedMarkerId}
             selectedMarkerId={selectedMarkerId}

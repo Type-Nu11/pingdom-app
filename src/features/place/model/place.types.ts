@@ -1,8 +1,12 @@
 export type Place = {
+  address?: string;
   id: string;
+  latitude?: number;
+  longitude?: number;
   name: string;
   lat: number;
   lng: number;
+  registrant?: string;
 };
 
 export type PlaceCreateDraft = {
@@ -42,6 +46,7 @@ export type HotPlace = {
 
 export type MarkerPreviewFeedItem = {
   caption: string;
+  imageUrls?: string[];
   id: string;
   likeCount: string;
   placeName: string;
@@ -53,7 +58,9 @@ export type MarkerPreview = {
   firstRegistrant: string;
   feeds: MarkerPreviewFeedItem[];
   id: string;
+  lat: number;
   locationLabel: string;
+  lng: number;
   title: string;
   updates: string[];
 };

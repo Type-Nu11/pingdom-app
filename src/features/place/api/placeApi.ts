@@ -14,8 +14,26 @@ export type PlaceSearchItem = {
   roadAddress: string;
 };
 
+export type PlaceListItem = {
+  address: string;
+  id: number;
+  latitude: number;
+  longitude: number;
+  name: string;
+  registrant?: string;
+};
+
 type PlaceSearchResponse = {
   places: PlaceSearchItem[];
+};
+
+type PlaceListResponse = {
+  hasNext: boolean;
+  limit: number;
+  page: number;
+  places: PlaceListItem[];
+  totalCount: number;
+  totalPages: number;
 };
 
 export type CreatePlaceRequest = {
@@ -60,6 +78,28 @@ export type FavoritePlaceResponse = {
   placeId: number;
 };
 
+export type PostListItem = {
+  createdAt: string;
+  description?: string | null;
+  id: number;
+  imageUrl?: string | null;
+  likeCount: number;
+  placeId: number;
+  placeName: string;
+  title: string;
+  userId: number;
+  username: string;
+};
+
+type PostListResponse = {
+  hasNext: boolean;
+  limit: number;
+  page: number;
+  posts: PostListItem[];
+  totalCount: number;
+  totalPages: number;
+};
+
 export type ApiFieldErrorResponse = CommonApiFieldErrorResponse;
 
 export type ApiTokenErrorResponse = CommonApiCodeErrorResponse<'INVALID_TOKEN'>;
@@ -88,8 +128,26 @@ export const placeApi = {
     const { data } = await api.delete<string>(`/map/places/${id}/delete`);
     return data;
   },
-  getPlaces: async () => {
-    return [];
+  getPlaces: async (params?: { keyword?: string; limit?: number; page?: number }) => {
+    const { data } = await api.get<PlaceListResponse>('/place', {
+      params: {
+        limit: params?.limit ?? 100,
+        page: params?.page ?? 1,
+        keyword: params?.keyword,
+      },
+    });
+
+    return data.places;
+  },
+  getPosts: async (params?: { limit?: number; page?: number }) => {
+    const { data } = await api.get<PostListResponse>('/map/posts', {
+      params: {
+        limit: params?.limit ?? 100,
+        page: params?.page ?? 1,
+      },
+    });
+
+    return data.posts;
   },
   searchPlaces: async (query: string) => {
     const { data } = await api.get<PlaceSearchResponse>('/places/search', {
