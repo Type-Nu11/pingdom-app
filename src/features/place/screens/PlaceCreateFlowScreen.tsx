@@ -23,7 +23,7 @@ import {
   type CreatePlaceResponse,
 } from '../api/placeApi';
 import { pictureApi, type UploadErrorResponse } from '../api/pictureApi';
-import type { PlaceCreateDraft, PlaceLibraryPhoto, PlaceUploadPhoto } from '../model/place.types';
+import type { PlaceCategory, PlaceCreateDraft, PlaceLibraryPhoto, PlaceUploadPhoto } from '../model/place.types';
 import { PlaceCreateStep } from '../components/create-flow/types';
 import { clamp } from '../constants/mapLayout';
 
@@ -36,7 +36,8 @@ const PHOTO_PAGE_SIZE = 60;
 const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const [step, setStep] = useState<PlaceCreateStep>(1);
   const [selectedPlaceDraft, setSelectedPlaceDraft] = useState<PlaceCreateDraft | null>(null);
-  const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
+  const [selectedPhotos, setSelectedPhotos] = useState<PlaceUploadPhoto[]>([]);
+  const [postCategory, setPostCategory] = useState<PlaceCategory>('food');
   const [createdPlace, setCreatedPlace] = useState<CreatePlaceResponse | null>(null);
   const [photoLibraryPermission, setPhotoLibraryPermission] = useState<MediaLibrary.PermissionResponse | null>(null);
   const [photoLibraryAssets, setPhotoLibraryAssets] = useState<PlaceLibraryPhoto[]>([]);
@@ -60,7 +61,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   };
 
   const goNext = () => {
-    if (step === 2 && !selectedPhoto) {
+    if (step === 2 && selectedPhotos.length === 0) {
       Alert.alert('사진을 먼저 선택해 주세요', '사진함에서 사진을 골라야 다음 단계로 이동할 수 있어요.');
       return;
     }
@@ -75,6 +76,8 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const handleSelectLocation = (draft: PlaceCreateDraft) => {
     setSelectedPlaceDraft(draft);
     setCreatedPlace(null);
+    setSelectedPhotos([]);
+    setPostCategory('food');
     setStep(2);
   };
 
@@ -172,22 +175,40 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       return;
     }
 
+    const isAlreadySelected = selectedPhotos.some((photo) => photo.assetId === asset.id || photo.uri === asset.uri);
+
+    if (isAlreadySelected) {
+      setSelectedPhotos((currentPhotos) => (
+        currentPhotos.filter((photo) => photo.assetId !== asset.id && photo.uri !== asset.uri)
+      ));
+      return;
+    }
+
     setIsPreparingSelectedPhoto(true);
 
     try {
-      const assetInfo = await MediaLibrary.getAssetInfoAsync(asset.id);
-      const resolvedUri = assetInfo.localUri ?? asset.uri;
+      let resolvedUri = asset.uri;
+
+      try {
+        const assetInfo = await MediaLibrary.getAssetInfoAsync(asset.id);
+        resolvedUri = assetInfo.localUri ?? assetInfo.uri ?? asset.uri;
+      } catch {
+        resolvedUri = asset.uri;
+      }
 
       if (!resolvedUri) {
         Alert.alert('사진 선택에 실패했어요', '선택한 사진 정보를 읽지 못했습니다. 다시 시도해 주세요.');
         return;
       }
 
-      setSelectedPhoto({
-        assetId: asset.id,
-        name: asset.filename,
-        uri: resolvedUri,
-      });
+      setSelectedPhotos((currentPhotos) => [
+        ...currentPhotos,
+        {
+          assetId: asset.id,
+          name: asset.filename,
+          uri: resolvedUri,
+        },
+      ]);
     } catch {
       Alert.alert('사진 선택에 실패했어요', '선택한 사진 정보를 읽지 못했습니다. 다시 시도해 주세요.');
     } finally {
@@ -217,21 +238,33 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   }, [step]);
 
   const handleUpload = async () => {
-    if (!selectedPlaceDraft || !selectedPhoto || isUploading) {
+    if (!selectedPlaceDraft || selectedPhotos.length === 0 || isUploading) {
       return;
     }
 
     setIsUploading(true);
 
     try {
-      const place = createdPlace ?? (await placeApi.createPlace(selectedPlaceDraft));
+      const place = createdPlace ?? (await placeApi.createPlace({
+        ...selectedPlaceDraft,
+        category: postCategory,
+      }));
 
       if (!createdPlace) {
         setCreatedPlace(place);
       }
 
-      const picture = await pictureApi.createPicture(selectedPhoto);
-      Alert.alert('업로드 완료', `${place.name} 장소를 등록하고 사진 업로드까지 완료했어요.\n${picture.message}`, [
+      const pictures = [];
+
+      for (const photo of selectedPhotos) {
+        pictures.push(await pictureApi.createPicture(photo));
+      }
+
+      const uploadMessage = pictures.length > 1
+        ? `${pictures.length}장의 사진 업로드까지 완료했어요.`
+        : pictures[0]?.message ?? '사진 업로드까지 완료했어요.';
+
+      Alert.alert('업로드 완료', `${place.name} 장소를 등록하고 ${uploadMessage}`, [
         { text: '확인', onPress: onClose },
       ]);
     } catch (error) {
@@ -268,7 +301,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       >
         <View style={[styles.screen, { maxWidth: maxContentWidth }]}>
           <PlaceCreateHeader
-            nextDisabled={step === 2 && !selectedPhoto}
+            nextDisabled={step === 2 && selectedPhotos.length === 0}
             step={step}
             onBack={goBack}
             onNext={step === 2 ? goNext : undefined}
@@ -298,13 +331,15 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
               permissionGranted={photoLibraryPermission?.granted ?? false}
               photoAccessPrivileges={photoLibraryPermission?.accessPrivileges}
               photos={photoLibraryAssets}
-              selectedPhoto={selectedPhoto}
+              selectedPhotos={selectedPhotos}
             />
           ) : (
             <CaptionStep
+              category={postCategory}
               isUploading={isUploading}
+              onChangeCategory={setPostCategory}
               placeName={selectedPlaceDraft?.name ?? ''}
-              selectedPhoto={selectedPhoto}
+              selectedPhotos={selectedPhotos}
               onUpload={handleUpload}
             />
           )}

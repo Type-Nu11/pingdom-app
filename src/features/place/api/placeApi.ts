@@ -38,6 +38,7 @@ type PlaceListResponse = {
 
 export type CreatePlaceRequest = {
   address: string;
+  category?: string;
   latitude: number;
   longitude: number;
   name: string;
@@ -64,6 +65,7 @@ export type CoordinateTokenResponse = {
 
 export type UploadPlaceWithTokenRequest = {
   address: string;
+  category: string;
   coordinateToken: string;
   name: string;
 };

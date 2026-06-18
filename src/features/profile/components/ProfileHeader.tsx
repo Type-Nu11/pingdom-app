@@ -9,6 +9,7 @@ type ProfileHeaderProps = {
   onChangeTab: (tab: 'liked' | 'saved') => void;
   onOpenArchive: () => void;
   onOpenEdit: () => void;
+  onLogout: () => void;
   showTabs: boolean;
 };
 
@@ -16,6 +17,7 @@ const ProfileHeader = ({
   activeTab,
   isArchive,
   onChangeTab,
+  onLogout,
   onOpenArchive,
   onOpenEdit,
   showTabs,
@@ -32,6 +34,9 @@ const ProfileHeader = ({
           </Pressable>
           <Pressable style={styles.actionButton} onPress={onOpenArchive}>
             <Text style={styles.actionText}>보관함 보기</Text>
+          </Pressable>
+          <Pressable style={[styles.actionButton, styles.logoutButton]} onPress={onLogout}>
+            <Text style={[styles.actionText, styles.logoutText]}>로그아웃</Text>
           </Pressable>
         </View>
       )}
@@ -81,8 +86,11 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 36,
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
     marginTop: 24,
+    paddingHorizontal: 24,
   },
   activeTabLine: {
     backgroundColor: '#ff1956',
@@ -107,6 +115,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingBottom: 32,
     paddingTop: 118,
+  },
+  logoutButton: {
+    borderColor: '#ffd2dd',
+  },
+  logoutText: {
+    color: '#ff1956',
   },
   tabBar: {
     alignItems: 'center',

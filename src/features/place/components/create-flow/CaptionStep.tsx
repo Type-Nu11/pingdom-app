@@ -1,17 +1,33 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Button from '../../../../shared/components/Button';
 import { PROFILE_USERNAME } from '../../../profile/constants/profileMock';
-import type { PlaceUploadPhoto } from '../../model/place.types';
+import type { PlaceCategory, PlaceUploadPhoto } from '../../model/place.types';
 import ExamplePhoto from './ExamplePhoto';
 
 type CaptionStepProps = {
+  category: PlaceCategory;
   isUploading?: boolean;
+  onChangeCategory: (category: PlaceCategory) => void;
   onUpload: () => void;
   placeName: string;
-  selectedPhoto: PlaceUploadPhoto | null;
+  selectedPhotos: PlaceUploadPhoto[];
 };
 
-const CaptionStep = ({ isUploading = false, onUpload, placeName, selectedPhoto }: CaptionStepProps) => (
+const PLACE_CATEGORIES: Array<{ id: PlaceCategory; label: string }> = [
+  { id: 'food', label: 'Food' },
+  { id: 'music', label: 'Music' },
+  { id: 'fashion', label: 'Fashion' },
+  { id: 'game', label: 'Game' },
+];
+
+const CaptionStep = ({
+  category,
+  isUploading = false,
+  onChangeCategory,
+  onUpload,
+  placeName,
+  selectedPhotos,
+}: CaptionStepProps) => (
   <View style={styles.captionBody}>
     <View style={styles.authorRow}>
       <View style={styles.profileCircle}>
@@ -29,7 +45,35 @@ const CaptionStep = ({ isUploading = false, onUpload, placeName, selectedPhoto }
     </View>
 
     <View style={styles.heroPhoto}>
-      <ExamplePhoto large uri={selectedPhoto?.uri} />
+      <ExamplePhoto large uri={selectedPhotos[0]?.uri} />
+      {selectedPhotos.length > 1 ? (
+        <View style={styles.photoCountBadge}>
+          <Text style={styles.photoCountText}>{selectedPhotos.length}장 선택됨</Text>
+        </View>
+      ) : null}
+    </View>
+
+    <View style={styles.categorySection}>
+      <Text style={styles.categoryLabel}>카테고리</Text>
+      <View style={styles.categoryRow}>
+        {PLACE_CATEGORIES.map((item) => {
+          const isSelected = category === item.id;
+
+          return (
+            <Pressable
+              key={item.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.label} 카테고리 선택`}
+              style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+              onPress={() => onChangeCategory(item.id)}
+            >
+              <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
+                {item.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
 
     <View style={styles.captionSection}>
@@ -45,7 +89,7 @@ const CaptionStep = ({ isUploading = false, onUpload, placeName, selectedPhoto }
 
     <View style={styles.buttonArea}>
       <Button
-        disabled={!selectedPhoto}
+        disabled={selectedPhotos.length === 0}
         label="업로드"
         labelStyle={styles.uploadText}
         loading={isUploading}
@@ -95,13 +139,64 @@ const styles = StyleSheet.create({
   },
   captionSection: {
     paddingHorizontal: 32,
-    paddingTop: 26,
+    paddingTop: 18,
+  },
+  categoryChip: {
+    alignItems: 'center',
+    backgroundColor: '#f6f6f7',
+    borderColor: '#dedfe4',
+    borderRadius: 999,
+    borderWidth: 1,
+    flex: 1,
+    height: 38,
+    justifyContent: 'center',
+  },
+  categoryChipSelected: {
+    backgroundColor: '#ff1956',
+    borderColor: '#ff1956',
+  },
+  categoryLabel: {
+    color: '#777a84',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 9,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  categorySection: {
+    paddingHorizontal: 32,
+    paddingTop: 18,
+  },
+  categoryText: {
+    color: '#5e5e66',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  categoryTextSelected: {
+    color: '#fff',
   },
   heroPhoto: {
     aspectRatio: 1,
     backgroundColor: '#05070d',
     overflow: 'hidden',
+    position: 'relative',
     width: '100%',
+  },
+  photoCountBadge: {
+    backgroundColor: 'rgba(12, 12, 13, 0.72)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    position: 'absolute',
+    right: 14,
+    top: 14,
+  },
+  photoCountText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   placeName: {
     color: '#22242b',

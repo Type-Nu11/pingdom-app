@@ -15,7 +15,7 @@ type PhotoSelectStepProps = {
   permissionGranted: boolean;
   photoAccessPrivileges?: 'all' | 'limited' | 'none';
   photos: PlaceLibraryPhoto[];
-  selectedPhoto: PlaceUploadPhoto | null;
+  selectedPhotos: PlaceUploadPhoto[];
 };
 
 const PhotoSelectStep = ({
@@ -31,7 +31,7 @@ const PhotoSelectStep = ({
   permissionGranted,
   photoAccessPrivileges,
   photos,
-  selectedPhoto,
+  selectedPhotos,
 }: PhotoSelectStepProps) => {
   const actionLabel = permissionCanAskAgain ? '사진 접근 허용하기' : '설정 열기';
   const actionPress = permissionCanAskAgain ? onRequestPermission : onOpenSettings;
@@ -121,7 +121,8 @@ const PhotoSelectStep = ({
       }}
       onEndReachedThreshold={0.4}
       renderItem={({ item }) => {
-        const isSelected = selectedPhoto?.assetId === item.id || selectedPhoto?.uri === item.uri;
+        const selectedIndex = selectedPhotos.findIndex((photo) => photo.assetId === item.id || photo.uri === item.uri);
+        const isSelected = selectedIndex >= 0;
 
         return (
           <Pressable
@@ -136,7 +137,7 @@ const PhotoSelectStep = ({
             <Image source={{ uri: item.uri }} style={styles.photoImage} />
             {isSelected ? (
               <View style={styles.selectedBadge}>
-                <Text style={styles.selectedBadgeText}>선택</Text>
+                <Text style={styles.selectedBadgeText}>{selectedIndex + 1}</Text>
               </View>
             ) : null}
           </Pressable>

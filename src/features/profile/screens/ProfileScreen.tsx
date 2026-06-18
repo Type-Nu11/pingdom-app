@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, SafeAreaView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import useAuth from '../../auth/hooks/useAuth';
 import ArchiveDetailView from '../components/ArchiveDetailView';
 import LikesBottomSheet from '../components/LikesBottomSheet';
 import ProfileEditView from '../components/ProfileEditView';
@@ -16,6 +17,7 @@ type ProfileTab = 'liked' | 'saved';
 
 const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
+  const { logout } = useAuth();
   const [mode, setMode] = useState<ProfileMode>('profile');
   const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
   const [likesOpen, setLikesOpen] = useState(false);
@@ -42,6 +44,18 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
   };
 
   const isArchiveDetail = mode === 'archive-detail';
+  const handleLogout = () => {
+    Alert.alert('로그아웃', '현재 계정에서 로그아웃할까요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        style: 'destructive',
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -67,6 +81,7 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
               isArchive={mode === 'archive'}
               activeTab={activeTab}
               onChangeTab={setActiveTab}
+              onLogout={handleLogout}
               onOpenArchive={() => setMode('archive')}
               onOpenEdit={() => setMode('profile-edit')}
               showTabs={mode === 'profile'}
