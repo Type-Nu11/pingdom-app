@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import {
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryChips from '../components/CategoryChips';
 import KakaoMapCard, { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import MapActionButtons from '../components/MapActionButtons';
@@ -27,6 +27,7 @@ import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePostLike } from '../../record/hooks/usePostLike';
+import { usePostReport } from '../../record/hooks/usePostReport';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
@@ -53,6 +54,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   });
   const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
   const { togglePostLike } = usePostLike();
+  const { reportPost } = usePostReport();
   const selectedPlace = useMemo(
     () => (
       places.find((place) => String(place.id) === selectedMarkerId)
@@ -195,6 +197,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
             onRetry={() => void refetchSelectedPlacePosts()}
+            onReport={reportPost}
             onToggleLike={togglePostLike}
           />
         </View>

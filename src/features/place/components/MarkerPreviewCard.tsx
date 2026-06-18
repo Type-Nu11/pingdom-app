@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +21,7 @@ type MarkerPreviewCardProps = {
   isError?: boolean;
   isLoading?: boolean;
   onClose: () => void;
+  onReport?: (postId: number) => Promise<void>;
   onRetry?: () => void;
   onToggleLike?: (postId: number, nextLiked: boolean) => Promise<void>;
   placeName?: string;
@@ -66,10 +68,23 @@ function formatPostTime(createdAt: string) {
   return `${diffDays}일 전`;
 }
 
+function getReportErrorMessage(error: unknown) {
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    const responseData = error.response.data as { code?: unknown } | undefined;
+
+    if (responseData?.code === 'INVALID_TOKEN') {
+      return '서버에서 신고 요청을 인증하지 못했어요. 잠시 후 다시 시도해 주세요.';
+    }
+  }
+
+  return getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.');
+}
+
 const MarkerPreviewCard = ({
   isError = false,
   isLoading = false,
   onClose,
+  onReport,
   onRetry,
   onToggleLike,
   placeName,
@@ -78,6 +93,8 @@ const MarkerPreviewCard = ({
 }: MarkerPreviewCardProps) => {
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [reportedById, setReportedById] = useState<Record<string, boolean>>({});
+  const [reportPendingById, setReportPendingById] = useState<Record<string, boolean>>({});
   const [reactions, setReactions] = useState<FeedReactionState>({});
   const placeDisplayName = placeName ?? posts[0]?.placeName ?? '이 장소';
   const firstPost = posts.reduce<Post | null>((oldestPost, post) => {
@@ -131,6 +148,52 @@ const MarkerPreviewCard = ({
     }
   };
 
+  const submitReport = async (item: Post) => {
+    const feedId = String(item.id);
+
+    if (reportPendingById[feedId] || reportedById[feedId]) {
+      return;
+    }
+
+    setReportPendingById((prev) => ({ ...prev, [feedId]: true }));
+
+    try {
+      await onReport?.(item.id);
+      setReportedById((prev) => ({ ...prev, [feedId]: true }));
+      Alert.alert('신고가 접수됐어요', '검토 후 필요한 조치를 진행할게요.');
+    } catch (error) {
+      Alert.alert(
+        '신고에 실패했어요',
+        getReportErrorMessage(error)
+      );
+    } finally {
+      setReportPendingById((prev) => ({ ...prev, [feedId]: false }));
+    }
+  };
+
+  const handleReportPress = (item: Post) => {
+    const feedId = String(item.id);
+    setOpenMenuId(null);
+
+    if (reportedById[feedId]) {
+      Alert.alert('이미 신고했어요', '이 게시글은 이미 신고 접수됐어요.');
+      return;
+    }
+
+    Alert.alert(
+      '핑 신고',
+      '이 게시글을 신고할까요?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '신고',
+          style: 'destructive',
+          onPress: () => void submitReport(item),
+        },
+      ]
+    );
+  };
+
   return (
     <View style={[styles.card, { width }]}>
       <Pressable
@@ -181,6 +244,9 @@ const MarkerPreviewCard = ({
           const feedId = String(item.id);
           const reaction = reactions[feedId] ?? defaultReaction;
           const isMenuOpen = openMenuId === feedId;
+          const isReportPending = reportPendingById[feedId] ?? false;
+          const isReported = reportedById[feedId] ?? false;
+          const reportLabel = isReportPending ? '신고 중...' : isReported ? '신고 완료' : '핑 신고';
 
           return (
             <View key={item.id} style={styles.feedItem}>
@@ -213,9 +279,16 @@ const MarkerPreviewCard = ({
                       <Text style={styles.menuIcon}>⊖</Text>
                       <Text style={styles.menuText}>관심 없음</Text>
                     </Pressable>
-                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                    <Pressable
+                      disabled={isReportPending || isReported}
+                      style={[
+                        styles.menuItem,
+                        (isReportPending || isReported) && styles.menuItemDisabled,
+                      ]}
+                      onPress={() => handleReportPress(item)}
+                    >
                       <ReportIcon width={16} height={16} />
-                      <Text style={styles.reportText}>핑 신고</Text>
+                      <Text style={styles.reportText}>{reportLabel}</Text>
                     </Pressable>
                   </View>
                 )}
@@ -402,6 +475,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
+  },
+  menuItemDisabled: {
+    opacity: 0.45,
   },
   menuText: {
     color: '#0c0c0d',
