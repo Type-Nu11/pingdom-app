@@ -65,6 +65,7 @@ const LocationStep = ({
     || selectedAddress === '주소 검색에 실패했습니다'
     || selectedAddress === '장소를 검색해 선택해 주세요';
   const isSelectionDisabled = !placeName.trim()
+    || !selectedKakaoPlaceId
     || isSelectedAddressInvalid
     || isSubmitting;
   const selectableSearchResults = searchResults.filter((result) => result.kakaoPlaceId);
@@ -108,7 +109,6 @@ const LocationStep = ({
       shouldUseAddressAsPlaceName = false;
     } else if (selectedPlaceCoordinate && !isSameCoordinate(nextCoordinate, selectedPlaceCoordinate)) {
       setAddressQuery('');
-      setSelectedKakaoPlaceId(undefined);
       setSelectedPlaceCoordinate(null);
       shouldUseAddressAsPlaceName = true;
     }
@@ -247,6 +247,9 @@ const LocationStep = ({
         >
           <Text style={styles.primaryButtonText}>{isSubmitting ? '확인 중...' : '선택'}</Text>
         </Pressable>
+        {!selectedKakaoPlaceId ? (
+          <Text style={styles.selectionHint}>검색 결과에서 장소를 선택한 뒤 지도로 위치를 조정할 수 있어요.</Text>
+        ) : null}
       </View>
     </View>
   );
@@ -396,6 +399,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 20,
     fontWeight: '900',
+  },
+  selectionHint: {
+    color: '#777a84',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

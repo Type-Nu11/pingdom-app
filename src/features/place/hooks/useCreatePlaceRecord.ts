@@ -1,4 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { getAuthState } from '../../../app/store/authStore';
+import { getTokens } from '../../../shared/api/authStorage';
 import { profileApi } from '../../profile/api/profileApi';
 import { recordApi, type CreateRecordResponse } from '../../record/api/recordApi';
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
@@ -14,9 +17,54 @@ type CreatePlaceRecordRequest = {
 };
 
 type CreatePlaceRecordResponse = {
-  place: CreatePlaceResponse;
+  place?: CreatePlaceResponse;
   record: CreateRecordResponse;
 };
+
+const UPLOAD_LOG_PREFIX = '[place-upload]';
+
+function logUpload(stage: string, details?: Record<string, unknown>) {
+  console.info(UPLOAD_LOG_PREFIX, stage, details ?? {});
+}
+
+function warnUpload(stage: string, details?: Record<string, unknown>) {
+  console.warn(UPLOAD_LOG_PREFIX, stage, details ?? {});
+}
+
+async function logAuthSnapshot(stage: string) {
+  const authState = getAuthState();
+  const tokens = await getTokens().catch(() => null);
+
+  logUpload(stage, {
+    keychainHasAccessToken: Boolean(tokens?.accessToken),
+    keychainHasRefreshToken: Boolean(tokens?.refreshToken),
+    storeHasAccessToken: Boolean(authState.accessToken),
+    storeIsLoggedIn: authState.isLoggedIn,
+  });
+}
+
+function getUploadErrorDetails(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return {
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  const responseData = error.response?.data as {
+    code?: unknown;
+    errors?: unknown;
+    message?: unknown;
+  } | undefined;
+
+  return {
+    code: responseData?.code,
+    errors: responseData?.errors,
+    message: responseData?.message ?? error.message,
+    method: error.config?.method,
+    status: error.response?.status,
+    url: error.config?.url,
+  };
+}
 
 export const useCreatePlaceRecord = () => {
   const queryClient = useQueryClient();
@@ -26,25 +74,61 @@ export const useCreatePlaceRecord = () => {
     CreatePlaceRecordRequest
   >({
     mutationFn: async ({ caption, category, draft, photo }) => {
-      const {
-        kakaoPlaceId,
-        place,
-        validPlace,
-      } = await resolvePlaceForRecord({ category, draft, photo });
-      const description = caption.trim();
+      try {
+        await logAuthSnapshot('start');
+        logUpload('input', {
+          captionLength: caption.trim().length,
+          category,
+          hasCoordinateToken: Boolean(draft.coordinateToken),
+          hasKakaoPlaceId: Boolean(draft.kakaoPlaceId),
+          photoName: photo.name,
+          photoType: photo.type,
+        });
 
-      await assertUserCanUploadPlacePost(place.id);
+        const {
+          kakaoPlaceId,
+          place,
+          validPlace,
+        } = await resolvePlaceForRecord({ category, draft, photo });
+        const description = caption.trim();
 
-      const record = await recordApi.createRecord({
-        description: description || undefined,
-        file: photo,
-        kakaoPlaceId,
-        placeId: place.id,
-        title: draft.name,
-        validPlace,
-      });
+        logUpload('place resolved', {
+          hasKakaoPlaceId: Boolean(kakaoPlaceId),
+          placeId: place?.id,
+          validPlace: Boolean(validPlace),
+        });
 
-      return { place, record };
+        if (place) {
+          await logAuthSnapshot('before duplicate check');
+          await assertUserCanUploadPlacePost(place.id);
+          logUpload('duplicate check passed', { placeId: place.id });
+        } else {
+          logUpload('duplicate check skipped', {
+            reason: 'new kakao place upload does not have legacy placeId yet',
+          });
+        }
+
+        await logAuthSnapshot('before record upload');
+        const record = await recordApi.createRecord({
+          description: description || undefined,
+          file: photo,
+          kakaoPlaceId,
+          placeId: place?.id,
+          title: draft.name,
+          validPlace,
+        });
+
+        logUpload('record upload success', {
+          placeId: place?.id,
+          recordId: record.id,
+        });
+
+        return { place, record };
+      } catch (error) {
+        warnUpload('failed', getUploadErrorDetails(error));
+        await logAuthSnapshot('after failure');
+        throw error;
+      }
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: placeQueryKeys.all });
@@ -60,22 +144,20 @@ export const useCreatePlaceRecord = () => {
   };
 };
 
-type CreateKakaoPlaceParams = {
-  category: PlaceCategory;
-  draft: PlaceCreateDraft;
-  photo: PlaceUploadPhoto;
-};
-
 const PLACE_SEARCH_LIMIT = 100;
 const PLACE_SEARCH_MAX_PAGES = 5;
 const MAX_POSTS_PER_USER_PER_PLACE = 1;
 export const PLACE_POST_ALREADY_EXISTS_ERROR = 'PLACE_POST_ALREADY_EXISTS';
 
-type ResolvePlaceForRecordParams = CreateKakaoPlaceParams;
+type ResolvePlaceForRecordParams = {
+  category: PlaceCategory;
+  draft: PlaceCreateDraft;
+  photo: PlaceUploadPhoto;
+};
 
 type ResolvedPlaceForRecord = {
   kakaoPlaceId?: string;
-  place: CreatePlaceResponse;
+  place?: CreatePlaceResponse;
   validPlace?: true;
 };
 
@@ -129,22 +211,28 @@ async function resolvePlaceForRecord({
   }
 
   if (draft.kakaoPlaceId) {
+    if (draft.coordinateToken) {
+      return {
+        kakaoPlaceId: draft.kakaoPlaceId,
+        place: await placeApi.createPlaceWithCoordinateToken({
+          address: draft.address,
+          category,
+          coordinateToken: draft.coordinateToken,
+          imageUrl: photo.uri,
+          kakaoPlaceId: draft.kakaoPlaceId,
+          name: draft.name,
+        }),
+        validPlace: true,
+      };
+    }
+
     return {
       kakaoPlaceId: draft.kakaoPlaceId,
-      place: await createKakaoPlace({ category, draft, photo }),
       validPlace: true,
     };
   }
 
-  return {
-    place: await placeApi.createPlace({
-      address: draft.address,
-      category,
-      latitude: draft.latitude,
-      longitude: draft.longitude,
-      name: draft.name,
-    }),
-  };
+  throw new Error('KAKAO_PLACE_ID_REQUIRED');
 }
 
 async function assertUserCanUploadPlacePost(placeId: number) {
@@ -163,29 +251,6 @@ async function assertUserCanUploadPlacePost(placeId: number) {
   if (userPostCount >= MAX_POSTS_PER_USER_PER_PLACE) {
     throw new Error(PLACE_POST_ALREADY_EXISTS_ERROR);
   }
-}
-
-async function createKakaoPlace({ category, draft, photo }: CreateKakaoPlaceParams) {
-  if (!draft.kakaoPlaceId) {
-    throw new Error('KAKAO_PLACE_ID_REQUIRED');
-  }
-
-  const coordinateToken = draft.coordinateToken ?? (
-    await placeApi.createPlaceCoordinates({
-      baseLatitude: draft.latitude,
-      baseLongitude: draft.longitude,
-      kakaoPlaceId: draft.kakaoPlaceId,
-    })
-  ).coordinateToken;
-
-  return placeApi.createPlaceWithCoordinateToken({
-    address: draft.address,
-    category,
-    coordinateToken,
-    imageUrl: photo.uri,
-    kakaoPlaceId: draft.kakaoPlaceId,
-    name: draft.name,
-  });
 }
 
 export default useCreatePlaceRecord;
