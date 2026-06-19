@@ -41,6 +41,7 @@ const SIDE_CARD_SCALE = 0.86;
 const SIDE_CARD_TRANSLATE_X = 24;
 const SIDE_CARD_TRANSLATE_Y = 42;
 const SIDE_CARD_OPACITY = 0.84;
+const IMAGE_ASPECT_RATIO = 340 / 341;
 
 const MarkerPreviewCard = ({
   cardWidth,
@@ -60,7 +61,7 @@ const MarkerPreviewCard = ({
   const sidePeekInset = Math.max(0, Math.round((viewportWidth - cardWidth) / 2));
   const contentRightInset = sidePeekInset;
   const snapInterval = cardWidth + pageGap;
-  const imageHeight = Math.round(cardWidth * (340 / 338));
+  const imageHeight = Math.round(cardWidth * IMAGE_ASPECT_RATIO);
 
   useEffect(() => {
     const selectedIndex = items.findIndex((item) => item.id === selectedMarkerId);
@@ -209,10 +210,13 @@ const MarkerPreviewCard = ({
                     <Text style={styles.emptyFeedText}>이 장소의 첫 핑을 남겨보세요.</Text>
                   </View>
                 ) : marker.feeds.map((item, feedIndex) => {
-                  const activeImageIndex = activeImageIndexes[item.id] ?? 0;
+                  const imageUrls = item.imageUrls ?? [];
+                  const activeImageIndex = Math.min(
+                    activeImageIndexes[item.id] ?? 0,
+                    Math.max(imageUrls.length - 1, 0),
+                  );
                   const reaction = reactions[item.id] ?? defaultReaction;
                   const isMenuOpen = openMenuId === item.id;
-                  const imageUrls = item.imageUrls ?? [];
 
                   return (
                     <View
@@ -275,16 +279,14 @@ const MarkerPreviewCard = ({
                             </ScrollView>
                           </View>
 
-                          {imageUrls.length > 1 && (
-                            <View style={styles.indicatorRow}>
-                              {imageUrls.map((_, index) => (
-                                <View
-                                  key={`${item.id}-indicator-${index}`}
-                                  style={activeImageIndex === index ? styles.indicatorActive : styles.indicator}
-                                />
-                              ))}
-                            </View>
-                          )}
+                          <View style={styles.indicatorRow}>
+                            {imageUrls.map((_, index) => (
+                              <View
+                                key={`${item.id}-indicator-${index}`}
+                                style={activeImageIndex === index ? styles.indicatorActive : styles.indicator}
+                              />
+                            ))}
+                          </View>
                         </>
                       ) : (
                         <View style={[styles.imageFrame, styles.imageMissing, { height: imageHeight }]}>
