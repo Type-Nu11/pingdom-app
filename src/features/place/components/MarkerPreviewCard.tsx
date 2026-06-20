@@ -839,9 +839,9 @@ const styles = StyleSheet.create({
   },
   radioInner: {
     backgroundColor: '#ff1956',
-    borderRadius: 5,
-    height: 10,
-    width: 10,
+    borderRadius: 9,
+    height: 18,
+    width: 18,
   },
   radioOuter: {
     alignItems: 'center',
