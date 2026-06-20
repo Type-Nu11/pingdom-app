@@ -70,14 +70,20 @@ export type UploadPlaceWithTokenRequest = {
   name: string;
 };
 
-export type FavoritePlaceRequest = {
+export type CreateBookmarkRequest = {
   placeId: number;
 };
 
-export type FavoritePlaceResponse = {
+export type CreateBookmarkResponse = {
   id: number;
   message: string;
   placeId: number;
+};
+
+export type RemoveBookmarkResponse = {
+  message: string;
+  placeId: number;
+  userId: number;
 };
 
 export type RecordRecommendationClickRequest = {
@@ -94,9 +100,22 @@ export type ApiFieldErrorResponse = CommonApiFieldErrorResponse;
 
 export type ApiTokenErrorResponse = CommonApiCodeErrorResponse<'INVALID_TOKEN'>;
 
+export type BookmarkApiErrorCode =
+  | 'BOOKMARK_ALREADY_EXISTS'
+  | 'BOOKMARK_NOT_FOUND'
+  | 'PLACE_NOT_FOUND';
+
+export type BookmarkApiErrorResponse = CommonApiCodeErrorResponse<BookmarkApiErrorCode>;
+
 export const placeApi = {
-  addFavorite: async (payload: FavoritePlaceRequest): Promise<FavoritePlaceResponse> => {
-    const { data } = await api.post<FavoritePlaceResponse>('/map/favorites', payload);
+  createBookmark: async (payload: CreateBookmarkRequest): Promise<CreateBookmarkResponse> => {
+    const { data } = await api.post<CreateBookmarkResponse>('/map/bookmarks', payload);
+    return data;
+  },
+  removeBookmark: async (placeId: number): Promise<RemoveBookmarkResponse> => {
+    const { data } = await api.delete<RemoveBookmarkResponse>('/map/bookmarks', {
+      params: { placeId },
+    });
     return data;
   },
   createPlace: async (payload: CreatePlaceRequest) => {

@@ -20,20 +20,23 @@ import type { Post } from '../../record/model/record.types';
 type MarkerPreviewCardProps = {
   isError?: boolean;
   isLoading?: boolean;
+  isPlaceBookmarked?: boolean;
+  isPlaceBookmarkPending?: boolean;
   notificationLikeContext?: {
     notificationsId?: string;
     postId?: string;
   } | null;
   onClose: () => void;
   onRetry?: () => void;
+  onTogglePlaceBookmark?: (placeId: number) => Promise<void>;
   onToggleLike?: (postId: number, nextLiked: boolean, notificationsId?: number) => Promise<void>;
+  placeId?: number;
   placeName?: string;
   posts: Post[];
   width: number;
 };
 
 type FeedReactionState = Record<string, {
-  saved: boolean;
   shared: boolean;
 }>;
 
@@ -44,7 +47,6 @@ type LocalLikeOverride = {
 };
 
 const defaultReaction = {
-  saved: false,
   shared: false,
 };
 
@@ -138,10 +140,14 @@ function isAlreadyLikedError(error: unknown) {
 const MarkerPreviewCard = ({
   isError = false,
   isLoading = false,
+  isPlaceBookmarked = false,
+  isPlaceBookmarkPending = false,
   notificationLikeContext,
   onClose,
   onRetry,
+  onTogglePlaceBookmark,
   onToggleLike,
+  placeId,
   placeName,
   posts,
   width,
@@ -238,6 +244,21 @@ const MarkerPreviewCard = ({
     }
   };
 
+  const handlePlaceBookmarkPress = async () => {
+    if (placeId === undefined || !onTogglePlaceBookmark) {
+      return;
+    }
+
+    try {
+      await onTogglePlaceBookmark(placeId);
+    } catch (error) {
+      Alert.alert(
+        '장소 저장에 실패했어요',
+        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.'),
+      );
+    }
+  };
+
   return (
     <View style={[styles.card, { width }]}>
       <Pressable
@@ -257,6 +278,26 @@ const MarkerPreviewCard = ({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.placeHeader}>
+          {placeId !== undefined ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={isPlaceBookmarked ? '저장한 장소 해제' : '장소 저장'}
+              disabled={isPlaceBookmarkPending}
+              hitSlop={10}
+              style={[
+                styles.placeBookmarkButton,
+                isPlaceBookmarkPending && styles.disabledActionButton,
+              ]}
+              onPress={() => void handlePlaceBookmarkPress()}
+            >
+              <SavedIcon
+                color={isPlaceBookmarked ? '#ff1956' : '#5e5e66'}
+                fill={isPlaceBookmarked ? '#ff1956' : 'none'}
+                width={18}
+                height={21}
+              />
+            </Pressable>
+          ) : null}
           <Text numberOfLines={1} style={styles.placeHeaderTitle}>{placeDisplayName}</Text>
           {firstUploaderName ? (
             <Text numberOfLines={1} style={styles.placeHeaderMeta}>
@@ -376,14 +417,18 @@ const MarkerPreviewCard = ({
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="저장"
+                  accessibilityLabel={isPlaceBookmarked ? '저장한 장소 해제' : '장소 저장'}
+                  disabled={placeId === undefined || isPlaceBookmarkPending}
                   hitSlop={10}
-                  style={styles.actionButton}
-                  onPress={() => setReaction(feedId, 'saved')}
+                  style={[
+                    styles.actionButton,
+                    (placeId === undefined || isPlaceBookmarkPending) && styles.disabledActionButton,
+                  ]}
+                  onPress={() => void handlePlaceBookmarkPress()}
                 >
                   <SavedIcon
-                    color={reaction.saved ? '#ff1956' : '#5e5e66'}
-                    fill={reaction.saved ? '#ff1956' : 'none'}
+                    color={isPlaceBookmarked ? '#ff1956' : '#5e5e66'}
+                    fill={isPlaceBookmarked ? '#ff1956' : 'none'}
                     width={18}
                     height={21}
                   />
@@ -545,6 +590,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 58,
     paddingVertical: 12,
+  },
+  placeBookmarkButton: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    left: 17,
+    position: 'absolute',
+    width: 32,
   },
   placeHeaderAuthor: {
     color: '#ff1956',

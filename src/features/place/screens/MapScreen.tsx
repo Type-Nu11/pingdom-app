@@ -29,6 +29,7 @@ import { usePlaces } from '../hooks/usePlaces';
 import { usePostLike } from '../../record/hooks/usePostLike';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
+import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import type { RecommendedPlace } from '../model/place.types';
 
@@ -60,6 +61,11 @@ export default function MapScreen({
     longitude: userLng,
   });
   const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const {
+    isPlaceBookmarked,
+    isPlaceBookmarkPending,
+    togglePlaceBookmark,
+  } = usePlaceBookmark();
   const { togglePostLike } = usePostLike();
   const selectedPlace = useMemo(
     () => (
@@ -198,12 +204,16 @@ export default function MapScreen({
           <MarkerPreviewCard
             isError={isPostsError}
             isLoading={isPostsLoading}
+            isPlaceBookmarked={selectedPlace ? isPlaceBookmarked(selectedPlace.id) : false}
+            isPlaceBookmarkPending={selectedPlace ? isPlaceBookmarkPending(selectedPlace.id) : false}
             notificationLikeContext={notificationLikeContext}
+            placeId={selectedPlace?.id}
             placeName={selectedPlace?.name}
             posts={selectedPlacePosts}
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
             onRetry={() => void refetchSelectedPlacePosts()}
+            onTogglePlaceBookmark={togglePlaceBookmark}
             onToggleLike={togglePostLike}
           />
         </View>
