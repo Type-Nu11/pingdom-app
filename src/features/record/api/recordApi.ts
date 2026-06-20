@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { api } from '../../../shared/api/apiClient';
 import type {
   ApiCodeErrorResponse,
@@ -148,7 +149,39 @@ export const recordApi = {
     return data;
   },
   reportRecord: async (id: number, payload: PostReportRequest): Promise<string> => {
-    const { data } = await api.post<string>(`/map/post/${id}/report`, payload);
-    return data;
+    const url = `/map/post/${id}/report`;
+
+    if (__DEV__) {
+      console.log('[PostReport] request', { body: payload, method: 'POST', url });
+    }
+
+    try {
+      const response = await api.post<string>(url, payload);
+
+      if (__DEV__) {
+        console.log('[PostReport] response', {
+          data: response.data,
+          status: response.status,
+          url,
+        });
+      }
+
+      return response.data;
+    } catch (error) {
+      if (__DEV__) {
+        if (axios.isAxiosError(error)) {
+          console.log('[PostReport] response error', {
+            data: error.response?.data,
+            message: error.message,
+            status: error.response?.status,
+            url,
+          });
+        } else {
+          console.log('[PostReport] unexpected error', { error, url });
+        }
+      }
+
+      throw error;
+    }
   },
 };
