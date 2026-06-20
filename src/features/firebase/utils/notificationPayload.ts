@@ -10,12 +10,20 @@ export function parseNotificationRoute(
   source: NotificationRouteSource
 ): NotificationRoute {
   const placeId = toStringValue(message.data?.placeId) ?? toStringValue(message.data?.targetId);
+  const postId = toStringValue(message.data?.postId) ?? toStringValue(message.data?.mapImageId);
+  const notificationsId = (
+    toStringValue(message.data?.notificationsId)
+    ?? toStringValue(message.data?.notificationId)
+    ?? toStringValue(message.data?.id)
+  );
   const requestedScreen = toStringValue(message.data?.screen);
   const screen = requestedScreen === 'place-detail' || placeId ? 'place-detail' : 'map';
 
   return {
     screen,
     placeId,
+    postId,
+    notificationsId,
     title: toStringValue(message.notification?.title) ?? toStringValue(message.data?.title),
     body: toStringValue(message.notification?.body) ?? toStringValue(message.data?.body),
     messageId: toStringValue(message.messageId),

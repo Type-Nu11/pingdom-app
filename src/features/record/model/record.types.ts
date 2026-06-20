@@ -15,6 +15,8 @@ export type Post = {
   likedByMe?: boolean;
   placeId: number;
   placeName: string;
+  notificationId?: number;
+  notificationsId?: number;
   title: string;
   userId: number;
   username: string;

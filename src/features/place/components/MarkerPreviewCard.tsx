@@ -20,9 +20,13 @@ import type { Post } from '../../record/model/record.types';
 type MarkerPreviewCardProps = {
   isError?: boolean;
   isLoading?: boolean;
+  notificationLikeContext?: {
+    notificationsId?: string;
+    postId?: string;
+  } | null;
   onClose: () => void;
   onRetry?: () => void;
-  onToggleLike?: (postId: number, nextLiked: boolean) => Promise<void>;
+  onToggleLike?: (postId: number, nextLiked: boolean, notificationsId?: number) => Promise<void>;
   placeName?: string;
   posts: Post[];
   width: number;
@@ -54,6 +58,23 @@ function formatLikeCount(count: number) {
 
 function getServerLiked(post: Post) {
   return Boolean(post.liked ?? post.isLiked ?? post.likedByMe);
+}
+
+function getPostNotificationsId(post: Post) {
+  return post.notificationsId ?? post.notificationId;
+}
+
+function toNumberId(value: number | string | undefined) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value !== 'string' || value.length === 0) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 function getDisplayLiked(post: Post, override?: LocalLikeOverride) {
@@ -117,6 +138,7 @@ function isAlreadyLikedError(error: unknown) {
 const MarkerPreviewCard = ({
   isError = false,
   isLoading = false,
+  notificationLikeContext,
   onClose,
   onRetry,
   onToggleLike,
@@ -176,7 +198,13 @@ const MarkerPreviewCard = ({
     }));
 
     try {
-      await onToggleLike?.(item.id, nextLiked);
+      const routePostId = toNumberId(notificationLikeContext?.postId);
+      const routeNotificationsId = toNumberId(notificationLikeContext?.notificationsId);
+      const notificationsId = routePostId === item.id
+        ? routeNotificationsId ?? getPostNotificationsId(item)
+        : getPostNotificationsId(item);
+
+      await onToggleLike?.(item.id, nextLiked, notificationsId);
     } catch (error) {
       if (nextLiked && isAlreadyLikedError(error)) {
         setLikeOverrides((prev) => ({

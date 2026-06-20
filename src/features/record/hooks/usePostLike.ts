@@ -6,6 +6,7 @@ import { postQueryKeys, type PostLikeState } from './usePlacePosts';
 
 type TogglePostLikePayload = {
   nextLiked: boolean;
+  notificationsId?: number;
   postId: number;
 };
 
@@ -65,9 +66,15 @@ export const usePostLike = () => {
   const queryClient = useQueryClient();
 
   const postLikeMutation = useMutation({
-    mutationFn: async ({ nextLiked, postId }: TogglePostLikePayload) => {
+    mutationFn: async ({ nextLiked, notificationsId, postId }: TogglePostLikePayload) => {
       try {
-        return nextLiked ? await recordApi.likePost(postId) : await recordApi.unlikePost(postId);
+        if (!nextLiked) {
+          return await recordApi.unlikePost(postId);
+        }
+
+        return typeof notificationsId === 'number'
+          ? await recordApi.likeReturnPost(postId, notificationsId)
+          : await recordApi.likePost(postId);
       } catch (error) {
         if (nextLiked && isAlreadyLikedError(error)) {
           return undefined;
@@ -110,8 +117,8 @@ export const usePostLike = () => {
 
   return {
     isPending: postLikeMutation.isPending,
-    togglePostLike: (postId: number, nextLiked: boolean) =>
-      postLikeMutation.mutateAsync({ postId, nextLiked }).then(() => undefined),
+    togglePostLike: (postId: number, nextLiked: boolean, notificationsId?: number) =>
+      postLikeMutation.mutateAsync({ postId, nextLiked, notificationsId }).then(() => undefined),
   };
 };
 

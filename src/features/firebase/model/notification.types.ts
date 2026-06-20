@@ -8,6 +8,8 @@ export type NotificationRouteSource =
 export type NotificationRoute = {
   screen: NotificationRouteName;
   placeId?: string;
+  postId?: string;
+  notificationsId?: string;
   title?: string;
   body?: string;
   messageId?: string;

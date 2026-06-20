@@ -50,6 +50,14 @@ export type RecordLikeResponse = {
 
 export type PostLikeResponse = RecordLikeResponse;
 
+export type PostLikeReturnResponse = PostLikeResponse | {
+  isLiked?: boolean;
+  likeCount?: number;
+  liked?: boolean;
+  likedByMe?: boolean;
+  message?: string;
+};
+
 export type RecordApiErrorCode =
   | 'ALREADY_REPORTED_IMAGE'
   | 'IMAGE_NOT_FOUND'
@@ -144,6 +152,15 @@ export const recordApi = {
     const { data } = await api.post<PostLikeResponse>('/map/like', {
       mapImageId: postId,
     });
+    return data;
+  },
+  likeReturnPost: async (
+    postId: number,
+    notificationsId: number
+  ): Promise<PostLikeReturnResponse> => {
+    const { data } = await api.post<PostLikeReturnResponse>(
+      `/map/like/return/${postId}/${notificationsId}`
+    );
     return data;
   },
   unlikePost: async (postId: number): Promise<PostLikeResponse> => {
