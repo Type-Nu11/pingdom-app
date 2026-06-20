@@ -33,11 +33,19 @@ import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecomm
 import type { RecommendedPlace } from '../model/place.types';
 
 type MapScreenProps = {
+  notificationLikeContext?: {
+    notificationsId?: string;
+    postId?: string;
+  } | null;
   onCreatePlace?: () => void;
   onOpenProfile?: () => void;
 };
 
-export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenProps) {
+export default function MapScreen({
+  notificationLikeContext,
+  onCreatePlace,
+  onOpenProfile,
+}: MapScreenProps) {
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
@@ -190,6 +198,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
           <MarkerPreviewCard
             isError={isPostsError}
             isLoading={isPostsLoading}
+            notificationLikeContext={notificationLikeContext}
             placeName={selectedPlace?.name}
             posts={selectedPlacePosts}
             width={markerCardWidth}
