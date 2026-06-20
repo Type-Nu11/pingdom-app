@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
@@ -18,6 +22,7 @@ import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { Post } from '../../record/model/record.types';
 
 type MarkerPreviewCardProps = {
+  hiddenPostIds: Record<string, boolean>;
   isError?: boolean;
   isLoading?: boolean;
   notificationLikeContext?: {
@@ -25,10 +30,13 @@ type MarkerPreviewCardProps = {
     postId?: string;
   } | null;
   onClose: () => void;
+  onReport: (postId: number, reason: string, hideAfterReport: boolean) => Promise<void>;
   onRetry?: () => void;
   onToggleLike?: (postId: number, nextLiked: boolean, notificationsId?: number) => Promise<void>;
   placeName?: string;
   posts: Post[];
+  reportedPostIds: Record<string, boolean>;
+  reportPendingPostIds: Record<string, boolean>;
   width: number;
 };
 
@@ -36,6 +44,18 @@ type FeedReactionState = Record<string, {
   saved: boolean;
   shared: boolean;
 }>;
+
+const REPORT_REASONS = [
+  '영리목적/홍보성',
+  '저작권침해',
+  '음란성/선정성',
+  '욕설/인신공격',
+  '개인정보노출',
+  '같은내용 반복게시',
+  '기타',
+] as const;
+
+type ReportReason = typeof REPORT_REASONS[number];
 
 type LocalLikeOverride = {
   baseLiked: boolean;
@@ -118,6 +138,18 @@ function formatPostTime(createdAt: string) {
   return `${diffDays}일 전`;
 }
 
+function getReportErrorMessage(error: unknown) {
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    const responseData = error.response.data as { code?: unknown } | undefined;
+
+    if (responseData?.code === 'INVALID_TOKEN') {
+      return '서버에서 신고 요청을 인증하지 못했어요. 잠시 후 다시 시도해 주세요.';
+    }
+  }
+
+  return getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.');
+}
+
 function isAlreadyLikedError(error: unknown) {
   if (!axios.isAxiosError(error)) {
     return false;
@@ -136,19 +168,28 @@ function isAlreadyLikedError(error: unknown) {
 }
 
 const MarkerPreviewCard = ({
+  hiddenPostIds,
   isError = false,
   isLoading = false,
   notificationLikeContext,
   onClose,
+  onReport,
   onRetry,
   onToggleLike,
   placeName,
   posts,
+  reportedPostIds,
+  reportPendingPostIds,
   width,
 }: MarkerPreviewCardProps) => {
+  const isMountedRef = useRef(true);
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
   const [likeOverrides, setLikeOverrides] = useState<Record<string, LocalLikeOverride>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [hideReportedPost, setHideReportedPost] = useState(false);
+  const [selectedReportReason, setSelectedReportReason] = useState<ReportReason | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportTarget, setReportTarget] = useState<Post | null>(null);
   const [reactions, setReactions] = useState<FeedReactionState>({});
   const placeDisplayName = placeName ?? posts[0]?.placeName ?? '이 장소';
   const firstPost = posts.reduce<Post | null>((oldestPost, post) => {
@@ -161,6 +202,11 @@ const MarkerPreviewCard = ({
       : oldestPost;
   }, null);
   const firstUploaderName = firstPost?.username;
+  const visiblePosts = posts.filter((post) => !hiddenPostIds[String(post.id)]);
+
+  useEffect(() => () => {
+    isMountedRef.current = false;
+  }, []);
 
   const setReaction = (
     feedId: string,
@@ -238,8 +284,194 @@ const MarkerPreviewCard = ({
     }
   };
 
+  const closeReportModal = () => {
+    if (reportTarget && reportPendingPostIds[String(reportTarget.id)]) {
+      return;
+    }
+
+    setHideReportedPost(false);
+    setSelectedReportReason(null);
+    setReportReason('');
+    setReportTarget(null);
+  };
+
+  const submitReport = async () => {
+    if (!reportTarget) {
+      return;
+    }
+
+    const detail = reportReason.trim();
+
+    if (!selectedReportReason) {
+      Alert.alert('신고 사유를 선택해 주세요');
+      return;
+    }
+
+    if (selectedReportReason === '기타' && !detail) {
+      Alert.alert('기타 신고 사유를 입력해 주세요');
+      return;
+    }
+
+    const item = reportTarget;
+    const feedId = String(item.id);
+    const reason = selectedReportReason === '기타' && detail
+      ? `${selectedReportReason}: ${detail}`
+      : selectedReportReason;
+
+    if (reportPendingPostIds[feedId] || reportedPostIds[feedId]) {
+      return;
+    }
+
+    try {
+      await onReport(item.id, reason, hideReportedPost);
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      setHideReportedPost(false);
+      setSelectedReportReason(null);
+      setReportReason('');
+      setReportTarget(null);
+      Alert.alert('신고가 접수됐어요', '검토 후 필요한 조치를 진행할게요.');
+    } catch (error) {
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      Alert.alert(
+        '신고에 실패했어요',
+        getReportErrorMessage(error)
+      );
+    }
+  };
+
+  const handleReportPress = (item: Post) => {
+    const feedId = String(item.id);
+    setOpenMenuId(null);
+
+    if (reportedPostIds[feedId]) {
+      Alert.alert('이미 신고했어요', '이 게시글은 이미 신고 접수됐어요.');
+      return;
+    }
+
+    setHideReportedPost(false);
+    setSelectedReportReason(null);
+    setReportReason('');
+    setReportTarget(item);
+  };
+
+  const isReportPending = reportTarget ? reportPendingPostIds[String(reportTarget.id)] : false;
+  const isOtherReasonMissing = selectedReportReason === '기타' && !reportReason.trim();
+  const isReportSubmitDisabled = !selectedReportReason || isOtherReasonMissing || isReportPending;
+
   return (
     <View style={[styles.card, { width }]}>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={reportTarget !== null}
+        onRequestClose={closeReportModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.reportModalBackdrop}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeReportModal} />
+          <View style={styles.reportModal}>
+            <ScrollView
+              bounces={false}
+              contentContainerStyle={styles.reportModalContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.reportModalHeader}>
+                <Text style={styles.reportModalTitle}>신고사유</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="신고 창 닫기"
+                  disabled={isReportPending}
+                  hitSlop={10}
+                  style={styles.reportCloseButton}
+                  onPress={closeReportModal}
+                >
+                  <Text style={styles.reportCloseText}>×</Text>
+                </Pressable>
+              </View>
+              <View style={styles.reportReasonGrid}>
+                {REPORT_REASONS.map((reason) => {
+                  const isSelected = selectedReportReason === reason;
+
+                  return (
+                    <Pressable
+                      key={reason}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: isSelected }}
+                      disabled={isReportPending}
+                      style={styles.reportReasonOption}
+                      onPress={() => {
+                        setSelectedReportReason(reason);
+
+                        if (reason !== '기타') {
+                          setReportReason('');
+                        }
+                      }}
+                    >
+                      <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
+                        {isSelected ? <View style={styles.radioInner} /> : null}
+                      </View>
+                      <Text style={[styles.reportReasonLabel, isSelected && styles.reportReasonLabelSelected]}>
+                        {reason}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {selectedReportReason === '기타' ? (
+                <TextInput
+                  accessibilityLabel="기타 신고 사유"
+                  editable={!isReportPending}
+                  multiline
+                  placeholder="기타사유를 입력하세요"
+                  placeholderTextColor="#b3b4ba"
+                  style={styles.reportReasonInput}
+                  textAlignVertical="top"
+                  value={reportReason}
+                  onChangeText={setReportReason}
+                />
+              ) : null}
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: hideReportedPost }}
+                disabled={isReportPending}
+                style={styles.hidePostOption}
+                onPress={() => setHideReportedPost((prev) => !prev)}
+              >
+                <View style={[styles.checkbox, hideReportedPost && styles.checkboxSelected]}>
+                  {hideReportedPost ? <Text style={styles.checkboxCheck}>✓</Text> : null}
+                </View>
+                <Text style={styles.hidePostLabel}>해당 게시글 다시보지 않기</Text>
+              </Pressable>
+              <Text style={styles.reportNotice}>신고는 반대 의견을 표시하는 기능이 아닙니다</Text>
+              <View style={styles.reportModalActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isReportSubmitDisabled}
+                  style={[
+                    styles.reportSubmitButton,
+                    isReportSubmitDisabled && styles.reportSubmitButtonDisabled,
+                  ]}
+                  onPress={() => void submitReport()}
+                >
+                  <Text style={styles.reportSubmitText}>
+                    {isReportPending ? '신고 중...' : '신고하기'}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="닫기"
@@ -279,18 +511,21 @@ const MarkerPreviewCard = ({
               </Pressable>
             ) : null}
           </View>
-        ) : posts.length === 0 ? (
+        ) : visiblePosts.length === 0 ? (
           <View style={styles.stateContainer}>
             <Text style={styles.stateTitle}>{placeDisplayName}에 아직 게시글이 없어요</Text>
             <Text style={styles.stateText}>첫 사진을 올려 장소를 채워보세요</Text>
           </View>
-        ) : posts.map((item) => {
+        ) : visiblePosts.map((item) => {
           const feedId = String(item.id);
           const reaction = reactions[feedId] ?? defaultReaction;
           const likeOverride = likeOverrides[feedId];
           const isLiked = getDisplayLiked(item, likeOverride);
           const displayLikeCount = getDisplayLikeCount(item, likeOverride);
           const isMenuOpen = openMenuId === feedId;
+          const isReportPending = reportPendingPostIds[feedId] ?? false;
+          const isReported = reportedPostIds[feedId] ?? false;
+          const reportLabel = isReportPending ? '신고 중...' : isReported ? '신고 완료' : '핑 신고';
 
           return (
             <View key={item.id} style={styles.feedItem}>
@@ -323,9 +558,16 @@ const MarkerPreviewCard = ({
                       <Text style={styles.menuIcon}>⊖</Text>
                       <Text style={styles.menuText}>관심 없음</Text>
                     </Pressable>
-                    <Pressable style={styles.menuItem} onPress={() => setOpenMenuId(null)}>
+                    <Pressable
+                      disabled={isReportPending || isReported}
+                      style={[
+                        styles.menuItem,
+                        (isReportPending || isReported) && styles.menuItemDisabled,
+                      ]}
+                      onPress={() => handleReportPress(item)}
+                    >
                       <ReportIcon width={16} height={16} />
-                      <Text style={styles.reportText}>핑 신고</Text>
+                      <Text style={styles.reportText}>{reportLabel}</Text>
                     </Pressable>
                   </View>
                 )}
@@ -516,6 +758,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  menuItemDisabled: {
+    opacity: 0.45,
+  },
   menuText: {
     color: '#0c0c0d',
     fontSize: 16,
@@ -608,6 +853,153 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
+  },
+  checkbox: {
+    alignItems: 'center',
+    borderColor: '#c6c7cc',
+    borderRadius: 7,
+    borderWidth: 1,
+    height: 29,
+    justifyContent: 'center',
+    width: 29,
+  },
+  checkboxCheck: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 22,
+  },
+  checkboxSelected: {
+    backgroundColor: '#ff1956',
+    borderColor: '#ff1956',
+  },
+  hidePostLabel: {
+    color: '#777883',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 22,
+  },
+  hidePostOption: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  reportModal: {
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    maxHeight: '92%',
+    maxWidth: 360,
+    width: '88%',
+  },
+  reportModalActions: {
+    marginTop: 26,
+  },
+  reportModalBackdrop: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  reportModalHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  reportModalContent: {
+    padding: 24,
+  },
+  reportModalTitle: {
+    color: '#24252a',
+    fontSize: 25,
+    fontWeight: '800',
+    lineHeight: 32,
+  },
+  reportCloseButton: {
+    alignItems: 'center',
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  reportCloseText: {
+    color: '#55565e',
+    fontSize: 38,
+    fontWeight: '300',
+    lineHeight: 38,
+  },
+  reportNotice: {
+    color: '#b3b4ba',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 16,
+  },
+  reportReasonGrid: {
+    columnGap: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 30,
+    rowGap: 16,
+  },
+  reportReasonLabel: {
+    color: '#777883',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  reportReasonLabelSelected: {
+    color: '#4d4e56',
+    fontWeight: '700',
+  },
+  reportReasonOption: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    width: '46%',
+  },
+  reportReasonInput: {
+    borderColor: '#c6c7cc',
+    borderRadius: 6,
+    borderWidth: 1,
+    color: '#4d4e56',
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 22,
+    minHeight: 156,
+    padding: 14,
+  },
+  radioInner: {
+    backgroundColor: '#ff1956',
+    borderRadius: 9,
+    height: 18,
+    width: 18,
+  },
+  radioOuter: {
+    alignItems: 'center',
+    borderColor: '#8b8c95',
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  radioOuterSelected: {
+    borderColor: '#ff1956',
+  },
+  reportSubmitButton: {
+    alignItems: 'center',
+    backgroundColor: '#ff1956',
+    borderRadius: 20,
+    height: 62,
+    justifyContent: 'center',
+  },
+  reportSubmitButtonDisabled: {
+    backgroundColor: '#d6d7da',
+  },
+  reportSubmitText: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '800',
   },
   retryButton: {
     alignItems: 'center',
