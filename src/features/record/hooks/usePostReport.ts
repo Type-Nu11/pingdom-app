@@ -1,12 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { recordApi } from '../api/recordApi';
+import { recordApi, type PostReportRequest } from '../api/recordApi';
 import { postQueryKeys } from './usePlacePosts';
+
+type PostReportMutation = PostReportRequest & {
+  postId: number;
+};
 
 export const usePostReport = () => {
   const queryClient = useQueryClient();
 
   const postReportMutation = useMutation({
-    mutationFn: (postId: number) => recordApi.reportRecord(postId),
+    mutationFn: ({ postId, reason }: PostReportMutation) => recordApi.reportRecord(postId, { reason }),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: postQueryKeys.all });
     },
@@ -14,8 +18,8 @@ export const usePostReport = () => {
 
   return {
     isPending: postReportMutation.isPending,
-    reportPost: (postId: number) =>
-      postReportMutation.mutateAsync(postId).then(() => undefined),
+    reportPost: (postId: number, reason: string) =>
+      postReportMutation.mutateAsync({ postId, reason }).then(() => undefined),
   };
 };
 

@@ -4,10 +4,14 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
@@ -21,7 +25,7 @@ type MarkerPreviewCardProps = {
   isError?: boolean;
   isLoading?: boolean;
   onClose: () => void;
-  onReport?: (postId: number) => Promise<void>;
+  onReport?: (postId: number, reason: string) => Promise<void>;
   onRetry?: () => void;
   onToggleLike?: (postId: number, nextLiked: boolean) => Promise<void>;
   placeName?: string;
@@ -93,6 +97,8 @@ const MarkerPreviewCard = ({
 }: MarkerPreviewCardProps) => {
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportTarget, setReportTarget] = useState<Post | null>(null);
   const [reportedById, setReportedById] = useState<Record<string, boolean>>({});
   const [reportPendingById, setReportPendingById] = useState<Record<string, boolean>>({});
   const [reactions, setReactions] = useState<FeedReactionState>({});
@@ -148,7 +154,28 @@ const MarkerPreviewCard = ({
     }
   };
 
-  const submitReport = async (item: Post) => {
+  const closeReportModal = () => {
+    if (reportTarget && reportPendingById[String(reportTarget.id)]) {
+      return;
+    }
+
+    setReportReason('');
+    setReportTarget(null);
+  };
+
+  const submitReport = async () => {
+    if (!reportTarget) {
+      return;
+    }
+
+    const reason = reportReason.trim();
+
+    if (!reason) {
+      Alert.alert('신고 사유를 입력해 주세요');
+      return;
+    }
+
+    const item = reportTarget;
     const feedId = String(item.id);
 
     if (reportPendingById[feedId] || reportedById[feedId]) {
@@ -158,8 +185,10 @@ const MarkerPreviewCard = ({
     setReportPendingById((prev) => ({ ...prev, [feedId]: true }));
 
     try {
-      await onReport?.(item.id);
+      await onReport?.(item.id, reason);
       setReportedById((prev) => ({ ...prev, [feedId]: true }));
+      setReportReason('');
+      setReportTarget(null);
       Alert.alert('신고가 접수됐어요', '검토 후 필요한 조치를 진행할게요.');
     } catch (error) {
       Alert.alert(
@@ -180,22 +209,63 @@ const MarkerPreviewCard = ({
       return;
     }
 
-    Alert.alert(
-      '핑 신고',
-      '이 게시글을 신고할까요?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '신고',
-          style: 'destructive',
-          onPress: () => void submitReport(item),
-        },
-      ]
-    );
+    setReportReason('');
+    setReportTarget(item);
   };
 
   return (
     <View style={[styles.card, { width }]}>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={reportTarget !== null}
+        onRequestClose={closeReportModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.reportModalBackdrop}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeReportModal} />
+          <View style={styles.reportModal}>
+            <Text style={styles.reportModalTitle}>게시글 신고</Text>
+            <Text style={styles.reportModalDescription}>
+              신고 사유를 입력해 주세요.
+            </Text>
+            <TextInput
+              accessibilityLabel="신고 사유"
+              editable={!reportTarget || !reportPendingById[String(reportTarget.id)]}
+              multiline
+              placeholder="신고 사유를 입력하세요"
+              placeholderTextColor="#8b8b94"
+              style={styles.reportReasonInput}
+              textAlignVertical="top"
+              value={reportReason}
+              onChangeText={setReportReason}
+            />
+            <View style={styles.reportModalActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={reportTarget ? reportPendingById[String(reportTarget.id)] : false}
+                style={styles.reportCancelButton}
+                onPress={closeReportModal}
+              >
+                <Text style={styles.reportCancelText}>취소</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={reportTarget ? reportPendingById[String(reportTarget.id)] : false}
+                style={styles.reportSubmitButton}
+                onPress={() => void submitReport()}
+              >
+                <Text style={styles.reportSubmitText}>
+                  {reportTarget && reportPendingById[String(reportTarget.id)] ? '신고 중...' : '신고'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="닫기"
@@ -571,6 +641,75 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
+  },
+  reportCancelButton: {
+    alignItems: 'center',
+    borderColor: '#d9d9df',
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    height: 46,
+    justifyContent: 'center',
+  },
+  reportCancelText: {
+    color: '#4d4d55',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  reportModal: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    maxWidth: 360,
+    padding: 20,
+    width: '88%',
+  },
+  reportModalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  reportModalBackdrop: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  reportModalDescription: {
+    color: '#5e5e66',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 6,
+  },
+  reportModalTitle: {
+    color: '#15171d',
+    fontSize: 18,
+    fontWeight: '800',
+    lineHeight: 24,
+  },
+  reportReasonInput: {
+    borderColor: '#d9d9df',
+    borderRadius: 8,
+    borderWidth: 1,
+    color: '#15171d',
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 16,
+    minHeight: 112,
+    padding: 12,
+  },
+  reportSubmitButton: {
+    alignItems: 'center',
+    backgroundColor: '#ee2b2b',
+    borderRadius: 8,
+    flex: 1,
+    height: 46,
+    justifyContent: 'center',
+  },
+  reportSubmitText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
   },
   retryButton: {
     alignItems: 'center',

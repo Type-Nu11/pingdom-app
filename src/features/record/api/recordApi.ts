@@ -38,6 +38,10 @@ export type RecordLikeRequest = {
   mapImageId: number;
 };
 
+export type PostReportRequest = {
+  reason: string;
+};
+
 export type RecordLikeResponse = {
   message?: string;
   mapImageId: number;
@@ -143,8 +147,8 @@ export const recordApi = {
     const { data } = await api.delete<PostLikeResponse>(`/map/like/${postId}`);
     return data;
   },
-  reportRecord: async (id: number): Promise<string> => {
-    const { data } = await api.post<string>(`/map/post/${id}/report`);
+  reportRecord: async (id: number, payload: PostReportRequest): Promise<string> => {
+    const { data } = await api.post<string>(`/map/post/${id}/report`, payload);
     return data;
   },
 };
