@@ -24,17 +24,20 @@ import type { Post } from '../../record/model/record.types';
 type MarkerPreviewCardProps = {
   isError?: boolean;
   isLoading?: boolean;
+  notificationLikeContext?: {
+    notificationsId?: string;
+    postId?: string;
+  } | null;
   onClose: () => void;
   onReport?: (postId: number, reason: string) => Promise<void>;
   onRetry?: () => void;
-  onToggleLike?: (postId: number, nextLiked: boolean) => Promise<void>;
+  onToggleLike?: (postId: number, nextLiked: boolean, notificationsId?: number) => Promise<void>;
   placeName?: string;
   posts: Post[];
   width: number;
 };
 
 type FeedReactionState = Record<string, {
-  liked: boolean;
   saved: boolean;
   shared: boolean;
 }>;
@@ -51,8 +54,13 @@ const REPORT_REASONS = [
 
 type ReportReason = typeof REPORT_REASONS[number];
 
+type LocalLikeOverride = {
+  baseLiked: boolean;
+  baseLikeCount: number;
+  liked: boolean;
+};
+
 const defaultReaction = {
-  liked: false,
   saved: false,
   shared: false,
 };
@@ -63,6 +71,49 @@ function formatLikeCount(count: number) {
   }
 
   return String(count);
+}
+
+function getServerLiked(post: Post) {
+  return Boolean(post.liked ?? post.isLiked ?? post.likedByMe);
+}
+
+function getPostNotificationsId(post: Post) {
+  return post.notificationsId ?? post.notificationId;
+}
+
+function toNumberId(value: number | string | undefined) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value !== 'string' || value.length === 0) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function getDisplayLiked(post: Post, override?: LocalLikeOverride) {
+  return override?.liked ?? getServerLiked(post);
+}
+
+function getDisplayLikeCount(post: Post, override?: LocalLikeOverride) {
+  if (!override) {
+    return post.likeCount;
+  }
+
+  if (post.likeCount !== override.baseLikeCount) {
+    return Math.max(0, post.likeCount);
+  }
+
+  const delta = override.liked === override.baseLiked
+    ? 0
+    : override.liked
+      ? 1
+      : -1;
+
+  return Math.max(0, post.likeCount + delta);
 }
 
 function formatPostTime(createdAt: string) {
@@ -96,9 +147,27 @@ function getReportErrorMessage(error: unknown) {
   return getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.');
 }
 
+function isAlreadyLikedError(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return false;
+  }
+
+  const responseData = error.response?.data as { code?: unknown; message?: unknown } | undefined;
+  const code = String(responseData?.code ?? '').toUpperCase();
+  const message = String(responseData?.message ?? '');
+  const lowerMessage = message.toLowerCase();
+
+  return (
+    (code.includes('ALREADY') && code.includes('LIKE')) ||
+    message.includes('이미 좋아요') ||
+    (lowerMessage.includes('already') && lowerMessage.includes('like'))
+  );
+}
+
 const MarkerPreviewCard = ({
   isError = false,
   isLoading = false,
+  notificationLikeContext,
   onClose,
   onReport,
   onRetry,
@@ -108,6 +177,7 @@ const MarkerPreviewCard = ({
   width,
 }: MarkerPreviewCardProps) => {
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
+  const [likeOverrides, setLikeOverrides] = useState<Record<string, LocalLikeOverride>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [hideReportedPost, setHideReportedPost] = useState(false);
   const [hiddenPostIds, setHiddenPostIds] = useState<Record<string, boolean>>({});
@@ -133,7 +203,7 @@ const MarkerPreviewCard = ({
   const setReaction = (
     feedId: string,
     key: keyof FeedReactionState[string],
-    nextValue?: boolean
+    nextValue?: boolean,
   ) => {
     setReactions((prev) => ({
       ...prev,
@@ -147,7 +217,8 @@ const MarkerPreviewCard = ({
 
   const handleLikePress = async (item: Post) => {
     const feedId = String(item.id);
-    const currentLiked = reactions[feedId]?.liked ?? defaultReaction.liked;
+    const previousOverride = likeOverrides[feedId];
+    const currentLiked = getDisplayLiked(item, previousOverride);
     const nextLiked = !currentLiked;
 
     if (likePendingById[feedId]) {
@@ -155,15 +226,50 @@ const MarkerPreviewCard = ({
     }
 
     setLikePendingById((prev) => ({ ...prev, [feedId]: true }));
-    setReaction(feedId, 'liked', nextLiked);
+    setLikeOverrides((prev) => ({
+      ...prev,
+      [feedId]: {
+        baseLiked: currentLiked,
+        baseLikeCount: item.likeCount,
+        liked: nextLiked,
+      },
+    }));
 
     try {
-      await onToggleLike?.(item.id, nextLiked);
+      const routePostId = toNumberId(notificationLikeContext?.postId);
+      const routeNotificationsId = toNumberId(notificationLikeContext?.notificationsId);
+      const notificationsId = routePostId === item.id
+        ? routeNotificationsId ?? getPostNotificationsId(item)
+        : getPostNotificationsId(item);
+
+      await onToggleLike?.(item.id, nextLiked, notificationsId);
     } catch (error) {
-      setReaction(feedId, 'liked', currentLiked);
+      if (nextLiked && isAlreadyLikedError(error)) {
+        setLikeOverrides((prev) => ({
+          ...prev,
+          [feedId]: {
+            baseLiked: true,
+            baseLikeCount: item.likeCount,
+            liked: true,
+          },
+        }));
+        return;
+      }
+
+      setLikeOverrides((prev) => {
+        const nextOverrides = { ...prev };
+
+        if (previousOverride) {
+          nextOverrides[feedId] = previousOverride;
+        } else {
+          delete nextOverrides[feedId];
+        }
+
+        return nextOverrides;
+      });
       Alert.alert(
         '좋아요에 실패했어요',
-        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.')
+        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.'),
       );
     } finally {
       setLikePendingById((prev) => ({ ...prev, [feedId]: false }));
@@ -394,6 +500,9 @@ const MarkerPreviewCard = ({
         ) : visiblePosts.map((item) => {
           const feedId = String(item.id);
           const reaction = reactions[feedId] ?? defaultReaction;
+          const likeOverride = likeOverrides[feedId];
+          const isLiked = getDisplayLiked(item, likeOverride);
+          const displayLikeCount = getDisplayLikeCount(item, likeOverride);
           const isMenuOpen = openMenuId === feedId;
           const isReportPending = reportPendingById[feedId] ?? false;
           const isReported = reportedById[feedId] ?? false;
@@ -460,18 +569,18 @@ const MarkerPreviewCard = ({
                     accessibilityLabel="좋아요"
                     disabled={likePendingById[feedId]}
                     hitSlop={10}
-                    style={styles.actionButton}
+                    style={[styles.actionButton, likePendingById[feedId] && styles.disabledActionButton]}
                     onPress={() => void handleLikePress(item)}
                   >
                     <LikeIcon
-                      color={reaction.liked ? '#ff1956' : '#5e5e66'}
-                      fill={reaction.liked ? '#ff1956' : 'none'}
+                      color={isLiked ? '#ff1956' : '#5e5e66'}
+                      fill={isLiked ? '#ff1956' : 'none'}
                       width={20}
                       height={18}
                     />
                   </Pressable>
-                  <Text style={[styles.likeCount, reaction.liked && styles.activeText]}>
-                    {formatLikeCount(item.likeCount + (reaction.liked ? 1 : 0))}
+                  <Text style={[styles.likeCount, isLiked && styles.activeText]}>
+                    {formatLikeCount(displayLikeCount)}
                   </Text>
                   <Pressable
                     accessibilityRole="button"
@@ -567,6 +676,9 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     lineHeight: 39,
   },
+  disabledActionButton: {
+    opacity: 0.5,
+  },
   feedImage: {
     height: '100%',
     width: '100%',
@@ -650,12 +762,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 13,
   },
-  placeName: {
-    color: '#0c0c0d',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 18,
-  },
   placeHeader: {
     alignItems: 'center',
     backgroundColor: '#f8f8fa',
@@ -682,6 +788,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     lineHeight: 20,
+  },
+  placeName: {
+    color: '#0c0c0d',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
   },
   profileBody: {
     backgroundColor: '#5e5e66',

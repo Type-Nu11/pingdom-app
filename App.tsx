@@ -84,6 +84,7 @@ function AppContent() {
           <ProfileScreen onBack={() => setMainScreen('map')} onLogout={handleLogout} />
         ) : (
           <MapScreen
+            notificationLikeContext={openedNotificationRoute}
             onCreatePlace={() => setMainScreen('place-create')}
             onOpenProfile={() => setMainScreen('profile')}
           />
