@@ -47,6 +47,9 @@ export default function MapScreen({
   onCreatePlace,
   onOpenProfile,
 }: MapScreenProps) {
+  const [hiddenPostIds, setHiddenPostIds] = useState<Record<string, boolean>>({});
+  const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
+  const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
@@ -111,6 +114,26 @@ export default function MapScreen({
       placeId: place.id,
       recommendationVersion: recommendationVersion ?? 'place-rec-v1',
     }).catch(() => undefined);
+  };
+  const handleReport = async (postId: number, reason: string, hideAfterReport: boolean) => {
+    const postKey = String(postId);
+
+    if (reportPendingPostIds[postKey] || reportedPostIds[postKey]) {
+      return;
+    }
+
+    setReportPendingPostIds((prev) => ({ ...prev, [postKey]: true }));
+
+    try {
+      await reportPost(postId, reason);
+      setReportedPostIds((prev) => ({ ...prev, [postKey]: true }));
+
+      if (hideAfterReport) {
+        setHiddenPostIds((prev) => ({ ...prev, [postKey]: true }));
+      }
+    } finally {
+      setReportPendingPostIds((prev) => ({ ...prev, [postKey]: false }));
+    }
   };
 
   return (
@@ -198,6 +221,7 @@ export default function MapScreen({
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
+            hiddenPostIds={hiddenPostIds}
             isError={isPostsError}
             isLoading={isPostsLoading}
             notificationLikeContext={notificationLikeContext}
@@ -206,8 +230,10 @@ export default function MapScreen({
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
             onRetry={() => void refetchSelectedPlacePosts()}
-            onReport={reportPost}
+            onReport={handleReport}
             onToggleLike={togglePostLike}
+            reportedPostIds={reportedPostIds}
+            reportPendingPostIds={reportPendingPostIds}
           />
         </View>
       )}

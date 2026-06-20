@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { Post } from '../../record/model/record.types';
 
 type MarkerPreviewCardProps = {
+  hiddenPostIds: Record<string, boolean>;
   isError?: boolean;
   isLoading?: boolean;
   notificationLikeContext?: {
@@ -29,11 +30,13 @@ type MarkerPreviewCardProps = {
     postId?: string;
   } | null;
   onClose: () => void;
-  onReport?: (postId: number, reason: string) => Promise<void>;
+  onReport: (postId: number, reason: string, hideAfterReport: boolean) => Promise<void>;
   onRetry?: () => void;
   onToggleLike?: (postId: number, nextLiked: boolean, notificationsId?: number) => Promise<void>;
   placeName?: string;
   posts: Post[];
+  reportedPostIds: Record<string, boolean>;
+  reportPendingPostIds: Record<string, boolean>;
   width: number;
 };
 
@@ -165,6 +168,7 @@ function isAlreadyLikedError(error: unknown) {
 }
 
 const MarkerPreviewCard = ({
+  hiddenPostIds,
   isError = false,
   isLoading = false,
   notificationLikeContext,
@@ -174,18 +178,18 @@ const MarkerPreviewCard = ({
   onToggleLike,
   placeName,
   posts,
+  reportedPostIds,
+  reportPendingPostIds,
   width,
 }: MarkerPreviewCardProps) => {
+  const isMountedRef = useRef(true);
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
   const [likeOverrides, setLikeOverrides] = useState<Record<string, LocalLikeOverride>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [hideReportedPost, setHideReportedPost] = useState(false);
-  const [hiddenPostIds, setHiddenPostIds] = useState<Record<string, boolean>>({});
   const [selectedReportReason, setSelectedReportReason] = useState<ReportReason | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [reportTarget, setReportTarget] = useState<Post | null>(null);
-  const [reportedById, setReportedById] = useState<Record<string, boolean>>({});
-  const [reportPendingById, setReportPendingById] = useState<Record<string, boolean>>({});
   const [reactions, setReactions] = useState<FeedReactionState>({});
   const placeDisplayName = placeName ?? posts[0]?.placeName ?? '이 장소';
   const firstPost = posts.reduce<Post | null>((oldestPost, post) => {
@@ -199,6 +203,10 @@ const MarkerPreviewCard = ({
   }, null);
   const firstUploaderName = firstPost?.username;
   const visiblePosts = posts.filter((post) => !hiddenPostIds[String(post.id)]);
+
+  useEffect(() => () => {
+    isMountedRef.current = false;
+  }, []);
 
   const setReaction = (
     feedId: string,
@@ -277,7 +285,7 @@ const MarkerPreviewCard = ({
   };
 
   const closeReportModal = () => {
-    if (reportTarget && reportPendingById[String(reportTarget.id)]) {
+    if (reportTarget && reportPendingPostIds[String(reportTarget.id)]) {
       return;
     }
 
@@ -306,32 +314,35 @@ const MarkerPreviewCard = ({
 
     const item = reportTarget;
     const feedId = String(item.id);
-    const reason = detail ? `${selectedReportReason}: ${detail}` : selectedReportReason;
+    const reason = selectedReportReason === '기타' && detail
+      ? `${selectedReportReason}: ${detail}`
+      : selectedReportReason;
 
-    if (reportPendingById[feedId] || reportedById[feedId]) {
+    if (reportPendingPostIds[feedId] || reportedPostIds[feedId]) {
       return;
     }
 
-    setReportPendingById((prev) => ({ ...prev, [feedId]: true }));
-
     try {
-      await onReport?.(item.id, reason);
-      setReportedById((prev) => ({ ...prev, [feedId]: true }));
-      if (hideReportedPost) {
-        setHiddenPostIds((prev) => ({ ...prev, [feedId]: true }));
+      await onReport(item.id, reason, hideReportedPost);
+
+      if (!isMountedRef.current) {
+        return;
       }
+
       setHideReportedPost(false);
       setSelectedReportReason(null);
       setReportReason('');
       setReportTarget(null);
       Alert.alert('신고가 접수됐어요', '검토 후 필요한 조치를 진행할게요.');
     } catch (error) {
+      if (!isMountedRef.current) {
+        return;
+      }
+
       Alert.alert(
         '신고에 실패했어요',
         getReportErrorMessage(error)
       );
-    } finally {
-      setReportPendingById((prev) => ({ ...prev, [feedId]: false }));
     }
   };
 
@@ -339,7 +350,7 @@ const MarkerPreviewCard = ({
     const feedId = String(item.id);
     setOpenMenuId(null);
 
-    if (reportedById[feedId]) {
+    if (reportedPostIds[feedId]) {
       Alert.alert('이미 신고했어요', '이 게시글은 이미 신고 접수됐어요.');
       return;
     }
@@ -350,7 +361,7 @@ const MarkerPreviewCard = ({
     setReportTarget(item);
   };
 
-  const isReportPending = reportTarget ? reportPendingById[String(reportTarget.id)] : false;
+  const isReportPending = reportTarget ? reportPendingPostIds[String(reportTarget.id)] : false;
   const isOtherReasonMissing = selectedReportReason === '기타' && !reportReason.trim();
   const isReportSubmitDisabled = !selectedReportReason || isOtherReasonMissing || isReportPending;
 
@@ -397,7 +408,13 @@ const MarkerPreviewCard = ({
                       accessibilityState={{ selected: isSelected }}
                       disabled={isReportPending}
                       style={styles.reportReasonOption}
-                      onPress={() => setSelectedReportReason(reason)}
+                      onPress={() => {
+                        setSelectedReportReason(reason);
+
+                        if (reason !== '기타') {
+                          setReportReason('');
+                        }
+                      }}
                     >
                       <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
                         {isSelected ? <View style={styles.radioInner} /> : null}
@@ -409,17 +426,19 @@ const MarkerPreviewCard = ({
                   );
                 })}
               </View>
-              <TextInput
-                accessibilityLabel="기타 신고 사유"
-                editable={!isReportPending}
-                multiline
-                placeholder="기타사유를 입력하세요"
-                placeholderTextColor="#b3b4ba"
-                style={styles.reportReasonInput}
-                textAlignVertical="top"
-                value={reportReason}
-                onChangeText={setReportReason}
-              />
+              {selectedReportReason === '기타' ? (
+                <TextInput
+                  accessibilityLabel="기타 신고 사유"
+                  editable={!isReportPending}
+                  multiline
+                  placeholder="기타사유를 입력하세요"
+                  placeholderTextColor="#b3b4ba"
+                  style={styles.reportReasonInput}
+                  textAlignVertical="top"
+                  value={reportReason}
+                  onChangeText={setReportReason}
+                />
+              ) : null}
               <Pressable
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: hideReportedPost }}
@@ -504,8 +523,8 @@ const MarkerPreviewCard = ({
           const isLiked = getDisplayLiked(item, likeOverride);
           const displayLikeCount = getDisplayLikeCount(item, likeOverride);
           const isMenuOpen = openMenuId === feedId;
-          const isReportPending = reportPendingById[feedId] ?? false;
-          const isReported = reportedById[feedId] ?? false;
+          const isReportPending = reportPendingPostIds[feedId] ?? false;
+          const isReported = reportedPostIds[feedId] ?? false;
           const reportLabel = isReportPending ? '신고 중...' : isReported ? '신고 완료' : '핑 신고';
 
           return (
