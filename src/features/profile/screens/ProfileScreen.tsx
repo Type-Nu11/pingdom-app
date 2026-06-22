@@ -6,20 +6,28 @@ import ProfileEditView from '../components/ProfileEditView';
 import ProfileGallery from '../components/ProfileGallery';
 import ProfileHeader from '../components/ProfileHeader';
 import { profileImageSource, savedProfileImageSource } from '../constants/profileMock';
+import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
 
 type ProfileScreenProps = {
   onBack: () => void;
   onLogout: () => Promise<void>;
+  onOpenBookmarkedPost: (placeId: number) => void;
 };
 
 type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
 type ProfileTab = 'liked' | 'saved';
 
-const ProfileScreen = ({ onBack, onLogout }: ProfileScreenProps) => {
+const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
   const [mode, setMode] = useState<ProfileMode>('profile');
   const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
   const [likesOpen, setLikesOpen] = useState(false);
+  const {
+    isError: isBookmarkedPostsError,
+    isLoading: isBookmarkedPostsLoading,
+    posts: bookmarkedPosts,
+    refetch: refetchBookmarkedPosts,
+  } = useBookmarkedPosts();
   const maxContentWidth = Math.min(width, 560);
   const gridItemSize = Math.floor(maxContentWidth / 3);
 
@@ -56,6 +64,7 @@ const ProfileScreen = ({ onBack, onLogout }: ProfileScreenProps) => {
   };
 
   const isArchiveDetail = mode === 'archive-detail';
+  const isSavedPostsTab = mode === 'profile' && activeTab === 'saved';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -87,10 +96,15 @@ const ProfileScreen = ({ onBack, onLogout }: ProfileScreenProps) => {
               showTabs={mode === 'profile'}
             />
             <ProfileGallery
+              bookmarkedPosts={isSavedPostsTab ? bookmarkedPosts : undefined}
               isArchive={mode === 'archive'}
+              isBookmarkedPostsError={isSavedPostsTab && isBookmarkedPostsError}
+              isBookmarkedPostsLoading={isSavedPostsTab && isBookmarkedPostsLoading}
               imageSource={activeTab === 'saved' ? savedProfileImageSource : profileImageSource}
               itemSize={gridItemSize}
               onArchiveItemPress={() => setMode('archive-detail')}
+              onBookmarkedPostPress={(post) => onOpenBookmarkedPost(post.placeId)}
+              onRetryBookmarkedPosts={() => void refetchBookmarkedPosts()}
             />
           </>
         )}

@@ -18,19 +18,17 @@ import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { Post } from '../../record/model/record.types';
 
 type MarkerPreviewCardProps = {
+  bookmarkedPlaceIds: Record<string, boolean>;
   isError?: boolean;
   isLoading?: boolean;
-  isPlaceBookmarked?: boolean;
-  isPlaceBookmarkPending?: boolean;
   notificationLikeContext?: {
     notificationsId?: string;
     postId?: string;
   } | null;
   onClose: () => void;
   onRetry?: () => void;
-  onTogglePlaceBookmark?: (placeId: number) => Promise<void>;
+  onToggleBookmark: (placeId: number, nextBookmarked: boolean) => Promise<void>;
   onToggleLike?: (postId: number, nextLiked: boolean, notificationsId?: number) => Promise<void>;
-  placeId?: number;
   placeName?: string;
   posts: Post[];
   width: number;
@@ -101,6 +99,18 @@ function getDisplayLikeCount(post: Post, override?: LocalLikeOverride) {
   return Math.max(0, post.likeCount + delta);
 }
 
+function getDisplayBookmarked(
+  post: Post,
+  bookmarkedPlaceIds: Record<string, boolean>,
+  override?: boolean,
+) {
+  if (override !== undefined) {
+    return override;
+  }
+
+  return bookmarkedPlaceIds[String(post.placeId)] ?? Boolean(post.bookmarked);
+}
+
 function formatPostTime(createdAt: string) {
   const createdTime = new Date(createdAt).getTime();
 
@@ -138,20 +148,20 @@ function isAlreadyLikedError(error: unknown) {
 }
 
 const MarkerPreviewCard = ({
+  bookmarkedPlaceIds,
   isError = false,
   isLoading = false,
-  isPlaceBookmarked = false,
-  isPlaceBookmarkPending = false,
   notificationLikeContext,
   onClose,
   onRetry,
-  onTogglePlaceBookmark,
+  onToggleBookmark,
   onToggleLike,
-  placeId,
   placeName,
   posts,
   width,
 }: MarkerPreviewCardProps) => {
+  const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
+  const [bookmarkPendingByPlaceId, setBookmarkPendingByPlaceId] = useState<Record<string, boolean>>({});
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
   const [likeOverrides, setLikeOverrides] = useState<Record<string, LocalLikeOverride>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -244,18 +254,40 @@ const MarkerPreviewCard = ({
     }
   };
 
-  const handlePlaceBookmarkPress = async () => {
-    if (placeId === undefined || !onTogglePlaceBookmark) {
+  const handleBookmarkPress = async (item: Post) => {
+    const placeKey = String(item.placeId);
+
+    if (bookmarkPendingByPlaceId[placeKey]) {
       return;
     }
 
+    const previousOverride = bookmarkOverrides[placeKey];
+    const wasBookmarked = getDisplayBookmarked(item, bookmarkedPlaceIds, previousOverride);
+    const nextBookmarked = !wasBookmarked;
+
+    setBookmarkPendingByPlaceId((prev) => ({ ...prev, [placeKey]: true }));
+    setBookmarkOverrides((prev) => ({ ...prev, [placeKey]: nextBookmarked }));
+
     try {
-      await onTogglePlaceBookmark(placeId);
+      await onToggleBookmark(item.placeId, nextBookmarked);
     } catch (error) {
+      setBookmarkOverrides((prev) => {
+        const nextOverrides = { ...prev };
+
+        if (previousOverride === undefined) {
+          delete nextOverrides[placeKey];
+        } else {
+          nextOverrides[placeKey] = previousOverride;
+        }
+
+        return nextOverrides;
+      });
       Alert.alert(
-        '장소 저장에 실패했어요',
+        '저장에 실패했어요',
         getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.'),
       );
+    } finally {
+      setBookmarkPendingByPlaceId((prev) => ({ ...prev, [placeKey]: false }));
     }
   };
 
@@ -278,26 +310,6 @@ const MarkerPreviewCard = ({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.placeHeader}>
-          {placeId !== undefined ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={isPlaceBookmarked ? '저장한 장소 해제' : '장소 저장'}
-              disabled={isPlaceBookmarkPending}
-              hitSlop={10}
-              style={[
-                styles.placeBookmarkButton,
-                isPlaceBookmarkPending && styles.disabledActionButton,
-              ]}
-              onPress={() => void handlePlaceBookmarkPress()}
-            >
-              <SavedIcon
-                color={isPlaceBookmarked ? '#ff1956' : '#5e5e66'}
-                fill={isPlaceBookmarked ? '#ff1956' : 'none'}
-                width={18}
-                height={21}
-              />
-            </Pressable>
-          ) : null}
           <Text numberOfLines={1} style={styles.placeHeaderTitle}>{placeDisplayName}</Text>
           {firstUploaderName ? (
             <Text numberOfLines={1} style={styles.placeHeaderMeta}>
@@ -328,6 +340,12 @@ const MarkerPreviewCard = ({
         ) : posts.map((item) => {
           const feedId = String(item.id);
           const reaction = reactions[feedId] ?? defaultReaction;
+          const bookmarkPlaceKey = String(item.placeId);
+          const isBookmarked = getDisplayBookmarked(
+            item,
+            bookmarkedPlaceIds,
+            bookmarkOverrides[bookmarkPlaceKey],
+          );
           const likeOverride = likeOverrides[feedId];
           const isLiked = getDisplayLiked(item, likeOverride);
           const displayLikeCount = getDisplayLikeCount(item, likeOverride);
@@ -417,18 +435,18 @@ const MarkerPreviewCard = ({
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={isPlaceBookmarked ? '저장한 장소 해제' : '장소 저장'}
-                  disabled={placeId === undefined || isPlaceBookmarkPending}
+                  accessibilityLabel={isBookmarked ? '저장한 게시글 해제' : '게시글 저장'}
+                  disabled={bookmarkPendingByPlaceId[bookmarkPlaceKey]}
                   hitSlop={10}
                   style={[
                     styles.actionButton,
-                    (placeId === undefined || isPlaceBookmarkPending) && styles.disabledActionButton,
+                    bookmarkPendingByPlaceId[bookmarkPlaceKey] && styles.disabledActionButton,
                   ]}
-                  onPress={() => void handlePlaceBookmarkPress()}
+                  onPress={() => void handleBookmarkPress(item)}
                 >
                   <SavedIcon
-                    color={isPlaceBookmarked ? '#ff1956' : '#5e5e66'}
-                    fill={isPlaceBookmarked ? '#ff1956' : 'none'}
+                    color={isBookmarked ? '#ff1956' : '#5e5e66'}
+                    fill={isBookmarked ? '#ff1956' : 'none'}
                     width={18}
                     height={21}
                   />
@@ -590,14 +608,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 58,
     paddingVertical: 12,
-  },
-  placeBookmarkButton: {
-    alignItems: 'center',
-    height: 32,
-    justifyContent: 'center',
-    left: 17,
-    position: 'absolute',
-    width: 32,
   },
   placeHeaderAuthor: {
     color: '#ff1956',

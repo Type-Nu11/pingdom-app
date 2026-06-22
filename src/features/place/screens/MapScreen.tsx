@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   SafeAreaView,
@@ -27,9 +27,9 @@ import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePostLike } from '../../record/hooks/usePostLike';
+import { useBookmarkedPosts, usePostBookmark } from '../../record/hooks/usePostBookmark';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
-import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import type { RecommendedPlace } from '../model/place.types';
 
@@ -40,12 +40,14 @@ type MapScreenProps = {
   } | null;
   onCreatePlace?: () => void;
   onOpenProfile?: () => void;
+  openedBookmarkedPlaceId?: number | null;
 };
 
 export default function MapScreen({
   notificationLikeContext,
   onCreatePlace,
   onOpenProfile,
+  openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
@@ -61,11 +63,8 @@ export default function MapScreen({
     longitude: userLng,
   });
   const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
-  const {
-    isPlaceBookmarked,
-    isPlaceBookmarkPending,
-    togglePlaceBookmark,
-  } = usePlaceBookmark();
+  const { bookmarkedPlaceIds } = useBookmarkedPosts();
+  const { togglePostBookmark } = usePostBookmark();
   const { togglePostLike } = usePostLike();
   const selectedPlace = useMemo(
     () => (
@@ -75,12 +74,14 @@ export default function MapScreen({
     ),
     [places, recommendedPlaces, selectedMarkerId]
   );
+  const selectedPlaceId = selectedPlace?.id
+    ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
   const {
     isError: isPostsError,
     isLoading: isPostsLoading,
     posts: selectedPlacePosts,
     refetch: refetchSelectedPlacePosts,
-  } = usePlacePosts(selectedPlace?.id ?? null);
+  } = usePlacePosts(Number.isFinite(selectedPlaceId) ? selectedPlaceId : null);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -105,6 +106,11 @@ export default function MapScreen({
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
+  useEffect(() => {
+    if (openedBookmarkedPlaceId !== undefined && openedBookmarkedPlaceId !== null) {
+      setSelectedMarkerId(String(openedBookmarkedPlaceId));
+    }
+  }, [openedBookmarkedPlaceId]);
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
     setSelectedMarkerId(event.nativeEvent.markerId);
   };
@@ -202,18 +208,16 @@ export default function MapScreen({
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
             isError={isPostsError}
             isLoading={isPostsLoading}
-            isPlaceBookmarked={selectedPlace ? isPlaceBookmarked(selectedPlace.id) : false}
-            isPlaceBookmarkPending={selectedPlace ? isPlaceBookmarkPending(selectedPlace.id) : false}
             notificationLikeContext={notificationLikeContext}
-            placeId={selectedPlace?.id}
             placeName={selectedPlace?.name}
             posts={selectedPlacePosts}
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
             onRetry={() => void refetchSelectedPlacePosts()}
-            onTogglePlaceBookmark={togglePlaceBookmark}
+            onToggleBookmark={togglePostBookmark}
             onToggleLike={togglePostLike}
           />
         </View>

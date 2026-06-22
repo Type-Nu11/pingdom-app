@@ -24,6 +24,7 @@ function AppContent() {
   const { pendingRoute, consumePendingNotificationRoute } = useNotificationState();
   const [authScreen, setAuthScreen] = useState<AuthScreen>('language-gate');
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
+  const [openedBookmarkedPlaceId, setOpenedBookmarkedPlaceId] = useState<number | null>(null);
   const [openedNotificationRoute, setOpenedNotificationRoute] = useState<NotificationRoute | null>(null);
 
   useFcmTokenSync(isLoggedIn);
@@ -81,9 +82,20 @@ function AppContent() {
             onBack={() => setMainScreen('map')}
           />
         ) : mainScreen === 'profile' ? (
-          <ProfileScreen onBack={() => setMainScreen('map')} onLogout={handleLogout} />
+          <ProfileScreen
+            onBack={() => {
+              setOpenedBookmarkedPlaceId(null);
+              setMainScreen('map');
+            }}
+            onLogout={handleLogout}
+            onOpenBookmarkedPost={(placeId) => {
+              setOpenedBookmarkedPlaceId(placeId);
+              setMainScreen('map');
+            }}
+          />
         ) : (
           <MapScreen
+            openedBookmarkedPlaceId={openedBookmarkedPlaceId}
             notificationLikeContext={openedNotificationRoute}
             onCreatePlace={() => setMainScreen('place-create')}
             onOpenProfile={() => setMainScreen('profile')}
