@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryChips from '../components/CategoryChips';
 import KakaoMapCard, { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import MapActionButtons from '../components/MapActionButtons';
@@ -28,6 +28,7 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePostLike } from '../../record/hooks/usePostLike';
 import { useBookmarkedPosts, usePostBookmark } from '../../record/hooks/usePostBookmark';
+import { usePostReport } from '../../record/hooks/usePostReport';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
@@ -49,6 +50,9 @@ export default function MapScreen({
   onOpenProfile,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
+  const [hiddenPostIds, setHiddenPostIds] = useState<Record<string, boolean>>({});
+  const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
+  const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
@@ -66,6 +70,7 @@ export default function MapScreen({
   const { bookmarkedPlaceIds } = useBookmarkedPosts();
   const { togglePostBookmark } = usePostBookmark();
   const { togglePostLike } = usePostLike();
+  const { reportPost } = usePostReport();
   const selectedPlace = useMemo(
     () => (
       places.find((place) => String(place.id) === selectedMarkerId)
@@ -121,6 +126,26 @@ export default function MapScreen({
       placeId: place.id,
       recommendationVersion: recommendationVersion ?? 'place-rec-v1',
     }).catch(() => undefined);
+  };
+  const handleReport = async (postId: number, reason: string, hideAfterReport: boolean) => {
+    const postKey = String(postId);
+
+    if (reportPendingPostIds[postKey] || reportedPostIds[postKey]) {
+      return;
+    }
+
+    setReportPendingPostIds((prev) => ({ ...prev, [postKey]: true }));
+
+    try {
+      await reportPost(postId, reason);
+      setReportedPostIds((prev) => ({ ...prev, [postKey]: true }));
+
+      if (hideAfterReport) {
+        setHiddenPostIds((prev) => ({ ...prev, [postKey]: true }));
+      }
+    } finally {
+      setReportPendingPostIds((prev) => ({ ...prev, [postKey]: false }));
+    }
   };
 
   return (
@@ -209,6 +234,7 @@ export default function MapScreen({
           />
           <MarkerPreviewCard
             bookmarkedPlaceIds={bookmarkedPlaceIds}
+            hiddenPostIds={hiddenPostIds}
             isError={isPostsError}
             isLoading={isPostsLoading}
             notificationLikeContext={notificationLikeContext}
@@ -218,7 +244,10 @@ export default function MapScreen({
             onClose={() => setSelectedMarkerId(null)}
             onRetry={() => void refetchSelectedPlacePosts()}
             onToggleBookmark={togglePostBookmark}
+            onReport={handleReport}
             onToggleLike={togglePostLike}
+            reportedPostIds={reportedPostIds}
+            reportPendingPostIds={reportPendingPostIds}
           />
         </View>
       )}
