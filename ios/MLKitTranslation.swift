@@ -16,7 +16,7 @@ final class MLKitTranslation: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    let languageIdentifier = NaturalLanguage.languageIdentification()
+    let languageIdentifier = LanguageIdentification.languageIdentification()
 
     languageIdentifier.identifyLanguage(for: text) { languageCode, error in
       if let error {
@@ -25,8 +25,8 @@ final class MLKitTranslation: NSObject {
       }
 
       guard let languageCode, languageCode != "und",
-            let sourceLanguage = TranslateLanguage.fromLanguageTag(languageCode),
-            let targetLanguage = TranslateLanguage.fromLanguageTag(targetLanguageTag) else {
+            let sourceLanguage = self.translateLanguage(from: languageCode),
+            let targetLanguage = self.translateLanguage(from: targetLanguageTag) else {
         reject("UNSUPPORTED_LANGUAGE", "지원하지 않는 언어예요.", nil)
         return
       }
@@ -65,8 +65,8 @@ final class MLKitTranslation: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    guard let sourceLanguage = TranslateLanguage.fromLanguageTag(sourceLanguageTag),
-          let targetLanguage = TranslateLanguage.fromLanguageTag(targetLanguageTag) else {
+    guard let sourceLanguage = translateLanguage(from: sourceLanguageTag),
+          let targetLanguage = translateLanguage(from: targetLanguageTag) else {
       reject("UNSUPPORTED_LANGUAGE", "지원하지 않는 언어예요.", nil)
       return
     }
@@ -112,5 +112,11 @@ final class MLKitTranslation: NSObject {
 
       translateText()
     }
+  }
+
+  private func translateLanguage(from languageTag: String) -> TranslateLanguage? {
+    let language = TranslateLanguage(rawValue: languageTag)
+
+    return TranslateLanguage.allLanguages().contains(language) ? language : nil
   }
 }

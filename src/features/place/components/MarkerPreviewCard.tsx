@@ -594,9 +594,15 @@ const MarkerPreviewCard = ({
           const isReported = reportedPostIds[feedId] ?? false;
           const reportLabel = isReportPending ? '신고 중...' : isReported ? '신고 완료' : '핑 신고';
           const translation = translations[feedId];
-          const isShowingTranslation = translation?.isShowingTranslation ?? false;
+          const currentTranslationTarget = (
+            translationTargetLanguage?.trim().replace('_', '-').toLowerCase() || 'ko'
+          );
+          const isShowingTranslation = (
+            translation?.isShowingTranslation
+            && translation.targetLanguage === currentTranslationTarget
+          ) ?? false;
           const isTranslationPending = translationPendingPostIds[feedId] ?? false;
-          const postText = item.description || item.title;
+          const postText = item.description?.trim() || item.title;
 
           return (
             <View key={item.id} style={styles.feedItem}>
