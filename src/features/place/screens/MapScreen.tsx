@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   StatusBar,
@@ -27,6 +27,7 @@ import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePostLike } from '../../record/hooks/usePostLike';
+import { useBookmarkedPosts, usePostBookmark } from '../../record/hooks/usePostBookmark';
 import { usePostReport } from '../../record/hooks/usePostReport';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
@@ -39,13 +40,17 @@ type MapScreenProps = {
     postId?: string;
   } | null;
   onCreatePlace?: () => void;
+  onClearOpenedBookmarkedPlace?: () => void;
   onOpenProfile?: () => void;
+  openedBookmarkedPlaceId?: number | null;
 };
 
 export default function MapScreen({
   notificationLikeContext,
   onCreatePlace,
+  onClearOpenedBookmarkedPlace,
   onOpenProfile,
+  openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const [hiddenPostIds, setHiddenPostIds] = useState<Record<string, boolean>>({});
   const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
@@ -64,6 +69,8 @@ export default function MapScreen({
     longitude: userLng,
   });
   const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const { bookmarkedPlaceIds } = useBookmarkedPosts();
+  const { togglePostBookmark } = usePostBookmark();
   const { togglePostLike } = usePostLike();
   const { reportPost } = usePostReport();
   const selectedPlace = useMemo(
@@ -74,12 +81,14 @@ export default function MapScreen({
     ),
     [places, recommendedPlaces, selectedMarkerId]
   );
+  const selectedPlaceId = selectedPlace?.id
+    ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
   const {
     isError: isPostsError,
     isLoading: isPostsLoading,
     posts: selectedPlacePosts,
     refetch: refetchSelectedPlacePosts,
-  } = usePlacePosts(selectedPlace?.id ?? null);
+  } = usePlacePosts(Number.isFinite(selectedPlaceId) ? selectedPlaceId : null);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -104,6 +113,12 @@ export default function MapScreen({
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
+  useEffect(() => {
+    if (openedBookmarkedPlaceId !== undefined && openedBookmarkedPlaceId !== null) {
+      setSelectedMarkerId(String(openedBookmarkedPlaceId));
+      onClearOpenedBookmarkedPlace?.();
+    }
+  }, [onClearOpenedBookmarkedPlace, openedBookmarkedPlaceId]);
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
     setSelectedMarkerId(event.nativeEvent.markerId);
   };
@@ -221,6 +236,7 @@ export default function MapScreen({
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
             hiddenPostIds={hiddenPostIds}
             isError={isPostsError}
             isLoading={isPostsLoading}
@@ -230,6 +246,7 @@ export default function MapScreen({
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
             onRetry={() => void refetchSelectedPlacePosts()}
+            onToggleBookmark={togglePostBookmark}
             onReport={handleReport}
             onToggleLike={togglePostLike}
             reportedPostIds={reportedPostIds}

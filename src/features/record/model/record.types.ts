@@ -7,6 +7,7 @@ export type RecordItem = {
 export type Post = {
   createdAt: string;
   description?: string | null;
+  bookmarked?: boolean;
   id: number;
   imageUrl: string;
   isLiked?: boolean;

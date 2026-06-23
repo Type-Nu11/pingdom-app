@@ -22,6 +22,7 @@ import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { Post } from '../../record/model/record.types';
 
 type MarkerPreviewCardProps = {
+  bookmarkedPlaceIds: Record<string, boolean>;
   hiddenPostIds: Record<string, boolean>;
   isError?: boolean;
   isLoading?: boolean;
@@ -32,6 +33,7 @@ type MarkerPreviewCardProps = {
   onClose: () => void;
   onReport: (postId: number, reason: string, hideAfterReport: boolean) => Promise<void>;
   onRetry?: () => void;
+  onToggleBookmark: (placeId: number, nextBookmarked: boolean) => Promise<void>;
   onToggleLike?: (postId: number, nextLiked: boolean, notificationsId?: number) => Promise<void>;
   placeName?: string;
   posts: Post[];
@@ -41,7 +43,6 @@ type MarkerPreviewCardProps = {
 };
 
 type FeedReactionState = Record<string, {
-  saved: boolean;
   shared: boolean;
 }>;
 
@@ -64,7 +65,6 @@ type LocalLikeOverride = {
 };
 
 const defaultReaction = {
-  saved: false,
   shared: false,
 };
 
@@ -119,6 +119,18 @@ function getDisplayLikeCount(post: Post, override?: LocalLikeOverride) {
   return Math.max(0, post.likeCount + delta);
 }
 
+function getDisplayBookmarked(
+  post: Post,
+  bookmarkedPlaceIds: Record<string, boolean>,
+  override?: boolean,
+) {
+  if (override !== undefined) {
+    return override;
+  }
+
+  return bookmarkedPlaceIds[String(post.placeId)] ?? Boolean(post.bookmarked);
+}
+
 function formatPostTime(createdAt: string) {
   const createdTime = new Date(createdAt).getTime();
 
@@ -168,6 +180,7 @@ function isAlreadyLikedError(error: unknown) {
 }
 
 const MarkerPreviewCard = ({
+  bookmarkedPlaceIds,
   hiddenPostIds,
   isError = false,
   isLoading = false,
@@ -175,6 +188,7 @@ const MarkerPreviewCard = ({
   onClose,
   onReport,
   onRetry,
+  onToggleBookmark,
   onToggleLike,
   placeName,
   posts,
@@ -182,6 +196,8 @@ const MarkerPreviewCard = ({
   reportPendingPostIds,
   width,
 }: MarkerPreviewCardProps) => {
+  const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
+  const [bookmarkPendingByPlaceId, setBookmarkPendingByPlaceId] = useState<Record<string, boolean>>({});
   const isMountedRef = useRef(true);
   const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
   const [likeOverrides, setLikeOverrides] = useState<Record<string, LocalLikeOverride>>({});
@@ -284,6 +300,43 @@ const MarkerPreviewCard = ({
     }
   };
 
+  const handleBookmarkPress = async (item: Post) => {
+    const placeKey = String(item.placeId);
+
+    if (bookmarkPendingByPlaceId[placeKey]) {
+      return;
+    }
+
+    const previousOverride = bookmarkOverrides[placeKey];
+    const wasBookmarked = getDisplayBookmarked(item, bookmarkedPlaceIds, previousOverride);
+    const nextBookmarked = !wasBookmarked;
+
+    setBookmarkPendingByPlaceId((prev) => ({ ...prev, [placeKey]: true }));
+    setBookmarkOverrides((prev) => ({ ...prev, [placeKey]: nextBookmarked }));
+
+    try {
+      await onToggleBookmark(item.placeId, nextBookmarked);
+    } catch (error) {
+      setBookmarkOverrides((prev) => {
+        const nextOverrides = { ...prev };
+
+        if (previousOverride === undefined) {
+          delete nextOverrides[placeKey];
+        } else {
+          nextOverrides[placeKey] = previousOverride;
+        }
+
+        return nextOverrides;
+      });
+      Alert.alert(
+        '저장에 실패했어요',
+        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.'),
+      );
+    } finally {
+      setBookmarkPendingByPlaceId((prev) => ({ ...prev, [placeKey]: false }));
+    }
+  };
+
   const closeReportModal = () => {
     if (reportTarget && reportPendingPostIds[String(reportTarget.id)]) {
       return;
@@ -364,7 +417,6 @@ const MarkerPreviewCard = ({
   const isReportPending = reportTarget ? reportPendingPostIds[String(reportTarget.id)] : false;
   const isOtherReasonMissing = selectedReportReason === '기타' && !reportReason.trim();
   const isReportSubmitDisabled = !selectedReportReason || isOtherReasonMissing || isReportPending;
-
   return (
     <View style={[styles.card, { width }]}>
       <Modal
@@ -519,6 +571,12 @@ const MarkerPreviewCard = ({
         ) : visiblePosts.map((item) => {
           const feedId = String(item.id);
           const reaction = reactions[feedId] ?? defaultReaction;
+          const bookmarkPlaceKey = String(item.placeId);
+          const isBookmarked = getDisplayBookmarked(
+            item,
+            bookmarkedPlaceIds,
+            bookmarkOverrides[bookmarkPlaceKey],
+          );
           const likeOverride = likeOverrides[feedId];
           const isLiked = getDisplayLiked(item, likeOverride);
           const displayLikeCount = getDisplayLikeCount(item, likeOverride);
@@ -618,14 +676,18 @@ const MarkerPreviewCard = ({
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="저장"
+                  accessibilityLabel={isBookmarked ? '저장한 게시글 해제' : '게시글 저장'}
+                  disabled={bookmarkPendingByPlaceId[bookmarkPlaceKey]}
                   hitSlop={10}
-                  style={styles.actionButton}
-                  onPress={() => setReaction(feedId, 'saved')}
+                  style={[
+                    styles.actionButton,
+                    bookmarkPendingByPlaceId[bookmarkPlaceKey] && styles.disabledActionButton,
+                  ]}
+                  onPress={() => void handleBookmarkPress(item)}
                 >
                   <SavedIcon
-                    color={reaction.saved ? '#ff1956' : '#5e5e66'}
-                    fill={reaction.saved ? '#ff1956' : 'none'}
+                    color={isBookmarked ? '#ff1956' : '#5e5e66'}
+                    fill={isBookmarked ? '#ff1956' : 'none'}
                     width={18}
                     height={21}
                   />
