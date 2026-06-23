@@ -106,6 +106,21 @@ PODS:
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
+  - GoogleMLKit/LanguageID (8.0.0):
+    - GoogleMLKit/MLKitCore
+    - MLKitLanguageID (~> 8.0.0)
+  - GoogleMLKit/MLKitCore (8.0.0):
+    - MLKitCommon (~> 13.0.0)
+  - GoogleMLKit/Translate (8.0.0):
+    - GoogleMLKit/MLKitCore
+    - MLKitTranslate (~> 7.0.0)
+  - GoogleToolboxForMac/Defines (4.2.1)
+  - GoogleToolboxForMac/Logger (4.2.1):
+    - GoogleToolboxForMac/Defines (= 4.2.1)
+  - "GoogleToolboxForMac/NSData+zlib (4.2.1)":
+    - GoogleToolboxForMac/Defines (= 4.2.1)
+  - GoogleToolboxForMac/StringEncoding (4.2.1):
+    - GoogleToolboxForMac/Defines (= 4.2.1)
   - GoogleUtilities (8.1.0):
     - GoogleUtilities/AppDelegateSwizzler (= 8.1.0)
     - GoogleUtilities/Environment (= 8.1.0)
@@ -146,10 +161,29 @@ PODS:
   - GoogleUtilities/UserDefaults (8.1.0):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
+  - GTMSessionFetcher/Core (3.5.0)
   - hermes-engine (0.14.1):
     - hermes-engine/Pre-built (= 0.14.1)
   - hermes-engine/Pre-built (0.14.1)
   - KakaoMapsSDK (2.12.10)
+  - MLKitCommon (13.0.0):
+    - GoogleDataTransport (~> 10.0)
+    - GoogleToolboxForMac/Logger (< 5.0, >= 4.2.1)
+    - "GoogleToolboxForMac/NSData+zlib (< 5.0, >= 4.2.1)"
+    - GoogleUtilities/Logger (~> 8.0)
+    - GoogleUtilities/UserDefaults (~> 8.0)
+    - GTMSessionFetcher/Core (< 4.0, >= 3.3.2)
+  - MLKitLanguageID (8.0.0):
+    - MLKitNaturalLanguage (~> 9.0)
+  - MLKitNaturalLanguage (9.0.0):
+    - GoogleToolboxForMac/Logger (< 5.0, >= 4.2.1)
+    - "GoogleToolboxForMac/NSData+zlib (< 5.0, >= 4.2.1)"
+    - GoogleToolboxForMac/StringEncoding (< 5.0, >= 4.2.1)
+    - GTMSessionFetcher/Core (< 4.0, >= 3.3.2)
+    - MLKitCommon (~> 13.0)
+  - MLKitTranslate (7.0.0):
+    - MLKitNaturalLanguage (~> 9.0)
+    - SSZipArchive (< 3.0, >= 2.5.5)
   - nanopb (3.30910.0):
     - nanopb/decode (= 3.30910.0)
     - nanopb/encode (= 3.30910.0)
@@ -1549,6 +1583,75 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+  - react-native-safe-area-context (5.6.2):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - react-native-safe-area-context/common (= 5.6.2)
+    - react-native-safe-area-context/fabric (= 5.6.2)
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - react-native-safe-area-context/common (5.6.2):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - react-native-safe-area-context/fabric (5.6.2):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - react-native-safe-area-context/common
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - react-native-slider (5.2.0):
     - hermes-engine
     - RCTRequired
@@ -2115,6 +2218,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - SSZipArchive (2.6.0)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2133,6 +2237,8 @@ DEPENDENCIES:
   - ExpoModulesJSI (from `../node_modules/expo-modules-core`)
   - ExpoNotifications (from `../node_modules/expo-notifications/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
+  - GoogleMLKit/LanguageID (= 8.0.0)
+  - GoogleMLKit/Translate (= 8.0.0)
   - GoogleUtilities
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - KakaoMapsSDK
@@ -2173,6 +2279,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
@@ -2224,10 +2331,18 @@ SPEC REPOS:
     - FirebaseInstallations
     - FirebaseMessaging
     - GoogleDataTransport
+    - GoogleMLKit
+    - GoogleToolboxForMac
     - GoogleUtilities
+    - GTMSessionFetcher
     - KakaoMapsSDK
+    - MLKitCommon
+    - MLKitLanguageID
+    - MLKitNaturalLanguage
+    - MLKitTranslate
     - nanopb
     - PromisesObjC
+    - SSZipArchive
 
 EXTERNAL SOURCES:
   EXApplication:
@@ -2335,6 +2450,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-safe-area-context:
+    :path: "../node_modules/react-native-safe-area-context"
   react-native-slider:
     :path: "../node_modules/@react-native-community/slider"
   React-NativeModulesApple:
@@ -2441,9 +2558,16 @@ SPEC CHECKSUMS:
   FirebaseInstallations: 047343aa91fd6a1ebfa3eb374ddecf36a8aaddfd
   FirebaseMessaging: ed18fb50634e6e85b5d3e77e628c21e2c928cc53
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
+  GoogleMLKit: ddd51d7dff36ff28defa69afedd9cdce684fd857
+  GoogleToolboxForMac: d1a2cbf009c453f4d6ded37c105e2f67a32206d8
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
+  GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   hermes-engine: 7974cc7ec07a95d41a8ee8f2cd8bdb2ce29a01b4
   KakaoMapsSDK: 32040e6268df2447c3f56dc4acada339d8eb8f32
+  MLKitCommon: 26b779f072a182c1603d4c88a101c350cac837b1
+  MLKitLanguageID: ca609e2c8706b01d1123f5d8c65f1ed7d3e385f3
+  MLKitNaturalLanguage: 4c5580068109aaea85809981b8c4cb4675b2100f
+  MLKitTranslate: ab71c9e4a67cc79756d4dae013e47edfca3b57cb
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RCTDeprecation: a522c536d2c7be8f518dd834883cf6dce1d4f545
@@ -2482,6 +2606,7 @@ SPEC CHECKSUMS:
   React-logger: 492d6067ffeb8f5dab6493de30035f22cffe3323
   React-Mapbuffer: 8c4d41ddf7b9bfb06e944e3805f1d7eace7f4aff
   React-microtasksnativemodule: 3b0be17d494b6d101a3efbbc7b18c7d42ef9fe76
+  react-native-safe-area-context: 53f796cb6c814661bbe99fbdfd0585d07b996cdd
   react-native-slider: a20ed17f350cbc9935f0dc9610e4cb29b9e7a4c7
   React-NativeModulesApple: 2a7118e5e104229a901412173db166cb51983797
   React-networking: dc151abf285c4a8e72a5a38e5212ece0a1051776
@@ -2519,11 +2644,12 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: b8822139dea09d95d7fb8a18c312b806a6ee1558
   RNCAsyncStorage: e85a99325df9eb0191a6ee2b2a842644c7eb29f4
   RNFBApp: 36eb434d58b125bdc63797c78ca67d2648f9cdb2
-  RNFBMessaging: 0b04592f48e374bb77b9b7ca965ddc2711c76409
+  RNFBMessaging: 0ac8a847413357bdc88c277ca8772db2874af077
   RNKeychain: 91be81cd32b30c7d4c2569dcad29b472d9b93982
   RNSVG: b5bd4454de003a99d3130a3c6a1b1c949c89d37d
+  SSZipArchive: 8a6ee5677c8e304bebc109e39cf0da91ccef22ea
   Yoga: dd994d8c85dca5cc9b10f5df8c01f9ef1d0da191
 
-PODFILE CHECKSUM: 31d143eff4d203f6a8462fab91f0a37430662027
+PODFILE CHECKSUM: 028a02bd171acb85da5cacd96be5f877b464c3ea
 
 COCOAPODS: 1.16.2
