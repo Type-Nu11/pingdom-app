@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import type { Post } from '../../record/model/record.types';
 import type { PostTranslation } from '../model/translation.types';
@@ -7,7 +7,11 @@ import { mlKitTranslation } from '../services/mlKitTranslation';
 const DEFAULT_TARGET_LANGUAGE = 'ko';
 
 function getPostText(post: Post) {
-  return (post.description || post.title).trim();
+  return post.description?.trim() || post.title.trim();
+}
+
+function normalizeLanguageTag(language: string | undefined) {
+  return language?.trim().replace('_', '-').toLowerCase() || DEFAULT_TARGET_LANGUAGE;
 }
 
 function confirmModelDownload() {
@@ -25,16 +29,44 @@ function confirmModelDownload() {
 }
 
 function getTranslationErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message === 'ML_KIT_UNAVAILABLE') {
+  if (!error || typeof error !== 'object') {
+    return '번역하지 못했어요. 잠시 후 다시 시도해 주세요.';
+  }
+
+  const nativeError = error as Error & { code?: string };
+  const errorCode = nativeError.code ?? nativeError.message;
+
+  if (errorCode === 'ML_KIT_UNAVAILABLE') {
     return '번역 기능을 사용하려면 ML Kit이 포함된 앱 빌드가 필요해요.';
+  }
+
+  if (errorCode === 'UNSUPPORTED_LANGUAGE' || errorCode === 'LANGUAGE_IDENTIFICATION_FAILED') {
+    return '게시글의 언어를 인식하지 못했어요.';
+  }
+
+  if (errorCode === 'MODEL_DOWNLOAD_FAILED' || errorCode === 'MODEL_DOWNLOAD_REQUIRED') {
+    return '언어 팩을 다운로드하지 못했어요. 네트워크 연결을 확인해 주세요.';
   }
 
   return '번역하지 못했어요. 잠시 후 다시 시도해 주세요.';
 }
 
 export function usePostTranslation(targetLanguage = DEFAULT_TARGET_LANGUAGE) {
+  const normalizedTargetLanguage = normalizeLanguageTag(targetLanguage);
   const [translations, setTranslations] = useState<Record<string, PostTranslation>>({});
   const [pendingPostIds, setPendingPostIds] = useState<Record<string, boolean>>({});
+  const isMountedRef = useRef(true);
+  const targetLanguageRef = useRef(normalizedTargetLanguage);
+
+  useEffect(() => () => {
+    isMountedRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    targetLanguageRef.current = normalizedTargetLanguage;
+    setTranslations({});
+    setPendingPostIds({});
+  }, [normalizedTargetLanguage]);
 
   const toggleTranslation = async (post: Post) => {
     const postId = String(post.id);
@@ -70,7 +102,7 @@ export function usePostTranslation(targetLanguage = DEFAULT_TARGET_LANGUAGE) {
     setPendingPostIds((previous) => ({ ...previous, [postId]: true }));
 
     try {
-      const plan = await mlKitTranslation.getTranslationPlan(text, targetLanguage);
+      const plan = await mlKitTranslation.getTranslationPlan(text, normalizedTargetLanguage);
 
       if (!plan.shouldTranslate) {
         Alert.alert('이미 선택한 언어로 작성된 게시글이에요.');
@@ -90,17 +122,24 @@ export function usePostTranslation(targetLanguage = DEFAULT_TARGET_LANGUAGE) {
         allowModelDownload,
       );
 
-      setTranslations((previous) => ({
-        ...previous,
-        [postId]: {
-          isShowingTranslation: true,
-          translatedText: result.translatedText,
-        },
-      }));
+      if (isMountedRef.current && targetLanguageRef.current === normalizedTargetLanguage) {
+        setTranslations((previous) => ({
+          ...previous,
+          [postId]: {
+            isShowingTranslation: true,
+            targetLanguage: result.targetLanguage,
+            translatedText: result.translatedText,
+          },
+        }));
+      }
     } catch (error) {
-      Alert.alert('번역에 실패했어요', getTranslationErrorMessage(error));
+      if (isMountedRef.current) {
+        Alert.alert('번역에 실패했어요', getTranslationErrorMessage(error));
+      }
     } finally {
-      setPendingPostIds((previous) => ({ ...previous, [postId]: false }));
+      if (isMountedRef.current) {
+        setPendingPostIds((previous) => ({ ...previous, [postId]: false }));
+      }
     }
   };
 
