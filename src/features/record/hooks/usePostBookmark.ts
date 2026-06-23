@@ -113,7 +113,7 @@ export const usePostBookmark = () => {
 
       queryClient.setQueriesData<PostsPage>(
         { queryKey: postQueryKeys.all },
-        (data) => updateBookmarkInPage(data, placeId, nextBookmarked),
+        (data) => updateBookmarkInPage(data, placeId, nextBookmarked,false),
       );
       queryClient.setQueriesData<PostsPage>(
         { queryKey: postBookmarkQueryKeys.all },
