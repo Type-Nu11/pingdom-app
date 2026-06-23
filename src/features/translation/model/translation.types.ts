@@ -13,5 +13,6 @@ export type TranslationResult = {
 
 export type PostTranslation = {
   isShowingTranslation: boolean;
+  targetLanguage: string;
   translatedText: string;
 };
