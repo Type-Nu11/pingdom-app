@@ -132,10 +132,11 @@ function getDisplayBookmarked(
 }
 
 function formatPostTime(createdAt: string) {
-  const createdTime = new Date(createdAt).getTime();
+  const createdDate = new Date(createdAt);
+  const createdTime = createdDate.getTime();
 
   if (Number.isNaN(createdTime)) {
-    return '방금 전';
+    return '작성일 정보 없음';
   }
 
   const diffMinutes = Math.max(0, Math.floor((Date.now() - createdTime) / 60000));
@@ -147,7 +148,9 @@ function formatPostTime(createdAt: string) {
   if (diffHours < 24) return `${diffHours}시간 전`;
 
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}일 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+
+  return `${createdDate.getFullYear()}. ${createdDate.getMonth() + 1}. ${createdDate.getDate()}.`;
 }
 
 function getReportErrorMessage(error: unknown) {
