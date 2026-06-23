@@ -43,6 +43,7 @@ type MapScreenProps = {
   onClearOpenedBookmarkedPlace?: () => void;
   onOpenProfile?: () => void;
   openedBookmarkedPlaceId?: number | null;
+  onClearOpenedBookmarkedPlace?: () => void;
 };
 
 export default function MapScreen({
