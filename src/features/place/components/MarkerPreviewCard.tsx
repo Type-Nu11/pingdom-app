@@ -40,6 +40,7 @@ type MarkerPreviewCardProps = {
   posts: Post[];
   reportedPostIds: Record<string, boolean>;
   reportPendingPostIds: Record<string, boolean>;
+  translationTargetLanguage?: string;
   width: number;
 };
 
@@ -198,6 +199,7 @@ const MarkerPreviewCard = ({
   posts,
   reportedPostIds,
   reportPendingPostIds,
+  translationTargetLanguage,
   width,
 }: MarkerPreviewCardProps) => {
   const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
@@ -211,7 +213,9 @@ const MarkerPreviewCard = ({
   const [reportReason, setReportReason] = useState('');
   const [reportTarget, setReportTarget] = useState<Post | null>(null);
   const [reactions, setReactions] = useState<FeedReactionState>({});
-  const { pendingPostIds: translationPendingPostIds, toggleTranslation, translations } = usePostTranslation();
+  const { pendingPostIds: translationPendingPostIds, toggleTranslation, translations } = usePostTranslation(
+    translationTargetLanguage,
+  );
   const placeDisplayName = placeName ?? posts[0]?.placeName ?? '이 장소';
   const firstPost = posts.reduce<Post | null>((oldestPost, post) => {
     if (!oldestPost) {
@@ -730,6 +734,7 @@ const MarkerPreviewCard = ({
                   </Text>
                 </Pressable>
               </View>
+              {isShowingTranslation ? <Text style={styles.translatedLabel}>번역됨</Text> : null}
             </View>
           );
         })}
@@ -1161,6 +1166,14 @@ const styles = StyleSheet.create({
   },
   translationButtonTextDisabled: {
     color: '#a2a2a8',
+  },
+  translatedLabel: {
+    color: '#8c8c93',
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 15,
+    paddingHorizontal: 16,
+    paddingTop: 4,
   },
   username: {
     color: '#3b3b40',

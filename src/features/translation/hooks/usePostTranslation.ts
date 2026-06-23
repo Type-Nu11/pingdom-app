@@ -4,7 +4,7 @@ import type { Post } from '../../record/model/record.types';
 import type { PostTranslation } from '../model/translation.types';
 import { mlKitTranslation } from '../services/mlKitTranslation';
 
-const TARGET_LANGUAGE = 'ko';
+const DEFAULT_TARGET_LANGUAGE = 'ko';
 
 function getPostText(post: Post) {
   return (post.description || post.title).trim();
@@ -32,7 +32,7 @@ function getTranslationErrorMessage(error: unknown) {
   return '번역하지 못했어요. 잠시 후 다시 시도해 주세요.';
 }
 
-export function usePostTranslation() {
+export function usePostTranslation(targetLanguage = DEFAULT_TARGET_LANGUAGE) {
   const [translations, setTranslations] = useState<Record<string, PostTranslation>>({});
   const [pendingPostIds, setPendingPostIds] = useState<Record<string, boolean>>({});
 
@@ -70,10 +70,10 @@ export function usePostTranslation() {
     setPendingPostIds((previous) => ({ ...previous, [postId]: true }));
 
     try {
-      const plan = await mlKitTranslation.getTranslationPlan(text, TARGET_LANGUAGE);
+      const plan = await mlKitTranslation.getTranslationPlan(text, targetLanguage);
 
       if (!plan.shouldTranslate) {
-        Alert.alert('이미 한국어로 작성된 게시글이에요.');
+        Alert.alert('이미 선택한 언어로 작성된 게시글이에요.');
         return;
       }
 

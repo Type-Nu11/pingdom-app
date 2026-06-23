@@ -30,6 +30,7 @@ import { usePostLike } from '../../record/hooks/usePostLike';
 import { useBookmarkedPosts, usePostBookmark } from '../../record/hooks/usePostBookmark';
 import { usePostReport } from '../../record/hooks/usePostReport';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
+import { useProfile } from '../../profile/hooks/useProfile';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import type { RecommendedPlace } from '../model/place.types';
@@ -73,6 +74,7 @@ export default function MapScreen({
   const { togglePostBookmark } = usePostBookmark();
   const { togglePostLike } = usePostLike();
   const { reportPost } = usePostReport();
+  const { profile } = useProfile();
   const selectedPlace = useMemo(
     () => (
       places.find((place) => String(place.id) === selectedMarkerId)
@@ -251,6 +253,7 @@ export default function MapScreen({
             onToggleLike={togglePostLike}
             reportedPostIds={reportedPostIds}
             reportPendingPostIds={reportPendingPostIds}
+            translationTargetLanguage={profile?.language || 'ko'}
           />
         </View>
       )}
