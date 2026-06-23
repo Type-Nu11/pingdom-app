@@ -21,9 +21,17 @@ function updateBookmarkInPage(
   data: PostsPage | undefined,
   placeId: number,
   nextBookmarked: boolean,
+  isBookmarkList = false,
 ) {
   if (!data) {
     return data;
+  }
+
+  if (isBookmarkList && !nextBookmarked) {
+    return {
+      ...data,
+      posts: data.posts.filter((post) => post.placeId !== placeId),
+    };
   }
 
   return {
@@ -109,7 +117,7 @@ export const usePostBookmark = () => {
       );
       queryClient.setQueriesData<PostsPage>(
         { queryKey: postBookmarkQueryKeys.all },
-        (data) => updateBookmarkInPage(data, placeId, nextBookmarked),
+        (data) => updateBookmarkInPage(data, placeId, nextBookmarked, true),
       );
 
       return { previousBookmarkedPostPages, previousPostPages };
