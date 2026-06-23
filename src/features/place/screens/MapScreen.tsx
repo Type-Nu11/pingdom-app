@@ -40,6 +40,7 @@ type MapScreenProps = {
     postId?: string;
   } | null;
   onCreatePlace?: () => void;
+  onClearOpenedBookmarkedPlace?: () => void;
   onOpenProfile?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
@@ -47,6 +48,7 @@ type MapScreenProps = {
 export default function MapScreen({
   notificationLikeContext,
   onCreatePlace,
+  onClearOpenedBookmarkedPlace,
   onOpenProfile,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
@@ -114,8 +116,9 @@ export default function MapScreen({
   useEffect(() => {
     if (openedBookmarkedPlaceId !== undefined && openedBookmarkedPlaceId !== null) {
       setSelectedMarkerId(String(openedBookmarkedPlaceId));
+      onClearOpenedBookmarkedPlace?.();
     }
-  }, [openedBookmarkedPlaceId]);
+  }, [onClearOpenedBookmarkedPlace, openedBookmarkedPlaceId]);
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
     setSelectedMarkerId(event.nativeEvent.markerId);
   };

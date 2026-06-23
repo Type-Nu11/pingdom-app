@@ -23,12 +23,13 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
   const [mode, setMode] = useState<ProfileMode>('profile');
   const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
   const [likesOpen, setLikesOpen] = useState(false);
+  const isSavedPostsTab = mode === 'profile' && activeTab === 'saved';
   const {
     isError: isBookmarkedPostsError,
     isLoading: isBookmarkedPostsLoading,
     posts: bookmarkedPosts,
     refetch: refetchBookmarkedPosts,
-  } = useBookmarkedPosts();
+  } = useBookmarkedPosts({ enabled: isSavedPostsTab });
   const maxContentWidth = Math.min(width, 560);
   const gridItemSize = Math.floor(maxContentWidth / 3);
 
@@ -65,7 +66,6 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
   };
 
   const isArchiveDetail = mode === 'archive-detail';
-  const isSavedPostsTab = mode === 'profile' && activeTab === 'saved';
 
   return (
     <SafeAreaView style={styles.safeArea}>

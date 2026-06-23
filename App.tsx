@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AppProvider from './src/app/providers/AppProvider';
 import LanguageGateScreen from './src/features/auth/screens/LanguageGateScreen';
 import LoginScreen from './src/features/auth/screens/LoginScreen';
@@ -66,6 +66,9 @@ function AppContent() {
     setMainScreen('map');
     setOpenedNotificationRoute(null);
   };
+  const clearOpenedBookmarkedPlace = useCallback(() => {
+    setOpenedBookmarkedPlaceId(null);
+  }, []);
 
   if (isHydrating) return null;
 
@@ -96,6 +99,7 @@ function AppContent() {
         ) : (
           <MapScreen
             openedBookmarkedPlaceId={openedBookmarkedPlaceId}
+            onClearOpenedBookmarkedPlace={clearOpenedBookmarkedPlace}
             notificationLikeContext={openedNotificationRoute}
             onCreatePlace={() => setMainScreen('place-create')}
             onOpenProfile={() => setMainScreen('profile')}

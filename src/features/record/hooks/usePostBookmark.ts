@@ -56,17 +56,20 @@ function isExpectedBookmarkStateError(error: unknown, nextBookmarked: boolean) {
     || (!nextBookmarked && code === 'BOOKMARK_NOT_FOUND');
 }
 
-export const useBookmarkedPosts = () => {
+export const useBookmarkedPosts = (options?: { enabled?: boolean }) => {
   const bookmarkedPostsQuery = useQuery({
     queryKey: postBookmarkQueryKeys.list(),
     queryFn: () => placeApi.getBookmarkedPosts({ limit: BOOKMARKS_PAGE_SIZE }),
+    enabled: options?.enabled,
   });
 
   const bookmarkedPlaceIds = useMemo(() => (
-    (bookmarkedPostsQuery.data?.posts ?? []).reduce<Record<string, boolean>>((acc, post) => {
-      acc[String(post.placeId)] = true;
-      return acc;
-    }, {})
+    (bookmarkedPostsQuery.data?.posts ?? [])
+      .filter((post) => post.bookmarked !== false)
+      .reduce<Record<string, boolean>>((acc, post) => {
+        acc[String(post.placeId)] = true;
+        return acc;
+      }, {})
   ), [bookmarkedPostsQuery.data?.posts]);
 
   return {
@@ -113,7 +116,7 @@ export const usePostBookmark = () => {
 
       queryClient.setQueriesData<PostsPage>(
         { queryKey: postQueryKeys.all },
-        (data) => updateBookmarkInPage(data, placeId, nextBookmarked,false),
+        (data) => updateBookmarkInPage(data, placeId, nextBookmarked),
       );
       queryClient.setQueriesData<PostsPage>(
         { queryKey: postBookmarkQueryKeys.all },
