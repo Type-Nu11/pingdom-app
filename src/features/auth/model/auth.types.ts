@@ -20,10 +20,10 @@ export type SignupRequest = {
   username: string;
   email: string;
   password: string;
-  birthYear: number;
+  birthYear?: number;
   profileImageUrl?: string;
-  language: string;
-  country: string;
+  language?: string;
+  country?: string;
 };
 
 export type SignupResponse = {

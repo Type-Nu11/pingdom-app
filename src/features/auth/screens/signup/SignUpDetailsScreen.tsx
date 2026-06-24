@@ -64,7 +64,7 @@ export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps
   const validate = () => {
     const newErrors: FieldError = {};
     if (!username.trim()) newErrors.username = '아이디를 입력해주세요';
-    if (!email.trim()) newErrors.email = '이메일 입력해주세요';
+    if (!email.trim()) newErrors.email = '이메일을 입력해주세요';
     if (!password.trim()) newErrors.password = '비밀번호를 입력해주세요';
     if (!passwordConfirm.trim()) newErrors.passwordConfirm = '비밀번호를 한번 더 입력해주세요';
     setErrors(newErrors);
@@ -83,7 +83,6 @@ export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps
 
     const signupResult = await signup({
       username: username.trim(),
-      name: username.trim(),
       email: email.trim(),
       password,
     });
@@ -200,6 +199,7 @@ export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps
                 {errors.passwordConfirm ?? ' '}
               </Text>
             </View>
+
           </View>
         </View>
 

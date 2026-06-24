@@ -78,7 +78,7 @@ export default function KoreanGenderScreen({
               </View>
 
               <View style={[styles.trailingCircle, selected && styles.trailingCircleSelected]}>
-                {selected ? <SvgXml xml={CHECK_SVG} width={14} height={10} /> : null}
+                {selected ? <SvgXml xml={CHECK_SVG} width={15} height={10} /> : null}
               </View>
             </Pressable>
           );

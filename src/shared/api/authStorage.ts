@@ -51,6 +51,8 @@ export async function saveTokens(tokens: AuthTokens): Promise<void> {
  */
 export async function getTokens(): Promise<AuthTokens | null> {
     try {
+        const credentials = await Keychain.getGenericPassword({ service: SERVICE_NAME });
+        if (!credentials) return null;
         return normalizeAuthTokens(JSON.parse(credentials.password) as AuthTokens);
     } catch {
         return null;

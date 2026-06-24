@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 4,
     minHeight: 56,
-    paddingHorizontal: 14,
+    paddingHorizontal: 15,
   },
   listItemSelected: {
     backgroundColor: '#FFE7EE',
