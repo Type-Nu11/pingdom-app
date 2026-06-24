@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 
@@ -8,9 +8,11 @@ type ButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  labelStyle?: StyleProp<TextStyle>;
+  style?: StyleProp<ViewStyle>;
 };
 
-const Button = ({ label, onPress, disabled = false, loading = false }: ButtonProps) => {
+const Button = ({ label, onPress, disabled = false, loading = false, labelStyle, style }: ButtonProps) => {
   const isDisabled = disabled || loading;
 
   return (
@@ -20,11 +22,16 @@ const Button = ({ label, onPress, disabled = false, loading = false }: ButtonPro
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        style,
         isDisabled && styles.buttonDisabled,
         pressed && !isDisabled && styles.buttonPressed,
       ]}
     >
-      {loading ? <ActivityIndicator color={colors.background} /> : <Text style={styles.label}>{label}</Text>}
+      {loading ? (
+        <ActivityIndicator color={colors.background} />
+      ) : (
+        <Text style={[styles.label, labelStyle]}>{label}</Text>
+      )}
     </Pressable>
   );
 };

@@ -18,9 +18,32 @@ export type LoginResponse = {
 
 export type SignupRequest = {
   username: string;
-  name: string;
   email: string;
   password: string;
+  birthYear: number;
+  profileImageUrl?: string;
+  language: string;
+  country: string;
+};
+
+export type SignupResponse = {
+  id: number;
+  username: string;
+  email: string;
+  birthYear: number;
+  profileImageUrl?: string;
+  language: string;
+  country: string;
+};
+
+export type ChangePasswordRequest = {
+  confirmPassword: string;
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type ChangeUsernameRequest = {
+  newUsername: string;
 };
 
 export type PhoneSendRequest = {

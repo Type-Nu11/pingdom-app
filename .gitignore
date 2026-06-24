@@ -54,3 +54,5 @@ ios/Naviapp.xcworkspace/
 
 # native secrets
 ios/Config/Secrets.xcconfig
+
+android/app/google-services.json

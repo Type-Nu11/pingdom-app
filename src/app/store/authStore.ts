@@ -1,5 +1,6 @@
+import { create } from 'zustand';
 import { hydrateAccessToken, persistTokens, removeTokens } from '../../shared/api/authTokens';
-import type { AuthTokens } from '../../shared/api/authStorage';
+import { normalizeAuthTokens, type AuthTokens } from '../../shared/api/authStorage';
 
 export type AuthState = {
   accessToken: string | null;
@@ -7,65 +8,92 @@ export type AuthState = {
   isHydrating: boolean;
 };
 
-type Listener = () => void;
+type AuthActions = {
+  bootstrapAuth: () => Promise<void>;
+  login: (tokens: AuthTokens) => Promise<void>;
+  loginWithGoogle: (tokens: AuthTokens) => Promise<void>;
+  logout: () => Promise<void>;
+};
 
-let state: AuthState = {
+export type AuthStore = AuthState & AuthActions;
+
+export const useAuthStore = create<AuthStore>((set) => ({
   accessToken: null,
   isLoggedIn: false,
   isHydrating: true,
-};
 
-const listeners = new Set<Listener>();
+  bootstrapAuth: async () => {
+    set({ isHydrating: true });
 
-function emit() {
-  listeners.forEach((listener) => listener());
-}
+    try {
+      const accessToken = await hydrateAccessToken();
+      set({
+        accessToken,
+        isLoggedIn: Boolean(accessToken),
+        isHydrating: false,
+      });
+    } catch {
+      set({
+        accessToken: null,
+        isLoggedIn: false,
+        isHydrating: false,
+      });
+    }
+  },
 
-function setState(next: Partial<AuthState>) {
-  state = { ...state, ...next };
-  emit();
-}
+  login: async (tokens: AuthTokens) => {
+    const normalizedTokens = normalizeAuthTokens(tokens);
 
-export function getAuthState(): AuthState {
-  return state;
-}
-
-export function subscribeAuth(listener: Listener): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-export async function bootstrapAuth(): Promise<void> {
-  try {
-    const accessToken = await hydrateAccessToken();
-    setState({
-      accessToken,
-      isLoggedIn: Boolean(accessToken),
+    await persistTokens(normalizedTokens);
+    set({
+      accessToken: normalizedTokens.accessToken,
+      isLoggedIn: true,
       isHydrating: false,
     });
-  } catch {
-    setState({
+  },
+
+  loginWithGoogle: async (tokens: AuthTokens) => {
+    const normalizedTokens = normalizeAuthTokens(tokens);
+
+    await persistTokens(normalizedTokens);
+    set({
+      accessToken: normalizedTokens.accessToken,
+      isLoggedIn: true,
+      isHydrating: false,
+    });
+  },
+
+  logout: async () => {
+    await removeTokens();
+    set({
       accessToken: null,
       isLoggedIn: false,
       isHydrating: false,
     });
-  }
+  },
+}));
+
+export function getAuthState(): AuthState {
+  const { accessToken, isLoggedIn, isHydrating } = useAuthStore.getState();
+  return { accessToken, isLoggedIn, isHydrating };
+}
+
+export function subscribeAuth(listener: () => void): () => void {
+  return useAuthStore.subscribe(listener);
+}
+
+export async function bootstrapAuth(): Promise<void> {
+  return useAuthStore.getState().bootstrapAuth();
 }
 
 export async function loginWithTokens(tokens: AuthTokens): Promise<void> {
-  await persistTokens(tokens);
-  setState({
-    accessToken: tokens.accessToken,
-    isLoggedIn: true,
-    isHydrating: false,
-  });
+  return useAuthStore.getState().login(tokens);
+}
+
+export async function loginWithGoogle(tokens: AuthTokens): Promise<void> {
+  return useAuthStore.getState().loginWithGoogle(tokens);
 }
 
 export async function logout(): Promise<void> {
-  await removeTokens();
-  setState({
-    accessToken: null,
-    isLoggedIn: false,
-    isHydrating: false,
-  });
+  return useAuthStore.getState().logout();
 }

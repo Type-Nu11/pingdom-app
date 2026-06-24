@@ -1,20 +1,19 @@
-import { useSyncExternalStore } from 'react';
-import {
-  bootstrapAuth,
-  getAuthState,
-  loginWithTokens,
-  logout,
-  subscribeAuth,
-} from '../../../app/store/authStore';
-import type { AuthTokens } from '../../../shared/api/authStorage';
+import { useAuthStore } from '../../../app/store/authStore';
 
 export const useAuth = () => {
-  const state = useSyncExternalStore(subscribeAuth, getAuthState, getAuthState);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isHydrating = useAuthStore((state) => state.isHydrating);
+  const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
+  const login = useAuthStore((state) => state.login);
+  const logout = useAuthStore((state) => state.logout);
 
   return {
-    ...state,
+    accessToken,
+    isLoggedIn,
+    isHydrating,
     bootstrapAuth,
-    login: async (tokens: AuthTokens) => loginWithTokens(tokens),
+    login,
     logout,
   };
 };
