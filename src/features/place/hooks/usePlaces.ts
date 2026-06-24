@@ -4,6 +4,8 @@ import { placeApi, type GetPlacesRequest } from '../api/placeApi';
 import type { MapMarker } from '../model/place.types';
 
 const DEFAULT_PLACE_CATEGORY: MapMarker['category'] = 'food';
+// GET /place 서버 오류가 해결될 때까지 개발 환경에서 기본 마커 조회만 끌 수 있다.
+const isPlaceListEnabled = process.env.EXPO_PUBLIC_ENABLE_PLACE_LIST !== 'false';
 
 export const placeQueryKeys = {
   all: ['places'] as const,
@@ -33,6 +35,7 @@ export const usePlaces = (params: GetPlacesRequest = {}) => {
   const placesQuery = useQuery({
     queryKey: placeQueryKeys.list(queryParams),
     queryFn: () => placeApi.getPlaces(queryParams),
+    enabled: isPlaceListEnabled,
   });
 
   const places = placesQuery.data?.places ?? [];
