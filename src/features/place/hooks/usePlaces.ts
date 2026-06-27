@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { placeApi, type GetPlacesRequest } from '../api/placeApi';
 import type { MapMarker } from '../model/place.types';
@@ -26,17 +27,49 @@ function toMapMarker(place: {
   };
 }
 
+function getPlacesErrorLog(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    const responseData = error.response?.data as {
+      code?: unknown;
+      message?: unknown;
+    } | undefined;
+
+    return {
+      code: responseData?.code,
+      message: responseData?.message ?? error.message,
+      status: error.response?.status,
+      url: error.config?.url,
+    };
+  }
+
+  return {
+    message: error instanceof Error ? error.message : String(error),
+  };
+}
+
 export const usePlaces = (params: GetPlacesRequest = {}) => {
-  const queryParams = {
+  const queryParams = useMemo(() => ({
     limit: params.limit ?? 100,
     page: params.page ?? 1,
     ...(params.keyword ? { keyword: params.keyword } : {}),
-  };
+  }), [params.keyword, params.limit, params.page]);
   const placesQuery = useQuery({
     queryKey: placeQueryKeys.list(queryParams),
     queryFn: () => placeApi.getPlaces(queryParams),
     enabled: isPlaceListEnabled,
   });
+
+  useEffect(() => {
+    if (!placesQuery.isError) {
+      return;
+    }
+
+    console.warn('[places]', 'failed to load place list', {
+      enabled: isPlaceListEnabled,
+      error: getPlacesErrorLog(placesQuery.error),
+      params: queryParams,
+    });
+  }, [placesQuery.error, placesQuery.isError, queryParams]);
 
   const places = placesQuery.data?.places ?? [];
   const markers = useMemo(() => places.map(toMapMarker), [places]);

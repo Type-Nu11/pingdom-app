@@ -118,6 +118,40 @@ function shouldLogAuthRequest(url?: string): boolean {
     ].includes(path);
 }
 
+function shouldLogApiRequest(url?: string): boolean {
+    const path = getRequestPath(url);
+
+    return shouldLogAuthRequest(url) || [
+        '/place',
+        '/place/recommendations',
+        '/places/search',
+    ].includes(path);
+}
+
+function summarizeResponseData(data: unknown) {
+    if (!data || typeof data !== 'object') {
+        return undefined;
+    }
+
+    const responseData = data as {
+        hasNext?: unknown;
+        limit?: unknown;
+        page?: unknown;
+        places?: unknown;
+        totalCount?: unknown;
+        totalPages?: unknown;
+    };
+
+    return {
+        hasNext: responseData.hasNext,
+        limit: responseData.limit,
+        page: responseData.page,
+        placesCount: Array.isArray(responseData.places) ? responseData.places.length : undefined,
+        totalCount: responseData.totalCount,
+        totalPages: responseData.totalPages,
+    };
+}
+
 function isPublicAuthUrl(url?: string): boolean {
     const path = getRequestPath(url);
 
@@ -275,10 +309,11 @@ api.interceptors.request.use(
             config.headers.set('Authorization', `Bearer ${token}`);
         }
 
-        if (shouldLogAuthRequest(config.url)) {
-            console.info('[api-auth]', 'request', {
+        if (shouldLogApiRequest(config.url)) {
+            console.info('[api]', 'request', {
                 hasAccessToken: Boolean(token),
                 method: config.method,
+                params: config.params,
                 path: getRequestPath(config.url),
                 token: getTokenDebug(token),
             });
@@ -300,21 +335,35 @@ api.interceptors.request.use(
 //   - 이미 재시도한 요청 (_retry === true)
 //   - 갱신 요청 자체가 401을 받은 경우 (무한루프 방지)
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        if (shouldLogApiRequest(response.config.url)) {
+            console.info('[api]', 'response success', {
+                method: response.config.method,
+                params: response.config.params,
+                path: getRequestPath(response.config.url),
+                status: response.status,
+                summary: summarizeResponseData(response.data),
+            });
+        }
+
+        return response;
+    },
     async (error: AxiosError) => {
         const originalRequest = error.config as RetryableRequestConfig | undefined;
         const status = error.response?.status;
         const isRefreshRequest = originalRequest?.url?.includes('/auth/token/refresh');
 
-        if (originalRequest && (status === 401 || shouldLogAuthRequest(originalRequest.url))) {
+        if (originalRequest && (status === 401 || shouldLogApiRequest(originalRequest.url))) {
             const responseData = error.response?.data as {
                 code?: unknown;
                 message?: unknown;
             } | undefined;
 
-            console.warn('[api-auth]', 'response error', {
+            console.warn('[api]', 'response error', {
                 code: responseData?.code,
                 message: responseData?.message ?? error.message,
+                method: originalRequest.method,
+                params: originalRequest.params,
                 path: getRequestPath(originalRequest.url),
                 retry: Boolean(originalRequest._retry),
                 status,

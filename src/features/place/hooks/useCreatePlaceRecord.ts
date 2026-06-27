@@ -177,10 +177,10 @@ async function findExistingPlaceByAddress(draft: PlaceCreateDraft) {
     normalizeAddress(draft.name),
   ].filter(Boolean)));
 
-  for (const keyword of [...queries, undefined]) {
+  for (const keyword of queries) {
     for (let page = 1; page <= PLACE_SEARCH_MAX_PAGES; page += 1) {
       const placesPage = await placeApi.getPlaces({
-        ...(keyword ? { keyword } : {}),
+        keyword,
         limit: PLACE_SEARCH_LIMIT,
         page,
       });
