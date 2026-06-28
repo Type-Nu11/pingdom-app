@@ -10,9 +10,9 @@ import {
   View,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import useLogin from '../../hooks/useLogin';
 import useSignup from '../../hooks/useSignup';
 import ProgressDots from './components/ProgressDots';
+import type { OnboardingData } from '../../../../features/onboarding/types';
 
 const ESCAPE_SVG = `<svg width="12" height="21" viewBox="0 0 12 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.25 1.25L1.25 10.25L10.25 19.25" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -26,6 +26,8 @@ const BG = '#F8F8F8';
 
 type SignUpDetailsScreenProps = {
   onBack?: () => void;
+  onVerify?: (email: string, username: string, password: string) => void;
+  onboardingData?: OnboardingData;
 };
 
 type FieldError = {
@@ -35,7 +37,10 @@ type FieldError = {
   passwordConfirm?: string;
 };
 
-export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps) {
+type InnerStep = 'account' | 'password';
+
+export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }: SignUpDetailsScreenProps) {
+  const [innerStep, setInnerStep] = useState<InnerStep>('account');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,50 +51,145 @@ export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps
 
   const {
     signup,
-    isSubmitting: isSignupSubmitting,
+    isSubmitting,
     errorMessage: signupErrorMessage,
     clearError: clearSignupError,
   } = useSignup();
 
-  const {
-    login,
-    isSubmitting: isLoginSubmitting,
-    clearError: clearLoginError,
-  } = useLogin();
+  const isStep1Filled = username.trim() && email.trim();
+  const isStep2Filled = password.trim() && passwordConfirm.trim();
 
-  const isSubmitting = isSignupSubmitting || isLoginSubmitting;
-  const isAllFilled =
-    username.trim() && email.trim() && password.trim() && passwordConfirm.trim();
-
-  const validate = () => {
+  const validateStep1 = () => {
     const newErrors: FieldError = {};
     if (!username.trim()) newErrors.username = '아이디를 입력해주세요';
     if (!email.trim()) newErrors.email = '이메일을 입력해주세요';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const newErrors: FieldError = {};
     if (!password.trim()) newErrors.password = '비밀번호를 입력해주세요';
     if (!passwordConfirm.trim()) newErrors.passwordConfirm = '비밀번호를 한번 더 입력해주세요';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (!validate() || isSubmitting) return;
+  const handleStep1Next = () => {
+    if (!validateStep1()) return;
+    clearSignupError();
+    setInnerStep('password');
+  };
+
+  const handleStep2Submit = async () => {
+    if (!validateStep2() || isSubmitting) return;
     if (password !== passwordConfirm) {
       setErrors((prev) => ({ ...prev, passwordConfirm: '비밀번호가 일치하지 않습니다' }));
       return;
     }
 
     clearSignupError();
-    clearLoginError();
 
     const signupResult = await signup({
       username: username.trim(),
       email: email.trim(),
       password,
+      birthYear: onboardingData?.birthYear,
+      language: onboardingData?.language,
+      country: onboardingData?.country,
     });
 
     if (!signupResult) return;
-    await login({ username: username.trim(), password });
+    onVerify?.(email.trim(), username.trim(), password);
   };
+
+  const handleBack = () => {
+    if (innerStep === 'password') {
+      setErrors({});
+      setInnerStep('account');
+    } else {
+      onBack?.();
+    }
+  };
+
+  if (innerStep === 'account') {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.header}>
+          <Pressable onPress={handleBack} hitSlop={12} style={styles.headerSide}>
+            <SvgXml xml={ESCAPE_SVG} width={12} height={21} />
+          </Pressable>
+          <View style={styles.headerCenter}>
+            <ProgressDots total={3} current={1} />
+          </View>
+          <View style={styles.headerSide} />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.topContent}>
+            <Text style={styles.title}>핑덤 시작하기</Text>
+
+            <View style={styles.fieldsGroup}>
+              <View style={styles.field}>
+                <Text style={[styles.label, styles.labelAlt]}>아이디</Text>
+                <View style={[styles.inputRow, errors.username ? styles.inputRowError : undefined]}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="아이디를 입력하세요"
+                    placeholderTextColor="#BFC1C1"
+                    value={username}
+                    onChangeText={(v) => { setUsername(v); setErrors((e) => ({ ...e, username: undefined })); }}
+                    autoCapitalize="none"
+                  />
+                </View>
+                <Text style={[styles.helper, errors.username ? styles.helperVisible : styles.helperHidden]}>
+                  {errors.username ?? ' '}
+                </Text>
+              </View>
+
+              <View style={styles.field}>
+                <Text style={[styles.label, styles.labelAlt]}>이메일</Text>
+                <View style={[styles.inputRow, errors.email ? styles.inputRowError : undefined]}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="이메일을 입력하세요"
+                    placeholderTextColor="#BFC1C1"
+                    value={email}
+                    onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+                {signupErrorMessage ? (
+                  <Text style={styles.helperVisible}>{signupErrorMessage}</Text>
+                ) : (
+                  <Text style={[styles.helper, errors.email ? styles.helperVisible : styles.helperHidden]}>
+                    {errors.email ?? ' '}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
+
+          <Pressable
+            style={[styles.button, isStep1Filled ? styles.buttonActive : styles.buttonDisabled]}
+            onPress={handleStep1Next}
+          >
+            <Text style={[styles.buttonText, isStep1Filled ? styles.buttonTextActive : styles.buttonTextDisabled]}>
+              다음
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -97,7 +197,7 @@ export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
-        <Pressable onPress={onBack} hitSlop={12} style={styles.headerSide}>
+        <Pressable onPress={handleBack} hitSlop={12} style={styles.headerSide}>
           <SvgXml xml={ESCAPE_SVG} width={12} height={21} />
         </Pressable>
         <View style={styles.headerCenter}>
@@ -112,49 +212,9 @@ export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topContent}>
-          <Text style={styles.title}>핑덤 시작하기</Text>
+          <Text style={styles.title}>비밀번호 확인</Text>
 
           <View style={styles.fieldsGroup}>
-            {/* 아이디 */}
-            <View style={styles.field}>
-              <Text style={[styles.label, styles.labelAlt]}>아이디</Text>
-              <View style={[styles.inputRow, errors.username ? styles.inputRowError : undefined]}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="아이디를 입력하세요"
-                  placeholderTextColor="#BFC1C1"
-                  value={username}
-                  onChangeText={(v) => { setUsername(v); setErrors((e) => ({ ...e, username: undefined })); }}
-                  autoCapitalize="none"
-                />
-              </View>
-              <Text style={[styles.helper, errors.username ? styles.helperVisible : styles.helperHidden]}>
-                {errors.username ?? ' '}
-              </Text>
-            </View>
-
-            {/* 이메일 */}
-            <View style={styles.field}>
-              <Text style={[styles.label, styles.labelAlt]}>이메일</Text>
-              <View style={[styles.inputRow, errors.email ? styles.inputRowError : undefined]}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="이메일을 입력하세요"
-                  placeholderTextColor="#BFC1C1"
-                  value={email}
-                  onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-              {signupErrorMessage ? (
-                <Text style={styles.helperVisible}>{signupErrorMessage}</Text>
-              ) : (
-                <Text style={styles.helperHidden}> </Text>
-              )}
-            </View>
-
-            {/* 비밀번호 */}
             <View style={styles.field}>
               <Text style={[styles.label, styles.labelNeutral]}>비밀번호</Text>
               <View style={[styles.inputRow, errors.password ? styles.inputRowError : undefined]}>
@@ -177,7 +237,6 @@ export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps
               </Text>
             </View>
 
-            {/* 비밀번호 확인 */}
             <View style={styles.field}>
               <Text style={[styles.label, styles.labelNeutral]}>비밀번호 확인</Text>
               <View style={[styles.inputRow, errors.passwordConfirm ? styles.inputRowError : undefined]}>
@@ -199,15 +258,14 @@ export default function SignUpDetailsScreen({ onBack }: SignUpDetailsScreenProps
                 {errors.passwordConfirm ?? ' '}
               </Text>
             </View>
-
           </View>
         </View>
 
         <Pressable
-          style={[styles.button, isAllFilled ? styles.buttonActive : styles.buttonDisabled]}
-          onPress={() => void handleSubmit()}
+          style={[styles.button, isStep2Filled ? styles.buttonActive : styles.buttonDisabled]}
+          onPress={() => void handleStep2Submit()}
         >
-          <Text style={[styles.buttonText, isAllFilled ? styles.buttonTextActive : styles.buttonTextDisabled]}>
+          <Text style={[styles.buttonText, isStep2Filled ? styles.buttonTextActive : styles.buttonTextDisabled]}>
             {isSubmitting ? '처리 중...' : '시작하기'}
           </Text>
         </Pressable>
@@ -237,10 +295,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   body: {
+    flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 52,
-    gap: 203,
+    justifyContent: 'space-between',
   },
   topContent: {
     gap: 16,
@@ -314,6 +373,7 @@ const styles = StyleSheet.create({
   },
   buttonTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
   buttonTextDisabled: {
     color: '#5E5E66',

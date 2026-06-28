@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import ProgressBar from './components/ProgressBar';
 
 const PINK = '#FF1956';
@@ -9,17 +9,13 @@ const BACK_SVG_PATH = 'M8 1L1 9L8 17';
 type Props = { onNext: () => void };
 
 export default function SelectFirstScreen({ onNext }: Props) {
+  const { width, height } = useWindowDimensions();
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/bg_ellipse_top.png')}
-        style={styles.blobTop}
-        resizeMode="contain"
-      />
-      <Image
-        source={require('../../assets/images/bg_ellipse_bottom.png')}
-        style={styles.blobBottom}
-        resizeMode="contain"
+        source={require('../../assets/images/pingDomBackGround.png')}
+        style={[styles.background, { width, height }]}
+        resizeMode="stretch"
       />
 
       <View style={styles.header}>
@@ -55,19 +51,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8F8',
     overflow: 'hidden',
   },
-  blobTop: {
+  background: {
     position: 'absolute',
-    width: 489,
-    height: 227,
-    left: -142,
-    top: 133,
-  },
-  blobBottom: {
-    position: 'absolute',
-    width: 528,
-    height: 212,
-    left: -3,
-    top: 483,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   header: {
     height: 105,
@@ -82,7 +71,7 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    paddingHorizontal: 28,
+    paddingHorizontal: 16,
     paddingBottom: 52,
     alignItems: 'center',
     justifyContent: 'space-between',
