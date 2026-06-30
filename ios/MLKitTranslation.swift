@@ -25,8 +25,8 @@ final class MLKitTranslation: NSObject {
       }
 
       guard let languageCode, languageCode != "und",
-            let sourceLanguage = self.translateLanguage(from: languageCode),
-            let targetLanguage = self.translateLanguage(from: targetLanguageTag) else {
+            let sourceLanguage = Self.translateLanguage(from: languageCode),
+            let targetLanguage = Self.translateLanguage(from: targetLanguageTag) else {
         reject("UNSUPPORTED_LANGUAGE", "지원하지 않는 언어예요.", nil)
         return
       }
