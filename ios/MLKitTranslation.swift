@@ -114,7 +114,7 @@ final class MLKitTranslation: NSObject {
     }
   }
 
-  private func translateLanguage(from languageTag: String) -> TranslateLanguage? {
+  private static func translateLanguage(from languageTag: String) -> TranslateLanguage? {
     let language = TranslateLanguage(rawValue: languageTag)
 
     return TranslateLanguage.allLanguages().contains(language) ? language : nil

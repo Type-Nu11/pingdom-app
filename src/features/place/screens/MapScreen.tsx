@@ -85,7 +85,7 @@ export default function MapScreen({
   );
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const placeMarkerIds = new Set(markers.map((marker) => marker.id));
-    const recommendationMarkers = recommendedPlaces
+    const recommendationMarkers = (recommendedPlaces ?? [])
       .filter((place) => !placeMarkerIds.has(String(place.id)))
       .map((place) => ({
         category: 'food' as const,
