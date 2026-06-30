@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import type { FirebaseRemoteMessage } from './firebaseMessaging';
 
 const FOREGROUND_CHANNEL_ID = 'foreground-fcm';
@@ -9,17 +9,19 @@ function toNotificationText(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
 }
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (NativeModules.RNFBAppModule) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 export async function configureForegroundNotifications(): Promise<void> {
-  if (Platform.OS !== 'android') {
+  if (Platform.OS !== 'android' || !NativeModules.RNFBAppModule) {
     return;
   }
 
@@ -33,6 +35,10 @@ export async function configureForegroundNotifications(): Promise<void> {
 }
 
 export async function presentForegroundNotification(message: FirebaseRemoteMessage): Promise<void> {
+  if (!NativeModules.RNFBAppModule) {
+    return;
+  }
+
   const title =
     toNotificationText(message.notification?.title) ||
     toNotificationText(message.data?.title, DEFAULT_NOTIFICATION_TITLE);

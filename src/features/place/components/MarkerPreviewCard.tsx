@@ -20,6 +20,7 @@ import ShareIcon from '../../../assets/icons/actions/share.svg';
 import ReportIcon from '../../../assets/icons/actions/tlsrh.svg';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { Post } from '../../record/model/record.types';
+import { usePostTranslation } from '../../translation/hooks/usePostTranslation';
 
 type MarkerPreviewCardProps = {
   bookmarkedPlaceIds: Record<string, boolean>;
@@ -39,6 +40,7 @@ type MarkerPreviewCardProps = {
   posts: Post[];
   reportedPostIds: Record<string, boolean>;
   reportPendingPostIds: Record<string, boolean>;
+  translationTargetLanguage?: string;
   width: number;
 };
 
@@ -132,10 +134,11 @@ function getDisplayBookmarked(
 }
 
 function formatPostTime(createdAt: string) {
-  const createdTime = new Date(createdAt).getTime();
+  const createdDate = new Date(createdAt);
+  const createdTime = createdDate.getTime();
 
   if (Number.isNaN(createdTime)) {
-    return '방금 전';
+    return '작성일 정보 없음';
   }
 
   const diffMinutes = Math.max(0, Math.floor((Date.now() - createdTime) / 60000));
@@ -147,7 +150,9 @@ function formatPostTime(createdAt: string) {
   if (diffHours < 24) return `${diffHours}시간 전`;
 
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}일 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+
+  return `${createdDate.getFullYear()}. ${createdDate.getMonth() + 1}. ${createdDate.getDate()}.`;
 }
 
 function getReportErrorMessage(error: unknown) {
@@ -194,6 +199,7 @@ const MarkerPreviewCard = ({
   posts,
   reportedPostIds,
   reportPendingPostIds,
+  translationTargetLanguage,
   width,
 }: MarkerPreviewCardProps) => {
   const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
@@ -207,6 +213,9 @@ const MarkerPreviewCard = ({
   const [reportReason, setReportReason] = useState('');
   const [reportTarget, setReportTarget] = useState<Post | null>(null);
   const [reactions, setReactions] = useState<FeedReactionState>({});
+  const { pendingPostIds: translationPendingPostIds, toggleTranslation, translations } = usePostTranslation(
+    translationTargetLanguage,
+  );
   const placeDisplayName = placeName ?? posts[0]?.placeName ?? '이 장소';
   const firstPost = posts.reduce<Post | null>((oldestPost, post) => {
     if (!oldestPost) {
@@ -584,6 +593,16 @@ const MarkerPreviewCard = ({
           const isReportPending = reportPendingPostIds[feedId] ?? false;
           const isReported = reportedPostIds[feedId] ?? false;
           const reportLabel = isReportPending ? '신고 중...' : isReported ? '신고 완료' : '핑 신고';
+          const translation = translations[feedId];
+          const currentTranslationTarget = (
+            translationTargetLanguage?.trim().replace('_', '-').toLowerCase() || 'ko'
+          );
+          const isShowingTranslation = (
+            translation?.isShowingTranslation
+            && translation.targetLanguage === currentTranslationTarget
+          ) ?? false;
+          const isTranslationPending = translationPendingPostIds[feedId] ?? false;
+          const postText = item.description?.trim() || item.title;
 
           return (
             <View key={item.id} style={styles.feedItem}>
@@ -696,9 +715,32 @@ const MarkerPreviewCard = ({
 
               <Text style={styles.caption}>
                 <Text style={styles.captionAuthor}>{item.username} </Text>
-                {item.description || item.title}
+                {isShowingTranslation ? translation.translatedText : postText}
               </Text>
-              <Text style={styles.timeText}>{formatPostTime(item.createdAt)} • 번역 보기</Text>
+              <View style={styles.postMetaRow}>
+                <Text style={styles.timeText}>{formatPostTime(item.createdAt)}</Text>
+                <Text style={styles.metaSeparator}>•</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={isShowingTranslation ? '원문 보기' : '번역 보기'}
+                  disabled={isTranslationPending}
+                  hitSlop={8}
+                  style={styles.translationButton}
+                  onPress={() => void toggleTranslation(item)}
+                >
+                  <Text style={[
+                    styles.translationButtonText,
+                    isTranslationPending && styles.translationButtonTextDisabled,
+                  ]}>
+                    {isTranslationPending
+                      ? '번역 중...'
+                      : isShowingTranslation
+                        ? '원문 보기'
+                        : '번역 보기'}
+                  </Text>
+                </Pressable>
+              </View>
+              {isShowingTranslation ? <Text style={styles.translatedLabel}>번역됨</Text> : null}
             </View>
           );
         })}
@@ -1103,8 +1145,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 16,
-    paddingHorizontal: 16,
     paddingTop: 10,
+  },
+  postMetaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+  },
+  metaSeparator: {
+    color: '#767680',
+    fontSize: 12,
+    lineHeight: 16,
+    paddingHorizontal: 4,
+    paddingTop: 10,
+  },
+  translationButton: {
+    minHeight: 28,
+    justifyContent: 'center',
+    paddingTop: 10,
+  },
+  translationButtonText: {
+    color: '#3b3b40',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  translationButtonTextDisabled: {
+    color: '#a2a2a8',
+  },
+  translatedLabel: {
+    color: '#8c8c93',
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 15,
+    paddingHorizontal: 16,
+    paddingTop: 4,
   },
   username: {
     color: '#3b3b40',
