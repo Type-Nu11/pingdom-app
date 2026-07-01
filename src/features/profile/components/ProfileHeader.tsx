@@ -7,9 +7,9 @@ type ProfileHeaderProps = {
   activeTab: 'liked' | 'saved';
   isArchive: boolean;
   onChangeTab: (tab: 'liked' | 'saved') => void;
+  onLogout: () => void;
   onOpenArchive: () => void;
   onOpenEdit: () => void;
-  onLogout: () => void;
   showTabs: boolean;
 };
 
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
     justifyContent: 'center',
     marginTop: 24,
     paddingHorizontal: 24,
@@ -117,7 +117,8 @@ const styles = StyleSheet.create({
     paddingTop: 118,
   },
   logoutButton: {
-    borderColor: '#ffd2dd',
+    backgroundColor: '#fff1f4',
+    borderColor: '#ffd0dc',
   },
   logoutText: {
     color: '#ff1956',

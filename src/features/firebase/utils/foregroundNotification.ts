@@ -1,6 +1,6 @@
-import type { RemoteMessage } from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
+import type { FirebaseRemoteMessage } from './firebaseMessaging';
 
 const FOREGROUND_CHANNEL_ID = 'foreground-fcm';
 const DEFAULT_NOTIFICATION_TITLE = '새 알림';
@@ -9,17 +9,19 @@ function toNotificationText(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
 }
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (NativeModules.RNFBAppModule) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 export async function configureForegroundNotifications(): Promise<void> {
-  if (Platform.OS !== 'android') {
+  if (Platform.OS !== 'android' || !NativeModules.RNFBAppModule) {
     return;
   }
 
@@ -28,10 +30,15 @@ export async function configureForegroundNotifications(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#0EA5E9',
+    sound: null,
   });
 }
 
-export async function presentForegroundNotification(message: RemoteMessage): Promise<void> {
+export async function presentForegroundNotification(message: FirebaseRemoteMessage): Promise<void> {
+  if (!NativeModules.RNFBAppModule) {
+    return;
+  }
+
   const title =
     toNotificationText(message.notification?.title) ||
     toNotificationText(message.data?.title, DEFAULT_NOTIFICATION_TITLE);
@@ -51,7 +58,7 @@ export async function presentForegroundNotification(message: RemoteMessage): Pro
         ...message.data,
         messageId: message.messageId ?? '',
       },
-      sound: 'default',
+      sound: true,
     },
     trigger: null,
   });

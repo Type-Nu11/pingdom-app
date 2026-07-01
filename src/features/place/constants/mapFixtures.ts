@@ -1,10 +1,5 @@
-import {
-  type CategoryChipItem,
-  FashionGlyph,
-  FoodGlyph,
-  GameGlyph,
-  MusicGlyph,
-} from '../components/map';
+import { CategoryChipItem } from '../components/CategoryChips';
+import { FashionGlyph, FoodGlyph, GameGlyph, MusicGlyph } from '../components/CategoryGlyphs';
 
 export const mapCategories: CategoryChipItem[] = [
   { id: 'food', label: 'Food', Icon: FoodGlyph, iconWidth: 15, iconHeight: 18 },

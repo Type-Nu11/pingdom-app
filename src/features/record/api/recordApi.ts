@@ -1,9 +1,10 @@
+import axios from 'axios';
 import { api } from '../../../shared/api/apiClient';
 import type {
   ApiCodeErrorResponse,
   ApiFieldErrorResponse,
 } from '../../../types/api.types';
-import type { RecordUploadFile } from '../model/record.types';
+import type { PostsPage, RecordUploadFile } from '../model/record.types';
 
 const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
   gif: 'image/gif',
@@ -17,8 +18,10 @@ const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
 export type CreateRecordRequest = {
   description?: string;
   file: RecordUploadFile;
-  placeId: number;
+  kakaoPlaceId?: string;
+  placeId?: number;
   title: string;
+  validPlace?: boolean;
 };
 
 export type CreateRecordResponse = {
@@ -26,17 +29,34 @@ export type CreateRecordResponse = {
   message: string;
 };
 
-export type ReportPostRequest = {
-  reason: string;
+export type GetPostsRequest = {
+  limit?: number;
+  page?: number;
+  placeId?: number;
 };
 
 export type RecordLikeRequest = {
   mapImageId: number;
 };
 
+export type PostReportRequest = {
+  reason: string;
+};
+
 export type RecordLikeResponse = {
+  message?: string;
   mapImageId: number;
   userId: number;
+};
+
+export type PostLikeResponse = RecordLikeResponse;
+
+export type PostLikeReturnResponse = PostLikeResponse | {
+  isLiked?: boolean;
+  likeCount?: number;
+  liked?: boolean;
+  likedByMe?: boolean;
+  message?: string;
 };
 
 export type RecordApiErrorCode =
@@ -72,11 +92,22 @@ function buildCreateRecordFormData(payload: CreateRecordRequest) {
   const fileName = payload.file.name ?? getFileNameFromUri(payload.file.uri);
   const mimeType = payload.file.type ?? getMimeType(fileName);
 
-  formData.append('placeId', String(payload.placeId));
   formData.append('title', payload.title);
 
   if (payload.description) {
     formData.append('description', payload.description);
+  }
+
+  if (payload.kakaoPlaceId) {
+    formData.append('kakaoPlaceId', payload.kakaoPlaceId);
+  }
+
+  if (payload.placeId !== undefined) {
+    formData.append('placeId', String(payload.placeId));
+  }
+
+  if (payload.validPlace !== undefined) {
+    formData.append('validPlace', String(payload.validPlace));
   }
 
   formData.append('file', {
@@ -91,19 +122,86 @@ function buildCreateRecordFormData(payload: CreateRecordRequest) {
 export const recordApi = {
   createRecord: async (payload: CreateRecordRequest): Promise<CreateRecordResponse> => {
     const formData = buildCreateRecordFormData(payload);
-    const { data } = await api.post<CreateRecordResponse>('/map/post/create', formData);
+    const { data } = await api.post<CreateRecordResponse>('/map/post/create', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return data;
   },
   deleteRecord: async (id: number): Promise<string> => {
     const { data } = await api.delete<string>(`/map/post/${id}/delete`);
     return data;
   },
+  getPosts: async (params: GetPostsRequest = {}): Promise<PostsPage> => {
+    const { data } = await api.get<PostsPage>('/map/posts', {
+      params: {
+        limit: params.limit ?? 100,
+        page: params.page ?? 1,
+        ...(params.placeId !== undefined ? { placeId: params.placeId } : {}),
+      },
+    });
+
+    return data;
+  },
   likeRecord: async (payload: RecordLikeRequest): Promise<RecordLikeResponse> => {
     const { data } = await api.post<RecordLikeResponse>('/map/like', payload);
     return data;
   },
-  reportRecord: async (id: number, payload: ReportPostRequest): Promise<string> => {
-    const { data } = await api.post<string>(`/map/post/${id}/report`, payload);
+  unlikeRecord: async (postId: number): Promise<void> => {
+    await api.delete(`/map/like/${postId}`);
+  },
+  likePost: async (postId: number): Promise<PostLikeResponse> => {
+    const { data } = await api.post<PostLikeResponse>('/map/like', {
+      mapImageId: postId,
+    });
     return data;
+  },
+  likeReturnPost: async (
+    postId: number,
+    notificationsId: number
+  ): Promise<PostLikeReturnResponse> => {
+    const { data } = await api.post<PostLikeReturnResponse>(
+      `/map/like/return/${postId}/${notificationsId}`
+    );
+    return data;
+  },
+  unlikePost: async (postId: number): Promise<PostLikeResponse> => {
+    const { data } = await api.delete<PostLikeResponse>(`/map/like/${postId}`);
+    return data;
+  },
+  reportRecord: async (id: number, payload: PostReportRequest): Promise<string> => {
+    const url = `/map/post/${id}/report`;
+
+    if (__DEV__) {
+      console.log('[PostReport] request', { body: payload, method: 'POST', url });
+    }
+
+    try {
+      const response = await api.post<string>(url, payload);
+
+      if (__DEV__) {
+        console.log('[PostReport] response', {
+          data: response.data,
+          status: response.status,
+          url,
+        });
+      }
+
+      return response.data;
+    } catch (error) {
+      if (__DEV__) {
+        if (axios.isAxiosError(error)) {
+          console.log('[PostReport] response error', {
+            data: error.response?.data,
+            message: error.message,
+            status: error.response?.status,
+            url,
+          });
+        } else {
+          console.log('[PostReport] unexpected error', { error, url });
+        }
+      }
+
+      throw error;
+    }
   },
 };

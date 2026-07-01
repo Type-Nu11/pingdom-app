@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AppProvider from './src/app/providers/AppProvider';
 import LanguageGateScreen from './src/features/auth/screens/LanguageGateScreen';
 import LoginScreen from './src/features/auth/screens/LoginScreen';
@@ -20,10 +20,11 @@ type AuthScreen = 'language-gate' | 'welcome' | 'login' | 'signup' | 'phone-veri
 type MainScreen = 'map' | 'place-create' | 'place-detail' | 'profile';
 
 function AppContent() {
-  const { bootstrapAuth, isHydrating, isLoggedIn } = useAuth();
+  const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
   const { pendingRoute, consumePendingNotificationRoute } = useNotificationState();
   const [authScreen, setAuthScreen] = useState<AuthScreen>('language-gate');
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
+  const [openedBookmarkedPlaceId, setOpenedBookmarkedPlaceId] = useState<number | null>(null);
   const [openedNotificationRoute, setOpenedNotificationRoute] = useState<NotificationRoute | null>(null);
 
   useFcmTokenSync(isLoggedIn);
@@ -59,6 +60,16 @@ function AppContent() {
     setOpenedNotificationRoute(null);
   }, [isLoggedIn]);
 
+  const handleLogout = async () => {
+    await logout();
+    setAuthScreen('login');
+    setMainScreen('map');
+    setOpenedNotificationRoute(null);
+  };
+  const clearOpenedBookmarkedPlace = useCallback(() => {
+    setOpenedBookmarkedPlaceId(null);
+  }, []);
+
   if (isHydrating) return null;
 
   return (
@@ -74,9 +85,22 @@ function AppContent() {
             onBack={() => setMainScreen('map')}
           />
         ) : mainScreen === 'profile' ? (
-          <ProfileScreen onBack={() => setMainScreen('map')} />
+          <ProfileScreen
+            onBack={() => {
+              setOpenedBookmarkedPlaceId(null);
+              setMainScreen('map');
+            }}
+            onLogout={handleLogout}
+            onOpenBookmarkedPost={(placeId) => {
+              setOpenedBookmarkedPlaceId(placeId);
+              setMainScreen('map');
+            }}
+          />
         ) : (
           <MapScreen
+            openedBookmarkedPlaceId={openedBookmarkedPlaceId}
+            onClearOpenedBookmarkedPlace={clearOpenedBookmarkedPlace}
+            notificationLikeContext={openedNotificationRoute}
             onCreatePlace={() => setMainScreen('place-create')}
             onOpenProfile={() => setMainScreen('profile')}
           />

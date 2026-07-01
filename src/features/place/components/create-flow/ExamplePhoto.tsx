@@ -11,7 +11,7 @@ const ExamplePhoto = ({ large = false, uri }: ExamplePhotoProps) => (
   <View style={[styles.examplePhoto, large && styles.examplePhotoLarge]}>
     <Image
       source={uri ? { uri } : examplePhotoSource}
-      resizeMode="cover"
+      resizeMode={large ? 'contain' : 'cover'}
       style={styles.image}
     />
   </View>
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   examplePhotoLarge: {
     borderWidth: 0,
     height: '100%',
-    width: '100%',
+    width: '72%',
   },
   image: {
     height: '100%',

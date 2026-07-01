@@ -1,8 +1,8 @@
 import React from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import LikedIcon from '../../../../assets/icons/main/Liked.svg';
-import PlaceRecommendIcon from '../../../../assets/icons/main/placeRecommend.svg';
-import SavedIcon from '../../../../assets/icons/main/Saved.svg';
+import LikedIcon from '../../../assets/icons/main/Liked.svg';
+import PlaceRecommendIcon from '../../../assets/icons/main/placeRecommend.svg';
+import SavedIcon from '../../../assets/icons/main/Saved.svg';
 
 type MapActionButtonsProps = {
   addIconSize: number;

@@ -1,31 +1,55 @@
 export type Place = {
-  address?: string;
-  id: string;
-  latitude?: number;
-  longitude?: number;
+  address: string;
+  id: number;
+  latitude: number;
+  longitude: number;
   name: string;
-  lat: number;
-  lng: number;
-  registrant?: string;
+};
+
+export type PlacesPage = {
+  hasNext: boolean;
+  limit: number;
+  page: number;
+  places: Place[];
+  totalCount: number;
+  totalPages: number;
+};
+
+export type PlaceGrowth = {
+  currentLevelMinPhotoCount: number;
+  level: number;
+  nextLevelMinPhotoCount: number;
+  photoCount: number;
+  progressPercent: number;
+};
+
+export type RecommendedPlace = Place & {
+  distanceMeters: number;
+  placeGrowth: PlaceGrowth;
+  reason: string;
+};
+
+export type PlaceRecommendations = {
+  appliedRadiusKm: number;
+  limit: number;
+  places: RecommendedPlace[];
+  recommendedCount: number;
+  recommendationVersion: string;
+  requestedRadiusKm: number;
 };
 
 export type PlaceCreateDraft = {
   address: string;
+  coordinateToken?: string;
+  kakaoPlaceId?: string;
   latitude: number;
   longitude: number;
   name: string;
 };
 
 export type PlaceUploadPhoto = {
-  assetId?: string;
   name?: string;
   type?: string;
-  uri: string;
-};
-
-export type PlaceLibraryPhoto = {
-  filename: string;
-  id: string;
   uri: string;
 };
 
@@ -37,32 +61,4 @@ export type MapMarker = {
   lat: number;
   lng: number;
   markerType?: 'default' | 'hot';
-};
-
-export type HotPlace = {
-  id: string;
-  location: string;
-  rank: number;
-  username: string;
-};
-
-export type MarkerPreviewFeedItem = {
-  caption: string;
-  imageUrls?: string[];
-  id: string;
-  likeCount: string;
-  placeName: string;
-  postedAt: string;
-  username: string;
-};
-
-export type MarkerPreview = {
-  firstRegistrant: string;
-  feeds: MarkerPreviewFeedItem[];
-  id: string;
-  lat: number;
-  locationLabel: string;
-  lng: number;
-  title: string;
-  updates: string[];
 };

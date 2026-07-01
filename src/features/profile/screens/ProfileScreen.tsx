@@ -1,26 +1,35 @@
 import { useState } from 'react';
-import { Alert, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import useAuth from '../../auth/hooks/useAuth';
+import { Alert, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import ArchiveDetailView from '../components/ArchiveDetailView';
 import LikesBottomSheet from '../components/LikesBottomSheet';
 import ProfileEditView from '../components/ProfileEditView';
 import ProfileGallery from '../components/ProfileGallery';
 import ProfileHeader from '../components/ProfileHeader';
 import { profileImageSource, savedProfileImageSource } from '../constants/profileMock';
+import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
 
 type ProfileScreenProps = {
   onBack: () => void;
+  onLogout: () => Promise<void>;
+  onOpenBookmarkedPost: (placeId: number) => void;
 };
 
 type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
 type ProfileTab = 'liked' | 'saved';
 
-const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
+const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
-  const { logout } = useAuth();
   const [mode, setMode] = useState<ProfileMode>('profile');
   const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
   const [likesOpen, setLikesOpen] = useState(false);
+  const isSavedPostsTab = mode === 'profile' && activeTab === 'saved';
+  const {
+    isError: isBookmarkedPostsError,
+    isLoading: isBookmarkedPostsLoading,
+    posts: bookmarkedPosts,
+    refetch: refetchBookmarkedPosts,
+  } = useBookmarkedPosts({ enabled: isSavedPostsTab });
   const maxContentWidth = Math.min(width, 560);
   const gridItemSize = Math.floor(maxContentWidth / 3);
 
@@ -43,19 +52,20 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
     onBack();
   };
 
-  const isArchiveDetail = mode === 'archive-detail';
   const handleLogout = () => {
-    Alert.alert('로그아웃', '현재 계정에서 로그아웃할까요?', [
+    Alert.alert('로그아웃할까요?', '다시 이용하려면 로그인해야 합니다.', [
       { text: '취소', style: 'cancel' },
       {
         text: '로그아웃',
         style: 'destructive',
         onPress: () => {
-          void logout();
+          void onLogout();
         },
       },
     ]);
   };
+
+  const isArchiveDetail = mode === 'archive-detail';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -81,16 +91,21 @@ const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
               isArchive={mode === 'archive'}
               activeTab={activeTab}
               onChangeTab={setActiveTab}
-              onLogout={handleLogout}
               onOpenArchive={() => setMode('archive')}
               onOpenEdit={() => setMode('profile-edit')}
+              onLogout={handleLogout}
               showTabs={mode === 'profile'}
             />
             <ProfileGallery
+              bookmarkedPosts={isSavedPostsTab ? bookmarkedPosts : undefined}
               isArchive={mode === 'archive'}
+              isBookmarkedPostsError={isSavedPostsTab && isBookmarkedPostsError}
+              isBookmarkedPostsLoading={isSavedPostsTab && isBookmarkedPostsLoading}
               imageSource={activeTab === 'saved' ? savedProfileImageSource : profileImageSource}
               itemSize={gridItemSize}
               onArchiveItemPress={() => setMode('archive-detail')}
+              onBookmarkedPostPress={(post) => onOpenBookmarkedPost(post.placeId)}
+              onRetryBookmarkedPosts={() => void refetchBookmarkedPosts()}
             />
           </>
         )}

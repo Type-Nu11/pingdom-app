@@ -1,21 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
-import {
-  CategoryChips,
-  KakaoMapCard,
-  type KakaoMapMarkerPressEvent,
-  MapActionButtons,
-  MapBottomSheet,
-  MapSearchBar,
-  MarkerPreviewCard,
-} from '../components/map';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import CategoryChips from '../components/CategoryChips';
+import KakaoMapCard, { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
+import MapActionButtons from '../components/MapActionButtons';
+import MapBottomSheet from '../components/MapBottomSheet';
+import MarkerPreviewCard from '../components/MarkerPreviewCard';
+import MapSearchBar from '../components/MapSearchBar';
 import { mapCategories } from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
@@ -27,18 +25,86 @@ import {
 } from '../constants/mapLayout';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
-import useMapPlacesData from '../hooks/useMapPlacesData';
+import { usePlaces } from '../hooks/usePlaces';
+import { usePostLike } from '../../record/hooks/usePostLike';
+import { useBookmarkedPosts, usePostBookmark } from '../../record/hooks/usePostBookmark';
+import { usePostReport } from '../../record/hooks/usePostReport';
+import { usePlacePosts } from '../../record/hooks/usePlacePosts';
+import { useProfile } from '../../profile/hooks/useProfile';
+import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
+import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
+import type { MapMarker, RecommendedPlace } from '../model/place.types';
 
 type MapScreenProps = {
+  notificationLikeContext?: {
+    notificationsId?: string;
+    postId?: string;
+  } | null;
   onCreatePlace?: () => void;
+  onClearOpenedBookmarkedPlace?: () => void;
   onOpenProfile?: () => void;
+  openedBookmarkedPlaceId?: number | null;
 };
 
-export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenProps) {
+export default function MapScreen({
+  notificationLikeContext,
+  onCreatePlace,
+  onClearOpenedBookmarkedPlace,
+  onOpenProfile,
+  openedBookmarkedPlaceId,
+}: MapScreenProps) {
+  const [hiddenPostIds, setHiddenPostIds] = useState<Record<string, boolean>>({});
+  const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
+  const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
-  const { hotPlaces, mapMarkers, nearbyMarkerPreviews } = useMapPlacesData(selectedMarkerId);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
+  const { isError: isPlacesError, markers, places } = usePlaces();
+  const {
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    places: recommendedPlaces,
+    recommendationVersion,
+  } = usePlaceRecommendations({
+    latitude: userLat,
+    longitude: userLng,
+  });
+  const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const { bookmarkedPlaceIds } = useBookmarkedPosts();
+  const { togglePostBookmark } = usePostBookmark();
+  const { togglePostLike } = usePostLike();
+  const { reportPost } = usePostReport();
+  const { profile } = useProfile();
+  const selectedPlace = useMemo(
+    () => (
+      places.find((place) => String(place.id) === selectedMarkerId)
+      ?? recommendedPlaces.find((place) => String(place.id) === selectedMarkerId)
+      ?? null
+    ),
+    [places, recommendedPlaces, selectedMarkerId]
+  );
+  const mapMarkers = useMemo<MapMarker[]>(() => {
+    const placeMarkerIds = new Set(markers.map((marker) => marker.id));
+    const recommendationMarkers = (recommendedPlaces ?? [])
+      .filter((place) => !placeMarkerIds.has(String(place.id)))
+      .map((place) => ({
+        category: 'food' as const,
+        id: String(place.id),
+        lat: place.latitude,
+        lng: place.longitude,
+        markerType: 'hot' as const,
+      }));
+
+    return [...markers, ...recommendationMarkers];
+  }, [markers, recommendedPlaces]);
+  const selectedPlaceId = selectedPlace?.id
+    ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
+  const {
+    isError: isPostsError,
+    isLoading: isPostsLoading,
+    posts: selectedPlacePosts,
+    refetch: refetchSelectedPlacePosts,
+  } = usePlacePosts(Number.isFinite(selectedPlaceId) ? selectedPlaceId : null);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -59,12 +125,46 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
   const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
   const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
-  const markerCardWidth = Math.round(clamp(width - 64, 292, 338));
+  const markerCardWidth = Math.round(clamp(width - 44, 338, 380));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
+  useEffect(() => {
+    if (openedBookmarkedPlaceId !== undefined && openedBookmarkedPlaceId !== null) {
+      setSelectedMarkerId(String(openedBookmarkedPlaceId));
+      onClearOpenedBookmarkedPlace?.();
+    }
+  }, [onClearOpenedBookmarkedPlace, openedBookmarkedPlaceId]);
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
     setSelectedMarkerId(event.nativeEvent.markerId);
+  };
+  const handleRecommendedPlacePress = (place: RecommendedPlace) => {
+    setSelectedMarkerId(String(place.id));
+
+    void recordRecommendationClick({
+      placeId: place.id,
+      recommendationVersion: recommendationVersion ?? 'place-rec-v1',
+    }).catch(() => undefined);
+  };
+  const handleReport = async (postId: number, reason: string, hideAfterReport: boolean) => {
+    const postKey = String(postId);
+
+    if (reportPendingPostIds[postKey] || reportedPostIds[postKey]) {
+      return;
+    }
+
+    setReportPendingPostIds((prev) => ({ ...prev, [postKey]: true }));
+
+    try {
+      await reportPost(postId, reason);
+      setReportedPostIds((prev) => ({ ...prev, [postKey]: true }));
+
+      if (hideAfterReport) {
+        setHiddenPostIds((prev) => ({ ...prev, [postKey]: true }));
+      }
+    } finally {
+      setReportPendingPostIds((prev) => ({ ...prev, [postKey]: false }));
+    }
   };
 
   return (
@@ -105,6 +205,11 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             topPaddingX={topPaddingX}
             uiScale={uiScale}
           />
+          {isPlacesError ? (
+            <View style={styles.mapStatusPill}>
+              <Text style={styles.mapStatusText}>장소를 불러오지 못했어요</Text>
+            </View>
+          ) : null}
         </View>
       </SafeAreaView>
 
@@ -123,20 +228,20 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
       <MapBottomSheet
         height={sheetExpandedHeight}
         isExpanded={isExpanded}
+        isRecommendationsError={isRecommendationsError}
+        isRecommendationsLoading={isRecommendationsLoading}
+        onPlacePress={handleRecommendedPlacePress}
         onToggle={toggleSheet}
         panHandlers={panHandlers}
-        places={hotPlaces}
+        places={recommendedPlaces}
         sheetTranslateY={sheetTranslateY}
       />
 
-      {selectedMarkerId && nearbyMarkerPreviews.length > 0 && (
+      {selectedMarkerId && (
         <View
           style={[
             styles.markerPreviewLayer,
-            {
-              paddingBottom: Math.round(clamp(26 * uiScale, 18, 26)),
-              paddingTop: Math.round(clamp(54 * uiScale, 42, 54)),
-            },
+            { paddingHorizontal: Math.round(clamp(22 * uiScale, 14, 22)) },
           ]}
           pointerEvents="box-none"
         >
@@ -147,12 +252,22 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
-            cardWidth={markerCardWidth}
-            items={nearbyMarkerPreviews}
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
+            hiddenPostIds={hiddenPostIds}
+            isError={isPostsError}
+            isLoading={isPostsLoading}
+            notificationLikeContext={notificationLikeContext}
+            placeName={selectedPlace?.name}
+            posts={selectedPlacePosts}
+            width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
-            onSelectMarker={setSelectedMarkerId}
-            selectedMarkerId={selectedMarkerId}
-            viewportWidth={width}
+            onRetry={() => void refetchSelectedPlacePosts()}
+            onToggleBookmark={togglePostBookmark}
+            onReport={handleReport}
+            onToggleLike={togglePostLike}
+            reportedPostIds={reportedPostIds}
+            reportPendingPostIds={reportPendingPostIds}
+            translationTargetLanguage={profile?.language || 'ko'}
           />
         </View>
       )}
@@ -174,13 +289,35 @@ const styles = StyleSheet.create({
   },
   markerPreviewLayer: {
     ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
     elevation: 100,
     justifyContent: 'flex-start',
+    paddingTop: 62,
     zIndex: 100,
   },
   markerPreviewBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.22)',
+  },
+  mapStatusPill: {
+    alignSelf: 'center',
+    backgroundColor: '#fff',
+    borderColor: '#ececf0',
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  mapStatusText: {
+    color: '#555965',
+    fontSize: 13,
+    fontWeight: '700',
   },
   safeArea: {
     ...StyleSheet.absoluteFillObject,
