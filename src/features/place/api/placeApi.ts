@@ -52,7 +52,7 @@ export type CreatePlaceResponse = {
 export type CoordinateTokenRequest = {
   baseLatitude: number;
   baseLongitude: number;
-  kakaoPlaceId: string;
+  kakaoPlaceId?: string;
 };
 
 export type CoordinateTokenResponse = {
@@ -67,7 +67,7 @@ export type UploadPlaceWithTokenRequest = {
   category: string;
   coordinateToken: string;
   imageUrl?: string;
-  kakaoPlaceId: string;
+  kakaoPlaceId?: string;
   name: string;
 };
 

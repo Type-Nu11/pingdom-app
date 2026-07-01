@@ -210,29 +210,29 @@ async function resolvePlaceForRecord({
     return { place: existingPlace };
   }
 
-  if (draft.kakaoPlaceId) {
-    if (draft.coordinateToken) {
-      return {
+  if (draft.coordinateToken) {
+    return {
+      kakaoPlaceId: draft.kakaoPlaceId,
+      place: await placeApi.createPlaceWithCoordinateToken({
+        address: draft.address,
+        category,
+        coordinateToken: draft.coordinateToken,
+        imageUrl: photo.uri,
         kakaoPlaceId: draft.kakaoPlaceId,
-        place: await placeApi.createPlaceWithCoordinateToken({
-          address: draft.address,
-          category,
-          coordinateToken: draft.coordinateToken,
-          imageUrl: photo.uri,
-          kakaoPlaceId: draft.kakaoPlaceId,
-          name: draft.name,
-        }),
-        validPlace: true,
-      };
-    }
+        name: draft.name,
+      }),
+      validPlace: draft.kakaoPlaceId ? true : undefined,
+    };
+  }
 
+  if (draft.kakaoPlaceId) {
     return {
       kakaoPlaceId: draft.kakaoPlaceId,
       validPlace: true,
     };
   }
 
-  throw new Error('KAKAO_PLACE_ID_REQUIRED');
+  throw new Error('PLACE_COORDINATE_TOKEN_REQUIRED');
 }
 
 async function assertUserCanUploadPlacePost(placeId: number) {
