@@ -68,12 +68,6 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   };
 
   const handleSelectLocation = async (draft: PlaceCreateDraft) => {
-    if (!draft.kakaoPlaceId) {
-      setSelectedPlaceDraft(draft);
-      setStep(2);
-      return;
-    }
-
     try {
       const coordinate = await createCoordinateToken({
         baseLatitude: draft.latitude,

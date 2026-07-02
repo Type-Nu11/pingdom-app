@@ -20,6 +20,9 @@ type Coordinate = {
 };
 
 const COORDINATE_MATCH_THRESHOLD = 0.0001;
+const PLACE_SELECT_PLACEHOLDER = '장소를 검색하거나 지도를 움직여 선택해 주세요';
+const SEARCH_EMPTY_MESSAGE = '검색 결과가 없습니다';
+const SEARCH_FAILED_MESSAGE = '주소 검색에 실패했습니다';
 
 function isSameCoordinate(a: Coordinate, b: Coordinate) {
   return (
@@ -38,13 +41,12 @@ const LocationStep = ({
   const [addressQuery, setAddressQuery] = useState('');
   const [placeName, setPlaceName] = useState(initialValue?.name ?? '');
   const [selectedAddress, setSelectedAddress] = useState(
-    initialValue?.address ?? '장소를 검색해 선택해 주세요'
+    initialValue?.address ?? PLACE_SELECT_PLACEHOLDER
   );
   const [selectedKakaoPlaceId, setSelectedKakaoPlaceId] = useState(initialValue?.kakaoPlaceId);
   const [selectedPlaceCoordinate, setSelectedPlaceCoordinate] = useState<Coordinate | null>(
     initialValue ? { lat: initialValue.latitude, lng: initialValue.longitude } : null
   );
-  const [detailAddress, setDetailAddress] = useState('');
   const [mapCenter, setMapCenter] = useState({
     lat: initialValue?.latitude ?? DEFAULT_PLACE_COORDINATE.lat,
     lng: initialValue?.longitude ?? DEFAULT_PLACE_COORDINATE.lng,
@@ -61,13 +63,10 @@ const LocationStep = ({
     searchResults,
     searchStatusMessage,
   } = useKakaoLocalSearch();
-  const isSelectedAddressInvalid = selectedAddress === '검색 결과가 없습니다'
-    || selectedAddress === '주소 검색에 실패했습니다'
-    || selectedAddress === '장소를 검색해 선택해 주세요';
-  const isSelectionDisabled = !placeName.trim()
-    || !selectedKakaoPlaceId
-    || isSelectedAddressInvalid
-    || isSubmitting;
+  const isSelectedAddressInvalid = selectedAddress === SEARCH_EMPTY_MESSAGE
+    || selectedAddress === SEARCH_FAILED_MESSAGE
+    || selectedAddress === PLACE_SELECT_PLACEHOLDER;
+  const isSelectionDisabled = isSelectedAddressInvalid || isSubmitting;
   const selectableSearchResults = searchResults.filter((result) => result.kakaoPlaceId);
 
   const applySearchResult = (result: KakaoLocalSearchItem) => {
@@ -86,7 +85,7 @@ const LocationStep = ({
     setSelectedPlaceCoordinate(nextCoordinate);
     setSelectedAddress(nextAddress);
     setSelectedKakaoPlaceId(result.kakaoPlaceId);
-    setPlaceName(result.name || nextAddress);
+    setPlaceName(result.name);
     clearSearchResults();
   };
 
@@ -109,6 +108,7 @@ const LocationStep = ({
       shouldUseAddressAsPlaceName = false;
     } else if (selectedPlaceCoordinate && !isSameCoordinate(nextCoordinate, selectedPlaceCoordinate)) {
       setAddressQuery('');
+      setSelectedKakaoPlaceId(undefined);
       setSelectedPlaceCoordinate(null);
       shouldUseAddressAsPlaceName = true;
     }
@@ -117,9 +117,8 @@ const LocationStep = ({
 
     if (nextAddress) {
       setSelectedAddress(nextAddress);
-
       if (shouldUseAddressAsPlaceName) {
-        setPlaceName(nextAddress);
+        setPlaceName('');
       }
     }
   };
@@ -132,13 +131,12 @@ const LocationStep = ({
   };
 
   const handleSelectLocation = () => {
-    const trimmedName = placeName.trim();
-    const trimmedDetailAddress = detailAddress.trim();
+    const trimmedName = placeName.trim() || selectedAddress.trim();
     if (!trimmedName || isSelectionDisabled) {
       return;
     }
     void onNext({
-      address: trimmedDetailAddress ? selectedAddress + ' ' + trimmedDetailAddress : selectedAddress,
+      address: selectedAddress,
       kakaoPlaceId: selectedKakaoPlaceId,
       latitude: selectedCoordinate.lat,
       longitude: selectedCoordinate.lng,
@@ -222,19 +220,23 @@ const LocationStep = ({
         />
       </View>
       <View style={styles.locationPanel}>
+        <View style={styles.selectedAddressRow} pointerEvents="none">
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.selectedAddressText,
+              isSelectedAddressInvalid && styles.selectedAddressPlaceholder,
+            ]}
+          >
+            {selectedAddress}
+          </Text>
+        </View>
         <TextInput
           style={styles.placeNameInput}
-          placeholder="장소 이름을 입력해 주세요"
+          placeholder="(선택) 상세 주소 입력"
           placeholderTextColor="#777a84"
           value={placeName}
           onChangeText={setPlaceName}
-        />
-        <TextInput
-          style={styles.detailInput}
-          placeholder="(선택) 상세 주소 입력"
-          placeholderTextColor="#777a84"
-          value={detailAddress}
-          onChangeText={setDetailAddress}
         />
         <Pressable
           accessibilityRole="button"
@@ -247,9 +249,6 @@ const LocationStep = ({
         >
           <Text style={styles.primaryButtonText}>{isSubmitting ? '확인 중...' : '선택'}</Text>
         </Pressable>
-        {!selectedKakaoPlaceId ? (
-          <Text style={styles.selectionHint}>검색 결과에서 장소를 선택한 뒤 지도로 위치를 조정할 수 있어요.</Text>
-        ) : null}
       </View>
     </View>
   );
@@ -342,7 +341,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   mapPreview: {
-    marginTop: 18,
+    marginTop: 16,
     overflow: 'hidden',
   },
   map: {
@@ -359,38 +358,42 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -27.5 }, { translateY: -35.5 }],
   },
   locationPanel: {
-    backgroundColor: '#fafafa',
+    backgroundColor: '#fff',
     paddingHorizontal: 34,
+    paddingBottom: 30,
     paddingTop: 22,
+  },
+  selectedAddressPlaceholder: {
+    color: '#777a84',
+  },
+  selectedAddressRow: {
+    height: 34,
+    justifyContent: 'center',
+  },
+  selectedAddressText: {
+    color: '#3e414b',
+    fontSize: 20,
+    fontWeight: '500',
+    lineHeight: 28,
   },
   placeNameInput: {
     borderColor: '#dedfe4',
-    borderRadius: 13,
+    borderRadius: 15,
     borderWidth: 1,
     color: '#1d2028',
-    fontSize: 17,
-    fontWeight: '700',
-    height: 54,
-    marginBottom: 12,
-    paddingHorizontal: 20,
-  },
-  detailInput: {
-    borderColor: '#dedfe4',
-    borderRadius: 13,
-    borderWidth: 1,
-    color: '#1d2028',
-    fontSize: 17,
-    fontWeight: '500',
-    height: 54,
+    fontSize: 20,
+    fontWeight: '600',
+    height: 58,
+    marginTop: 14,
     paddingHorizontal: 20,
   },
   primaryButton: {
     alignItems: 'center',
     backgroundColor: '#ff1956',
-    borderRadius: 12,
-    height: 54,
+    borderRadius: 13,
+    height: 58,
     justifyContent: 'center',
-    marginTop: 14,
+    marginTop: 16,
   },
   primaryButtonDisabled: {
     opacity: 0.55,
@@ -399,14 +402,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 20,
     fontWeight: '900',
-  },
-  selectionHint: {
-    color: '#777a84',
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 16,
-    marginTop: 8,
-    textAlign: 'center',
   },
 });
 
