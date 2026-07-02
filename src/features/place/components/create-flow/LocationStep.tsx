@@ -120,9 +120,6 @@ const LocationStep = ({
       if (shouldUseAddressAsPlaceName) {
         setPlaceName('');
       }
-    } else if (shouldUseAddressAsPlaceName) {
-      setSelectedAddress(SEARCH_FAILED_MESSAGE);
-      setPlaceName('');
     }
   };
 
