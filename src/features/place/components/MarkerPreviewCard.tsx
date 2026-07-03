@@ -219,6 +219,7 @@ const MarkerPreviewCard = ({
   }, null);
   const firstUploaderName = firstPost?.username;
   const visiblePosts = posts.filter((post) => !hiddenPostIds[String(post.id)]);
+  const hiddenPostCount = posts.length - visiblePosts.length;
 
   useEffect(() => () => {
     isMountedRef.current = false;
@@ -565,8 +566,17 @@ const MarkerPreviewCard = ({
           </View>
         ) : visiblePosts.length === 0 ? (
           <View style={styles.stateContainer}>
-            <Text style={styles.stateTitle}>{placeDisplayName}에 아직 게시글이 없어요</Text>
-            <Text style={styles.stateText}>첫 사진을 올려 장소를 채워보세요</Text>
+            {hiddenPostCount > 0 ? (
+              <>
+                <Text style={styles.stateTitle}>표시할 게시글이 없어요</Text>
+                <Text style={styles.stateText}>숨긴 게시글은 이 기기에서 다시 표시되지 않아요</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.stateTitle}>{placeDisplayName}에 아직 게시글이 없어요</Text>
+                <Text style={styles.stateText}>첫 사진을 올려 장소를 채워보세요</Text>
+              </>
+            )}
           </View>
         ) : visiblePosts.map((item) => {
           const feedId = String(item.id);
