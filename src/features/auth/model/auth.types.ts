@@ -54,3 +54,8 @@ export type PhoneVerifyRequest = {
   phoneNumber: string;
   code: string;
 };
+
+export type EmailVerifyRequest = {
+  email: string;
+  code: string;
+};
