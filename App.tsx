@@ -103,7 +103,12 @@ function AppContent() {
                 />
               );
             case 'login':
-              return <LoginFormScreen onBack={() => setAppScreen('onboarding')} />;
+              return (
+                <LoginFormScreen
+                  onBack={() => setAppScreen('onboarding')}
+                  onSignup={() => setAppScreen('signup-details')}
+                />
+              );
             case 'signup-details':
               return (
                 <SignUpDetailsScreen

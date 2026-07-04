@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 const PINK = '#FF1956';
@@ -13,17 +13,13 @@ type Props = {
 };
 
 export default function LogInKrScreen({ onBack, onSignup, onLogin }: Props) {
+  const { width, height } = useWindowDimensions();
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/bg_ellipse_top.png')}
-        style={styles.blobTop}
-        resizeMode="contain"
-      />
-      <Image
-        source={require('../../assets/images/bg_ellipse_bottom.png')}
-        style={styles.blobBottom}
-        resizeMode="contain"
+        source={require('../../assets/images/pingDomBackGround.png')}
+        style={[styles.background, { width, height }]}
+        resizeMode="stretch"
       />
 
       <View style={styles.header}>
@@ -68,19 +64,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8F8',
     overflow: 'hidden',
   },
-  blobTop: {
+  background: {
     position: 'absolute',
-    width: 489,
-    height: 227,
-    left: -142,
-    top: 133,
-  },
-  blobBottom: {
-    position: 'absolute',
-    width: 528,
-    height: 212,
-    left: -3,
-    top: 483,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   header: {
     height: 105,
