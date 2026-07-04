@@ -1,8 +1,9 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import ProgressBar from './components/ProgressBar';
+import { colors } from '../../styles/colors';
 
-const PINK = '#FF1956';
+const PINK = colors.primaryNormal;
 
 const BACK_SVG_PATH = 'M8 1L1 9L8 17';
 
@@ -48,7 +49,7 @@ export default function SelectFirstScreen({ onNext }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: colors.bgAssistive,
     overflow: 'hidden',
   },
   background: {
@@ -93,13 +94,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0C0C0D',
+    color: colors.labelStrong,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#5E5E66',
+    color: colors.labelAlternative,
     textAlign: 'center',
     lineHeight: 20.8,
   },
@@ -114,6 +115,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.white,
   },
 });

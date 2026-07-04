@@ -8,8 +8,9 @@ import OtherIcon from '../../assets/icons/other.svg';
 import ProgressBar from './components/ProgressBar';
 import { useTranslation } from 'react-i18next';
 import type { Gender } from './types';
+import { colors } from '../../styles/colors';
 
-const BG = '#F8F8F8';
+const BG = colors.bgAssistive;
 
 type Props = {
   onBack: () => void;
@@ -77,8 +78,8 @@ export default function SelectGenderScreen({ onBack, onNext }: Props) {
 }
 
 function GenderIcon({ code, isSelected }: { code: Gender; isSelected: boolean }) {
-  const bg = isSelected ? '#FF1956' : '#FFFFFF';
-  const color = isSelected ? '#FFFFFF' : '#3B3B40';
+  const bg = isSelected ? colors.primaryNormal : colors.white;
+  const color = isSelected ? colors.white : colors.labelNeutral;
 
   if (code === 'male') {
     return (
@@ -119,14 +120,14 @@ const styles = StyleSheet.create({
     paddingBottom: 52,
   },
   titleGroup: { gap: 2, marginBottom: 18 },
-  title: { fontSize: 32, fontWeight: '700', color: '#000000', lineHeight: 41.6 },
-  subtitle: { fontSize: 16, fontWeight: '500', color: '#5E5E66', lineHeight: 20.8 },
+  title: { fontSize: 32, fontWeight: '700', color: colors.labelBlack, lineHeight: 41.6 },
+  subtitle: { fontSize: 16, fontWeight: '500', color: colors.labelAlternative, lineHeight: 20.8 },
   options: { gap: 20 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F2F2F3',
+    backgroundColor: colors.fillNeutral,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: 'transparent',
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
   },
   cardSelected: {
     backgroundColor: 'rgba(255, 74, 117, 0.36)',
-    borderColor: '#FF4A75',
+    borderColor: colors.primaryLight,
   },
   cardLeft: { flexDirection: 'row', alignItems: 'center', gap: 20 },
   iconCircle: {
@@ -145,28 +146,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardText: { fontSize: 20, fontWeight: '700', color: '#0C0C0D' },
-  cardTextSelected: { color: '#FFFFFF' },
+  cardText: { fontSize: 20, fontWeight: '700', color: colors.labelStrong },
+  cardTextSelected: { color: colors.white },
   checkbox: {
     width: 34,
     height: 34,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#BFC1C1',
+    borderColor: colors.placeholder,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxSelected: {
-    backgroundColor: '#FF1956',
-    borderColor: '#FF1956',
+    backgroundColor: colors.primaryNormal,
+    borderColor: colors.primaryNormal,
   },
   spacer: { flex: 1 },
   button: {
     height: 64,
-    backgroundColor: '#FF1956',
+    backgroundColor: colors.primaryNormal,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: { fontSize: 20, fontWeight: '700', color: '#FFFFFF' },
+  buttonText: { fontSize: 20, fontWeight: '700', color: colors.white },
 });

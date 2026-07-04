@@ -12,11 +12,12 @@ import { SvgXml } from 'react-native-svg';
 import useEmailVerify from '../../hooks/useEmailVerify';
 import useLogin from '../../hooks/useLogin';
 import ProgressDots from './components/ProgressDots';
+import { colors } from '../../../../styles/colors';
 
 const ESCAPE_SVG = `<svg width="12" height="21" viewBox="0 0 12 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.25 1.25L1.25 10.25L10.25 19.25" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-const PINK = '#FF1956';
-const BG = '#F8F8F8';
+const PINK = colors.primaryNormal;
+const BG = colors.bgAssistive;
 
 type Props = {
   email: string;
@@ -68,7 +69,7 @@ export default function SignUpEmailVerifyScreen({ email, username, password, onB
             <TextInput
               style={styles.input}
               placeholder="인증 코드 6자리"
-              placeholderTextColor="#BFC1C1"
+              placeholderTextColor={colors.placeholder}
               value={code}
               onChangeText={setCode}
               keyboardType="number-pad"
@@ -116,24 +117,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   topContent: { width: '100%', gap: 16 },
-  title: { fontSize: 32, fontWeight: '700', color: '#0C0C0D' },
-  desc: { fontSize: 16, fontWeight: '500', color: '#5E5E66', lineHeight: 22 },
+  title: { fontSize: 32, fontWeight: '700', color: colors.labelStrong },
+  desc: { fontSize: 16, fontWeight: '500', color: colors.labelAlternative, lineHeight: 22 },
   email: { color: PINK, fontWeight: '700' },
   inputWrap: {
     borderBottomWidth: 2,
-    borderBottomColor: '#BFC1C1',
+    borderBottomColor: colors.placeholder,
     paddingTop: 8,
     paddingBottom: 6,
   },
   input: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0C0C0D',
+    color: colors.labelStrong,
     height: 44,
     padding: 0,
     letterSpacing: 8,
   },
-  errorText: { fontSize: 13, color: '#EE2B2B' },
+  errorText: { fontSize: 13, color: colors.error },
   button: {
     width: '100%',
     height: 64,
@@ -142,8 +143,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonActive: { backgroundColor: PINK },
-  buttonDisabled: { backgroundColor: '#D1D4D5' },
+  buttonDisabled: { backgroundColor: colors.disabledBg },
   buttonText: { fontSize: 20, fontWeight: '500' },
-  buttonTextActive: { color: '#FFFFFF' },
-  buttonTextDisabled: { color: '#5E5E66' },
+  buttonTextActive: { color: colors.white },
+  buttonTextDisabled: { color: colors.labelAlternative },
 });

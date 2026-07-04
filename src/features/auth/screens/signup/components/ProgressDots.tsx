@@ -1,8 +1,9 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { colors } from '../../../../../styles/colors';
 
-const PINK = '#FF1956';
-const INACTIVE = '#E4E4E5';
+const PINK = colors.primaryNormal;
+const INACTIVE = colors.fillAlternative;
 
 type ProgressDotsProps = {
   total: number;

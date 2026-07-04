@@ -12,9 +12,10 @@ import FlagVN from '../../assets/flags/vn.svg';
 import ProgressBar from './components/ProgressBar';
 import { useTranslation } from 'react-i18next';
 import type { Country } from './types';
+import { colors } from '../../styles/colors';
 
-const PINK = '#FF1956';
-const BG = '#F8F8F8';
+const PINK = colors.primaryNormal;
+const BG = colors.bgAssistive;
 
 type FlagComponent = React.FC<{ width?: number; height?: number }>;
 
@@ -35,7 +36,7 @@ type Props = {
 export default function SelectCountryScreen({ onBack, onNext }: Props) {
   const [selected, setSelected] = useState<Country>('US');
   const [query, setQuery] = useState('');
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tr = {
     title: t('selectCountry.title'),
     subtitle: t('selectCountry.subtitle'),
@@ -43,7 +44,10 @@ export default function SelectCountryScreen({ onBack, onNext }: Props) {
     search: t('selectCountry.search'),
   };
 
-  const countries = COUNTRIES.map((c) => ({ ...c, label: t(`countries.${c.countryKey}`) }));
+  const collator = new Intl.Collator(i18n.language);
+  const countries = COUNTRIES.map((c) => ({ ...c, label: t(`countries.${c.countryKey}`) })).sort(
+    (a, b) => collator.compare(a.label, b.label)
+  );
   const filtered = countries.filter((c) =>
     c.label.toLowerCase().includes(query.toLowerCase())
   );
@@ -69,13 +73,17 @@ export default function SelectCountryScreen({ onBack, onNext }: Props) {
           <TextInput
             style={styles.searchInput}
             placeholder={tr.search}
-            placeholderTextColor="#767680"
+            placeholderTextColor={colors.labelAssistive}
             value={query}
             onChangeText={setQuery}
           />
         </View>
 
-        <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
           {filtered.map(({ code, Flag, label }) => {
             const isSelected = selected === code;
             return (
@@ -98,7 +106,7 @@ export default function SelectCountryScreen({ onBack, onNext }: Props) {
           })}
         </ScrollView>
 
-        <Pressable style={styles.button} onPress={() => onNext(selected)}>
+        <Pressable style={[styles.button, styles.buttonSpacing]} onPress={() => onNext(selected)}>
           <Text style={styles.buttonText}>{tr.button}</Text>
         </Pressable>
       </View>
@@ -122,34 +130,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 52,
-    gap: 18,
   },
-  titleGroup: { gap: 2 },
-  title: { fontSize: 32, fontWeight: '700', color: '#000000', lineHeight: 41.6 },
-  subtitle: { fontSize: 16, fontWeight: '500', color: '#5E5E66', lineHeight: 20.8 },
+  titleGroup: { gap: 0, marginBottom: 18 },
+  title: { fontSize: 32, fontWeight: '700', color: colors.labelBlack, lineHeight: 41.6 },
+  subtitle: { fontSize: 16, fontWeight: '500', color: colors.labelAlternative, lineHeight: 20.8 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
-    backgroundColor: '#E4E4E5',
+    backgroundColor: colors.fillAlternative,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 15,
+    marginBottom: 18,
   },
-  searchInput: { flex: 1, fontSize: 20, fontWeight: '500', color: '#0C0C0D', padding: 0 },
+  searchInput: { flex: 1, fontSize: 20, fontWeight: '500', color: colors.labelStrong, padding: 0 },
   list: { flex: 1 },
+  listContent: { gap: 18 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 60,
+    height: 62,
     paddingHorizontal: 16,
     borderRadius: 16,
-    marginBottom: 18,
   },
-  itemSelected: { backgroundColor: 'rgba(255, 25, 86, 0.08)' },
+  itemSelected: { backgroundColor: colors.primarySoft },
   itemLeft: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-  itemText: { fontSize: 20, fontWeight: '700', color: '#3B3B40' },
+  itemText: { fontSize: 20, fontWeight: '700', color: colors.labelNeutral },
   checkCircle: {
     width: 30,
     height: 30,
@@ -165,5 +173,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: { fontSize: 20, fontWeight: '700', color: '#FFFFFF' },
+  buttonSpacing: { marginTop: 20 },
+  buttonText: { fontSize: 20, fontWeight: '700', color: colors.white },
 });

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { colors } from '../../styles/colors';
 
-const PINK = '#FF1956';
+const PINK = colors.primaryNormal;
 
 const BACK_SVG = `<svg width="9" height="18" viewBox="0 0 9 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1L1 9L8 17" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -61,7 +62,7 @@ export default function LogInKrScreen({ onBack, onSignup, onLogin }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: colors.bgAssistive,
     overflow: 'hidden',
   },
   background: {
@@ -107,13 +108,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0C0C0D',
+    color: colors.labelStrong,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#5E5E66',
+    color: colors.labelAlternative,
     textAlign: 'center',
     lineHeight: 20.8,
   },
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#3B3B40',
+    color: colors.labelNeutral,
   },
   loginLink: {
     fontSize: 16,
@@ -148,6 +149,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.white,
   },
 });

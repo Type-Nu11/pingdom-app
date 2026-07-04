@@ -11,11 +11,12 @@ import {
 import EscapeIcon from '../../assets/icons/escape.svg';
 import ProgressBar from './components/ProgressBar';
 import { useTranslation } from 'react-i18next';
+import { colors } from '../../styles/colors';
 
-const PINK = '#FF1956';
-const PINK_ALT = '#FF4A75';
-const BG = '#F8F8F8';
-const WHEEL_BG = '#F2F2F3';
+const PINK = colors.primaryNormal;
+const PINK_ALT = colors.primaryLight;
+const BG = colors.bgAssistive;
+const WHEEL_BG = colors.fillNeutral;
 
 const ITEM_HEIGHT = 60;
 const VISIBLE = 5;
@@ -45,9 +46,9 @@ export default function SelectAgeScreen({ onBack, onNext }: Props) {
 
   const getTextStyle = (diff: number) => {
     if (diff === 0) return { fontSize: 32, color: PINK };
-    if (diff === 1) return { fontSize: 28, color: '#767680' };
+    if (diff === 1) return { fontSize: 28, color: colors.labelAssistive };
     if (diff === -1) return { fontSize: 28, color: 'rgba(118,118,128,0.5)' };
-    if (diff === 2) return { fontSize: 28, color: '#767680' };
+    if (diff === 2) return { fontSize: 28, color: colors.labelAssistive };
     return { fontSize: 28, color: 'rgba(118,118,128,0.25)' };
   };
 
@@ -140,13 +141,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.labelBlack,
     lineHeight: 41.6,
   },
   subtitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#5E5E66',
+    color: colors.labelAlternative,
     lineHeight: 20.8,
   },
   wheelOuter: {
@@ -198,6 +199,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.white,
   },
 });

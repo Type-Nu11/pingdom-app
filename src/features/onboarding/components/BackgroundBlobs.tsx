@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { colors } from '../../../styles/colors';
 
 export default function BackgroundBlobs() {
   return (
@@ -19,7 +20,7 @@ const styles = StyleSheet.create({
     left: -142,
     top: 133,
     backgroundColor: 'rgba(255, 25, 86, 0.18)',
-    shadowColor: '#FF1956',
+    shadowColor: colors.primaryNormal,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.45,
     shadowRadius: 80,
@@ -33,7 +34,7 @@ const styles = StyleSheet.create({
     left: -3,
     top: 483,
     backgroundColor: 'rgba(255, 25, 86, 0.18)',
-    shadowColor: '#FF1956',
+    shadowColor: colors.primaryNormal,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.45,
     shadowRadius: 80,
