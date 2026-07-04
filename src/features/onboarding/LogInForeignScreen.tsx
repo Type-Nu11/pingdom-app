@@ -1,8 +1,10 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+import { colors } from '../../styles/colors';
 
-const PINK = '#FF1956';
+const PINK = colors.primaryNormal;
 
 const BACK_SVG = `<svg width="9" height="18" viewBox="0 0 9 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1L1 9L8 17" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -13,6 +15,7 @@ type Props = {
 
 export default function LogInForeignScreen({ onBack, onStart }: Props) {
   const { width, height } = useWindowDimensions();
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       <Image
@@ -36,13 +39,13 @@ export default function LogInForeignScreen({ onBack, onStart }: Props) {
             resizeMode="contain"
           />
           <View style={styles.textGroup}>
-            <Text style={styles.title}>Only Pingdom</Text>
-            <Text style={styles.subtitle}>{`Let's find hidden\nplaces in Korea!`}</Text>
+            <Text style={styles.title}>{t('loginForeign.title')}</Text>
+            <Text style={styles.subtitle}>{t('loginForeign.subtitle')}</Text>
           </View>
         </View>
 
         <Pressable style={styles.button} onPress={onStart}>
-          <Text style={styles.buttonText}>Get Started</Text>
+          <Text style={styles.buttonText}>{t('loginForeign.button')}</Text>
         </Pressable>
       </View>
     </View>
@@ -52,7 +55,7 @@ export default function LogInForeignScreen({ onBack, onStart }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: colors.bgAssistive,
     overflow: 'hidden',
   },
   background: {
@@ -96,13 +99,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0C0C0D',
+    color: colors.labelStrong,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#5E5E66',
+    color: colors.labelAlternative,
     textAlign: 'center',
     lineHeight: 20.8,
   },
@@ -117,6 +120,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.white,
   },
 });

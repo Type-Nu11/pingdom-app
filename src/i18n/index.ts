@@ -37,6 +37,11 @@ const resources = {
         vn: 'Vietnam',
         kr: 'South Korea',
       },
+      loginForeign: {
+        title: 'Only Pingdom',
+        subtitle: "Let's find hidden\nplaces in Korea!",
+        button: 'Get Started',
+      },
     },
   },
   ko: {
@@ -73,6 +78,11 @@ const resources = {
         th: '태국',
         vn: '베트남',
         kr: '대한민국',
+      },
+      loginForeign: {
+        title: '오직 핑덤',
+        subtitle: '한국의 숨은 장소를\n찾아보세요!',
+        button: '시작하기',
       },
     },
   },
@@ -111,6 +121,11 @@ const resources = {
         vn: 'ベトナム',
         kr: '韓国',
       },
+      loginForeign: {
+        title: 'Only Pingdom',
+        subtitle: '韓国の隠れた場所を\n見つけましょう！',
+        button: 'はじめる',
+      },
     },
   },
   zh: {
@@ -147,6 +162,11 @@ const resources = {
         th: '泰国',
         vn: '越南',
         kr: '韩国',
+      },
+      loginForeign: {
+        title: 'Only Pingdom',
+        subtitle: '发现韩国的隐藏景点！',
+        button: '开始使用',
       },
     },
   },
@@ -185,6 +205,11 @@ const resources = {
         vn: 'Việt Nam',
         kr: 'Hàn Quốc',
       },
+      loginForeign: {
+        title: 'Only Pingdom',
+        subtitle: 'Cùng khám phá những địa điểm\nẩn giấu tại Hàn Quốc!',
+        button: 'Bắt đầu',
+      },
     },
   },
   th: {
@@ -221,6 +246,11 @@ const resources = {
         th: 'ไทย',
         vn: 'เวียดนาม',
         kr: 'เกาหลีใต้',
+      },
+      loginForeign: {
+        title: 'Only Pingdom',
+        subtitle: 'มาค้นหาสถานที่ลับ\nในเกาหลีกันเถอะ!',
+        button: 'เริ่มต้นใช้งาน',
       },
     },
   },
