@@ -10,8 +10,7 @@ import {
 } from 'react-native';
 import EscapeIcon from '../../assets/icons/escape.svg';
 import ProgressBar from './components/ProgressBar';
-import { t } from './i18n';
-import type { Language } from './types';
+import { useTranslation } from 'react-i18next';
 
 const PINK = '#FF1956';
 const PINK_ALT = '#FF4A75';
@@ -28,15 +27,15 @@ const DEFAULT_YEAR = 2000;
 const DEFAULT_INDEX = YEARS.indexOf(DEFAULT_YEAR);
 
 type Props = {
-  language: Language;
   onBack: () => void;
   onNext: (birthYear: number) => void;
 };
 
-export default function SelectAgeScreen({ language, onBack, onNext }: Props) {
+export default function SelectAgeScreen({ onBack, onNext }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(DEFAULT_INDEX);
   const scrollRef = useRef<ScrollView>(null);
-  const tr = t(language).selectAge;
+  const { t } = useTranslation();
+  const tr = { title: t('selectAge.title'), subtitle: t('selectAge.subtitle'), button: t('selectAge.button') };
 
   const handleScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetY = e.nativeEvent.contentOffset.y;

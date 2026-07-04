@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import React, { useState } from 'react';
 import LogInForeignScreen from './LogInForeignScreen';
 import LogInKrScreen from './LogInKrScreen';
@@ -6,12 +7,12 @@ import SelectCountryScreen from './SelectCountryScreen';
 import SelectFirstScreen from './SelectFirstScreen';
 import SelectGenderScreen from './SelectGenderScreen';
 import SelectLanguageScreen from './SelectLanguageScreen';
-import type { Country, Gender, Language } from './types';
+import type { Country, Gender, Language, OnboardingData } from './types';
 
 type Step = 'first' | 'language' | 'country' | 'age' | 'gender' | 'login-kr' | 'login-foreign';
 
 type Props = {
-  onSignup: () => void;
+  onSignup: (data: OnboardingData) => void;
   onLogin: () => void;
 };
 
@@ -30,14 +31,17 @@ export default function OnboardingFlow({ onSignup, onLogin }: Props) {
       return (
         <SelectLanguageScreen
           onBack={() => setStep('first')}
-          onNext={(lang) => { setLanguage(lang); setStep('country'); }}
+          onNext={(lang) => {
+            setLanguage(lang);
+            void i18n.changeLanguage(lang);
+            setStep('country');
+          }}
         />
       );
 
     case 'country':
       return (
         <SelectCountryScreen
-          language={language}
           onBack={() => setStep('language')}
           onNext={(c) => { setCountry(c); setStep('age'); }}
         />
@@ -46,7 +50,6 @@ export default function OnboardingFlow({ onSignup, onLogin }: Props) {
     case 'age':
       return (
         <SelectAgeScreen
-          language={language}
           onBack={() => setStep('country')}
           onNext={(year) => { setBirthYear(year); setStep('gender'); }}
         />
@@ -55,7 +58,6 @@ export default function OnboardingFlow({ onSignup, onLogin }: Props) {
     case 'gender':
       return (
         <SelectGenderScreen
-          language={language}
           onBack={() => setStep('age')}
           onNext={(g) => {
             setGender(g);
@@ -68,7 +70,7 @@ export default function OnboardingFlow({ onSignup, onLogin }: Props) {
       return (
         <LogInKrScreen
           onBack={() => setStep('gender')}
-          onSignup={onSignup}
+          onSignup={() => onSignup({ language, country, birthYear, gender })}
           onLogin={onLogin}
         />
       );
@@ -77,7 +79,7 @@ export default function OnboardingFlow({ onSignup, onLogin }: Props) {
       return (
         <LogInForeignScreen
           onBack={() => setStep('gender')}
-          onStart={onSignup}
+          onStart={() => onSignup({ language, country, birthYear, gender })}
         />
       );
   }

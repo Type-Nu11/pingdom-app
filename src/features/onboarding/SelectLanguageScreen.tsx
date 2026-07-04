@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import CheckIcon from '../../assets/icons/check.svg';
 import EscapeIcon from '../../assets/icons/escape.svg';
 import SearchIcon from '../../assets/icons/search.svg';
@@ -26,6 +27,13 @@ type Props = {
 export default function SelectLanguageScreen({ onBack, onNext }: Props) {
   const [selected, setSelected] = useState<Language>('en');
   const [query, setQuery] = useState('');
+  const { t } = useTranslation();
+  const tr = {
+    title: t('selectLanguage.title'),
+    subtitle: t('selectLanguage.subtitle'),
+    button: t('selectLanguage.button'),
+    search: t('selectLanguage.search'),
+  };
 
   const filtered = LANGUAGES.filter((l) =>
     l.label.toLowerCase().includes(query.toLowerCase())
@@ -43,15 +51,15 @@ export default function SelectLanguageScreen({ onBack, onNext }: Props) {
 
       <View style={styles.body}>
         <View style={styles.titleGroup}>
-          <Text style={styles.title}>Select Language</Text>
-          <Text style={styles.subtitle}>{"We'll tell you the best route!"}</Text>
+          <Text style={styles.title}>{tr.title}</Text>
+          <Text style={styles.subtitle}>{tr.subtitle}</Text>
         </View>
 
         <View style={styles.searchBox}>
           <SearchIcon width={18} height={18} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search..."
+            placeholder={tr.search}
             placeholderTextColor="#767680"
             value={query}
             onChangeText={setQuery}
@@ -79,7 +87,7 @@ export default function SelectLanguageScreen({ onBack, onNext }: Props) {
         </ScrollView>
 
         <Pressable style={styles.button} onPress={() => onNext(selected)}>
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={styles.buttonText}>{tr.button}</Text>
         </Pressable>
       </View>
     </View>
@@ -122,10 +130,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    height: 60,
     paddingHorizontal: 16,
-    paddingVertical: 15,
     borderRadius: 16,
-    marginBottom: 20,
+    marginBottom: 26,
   },
   itemSelected: { backgroundColor: 'rgba(255, 25, 86, 0.08)' },
   itemText: { fontSize: 20, fontWeight: '700', color: '#3B3B40' },

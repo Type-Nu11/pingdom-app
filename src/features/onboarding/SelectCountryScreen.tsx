@@ -10,35 +10,41 @@ import FlagTH from '../../assets/flags/th.svg';
 import FlagUS from '../../assets/flags/us.svg';
 import FlagVN from '../../assets/flags/vn.svg';
 import ProgressBar from './components/ProgressBar';
-import { t } from './i18n';
-import type { Country, Language } from './types';
+import { useTranslation } from 'react-i18next';
+import type { Country } from './types';
 
 const PINK = '#FF1956';
 const BG = '#F8F8F8';
 
 type FlagComponent = React.FC<{ width?: number; height?: number }>;
 
-const COUNTRIES: { code: Country; Flag: FlagComponent; label: string }[] = [
-  { code: 'US', Flag: FlagUS, label: 'United States' },
-  { code: 'CN', Flag: FlagCN, label: 'China' },
-  { code: 'JP', Flag: FlagJP, label: 'Japan' },
-  { code: 'TH', Flag: FlagTH, label: 'Thailand' },
-  { code: 'VN', Flag: FlagVN, label: 'Vietnam' },
-  { code: 'KR', Flag: FlagKR, label: 'South Korea' },
+const COUNTRIES: { code: Country; Flag: FlagComponent; countryKey: string }[] = [
+  { code: 'US', Flag: FlagUS, countryKey: 'us' },
+  { code: 'CN', Flag: FlagCN, countryKey: 'cn' },
+  { code: 'JP', Flag: FlagJP, countryKey: 'jp' },
+  { code: 'TH', Flag: FlagTH, countryKey: 'th' },
+  { code: 'VN', Flag: FlagVN, countryKey: 'vn' },
+  { code: 'KR', Flag: FlagKR, countryKey: 'kr' },
 ];
 
 type Props = {
-  language: Language;
   onBack: () => void;
   onNext: (country: Country) => void;
 };
 
-export default function SelectCountryScreen({ language, onBack, onNext }: Props) {
+export default function SelectCountryScreen({ onBack, onNext }: Props) {
   const [selected, setSelected] = useState<Country>('US');
   const [query, setQuery] = useState('');
-  const tr = t(language).selectCountry;
+  const { t } = useTranslation();
+  const tr = {
+    title: t('selectCountry.title'),
+    subtitle: t('selectCountry.subtitle'),
+    button: t('selectCountry.button'),
+    search: t('selectCountry.search'),
+  };
 
-  const filtered = COUNTRIES.filter((c) =>
+  const countries = COUNTRIES.map((c) => ({ ...c, label: t(`countries.${c.countryKey}`) }));
+  const filtered = countries.filter((c) =>
     c.label.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -62,7 +68,7 @@ export default function SelectCountryScreen({ language, onBack, onNext }: Props)
           <SearchIcon width={18} height={18} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search..."
+            placeholder={tr.search}
             placeholderTextColor="#767680"
             value={query}
             onChangeText={setQuery}
@@ -136,10 +142,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    height: 60,
     paddingHorizontal: 16,
-    paddingVertical: 15,
     borderRadius: 16,
-    marginBottom: 8,
+    marginBottom: 18,
   },
   itemSelected: { backgroundColor: 'rgba(255, 25, 86, 0.08)' },
   itemLeft: { flexDirection: 'row', alignItems: 'center', gap: 13 },

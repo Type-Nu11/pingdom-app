@@ -6,20 +6,20 @@ import FemaleIcon from '../../assets/icons/female.svg';
 import MaleIcon from '../../assets/icons/male.svg';
 import OtherIcon from '../../assets/icons/other.svg';
 import ProgressBar from './components/ProgressBar';
-import { t } from './i18n';
-import type { Gender, Language } from './types';
+import { useTranslation } from 'react-i18next';
+import type { Gender } from './types';
 
 const BG = '#F8F8F8';
 
 type Props = {
-  language: Language;
   onBack: () => void;
   onNext: (gender: Gender) => void;
 };
 
-export default function SelectGenderScreen({ language, onBack, onNext }: Props) {
+export default function SelectGenderScreen({ onBack, onNext }: Props) {
   const [selected, setSelected] = useState<Gender>('male');
-  const tr = t(language).selectGender;
+  const { t } = useTranslation();
+  const tr = { title: t('selectGender.title'), subtitle: t('selectGender.subtitle'), button: t('selectGender.button'), male: t('selectGender.male'), female: t('selectGender.female'), other: t('selectGender.other') };
 
   const GENDERS: { code: Gender; label: string }[] = [
     { code: 'male', label: tr.male },
@@ -77,23 +77,26 @@ export default function SelectGenderScreen({ language, onBack, onNext }: Props) 
 }
 
 function GenderIcon({ code, isSelected }: { code: Gender; isSelected: boolean }) {
+  const bg = isSelected ? '#FF1956' : '#FFFFFF';
+  const color = isSelected ? '#FFFFFF' : '#3B3B40';
+
   if (code === 'male') {
     return (
-      <View style={[styles.iconCircle, { backgroundColor: isSelected ? '#FF1956' : '#FFFFFF' }]}>
-        <MaleIcon width={22} height={22} color={isSelected ? '#FFFFFF' : '#3B3B40'} />
+      <View style={[styles.iconCircle, { backgroundColor: bg }]}>
+        <MaleIcon width={22} height={22} color={color} />
       </View>
     );
   }
   if (code === 'female') {
     return (
-      <View style={[styles.iconCircle, { backgroundColor: '#FFFFFF' }]}>
-        <FemaleIcon width={15} height={22} color={isSelected ? '#000000' : '#3B3B40'} />
+      <View style={[styles.iconCircle, { backgroundColor: bg }]}>
+        <FemaleIcon width={15} height={22} color={color} />
       </View>
     );
   }
   return (
-    <View style={[styles.iconCircle, { backgroundColor: '#FFFFFF' }]}>
-      <OtherIcon width={22} height={3} color={isSelected ? '#000000' : '#3B3B40'} />
+    <View style={[styles.iconCircle, { backgroundColor: bg }]}>
+      <OtherIcon width={22} height={3} color={color} />
     </View>
   );
 }
@@ -125,12 +128,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#F2F2F3',
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'transparent',
     paddingHorizontal: 28,
     paddingVertical: 18,
   },
   cardSelected: {
     backgroundColor: 'rgba(255, 74, 117, 0.36)',
-    borderWidth: 2,
     borderColor: '#FF4A75',
   },
   cardLeft: { flexDirection: 'row', alignItems: 'center', gap: 20 },

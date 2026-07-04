@@ -1,6 +1,7 @@
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
+import '../../i18n';
 import { createQueryClient } from './queryClient';
 
 const AppProvider = ({ children }: PropsWithChildren) => {
