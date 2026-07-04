@@ -32,18 +32,30 @@ function parseHiddenPostIds(value: string | null): HiddenPostIds {
 export const useHiddenPosts = () => {
   const [hiddenPostIds, setHiddenPostIds] = useState<HiddenPostIds>({});
   const hiddenPostIdsRef = useRef<HiddenPostIds>({});
+  const hydrationPromiseRef = useRef<Promise<HiddenPostIds> | null>(null);
+
+  if (!hydrationPromiseRef.current) {
+    hydrationPromiseRef.current = (async () => {
+      try {
+        const storedValue = await AsyncStorage.getItem(HIDDEN_POSTS_STORAGE_KEY);
+        return parseHiddenPostIds(storedValue);
+      } catch (error) {
+        console.warn('hidden post hydration failed', error);
+        return {};
+      }
+    })();
+  }
 
   useEffect(() => {
     let isMounted = true;
 
     const hydrateHiddenPosts = async () => {
-      const storedValue = await AsyncStorage.getItem(HIDDEN_POSTS_STORAGE_KEY);
+      const storedHiddenPostIds = await hydrationPromiseRef.current;
 
       if (!isMounted) {
         return;
       }
 
-      const storedHiddenPostIds = parseHiddenPostIds(storedValue);
       setHiddenPostIds((currentHiddenPostIds) => {
         const nextHiddenPostIds = { ...storedHiddenPostIds, ...currentHiddenPostIds };
         hiddenPostIdsRef.current = nextHiddenPostIds;
@@ -60,7 +72,12 @@ export const useHiddenPosts = () => {
 
   const hidePost = useCallback(async (postId: number) => {
     const postKey = String(postId);
-    const nextHiddenPostIds = { ...hiddenPostIdsRef.current, [postKey]: true };
+    const storedHiddenPostIds = await (hydrationPromiseRef.current ?? Promise.resolve({}));
+    const nextHiddenPostIds = {
+      ...storedHiddenPostIds,
+      ...hiddenPostIdsRef.current,
+      [postKey]: true,
+    };
 
     hiddenPostIdsRef.current = nextHiddenPostIds;
     setHiddenPostIds(nextHiddenPostIds);
