@@ -40,6 +40,7 @@ yarn-error.*
 
 # IDE
 .idea/
+.claude/
 
 # android
 android/app/debug.keystore

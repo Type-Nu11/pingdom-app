@@ -26,6 +26,7 @@ import {
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
+import { useHiddenPosts } from '../../record/hooks/useHiddenPosts';
 import { usePostLike } from '../../record/hooks/usePostLike';
 import { useBookmarkedPosts, usePostBookmark } from '../../record/hooks/usePostBookmark';
 import { usePostReport } from '../../record/hooks/usePostReport';
@@ -53,7 +54,6 @@ export default function MapScreen({
   onOpenProfile,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
-  const [hiddenPostIds, setHiddenPostIds] = useState<Record<string, boolean>>({});
   const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
   const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
@@ -72,6 +72,7 @@ export default function MapScreen({
   const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
   const { bookmarkedPlaceIds } = useBookmarkedPosts();
   const { togglePostBookmark } = usePostBookmark();
+  const { hiddenPostIds, hidePost } = useHiddenPosts();
   const { togglePostLike } = usePostLike();
   const { reportPost } = usePostReport();
   const { profile } = useProfile();
@@ -160,7 +161,7 @@ export default function MapScreen({
       setReportedPostIds((prev) => ({ ...prev, [postKey]: true }));
 
       if (hideAfterReport) {
-        setHiddenPostIds((prev) => ({ ...prev, [postKey]: true }));
+        await hidePost(postId);
       }
     } finally {
       setReportPendingPostIds((prev) => ({ ...prev, [postKey]: false }));
