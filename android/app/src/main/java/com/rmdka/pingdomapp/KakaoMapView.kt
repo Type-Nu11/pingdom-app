@@ -63,6 +63,7 @@ class KakaoMapView(
         private const val MARKER_LAYER_Z_ORDER = 10
         private const val USER_LOCATION_COLOR = 0xFFFF1956.toInt()
         private const val PLACE_MARKER_ANCHOR_X = 0.5f
+        private const val PLACE_MARKER_TIP_RATIO_Y = 0.62f
         private const val PLACE_MARKER_SIDE_SAFE_PADDING_PX = 12
         private const val NORMAL_MARKER_BOTTOM_SAFE_PADDING_PX = 20
         private const val HOT_MARKER_BOTTOM_SAFE_PADDING_PX = 20
@@ -369,8 +370,13 @@ class KakaoMapView(
             sideSafePaddingPx = PLACE_MARKER_SIDE_SAFE_PADDING_PX,
             bottomSafePaddingPx = bottomSafePaddingPx
         )
-        val anchorY = originalBitmap.height / canvasBitmap.height.toFloat()
-        
+        val anchorY = computePaddedAnchorY(
+            rawHeightPx = originalBitmap.height,
+            rawAnchorY = PLACE_MARKER_TIP_RATIO_Y,
+            topPaddingPx = 0,
+            bottomPaddingPx = bottomSafePaddingPx
+        )
+
         if (originalBitmap != canvasBitmap) {
             originalBitmap.recycle()
         }
