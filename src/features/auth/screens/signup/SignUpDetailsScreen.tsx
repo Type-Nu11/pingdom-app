@@ -10,7 +10,14 @@ import {
   View,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { colors } from '../../../../styles/colors';
 import useSignup from '../../hooks/useSignup';
+import {
+  validateEmail,
+  validatePassword,
+  validatePasswordConfirm,
+  validateUsername,
+} from '../../lib/validators';
 import ProgressDots from './components/ProgressDots';
 import type { OnboardingData } from '../../../../features/onboarding/types';
 
@@ -20,9 +27,9 @@ const OPEN_EYE_SVG = `<svg width="20" height="13" viewBox="0 0 20 13" fill="none
 
 const CLOSED_EYE_SVG = `<svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M16.2927 12.2456L19.1745 15.0585L18.2109 16L2.78182 0.94149L3.74545 0L6.23636 2.42959C7.44113 1.99495 8.71557 1.7732 10 1.77472C14.3709 1.77472 18.1564 4.30192 20 7.98625C19.1516 9.68819 17.8764 11.1533 16.2927 12.2456ZM8.93091 5.06062L12.9973 9.02978C13.2001 8.47593 13.2377 7.87723 13.1056 7.30335C12.9735 6.72947 12.6772 6.204 12.2511 5.78809C11.825 5.37218 11.2866 5.08293 10.6987 4.95398C10.1108 4.82504 9.49742 4.86171 8.93 5.05973L8.93091 5.06062ZM13.7645 13.5438C12.5594 13.9782 11.2847 14.1997 10 14.1978C5.62909 14.1978 1.84364 11.6706 0 7.98625C0.848426 6.2843 2.12365 4.81918 3.70727 3.72691L7.00273 6.94271C6.79986 7.49656 6.76229 8.09526 6.89439 8.66914C7.02649 9.24302 7.32283 9.76849 7.74893 10.1844C8.17502 10.6003 8.71336 10.8896 9.30129 11.0185C9.88923 11.1475 10.5026 11.1108 11.07 10.9128L13.7645 13.5438Z" fill="#5E5E66"/></svg>`;
 
-const PINK = '#FF1956';
-const ERROR = '#EE2B2B';
-const BG = '#F8F8F8';
+const PINK = colors.primaryNormal;
+const ERROR = colors.error;
+const BG = colors.bgAssistive;
 
 type SignUpDetailsScreenProps = {
   onBack?: () => void;
@@ -60,19 +67,21 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
   const isStep2Filled = password.trim() && passwordConfirm.trim();
 
   const validateStep1 = () => {
-    const newErrors: FieldError = {};
-    if (!username.trim()) newErrors.username = '아이디를 입력해주세요';
-    if (!email.trim()) newErrors.email = '이메일을 입력해주세요';
+    const newErrors: FieldError = {
+      username: validateUsername(username) ?? undefined,
+      email: validateEmail(email) ?? undefined,
+    };
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return !newErrors.username && !newErrors.email;
   };
 
   const validateStep2 = () => {
-    const newErrors: FieldError = {};
-    if (!password.trim()) newErrors.password = '비밀번호를 입력해주세요';
-    if (!passwordConfirm.trim()) newErrors.passwordConfirm = '비밀번호를 한번 더 입력해주세요';
+    const newErrors: FieldError = {
+      password: validatePassword(password) ?? undefined,
+      passwordConfirm: validatePasswordConfirm(password, passwordConfirm) ?? undefined,
+    };
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return !newErrors.password && !newErrors.passwordConfirm;
   };
 
   const handleStep1Next = () => {
@@ -83,10 +92,6 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
 
   const handleStep2Submit = async () => {
     if (!validateStep2() || isSubmitting) return;
-    if (password !== passwordConfirm) {
-      setErrors((prev) => ({ ...prev, passwordConfirm: '비밀번호가 일치하지 않습니다' }));
-      return;
-    }
 
     clearSignupError();
 
@@ -143,7 +148,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
                   <TextInput
                     style={styles.input}
                     placeholder="아이디를 입력하세요"
-                    placeholderTextColor="#BFC1C1"
+                    placeholderTextColor={colors.placeholder}
                     value={username}
                     onChangeText={(v) => { setUsername(v); setErrors((e) => ({ ...e, username: undefined })); }}
                     autoCapitalize="none"
@@ -160,7 +165,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
                   <TextInput
                     style={styles.input}
                     placeholder="이메일을 입력하세요"
-                    placeholderTextColor="#BFC1C1"
+                    placeholderTextColor={colors.placeholder}
                     value={email}
                     onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
                     keyboardType="email-address"
@@ -221,7 +226,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
                 <TextInput
                   style={styles.input}
                   placeholder="비밀번호를 입력하세요"
-                  placeholderTextColor="#BFC1C1"
+                  placeholderTextColor={colors.placeholder}
                   value={password}
                   onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined })); }}
                   secureTextEntry={!showPassword}
@@ -243,7 +248,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
                 <TextInput
                   style={styles.input}
                   placeholder="비밀번호를 한번 더 입력하세요"
-                  placeholderTextColor="#BFC1C1"
+                  placeholderTextColor={colors.placeholder}
                   value={passwordConfirm}
                   onChangeText={(v) => { setPasswordConfirm(v); setErrors((e) => ({ ...e, passwordConfirm: undefined })); }}
                   secureTextEntry={!showPasswordConfirm}
@@ -307,7 +312,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#0C0C0D',
+    color: colors.labelStrong,
   },
   fieldsGroup: {
     gap: 16,
@@ -321,17 +326,17 @@ const styles = StyleSheet.create({
     letterSpacing: -0.28,
   },
   labelAlt: {
-    color: '#5C5E5E',
+    color: colors.labelDim,
   },
   labelNeutral: {
-    color: '#3B3B40',
+    color: colors.labelNeutral,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 40,
     borderBottomWidth: 1,
-    borderBottomColor: '#BDBEBE',
+    borderBottomColor: colors.lineNormal,
     paddingVertical: 10,
   },
   inputRowError: {
@@ -341,7 +346,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '500',
-    color: '#0C0C0D',
+    color: colors.labelStrong,
     padding: 0,
   },
   helper: {
@@ -365,17 +370,17 @@ const styles = StyleSheet.create({
     backgroundColor: PINK,
   },
   buttonDisabled: {
-    backgroundColor: '#D1D4D5',
+    backgroundColor: colors.disabledBg,
   },
   buttonText: {
     fontSize: 20,
     fontWeight: '500',
   },
   buttonTextActive: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontWeight: '700',
   },
   buttonTextDisabled: {
-    color: '#5E5E66',
+    color: colors.labelAlternative,
   },
 });

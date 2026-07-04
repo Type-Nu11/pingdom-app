@@ -9,12 +9,12 @@ import {
   View,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { colors } from '../../../../styles/colors';
+import usePhoneVerification from '../../hooks/usePhoneVerification';
+import { validatePhoneNumber } from '../../lib/validators';
 import ProgressDots from './components/ProgressDots';
 
 const ESCAPE_SVG = `<svg width="12" height="21" viewBox="0 0 12 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.25 1.25L1.25 10.25L10.25 19.25" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
-const PINK = '#FF1956';
-const BG = '#F8F8F8';
 
 type SignUpPhoneScreenProps = {
   onBack?: () => void;
@@ -23,8 +23,27 @@ type SignUpPhoneScreenProps = {
 
 export default function SignUpPhoneScreen({ onBack, onNext }: SignUpPhoneScreenProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const { sendCode, isSending, errorMessage, clearError } = usePhoneVerification();
 
-  const isActive = phoneNumber.trim().length > 0;
+  const isActive = phoneNumber.trim().length > 0 && !isSending;
+  const displayedError = fieldError ?? errorMessage;
+
+  const handleNext = async () => {
+    if (!isActive) return;
+
+    const trimmed = phoneNumber.trim();
+    const validationError = validatePhoneNumber(trimmed);
+    if (validationError) {
+      setFieldError(validationError);
+      return;
+    }
+
+    setFieldError(null);
+    clearError();
+    const ok = await sendCode(trimmed);
+    if (ok) onNext?.(trimmed);
+  };
 
   return (
     <KeyboardAvoidingView
@@ -44,25 +63,32 @@ export default function SignUpPhoneScreen({ onBack, onNext }: SignUpPhoneScreenP
       <View style={styles.body}>
         <View style={styles.topContent}>
           <Text style={styles.title}>전화번호 인증</Text>
-          <View style={styles.inputWrap}>
-            <TextInput
-              style={styles.input}
-              placeholder="ex) 010 1234 5678"
-              placeholderTextColor="#BFC1C1"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-            />
+          <View>
+            <View style={[styles.inputWrap, displayedError ? styles.inputWrapError : undefined]}>
+              <TextInput
+                style={styles.input}
+                placeholder="ex) 010 1234 5678"
+                placeholderTextColor={colors.placeholder}
+                value={phoneNumber}
+                onChangeText={(v) => {
+                  setPhoneNumber(v);
+                  setFieldError(null);
+                  clearError();
+                }}
+                keyboardType="phone-pad"
+              />
+            </View>
+            {displayedError ? <Text style={styles.errorText}>{displayedError}</Text> : null}
           </View>
         </View>
 
         <Pressable
           style={[styles.button, isActive ? styles.buttonActive : styles.buttonDisabled]}
-          onPress={() => isActive && onNext?.(phoneNumber.trim())}
+          onPress={() => void handleNext()}
           disabled={!isActive}
         >
           <Text style={[styles.buttonText, isActive ? styles.buttonTextActive : styles.buttonTextDisabled]}>
-            다음
+            {isSending ? '전송 중...' : '다음'}
           </Text>
         </Pressable>
       </View>
@@ -73,7 +99,7 @@ export default function SignUpPhoneScreen({ onBack, onNext }: SignUpPhoneScreenP
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: colors.bgAssistive,
   },
   header: {
     height: 105,
@@ -105,25 +131,28 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#0C0C0D',
+    color: colors.labelStrong,
   },
   inputWrap: {
     borderBottomWidth: 2,
-    borderBottomColor: '#BFC1C1',
+    borderBottomColor: colors.placeholder,
     paddingTop: 8,
     paddingBottom: 6,
     paddingRight: 16,
   },
+  inputWrapError: {
+    borderBottomColor: colors.error,
+  },
   input: {
     fontSize: 24,
     fontWeight: '500',
-    color: '#0C0C0D',
+    color: colors.labelStrong,
     height: 40,
     padding: 0,
   },
   errorText: {
     fontSize: 13,
-    color: '#EE2B2B',
+    color: colors.error,
     marginTop: 4,
   },
   button: {
@@ -134,19 +163,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonActive: {
-    backgroundColor: PINK,
+    backgroundColor: colors.primaryNormal,
   },
   buttonDisabled: {
-    backgroundColor: '#D1D4D5',
+    backgroundColor: colors.disabledBg,
   },
   buttonText: {
     fontSize: 20,
     fontWeight: '500',
   },
   buttonTextActive: {
-    color: '#FFFFFF',
+    color: colors.white,
   },
   buttonTextDisabled: {
-    color: '#5E5E66',
+    color: colors.labelAlternative,
   },
 });

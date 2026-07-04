@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { authApi } from '../api/authApi';
+import { phoneVerificationApi } from '../api/phoneVerificationApi';
 
 export const usePhoneVerification = () => {
   const [isSending, setIsSending] = useState(false);
@@ -10,7 +10,7 @@ export const usePhoneVerification = () => {
     setIsSending(true);
     setErrorMessage(null);
     try {
-      await authApi.sendPhoneCode({ phoneNumber });
+      await phoneVerificationApi.sendPhoneCode({ phoneNumber });
       return true;
     } catch (error) {
       const message =
@@ -26,7 +26,7 @@ export const usePhoneVerification = () => {
     setIsVerifying(true);
     setErrorMessage(null);
     try {
-      await authApi.verifyPhoneCode({ phoneNumber, code });
+      await phoneVerificationApi.verifyPhoneCode({ phoneNumber, code });
       return true;
     } catch (error) {
       const message =

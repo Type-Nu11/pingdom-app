@@ -15,10 +15,12 @@ import CloseEyeIcon from '../../../../assets/icons/closeEye.svg';
 import GoogleIcon from '../../../../assets/icons/google.svg';
 import NaverIcon from '../../../../assets/icons/simple-icons_naver.svg';
 import CallIcon from '../../../../assets/icons/ion_call.svg';
+import { colors } from '../../../../styles/colors';
 import useLogin from '../../hooks/useLogin';
+import { validatePassword, validateUsername } from '../../lib/validators';
 
-const PINK = '#FF1956';
-const BG = '#F8F8F8';
+const PINK = colors.primaryNormal;
+const BG = colors.bgAssistive;
 
 const BACK_SVG = `<svg width="9" height="18" viewBox="0 0 9 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1L1 9L8 17" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -41,20 +43,11 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    let hasError = false;
-    if (!username.trim()) {
-      setUsernameError('아이디를 입력해주세요');
-      hasError = true;
-    } else {
-      setUsernameError(null);
-    }
-    if (!password.trim()) {
-      setPasswordError('비밀번호를 입력해주세요');
-      hasError = true;
-    } else {
-      setPasswordError(null);
-    }
-    if (hasError) return;
+    const nextUsernameError = validateUsername(username);
+    const nextPasswordError = validatePassword(password);
+    setUsernameError(nextUsernameError);
+    setPasswordError(nextPasswordError);
+    if (nextUsernameError || nextPasswordError) return;
 
     clearError();
     await login({ username: username.trim(), password });
@@ -88,7 +81,7 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
                 value={username}
                 onChangeText={(t) => { setUsername(t); if (usernameError) setUsernameError(null); }}
                 placeholder="아이디를 입력하세요"
-                placeholderTextColor="#BFC1C1"
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
@@ -106,7 +99,7 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
                 value={password}
                 onChangeText={(t) => { setPassword(t); if (passwordError) setPasswordError(null); }}
                 placeholder="비밀번호를 입력하세요"
-                placeholderTextColor="#BFC1C1"
+                placeholderTextColor={colors.placeholder}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -189,7 +182,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.labelBlack,
     lineHeight: 41.6,
     marginBottom: -12,
   },
@@ -198,7 +191,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#5E5E66',
+    color: colors.labelAlternative,
     letterSpacing: -0.28,
     lineHeight: 18.2,
   },
@@ -209,19 +202,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
   },
-  inputRowNormal: { borderBottomColor: '#BDBEBE' },
-  inputRowError: { borderBottomColor: '#EE2B2B' },
+  inputRowNormal: { borderBottomColor: colors.lineNormal },
+  inputRowError: { borderBottomColor: colors.error },
   textInput: {
     fontSize: 18,
     fontWeight: '500',
-    color: '#3B3B40',
+    color: colors.labelNeutral,
     padding: 0,
     flex: 1,
   },
   fieldError: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#EE2B2B',
+    color: colors.error,
     letterSpacing: -0.24,
     lineHeight: 15.6,
   },
@@ -234,26 +227,26 @@ const styles = StyleSheet.create({
   },
   submitActive: {
     backgroundColor: PINK,
-    shadowColor: '#FFC9D3',
+    shadowColor: colors.shadowPink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
   },
-  submitDisabled: { backgroundColor: '#D1D4D5' },
+  submitDisabled: { backgroundColor: colors.disabledBg },
   submitText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.white,
     lineHeight: 26,
   },
   submitTextDisabled: {
-    color: '#5E5E66',
+    color: colors.labelAlternative,
     fontWeight: '500',
   },
   serverError: {
     fontSize: 12,
-    color: '#EE2B2B',
+    color: colors.error,
     textAlign: 'center',
     marginTop: -12,
   },
@@ -266,13 +259,13 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#3B3B40',
+    color: colors.labelNeutral,
     lineHeight: 20.8,
   },
   linkSeparator: {
     width: 1.5,
     height: 12,
-    backgroundColor: '#BDBEBE',
+    backgroundColor: colors.lineNormal,
   },
   dividerRow: {
     flexDirection: 'row',
@@ -282,12 +275,12 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#BDBEBE',
+    backgroundColor: colors.lineNormal,
   },
   dividerText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#5E5E66',
+    color: colors.labelAlternative,
     lineHeight: 20.8,
   },
   socialButtons: { gap: 16 },
@@ -298,17 +291,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 11,
-    backgroundColor: '#F6F6F7',
+    backgroundColor: colors.fillSocial,
     borderWidth: 1,
   },
-  googleBtn: { borderColor: '#E4E4E5' },
-  naverBtn: { borderColor: '#00CB4B' },
-  smsBtn: { borderColor: '#3B3B40' },
+  googleBtn: { borderColor: colors.fillAlternative },
+  naverBtn: { borderColor: colors.naver },
+  smsBtn: { borderColor: colors.labelNeutral },
   socialBtnText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#3B3B40',
+    color: colors.labelNeutral,
     lineHeight: 26,
   },
-  naverText: { color: '#00CB4B' },
+  naverText: { color: colors.naver },
 });
