@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import AppProvider from './src/app/providers/AppProvider';
-import { LoginFormScreen } from './src/features/auth/screens/login';
-import SignUpDetailsScreen from './src/features/auth/screens/signup/SignUpDetailsScreen';
-import SignUpEmailVerifyScreen from './src/features/auth/screens/signup/SignUpEmailVerifyScreen';
-import type { OnboardingData } from './src/features/onboarding/types';
 import { OnboardingFlow } from './src/features/onboarding';
 import useAuth from './src/features/auth/hooks/useAuth';
 import { useFcmTokenSync } from './src/features/firebase/hooks/useFcmTokenSync';
@@ -16,17 +12,11 @@ import PlaceCreateFlowScreen from './src/features/place/screens/PlaceCreateFlowS
 import PlaceDetailScreen from './src/features/place/screens/PlaceDetailScreen';
 import ProfileScreen from './src/features/profile/screens/ProfileScreen';
 
-type AppScreen = 'onboarding' | 'login' | 'signup-details' | 'signup-email-verify';
 type MainScreen = 'map' | 'place-create' | 'place-detail' | 'profile';
 
 function AppContent() {
   const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
   const { pendingRoute, consumePendingNotificationRoute } = useNotificationState();
-  const [appScreen, setAppScreen] = useState<AppScreen>('onboarding');
-  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
-  const [verifyEmail, setVerifyEmail] = useState('');
-  const [verifyUsername, setVerifyUsername] = useState('');
-  const [verifyPassword, setVerifyPassword] = useState('');
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
   const [openedNotificationRoute, setOpenedNotificationRoute] = useState<NotificationRoute | null>(null);
 
@@ -65,7 +55,6 @@ function AppContent() {
 
   const handleLogout = async () => {
     await logout();
-    setAppScreen('onboarding');
     setMainScreen('map');
     setOpenedNotificationRoute(null);
   };
@@ -93,46 +82,7 @@ function AppContent() {
           />
         )
       ) : (
-        (() => {
-          switch (appScreen) {
-            case 'onboarding':
-              return (
-                <OnboardingFlow
-                  onSignup={(data) => { setOnboardingData(data); setAppScreen('signup-details'); }}
-                  onLogin={() => setAppScreen('login')}
-                />
-              );
-            case 'login':
-              return (
-                <LoginFormScreen
-                  onBack={() => setAppScreen('onboarding')}
-                  onSignup={() => setAppScreen('signup-details')}
-                />
-              );
-            case 'signup-details':
-              return (
-                <SignUpDetailsScreen
-                  onBack={() => setAppScreen('onboarding')}
-                  onboardingData={onboardingData ?? undefined}
-                  onVerify={(email, username, password) => {
-                    setVerifyEmail(email);
-                    setVerifyUsername(username);
-                    setVerifyPassword(password);
-                    setAppScreen('signup-email-verify');
-                  }}
-                />
-              );
-            default:
-              return (
-                <SignUpEmailVerifyScreen
-                  email={verifyEmail}
-                  username={verifyUsername}
-                  password={verifyPassword}
-                  onBack={() => setAppScreen('signup-details')}
-                />
-              );
-          }
-        })()
+        <OnboardingFlow />
       )}
     </>
   );
