@@ -30,6 +30,10 @@ type ProfileGalleryProps = {
 };
 
 function getDateBadge(createdAt: string) {
+  if (!createdAt) {
+    return { day: '', month: '' };
+  }
+
   const date = new Date(createdAt);
 
   if (Number.isNaN(date.getTime())) {

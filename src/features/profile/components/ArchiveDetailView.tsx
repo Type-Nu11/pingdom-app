@@ -42,6 +42,10 @@ const initialArchivePosts: ArchivePost[] = [
 ];
 
 function formatArchiveDate(createdAt: string) {
+  if (!createdAt) {
+    return PROFILE_DATE;
+  }
+
   const date = new Date(createdAt);
 
   if (Number.isNaN(date.getTime())) {
