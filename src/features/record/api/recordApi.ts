@@ -24,6 +24,12 @@ export type CreateRecordRequest = {
   validPlace?: boolean;
 };
 
+export type UpdateRecordRequest = {
+  description?: string;
+  file?: RecordUploadFile;
+  title: string;
+};
+
 export type CreateRecordResponse = {
   id: number;
   message: string;
@@ -119,6 +125,33 @@ function buildCreateRecordFormData(payload: CreateRecordRequest) {
   return formData;
 }
 
+function appendRecordFile(formData: FormData, file: RecordUploadFile) {
+  const fileName = file.name ?? getFileNameFromUri(file.uri);
+  const mimeType = file.type ?? getMimeType(fileName);
+
+  formData.append('file', {
+    name: fileName,
+    type: mimeType,
+    uri: file.uri,
+  } as any);
+}
+
+function buildUpdateRecordFormData(payload: UpdateRecordRequest) {
+  const formData = new FormData();
+
+  formData.append('title', payload.title);
+
+  if (payload.description !== undefined) {
+    formData.append('description', payload.description);
+  }
+
+  if (payload.file) {
+    appendRecordFile(formData, payload.file);
+  }
+
+  return formData;
+}
+
 export const recordApi = {
   createRecord: async (payload: CreateRecordRequest): Promise<CreateRecordResponse> => {
     const formData = buildCreateRecordFormData(payload);
@@ -129,6 +162,13 @@ export const recordApi = {
   },
   deleteRecord: async (id: number): Promise<string> => {
     const { data } = await api.delete<string>(`/map/post/${id}/delete`);
+    return data;
+  },
+  updateRecord: async (id: number, payload: UpdateRecordRequest): Promise<string> => {
+    const formData = buildUpdateRecordFormData(payload);
+    const { data } = await api.post<string>(`/map/post/${id}/update`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return data;
   },
   getPosts: async (params: GetPostsRequest = {}): Promise<PostsPage> => {
