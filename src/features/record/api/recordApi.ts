@@ -39,6 +39,7 @@ export type GetPostsRequest = {
   limit?: number;
   page?: number;
   placeId?: number;
+  userId?: number;
 };
 
 export type GetLikedPostsRequest = {
@@ -182,6 +183,7 @@ export const recordApi = {
         limit: params.limit ?? 100,
         page: params.page ?? 1,
         ...(params.placeId !== undefined ? { placeId: params.placeId } : {}),
+        ...(params.userId !== undefined ? { userId: params.userId } : {}),
       },
     });
 
