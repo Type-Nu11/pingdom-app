@@ -101,16 +101,17 @@ const ProfileGallery = ({
                   key={post.id}
                   accessibilityRole="button"
                   accessibilityLabel={`${post.title} 게시글 보기`}
+                  style={[styles.tile, styles.archiveTile, { height: itemSize, width: itemSize }]}
                   onPress={() => onArchiveItemPress(post)}
                 >
                   <Image
                     source={{ uri: post.imageUrl }}
                     resizeMode="cover"
-                    style={[styles.image, { height: itemSize, width: itemSize }]}
+                    style={styles.fullImage}
                   />
-                  <View style={styles.dateBadge}>
-                    <Text style={styles.dateBadgeText}>{dateBadge.day}</Text>
-                    <Text style={styles.dateBadgeTextSmall}>{dateBadge.month}</Text>
+                  <View style={styles.archiveDateBadge}>
+                    <Text style={styles.archiveDateDay}>{dateBadge.day}</Text>
+                    <Text style={styles.archiveDateMonth}>{dateBadge.month}</Text>
                   </View>
                 </Pressable>
               );
@@ -149,12 +150,13 @@ const ProfileGallery = ({
                 accessibilityRole="button"
                 accessibilityLabel={`${post.title} 게시글 보기`}
                 disabled={!onLikedPostPress}
+                style={[styles.tile, { height: itemSize, width: itemSize }]}
                 onPress={() => onLikedPostPress?.(post)}
               >
                 <Image
                   source={{ uri: post.imageUrl }}
                   resizeMode="cover"
-                  style={[styles.image, { height: itemSize, width: itemSize }]}
+                  style={styles.fullImage}
                 />
               </Pressable>
             ))}
@@ -192,12 +194,13 @@ const ProfileGallery = ({
                 accessibilityRole="button"
                 accessibilityLabel={`${post.title} 게시글 보기`}
                 disabled={!onBookmarkedPostPress}
+                style={[styles.tile, { height: itemSize, width: itemSize }]}
                 onPress={() => onBookmarkedPostPress?.(post)}
               >
                 <Image
                   source={{ uri: post.imageUrl }}
                   resizeMode="cover"
-                  style={[styles.image, { height: itemSize, width: itemSize }]}
+                  style={styles.fullImage}
                 />
               </Pressable>
             ))}
@@ -213,39 +216,47 @@ const ProfileGallery = ({
 };
 
 const styles = StyleSheet.create({
-  dateBadge: {
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    borderRadius: 8,
-    left: 18,
-    paddingHorizontal: 6,
+  archiveDateBadge: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.76)',
+    borderRadius: 4,
+    left: 14,
+    minWidth: 32,
+    paddingHorizontal: 4,
     paddingVertical: 4,
     position: 'absolute',
     top: 10,
   },
-  dateBadgeText: {
+  archiveDateDay: {
     color: '#fff',
-    fontSize: 21,
-    fontWeight: '600',
-    lineHeight: 22,
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 20,
     textShadowColor: 'rgba(0, 0, 0, 0.45)',
     textShadowOffset: { height: 1, width: 0 },
     textShadowRadius: 3,
   },
-  dateBadgeTextSmall: {
+  archiveDateMonth: {
     color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 15,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 14,
     textShadowColor: 'rgba(0, 0, 0, 0.45)',
     textShadowOffset: { height: 1, width: 0 },
     textShadowRadius: 3,
+  },
+  archiveTile: {
+    borderColor: '#fafafa',
+    borderWidth: 1,
+  },
+  fullImage: {
+    backgroundColor: '#fff',
+    height: '100%',
+    width: '100%',
   },
   gallery: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-  },
-  image: {
-    backgroundColor: '#fff',
   },
   retryButton: {
     alignItems: 'center',
@@ -272,6 +283,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 10,
     textAlign: 'center',
+  },
+  tile: {
+    backgroundColor: '#fff',
+    overflow: 'hidden',
   },
 });
 
