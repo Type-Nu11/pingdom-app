@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { UpdateRecordRequest } from '../../record/api/recordApi';
@@ -95,18 +95,12 @@ const ArchiveDetailView = ({
       ...mappedPosts.filter((post) => post.id !== initialPostId),
     ];
   }, [initialPostId, sourcePosts]);
-  const [posts, setPosts] = useState(archivePosts);
   const { deletePost, isDeleting } = useDeletePost();
   const { isUpdating, updatePost } = useUpdatePost();
-
-  useEffect(() => {
-    setPosts(archivePosts);
-  }, [archivePosts]);
 
   const handleDelete = async (id: number) => {
     try {
       await deletePost(id);
-      setPosts((currentPosts) => currentPosts.filter((post) => post.id !== id));
       Alert.alert('삭제 완료', '게시글을 삭제했습니다.');
     } catch (error) {
       Alert.alert(
@@ -119,16 +113,6 @@ const ArchiveDetailView = ({
   const handleUpdate = async (id: number, payload: UpdateRecordRequest) => {
     try {
       await updatePost(id, payload);
-      setPosts((currentPosts) => currentPosts.map((post) => (
-        post.id === id
-          ? {
-            ...post,
-            description: payload.description ?? post.description,
-            imageSource: payload.file ? { uri: payload.file.uri } : post.imageSource,
-            title: payload.title,
-          }
-          : post
-      )));
     } catch (error) {
       Alert.alert(
         '게시물 수정에 실패했어요',
@@ -140,12 +124,12 @@ const ArchiveDetailView = ({
 
   return (
     <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={styles.scroll}>
-      {posts.length === 0 ? (
+      {archivePosts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>보관함에 게시글이 없어요</Text>
         </View>
       ) : (
-        posts.map((post, index) => (
+        archivePosts.map((post, index) => (
           <ArchiveFeedItem
             key={post.id}
             isDeleting={isDeleting}
