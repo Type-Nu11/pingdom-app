@@ -1,15 +1,23 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { PROFILE_PLACE, PROFILE_USERNAME } from '../constants/profileMock';
 
-const ProfileMini = () => (
+type ProfileMiniProps = {
+  place?: string;
+  username?: string;
+};
+
+const ProfileMini = ({
+  place = PROFILE_PLACE,
+  username = PROFILE_USERNAME,
+}: ProfileMiniProps) => (
   <View style={styles.profile}>
     <View style={styles.icon}>
       <View style={styles.head} />
       <View style={styles.body} />
     </View>
     <View>
-      <Text style={styles.username}>{PROFILE_USERNAME}</Text>
-      <Text style={styles.place}>{PROFILE_PLACE}</Text>
+      <Text style={styles.username}>{username}</Text>
+      <Text style={styles.place}>{place}</Text>
     </View>
   </View>
 );

@@ -6,8 +6,10 @@ import LikesBottomSheet from '../components/LikesBottomSheet';
 import ProfileEditView from '../components/ProfileEditView';
 import ProfileGallery from '../components/ProfileGallery';
 import ProfileHeader from '../components/ProfileHeader';
-import { profileImageSource, savedProfileImageSource } from '../constants/profileMock';
+import { useLikedPosts } from '../../record/hooks/useLikedPosts';
+import { useMyPosts } from '../../record/hooks/useMyPosts';
 import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
+import { useProfile } from '../hooks/useProfile';
 
 type ProfileScreenProps = {
   onBack: () => void;
@@ -23,13 +25,32 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
   const [mode, setMode] = useState<ProfileMode>('profile');
   const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
   const [likesOpen, setLikesOpen] = useState(false);
+  const [selectedArchivePostId, setSelectedArchivePostId] = useState<number | null>(null);
+  const isLikedPostsTab = mode === 'profile' && activeTab === 'liked';
   const isSavedPostsTab = mode === 'profile' && activeTab === 'saved';
+  const isArchiveVisible = mode === 'archive' || mode === 'archive-detail';
+  const {
+    isLoading: isProfileLoading,
+    profile,
+  } = useProfile();
   const {
     isError: isBookmarkedPostsError,
     isLoading: isBookmarkedPostsLoading,
     posts: bookmarkedPosts,
     refetch: refetchBookmarkedPosts,
   } = useBookmarkedPosts({ enabled: isSavedPostsTab });
+  const {
+    isError: isLikedPostsError,
+    isLoading: isLikedPostsLoading,
+    posts: likedPosts,
+    refetch: refetchLikedPosts,
+  } = useLikedPosts({ enabled: isLikedPostsTab });
+  const {
+    isError: isArchivePostsError,
+    isLoading: isArchivePostsLoading,
+    posts: archivePosts,
+    refetch: refetchArchivePosts,
+  } = useMyPosts(profile?.id ?? null, { enabled: isArchiveVisible });
   const maxContentWidth = Math.min(width, 560);
   const gridItemSize = Math.floor(maxContentWidth / 3);
 
@@ -84,7 +105,11 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
         {mode === 'profile-edit' ? (
           <ProfileEditView />
         ) : isArchiveDetail ? (
-          <ArchiveDetailView onOpenLikes={() => setLikesOpen(true)} />
+          <ArchiveDetailView
+            initialPostId={selectedArchivePostId}
+            posts={archivePosts}
+            onOpenLikes={() => setLikesOpen(true)}
+          />
         ) : (
           <>
             <ProfileHeader
@@ -97,15 +122,26 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
               showTabs={mode === 'profile'}
             />
             <ProfileGallery
+              archivePosts={mode === 'archive' ? archivePosts : undefined}
               bookmarkedPosts={isSavedPostsTab ? bookmarkedPosts : undefined}
               isArchive={mode === 'archive'}
+              isArchivePostsError={mode === 'archive' && isArchivePostsError}
+              isArchivePostsLoading={mode === 'archive' && (isProfileLoading || isArchivePostsLoading)}
               isBookmarkedPostsError={isSavedPostsTab && isBookmarkedPostsError}
               isBookmarkedPostsLoading={isSavedPostsTab && isBookmarkedPostsLoading}
-              imageSource={activeTab === 'saved' ? savedProfileImageSource : profileImageSource}
+              isLikedPostsError={isLikedPostsTab && isLikedPostsError}
+              isLikedPostsLoading={isLikedPostsTab && isLikedPostsLoading}
               itemSize={gridItemSize}
-              onArchiveItemPress={() => setMode('archive-detail')}
+              likedPosts={isLikedPostsTab ? likedPosts : undefined}
+              onArchiveItemPress={(post) => {
+                setSelectedArchivePostId(post?.id ?? null);
+                setMode('archive-detail');
+              }}
               onBookmarkedPostPress={(post) => onOpenBookmarkedPost(post.placeId)}
+              onLikedPostPress={(post) => onOpenBookmarkedPost(post.placeId)}
+              onRetryArchivePosts={() => void refetchArchivePosts()}
               onRetryBookmarkedPosts={() => void refetchBookmarkedPosts()}
+              onRetryLikedPosts={() => void refetchLikedPosts()}
             />
           </>
         )}
