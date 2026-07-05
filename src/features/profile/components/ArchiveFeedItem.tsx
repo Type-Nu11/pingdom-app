@@ -13,6 +13,8 @@ import {
   View,
 } from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
+import EditIcon from '../../../assets/icons/edit/Vector.svg';
+import TrashIcon from '../../../assets/icons/edit/gg_trash.svg';
 import type { UpdateRecordRequest } from '../../record/api/recordApi';
 import type { RecordUploadFile } from '../../record/model/record.types';
 import ProfileMini from './ProfileMini';
@@ -159,7 +161,9 @@ const ArchiveFeedItem = ({
                 style={styles.menuItem}
                 onPress={openEdit}
               >
-                <Text style={styles.menuIcon}>✎</Text>
+                <View style={styles.menuIcon}>
+                  <EditIcon width={16} height={16} />
+                </View>
                 <Text style={styles.menuText}>게시물 수정</Text>
               </Pressable>
               <Pressable
@@ -168,7 +172,9 @@ const ArchiveFeedItem = ({
                 style={styles.menuItem}
                 onPress={handleDelete}
               >
-                <Text style={[styles.menuIcon, styles.deleteText]}>⌫</Text>
+                <View style={styles.menuIcon}>
+                  <TrashIcon width={16} height={16} />
+                </View>
                 <Text style={[styles.menuText, styles.deleteText]}>게시물 삭제</Text>
               </Pressable>
             </View>
@@ -405,10 +411,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   menuIcon: {
-    color: '#111116',
-    fontSize: 18,
-    fontWeight: '800',
-    lineHeight: 20,
+    alignItems: 'center',
+    height: 20,
+    justifyContent: 'center',
     width: 20,
   },
   menuItem: {
