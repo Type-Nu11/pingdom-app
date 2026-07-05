@@ -7,7 +7,9 @@ import ProfileEditView from '../components/ProfileEditView';
 import ProfileGallery from '../components/ProfileGallery';
 import ProfileHeader from '../components/ProfileHeader';
 import { profileImageSource, savedProfileImageSource } from '../constants/profileMock';
+import { useMyPosts } from '../../record/hooks/useMyPosts';
 import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
+import { useProfile } from '../hooks/useProfile';
 
 type ProfileScreenProps = {
   onBack: () => void;
@@ -23,13 +25,25 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
   const [mode, setMode] = useState<ProfileMode>('profile');
   const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
   const [likesOpen, setLikesOpen] = useState(false);
+  const [selectedArchivePostId, setSelectedArchivePostId] = useState<number | null>(null);
   const isSavedPostsTab = mode === 'profile' && activeTab === 'saved';
+  const isArchiveVisible = mode === 'archive' || mode === 'archive-detail';
+  const {
+    isLoading: isProfileLoading,
+    profile,
+  } = useProfile();
   const {
     isError: isBookmarkedPostsError,
     isLoading: isBookmarkedPostsLoading,
     posts: bookmarkedPosts,
     refetch: refetchBookmarkedPosts,
   } = useBookmarkedPosts({ enabled: isSavedPostsTab });
+  const {
+    isError: isArchivePostsError,
+    isLoading: isArchivePostsLoading,
+    posts: archivePosts,
+    refetch: refetchArchivePosts,
+  } = useMyPosts(profile?.id ?? null, { enabled: isArchiveVisible });
   const maxContentWidth = Math.min(width, 560);
   const gridItemSize = Math.floor(maxContentWidth / 3);
 
@@ -84,7 +98,11 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
         {mode === 'profile-edit' ? (
           <ProfileEditView />
         ) : isArchiveDetail ? (
-          <ArchiveDetailView onOpenLikes={() => setLikesOpen(true)} />
+          <ArchiveDetailView
+            initialPostId={selectedArchivePostId}
+            posts={archivePosts}
+            onOpenLikes={() => setLikesOpen(true)}
+          />
         ) : (
           <>
             <ProfileHeader
@@ -97,14 +115,21 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
               showTabs={mode === 'profile'}
             />
             <ProfileGallery
+              archivePosts={mode === 'archive' ? archivePosts : undefined}
               bookmarkedPosts={isSavedPostsTab ? bookmarkedPosts : undefined}
               isArchive={mode === 'archive'}
+              isArchivePostsError={mode === 'archive' && isArchivePostsError}
+              isArchivePostsLoading={mode === 'archive' && (isProfileLoading || isArchivePostsLoading)}
               isBookmarkedPostsError={isSavedPostsTab && isBookmarkedPostsError}
               isBookmarkedPostsLoading={isSavedPostsTab && isBookmarkedPostsLoading}
               imageSource={activeTab === 'saved' ? savedProfileImageSource : profileImageSource}
               itemSize={gridItemSize}
-              onArchiveItemPress={() => setMode('archive-detail')}
+              onArchiveItemPress={(post) => {
+                setSelectedArchivePostId(post?.id ?? null);
+                setMode('archive-detail');
+              }}
               onBookmarkedPostPress={(post) => onOpenBookmarkedPost(post.placeId)}
+              onRetryArchivePosts={() => void refetchArchivePosts()}
               onRetryBookmarkedPosts={() => void refetchBookmarkedPosts()}
             />
           </>
