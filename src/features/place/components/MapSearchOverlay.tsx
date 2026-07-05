@@ -78,6 +78,7 @@ const MapSearchOverlay = ({
   onSelectPlace,
 }: MapSearchOverlayProps) => {
   const inputRef = useRef<TextInput>(null);
+  const searchRequestIdRef = useRef(0);
   const [query, setQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [recentQueries, setRecentQueries] = useState(['동물병원', '포장주문', '할인중']);
@@ -97,6 +98,7 @@ const MapSearchOverlay = ({
   const shouldShowEmptyState = hasSearched && !isSearching && !hasResults;
 
   const handleQueryChange = (nextQuery: string) => {
+    searchRequestIdRef.current += 1;
     setQuery(nextQuery);
 
     if (!nextQuery.trim()) {
@@ -104,6 +106,7 @@ const MapSearchOverlay = ({
     }
 
     setRegisteredResults([]);
+    setIsSearchingRegisteredPlaces(false);
     clearSearchResults();
   };
 
@@ -112,11 +115,14 @@ const MapSearchOverlay = ({
 
     if (!normalizedQuery) {
       setHasSearched(false);
+      setRegisteredResults([]);
+      setIsSearchingRegisteredPlaces(false);
       await searchPlaces(normalizedQuery, { centerLat, centerLng });
       return;
     }
 
     Keyboard.dismiss();
+    const requestId = ++searchRequestIdRef.current;
     setHasSearched(true);
     setQuery(normalizedQuery);
     setRecentQueries((prev) => [
@@ -128,9 +134,21 @@ const MapSearchOverlay = ({
     setRegisteredResults([]);
 
     const registeredSearch = placeApi.searchPlaces(normalizedQuery)
-      .then(setRegisteredResults)
-      .catch(() => setRegisteredResults([]))
-      .finally(() => setIsSearchingRegisteredPlaces(false));
+      .then((results) => {
+        if (requestId === searchRequestIdRef.current) {
+          setRegisteredResults(results);
+        }
+      })
+      .catch(() => {
+        if (requestId === searchRequestIdRef.current) {
+          setRegisteredResults([]);
+        }
+      })
+      .finally(() => {
+        if (requestId === searchRequestIdRef.current) {
+          setIsSearchingRegisteredPlaces(false);
+        }
+      });
     const localSearch = searchPlaces(normalizedQuery, { centerLat, centerLng });
 
     await Promise.all([registeredSearch, localSearch]);
@@ -196,6 +214,7 @@ const MapSearchOverlay = ({
               accessibilityLabel="검색어 지우기"
               hitSlop={8}
               onPress={() => {
+                searchRequestIdRef.current += 1;
                 setQuery('');
                 setHasSearched(false);
                 setRegisteredResults([]);
