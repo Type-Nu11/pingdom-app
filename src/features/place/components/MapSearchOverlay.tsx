@@ -247,15 +247,23 @@ const MapSearchOverlay = ({
             </View>
             <View style={styles.chipRow}>
               {recentQueries.map((item) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={item}
-                  style={styles.chip}
-                  onPress={() => void runSearch(item)}
-                >
-                  <Text style={styles.chipText}>{item}</Text>
-                  <Text style={styles.chipRemove}>×</Text>
-                </Pressable>
+                <View key={item} style={styles.chip}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item} 검색`}
+                    onPress={() => void runSearch(item)}
+                  >
+                    <Text style={styles.chipText}>{item}</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item} 최근 검색어 삭제`}
+                    hitSlop={6}
+                    onPress={() => setRecentQueries((prev) => prev.filter((query) => query !== item))}
+                  >
+                    <Text style={styles.chipRemove}>×</Text>
+                  </Pressable>
+                </View>
               ))}
             </View>
 
