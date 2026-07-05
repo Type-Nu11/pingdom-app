@@ -41,6 +41,11 @@ export type GetPostsRequest = {
   placeId?: number;
 };
 
+export type GetLikedPostsRequest = {
+  limit?: number;
+  page?: number;
+};
+
 export type RecordLikeRequest = {
   mapImageId: number;
 };
@@ -177,6 +182,16 @@ export const recordApi = {
         limit: params.limit ?? 100,
         page: params.page ?? 1,
         ...(params.placeId !== undefined ? { placeId: params.placeId } : {}),
+      },
+    });
+
+    return data;
+  },
+  getLikedPosts: async (params: GetLikedPostsRequest = {}): Promise<PostsPage> => {
+    const { data } = await api.get<PostsPage>('/map/like', {
+      params: {
+        limit: params.limit ?? 100,
+        page: params.page ?? 1,
       },
     });
 

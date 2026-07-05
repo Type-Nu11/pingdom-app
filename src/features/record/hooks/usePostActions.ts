@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { likedPostQueryKeys } from './useLikedPosts';
 import { postBookmarkQueryKeys } from './usePostBookmark';
 import { postQueryKeys } from './usePlacePosts';
 import { recordApi, type UpdateRecordRequest } from '../api/recordApi';
@@ -52,6 +53,7 @@ export const useDeletePost = () => {
     mutationFn: (id: number) => recordApi.deleteRecord(id),
     onMutate: async (id) => {
       await Promise.all([
+        queryClient.cancelQueries({ queryKey: likedPostQueryKeys.all }),
         queryClient.cancelQueries({ queryKey: postQueryKeys.all }),
         queryClient.cancelQueries({ queryKey: postBookmarkQueryKeys.all }),
       ]);
@@ -62,7 +64,14 @@ export const useDeletePost = () => {
       const previousBookmarkedPostPages = queryClient.getQueriesData<PostsPage>({
         queryKey: postBookmarkQueryKeys.all,
       });
+      const previousLikedPostPages = queryClient.getQueriesData<PostsPage>({
+        queryKey: likedPostQueryKeys.all,
+      });
 
+      queryClient.setQueriesData<PostsPage>(
+        { queryKey: likedPostQueryKeys.all },
+        (data) => removePostFromPage(data, id),
+      );
       queryClient.setQueriesData<PostsPage>(
         { queryKey: postQueryKeys.all },
         (data) => removePostFromPage(data, id),
@@ -72,9 +81,12 @@ export const useDeletePost = () => {
         (data) => removePostFromPage(data, id),
       );
 
-      return { previousBookmarkedPostPages, previousPostPages };
+      return { previousBookmarkedPostPages, previousLikedPostPages, previousPostPages };
     },
     onError: (_error, _id, context) => {
+      context?.previousLikedPostPages.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data);
+      });
       context?.previousPostPages.forEach(([queryKey, data]) => {
         queryClient.setQueryData(queryKey, data);
       });
@@ -84,6 +96,7 @@ export const useDeletePost = () => {
     },
     onSettled: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: likedPostQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: postQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: postBookmarkQueryKeys.all }),
       ]);
@@ -103,6 +116,7 @@ export const useUpdatePost = () => {
     mutationFn: ({ id, payload }: UpdatePostPayload) => recordApi.updateRecord(id, payload),
     onMutate: async ({ id, payload }) => {
       await Promise.all([
+        queryClient.cancelQueries({ queryKey: likedPostQueryKeys.all }),
         queryClient.cancelQueries({ queryKey: postQueryKeys.all }),
         queryClient.cancelQueries({ queryKey: postBookmarkQueryKeys.all }),
       ]);
@@ -113,7 +127,14 @@ export const useUpdatePost = () => {
       const previousBookmarkedPostPages = queryClient.getQueriesData<PostsPage>({
         queryKey: postBookmarkQueryKeys.all,
       });
+      const previousLikedPostPages = queryClient.getQueriesData<PostsPage>({
+        queryKey: likedPostQueryKeys.all,
+      });
 
+      queryClient.setQueriesData<PostsPage>(
+        { queryKey: likedPostQueryKeys.all },
+        (data) => updatePostInPage(data, id, payload),
+      );
       queryClient.setQueriesData<PostsPage>(
         { queryKey: postQueryKeys.all },
         (data) => updatePostInPage(data, id, payload),
@@ -123,9 +144,12 @@ export const useUpdatePost = () => {
         (data) => updatePostInPage(data, id, payload),
       );
 
-      return { previousBookmarkedPostPages, previousPostPages };
+      return { previousBookmarkedPostPages, previousLikedPostPages, previousPostPages };
     },
     onError: (_error, _payload, context) => {
+      context?.previousLikedPostPages.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data);
+      });
       context?.previousPostPages.forEach(([queryKey, data]) => {
         queryClient.setQueryData(queryKey, data);
       });
@@ -135,6 +159,7 @@ export const useUpdatePost = () => {
     },
     onSettled: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: likedPostQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: postQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: postBookmarkQueryKeys.all }),
       ]);
@@ -148,4 +173,3 @@ export const useUpdatePost = () => {
     ),
   };
 };
-
