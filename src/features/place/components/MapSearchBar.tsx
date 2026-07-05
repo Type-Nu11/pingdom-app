@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type MapSearchBarProps = {
+  onOpenSearch?: () => void;
   onProfilePress?: () => void;
   profileSize: number;
   searchHeight: number;
@@ -10,7 +11,13 @@ type MapSearchBarProps = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
-const MapSearchBar = ({ onProfilePress, profileSize, searchHeight, uiScale }: MapSearchBarProps) => {
+const MapSearchBar = ({
+  onOpenSearch,
+  onProfilePress,
+  profileSize,
+  searchHeight,
+  uiScale,
+}: MapSearchBarProps) => {
   return (
     <View
       style={[
@@ -22,27 +29,35 @@ const MapSearchBar = ({ onProfilePress, profileSize, searchHeight, uiScale }: Ma
         },
       ]}
     >
-      <Text
-        style={[
-          styles.searchIcon,
-          {
-            fontSize: Math.round(clamp(36 * uiScale, 25, 36)),
-            lineHeight: Math.round(clamp(39 * uiScale, 28, 39)),
-            marginRight: Math.round(clamp(8 * uiScale, 5, 8)),
-          },
-        ]}
+      <Pressable
+        accessibilityRole="search"
+        accessibilityLabel="집 근처 업체 검색"
+        style={styles.searchTapArea}
+        onPress={onOpenSearch}
       >
-        ⌕
-      </Text>
-      <TextInput
-        style={[styles.searchInput, { fontSize: Math.round(clamp(25 * uiScale, 17, 25)) }]}
-        placeholder="Search..."
-        placeholderTextColor="#81828c"
-        returnKeyType="search"
-      />
+        <Text
+          style={[
+            styles.searchIcon,
+            {
+              fontSize: Math.round(clamp(36 * uiScale, 25, 36)),
+              lineHeight: Math.round(clamp(39 * uiScale, 28, 39)),
+              marginRight: Math.round(clamp(8 * uiScale, 5, 8)),
+            },
+          ]}
+        >
+          ⌕
+        </Text>
+        <Text
+          numberOfLines={1}
+          style={[styles.searchPlaceholder, { fontSize: Math.round(clamp(25 * uiScale, 17, 25)) }]}
+        >
+          집 근처 업체 검색
+        </Text>
+      </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="프로필 열기"
+        hitSlop={8}
         style={[
           styles.profileButton,
           {
@@ -99,13 +114,17 @@ const styles = StyleSheet.create({
     lineHeight: 39,
     marginRight: 8,
   },
-  searchInput: {
-    color: '#202330',
+  searchPlaceholder: {
+    color: '#81828c',
     flex: 1,
     fontSize: 25,
     fontWeight: '700',
+  },
+  searchTapArea: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
     height: '100%',
-    paddingVertical: 0,
   },
   profileButton: {
     alignItems: 'center',

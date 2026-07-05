@@ -1,5 +1,7 @@
-# PingDom App
+<img width="7680" height="4320" alt="image" src="https://github.com/user-attachments/assets/a789ec07-981f-4d2b-a11b-f75d8d6694b6" />
 
+
+# Pingdum Frontend Convention
 
 ## 프로젝트 구조
 
@@ -96,6 +98,7 @@ login()
 * Docs: 문서 수정
 * Style: 코드 포맷 변경
 * Refactor: 코드 리팩토링
+* Design: 디자인 변경
 * Test: 테스트 코드
 * Chore: 설정 변경
 * Design: UI 변경

@@ -14,6 +14,7 @@ import MapActionButtons from '../components/MapActionButtons';
 import MapBottomSheet from '../components/MapBottomSheet';
 import MarkerPreviewCard from '../components/MarkerPreviewCard';
 import MapSearchBar from '../components/MapSearchBar';
+import MapSearchOverlay, { type MapSearchSelection } from '../components/MapSearchOverlay';
 import { mapCategories } from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
@@ -36,6 +37,16 @@ import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import type { MapMarker, RecommendedPlace } from '../model/place.types';
 
+const COORDINATE_MATCH_THRESHOLD = 0.00015;
+
+const isSamePlaceCoordinate = (
+  a: { latitude: number; longitude: number },
+  b: { lat: number; lng: number }
+) => (
+  Math.abs(a.latitude - b.lat) <= COORDINATE_MATCH_THRESHOLD
+  && Math.abs(a.longitude - b.lng) <= COORDINATE_MATCH_THRESHOLD
+);
+
 type MapScreenProps = {
   notificationLikeContext?: {
     notificationsId?: string;
@@ -56,6 +67,8 @@ export default function MapScreen({
 }: MapScreenProps) {
   const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
   const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchFocusPlace, setSearchFocusPlace] = useState<MapSearchSelection | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
@@ -136,16 +149,29 @@ export default function MapScreen({
       onClearOpenedBookmarkedPlace?.();
     }
   }, [onClearOpenedBookmarkedPlace, openedBookmarkedPlaceId]);
+  const mapCenterLat = searchFocusPlace?.lat ?? center.lat;
+  const mapCenterLng = searchFocusPlace?.lng ?? center.lng;
+
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
     setSelectedMarkerId(event.nativeEvent.markerId);
   };
   const handleRecommendedPlacePress = (place: RecommendedPlace) => {
     setSelectedMarkerId(String(place.id));
+    setSearchFocusPlace(null);
 
     void recordRecommendationClick({
       placeId: place.id,
       recommendationVersion: recommendationVersion ?? 'place-rec-v1',
     }).catch(() => undefined);
+  };
+  const handleSearchPlaceSelect = (place: MapSearchSelection) => {
+    const matchingPlace = [...places, ...recommendedPlaces].find((candidate) => (
+      String(candidate.id) === place.id
+      || isSamePlaceCoordinate(candidate, place)
+    ));
+
+    setSearchFocusPlace(place);
+    setSelectedMarkerId(matchingPlace ? String(matchingPlace.id) : null);
   };
   const handleReport = async (postId: number, reason: string, hideAfterReport: boolean) => {
     const postKey = String(postId);
@@ -174,12 +200,12 @@ export default function MapScreen({
 
       <KakaoMapCard
         style={styles.map}
-        centerLat={center.lat}
-        centerLng={center.lng}
+        centerLat={mapCenterLat}
+        centerLng={mapCenterLng}
         zoomLevel={16}
         userLat={userLat}
         userLng={userLng}
-        followUser={followUser}
+        followUser={searchFocusPlace ? false : followUser}
         markers={mapMarkers}
         onMarkerPress={handleMarkerPress}
       />
@@ -194,6 +220,7 @@ export default function MapScreen({
           pointerEvents="box-none"
         >
           <MapSearchBar
+            onOpenSearch={() => setIsSearchOpen(true)}
             onProfilePress={onOpenProfile}
             profileSize={profileSize}
             searchHeight={searchHeight}
@@ -272,6 +299,17 @@ export default function MapScreen({
           />
         </View>
       )}
+
+      {isSearchOpen ? (
+        <MapSearchOverlay
+          centerLat={mapCenterLat}
+          centerLng={mapCenterLng}
+          onClose={() => setIsSearchOpen(false)}
+          onCreatePlace={onCreatePlace}
+          onOpenProfile={onOpenProfile}
+          onSelectPlace={handleSearchPlaceSelect}
+        />
+      ) : null}
     </View>
   );
 }
