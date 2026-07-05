@@ -25,7 +25,7 @@ export type KakaoMapCardProps = ViewProps & {
     id: string;
     lat: number;
     lng: number;
-    markerType?: 'default' | 'hot';
+    markerType?: 'default' | 'hot' | 'search';
   }>;
 };
 
