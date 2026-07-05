@@ -34,20 +34,12 @@ type MapSearchOverlayProps = {
 };
 
 const quickActions = [
-  { id: 'create', icon: '+', label: '장소 등록' },
-  { id: 'nearby', icon: '⌖', label: '내 주변' },
-  { id: 'recommend', icon: '◆', label: '추천 장소' },
-  { id: 'profile', icon: '●', label: '프로필' },
+  { id: 'food', icon: '♨', label: '음식', query: '음식' },
+  { id: 'music', icon: '♪', label: '음악', query: '음악' },
+  { id: 'fashion', icon: '♧', label: '패션', query: '패션' },
+  { id: 'game', icon: '⊙', label: '게임', query: '게임' },
+  { id: 'more', icon: '•••', label: '더보기', query: '핫플' },
 ] as const;
-
-const recommendedQueries = [
-  '홍대 맛집',
-  '강남 카페',
-  '신촌 놀거리',
-  '성수 편집샵',
-  '이태원 음악바',
-  '잠실 보드게임',
-];
 
 const toKakaoSelection = (item: KakaoLocalSearchItem): MapSearchSelection => ({
   address: item.address,
@@ -74,14 +66,20 @@ const MapSearchOverlay = ({
   centerLng,
   onClose,
   onCreatePlace,
-  onOpenProfile,
   onSelectPlace,
 }: MapSearchOverlayProps) => {
   const inputRef = useRef<TextInput>(null);
   const searchRequestIdRef = useRef(0);
   const [query, setQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
-  const [recentQueries, setRecentQueries] = useState(['동물병원', '포장주문', '할인중']);
+  const [recentQueries, setRecentQueries] = useState([
+    '대구소프트웨어마이스터고',
+    '진주성',
+    '이용인집',
+    '이용인카페',
+    '스타벅스',
+    '대소고사감실',
+  ]);
   const [registeredResults, setRegisteredResults] = useState<PlaceSearchItem[]>([]);
   const [isSearchingRegisteredPlaces, setIsSearchingRegisteredPlaces] = useState(false);
   const {
@@ -161,24 +159,11 @@ const MapSearchOverlay = ({
   };
 
   const handleQuickAction = (id: typeof quickActions[number]['id']) => {
-    if (id === 'create') {
-      onClose();
-      onCreatePlace?.();
-      return;
-    }
+    const action = quickActions.find((item) => item.id === id);
 
-    if (id === 'profile') {
-      onClose();
-      onOpenProfile?.();
-      return;
+    if (action) {
+      void runSearch(action.query);
     }
-
-    if (id === 'nearby') {
-      void runSearch('내 주변 맛집');
-      return;
-    }
-
-    void runSearch('추천 장소');
   };
 
   return (
@@ -202,8 +187,8 @@ const MapSearchOverlay = ({
             ref={inputRef}
             returnKeyType="search"
             style={styles.searchInput}
-            placeholder="집 근처 업체 검색"
-            placeholderTextColor="#8b8e98"
+            placeholder="원하는 장소 검색"
+            placeholderTextColor="#717481"
             value={query}
             onChangeText={handleQueryChange}
             onSubmitEditing={() => void runSearch()}
@@ -268,7 +253,11 @@ const MapSearchOverlay = ({
             </View>
 
             <Text style={[styles.sectionTitle, styles.shortcutTitle]}>바로가기</Text>
-            <View style={styles.shortcutRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.shortcutRow}
+            >
               {quickActions.map((item) => (
                 <Pressable
                   accessibilityRole="button"
@@ -276,13 +265,20 @@ const MapSearchOverlay = ({
                   style={styles.shortcut}
                   onPress={() => handleQuickAction(item.id)}
                 >
-                  <View style={styles.shortcutIconBox}>
-                    <Text style={styles.shortcutIcon}>{item.icon}</Text>
-                  </View>
+                  <Text style={styles.shortcutIcon}>{item.icon}</Text>
                   <Text style={styles.shortcutText}>{item.label}</Text>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
+
+            <Text style={[styles.sectionTitle, styles.recommendTitle]}>장소 추천 받기</Text>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.recommendButton}
+              onPress={() => void runSearch('장소 추천')}
+            >
+              <Text style={styles.recommendButtonText}>장소 추천 받아보기</Text>
+            </Pressable>
           </>
         ) : null}
 
@@ -352,24 +348,6 @@ const MapSearchOverlay = ({
         ) : !isSearching && !hasResults && searchStatusMessage && !hasSearched ? (
           <Text style={styles.statusText}>{searchStatusMessage}</Text>
         ) : null}
-
-        {!isResultMode ? (
-          <>
-            <Text style={[styles.sectionTitle, styles.recommendTitle]}>추천 검색</Text>
-            <View style={styles.chipRow}>
-              {recommendedQueries.map((item) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={item}
-                  style={styles.recommendChip}
-                  onPress={() => void runSearch(item)}
-                >
-                  <Text style={styles.recommendChipText}>{item}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </>
-        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -378,41 +356,41 @@ const MapSearchOverlay = ({
 const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
-    height: 40,
+    height: 48,
     justifyContent: 'center',
-    width: 34,
+    width: 32,
   },
   backIcon: {
-    color: '#3e414b',
-    fontSize: 38,
+    color: '#5c606b',
+    fontSize: 40,
     fontWeight: '300',
-    lineHeight: 40,
+    lineHeight: 44,
   },
   chip: {
     alignItems: 'center',
-    backgroundColor: '#eef0f5',
-    borderRadius: 18,
+    backgroundColor: '#f0f0f2',
+    borderRadius: 21,
     flexDirection: 'row',
-    gap: 5,
-    minHeight: 34,
-    paddingHorizontal: 13,
+    gap: 6,
+    minHeight: 38,
+    paddingHorizontal: 14,
   },
   chipRemove: {
-    color: '#777a84',
-    fontSize: 16,
-    fontWeight: '800',
-    lineHeight: 18,
+    color: '#7a7d86',
+    fontSize: 22,
+    fontWeight: '400',
+    lineHeight: 22,
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
+    gap: 10,
+    marginTop: 12,
   },
   chipText: {
-    color: '#525661',
-    fontSize: 13,
-    fontWeight: '800',
+    color: '#696d78',
+    fontSize: 15,
+    fontWeight: '600',
   },
   clearIcon: {
     color: '#777a84',
@@ -422,18 +400,18 @@ const styles = StyleSheet.create({
   },
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fbfbfc',
     zIndex: 200,
   },
   content: {
-    paddingBottom: 42,
-    paddingHorizontal: 24,
-    paddingTop: 14,
+    paddingBottom: 48,
+    paddingHorizontal: 31,
+    paddingTop: 16,
   },
   deleteText: {
-    color: '#9a9da7',
+    color: '#737781',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   emptyButton: {
     alignItems: 'center',
@@ -471,24 +449,26 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 7,
-    paddingHorizontal: 24,
-    paddingTop: 10,
-  },
-  recommendChip: {
-    backgroundColor: '#f3f4f8',
-    borderRadius: 18,
-    minHeight: 34,
-    paddingHorizontal: 15,
-    justifyContent: 'center',
-  },
-  recommendChipText: {
-    color: '#4b4f5c',
-    fontSize: 13,
-    fontWeight: '800',
+    gap: 12,
+    paddingHorizontal: 28,
+    paddingTop: 8,
   },
   recommendTitle: {
-    marginTop: 22,
+    marginTop: 48,
+  },
+  recommendButton: {
+    alignItems: 'center',
+    backgroundColor: '#ff1956',
+    borderRadius: 18,
+    height: 75,
+    justifyContent: 'center',
+    marginTop: 14,
+    width: '100%',
+  },
+  recommendButtonText: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '900',
   },
   resultAddress: {
     color: '#636774',
@@ -517,24 +497,24 @@ const styles = StyleSheet.create({
   },
   searchField: {
     alignItems: 'center',
-    backgroundColor: '#f0f1f6',
-    borderRadius: 10,
+    backgroundColor: '#e8e8eb',
+    borderRadius: 18,
     flex: 1,
     flexDirection: 'row',
-    gap: 8,
-    height: 42,
-    paddingHorizontal: 12,
+    gap: 10,
+    height: 54,
+    paddingHorizontal: 17,
   },
   searchIcon: {
-    color: '#777a84',
-    fontSize: 23,
-    lineHeight: 26,
+    color: '#717481',
+    fontSize: 30,
+    lineHeight: 32,
   },
   searchInput: {
-    color: '#1d2028',
+    color: '#303440',
     flex: 1,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
     padding: 0,
   },
   sectionHeader: {
@@ -543,43 +523,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    color: '#363a45',
-    fontSize: 13,
+    color: '#2f333d',
+    fontSize: 15,
     fontWeight: '900',
   },
   shortcut: {
     alignItems: 'center',
-    flex: 1,
-    minWidth: 68,
+    backgroundColor: '#f4f4f6',
+    borderRadius: 18,
+    flexDirection: 'row',
+    gap: 7,
+    height: 42,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
   },
   shortcutIcon: {
     color: '#ff1956',
     fontSize: 22,
     fontWeight: '900',
   },
-  shortcutIconBox: {
-    alignItems: 'center',
-    backgroundColor: '#eef6ff',
-    borderRadius: 13,
-    height: 42,
-    justifyContent: 'center',
-    width: 42,
-  },
   shortcutRow: {
     flexDirection: 'row',
-    gap: 11,
-    marginTop: 12,
+    gap: 12,
+    paddingRight: 31,
+    paddingTop: 16,
   },
   shortcutText: {
-    color: '#3e414b',
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 16,
-    marginTop: 7,
+    color: '#5f626d',
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 20,
     textAlign: 'center',
   },
   shortcutTitle: {
-    marginTop: 24,
+    marginTop: 64,
   },
   statusRow: {
     alignItems: 'center',
