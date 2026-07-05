@@ -349,7 +349,7 @@ class KakaoMapView(
 
     private fun normalizeMarkerType(value: String?): String {
         return when (value) {
-            "default", "hot" -> value
+            "default", "hot", "search" -> value
             else -> "default"
         }
     }
@@ -361,9 +361,11 @@ class KakaoMapView(
         val originalBitmap = if (sourceBitmap != null) {
             sourceBitmap
         } else {
-            val fallbackBitmap =
-                if (markerType == "hot") createHotMarkerBitmap(category) else createDefaultMarkerBitmap(category)
-            fallbackBitmap
+            when (markerType) {
+                "hot" -> createHotMarkerBitmap(category)
+                "search" -> createSearchMarkerBitmap()
+                else -> createDefaultMarkerBitmap(category)
+            }
         }
         val bottomSafePaddingPx =
             if (markerType == "hot") HOT_MARKER_BOTTOM_SAFE_PADDING_PX else NORMAL_MARKER_BOTTOM_SAFE_PADDING_PX
@@ -456,6 +458,58 @@ class KakaoMapView(
         canvas.scale(0.66f, 0.66f)
         drawPlaceMarkerIcon(canvas, category)
         canvas.restore()
+
+        return bitmap
+    }
+
+    private fun createSearchMarkerBitmap(): Bitmap {
+        val scale = resources.displayMetrics.density
+        val width = (32 * scale).toInt()
+        val height = (37 * scale).toInt()
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.scale(scale, scale)
+        val markerPath = Path().apply {
+            moveTo(5.3937f, 5.3278f)
+            cubicTo(8.2067f, 2.5567f, 12.022f, 1f, 16.0002f, 1f)
+            cubicTo(19.9784f, 1f, 23.7936f, 2.5567f, 26.6066f, 5.3278f)
+            cubicTo(29.4197f, 8.0988f, 31f, 11.8571f, 31f, 15.7759f)
+            cubicTo(31f, 19.6947f, 29.4197f, 23.453f, 26.6066f, 26.224f)
+            lineTo(16.0002f, 35f)
+            lineTo(5.3937f, 26.224f)
+            cubicTo(4.0007f, 24.852f, 2.8958f, 23.2231f, 2.1419f, 21.4304f)
+            cubicTo(1.388f, 19.6377f, 1f, 17.7163f, 1f, 15.7759f)
+            cubicTo(1f, 13.8355f, 1.388f, 11.914f, 2.1419f, 10.1213f)
+            cubicTo(2.8958f, 8.3286f, 4.0007f, 6.6998f, 5.3937f, 5.3278f)
+            close()
+        }
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFF2D6CDF.toInt()
+            style = Paint.Style.FILL
+        }
+        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.STROKE
+            strokeJoin = Paint.Join.ROUND
+            strokeWidth = 2f
+        }
+        val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.STROKE
+            strokeWidth = 2.2f
+        }
+        val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeWidth = 2.2f
+        }
+
+        canvas.drawPath(markerPath, fillPaint)
+        canvas.drawPath(markerPath, strokePaint)
+        canvas.drawCircle(14.5f, 14.3f, 4.7f, ringPaint)
+        canvas.drawLine(18.1f, 17.9f, 22f, 21.8f, handlePaint)
 
         return bitmap
     }

@@ -37,6 +37,7 @@ import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import type { MapMarker, RecommendedPlace } from '../model/place.types';
 
+const SEARCH_FOCUS_MARKER_ID = 'search-focus-place';
 const COORDINATE_MATCH_THRESHOLD = 0.00015;
 
 const isSamePlaceCoordinate = (
@@ -45,6 +46,14 @@ const isSamePlaceCoordinate = (
 ) => (
   Math.abs(a.latitude - b.lat) <= COORDINATE_MATCH_THRESHOLD
   && Math.abs(a.longitude - b.lng) <= COORDINATE_MATCH_THRESHOLD
+);
+
+const isSameMarkerCoordinate = (
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) => (
+  Math.abs(a.lat - b.lat) <= COORDINATE_MATCH_THRESHOLD
+  && Math.abs(a.lng - b.lng) <= COORDINATE_MATCH_THRESHOLD
 );
 
 type MapScreenProps = {
@@ -108,9 +117,25 @@ export default function MapScreen({
         lng: place.longitude,
         markerType: 'hot' as const,
       }));
+    const baseMarkers = [...markers, ...recommendationMarkers];
+    const hasMatchingMarker = searchFocusPlace
+      ? baseMarkers.some((marker) => (
+        marker.id === searchFocusPlace.id
+        || isSameMarkerCoordinate(marker, searchFocusPlace)
+      ))
+      : true;
+    const searchFocusMarker = searchFocusPlace && !hasMatchingMarker
+      ? [{
+        category: 'food' as const,
+        id: SEARCH_FOCUS_MARKER_ID,
+        lat: searchFocusPlace.lat,
+        lng: searchFocusPlace.lng,
+        markerType: 'search' as const,
+      }]
+      : [];
 
-    return [...markers, ...recommendationMarkers];
-  }, [markers, recommendedPlaces]);
+    return [...baseMarkers, ...searchFocusMarker];
+  }, [markers, recommendedPlaces, searchFocusPlace]);
   const selectedPlaceId = selectedPlace?.id
     ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
   const {
@@ -153,6 +178,10 @@ export default function MapScreen({
   const mapCenterLng = searchFocusPlace?.lng ?? center.lng;
 
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
+    if (event.nativeEvent.markerId === SEARCH_FOCUS_MARKER_ID) {
+      return;
+    }
+
     setSelectedMarkerId(event.nativeEvent.markerId);
   };
   const handleRecommendedPlacePress = (place: RecommendedPlace) => {
