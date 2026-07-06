@@ -123,7 +123,7 @@ export default function MapScreen({
         lng: place.longitude,
         markerType: hotPlaceIds.has(String(place.id)) ? 'hot' as const : 'default' as const,
       }));
-    const baseMarkers = [...markers, ...recommendationMarkers];
+    const baseMarkers = [...placeMarkers, ...recommendationMarkers];
     const hasMatchingMarker = searchFocusPlace
       ? baseMarkers.some((marker) => (
         marker.id === searchFocusPlace.id
@@ -140,8 +140,8 @@ export default function MapScreen({
       }]
       : [];
 
-    return [...placeMarkers, ...recommendationMarkers];
-  }, [hotPlaceIds, markers, recommendedPlaces]);
+    return [...baseMarkers, ...searchFocusMarker];
+  }, [hotPlaceIds, markers, recommendedPlaces, searchFocusPlace]);
   const selectedPlaceId = selectedPlace?.id
     ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
   const {

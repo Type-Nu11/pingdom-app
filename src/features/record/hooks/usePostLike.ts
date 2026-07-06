@@ -144,6 +144,7 @@ export const usePostLike = () => {
       });
     },
     onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: likedPostQueryKeys.all });
       void queryClient.invalidateQueries({ queryKey: postQueryKeys.hotPlaces() });
     },
   });

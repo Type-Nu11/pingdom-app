@@ -22,6 +22,7 @@ async function getPostsForHotPlaceDetection(): Promise<PostsPage> {
     return firstPage;
   }
 
+  // TODO: 서버에서 isHot 또는 hotPlaceIds 제공 시 해당 API로 교체
   const remainingPages = await Promise.all(
     Array.from({ length: firstPage.totalPages - 1 }, (_, index) => (
       recordApi.getPosts({
