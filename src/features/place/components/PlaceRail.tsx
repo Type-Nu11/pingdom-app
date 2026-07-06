@@ -20,6 +20,9 @@ const PlaceRail = ({
     imageUrlsByPlaceId,
     isLoadingByPlaceId,
   } = usePlacePreviewImages(visiblePlaces);
+  const fallbackImageUrl = visiblePlaces
+    .map((place) => imageUrlsByPlaceId[String(place.id)])
+    .find(Boolean);
 
   return (
     <View style={styles.placeRail}>
@@ -46,7 +49,7 @@ const PlaceRail = ({
                 address={place.address}
                 dimmed={index === 4 && places.length > 5}
                 distanceMeters={place.distanceMeters}
-                imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                imageUrl={imageUrlsByPlaceId[String(place.id)] ?? fallbackImageUrl}
                 isImageLoading={isLoadingByPlaceId[String(place.id)]}
                 name={place.name}
               />

@@ -369,7 +369,7 @@ export default function MapScreen({
         style={styles.map}
         centerLat={mapCenterLat}
         centerLng={mapCenterLng}
-        zoomLevel={16}
+        zoomLevel={3}
         userLat={userLat}
         userLng={userLng}
         followUser={searchFocusPlace ? false : followUser}
