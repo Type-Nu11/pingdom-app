@@ -723,7 +723,7 @@ class KakaoMapView(
         val topPaddingPx = (3f * scale).roundToInt()
         val bottomPaddingPx = scale.roundToInt()
         val anchorY = computePaddedAnchorY(
-            rawHeightPx = (63 * scale).roundToInt(),
+            rawHeightPx = (48 * scale).roundToInt(),
             rawAnchorY = 0.72f,
             topPaddingPx = topPaddingPx,
             bottomPaddingPx = bottomPaddingPx
@@ -742,11 +742,11 @@ class KakaoMapView(
 
     private fun createUserLocationBitmap(): Bitmap {
         val scale = resources.displayMetrics.density
-        val width = (48 * scale).toInt()
-        val height = (63 * scale).toInt()
+        val width = (36 * scale).toInt()
+        val height = (48 * scale).toInt()
         val centerX = width / 2f
-        val circleCenterY = 42 * scale
-        val circleRadius = 16.5f * scale
+        val circleCenterY = 32 * scale
+        val circleRadius = 12.5f * scale
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -764,20 +764,20 @@ class KakaoMapView(
             style = Paint.Style.STROKE
             strokeJoin = Paint.Join.ROUND
             strokeCap = Paint.Cap.ROUND
-            strokeWidth = 4f * scale
+            strokeWidth = 3f * scale
         }
 
         val arrowPath = Path().apply {
-            moveTo(centerX, 4.5f * scale)
-            lineTo(centerX - 15.5f * scale, 25.5f * scale)
-            lineTo(centerX + 15.5f * scale, 25.5f * scale)
+            moveTo(centerX, 3.5f * scale)
+            lineTo(centerX - 11.5f * scale, 19.5f * scale)
+            lineTo(centerX + 11.5f * scale, 19.5f * scale)
             close()
         }
 
-        canvas.drawCircle(centerX, circleCenterY + 1.5f * scale, circleRadius + 4 * scale, shadowPaint)
+        canvas.drawCircle(centerX, circleCenterY + 1.2f * scale, circleRadius + 3 * scale, shadowPaint)
         canvas.drawPath(arrowPath, strokePaint)
         canvas.drawPath(arrowPath, fillPaint)
-        canvas.drawCircle(centerX, circleCenterY, circleRadius + 4 * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        canvas.drawCircle(centerX, circleCenterY, circleRadius + 3 * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             style = Paint.Style.FILL
         })
