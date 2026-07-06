@@ -235,18 +235,29 @@ async function resolvePlaceForRecord({
   throw new Error('PLACE_COORDINATE_TOKEN_REQUIRED');
 }
 
-async function assertUserCanUploadPlacePost(placeId: number) {
-  const [profile, postsPage] = await Promise.all([
-    profileApi.getProfile(),
-    recordApi.getPosts({
-      limit: 100,
-      page: 1,
+async function countUserPostsForPlace(placeId: number, userId: number) {
+  let count = 0;
+
+  for (let page = 1; page <= PLACE_SEARCH_MAX_PAGES; page += 1) {
+    const postsPage = await recordApi.getPosts({
+      limit: PLACE_SEARCH_LIMIT,
+      page,
       placeId,
-    }),
-  ]);
-  const userPostCount = postsPage.posts.filter((post) => (
-    Number(post.placeId) === placeId && post.userId === profile.id
-  )).length;
+    });
+
+    count += postsPage.posts.filter((post) => (
+      Number(post.placeId) === placeId && post.userId === userId
+    )).length;
+
+    if (!postsPage.hasNext) break;
+  }
+
+  return count;
+}
+
+async function assertUserCanUploadPlacePost(placeId: number) {
+  const profile = await profileApi.getProfile();
+  const userPostCount = await countUserPostsForPlace(placeId, profile.id);
 
   if (userPostCount >= MAX_POSTS_PER_USER_PER_PLACE) {
     throw new Error(PLACE_POST_ALREADY_EXISTS_ERROR);

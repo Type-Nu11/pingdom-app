@@ -11,4 +11,8 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+# Kakao Maps SDK v2
+-keep class com.kakao.vectormap.** { *; }
+-dontwarn com.kakao.vectormap.**
+
 # Add any project specific keep options here:

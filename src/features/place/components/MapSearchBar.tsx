@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { clamp } from '../constants/mapLayout';
 
 type MapSearchBarProps = {
   onOpenSearch?: () => void;
@@ -8,8 +9,6 @@ type MapSearchBarProps = {
   searchHeight: number;
   uiScale: number;
 };
-
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 const MapSearchBar = ({
   onOpenSearch,

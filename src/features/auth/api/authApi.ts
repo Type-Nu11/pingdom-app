@@ -2,6 +2,7 @@ import { api } from '../../../shared/api/apiClient';
 import type {
   ChangePasswordRequest,
   ChangeUsernameRequest,
+  EmailVerifyRequest,
   LoginRequest,
   LoginResponse,
   SignupRequest,
@@ -49,5 +50,8 @@ export const authApi = {
   signup: async (payload: SignupRequest): Promise<SignupResponse> => {
     const { data } = await api.post<SignupResponse>('/auth/signup', payload);
     return data;
+  },
+  verifyEmail: async (payload: EmailVerifyRequest): Promise<void> => {
+    await api.post('/auth/email/verify', payload);
   },
 };

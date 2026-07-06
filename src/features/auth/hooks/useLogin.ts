@@ -30,6 +30,7 @@ export const useLogin = () => {
     isSubmitting,
     errorMessage,
     clearError: () => setErrorMessage(null),
+    setError: (msg: string) => setErrorMessage(msg),
   };
 };
 
