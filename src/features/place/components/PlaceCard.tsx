@@ -37,20 +37,11 @@ const PlaceCard = ({
           style={styles.previewImage}
         />
       ) : (
-        <>
-          <View style={styles.skyline}>
-            <View style={[styles.tower, styles.towerShort]} />
-            <View style={[styles.tower, styles.towerTall]} />
-            <View style={[styles.tower, styles.towerMid]} />
-            <View style={[styles.tower, styles.towerTiny]} />
-          </View>
-          <View style={styles.crowd}>
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
-        </>
+        <View style={styles.emptyPreview}>
+          <Text numberOfLines={1} style={styles.emptyPreviewText}>
+            {name?.slice(0, 1) ?? ''}
+          </Text>
+        </View>
       )}
       <View style={styles.imageShade} />
       {name ? (
@@ -100,39 +91,16 @@ const styles = StyleSheet.create({
   dimmedCard: {
     opacity: 0.72,
   },
-  skyline: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
-    height: 38,
-    justifyContent: 'space-around',
+  emptyPreview: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    backgroundColor: '#252a32',
+    justifyContent: 'center',
   },
-  tower: {
-    backgroundColor: '#f6d79c',
-    borderRadius: 2,
-    width: 10,
-  },
-  towerShort: {
-    height: 21,
-  },
-  towerTall: {
-    height: 36,
-  },
-  towerMid: {
-    height: 28,
-  },
-  towerTiny: {
-    height: 17,
-  },
-  crowd: {
-    flexDirection: 'row',
-    gap: 5,
-    marginTop: 9,
-  },
-  dot: {
-    backgroundColor: '#f8f0e5',
-    borderRadius: 4,
-    height: 8,
-    width: 8,
+  emptyPreviewText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 26,
+    fontWeight: '900',
   },
   moreText: {
     bottom: 19,
