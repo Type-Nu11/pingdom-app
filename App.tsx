@@ -12,12 +12,14 @@ import PlaceCreateFlowScreen from './src/features/place/screens/PlaceCreateFlowS
 import PlaceDetailScreen from './src/features/place/screens/PlaceDetailScreen';
 import ProfileScreen from './src/features/profile/screens/ProfileScreen';
 import SettingsScreen from './src/features/settings/screens/SettingsScreen';
+import { useMapSettingsStore } from './src/app/store/mapSettingsStore';
 
 type MainScreen = 'map' | 'place-create' | 'place-detail' | 'profile' | 'settings';
 type ProfileTab = 'liked' | 'saved';
 
 function AppContent() {
   const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
+  const hydrateMapSettings = useMapSettingsStore((state) => state.hydrateMapSettings);
   const { pendingRoute, consumePendingNotificationRoute } = useNotificationState();
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
   const [openedBookmarkedPlaceId, setOpenedBookmarkedPlaceId] = useState<number | null>(null);
@@ -30,7 +32,8 @@ function AppContent() {
 
   useEffect(() => {
     void bootstrapAuth();
-  }, [bootstrapAuth]);
+    void hydrateMapSettings();
+  }, [bootstrapAuth, hydrateMapSettings]);
 
   useEffect(() => {
     if (!isLoggedIn || !pendingRoute) {
