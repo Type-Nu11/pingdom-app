@@ -34,7 +34,7 @@ const HotPlaceList = ({
       return isLoading ? '등록자 확인 중' : '등록자 없음';
     }
 
-    return `등록자 ${username}`;
+    return `${username}`;
   };
 
   return (
