@@ -48,6 +48,7 @@ const resources = {
           accessibilityLabel: 'Enter a search term',
         },
         categories: {
+          etc: 'Etc',
           food: 'Food',
           music: 'Music',
           fashion: 'Fashion',
@@ -111,6 +112,7 @@ const resources = {
           accessibilityLabel: '검색어를 입력하세요',
         },
         categories: {
+          etc: '기타',
           food: '음식',
           music: '음악',
           fashion: '패션',
@@ -174,6 +176,7 @@ const resources = {
           accessibilityLabel: '検索語を入力してください',
         },
         categories: {
+          etc: 'その他',
           food: 'グルメ',
           music: '音楽',
           fashion: 'ファッション',
@@ -237,6 +240,7 @@ const resources = {
           accessibilityLabel: '请输入搜索词',
         },
         categories: {
+          etc: '其他',
           food: '美食',
           music: '音乐',
           fashion: '时尚',
@@ -300,6 +304,7 @@ const resources = {
           accessibilityLabel: 'Nhập từ khóa tìm kiếm',
         },
         categories: {
+          etc: 'Khác',
           food: 'Ẩm thực',
           music: 'Âm nhạc',
           fashion: 'Thời trang',
@@ -363,6 +368,7 @@ const resources = {
           accessibilityLabel: 'ป้อนคำค้นหา',
         },
         categories: {
+          etc: 'อื่นๆ',
           food: 'อาหาร',
           music: 'เพลง',
           fashion: 'แฟชั่น',

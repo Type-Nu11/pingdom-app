@@ -261,8 +261,8 @@ export default function MapScreen({
   const topPaddingTop = Math.round(clamp(44 * uiScale, 24, 44));
   const searchHeight = Math.round(clamp(64 * uiScale, 44, 64));
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
-  const chipHeight = Math.round(clamp(44 * uiScale, 40, 44));
-  const categoryIconScale = clamp(chipHeight / 52, 0.76, 0.86);
+  const chipHeight = Math.round(clamp(38 * uiScale, 34, 38));
+  const categoryIconScale = clamp(chipHeight / 54, 0.62, 0.7);
   const markerCardWidth = Math.round(clamp(width - 44, 338, 380));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,

@@ -1,5 +1,5 @@
 import { CategoryChipItem } from '../components/CategoryChips';
-import { FashionGlyph, FoodGlyph, GameGlyph, MusicGlyph } from '../components/CategoryGlyphs';
+import { EtcGlyph, FashionGlyph, FoodGlyph, GameGlyph, MusicGlyph } from '../components/CategoryGlyphs';
 
 export const mapCategories: CategoryChipItem[] = [
   {
@@ -33,5 +33,13 @@ export const mapCategories: CategoryChipItem[] = [
     Icon: GameGlyph,
     iconWidth: 22,
     iconHeight: 19,
+  },
+  {
+    id: 'etc',
+    label: '기타',
+    labelKey: 'map.categories.etc',
+    Icon: EtcGlyph,
+    iconWidth: 20,
+    iconHeight: 4,
   },
 ];

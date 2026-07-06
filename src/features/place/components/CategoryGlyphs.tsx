@@ -51,3 +51,11 @@ export const GameGlyph = (props: SvgProps) => (
     <Circle cx="17.5" cy="13" r="1.5" fill={PINK} />
   </Svg>
 );
+
+export const EtcGlyph = (props: SvgProps) => (
+  <Svg viewBox="0 0 20 4" fill="none" {...props}>
+    <Circle cx="2" cy="2" r="2" fill={PINK} />
+    <Circle cx="10" cy="2" r="2" fill={PINK} />
+    <Circle cx="18" cy="2" r="2" fill={PINK} />
+  </Svg>
+);

@@ -3,11 +3,14 @@ import type { PlaceCategory } from '../model/place.types';
 export const DEFAULT_PLACE_CATEGORY: PlaceCategory = 'food';
 
 const PLACE_CATEGORY_ALIASES: Record<string, PlaceCategory> = {
+  etc: 'etc',
   fashion: 'fashion',
   feshion: 'fashion',
   food: 'food',
   game: 'game',
   music: 'music',
+  other: 'etc',
+  기타: 'etc',
   패션: 'fashion',
   음식: 'food',
   게임: 'game',

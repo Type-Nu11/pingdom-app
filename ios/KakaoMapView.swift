@@ -394,7 +394,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
 
     private func normalizeMarkerCategory(_ value: String?) -> String {
         switch value {
-        case "fashion", "food", "game", "music":
+        case "etc", "fashion", "food", "game", "music":
             return value ?? "music"
         default:
             return "music"
@@ -630,6 +630,8 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
             drawGameIcon()
         case "fashion":
             drawFashionIcon()
+        case "etc":
+            drawEtcIcon()
         default:
             drawMusicIcon()
         }
@@ -700,6 +702,13 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
         path.addLine(to: CGPoint(x: 0, y: -2))
         UIColor.white.setStroke()
         path.stroke()
+    }
+
+    private func drawEtcIcon() {
+        UIColor.white.setFill()
+        UIBezierPath(ovalIn: CGRect(x: -10.7, y: -2.7, width: 5.4, height: 5.4)).fill()
+        UIBezierPath(ovalIn: CGRect(x: -2.7, y: -2.7, width: 5.4, height: 5.4)).fill()
+        UIBezierPath(ovalIn: CGRect(x: 5.3, y: -2.7, width: 5.4, height: 5.4)).fill()
     }
 
     private func makeUserLocationImage() -> UIImage {

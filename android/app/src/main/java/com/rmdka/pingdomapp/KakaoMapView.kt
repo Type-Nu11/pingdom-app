@@ -342,7 +342,7 @@ class KakaoMapView(
 
     private fun normalizeMarkerCategory(value: String?): String {
         return when (value) {
-            "fashion", "food", "game", "music" -> value
+            "etc", "fashion", "food", "game", "music" -> value
             else -> "music"
         }
     }
@@ -621,6 +621,7 @@ class KakaoMapView(
             "food" -> drawFoodIcon(canvas)
             "game" -> drawGameIcon(canvas)
             "fashion" -> drawFashionIcon(canvas)
+            "etc" -> drawEtcIcon(canvas)
             else -> drawMusicIcon(canvas)
         }
     }
@@ -690,6 +691,16 @@ class KakaoMapView(
             lineTo(0f, -2f)
         }
         canvas.drawPath(hangerPath, paint)
+    }
+
+    private fun drawEtcIcon(canvas: Canvas) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.FILL
+        }
+        canvas.drawCircle(-8f, 0f, 2.7f, paint)
+        canvas.drawCircle(0f, 0f, 2.7f, paint)
+        canvas.drawCircle(8f, 0f, 2.7f, paint)
     }
 
     private fun updateUserLocationIfReady() {
