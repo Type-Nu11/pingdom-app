@@ -107,28 +107,108 @@ function getRequestPath(url?: string): string {
     return url.split('?')[0] ?? url;
 }
 
+function shouldLogAuthRequest(url?: string): boolean {
+    const path = getRequestPath(url);
+
+    return [
+        '/auth/token/refresh',
+        '/map/places/create',
+        '/map/places/upload',
+        '/map/post/create',
+    ].includes(path);
+}
+
+function shouldLogApiRequest(url?: string): boolean {
+    const path = getRequestPath(url);
+
+    return shouldLogAuthRequest(url) || [
+        '/place',
+        '/place/recommendations',
+        '/places/search',
+    ].includes(path);
+}
+
+function summarizeResponseData(data: unknown) {
+    if (!data || typeof data !== 'object') {
+        return undefined;
+    }
+
+    const responseData = data as {
+        hasNext?: unknown;
+        limit?: unknown;
+        page?: unknown;
+        places?: unknown;
+        totalCount?: unknown;
+        totalPages?: unknown;
+    };
+
+    return {
+        hasNext: responseData.hasNext,
+        limit: responseData.limit,
+        page: responseData.page,
+        placesCount: Array.isArray(responseData.places) ? responseData.places.length : undefined,
+        totalCount: responseData.totalCount,
+        totalPages: responseData.totalPages,
+    };
+}
+
 function isPublicAuthUrl(url?: string): boolean {
     const path = getRequestPath(url);
 
     return path === '/auth/login' || path === '/auth/signup' || path === '/auth/token/refresh';
 }
 
-function toRefreshResponse(response: RawRefreshResponse): RefreshResponse {
+function toRefreshResponse(response: RawRefreshResponse, fallbackRefreshToken: string): RefreshResponse {
     if ('data' in response && response.data?.accessToken) {
         return {
             accessToken: response.data.accessToken,
-            refreshToken: response.data.refreshToken ?? '',
+            refreshToken: response.data.refreshToken ?? fallbackRefreshToken,
         };
     }
 
     if ('accessToken' in response && response.accessToken) {
         return {
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken ?? '',
+            refreshToken: response.refreshToken ?? fallbackRefreshToken,
         };
     }
 
     throw new Error('토큰 갱신 응답에 accessToken이 없습니다.');
+}
+
+function decodeJwtPayload(token: string | null): Record<string, unknown> | null {
+    if (!token) return null;
+
+    const payload = token.split('.')[1];
+
+    if (!payload || typeof globalThis.atob !== 'function') {
+        return null;
+    }
+
+    try {
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+        const json = globalThis.atob(paddedBase64);
+
+        return JSON.parse(json) as Record<string, unknown>;
+    } catch {
+        return null;
+    }
+}
+
+function getTokenDebug(token: string | null) {
+    const payload = decodeJwtPayload(token);
+    const exp = typeof payload?.exp === 'number' ? payload.exp : undefined;
+    const iat = typeof payload?.iat === 'number' ? payload.iat : undefined;
+
+    return {
+        exp,
+        expiresInSeconds: exp ? exp - Math.floor(Date.now() / 1000) : undefined,
+        hasPayload: Boolean(payload),
+        iat,
+        sub: payload?.sub,
+        tokenLength: token?.length ?? 0,
+    };
 }
 
 // ─────────────────────────────────────────────
@@ -150,6 +230,11 @@ async function resolveAccessToken(): Promise<string | null> {
 async function fetchNewTokens(): Promise<string> {
     const tokens = await getTokens();
 
+    console.info('[auth-refresh]', 'start', {
+        hasRefreshToken: Boolean(tokens?.refreshToken),
+        refreshToken: getTokenDebug(tokens?.refreshToken ?? null),
+    });
+
     if (!tokens?.refreshToken) {
         throw new Error('refreshToken 없음');
     }
@@ -159,7 +244,16 @@ async function fetchNewTokens(): Promise<string> {
         { refreshToken: tokens.refreshToken }
     );
 
-    const nextTokens = toRefreshResponse(data);
+    const nextTokens = toRefreshResponse(data, tokens.refreshToken);
+
+    console.info('[auth-refresh]', 'success', {
+        accessToken: getTokenDebug(nextTokens.accessToken),
+        receivedRefreshToken: Boolean(
+            ('data' in data && data.data?.refreshToken) ||
+            ('refreshToken' in data && data.refreshToken)
+        ),
+        refreshToken: getTokenDebug(nextTokens.refreshToken),
+    });
 
     await persistTokens(nextTokens);
     return nextTokens.accessToken;
@@ -172,7 +266,10 @@ async function refreshAccessToken(): Promise<string | null> {
     const inFlight = getRefreshPromise();
     if (inFlight) return inFlight;
 
-    const promise = fetchNewTokens().catch(async () => {
+    const promise = fetchNewTokens().catch(async (error) => {
+        console.warn('[auth-refresh]', 'failed', {
+            message: error instanceof Error ? error.message : String(error),
+        });
         await logout();
         return null;
     });
@@ -212,6 +309,16 @@ api.interceptors.request.use(
             config.headers.set('Authorization', `Bearer ${token}`);
         }
 
+        if (shouldLogApiRequest(config.url)) {
+            console.info('[api]', 'request', {
+                hasAccessToken: Boolean(token),
+                method: config.method,
+                params: config.params,
+                path: getRequestPath(config.url),
+                token: getTokenDebug(token),
+            });
+        }
+
         return config;
     },
     (error) => Promise.reject(error)
@@ -228,11 +335,45 @@ api.interceptors.request.use(
 //   - 이미 재시도한 요청 (_retry === true)
 //   - 갱신 요청 자체가 401을 받은 경우 (무한루프 방지)
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        if (shouldLogApiRequest(response.config.url)) {
+            console.info('[api]', 'response success', {
+                method: response.config.method,
+                params: response.config.params,
+                path: getRequestPath(response.config.url),
+                status: response.status,
+                summary: summarizeResponseData(response.data),
+            });
+        }
+
+        return response;
+    },
     async (error: AxiosError) => {
         const originalRequest = error.config as RetryableRequestConfig | undefined;
         const status = error.response?.status;
         const isRefreshRequest = originalRequest?.url?.includes('/auth/token/refresh');
+
+        if (originalRequest && (status === 401 || shouldLogApiRequest(originalRequest.url))) {
+            const responseData = error.response?.data as {
+                code?: unknown;
+                message?: unknown;
+            } | undefined;
+
+            console.warn('[api]', 'response error', {
+                code: responseData?.code,
+                message: responseData?.message ?? error.message,
+                method: originalRequest.method,
+                params: originalRequest.params,
+                path: getRequestPath(originalRequest.url),
+                retry: Boolean(originalRequest._retry),
+                status,
+                token: getTokenDebug(
+                    typeof originalRequest.headers?.get === 'function'
+                        ? String(originalRequest.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+                        : null
+                ),
+            });
+        }
 
         const shouldSkipRetry =
             !originalRequest ||

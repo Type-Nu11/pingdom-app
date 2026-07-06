@@ -33,6 +33,7 @@ yarn-error.*
 # local env files
 .env
 .env*.local
+.claude
 
 .claude
 .agents
@@ -42,6 +43,7 @@ yarn-error.*
 
 # IDE
 .idea/
+.claude/
 
 # android
 android/app/debug.keystore

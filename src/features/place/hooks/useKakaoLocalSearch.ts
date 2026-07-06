@@ -100,7 +100,7 @@ export const useKakaoLocalSearch = () => {
         })),
       });
       setSearchResults(places);
-      setSearchStatusMessage('검색 결과에서 주소를 선택해 주세요');
+      setSearchStatusMessage('');
     } catch (error) {
       console.error('[KakaoLocalSearch] search failed', {
         centerLat: options.centerLat,

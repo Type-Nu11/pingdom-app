@@ -3,6 +3,7 @@ import type {
   ApiCodeErrorResponse as CommonApiCodeErrorResponse,
   ApiFieldErrorResponse as CommonApiFieldErrorResponse,
 } from '../../../types/api.types';
+import type { PostsPage } from '../../record/model/record.types';
 import type { PlaceRecommendations, PlacesPage } from '../model/place.types';
 
 export type PlaceSearchItem = {
@@ -51,7 +52,7 @@ export type CreatePlaceResponse = {
 export type CoordinateTokenRequest = {
   baseLatitude: number;
   baseLongitude: number;
-  kakaoPlaceId: string;
+  kakaoPlaceId?: string;
 };
 
 export type CoordinateTokenResponse = {
@@ -66,18 +67,29 @@ export type UploadPlaceWithTokenRequest = {
   category: string;
   coordinateToken: string;
   imageUrl?: string;
-  kakaoPlaceId: string;
+  kakaoPlaceId?: string;
   name: string;
 };
 
-export type FavoritePlaceRequest = {
+export type CreateBookmarkRequest = {
   placeId: number;
 };
 
-export type FavoritePlaceResponse = {
+export type CreateBookmarkResponse = {
   id: number;
   message: string;
   placeId: number;
+};
+
+export type RemoveBookmarkResponse = {
+  message: string;
+  placeId: number;
+  userId: number;
+};
+
+export type GetBookmarkedPostsRequest = {
+  limit?: number;
+  page?: number;
 };
 
 export type RecordRecommendationClickRequest = {
@@ -94,9 +106,33 @@ export type ApiFieldErrorResponse = CommonApiFieldErrorResponse;
 
 export type ApiTokenErrorResponse = CommonApiCodeErrorResponse<'INVALID_TOKEN'>;
 
+export type BookmarkApiErrorCode =
+  | 'BOOKMARK_ALREADY_EXISTS'
+  | 'BOOKMARK_NOT_FOUND'
+  | 'PLACE_NOT_FOUND';
+
+export type BookmarkApiErrorResponse = CommonApiCodeErrorResponse<BookmarkApiErrorCode>;
+
 export const placeApi = {
-  addFavorite: async (payload: FavoritePlaceRequest): Promise<FavoritePlaceResponse> => {
-    const { data } = await api.post<FavoritePlaceResponse>('/map/favorites', payload);
+  createBookmark: async (payload: CreateBookmarkRequest): Promise<CreateBookmarkResponse> => {
+    const { data } = await api.post<CreateBookmarkResponse>('/map/bookmarks', payload);
+    return data;
+  },
+  getBookmarkedPosts: async (
+    params: GetBookmarkedPostsRequest = {},
+  ): Promise<PostsPage> => {
+    const { data } = await api.get<PostsPage>('/map/bookmarks', {
+      params: {
+        limit: params.limit ?? 100,
+        page: params.page ?? 1,
+      },
+    });
+    return data;
+  },
+  removeBookmark: async (placeId: number): Promise<RemoveBookmarkResponse> => {
+    const { data } = await api.delete<RemoveBookmarkResponse>('/map/bookmarks', {
+      params: { placeId },
+    });
     return data;
   },
   createPlace: async (payload: CreatePlaceRequest) => {

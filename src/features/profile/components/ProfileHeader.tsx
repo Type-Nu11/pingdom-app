@@ -24,8 +24,12 @@ const ProfileHeader = ({
 }: ProfileHeaderProps) => (
   <>
     <View style={[styles.header, isArchive && styles.archiveHeader]}>
-      <Image source={profileImageSource} resizeMode="cover" style={styles.avatar} />
-      <Text style={styles.username}>{PROFILE_USERNAME}</Text>
+      <Image
+        source={profileImageSource}
+        resizeMode="cover"
+        style={[styles.avatar, isArchive && styles.archiveAvatar]}
+      />
+      <Text style={[styles.username, isArchive && styles.archiveUsername]}>{PROFILE_USERNAME}</Text>
 
       {!isArchive && (
         <View style={styles.actions}>
@@ -101,8 +105,11 @@ const styles = StyleSheet.create({
     width: 100,
   },
   archiveHeader: {
-    paddingBottom: 28,
-    paddingTop: 96,
+    height: 235,
+    justifyContent: 'flex-start',
+    overflow: 'hidden',
+    paddingBottom: 0,
+    paddingTop: 68,
   },
   avatar: {
     borderRadius: 48,
@@ -115,6 +122,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingBottom: 32,
     paddingTop: 118,
+  },
+  archiveAvatar: {
+    borderRadius: 38,
+    height: 76,
+    width: 76,
+  },
+  archiveUsername: {
+    fontSize: 22,
+    lineHeight: 29,
+    marginTop: 12,
   },
   logoutButton: {
     backgroundColor: '#fff1f4',

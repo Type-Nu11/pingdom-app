@@ -5,12 +5,12 @@ import {
   KeyboardAvoidingView,
   Linking,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import CaptionStep from '../components/create-flow/CaptionStep';
 import PlaceCreateHeader from '../components/create-flow/PlaceCreateHeader';
 import LocationStep from '../components/create-flow/LocationStep';
@@ -68,12 +68,6 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   };
 
   const handleSelectLocation = async (draft: PlaceCreateDraft) => {
-    if (!draft.kakaoPlaceId) {
-      setSelectedPlaceDraft(draft);
-      setStep(2);
-      return;
-    }
-
     try {
       const coordinate = await createCoordinateToken({
         baseLatitude: draft.latitude,

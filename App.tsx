@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AppProvider from './src/app/providers/AppProvider';
 import { OnboardingFlow } from './src/features/onboarding';
 import useAuth from './src/features/auth/hooks/useAuth';
@@ -18,6 +18,7 @@ function AppContent() {
   const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
   const { pendingRoute, consumePendingNotificationRoute } = useNotificationState();
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
+  const [openedBookmarkedPlaceId, setOpenedBookmarkedPlaceId] = useState<number | null>(null);
   const [openedNotificationRoute, setOpenedNotificationRoute] = useState<NotificationRoute | null>(null);
 
   useFcmTokenSync(isLoggedIn);
@@ -58,6 +59,9 @@ function AppContent() {
     setMainScreen('map');
     setOpenedNotificationRoute(null);
   };
+  const clearOpenedBookmarkedPlace = useCallback(() => {
+    setOpenedBookmarkedPlaceId(null);
+  }, []);
 
   if (isHydrating) return null;
 
@@ -74,9 +78,22 @@ function AppContent() {
             onBack={() => setMainScreen('map')}
           />
         ) : mainScreen === 'profile' ? (
-          <ProfileScreen onBack={() => setMainScreen('map')} onLogout={handleLogout} />
+          <ProfileScreen
+            onBack={() => {
+              setOpenedBookmarkedPlaceId(null);
+              setMainScreen('map');
+            }}
+            onLogout={handleLogout}
+            onOpenBookmarkedPost={(placeId) => {
+              setOpenedBookmarkedPlaceId(placeId);
+              setMainScreen('map');
+            }}
+          />
         ) : (
           <MapScreen
+            openedBookmarkedPlaceId={openedBookmarkedPlaceId}
+            onClearOpenedBookmarkedPlace={clearOpenedBookmarkedPlace}
+            notificationLikeContext={openedNotificationRoute}
             onCreatePlace={() => setMainScreen('place-create')}
             onOpenProfile={() => setMainScreen('profile')}
           />

@@ -1,19 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryChips from '../components/CategoryChips';
 import KakaoMapCard, { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import MapActionButtons from '../components/MapActionButtons';
 import MapBottomSheet from '../components/MapBottomSheet';
 import MarkerPreviewCard from '../components/MarkerPreviewCard';
 import MapSearchBar from '../components/MapSearchBar';
+import MapSearchOverlay, { type MapSearchSelection } from '../components/MapSearchOverlay';
 import { mapCategories } from '../constants/mapFixtures';
 import {
   ACTION_BOTTOM_GAP,
@@ -26,22 +27,63 @@ import {
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
+import { useHiddenPosts } from '../../record/hooks/useHiddenPosts';
 import { usePostLike } from '../../record/hooks/usePostLike';
+import { useBookmarkedPosts, usePostBookmark } from '../../record/hooks/usePostBookmark';
+import { usePostReport } from '../../record/hooks/usePostReport';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
+import { useProfile } from '../../profile/hooks/useProfile';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
-import type { RecommendedPlace } from '../model/place.types';
+import { useHotPlaceIds } from '../hooks/useHotPlaceIds';
+import type { MapMarker, RecommendedPlace } from '../model/place.types';
+
+const SEARCH_FOCUS_MARKER_ID = 'search-focus-place';
+const COORDINATE_MATCH_THRESHOLD = 0.00015;
+
+const isSamePlaceCoordinate = (
+  a: { latitude: number; longitude: number },
+  b: { lat: number; lng: number }
+) => (
+  Math.abs(a.latitude - b.lat) <= COORDINATE_MATCH_THRESHOLD
+  && Math.abs(a.longitude - b.lng) <= COORDINATE_MATCH_THRESHOLD
+);
+
+const isSameMarkerCoordinate = (
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) => (
+  Math.abs(a.lat - b.lat) <= COORDINATE_MATCH_THRESHOLD
+  && Math.abs(a.lng - b.lng) <= COORDINATE_MATCH_THRESHOLD
+);
 
 type MapScreenProps = {
+  notificationLikeContext?: {
+    notificationsId?: string;
+    postId?: string;
+  } | null;
   onCreatePlace?: () => void;
+  onClearOpenedBookmarkedPlace?: () => void;
   onOpenProfile?: () => void;
+  openedBookmarkedPlaceId?: number | null;
 };
 
-export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenProps) {
+export default function MapScreen({
+  notificationLikeContext,
+  onCreatePlace,
+  onClearOpenedBookmarkedPlace,
+  onOpenProfile,
+  openedBookmarkedPlaceId,
+}: MapScreenProps) {
+  const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
+  const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchFocusPlace, setSearchFocusPlace] = useState<MapSearchSelection | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const { isError: isPlacesError, markers, places } = usePlaces();
+  const { hotPlaceIds } = useHotPlaceIds();
   const {
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
@@ -52,7 +94,12 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
     longitude: userLng,
   });
   const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const { bookmarkedPlaceIds } = useBookmarkedPosts();
+  const { togglePostBookmark } = usePostBookmark();
+  const { hiddenPostIds, hidePost } = useHiddenPosts();
   const { togglePostLike } = usePostLike();
+  const { reportPost } = usePostReport();
+  const { profile } = useProfile();
   const selectedPlace = useMemo(
     () => (
       places.find((place) => String(place.id) === selectedMarkerId)
@@ -61,12 +108,48 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
     ),
     [places, recommendedPlaces, selectedMarkerId]
   );
+  const mapMarkers = useMemo<MapMarker[]>(() => {
+    const placeMarkerIds = new Set(markers.map((marker) => marker.id));
+    const placeMarkers = markers.map((marker) => ({
+      ...marker,
+      markerType: hotPlaceIds.has(marker.id) ? 'hot' as const : 'default' as const,
+    }));
+    const recommendationMarkers = (recommendedPlaces ?? [])
+      .filter((place) => !placeMarkerIds.has(String(place.id)))
+      .map((place) => ({
+        category: 'food' as const,
+        id: String(place.id),
+        lat: place.latitude,
+        lng: place.longitude,
+        markerType: hotPlaceIds.has(String(place.id)) ? 'hot' as const : 'default' as const,
+      }));
+    const baseMarkers = [...placeMarkers, ...recommendationMarkers];
+    const hasMatchingMarker = searchFocusPlace
+      ? baseMarkers.some((marker) => (
+        marker.id === searchFocusPlace.id
+        || isSameMarkerCoordinate(marker, searchFocusPlace)
+      ))
+      : true;
+    const searchFocusMarker = searchFocusPlace && !hasMatchingMarker
+      ? [{
+        category: 'food' as const,
+        id: SEARCH_FOCUS_MARKER_ID,
+        lat: searchFocusPlace.lat,
+        lng: searchFocusPlace.lng,
+        markerType: 'search' as const,
+      }]
+      : [];
+
+    return [...baseMarkers, ...searchFocusMarker];
+  }, [hotPlaceIds, markers, recommendedPlaces, searchFocusPlace]);
+  const selectedPlaceId = selectedPlace?.id
+    ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
   const {
     isError: isPostsError,
     isLoading: isPostsLoading,
     posts: selectedPlacePosts,
     refetch: refetchSelectedPlacePosts,
-  } = usePlacePosts(selectedPlace?.id ?? null);
+  } = usePlacePosts(Number.isFinite(selectedPlaceId) ? selectedPlaceId : null);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -91,16 +174,59 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
+  useEffect(() => {
+    if (openedBookmarkedPlaceId !== undefined && openedBookmarkedPlaceId !== null) {
+      setSelectedMarkerId(String(openedBookmarkedPlaceId));
+      onClearOpenedBookmarkedPlace?.();
+    }
+  }, [onClearOpenedBookmarkedPlace, openedBookmarkedPlaceId]);
+  const mapCenterLat = searchFocusPlace?.lat ?? center.lat;
+  const mapCenterLng = searchFocusPlace?.lng ?? center.lng;
+
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
+    if (event.nativeEvent.markerId === SEARCH_FOCUS_MARKER_ID) {
+      return;
+    }
+
     setSelectedMarkerId(event.nativeEvent.markerId);
   };
   const handleRecommendedPlacePress = (place: RecommendedPlace) => {
     setSelectedMarkerId(String(place.id));
+    setSearchFocusPlace(null);
 
     void recordRecommendationClick({
       placeId: place.id,
       recommendationVersion: recommendationVersion ?? 'place-rec-v1',
     }).catch(() => undefined);
+  };
+  const handleSearchPlaceSelect = (place: MapSearchSelection) => {
+    const matchingPlace = [...places, ...recommendedPlaces].find((candidate) => (
+      String(candidate.id) === place.id
+      || isSamePlaceCoordinate(candidate, place)
+    ));
+
+    setSearchFocusPlace(place);
+    setSelectedMarkerId(matchingPlace ? String(matchingPlace.id) : null);
+  };
+  const handleReport = async (postId: number, reason: string, hideAfterReport: boolean) => {
+    const postKey = String(postId);
+
+    if (reportPendingPostIds[postKey] || reportedPostIds[postKey]) {
+      return;
+    }
+
+    setReportPendingPostIds((prev) => ({ ...prev, [postKey]: true }));
+
+    try {
+      await reportPost(postId, reason);
+      setReportedPostIds((prev) => ({ ...prev, [postKey]: true }));
+
+      if (hideAfterReport) {
+        await hidePost(postId);
+      }
+    } finally {
+      setReportPendingPostIds((prev) => ({ ...prev, [postKey]: false }));
+    }
   };
 
   return (
@@ -109,13 +235,13 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
 
       <KakaoMapCard
         style={styles.map}
-        centerLat={center.lat}
-        centerLng={center.lng}
+        centerLat={mapCenterLat}
+        centerLng={mapCenterLng}
         zoomLevel={16}
         userLat={userLat}
         userLng={userLng}
-        followUser={followUser}
-        markers={markers}
+        followUser={searchFocusPlace ? false : followUser}
+        markers={mapMarkers}
         onMarkerPress={handleMarkerPress}
       />
 
@@ -129,6 +255,7 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
           pointerEvents="box-none"
         >
           <MapSearchBar
+            onOpenSearch={() => setIsSearchOpen(true)}
             onProfilePress={onOpenProfile}
             profileSize={profileSize}
             searchHeight={searchHeight}
@@ -188,17 +315,36 @@ export default function MapScreen({ onCreatePlace, onOpenProfile }: MapScreenPro
             onPress={() => setSelectedMarkerId(null)}
           />
           <MarkerPreviewCard
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
+            hiddenPostIds={hiddenPostIds}
             isError={isPostsError}
             isLoading={isPostsLoading}
+            notificationLikeContext={notificationLikeContext}
             placeName={selectedPlace?.name}
             posts={selectedPlacePosts}
             width={markerCardWidth}
             onClose={() => setSelectedMarkerId(null)}
             onRetry={() => void refetchSelectedPlacePosts()}
+            onToggleBookmark={togglePostBookmark}
+            onReport={handleReport}
             onToggleLike={togglePostLike}
+            reportedPostIds={reportedPostIds}
+            reportPendingPostIds={reportPendingPostIds}
+            translationTargetLanguage={profile?.language || 'ko'}
           />
         </View>
       )}
+
+      {isSearchOpen ? (
+        <MapSearchOverlay
+          centerLat={mapCenterLat}
+          centerLng={mapCenterLng}
+          onClose={() => setIsSearchOpen(false)}
+          onCreatePlace={onCreatePlace}
+          onOpenProfile={onOpenProfile}
+          onSelectPlace={handleSearchPlaceSelect}
+        />
+      ) : null}
     </View>
   );
 }
