@@ -403,7 +403,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
 
     private func normalizeMarkerType(_ value: String?) -> String {
         switch value {
-        case "default", "hot":
+        case "default", "hot", "search":
             return value ?? "default"
         default:
             return "default"
@@ -453,6 +453,10 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
             return makeHotMarkerImage(category: category)
         }
 
+        if markerType == "search" {
+            return makeSearchMarkerImage()
+        }
+
         return makeDefaultMarkerImage(category: category)
     }
 
@@ -482,6 +486,33 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
             cgContext.scaleBy(x: 0.66, y: 0.66)
             drawPlaceMarkerIcon(category: category)
             cgContext.restoreGState()
+        }
+    }
+
+    private func makeSearchMarkerImage() -> UIImage {
+        let size = CGSize(width: 32, height: 37)
+        let renderer = UIGraphicsImageRenderer(size: size)
+
+        return renderer.image { context in
+            let cgContext = context.cgContext
+            let blue = UIColor(red: 0.176, green: 0.424, blue: 0.875, alpha: 1.0)
+            let white = UIColor.white
+            let markerPath = makeDefaultMarkerPath()
+
+            blue.setFill()
+            markerPath.fill()
+            white.setStroke()
+            markerPath.lineWidth = 2
+            markerPath.lineJoinStyle = .round
+            markerPath.stroke()
+
+            cgContext.setStrokeColor(white.cgColor)
+            cgContext.setLineWidth(2.2)
+            cgContext.strokeEllipse(in: CGRect(x: 9.8, y: 9.6, width: 9.4, height: 9.4))
+            cgContext.setLineCap(.round)
+            cgContext.move(to: CGPoint(x: 18.1, y: 17.9))
+            cgContext.addLine(to: CGPoint(x: 22, y: 21.8))
+            cgContext.strokePath()
         }
     }
 
