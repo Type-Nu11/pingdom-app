@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { placeApi, type PlaceSearchItem } from '../api/placeApi';
+import { placeApi, type PlaceAutocompleteItem } from '../api/placeApi';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
 
@@ -51,14 +51,14 @@ const toKakaoSelection = (item: KakaoLocalSearchItem): MapSearchSelection => ({
   roadAddress: item.roadAddress,
 });
 
-const toRegisteredSelection = (item: PlaceSearchItem): MapSearchSelection => ({
+const toRegisteredSelection = (item: PlaceAutocompleteItem): MapSearchSelection => ({
   address: item.address,
   id: String(item.id),
   isRegisteredPlace: true,
-  lat: item.lat,
-  lng: item.lng,
+  lat: item.latitude,
+  lng: item.longitude,
   name: item.name,
-  roadAddress: item.roadAddress,
+  roadAddress: item.address,
 });
 
 const MapSearchOverlay = ({
@@ -80,7 +80,7 @@ const MapSearchOverlay = ({
     '스타벅스',
     '대소고사감실',
   ]);
-  const [registeredResults, setRegisteredResults] = useState<PlaceSearchItem[]>([]);
+  const [registeredResults, setRegisteredResults] = useState<PlaceAutocompleteItem[]>([]);
   const [isSearchingRegisteredPlaces, setIsSearchingRegisteredPlaces] = useState(false);
   const {
     clearSearchResults,
@@ -131,10 +131,14 @@ const MapSearchOverlay = ({
     setIsSearchingRegisteredPlaces(true);
     setRegisteredResults([]);
 
-    const registeredSearch = placeApi.searchPlaces(normalizedQuery)
-      .then((results) => {
+    const registeredSearch = placeApi.autocompletePlaces({
+      keyword: normalizedQuery,
+      latitude: centerLat,
+      longitude: centerLng,
+    })
+      .then(({ places }) => {
         if (requestId === searchRequestIdRef.current) {
-          setRegisteredResults(results);
+          setRegisteredResults(places);
         }
       })
       .catch(() => {
@@ -301,7 +305,7 @@ const MapSearchOverlay = ({
               >
                 <Text numberOfLines={1} style={styles.resultName}>{item.name}</Text>
                 <Text numberOfLines={1} style={styles.resultAddress}>
-                  {item.roadAddress || item.address}
+                  {item.address}
                 </Text>
               </Pressable>
             ))}

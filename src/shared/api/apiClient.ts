@@ -112,8 +112,7 @@ function shouldLogAuthRequest(url?: string): boolean {
 
     return [
         '/auth/token/refresh',
-        '/map/places/create',
-        '/map/places/upload',
+        '/places/upload',
         '/map/post/create',
     ].includes(path);
 }
@@ -122,9 +121,9 @@ function shouldLogApiRequest(url?: string): boolean {
     const path = getRequestPath(url);
 
     return shouldLogAuthRequest(url) || [
-        '/place',
-        '/place/recommendations',
-        '/places/search',
+        '/places',
+        '/places/recommendations',
+        '/places/autocomplete',
     ].includes(path);
 }
 

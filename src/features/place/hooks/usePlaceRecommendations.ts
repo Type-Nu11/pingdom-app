@@ -16,6 +16,7 @@ export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) 
     limit: params.limit ?? 10,
     longitude: params.longitude,
     radiusKm: params.radiusKm ?? 5,
+    ...(params.recommendationVersion ? { recommendationVersion: params.recommendationVersion } : {}),
   };
   const recommendationsQuery = useQuery({
     enabled: Number.isFinite(queryParams.latitude) && Number.isFinite(queryParams.longitude),
@@ -28,6 +29,7 @@ export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) 
     isError: recommendationsQuery.isError,
     isLoading: recommendationsQuery.isLoading,
     places: recommendationsQuery.data?.places ?? [],
+    recommendationRequestId: recommendationsQuery.data?.recommendationRequestId,
     recommendationVersion: recommendationsQuery.data?.recommendationVersion,
     refetch: recommendationsQuery.refetch,
   };

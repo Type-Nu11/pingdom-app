@@ -6,24 +6,41 @@ import type {
 import type { PostsPage } from '../../record/model/record.types';
 import type { PlaceRecommendations, PlacesPage } from '../model/place.types';
 
-export type PlaceSearchItem = {
+export type PlaceAutocompleteItem = {
   address: string;
-  category: string;
-  id: string;
-  lat: number;
-  lng: number;
+  category?: string;
+  distanceMeters?: number;
+  id: number;
+  latitude: number;
+  longitude: number;
   name: string;
-  roadAddress: string;
 };
 
-type PlaceSearchResponse = {
-  places: PlaceSearchItem[];
+export type GetPlaceAutocompleteRequest = {
+  keyword: string;
+  latitude?: number;
+  limit?: number;
+  longitude?: number;
 };
+
+export type PlaceAutocompleteResponse = {
+  keyword: string;
+  limit: number;
+  places: PlaceAutocompleteItem[];
+  totalCount: number;
+};
+
+export type PlaceSort = 'LATEST' | 'NEAREST';
 
 export type GetPlacesRequest = {
+  category?: string;
   keyword?: string;
+  latitude?: number;
   limit?: number;
+  longitude?: number;
   page?: number;
+  radiusKm?: number;
+  sort?: PlaceSort;
 };
 
 export type GetPlaceRecommendationsRequest = {
@@ -31,22 +48,7 @@ export type GetPlaceRecommendationsRequest = {
   limit?: number;
   longitude: number;
   radiusKm?: number;
-};
-
-export type CreatePlaceRequest = {
-  address: string;
-  category?: string;
-  latitude: number;
-  longitude: number;
-  name: string;
-};
-
-export type CreatePlaceResponse = {
-  address: string;
-  id: number;
-  latitude: number;
-  longitude: number;
-  name: string;
+  recommendationVersion?: string;
 };
 
 export type CoordinateTokenRequest = {
@@ -58,8 +60,6 @@ export type CoordinateTokenRequest = {
 export type CoordinateTokenResponse = {
   coordinateToken: string;
   kakaoPlaceId?: string;
-  latitude?: number;
-  longitude?: number;
 };
 
 export type UploadPlaceWithTokenRequest = {
@@ -68,6 +68,14 @@ export type UploadPlaceWithTokenRequest = {
   coordinateToken: string;
   imageUrl?: string;
   kakaoPlaceId?: string;
+  name: string;
+};
+
+export type CreatePlaceResponse = {
+  address: string;
+  id: number;
+  latitude: number;
+  longitude: number;
   name: string;
 };
 
@@ -87,6 +95,11 @@ export type RemoveBookmarkResponse = {
   userId: number;
 };
 
+export type GetBookmarkedPlacesRequest = {
+  limit?: number;
+  page?: number;
+};
+
 export type GetBookmarkedPostsRequest = {
   limit?: number;
   page?: number;
@@ -95,6 +108,7 @@ export type GetBookmarkedPostsRequest = {
 export type RecordRecommendationClickRequest = {
   placeId: number;
   recommendationVersion: string;
+  requestId: string;
 };
 
 export type RecordRecommendationClickResponse = {
@@ -115,7 +129,18 @@ export type BookmarkApiErrorResponse = CommonApiCodeErrorResponse<BookmarkApiErr
 
 export const placeApi = {
   createBookmark: async (payload: CreateBookmarkRequest): Promise<CreateBookmarkResponse> => {
-    const { data } = await api.post<CreateBookmarkResponse>('/map/bookmarks', payload);
+    const { data } = await api.post<CreateBookmarkResponse>('/users/me/bookmarks', payload);
+    return data;
+  },
+  getBookmarkedPlaces: async (
+    params: GetBookmarkedPlacesRequest = {},
+  ): Promise<PlacesPage> => {
+    const { data } = await api.get<PlacesPage>('/users/me/bookmarks', {
+      params: {
+        limit: params.limit ?? 20,
+        page: params.page ?? 1,
+      },
+    });
     return data;
   },
   getBookmarkedPosts: async (
@@ -130,36 +155,34 @@ export const placeApi = {
     return data;
   },
   removeBookmark: async (placeId: number): Promise<RemoveBookmarkResponse> => {
-    const { data } = await api.delete<RemoveBookmarkResponse>('/map/bookmarks', {
-      params: { placeId },
-    });
-    return data;
-  },
-  createPlace: async (payload: CreatePlaceRequest) => {
-    const { data } = await api.post<CreatePlaceResponse>('/map/places/create', payload);
-
+    const { data } = await api.delete<RemoveBookmarkResponse>(`/users/me/bookmarks/${placeId}`);
     return data;
   },
   createPlaceCoordinates: async (payload: CoordinateTokenRequest): Promise<CoordinateTokenResponse> => {
-    const { data } = await api.post<CoordinateTokenResponse>('/map/places/coordinates', payload);
+    const { data } = await api.post<CoordinateTokenResponse>('/places/coordinates', payload);
     return data;
   },
   createPlaceWithCoordinateToken: async (
     payload: UploadPlaceWithTokenRequest
   ): Promise<CreatePlaceResponse> => {
-    const { data } = await api.post<CreatePlaceResponse>('/map/places/upload', payload);
+    const { data } = await api.post<CreatePlaceResponse>('/places/upload', payload);
     return data;
   },
   deletePlace: async (id: number): Promise<string> => {
-    const { data } = await api.delete<string>(`/map/places/${id}/delete`);
+    const { data } = await api.delete<string>(`/places/${id}`);
     return data;
   },
   getPlaces: async (params: GetPlacesRequest = {}): Promise<PlacesPage> => {
-    const { data } = await api.get<PlacesPage>('/place', {
+    const { data } = await api.get<PlacesPage>('/places', {
       params: {
         limit: params.limit ?? 100,
         page: params.page ?? 1,
         ...(params.keyword ? { keyword: params.keyword } : {}),
+        ...(params.category ? { category: params.category } : {}),
+        ...(params.latitude !== undefined ? { latitude: params.latitude } : {}),
+        ...(params.longitude !== undefined ? { longitude: params.longitude } : {}),
+        ...(params.radiusKm !== undefined ? { radiusKm: params.radiusKm } : {}),
+        ...(params.sort ? { sort: params.sort } : {}),
       },
     });
 
@@ -168,12 +191,13 @@ export const placeApi = {
   getRecommendations: async (
     params: GetPlaceRecommendationsRequest
   ): Promise<PlaceRecommendations> => {
-    const { data } = await api.get<PlaceRecommendations>('/place/recommendations', {
+    const { data } = await api.get<PlaceRecommendations>('/places/recommendations', {
       params: {
         latitude: params.latitude,
         limit: params.limit ?? 10,
         longitude: params.longitude,
         radiusKm: params.radiusKm ?? 5,
+        ...(params.recommendationVersion ? { recommendationVersion: params.recommendationVersion } : {}),
       },
     });
 
@@ -183,17 +207,24 @@ export const placeApi = {
     payload: RecordRecommendationClickRequest
   ): Promise<RecordRecommendationClickResponse> => {
     const { data } = await api.post<RecordRecommendationClickResponse>(
-      '/place/recommendations/click',
+      '/places/recommendations/click',
       payload
     );
 
     return data;
   },
-  searchPlaces: async (query: string) => {
-    const { data } = await api.get<PlaceSearchResponse>('/places/search', {
-      params: { query },
+  autocompletePlaces: async (
+    params: GetPlaceAutocompleteRequest
+  ): Promise<PlaceAutocompleteResponse> => {
+    const { data } = await api.get<PlaceAutocompleteResponse>('/places/autocomplete', {
+      params: {
+        keyword: params.keyword,
+        limit: params.limit ?? 10,
+        ...(params.latitude !== undefined ? { latitude: params.latitude } : {}),
+        ...(params.longitude !== undefined ? { longitude: params.longitude } : {}),
+      },
     });
 
-    return data.places;
+    return data;
   },
 };
