@@ -65,8 +65,8 @@ final class MLKitTranslation: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    guard let sourceLanguage = translateLanguage(from: sourceLanguageTag),
-          let targetLanguage = translateLanguage(from: targetLanguageTag) else {
+    guard let sourceLanguage = Self.translateLanguage(from: sourceLanguageTag),
+          let targetLanguage = Self.translateLanguage(from: targetLanguageTag) else {
       reject("UNSUPPORTED_LANGUAGE", "지원하지 않는 언어예요.", nil)
       return
     }

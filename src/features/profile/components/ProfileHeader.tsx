@@ -8,9 +8,8 @@ type ProfileHeaderProps = {
   isArchive: boolean;
   isLoading?: boolean;
   onChangeTab: (tab: 'liked' | 'saved') => void;
-  onLogout: () => void;
   onOpenArchive: () => void;
-  onOpenEdit: () => void;
+  onOpenSettings: () => void;
   profile: ProfileResponse | null;
   showTabs: boolean;
 };
@@ -36,9 +35,8 @@ const ProfileHeader = ({
   isArchive,
   isLoading = false,
   onChangeTab,
-  onLogout,
   onOpenArchive,
-  onOpenEdit,
+  onOpenSettings,
   profile,
   showTabs,
 }: ProfileHeaderProps) => {
@@ -66,14 +64,11 @@ const ProfileHeader = ({
 
         {!isArchive && (
           <View style={styles.actions}>
-            <Pressable style={styles.actionButton} onPress={onOpenEdit}>
-              <Text style={styles.actionText}>프로필 편집</Text>
+            <Pressable style={styles.actionButton} onPress={onOpenSettings}>
+              <Text style={styles.actionText}>프로필 설정</Text>
             </Pressable>
             <Pressable style={styles.actionButton} onPress={onOpenArchive}>
               <Text style={styles.actionText}>보관함 보기</Text>
-            </Pressable>
-            <Pressable style={[styles.actionButton, styles.logoutButton]} onPress={onLogout}>
-              <Text style={[styles.actionText, styles.logoutText]}>로그아웃</Text>
             </Pressable>
           </View>
         )}
@@ -85,8 +80,8 @@ const ProfileHeader = ({
             <LikeIcon
               color={activeTab === 'liked' ? '#ff1956' : '#c7c8cc'}
               fill={activeTab === 'liked' ? '#ff1956' : 'none'}
-              width={40}
-              height={36}
+              width={34}
+              height={31}
             />
             {activeTab === 'liked' && <View style={styles.activeTabLine} />}
           </Pressable>
@@ -94,8 +89,8 @@ const ProfileHeader = ({
             <SavedIcon
               color={activeTab === 'saved' ? '#ff1956' : '#c7c8cc'}
               fill={activeTab === 'saved' ? '#ff1956' : 'none'}
-              width={34}
-              height={40}
+              width={29}
+              height={34}
             />
             {activeTab === 'saved' && <View style={styles.activeTabLine} />}
           </Pressable>
@@ -181,13 +176,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ff4a75',
     justifyContent: 'center',
-  },
-  logoutButton: {
-    backgroundColor: '#fff1f4',
-    borderColor: '#ffd0dc',
-  },
-  logoutText: {
-    color: '#ff1956',
   },
   tabBar: {
     alignItems: 'center',

@@ -36,6 +36,7 @@ import { useBookmarkedPosts, usePostBookmark } from '../../record/hooks/usePostB
 import { usePostReport } from '../../record/hooks/usePostReport';
 import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 import { useProfile } from '../../profile/hooks/useProfile';
+import { useMapSettingsStore } from '../../../app/store/mapSettingsStore';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import { useHotPlaceIds } from '../hooks/useHotPlaceIds';
@@ -123,6 +124,7 @@ export default function MapScreen({
   const { i18n } = useTranslation();
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
+  const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
     isError: isPlacesError,
     markers,
@@ -143,6 +145,7 @@ export default function MapScreen({
   } = usePlaceRecommendations({
     latitude: userLat,
     longitude: userLng,
+    radiusKm: recommendationRadiusKm,
   });
   const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
   const { bookmarkedPlaceIds } = useBookmarkedPosts();

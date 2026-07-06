@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import { Alert, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ArchiveDetailView from '../components/ArchiveDetailView';
 import LikesBottomSheet from '../components/LikesBottomSheet';
-import ProfileEditView from '../components/ProfileEditView';
 import ProfileGallery from '../components/ProfileGallery';
 import ProfileHeader from '../components/ProfileHeader';
 import { useLikedPosts } from '../../record/hooks/useLikedPosts';
+import { useHiddenPosts } from '../../record/hooks/useHiddenPosts';
+import { useMyReports } from '../../record/hooks/useMyReports';
 import { useMyPosts } from '../../record/hooks/useMyPosts';
 import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
 import { useProfile } from '../hooks/useProfile';
@@ -14,18 +15,18 @@ import { useProfile } from '../hooks/useProfile';
 type ProfileScreenProps = {
   initialTab?: ProfileTab;
   onBack: () => void;
-  onLogout: () => Promise<void>;
   onOpenBookmarkedPost: (placeId: number) => void;
+  onOpenSettings: () => void;
 };
 
-type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
+type ProfileMode = 'profile' | 'archive' | 'archive-detail';
 type ProfileTab = 'liked' | 'saved';
 
 const ProfileScreen = ({
   initialTab = 'liked',
   onBack,
-  onLogout,
   onOpenBookmarkedPost,
+  onOpenSettings,
 }: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
   const [mode, setMode] = useState<ProfileMode>('profile');
@@ -51,6 +52,10 @@ const ProfileScreen = ({
     posts: likedPosts,
     refetch: refetchLikedPosts,
   } = useLikedPosts({ enabled: isLikedPostsTab });
+  const { hiddenPostIds } = useHiddenPosts();
+  const {
+    reports: reportedPosts,
+  } = useMyReports({ limit: 100 }, { enabled: isLikedPostsTab });
   const {
     isError: isArchivePostsError,
     isLoading: isArchivePostsLoading,
@@ -59,6 +64,14 @@ const ProfileScreen = ({
   } = useMyPosts(profile?.id ?? null, { enabled: isArchiveVisible });
   const maxContentWidth = Math.min(width, 560);
   const gridItemSize = Math.floor(maxContentWidth / 3);
+  const visibleLikedPosts = useMemo(() => {
+    const reportedPostIds = new Set(reportedPosts.map((report) => String(report.postId)));
+
+    return likedPosts.filter((post) => {
+      const postId = String(post.id);
+      return !hiddenPostIds[postId] && !reportedPostIds.has(postId);
+    });
+  }, [hiddenPostIds, likedPosts, reportedPosts]);
 
   const handleBack = () => {
     if (likesOpen) {
@@ -71,25 +84,12 @@ const ProfileScreen = ({
       return;
     }
 
-    if (mode === 'archive' || mode === 'profile-edit') {
+    if (mode === 'archive') {
       setMode('profile');
       return;
     }
 
     onBack();
-  };
-
-  const handleLogout = () => {
-    Alert.alert('로그아웃할까요?', '다시 이용하려면 로그인해야 합니다.', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '로그아웃',
-        style: 'destructive',
-        onPress: () => {
-          void onLogout();
-        },
-      },
-    ]);
   };
 
   const isArchiveDetail = mode === 'archive-detail';
@@ -108,9 +108,7 @@ const ProfileScreen = ({
           <Text style={styles.backText}>‹</Text>
         </Pressable>
 
-        {mode === 'profile-edit' ? (
-          <ProfileEditView profile={profile} />
-        ) : isArchiveDetail ? (
+        {isArchiveDetail ? (
           <ArchiveDetailView
             initialPostId={selectedArchivePostId}
             posts={archivePosts}
@@ -124,8 +122,7 @@ const ProfileScreen = ({
               activeTab={activeTab}
               onChangeTab={setActiveTab}
               onOpenArchive={() => setMode('archive')}
-              onOpenEdit={() => setMode('profile-edit')}
-              onLogout={handleLogout}
+              onOpenSettings={onOpenSettings}
               profile={profile}
               showTabs={mode === 'profile'}
             />
@@ -140,7 +137,7 @@ const ProfileScreen = ({
               isLikedPostsError={isLikedPostsTab && isLikedPostsError}
               isLikedPostsLoading={isLikedPostsTab && isLikedPostsLoading}
               itemSize={gridItemSize}
-              likedPosts={isLikedPostsTab ? likedPosts : undefined}
+              likedPosts={isLikedPostsTab ? visibleLikedPosts : undefined}
               onArchiveItemPress={(post) => {
                 setSelectedArchivePostId(post?.id ?? null);
                 setMode('archive-detail');
