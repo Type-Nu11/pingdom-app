@@ -3,28 +3,33 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { SvgProps } from 'react-native-svg';
 import { clamp } from '../constants/mapLayout';
+import type { PlaceCategory } from '../model/place.types';
 
 export type CategoryChipItem = {
   Icon: React.FC<SvgProps>;
   iconHeight: number;
   iconWidth: number;
-  id: string;
+  id: PlaceCategory;
   label: string;
   labelKey?: string;
 };
 
 type CategoryChipsProps = {
+  activeCategory?: PlaceCategory | null;
   categories: CategoryChipItem[];
   categoryIconScale: number;
   chipHeight: number;
+  onSelectCategory?: (category: PlaceCategory) => void;
   topPaddingX: number;
   uiScale: number;
 };
 
 const CategoryChips = ({
+  activeCategory,
   categories,
   categoryIconScale,
   chipHeight,
+  onSelectCategory,
   topPaddingX,
   uiScale,
 }: CategoryChipsProps) => {
@@ -48,37 +53,46 @@ const CategoryChips = ({
         },
       ]}
     >
-      {categories.map((category) => (
-        <Pressable
-          key={category.id}
-          style={[
-            styles.categoryChip,
-            {
-              gap: Math.round(clamp(7 * uiScale, 5, 7)),
-              height: chipHeight,
-              paddingHorizontal: Math.round(clamp(17 * uiScale, 14, 17)),
-            },
-          ]}
-        >
-          <category.Icon
-            height={Math.round(category.iconHeight * categoryIconScale)}
-            width={Math.round(category.iconWidth * categoryIconScale)}
-          />
-          <Text
+      {categories.map((category) => {
+        const isActive = activeCategory === category.id;
+
+        return (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: isActive }}
+            key={category.id}
+            onPress={() => onSelectCategory?.(category.id)}
             style={[
-              styles.categoryText,
+              styles.categoryChip,
+              isActive && styles.categoryChipActive,
               {
-                fontSize: Math.round(clamp(17 * uiScale, 15, 17)),
-                lineHeight: Math.round(clamp(21 * uiScale, 18, 21)),
+                gap: Math.round(clamp(7 * uiScale, 5, 7)),
+                height: chipHeight,
+                paddingHorizontal: Math.round(clamp(17 * uiScale, 14, 17)),
               },
             ]}
           >
-            {category.labelKey
-              ? t(category.labelKey, { defaultValue: category.label })
-              : category.label}
-          </Text>
-        </Pressable>
-      ))}
+            <category.Icon
+              height={Math.round(category.iconHeight * categoryIconScale)}
+              width={Math.round(category.iconWidth * categoryIconScale)}
+            />
+            <Text
+              style={[
+                styles.categoryText,
+                isActive && styles.categoryTextActive,
+                {
+                  fontSize: Math.round(clamp(17 * uiScale, 15, 17)),
+                  lineHeight: Math.round(clamp(21 * uiScale, 18, 21)),
+                },
+              ]}
+            >
+              {category.labelKey
+                ? t(category.labelKey, { defaultValue: category.label })
+                : category.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </ScrollView>
   );
 };
@@ -107,11 +121,19 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 4,
   },
+  categoryChipActive: {
+    backgroundColor: '#fff0f4',
+    borderColor: '#ff4a75',
+    borderWidth: 1,
+  },
   categoryText: {
     color: '#5f626d',
     fontSize: 17,
     fontWeight: '800',
     includeFontPadding: false,
+  },
+  categoryTextActive: {
+    color: '#ff1956',
   },
 });
 

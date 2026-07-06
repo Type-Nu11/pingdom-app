@@ -39,7 +39,7 @@ import { useProfile } from '../../profile/hooks/useProfile';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import { useHotPlaceIds } from '../hooks/useHotPlaceIds';
-import type { MapMarker, RecommendedPlace } from '../model/place.types';
+import type { MapMarker, PlaceCategory, RecommendedPlace } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 
 const SEARCH_FOCUS_MARKER_ID = 'search-focus-place';
@@ -117,6 +117,7 @@ export default function MapScreen({
   const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<PlaceCategory | null>(null);
   const [searchFocusPlace, setSearchFocusPlace] = useState<MapSearchSelection | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { i18n } = useTranslation();
@@ -165,13 +166,23 @@ export default function MapScreen({
     ),
     [places, recommendedPlaces, selectedMarkerId]
   );
+  const filteredRecommendedPlaces = useMemo(
+    () => (
+      selectedCategory
+        ? recommendedPlaces.filter((place) => normalizePlaceCategory(place.category) === selectedCategory)
+        : recommendedPlaces
+    ),
+    [recommendedPlaces, selectedCategory]
+  );
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const placeMarkerIds = new Set(markers.map((marker) => marker.id));
-    const placeMarkers = markers.map((marker) => ({
-      ...marker,
-      markerType: hotPlaceIds.has(marker.id) ? 'hot' as const : 'default' as const,
-    }));
-    const recommendationMarkers = (recommendedPlaces ?? [])
+    const placeMarkers = markers
+      .filter((marker) => !selectedCategory || marker.category === selectedCategory)
+      .map((marker) => ({
+        ...marker,
+        markerType: hotPlaceIds.has(marker.id) ? 'hot' as const : 'default' as const,
+      }));
+    const recommendationMarkers = (filteredRecommendedPlaces ?? [])
       .filter((place) => !placeMarkerIds.has(String(place.id)))
       .map((place) => ({
         category: normalizePlaceCategory(place.category),
@@ -198,7 +209,7 @@ export default function MapScreen({
       : [];
 
     return [...baseMarkers, ...searchFocusMarker];
-  }, [hotPlaceIds, markers, recommendedPlaces, searchFocusPlace]);
+  }, [filteredRecommendedPlaces, hotPlaceIds, markers, searchFocusPlace, selectedCategory]);
   const selectedPlaceId = selectedPlace?.id
     ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
   const {
@@ -307,6 +318,11 @@ export default function MapScreen({
     setSearchFocusPlace(place);
     setSelectedMarkerId(matchingPlace ? String(matchingPlace.id) : null);
   };
+  const handleSelectCategory = (category: PlaceCategory) => {
+    setSelectedCategory((current) => (current === category ? null : category));
+    setSelectedMarkerId(null);
+    setSearchFocusPlace(null);
+  };
   const handleReport = async (postId: number, reason: string, hideAfterReport: boolean) => {
     const postKey = String(postId);
 
@@ -362,9 +378,11 @@ export default function MapScreen({
             uiScale={uiScale}
           />
           <CategoryChips
+            activeCategory={selectedCategory}
             categories={mapCategories}
             categoryIconScale={categoryIconScale}
             chipHeight={chipHeight}
+            onSelectCategory={handleSelectCategory}
             topPaddingX={topPaddingX}
             uiScale={uiScale}
           />
@@ -406,7 +424,7 @@ export default function MapScreen({
         onPlacePress={handleRecommendedPlacePress}
         onToggle={toggleSheet}
         panHandlers={panHandlers}
-        places={recommendedPlaces}
+        places={filteredRecommendedPlaces}
         sheetTranslateY={sheetTranslateY}
       />
 
