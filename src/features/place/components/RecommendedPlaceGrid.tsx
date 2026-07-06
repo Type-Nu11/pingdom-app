@@ -5,7 +5,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
@@ -21,6 +20,10 @@ type RecommendedPlaceGridProps = {
   places: RecommendedPlace[];
 };
 
+const formatUsername = (username: string | undefined) => (
+  username?.trim() ? username : '등록자 없음'
+);
+
 type RecommendedPlaceCardProps = {
   address?: string;
   imageUrl?: string;
@@ -29,12 +32,7 @@ type RecommendedPlaceCardProps = {
   onPress?: () => void;
   rank: number;
   username?: string;
-  width: number;
 };
-
-const formatUsername = (username: string | undefined) => (
-  username?.trim() ? username : '등록자 없음'
-);
 
 const RecommendedPlaceCard = ({
   address,
@@ -44,7 +42,6 @@ const RecommendedPlaceCard = ({
   onPress,
   rank,
   username,
-  width,
 }: RecommendedPlaceCardProps) => {
   const [hasImageError, setHasImageError] = useState(false);
   const shouldShowImage = Boolean(imageUrl && !hasImageError);
@@ -57,7 +54,7 @@ const RecommendedPlaceCard = ({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${name} 추천 장소 보기`}
-      style={[styles.card, { width }]}
+      style={styles.card}
       onPress={onPress}
     >
       {shouldShowImage ? (
@@ -94,8 +91,8 @@ const RecommendedPlaceCard = ({
           </Text>
         </View>
         <View style={styles.cardActions}>
-          <LikeIcon color="#fff" height={17} width={19} />
-          <SavedIcon color="#fff" height={18} width={16} />
+          <LikeIcon color="#fff" height={21} width={23} />
+          <SavedIcon color="#fff" height={22} width={19} />
         </View>
       </View>
     </Pressable>
@@ -108,9 +105,7 @@ const RecommendedPlaceGrid = ({
   onPlacePress,
   places,
 }: RecommendedPlaceGridProps) => {
-  const { width: screenWidth } = useWindowDimensions();
-  const visiblePlaces = places.slice(0, 20);
-  const cardWidth = Math.floor((Math.min(screenWidth, 430) - 48 - 14) / 2);
+  const visiblePlaces = places.slice(0, 4);
   const {
     imageUrlsByPlaceId,
     isLoadingByPlaceId,
@@ -150,11 +145,10 @@ const RecommendedPlaceGrid = ({
             address={place.address}
             imageUrl={imageUrlsByPlaceId[placeKey] ?? fallbackImageUrl}
             isImageLoading={isLoadingByPlaceId[placeKey]}
-            key={place.id}
+            key={`${place.id}-${index}`}
             name={place.name}
             rank={index + 1}
             username={username ?? (isUsernameLoadingByPlaceId[placeKey] ? '등록자 확인 중' : undefined)}
-            width={cardWidth}
             onPress={() => onPlacePress?.(place)}
           />
         );
@@ -165,17 +159,16 @@ const RecommendedPlaceGrid = ({
 
 const styles = StyleSheet.create({
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
+    gap: 10,
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   card: {
-    aspectRatio: 0.82,
     backgroundColor: '#e9edf2',
     borderRadius: 8,
+    height: 94,
     overflow: 'hidden',
+    width: '100%',
   },
   cardImage: {
     ...StyleSheet.absoluteFillObject,
@@ -194,24 +187,24 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   topShade: {
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    height: 46,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    height: 38,
     left: 0,
     position: 'absolute',
     right: 0,
     top: 0,
   },
   bottomShade: {
-    backgroundColor: 'rgba(0, 0, 0, 0.36)',
+    backgroundColor: 'rgba(0, 0, 0, 0.38)',
     bottom: 0,
-    height: 54,
+    height: 46,
     left: 0,
     position: 'absolute',
     right: 0,
   },
   cardTitle: {
     color: '#2f333b',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '900',
     left: 8,
     position: 'absolute',
@@ -220,7 +213,7 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     alignItems: 'flex-end',
-    bottom: 10,
+    bottom: 8,
     flexDirection: 'row',
     gap: 8,
     left: 8,
@@ -237,7 +230,7 @@ const styles = StyleSheet.create({
   },
   address: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     marginTop: 4,
   },

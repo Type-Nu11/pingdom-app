@@ -24,6 +24,7 @@ type MapBottomSheetProps = {
   onToggle: () => void;
   panHandlers: GestureResponderHandlers;
   places: RecommendedPlace[];
+  recommendedPlaces: RecommendedPlace[];
   sheetTranslateY: Animated.Value;
 };
 
@@ -38,9 +39,10 @@ const MapBottomSheet = ({
   onToggle,
   panHandlers,
   places,
+  recommendedPlaces,
   sheetTranslateY,
 }: MapBottomSheetProps) => {
-  const [activeTab, setActiveTab] = useState<BottomSheetTab>('hot');
+  const [activeTab, setActiveTab] = useState<BottomSheetTab>('recommend');
   const isHotTab = activeTab === 'hot';
 
   return (
@@ -120,7 +122,7 @@ const MapBottomSheet = ({
             isError={isRecommendationsError}
             isLoading={isRecommendationsLoading}
             onPlacePress={onPlacePress}
-            places={places}
+            places={recommendedPlaces}
           />
         )}
       </ScrollView>
