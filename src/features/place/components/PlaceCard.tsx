@@ -1,11 +1,12 @@
-import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 type PlaceCardProps = {
   address?: string;
   dimmed?: boolean;
   distanceMeters?: number;
   imageUrl?: string;
+  isImageLoading?: boolean;
   name?: string;
 };
 
@@ -26,16 +27,29 @@ const PlaceCard = ({
   dimmed = false,
   distanceMeters,
   imageUrl,
+  isImageLoading = false,
   name,
 }: PlaceCardProps) => {
+  const [hasImageError, setHasImageError] = useState(false);
+  const shouldShowImage = Boolean(imageUrl && !hasImageError);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [imageUrl]);
+
   return (
     <View style={[styles.card, dimmed && styles.dimmedCard]}>
-      {imageUrl ? (
+      {shouldShowImage ? (
         <Image
           resizeMode="cover"
           source={{ uri: imageUrl }}
           style={styles.previewImage}
+          onError={() => setHasImageError(true)}
         />
+      ) : isImageLoading ? (
+        <View style={styles.emptyPreview}>
+          <ActivityIndicator color="rgba(255, 255, 255, 0.72)" size="small" />
+        </View>
       ) : (
         <View style={styles.emptyPreview}>
           <Text numberOfLines={1} style={styles.emptyPreviewText}>

@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { placeApi, type PlaceAutocompleteItem } from '../api/placeApi';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
+import type { RecommendedPlace } from '../model/place.types';
 
 export type MapSearchSelection = {
   address: string;
@@ -27,10 +28,15 @@ export type MapSearchSelection = {
 type MapSearchOverlayProps = {
   centerLat: number;
   centerLng: number;
+  isRecommendationsError?: boolean;
+  isRecommendationsLoading?: boolean;
   onClose: () => void;
   onCreatePlace?: () => void;
   onOpenProfile?: () => void;
+  onRefreshRecommendations?: () => Promise<unknown> | void;
+  onSelectRecommendedPlace?: (place: RecommendedPlace) => void;
   onSelectPlace: (place: MapSearchSelection) => void;
+  recommendedPlaces?: RecommendedPlace[];
 };
 
 const quickActions = [
@@ -61,17 +67,31 @@ const toRegisteredSelection = (item: PlaceAutocompleteItem): MapSearchSelection 
   roadAddress: item.address,
 });
 
+function formatDistance(distanceMeters: number) {
+  if (distanceMeters >= 1000) {
+    return `${(distanceMeters / 1000).toFixed(1)}km`;
+  }
+
+  return `${Math.round(distanceMeters)}m`;
+}
+
 const MapSearchOverlay = ({
   centerLat,
   centerLng,
+  isRecommendationsError = false,
+  isRecommendationsLoading = false,
   onClose,
   onCreatePlace,
+  onRefreshRecommendations,
+  onSelectRecommendedPlace,
   onSelectPlace,
+  recommendedPlaces = [],
 }: MapSearchOverlayProps) => {
   const inputRef = useRef<TextInput>(null);
   const searchRequestIdRef = useRef(0);
   const [query, setQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const [recentQueries, setRecentQueries] = useState([
     '대구소프트웨어마이스터고',
     '진주성',
@@ -103,6 +123,7 @@ const MapSearchOverlay = ({
       setHasSearched(false);
     }
 
+    setShowRecommendations(false);
     setRegisteredResults([]);
     setIsSearchingRegisteredPlaces(false);
     clearSearchResults();
@@ -162,6 +183,12 @@ const MapSearchOverlay = ({
     onClose();
   };
 
+  const handleRecommendedPlaceSelect = (place: RecommendedPlace) => {
+    Keyboard.dismiss();
+    onSelectRecommendedPlace?.(place);
+    onClose();
+  };
+
   const handleQuickAction = (id: typeof quickActions[number]['id']) => {
     const action = quickActions.find((item) => item.id === id);
 
@@ -169,6 +196,20 @@ const MapSearchOverlay = ({
       void runSearch(action.query);
     }
   };
+
+  const handleShowRecommendations = () => {
+    Keyboard.dismiss();
+    setShowRecommendations(true);
+    void onRefreshRecommendations?.();
+  };
+
+  const recommendationStatusText = isRecommendationsLoading
+    ? '추천 장소를 불러오고 있어요'
+    : isRecommendationsError
+      ? '추천 장소를 불러오지 못했어요'
+      : recommendedPlaces.length === 0
+        ? '주변 추천 장소가 아직 없어요'
+        : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -206,6 +247,7 @@ const MapSearchOverlay = ({
                 searchRequestIdRef.current += 1;
                 setQuery('');
                 setHasSearched(false);
+                setShowRecommendations(false);
                 setRegisteredResults([]);
                 clearSearchResults();
                 inputRef.current?.focus();
@@ -279,10 +321,43 @@ const MapSearchOverlay = ({
             <Pressable
               accessibilityRole="button"
               style={styles.recommendButton}
-              onPress={() => void runSearch('장소 추천')}
+              onPress={handleShowRecommendations}
             >
-              <Text style={styles.recommendButtonText}>장소 추천 받아보기</Text>
+              <Text style={styles.recommendButtonText}>
+                {showRecommendations ? '추천 다시 받기' : '장소 추천 받아보기'}
+              </Text>
             </Pressable>
+            {showRecommendations ? (
+              <View style={styles.recommendList}>
+                {recommendationStatusText ? (
+                  <View style={styles.recommendStateRow}>
+                    {isRecommendationsLoading ? (
+                      <ActivityIndicator color="#ff1956" size="small" />
+                    ) : null}
+                    <Text style={styles.recommendStateText}>{recommendationStatusText}</Text>
+                  </View>
+                ) : recommendedPlaces.slice(0, 5).map((place) => (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${place.name} 추천 장소 보기`}
+                    key={place.id}
+                    style={styles.recommendItem}
+                    onPress={() => handleRecommendedPlaceSelect(place)}
+                  >
+                    <View style={styles.recommendBadge}>
+                      <Text style={styles.recommendBadgeText}>P</Text>
+                    </View>
+                    <View style={styles.recommendTextGroup}>
+                      <Text numberOfLines={1} style={styles.resultName}>{place.name}</Text>
+                      <Text numberOfLines={1} style={styles.resultAddress}>
+                        {formatDistance(place.distanceMeters)} · {place.address}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.resultCategory}>{place.reason}</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
           </>
         ) : null}
 
@@ -473,6 +548,44 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 22,
     fontWeight: '900',
+  },
+  recommendBadge: {
+    alignItems: 'center',
+    backgroundColor: '#ffedf3',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 32,
+  },
+  recommendBadgeText: {
+    color: '#ff1956',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  recommendItem: {
+    alignItems: 'center',
+    borderBottomColor: '#eff0f4',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    paddingVertical: 13,
+  },
+  recommendList: {
+    marginTop: 12,
+  },
+  recommendStateRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    minHeight: 52,
+  },
+  recommendStateText: {
+    color: '#747681',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  recommendTextGroup: {
+    flex: 1,
   },
   resultAddress: {
     color: '#636774',

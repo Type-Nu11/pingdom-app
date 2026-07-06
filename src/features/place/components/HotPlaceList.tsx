@@ -1,6 +1,9 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import FirstPlaceIcon from '../../../assets/icons/FirstPlace.svg';
+import HotPlaceIcon from '../../../assets/icons/hotplace.svg';
+import SecondPlaceIcon from '../../../assets/icons/SecondPlace.svg';
+import ThirdPlaceIcon from '../../../assets/icons/ThirdPlace.svg';
 import type { RecommendedPlace } from '../model/place.types';
 
 type HotPlaceListProps = {
@@ -10,21 +13,12 @@ type HotPlaceListProps = {
   places: RecommendedPlace[];
 };
 
-function formatDistance(distanceMeters: number) {
-  if (distanceMeters >= 1000) {
-    return `${(distanceMeters / 1000).toFixed(1)}km`;
-  }
-
-  return `${Math.round(distanceMeters)}m`;
-}
-
 const HotPlaceList = ({
   isError = false,
   isLoading = false,
   onPlacePress,
   places,
 }: HotPlaceListProps) => {
-  const previewImages = usePlacePreviewImages(places);
   const stateText = isLoading
     ? '추천 장소를 불러오고 있어요'
     : isError
@@ -36,8 +30,8 @@ const HotPlaceList = ({
   return (
     <View style={styles.hotSection}>
       <View style={styles.hotTitleRow}>
-        <View style={styles.hotIcon} />
-        <Text style={styles.hotTitle}>Hot Place</Text>
+        <HotPlaceIcon height={24} width={20} />
+        <Text style={styles.hotTitle}>우리 지역 핫플!</Text>
       </View>
 
       {stateText ? (
@@ -46,7 +40,6 @@ const HotPlaceList = ({
         </View>
       ) : places.map((place, index) => {
         const rank = index + 1;
-        const previewImageUrl = previewImages[String(place.id)];
 
         return (
           <Pressable
@@ -56,30 +49,32 @@ const HotPlaceList = ({
             style={styles.hotRow}
             onPress={() => onPlacePress?.(place)}
           >
-            <View style={[styles.rankBadge, rank !== 1 && styles.rankBadgeMuted]}>
-              <Text style={[styles.rankText, rank !== 1 && styles.rankTextMuted]}>
-                {rank}
-              </Text>
-            </View>
-            <View style={styles.thumbnail}>
-              {previewImageUrl ? (
-                <Image
-                  resizeMode="cover"
-                  source={{ uri: previewImageUrl }}
-                  style={styles.thumbnailImage}
-                />
+            <View style={styles.rankColumn}>
+              {rank === 1 ? (
+                <FirstPlaceIcon height={36} width={25} />
+              ) : rank === 2 ? (
+                <SecondPlaceIcon height={36} width={25} />
+              ) : rank === 3 ? (
+                <ThirdPlaceIcon height={36} width={25} />
               ) : (
-                <View style={styles.thumbnailFallback}>
-                  <Text numberOfLines={1} style={styles.thumbnailFallbackText}>
-                    {place.name.slice(0, 1)}
-                  </Text>
-                </View>
+                <Text
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.78}
+                  numberOfLines={1}
+                  style={styles.rankNumber}
+                >
+                  {rank}.
+                </Text>
               )}
+            </View>
+            <View style={styles.profileIcon}>
+              <View style={styles.profileHead} />
+              <View style={styles.profileBody} />
             </View>
             <View style={styles.hotTextGroup}>
               <Text numberOfLines={1} style={styles.hotLocation}>{place.name}</Text>
               <Text numberOfLines={1} style={styles.hotUsername}>
-                {formatDistance(place.distanceMeters)} · {place.reason}
+                {place.reason}
               </Text>
             </View>
           </Pressable>
@@ -91,24 +86,18 @@ const HotPlaceList = ({
 
 const styles = StyleSheet.create({
   hotSection: {
-    paddingTop: 22,
+    paddingTop: 28,
   },
   hotTitleRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 13,
-    paddingHorizontal: 42,
-  },
-  hotIcon: {
-    backgroundColor: '#ff1956',
-    borderRadius: 12,
-    height: 24,
-    width: 24,
+    gap: 12,
+    marginBottom: 16,
+    paddingHorizontal: 18,
   },
   hotTitle: {
-    color: '#3a3b43',
-    fontSize: 25,
+    color: '#3f4149',
+    fontSize: 27,
     fontWeight: '900',
   },
   hotRow: {
@@ -116,77 +105,69 @@ const styles = StyleSheet.create({
     borderTopColor: '#ececf0',
     borderTopWidth: 1,
     flexDirection: 'row',
-    height: 73,
-    paddingHorizontal: 43,
+    minHeight: 84,
+    paddingHorizontal: 18,
   },
   hotTextGroup: {
     flex: 1,
   },
-  rankBadge: {
+  rankColumn: {
     alignItems: 'center',
-    borderColor: '#ff9f1a',
-    borderRadius: 13,
-    borderWidth: 3,
-    height: 27,
     justifyContent: 'center',
-    marginRight: 17,
-    width: 27,
+    marginRight: 16,
+    width: 32,
   },
-  rankBadgeMuted: {
-    borderColor: '#7d7f8a',
-  },
-  rankText: {
-    color: '#df8600',
-    fontSize: 16,
+  rankNumber: {
+    color: '#767680',
+    fontSize: 25,
     fontWeight: '900',
-    lineHeight: 18,
+    lineHeight: 36,
+    textAlign: 'center',
+    width: '100%',
   },
-  rankTextMuted: {
-    color: '#747681',
-  },
-  thumbnail: {
+  profileIcon: {
     alignItems: 'center',
-    backgroundColor: '#eff0f4',
-    borderRadius: 8,
-    height: 42,
+    borderColor: '#676873',
+    borderRadius: 19,
+    borderWidth: 4,
+    height: 38,
     justifyContent: 'center',
-    marginRight: 11,
+    marginRight: 13,
     overflow: 'hidden',
-    width: 42,
+    width: 38,
   },
-  thumbnailFallback: {
-    alignItems: 'center',
-    backgroundColor: '#e4e5ea',
-    flex: 1,
-    justifyContent: 'center',
-    width: '100%',
+  profileHead: {
+    backgroundColor: '#676873',
+    borderRadius: 6,
+    height: 12,
+    marginTop: 2,
+    width: 12,
   },
-  thumbnailFallbackText: {
-    color: '#747681',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  thumbnailImage: {
-    height: '100%',
-    width: '100%',
+  profileBody: {
+    backgroundColor: '#676873',
+    borderTopLeftRadius: 13,
+    borderTopRightRadius: 13,
+    height: 14,
+    marginTop: 2,
+    width: 24,
   },
   hotLocation: {
-    color: '#6e7079',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#74767f',
+    fontSize: 16,
+    fontWeight: '700',
     marginBottom: 3,
   },
   hotUsername: {
     color: '#111217',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
   },
   stateRow: {
     borderTopColor: '#ececf0',
     borderTopWidth: 1,
-    minHeight: 73,
     justifyContent: 'center',
-    paddingHorizontal: 43,
+    minHeight: 84,
+    paddingHorizontal: 18,
   },
   stateText: {
     color: '#747681',
