@@ -40,6 +40,7 @@ import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import { useHotPlaceIds } from '../hooks/useHotPlaceIds';
 import type { MapMarker, RecommendedPlace } from '../model/place.types';
+import { normalizePlaceCategory } from '../utils/placeCategory';
 
 const SEARCH_FOCUS_MARKER_ID = 'search-focus-place';
 const COORDINATE_MATCH_THRESHOLD = 0.00015;
@@ -169,7 +170,7 @@ export default function MapScreen({
     const recommendationMarkers = (recommendedPlaces ?? [])
       .filter((place) => !placeMarkerIds.has(String(place.id)))
       .map((place) => ({
-        category: 'food' as const,
+        category: normalizePlaceCategory(place.category),
         id: String(place.id),
         lat: place.latitude,
         lng: place.longitude,
