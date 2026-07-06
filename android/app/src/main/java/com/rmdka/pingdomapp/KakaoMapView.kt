@@ -342,7 +342,7 @@ class KakaoMapView(
 
     private fun normalizeMarkerCategory(value: String?): String {
         return when (value) {
-            "fashion", "food", "game", "music" -> value
+            "etc", "fashion", "food", "game", "music" -> value
             else -> "music"
         }
     }
@@ -621,6 +621,7 @@ class KakaoMapView(
             "food" -> drawFoodIcon(canvas)
             "game" -> drawGameIcon(canvas)
             "fashion" -> drawFashionIcon(canvas)
+            "etc" -> drawEtcIcon(canvas)
             else -> drawMusicIcon(canvas)
         }
     }
@@ -692,6 +693,16 @@ class KakaoMapView(
         canvas.drawPath(hangerPath, paint)
     }
 
+    private fun drawEtcIcon(canvas: Canvas) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.FILL
+        }
+        canvas.drawCircle(-8f, 0f, 2.7f, paint)
+        canvas.drawCircle(0f, 0f, 2.7f, paint)
+        canvas.drawCircle(8f, 0f, 2.7f, paint)
+    }
+
     private fun updateUserLocationIfReady() {
         val map = kakaoMap ?: return
         val lat = userLat ?: return
@@ -723,7 +734,7 @@ class KakaoMapView(
         val topPaddingPx = (3f * scale).roundToInt()
         val bottomPaddingPx = scale.roundToInt()
         val anchorY = computePaddedAnchorY(
-            rawHeightPx = (63 * scale).roundToInt(),
+            rawHeightPx = (40 * scale).roundToInt(),
             rawAnchorY = 0.72f,
             topPaddingPx = topPaddingPx,
             bottomPaddingPx = bottomPaddingPx
@@ -742,11 +753,11 @@ class KakaoMapView(
 
     private fun createUserLocationBitmap(): Bitmap {
         val scale = resources.displayMetrics.density
-        val width = (48 * scale).toInt()
-        val height = (63 * scale).toInt()
+        val width = (30 * scale).toInt()
+        val height = (40 * scale).toInt()
         val centerX = width / 2f
-        val circleCenterY = 42 * scale
-        val circleRadius = 16.5f * scale
+        val circleCenterY = 27 * scale
+        val circleRadius = 10.5f * scale
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -764,20 +775,20 @@ class KakaoMapView(
             style = Paint.Style.STROKE
             strokeJoin = Paint.Join.ROUND
             strokeCap = Paint.Cap.ROUND
-            strokeWidth = 4f * scale
+            strokeWidth = 2.5f * scale
         }
 
         val arrowPath = Path().apply {
-            moveTo(centerX, 4.5f * scale)
-            lineTo(centerX - 15.5f * scale, 25.5f * scale)
-            lineTo(centerX + 15.5f * scale, 25.5f * scale)
+            moveTo(centerX, 3f * scale)
+            lineTo(centerX - 9.5f * scale, 16.5f * scale)
+            lineTo(centerX + 9.5f * scale, 16.5f * scale)
             close()
         }
 
-        canvas.drawCircle(centerX, circleCenterY + 1.5f * scale, circleRadius + 4 * scale, shadowPaint)
+        canvas.drawCircle(centerX, circleCenterY + scale, circleRadius + 2.5f * scale, shadowPaint)
         canvas.drawPath(arrowPath, strokePaint)
         canvas.drawPath(arrowPath, fillPaint)
-        canvas.drawCircle(centerX, circleCenterY, circleRadius + 4 * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        canvas.drawCircle(centerX, circleCenterY, circleRadius + 2.5f * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             style = Paint.Style.FILL
         })

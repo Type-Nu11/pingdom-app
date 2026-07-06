@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import type { RecommendedPlace } from '../model/place.types';
 
 type HotPlaceListProps = {
@@ -23,6 +24,7 @@ const HotPlaceList = ({
   onPlacePress,
   places,
 }: HotPlaceListProps) => {
+  const previewImages = usePlacePreviewImages(places);
   const stateText = isLoading
     ? '추천 장소를 불러오고 있어요'
     : isError
@@ -44,6 +46,7 @@ const HotPlaceList = ({
         </View>
       ) : places.map((place, index) => {
         const rank = index + 1;
+        const previewImageUrl = previewImages[String(place.id)];
 
         return (
           <Pressable
@@ -58,9 +61,20 @@ const HotPlaceList = ({
                 {rank}
               </Text>
             </View>
-            <View style={styles.avatar}>
-              <View style={styles.avatarHead} />
-              <View style={styles.avatarBody} />
+            <View style={styles.thumbnail}>
+              {previewImageUrl ? (
+                <Image
+                  resizeMode="cover"
+                  source={{ uri: previewImageUrl }}
+                  style={styles.thumbnailImage}
+                />
+              ) : (
+                <View style={styles.thumbnailFallback}>
+                  <Text numberOfLines={1} style={styles.thumbnailFallbackText}>
+                    {place.name.slice(0, 1)}
+                  </Text>
+                </View>
+              )}
             </View>
             <View style={styles.hotTextGroup}>
               <Text numberOfLines={1} style={styles.hotLocation}>{place.name}</Text>
@@ -130,31 +144,31 @@ const styles = StyleSheet.create({
   rankTextMuted: {
     color: '#747681',
   },
-  avatar: {
+  thumbnail: {
     alignItems: 'center',
-    borderColor: '#737580',
-    borderRadius: 17,
-    borderWidth: 4,
-    height: 34,
+    backgroundColor: '#eff0f4',
+    borderRadius: 8,
+    height: 42,
     justifyContent: 'center',
     marginRight: 11,
     overflow: 'hidden',
-    width: 34,
+    width: 42,
   },
-  avatarHead: {
-    backgroundColor: '#737580',
-    borderRadius: 6,
-    height: 11,
-    marginTop: 2,
-    width: 11,
+  thumbnailFallback: {
+    alignItems: 'center',
+    backgroundColor: '#e4e5ea',
+    flex: 1,
+    justifyContent: 'center',
+    width: '100%',
   },
-  avatarBody: {
-    backgroundColor: '#737580',
-    borderTopLeftRadius: 13,
-    borderTopRightRadius: 13,
-    height: 14,
-    marginTop: 2,
-    width: 24,
+  thumbnailFallbackText: {
+    color: '#747681',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  thumbnailImage: {
+    height: '100%',
+    width: '100%',
   },
   hotLocation: {
     color: '#6e7079',

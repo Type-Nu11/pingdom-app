@@ -21,7 +21,7 @@ export type KakaoMapCardProps = ViewProps & {
   onCameraIdle?: (event: KakaoMapCameraIdleEvent) => void;
   onMarkerPress?: (event: KakaoMapMarkerPressEvent) => void;
   markers?: Array<{
-    category: 'fashion' | 'food' | 'game' | 'music';
+    category: 'etc' | 'fashion' | 'food' | 'game' | 'music';
     id: string;
     lat: number;
     lng: number;

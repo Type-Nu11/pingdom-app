@@ -1,75 +1,109 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import LikeIcon from '../../../assets/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/icons/actions/Saved.svg';
-import { PROFILE_USERNAME, profileImageSource } from '../constants/profileMock';
+import type { ProfileResponse } from '../api/profileApi';
 
 type ProfileHeaderProps = {
   activeTab: 'liked' | 'saved';
   isArchive: boolean;
+  isLoading?: boolean;
   onChangeTab: (tab: 'liked' | 'saved') => void;
   onLogout: () => void;
   onOpenArchive: () => void;
   onOpenEdit: () => void;
+  profile: ProfileResponse | null;
   showTabs: boolean;
 };
+
+function getDisplayName(profile: ProfileResponse | null) {
+  if (profile?.username?.trim()) {
+    return profile.username.trim();
+  }
+
+  if (profile?.id) {
+    return `user-${profile.id}`;
+  }
+
+  return '내 프로필';
+}
+
+function getAvatarInitial(displayName: string) {
+  return displayName.trim().charAt(0).toUpperCase() || 'P';
+}
 
 const ProfileHeader = ({
   activeTab,
   isArchive,
+  isLoading = false,
   onChangeTab,
   onLogout,
   onOpenArchive,
   onOpenEdit,
+  profile,
   showTabs,
-}: ProfileHeaderProps) => (
-  <>
-    <View style={[styles.header, isArchive && styles.archiveHeader]}>
-      <Image
-        source={profileImageSource}
-        resizeMode="cover"
-        style={[styles.avatar, isArchive && styles.archiveAvatar]}
-      />
-      <Text style={[styles.username, isArchive && styles.archiveUsername]}>{PROFILE_USERNAME}</Text>
+}: ProfileHeaderProps) => {
+  const displayName = isLoading ? '불러오는 중...' : getDisplayName(profile);
+  const avatarInitial = getAvatarInitial(displayName);
+  const profileImageUrl = profile?.profileImageUrl?.trim();
 
-      {!isArchive && (
-        <View style={styles.actions}>
-          <Pressable style={styles.actionButton} onPress={onOpenEdit}>
-            <Text style={styles.actionText}>프로필 편집</Text>
+  return (
+    <>
+      <View style={[styles.header, isArchive && styles.archiveHeader]}>
+        {profileImageUrl ? (
+          <Image
+            source={{ uri: profileImageUrl }}
+            resizeMode="cover"
+            style={[styles.avatar, isArchive && styles.archiveAvatar]}
+          />
+        ) : (
+          <View style={[styles.avatar, styles.defaultAvatar, isArchive && styles.archiveAvatar]}>
+            <Text style={[styles.avatarInitial, isArchive && styles.archiveAvatarInitial]}>
+              {avatarInitial}
+            </Text>
+          </View>
+        )}
+        <Text style={[styles.username, isArchive && styles.archiveUsername]}>{displayName}</Text>
+
+        {!isArchive && (
+          <View style={styles.actions}>
+            <Pressable style={styles.actionButton} onPress={onOpenEdit}>
+              <Text style={styles.actionText}>프로필 편집</Text>
+            </Pressable>
+            <Pressable style={styles.actionButton} onPress={onOpenArchive}>
+              <Text style={styles.actionText}>보관함 보기</Text>
+            </Pressable>
+            <Pressable style={[styles.actionButton, styles.logoutButton]} onPress={onLogout}>
+              <Text style={[styles.actionText, styles.logoutText]}>로그아웃</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+
+      {showTabs && (
+        <View style={styles.tabBar}>
+          <Pressable style={styles.tabItem} onPress={() => onChangeTab('liked')}>
+            <LikeIcon
+              color={activeTab === 'liked' ? '#ff1956' : '#c7c8cc'}
+              fill={activeTab === 'liked' ? '#ff1956' : 'none'}
+              width={40}
+              height={36}
+            />
+            {activeTab === 'liked' && <View style={styles.activeTabLine} />}
           </Pressable>
-          <Pressable style={styles.actionButton} onPress={onOpenArchive}>
-            <Text style={styles.actionText}>보관함 보기</Text>
-          </Pressable>
-          <Pressable style={[styles.actionButton, styles.logoutButton]} onPress={onLogout}>
-            <Text style={[styles.actionText, styles.logoutText]}>로그아웃</Text>
+          <Pressable style={styles.tabItem} onPress={() => onChangeTab('saved')}>
+            <SavedIcon
+              color={activeTab === 'saved' ? '#ff1956' : '#c7c8cc'}
+              fill={activeTab === 'saved' ? '#ff1956' : 'none'}
+              width={34}
+              height={40}
+            />
+            {activeTab === 'saved' && <View style={styles.activeTabLine} />}
           </Pressable>
         </View>
       )}
-    </View>
-
-    {showTabs && (
-      <View style={styles.tabBar}>
-        <Pressable style={styles.tabItem} onPress={() => onChangeTab('liked')}>
-          <LikeIcon
-            color={activeTab === 'liked' ? '#ff1956' : '#c7c8cc'}
-            fill={activeTab === 'liked' ? '#ff1956' : 'none'}
-            width={40}
-            height={36}
-          />
-          {activeTab === 'liked' && <View style={styles.activeTabLine} />}
-        </Pressable>
-        <Pressable style={styles.tabItem} onPress={() => onChangeTab('saved')}>
-          <SavedIcon
-            color={activeTab === 'saved' ? '#ff1956' : '#c7c8cc'}
-            fill={activeTab === 'saved' ? '#ff1956' : 'none'}
-            width={34}
-            height={40}
-          />
-          {activeTab === 'saved' && <View style={styles.activeTabLine} />}
-        </Pressable>
-      </View>
-    )}
-  </>
-);
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   actionButton: {
@@ -132,6 +166,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 29,
     marginTop: 12,
+  },
+  avatarInitial: {
+    color: '#fff',
+    fontSize: 36,
+    fontWeight: '900',
+    lineHeight: 44,
+  },
+  archiveAvatarInitial: {
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  defaultAvatar: {
+    alignItems: 'center',
+    backgroundColor: '#ff4a75',
+    justifyContent: 'center',
   },
   logoutButton: {
     backgroundColor: '#fff1f4',

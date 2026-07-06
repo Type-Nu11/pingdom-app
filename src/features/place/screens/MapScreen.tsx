@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  PanResponder,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -7,6 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryChips from '../components/CategoryChips';
 import KakaoMapCard, { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
@@ -36,10 +39,41 @@ import { useProfile } from '../../profile/hooks/useProfile';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import { useHotPlaceIds } from '../hooks/useHotPlaceIds';
-import type { MapMarker, RecommendedPlace } from '../model/place.types';
+import type { MapMarker, PlaceCategory, RecommendedPlace } from '../model/place.types';
+import { normalizePlaceCategory } from '../utils/placeCategory';
 
 const SEARCH_FOCUS_MARKER_ID = 'search-focus-place';
 const COORDINATE_MATCH_THRESHOLD = 0.00015;
+const I18N_LANGUAGE_ALIASES: Record<string, string> = {
+  chinese: 'zh',
+  english: 'en',
+  japanese: 'ja',
+  korean: 'ko',
+  thai: 'th',
+  vietnamese: 'vi',
+  '中文': 'zh',
+  '日本語': 'ja',
+  '한국어': 'ko',
+  'ภาษาไทย': 'th',
+  'tiếng việt': 'vi',
+};
+const SUPPORTED_I18N_LANGUAGES = new Set(['en', 'ko', 'ja', 'zh', 'vi', 'th']);
+
+const normalizeI18nLanguage = (language: string | undefined | null) => {
+  const normalized = language?.trim().toLowerCase();
+
+  if (!normalized) {
+    return null;
+  }
+
+  const baseLanguage = normalized.split('-')[0];
+
+  if (SUPPORTED_I18N_LANGUAGES.has(baseLanguage)) {
+    return baseLanguage;
+  }
+
+  return I18N_LANGUAGE_ALIASES[normalized] ?? null;
+};
 
 const isSamePlaceCoordinate = (
   a: { latitude: number; longitude: number },
@@ -64,7 +98,9 @@ type MapScreenProps = {
   } | null;
   onCreatePlace?: () => void;
   onClearOpenedBookmarkedPlace?: () => void;
+  onOpenLikedPlaces?: () => void;
   onOpenProfile?: () => void;
+  onOpenSavedPlaces?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
 
@@ -72,22 +108,36 @@ export default function MapScreen({
   notificationLikeContext,
   onCreatePlace,
   onClearOpenedBookmarkedPlace,
+  onOpenLikedPlaces,
   onOpenProfile,
+  onOpenSavedPlaces,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
   const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<PlaceCategory | null>(null);
   const [searchFocusPlace, setSearchFocusPlace] = useState<MapSearchSelection | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const { i18n } = useTranslation();
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
-  const { isError: isPlacesError, markers, places } = usePlaces();
-  const { hotPlaceIds } = useHotPlaceIds();
+  const {
+    isError: isPlacesError,
+    markers,
+    places,
+    refetch: refetchPlaces,
+  } = usePlaces();
+  const {
+    hotPlaceIds,
+    refetch: refetchHotPlaceIds,
+  } = useHotPlaceIds();
   const {
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
     places: recommendedPlaces,
+    refetch: refetchRecommendations,
     recommendationRequestId,
     recommendationVersion,
   } = usePlaceRecommendations({
@@ -101,6 +151,13 @@ export default function MapScreen({
   const { togglePostLike } = usePostLike();
   const { reportPost } = usePostReport();
   const { profile } = useProfile();
+  useEffect(() => {
+    const nextLanguage = normalizeI18nLanguage(profile?.language);
+
+    if (nextLanguage && i18n.language !== nextLanguage) {
+      void i18n.changeLanguage(nextLanguage);
+    }
+  }, [i18n, profile?.language]);
   const selectedPlace = useMemo(
     () => (
       places.find((place) => String(place.id) === selectedMarkerId)
@@ -109,16 +166,26 @@ export default function MapScreen({
     ),
     [places, recommendedPlaces, selectedMarkerId]
   );
+  const filteredRecommendedPlaces = useMemo(
+    () => (
+      selectedCategory
+        ? recommendedPlaces.filter((place) => normalizePlaceCategory(place.category) === selectedCategory)
+        : recommendedPlaces
+    ),
+    [recommendedPlaces, selectedCategory]
+  );
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const placeMarkerIds = new Set(markers.map((marker) => marker.id));
-    const placeMarkers = markers.map((marker) => ({
-      ...marker,
-      markerType: hotPlaceIds.has(marker.id) ? 'hot' as const : 'default' as const,
-    }));
-    const recommendationMarkers = (recommendedPlaces ?? [])
+    const placeMarkers = markers
+      .filter((marker) => !selectedCategory || marker.category === selectedCategory)
+      .map((marker) => ({
+        ...marker,
+        markerType: hotPlaceIds.has(marker.id) ? 'hot' as const : 'default' as const,
+      }));
+    const recommendationMarkers = (filteredRecommendedPlaces ?? [])
       .filter((place) => !placeMarkerIds.has(String(place.id)))
       .map((place) => ({
-        category: 'food' as const,
+        category: normalizePlaceCategory(place.category),
         id: String(place.id),
         lat: place.latitude,
         lng: place.longitude,
@@ -142,7 +209,7 @@ export default function MapScreen({
       : [];
 
     return [...baseMarkers, ...searchFocusMarker];
-  }, [hotPlaceIds, markers, recommendedPlaces, searchFocusPlace]);
+  }, [filteredRecommendedPlaces, hotPlaceIds, markers, searchFocusPlace, selectedCategory]);
   const selectedPlaceId = selectedPlace?.id
     ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
   const {
@@ -151,6 +218,31 @@ export default function MapScreen({
     posts: selectedPlacePosts,
     refetch: refetchSelectedPlacePosts,
   } = usePlacePosts(Number.isFinite(selectedPlaceId) ? selectedPlaceId : null);
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) {
+      return;
+    }
+
+    setIsRefreshing(true);
+
+    try {
+      await Promise.all([
+        refetchPlaces(),
+        refetchRecommendations(),
+        refetchHotPlaceIds(),
+        Number.isFinite(selectedPlaceId) ? refetchSelectedPlacePosts() : Promise.resolve(),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    isRefreshing,
+    refetchHotPlaceIds,
+    refetchPlaces,
+    refetchRecommendations,
+    refetchSelectedPlacePosts,
+    selectedPlaceId,
+  ]);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -159,8 +251,8 @@ export default function MapScreen({
     clamp(BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT * uiScale, 104, BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT)
   );
   const sheetCollapsedTranslateY = Math.max(0, sheetExpandedHeight - sheetCollapsedVisibleHeight);
-  const smallActionWidth = Math.round(clamp(38 * uiScale, 30, 38));
-  const smallActionHeight = Math.round(clamp(44 * uiScale, 35, 44));
+  const smallActionWidth = Math.round(clamp(44 * uiScale, 38, 44));
+  const smallActionHeight = Math.round(clamp(51 * uiScale, 44, 51));
   const addIconSize = Math.round(clamp(21 * uiScale, 17, 21));
   const addTextSize = Math.round(clamp(17 * uiScale, 14, 17));
   const sideGap = Math.round(clamp(42 * uiScale, 16, 42));
@@ -169,12 +261,26 @@ export default function MapScreen({
   const topPaddingTop = Math.round(clamp(44 * uiScale, 24, 44));
   const searchHeight = Math.round(clamp(64 * uiScale, 44, 64));
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
-  const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
-  const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
+  const chipHeight = Math.round(clamp(38 * uiScale, 34, 38));
+  const categoryIconScale = clamp(chipHeight / 54, 0.62, 0.7);
   const markerCardWidth = Math.round(clamp(width - 44, 338, 380));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
+  const refreshPanResponder = useMemo(
+    () => PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => (
+        !isRefreshing
+        && !isSearchOpen
+        && gesture.dy > 72
+        && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.8
+      ),
+      onPanResponderRelease: () => {
+        void handleRefresh();
+      },
+    }),
+    [handleRefresh, isRefreshing, isSearchOpen]
+  );
   useEffect(() => {
     if (openedBookmarkedPlaceId !== undefined && openedBookmarkedPlaceId !== null) {
       setSelectedMarkerId(String(openedBookmarkedPlaceId));
@@ -211,6 +317,11 @@ export default function MapScreen({
 
     setSearchFocusPlace(place);
     setSelectedMarkerId(matchingPlace ? String(matchingPlace.id) : null);
+  };
+  const handleSelectCategory = (category: PlaceCategory) => {
+    setSelectedCategory((current) => (current === category ? null : category));
+    setSelectedMarkerId(null);
+    setSearchFocusPlace(null);
   };
   const handleReport = async (postId: number, reason: string, hideAfterReport: boolean) => {
     const postKey = String(postId);
@@ -252,6 +363,7 @@ export default function MapScreen({
       <View style={styles.mapTint} pointerEvents="none" />
       <SafeAreaView style={styles.safeArea} pointerEvents="box-none">
         <View
+          {...refreshPanResponder.panHandlers}
           style={[
             styles.topPanel,
             { paddingHorizontal: topPaddingX, paddingTop: topPaddingTop },
@@ -266,9 +378,11 @@ export default function MapScreen({
             uiScale={uiScale}
           />
           <CategoryChips
+            activeCategory={selectedCategory}
             categories={mapCategories}
             categoryIconScale={categoryIconScale}
             chipHeight={chipHeight}
+            onSelectCategory={handleSelectCategory}
             topPaddingX={topPaddingX}
             uiScale={uiScale}
           />
@@ -279,6 +393,14 @@ export default function MapScreen({
           ) : null}
         </View>
       </SafeAreaView>
+      {isRefreshing ? (
+        <View
+          style={[styles.refreshIndicator, { top: topPaddingTop + 14 }]}
+          pointerEvents="none"
+        >
+          <ActivityIndicator color="#ff1956" />
+        </View>
+      ) : null}
 
       <MapActionButtons
         addIconSize={addIconSize}
@@ -286,6 +408,8 @@ export default function MapScreen({
         bottom={sheetExpandedHeight + ACTION_BOTTOM_GAP}
         left={sideGap}
         onAddPlace={onCreatePlace}
+        onOpenLikedPlaces={onOpenLikedPlaces}
+        onOpenSavedPlaces={onOpenSavedPlaces}
         right={rightGap}
         sheetTranslateY={sheetTranslateY}
         smallActionHeight={smallActionHeight}
@@ -300,7 +424,7 @@ export default function MapScreen({
         onPlacePress={handleRecommendedPlacePress}
         onToggle={toggleSheet}
         panHandlers={panHandlers}
-        places={recommendedPlaces}
+        places={filteredRecommendedPlaces}
         sheetTranslateY={sheetTranslateY}
       />
 
@@ -399,6 +523,22 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     ...StyleSheet.absoluteFillObject,
+  },
+  refreshIndicator: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    elevation: 4,
+    height: 36,
+    justifyContent: 'center',
+    left: '50%',
+    marginLeft: -18,
+    position: 'absolute',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    width: 36,
+    zIndex: 30,
   },
   topPanel: {
     paddingHorizontal: 22,

@@ -394,7 +394,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
 
     private func normalizeMarkerCategory(_ value: String?) -> String {
         switch value {
-        case "fashion", "food", "game", "music":
+        case "etc", "fashion", "food", "game", "music":
             return value ?? "music"
         default:
             return "music"
@@ -630,6 +630,8 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
             drawGameIcon()
         case "fashion":
             drawFashionIcon()
+        case "etc":
+            drawEtcIcon()
         default:
             drawMusicIcon()
         }
@@ -702,8 +704,15 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
         path.stroke()
     }
 
+    private func drawEtcIcon() {
+        UIColor.white.setFill()
+        UIBezierPath(ovalIn: CGRect(x: -10.7, y: -2.7, width: 5.4, height: 5.4)).fill()
+        UIBezierPath(ovalIn: CGRect(x: -2.7, y: -2.7, width: 5.4, height: 5.4)).fill()
+        UIBezierPath(ovalIn: CGRect(x: 5.3, y: -2.7, width: 5.4, height: 5.4)).fill()
+    }
+
     private func makeUserLocationImage() -> UIImage {
-        let size = CGSize(width: 48, height: 63)
+        let size = CGSize(width: 30, height: 40)
         let renderer = UIGraphicsImageRenderer(size: size)
 
         return renderer.image { context in
@@ -711,30 +720,30 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
             let pink = UIColor(red: 1.0, green: 0.098, blue: 0.337, alpha: 1.0)
             let white = UIColor.white
             let centerX = size.width / 2
-            let circleCenter = CGPoint(x: centerX, y: 42)
+            let circleCenter = CGPoint(x: centerX, y: 27)
 
             let arrowPath = UIBezierPath()
-            arrowPath.move(to: CGPoint(x: centerX, y: 4.5))
-            arrowPath.addLine(to: CGPoint(x: centerX - 15.5, y: 25.5))
-            arrowPath.addLine(to: CGPoint(x: centerX + 15.5, y: 25.5))
+            arrowPath.move(to: CGPoint(x: centerX, y: 3))
+            arrowPath.addLine(to: CGPoint(x: centerX - 9.5, y: 16.5))
+            arrowPath.addLine(to: CGPoint(x: centerX + 9.5, y: 16.5))
             arrowPath.close()
 
             white.setStroke()
             pink.setFill()
-            arrowPath.lineWidth = 4
+            arrowPath.lineWidth = 2.5
             arrowPath.lineJoinStyle = .round
             arrowPath.stroke()
             arrowPath.fill()
 
             cgContext.saveGState()
-            cgContext.setShadow(offset: CGSize(width: 0, height: 3), blur: 8, color: UIColor.black.withAlphaComponent(0.18).cgColor)
+            cgContext.setShadow(offset: CGSize(width: 0, height: 2), blur: 6, color: UIColor.black.withAlphaComponent(0.16).cgColor)
             white.setFill()
             UIBezierPath(
                 ovalIn: CGRect(
-                    x: circleCenter.x - 20.5,
-                    y: circleCenter.y - 20.5,
-                    width: 41,
-                    height: 41
+                    x: circleCenter.x - 13,
+                    y: circleCenter.y - 13,
+                    width: 26,
+                    height: 26
                 )
             ).fill()
             cgContext.restoreGState()
@@ -742,10 +751,10 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
             pink.setFill()
             UIBezierPath(
                 ovalIn: CGRect(
-                    x: circleCenter.x - 16.5,
-                    y: circleCenter.y - 16.5,
-                    width: 33,
-                    height: 33
+                    x: circleCenter.x - 10.5,
+                    y: circleCenter.y - 10.5,
+                    width: 21,
+                    height: 21
                 )
             ).fill()
         }

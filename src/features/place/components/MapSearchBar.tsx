@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { clamp } from '../constants/mapLayout';
 
 type MapSearchBarProps = {
@@ -17,6 +18,14 @@ const MapSearchBar = ({
   searchHeight,
   uiScale,
 }: MapSearchBarProps) => {
+  const { t } = useTranslation();
+  const accessibilityLabel = t('map.search.accessibilityLabel', {
+    defaultValue: '검색어를 입력하세요',
+  });
+  const placeholder = t('map.search.placeholder', {
+    defaultValue: '검색어를 입력하세요...',
+  });
+
   return (
     <View
       style={[
@@ -30,7 +39,7 @@ const MapSearchBar = ({
     >
       <Pressable
         accessibilityRole="search"
-        accessibilityLabel="집 근처 업체 검색"
+        accessibilityLabel={accessibilityLabel}
         style={styles.searchTapArea}
         onPress={onOpenSearch}
       >
@@ -50,7 +59,7 @@ const MapSearchBar = ({
           numberOfLines={1}
           style={[styles.searchPlaceholder, { fontSize: Math.round(clamp(25 * uiScale, 17, 25)) }]}
         >
-          집 근처 업체 검색
+          {placeholder}
         </Text>
       </Pressable>
       <Pressable

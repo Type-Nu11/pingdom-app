@@ -1,31 +1,39 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { SvgProps } from 'react-native-svg';
 import { clamp } from '../constants/mapLayout';
+import type { PlaceCategory } from '../model/place.types';
 
 export type CategoryChipItem = {
   Icon: React.FC<SvgProps>;
   iconHeight: number;
   iconWidth: number;
-  id: string;
+  id: PlaceCategory;
   label: string;
+  labelKey?: string;
 };
 
 type CategoryChipsProps = {
+  activeCategory?: PlaceCategory | null;
   categories: CategoryChipItem[];
   categoryIconScale: number;
   chipHeight: number;
+  onSelectCategory?: (category: PlaceCategory) => void;
   topPaddingX: number;
   uiScale: number;
 };
 
 const CategoryChips = ({
+  activeCategory,
   categories,
   categoryIconScale,
   chipHeight,
+  onSelectCategory,
   topPaddingX,
   uiScale,
 }: CategoryChipsProps) => {
+  const { t } = useTranslation();
   const shadowGutter = Math.round(clamp(12 * uiScale, 8, 12));
 
   return (
@@ -45,35 +53,46 @@ const CategoryChips = ({
         },
       ]}
     >
-      {categories.map((category) => (
-        <Pressable
-          key={category.id}
-          style={[
-            styles.categoryChip,
-            {
-              gap: Math.round(clamp(8 * uiScale, 5, 8)),
-              height: chipHeight,
-              paddingHorizontal: Math.round(clamp(18 * uiScale, 12, 18)),
-            },
-          ]}
-        >
-          <category.Icon
-            height={Math.round(category.iconHeight * categoryIconScale)}
-            width={Math.round(category.iconWidth * categoryIconScale)}
-          />
-          <Text
+      {categories.map((category) => {
+        const isActive = activeCategory === category.id;
+
+        return (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: isActive }}
+            key={category.id}
+            onPress={() => onSelectCategory?.(category.id)}
             style={[
-              styles.categoryText,
+              styles.categoryChip,
+              isActive && styles.categoryChipActive,
               {
-                fontSize: Math.round(clamp(19 * uiScale, 14, 19)),
-                lineHeight: Math.round(clamp(23 * uiScale, 18, 23)),
+                gap: Math.round(clamp(6 * uiScale, 5, 6)),
+                height: chipHeight,
+                paddingHorizontal: Math.round(clamp(13 * uiScale, 11, 13)),
               },
             ]}
           >
-            {category.label}
-          </Text>
-        </Pressable>
-      ))}
+            <category.Icon
+              height={Math.round(category.iconHeight * categoryIconScale)}
+              width={Math.round(category.iconWidth * categoryIconScale)}
+            />
+            <Text
+              style={[
+                styles.categoryText,
+                isActive && styles.categoryTextActive,
+                {
+                  fontSize: Math.round(clamp(14 * uiScale, 13, 14)),
+                  lineHeight: Math.round(clamp(18 * uiScale, 16, 18)),
+                },
+              ]}
+            >
+              {category.labelKey
+                ? t(category.labelKey, { defaultValue: category.label })
+                : category.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </ScrollView>
   );
 };
@@ -92,21 +111,29 @@ const styles = StyleSheet.create({
   categoryChip: {
     alignItems: 'center',
     backgroundColor: '#fcfcfd',
-    borderRadius: 16,
+    borderRadius: 14,
     flexDirection: 'row',
-    height: 46,
-    paddingHorizontal: 18,
+    height: 38,
+    paddingHorizontal: 13,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.14,
     shadowRadius: 5,
     elevation: 4,
   },
+  categoryChipActive: {
+    backgroundColor: '#fff0f4',
+    borderColor: '#ff4a75',
+    borderWidth: 1,
+  },
   categoryText: {
     color: '#5f626d',
-    fontSize: 19,
+    fontSize: 14,
     fontWeight: '800',
     includeFontPadding: false,
+  },
+  categoryTextActive: {
+    color: '#ff1956',
   },
 });
 

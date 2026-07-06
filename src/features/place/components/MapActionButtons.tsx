@@ -1,5 +1,6 @@
 import React from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import LikedIcon from '../../../assets/icons/main/Liked.svg';
 import PlaceRecommendIcon from '../../../assets/icons/main/placeRecommend.svg';
 import SavedIcon from '../../../assets/icons/main/Saved.svg';
@@ -10,6 +11,8 @@ type MapActionButtonsProps = {
   bottom: number;
   left: number;
   onAddPlace?: () => void;
+  onOpenLikedPlaces?: () => void;
+  onOpenSavedPlaces?: () => void;
   right: number;
   sheetTranslateY: Animated.Value;
   smallActionHeight: number;
@@ -22,11 +25,16 @@ const MapActionButtons = ({
   bottom,
   left,
   onAddPlace,
+  onOpenLikedPlaces,
+  onOpenSavedPlaces,
   right,
   sheetTranslateY,
   smallActionHeight,
   smallActionWidth,
 }: MapActionButtonsProps) => {
+  const { t } = useTranslation();
+  const addPlaceLabel = t('map.actions.addPlace', { defaultValue: '게시 하기' });
+
   return (
     <Animated.View
       style={[
@@ -42,16 +50,18 @@ const MapActionButtons = ({
       <View style={styles.quickActionGroup}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="좋아요 장소 보기"
+          accessibilityLabel={t('map.actions.likedPlaces', { defaultValue: '좋아요 장소 보기' })}
           hitSlop={8}
+          onPress={onOpenLikedPlaces}
           style={styles.quickActionButton}
         >
           <LikedIcon height={smallActionHeight} width={smallActionWidth} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="저장한 장소 보기"
+          accessibilityLabel={t('map.actions.savedPlaces', { defaultValue: '저장한 장소 보기' })}
           hitSlop={8}
+          onPress={onOpenSavedPlaces}
           style={styles.quickActionButton}
         >
           <SavedIcon height={smallActionHeight} width={smallActionWidth} />
@@ -60,14 +70,14 @@ const MapActionButtons = ({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="장소 추가"
+        accessibilityLabel={addPlaceLabel}
         hitSlop={8}
         onPress={onAddPlace}
         style={styles.addPlaceButton}
       >
         <PlaceRecommendIcon height={addIconSize} width={addIconSize} />
         <Text style={[styles.addPlaceText, { fontSize: addTextSize, lineHeight: addTextSize + 4 }]}>
-          장소 게시
+          {addPlaceLabel}
         </Text>
       </Pressable>
     </Animated.View>
@@ -105,6 +115,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.09,
     shadowRadius: 2,
+    transform: [{ translateY: -8 }],
     ...Platform.select({
       android: {
         elevation: 3,

@@ -12,6 +12,7 @@ import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
 import { useProfile } from '../hooks/useProfile';
 
 type ProfileScreenProps = {
+  initialTab?: ProfileTab;
   onBack: () => void;
   onLogout: () => Promise<void>;
   onOpenBookmarkedPost: (placeId: number) => void;
@@ -21,10 +22,16 @@ type ProfileScreenProps = {
 type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
 type ProfileTab = 'liked' | 'saved';
 
-const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost, onOpenSettings }: ProfileScreenProps) => {
+const ProfileScreen = ({
+  initialTab = 'liked',
+  onBack,
+  onLogout,
+  onOpenBookmarkedPost,
+  onOpenSettings,
+}: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
   const [mode, setMode] = useState<ProfileMode>('profile');
-  const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
+  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
   const [likesOpen, setLikesOpen] = useState(false);
   const [selectedArchivePostId, setSelectedArchivePostId] = useState<number | null>(null);
   const isLikedPostsTab = mode === 'profile' && activeTab === 'liked';
@@ -116,7 +123,7 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost, onOpenSettings 
         )}
 
         {mode === 'profile-edit' ? (
-          <ProfileEditView />
+          <ProfileEditView profile={profile} />
         ) : isArchiveDetail ? (
           <ArchiveDetailView
             initialPostId={selectedArchivePostId}
@@ -127,11 +134,13 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost, onOpenSettings 
           <>
             <ProfileHeader
               isArchive={mode === 'archive'}
+              isLoading={isProfileLoading}
               activeTab={activeTab}
               onChangeTab={setActiveTab}
               onOpenArchive={() => setMode('archive')}
               onOpenEdit={() => setMode('profile-edit')}
               onLogout={handleLogout}
+              profile={profile}
               showTabs={mode === 'profile'}
             />
             <ProfileGallery
