@@ -16,7 +16,8 @@ export const useKakaoLocalSearch = () => {
   const [searchResults, setSearchResults] = useState<KakaoLocalSearchItem[]>([]);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [searchStatusMessage, setSearchStatusMessage] = useState('');
-  const requestIdRef = useRef(0);
+  const addressRequestIdRef = useRef(0);
+  const searchRequestIdRef = useRef(0);
 
   const clearSearchResults = () => {
     setSearchResults([]);
@@ -24,18 +25,18 @@ export const useKakaoLocalSearch = () => {
   };
 
   const resolveAddressFromCoordinate = async (lat: number, lng: number) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = ++addressRequestIdRef.current;
 
     try {
       const nextAddress = await getAddressFromCoordinate(lat, lng);
 
-      if (requestId !== requestIdRef.current) {
+      if (requestId !== addressRequestIdRef.current) {
         return null;
       }
 
       return nextAddress || formatCoordinateAddress(lat, lng);
     } catch {
-      if (requestId !== requestIdRef.current) {
+      if (requestId !== addressRequestIdRef.current) {
         return null;
       }
 
@@ -63,7 +64,7 @@ export const useKakaoLocalSearch = () => {
       return;
     }
 
-    const requestId = ++requestIdRef.current;
+    const requestId = ++searchRequestIdRef.current;
     setIsSearchingAddress(true);
     setSearchResults([]);
     setSearchStatusMessage('');
@@ -74,7 +75,7 @@ export const useKakaoLocalSearch = () => {
         centerLng: options.centerLng,
       });
 
-      if (requestId !== requestIdRef.current) {
+      if (requestId !== searchRequestIdRef.current) {
         console.log('[KakaoLocalSearch] search ignored: stale request', { requestId });
         return;
       }
@@ -108,11 +109,11 @@ export const useKakaoLocalSearch = () => {
         error,
         query: trimmedQuery,
       });
-      if (requestId === requestIdRef.current) {
+      if (requestId === searchRequestIdRef.current) {
         setSearchStatusMessage('주소 검색에 실패했습니다');
       }
     } finally {
-      if (requestId === requestIdRef.current) {
+      if (requestId === searchRequestIdRef.current) {
         setIsSearchingAddress(false);
       }
     }

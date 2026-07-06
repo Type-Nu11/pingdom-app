@@ -3,19 +3,27 @@ export type LoginRequest = {
   password: string;
 };
 
+export type User = {
+  id: number;
+  username: string;
+  name: string;
+  email: string;
+};
+
 export type LoginResponse = {
   accessToken: string;
   refreshToken: string;
+  user?: User;
 };
 
 export type SignupRequest = {
   username: string;
   email: string;
   password: string;
-  birthYear: number;
+  birthYear?: number;
   profileImageUrl?: string;
-  language: string;
-  country: string;
+  language?: string;
+  country?: string;
 };
 
 export type SignupResponse = {
@@ -36,4 +44,18 @@ export type ChangePasswordRequest = {
 
 export type ChangeUsernameRequest = {
   newUsername: string;
+};
+
+export type PhoneSendRequest = {
+  phoneNumber: string;
+};
+
+export type PhoneVerifyRequest = {
+  phoneNumber: string;
+  code: string;
+};
+
+export type EmailVerifyRequest = {
+  email: string;
+  code: string;
 };

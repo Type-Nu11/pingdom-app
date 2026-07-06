@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
+import { clamp } from '../constants/mapLayout';
 
 export type CategoryChipItem = {
   Icon: React.FC<SvgProps>;
@@ -17,8 +18,6 @@ type CategoryChipsProps = {
   topPaddingX: number;
   uiScale: number;
 };
-
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 const CategoryChips = ({
   categories,

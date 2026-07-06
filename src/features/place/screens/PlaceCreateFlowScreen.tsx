@@ -16,6 +16,7 @@ import PlaceCreateHeader from '../components/create-flow/PlaceCreateHeader';
 import LocationStep from '../components/create-flow/LocationStep';
 import PhotoSelectStep from '../components/create-flow/PhotoSelectStep';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
+import useProfile from '../../profile/hooks/useProfile';
 import { useCreatePlaceCoordinateToken } from '../hooks/useCreatePlaceCoordinateToken';
 import {
   PLACE_POST_ALREADY_EXISTS_ERROR,
@@ -41,6 +42,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
     isCreatingCoordinateToken,
   } = useCreatePlaceCoordinateToken();
   const { createPlaceRecord, isUploading } = useCreatePlaceRecord();
+  const { profile } = useProfile();
   const { width, height } = useWindowDimensions();
   const maxContentWidth = Math.min(width, 560);
   const mapHeight = Math.round(clamp(height * 0.46, 310, 430));
@@ -206,6 +208,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
               placeName={selectedPlaceDraft?.name ?? ''}
               selectedCategory={selectedCategory}
               selectedPhoto={selectedPhoto}
+              username={profile?.username ?? ''}
               onChangeCaption={setCaption}
               onChangeCategory={setSelectedCategory}
               onUpload={handleUpload}

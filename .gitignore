@@ -35,6 +35,9 @@ yarn-error.*
 .env*.local
 .claude
 
+.claude
+.agents
+
 # typescript
 *.tsbuildinfo
 
