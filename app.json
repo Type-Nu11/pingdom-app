@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PingDom",
-    "slug": "pingdom-app",
+    "name": "Navi_app",
+    "slug": "Navi_app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,11 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "내 사진을 장소 게시글에 올리기 위해 사진 보관함 접근 권한이 필요합니다."
-      },
       "supportsTablet": true,
-      "bundleIdentifier": "com.rmdka.pingdomapp"
+      "bundleIdentifier": "com.rmdka.Navi-app"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,17 +23,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.rmdka.pingdomapp"
+      "package": "com.rmdka.Navi_app"
     },
-    "plugins": [
-      "expo-font",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "내 사진을 장소 게시글에 올리기 위해 사진 보관함 접근 권한이 필요합니다."
-        }
-      ]
-    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }

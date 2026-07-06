@@ -1,9 +1,7 @@
-import { colors } from './colors';
-import { radius } from './radius';
-import { spacing } from './spacing';
+import { colors } from '../shared/constants/colors';
+import { spacing } from '../shared/constants/spacing';
 
 export const theme = {
   colors,
-  radius,
   spacing,
 };
