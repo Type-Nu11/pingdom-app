@@ -52,9 +52,9 @@ const CategoryChips = ({
           style={[
             styles.categoryChip,
             {
-              gap: Math.round(clamp(8 * uiScale, 5, 8)),
+              gap: Math.round(clamp(7 * uiScale, 5, 7)),
               height: chipHeight,
-              paddingHorizontal: Math.round(clamp(18 * uiScale, 12, 18)),
+              paddingHorizontal: Math.round(clamp(17 * uiScale, 14, 17)),
             },
           ]}
         >
@@ -66,8 +66,8 @@ const CategoryChips = ({
             style={[
               styles.categoryText,
               {
-                fontSize: Math.round(clamp(19 * uiScale, 14, 19)),
-                lineHeight: Math.round(clamp(23 * uiScale, 18, 23)),
+                fontSize: Math.round(clamp(17 * uiScale, 15, 17)),
+                lineHeight: Math.round(clamp(21 * uiScale, 18, 21)),
               },
             ]}
           >
@@ -95,8 +95,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fcfcfd',
     borderRadius: 16,
     flexDirection: 'row',
-    height: 46,
-    paddingHorizontal: 18,
+    height: 44,
+    paddingHorizontal: 17,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.14,
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: '#5f626d',
-    fontSize: 19,
+    fontSize: 17,
     fontWeight: '800',
     includeFontPadding: false,
   },

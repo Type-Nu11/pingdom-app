@@ -159,8 +159,8 @@ export default function MapScreen({
     clamp(BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT * uiScale, 104, BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT)
   );
   const sheetCollapsedTranslateY = Math.max(0, sheetExpandedHeight - sheetCollapsedVisibleHeight);
-  const smallActionWidth = Math.round(clamp(38 * uiScale, 30, 38));
-  const smallActionHeight = Math.round(clamp(44 * uiScale, 35, 44));
+  const smallActionWidth = Math.round(clamp(44 * uiScale, 38, 44));
+  const smallActionHeight = Math.round(clamp(51 * uiScale, 44, 51));
   const addIconSize = Math.round(clamp(21 * uiScale, 17, 21));
   const addTextSize = Math.round(clamp(17 * uiScale, 14, 17));
   const sideGap = Math.round(clamp(42 * uiScale, 16, 42));
@@ -169,8 +169,8 @@ export default function MapScreen({
   const topPaddingTop = Math.round(clamp(44 * uiScale, 24, 44));
   const searchHeight = Math.round(clamp(64 * uiScale, 44, 64));
   const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
-  const chipHeight = Math.round(clamp(46 * uiScale, 34, 46));
-  const categoryIconScale = clamp(chipHeight / 46, 0.78, 1);
+  const chipHeight = Math.round(clamp(44 * uiScale, 40, 44));
+  const categoryIconScale = clamp(chipHeight / 44, 0.9, 1);
   const markerCardWidth = Math.round(clamp(width - 44, 338, 380));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,

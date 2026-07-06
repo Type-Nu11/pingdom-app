@@ -67,7 +67,7 @@ const MapActionButtons = ({
       >
         <PlaceRecommendIcon height={addIconSize} width={addIconSize} />
         <Text style={[styles.addPlaceText, { fontSize: addTextSize, lineHeight: addTextSize + 4 }]}>
-          장소 게시
+          게시 하기
         </Text>
       </Pressable>
     </Animated.View>

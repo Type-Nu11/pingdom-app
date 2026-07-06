@@ -31,7 +31,7 @@ const MapSearchBar = ({
     >
       <Pressable
         accessibilityRole="search"
-        accessibilityLabel="집 근처 업체 검색"
+        accessibilityLabel="검색어를 입력하세요"
         style={styles.searchTapArea}
         onPress={onOpenSearch}
       >
@@ -51,7 +51,7 @@ const MapSearchBar = ({
           numberOfLines={1}
           style={[styles.searchPlaceholder, { fontSize: Math.round(clamp(25 * uiScale, 17, 25)) }]}
         >
-          집 근처 업체 검색
+          검색어를 입력하세요...
         </Text>
       </Pressable>
       <Pressable
