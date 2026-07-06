@@ -103,7 +103,7 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
         </Pressable>
 
         {mode === 'profile-edit' ? (
-          <ProfileEditView />
+          <ProfileEditView profile={profile} />
         ) : isArchiveDetail ? (
           <ArchiveDetailView
             initialPostId={selectedArchivePostId}
@@ -114,11 +114,13 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
           <>
             <ProfileHeader
               isArchive={mode === 'archive'}
+              isLoading={isProfileLoading}
               activeTab={activeTab}
               onChangeTab={setActiveTab}
               onOpenArchive={() => setMode('archive')}
               onOpenEdit={() => setMode('profile-edit')}
               onLogout={handleLogout}
+              profile={profile}
               showTabs={mode === 'profile'}
             />
             <ProfileGallery

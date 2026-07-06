@@ -50,7 +50,7 @@ const LikesBottomSheet = ({ onClose }: LikesBottomSheetProps) => {
           {likeUsers.map((item) => (
             <View key={item} style={styles.userRow}>
               <Image source={profileImageSource} resizeMode="cover" style={styles.userAvatar} />
-              <Text style={styles.userName}>woo._sm</Text>
+              <Text style={styles.userName}>{item}</Text>
             </View>
           ))}
         </ScrollView>
