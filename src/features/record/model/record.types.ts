@@ -37,3 +37,28 @@ export type RecordUploadFile = {
   type?: string;
   uri: string;
 };
+
+export type Report = {
+  description?: string | null;
+  imageUrl?: string | null;
+  placeId?: number;
+  placeName?: string;
+  postCreatedAt?: string;
+  postId: number;
+  postUserId?: number;
+  postUsername?: string;
+  reason: string;
+  reportId: number;
+  status: string;
+  thumbnailUrl?: string | null;
+  title: string;
+};
+
+export type ReportsPage = {
+  hasNext: boolean;
+  limit: number;
+  page: number;
+  reports: Report[];
+  totalCount: number;
+  totalPages: number;
+};

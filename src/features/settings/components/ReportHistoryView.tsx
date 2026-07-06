@@ -1,35 +1,67 @@
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { REPORT_HISTORY } from '../constants/legalContent';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { useMyReports } from '../../record/hooks/useMyReports';
+import type { Report } from '../../record/model/record.types';
 import SettingsDivider from './SettingsDivider';
 import SettingsNavBar from './SettingsNavBar';
+
+const PAGE_SIZE = 20;
 
 type ReportHistoryViewProps = {
   onBack: () => void;
 };
 
-const ReportHistoryView = ({ onBack }: ReportHistoryViewProps) => (
-  <View style={styles.screen}>
-    <SettingsNavBar title="신고 내역" onBack={onBack} />
-    <FlatList
-      data={REPORT_HISTORY}
-      keyExtractor={(item) => item.title}
-      ItemSeparatorComponent={SettingsDivider}
-      renderItem={({ item }) => (
-        <View style={styles.row}>
-          <View style={styles.texts}>
-            <Text style={styles.name}>{item.title}</Text>
-            <Text style={styles.sub}>{item.submittedAt}</Text>
-          </View>
-          <View style={[styles.badge, item.status === 'done' ? styles.badgeDone : styles.badgePending]}>
-            <Text style={item.status === 'done' ? styles.badgeTextDone : styles.badgeTextPending}>
-              {item.status === 'done' ? '처리 완료' : '처리중'}
-            </Text>
-          </View>
-        </View>
+const ReportHistoryView = ({ onBack }: ReportHistoryViewProps) => {
+  const [page, setPage] = useState(1);
+  const [items, setItems] = useState<Report[]>([]);
+  const { hasNext, isError, isLoading, reports } = useMyReports({ limit: PAGE_SIZE, page });
+
+  useEffect(() => {
+    setItems((prev) => (page === 1 ? reports : [...prev, ...reports]));
+  }, [page, reports]);
+
+  const handleEndReached = () => {
+    if (!isLoading && hasNext) {
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  return (
+    <View style={styles.screen}>
+      <SettingsNavBar title="신고 내역" onBack={onBack} />
+      {isError && items.length === 0 ? (
+        <Text style={styles.emptyText}>신고 내역을 불러오지 못했습니다.</Text>
+      ) : !isLoading && items.length === 0 ? (
+        <Text style={styles.emptyText}>신고한 내역이 없습니다.</Text>
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(item) => String(item.reportId)}
+          ItemSeparatorComponent={SettingsDivider}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={isLoading ? <ActivityIndicator style={styles.footerSpinner} /> : null}
+          renderItem={({ item }) => {
+            const isDone = item.status !== 'PENDING';
+            return (
+              <View style={styles.row}>
+                <View style={styles.texts}>
+                  <Text style={styles.name}>{item.title}</Text>
+                  <Text style={styles.sub}>{item.reason}</Text>
+                </View>
+                <View style={[styles.badge, isDone ? styles.badgeDone : styles.badgePending]}>
+                  <Text style={isDone ? styles.badgeTextDone : styles.badgeTextPending}>
+                    {isDone ? '처리 완료' : '처리중'}
+                  </Text>
+                </View>
+              </View>
+            );
+          }}
+        />
       )}
-    />
-  </View>
-);
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   badge: {
@@ -53,6 +85,15 @@ const styles = StyleSheet.create({
     color: '#b06a00',
     fontSize: 12,
     fontWeight: '600',
+  },
+  emptyText: {
+    color: '#5e5e66',
+    fontSize: 14,
+    padding: 20,
+    textAlign: 'center',
+  },
+  footerSpinner: {
+    paddingVertical: 16,
   },
   name: {
     color: '#000000',

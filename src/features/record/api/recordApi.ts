@@ -4,7 +4,7 @@ import type {
   ApiCodeErrorResponse,
   ApiFieldErrorResponse,
 } from '../../../types/api.types';
-import type { PostsPage, RecordUploadFile } from '../model/record.types';
+import type { PostsPage, RecordUploadFile, ReportsPage } from '../model/record.types';
 
 const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
   gif: 'image/gif',
@@ -43,6 +43,11 @@ export type GetPostsRequest = {
 };
 
 export type GetLikedPostsRequest = {
+  limit?: number;
+  page?: number;
+};
+
+export type GetReportsRequest = {
   limit?: number;
   page?: number;
 };
@@ -260,5 +265,14 @@ export const recordApi = {
 
       throw error;
     }
+  },
+  getMyReports: async (params: GetReportsRequest = {}): Promise<ReportsPage> => {
+    const { data } = await api.get<ReportsPage>('/map/reports', {
+      params: {
+        limit: params.limit ?? 20,
+        page: params.page ?? 1,
+      },
+    });
+    return data;
   },
 };
