@@ -7,6 +7,7 @@ export type Place = {
   longitude: number;
   name: string;
   userId?: number;
+  username?: string;
 };
 
 export type PlacesPage = {

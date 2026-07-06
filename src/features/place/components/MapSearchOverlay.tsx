@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { placeApi, type PlaceAutocompleteItem } from '../api/placeApi';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
-import { usePlaceRegistrantIds } from '../hooks/usePlaceRegistrantIds';
+import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
 import type { RecommendedPlace } from '../model/place.types';
 
 export type MapSearchSelection = {
@@ -76,12 +76,12 @@ function formatDistance(distanceMeters: number) {
   return `${Math.round(distanceMeters)}m`;
 }
 
-function formatRegistrantId(userId: number | undefined, isLoading = false) {
-  if (userId === undefined) {
-    return isLoading ? '등록자 ID 확인 중' : '등록자 ID 없음';
+function formatRegistrantUsername(username: string | undefined, isLoading = false) {
+  if (!username) {
+    return isLoading ? '등록자 확인 중' : '등록자 없음';
   }
 
-  return `등록자 ID ${userId}`;
+  return `등록자 ${username}`;
 }
 
 const MapSearchOverlay = ({
@@ -123,7 +123,7 @@ const MapSearchOverlay = ({
   const hasResults = registeredResults.length > 0 || searchResults.length > 0;
   const isResultMode = hasSearched || trimmedQuery.length > 0;
   const shouldShowEmptyState = hasSearched && !isSearching && !hasResults;
-  const { isLoadingByPlaceId, registrantIdsByPlaceId } = usePlaceRegistrantIds(
+  const { isLoadingByPlaceId, usernamesByPlaceId } = usePlaceRegistrantUsernames(
     showRecommendations ? recommendedPlaces.slice(0, 5) : []
   );
 
@@ -365,8 +365,8 @@ const MapSearchOverlay = ({
                         {formatDistance(place.distanceMeters)} · {place.address}
                       </Text>
                       <Text numberOfLines={1} style={styles.resultCategory}>
-                        {formatRegistrantId(
-                          registrantIdsByPlaceId[String(place.id)] ?? place.userId,
+                        {formatRegistrantUsername(
+                          usernamesByPlaceId[String(place.id)] ?? place.username,
                           isLoadingByPlaceId[String(place.id)]
                         )}
                       </Text>

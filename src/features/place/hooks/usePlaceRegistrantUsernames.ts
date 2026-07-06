@@ -6,31 +6,32 @@ import type { Post } from '../../record/model/record.types';
 import type { RecommendedPlace } from '../model/place.types';
 
 type PlaceWithRegistrantAliases = RecommendedPlace & {
-  createdBy?: number;
-  createdByUserId?: number;
-  creatorId?: number;
-  ownerId?: number;
-  placeUserId?: number;
-  registrantId?: number;
-  user_id?: number;
+  createdByUsername?: string;
+  creatorName?: string;
+  ownerName?: string;
+  placeUsername?: string;
+  registrantName?: string;
+  registrantUsername?: string;
+  userName?: string;
+  username?: string;
 };
 
-function getInlineRegistrantId(place: RecommendedPlace) {
+function getInlineRegistrantUsername(place: RecommendedPlace) {
   const placeWithAliases = place as PlaceWithRegistrantAliases;
 
   return (
-    placeWithAliases.userId
-    ?? placeWithAliases.registrantId
-    ?? placeWithAliases.placeUserId
-    ?? placeWithAliases.createdByUserId
-    ?? placeWithAliases.creatorId
-    ?? placeWithAliases.createdBy
-    ?? placeWithAliases.ownerId
-    ?? placeWithAliases.user_id
+    placeWithAliases.username
+    ?? placeWithAliases.userName
+    ?? placeWithAliases.registrantUsername
+    ?? placeWithAliases.registrantName
+    ?? placeWithAliases.placeUsername
+    ?? placeWithAliases.createdByUsername
+    ?? placeWithAliases.creatorName
+    ?? placeWithAliases.ownerName
   );
 }
 
-function getFirstRegistrantId(posts: Post[]) {
+function getFirstRegistrantUsername(posts: Post[]) {
   const firstPost = posts.reduce<Post | null>((oldestPost, post) => {
     if (!oldestPost) {
       return post;
@@ -41,10 +42,10 @@ function getFirstRegistrantId(posts: Post[]) {
       : oldestPost;
   }, null);
 
-  return firstPost?.userId;
+  return firstPost?.username;
 }
 
-export function usePlaceRegistrantIds(places: RecommendedPlace[]) {
+export function usePlaceRegistrantUsernames(places: RecommendedPlace[]) {
   const placeIds = useMemo(
     () => places
       .map((place) => Number(place.id))
@@ -69,14 +70,14 @@ export function usePlaceRegistrantIds(places: RecommendedPlace[]) {
   });
 
   return useMemo(() => {
-    const registrantIdsByPlaceId: Record<string, number> = {};
     const isLoadingByPlaceId: Record<string, boolean> = {};
+    const usernamesByPlaceId: Record<string, string> = {};
 
     places.forEach((place) => {
-      const registrantId = getInlineRegistrantId(place);
+      const username = getInlineRegistrantUsername(place);
 
-      if (registrantId !== undefined) {
-        registrantIdsByPlaceId[String(place.id)] = registrantId;
+      if (username) {
+        usernamesByPlaceId[String(place.id)] = username;
       }
     });
 
@@ -84,16 +85,16 @@ export function usePlaceRegistrantIds(places: RecommendedPlace[]) {
       const placeId = placeIds[index];
       const placeKey = String(placeId);
 
-      if (registrantIdsByPlaceId[placeKey] !== undefined) {
+      if (usernamesByPlaceId[placeKey] !== undefined) {
         return;
       }
 
-      const registrantId = getFirstRegistrantId(
+      const username = getFirstRegistrantUsername(
         query.data?.posts.filter((post) => Number(post.placeId) === placeId) ?? []
       );
 
-      if (registrantId !== undefined) {
-        registrantIdsByPlaceId[placeKey] = registrantId;
+      if (username) {
+        usernamesByPlaceId[placeKey] = username;
       }
 
       isLoadingByPlaceId[placeKey] = query.isLoading;
@@ -101,7 +102,8 @@ export function usePlaceRegistrantIds(places: RecommendedPlace[]) {
 
     return {
       isLoadingByPlaceId,
-      registrantIdsByPlaceId,
+      usernamesByPlaceId,
     };
   }, [placeIds, places, registrantQueries]);
 }
+
