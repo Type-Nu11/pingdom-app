@@ -133,6 +133,29 @@ function getDisplayBookmarked(
   return bookmarkedPlaceIds[String(post.placeId)] ?? Boolean(post.bookmarked);
 }
 
+function getPostImageUrls(post: Post) {
+  const postWithMedia = post as Post & {
+    imageUrls?: string[];
+    images?: Array<{ imageUrl?: string; url?: string } | string>;
+    mediaUrls?: string[];
+  };
+  const imageUrls = [
+    ...(Array.isArray(postWithMedia.imageUrls) ? postWithMedia.imageUrls : []),
+    ...(Array.isArray(postWithMedia.mediaUrls) ? postWithMedia.mediaUrls : []),
+    ...(Array.isArray(postWithMedia.images)
+      ? postWithMedia.images.map((image) => (
+        typeof image === 'string' ? image : image.imageUrl ?? image.url
+      ))
+      : []),
+  ].filter((url): url is string => Boolean(url?.trim()));
+
+  if (imageUrls.length > 0) {
+    return Array.from(new Set(imageUrls));
+  }
+
+  return post.imageUrl ? [post.imageUrl] : [];
+}
+
 function formatPostTime(createdAt: string) {
   const createdDate = new Date(createdAt);
   const createdTime = createdDate.getTime();
@@ -613,6 +636,7 @@ const MarkerPreviewCard = ({
           ) ?? false;
           const isTranslationPending = translationPendingPostIds[feedId] ?? false;
           const postText = item.description?.trim() || item.title;
+          const imageUrls = getPostImageUrls(item);
 
           return (
             <View key={item.id} style={styles.feedItem}>
@@ -662,11 +686,27 @@ const MarkerPreviewCard = ({
 
               <View style={styles.imageFrame}>
                 <Image
-                  source={{ uri: item.imageUrl }}
+                  source={{ uri: imageUrls[0] ?? item.imageUrl }}
                   resizeMode="contain"
                   style={styles.feedImage}
                 />
               </View>
+              {imageUrls.length > 0 ? (
+                <View
+                  accessibilityLabel={`사진 ${imageUrls.length}장 중 1번째`}
+                  style={styles.imagePagination}
+                >
+                  {imageUrls.map((imageUrl, index) => (
+                    <View
+                      key={`${feedId}-${imageUrl}-${index}`}
+                      style={[
+                        styles.imagePaginationDot,
+                        index === 0 ? styles.imagePaginationDotActive : styles.imagePaginationDotInactive,
+                      ]}
+                    />
+                  ))}
+                </View>
+              ) : null}
 
               <View style={styles.actionRow}>
                 <View style={styles.leftActions}>
@@ -832,6 +872,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#05070d',
     justifyContent: 'center',
     width: '100%',
+  },
+  imagePagination: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    height: 22,
+    justifyContent: 'center',
+  },
+  imagePaginationDot: {
+    borderRadius: 4,
+    height: 8,
+    width: 8,
+  },
+  imagePaginationDotActive: {
+    backgroundColor: '#ff1956',
+  },
+  imagePaginationDotInactive: {
+    backgroundColor: '#c8c9cf',
   },
   leftActions: {
     alignItems: 'center',

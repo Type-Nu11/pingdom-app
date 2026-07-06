@@ -56,7 +56,7 @@ export type PlaceUploadPhoto = {
   uri: string;
 };
 
-export type PlaceCategory = 'fashion' | 'food' | 'game' | 'music';
+export type PlaceCategory = 'etc' | 'fashion' | 'food' | 'game' | 'music';
 
 export type MapMarker = {
   category: PlaceCategory;

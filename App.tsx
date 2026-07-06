@@ -13,6 +13,7 @@ import PlaceDetailScreen from './src/features/place/screens/PlaceDetailScreen';
 import ProfileScreen from './src/features/profile/screens/ProfileScreen';
 
 type MainScreen = 'map' | 'place-create' | 'place-detail' | 'profile';
+type ProfileTab = 'liked' | 'saved';
 
 function AppContent() {
   const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
@@ -20,6 +21,7 @@ function AppContent() {
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
   const [openedBookmarkedPlaceId, setOpenedBookmarkedPlaceId] = useState<number | null>(null);
   const [openedNotificationRoute, setOpenedNotificationRoute] = useState<NotificationRoute | null>(null);
+  const [profileInitialTab, setProfileInitialTab] = useState<ProfileTab>('liked');
 
   useFcmTokenSync(isLoggedIn);
   useForegroundFcmNotifications(isLoggedIn);
@@ -62,6 +64,10 @@ function AppContent() {
   const clearOpenedBookmarkedPlace = useCallback(() => {
     setOpenedBookmarkedPlaceId(null);
   }, []);
+  const openProfile = useCallback((tab: ProfileTab = 'liked') => {
+    setProfileInitialTab(tab);
+    setMainScreen('profile');
+  }, []);
 
   if (isHydrating) return null;
 
@@ -79,6 +85,7 @@ function AppContent() {
           />
         ) : mainScreen === 'profile' ? (
           <ProfileScreen
+            initialTab={profileInitialTab}
             onBack={() => {
               setOpenedBookmarkedPlaceId(null);
               setMainScreen('map');
@@ -95,7 +102,9 @@ function AppContent() {
             onClearOpenedBookmarkedPlace={clearOpenedBookmarkedPlace}
             notificationLikeContext={openedNotificationRoute}
             onCreatePlace={() => setMainScreen('place-create')}
-            onOpenProfile={() => setMainScreen('profile')}
+            onOpenLikedPlaces={() => openProfile('liked')}
+            onOpenProfile={() => openProfile('liked')}
+            onOpenSavedPlaces={() => openProfile('saved')}
           />
         )
       ) : (

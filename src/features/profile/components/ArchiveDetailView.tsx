@@ -4,14 +4,6 @@ import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { UpdateRecordRequest } from '../../record/api/recordApi';
 import { useDeletePost, useUpdatePost } from '../../record/hooks/usePostActions';
 import type { Post } from '../../record/model/record.types';
-import {
-  PROFILE_CAPTION,
-  PROFILE_DATE,
-  PROFILE_LIKE_COUNT,
-  PROFILE_PLACE,
-  PROFILE_USERNAME,
-  profileImageSource,
-} from '../constants/profileMock';
 import ArchiveFeedItem, { type ArchivePost } from './ArchiveFeedItem';
 
 type ArchiveDetailViewProps = {
@@ -20,36 +12,15 @@ type ArchiveDetailViewProps = {
   posts?: Post[];
 };
 
-const initialArchivePosts: ArchivePost[] = [
-  {
-    date: PROFILE_DATE,
-    description: PROFILE_CAPTION,
-    id: 1,
-    imageSource: profileImageSource,
-    likeCount: PROFILE_LIKE_COUNT,
-    title: PROFILE_PLACE,
-    username: PROFILE_USERNAME,
-  },
-  {
-    date: PROFILE_DATE,
-    description: PROFILE_CAPTION,
-    id: 2,
-    imageSource: profileImageSource,
-    likeCount: PROFILE_LIKE_COUNT,
-    title: PROFILE_PLACE,
-    username: PROFILE_USERNAME,
-  },
-];
-
 function formatArchiveDate(createdAt: string) {
   if (!createdAt) {
-    return PROFILE_DATE;
+    return '';
   }
 
   const date = new Date(createdAt);
 
   if (Number.isNaN(date.getTime())) {
-    return PROFILE_DATE;
+    return '';
   }
 
   return `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}`;
@@ -82,7 +53,7 @@ const ArchiveDetailView = ({
   posts: sourcePosts,
 }: ArchiveDetailViewProps) => {
   const archivePosts = useMemo(() => {
-    const mappedPosts = sourcePosts ? sourcePosts.map(toArchivePost) : initialArchivePosts;
+    const mappedPosts = sourcePosts ? sourcePosts.map(toArchivePost) : [];
 
     if (!initialPostId) {
       return mappedPosts;

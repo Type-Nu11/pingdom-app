@@ -7,6 +7,7 @@ import { recordApi, type CreateRecordResponse } from '../../record/api/recordApi
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
 import { placeApi, type CreatePlaceResponse } from '../api/placeApi';
 import type { Place, PlaceCategory, PlaceCreateDraft, PlaceUploadPhoto } from '../model/place.types';
+import { placeRecommendationQueryKeys } from './usePlaceRecommendations';
 import { placeQueryKeys } from './usePlaces';
 
 type CreatePlaceRecordRequest = {
@@ -132,6 +133,7 @@ export const useCreatePlaceRecord = () => {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: placeQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: placeRecommendationQueryKeys.all });
       void queryClient.invalidateQueries({ queryKey: postQueryKeys.all });
     },
   });

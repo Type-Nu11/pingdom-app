@@ -45,11 +45,11 @@ export default function SelectAgeScreen({ onBack, onNext }: Props) {
   }, []);
 
   const getTextStyle = (diff: number) => {
-    if (diff === 0) return { fontSize: 32, color: PINK };
-    if (diff === 1) return { fontSize: 28, color: colors.labelAssistive };
-    if (diff === -1) return { fontSize: 28, color: 'rgba(118,118,128,0.5)' };
-    if (diff === 2) return { fontSize: 28, color: colors.labelAssistive };
-    return { fontSize: 28, color: 'rgba(118,118,128,0.25)' };
+    if (diff === 0) return { fontSize: 32, lineHeight: 38, color: PINK };
+    if (diff === 1) return { fontSize: 28, lineHeight: 34, color: colors.labelAssistive };
+    if (diff === -1) return { fontSize: 28, lineHeight: 34, color: 'rgba(118,118,128,0.5)' };
+    if (diff === 2) return { fontSize: 28, lineHeight: 34, color: colors.labelAssistive };
+    return { fontSize: 28, lineHeight: 34, color: 'rgba(118,118,128,0.25)' };
   };
 
   return (
@@ -109,7 +109,7 @@ export default function SelectAgeScreen({ onBack, onNext }: Props) {
 }
 
 const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE;
-const SELECTION_TOP = ITEM_HEIGHT * 2;
+const SELECTION_TOP = (WHEEL_HEIGHT - ITEM_HEIGHT) / 2;
 
 const styles = StyleSheet.create({
   container: {
@@ -185,6 +185,9 @@ const styles = StyleSheet.create({
   },
   yearBase: {
     fontWeight: '700',
+    includeFontPadding: false,
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   yearCenter: {
     color: PINK,

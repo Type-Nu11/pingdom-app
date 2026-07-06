@@ -11,6 +11,7 @@ const POST_CATEGORY_OPTIONS: Array<{
   { id: 'music', label: 'Music' },
   { id: 'fashion', label: 'Fashion' },
   { id: 'game', label: 'Game' },
+  { id: 'etc', label: 'Etc' },
 ];
 
 type CaptionStepProps = {

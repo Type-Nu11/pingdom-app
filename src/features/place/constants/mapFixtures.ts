@@ -1,9 +1,45 @@
 import { CategoryChipItem } from '../components/CategoryChips';
-import { FashionGlyph, FoodGlyph, GameGlyph, MusicGlyph } from '../components/CategoryGlyphs';
+import { EtcGlyph, FashionGlyph, FoodGlyph, GameGlyph, MusicGlyph } from '../components/CategoryGlyphs';
 
 export const mapCategories: CategoryChipItem[] = [
-  { id: 'food', label: 'Food', Icon: FoodGlyph, iconWidth: 15, iconHeight: 18 },
-  { id: 'music', label: 'Music', Icon: MusicGlyph, iconWidth: 13, iconHeight: 17 },
-  { id: 'fashion', label: 'Fashion', Icon: FashionGlyph, iconWidth: 24, iconHeight: 18 },
-  { id: 'game', label: 'Game', Icon: GameGlyph, iconWidth: 22, iconHeight: 19 },
+  {
+    id: 'food',
+    label: '음식',
+    labelKey: 'map.categories.food',
+    Icon: FoodGlyph,
+    iconWidth: 15,
+    iconHeight: 18,
+  },
+  {
+    id: 'music',
+    label: '음악',
+    labelKey: 'map.categories.music',
+    Icon: MusicGlyph,
+    iconWidth: 13,
+    iconHeight: 17,
+  },
+  {
+    id: 'fashion',
+    label: '패션',
+    labelKey: 'map.categories.fashion',
+    Icon: FashionGlyph,
+    iconWidth: 24,
+    iconHeight: 18,
+  },
+  {
+    id: 'game',
+    label: '게임',
+    labelKey: 'map.categories.game',
+    Icon: GameGlyph,
+    iconWidth: 22,
+    iconHeight: 19,
+  },
+  {
+    id: 'etc',
+    label: '기타',
+    labelKey: 'map.categories.etc',
+    Icon: EtcGlyph,
+    iconWidth: 20,
+    iconHeight: 4,
+  },
 ];
