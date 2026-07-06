@@ -4,6 +4,7 @@ import FirstPlaceIcon from '../../../assets/icons/FirstPlace.svg';
 import HotPlaceIcon from '../../../assets/icons/hotplace.svg';
 import SecondPlaceIcon from '../../../assets/icons/SecondPlace.svg';
 import ThirdPlaceIcon from '../../../assets/icons/ThirdPlace.svg';
+import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
 import type { RecommendedPlace } from '../model/place.types';
 
 type HotPlaceListProps = {
@@ -19,6 +20,7 @@ const HotPlaceList = ({
   onPlacePress,
   places,
 }: HotPlaceListProps) => {
+  const { isLoadingByPlaceId, usernamesByPlaceId } = usePlaceRegistrantUsernames(places);
   const stateText = isLoading
     ? '추천 장소를 불러오고 있어요'
     : isError
@@ -26,6 +28,14 @@ const HotPlaceList = ({
       : places.length === 0
         ? '주변 추천 장소가 아직 없어요'
         : null;
+
+  const formatRegistrantUsername = (username: string | undefined, isLoading = false) => {
+    if (!username) {
+      return isLoading ? '등록자 확인 중' : '등록자 없음';
+    }
+
+    return `${username}`;
+  };
 
   return (
     <View style={styles.hotSection}>
@@ -74,7 +84,10 @@ const HotPlaceList = ({
             <View style={styles.hotTextGroup}>
               <Text numberOfLines={1} style={styles.hotLocation}>{place.name}</Text>
               <Text numberOfLines={1} style={styles.hotUsername}>
-                {place.reason}
+                {formatRegistrantUsername(
+                  usernamesByPlaceId[String(place.id)] ?? place.username,
+                  isLoadingByPlaceId[String(place.id)]
+                )}
               </Text>
             </View>
           </Pressable>
@@ -86,14 +99,14 @@ const HotPlaceList = ({
 
 const styles = StyleSheet.create({
   hotSection: {
-    paddingTop: 28,
+    paddingTop: 24,
   },
   hotTitleRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-    paddingHorizontal: 18,
+    gap: 10,
+    marginBottom: 5,
+    paddingHorizontal: 16,
   },
   hotTitle: {
     color: '#3f4149',
@@ -105,8 +118,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#ececf0',
     borderTopWidth: 1,
     flexDirection: 'row',
-    minHeight: 84,
-    paddingHorizontal: 18,
+    minHeight: 72,
+    paddingHorizontal: 16,
   },
   hotTextGroup: {
     flex: 1,
@@ -115,11 +128,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
-    width: 32,
+    width: 25,
   },
   rankNumber: {
     color: '#767680',
-    fontSize: 25,
+    fontSize: 23,
     fontWeight: '900',
     lineHeight: 36,
     textAlign: 'center',
@@ -128,28 +141,28 @@ const styles = StyleSheet.create({
   profileIcon: {
     alignItems: 'center',
     borderColor: '#676873',
-    borderRadius: 19,
-    borderWidth: 4,
-    height: 38,
+    borderRadius: 16,
+    borderWidth: 3.5,
+    height: 32,
     justifyContent: 'center',
-    marginRight: 13,
+    marginRight: 8,
     overflow: 'hidden',
-    width: 38,
+    width: 32,
   },
   profileHead: {
     backgroundColor: '#676873',
-    borderRadius: 6,
-    height: 12,
+    borderRadius: 5,
+    height: 10,
     marginTop: 2,
-    width: 12,
+    width: 10,
   },
   profileBody: {
     backgroundColor: '#676873',
     borderTopLeftRadius: 13,
     borderTopRightRadius: 13,
-    height: 14,
+    height: 12,
     marginTop: 2,
-    width: 24,
+    width: 20,
   },
   hotLocation: {
     color: '#74767f',
@@ -159,14 +172,14 @@ const styles = StyleSheet.create({
   },
   hotUsername: {
     color: '#111217',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
   },
   stateRow: {
     borderTopColor: '#ececf0',
     borderTopWidth: 1,
     justifyContent: 'center',
-    minHeight: 84,
+    minHeight: 72,
     paddingHorizontal: 18,
   },
   stateText: {

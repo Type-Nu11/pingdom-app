@@ -248,24 +248,24 @@ export default function MapScreen({
   ]);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
-    clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
+    clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.82), 520, BASE_SHEET_EXPANDED_HEIGHT)
   );
   const sheetCollapsedVisibleHeight = Math.round(
-    clamp(BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT * uiScale, 104, BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT)
+    clamp(BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT * uiScale, 132, BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT)
   );
   const sheetCollapsedTranslateY = Math.max(0, sheetExpandedHeight - sheetCollapsedVisibleHeight);
-  const smallActionWidth = Math.round(clamp(44 * uiScale, 38, 44));
-  const smallActionHeight = Math.round(clamp(51 * uiScale, 44, 51));
-  const addIconSize = Math.round(clamp(21 * uiScale, 17, 21));
-  const addTextSize = Math.round(clamp(17 * uiScale, 14, 17));
-  const sideGap = Math.round(clamp(42 * uiScale, 16, 42));
-  const rightGap = Math.round(clamp(36 * uiScale, 16, 36));
-  const topPaddingX = Math.round(clamp(22 * uiScale, 16, 22));
-  const topPaddingTop = Math.round(clamp(44 * uiScale, 24, 44));
-  const searchHeight = Math.round(clamp(64 * uiScale, 44, 64));
-  const profileSize = Math.round(clamp(44 * uiScale, 32, 44));
-  const chipHeight = Math.round(clamp(38 * uiScale, 34, 38));
-  const categoryIconScale = clamp(chipHeight / 54, 0.62, 0.7);
+  const smallActionWidth = Math.round(clamp(36 * uiScale, 32, 36));
+  const smallActionHeight = Math.round(clamp(36 * uiScale, 32, 36));
+  const addIconSize = Math.round(clamp(21 * uiScale, 18, 21));
+  const addTextSize = Math.round(clamp(14 * uiScale, 13, 14));
+  const sideGap = Math.round(clamp(16 * uiScale, 14, 16));
+  const rightGap = Math.round(clamp(16 * uiScale, 14, 16));
+  const topPaddingX = Math.round(clamp(16 * uiScale, 14, 16));
+  const topPaddingTop = Math.round(clamp(62 * uiScale, 34, 62));
+  const searchHeight = Math.round(clamp(48 * uiScale, 44, 48));
+  const profileSize = Math.round(clamp(32 * uiScale, 30, 32));
+  const chipHeight = Math.round(clamp(37 * uiScale, 34, 37));
+  const categoryIconScale = clamp(chipHeight / 37, 0.86, 1);
   const markerCardWidth = Math.round(clamp(width - 44, 338, 380));
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,

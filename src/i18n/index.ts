@@ -121,7 +121,7 @@ const resources = {
         actions: {
           likedPlaces: '좋아요 장소 보기',
           savedPlaces: '저장한 장소 보기',
-          addPlace: '게시 하기',
+          addPlace: '게시하기',
         },
       },
       apiErrors: {

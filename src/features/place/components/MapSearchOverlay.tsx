@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { placeApi, type PlaceAutocompleteItem } from '../api/placeApi';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
+import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
 import type { RecommendedPlace } from '../model/place.types';
 
 export type MapSearchSelection = {
@@ -75,6 +76,14 @@ function formatDistance(distanceMeters: number) {
   return `${Math.round(distanceMeters)}m`;
 }
 
+function formatRegistrantUsername(username: string | undefined, isLoading = false) {
+  if (!username) {
+    return isLoading ? '등록자 확인 중' : '등록자 없음';
+  }
+
+  return `등록자 ${username}`;
+}
+
 const MapSearchOverlay = ({
   centerLat,
   centerLng,
@@ -114,6 +123,9 @@ const MapSearchOverlay = ({
   const hasResults = registeredResults.length > 0 || searchResults.length > 0;
   const isResultMode = hasSearched || trimmedQuery.length > 0;
   const shouldShowEmptyState = hasSearched && !isSearching && !hasResults;
+  const { isLoadingByPlaceId, usernamesByPlaceId } = usePlaceRegistrantUsernames(
+    showRecommendations ? recommendedPlaces.slice(0, 5) : []
+  );
 
   const handleQueryChange = (nextQuery: string) => {
     searchRequestIdRef.current += 1;
@@ -352,7 +364,12 @@ const MapSearchOverlay = ({
                       <Text numberOfLines={1} style={styles.resultAddress}>
                         {formatDistance(place.distanceMeters)} · {place.address}
                       </Text>
-                      <Text numberOfLines={1} style={styles.resultCategory}>{place.reason}</Text>
+                      <Text numberOfLines={1} style={styles.resultCategory}>
+                        {formatRegistrantUsername(
+                          usernamesByPlaceId[String(place.id)] ?? place.username,
+                          isLoadingByPlaceId[String(place.id)]
+                        )}
+                      </Text>
                     </View>
                   </Pressable>
                 ))}

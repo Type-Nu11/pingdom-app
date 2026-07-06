@@ -6,6 +6,8 @@ export type Place = {
   latitude: number;
   longitude: number;
   name: string;
+  userId?: number;
+  username?: string;
 };
 
 export type PlacesPage = {
@@ -29,6 +31,7 @@ export type RecommendedPlace = Place & {
   distanceMeters: number;
   placeGrowth: PlaceGrowth;
   reason: string;
+  userId?: number;
 };
 
 export type PlaceRecommendations = {
