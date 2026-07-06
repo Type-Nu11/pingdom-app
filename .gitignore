@@ -31,11 +31,33 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+.claude
+
+.claude
+.agents
 
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# IDE
+.idea/
+.claude/
+
+# android
+android/app/debug.keystore
+android/.gradle/
+android/app/.cxx/
+android/app/build/
+android/build/
+
+# ios
+ios/build/
+ios/Pods/
+ios/Naviapp.xcworkspace/
+
+# native secrets
+ios/Config/Secrets.xcconfig
+
+android/app/google-services.json
