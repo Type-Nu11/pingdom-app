@@ -12,9 +12,6 @@ import {
 import { SvgXml } from 'react-native-svg';
 import OpenEyeIcon from '../../../../assets/icons/openEye.svg';
 import CloseEyeIcon from '../../../../assets/icons/closeEye.svg';
-import GoogleIcon from '../../../../assets/icons/google.svg';
-import NaverIcon from '../../../../assets/icons/simple-icons_naver.svg';
-import CallIcon from '../../../../assets/icons/ion_call.svg';
 import { colors } from '../../../../styles/colors';
 import useLogin from '../../hooks/useLogin';
 import { validatePassword, validateUsername } from '../../lib/validators';
@@ -138,27 +135,6 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
           <View style={styles.linkSeparator} />
           <Pressable onPress={onSignup}><Text style={styles.linkText}>회원가입</Text></Pressable>
         </View>
-
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>SNS 계정으로 로그인</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <View style={styles.socialButtons}>
-          <Pressable style={[styles.socialBtn, styles.googleBtn]}>
-            <GoogleIcon width={28} height={28} />
-            <Text style={styles.socialBtnText}>구글로 시작하기</Text>
-          </Pressable>
-          <Pressable style={[styles.socialBtn, styles.naverBtn]}>
-            <NaverIcon width={24} height={24} />
-            <Text style={[styles.socialBtnText, styles.naverText]}>네이버로 시작하기</Text>
-          </Pressable>
-          <Pressable style={[styles.socialBtn, styles.smsBtn]}>
-            <CallIcon width={28} height={28} />
-            <Text style={styles.socialBtnText}>SMS로 시작하기</Text>
-          </Pressable>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -267,41 +243,4 @@ const styles = StyleSheet.create({
     height: 12,
     backgroundColor: colors.lineNormal,
   },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.lineNormal,
-  },
-  dividerText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.labelAlternative,
-    lineHeight: 20.8,
-  },
-  socialButtons: { gap: 16 },
-  socialBtn: {
-    height: 58,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 11,
-    backgroundColor: colors.fillSocial,
-    borderWidth: 1,
-  },
-  googleBtn: { borderColor: colors.fillAlternative },
-  naverBtn: { borderColor: colors.naver },
-  smsBtn: { borderColor: colors.labelNeutral },
-  socialBtnText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.labelNeutral,
-    lineHeight: 26,
-  },
-  naverText: { color: colors.naver },
 });

@@ -29,6 +29,7 @@
       "package": "com.rmdka.pingdomapp"
     },
     "plugins": [
+      "expo-font",
       [
         "expo-image-picker",
         {
@@ -38,9 +39,6 @@
     ],
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-font"
-    ]
+    }
   }
 }
