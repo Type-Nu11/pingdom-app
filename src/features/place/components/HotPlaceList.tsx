@@ -57,7 +57,14 @@ const HotPlaceList = ({
               ) : rank === 3 ? (
                 <ThirdPlaceIcon height={36} width={25} />
               ) : (
-                <Text style={styles.rankNumber}>{rank}.</Text>
+                <Text
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.78}
+                  numberOfLines={1}
+                  style={styles.rankNumber}
+                >
+                  {rank}.
+                </Text>
               )}
             </View>
             <View style={styles.profileIcon}>
@@ -112,9 +119,11 @@ const styles = StyleSheet.create({
   },
   rankNumber: {
     color: '#767680',
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '900',
     lineHeight: 36,
+    textAlign: 'center',
+    width: '100%',
   },
   profileIcon: {
     alignItems: 'center',
