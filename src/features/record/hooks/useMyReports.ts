@@ -6,7 +6,10 @@ export const myReportsQueryKeys = {
   list: (params: GetReportsRequest) => [...myReportsQueryKeys.all, 'list', params] as const,
 };
 
-export const useMyReports = (params: GetReportsRequest = {}) => {
+export const useMyReports = (
+  params: GetReportsRequest = {},
+  options?: { enabled?: boolean },
+) => {
   const queryParams = {
     limit: params.limit ?? 20,
     page: params.page ?? 1,
@@ -14,6 +17,7 @@ export const useMyReports = (params: GetReportsRequest = {}) => {
   const reportsQuery = useQuery({
     queryKey: myReportsQueryKeys.list(queryParams),
     queryFn: () => recordApi.getMyReports(queryParams),
+    enabled: options?.enabled,
   });
 
   return {

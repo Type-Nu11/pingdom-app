@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ArchiveDetailView from '../components/ArchiveDetailView';
@@ -6,6 +6,8 @@ import LikesBottomSheet from '../components/LikesBottomSheet';
 import ProfileGallery from '../components/ProfileGallery';
 import ProfileHeader from '../components/ProfileHeader';
 import { useLikedPosts } from '../../record/hooks/useLikedPosts';
+import { useHiddenPosts } from '../../record/hooks/useHiddenPosts';
+import { useMyReports } from '../../record/hooks/useMyReports';
 import { useMyPosts } from '../../record/hooks/useMyPosts';
 import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
 import { useProfile } from '../hooks/useProfile';
@@ -50,6 +52,10 @@ const ProfileScreen = ({
     posts: likedPosts,
     refetch: refetchLikedPosts,
   } = useLikedPosts({ enabled: isLikedPostsTab });
+  const { hiddenPostIds } = useHiddenPosts();
+  const {
+    reports: reportedPosts,
+  } = useMyReports({ limit: 100 }, { enabled: isLikedPostsTab });
   const {
     isError: isArchivePostsError,
     isLoading: isArchivePostsLoading,
@@ -58,6 +64,14 @@ const ProfileScreen = ({
   } = useMyPosts(profile?.id ?? null, { enabled: isArchiveVisible });
   const maxContentWidth = Math.min(width, 560);
   const gridItemSize = Math.floor(maxContentWidth / 3);
+  const visibleLikedPosts = useMemo(() => {
+    const reportedPostIds = new Set(reportedPosts.map((report) => String(report.postId)));
+
+    return likedPosts.filter((post) => {
+      const postId = String(post.id);
+      return !hiddenPostIds[postId] && !reportedPostIds.has(postId);
+    });
+  }, [hiddenPostIds, likedPosts, reportedPosts]);
 
   const handleBack = () => {
     if (likesOpen) {
@@ -123,7 +137,7 @@ const ProfileScreen = ({
               isLikedPostsError={isLikedPostsTab && isLikedPostsError}
               isLikedPostsLoading={isLikedPostsTab && isLikedPostsLoading}
               itemSize={gridItemSize}
-              likedPosts={isLikedPostsTab ? likedPosts : undefined}
+              likedPosts={isLikedPostsTab ? visibleLikedPosts : undefined}
               onArchiveItemPress={(post) => {
                 setSelectedArchivePostId(post?.id ?? null);
                 setMode('archive-detail');
