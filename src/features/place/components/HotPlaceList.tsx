@@ -27,6 +27,10 @@ const HotPlaceList = ({
         ? '주변 추천 장소가 아직 없어요'
         : null;
 
+  const formatRegistrantId = (userId: number | undefined) => (
+    userId === undefined ? '' : `등록자 ID ${userId}`
+  );
+
   return (
     <View style={styles.hotSection}>
       <View style={styles.hotTitleRow}>
@@ -74,7 +78,7 @@ const HotPlaceList = ({
             <View style={styles.hotTextGroup}>
               <Text numberOfLines={1} style={styles.hotLocation}>{place.name}</Text>
               <Text numberOfLines={1} style={styles.hotUsername}>
-                {place.reason}
+                {formatRegistrantId(place.userId)}
               </Text>
             </View>
           </Pressable>

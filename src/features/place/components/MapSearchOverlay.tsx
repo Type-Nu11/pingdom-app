@@ -75,6 +75,10 @@ function formatDistance(distanceMeters: number) {
   return `${Math.round(distanceMeters)}m`;
 }
 
+function formatRegistrantId(userId: number | undefined) {
+  return userId === undefined ? '' : `등록자 ID ${userId}`;
+}
+
 const MapSearchOverlay = ({
   centerLat,
   centerLng,
@@ -352,7 +356,9 @@ const MapSearchOverlay = ({
                       <Text numberOfLines={1} style={styles.resultAddress}>
                         {formatDistance(place.distanceMeters)} · {place.address}
                       </Text>
-                      <Text numberOfLines={1} style={styles.resultCategory}>{place.reason}</Text>
+                      <Text numberOfLines={1} style={styles.resultCategory}>
+                        {formatRegistrantId(place.userId)}
+                      </Text>
                     </View>
                   </Pressable>
                 ))}
