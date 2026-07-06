@@ -41,7 +41,7 @@ export async function presentForegroundNotification(message: FirebaseRemoteMessa
 
   const title =
     toNotificationText(message.notification?.title) ||
-    toNotificationText(message.data?.title, DEFAULT_NOTIFICATION_TITLE);
+    toNotificationText(message.data?.title);
   const body =
     toNotificationText(message.notification?.body) ||
     toNotificationText(message.data?.body);
@@ -52,7 +52,7 @@ export async function presentForegroundNotification(message: FirebaseRemoteMessa
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title,
+      title: title || DEFAULT_NOTIFICATION_TITLE,
       body,
       data: {
         ...message.data,
@@ -60,6 +60,6 @@ export async function presentForegroundNotification(message: FirebaseRemoteMessa
       },
       sound: true,
     },
-    trigger: null,
+    trigger: Platform.OS === 'android' ? { channelId: FOREGROUND_CHANNEL_ID } : null,
   });
 }

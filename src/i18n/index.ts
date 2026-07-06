@@ -42,6 +42,10 @@ const resources = {
         subtitle: "Let's find hidden\nplaces in Korea!",
         button: 'Get Started',
       },
+      apiErrors: {
+        networkError: "Couldn't connect to the server. Please check your network connection.",
+        sessionExpired: 'Your session has expired. Please log in again.',
+      },
     },
   },
   ko: {
@@ -83,6 +87,10 @@ const resources = {
         title: '오직 핑덤',
         subtitle: '한국의 숨은 장소를\n찾아보세요!',
         button: '시작하기',
+      },
+      apiErrors: {
+        networkError: '서버에 연결하지 못했어요. 네트워크 상태를 확인해 주세요.',
+        sessionExpired: '로그인이 만료됐어요. 다시 로그인해 주세요.',
       },
     },
   },
@@ -126,6 +134,10 @@ const resources = {
         subtitle: '韓国の隠れた場所を\n見つけましょう！',
         button: 'はじめる',
       },
+      apiErrors: {
+        networkError: 'サーバーに接続できませんでした。ネットワーク状態をご確認ください。',
+        sessionExpired: 'セッションが期限切れです。もう一度ログインしてください。',
+      },
     },
   },
   zh: {
@@ -167,6 +179,10 @@ const resources = {
         title: 'Only Pingdom',
         subtitle: '发现韩国的隐藏景点！',
         button: '开始使用',
+      },
+      apiErrors: {
+        networkError: '无法连接到服务器,请检查网络连接。',
+        sessionExpired: '登录已过期,请重新登录。',
       },
     },
   },
@@ -210,6 +226,10 @@ const resources = {
         subtitle: 'Cùng khám phá những địa điểm\nẩn giấu tại Hàn Quốc!',
         button: 'Bắt đầu',
       },
+      apiErrors: {
+        networkError: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.',
+        sessionExpired: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+      },
     },
   },
   th: {
@@ -251,6 +271,10 @@ const resources = {
         title: 'Only Pingdom',
         subtitle: 'มาค้นหาสถานที่ลับ\nในเกาหลีกันเถอะ!',
         button: 'เริ่มต้นใช้งาน',
+      },
+      apiErrors: {
+        networkError: 'เชื่อมต่อกับเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบการเชื่อมต่อเครือข่าย',
+        sessionExpired: 'เซสชันหมดอายุแล้ว กรุณาเข้าสู่ระบบอีกครั้ง',
       },
     },
   },

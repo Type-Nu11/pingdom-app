@@ -38,19 +38,16 @@ export default function SignUpCertificationScreen({
     usePhoneVerification();
 
   useEffect(() => {
+    if (timeLeft <= 0) return;
+
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 0) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft((prev) => (prev <= 0 ? 0 : prev - 1));
     }, 1000);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [timeLeft > 0]);
 
   const handleResend = async () => {
     if (isSending) return;

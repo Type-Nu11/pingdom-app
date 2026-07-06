@@ -22,6 +22,7 @@ type CaptionStepProps = {
   placeName: string;
   selectedCategory: PlaceCategory;
   selectedPhoto: PlaceUploadPhoto | null;
+  username: string;
 };
 
 const CaptionStep = ({
@@ -33,6 +34,7 @@ const CaptionStep = ({
   placeName,
   selectedCategory,
   selectedPhoto,
+  username,
 }: CaptionStepProps) => (
   <View style={styles.captionBody}>
     <View style={styles.authorRow}>
@@ -41,7 +43,7 @@ const CaptionStep = ({
         <View style={styles.profileBody} />
       </View>
       <View>
-        <Text style={styles.username}>woo._sm</Text>
+        <Text style={styles.username}>{username}</Text>
         <Text style={styles.placeName}>{placeName}</Text>
       </View>
     </View>

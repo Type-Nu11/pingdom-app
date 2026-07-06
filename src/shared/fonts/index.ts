@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
 import { StyleSheet, Text, TextInput } from 'react-native';
@@ -12,12 +13,6 @@ const styles = StyleSheet.create({
 
 let hasConfiguredGlobalFont = false;
 
-type DefaultStyleComponent = {
-  defaultProps?: {
-    style?: unknown;
-  };
-};
-
 function appendStyle(existingStyle: unknown) {
   if (!existingStyle) {
     return styles.text;
@@ -26,16 +21,26 @@ function appendStyle(existingStyle: unknown) {
   return [existingStyle, styles.text];
 }
 
+// Text/TextInput are function components under React 19 + RN 0.83, so
+// defaultProps mutation is a no-op there. Patch createElement instead so the
+// font style is injected regardless of component implementation.
 export function configureGlobalFontFamily() {
   if (hasConfiguredGlobalFont) return;
 
-  const textComponent = Text as unknown as DefaultStyleComponent;
-  textComponent.defaultProps = textComponent.defaultProps ?? {};
-  textComponent.defaultProps.style = appendStyle(textComponent.defaultProps.style);
+  const originalCreateElement = React.createElement as (...args: unknown[]) => unknown;
 
-  const textInputComponent = TextInput as unknown as DefaultStyleComponent;
-  textInputComponent.defaultProps = textInputComponent.defaultProps ?? {};
-  textInputComponent.defaultProps.style = appendStyle(textInputComponent.defaultProps.style);
+  (React as { createElement: unknown }).createElement = (
+    type: unknown,
+    props: Record<string, unknown> | null,
+    ...children: unknown[]
+  ) => {
+    if (type === Text || type === TextInput) {
+      const nextProps = { ...props, style: appendStyle(props?.style) };
+      return originalCreateElement(type, nextProps, ...children);
+    }
+
+    return originalCreateElement(type, props, ...children);
+  };
 
   hasConfiguredGlobalFont = true;
 }
