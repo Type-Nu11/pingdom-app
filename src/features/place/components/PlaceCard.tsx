@@ -2,33 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 type PlaceCardProps = {
-  address?: string;
   dimmed?: boolean;
-  distanceMeters?: number;
   imageUrl?: string;
   isImageLoading?: boolean;
   name?: string;
+  rank?: number;
 };
 
-function formatDistance(distanceMeters?: number) {
-  if (distanceMeters === undefined) {
-    return '';
-  }
-
-  if (distanceMeters >= 1000) {
-    return `${(distanceMeters / 1000).toFixed(1)}km`;
-  }
-
-  return `${Math.round(distanceMeters)}m`;
-}
-
 const PlaceCard = ({
-  address,
   dimmed = false,
-  distanceMeters,
   imageUrl,
   isImageLoading = false,
   name,
+  rank,
 }: PlaceCardProps) => {
   const [hasImageError, setHasImageError] = useState(false);
   const shouldShowImage = Boolean(imageUrl && !hasImageError);
@@ -58,12 +44,9 @@ const PlaceCard = ({
         </View>
       )}
       <View style={styles.imageShade} />
-      {name ? (
-        <View style={styles.textOverlay}>
-          <Text numberOfLines={1} style={styles.name}>{name}</Text>
-          <Text numberOfLines={1} style={styles.meta}>
-            {formatDistance(distanceMeters) || address}
-          </Text>
+      {rank ? (
+        <View style={styles.rankBadge}>
+          <Text style={styles.rankText}>{rank}</Text>
         </View>
       ) : null}
       {dimmed ? <Text style={styles.moreText}>•••</Text> : null}
@@ -89,18 +72,7 @@ const styles = StyleSheet.create({
   },
   imageShade: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
-  },
-  name: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '900',
-  },
-  meta: {
-    color: 'rgba(255, 255, 255, 0.78)',
-    fontSize: 8,
-    fontWeight: '700',
-    marginTop: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
   },
   dimmedCard: {
     opacity: 0.72,
@@ -117,7 +89,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   moreText: {
-    bottom: 14,
+    bottom: 18,
     color: '#fff',
     fontSize: 18,
     fontWeight: '900',
@@ -125,14 +97,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 12,
   },
-  textOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.42)',
-    bottom: 0,
-    left: 0,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+  rankBadge: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(17, 20, 26, 0.82)',
+    borderRadius: 8,
+    bottom: 6,
+    height: 19,
+    justifyContent: 'center',
     position: 'absolute',
-    right: 0,
+    right: 5,
+    transform: [{ rotate: '-12deg' }],
+    width: 24,
+  },
+  rankText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '900',
+    lineHeight: 15,
   },
 });
 

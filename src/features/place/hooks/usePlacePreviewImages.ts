@@ -1,9 +1,20 @@
 import { useMemo } from 'react';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { recordApi } from '../../record/api/recordApi';
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
-import type { Post } from '../../record/model/record.types';
+import type { Post, PostsPage } from '../../record/model/record.types';
 import type { RecommendedPlace } from '../model/place.types';
+
+const PREVIEW_POST_PARAMS = {
+  limit: 100,
+  page: 1,
+};
+
+const PREVIEW_POST_QUERY_KEY = [
+  ...postQueryKeys.all,
+  'previewImages',
+  PREVIEW_POST_PARAMS,
+] as const;
 
 function getInlinePreviewImage(place: RecommendedPlace) {
   const placeWithImages = place as RecommendedPlace & {
@@ -49,6 +60,32 @@ function getPostPreviewImage(post: Post) {
   return imageUrls[0];
 }
 
+async function getPostsForPreviewImages(): Promise<PostsPage> {
+  const firstPage = await recordApi.getPosts(PREVIEW_POST_PARAMS);
+
+  if (!firstPage.hasNext || firstPage.totalPages <= 1) {
+    return firstPage;
+  }
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: firstPage.totalPages - 1 }, (_, index) => (
+      recordApi.getPosts({
+        ...PREVIEW_POST_PARAMS,
+        page: index + 2,
+      })
+    ))
+  );
+
+  return {
+    ...firstPage,
+    hasNext: false,
+    posts: [
+      ...firstPage.posts,
+      ...remainingPages.flatMap((page) => page.posts),
+    ],
+  };
+}
+
 export function usePlacePreviewImages(places: RecommendedPlace[]) {
   const placeIds = useMemo(
     () => places
@@ -72,6 +109,10 @@ export function usePlacePreviewImages(places: RecommendedPlace[]) {
       };
     }),
   });
+  const previewPostsQuery = useQuery({
+    queryFn: getPostsForPreviewImages,
+    queryKey: PREVIEW_POST_QUERY_KEY,
+  });
 
   return useMemo(() => {
     const imageUrlsByPlaceId: Record<string, string> = {};
@@ -82,6 +123,15 @@ export function usePlacePreviewImages(places: RecommendedPlace[]) {
 
       if (imageUrl) {
         imageUrlsByPlaceId[String(place.id)] = imageUrl;
+      }
+    });
+
+    (previewPostsQuery.data?.posts ?? []).forEach((post) => {
+      const placeKey = String(post.placeId);
+      const imageUrl = getPostPreviewImage(post);
+
+      if (imageUrl && !imageUrlsByPlaceId[placeKey]) {
+        imageUrlsByPlaceId[placeKey] = imageUrl;
       }
     });
 
@@ -97,12 +147,13 @@ export function usePlacePreviewImages(places: RecommendedPlace[]) {
         imageUrlsByPlaceId[placeKey] = previewImageUrl;
       }
 
-      isLoadingByPlaceId[placeKey] = !imageUrlsByPlaceId[placeKey] && query.isLoading;
+      isLoadingByPlaceId[placeKey] = !imageUrlsByPlaceId[placeKey]
+        && (query.isLoading || previewPostsQuery.isLoading);
     });
 
     return {
       imageUrlsByPlaceId,
       isLoadingByPlaceId,
     };
-  }, [placeIds, places, previewQueries]);
+  }, [placeIds, places, previewPostsQuery.data?.posts, previewPostsQuery.isLoading, previewQueries]);
 }

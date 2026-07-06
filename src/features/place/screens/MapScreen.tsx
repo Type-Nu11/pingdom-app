@@ -40,7 +40,8 @@ import { useMapSettingsStore } from '../../../app/store/mapSettingsStore';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import { useHotPlaceIds } from '../hooks/useHotPlaceIds';
-import type { MapMarker, PlaceCategory, RecommendedPlace } from '../model/place.types';
+import { usePostBackedPlaces } from '../hooks/usePostBackedPlaces';
+import type { MapMarker, Place, PlaceCategory, RecommendedPlace } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 
 const SEARCH_FOCUS_MARKER_ID = 'search-focus-place';
@@ -92,6 +93,21 @@ const isSameMarkerCoordinate = (
   && Math.abs(a.lng - b.lng) <= COORDINATE_MATCH_THRESHOLD
 );
 
+function toRecommendedPlace(place: Place): RecommendedPlace {
+  return {
+    ...place,
+    distanceMeters: place.distanceMeters ?? 0,
+    placeGrowth: {
+      currentLevelMinPhotoCount: 0,
+      level: 0,
+      nextLevelMinPhotoCount: 0,
+      photoCount: 0,
+      progressPercent: 0,
+    },
+    reason: '',
+  };
+}
+
 type MapScreenProps = {
   notificationLikeContext?: {
     notificationsId?: string;
@@ -136,6 +152,11 @@ export default function MapScreen({
     refetch: refetchHotPlaceIds,
   } = useHotPlaceIds();
   const {
+    isLoading: isPostBackedPlacesLoading,
+    places: postBackedPlaces,
+    refetch: refetchPostBackedPlaces,
+  } = usePostBackedPlaces();
+  const {
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
     places: recommendedPlaces,
@@ -177,6 +198,31 @@ export default function MapScreen({
     ),
     [recommendedPlaces, selectedCategory]
   );
+  const bottomSheetPlaces = useMemo(() => {
+    if (filteredRecommendedPlaces.length > 0) {
+      return filteredRecommendedPlaces;
+    }
+
+    return places
+      .filter((place) => !selectedCategory || normalizePlaceCategory(place.category) === selectedCategory)
+      .map(toRecommendedPlace);
+  }, [filteredRecommendedPlaces, places, selectedCategory]);
+  const visibleBottomSheetPlaces = useMemo(() => {
+    if (bottomSheetPlaces.length > 0) {
+      return bottomSheetPlaces;
+    }
+
+    return postBackedPlaces;
+  }, [bottomSheetPlaces, postBackedPlaces]);
+  const isBottomSheetRecommendationsLoading = recommendedPlaces.length === 0 && isRecommendationsLoading;
+  const isBottomSheetPlacesError = recommendedPlaces.length === 0 && isRecommendationsError;
+  useEffect(() => {
+    if (!Number.isFinite(userLat) || !Number.isFinite(userLng)) {
+      return;
+    }
+
+    void refetchRecommendations();
+  }, [recommendationRadiusKm, refetchRecommendations, userLat, userLng]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const placeMarkerIds = new Set(markers.map((marker) => marker.id));
     const placeMarkers = markers
@@ -233,6 +279,7 @@ export default function MapScreen({
         refetchPlaces(),
         refetchRecommendations(),
         refetchHotPlaceIds(),
+        refetchPostBackedPlaces(),
         Number.isFinite(selectedPlaceId) ? refetchSelectedPlacePosts() : Promise.resolve(),
       ]);
     } finally {
@@ -241,6 +288,7 @@ export default function MapScreen({
   }, [
     isRefreshing,
     refetchHotPlaceIds,
+    refetchPostBackedPlaces,
     refetchPlaces,
     refetchRecommendations,
     refetchSelectedPlacePosts,
@@ -248,14 +296,14 @@ export default function MapScreen({
   ]);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
-    clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.82), 520, BASE_SHEET_EXPANDED_HEIGHT)
+    clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.6), 360, BASE_SHEET_EXPANDED_HEIGHT)
   );
   const sheetCollapsedVisibleHeight = Math.round(
     clamp(BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT * uiScale, 132, BASE_SHEET_COLLAPSED_VISIBLE_HEIGHT)
   );
   const sheetCollapsedTranslateY = Math.max(0, sheetExpandedHeight - sheetCollapsedVisibleHeight);
-  const smallActionWidth = Math.round(clamp(36 * uiScale, 32, 36));
-  const smallActionHeight = Math.round(clamp(36 * uiScale, 32, 36));
+  const smallActionWidth = Math.round(clamp(48 * uiScale, 42, 48));
+  const smallActionHeight = Math.round(clamp(48 * uiScale, 42, 48));
   const addIconSize = Math.round(clamp(21 * uiScale, 18, 21));
   const addTextSize = Math.round(clamp(14 * uiScale, 13, 14));
   const sideGap = Math.round(clamp(16 * uiScale, 14, 16));
@@ -369,7 +417,7 @@ export default function MapScreen({
         style={styles.map}
         centerLat={mapCenterLat}
         centerLng={mapCenterLng}
-        zoomLevel={16}
+        zoomLevel={3}
         userLat={userLat}
         userLng={userLng}
         followUser={searchFocusPlace ? false : followUser}
@@ -436,12 +484,17 @@ export default function MapScreen({
       <MapBottomSheet
         height={sheetExpandedHeight}
         isExpanded={isExpanded}
-        isRecommendationsError={isRecommendationsError}
-        isRecommendationsLoading={isRecommendationsLoading}
+        isRecommendationsError={isBottomSheetPlacesError}
+        isRecommendationsLoading={isBottomSheetRecommendationsLoading}
         onPlacePress={handleRecommendedPlacePress}
         onToggle={toggleSheet}
         panHandlers={panHandlers}
-        places={filteredRecommendedPlaces}
+        places={visibleBottomSheetPlaces}
+        recommendedPlaces={
+          filteredRecommendedPlaces.length > 0
+            ? filteredRecommendedPlaces
+            : visibleBottomSheetPlaces
+        }
         sheetTranslateY={sheetTranslateY}
       />
 
