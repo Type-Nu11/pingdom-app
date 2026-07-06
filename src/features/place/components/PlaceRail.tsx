@@ -46,12 +46,11 @@ const PlaceRail = ({
               onPress={() => onPlacePress?.(place)}
             >
               <PlaceCard
-                address={place.address}
                 dimmed={index === 4 && places.length > 5}
-                distanceMeters={place.distanceMeters}
                 imageUrl={imageUrlsByPlaceId[String(place.id)] ?? fallbackImageUrl}
                 isImageLoading={isLoadingByPlaceId[String(place.id)]}
                 name={place.name}
+                rank={index + 1}
               />
             </Pressable>
           ))
