@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.09,
     shadowRadius: 2,
+    transform: [{ translateY: -8 }],
     ...Platform.select({
       android: {
         elevation: 3,
