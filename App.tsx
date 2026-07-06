@@ -96,7 +96,6 @@ function AppContent() {
               setOpenedBookmarkedPlaceId(null);
               setMainScreen('map');
             }}
-            onLogout={handleLogout}
             onOpenBookmarkedPost={(placeId) => {
               setOpenedBookmarkedPlaceId(placeId);
               setMainScreen('map');

@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Alert, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ArchiveDetailView from '../components/ArchiveDetailView';
 import LikesBottomSheet from '../components/LikesBottomSheet';
-import ProfileEditView from '../components/ProfileEditView';
 import ProfileGallery from '../components/ProfileGallery';
 import ProfileHeader from '../components/ProfileHeader';
 import { useLikedPosts } from '../../record/hooks/useLikedPosts';
@@ -14,18 +13,16 @@ import { useProfile } from '../hooks/useProfile';
 type ProfileScreenProps = {
   initialTab?: ProfileTab;
   onBack: () => void;
-  onLogout: () => Promise<void>;
   onOpenBookmarkedPost: (placeId: number) => void;
   onOpenSettings: () => void;
 };
 
-type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
+type ProfileMode = 'profile' | 'archive' | 'archive-detail';
 type ProfileTab = 'liked' | 'saved';
 
 const ProfileScreen = ({
   initialTab = 'liked',
   onBack,
-  onLogout,
   onOpenBookmarkedPost,
   onOpenSettings,
 }: ProfileScreenProps) => {
@@ -73,25 +70,12 @@ const ProfileScreen = ({
       return;
     }
 
-    if (mode === 'archive' || mode === 'profile-edit') {
+    if (mode === 'archive') {
       setMode('profile');
       return;
     }
 
     onBack();
-  };
-
-  const handleLogout = () => {
-    Alert.alert('로그아웃할까요?', '다시 이용하려면 로그인해야 합니다.', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '로그아웃',
-        style: 'destructive',
-        onPress: () => {
-          void onLogout();
-        },
-      },
-    ]);
   };
 
   const isArchiveDetail = mode === 'archive-detail';
@@ -110,21 +94,7 @@ const ProfileScreen = ({
           <Text style={styles.backText}>‹</Text>
         </Pressable>
 
-        {mode === 'profile' && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="설정"
-            hitSlop={12}
-            style={styles.settingsButton}
-            onPress={onOpenSettings}
-          >
-            <Text style={styles.settingsIcon}>⚙</Text>
-          </Pressable>
-        )}
-
-        {mode === 'profile-edit' ? (
-          <ProfileEditView profile={profile} />
-        ) : isArchiveDetail ? (
+        {isArchiveDetail ? (
           <ArchiveDetailView
             initialPostId={selectedArchivePostId}
             posts={archivePosts}
@@ -138,8 +108,7 @@ const ProfileScreen = ({
               activeTab={activeTab}
               onChangeTab={setActiveTab}
               onOpenArchive={() => setMode('archive')}
-              onOpenEdit={() => setMode('profile-edit')}
-              onLogout={handleLogout}
+              onOpenSettings={onOpenSettings}
               profile={profile}
               showTabs={mode === 'profile'}
             />
@@ -200,18 +169,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
     flex: 1,
     width: '100%',
-  },
-  settingsButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 24,
-    top: 54,
-    zIndex: 8,
-  },
-  settingsIcon: {
-    color: '#0c0c0d',
-    fontSize: 24,
   },
 });
 
