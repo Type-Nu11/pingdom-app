@@ -143,8 +143,9 @@ export const usePostLike = () => {
         queryClient.setQueryData(queryKey, data);
       });
     },
-    onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: likedPostQueryKeys.all });
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: likedPostQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: postQueryKeys.hotPlaces() });
     },
   });
 

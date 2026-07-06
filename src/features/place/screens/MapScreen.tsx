@@ -35,6 +35,7 @@ import { usePlacePosts } from '../../record/hooks/usePlacePosts';
 import { useProfile } from '../../profile/hooks/useProfile';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
+import { useHotPlaceIds } from '../hooks/useHotPlaceIds';
 import type { MapMarker, RecommendedPlace } from '../model/place.types';
 
 const SEARCH_FOCUS_MARKER_ID = 'search-focus-place';
@@ -82,6 +83,7 @@ export default function MapScreen({
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const { isError: isPlacesError, markers, places } = usePlaces();
+  const { hotPlaceIds } = useHotPlaceIds();
   const {
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
@@ -108,6 +110,10 @@ export default function MapScreen({
   );
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const placeMarkerIds = new Set(markers.map((marker) => marker.id));
+    const placeMarkers = markers.map((marker) => ({
+      ...marker,
+      markerType: hotPlaceIds.has(marker.id) ? 'hot' as const : 'default' as const,
+    }));
     const recommendationMarkers = (recommendedPlaces ?? [])
       .filter((place) => !placeMarkerIds.has(String(place.id)))
       .map((place) => ({
@@ -115,9 +121,9 @@ export default function MapScreen({
         id: String(place.id),
         lat: place.latitude,
         lng: place.longitude,
-        markerType: 'hot' as const,
+        markerType: hotPlaceIds.has(String(place.id)) ? 'hot' as const : 'default' as const,
       }));
-    const baseMarkers = [...markers, ...recommendationMarkers];
+    const baseMarkers = [...placeMarkers, ...recommendationMarkers];
     const hasMatchingMarker = searchFocusPlace
       ? baseMarkers.some((marker) => (
         marker.id === searchFocusPlace.id
@@ -135,7 +141,7 @@ export default function MapScreen({
       : [];
 
     return [...baseMarkers, ...searchFocusMarker];
-  }, [markers, recommendedPlaces, searchFocusPlace]);
+  }, [hotPlaceIds, markers, recommendedPlaces, searchFocusPlace]);
   const selectedPlaceId = selectedPlace?.id
     ?? (selectedMarkerId !== null ? Number(selectedMarkerId) : null);
   const {
