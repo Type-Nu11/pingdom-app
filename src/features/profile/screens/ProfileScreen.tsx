@@ -15,12 +15,13 @@ type ProfileScreenProps = {
   onBack: () => void;
   onLogout: () => Promise<void>;
   onOpenBookmarkedPost: (placeId: number) => void;
+  onOpenSettings: () => void;
 };
 
 type ProfileMode = 'profile' | 'archive' | 'archive-detail' | 'profile-edit';
 type ProfileTab = 'liked' | 'saved';
 
-const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreenProps) => {
+const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost, onOpenSettings }: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
   const [mode, setMode] = useState<ProfileMode>('profile');
   const [activeTab, setActiveTab] = useState<ProfileTab>('liked');
@@ -102,6 +103,18 @@ const ProfileScreen = ({ onBack, onLogout, onOpenBookmarkedPost }: ProfileScreen
           <Text style={styles.backText}>‹</Text>
         </Pressable>
 
+        {mode === 'profile' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="설정"
+            hitSlop={12}
+            style={styles.settingsButton}
+            onPress={onOpenSettings}
+          >
+            <Text style={styles.settingsIcon}>⚙</Text>
+          </Pressable>
+        )}
+
         {mode === 'profile-edit' ? (
           <ProfileEditView />
         ) : isArchiveDetail ? (
@@ -178,6 +191,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
     flex: 1,
     width: '100%',
+  },
+  settingsButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 24,
+    top: 54,
+    zIndex: 8,
+  },
+  settingsIcon: {
+    color: '#0c0c0d',
+    fontSize: 24,
   },
 });
 

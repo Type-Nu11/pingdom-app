@@ -15,9 +15,10 @@ import MapScreen from './src/features/place/screens/MapScreen';
 import PlaceCreateFlowScreen from './src/features/place/screens/PlaceCreateFlowScreen';
 import PlaceDetailScreen from './src/features/place/screens/PlaceDetailScreen';
 import ProfileScreen from './src/features/profile/screens/ProfileScreen';
+import SettingsScreen from './src/features/settings/screens/SettingsScreen';
 
 type AuthScreen = 'language-gate' | 'welcome' | 'login' | 'signup' | 'phone-verify';
-type MainScreen = 'map' | 'place-create' | 'place-detail' | 'profile';
+type MainScreen = 'map' | 'place-create' | 'place-detail' | 'profile' | 'settings';
 
 function AppContent() {
   const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
@@ -84,6 +85,8 @@ function AppContent() {
             notificationBody={openedNotificationRoute.body}
             onBack={() => setMainScreen('map')}
           />
+        ) : mainScreen === 'settings' ? (
+          <SettingsScreen onBack={() => setMainScreen('profile')} onLogout={handleLogout} />
         ) : mainScreen === 'profile' ? (
           <ProfileScreen
             onBack={() => {
@@ -95,6 +98,7 @@ function AppContent() {
               setOpenedBookmarkedPlaceId(placeId);
               setMainScreen('map');
             }}
+            onOpenSettings={() => setMainScreen('settings')}
           />
         ) : (
           <MapScreen
