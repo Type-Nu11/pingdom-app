@@ -30,7 +30,7 @@ export type RecommendedPlace = Place & {
   distanceMeters: number;
   placeGrowth: PlaceGrowth;
   reason: string;
-  userId: number;
+  userId?: number;
 };
 
 export type PlaceRecommendations = {

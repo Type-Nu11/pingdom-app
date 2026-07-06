@@ -4,6 +4,7 @@ import FirstPlaceIcon from '../../../assets/icons/FirstPlace.svg';
 import HotPlaceIcon from '../../../assets/icons/hotplace.svg';
 import SecondPlaceIcon from '../../../assets/icons/SecondPlace.svg';
 import ThirdPlaceIcon from '../../../assets/icons/ThirdPlace.svg';
+import { usePlaceRegistrantIds } from '../hooks/usePlaceRegistrantIds';
 import type { RecommendedPlace } from '../model/place.types';
 
 type HotPlaceListProps = {
@@ -19,6 +20,7 @@ const HotPlaceList = ({
   onPlacePress,
   places,
 }: HotPlaceListProps) => {
+  const { isLoadingByPlaceId, registrantIdsByPlaceId } = usePlaceRegistrantIds(places);
   const stateText = isLoading
     ? '추천 장소를 불러오고 있어요'
     : isError
@@ -27,9 +29,13 @@ const HotPlaceList = ({
         ? '주변 추천 장소가 아직 없어요'
         : null;
 
-  const formatRegistrantId = (userId: number | undefined) => (
-    userId === undefined ? '' : `등록자 ID ${userId}`
-  );
+  const formatRegistrantId = (userId: number | undefined, isLoading = false) => {
+    if (userId === undefined) {
+      return isLoading ? '등록자 ID 확인 중' : '등록자 ID 없음';
+    }
+
+    return `등록자 ID ${userId}`;
+  };
 
   return (
     <View style={styles.hotSection}>
@@ -78,7 +84,10 @@ const HotPlaceList = ({
             <View style={styles.hotTextGroup}>
               <Text numberOfLines={1} style={styles.hotLocation}>{place.name}</Text>
               <Text numberOfLines={1} style={styles.hotUsername}>
-                {formatRegistrantId(place.userId)}
+                {formatRegistrantId(
+                  registrantIdsByPlaceId[String(place.id)] ?? place.userId,
+                  isLoadingByPlaceId[String(place.id)]
+                )}
               </Text>
             </View>
           </Pressable>
