@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useMapSettingsStore } from '../../../app/store/mapSettingsStore';
+import { useDevicePermissions } from '../hooks/useDevicePermissions';
+import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
 import { APP_VERSION } from '../constants/legalContent';
 import type { SettingsPage } from '../screens/SettingsScreen';
 import SettingsDivider from './SettingsDivider';
@@ -10,15 +14,20 @@ type SettingsRootViewProps = {
   onNavigate: (page: SettingsPage) => void;
 };
 
-const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [activityEnabled, setActivityEnabled] = useState(true);
-  const [marketingEnabled, setMarketingEnabled] = useState(false);
-  const [nightModeEnabled, setNightModeEnabled] = useState(false);
-  const [cacheSize, setCacheSize] = useState('128.4MB');
+const CACHE_KEY_PREFIXES = ['@pingdom/record-likes', '@pingdom/hidden-posts'];
 
-  const handleClearCache = () => {
-    setCacheSize('0MB');
+const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
+  const { preferences, setPreference } = useNotificationPreferences();
+  const { permissions } = useDevicePermissions();
+  const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
+  const queryClient = useQueryClient();
+
+  const handleClearCache = async () => {
+    const keys = await AsyncStorage.getAllKeys();
+    const cacheKeys = keys.filter((key) => CACHE_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)));
+
+    await AsyncStorage.multiRemove(cacheKeys);
+    queryClient.clear();
     Alert.alert('캐시를 삭제했습니다');
   };
 
@@ -27,9 +36,9 @@ const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
       <SettingsSection title="계정">
         <SettingsRow
           chevron
-          subtitle="닉네임, 프로필 사진 등 내 프로필 정보를 수정합니다."
-          title="프로필 수정"
-          onPress={() => onNavigate('profile')}
+          subtitle="로그인에 사용하는 아이디를 변경합니다."
+          title="아이디 변경"
+          onPress={() => onNavigate('username')}
         />
         <SettingsDivider />
         <SettingsRow
@@ -41,13 +50,6 @@ const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
         <SettingsDivider />
         <SettingsRow
           chevron
-          subtitle="내가 차단한 사용자 목록을 확인하고 해제합니다."
-          title="차단한 사용자 관리"
-          onPress={() => onNavigate('blocked')}
-        />
-        <SettingsDivider />
-        <SettingsRow
-          chevron
           destructive
           subtitle="계정과 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다."
           title="계정 삭제"
@@ -55,44 +57,54 @@ const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
         />
       </SettingsSection>
 
+      <SettingsSection title="지도">
+        <SettingsRow
+          chevron
+          subtitle="현재 위치 기준 장소 추천을 받을 반경을 설정합니다."
+          title="추천 반경 설정"
+          value={`${recommendationRadiusKm}km`}
+          onPress={() => onNavigate('map-radius')}
+        />
+      </SettingsSection>
+
       <SettingsSection title="알림">
         <SettingsRow
           subtitle="모바일 앱에서 전송하는 푸시 알림을 받습니다."
           title="모바일 푸시 알림"
-          toggled={pushEnabled}
-          onToggle={setPushEnabled}
+          toggled={preferences.pushEnabled}
+          onToggle={(next) => setPreference('pushEnabled', next)}
         />
         <SettingsDivider />
         <SettingsRow
           subtitle="내 게시물의 좋아요, 댓글, 신고 처리 결과와 추천 장소 알림을 받습니다."
           title="내 활동"
-          toggled={activityEnabled}
-          onToggle={setActivityEnabled}
+          toggled={preferences.activityEnabled}
+          onToggle={(next) => setPreference('activityEnabled', next)}
         />
         <SettingsDivider />
         <SettingsRow
           subtitle="이벤트, 혜택 등 마케팅 정보를 받습니다."
           title="마케팅/이벤트 알림"
-          toggled={marketingEnabled}
-          onToggle={setMarketingEnabled}
+          toggled={preferences.marketingEnabled}
+          onToggle={(next) => setPreference('marketingEnabled', next)}
         />
         <SettingsDivider />
         <SettingsRow
           subtitle="오후 10시부터 오전 8시까지 알림을 받지 않습니다."
           title="야간 알림 끄기"
-          toggled={nightModeEnabled}
-          onToggle={setNightModeEnabled}
+          toggled={preferences.nightModeEnabled}
+          onToggle={(next) => setPreference('nightModeEnabled', next)}
         />
       </SettingsSection>
 
       <SettingsSection title="권한">
-        <SettingsRow subtitle="내 주변 장소 추천을 위해 위치 정보에 접근합니다." title="위치 권한" value="허용됨" />
+        <SettingsRow subtitle="내 주변 장소 추천을 위해 위치 정보에 접근합니다." title="위치 권한" value={permissions.location} />
         <SettingsDivider />
-        <SettingsRow subtitle="사진 촬영 및 본인 인증을 위해 카메라에 접근합니다." title="카메라 권한" value="허용됨" />
+        <SettingsRow subtitle="사진 촬영 및 본인 인증을 위해 카메라에 접근합니다." title="카메라 권한" value={permissions.camera} />
         <SettingsDivider />
-        <SettingsRow subtitle="프로필 및 게시물 등록을 위해 사진첩에 접근합니다." title="사진 접근 권한" value="일부 허용" />
+        <SettingsRow subtitle="프로필 및 게시물 등록을 위해 사진첩에 접근합니다." title="사진 접근 권한" value={permissions.photoLibrary} />
         <SettingsDivider />
-        <SettingsRow subtitle="푸시 알림 전송을 위해 알림 권한이 필요합니다." title="알림 권한" value="허용됨" />
+        <SettingsRow subtitle="푸시 알림 전송을 위해 알림 권한이 필요합니다." title="알림 권한" value={permissions.notification} />
         <Pressable style={styles.gotoSettingsButton} onPress={() => void Linking.openSettings()}>
           <Text style={styles.gotoSettingsText}>설정 앱으로 이동</Text>
         </Pressable>
@@ -111,13 +123,6 @@ const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
           subtitle="차단 및 신고 처리에 대한 정책을 확인합니다."
           title="차단/신고 정책"
           onPress={() => onNavigate('block-policy')}
-        />
-        <SettingsDivider />
-        <SettingsRow
-          chevron
-          subtitle="불편한 점이나 궁금한 점을 문의합니다."
-          title="문의하기"
-          onPress={() => onNavigate('contact-us')}
         />
       </SettingsSection>
 
@@ -157,8 +162,7 @@ const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
         <SettingsRow
           subtitle="임시 저장된 이미지 및 데이터를 삭제해 저장 공간을 확보합니다."
           title="캐시 삭제"
-          value={cacheSize}
-          onPress={handleClearCache}
+          onPress={() => void handleClearCache()}
         />
       </SettingsSection>
     </ScrollView>

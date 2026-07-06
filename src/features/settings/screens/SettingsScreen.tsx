@@ -3,16 +3,15 @@ import { StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { profileApi } from '../../profile/api/profileApi';
 import { useProfile } from '../../profile/hooks/useProfile';
-import AccountEditView from '../components/AccountEditView';
-import BlockedUsersView from '../components/BlockedUsersView';
-import ContactUsView from '../components/ContactUsView';
 import DeleteAccountView from '../components/DeleteAccountView';
 import LegalTextPage from '../components/LegalTextPage';
 import LicensesView from '../components/LicensesView';
+import MapRadiusView from '../components/MapRadiusView';
 import PasswordChangeView from '../components/PasswordChangeView';
 import ReportHistoryView from '../components/ReportHistoryView';
 import SettingsNavBar from '../components/SettingsNavBar';
 import SettingsRootView from '../components/SettingsRootView';
+import UsernameChangeView from '../components/UsernameChangeView';
 import {
   BLOCK_POLICY_CONTENT,
   LOCATION_TERMS_CONTENT,
@@ -22,13 +21,12 @@ import {
 
 export type SettingsPage =
   | 'root'
-  | 'profile'
+  | 'username'
   | 'password'
-  | 'blocked'
   | 'delete-account'
   | 'report-history'
   | 'block-policy'
-  | 'contact-us'
+  | 'map-radius'
   | 'terms'
   | 'privacy'
   | 'location-terms'
@@ -70,9 +68,8 @@ const SettingsScreen = ({ onBack, onLogout }: SettingsScreenProps) => {
             <SettingsRootView onNavigate={goTo} />
           </>
         )}
-        {currentPage === 'profile' && <AccountEditView onBack={goBack} />}
+        {currentPage === 'username' && <UsernameChangeView profile={profile} onBack={goBack} />}
         {currentPage === 'password' && <PasswordChangeView onBack={goBack} />}
-        {currentPage === 'blocked' && <BlockedUsersView onBack={goBack} />}
         {currentPage === 'delete-account' && (
           <DeleteAccountView onBack={goBack} onDeleted={handleAccountDeleted} />
         )}
@@ -85,9 +82,7 @@ const SettingsScreen = ({ onBack, onLogout }: SettingsScreenProps) => {
             onBack={goBack}
           />
         )}
-        {currentPage === 'contact-us' && (
-          <ContactUsView defaultEmail={profile?.email ?? ''} onBack={goBack} />
-        )}
+        {currentPage === 'map-radius' && <MapRadiusView onBack={goBack} />}
         {currentPage === 'terms' && (
           <LegalTextPage
             meta={TERMS_CONTENT.meta}
