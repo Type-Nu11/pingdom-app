@@ -1,5 +1,7 @@
 export type Place = {
   address: string;
+  category?: string;
+  distanceMeters?: number;
   id: number;
   latitude: number;
   longitude: number;
@@ -33,6 +35,7 @@ export type PlaceRecommendations = {
   appliedRadiusKm: number;
   limit: number;
   places: RecommendedPlace[];
+  recommendationRequestId: string;
   recommendedCount: number;
   recommendationVersion: string;
   requestedRadiusKm: number;

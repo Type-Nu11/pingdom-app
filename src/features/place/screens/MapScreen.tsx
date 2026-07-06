@@ -88,6 +88,7 @@ export default function MapScreen({
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
     places: recommendedPlaces,
+    recommendationRequestId,
     recommendationVersion,
   } = usePlaceRecommendations({
     latitude: userLat,
@@ -194,10 +195,13 @@ export default function MapScreen({
     setSelectedMarkerId(String(place.id));
     setSearchFocusPlace(null);
 
-    void recordRecommendationClick({
-      placeId: place.id,
-      recommendationVersion: recommendationVersion ?? 'place-rec-v1',
-    }).catch(() => undefined);
+    if (recommendationRequestId) {
+      void recordRecommendationClick({
+        placeId: place.id,
+        recommendationVersion: recommendationVersion ?? 'place-rec-v1',
+        requestId: recommendationRequestId,
+      }).catch(() => undefined);
+    }
   };
   const handleSearchPlaceSelect = (place: MapSearchSelection) => {
     const matchingPlace = [...places, ...recommendedPlaces].find((candidate) => (
