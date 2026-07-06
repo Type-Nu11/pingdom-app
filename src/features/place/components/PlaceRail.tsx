@@ -61,11 +61,11 @@ const PlaceRail = ({
 const styles = StyleSheet.create({
   placeRail: {
     borderColor: '#e5e6eb',
-    borderRadius: 18,
+    borderRadius: 12,
     borderWidth: 1,
-    height: 94,
+    height: 78,
     justifyContent: 'center',
-    marginHorizontal: 22,
+    marginHorizontal: 16,
     overflow: 'hidden',
   },
   placeScroller: {
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   },
   placeList: {
     alignItems: 'center',
-    minHeight: 72,
+    minHeight: 58,
     paddingHorizontal: 12,
   },
   stateText: {

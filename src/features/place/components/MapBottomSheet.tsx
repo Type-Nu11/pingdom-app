@@ -79,8 +79,8 @@ const MapBottomSheet = ({
 const styles = StyleSheet.create({
   bottomSheet: {
     backgroundColor: '#fdfdfd',
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     bottom: 0,
     left: 0,
     paddingBottom: 0,
@@ -93,20 +93,20 @@ const styles = StyleSheet.create({
   },
   handleArea: {
     alignItems: 'center',
-    height: 42,
+    height: 26,
     justifyContent: 'center',
   },
   handle: {
     backgroundColor: '#dedfe5',
     borderRadius: 2,
     height: 4,
-    width: 58,
+    width: 46,
   },
   sheetScroll: {
     flex: 1,
   },
   sheetContent: {
-    paddingBottom: 28,
+    paddingBottom: 24,
   },
 });
 

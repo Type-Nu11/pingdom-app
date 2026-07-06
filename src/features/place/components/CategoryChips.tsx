@@ -34,7 +34,7 @@ const CategoryChips = ({
   uiScale,
 }: CategoryChipsProps) => {
   const { t } = useTranslation();
-  const shadowGutter = Math.round(clamp(12 * uiScale, 8, 12));
+  const shadowGutter = Math.round(clamp(4 * uiScale, 4, 8));
 
   return (
     <ScrollView
@@ -45,11 +45,11 @@ const CategoryChips = ({
       contentContainerStyle={[
         styles.categoryList,
         {
-          gap: Math.round(clamp(12 * uiScale, 8, 12)),
-          paddingBottom: Math.round(clamp(14 * uiScale, 10, 14)),
+          gap: Math.round(clamp(12 * uiScale, 10, 12)),
+          paddingBottom: Math.round(clamp(8 * uiScale, 6, 8)),
           paddingLeft: shadowGutter,
           paddingRight: topPaddingX + shadowGutter,
-          paddingTop: Math.round(clamp(20 * uiScale, 12, 20)),
+          paddingTop: Math.round(clamp(15 * uiScale, 12, 15)),
         },
       ]}
     >
@@ -68,7 +68,7 @@ const CategoryChips = ({
               {
                 gap: Math.round(clamp(6 * uiScale, 5, 6)),
                 height: chipHeight,
-                paddingHorizontal: Math.round(clamp(13 * uiScale, 11, 13)),
+                paddingHorizontal: Math.round(clamp(12 * uiScale, 10, 12)),
               },
             ]}
           >
@@ -103,10 +103,10 @@ const styles = StyleSheet.create({
   },
   categoryList: {
     gap: 12,
-    paddingBottom: 14,
+    paddingBottom: 8,
     paddingLeft: 12,
     paddingRight: 22,
-    paddingTop: 20,
+    paddingTop: 15,
   },
   categoryChip: {
     alignItems: 'center',
@@ -114,12 +114,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     flexDirection: 'row',
     height: 38,
-    paddingHorizontal: 13,
+    paddingHorizontal: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.14,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.11,
+    shadowRadius: 4,
+    elevation: 3,
   },
   categoryChipActive: {
     backgroundColor: '#fff0f4',

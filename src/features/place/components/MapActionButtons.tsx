@@ -33,7 +33,7 @@ const MapActionButtons = ({
   smallActionWidth,
 }: MapActionButtonsProps) => {
   const { t } = useTranslation();
-  const addPlaceLabel = t('map.actions.addPlace', { defaultValue: '게시 하기' });
+  const addPlaceLabel = t('map.actions.addPlace', { defaultValue: '게시하기' });
 
   return (
     <Animated.View
@@ -107,15 +107,17 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     borderWidth: 2,
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
+    height: 37,
     justifyContent: 'center',
+    minWidth: 110,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.09,
     shadowRadius: 2,
-    transform: [{ translateY: -8 }],
+    transform: [{ translateY: -3 }],
     ...Platform.select({
       android: {
         elevation: 3,
