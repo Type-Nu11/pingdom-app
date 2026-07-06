@@ -65,6 +65,17 @@ const kakaoHeaders = {
   Authorization: `KakaoAK ${KAKAO_REST_API_KEY}`,
 };
 
+const KAKAO_FETCH_TIMEOUT_MS = 8000;
+
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = KAKAO_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
 const parseCoordinate = (value?: string) => {
   const coordinate = Number(value);
   return Number.isFinite(coordinate) ? coordinate : null;
@@ -103,7 +114,7 @@ export const getAddressFromCoordinate = async (lat: number, lng: number) => {
   });
 
   try {
-    const response = await fetch(`${KAKAO_LOCAL_BASE_URL}/geo/coord2address.json?${params}`, {
+    const response = await fetchWithTimeout(`${KAKAO_LOCAL_BASE_URL}/geo/coord2address.json?${params}`, {
       headers: kakaoHeaders,
     });
 
@@ -145,7 +156,7 @@ const searchKakaoKeywordPlaces = async (
     sort: params.get('sort'),
   });
 
-  const response = await fetch(`${KAKAO_LOCAL_BASE_URL}/search/keyword.json?${params}`, {
+  const response = await fetchWithTimeout(`${KAKAO_LOCAL_BASE_URL}/search/keyword.json?${params}`, {
     headers: kakaoHeaders,
   });
 
@@ -221,7 +232,7 @@ const searchKakaoAddresses = async (query: string) => {
 
   logKakaoSearch('address request', { query });
 
-  const response = await fetch(`${KAKAO_LOCAL_BASE_URL}/search/address.json?${params}`, {
+  const response = await fetchWithTimeout(`${KAKAO_LOCAL_BASE_URL}/search/address.json?${params}`, {
     headers: kakaoHeaders,
   });
 

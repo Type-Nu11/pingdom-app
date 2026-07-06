@@ -11,7 +11,6 @@ export type AuthState = {
 type AuthActions = {
   bootstrapAuth: () => Promise<void>;
   login: (tokens: AuthTokens) => Promise<void>;
-  loginWithGoogle: (tokens: AuthTokens) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -52,17 +51,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
     });
   },
 
-  loginWithGoogle: async (tokens: AuthTokens) => {
-    const normalizedTokens = normalizeAuthTokens(tokens);
-
-    await persistTokens(normalizedTokens);
-    set({
-      accessToken: normalizedTokens.accessToken,
-      isLoggedIn: true,
-      isHydrating: false,
-    });
-  },
-
   logout: async () => {
     await removeTokens();
     set({
@@ -88,10 +76,6 @@ export async function bootstrapAuth(): Promise<void> {
 
 export async function loginWithTokens(tokens: AuthTokens): Promise<void> {
   return useAuthStore.getState().login(tokens);
-}
-
-export async function loginWithGoogle(tokens: AuthTokens): Promise<void> {
-  return useAuthStore.getState().loginWithGoogle(tokens);
 }
 
 export async function logout(): Promise<void> {

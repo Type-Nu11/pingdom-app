@@ -162,7 +162,7 @@ export const recordApi = {
   createRecord: async (payload: CreateRecordRequest): Promise<CreateRecordResponse> => {
     const formData = buildCreateRecordFormData(payload);
     const { data } = await api.post<CreateRecordResponse>('/map/post/create', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     });
     return data;
   },
@@ -173,7 +173,7 @@ export const recordApi = {
   updateRecord: async (id: number, payload: UpdateRecordRequest): Promise<string> => {
     const formData = buildUpdateRecordFormData(payload);
     const { data } = await api.post<string>(`/map/post/${id}/update`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     });
     return data;
   },

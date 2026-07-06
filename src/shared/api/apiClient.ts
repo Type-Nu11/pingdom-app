@@ -22,7 +22,7 @@ if (!rawApiBaseUrl) {
 }
 const API_BASE_URL = /^https?:\/\//i.test(rawApiBaseUrl)
     ? rawApiBaseUrl
-    : `http://${rawApiBaseUrl}`;
+    : `https://${rawApiBaseUrl}`;
 const REQUEST_TIMEOUT = 10000;
 
 // ─────────────────────────────────────────────

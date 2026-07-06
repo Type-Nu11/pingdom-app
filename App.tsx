@@ -1,10 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import AppProvider from './src/app/providers/AppProvider';
-import LanguageGateScreen from './src/features/auth/screens/LanguageGateScreen';
-import LoginScreen from './src/features/auth/screens/LoginScreen';
-import PhoneVerifyScreen from './src/features/auth/screens/PhoneVerifyScreen';
-import SignupDetailsScreen from './src/features/auth/screens/SignupDetailsScreen';
-import WelcomeScreen from './src/features/auth/screens/WelcomeScreen';
+import { OnboardingFlow } from './src/features/onboarding';
 import useAuth from './src/features/auth/hooks/useAuth';
 import { useFcmTokenSync } from './src/features/firebase/hooks/useFcmTokenSync';
 import { useForegroundFcmNotifications } from './src/features/firebase/hooks/useForegroundFcmNotifications';
@@ -16,13 +12,11 @@ import PlaceCreateFlowScreen from './src/features/place/screens/PlaceCreateFlowS
 import PlaceDetailScreen from './src/features/place/screens/PlaceDetailScreen';
 import ProfileScreen from './src/features/profile/screens/ProfileScreen';
 
-type AuthScreen = 'language-gate' | 'welcome' | 'login' | 'signup' | 'phone-verify';
 type MainScreen = 'map' | 'place-create' | 'place-detail' | 'profile';
 
 function AppContent() {
   const { bootstrapAuth, isHydrating, isLoggedIn, logout } = useAuth();
   const { pendingRoute, consumePendingNotificationRoute } = useNotificationState();
-  const [authScreen, setAuthScreen] = useState<AuthScreen>('language-gate');
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
   const [openedBookmarkedPlaceId, setOpenedBookmarkedPlaceId] = useState<number | null>(null);
   const [openedNotificationRoute, setOpenedNotificationRoute] = useState<NotificationRoute | null>(null);
@@ -62,7 +56,6 @@ function AppContent() {
 
   const handleLogout = async () => {
     await logout();
-    setAuthScreen('login');
     setMainScreen('map');
     setOpenedNotificationRoute(null);
   };
@@ -106,15 +99,7 @@ function AppContent() {
           />
         )
       ) : (
-        (() => {
-          switch (authScreen) {
-            case 'language-gate': return <LanguageGateScreen onSubmit={() => setAuthScreen('welcome')} />;
-            case 'welcome': return <WelcomeScreen onStart={() => setAuthScreen('signup')} onLogin={() => setAuthScreen('login')} />;
-            case 'login': return <LoginScreen onBack={() => setAuthScreen('welcome')} />;
-            case 'signup': return <SignupDetailsScreen onBack={() => setAuthScreen('welcome')} onLogin={() => setAuthScreen('login')} onComplete={() => setAuthScreen('phone-verify')} />;
-            default: return <PhoneVerifyScreen onBack={() => setAuthScreen('signup')} onLogin={() => setAuthScreen('login')} />;
-          }
-        })()
+        <OnboardingFlow />
       )}
     </>
   );

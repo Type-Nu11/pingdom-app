@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '../../i18n';
 import type { ApiCodeErrorResponse, ApiFieldErrorResponse } from '../../types/api.types';
 
 type KnownApiErrorResponse = ApiCodeErrorResponse | ApiFieldErrorResponse;
@@ -16,13 +17,13 @@ export function getApiErrorMessage(error: unknown, fallbackMessage: string) {
   const serverMessage = responseData?.message;
 
   if (!status) {
-    return '서버에 연결하지 못했어요. 네트워크 상태를 확인해 주세요.';
+    return i18n.t('apiErrors.networkError');
   }
 
   if (status === 401) {
     return responseData && 'code' in responseData && responseData.code === 'INVALID_TOKEN'
-      ? '로그인이 만료됐어요. 다시 로그인해 주세요.'
-      : serverMessage ?? '로그인이 만료됐어요. 다시 로그인해 주세요.';
+      ? i18n.t('apiErrors.sessionExpired')
+      : serverMessage ?? i18n.t('apiErrors.sessionExpired');
   }
 
   return fieldErrorMessage ?? serverMessage ?? fallbackMessage;

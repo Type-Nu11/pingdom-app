@@ -36,4 +36,3 @@ rootProject.name = 'PingDom'
 expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
-includeBuild(expoAutolinking.reactNativeGradlePlugin)

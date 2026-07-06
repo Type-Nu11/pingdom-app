@@ -67,7 +67,7 @@ export const pictureApi = {
   createPicture: async (payload: CreatePictureRequest): Promise<CreatePictureResponse> => {
     const formData = buildPictureUploadFormData(payload);
     const { data } = await api.post<CreatePictureResponse>('/map/pictures/create', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     });
 
     return data;
