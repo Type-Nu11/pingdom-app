@@ -297,9 +297,23 @@ export default function MapScreen({
 
     setSelectedMarkerId(event.nativeEvent.markerId);
   };
-  const handleRecommendedPlacePress = (place: RecommendedPlace) => {
+  const handleRecommendedPlacePress = (
+    place: RecommendedPlace,
+    options: { focusOnMap?: boolean } = {},
+  ) => {
     setSelectedMarkerId(String(place.id));
-    setSearchFocusPlace(null);
+    if (options.focusOnMap) {
+      setSelectedCategory(null);
+    }
+    setSearchFocusPlace(options.focusOnMap ? {
+      address: place.address,
+      id: String(place.id),
+      isRegisteredPlace: true,
+      lat: place.latitude,
+      lng: place.longitude,
+      name: place.name,
+      roadAddress: place.address,
+    } : null);
 
     if (recommendationRequestId) {
       void recordRecommendationClick({
@@ -467,10 +481,15 @@ export default function MapScreen({
         <MapSearchOverlay
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
+          isRecommendationsError={isRecommendationsError}
+          isRecommendationsLoading={isRecommendationsLoading}
           onClose={() => setIsSearchOpen(false)}
           onCreatePlace={onCreatePlace}
           onOpenProfile={onOpenProfile}
+          onRefreshRecommendations={() => refetchRecommendations()}
+          onSelectRecommendedPlace={(place) => handleRecommendedPlacePress(place, { focusOnMap: true })}
           onSelectPlace={handleSearchPlaceSelect}
+          recommendedPlaces={recommendedPlaces}
         />
       ) : null}
     </View>
