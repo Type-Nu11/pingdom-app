@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { recordApi } from '../../record/api/recordApi';
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
+import type { Post } from '../../record/model/record.types';
 import type { RecommendedPlace } from '../model/place.types';
 
 function getInlinePreviewImage(place: RecommendedPlace) {
@@ -26,6 +27,26 @@ function getInlinePreviewImage(place: RecommendedPlace) {
   }
 
   return imageFromImages?.imageUrl ?? imageFromImages?.url ?? placeWithImages.mediaUrls?.[0];
+}
+
+function getPostPreviewImage(post: Post) {
+  const postWithMedia = post as Post & {
+    imageUrls?: string[];
+    images?: Array<{ imageUrl?: string; url?: string } | string>;
+    mediaUrls?: string[];
+  };
+  const imageUrls = [
+    ...(Array.isArray(postWithMedia.imageUrls) ? postWithMedia.imageUrls : []),
+    ...(Array.isArray(postWithMedia.mediaUrls) ? postWithMedia.mediaUrls : []),
+    ...(Array.isArray(postWithMedia.images)
+      ? postWithMedia.images.map((image) => (
+        typeof image === 'string' ? image : image.imageUrl ?? image.url
+      ))
+      : []),
+    post.imageUrl,
+  ].filter((url): url is string => Boolean(url?.trim()));
+
+  return imageUrls[0];
 }
 
 export function usePlacePreviewImages(places: RecommendedPlace[]) {
@@ -54,6 +75,7 @@ export function usePlacePreviewImages(places: RecommendedPlace[]) {
 
   return useMemo(() => {
     const imageUrlsByPlaceId: Record<string, string> = {};
+    const isLoadingByPlaceId: Record<string, boolean> = {};
 
     places.forEach((place) => {
       const imageUrl = getInlinePreviewImage(place);
@@ -65,15 +87,22 @@ export function usePlacePreviewImages(places: RecommendedPlace[]) {
 
     previewQueries.forEach((query, index) => {
       const placeId = placeIds[index];
+      const placeKey = String(placeId);
       const previewPost = query.data?.posts.find((post) => (
-        Number(post.placeId) === placeId && Boolean(post.imageUrl)
+        Number(post.placeId) === placeId && Boolean(getPostPreviewImage(post))
       ));
+      const previewImageUrl = previewPost ? getPostPreviewImage(previewPost) : undefined;
 
-      if (previewPost?.imageUrl && !imageUrlsByPlaceId[String(placeId)]) {
-        imageUrlsByPlaceId[String(placeId)] = previewPost.imageUrl;
+      if (previewImageUrl && !imageUrlsByPlaceId[placeKey]) {
+        imageUrlsByPlaceId[placeKey] = previewImageUrl;
       }
+
+      isLoadingByPlaceId[placeKey] = !imageUrlsByPlaceId[placeKey] && query.isLoading;
     });
 
-    return imageUrlsByPlaceId;
+    return {
+      imageUrlsByPlaceId,
+      isLoadingByPlaceId,
+    };
   }, [placeIds, places, previewQueries]);
 }
