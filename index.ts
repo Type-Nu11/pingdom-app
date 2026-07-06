@@ -1,5 +1,6 @@
 import { registerRootComponent } from 'expo';
 
+import './src/i18n';
 import App from './App';
 import { parseNotificationRoute } from './src/features/firebase/utils/notificationPayload';
 import { getFirebaseMessagingRuntime } from './src/features/firebase/utils/firebaseMessaging';

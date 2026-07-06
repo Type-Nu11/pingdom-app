@@ -42,6 +42,23 @@ const resources = {
         subtitle: "Let's find hidden\nplaces in Korea!",
         button: 'Get Started',
       },
+      map: {
+        search: {
+          placeholder: 'Enter a search term...',
+          accessibilityLabel: 'Enter a search term',
+        },
+        categories: {
+          food: 'Food',
+          music: 'Music',
+          fashion: 'Fashion',
+          game: 'Game',
+        },
+        actions: {
+          likedPlaces: 'View liked places',
+          savedPlaces: 'View saved places',
+          addPlace: 'Post place',
+        },
+      },
       apiErrors: {
         networkError: "Couldn't connect to the server. Please check your network connection.",
         sessionExpired: 'Your session has expired. Please log in again.',
@@ -87,6 +104,23 @@ const resources = {
         title: '오직 핑덤',
         subtitle: '한국의 숨은 장소를\n찾아보세요!',
         button: '시작하기',
+      },
+      map: {
+        search: {
+          placeholder: '검색어를 입력하세요...',
+          accessibilityLabel: '검색어를 입력하세요',
+        },
+        categories: {
+          food: '음식',
+          music: '음악',
+          fashion: '패션',
+          game: '게임',
+        },
+        actions: {
+          likedPlaces: '좋아요 장소 보기',
+          savedPlaces: '저장한 장소 보기',
+          addPlace: '게시 하기',
+        },
       },
       apiErrors: {
         networkError: '서버에 연결하지 못했어요. 네트워크 상태를 확인해 주세요.',
@@ -134,6 +168,23 @@ const resources = {
         subtitle: '韓国の隠れた場所を\n見つけましょう！',
         button: 'はじめる',
       },
+      map: {
+        search: {
+          placeholder: '検索語を入力してください...',
+          accessibilityLabel: '検索語を入力してください',
+        },
+        categories: {
+          food: 'グルメ',
+          music: '音楽',
+          fashion: 'ファッション',
+          game: 'ゲーム',
+        },
+        actions: {
+          likedPlaces: 'いいねした場所を見る',
+          savedPlaces: '保存した場所を見る',
+          addPlace: '投稿する',
+        },
+      },
       apiErrors: {
         networkError: 'サーバーに接続できませんでした。ネットワーク状態をご確認ください。',
         sessionExpired: 'セッションが期限切れです。もう一度ログインしてください。',
@@ -179,6 +230,23 @@ const resources = {
         title: 'Only Pingdom',
         subtitle: '发现韩国的隐藏景点！',
         button: '开始使用',
+      },
+      map: {
+        search: {
+          placeholder: '请输入搜索词...',
+          accessibilityLabel: '请输入搜索词',
+        },
+        categories: {
+          food: '美食',
+          music: '音乐',
+          fashion: '时尚',
+          game: '游戏',
+        },
+        actions: {
+          likedPlaces: '查看喜欢的地点',
+          savedPlaces: '查看已保存地点',
+          addPlace: '发布',
+        },
       },
       apiErrors: {
         networkError: '无法连接到服务器,请检查网络连接。',
@@ -226,6 +294,23 @@ const resources = {
         subtitle: 'Cùng khám phá những địa điểm\nẩn giấu tại Hàn Quốc!',
         button: 'Bắt đầu',
       },
+      map: {
+        search: {
+          placeholder: 'Nhập từ khóa tìm kiếm...',
+          accessibilityLabel: 'Nhập từ khóa tìm kiếm',
+        },
+        categories: {
+          food: 'Ẩm thực',
+          music: 'Âm nhạc',
+          fashion: 'Thời trang',
+          game: 'Trò chơi',
+        },
+        actions: {
+          likedPlaces: 'Xem địa điểm đã thích',
+          savedPlaces: 'Xem địa điểm đã lưu',
+          addPlace: 'Đăng',
+        },
+      },
       apiErrors: {
         networkError: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.',
         sessionExpired: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
@@ -271,6 +356,23 @@ const resources = {
         title: 'Only Pingdom',
         subtitle: 'มาค้นหาสถานที่ลับ\nในเกาหลีกันเถอะ!',
         button: 'เริ่มต้นใช้งาน',
+      },
+      map: {
+        search: {
+          placeholder: 'ป้อนคำค้นหา...',
+          accessibilityLabel: 'ป้อนคำค้นหา',
+        },
+        categories: {
+          food: 'อาหาร',
+          music: 'เพลง',
+          fashion: 'แฟชั่น',
+          game: 'เกม',
+        },
+        actions: {
+          likedPlaces: 'ดูสถานที่ที่ถูกใจ',
+          savedPlaces: 'ดูสถานที่ที่บันทึกไว้',
+          addPlace: 'โพสต์',
+        },
       },
       apiErrors: {
         networkError: 'เชื่อมต่อกับเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบการเชื่อมต่อเครือข่าย',

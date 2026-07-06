@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CategoryChips from '../components/CategoryChips';
 import KakaoMapCard, { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
@@ -40,6 +41,36 @@ import type { MapMarker, RecommendedPlace } from '../model/place.types';
 
 const SEARCH_FOCUS_MARKER_ID = 'search-focus-place';
 const COORDINATE_MATCH_THRESHOLD = 0.00015;
+const I18N_LANGUAGE_ALIASES: Record<string, string> = {
+  chinese: 'zh',
+  english: 'en',
+  japanese: 'ja',
+  korean: 'ko',
+  thai: 'th',
+  vietnamese: 'vi',
+  '中文': 'zh',
+  '日本語': 'ja',
+  '한국어': 'ko',
+  'ภาษาไทย': 'th',
+  'tiếng việt': 'vi',
+};
+const SUPPORTED_I18N_LANGUAGES = new Set(['en', 'ko', 'ja', 'zh', 'vi', 'th']);
+
+const normalizeI18nLanguage = (language: string | undefined | null) => {
+  const normalized = language?.trim().toLowerCase();
+
+  if (!normalized) {
+    return null;
+  }
+
+  const baseLanguage = normalized.split('-')[0];
+
+  if (SUPPORTED_I18N_LANGUAGES.has(baseLanguage)) {
+    return baseLanguage;
+  }
+
+  return I18N_LANGUAGE_ALIASES[normalized] ?? null;
+};
 
 const isSamePlaceCoordinate = (
   a: { latitude: number; longitude: number },
@@ -80,6 +111,7 @@ export default function MapScreen({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchFocusPlace, setSearchFocusPlace] = useState<MapSearchSelection | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const { i18n } = useTranslation();
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
   const { isError: isPlacesError, markers, places } = usePlaces();
@@ -101,6 +133,13 @@ export default function MapScreen({
   const { togglePostLike } = usePostLike();
   const { reportPost } = usePostReport();
   const { profile } = useProfile();
+  useEffect(() => {
+    const nextLanguage = normalizeI18nLanguage(profile?.language);
+
+    if (nextLanguage && i18n.language !== nextLanguage) {
+      void i18n.changeLanguage(nextLanguage);
+    }
+  }, [i18n, profile?.language]);
   const selectedPlace = useMemo(
     () => (
       places.find((place) => String(place.id) === selectedMarkerId)

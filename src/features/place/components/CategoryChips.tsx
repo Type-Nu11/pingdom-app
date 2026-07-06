@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { SvgProps } from 'react-native-svg';
 import { clamp } from '../constants/mapLayout';
 
@@ -9,6 +10,7 @@ export type CategoryChipItem = {
   iconWidth: number;
   id: string;
   label: string;
+  labelKey?: string;
 };
 
 type CategoryChipsProps = {
@@ -26,6 +28,7 @@ const CategoryChips = ({
   topPaddingX,
   uiScale,
 }: CategoryChipsProps) => {
+  const { t } = useTranslation();
   const shadowGutter = Math.round(clamp(12 * uiScale, 8, 12));
 
   return (
@@ -70,7 +73,9 @@ const CategoryChips = ({
               },
             ]}
           >
-            {category.label}
+            {category.labelKey
+              ? t(category.labelKey, { defaultValue: category.label })
+              : category.label}
           </Text>
         </Pressable>
       ))}
