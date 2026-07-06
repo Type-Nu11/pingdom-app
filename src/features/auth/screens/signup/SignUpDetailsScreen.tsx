@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { colors } from '../../../../styles/colors';
+import useLogin from '../../hooks/useLogin';
 import useSignup from '../../hooks/useSignup';
 import {
   validateEmail,
@@ -33,7 +34,6 @@ const BG = colors.bgAssistive;
 
 type SignUpDetailsScreenProps = {
   onBack?: () => void;
-  onVerify?: (email: string, username: string, password: string) => void;
   onboardingData?: OnboardingData;
 };
 
@@ -46,7 +46,7 @@ type FieldError = {
 
 type InnerStep = 'account' | 'password';
 
-export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }: SignUpDetailsScreenProps) {
+export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDetailsScreenProps) {
   const [innerStep, setInnerStep] = useState<InnerStep>('account');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -58,13 +58,21 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
 
   const {
     signup,
-    isSubmitting,
+    isSubmitting: isSigningUp,
     errorMessage: signupErrorMessage,
     clearError: clearSignupError,
   } = useSignup();
+  const {
+    login,
+    isSubmitting: isLoggingIn,
+    errorMessage: loginErrorMessage,
+    clearError: clearLoginError,
+  } = useLogin();
 
   const isStep1Filled = username.trim() && email.trim();
   const isStep2Filled = password.trim() && passwordConfirm.trim();
+  const isSubmitting = isSigningUp || isLoggingIn;
+  const submitErrorMessage = signupErrorMessage ?? loginErrorMessage;
 
   const validateStep1 = () => {
     const newErrors: FieldError = {
@@ -87,6 +95,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
   const handleStep1Next = () => {
     if (!validateStep1()) return;
     clearSignupError();
+    clearLoginError();
     setInnerStep('password');
   };
 
@@ -94,6 +103,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
     if (!validateStep2() || isSubmitting) return;
 
     clearSignupError();
+    clearLoginError();
 
     const signupResult = await signup({
       username: username.trim(),
@@ -105,7 +115,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
     });
 
     if (!signupResult) return;
-    onVerify?.(email.trim(), username.trim(), password);
+    await login({ username: username.trim(), password });
   };
 
   const handleBack = () => {
@@ -128,7 +138,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
             <SvgXml xml={ESCAPE_SVG} width={12} height={21} />
           </Pressable>
           <View style={styles.headerCenter}>
-            <ProgressDots total={3} current={1} />
+            <ProgressDots total={2} current={0} />
           </View>
           <View style={styles.headerSide} />
         </View>
@@ -206,7 +216,7 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
           <SvgXml xml={ESCAPE_SVG} width={12} height={21} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <ProgressDots total={3} current={2} />
+          <ProgressDots total={2} current={1} />
         </View>
         <View style={styles.headerSide} />
       </View>
@@ -264,6 +274,9 @@ export default function SignUpDetailsScreen({ onBack, onVerify, onboardingData }
               </Text>
             </View>
           </View>
+          {submitErrorMessage ? (
+            <Text style={styles.submitError}>{submitErrorMessage}</Text>
+          ) : null}
         </View>
 
         <Pressable
@@ -359,6 +372,12 @@ const styles = StyleSheet.create({
   },
   helperHidden: {
     color: 'transparent',
+  },
+  submitError: {
+    color: ERROR,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
   },
   button: {
     height: 64,

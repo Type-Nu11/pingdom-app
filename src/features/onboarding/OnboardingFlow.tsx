@@ -2,7 +2,6 @@ import i18n from 'i18next';
 import React, { useState } from 'react';
 import { LoginFormScreen } from '../auth/screens/login';
 import SignUpDetailsScreen from '../auth/screens/signup/SignUpDetailsScreen';
-import SignUpEmailVerifyScreen from '../auth/screens/signup/SignUpEmailVerifyScreen';
 import LogInForeignScreen from './LogInForeignScreen';
 import LogInKrScreen from './LogInKrScreen';
 import SelectAgeScreen from './SelectAgeScreen';
@@ -21,8 +20,7 @@ type Step =
   | 'login-kr'
   | 'login-foreign'
   | 'login'
-  | 'signup-details'
-  | 'signup-email-verify';
+  | 'signup-details';
 
 export default function OnboardingFlow() {
   const [step, setStep] = useState<Step>('first');
@@ -30,9 +28,6 @@ export default function OnboardingFlow() {
   const [country, setCountry] = useState<Country>('US');
   const [birthYear, setBirthYear] = useState(2000);
   const [gender, setGender] = useState<Gender>('male');
-  const [verifyEmail, setVerifyEmail] = useState('');
-  const [verifyUsername, setVerifyUsername] = useState('');
-  const [verifyPassword, setVerifyPassword] = useState('');
 
   const loginStep = country === 'KR' ? 'login-kr' : 'login-foreign';
 
@@ -109,22 +104,6 @@ export default function OnboardingFlow() {
         <SignUpDetailsScreen
           onBack={() => setStep(loginStep)}
           onboardingData={{ language, country, birthYear, gender }}
-          onVerify={(email, username, password) => {
-            setVerifyEmail(email);
-            setVerifyUsername(username);
-            setVerifyPassword(password);
-            setStep('signup-email-verify');
-          }}
-        />
-      );
-
-    case 'signup-email-verify':
-      return (
-        <SignUpEmailVerifyScreen
-          email={verifyEmail}
-          username={verifyUsername}
-          password={verifyPassword}
-          onBack={() => setStep('signup-details')}
         />
       );
   }
