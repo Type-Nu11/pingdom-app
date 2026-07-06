@@ -81,18 +81,4 @@ export const OPEN_SOURCE_LICENSES = [
   { license: 'BSD, MIT, Apache 2.0', name: 'Glide' },
 ];
 
-export const BLOCKED_USERS = [
-  { blockedAt: '2026.05.12 차단', id: 'user_ho92' },
-  { blockedAt: '2026.04.03 차단', id: 'travel_kim' },
-  { blockedAt: '2026.02.21 차단', id: 'spot_review99' },
-];
-
-export const REPORT_HISTORY = [
-  { status: 'pending' as const, submittedAt: '2026.06.28 접수', title: '스팸성 댓글 신고' },
-  { status: 'done' as const, submittedAt: '2026.06.02 접수', title: '부적절한 게시물 신고' },
-  { status: 'done' as const, submittedAt: '2026.05.11 접수', title: '사칭 계정 신고' },
-];
-
-export const CONTACT_TYPES = ['계정 관련', '버그 신고', '결제 관련', '기타'];
-
 export const APP_VERSION = '1.0.0';
