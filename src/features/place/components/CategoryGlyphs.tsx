@@ -6,15 +6,15 @@ const PINK = '#FF4A75';
 
 export const FoodGlyph = (props: SvgProps) => (
   <Svg viewBox="0 0 15 18" fill="none" {...props}>
-    <Line x1="2" y1="1" x2="2" y2="8" stroke={PINK} strokeWidth="2" strokeLinecap="round" />
-    <Line x1="5" y1="1" x2="5" y2="8" stroke={PINK} strokeWidth="2" strokeLinecap="round" />
-    <Line x1="8" y1="1" x2="8" y2="8" stroke={PINK} strokeWidth="2" strokeLinecap="round" />
-    <Line x1="2" y1="8" x2="8" y2="8" stroke={PINK} strokeWidth="2" strokeLinecap="round" />
-    <Line x1="5" y1="8" x2="5" y2="17" stroke={PINK} strokeWidth="2" strokeLinecap="round" />
+    <Line x1="2" y1="1.2" x2="2" y2="8" stroke={PINK} strokeWidth="1.8" strokeLinecap="round" />
+    <Line x1="5" y1="1.2" x2="5" y2="8" stroke={PINK} strokeWidth="1.8" strokeLinecap="round" />
+    <Line x1="8" y1="1.2" x2="8" y2="8" stroke={PINK} strokeWidth="1.8" strokeLinecap="round" />
+    <Line x1="2" y1="8" x2="8" y2="8" stroke={PINK} strokeWidth="1.8" strokeLinecap="round" />
+    <Line x1="5" y1="8" x2="5" y2="17" stroke={PINK} strokeWidth="1.8" strokeLinecap="round" />
     <Path
       d="M12.5 1C10.5 3 10.2 6.5 12.3 8.4V17"
       stroke={PINK}
-      strokeWidth="2"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -35,7 +35,7 @@ export const FashionGlyph = (props: SvgProps) => (
     <Path
       d="M12 2C14.2 2 14.2 5.2 12 5.2V8M12 8L3 15H21L12 8Z"
       stroke={PINK}
-      strokeWidth="2.4"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -44,9 +44,9 @@ export const FashionGlyph = (props: SvgProps) => (
 
 export const GameGlyph = (props: SvgProps) => (
   <Svg viewBox="0 0 22 19" fill="none" {...props}>
-    <Rect x="1.5" y="4.5" width="19" height="13" rx="6.5" stroke={PINK} strokeWidth="3" />
-    <Line x1="7" y1="8" x2="7" y2="14" stroke={PINK} strokeWidth="2.4" strokeLinecap="round" />
-    <Line x1="4" y1="11" x2="10" y2="11" stroke={PINK} strokeWidth="2.4" strokeLinecap="round" />
+    <Rect x="1.5" y="4.8" width="19" height="12.2" rx="6.1" stroke={PINK} strokeWidth="2.4" />
+    <Line x1="7" y1="8.4" x2="7" y2="13.4" stroke={PINK} strokeWidth="2" strokeLinecap="round" />
+    <Line x1="4.5" y1="10.9" x2="9.5" y2="10.9" stroke={PINK} strokeWidth="2" strokeLinecap="round" />
     <Circle cx="15" cy="9" r="1.5" fill={PINK} />
     <Circle cx="17.5" cy="13" r="1.5" fill={PINK} />
   </Svg>

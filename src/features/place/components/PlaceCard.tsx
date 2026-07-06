@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 type PlaceCardProps = {
   address?: string;
   dimmed?: boolean;
   distanceMeters?: number;
+  imageUrl?: string;
   name?: string;
 };
 
@@ -24,22 +25,34 @@ const PlaceCard = ({
   address,
   dimmed = false,
   distanceMeters,
+  imageUrl,
   name,
 }: PlaceCardProps) => {
   return (
     <View style={[styles.card, dimmed && styles.dimmedCard]}>
-      <View style={styles.skyline}>
-        <View style={[styles.tower, styles.towerShort]} />
-        <View style={[styles.tower, styles.towerTall]} />
-        <View style={[styles.tower, styles.towerMid]} />
-        <View style={[styles.tower, styles.towerTiny]} />
-      </View>
-      <View style={styles.crowd}>
-        <View style={styles.dot} />
-        <View style={styles.dot} />
-        <View style={styles.dot} />
-        <View style={styles.dot} />
-      </View>
+      {imageUrl ? (
+        <Image
+          resizeMode="cover"
+          source={{ uri: imageUrl }}
+          style={styles.previewImage}
+        />
+      ) : (
+        <>
+          <View style={styles.skyline}>
+            <View style={[styles.tower, styles.towerShort]} />
+            <View style={[styles.tower, styles.towerTall]} />
+            <View style={[styles.tower, styles.towerMid]} />
+            <View style={[styles.tower, styles.towerTiny]} />
+          </View>
+          <View style={styles.crowd}>
+            <View style={styles.dot} />
+            <View style={styles.dot} />
+            <View style={styles.dot} />
+            <View style={styles.dot} />
+          </View>
+        </>
+      )}
+      <View style={styles.imageShade} />
       {name ? (
         <View style={styles.textOverlay}>
           <Text numberOfLines={1} style={styles.name}>{name}</Text>
@@ -63,6 +76,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 9,
     width: 78,
+  },
+  previewImage: {
+    ...StyleSheet.absoluteFillObject,
+    height: undefined,
+    width: undefined,
+  },
+  imageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
   },
   name: {
     color: '#fff',
