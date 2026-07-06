@@ -16,7 +16,10 @@ const PlaceRail = ({
   places,
 }: PlaceRailProps) => {
   const visiblePlaces = places.slice(0, 5);
-  const previewImages = usePlacePreviewImages(visiblePlaces);
+  const {
+    imageUrlsByPlaceId,
+    isLoadingByPlaceId,
+  } = usePlacePreviewImages(visiblePlaces);
 
   return (
     <View style={styles.placeRail}>
@@ -43,7 +46,8 @@ const PlaceRail = ({
                 address={place.address}
                 dimmed={index === 4 && places.length > 5}
                 distanceMeters={place.distanceMeters}
-                imageUrl={previewImages[String(place.id)]}
+                imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                isImageLoading={isLoadingByPlaceId[String(place.id)]}
                 name={place.name}
               />
             </Pressable>
