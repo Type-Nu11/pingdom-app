@@ -11,6 +11,8 @@ type MapActionButtonsProps = {
   bottom: number;
   left: number;
   onAddPlace?: () => void;
+  onOpenLikedPlaces?: () => void;
+  onOpenSavedPlaces?: () => void;
   right: number;
   sheetTranslateY: Animated.Value;
   smallActionHeight: number;
@@ -23,6 +25,8 @@ const MapActionButtons = ({
   bottom,
   left,
   onAddPlace,
+  onOpenLikedPlaces,
+  onOpenSavedPlaces,
   right,
   sheetTranslateY,
   smallActionHeight,
@@ -48,6 +52,7 @@ const MapActionButtons = ({
           accessibilityRole="button"
           accessibilityLabel={t('map.actions.likedPlaces', { defaultValue: '좋아요 장소 보기' })}
           hitSlop={8}
+          onPress={onOpenLikedPlaces}
           style={styles.quickActionButton}
         >
           <LikedIcon height={smallActionHeight} width={smallActionWidth} />
@@ -56,6 +61,7 @@ const MapActionButtons = ({
           accessibilityRole="button"
           accessibilityLabel={t('map.actions.savedPlaces', { defaultValue: '저장한 장소 보기' })}
           hitSlop={8}
+          onPress={onOpenSavedPlaces}
           style={styles.quickActionButton}
         >
           <SavedIcon height={smallActionHeight} width={smallActionWidth} />

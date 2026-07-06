@@ -98,7 +98,9 @@ type MapScreenProps = {
   } | null;
   onCreatePlace?: () => void;
   onClearOpenedBookmarkedPlace?: () => void;
+  onOpenLikedPlaces?: () => void;
   onOpenProfile?: () => void;
+  onOpenSavedPlaces?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
 
@@ -106,7 +108,9 @@ export default function MapScreen({
   notificationLikeContext,
   onCreatePlace,
   onClearOpenedBookmarkedPlace,
+  onOpenLikedPlaces,
   onOpenProfile,
+  onOpenSavedPlaces,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
@@ -386,6 +390,8 @@ export default function MapScreen({
         bottom={sheetExpandedHeight + ACTION_BOTTOM_GAP}
         left={sideGap}
         onAddPlace={onCreatePlace}
+        onOpenLikedPlaces={onOpenLikedPlaces}
+        onOpenSavedPlaces={onOpenSavedPlaces}
         right={rightGap}
         sheetTranslateY={sheetTranslateY}
         smallActionHeight={smallActionHeight}
