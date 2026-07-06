@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { recordApi } from '../../record/api/recordApi';
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
@@ -94,6 +94,21 @@ export function usePostBackedPlaces() {
 
     return Array.from(postsByPlaceId.values()).map(toPostBackedPlace);
   }, [postsQuery.data?.posts]);
+
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+
+    console.log('[usePostBackedPlaces]', {
+      isError: postsQuery.isError,
+      isLoading: postsQuery.isLoading,
+      placesCount: places.length,
+      postsCount: postsQuery.data?.posts.length ?? 0,
+      postsWithImageCount: (postsQuery.data?.posts ?? [])
+        .filter((post) => Boolean(post.imageUrl?.trim())).length,
+    });
+  }, [places.length, postsQuery.data?.posts, postsQuery.isError, postsQuery.isLoading]);
 
   return {
     error: postsQuery.error,

@@ -125,6 +125,30 @@ const RecommendedPlaceGrid = ({
       : visiblePlaces.length === 0
         ? '추천 장소가 아직 없어요'
         : null;
+  const imageCount = Object.keys(imageUrlsByPlaceId).length;
+
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+
+    console.log('[RecommendedPlaceGrid]', {
+      fallbackImageUrl,
+      imageCount,
+      isError,
+      isLoading,
+      placeIds: visiblePlaces.map((place) => place.id),
+      placesCount: places.length,
+      visiblePlacesCount: visiblePlaces.length,
+    });
+  }, [
+    fallbackImageUrl,
+    imageCount,
+    isError,
+    isLoading,
+    places.length,
+    visiblePlaces,
+  ]);
 
   if (stateText) {
     return (

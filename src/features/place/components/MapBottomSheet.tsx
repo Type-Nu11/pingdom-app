@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Animated,
   GestureResponderHandlers,
@@ -44,6 +44,26 @@ const MapBottomSheet = ({
 }: MapBottomSheetProps) => {
   const [activeTab, setActiveTab] = useState<BottomSheetTab>('recommend');
   const isHotTab = activeTab === 'hot';
+
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+
+    console.log('[MapBottomSheet]', {
+      activeTab,
+      isRecommendationsError,
+      isRecommendationsLoading,
+      placesCount: places.length,
+      recommendedPlacesCount: recommendedPlaces.length,
+    });
+  }, [
+    activeTab,
+    isRecommendationsError,
+    isRecommendationsLoading,
+    places.length,
+    recommendedPlaces.length,
+  ]);
 
   return (
     <Animated.View
