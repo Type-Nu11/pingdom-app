@@ -1,17 +1,30 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import axios from 'axios';
+import { profileApi } from '../../profile/api/profileApi';
 import SettingsNavBar from './SettingsNavBar';
 
 type PasswordChangeViewProps = {
   onBack: () => void;
 };
 
+function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { errors?: Record<string, string>; message?: string } | undefined;
+    const fieldMessage = data?.errors?.newPassword ?? data?.errors?.currentPassword ?? data?.errors?.confirmPassword;
+    return fieldMessage ?? data?.message ?? '비밀번호 변경에 실패했습니다.';
+  }
+
+  return '비밀번호 변경에 실패했습니다.';
+}
+
 const PasswordChangeView = ({ onBack }: PasswordChangeViewProps) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert('모든 항목을 입력해주세요.');
       return;
@@ -22,8 +35,15 @@ const PasswordChangeView = ({ onBack }: PasswordChangeViewProps) => {
       return;
     }
 
-    Alert.alert('비밀번호가 변경되었습니다');
-    onBack();
+    setIsSubmitting(true);
+    try {
+      await profileApi.changePassword({ confirmPassword, currentPassword, newPassword });
+      Alert.alert('비밀번호가 변경되었습니다');
+      onBack();
+    } catch (error) {
+      setIsSubmitting(false);
+      Alert.alert(getErrorMessage(error));
+    }
   };
 
   return (
@@ -63,8 +83,12 @@ const PasswordChangeView = ({ onBack }: PasswordChangeViewProps) => {
             onChangeText={setConfirmPassword}
           />
         </View>
-        <Pressable style={styles.primaryButton} onPress={handleSubmit}>
-          <Text style={styles.primaryButtonText}>변경하기</Text>
+        <Pressable
+          disabled={isSubmitting}
+          style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}
+          onPress={handleSubmit}
+        >
+          <Text style={styles.primaryButtonText}>{isSubmitting ? '변경 중...' : '변경하기'}</Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -101,6 +125,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 20,
     marginTop: 24,
+  },
+  primaryButtonDisabled: {
+    backgroundColor: '#d1d4d5',
   },
   primaryButtonText: {
     color: '#ffffff',
