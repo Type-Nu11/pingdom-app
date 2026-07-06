@@ -59,7 +59,7 @@ export function usePlacePreviewImages(places: RecommendedPlace[]) {
   const previewQueries = useQueries({
     queries: placeIds.map((placeId) => {
       const queryParams = {
-        limit: 5,
+        limit: 20,
         page: 1,
         placeId,
       };
