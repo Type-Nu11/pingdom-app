@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  PanResponder,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -109,17 +111,27 @@ export default function MapScreen({
   const [reportedPostIds, setReportedPostIds] = useState<Record<string, boolean>>({});
   const [reportPendingPostIds, setReportPendingPostIds] = useState<Record<string, boolean>>({});
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchFocusPlace, setSearchFocusPlace] = useState<MapSearchSelection | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const { i18n } = useTranslation();
   const { width, height } = useWindowDimensions();
   const { center, userLat, userLng, followUser } = useCurrentLocation();
-  const { isError: isPlacesError, markers, places } = usePlaces();
-  const { hotPlaceIds } = useHotPlaceIds();
+  const {
+    isError: isPlacesError,
+    markers,
+    places,
+    refetch: refetchPlaces,
+  } = usePlaces();
+  const {
+    hotPlaceIds,
+    refetch: refetchHotPlaceIds,
+  } = useHotPlaceIds();
   const {
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
     places: recommendedPlaces,
+    refetch: refetchRecommendations,
     recommendationRequestId,
     recommendationVersion,
   } = usePlaceRecommendations({
@@ -190,6 +202,31 @@ export default function MapScreen({
     posts: selectedPlacePosts,
     refetch: refetchSelectedPlacePosts,
   } = usePlacePosts(Number.isFinite(selectedPlaceId) ? selectedPlaceId : null);
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) {
+      return;
+    }
+
+    setIsRefreshing(true);
+
+    try {
+      await Promise.all([
+        refetchPlaces(),
+        refetchRecommendations(),
+        refetchHotPlaceIds(),
+        Number.isFinite(selectedPlaceId) ? refetchSelectedPlacePosts() : Promise.resolve(),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    isRefreshing,
+    refetchHotPlaceIds,
+    refetchPlaces,
+    refetchRecommendations,
+    refetchSelectedPlacePosts,
+    selectedPlaceId,
+  ]);
   const uiScale = Math.min(width / BASE_SCREEN_WIDTH, height / BASE_SCREEN_HEIGHT, 1);
   const sheetExpandedHeight = Math.round(
     clamp(Math.min(BASE_SHEET_EXPANDED_HEIGHT * uiScale, height * 0.74), 420, BASE_SHEET_EXPANDED_HEIGHT)
@@ -214,6 +251,20 @@ export default function MapScreen({
   const { isExpanded, panHandlers, sheetTranslateY, toggleSheet } = useBottomSheet({
     collapsedTranslateY: sheetCollapsedTranslateY,
   });
+  const refreshPanResponder = useMemo(
+    () => PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => (
+        !isRefreshing
+        && !isSearchOpen
+        && gesture.dy > 72
+        && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.8
+      ),
+      onPanResponderRelease: () => {
+        void handleRefresh();
+      },
+    }),
+    [handleRefresh, isRefreshing, isSearchOpen]
+  );
   useEffect(() => {
     if (openedBookmarkedPlaceId !== undefined && openedBookmarkedPlaceId !== null) {
       setSelectedMarkerId(String(openedBookmarkedPlaceId));
@@ -291,6 +342,7 @@ export default function MapScreen({
       <View style={styles.mapTint} pointerEvents="none" />
       <SafeAreaView style={styles.safeArea} pointerEvents="box-none">
         <View
+          {...refreshPanResponder.panHandlers}
           style={[
             styles.topPanel,
             { paddingHorizontal: topPaddingX, paddingTop: topPaddingTop },
@@ -318,6 +370,14 @@ export default function MapScreen({
           ) : null}
         </View>
       </SafeAreaView>
+      {isRefreshing ? (
+        <View
+          style={[styles.refreshIndicator, { top: topPaddingTop + 14 }]}
+          pointerEvents="none"
+        >
+          <ActivityIndicator color="#ff1956" />
+        </View>
+      ) : null}
 
       <MapActionButtons
         addIconSize={addIconSize}
@@ -438,6 +498,22 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     ...StyleSheet.absoluteFillObject,
+  },
+  refreshIndicator: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    elevation: 4,
+    height: 36,
+    justifyContent: 'center',
+    left: '50%',
+    marginLeft: -18,
+    position: 'absolute',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    width: 36,
+    zIndex: 30,
   },
   topPanel: {
     paddingHorizontal: 22,
