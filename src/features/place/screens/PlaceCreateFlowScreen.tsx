@@ -45,7 +45,7 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
   const { profile } = useProfile();
   const { width, height } = useWindowDimensions();
   const maxContentWidth = Math.min(width, 560);
-  const mapHeight = Math.round(clamp(height * 0.46, 310, 430));
+  const mapHeight = Math.round(clamp(height * 0.34, 240, 360));
 
   const goBack = () => {
     if (step === 1) {

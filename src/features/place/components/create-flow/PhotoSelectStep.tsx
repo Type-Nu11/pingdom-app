@@ -18,13 +18,16 @@ const PhotoSelectStep = ({ isPickingPhoto, onPickPhoto, selectedPhoto }: PhotoSe
       </Text>
 
       <View style={styles.previewCard}>
-        <ExamplePhoto uri={selectedPhoto?.uri} />
-        {!selectedPhoto ? (
-          <View pointerEvents="none" style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>아직 선택된 사진이 없어요</Text>
-            <Text style={styles.emptyStateBody}>아래 버튼을 눌러 사진함에서 사진을 골라 주세요.</Text>
+        {selectedPhoto ? (
+          <ExamplePhoto uri={selectedPhoto.uri} />
+        ) : (
+          <View style={styles.placeholderPhoto}>
+            <View pointerEvents="none" style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>아직 선택된 사진이 없어요</Text>
+              <Text style={styles.emptyStateBody}>아래 버튼을 눌러 사진함에서 사진을 골라 주세요.</Text>
+            </View>
           </View>
-        ) : null}
+        )}
       </View>
 
       <Button
@@ -67,21 +70,27 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '82%',
   },
+  placeholderPhoto: {
+    aspectRatio: 1,
+    backgroundColor: '#eef0f4',
+    borderColor: '#dedfe6',
+    borderWidth: StyleSheet.hairlineWidth,
+    width: '100%',
+  },
   emptyState: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    backgroundColor: 'rgba(17, 18, 24, 0.28)',
     justifyContent: 'center',
     paddingHorizontal: 26,
   },
   emptyStateTitle: {
-    color: '#fff',
+    color: '#3e414b',
     fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
   },
   emptyStateBody: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#666b78',
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,

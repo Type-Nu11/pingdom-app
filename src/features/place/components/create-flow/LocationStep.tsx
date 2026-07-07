@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MypingIcon from '../../../../assets/icons/map/Myping.svg';
 import type { KakaoLocalSearchItem } from '../../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
@@ -145,7 +145,12 @@ const LocationStep = ({
   };
 
   return (
-    <View style={styles.stepBody}>
+    <ScrollView
+      contentContainerStyle={styles.stepContent}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      style={styles.stepBody}
+    >
       <Text style={styles.title}>새로 게시할 장소의{'\n'}위치를 선택해 주세요</Text>
       <View style={styles.searchBox}>
         <Pressable
@@ -250,13 +255,17 @@ const LocationStep = ({
           <Text style={styles.primaryButtonText}>{isSubmitting ? '확인 중...' : '선택'}</Text>
         </Pressable>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   stepBody: {
     flex: 1,
+  },
+  stepContent: {
+    flexGrow: 1,
+    paddingBottom: 18,
   },
   title: {
     color: '#3e414b',
@@ -360,7 +369,7 @@ const styles = StyleSheet.create({
   locationPanel: {
     backgroundColor: '#fff',
     paddingHorizontal: 34,
-    paddingBottom: 30,
+    paddingBottom: 42,
     paddingTop: 22,
   },
   selectedAddressPlaceholder: {

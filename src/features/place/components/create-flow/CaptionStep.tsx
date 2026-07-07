@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Button from '../../../../shared/components/Button';
 import type { PlaceCategory, PlaceUploadPhoto } from '../../model/place.types';
 import ExamplePhoto from './ExamplePhoto';
@@ -37,7 +37,12 @@ const CaptionStep = ({
   selectedPhoto,
   username,
 }: CaptionStepProps) => (
-  <View style={styles.captionBody}>
+  <ScrollView
+    contentContainerStyle={styles.captionContent}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator={false}
+    style={styles.captionBody}
+  >
     <View style={styles.authorRow}>
       <View style={styles.profileCircle}>
         <View style={styles.profileHead} />
@@ -89,12 +94,15 @@ const CaptionStep = ({
       style={styles.uploadButton}
       onPress={onUpload}
     />
-  </View>
+  </ScrollView>
 );
 
 const styles = StyleSheet.create({
   captionBody: {
     flex: 1,
+  },
+  captionContent: {
+    paddingBottom: 40,
   },
   categoryChip: {
     alignItems: 'center',
@@ -178,28 +186,33 @@ const styles = StyleSheet.create({
   heroPhoto: {
     alignItems: 'center',
     backgroundColor: '#05070d',
-    height: '46%',
+    aspectRatio: 1.08,
     justifyContent: 'center',
     overflow: 'hidden',
     width: '100%',
   },
   captionInput: {
+    backgroundColor: '#fff',
+    borderColor: '#dedfe4',
+    borderRadius: 16,
+    borderWidth: 1,
     color: '#111',
     fontSize: 16,
     fontWeight: '700',
-    minHeight: 96,
-    paddingHorizontal: 34,
-    paddingTop: 18,
+    marginHorizontal: 34,
+    marginTop: 18,
+    minHeight: 104,
+    paddingHorizontal: 16,
+    paddingTop: 14,
     textAlignVertical: 'top',
   },
   uploadButton: {
     alignSelf: 'center',
     backgroundColor: '#ff1956',
     borderRadius: 16,
-    bottom: 58,
     height: 66,
+    marginTop: 20,
     minHeight: 66,
-    position: 'absolute',
     width: '82%',
   },
   uploadText: {
