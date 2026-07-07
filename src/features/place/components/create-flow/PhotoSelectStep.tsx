@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Button from '../../../../shared/components/Button';
 import type { PlaceUploadPhoto } from '../../model/place.types';
 import ExamplePhoto from './ExamplePhoto';
@@ -10,11 +11,13 @@ type PhotoSelectStepProps = {
 };
 
 const PhotoSelectStep = ({ isPickingPhoto, onPickPhoto, selectedPhoto }: PhotoSelectStepProps) => {
+  const { t } = useTranslation();
+
   return (
     <ScrollView style={styles.photoScroll} contentContainerStyle={styles.photoContent}>
-      <Text style={styles.title}>새로 게시할 장소의{'\n'}사진을 선택해 주세요.</Text>
+      <Text style={styles.title}>{t('placeCreate.photo.title')}</Text>
       <Text style={styles.description}>
-        사진함 권한을 허용하면 내 휴대폰에 있는 사진을 불러와 업로드할 수 있어요.
+        {t('placeCreate.photo.description')}
       </Text>
 
       <View style={styles.previewCard}>
@@ -23,15 +26,15 @@ const PhotoSelectStep = ({ isPickingPhoto, onPickPhoto, selectedPhoto }: PhotoSe
         ) : (
           <View style={styles.placeholderPhoto}>
             <View pointerEvents="none" style={styles.emptyState}>
-              <Text style={styles.emptyStateTitle}>아직 선택된 사진이 없어요</Text>
-              <Text style={styles.emptyStateBody}>아래 버튼을 눌러 사진함에서 사진을 골라 주세요.</Text>
+              <Text style={styles.emptyStateTitle}>{t('placeCreate.photo.emptyTitle')}</Text>
+              <Text style={styles.emptyStateBody}>{t('placeCreate.photo.emptyBody')}</Text>
             </View>
           </View>
         )}
       </View>
 
       <Button
-        label={selectedPhoto ? '사진 다시 고르기' : '사진함에서 선택'}
+        label={selectedPhoto ? t('placeCreate.photo.chooseAgain') : t('placeCreate.photo.pickFromLibrary')}
         loading={isPickingPhoto}
         style={styles.pickButton}
         onPress={onPickPhoto}

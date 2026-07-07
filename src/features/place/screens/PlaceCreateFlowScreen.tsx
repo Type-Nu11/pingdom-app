@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CaptionStep from '../components/create-flow/CaptionStep';
 import PlaceCreateHeader from '../components/create-flow/PlaceCreateHeader';
@@ -31,6 +32,7 @@ type PlaceCreateFlowScreenProps = {
 };
 
 const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState<PlaceCreateStep>(1);
   const [selectedPlaceDraft, setSelectedPlaceDraft] = useState<PlaceCreateDraft | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PlaceUploadPhoto | null>(null);
@@ -58,7 +60,10 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
 
   const goNext = () => {
     if (step === 2 && !selectedPhoto) {
-      Alert.alert('사진을 먼저 선택해 주세요', '사진함에서 사진을 골라야 다음 단계로 이동할 수 있어요.');
+      Alert.alert(
+        t('placeCreate.alerts.photoRequiredTitle'),
+        t('placeCreate.alerts.photoRequiredBody')
+      );
       return;
     }
 
@@ -85,8 +90,8 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       setStep(2);
     } catch (error) {
       Alert.alert(
-        '장소 좌표 확인에 실패했어요',
-        getApiErrorMessage(error, '장소 좌표 토큰을 발급받지 못했습니다.')
+        t('placeCreate.alerts.coordinateFailedTitle'),
+        getApiErrorMessage(error, t('placeCreate.alerts.coordinateFailedFallback'))
       );
     }
   };
@@ -104,15 +109,18 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       if (!permission.granted) {
         if (!permission.canAskAgain) {
           Alert.alert(
-            '사진 권한이 꺼져 있어요',
-            '내 사진을 올리려면 설정에서 사진 접근 권한을 허용해 주세요.',
+            t('placeCreate.alerts.photoPermissionBlockedTitle'),
+            t('placeCreate.alerts.photoPermissionBlockedBody'),
             [
-              { text: '취소', style: 'cancel' },
-              { text: '설정 열기', onPress: () => void Linking.openSettings() },
+              { text: t('placeCreate.alerts.cancel'), style: 'cancel' },
+              { text: t('placeCreate.alerts.openSettings'), onPress: () => void Linking.openSettings() },
             ]
           );
         } else {
-          Alert.alert('사진 권한이 필요해요', '사진함에서 사진을 불러오려면 접근 권한을 허용해 주세요.');
+          Alert.alert(
+            t('placeCreate.alerts.photoPermissionTitle'),
+            t('placeCreate.alerts.photoPermissionBody')
+          );
         }
 
         return;
@@ -132,7 +140,10 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
       const asset = result.assets[0];
 
       if (!asset?.uri) {
-        Alert.alert('사진 선택에 실패했어요', '선택한 사진 정보를 읽지 못했습니다. 다시 시도해 주세요.');
+        Alert.alert(
+          t('placeCreate.alerts.photoSelectFailedTitle'),
+          t('placeCreate.alerts.photoSelectFailedBody')
+        );
         return;
       }
 
@@ -142,7 +153,10 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
         uri: asset.uri,
       });
     } catch {
-      Alert.alert('사진함을 열지 못했어요', '잠시 후 다시 시도해 주세요.');
+      Alert.alert(
+        t('placeCreate.alerts.photoLibraryFailedTitle'),
+        t('placeCreate.alerts.photoLibraryFailedBody')
+      );
     } finally {
       setIsPickingPhoto(false);
     }
@@ -161,15 +175,18 @@ const PlaceCreateFlowScreen = ({ onClose }: PlaceCreateFlowScreenProps) => {
         photo: selectedPhoto,
       });
 
-      Alert.alert('업로드 완료', `${selectedPlaceDraft.name} 게시물 업로드를 완료했어요.\n${result.record.message}`, [
-        { text: '확인', onPress: onClose },
+      Alert.alert(t('placeCreate.alerts.uploadSuccessTitle'), t('placeCreate.alerts.uploadSuccessBody', {
+        message: result.record.message,
+        placeName: selectedPlaceDraft.name,
+      }), [
+        { text: t('placeCreate.alerts.confirm'), onPress: onClose },
       ]);
     } catch (error) {
       const errorMessage = error instanceof Error && error.message === PLACE_POST_ALREADY_EXISTS_ERROR
-        ? '이미 이 장소에 게시글을 올렸어요.'
-        : getApiErrorMessage(error, '사진을 서버에 저장하지 못했습니다.');
+        ? t('placeCreate.alerts.uploadAlreadyExists')
+        : getApiErrorMessage(error, t('placeCreate.alerts.uploadFailedFallback'));
 
-      Alert.alert('사진 업로드에 실패했어요', errorMessage);
+      Alert.alert(t('placeCreate.alerts.uploadFailedTitle'), errorMessage);
     }
   };
 

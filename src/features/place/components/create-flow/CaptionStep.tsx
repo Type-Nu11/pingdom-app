@@ -1,17 +1,17 @@
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Button from '../../../../shared/components/Button';
 import type { PlaceCategory, PlaceUploadPhoto } from '../../model/place.types';
 import ExamplePhoto from './ExamplePhoto';
 
 const POST_CATEGORY_OPTIONS: Array<{
   id: PlaceCategory;
-  label: string;
 }> = [
-  { id: 'food', label: 'Food' },
-  { id: 'music', label: 'Music' },
-  { id: 'fashion', label: 'Fashion' },
-  { id: 'game', label: 'Game' },
-  { id: 'etc', label: 'Etc' },
+  { id: 'food' },
+  { id: 'music' },
+  { id: 'fashion' },
+  { id: 'game' },
+  { id: 'etc' },
 ];
 
 type CaptionStepProps = {
@@ -36,66 +36,70 @@ const CaptionStep = ({
   selectedCategory,
   selectedPhoto,
   username,
-}: CaptionStepProps) => (
-  <ScrollView
-    contentContainerStyle={styles.captionContent}
-    keyboardShouldPersistTaps="handled"
-    showsVerticalScrollIndicator={false}
-    style={styles.captionBody}
-  >
-    <View style={styles.authorRow}>
-      <View style={styles.profileCircle}>
-        <View style={styles.profileHead} />
-        <View style={styles.profileBody} />
-      </View>
-      <View>
-        <Text style={styles.username}>{username}</Text>
-        <Text style={styles.placeName}>{placeName}</Text>
-      </View>
-    </View>
-    <View style={styles.heroPhoto}>
-      <ExamplePhoto large uri={selectedPhoto?.uri} />
-    </View>
-    <View style={styles.categorySection}>
-      <Text style={styles.categoryTitle}>카테고리</Text>
-      <View style={styles.categoryList}>
-        {POST_CATEGORY_OPTIONS.map((category) => {
-          const isSelected = selectedCategory === category.id;
+}: CaptionStepProps) => {
+  const { t } = useTranslation();
 
-          return (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              key={category.id}
-              style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
-              onPress={() => onChangeCategory(category.id)}
-            >
-              <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
-                {category.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+  return (
+    <ScrollView
+      contentContainerStyle={styles.captionContent}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      style={styles.captionBody}
+    >
+      <View style={styles.authorRow}>
+        <View style={styles.profileCircle}>
+          <View style={styles.profileHead} />
+          <View style={styles.profileBody} />
+        </View>
+        <View>
+          <Text style={styles.username}>{username}</Text>
+          <Text style={styles.placeName}>{placeName}</Text>
+        </View>
       </View>
-    </View>
-    <TextInput
-      multiline
-      style={styles.captionInput}
-      placeholder="캡션을 입력하세요..."
-      placeholderTextColor="#111"
-      value={caption}
-      onChangeText={onChangeCaption}
-    />
-    <Button
-      disabled={!selectedPhoto}
-      label="업로드"
-      labelStyle={styles.uploadText}
-      loading={isUploading}
-      style={styles.uploadButton}
-      onPress={onUpload}
-    />
-  </ScrollView>
-);
+      <View style={styles.heroPhoto}>
+        <ExamplePhoto large uri={selectedPhoto?.uri} />
+      </View>
+      <View style={styles.categorySection}>
+        <Text style={styles.categoryTitle}>{t('placeCreate.caption.category')}</Text>
+        <View style={styles.categoryList}>
+          {POST_CATEGORY_OPTIONS.map((category) => {
+            const isSelected = selectedCategory === category.id;
+
+            return (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                key={category.id}
+                style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+                onPress={() => onChangeCategory(category.id)}
+              >
+                <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
+                  {t(`map.categories.${category.id}`)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+      <TextInput
+        multiline
+        style={styles.captionInput}
+        placeholder={t('placeCreate.caption.captionPlaceholder')}
+        placeholderTextColor="#111"
+        value={caption}
+        onChangeText={onChangeCaption}
+      />
+      <Button
+        disabled={!selectedPhoto}
+        label={t('placeCreate.caption.upload')}
+        labelStyle={styles.uploadText}
+        loading={isUploading}
+        style={styles.uploadButton}
+        onPress={onUpload}
+      />
+    </ScrollView>
+  );
+};
 
 const styles = StyleSheet.create({
   captionBody: {

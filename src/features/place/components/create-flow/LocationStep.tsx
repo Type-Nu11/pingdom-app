@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MypingIcon from '../../../../assets/icons/map/Myping.svg';
 import type { KakaoLocalSearchItem } from '../../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
@@ -20,9 +21,6 @@ type Coordinate = {
 };
 
 const COORDINATE_MATCH_THRESHOLD = 0.0001;
-const PLACE_SELECT_PLACEHOLDER = '장소를 검색하거나 지도를 움직여 선택해 주세요';
-const SEARCH_EMPTY_MESSAGE = '검색 결과가 없습니다';
-const SEARCH_FAILED_MESSAGE = '주소 검색에 실패했습니다';
 
 function isSameCoordinate(a: Coordinate, b: Coordinate) {
   return (
@@ -37,11 +35,15 @@ const LocationStep = ({
   mapHeight,
   onNext,
 }: LocationStepProps) => {
+  const { t } = useTranslation();
+  const placeSelectPlaceholder = t('placeCreate.location.placeholderAddress');
+  const searchEmptyMessage = t('placeCreate.location.searchEmpty');
+  const searchFailedMessage = t('placeCreate.location.searchFailed');
   const pendingSearchResultCoordinateRef = useRef<Coordinate | null>(null);
   const [addressQuery, setAddressQuery] = useState('');
   const [placeName, setPlaceName] = useState(initialValue?.name ?? '');
   const [selectedAddress, setSelectedAddress] = useState(
-    initialValue?.address ?? PLACE_SELECT_PLACEHOLDER
+    initialValue?.address ?? placeSelectPlaceholder
   );
   const [selectedKakaoPlaceId, setSelectedKakaoPlaceId] = useState(initialValue?.kakaoPlaceId);
   const [selectedPlaceCoordinate, setSelectedPlaceCoordinate] = useState<Coordinate | null>(
@@ -63,9 +65,9 @@ const LocationStep = ({
     searchResults,
     searchStatusMessage,
   } = useKakaoLocalSearch();
-  const isSelectedAddressInvalid = selectedAddress === SEARCH_EMPTY_MESSAGE
-    || selectedAddress === SEARCH_FAILED_MESSAGE
-    || selectedAddress === PLACE_SELECT_PLACEHOLDER;
+  const isSelectedAddressInvalid = selectedAddress === searchEmptyMessage
+    || selectedAddress === searchFailedMessage
+    || selectedAddress === placeSelectPlaceholder;
   const isSelectionDisabled = isSelectedAddressInvalid || isSubmitting;
   const selectableSearchResults = searchResults.filter((result) => result.kakaoPlaceId);
 
@@ -151,11 +153,11 @@ const LocationStep = ({
       showsVerticalScrollIndicator={false}
       style={styles.stepBody}
     >
-      <Text style={styles.title}>새로 게시할 장소의{'\n'}위치를 선택해 주세요</Text>
+      <Text style={styles.title}>{t('placeCreate.location.title')}</Text>
       <View style={styles.searchBox}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="주소 검색"
+          accessibilityLabel={t('placeCreate.location.searchAccessibilityLabel')}
           disabled={isSearchingAddress}
           hitSlop={8}
           onPress={handleSearchAddress}
@@ -164,7 +166,7 @@ const LocationStep = ({
         </Pressable>
         <TextInput
           style={styles.searchInput}
-          placeholder="주소를 입력하세요..."
+          placeholder={t('placeCreate.location.searchPlaceholder')}
           placeholderTextColor="#777a84"
           returnKeyType="search"
           value={addressQuery}
@@ -175,7 +177,7 @@ const LocationStep = ({
       {isSearchingAddress ? (
         <View style={styles.searchStatusRow}>
           <ActivityIndicator color="#ff1956" size="small" />
-          <Text style={styles.searchStatusInlineText}>주소를 찾고 있어요</Text>
+          <Text style={styles.searchStatusInlineText}>{t('placeCreate.location.searching')}</Text>
         </View>
       ) : searchStatusMessage ? (
         <Text style={styles.searchStatusText}>{searchStatusMessage}</Text>
@@ -184,8 +186,8 @@ const LocationStep = ({
         <View style={styles.searchResultList}>
           {selectableSearchResults.length === 0 ? (
             <View style={styles.searchResultItem}>
-              <Text style={styles.searchResultName}>선택 가능한 장소 결과가 없어요</Text>
-              <Text style={styles.searchResultAddress}>상호명이나 건물명을 조금 더 구체적으로 입력해 주세요.</Text>
+              <Text style={styles.searchResultName}>{t('placeCreate.location.noSelectableResultsTitle')}</Text>
+              <Text style={styles.searchResultAddress}>{t('placeCreate.location.noSelectableResultsBody')}</Text>
             </View>
           ) : selectableSearchResults.slice(0, 5).map((result) => {
             const resultAddress = result.roadAddress || result.address;
@@ -238,7 +240,7 @@ const LocationStep = ({
         </View>
         <TextInput
           style={styles.placeNameInput}
-          placeholder="(선택) 상세 주소 입력"
+          placeholder={t('placeCreate.location.detailAddressPlaceholder')}
           placeholderTextColor="#777a84"
           value={placeName}
           onChangeText={setPlaceName}
@@ -252,7 +254,9 @@ const LocationStep = ({
           ]}
           onPress={handleSelectLocation}
         >
-          <Text style={styles.primaryButtonText}>{isSubmitting ? '확인 중...' : '선택'}</Text>
+          <Text style={styles.primaryButtonText}>
+            {isSubmitting ? t('placeCreate.location.selectChecking') : t('placeCreate.location.select')}
+          </Text>
         </Pressable>
       </View>
     </ScrollView>

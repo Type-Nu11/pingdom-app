@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   getAddressFromCoordinate,
   type KakaoLocalSearchItem,
@@ -13,6 +14,7 @@ type SearchPlacesOptions = {
 const formatCoordinateAddress = (lat: number, lng: number) => `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
 export const useKakaoLocalSearch = () => {
+  const { t } = useTranslation();
   const [searchResults, setSearchResults] = useState<KakaoLocalSearchItem[]>([]);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [searchStatusMessage, setSearchStatusMessage] = useState('');
@@ -60,7 +62,7 @@ export const useKakaoLocalSearch = () => {
 
     if (!trimmedQuery) {
       console.log('[KakaoLocalSearch] search skipped: empty query');
-      setSearchStatusMessage('검색어를 입력해 주세요');
+      setSearchStatusMessage(t('placeCreate.location.searchPlaceholder'));
       return;
     }
 
@@ -86,7 +88,7 @@ export const useKakaoLocalSearch = () => {
           centerLng: options.centerLng,
           query: trimmedQuery,
         });
-        setSearchStatusMessage('검색 결과가 없습니다');
+        setSearchStatusMessage(t('placeCreate.location.searchEmpty'));
         return;
       }
 
@@ -110,7 +112,7 @@ export const useKakaoLocalSearch = () => {
         query: trimmedQuery,
       });
       if (requestId === searchRequestIdRef.current) {
-        setSearchStatusMessage('주소 검색에 실패했습니다');
+        setSearchStatusMessage(t('placeCreate.location.searchFailed'));
       }
     } finally {
       if (requestId === searchRequestIdRef.current) {
