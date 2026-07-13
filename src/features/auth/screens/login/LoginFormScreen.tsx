@@ -9,12 +9,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
 import OpenEyeIcon from '../../../../assets/icons/openEye.svg';
 import CloseEyeIcon from '../../../../assets/icons/closeEye.svg';
 import { colors } from '../../../../styles/colors';
 import useLogin from '../../hooks/useLogin';
-import { validatePassword, validateUsername } from '../../lib/validators';
 
 const PINK = colors.primaryNormal;
 const BG = colors.bgAssistive;
@@ -27,6 +27,7 @@ type Props = {
 };
 
 export default function LoginFormScreen({ onBack, onSignup }: Props) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -40,8 +41,8 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    const nextUsernameError = validateUsername(username);
-    const nextPasswordError = validatePassword(password);
+    const nextUsernameError = username.trim() ? null : t('auth.validation.usernameRequired');
+    const nextPasswordError = password.trim() ? null : t('auth.validation.passwordRequired');
     setUsernameError(nextUsernameError);
     setPasswordError(nextPasswordError);
     if (nextUsernameError || nextPasswordError) return;
@@ -67,17 +68,17 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>핑덤 시작하기</Text>
+        <Text style={styles.title}>{t('auth.login.title')}</Text>
 
         <View style={styles.fields}>
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>아이디</Text>
+            <Text style={styles.fieldLabel}>{t('auth.login.username')}</Text>
             <View style={[styles.inputRow, usernameError ? styles.inputRowError : styles.inputRowNormal]}>
               <TextInput
                 style={styles.textInput}
                 value={username}
                 onChangeText={(t) => { setUsername(t); if (usernameError) setUsernameError(null); }}
-                placeholder="아이디를 입력하세요"
+                placeholder={t('auth.login.usernamePlaceholder')}
                 placeholderTextColor={colors.placeholder}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -89,13 +90,13 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>비밀번호</Text>
+            <Text style={styles.fieldLabel}>{t('auth.login.password')}</Text>
             <View style={[styles.inputRow, passwordError ? styles.inputRowError : styles.inputRowNormal]}>
               <TextInput
                 style={[styles.textInput, { flex: 1 }]}
                 value={password}
                 onChangeText={(t) => { setPassword(t); if (passwordError) setPasswordError(null); }}
-                placeholder="비밀번호를 입력하세요"
+                placeholder={t('auth.login.passwordPlaceholder')}
                 placeholderTextColor={colors.placeholder}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
@@ -120,7 +121,7 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
           disabled={isSubmitting}
         >
           <Text style={[styles.submitText, !isFilled && styles.submitTextDisabled]}>
-            {isSubmitting ? '로그인 중...' : '시작하기'}
+            {isSubmitting ? t('auth.login.submitting') : t('auth.login.submit')}
           </Text>
         </Pressable>
 
@@ -129,11 +130,11 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
         ) : null}
 
         <View style={styles.linkRow}>
-          <Pressable><Text style={styles.linkText}>아이디 찾기</Text></Pressable>
+          <Pressable><Text style={styles.linkText}>{t('auth.login.findUsername')}</Text></Pressable>
           <View style={styles.linkSeparator} />
-          <Pressable><Text style={styles.linkText}>비밀번호 찾기</Text></Pressable>
+          <Pressable><Text style={styles.linkText}>{t('auth.login.findPassword')}</Text></Pressable>
           <View style={styles.linkSeparator} />
-          <Pressable onPress={onSignup}><Text style={styles.linkText}>회원가입</Text></Pressable>
+          <Pressable onPress={onSignup}><Text style={styles.linkText}>{t('auth.login.signup')}</Text></Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

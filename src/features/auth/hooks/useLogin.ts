@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { loginWithTokens } from '../../../app/store/authStore';
 import { authApi } from '../api/authApi';
 import type { LoginRequest } from '../model/auth.types';
 
 export const useLogin = () => {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -17,7 +19,7 @@ export const useLogin = () => {
       return true;
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : '로그인 중 알 수 없는 오류가 발생했습니다.';
+        error instanceof Error ? error.message : t('auth.login.unknownError');
       setErrorMessage(message);
       return false;
     } finally {

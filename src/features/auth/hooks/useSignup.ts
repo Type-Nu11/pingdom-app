@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { useState } from 'react';
+import { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/authApi';
 import type { SignupRequest, SignupResponse } from '../model/auth.types';
 
@@ -9,7 +11,7 @@ type SignupErrorResponse = {
   code?: string;
 };
 
-function toSignupErrorMessage(error: unknown): string {
+function toSignupErrorMessage(error: unknown, t: TFunction): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as SignupErrorResponse | undefined;
     const fieldErrors = data?.errors ? Object.values(data.errors).filter(Boolean) : [];
@@ -23,10 +25,11 @@ function toSignupErrorMessage(error: unknown): string {
     }
   }
 
-  return error instanceof Error ? error.message : '회원가입 중 알 수 없는 오류가 발생했습니다.';
+  return error instanceof Error ? error.message : t('auth.signup.unknownError');
 }
 
 export const useSignup = () => {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -37,7 +40,7 @@ export const useSignup = () => {
     try {
       return await authApi.signup(payload);
     } catch (error) {
-      setErrorMessage(toSignupErrorMessage(error));
+      setErrorMessage(toSignupErrorMessage(error, t));
       return null;
     } finally {
       setIsSubmitting(false);

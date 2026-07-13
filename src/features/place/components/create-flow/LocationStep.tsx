@@ -41,6 +41,7 @@ const LocationStep = ({
   const searchFailedMessage = t('placeCreate.location.searchFailed');
   const pendingSearchResultCoordinateRef = useRef<Coordinate | null>(null);
   const [addressQuery, setAddressQuery] = useState('');
+  const [isMapInteractionActive, setIsMapInteractionActive] = useState(false);
   const [placeName, setPlaceName] = useState(initialValue?.name ?? '');
   const [selectedAddress, setSelectedAddress] = useState(
     initialValue?.address ?? placeSelectPlaceholder
@@ -150,6 +151,7 @@ const LocationStep = ({
     <ScrollView
       contentContainerStyle={styles.stepContent}
       keyboardShouldPersistTaps="handled"
+      scrollEnabled={!isMapInteractionActive}
       showsVerticalScrollIndicator={false}
       style={styles.stepBody}
     >
@@ -209,7 +211,12 @@ const LocationStep = ({
           })}
         </View>
       ) : null}
-      <View style={[styles.mapPreview, { height: mapHeight }]}>
+      <View
+        style={[styles.mapPreview, { height: mapHeight }]}
+        onTouchCancel={() => setIsMapInteractionActive(false)}
+        onTouchEnd={() => setIsMapInteractionActive(false)}
+        onTouchStart={() => setIsMapInteractionActive(true)}
+      >
         <KakaoMapCard
           style={styles.map}
           centerLat={mapCenter.lat}

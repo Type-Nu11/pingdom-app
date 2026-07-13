@@ -9,16 +9,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
 import { colors } from '../../../../styles/colors';
 import useLogin from '../../hooks/useLogin';
 import useSignup from '../../hooks/useSignup';
-import {
-  validateEmail,
-  validatePassword,
-  validatePasswordConfirm,
-  validateUsername,
-} from '../../lib/validators';
 import ProgressDots from './components/ProgressDots';
 import type { OnboardingData } from '../../../../features/onboarding/types';
 
@@ -47,6 +42,7 @@ type FieldError = {
 type InnerStep = 'account' | 'password';
 
 export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDetailsScreenProps) {
+  const { t } = useTranslation();
   const [innerStep, setInnerStep] = useState<InnerStep>('account');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -75,9 +71,14 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
   const submitErrorMessage = signupErrorMessage ?? loginErrorMessage;
 
   const validateStep1 = () => {
+    const trimmedEmail = email.trim();
     const newErrors: FieldError = {
-      username: validateUsername(username) ?? undefined,
-      email: validateEmail(email) ?? undefined,
+      username: username.trim() ? undefined : t('auth.validation.usernameRequired'),
+      email: !trimmedEmail
+        ? t('auth.validation.emailRequired')
+        : /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedEmail)
+          ? undefined
+          : t('auth.validation.emailInvalid'),
     };
     setErrors(newErrors);
     return !newErrors.username && !newErrors.email;
@@ -85,8 +86,12 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
 
   const validateStep2 = () => {
     const newErrors: FieldError = {
-      password: validatePassword(password) ?? undefined,
-      passwordConfirm: validatePasswordConfirm(password, passwordConfirm) ?? undefined,
+      password: password.trim() ? undefined : t('auth.validation.passwordRequired'),
+      passwordConfirm: !passwordConfirm.trim()
+        ? t('auth.validation.passwordConfirmRequired')
+        : password === passwordConfirm
+          ? undefined
+          : t('auth.validation.passwordMismatch'),
     };
     setErrors(newErrors);
     return !newErrors.password && !newErrors.passwordConfirm;
@@ -149,15 +154,15 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.topContent}>
-            <Text style={styles.title}>핑덤 시작하기</Text>
+            <Text style={styles.title}>{t('auth.signup.title')}</Text>
 
             <View style={styles.fieldsGroup}>
               <View style={styles.field}>
-                <Text style={[styles.label, styles.labelAlt]}>아이디</Text>
+                <Text style={[styles.label, styles.labelAlt]}>{t('auth.signup.username')}</Text>
                 <View style={[styles.inputRow, errors.username ? styles.inputRowError : undefined]}>
                   <TextInput
                     style={styles.input}
-                    placeholder="아이디를 입력하세요"
+                    placeholder={t('auth.signup.usernamePlaceholder')}
                     placeholderTextColor={colors.placeholder}
                     value={username}
                     onChangeText={(v) => { setUsername(v); setErrors((e) => ({ ...e, username: undefined })); }}
@@ -170,11 +175,11 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
               </View>
 
               <View style={styles.field}>
-                <Text style={[styles.label, styles.labelAlt]}>이메일</Text>
+                <Text style={[styles.label, styles.labelAlt]}>{t('auth.signup.email')}</Text>
                 <View style={[styles.inputRow, errors.email ? styles.inputRowError : undefined]}>
                   <TextInput
                     style={styles.input}
-                    placeholder="이메일을 입력하세요"
+                    placeholder={t('auth.signup.emailPlaceholder')}
                     placeholderTextColor={colors.placeholder}
                     value={email}
                     onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
@@ -198,7 +203,7 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
             onPress={handleStep1Next}
           >
             <Text style={[styles.buttonText, isStep1Filled ? styles.buttonTextActive : styles.buttonTextDisabled]}>
-              다음
+              {t('auth.signup.next')}
             </Text>
           </Pressable>
         </ScrollView>
@@ -227,15 +232,15 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topContent}>
-          <Text style={styles.title}>비밀번호 확인</Text>
+          <Text style={styles.title}>{t('auth.signup.passwordTitle')}</Text>
 
           <View style={styles.fieldsGroup}>
             <View style={styles.field}>
-              <Text style={[styles.label, styles.labelNeutral]}>비밀번호</Text>
+              <Text style={[styles.label, styles.labelNeutral]}>{t('auth.signup.password')}</Text>
               <View style={[styles.inputRow, errors.password ? styles.inputRowError : undefined]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="비밀번호를 입력하세요"
+                  placeholder={t('auth.signup.passwordPlaceholder')}
                   placeholderTextColor={colors.placeholder}
                   value={password}
                   onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined })); }}
@@ -253,11 +258,11 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
             </View>
 
             <View style={styles.field}>
-              <Text style={[styles.label, styles.labelNeutral]}>비밀번호 확인</Text>
+              <Text style={[styles.label, styles.labelNeutral]}>{t('auth.signup.passwordConfirm')}</Text>
               <View style={[styles.inputRow, errors.passwordConfirm ? styles.inputRowError : undefined]}>
                 <TextInput
                   style={styles.input}
-                  placeholder="비밀번호를 한번 더 입력하세요"
+                  placeholder={t('auth.signup.passwordConfirmPlaceholder')}
                   placeholderTextColor={colors.placeholder}
                   value={passwordConfirm}
                   onChangeText={(v) => { setPasswordConfirm(v); setErrors((e) => ({ ...e, passwordConfirm: undefined })); }}
@@ -284,7 +289,7 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
           onPress={() => void handleStep2Submit()}
         >
           <Text style={[styles.buttonText, isStep2Filled ? styles.buttonTextActive : styles.buttonTextDisabled]}>
-            {isSubmitting ? '처리 중...' : '시작하기'}
+            {isSubmitting ? t('auth.signup.processing') : t('auth.signup.start')}
           </Text>
         </Pressable>
       </ScrollView>
