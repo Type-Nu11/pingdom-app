@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useMapSettingsStore } from '../../../app/store/mapSettingsStore';
 import { useDevicePermissions } from '../hooks/useDevicePermissions';
@@ -12,15 +13,17 @@ import SettingsSection from './SettingsSection';
 
 type SettingsRootViewProps = {
   onNavigate: (page: SettingsPage) => void;
+  onLogout: () => Promise<void>;
 };
 
 const CACHE_KEY_PREFIXES = ['@pingdom/record-likes', '@pingdom/hidden-posts'];
 
-const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
+const SettingsRootView = ({ onLogout, onNavigate }: SettingsRootViewProps) => {
   const { preferences, setPreference } = useNotificationPreferences();
   const { permissions } = useDevicePermissions();
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const queryClient = useQueryClient();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleClearCache = async () => {
     const keys = await AsyncStorage.getAllKeys();
@@ -29,6 +32,35 @@ const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
     await AsyncStorage.multiRemove(cacheKeys);
     queryClient.clear();
     Alert.alert('캐시를 삭제했습니다');
+  };
+
+  const handleLogout = () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    Alert.alert(
+      '로그아웃할까요?',
+      '이 기기에서 저장된 로그인 정보가 삭제됩니다.',
+      [
+        { style: 'cancel', text: '취소' },
+        {
+          style: 'destructive',
+          text: '로그아웃',
+          onPress: () => {
+            setIsLoggingOut(true);
+            void (async () => {
+              try {
+                await onLogout();
+              } catch {
+                setIsLoggingOut(false);
+                Alert.alert('로그아웃에 실패했어요', '잠시 후 다시 시도해 주세요.');
+              }
+            })();
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -46,6 +78,13 @@ const SettingsRootView = ({ onNavigate }: SettingsRootViewProps) => {
           subtitle="계정 보안을 위해 비밀번호를 변경합니다."
           title="비밀번호 변경"
           onPress={() => onNavigate('password')}
+        />
+        <SettingsDivider />
+        <SettingsRow
+          destructive
+          subtitle="이 기기에서 안전하게 로그아웃합니다."
+          title={isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+          onPress={handleLogout}
         />
         <SettingsDivider />
         <SettingsRow

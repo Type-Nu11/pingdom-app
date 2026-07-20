@@ -24,6 +24,7 @@ function AppContent() {
   const [mainScreen, setMainScreen] = useState<MainScreen>('map');
   const [openedBookmarkedPlaceId, setOpenedBookmarkedPlaceId] = useState<number | null>(null);
   const [openedNotificationRoute, setOpenedNotificationRoute] = useState<NotificationRoute | null>(null);
+  const [selectedPlaceDetailId, setSelectedPlaceDetailId] = useState<string | null>(null);
   const [profileInitialTab, setProfileInitialTab] = useState<ProfileTab>('liked');
 
   useFcmTokenSync(isLoggedIn);
@@ -58,12 +59,14 @@ function AppContent() {
 
     setMainScreen('map');
     setOpenedNotificationRoute(null);
+    setSelectedPlaceDetailId(null);
   }, [isLoggedIn]);
 
   const handleLogout = async () => {
     await logout();
     setMainScreen('map');
     setOpenedNotificationRoute(null);
+    setSelectedPlaceDetailId(null);
   };
   const clearOpenedBookmarkedPlace = useCallback(() => {
     setOpenedBookmarkedPlaceId(null);
@@ -80,12 +83,15 @@ function AppContent() {
       {isLoggedIn ? (
         mainScreen === 'place-create' ? (
           <PlaceCreateFlowScreen onClose={() => setMainScreen('map')} />
-        ) : mainScreen === 'place-detail' && openedNotificationRoute?.placeId ? (
+        ) : mainScreen === 'place-detail' && (selectedPlaceDetailId || openedNotificationRoute?.placeId) ? (
           <PlaceDetailScreen
-            placeId={openedNotificationRoute.placeId}
-            notificationTitle={openedNotificationRoute.title}
-            notificationBody={openedNotificationRoute.body}
-            onBack={() => setMainScreen('map')}
+            placeId={selectedPlaceDetailId ?? openedNotificationRoute!.placeId!}
+            notificationTitle={selectedPlaceDetailId ? undefined : openedNotificationRoute?.title}
+            notificationBody={selectedPlaceDetailId ? undefined : openedNotificationRoute?.body}
+            onBack={() => {
+              setSelectedPlaceDetailId(null);
+              setMainScreen('map');
+            }}
           />
         ) : mainScreen === 'settings' ? (
           <SettingsScreen onBack={() => setMainScreen('profile')} onLogout={handleLogout} />
@@ -109,6 +115,10 @@ function AppContent() {
             notificationLikeContext={openedNotificationRoute}
             onCreatePlace={() => setMainScreen('place-create')}
             onOpenLikedPlaces={() => openProfile('liked')}
+            onOpenPlaceDetail={(placeId) => {
+              setSelectedPlaceDetailId(placeId);
+              setMainScreen('place-detail');
+            }}
             onOpenProfile={() => openProfile('liked')}
             onOpenSavedPlaces={() => openProfile('saved')}
           />
