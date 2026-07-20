@@ -1,5 +1,6 @@
 import React from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import GlassSurface from './GlassSurface';
 
 type MapControlRailProps = {
@@ -16,21 +17,25 @@ const MapControlRail = ({
   onLocatePress,
   onMapTypePress,
   sheetTranslateY,
-}: MapControlRailProps) => (
-  <Animated.View style={[styles.rail, { bottom, transform: [{ translateY: sheetTranslateY }] }]}>
+}: MapControlRailProps) => {
+  const { t } = useTranslation();
+
+  return (
+    <Animated.View style={[styles.rail, { bottom, transform: [{ translateY: sheetTranslateY }] }]}>
     <GlassSurface interactive style={styles.railSurface} tintColor="rgba(255,255,255,0.2)">
       <Pressable accessibilityLabel="지도 타입 변경" onPress={onMapTypePress} style={styles.button}>
         <Text style={styles.mapIcon}>◇</Text>
-        <Text style={styles.buttonLabel}>{mapType}</Text>
+        <Text style={styles.buttonLabel}>{mapType === 'Map' ? t('map.decision.map') : t('map.decision.transit')}</Text>
       </Pressable>
       <View style={styles.divider} />
       <Pressable accessibilityLabel="현재 위치로 이동" onPress={onLocatePress} style={styles.button}>
         <Text style={styles.locationIcon}>➤</Text>
-        <Text style={styles.buttonLabel}>Near me</Text>
+        <Text style={styles.buttonLabel}>{t('map.decision.nearMe')}</Text>
       </Pressable>
     </GlassSurface>
-  </Animated.View>
-);
+    </Animated.View>
+  );
+};
 
 const styles = StyleSheet.create({
   button: { alignItems: 'center', height: 57, justifyContent: 'center', width: 58 },

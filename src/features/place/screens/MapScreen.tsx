@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MapBottomSheet, {
   type BottomSheetContent,
   type DecisionPlace,
@@ -12,6 +13,7 @@ import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
+import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 
@@ -89,9 +91,11 @@ export default function MapScreen({
   onOpenProfile,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
+  const { i18n, t } = useTranslation();
   const { height } = useWindowDimensions();
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
+  const { profile } = useProfile();
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
@@ -107,6 +111,19 @@ export default function MapScreen({
     initialSnapPoint: 'medium',
     mediumTranslateY,
   });
+
+  useEffect(() => {
+    const language = profile?.language?.trim().toLowerCase();
+    const nextLanguage = language === 'korean' || language === '한국어'
+      ? 'ko'
+      : language === 'english' || language === '영어'
+        ? 'en'
+        : language?.split('-')[0];
+
+    if (nextLanguage && i18n.language !== nextLanguage) {
+      void i18n.changeLanguage(nextLanguage);
+    }
+  }, [i18n, profile?.language]);
 
   const mockPlaces = useMemo(
     () => makeMockPlaces(center.lat, center.lng),
@@ -210,10 +227,18 @@ export default function MapScreen({
     snapTo('medium');
   };
   const handleGoNow = (place: DecisionPlace) => {
-    Alert.alert('Ready to go', `Directions to ${place.name} are ready.`, [{ text: 'OK' }]);
+    Alert.alert(
+      t('map.decision.goNow'),
+      t('map.decision.goNowMessage', { placeName: place.name, defaultValue: `Directions to ${place.name} are ready.` }),
+      [{ text: t('placeCreate.alerts.confirm') }],
+    );
   };
   const handleCoupon = (place: DecisionPlace) => {
-    Alert.alert('Mock coupon', `${place.name} coupon will be available here.`, [{ text: 'OK' }]);
+    Alert.alert(
+      t('map.decision.getCoupon'),
+      t('map.decision.couponMessage', { placeName: place.name, defaultValue: `${place.name} coupon will be available here.` }),
+      [{ text: t('placeCreate.alerts.confirm') }],
+    );
   };
 
   const focusedPlace = selectedPlace;
@@ -234,9 +259,8 @@ export default function MapScreen({
       />
       <View pointerEvents="none" style={styles.mapTint} />
       <MapStatusOverlay
-        onProfilePress={onOpenProfile}
         placeCount={allPlaces.length}
-        region="Near you"
+        region={t('map.decision.nearYou')}
       />
       <MapControlRail
         bottom={fullSheetHeight + 16}
@@ -264,6 +288,7 @@ export default function MapScreen({
           else snapTo('medium');
         }}
         onPlacePress={handlePlacePress}
+        onProfilePress={onOpenProfile}
         onQueryChange={handleQueryChange}
         onSearchFocus={handleSearchFocus}
         onSubmitSearch={() => {

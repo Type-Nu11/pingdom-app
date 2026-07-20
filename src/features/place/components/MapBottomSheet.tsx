@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import GlassSurface from './GlassSurface';
 
@@ -44,6 +45,7 @@ type MapBottomSheetProps = {
   onGoNowPress: (place: DecisionPlace) => void;
   onHandlePress: () => void;
   onPlacePress: (place: DecisionPlace) => void;
+  onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
   onSearchFocus: () => void;
   onSubmitSearch: () => void;
@@ -55,37 +57,59 @@ type MapBottomSheetProps = {
 };
 
 const FILTERS: VisitFilter[] = ['Open now', 'Short wait', 'Coupon', 'Bookable'];
+const FILTER_LABEL_KEYS: Record<VisitFilter, string> = {
+  'Open now': 'map.decision.filters.openNow',
+  'Short wait': 'map.decision.filters.shortWait',
+  Coupon: 'map.decision.filters.coupon',
+  Bookable: 'map.decision.filters.bookable',
+};
 
 const SearchBar = ({
   onFocus,
+  onProfilePress,
   onQueryChange,
   onSubmit,
   query,
 }: {
   onFocus: () => void;
+  onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
   onSubmit: () => void;
   query: string;
-}) => (
-  <View style={styles.searchBar}>
-    <Text style={styles.searchIcon}>⌕</Text>
-    <TextInput
-      accessibilityLabel="장소 검색"
-      autoCorrect={false}
-      onChangeText={onQueryChange}
-      onFocus={onFocus}
-      onSubmitEditing={onSubmit}
-      placeholder="Search places"
-      placeholderTextColor="#8B9099"
-      returnKeyType="search"
-      style={styles.searchInput}
-      value={query}
-    />
-    <Pressable accessibilityLabel="검색" hitSlop={8} onPress={onSubmit}>
-      <Text style={styles.searchAction}>Search</Text>
-    </Pressable>
-  </View>
-);
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <View style={styles.searchRow}>
+      <View style={styles.searchBar}>
+        <Text style={styles.searchIcon}>⌕</Text>
+        <TextInput
+          accessibilityLabel={t('map.decision.searchAccessibilityLabel')}
+          autoCorrect={false}
+          onChangeText={onQueryChange}
+          onFocus={onFocus}
+          onSubmitEditing={onSubmit}
+          placeholder={t('map.decision.searchPlaceholder')}
+          placeholderTextColor="#8B9099"
+          returnKeyType="search"
+          style={styles.searchInput}
+          value={query}
+        />
+      </View>
+      <Pressable
+        accessibilityLabel={t('map.decision.profileAccessibilityLabel')}
+        hitSlop={8}
+        onPress={onProfilePress}
+        style={styles.profileIconButton}
+      >
+        <View style={styles.profileGlyph}>
+          <View style={styles.profileGlyphHead} />
+          <View style={styles.profileGlyphBody} />
+        </View>
+      </Pressable>
+    </View>
+  );
+};
 
 const FilterRow = ({
   activeFilters,
@@ -94,7 +118,20 @@ const FilterRow = ({
   activeFilters: VisitFilter[];
   onFilterPress: (filter: VisitFilter) => void;
 }) => (
-  <ScrollView
+  <FilterRowContent activeFilters={activeFilters} onFilterPress={onFilterPress} />
+);
+
+const FilterRowContent = ({
+  activeFilters,
+  onFilterPress,
+}: {
+  activeFilters: VisitFilter[];
+  onFilterPress: (filter: VisitFilter) => void;
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <ScrollView
     contentContainerStyle={styles.filterContent}
     horizontal
     keyboardShouldPersistTaps="handled"
@@ -110,26 +147,33 @@ const FilterRow = ({
           onPress={() => onFilterPress(filter)}
           style={[styles.filterChip, isActive && styles.filterChipActive]}
         >
-          <Text style={[styles.filterText, isActive && styles.filterTextActive]}>{filter}</Text>
+          <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+            {t(FILTER_LABEL_KEYS[filter])}
+          </Text>
         </Pressable>
       );
     })}
-  </ScrollView>
-);
+    </ScrollView>
+  );
+};
 
-const PlaceMeta = ({ place }: { place: DecisionPlace }) => (
-  <>
+const PlaceMeta = ({ place }: { place: DecisionPlace }) => {
+  const { t } = useTranslation();
+
+  return (
+    <>
     <View style={styles.statusRow}>
       <View style={styles.openDot} />
-      <Text style={styles.openText}>Open now</Text>
+      <Text style={styles.openText}>{t('map.decision.status.openNow')}</Text>
       <Text style={styles.metaDivider}>·</Text>
-      <Text style={styles.waitText}>Wait {place.wait}</Text>
+      <Text style={styles.waitText}>{t('map.decision.status.wait', { wait: place.wait })}</Text>
     </View>
     <Text numberOfLines={1} style={styles.verifiedText}>
-      Visitor verified · {place.verifiedAgo} ago
+      {t('map.decision.status.verified', { time: place.verifiedAgo })}
     </Text>
-  </>
-);
+    </>
+  );
+};
 
 const RecommendationCard = ({
   onCouponPress,
@@ -141,8 +185,11 @@ const RecommendationCard = ({
   onGoNowPress: (place: DecisionPlace) => void;
   onPress: (place: DecisionPlace) => void;
   place: DecisionPlace;
-}) => (
-  <Pressable onPress={() => onPress(place)} style={styles.recommendationCard}>
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <Pressable onPress={() => onPress(place)} style={styles.recommendationCard}>
     <View style={styles.cardTopRow}>
       <View style={styles.categoryBadge}>
         <Text style={styles.categoryBadgeText}>{place.category}</Text>
@@ -153,14 +200,15 @@ const RecommendationCard = ({
     <PlaceMeta place={place} />
     <View style={styles.cardActions}>
       <Pressable onPress={() => onCouponPress(place)} style={styles.secondaryButton}>
-        <Text style={styles.secondaryButtonText}>Coupon</Text>
+        <Text style={styles.secondaryButtonText}>{t('map.decision.filters.coupon')}</Text>
       </Pressable>
       <Pressable onPress={() => onGoNowPress(place)} style={styles.primaryButton}>
-        <Text style={styles.primaryButtonText}>Go now</Text>
+        <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
       </Pressable>
     </View>
-  </Pressable>
-);
+    </Pressable>
+  );
+};
 
 const ResultCard = ({ onPress, place }: {
   onPress: (place: DecisionPlace) => void;
@@ -192,8 +240,11 @@ const PlacePreview = ({
   onDetailPress: (place: DecisionPlace) => void;
   onGoNowPress: (place: DecisionPlace) => void;
   place: DecisionPlace;
-}) => (
-  <Pressable onPress={() => onDetailPress(place)} style={styles.previewCard}>
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <Pressable onPress={() => onDetailPress(place)} style={styles.previewCard}>
     <View style={styles.previewImage}>
       <View style={styles.previewImageOrb} />
       <View style={styles.previewImageLabel}>
@@ -216,15 +267,16 @@ const PlacePreview = ({
       </View>
       <View style={styles.previewActions}>
         <Pressable onPress={() => onCouponPress(place)} style={styles.previewSecondaryButton}>
-          <Text style={styles.secondaryButtonText}>Get coupon</Text>
+          <Text style={styles.secondaryButtonText}>{t('map.decision.getCoupon')}</Text>
         </Pressable>
         <Pressable onPress={() => onGoNowPress(place)} style={styles.previewPrimaryButton}>
-          <Text style={styles.primaryButtonText}>Go now</Text>
+          <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
         </Pressable>
       </View>
     </View>
-  </Pressable>
-);
+    </Pressable>
+  );
+};
 
 const MapBottomSheet = ({
   activeFilters,
@@ -237,6 +289,7 @@ const MapBottomSheet = ({
   onGoNowPress,
   onHandlePress,
   onPlacePress,
+  onProfilePress,
   onQueryChange,
   onSearchFocus,
   onSubmitSearch,
@@ -246,6 +299,7 @@ const MapBottomSheet = ({
   sheetTranslateY,
   snapPoint,
 }: MapBottomSheetProps) => {
+  const { t } = useTranslation();
   const query = content.type === 'search' || content.type === 'results' ? content.query : '';
   const isPreview = content.type === 'place-preview' && selectedPlace;
   const showResults = content.type === 'search' || content.type === 'results' || snapPoint === 'expanded';
@@ -269,6 +323,7 @@ const MapBottomSheet = ({
       <View style={styles.headerArea}>
         <SearchBar
           onFocus={onSearchFocus}
+          onProfilePress={onProfilePress}
           onQueryChange={onQueryChange}
           onSubmit={onSubmitSearch}
           query={query}
@@ -277,7 +332,7 @@ const MapBottomSheet = ({
           <FilterRow activeFilters={activeFilters} onFilterPress={onFilterPress} />
         ) : (
           <Pressable onPress={onBackHome} style={styles.backRow}>
-            <Text style={styles.backText}>‹  Back to recommendations</Text>
+            <Text style={styles.backText}>‹  {t('map.decision.backToRecommendations')}</Text>
           </Pressable>
         )}
       </View>
@@ -298,15 +353,17 @@ const MapBottomSheet = ({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>{query ? `Results for “${query}”` : 'Places near you'}</Text>
-            <Pressable><Text style={styles.sortText}>Recommended⌄</Text></Pressable>
+            <Text style={styles.sectionTitle}>
+              {query ? t('map.decision.resultsFor', { query }) : t('map.decision.placesNearYou')}
+            </Text>
+            <Pressable><Text style={styles.sortText}>{t('map.decision.recommended')}⌄</Text></Pressable>
           </View>
           {places.length > 0 ? (
             places.map((place) => <ResultCard key={place.id} onPress={onPlacePress} place={place} />)
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No matching places yet</Text>
-              <Text style={styles.emptyBody}>Try another keyword or remove a visit condition.</Text>
+              <Text style={styles.emptyTitle}>{t('map.decision.emptyTitle')}</Text>
+              <Text style={styles.emptyBody}>{t('map.decision.emptyBody')}</Text>
             </View>
           )}
         </ScrollView>
@@ -314,10 +371,10 @@ const MapBottomSheet = ({
         <View style={styles.homeContent}>
           <View style={styles.sectionTitleRow}>
             <View>
-              <Text style={styles.eyebrow}>LIVE PICKS</Text>
-              <Text style={styles.sectionTitle}>Where to go now</Text>
+              <Text style={styles.eyebrow}>{t('map.decision.livePicks')}</Text>
+              <Text style={styles.sectionTitle}>{t('map.decision.whereToGo')}</Text>
             </View>
-            <Pressable onPress={onSearchFocus}><Text style={styles.seeAllText}>See all</Text></Pressable>
+            <Pressable onPress={onSearchFocus}><Text style={styles.seeAllText}>{t('map.decision.seeAll')}</Text></Pressable>
           </View>
           <ScrollView
             contentContainerStyle={styles.recommendationRow}
@@ -399,11 +456,15 @@ const styles = StyleSheet.create({
   resultThumb: { alignItems: 'center', backgroundColor: '#293C4E', borderRadius: 14, height: 72, justifyContent: 'center', overflow: 'hidden', width: 72 },
   resultThumbText: { color: '#FF7599', fontSize: 25, fontWeight: '900' },
   resultTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 5 },
-  searchAction: { color: '#EC245B', fontSize: 12, fontWeight: '900' },
-  searchBar: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.54)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', height: 48, paddingHorizontal: 14 },
+  searchBar: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.54)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, flex: 1, flexDirection: 'row', height: 48, paddingHorizontal: 14 },
   sheetGlass: { ...StyleSheet.absoluteFillObject, borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden' },
   searchIcon: { color: '#252B33', fontSize: 27, lineHeight: 29, marginRight: 8, transform: [{ rotate: '-20deg' }] },
   searchInput: { color: '#151A20', flex: 1, fontSize: 15, fontWeight: '600', height: '100%', padding: 0 },
+  profileGlyph: { alignItems: 'center', height: 18, justifyContent: 'flex-end', overflow: 'hidden', width: 18 },
+  profileGlyphBody: { backgroundColor: '#5C636D', borderTopLeftRadius: 7, borderTopRightRadius: 7, height: 9, width: 14 },
+  profileGlyphHead: { backgroundColor: '#5C636D', borderRadius: 4, height: 8, marginBottom: 2, width: 8 },
+  profileIconButton: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, height: 48, justifyContent: 'center', width: 48 },
+  searchRow: { flexDirection: 'row', gap: 8 },
   secondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, flex: 1, height: 35, justifyContent: 'center' },
   secondaryButtonText: { color: '#E8245E', fontSize: 12, fontWeight: '900' },
   sectionTitle: { color: '#171B21', fontSize: 20, fontWeight: '900' },
