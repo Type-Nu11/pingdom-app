@@ -2,14 +2,15 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 
 import HomeScreen from '../features/home/screens/HomeScreen';
-import '../shared/config/env';
+import PlaceListExampleScreen from '../features/place-list/screens/PlaceListExampleScreen';
+import { env } from '../shared/config';
 import AppProviders from './AppProviders';
 
 export default function App() {
   return (
     <AppProviders>
       <StatusBar style="dark" />
-      <HomeScreen />
+      {env.featureFlags.placeList ? <PlaceListExampleScreen /> : <HomeScreen />}
     </AppProviders>
   );
 }
