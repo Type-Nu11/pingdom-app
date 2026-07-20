@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import GlassSurface from './GlassSurface';
 
 type MapStatusOverlayProps = {
   onProfilePress?: () => void;
@@ -9,15 +10,17 @@ type MapStatusOverlayProps = {
 
 const MapStatusOverlay = ({ onProfilePress, placeCount, region }: MapStatusOverlayProps) => (
   <View pointerEvents="box-none" style={styles.container}>
-    <View style={styles.summaryCard}>
+    <GlassSurface style={styles.summaryCard} tintColor="rgba(255,255,255,0.22)">
       <Text style={styles.region}>{region}</Text>
       <View style={styles.statusRow}>
         <View style={styles.liveDot} />
         <Text style={styles.statusText}>{placeCount} places live nearby</Text>
       </View>
-    </View>
-    <Pressable accessibilityLabel="프로필 열기" onPress={onProfilePress} style={styles.profileButton}>
-      <Text style={styles.profileText}>P</Text>
+    </GlassSurface>
+    <Pressable accessibilityLabel="프로필 열기" onPress={onProfilePress}>
+      <GlassSurface interactive style={styles.profileButton} tintColor="rgba(19,29,40,0.42)">
+        <Text style={styles.profileText}>P</Text>
+      </GlassSurface>
     </Pressable>
   </View>
 );
@@ -30,7 +33,7 @@ const styles = StyleSheet.create({
   region: { color: '#161C23', fontSize: 16, fontWeight: '900' },
   statusRow: { alignItems: 'center', flexDirection: 'row', gap: 6, marginTop: 3 },
   statusText: { color: '#606771', fontSize: 11, fontWeight: '700' },
-  summaryCard: { backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 15, elevation: 5, paddingHorizontal: 14, paddingVertical: 10, shadowColor: '#17202A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.13, shadowRadius: 8 },
+  summaryCard: { borderColor: 'rgba(255,255,255,0.72)', borderRadius: 17, borderWidth: 1, elevation: 5, overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 10, shadowColor: '#17202A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.13, shadowRadius: 8 },
 });
 
 export default MapStatusOverlay;

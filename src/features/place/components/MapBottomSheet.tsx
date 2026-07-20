@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
+import GlassSurface from './GlassSurface';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -253,6 +254,13 @@ const MapBottomSheet = ({
     <Animated.View
       style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}
     >
+      <GlassSurface
+        intensity={76}
+        pointerEvents="none"
+        style={styles.sheetGlass}
+        tintColor="rgba(255,255,255,0.18)"
+      />
+      <View pointerEvents="none" style={styles.topSheen} />
       <View style={styles.handleArea} {...panHandlers}>
         <Pressable accessibilityLabel="하단 시트 크기 변경" hitSlop={10} onPress={onHandlePress}>
           <View style={styles.handle} />
@@ -336,7 +344,8 @@ const styles = StyleSheet.create({
   backRow: { height: 40, justifyContent: 'center' },
   backText: { color: '#5F6670', fontSize: 13, fontWeight: '700' },
   bottomSheet: {
-    backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, bottom: 0,
+    backgroundColor: 'rgba(247,250,252,0.38)', borderColor: 'rgba(255,255,255,0.76)',
+    borderTopLeftRadius: 30, borderTopRightRadius: 30, borderTopWidth: 1, bottom: 0,
     elevation: 18, left: 0, position: 'absolute', right: 0, shadowColor: '#101820',
     shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.16, shadowRadius: 18, zIndex: 50,
   },
@@ -350,13 +359,13 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 70 },
   emptyTitle: { color: '#2B3139', fontSize: 16, fontWeight: '900' },
   eyebrow: { color: '#F52A62', fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginBottom: 3 },
-  filterChip: { alignItems: 'center', backgroundColor: '#F4F5F7', borderColor: '#F4F5F7', borderRadius: 18, borderWidth: 1, height: 36, justifyContent: 'center', paddingHorizontal: 14 },
+  filterChip: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 18, borderWidth: 1, height: 36, justifyContent: 'center', paddingHorizontal: 14 },
   filterChipActive: { backgroundColor: '#FFF0F4', borderColor: '#FF4A75' },
   filterContent: { gap: 8, paddingRight: 20 },
   filterScroll: { flexGrow: 0, marginTop: 11 },
   filterText: { color: '#5F6670', fontSize: 12, fontWeight: '800' },
   filterTextActive: { color: '#EA235B' },
-  handle: { backgroundColor: '#D5D8DD', borderRadius: 3, height: 5, width: 42 },
+  handle: { backgroundColor: 'rgba(75,83,94,0.3)', borderRadius: 3, height: 5, width: 42 },
   handleArea: { alignItems: 'center', height: 24, justifyContent: 'center' },
   headerArea: { paddingHorizontal: 18 },
   homeContent: { paddingTop: 16 },
@@ -367,7 +376,7 @@ const styles = StyleSheet.create({
   previewActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
   previewAddress: { color: '#8A9099', fontSize: 12, marginTop: 3 },
   previewBody: { padding: 18 },
-  previewCard: { backgroundColor: '#FFFFFF', borderColor: '#ECEEF1', borderRadius: 22, borderWidth: 1, overflow: 'hidden', shadowColor: '#18202A', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.08, shadowRadius: 14 },
+  previewCard: { backgroundColor: 'rgba(255,255,255,0.62)', borderColor: 'rgba(255,255,255,0.82)', borderRadius: 22, borderWidth: 1, overflow: 'hidden', shadowColor: '#18202A', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.08, shadowRadius: 14 },
   previewImage: { backgroundColor: '#26394A', height: 145, justifyContent: 'flex-end', overflow: 'hidden', padding: 14 },
   previewImageLabel: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
   previewImageLabelText: { color: '#D91F56', fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
@@ -380,10 +389,10 @@ const styles = StyleSheet.create({
   previewTitleRow: { alignItems: 'center', flexDirection: 'row', marginBottom: 12 },
   primaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 10, flex: 1, height: 35, justifyContent: 'center' },
   primaryButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
-  recommendationCard: { backgroundColor: '#FFFFFF', borderColor: '#E8EAED', borderRadius: 18, borderWidth: 1, padding: 15, shadowColor: '#151A20', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 10, width: 255 },
+  recommendationCard: { backgroundColor: 'rgba(255,255,255,0.58)', borderColor: 'rgba(255,255,255,0.82)', borderRadius: 20, borderWidth: 1, padding: 15, shadowColor: '#151A20', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 10, width: 255 },
   recommendationRow: { gap: 12, paddingBottom: 24, paddingHorizontal: 18, paddingTop: 12 },
   resultBody: { flex: 1 },
-  resultCard: { alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomColor: '#ECEEF1', borderBottomWidth: 1, flexDirection: 'row', gap: 13, minHeight: 104, paddingVertical: 13 },
+  resultCard: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.28)', borderBottomColor: 'rgba(255,255,255,0.72)', borderBottomWidth: 1, flexDirection: 'row', gap: 13, minHeight: 104, paddingHorizontal: 8, paddingVertical: 13 },
   resultList: { paddingBottom: 40, paddingHorizontal: 18, paddingTop: 17 },
   resultName: { color: '#181C22', flex: 1, fontSize: 15, fontWeight: '900' },
   resultTags: { color: '#737982', fontSize: 11, marginTop: 5 },
@@ -391,7 +400,8 @@ const styles = StyleSheet.create({
   resultThumbText: { color: '#FF7599', fontSize: 25, fontWeight: '900' },
   resultTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 5 },
   searchAction: { color: '#EC245B', fontSize: 12, fontWeight: '900' },
-  searchBar: { alignItems: 'center', backgroundColor: '#F1F3F5', borderRadius: 15, flexDirection: 'row', height: 48, paddingHorizontal: 14 },
+  searchBar: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.54)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, flexDirection: 'row', height: 48, paddingHorizontal: 14 },
+  sheetGlass: { ...StyleSheet.absoluteFillObject, borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden' },
   searchIcon: { color: '#252B33', fontSize: 27, lineHeight: 29, marginRight: 8, transform: [{ rotate: '-20deg' }] },
   searchInput: { color: '#151A20', flex: 1, fontSize: 15, fontWeight: '600', height: '100%', padding: 0 },
   secondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, flex: 1, height: 35, justifyContent: 'center' },
@@ -404,6 +414,7 @@ const styles = StyleSheet.create({
   tag: { backgroundColor: '#F3F4F6', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 6 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
   tagText: { color: '#5E6570', fontSize: 10, fontWeight: '800' },
+  topSheen: { backgroundColor: 'rgba(255,255,255,0.64)', borderRadius: 2, height: 1, left: 34, position: 'absolute', right: 34, top: 1 },
   verifiedText: { color: '#777D86', fontSize: 11, marginTop: 5 },
   waitText: { color: '#4E555F', fontSize: 11, fontWeight: '700' },
 });
