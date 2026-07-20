@@ -189,7 +189,7 @@ const resources = {
         actions: {
           likedPlaces: 'View liked places',
           savedPlaces: 'View saved places',
-          addPlace: 'Post place',
+          addPlace: 'Add place',
         },
       },
       apiErrors: {
@@ -385,7 +385,7 @@ const resources = {
         actions: {
           likedPlaces: '좋아요 장소 보기',
           savedPlaces: '저장한 장소 보기',
-          addPlace: '게시하기',
+          addPlace: '장소 등록',
         },
       },
       apiErrors: {
