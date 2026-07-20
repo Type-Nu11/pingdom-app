@@ -1,1 +1,1 @@
-export { default } from './src/v2/app/App';
+export { default } from './App.v1';
