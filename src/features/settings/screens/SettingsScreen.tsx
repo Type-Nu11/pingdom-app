@@ -65,7 +65,7 @@ const SettingsScreen = ({ onBack, onLogout }: SettingsScreenProps) => {
         {currentPage === 'root' && (
           <>
             <SettingsNavBar title="설정" onBack={goBack} />
-            <SettingsRootView onNavigate={goTo} />
+            <SettingsRootView onLogout={onLogout} onNavigate={goTo} />
           </>
         )}
         {currentPage === 'username' && <UsernameChangeView profile={profile} onBack={goBack} />}
