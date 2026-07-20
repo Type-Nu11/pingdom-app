@@ -8,7 +8,6 @@ import MapBottomSheet, {
 } from '../components/MapBottomSheet';
 import MapCanvas from '../components/MapCanvas';
 import MapControlRail from '../components/MapControlRail';
-import MapStatusOverlay from '../components/MapStatusOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
@@ -258,10 +257,6 @@ export default function MapScreen({
         userLng={userLng}
       />
       <View pointerEvents="none" style={styles.mapTint} />
-      <MapStatusOverlay
-        placeCount={allPlaces.length}
-        region={t('map.decision.nearYou')}
-      />
       <MapControlRail
         bottom={fullSheetHeight + 16}
         mapType={mapType}
