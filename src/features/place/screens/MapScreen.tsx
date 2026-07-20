@@ -85,6 +85,7 @@ type MapScreenProps = {
 };
 
 export default function MapScreen({
+  onCreatePlace,
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
@@ -274,6 +275,7 @@ export default function MapScreen({
         height={fullSheetHeight}
         onBackHome={handleBackHome}
         onCouponPress={handleCoupon}
+        onCreatePlace={onCreatePlace}
         onDetailPress={(place) => onOpenPlaceDetail?.(String(place.id))}
         onFilterPress={handleFilterPress}
         onGoNowPress={handleGoNow}

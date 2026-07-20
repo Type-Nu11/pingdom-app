@@ -40,6 +40,7 @@ type MapBottomSheetProps = {
   height: number;
   onBackHome: () => void;
   onCouponPress: (place: DecisionPlace) => void;
+  onCreatePlace?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
@@ -284,6 +285,7 @@ const MapBottomSheet = ({
   height,
   onBackHome,
   onCouponPress,
+  onCreatePlace,
   onDetailPress,
   onFilterPress,
   onGoNowPress,
@@ -329,7 +331,24 @@ const MapBottomSheet = ({
           query={query}
         />
         {!isPreview ? (
-          <FilterRow activeFilters={activeFilters} onFilterPress={onFilterPress} />
+          <View style={styles.sheetActionRow}>
+            <Pressable
+              accessibilityLabel={t('map.actions.addPlace')}
+              accessibilityRole="button"
+              hitSlop={6}
+              onPress={onCreatePlace}
+              style={({ pressed }) => [
+                styles.createPlaceButton,
+                pressed && styles.createPlaceButtonPressed,
+              ]}
+            >
+              <Text style={styles.createPlaceIcon}>＋</Text>
+              <Text style={styles.createPlaceText}>{t('map.actions.addPlace')}</Text>
+            </Pressable>
+            <View style={styles.filterRowBody}>
+              <FilterRow activeFilters={activeFilters} onFilterPress={onFilterPress} />
+            </View>
+          </View>
         ) : (
           <Pressable onPress={onBackHome} style={styles.backRow}>
             <Text style={styles.backText}>‹  {t('map.decision.backToRecommendations')}</Text>
@@ -411,6 +430,10 @@ const styles = StyleSheet.create({
   categoryBadge: { backgroundColor: '#FFF0F4', borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
   categoryBadgeText: { color: '#E8245E', fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
   chevron: { color: '#B3B7BE', fontSize: 28, fontWeight: '300' },
+  createPlaceButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 18, flexDirection: 'row', gap: 3, height: 36, justifyContent: 'center', paddingHorizontal: 13 },
+  createPlaceButtonPressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
+  createPlaceIcon: { color: '#FFFFFF', fontSize: 17, fontWeight: '700', lineHeight: 19 },
+  createPlaceText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
   distanceText: { color: '#8A9099', fontSize: 11, fontWeight: '700' },
   emptyBody: { color: '#838992', fontSize: 12, marginTop: 7, textAlign: 'center' },
   emptyState: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 70 },
@@ -419,9 +442,10 @@ const styles = StyleSheet.create({
   filterChip: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 18, borderWidth: 1, height: 36, justifyContent: 'center', paddingHorizontal: 14 },
   filterChipActive: { backgroundColor: '#FFF0F4', borderColor: '#FF4A75' },
   filterContent: { gap: 8, paddingRight: 20 },
-  filterScroll: { flexGrow: 0, marginTop: 11 },
+  filterScroll: { flexGrow: 0 },
   filterText: { color: '#5F6670', fontSize: 12, fontWeight: '800' },
   filterTextActive: { color: '#EA235B' },
+  filterRowBody: { flex: 1, overflow: 'hidden' },
   handle: { backgroundColor: 'rgba(75,83,94,0.3)', borderRadius: 3, height: 5, width: 42 },
   handleArea: { alignItems: 'center', height: 24, justifyContent: 'center' },
   headerArea: { paddingHorizontal: 18 },
@@ -465,6 +489,7 @@ const styles = StyleSheet.create({
   profileGlyphHead: { backgroundColor: '#5C636D', borderRadius: 4, height: 8, marginBottom: 2, width: 8 },
   profileIconButton: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, height: 48, justifyContent: 'center', width: 48 },
   searchRow: { flexDirection: 'row', gap: 8 },
+  sheetActionRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 11 },
   secondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, flex: 1, height: 35, justifyContent: 'center' },
   secondaryButtonText: { color: '#E8245E', fontSize: 12, fontWeight: '900' },
   sectionTitle: { color: '#171B21', fontSize: 20, fontWeight: '900' },
