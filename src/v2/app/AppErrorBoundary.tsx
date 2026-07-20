@@ -1,8 +1,9 @@
 import React, { Component, type ErrorInfo, type PropsWithChildren, type ReactNode } from 'react';
-import { Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
+
+import { ErrorState } from '../shared/components';
 
 type AppErrorBoundaryState = {
   error: Error | null;
@@ -39,50 +40,18 @@ function ErrorFallback({ onRetry }: { onRetry: () => void }) {
 
   return (
     <FallbackContainer edges={['top', 'right', 'bottom', 'left']}>
-      <FallbackTitle>{t('common.error.title')}</FallbackTitle>
-      <FallbackDescription>{t('common.error.description')}</FallbackDescription>
-      <RetryButton accessibilityRole="button" onPress={onRetry}>
-        <RetryLabel>{t('common.error.retry')}</RetryLabel>
-      </RetryButton>
+      <ErrorState
+        actionLabel={t('common.error.retry')}
+        description={t('common.error.description')}
+        fill
+        onAction={onRetry}
+        title={t('common.error.title')}
+      />
     </FallbackContainer>
   );
 }
 
 const FallbackContainer = styled(SafeAreaView)`
   flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: ${({ theme }) => theme.spacing.md}px;
-  padding: ${({ theme }) => theme.spacing.xl}px;
   background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const FallbackTitle = styled(Text)`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.title.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.title.fontWeight};
-  line-height: ${({ theme }) => theme.typography.title.lineHeight}px;
-`;
-
-const FallbackDescription = styled(Text)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.body.fontWeight};
-  line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
-`;
-
-const RetryButton = styled.Pressable`
-  min-height: ${({ theme }) => theme.spacing.xxl}px;
-  align-items: center;
-  justify-content: center;
-  padding: ${({ theme }) => theme.spacing.none}px ${({ theme }) => theme.spacing.lg}px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  background-color: ${({ theme }) => theme.colors.primary};
-`;
-
-const RetryLabel = styled(Text)`
-  color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
 `;
