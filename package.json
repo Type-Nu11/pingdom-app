@@ -6,6 +6,8 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "check:v2": "node scripts/check-v2-boundaries.mjs",
+    "typecheck": "tsc --noEmit",
     "web": "expo start --web"
   },
   "dependencies": {
@@ -32,6 +34,7 @@
     "react-native-keychain": "^10.0.0",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-svg": "15.15.3",
+    "styled-components": "^6.4.4",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
