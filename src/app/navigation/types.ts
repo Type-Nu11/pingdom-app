@@ -42,6 +42,7 @@ export const MAIN_ROUTES = {
   CouponWallet: 'CouponWallet',
   Map: 'Map',
   Merchant: 'Merchant',
+  PlaceCreate: 'PlaceCreate',
   PlaceDetail: 'PlaceDetail',
   Profile: 'Profile',
   Settings: 'Settings',
@@ -60,6 +61,7 @@ export type MainStackParamList = {
     notificationContext?: NotificationNavigationContext;
     placeId: PlaceId;
   };
+  PlaceCreate: undefined;
   CheckIn: {
     placeId: PlaceId;
   };
