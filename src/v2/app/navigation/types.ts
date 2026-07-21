@@ -8,11 +8,13 @@ export type PlaceId = number & {
 
 export const V2_ROUTES = {
   Home: 'Home',
+  Map: 'Map',
   PlaceDetail: 'PlaceDetail',
 } as const;
 
 export type V2StackParamList = {
   Home: undefined;
+  Map: undefined;
   PlaceDetail: {
     placeId: PlaceId;
   };
