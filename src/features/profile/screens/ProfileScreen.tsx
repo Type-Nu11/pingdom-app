@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BackHandler, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ArchiveDetailView from '../components/ArchiveDetailView';
 import LikesBottomSheet from '../components/LikesBottomSheet';
@@ -11,6 +11,7 @@ import { useMyReports } from '../../record/hooks/useMyReports';
 import { useMyPosts } from '../../record/hooks/useMyPosts';
 import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
 import { useProfile } from '../hooks/useProfile';
+import { getProfileBackAction, type ProfileMode } from '../utils/profileBack';
 
 type ProfileScreenProps = {
   initialTab?: ProfileTab;
@@ -19,7 +20,6 @@ type ProfileScreenProps = {
   onOpenSettings: () => void;
 };
 
-type ProfileMode = 'profile' | 'archive' | 'archive-detail';
 type ProfileTab = 'liked' | 'saved';
 
 const ProfileScreen = ({
@@ -73,24 +73,27 @@ const ProfileScreen = ({
     });
   }, [hiddenPostIds, likedPosts, reportedPosts]);
 
-  const handleBack = () => {
-    if (likesOpen) {
-      setLikesOpen(false);
-      return;
-    }
+  const handleBack = useCallback(() => {
+    const action = getProfileBackAction(likesOpen, mode);
 
-    if (mode === 'archive-detail') {
-      setMode('archive');
-      return;
-    }
+    if (action === 'close-likes') setLikesOpen(false);
+    else if (action === 'show-archive') setMode('archive');
+    else if (action === 'show-profile') setMode('profile');
+    else onBack();
+  }, [likesOpen, mode, onBack]);
 
-    if (mode === 'archive') {
-      setMode('profile');
-      return;
-    }
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (getProfileBackAction(likesOpen, mode) === 'navigate-back') {
+        return false;
+      }
 
-    onBack();
-  };
+      handleBack();
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [handleBack, likesOpen, mode]);
 
   const isArchiveDetail = mode === 'archive-detail';
 

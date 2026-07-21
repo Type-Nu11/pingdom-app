@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StatusBar, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { BackHandler, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { profileApi } from '../../profile/api/profileApi';
 import { useProfile } from '../../profile/hooks/useProfile';
@@ -18,6 +18,7 @@ import {
   PRIVACY_CONTENT,
   TERMS_CONTENT,
 } from '../constants/legalContent';
+import { getSettingsBackAction } from '../utils/settingsBack';
 
 export type SettingsPage =
   | 'root'
@@ -44,14 +45,27 @@ const SettingsScreen = ({ onBack, onLogout }: SettingsScreenProps) => {
 
   const goTo = (page: SettingsPage) => setPageStack((prev) => [...prev, page]);
 
-  const goBack = () => {
-    if (pageStack.length > 1) {
+  const goBack = useCallback(() => {
+    if (getSettingsBackAction(pageStack.length) === 'pop-page') {
       setPageStack((prev) => prev.slice(0, -1));
       return;
     }
 
     onBack();
-  };
+  }, [onBack, pageStack.length]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (getSettingsBackAction(pageStack.length) === 'navigate-back') {
+        return false;
+      }
+
+      goBack();
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [goBack, pageStack.length]);
 
   const handleAccountDeleted = async () => {
     await profileApi.deleteProfile();
