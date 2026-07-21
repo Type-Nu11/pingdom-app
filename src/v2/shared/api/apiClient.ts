@@ -12,6 +12,10 @@ export type GetRequestOptions = {
   signal?: AbortSignal;
 };
 
+export type MutationRequestOptions = {
+  signal?: AbortSignal;
+};
+
 const axiosInstance = axios.create({
   baseURL: env.apiBaseUrl,
   headers: {
@@ -32,6 +36,21 @@ export const apiClient = {
 
     try {
       const response = await axiosInstance.get<TResponse>(path, options);
+      return response.data;
+    } catch (error) {
+      throw toApiError(error);
+    }
+  },
+
+  async patch<TResponse, TBody = unknown>(
+    path: string,
+    body: TBody,
+    options: MutationRequestOptions = {},
+  ): Promise<TResponse> {
+    assertRelativeApiPath(path);
+
+    try {
+      const response = await axiosInstance.patch<TResponse>(path, body, options);
       return response.data;
     } catch (error) {
       throw toApiError(error);

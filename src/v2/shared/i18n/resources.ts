@@ -15,6 +15,11 @@ export const resources = {
         loading: 'Loading places...',
         title: 'Place list example',
       },
+      placeDetail: {
+        back: 'Back',
+        placeId: 'Place ID: {{placeId}}',
+        title: 'Place detail',
+      },
     },
   },
   ko: {
@@ -33,6 +38,15 @@ export const resources = {
         loading: '장소를 불러오는 중입니다...',
         title: '장소 목록 예제',
       },
+      placeDetail: {
+        back: '뒤로',
+        placeId: '장소 ID: {{placeId}}',
+        title: '장소 상세',
+      },
     },
   },
 } as const;
+
+export const supportedLanguages = ['en', 'ko'] as const;
+
+export type SupportedLanguage = (typeof supportedLanguages)[number];
