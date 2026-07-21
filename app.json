@@ -2,6 +2,7 @@
   "expo": {
     "name": "PingDom",
     "slug": "pingdom-app",
+    "scheme": "pingdom",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -13,6 +14,17 @@
       "bundleIdentifier": "com.rmdka.pingdomapp"
     },
     "android": {
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "pingdom"
+            }
+          ]
+        }
+      ],
       "predictiveBackGestureEnabled": false,
       "package": "com.rmdka.pingdomapp"
     },
