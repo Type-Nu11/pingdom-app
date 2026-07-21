@@ -16,6 +16,7 @@ import {
   createNotificationNavigationIntent,
 } from './notificationIntent';
 import { V2_ROUTES, type V2StackParamList } from './types';
+import { useAndroidBackHandler } from './useAndroidBackHandler';
 
 const Stack = createNativeStackNavigator<V2StackParamList>();
 const navigationRef = createNavigationContainerRef<V2StackParamList>();
@@ -28,6 +29,8 @@ export default function RootNavigator() {
   const [isNavigationReady, setIsNavigationReady] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<NotificationRoute | null>(null);
   const handledMessageIds = useRef(new Set<string>());
+
+  useAndroidBackHandler(navigationRef);
 
   const handleNotificationOpen = useCallback((route: NotificationRoute) => {
     setPendingRoute(route);
