@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BackHandler, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import ArchiveDetailView from '../components/ArchiveDetailView';
 import LikesBottomSheet from '../components/LikesBottomSheet';
 import ProfileGallery from '../components/ProfileGallery';
@@ -82,8 +84,8 @@ const ProfileScreen = ({
     else onBack();
   }, [likesOpen, mode, onBack]);
 
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+  useFocusEffect(useCallback(() => {
+    return registerAndroidBackOverride(() => {
       if (getProfileBackAction(likesOpen, mode) === 'navigate-back') {
         return false;
       }
@@ -91,9 +93,7 @@ const ProfileScreen = ({
       handleBack();
       return true;
     });
-
-    return () => subscription.remove();
-  }, [handleBack, likesOpen, mode]);
+  }, [handleBack, likesOpen, mode]));
 
   const isArchiveDetail = mode === 'archive-detail';
 

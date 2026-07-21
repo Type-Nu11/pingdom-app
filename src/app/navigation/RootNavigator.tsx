@@ -25,6 +25,7 @@ import {
   ROOT_ROUTES,
   type RootStackParamList,
 } from './types';
+import { useAndroidBackHandler } from './useAndroidBackHandler';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -37,6 +38,8 @@ const RootNavigator = () => {
   const [pendingDeepLinkIntent, setPendingDeepLinkIntent] = useState<MainNavigationIntent | null>(null);
   const handledNotificationIds = useRef(new Set<string>());
   const previousIsLoggedIn = useRef(isLoggedIn);
+
+  useAndroidBackHandler(navigationRef);
 
   useFcmTokenSync(isLoggedIn);
   useForegroundFcmNotifications(isLoggedIn);

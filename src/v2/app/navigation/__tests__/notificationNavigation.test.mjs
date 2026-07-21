@@ -7,6 +7,10 @@ import {
   createNotificationNavigationIntent,
 } from '../notificationIntent.ts';
 import { parsePlaceId, V2_ROUTES } from '../types.ts';
+import {
+  ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
+  getAndroidBackAction,
+} from '../androidBack.ts';
 
 test('V2 place route parameters accept only positive safe integers', () => {
   assert.equal(parsePlaceId('42'), 42);
@@ -15,6 +19,18 @@ test('V2 place route parameters accept only positive safe integers', () => {
   for (const value of [undefined, '', '0', '01', '-1', '1.2', '../settings', 0]) {
     assert.equal(parsePlaceId(value), null);
   }
+});
+
+test('V2 Android back pops history and requires confirmation at the root', () => {
+  const now = 10_000;
+
+  assert.equal(getAndroidBackAction(true, now - 100, now), 'go-back');
+  assert.equal(getAndroidBackAction(false, 0, now), 'show-exit-hint');
+  assert.equal(getAndroidBackAction(false, now - 100, now), 'exit-app');
+  assert.equal(
+    getAndroidBackAction(false, now - ANDROID_EXIT_CONFIRMATION_WINDOW_MS - 1, now),
+    'show-exit-hint',
+  );
 });
 
 test('current notification payload routes to V2 place detail', () => {

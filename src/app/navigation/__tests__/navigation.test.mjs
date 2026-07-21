@@ -18,6 +18,11 @@ import {
 } from '../types.ts';
 import { getProfileBackAction } from '../../../features/profile/utils/profileBack.ts';
 import { getSettingsBackAction } from '../../../features/settings/utils/settingsBack.ts';
+import { getMapBackAction } from '../../../features/place/utils/mapBack.ts';
+import {
+  ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
+  getAndroidBackAction,
+} from '../androidBack.ts';
 
 test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parsePlaceId(123), 123);
@@ -127,4 +132,22 @@ test('Profile and Settings consume hardware back only for local UI state', () =>
   assert.equal(getProfileBackAction(false, 'profile'), 'navigate-back');
   assert.equal(getSettingsBackAction(2), 'pop-page');
   assert.equal(getSettingsBackAction(1), 'navigate-back');
+});
+
+test('Map closes local bottom-sheet state before delegating navigation back', () => {
+  assert.equal(getMapBackAction({ type: 'place-preview', placeId: 1 }, 'expanded'), 'show-home');
+  assert.equal(getMapBackAction({ type: 'home' }, 'medium'), 'collapse-sheet');
+  assert.equal(getMapBackAction({ type: 'home' }, 'collapsed'), 'navigate-back');
+});
+
+test('Android back pops navigation before applying the double-back exit policy', () => {
+  const now = 10_000;
+
+  assert.equal(getAndroidBackAction(true, now - 500, now), 'go-back');
+  assert.equal(getAndroidBackAction(false, 0, now), 'show-exit-hint');
+  assert.equal(getAndroidBackAction(false, now - 500, now), 'exit-app');
+  assert.equal(
+    getAndroidBackAction(false, now - ANDROID_EXIT_CONFIRMATION_WINDOW_MS - 1, now),
+    'show-exit-hint',
+  );
 });

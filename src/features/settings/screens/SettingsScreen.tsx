@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { BackHandler, StatusBar, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { profileApi } from '../../profile/api/profileApi';
 import { useProfile } from '../../profile/hooks/useProfile';
 import DeleteAccountView from '../components/DeleteAccountView';
@@ -54,8 +56,8 @@ const SettingsScreen = ({ onBack, onLogout }: SettingsScreenProps) => {
     onBack();
   }, [onBack, pageStack.length]);
 
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+  useFocusEffect(useCallback(() => {
+    return registerAndroidBackOverride(() => {
       if (getSettingsBackAction(pageStack.length) === 'navigate-back') {
         return false;
       }
@@ -63,9 +65,7 @@ const SettingsScreen = ({ onBack, onLogout }: SettingsScreenProps) => {
       goBack();
       return true;
     });
-
-    return () => subscription.remove();
-  }, [goBack, pageStack.length]);
+  }, [goBack, pageStack.length]));
 
   const handleAccountDeleted = async () => {
     await profileApi.deleteProfile();

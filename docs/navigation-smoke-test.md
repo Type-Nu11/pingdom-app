@@ -31,6 +31,14 @@ The device must be listed as `device`, not `offline` or `unauthorized`.
 4. Press Android back. Profile must not reopen; Map is the root screen.
 5. Open a place detail from Map and press Android back. The previous Map state must remain.
 
+## Root exit policy
+
+1. On Map, return the bottom sheet to Home and press Android back once if it is expanded.
+2. Confirm the sheet collapses and the app stays open.
+3. Press Android back once more and confirm the exit guidance toast appears.
+4. Wait more than two seconds and press Android back; confirm the guidance appears again.
+5. Press Android back again within two seconds; only then should the app exit.
+
 ## Local back handling
 
 1. In Profile, open Archive and an archive detail. Android back must go detail → archive → profile → Map.
