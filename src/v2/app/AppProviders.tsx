@@ -5,13 +5,32 @@ import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from 'styled-components/native';
 
-import { i18n } from '../shared/i18n';
+import { i18n, initializeI18n } from '../shared/i18n';
 import { theme } from '../shared/theme';
 import AppErrorBoundary from './AppErrorBoundary';
 import { createQueryClient } from './queryClient';
 
 export default function AppProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(createQueryClient);
+  const [isI18nReady, setIsI18nReady] = useState(i18n.isInitialized);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void initializeI18n()
+      .catch((error) => {
+        console.warn('[V2 i18n] Initialization failed:', error);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsI18nReady(true);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handleAppStateChange = (status: AppStateStatus) => {
@@ -24,6 +43,10 @@ export default function AppProviders({ children }: PropsWithChildren) {
 
     return () => subscription.remove();
   }, []);
+
+  if (!isI18nReady) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
