@@ -7,6 +7,7 @@ import PlaceDetailScreen from '../../features/place/screens/PlaceDetailScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
+import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
   MAIN_ROUTES,
   parsePlaceId,
@@ -69,9 +70,9 @@ const ProfileRouteScreen = ({ navigation, route }: MainScreenProps<'Profile'>) =
     initialTab={route.params?.initialTab}
     onBack={navigation.goBack}
     onOpenBookmarkedPost={(value) => {
-      const focusedPlaceId = parsePlaceId(value);
-      if (focusedPlaceId) {
-        navigation.popTo(MAIN_ROUTES.Map, { focusedPlaceId });
+      const mapParams = createFocusedPlaceMapParams(value);
+      if (mapParams) {
+        navigation.popTo(MAIN_ROUTES.Map, mapParams);
       }
     }}
     onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
