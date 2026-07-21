@@ -9,6 +9,7 @@
     "check:v2": "node scripts/check-v2-boundaries.mjs",
     "test:navigation": "tsx --test src/app/navigation/__tests__/*.test.mjs",
     "test:v2-notifications": "tsx --test src/v2/app/navigation/__tests__/*.test.mjs",
+    "test:v2-map": "tsx --test src/v2/features/map/__tests__/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "web": "expo start --web"
   },
