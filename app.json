@@ -2,10 +2,13 @@
   "expo": {
     "name": "PingDom",
     "slug": "pingdom-app",
+    "scheme": "pingdom",
     "version": "1.0.0",
+    "icon": "./src/assets/icons/pingdomlogo-ios.png",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
+      "icon": "./src/assets/icons/pingdomlogo-ios.png",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "내 사진을 장소 게시글에 올리기 위해 사진 보관함 접근 권한이 필요합니다."
       },
@@ -13,6 +16,22 @@
       "bundleIdentifier": "com.rmdka.pingdomapp"
     },
     "android": {
+      "icon": "./src/assets/icons/pingdomlogo.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/icons/pingdomlogo-adaptive.png",
+        "backgroundColor": "#FF1452"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "pingdom"
+            }
+          ]
+        }
+      ],
       "predictiveBackGestureEnabled": false,
       "package": "com.rmdka.pingdomapp"
     },

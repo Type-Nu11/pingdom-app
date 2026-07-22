@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { profileApi } from '../../profile/api/profileApi';
 import { useProfile } from '../../profile/hooks/useProfile';
 import DeleteAccountView from '../components/DeleteAccountView';
@@ -18,6 +20,7 @@ import {
   PRIVACY_CONTENT,
   TERMS_CONTENT,
 } from '../constants/legalContent';
+import { getSettingsBackAction } from '../utils/settingsBack';
 
 export type SettingsPage =
   | 'root'
@@ -44,14 +47,25 @@ const SettingsScreen = ({ onBack, onLogout }: SettingsScreenProps) => {
 
   const goTo = (page: SettingsPage) => setPageStack((prev) => [...prev, page]);
 
-  const goBack = () => {
-    if (pageStack.length > 1) {
+  const goBack = useCallback(() => {
+    if (getSettingsBackAction(pageStack.length) === 'pop-page') {
       setPageStack((prev) => prev.slice(0, -1));
       return;
     }
 
     onBack();
-  };
+  }, [onBack, pageStack.length]);
+
+  useFocusEffect(useCallback(() => {
+    return registerAndroidBackOverride(() => {
+      if (getSettingsBackAction(pageStack.length) === 'navigate-back') {
+        return false;
+      }
+
+      goBack();
+      return true;
+    });
+  }, [goBack, pageStack.length]));
 
   const handleAccountDeleted = async () => {
     await profileApi.deleteProfile();

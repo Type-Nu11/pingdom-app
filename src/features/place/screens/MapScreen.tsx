@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { useTranslation } from 'react-i18next';
 import MapBottomSheet, {
   type BottomSheetContent,
@@ -15,6 +17,7 @@ import { usePlaces } from '../hooks/usePlaces';
 import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
+import { getMapBackAction } from '../utils/mapBack';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
 
@@ -226,6 +229,26 @@ export default function MapScreen({
     setIsFollowingUser(true);
     snapTo('medium');
   };
+
+  useFocusEffect(useCallback(() => {
+    return registerAndroidBackOverride(() => {
+      const action = getMapBackAction(content, snapPoint);
+
+      if (action === 'show-home') {
+        setContent({ type: 'home' });
+        setIsFollowingUser(true);
+        snapTo('medium');
+        return true;
+      }
+
+      if (action === 'collapse-sheet') {
+        snapTo('collapsed');
+        return true;
+      }
+
+      return false;
+    });
+  }, [content, snapPoint, snapTo]));
   const handleGoNow = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.goNow'),

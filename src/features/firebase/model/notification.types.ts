@@ -3,6 +3,7 @@ export type NotificationRouteName = 'map' | 'place-detail';
 export type NotificationRouteSource =
   | 'background-message'
   | 'background-open'
+  | 'local-open'
   | 'quit-open';
 
 export type NotificationRoute = {

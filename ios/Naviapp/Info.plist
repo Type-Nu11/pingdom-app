@@ -38,6 +38,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.rmdka.pingdomapp</string>
+				<string>pingdom</string>
 			</array>
 		</dict>
 	</array>
