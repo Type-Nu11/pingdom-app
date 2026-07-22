@@ -8,6 +8,7 @@
     "ios": "expo run:ios",
     "check:v2": "node scripts/check-v2-boundaries.mjs",
     "check:a11y-i18n": "node scripts/check-accessibility-i18n.mjs",
+    "check:api-contract": "node scripts/check-api-contract.mjs",
     "test:navigation": "tsx --test src/app/navigation/__tests__/*.test.mjs",
     "test:v2-notifications": "tsx --test src/v2/app/navigation/__tests__/*.test.mjs",
     "test:v2-map": "tsx --test src/v2/features/map/__tests__/*.test.mjs",

@@ -1,0 +1,13 @@
+{
+  "name": "status vote canonical signing fixture",
+  "testOnlySecret": "test-signing-key",
+  "method": "POST",
+  "pathWithSortedQuery": "/api/v1/places/17/status-votes?include=liveStatus&locale=ko-KR",
+  "timestamp": 1784784600,
+  "deviceId": "6f1a0f58-34b3-4f7a-81e0-9959c76283cb",
+  "appVersion": "1.4.0",
+  "canonicalJsonBody": "{\"checkInId\":7001,\"couponUsageStatus\":\"AVAILABLE\",\"crowdLevel\":\"MODERATE\",\"observedAt\":\"2026-07-23T05:30:00Z\",\"waitTimeMinutes\":15}",
+  "bodySha256": "387156346985e0e676b1cc8046a56ea5d194c7a24d9ed4ea0f924001fdd265b9",
+  "canonicalString": "POST\n/api/v1/places/17/status-votes?include=liveStatus&locale=ko-KR\n1784784600\n6f1a0f58-34b3-4f7a-81e0-9959c76283cb\n1.4.0\n387156346985e0e676b1cc8046a56ea5d194c7a24d9ed4ea0f924001fdd265b9",
+  "signatureBase64": "ldIhZD2vxX91FmpJQjIZjqbAyrCl7s68yC48kO0b9SA="
+}
