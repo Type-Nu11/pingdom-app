@@ -4,6 +4,8 @@ import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../features/place/screens/MapScreen';
 import PlaceCreateFlowScreen from '../../features/place/screens/PlaceCreateFlowScreen';
 import PlaceDetailScreen from '../../features/place/screens/PlaceDetailScreen';
+import CheckInScreen from '../../features/place/screens/CheckInScreen';
+import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
@@ -62,6 +64,8 @@ const PlaceDetailRouteScreen = ({
     notificationTitle={route.params.notificationContext?.title}
     placeId={String(route.params.placeId)}
     onBack={navigation.goBack}
+    onCheckIn={() => navigation.navigate(MAIN_ROUTES.CheckIn, { placeId: route.params.placeId })}
+    onCoupon={() => navigation.navigate(MAIN_ROUTES.CouponWallet)}
   />
 );
 
@@ -91,18 +95,16 @@ const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
 };
 
 const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) => (
-  <RoutePlaceholderScreen
-    description={`placeId: ${route.params.placeId}`}
-    title="체크인"
+  <CheckInScreen
+    placeId={route.params.placeId}
     onBack={navigation.goBack}
   />
 );
 
 const CouponWalletRouteScreen = ({ navigation }: MainScreenProps<'CouponWallet'>) => (
-  <RoutePlaceholderScreen
-    description="쿠폰 지갑 화면은 준비 중입니다."
-    title="쿠폰 지갑"
+  <CouponWalletScreen
     onBack={navigation.goBack}
+    onExplore={() => navigation.popTo(MAIN_ROUTES.Map)}
   />
 );
 

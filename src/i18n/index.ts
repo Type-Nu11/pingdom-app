@@ -42,6 +42,22 @@ const resources = {
         subtitle: "Let's find hidden\nplaces in Korea!",
         button: 'Get Started',
       },
+      experience: {
+        common: { back: 'Back to map', close: 'Close', loading: 'Loading. Please wait.' },
+        placeDetail: {
+          title: 'Place details', open: 'Open now', distance: '{{distance}} away',
+          checked: 'Visitor information updated {{date}}', couponPrice: 'Coupon value {{price}}',
+          checkIn: 'Check in at this place', coupon: 'View available coupons',
+        },
+        checkIn: {
+          title: 'Check in', description: 'Confirm that you are visiting this place to unlock local benefits.',
+          status: 'Location confirmation required', action: 'Confirm my location and complete check-in',
+        },
+        coupon: {
+          title: 'Coupon wallet', description: 'Coupons that are ready to use appear here.',
+          status: 'No available coupons', action: 'Explore places offering visitor coupons',
+        },
+      },
       auth: {
         koreanEntry: {
           title: 'My own places, Pingdom',
@@ -169,7 +185,7 @@ const resources = {
           seeAll: 'See all',
           status: {
             openNow: 'Open now',
-            verified: 'Visitor verified · {{time}} ago',
+            verified: 'Visitor verified · {{time}}',
             wait: 'Wait {{wait}}',
           },
           transit: 'Transit',
@@ -237,6 +253,22 @@ const resources = {
         title: '오직 핑덤',
         subtitle: '한국의 숨은 장소를\n찾아보세요!',
         button: '시작하기',
+      },
+      experience: {
+        common: { back: '지도로 돌아가기', close: '닫기', loading: '불러오는 중입니다. 잠시 기다려 주세요.' },
+        placeDetail: {
+          title: '장소 상세', open: '영업 중', distance: '{{distance}} 거리',
+          checked: '방문자 정보 업데이트 {{date}}', couponPrice: '쿠폰 혜택 {{price}}',
+          checkIn: '이 장소에 체크인하기', coupon: '사용 가능한 쿠폰 보기',
+        },
+        checkIn: {
+          title: '체크인', description: '장소 방문을 확인하고 현지 방문객 혜택을 받아보세요.',
+          status: '위치 확인 필요', action: '내 위치를 확인하고 체크인 완료하기',
+        },
+        coupon: {
+          title: '쿠폰 지갑', description: '바로 사용할 수 있는 쿠폰이 이곳에 표시됩니다.',
+          status: '사용 가능한 쿠폰 없음', action: '방문객 쿠폰을 제공하는 장소 둘러보기',
+        },
       },
       auth: {
         koreanEntry: {
@@ -365,7 +397,7 @@ const resources = {
           seeAll: '전체 보기',
           status: {
             openNow: '영업 중',
-            verified: '방문자 확인 · {{time}} 전',
+            verified: '방문자 확인 · {{time}}',
             wait: '대기 {{wait}}',
           },
           transit: '대중교통',
@@ -434,7 +466,32 @@ const resources = {
         subtitle: '韓国の隠れた場所を\n見つけましょう！',
         button: 'はじめる',
       },
+      experience: {
+        common: { back: '地図に戻る', close: '閉じる', loading: '読み込み中です。しばらくお待ちください。' },
+        placeDetail: {
+          title: '場所の詳細', open: '営業中', distance: '{{distance}}先',
+          checked: '訪問者情報の更新日時：{{date}}', couponPrice: 'クーポン特典：{{price}}',
+          checkIn: 'この場所にチェックインする', coupon: '利用可能なクーポンを見る',
+        },
+        checkIn: {
+          title: 'チェックイン', description: 'この場所への訪問を確認して、旅行者向け特典を受け取りましょう。',
+          status: '位置情報の確認が必要です', action: '現在地を確認してチェックインを完了する',
+        },
+        coupon: {
+          title: 'クーポンウォレット', description: 'すぐに利用できるクーポンがここに表示されます。',
+          status: '利用可能なクーポンはありません', action: '旅行者向けクーポンがある場所を探す',
+        },
+      },
       map: {
+        decision: {
+          backToRecommendations: 'おすすめに戻る', emptyBody: '別のキーワードを入力するか、条件を解除してください。', emptyTitle: '一致する場所がありません',
+          filters: { bookable: '予約可能', coupon: 'クーポン', openNow: '営業中', shortWait: '待ち時間が短い' },
+          getCoupon: 'クーポンを受け取る', goNow: 'ここへ行く', livePicks: '今人気の場所', placesNearYou: '近くの場所',
+          profileAccessibilityLabel: 'プロフィールを開く', recommended: 'おすすめ順', resultsFor: '「{{query}}」の検索結果',
+          searchAccessibilityLabel: '場所を検索', searchPlaceholder: '場所を検索', seeAll: 'すべて見る',
+          status: { openNow: '営業中', verified: '訪問者が確認 · {{time}}', wait: '待ち時間 {{wait}}' },
+          whereToGo: '今どこへ行きますか？',
+        },
         search: {
           placeholder: '検索語を入力してください...',
           accessibilityLabel: '検索語を入力してください',
@@ -498,7 +555,32 @@ const resources = {
         subtitle: '发现韩国的隐藏景点！',
         button: '开始使用',
       },
+      experience: {
+        common: { back: '返回地图', close: '关闭', loading: '正在加载，请稍候。' },
+        placeDetail: {
+          title: '地点详情', open: '营业中', distance: '距离 {{distance}}',
+          checked: '访客信息更新于 {{date}}', couponPrice: '优惠券价值 {{price}}',
+          checkIn: '在此地点签到', coupon: '查看可用优惠券',
+        },
+        checkIn: {
+          title: '签到', description: '确认您正在访问此地点，即可解锁当地访客专属优惠。',
+          status: '需要确认位置', action: '确认我的位置并完成签到',
+        },
+        coupon: {
+          title: '优惠券包', description: '可立即使用的优惠券将显示在这里。',
+          status: '暂无可用优惠券', action: '探索提供访客优惠券的地点',
+        },
+      },
       map: {
+        decision: {
+          backToRecommendations: '返回推荐', emptyBody: '请尝试其他关键词或取消访问条件。', emptyTitle: '暂无匹配地点',
+          filters: { bookable: '可预订', coupon: '优惠券', openNow: '营业中', shortWait: '等候较短' },
+          getCoupon: '领取优惠券', goNow: '立即前往', livePicks: '当前热门地点', placesNearYou: '附近地点',
+          profileAccessibilityLabel: '打开个人资料', recommended: '推荐排序', resultsFor: '“{{query}}”的搜索结果',
+          searchAccessibilityLabel: '搜索地点', searchPlaceholder: '搜索地点', seeAll: '查看全部',
+          status: { openNow: '营业中', verified: '访客已确认 · {{time}}', wait: '等候 {{wait}}' },
+          whereToGo: '现在想去哪里？',
+        },
         search: {
           placeholder: '请输入搜索词...',
           accessibilityLabel: '请输入搜索词',
@@ -562,7 +644,32 @@ const resources = {
         subtitle: 'Cùng khám phá những địa điểm\nẩn giấu tại Hàn Quốc!',
         button: 'Bắt đầu',
       },
+      experience: {
+        common: { back: 'Quay lại bản đồ', close: 'Đóng', loading: 'Đang tải. Vui lòng chờ trong giây lát.' },
+        placeDetail: {
+          title: 'Chi tiết địa điểm', open: 'Đang mở cửa', distance: 'Cách {{distance}}',
+          checked: 'Thông tin khách ghé thăm được cập nhật lúc {{date}}', couponPrice: 'Giá trị phiếu ưu đãi {{price}}',
+          checkIn: 'Check-in tại địa điểm này', coupon: 'Xem các phiếu ưu đãi hiện có',
+        },
+        checkIn: {
+          title: 'Check-in', description: 'Xác nhận bạn đang ghé thăm địa điểm này để nhận các quyền lợi dành cho khách du lịch.',
+          status: 'Cần xác nhận vị trí', action: 'Xác nhận vị trí của tôi và hoàn tất check-in',
+        },
+        coupon: {
+          title: 'Ví phiếu ưu đãi', description: 'Các phiếu ưu đãi có thể sử dụng ngay sẽ xuất hiện tại đây.',
+          status: 'Không có phiếu ưu đãi khả dụng', action: 'Khám phá các địa điểm có phiếu ưu đãi dành cho khách du lịch',
+        },
+      },
       map: {
+        decision: {
+          backToRecommendations: 'Quay lại đề xuất', emptyBody: 'Hãy thử từ khóa khác hoặc bỏ điều kiện ghé thăm.', emptyTitle: 'Chưa có địa điểm phù hợp',
+          filters: { bookable: 'Có thể đặt chỗ', coupon: 'Phiếu ưu đãi', openNow: 'Đang mở cửa', shortWait: 'Chờ ít' },
+          getCoupon: 'Nhận phiếu ưu đãi', goNow: 'Đi ngay', livePicks: 'Địa điểm đang nổi bật', placesNearYou: 'Địa điểm gần bạn',
+          profileAccessibilityLabel: 'Mở hồ sơ', recommended: 'Được đề xuất', resultsFor: 'Kết quả cho “{{query}}”',
+          searchAccessibilityLabel: 'Tìm địa điểm', searchPlaceholder: 'Tìm địa điểm', seeAll: 'Xem tất cả',
+          status: { openNow: 'Đang mở cửa', verified: 'Khách ghé thăm đã xác nhận · {{time}}', wait: 'Chờ {{wait}}' },
+          whereToGo: 'Bây giờ bạn muốn đi đâu?',
+        },
         search: {
           placeholder: 'Nhập từ khóa tìm kiếm...',
           accessibilityLabel: 'Nhập từ khóa tìm kiếm',
@@ -626,7 +733,32 @@ const resources = {
         subtitle: 'มาค้นหาสถานที่ลับ\nในเกาหลีกันเถอะ!',
         button: 'เริ่มต้นใช้งาน',
       },
+      experience: {
+        common: { back: 'กลับไปยังแผนที่', close: 'ปิด', loading: 'กำลังโหลด โปรดรอสักครู่' },
+        placeDetail: {
+          title: 'รายละเอียดสถานที่', open: 'เปิดอยู่', distance: 'ห่างออกไป {{distance}}',
+          checked: 'อัปเดตข้อมูลผู้เยี่ยมชมเมื่อ {{date}}', couponPrice: 'มูลค่าคูปอง {{price}}',
+          checkIn: 'เช็กอินที่สถานที่นี้', coupon: 'ดูคูปองที่พร้อมใช้งาน',
+        },
+        checkIn: {
+          title: 'เช็กอิน', description: 'ยืนยันว่าคุณกำลังเยี่ยมชมสถานที่นี้เพื่อรับสิทธิประโยชน์สำหรับนักท่องเที่ยว',
+          status: 'ต้องยืนยันตำแหน่งที่ตั้ง', action: 'ยืนยันตำแหน่งของฉันและดำเนินการเช็กอินให้เสร็จสิ้น',
+        },
+        coupon: {
+          title: 'กระเป๋าคูปอง', description: 'คูปองที่พร้อมใช้งานทันทีจะแสดงอยู่ที่นี่',
+          status: 'ไม่มีคูปองที่พร้อมใช้งาน', action: 'สำรวจสถานที่ที่มีคูปองสำหรับนักท่องเที่ยว',
+        },
+      },
       map: {
+        decision: {
+          backToRecommendations: 'กลับไปยังคำแนะนำ', emptyBody: 'ลองใช้คำค้นหาอื่นหรือนำเงื่อนไขการเยี่ยมชมออก', emptyTitle: 'ยังไม่มีสถานที่ที่ตรงกัน',
+          filters: { bookable: 'จองได้', coupon: 'คูปอง', openNow: 'เปิดอยู่', shortWait: 'รอไม่นาน' },
+          getCoupon: 'รับคูปอง', goNow: 'ไปตอนนี้', livePicks: 'สถานที่ยอดนิยมตอนนี้', placesNearYou: 'สถานที่ใกล้คุณ',
+          profileAccessibilityLabel: 'เปิดโปรไฟล์', recommended: 'แนะนำ', resultsFor: 'ผลลัพธ์สำหรับ “{{query}}”',
+          searchAccessibilityLabel: 'ค้นหาสถานที่', searchPlaceholder: 'ค้นหาสถานที่', seeAll: 'ดูทั้งหมด',
+          status: { openNow: 'เปิดอยู่', verified: 'ผู้เยี่ยมชมยืนยันแล้ว · {{time}}', wait: 'รอ {{wait}}' },
+          whereToGo: 'ตอนนี้จะไปที่ไหนดี?',
+        },
         search: {
           placeholder: 'ป้อนคำค้นหา...',
           accessibilityLabel: 'ป้อนคำค้นหา',

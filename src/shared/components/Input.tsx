@@ -4,6 +4,8 @@ import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 
 type InputProps = {
+  accessibilityHint?: string;
+  errorMessage?: string;
   label: string;
   placeholder: string;
   value: string;
@@ -11,6 +13,7 @@ type InputProps = {
   secureTextEntry?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address';
+  required?: boolean;
 };
 
 const Input = ({
@@ -21,11 +24,21 @@ const Input = ({
   secureTextEntry = false,
   autoCapitalize = 'none',
   keyboardType = 'default',
+  accessibilityHint,
+  errorMessage,
+  required = false,
 }: InputProps) => {
+  const errorId = `${label.replace(/\s+/g, '-').toLowerCase()}-error`;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text nativeID={`${errorId}-label`} style={styles.label}>
+        {label}{required ? ' *' : ''}
+      </Text>
       <TextInput
+        accessibilityHint={[accessibilityHint, errorMessage].filter(Boolean).join('. ') || undefined}
+        accessibilityLabel={label}
+        accessibilityValue={errorMessage ? { text: errorMessage } : undefined}
         autoCapitalize={autoCapitalize}
         autoCorrect={false}
         keyboardType={keyboardType}
@@ -33,9 +46,14 @@ const Input = ({
         placeholder={placeholder}
         placeholderTextColor="#94A3B8"
         secureTextEntry={secureTextEntry}
-        style={styles.input}
+        style={[styles.input, errorMessage && styles.inputError]}
         value={value}
       />
+      {errorMessage ? (
+        <Text accessibilityLiveRegion="polite" nativeID={errorId} style={styles.error}>
+          {errorMessage}
+        </Text>
+      ) : null}
     </View>
   );
 };
@@ -58,6 +76,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
+    minHeight: 48,
+  },
+  inputError: {
+    borderColor: '#B42318',
+    borderWidth: 2,
+  },
+  error: {
+    color: '#B42318',
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
 
