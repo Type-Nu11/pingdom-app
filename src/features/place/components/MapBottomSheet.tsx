@@ -10,6 +10,11 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import {
+  formatDistance,
+  formatMinuteRange,
+  formatRelativeMinutes,
+} from '../../../shared/i18n/formatters';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import GlassSurface from './GlassSurface';
 
@@ -25,13 +30,16 @@ export type DecisionPlace = {
   address: string;
   category: string;
   distance: string;
+  distanceMeters?: number;
   id: number;
   latitude: number;
   longitude: number;
   name: string;
   tags: string[];
   verifiedAgo: string;
+  verifiedMinutes?: number;
   wait: string;
+  waitMinutes?: [number, number];
 };
 
 type MapBottomSheetProps = {
@@ -99,6 +107,7 @@ const SearchBar = ({
       </View>
       <Pressable
         accessibilityLabel={t('map.decision.profileAccessibilityLabel')}
+        accessibilityRole="button"
         hitSlop={8}
         onPress={onProfilePress}
         style={styles.profileIconButton}
@@ -144,6 +153,8 @@ const FilterRowContent = ({
       return (
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={t(FILTER_LABEL_KEYS[filter])}
+          accessibilityState={{ selected: isActive }}
           key={filter}
           onPress={() => onFilterPress(filter)}
           style={[styles.filterChip, isActive && styles.filterChipActive]}
@@ -159,7 +170,14 @@ const FilterRowContent = ({
 };
 
 const PlaceMeta = ({ place }: { place: DecisionPlace }) => {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const language = i18n.resolvedLanguage ?? i18n.language;
+  const wait = place.waitMinutes
+    ? formatMinuteRange(place.waitMinutes[0], place.waitMinutes[1], language)
+    : place.wait;
+  const verifiedAgo = place.verifiedMinutes === undefined
+    ? place.verifiedAgo
+    : formatRelativeMinutes(place.verifiedMinutes, language);
 
   return (
     <>
@@ -167,10 +185,10 @@ const PlaceMeta = ({ place }: { place: DecisionPlace }) => {
       <View style={styles.openDot} />
       <Text style={styles.openText}>{t('map.decision.status.openNow')}</Text>
       <Text style={styles.metaDivider}>·</Text>
-      <Text style={styles.waitText}>{t('map.decision.status.wait', { wait: place.wait })}</Text>
+      <Text style={styles.waitText}>{t('map.decision.status.wait', { wait })}</Text>
     </View>
-    <Text numberOfLines={1} style={styles.verifiedText}>
-      {t('map.decision.status.verified', { time: place.verifiedAgo })}
+    <Text style={styles.verifiedText}>
+      {t('map.decision.status.verified', { time: verifiedAgo })}
     </Text>
     </>
   );
@@ -187,49 +205,64 @@ const RecommendationCard = ({
   onPress: (place: DecisionPlace) => void;
   place: DecisionPlace;
 }) => {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const distance = place.distanceMeters
+    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
+    : place.distance;
 
   return (
-    <Pressable onPress={() => onPress(place)} style={styles.recommendationCard}>
-    <View style={styles.cardTopRow}>
-      <View style={styles.categoryBadge}>
-        <Text style={styles.categoryBadgeText}>{place.category}</Text>
+    <View style={styles.recommendationCard}>
+      <Pressable
+        accessibilityLabel={`${place.name}, ${distance}`}
+        accessibilityRole="button"
+        onPress={() => onPress(place)}
+      >
+      <View style={styles.cardTopRow}>
+        <View style={styles.categoryBadge}>
+          <Text style={styles.categoryBadgeText}>{place.category}</Text>
+        </View>
+        <Text style={styles.distanceText}>{distance}</Text>
       </View>
-      <Text style={styles.distanceText}>{place.distance}</Text>
-    </View>
-    <Text numberOfLines={1} style={styles.placeName}>{place.name}</Text>
-    <PlaceMeta place={place} />
-    <View style={styles.cardActions}>
-      <Pressable onPress={() => onCouponPress(place)} style={styles.secondaryButton}>
-        <Text style={styles.secondaryButtonText}>{t('map.decision.filters.coupon')}</Text>
+      <Text numberOfLines={2} style={styles.placeName}>{place.name}</Text>
+      <PlaceMeta place={place} />
       </Pressable>
-      <Pressable onPress={() => onGoNowPress(place)} style={styles.primaryButton}>
-        <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
-      </Pressable>
+      <View style={styles.cardActions}>
+        <Pressable accessibilityRole="button" onPress={() => onCouponPress(place)} style={styles.secondaryButton}>
+          <Text style={styles.secondaryButtonText}>{t('map.decision.filters.coupon')}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => onGoNowPress(place)} style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
+        </Pressable>
+      </View>
     </View>
-    </Pressable>
   );
 };
 
 const ResultCard = ({ onPress, place }: {
   onPress: (place: DecisionPlace) => void;
   place: DecisionPlace;
-}) => (
-  <Pressable onPress={() => onPress(place)} style={styles.resultCard}>
+}) => {
+  const { i18n } = useTranslation();
+  const distance = place.distanceMeters
+    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
+    : place.distance;
+  return (
+  <Pressable accessibilityLabel={`${place.name}, ${distance}`} accessibilityRole="button" onPress={() => onPress(place)} style={styles.resultCard}>
     <View style={styles.resultThumb}>
       <Text style={styles.resultThumbText}>{place.category.slice(0, 1)}</Text>
     </View>
     <View style={styles.resultBody}>
       <View style={styles.resultTitleRow}>
-        <Text numberOfLines={1} style={styles.resultName}>{place.name}</Text>
-        <Text style={styles.distanceText}>{place.distance}</Text>
+        <Text numberOfLines={2} style={styles.resultName}>{place.name}</Text>
+        <Text style={styles.distanceText}>{distance}</Text>
       </View>
       <PlaceMeta place={place} />
-      <Text numberOfLines={1} style={styles.resultTags}>{place.tags.join(' · ')}</Text>
+      <Text style={styles.resultTags}>{place.tags.join(' · ')}</Text>
     </View>
-    <Text style={styles.chevron}>›</Text>
+    <Text accessibilityElementsHidden style={styles.chevron}>{i18n.dir() === 'rtl' ? '‹' : '›'}</Text>
   </Pressable>
-);
+  );
+};
 
 const PlacePreview = ({
   onCouponPress,
@@ -242,40 +275,45 @@ const PlacePreview = ({
   onGoNowPress: (place: DecisionPlace) => void;
   place: DecisionPlace;
 }) => {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const distance = place.distanceMeters
+    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
+    : place.distance;
 
   return (
-    <Pressable onPress={() => onDetailPress(place)} style={styles.previewCard}>
-    <View style={styles.previewImage}>
-      <View style={styles.previewImageOrb} />
-      <View style={styles.previewImageLabel}>
-        <Text style={styles.previewImageLabelText}>{place.category}</Text>
-      </View>
-    </View>
-    <View style={styles.previewBody}>
-      <View style={styles.previewTitleRow}>
-        <View style={styles.previewTitleBody}>
-          <Text numberOfLines={1} style={styles.previewName}>{place.name.toUpperCase()}</Text>
-          <Text numberOfLines={1} style={styles.previewAddress}>{place.address}</Text>
+    <View style={styles.previewCard}>
+      <Pressable accessibilityLabel={`${place.name}, ${distance}`} accessibilityRole="button" onPress={() => onDetailPress(place)}>
+      <View style={styles.previewImage}>
+        <View style={styles.previewImageOrb} />
+        <View style={styles.previewImageLabel}>
+          <Text style={styles.previewImageLabelText}>{place.category}</Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
       </View>
-      <PlaceMeta place={place} />
-      <View style={styles.tagRow}>
-        {place.tags.map((tag) => (
-          <View key={tag} style={styles.tag}><Text style={styles.tagText}>{tag}</Text></View>
-        ))}
+      <View style={styles.previewBody}>
+        <View style={styles.previewTitleRow}>
+          <View style={styles.previewTitleBody}>
+            <Text numberOfLines={2} style={styles.previewName}>{place.name.toUpperCase()}</Text>
+            <Text style={styles.previewAddress}>{place.address}</Text>
+          </View>
+          <Text accessibilityElementsHidden style={styles.chevron}>{i18n.dir() === 'rtl' ? '‹' : '›'}</Text>
+        </View>
+        <PlaceMeta place={place} />
+        <View style={styles.tagRow}>
+          {place.tags.map((tag) => (
+            <View key={tag} style={styles.tag}><Text style={styles.tagText}>{tag}</Text></View>
+          ))}
+        </View>
       </View>
-      <View style={styles.previewActions}>
-        <Pressable onPress={() => onCouponPress(place)} style={styles.previewSecondaryButton}>
+      </Pressable>
+      <View style={[styles.previewActions, styles.previewActionsOuter]}>
+        <Pressable accessibilityRole="button" onPress={() => onCouponPress(place)} style={styles.previewSecondaryButton}>
           <Text style={styles.secondaryButtonText}>{t('map.decision.getCoupon')}</Text>
         </Pressable>
-        <Pressable onPress={() => onGoNowPress(place)} style={styles.previewPrimaryButton}>
+        <Pressable accessibilityRole="button" onPress={() => onGoNowPress(place)} style={styles.previewPrimaryButton}>
           <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
         </Pressable>
       </View>
     </View>
-    </Pressable>
   );
 };
 
@@ -301,7 +339,7 @@ const MapBottomSheet = ({
   sheetTranslateY,
   snapPoint,
 }: MapBottomSheetProps) => {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const query = content.type === 'search' || content.type === 'results' ? content.query : '';
   const isPreview = content.type === 'place-preview' && selectedPlace;
   const showResults = content.type === 'search' || content.type === 'results' || snapPoint === 'expanded';
@@ -318,7 +356,7 @@ const MapBottomSheet = ({
       />
       <View pointerEvents="none" style={styles.topSheen} />
       <View style={styles.handleArea} {...panHandlers}>
-        <Pressable accessibilityLabel="하단 시트 크기 변경" hitSlop={10} onPress={onHandlePress}>
+        <Pressable accessibilityLabel={t('map.decision.resizeSheet', { defaultValue: 'Resize place panel' })} accessibilityRole="adjustable" onPress={onHandlePress} style={styles.handleButton}>
           <View style={styles.handle} />
         </Pressable>
       </View>
@@ -350,8 +388,11 @@ const MapBottomSheet = ({
             </View>
           </View>
         ) : (
-          <Pressable onPress={onBackHome} style={styles.backRow}>
-            <Text style={styles.backText}>‹  {t('map.decision.backToRecommendations')}</Text>
+          <Pressable accessibilityRole="button" onPress={onBackHome} style={styles.backRow}>
+            <View style={styles.backContent}>
+              <Text accessibilityElementsHidden style={styles.backText}>{i18n.dir() === 'rtl' ? '›' : '‹'}</Text>
+              <Text style={styles.backText}>{t('map.decision.backToRecommendations')}</Text>
+            </View>
           </Pressable>
         )}
       </View>
@@ -375,7 +416,7 @@ const MapBottomSheet = ({
             <Text style={styles.sectionTitle}>
               {query ? t('map.decision.resultsFor', { query }) : t('map.decision.placesNearYou')}
             </Text>
-            <Pressable><Text style={styles.sortText}>{t('map.decision.recommended')}⌄</Text></Pressable>
+            <Pressable accessibilityRole="button" style={styles.minimumTouch}><Text style={styles.sortText}>{t('map.decision.recommended')}⌄</Text></Pressable>
           </View>
           {places.length > 0 ? (
             places.map((place) => <ResultCard key={place.id} onPress={onPlacePress} place={place} />)
@@ -393,7 +434,7 @@ const MapBottomSheet = ({
               <Text style={styles.eyebrow}>{t('map.decision.livePicks')}</Text>
               <Text style={styles.sectionTitle}>{t('map.decision.whereToGo')}</Text>
             </View>
-            <Pressable onPress={onSearchFocus}><Text style={styles.seeAllText}>{t('map.decision.seeAll')}</Text></Pressable>
+            <Pressable accessibilityRole="button" onPress={onSearchFocus} style={styles.minimumTouch}><Text style={styles.seeAllText}>{t('map.decision.seeAll')}</Text></Pressable>
           </View>
           <ScrollView
             contentContainerStyle={styles.recommendationRow}
@@ -417,7 +458,8 @@ const MapBottomSheet = ({
 };
 
 const styles = StyleSheet.create({
-  backRow: { height: 40, justifyContent: 'center' },
+  backRow: { justifyContent: 'center', minHeight: 44, paddingVertical: 8 },
+  backContent: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   backText: { color: '#5F6670', fontSize: 13, fontWeight: '700' },
   bottomSheet: {
     backgroundColor: 'rgba(247,250,252,0.38)', borderColor: 'rgba(255,255,255,0.76)',
@@ -425,21 +467,21 @@ const styles = StyleSheet.create({
     elevation: 18, left: 0, position: 'absolute', right: 0, shadowColor: '#101820',
     shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.16, shadowRadius: 18, zIndex: 50,
   },
-  cardActions: { flexDirection: 'row', gap: 8, marginTop: 13 },
+  cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 13 },
   cardTopRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   categoryBadge: { backgroundColor: '#FFF0F4', borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
   categoryBadgeText: { color: '#E8245E', fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
   chevron: { color: '#B3B7BE', fontSize: 28, fontWeight: '300' },
-  createPlaceButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 18, flexDirection: 'row', gap: 3, height: 36, justifyContent: 'center', paddingHorizontal: 13 },
+  createPlaceButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 18, flexDirection: 'row', gap: 3, justifyContent: 'center', minHeight: 44, paddingHorizontal: 13, paddingVertical: 8 },
   createPlaceButtonPressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
   createPlaceIcon: { color: '#FFFFFF', fontSize: 17, fontWeight: '700', lineHeight: 19 },
-  createPlaceText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  createPlaceText: { color: '#FFFFFF', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
   distanceText: { color: '#8A9099', fontSize: 11, fontWeight: '700' },
   emptyBody: { color: '#838992', fontSize: 12, marginTop: 7, textAlign: 'center' },
   emptyState: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 70 },
   emptyTitle: { color: '#2B3139', fontSize: 16, fontWeight: '900' },
   eyebrow: { color: '#F52A62', fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginBottom: 3 },
-  filterChip: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 18, borderWidth: 1, height: 36, justifyContent: 'center', paddingHorizontal: 14 },
+  filterChip: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 18, borderWidth: 1, justifyContent: 'center', minHeight: 44, paddingHorizontal: 14, paddingVertical: 8 },
   filterChipActive: { backgroundColor: '#FFF0F4', borderColor: '#FF4A75' },
   filterContent: { gap: 8, paddingRight: 20 },
   filterScroll: { flexGrow: 0 },
@@ -448,13 +490,16 @@ const styles = StyleSheet.create({
   filterRowBody: { flex: 1, overflow: 'hidden' },
   handle: { backgroundColor: 'rgba(75,83,94,0.3)', borderRadius: 3, height: 5, width: 42 },
   handleArea: { alignItems: 'center', height: 24, justifyContent: 'center' },
+  handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 64 },
   headerArea: { paddingHorizontal: 18 },
   homeContent: { paddingTop: 16 },
   metaDivider: { color: '#B0B4BA', fontSize: 11 },
+  minimumTouch: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44, padding: 6 },
   openDot: { backgroundColor: '#18B66A', borderRadius: 4, height: 7, width: 7 },
   openText: { color: '#158B56', fontSize: 11, fontWeight: '800' },
   placeName: { color: '#161A20', fontSize: 17, fontWeight: '900', marginBottom: 7, marginTop: 10 },
-  previewActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  previewActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
+  previewActionsOuter: { marginTop: 0, padding: 18, paddingTop: 0 },
   previewAddress: { color: '#8A9099', fontSize: 12, marginTop: 3 },
   previewBody: { padding: 18 },
   previewCard: { backgroundColor: 'rgba(255,255,255,0.62)', borderColor: 'rgba(255,255,255,0.82)', borderRadius: 22, borderWidth: 1, overflow: 'hidden', shadowColor: '#18202A', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.08, shadowRadius: 14 },
@@ -463,13 +508,13 @@ const styles = StyleSheet.create({
   previewImageLabelText: { color: '#D91F56', fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
   previewImageOrb: { backgroundColor: '#F5567F', borderRadius: 90, height: 180, opacity: 0.72, position: 'absolute', right: -20, top: -55, width: 180 },
   previewName: { color: '#151A20', fontSize: 19, fontWeight: '900' },
-  previewPrimaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 13, flex: 1, height: 48, justifyContent: 'center' },
+  previewPrimaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 13, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 120, padding: 10 },
   previewScrollContent: { padding: 18, paddingBottom: 48 },
-  previewSecondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 13, flex: 1, height: 48, justifyContent: 'center' },
+  previewSecondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 13, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 120, padding: 10 },
   previewTitleBody: { flex: 1 },
   previewTitleRow: { alignItems: 'center', flexDirection: 'row', marginBottom: 12 },
-  primaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 10, flex: 1, height: 35, justifyContent: 'center' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  primaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 10, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 96, padding: 8 },
+  primaryButtonText: { color: '#FFFFFF', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
   recommendationCard: { backgroundColor: 'rgba(255,255,255,0.58)', borderColor: 'rgba(255,255,255,0.82)', borderRadius: 20, borderWidth: 1, padding: 15, shadowColor: '#151A20', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 10, width: 255 },
   recommendationRow: { gap: 12, paddingBottom: 24, paddingHorizontal: 18, paddingTop: 12 },
   resultBody: { flex: 1 },
@@ -480,7 +525,7 @@ const styles = StyleSheet.create({
   resultThumb: { alignItems: 'center', backgroundColor: '#293C4E', borderRadius: 14, height: 72, justifyContent: 'center', overflow: 'hidden', width: 72 },
   resultThumbText: { color: '#FF7599', fontSize: 25, fontWeight: '900' },
   resultTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 5 },
-  searchBar: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.54)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, flex: 1, flexDirection: 'row', height: 48, paddingHorizontal: 14 },
+  searchBar: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.54)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, flex: 1, flexDirection: 'row', minHeight: 48, paddingHorizontal: 14, paddingVertical: 4 },
   sheetGlass: { ...StyleSheet.absoluteFillObject, borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden' },
   searchIcon: { color: '#252B33', fontSize: 27, lineHeight: 29, marginRight: 8, transform: [{ rotate: '-20deg' }] },
   searchInput: { color: '#151A20', flex: 1, fontSize: 15, fontWeight: '600', height: '100%', padding: 0 },
@@ -490,8 +535,8 @@ const styles = StyleSheet.create({
   profileIconButton: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, height: 48, justifyContent: 'center', width: 48 },
   searchRow: { flexDirection: 'row', gap: 8 },
   sheetActionRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 11 },
-  secondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, flex: 1, height: 35, justifyContent: 'center' },
-  secondaryButtonText: { color: '#E8245E', fontSize: 12, fontWeight: '900' },
+  secondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 96, padding: 8 },
+  secondaryButtonText: { color: '#B4234D', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
   sectionTitle: { color: '#171B21', fontSize: 20, fontWeight: '900' },
   sectionTitleRow: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 18 },
   seeAllText: { color: '#EC245B', fontSize: 12, fontWeight: '800' },
