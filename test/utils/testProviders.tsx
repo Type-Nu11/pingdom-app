@@ -29,10 +29,10 @@ export function createTestQueryClient() {
   });
 }
 
-export function createTestI18n(language: SupportedLanguage = 'ko') {
+export async function createTestI18n(language: SupportedLanguage = 'ko') {
   const instance = createInstance();
 
-  void instance.use(initReactI18next).init({
+  await instance.use(initReactI18next).init({
     fallbackLng: 'ko',
     initAsync: false,
     interpolation: {
@@ -52,9 +52,9 @@ type TestProviderOptions = {
   queryClient?: QueryClient;
 };
 
-export function createTestWrapper(options: TestProviderOptions = {}) {
+export async function createTestWrapper(options: TestProviderOptions = {}) {
   const queryClient = options.queryClient ?? createTestQueryClient();
-  const i18n = options.i18n ?? createTestI18n(options.language);
+  const i18n = options.i18n ?? await createTestI18n(options.language);
 
   function TestProviders({ children }: PropsWithChildren) {
     return (
@@ -75,7 +75,7 @@ export async function renderWithProviders(
   ui: ReactElement,
   { i18n, language, queryClient, ...renderOptions }: RenderWithProvidersOptions = {},
 ) {
-  const providers = createTestWrapper({ i18n, language, queryClient });
+  const providers = await createTestWrapper({ i18n, language, queryClient });
   const result = await render(ui, { wrapper: providers.wrapper, ...renderOptions });
 
   return {
