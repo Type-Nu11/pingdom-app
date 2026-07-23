@@ -16,6 +16,20 @@ export type MutationRequestOptions = {
   signal?: AbortSignal;
 };
 
+export type ApiClient = {
+  get<TResponse>(path: string, options?: GetRequestOptions): Promise<TResponse>;
+  patch<TResponse, TBody = unknown>(
+    path: string,
+    body: TBody,
+    options?: MutationRequestOptions,
+  ): Promise<TResponse>;
+  post<TResponse, TBody = never>(
+    path: string,
+    body?: TBody,
+    options?: MutationRequestOptions,
+  ): Promise<TResponse>;
+};
+
 const axiosInstance = axios.create({
   baseURL: env.apiBaseUrl,
   headers: {
@@ -30,7 +44,7 @@ function assertRelativeApiPath(path: string) {
   }
 }
 
-export const apiClient = {
+export const apiClient: ApiClient = {
   async get<TResponse>(path: string, options: GetRequestOptions = {}): Promise<TResponse> {
     assertRelativeApiPath(path);
 
@@ -51,6 +65,21 @@ export const apiClient = {
 
     try {
       const response = await axiosInstance.patch<TResponse>(path, body, options);
+      return response.data;
+    } catch (error) {
+      throw toApiError(error);
+    }
+  },
+
+  async post<TResponse, TBody = never>(
+    path: string,
+    body?: TBody,
+    options: MutationRequestOptions = {},
+  ): Promise<TResponse> {
+    assertRelativeApiPath(path);
+
+    try {
+      const response = await axiosInstance.post<TResponse>(path, body, options);
       return response.data;
     } catch (error) {
       throw toApiError(error);

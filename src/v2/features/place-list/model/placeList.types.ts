@@ -1,22 +1,5 @@
-export type PlaceListItem = {
-  address: string;
-  category?: string;
-  id: number;
-  latitude: number;
-  longitude: number;
-  name: string;
-};
+import type { ApiSchema, OperationQuery } from '../../../shared/api';
 
-export type PlaceListPage = {
-  hasNext: boolean;
-  limit: number;
-  page: number;
-  places: PlaceListItem[];
-  totalCount: number;
-  totalPages: number;
-};
-
-export type GetPlaceListParams = {
-  limit?: number;
-  page?: number;
-};
+export type PlaceListItem = ApiSchema<'PlaceSummary'>;
+export type PlaceListPage = ApiSchema<'PlacePage'>;
+export type GetPlaceListParams = OperationQuery<'listPlaces'>;

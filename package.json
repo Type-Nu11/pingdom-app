@@ -9,9 +9,12 @@
     "check:v2": "node scripts/check-v2-boundaries.mjs",
     "check:a11y-i18n": "node scripts/check-accessibility-i18n.mjs",
     "check:api-contract": "node scripts/check-api-contract.mjs",
+    "generate:api-types": "openapi-typescript docs/api/mvp.openapi.json -o src/v2/shared/api/generated/mvp.ts",
+    "check:api-types": "node scripts/check-generated-api-types.mjs",
     "test:navigation": "tsx --test src/app/navigation/__tests__/*.test.mjs",
     "test:v2-notifications": "tsx --test src/v2/app/navigation/__tests__/*.test.mjs",
     "test:v2-map": "tsx --test src/v2/features/map/__tests__/*.test.mjs",
+    "test:v2-api": "EXPO_PUBLIC_APP_ENV=development EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1/api/v1 tsx --test src/v2/shared/api/__tests__/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "web": "expo start --web"
   },
@@ -47,6 +50,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "openapi-typescript": "^7.13.0",
     "react-native-svg-transformer": "^1.5.3",
     "tsx": "^4.23.1",
     "typescript": "~5.9.2"

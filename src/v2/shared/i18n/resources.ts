@@ -2,6 +2,50 @@ export const resources = {
   en: {
     translation: {
       common: {
+        apiError: {
+          actions: {
+            back: 'Go back',
+            retry: 'Try again',
+            signIn: 'Sign in again',
+            update: 'Update app',
+          },
+          authentication: {
+            description: 'Your session or request key is no longer valid. Please sign in again.',
+            title: 'Sign-in required',
+          },
+          authorization: {
+            description: 'This account does not have permission for this action.',
+            title: 'Permission required',
+          },
+          conflict: {
+            description: 'The request conflicts with the resource’s current state. Refresh its latest state.',
+            title: 'State has changed',
+          },
+          expired: {
+            description: 'This coupon or resource has expired.',
+            title: 'No longer available',
+          },
+          generic: {
+            description: 'Please check your connection and try again.',
+            title: 'Could not load data',
+          },
+          notFound: {
+            description: 'The requested resource no longer exists. Return to the latest list.',
+            title: 'Not found',
+          },
+          outOfRange: {
+            description: 'Move closer to the place and check your location accuracy.',
+            title: 'Too far away to check in',
+          },
+          updateRequired: {
+            description: 'Install the latest version to keep using PingDom.',
+            title: 'Update required',
+          },
+          validation: {
+            description: 'Review the highlighted information and try again.',
+            title: 'Check your entries',
+          },
+        },
         error: {
           description: 'Please try again in a moment.',
           retry: 'Try again',
@@ -10,10 +54,12 @@ export const resources = {
       },
       examplePlaces: {
         count: '{{count}} places',
+        englishMenu: 'English menu: {{status}}',
         emptyDescription: 'Try again after place data is available.',
         emptyTitle: 'No places yet',
         loading: 'Loading places...',
         title: 'Place list example',
+        trustScore: 'Trust score: {{score}}/100',
       },
       map: {
         locate: 'My location',
@@ -32,14 +78,87 @@ export const resources = {
       },
       placeDetail: {
         back: 'Back',
-        placeId: 'Place ID: {{placeId}}',
-        title: 'Place detail',
+        couponUsage: 'Coupon use: {{value}}',
+        englishMenu: 'English menu: {{value}}',
+        languages: 'Languages: {{value}}',
+        liveStatus: 'Live status',
+        loading: 'Loading place details...',
+        touristSupport: 'Tourist support',
+        trust: 'Trust',
+        trustScore: '{{score}}/100 · {{confidence}} confidence',
+        unknownValue: 'Unknown',
+        waitMinutes_one: '{{count}} minute',
+        waitMinutes_other: '{{count}} minutes',
+        waitTime: 'Estimated wait: {{value}}',
+      },
+      placeStatus: {
+        closed: 'Permanently closed',
+        open: 'Operating',
+        temporarilyClosed: 'Temporarily closed',
+        unknown: 'Status unknown',
+      },
+      placeSupport: {
+        available: 'Available',
+        unavailable: 'Unavailable',
+        unknown: 'Unknown',
+      },
+      placeTrust: {
+        confidence: {
+          high: 'High',
+          low: 'Low',
+          medium: 'Medium',
+          unknown: 'Unknown',
+        },
       },
     },
   },
   ko: {
     translation: {
       common: {
+        apiError: {
+          actions: {
+            back: '목록으로',
+            retry: '다시 시도',
+            signIn: '다시 로그인',
+            update: '앱 업데이트',
+          },
+          authentication: {
+            description: '로그인 정보 또는 요청 키가 만료되었습니다. 다시 로그인해 주세요.',
+            title: '로그인이 필요합니다',
+          },
+          authorization: {
+            description: '이 계정에는 해당 작업을 수행할 권한이 없습니다.',
+            title: '권한이 필요합니다',
+          },
+          conflict: {
+            description: '리소스의 현재 상태와 요청이 충돌합니다. 최신 상태를 확인해 주세요.',
+            title: '상태가 변경되었습니다',
+          },
+          expired: {
+            description: '쿠폰 또는 리소스의 이용 기간이 만료되었습니다.',
+            title: '더 이상 이용할 수 없습니다',
+          },
+          generic: {
+            description: '네트워크 상태를 확인한 후 다시 시도해 주세요.',
+            title: '데이터를 불러오지 못했습니다',
+          },
+          notFound: {
+            description: '요청한 항목이 더 이상 존재하지 않습니다. 최신 목록으로 돌아가 주세요.',
+            title: '항목을 찾을 수 없습니다',
+          },
+          outOfRange: {
+            description: '장소에 더 가까이 이동하고 위치 정확도를 확인해 주세요.',
+            title: '체크인 가능 거리 밖입니다',
+          },
+          updateRequired: {
+            description: 'PingDom을 계속 사용하려면 최신 버전을 설치해 주세요.',
+            title: '앱 업데이트가 필요합니다',
+          },
+          validation: {
+            description: '입력한 정보를 확인한 후 다시 시도해 주세요.',
+            title: '입력 정보를 확인해 주세요',
+          },
+        },
         error: {
           description: '잠시 후 다시 시도해 주세요.',
           retry: '다시 시도',
@@ -48,10 +167,12 @@ export const resources = {
       },
       examplePlaces: {
         count: '장소 {{count}}개',
+        englishMenu: '영문 메뉴: {{status}}',
         emptyDescription: '장소 데이터가 등록된 후 다시 확인해 주세요.',
         emptyTitle: '아직 등록된 장소가 없습니다',
         loading: '장소를 불러오는 중입니다...',
         title: '장소 목록 예제',
+        trustScore: '신뢰 점수: {{score}}/100',
       },
       map: {
         locate: '내 위치',
@@ -70,8 +191,36 @@ export const resources = {
       },
       placeDetail: {
         back: '뒤로',
-        placeId: '장소 ID: {{placeId}}',
-        title: '장소 상세',
+        couponUsage: '쿠폰 사용: {{value}}',
+        englishMenu: '영문 메뉴: {{value}}',
+        languages: '지원 언어: {{value}}',
+        liveStatus: '실시간 상태',
+        loading: '장소 상세를 불러오는 중입니다...',
+        touristSupport: '관광객 지원',
+        trust: '신뢰 정보',
+        trustScore: '{{score}}/100 · 신뢰도 {{confidence}}',
+        unknownValue: '알 수 없음',
+        waitMinutes: '{{count}}분',
+        waitTime: '예상 대기: {{value}}',
+      },
+      placeStatus: {
+        closed: '폐업',
+        open: '영업 중',
+        temporarilyClosed: '임시 휴무',
+        unknown: '상태 알 수 없음',
+      },
+      placeSupport: {
+        available: '가능',
+        unavailable: '불가능',
+        unknown: '알 수 없음',
+      },
+      placeTrust: {
+        confidence: {
+          high: '높음',
+          low: '낮음',
+          medium: '보통',
+          unknown: '알 수 없음',
+        },
       },
     },
   },

@@ -1,5 +1,9 @@
-export { placeListApi } from './api/placeListApi';
-export { placeListQueryKeys, usePlaceList } from './hooks/usePlaceList';
+export { createPlaceListApi, placeListApi } from './api/placeListApi';
+export {
+  createPlaceListQueryOptions,
+  placeListQueryKeys,
+  usePlaceList,
+} from './hooks/usePlaceList';
 export type {
   GetPlaceListParams,
   PlaceListItem,
