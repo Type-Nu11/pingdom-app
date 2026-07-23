@@ -1,16 +1,17 @@
-import { apiClient } from '../../../shared/api';
+import { apiClient, type ApiClient } from '../../../shared/api';
 import type { GetPlaceListParams, PlaceListPage } from '../model/placeList.types';
 
-export const placeListApi = {
-  getPlaceList: (
-    params: GetPlaceListParams,
-    signal?: AbortSignal,
-  ): Promise<PlaceListPage> =>
-    apiClient.get<PlaceListPage>('/places', {
-      params: {
-        limit: params.limit,
-        page: params.page,
-      },
-      signal,
-    }),
-};
+export function createPlaceListApi(client: ApiClient = apiClient) {
+  return {
+    getPlaceList: (
+      params: GetPlaceListParams,
+      signal?: AbortSignal,
+    ): Promise<PlaceListPage> =>
+      client.get<PlaceListPage>('/places', {
+        params,
+        signal,
+      }),
+  };
+}
+
+export const placeListApi = createPlaceListApi();

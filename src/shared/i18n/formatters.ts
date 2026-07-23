@@ -35,9 +35,41 @@ export const formatDistance = (meters: number, language: string) => {
   }).format(value);
 };
 
-export const formatRelativeMinutes = (minutesAgo: number, language: string) =>
-  new Intl.RelativeTimeFormat(resolveLocale(language), { numeric: 'auto' })
-    .format(-minutesAgo, 'minute');
+const formatRelativeMinutesFallback = (minutesAgo: number, language: string) => {
+  const minutes = Math.max(0, Math.round(minutesAgo));
+  const baseLanguage = language.toLowerCase().split('-')[0];
+
+  if (minutes === 0) {
+    if (baseLanguage === 'ko') return '지금';
+    if (baseLanguage === 'ja') return '今';
+    if (baseLanguage === 'zh') return '现在';
+    if (baseLanguage === 'vi') return 'bây giờ';
+    if (baseLanguage === 'th') return 'ตอนนี้';
+    return 'now';
+  }
+
+  if (baseLanguage === 'ko') return `${minutes}분 전`;
+  if (baseLanguage === 'ja') return `${minutes}分前`;
+  if (baseLanguage === 'zh') return `${minutes}分钟前`;
+  if (baseLanguage === 'vi') return `${minutes} phút trước`;
+  if (baseLanguage === 'th') return `${minutes} นาทีที่แล้ว`;
+  return `${minutes} min ago`;
+};
+
+export const formatRelativeMinutes = (minutesAgo: number, language: string) => {
+  const RelativeTimeFormat = Intl.RelativeTimeFormat;
+
+  if (typeof RelativeTimeFormat !== 'function') {
+    return formatRelativeMinutesFallback(minutesAgo, language);
+  }
+
+  try {
+    return new RelativeTimeFormat(resolveLocale(language), { numeric: 'auto' })
+      .format(-minutesAgo, 'minute');
+  } catch {
+    return formatRelativeMinutesFallback(minutesAgo, language);
+  }
+};
 
 export const formatMinuteRange = (minimum: number, maximum: number, language: string) => {
   const formatter = new Intl.NumberFormat(resolveLocale(language), {

@@ -1553,20 +1553,44 @@
         }
       },
       "CreateStatusVoteRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["checkInId", "observedAt"],
-        "properties": {
-          "checkInId": { "$ref": "#/components/schemas/PositiveId" },
-          "crowdLevel": { "type": "string", "enum": ["LOW", "MODERATE", "HIGH"] },
-          "waitTimeMinutes": { "type": "integer", "format": "int32", "minimum": 0, "maximum": 1440 },
-          "couponUsageStatus": { "type": "string", "enum": ["AVAILABLE", "UNAVAILABLE"] },
-          "observedAt": { "type": "string", "format": "date-time" }
-        },
-        "anyOf": [
-          { "required": ["crowdLevel"] },
-          { "required": ["waitTimeMinutes"] },
-          { "required": ["couponUsageStatus"] }
+        "allOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["checkInId", "observedAt"],
+            "properties": {
+              "checkInId": { "$ref": "#/components/schemas/PositiveId" },
+              "crowdLevel": { "type": "string", "enum": ["LOW", "MODERATE", "HIGH"] },
+              "waitTimeMinutes": { "type": "integer", "format": "int32", "minimum": 0, "maximum": 1440 },
+              "couponUsageStatus": { "type": "string", "enum": ["AVAILABLE", "UNAVAILABLE"] },
+              "observedAt": { "type": "string", "format": "date-time" }
+            }
+          },
+          {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["crowdLevel"],
+                "properties": {
+                  "crowdLevel": { "type": "string", "enum": ["LOW", "MODERATE", "HIGH"] }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["waitTimeMinutes"],
+                "properties": {
+                  "waitTimeMinutes": { "type": "integer", "format": "int32", "minimum": 0, "maximum": 1440 }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["couponUsageStatus"],
+                "properties": {
+                  "couponUsageStatus": { "type": "string", "enum": ["AVAILABLE", "UNAVAILABLE"] }
+                }
+              }
+            ]
+          }
         ]
       },
       "StatusVote": {
