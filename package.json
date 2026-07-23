@@ -11,6 +11,11 @@
     "check:api-contract": "node scripts/check-api-contract.mjs",
     "generate:api-types": "openapi-typescript docs/api/mvp.openapi.json -o src/v2/shared/api/generated/mvp.ts",
     "check:api-types": "node scripts/check-generated-api-types.mjs",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci --runInBand && npm run test:regression",
+    "test:regression": "npm run test:navigation && npm run test:i18n-formatters && npm run test:v2-notifications && npm run test:v2-map && npm run test:v2-api",
+    "validate:pr": "npm run typecheck && npm run test:ci",
     "test:navigation": "tsx --test src/app/navigation/__tests__/*.test.mjs",
     "test:i18n-formatters": "tsx --test src/shared/i18n/__tests__/*.test.mjs",
     "test:v2-notifications": "tsx --test src/v2/app/navigation/__tests__/*.test.mjs",
@@ -50,7 +55,11 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.2.2",
+    "jest": "^29.7.0",
+    "jest-expo": "~55.0.20",
     "openapi-typescript": "^7.13.0",
     "react-native-svg-transformer": "^1.5.3",
     "tsx": "^4.23.1",
