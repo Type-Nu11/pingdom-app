@@ -2,6 +2,7 @@ import axios from 'axios';
 
 import { env } from '../config';
 import { toApiError } from './ApiError';
+import { mockApiClient } from './mock/mockApiClient';
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -44,7 +45,7 @@ function assertRelativeApiPath(path: string) {
   }
 }
 
-export const apiClient: ApiClient = {
+const realApiClient: ApiClient = {
   async get<TResponse>(path: string, options: GetRequestOptions = {}): Promise<TResponse> {
     assertRelativeApiPath(path);
 
@@ -86,3 +87,5 @@ export const apiClient: ApiClient = {
     }
   },
 };
+
+export const apiClient: ApiClient = env.apiMode === 'mock' ? mockApiClient : realApiClient;
