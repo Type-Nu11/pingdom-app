@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Animated,
   GestureResponderHandlers,
@@ -6,15 +6,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import {
-  formatDistance,
-  formatMinuteRange,
-  formatRelativeMinutes,
-} from '../../../shared/i18n/formatters';
+import Svg, { Circle, Path, Polygon } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import GlassSurface from './GlassSurface';
 
@@ -53,6 +48,8 @@ type MapBottomSheetProps = {
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
   onHandlePress: () => void;
+  onOpenLikedPlaces?: () => void;
+  onOpenSavedPlaces?: () => void;
   onPlacePress: (place: DecisionPlace) => void;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
@@ -65,489 +62,570 @@ type MapBottomSheetProps = {
   snapPoint: BottomSheetSnapPoint;
 };
 
-const FILTERS: VisitFilter[] = ['Open now', 'Short wait', 'Coupon', 'Bookable'];
-const FILTER_LABEL_KEYS: Record<VisitFilter, string> = {
-  'Open now': 'map.decision.filters.openNow',
-  'Short wait': 'map.decision.filters.shortWait',
-  Coupon: 'map.decision.filters.coupon',
-  Bookable: 'map.decision.filters.bookable',
+type IconProps = {
+  active?: boolean;
+  size?: number;
 };
 
-const SearchBar = ({
-  onFocus,
-  onProfilePress,
-  onQueryChange,
-  onSubmit,
-  query,
-}: {
-  onFocus: () => void;
-  onProfilePress?: () => void;
-  onQueryChange: (query: string) => void;
-  onSubmit: () => void;
-  query: string;
-}) => {
-  const { t } = useTranslation();
-
-  return (
-    <View style={styles.searchRow}>
-      <View style={styles.searchBar}>
-        <Text style={styles.searchIcon}>⌕</Text>
-        <TextInput
-          accessibilityLabel={t('map.decision.searchAccessibilityLabel')}
-          autoCorrect={false}
-          onChangeText={onQueryChange}
-          onFocus={onFocus}
-          onSubmitEditing={onSubmit}
-          placeholder={t('map.decision.searchPlaceholder')}
-          placeholderTextColor="#8B9099"
-          returnKeyType="search"
-          style={styles.searchInput}
-          value={query}
-        />
-      </View>
-      <Pressable
-        accessibilityLabel={t('map.decision.profileAccessibilityLabel')}
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={onProfilePress}
-        style={styles.profileIconButton}
-      >
-        <View style={styles.profileGlyph}>
-          <View style={styles.profileGlyphHead} />
-          <View style={styles.profileGlyphBody} />
-        </View>
-      </Pressable>
-    </View>
-  );
-};
-
-const FilterRow = ({
-  activeFilters,
-  onFilterPress,
-}: {
-  activeFilters: VisitFilter[];
-  onFilterPress: (filter: VisitFilter) => void;
-}) => (
-  <FilterRowContent activeFilters={activeFilters} onFilterPress={onFilterPress} />
+const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
+  <Svg height={size} viewBox="0 0 24 24" width={size}>
+    <Path
+      d="M12 22s7-6.1 7-13A7 7 0 0 0 5 9c0 6.9 7 13 7 13Z"
+      fill={active ? '#FF245B' : 'none'}
+      stroke={active ? '#FF245B' : '#383B43'}
+      strokeLinejoin="round"
+      strokeWidth="2"
+    />
+    <Circle cx="12" cy="9" fill={active ? '#FFFFFF' : 'none'} r="2.4" stroke={active ? '#FFFFFF' : '#383B43'} strokeWidth="1.5" />
+  </Svg>
 );
 
-const FilterRowContent = ({
-  activeFilters,
-  onFilterPress,
-}: {
-  activeFilters: VisitFilter[];
-  onFilterPress: (filter: VisitFilter) => void;
-}) => {
-  const { t } = useTranslation();
+const StarIcon = ({ active = false, size = 25 }: IconProps) => (
+  <Svg height={size} viewBox="0 0 24 24" width={size}>
+    <Polygon
+      fill={active ? '#FF245B' : 'none'}
+      points="12,2.3 14.9,8.2 21.4,9.1 16.7,13.7 17.8,20.2 12,17.1 6.2,20.2 7.3,13.7 2.6,9.1 9.1,8.2"
+      stroke={active ? '#FF245B' : '#383B43'}
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+    />
+  </Svg>
+);
 
-  return (
-    <ScrollView
-    contentContainerStyle={styles.filterContent}
-    horizontal
-    keyboardShouldPersistTaps="handled"
-    showsHorizontalScrollIndicator={false}
-    style={styles.filterScroll}
-  >
-    {FILTERS.map((filter) => {
-      const isActive = activeFilters.includes(filter);
-      return (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t(FILTER_LABEL_KEYS[filter])}
-          accessibilityState={{ selected: isActive }}
-          key={filter}
-          onPress={() => onFilterPress(filter)}
-          style={[styles.filterChip, isActive && styles.filterChipActive]}
-        >
-          <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-            {t(FILTER_LABEL_KEYS[filter])}
-          </Text>
-        </Pressable>
-      );
-    })}
-    </ScrollView>
-  );
+const CheckInIcon = ({ active = false, size = 24 }: IconProps) => (
+  <Svg height={size} viewBox="0 0 24 24" width={size}>
+    <Path d="M4 10.2 12 4l8 6.2V21H4V10.2Z" fill="none" stroke={active ? '#FF245B' : '#383B43'} strokeLinejoin="round" strokeWidth="1.8" />
+    <Path d="m8.2 14.2 2.4 2.4 5.3-5.3" fill="none" stroke={active ? '#FF245B' : '#383B43'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+  </Svg>
+);
+
+const SendIcon = ({ size = 27 }: IconProps) => (
+  <Svg height={size} viewBox="0 0 24 24" width={size}>
+    <Path d="m3 3 18 8.2-7.7 2.2-2.4 7.6L3 3Z" fill="none" stroke="#383B43" strokeLinejoin="round" strokeWidth="2" />
+  </Svg>
+);
+
+const TrendPin = () => (
+  <Svg height={15} viewBox="0 0 20 20" width={15}>
+    <Path d="M10 18s5.5-4.7 5.5-10A5.5 5.5 0 1 0 4.5 8c0 5.3 5.5 10 5.5 10Z" fill="#858892" />
+    <Circle cx="10" cy="8" fill="#F7F7F9" r="2" />
+  </Svg>
+);
+
+const CARD_COLORS = [
+  ['#28233C', '#8B315A', '#F1A147'],
+  ['#132A42', '#155C6C', '#E1AE69'],
+  ['#39252A', '#945045', '#F0BE7C'],
+  ['#172E31', '#3C746B', '#E3A56D'],
+] as const;
+
+const CARD_FALLBACKS = [
+  '오아시스 팝업 스토어',
+  '성수 스튜디오 마켓',
+  '레이어드 커피 랩',
+  '커먼 테이블 성수',
+];
+
+const formatDistance = (place: DecisionPlace) => {
+  if (place.distanceMeters !== undefined) {
+    return place.distanceMeters >= 1000
+      ? `${(place.distanceMeters / 1000).toFixed(1)}km`
+      : `${Math.round(place.distanceMeters)}m`;
+  }
+
+  return place.distance;
 };
 
-const PlaceMeta = ({ place }: { place: DecisionPlace }) => {
-  const { i18n, t } = useTranslation();
-  const language = i18n.resolvedLanguage ?? i18n.language;
-  const wait = place.waitMinutes
-    ? formatMinuteRange(place.waitMinutes[0], place.waitMinutes[1], language)
-    : place.wait;
-  const verifiedAgo = place.verifiedMinutes === undefined
-    ? place.verifiedAgo
-    : formatRelativeMinutes(place.verifiedMinutes, language);
+const PlaceArtwork = ({ index }: { index: number }) => {
+  const colors = CARD_COLORS[index % CARD_COLORS.length];
 
   return (
-    <>
-    <View style={styles.statusRow}>
-      <View style={styles.openDot} />
-      <Text style={styles.openText}>{t('map.decision.status.openNow')}</Text>
-      <Text style={styles.metaDivider}>·</Text>
-      <Text style={styles.waitText}>{t('map.decision.status.wait', { wait })}</Text>
+    <View style={[styles.artwork, { backgroundColor: colors[0] }]}>
+      <View style={[styles.artworkGlow, { backgroundColor: colors[1] }]} />
+      <View style={[styles.artworkFloor, { backgroundColor: colors[2] }]} />
+      <View style={styles.artworkSign}>
+        <Text style={styles.artworkSignText}>{index % 2 === 0 ? 'POP-UP' : 'LOCAL'}</Text>
+      </View>
+      <View style={styles.artworkShelf}>
+        <View style={styles.artworkBoxTall} />
+        <View style={styles.artworkBox} />
+        <View style={styles.artworkBoxSmall} />
+      </View>
     </View>
-    <Text style={styles.verifiedText}>
-      {t('map.decision.status.verified', { time: verifiedAgo })}
-    </Text>
-    </>
   );
 };
 
-const RecommendationCard = ({
-  onCouponPress,
-  onGoNowPress,
+const PlaceTrendCard = ({
+  index,
   onPress,
   place,
 }: {
-  onCouponPress: (place: DecisionPlace) => void;
-  onGoNowPress: (place: DecisionPlace) => void;
-  onPress: (place: DecisionPlace) => void;
+  index: number;
+  onPress: () => void;
   place: DecisionPlace;
 }) => {
-  const { i18n, t } = useTranslation();
-  const distance = place.distanceMeters
-    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
-    : place.distance;
+  const [liked, setLiked] = useState(false);
 
   return (
-    <View style={styles.recommendationCard}>
-      <Pressable
-        accessibilityLabel={`${place.name}, ${distance}`}
-        accessibilityRole="button"
-        onPress={() => onPress(place)}
-      >
-      <View style={styles.cardTopRow}>
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryBadgeText}>{place.category}</Text>
-        </View>
-        <Text style={styles.distanceText}>{distance}</Text>
-      </View>
-      <Text numberOfLines={2} style={styles.placeName}>{place.name}</Text>
-      <PlaceMeta place={place} />
-      </Pressable>
-      <View style={styles.cardActions}>
-        <Pressable accessibilityRole="button" onPress={() => onCouponPress(place)} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>{t('map.decision.filters.coupon')}</Text>
+    <Pressable
+      accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.placeCard, pressed && styles.pressed]}
+    >
+      <PlaceArtwork index={index} />
+      <View style={styles.placeCardBody}>
+        <Text numberOfLines={1} style={styles.placeCardName}>
+          {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
+        </Text>
+        <Text numberOfLines={1} style={styles.placeCardDistance}>
+          여기서 {formatDistance(place)}
+        </Text>
+        <Pressable
+          accessibilityLabel={liked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={(event) => {
+            event.stopPropagation();
+            setLiked((current) => !current);
+          }}
+          style={styles.favoriteButton}
+        >
+          <StarIcon active={liked} size={29} />
         </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => onGoNowPress(place)} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
-        </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
-const ResultCard = ({ onPress, place }: {
-  onPress: (place: DecisionPlace) => void;
-  place: DecisionPlace;
-}) => {
-  const { i18n } = useTranslation();
-  const distance = place.distanceMeters
-    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
-    : place.distance;
-  return (
-  <Pressable accessibilityLabel={`${place.name}, ${distance}`} accessibilityRole="button" onPress={() => onPress(place)} style={styles.resultCard}>
-    <View style={styles.resultThumb}>
-      <Text style={styles.resultThumbText}>{place.category.slice(0, 1)}</Text>
-    </View>
-    <View style={styles.resultBody}>
-      <View style={styles.resultTitleRow}>
-        <Text numberOfLines={2} style={styles.resultName}>{place.name}</Text>
-        <Text style={styles.distanceText}>{distance}</Text>
-      </View>
-      <PlaceMeta place={place} />
-      <Text style={styles.resultTags}>{place.tags.join(' · ')}</Text>
-    </View>
-    <Text accessibilityElementsHidden style={styles.chevron}>{i18n.dir() === 'rtl' ? '‹' : '›'}</Text>
-  </Pressable>
-  );
-};
+const EmptyCard = () => (
+  <View style={[styles.placeCard, styles.emptyCard]}>
+    <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
+    <Text style={styles.emptyCardTitle}>주변 핫플을 찾는 중이에요</Text>
+    <Text style={styles.emptyCardBody}>지도를 움직여 다른 지역도 둘러보세요.</Text>
+  </View>
+);
 
-const PlacePreview = ({
-  onCouponPress,
-  onDetailPress,
-  onGoNowPress,
+const ResultRow = ({
+  onPress,
   place,
 }: {
-  onCouponPress: (place: DecisionPlace) => void;
-  onDetailPress: (place: DecisionPlace) => void;
-  onGoNowPress: (place: DecisionPlace) => void;
+  onPress: () => void;
   place: DecisionPlace;
-}) => {
-  const { i18n, t } = useTranslation();
-  const distance = place.distanceMeters
-    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
-    : place.distance;
-
-  return (
-    <View style={styles.previewCard}>
-      <Pressable accessibilityLabel={`${place.name}, ${distance}`} accessibilityRole="button" onPress={() => onDetailPress(place)}>
-      <View style={styles.previewImage}>
-        <View style={styles.previewImageOrb} />
-        <View style={styles.previewImageLabel}>
-          <Text style={styles.previewImageLabelText}>{place.category}</Text>
-        </View>
-      </View>
-      <View style={styles.previewBody}>
-        <View style={styles.previewTitleRow}>
-          <View style={styles.previewTitleBody}>
-            <Text numberOfLines={2} style={styles.previewName}>{place.name.toUpperCase()}</Text>
-            <Text style={styles.previewAddress}>{place.address}</Text>
-          </View>
-          <Text accessibilityElementsHidden style={styles.chevron}>{i18n.dir() === 'rtl' ? '‹' : '›'}</Text>
-        </View>
-        <PlaceMeta place={place} />
-        <View style={styles.tagRow}>
-          {place.tags.map((tag) => (
-            <View key={tag} style={styles.tag}><Text style={styles.tagText}>{tag}</Text></View>
-          ))}
-        </View>
-      </View>
-      </Pressable>
-      <View style={[styles.previewActions, styles.previewActionsOuter]}>
-        <Pressable accessibilityRole="button" onPress={() => onCouponPress(place)} style={styles.previewSecondaryButton}>
-          <Text style={styles.secondaryButtonText}>{t('map.decision.getCoupon')}</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => onGoNowPress(place)} style={styles.previewPrimaryButton}>
-          <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
-        </Pressable>
-      </View>
+}) => (
+  <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
+    <View style={styles.resultThumbnail}><MapPinIcon active size={25} /></View>
+    <View style={styles.resultTextBody}>
+      <Text numberOfLines={1} style={styles.resultName}>{place.name}</Text>
+      <Text numberOfLines={1} style={styles.resultAddress}>{place.address}</Text>
     </View>
-  );
-};
+    <Text style={styles.resultDistance}>{formatDistance(place)}</Text>
+  </Pressable>
+);
 
-const MapBottomSheet = ({
-  activeFilters,
+const PreviewContent = ({
+  onBack,
+  onDetail,
+  place,
+}: {
+  onBack: () => void;
+  onDetail: () => void;
+  place: DecisionPlace;
+}) => (
+  <View style={styles.previewContent}>
+    <Pressable onPress={onBack} style={styles.previewBack}>
+      <Text style={styles.previewBackText}>‹  주변 핫플로 돌아가기</Text>
+    </Pressable>
+    <Pressable onPress={onDetail} style={({ pressed }) => [styles.previewPanel, pressed && styles.pressed]}>
+      <PlaceArtwork index={place.id} />
+      <View style={styles.previewBody}>
+        <Text style={styles.previewName}>{place.name}</Text>
+        <Text numberOfLines={2} style={styles.previewAddress}>{place.address}</Text>
+        <View style={styles.previewMeta}>
+          <Text style={styles.previewDistance}>여기서 {formatDistance(place)}</Text>
+          <Text style={styles.previewMore}>상세보기  ›</Text>
+        </View>
+      </View>
+    </Pressable>
+  </View>
+);
+
+const BottomNavigation = ({
+  bottomInset,
+  onCreatePlace,
+  onOpenLikedPlaces,
+  onOpenSavedPlaces,
+}: {
+  bottomInset: number;
+  onCreatePlace?: () => void;
+  onOpenLikedPlaces?: () => void;
+  onOpenSavedPlaces?: () => void;
+}) => (
+  <View style={[styles.navigationRow, { bottom: Math.max(12, bottomInset) }]}>
+    <GlassSurface interactive style={styles.navigationGlass} tintColor="rgba(255,255,255,0.24)">
+      <Pressable accessibilityRole="button" style={styles.navItem}>
+        <MapPinIcon active />
+        <Text style={[styles.navLabel, styles.navLabelActive]}>지도</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={onOpenLikedPlaces} style={styles.navItem}>
+        <StarIcon />
+        <Text style={styles.navLabel}>즐겨찾기</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={onOpenSavedPlaces} style={styles.navItem}>
+        <CheckInIcon />
+        <Text style={styles.navLabel}>체크인</Text>
+      </Pressable>
+    </GlassSurface>
+    <Pressable
+      accessibilityLabel="장소 등록"
+      accessibilityRole="button"
+      onPress={onCreatePlace}
+      style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
+    >
+      <GlassSurface interactive style={styles.sendGlass} tintColor="rgba(255,255,255,0.25)">
+        <SendIcon />
+      </GlassSurface>
+    </Pressable>
+  </View>
+);
+
+export default function MapBottomSheet({
   content,
   height,
   onBackHome,
-  onCouponPress,
   onCreatePlace,
   onDetailPress,
-  onFilterPress,
-  onGoNowPress,
   onHandlePress,
+  onOpenLikedPlaces,
+  onOpenSavedPlaces,
   onPlacePress,
-  onProfilePress,
-  onQueryChange,
-  onSearchFocus,
-  onSubmitSearch,
   panHandlers,
   places,
   selectedPlace,
   sheetTranslateY,
   snapPoint,
-}: MapBottomSheetProps) => {
-  const { i18n, t } = useTranslation();
-  const query = content.type === 'search' || content.type === 'results' ? content.query : '';
-  const isPreview = content.type === 'place-preview' && selectedPlace;
-  const showResults = content.type === 'search' || content.type === 'results' || snapPoint === 'expanded';
+}: MapBottomSheetProps) {
+  const insets = useSafeAreaInsets();
+  const [feed, setFeed] = useState<'local' | 'national'>('local');
+  const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
+  const isSearchMode = content.type === 'search' || content.type === 'results' || snapPoint === 'expanded';
+  const shownPlaces = feed === 'local' ? places : [...places].reverse();
 
   return (
-    <Animated.View
-      style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}
-    >
+    <Animated.View style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}>
       <GlassSurface
-        intensity={76}
+        intensity={82}
         pointerEvents="none"
         style={styles.sheetGlass}
-        tintColor="rgba(255,255,255,0.18)"
+        tintColor="rgba(255,255,255,0.22)"
       />
-      <View pointerEvents="none" style={styles.topSheen} />
+      <View pointerEvents="none" style={styles.sheetTint} />
       <View style={styles.handleArea} {...panHandlers}>
-        <Pressable accessibilityLabel={t('map.decision.resizeSheet', { defaultValue: 'Resize place panel' })} accessibilityRole="adjustable" onPress={onHandlePress} style={styles.handleButton}>
+        <Pressable
+          accessibilityLabel="추천 패널 크기 조절"
+          accessibilityRole="adjustable"
+          onPress={onHandlePress}
+          style={styles.handleButton}
+        >
           <View style={styles.handle} />
         </Pressable>
       </View>
-      <View style={styles.headerArea}>
-        <SearchBar
-          onFocus={onSearchFocus}
-          onProfilePress={onProfilePress}
-          onQueryChange={onQueryChange}
-          onSubmit={onSubmitSearch}
-          query={query}
-        />
-        {!isPreview ? (
-          <View style={styles.sheetActionRow}>
-            <Pressable
-              accessibilityLabel={t('map.actions.addPlace')}
-              accessibilityRole="button"
-              hitSlop={6}
-              onPress={onCreatePlace}
-              style={({ pressed }) => [
-                styles.createPlaceButton,
-                pressed && styles.createPlaceButtonPressed,
-              ]}
-            >
-              <Text style={styles.createPlaceIcon}>＋</Text>
-              <Text style={styles.createPlaceText}>{t('map.actions.addPlace')}</Text>
-            </Pressable>
-            <View style={styles.filterRowBody}>
-              <FilterRow activeFilters={activeFilters} onFilterPress={onFilterPress} />
-            </View>
-          </View>
-        ) : (
-          <Pressable accessibilityRole="button" onPress={onBackHome} style={styles.backRow}>
-            <View style={styles.backContent}>
-              <Text accessibilityElementsHidden style={styles.backText}>{i18n.dir() === 'rtl' ? '›' : '‹'}</Text>
-              <Text style={styles.backText}>{t('map.decision.backToRecommendations')}</Text>
-            </View>
-          </Pressable>
-        )}
-      </View>
 
-      {isPreview ? (
-        <ScrollView contentContainerStyle={styles.previewScrollContent} showsVerticalScrollIndicator={false}>
-          <PlacePreview
-            onCouponPress={onCouponPress}
-            onDetailPress={onDetailPress}
-            onGoNowPress={onGoNowPress}
-            place={selectedPlace}
-          />
-        </ScrollView>
-      ) : showResults ? (
+      {content.type === 'place-preview' && selectedPlace ? (
+        <PreviewContent
+          onBack={onBackHome}
+          onDetail={() => onDetailPress(selectedPlace)}
+          place={selectedPlace}
+        />
+      ) : isSearchMode ? (
         <ScrollView
-          contentContainerStyle={styles.resultList}
+          contentContainerStyle={styles.resultsContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>
-              {query ? t('map.decision.resultsFor', { query }) : t('map.decision.placesNearYou')}
-            </Text>
-            <Pressable accessibilityRole="button" style={styles.minimumTouch}><Text style={styles.sortText}>{t('map.decision.recommended')}⌄</Text></Pressable>
+          <View style={styles.resultsTitleRow}>
+            <Text style={styles.resultsTitle}>{query ? `“${query}” 검색 결과` : '내 주변 장소'}</Text>
+            <Text style={styles.resultsCount}>{places.length}</Text>
           </View>
-          {places.length > 0 ? (
-            places.map((place) => <ResultCard key={place.id} onPress={onPlacePress} place={place} />)
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>{t('map.decision.emptyTitle')}</Text>
-              <Text style={styles.emptyBody}>{t('map.decision.emptyBody')}</Text>
-            </View>
-          )}
+          {places.length > 0 ? places.map((place) => (
+            <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
+          )) : <EmptyCard />}
         </ScrollView>
       ) : (
-        <View style={styles.homeContent}>
-          <View style={styles.sectionTitleRow}>
-            <View>
-              <Text style={styles.eyebrow}>{t('map.decision.livePicks')}</Text>
-              <Text style={styles.sectionTitle}>{t('map.decision.whereToGo')}</Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={onSearchFocus} style={styles.minimumTouch}><Text style={styles.seeAllText}>{t('map.decision.seeAll')}</Text></Pressable>
+        <>
+          <View style={styles.segmentOuter}>
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: feed === 'local' }}
+              onPress={() => setFeed('local')}
+              style={[styles.segment, feed === 'local' && styles.segmentActive]}
+            >
+              <Text style={styles.fireIcon}>♥</Text>
+              <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+                우리 지역 핫플
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: feed === 'national' }}
+              onPress={() => setFeed('national')}
+              style={[styles.segment, feed === 'national' && styles.segmentActive]}
+            >
+              <TrendPin />
+              <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+                전국 트렌드
+              </Text>
+            </Pressable>
           </View>
+
           <ScrollView
-            contentContainerStyle={styles.recommendationRow}
+            contentContainerStyle={styles.cardRow}
             horizontal
             showsHorizontalScrollIndicator={false}
           >
-            {places.map((place) => (
-              <RecommendationCard
+            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place, index) => (
+              <PlaceTrendCard
+                index={index}
                 key={place.id}
-                onCouponPress={onCouponPress}
-                onGoNowPress={onGoNowPress}
-                onPress={onPlacePress}
+                onPress={() => onPlacePress(place)}
                 place={place}
               />
-            ))}
+            )) : <EmptyCard />}
           </ScrollView>
-        </View>
+        </>
       )}
+
+      <BottomNavigation
+        bottomInset={insets.bottom}
+        onCreatePlace={onCreatePlace}
+        onOpenLikedPlaces={onOpenLikedPlaces}
+        onOpenSavedPlaces={onOpenSavedPlaces}
+      />
     </Animated.View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  backRow: { justifyContent: 'center', minHeight: 44, paddingVertical: 8 },
-  backContent: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  backText: { color: '#5F6670', fontSize: 13, fontWeight: '700' },
-  bottomSheet: {
-    backgroundColor: 'rgba(247,250,252,0.38)', borderColor: 'rgba(255,255,255,0.76)',
-    borderTopLeftRadius: 30, borderTopRightRadius: 30, borderTopWidth: 1, bottom: 0,
-    elevation: 18, left: 0, position: 'absolute', right: 0, shadowColor: '#101820',
-    shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.16, shadowRadius: 18, zIndex: 50,
+  artwork: {
+    height: 132,
+    overflow: 'hidden',
   },
-  cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 13 },
-  cardTopRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  categoryBadge: { backgroundColor: '#FFF0F4', borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
-  categoryBadgeText: { color: '#E8245E', fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
-  chevron: { color: '#B3B7BE', fontSize: 28, fontWeight: '300' },
-  createPlaceButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 18, flexDirection: 'row', gap: 3, justifyContent: 'center', minHeight: 44, paddingHorizontal: 13, paddingVertical: 8 },
-  createPlaceButtonPressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
-  createPlaceIcon: { color: '#FFFFFF', fontSize: 17, fontWeight: '700', lineHeight: 19 },
-  createPlaceText: { color: '#FFFFFF', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
-  distanceText: { color: '#8A9099', fontSize: 11, fontWeight: '700' },
-  emptyBody: { color: '#838992', fontSize: 12, marginTop: 7, textAlign: 'center' },
-  emptyState: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 70 },
-  emptyTitle: { color: '#2B3139', fontSize: 16, fontWeight: '900' },
-  eyebrow: { color: '#F52A62', fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginBottom: 3 },
-  filterChip: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 18, borderWidth: 1, justifyContent: 'center', minHeight: 44, paddingHorizontal: 14, paddingVertical: 8 },
-  filterChipActive: { backgroundColor: '#FFF0F4', borderColor: '#FF4A75' },
-  filterContent: { gap: 8, paddingRight: 20 },
-  filterScroll: { flexGrow: 0 },
-  filterText: { color: '#5F6670', fontSize: 12, fontWeight: '800' },
-  filterTextActive: { color: '#EA235B' },
-  filterRowBody: { flex: 1, overflow: 'hidden' },
-  handle: { backgroundColor: 'rgba(75,83,94,0.3)', borderRadius: 3, height: 5, width: 42 },
-  handleArea: { alignItems: 'center', height: 24, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 64 },
-  headerArea: { paddingHorizontal: 18 },
-  homeContent: { paddingTop: 16 },
-  metaDivider: { color: '#B0B4BA', fontSize: 11 },
-  minimumTouch: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44, padding: 6 },
-  openDot: { backgroundColor: '#18B66A', borderRadius: 4, height: 7, width: 7 },
-  openText: { color: '#158B56', fontSize: 11, fontWeight: '800' },
-  placeName: { color: '#161A20', fontSize: 17, fontWeight: '900', marginBottom: 7, marginTop: 10 },
-  previewActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
-  previewActionsOuter: { marginTop: 0, padding: 18, paddingTop: 0 },
-  previewAddress: { color: '#8A9099', fontSize: 12, marginTop: 3 },
-  previewBody: { padding: 18 },
-  previewCard: { backgroundColor: 'rgba(255,255,255,0.62)', borderColor: 'rgba(255,255,255,0.82)', borderRadius: 22, borderWidth: 1, overflow: 'hidden', shadowColor: '#18202A', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.08, shadowRadius: 14 },
-  previewImage: { backgroundColor: '#26394A', height: 145, justifyContent: 'flex-end', overflow: 'hidden', padding: 14 },
-  previewImageLabel: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
-  previewImageLabelText: { color: '#D91F56', fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
-  previewImageOrb: { backgroundColor: '#F5567F', borderRadius: 90, height: 180, opacity: 0.72, position: 'absolute', right: -20, top: -55, width: 180 },
-  previewName: { color: '#151A20', fontSize: 19, fontWeight: '900' },
-  previewPrimaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 13, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 120, padding: 10 },
-  previewScrollContent: { padding: 18, paddingBottom: 48 },
-  previewSecondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 13, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 120, padding: 10 },
-  previewTitleBody: { flex: 1 },
-  previewTitleRow: { alignItems: 'center', flexDirection: 'row', marginBottom: 12 },
-  primaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 10, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 96, padding: 8 },
-  primaryButtonText: { color: '#FFFFFF', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
-  recommendationCard: { backgroundColor: 'rgba(255,255,255,0.58)', borderColor: 'rgba(255,255,255,0.82)', borderRadius: 20, borderWidth: 1, padding: 15, shadowColor: '#151A20', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 10, width: 255 },
-  recommendationRow: { gap: 12, paddingBottom: 24, paddingHorizontal: 18, paddingTop: 12 },
-  resultBody: { flex: 1 },
-  resultCard: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.28)', borderBottomColor: 'rgba(255,255,255,0.72)', borderBottomWidth: 1, flexDirection: 'row', gap: 13, minHeight: 104, paddingHorizontal: 8, paddingVertical: 13 },
-  resultList: { paddingBottom: 40, paddingHorizontal: 18, paddingTop: 17 },
-  resultName: { color: '#181C22', flex: 1, fontSize: 15, fontWeight: '900' },
-  resultTags: { color: '#737982', fontSize: 11, marginTop: 5 },
-  resultThumb: { alignItems: 'center', backgroundColor: '#293C4E', borderRadius: 14, height: 72, justifyContent: 'center', overflow: 'hidden', width: 72 },
-  resultThumbText: { color: '#FF7599', fontSize: 25, fontWeight: '900' },
-  resultTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 5 },
-  searchBar: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.54)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, flex: 1, flexDirection: 'row', minHeight: 48, paddingHorizontal: 14, paddingVertical: 4 },
-  sheetGlass: { ...StyleSheet.absoluteFillObject, borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden' },
-  searchIcon: { color: '#252B33', fontSize: 27, lineHeight: 29, marginRight: 8, transform: [{ rotate: '-20deg' }] },
-  searchInput: { color: '#151A20', flex: 1, fontSize: 15, fontWeight: '600', height: '100%', padding: 0 },
-  profileGlyph: { alignItems: 'center', height: 18, justifyContent: 'flex-end', overflow: 'hidden', width: 18 },
-  profileGlyphBody: { backgroundColor: '#5C636D', borderTopLeftRadius: 7, borderTopRightRadius: 7, height: 9, width: 14 },
-  profileGlyphHead: { backgroundColor: '#5C636D', borderRadius: 4, height: 8, marginBottom: 2, width: 8 },
-  profileIconButton: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, height: 48, justifyContent: 'center', width: 48 },
-  searchRow: { flexDirection: 'row', gap: 8 },
-  sheetActionRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 11 },
-  secondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 96, padding: 8 },
-  secondaryButtonText: { color: '#B4234D', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
-  sectionTitle: { color: '#171B21', fontSize: 20, fontWeight: '900' },
-  sectionTitleRow: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 18 },
-  seeAllText: { color: '#EC245B', fontSize: 12, fontWeight: '800' },
-  sortText: { color: '#707680', fontSize: 11, fontWeight: '700' },
-  statusRow: { alignItems: 'center', flexDirection: 'row', gap: 5 },
-  tag: { backgroundColor: '#F3F4F6', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 6 },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
-  tagText: { color: '#5E6570', fontSize: 10, fontWeight: '800' },
-  topSheen: { backgroundColor: 'rgba(255,255,255,0.64)', borderRadius: 2, height: 1, left: 34, position: 'absolute', right: 34, top: 1 },
-  verifiedText: { color: '#777D86', fontSize: 11, marginTop: 5 },
-  waitText: { color: '#4E555F', fontSize: 11, fontWeight: '700' },
+  artworkBox: { backgroundColor: '#E6D0B1', height: 34, marginLeft: 4, width: 34 },
+  artworkBoxSmall: { backgroundColor: '#9C6D51', height: 23, marginLeft: 5, width: 25 },
+  artworkBoxTall: { backgroundColor: '#D8E1D2', height: 49, width: 29 },
+  artworkFloor: {
+    bottom: -40,
+    height: 105,
+    left: -15,
+    opacity: 0.92,
+    position: 'absolute',
+    transform: [{ rotate: '-7deg' }],
+    width: 260,
+  },
+  artworkGlow: {
+    borderRadius: 80,
+    height: 155,
+    opacity: 0.68,
+    position: 'absolute',
+    right: -36,
+    top: -42,
+    width: 155,
+  },
+  artworkShelf: {
+    alignItems: 'flex-end',
+    bottom: 13,
+    flexDirection: 'row',
+    left: 17,
+    position: 'absolute',
+  },
+  artworkSign: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    position: 'absolute',
+    right: 12,
+    top: 13,
+    transform: [{ rotate: '4deg' }],
+  },
+  artworkSignText: { color: '#292934', fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
+  bottomSheet: {
+    backgroundColor: 'rgba(244,246,248,0.44)',
+    borderColor: 'rgba(255,255,255,0.86)',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: 1,
+    bottom: 0,
+    elevation: 22,
+    left: 0,
+    overflow: 'hidden',
+    position: 'absolute',
+    right: 0,
+    shadowColor: '#10141A',
+    shadowOffset: { width: 0, height: -7 },
+    shadowOpacity: 0.17,
+    shadowRadius: 24,
+    zIndex: 50,
+  },
+  cardRow: {
+    gap: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  emptyCardBody: { color: '#81838C', fontSize: 11, marginTop: 4, textAlign: 'center' },
+  emptyCardIcon: {
+    alignItems: 'center',
+    backgroundColor: '#FFF0F4',
+    borderRadius: 22,
+    height: 44,
+    justifyContent: 'center',
+    marginBottom: 8,
+    width: 44,
+  },
+  emptyCardTitle: { color: '#30323A', fontSize: 14, fontWeight: '800' },
+  favoriteButton: { bottom: 13, position: 'absolute', right: 11 },
+  fireIcon: { color: '#FF245B', fontSize: 17, transform: [{ rotate: '-10deg' }] },
+  handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
+  handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
+  handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
+  navItem: { alignItems: 'center', flex: 1, gap: 2, height: 59, justifyContent: 'center' },
+  navLabel: { color: '#3E4149', fontSize: 10, fontWeight: '700' },
+  navLabelActive: { color: '#FF245B' },
+  navigationGlass: {
+    borderColor: 'rgba(255,255,255,0.82)',
+    borderRadius: 30,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: 'row',
+    height: 62,
+    overflow: 'hidden',
+  },
+  navigationRow: {
+    bottom: 12,
+    flexDirection: 'row',
+    gap: 10,
+    left: 16,
+    position: 'absolute',
+    right: 16,
+  },
+  placeCard: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 195,
+    overflow: 'hidden',
+    shadowColor: '#12161D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    width: 245,
+  },
+  placeCardBody: { flex: 1, paddingHorizontal: 11, paddingTop: 9 },
+  placeCardDistance: { color: '#73757D', fontSize: 11, marginTop: 2 },
+  placeCardName: { color: '#25272D', fontSize: 15, fontWeight: '800', paddingRight: 35 },
+  pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
+  previewAddress: { color: '#747780', fontSize: 12, marginTop: 4 },
+  previewBack: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' },
+  previewBackText: { color: '#5E616A', fontSize: 12, fontWeight: '700' },
+  previewBody: { padding: 14 },
+  previewContent: { paddingHorizontal: 16 },
+  previewDistance: { color: '#6D7079', fontSize: 12 },
+  previewMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+  previewMore: { color: '#FF245B', fontSize: 12, fontWeight: '800' },
+  previewName: { color: '#22242A', fontSize: 18, fontWeight: '900' },
+  previewPanel: {
+    backgroundColor: 'rgba(255,255,255,0.84)',
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  resultAddress: { color: '#7A7D85', fontSize: 11, marginTop: 3 },
+  resultDistance: { color: '#686B73', fontSize: 11, fontWeight: '700' },
+  resultName: { color: '#272930', fontSize: 14, fontWeight: '800' },
+  resultRow: {
+    alignItems: 'center',
+    borderBottomColor: 'rgba(255,255,255,0.8)',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    minHeight: 72,
+  },
+  resultTextBody: { flex: 1 },
+  resultThumbnail: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,240,244,0.86)',
+    borderRadius: 13,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  resultsContent: { paddingBottom: 105, paddingHorizontal: 17 },
+  resultsCount: { color: '#FF245B', fontSize: 13, fontWeight: '900' },
+  resultsTitle: { color: '#24262C', flex: 1, fontSize: 18, fontWeight: '900' },
+  resultsTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingBottom: 8, paddingTop: 6 },
+  segment: {
+    alignItems: 'center',
+    borderRadius: 22,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    height: 40,
+    justifyContent: 'center',
+  },
+  segmentActive: {
+    backgroundColor: 'rgba(255,255,255,0.84)',
+    elevation: 2,
+    shadowColor: '#171A20',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+  },
+  segmentLabel: { color: '#8A8C94', fontSize: 13, fontWeight: '800' },
+  segmentLabelActive: { color: '#FF245B' },
+  segmentOuter: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(222,224,228,0.54)',
+    borderColor: 'rgba(255,255,255,0.72)',
+    borderRadius: 24,
+    borderWidth: 1,
+    flexDirection: 'row',
+    height: 44,
+    padding: 2,
+    width: '88%',
+  },
+  sendButton: {
+    borderRadius: 31,
+    height: 62,
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.13,
+    shadowRadius: 10,
+    width: 62,
+  },
+  sendGlass: {
+    alignItems: 'center',
+    borderColor: 'rgba(255,255,255,0.86)',
+    borderRadius: 31,
+    borderWidth: 1,
+    height: 62,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: 62,
+  },
+  sheetGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    overflow: 'hidden',
+  },
+  sheetTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(247,249,251,0.18)',
+  },
 });
-
-export default MapBottomSheet;
