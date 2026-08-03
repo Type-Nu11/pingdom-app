@@ -14,6 +14,7 @@ import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
+import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
@@ -30,7 +31,7 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     id: MOCK_PLACE_IDS[0],
     latitude: latitude + 0.0018,
     longitude: longitude - 0.0012,
-    name: 'Seongsu Pop-up',
+    name: '오아시스 팝업 스토어',
     tags: ['English menu', 'Coupon'],
     verifiedAgo: '18m',
     verifiedMinutes: 18,
@@ -45,7 +46,7 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     id: MOCK_PLACE_IDS[1],
     latitude: latitude - 0.0011,
     longitude: longitude + 0.0019,
-    name: 'Layered Coffee Lab',
+    name: '레이어드 커피 랩',
     tags: ['Short wait', 'Bookable'],
     verifiedAgo: '7m',
     verifiedMinutes: 7,
@@ -60,7 +61,7 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     id: MOCK_PLACE_IDS[2],
     latitude: latitude + 0.0004,
     longitude: longitude + 0.0028,
-    name: 'Common Table Seongsu',
+    name: '커먼 테이블 성수',
     tags: ['Coupon', 'Bookable'],
     verifiedAgo: '24m',
     verifiedMinutes: 24,
@@ -70,6 +71,7 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
 ];
 
 const toDecisionPlace = (place: Place): DecisionPlace => ({
+  ...place,
   address: place.address || 'Nearby place',
   category: (place.category || 'PLACE').toUpperCase(),
   distance: place.distanceMeters ? `${Math.round(place.distanceMeters)} m` : 'Nearby',
@@ -112,6 +114,12 @@ export default function MapScreen({
   const { height } = useWindowDimensions();
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
+  const { places: recommendedPlaces } = usePlaceRecommendations({
+    latitude: center.lat,
+    limit: 8,
+    longitude: center.lng,
+    radiusKm: 20,
+  });
   const { profile } = useProfile();
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
@@ -147,14 +155,16 @@ export default function MapScreen({
     [center.lat, center.lng],
   );
   const allPlaces = useMemo(() => {
-    const mockIds = new Set<number>(MOCK_PLACE_IDS);
+    const recommendations = recommendedPlaces
+      .slice(0, 8)
+      .map(toDecisionPlace);
     const livePlaces = apiPlaces
-      .filter((place) => !mockIds.has(place.id))
       .slice(0, 8)
       .map(toDecisionPlace);
 
-    return [...mockPlaces, ...livePlaces];
-  }, [apiPlaces, mockPlaces]);
+    if (recommendations.length > 0) return recommendations;
+    return livePlaces.length > 0 ? livePlaces : mockPlaces;
+  }, [apiPlaces, mockPlaces, recommendedPlaces]);
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
     return allPlaces.find((place) => place.id === content.placeId) ?? null;

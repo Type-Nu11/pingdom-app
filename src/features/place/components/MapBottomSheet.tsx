@@ -1,20 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Animated,
   GestureResponderHandlers,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, Path, Polygon } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
+import HotPlaceAsset from '../../../assets/v2icon/hotplace.svg';
 import MapAsset from '../../../assets/v2icon/maping_svg.svg';
 import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend_svg.svg';
 import StarAsset from '../../../assets/v2icon/star_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
+import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface from './GlassSurface';
 
 export type BottomSheetContent =
@@ -85,31 +88,18 @@ const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
   </Svg>
 );
 
-const FilledStarIcon = ({ active = false, size = 25 }: IconProps) => (
-  <Svg height={size} viewBox="0 0 24 24" width={size}>
-    <Polygon
+const FavoriteStarIcon = ({ active = false, size = 30 }: IconProps) => (
+  <Svg height={size} viewBox="0 0 25 24" width={size}>
+    <Path
+      d="M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z"
       fill={active ? '#FF245B' : 'none'}
-      points="12,2.3 14.9,8.2 21.4,9.1 16.7,13.7 17.8,20.2 12,17.1 6.2,20.2 7.3,13.7 2.6,9.1 9.1,8.2"
       stroke={active ? '#FF245B' : '#383B43'}
+      strokeLinecap="round"
       strokeLinejoin="round"
-      strokeWidth="1.8"
+      strokeWidth="2"
     />
   </Svg>
 );
-
-const TrendPin = () => (
-  <Svg height={15} viewBox="0 0 20 20" width={15}>
-    <Path d="M10 18s5.5-4.7 5.5-10A5.5 5.5 0 1 0 4.5 8c0 5.3 5.5 10 5.5 10Z" fill="#858892" />
-    <Circle cx="10" cy="8" fill="#F7F7F9" r="2" />
-  </Svg>
-);
-
-const CARD_COLORS = [
-  ['#28233C', '#8B315A', '#F1A147'],
-  ['#132A42', '#155C6C', '#E1AE69'],
-  ['#39252A', '#945045', '#F0BE7C'],
-  ['#172E31', '#3C746B', '#E3A56D'],
-] as const;
 
 const CARD_FALLBACKS = [
   '오아시스 팝업 스토어',
@@ -117,6 +107,8 @@ const CARD_FALLBACKS = [
   '레이어드 커피 랩',
   '커먼 테이블 성수',
 ];
+
+const PLACEHOLDER_IMAGE_URL = 'https://placehold.co/520x280.png';
 
 const formatDistance = (place: DecisionPlace) => {
   if (place.distanceMeters !== undefined) {
@@ -128,30 +120,34 @@ const formatDistance = (place: DecisionPlace) => {
   return place.distance;
 };
 
-const PlaceArtwork = ({ index }: { index: number }) => {
-  const colors = CARD_COLORS[index % CARD_COLORS.length];
+const PlaceArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [imageUrl]);
+
+  const sourceUrl = imageUrl && !hasImageError ? imageUrl : PLACEHOLDER_IMAGE_URL;
 
   return (
-    <View style={[styles.artwork, { backgroundColor: colors[0] }]}>
-      <View style={[styles.artworkGlow, { backgroundColor: colors[1] }]} />
-      <View style={[styles.artworkFloor, { backgroundColor: colors[2] }]} />
-      <View style={styles.artworkSign}>
-        <Text style={styles.artworkSignText}>{index % 2 === 0 ? 'POP-UP' : 'LOCAL'}</Text>
-      </View>
-      <View style={styles.artworkShelf}>
-        <View style={styles.artworkBoxTall} />
-        <View style={styles.artworkBox} />
-        <View style={styles.artworkBoxSmall} />
-      </View>
-    </View>
+    <Image
+      onError={() => {
+        if (sourceUrl !== PLACEHOLDER_IMAGE_URL) setHasImageError(true);
+      }}
+      resizeMode="cover"
+      source={{ uri: sourceUrl }}
+      style={styles.artwork}
+    />
   );
 };
 
 const PlaceTrendCard = ({
+  imageUrl,
   index,
   onPress,
   place,
 }: {
+  imageUrl?: string;
   index: number;
   onPress: () => void;
   place: DecisionPlace;
@@ -165,7 +161,7 @@ const PlaceTrendCard = ({
       onPress={onPress}
       style={({ pressed }) => [styles.placeCard, pressed && styles.pressed]}
     >
-      <PlaceArtwork index={index} />
+      <PlaceArtwork imageUrl={imageUrl} />
       <View style={styles.placeCardBody}>
         <Text numberOfLines={1} style={styles.placeCardName}>
           {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
@@ -183,7 +179,7 @@ const PlaceTrendCard = ({
           }}
           style={styles.favoriteButton}
         >
-          {liked ? <FilledStarIcon active size={29} /> : <StarAsset height={29} width={30} />}
+          <FavoriteStarIcon active={liked} />
         </Pressable>
       </View>
     </Pressable>
@@ -216,10 +212,12 @@ const ResultRow = ({
 );
 
 const PreviewContent = ({
+  imageUrl,
   onBack,
   onDetail,
   place,
 }: {
+  imageUrl?: string;
   onBack: () => void;
   onDetail: () => void;
   place: DecisionPlace;
@@ -229,7 +227,7 @@ const PreviewContent = ({
       <Text style={styles.previewBackText}>‹  주변 핫플로 돌아가기</Text>
     </Pressable>
     <Pressable onPress={onDetail} style={({ pressed }) => [styles.previewPanel, pressed && styles.pressed]}>
-      <PlaceArtwork index={place.id} />
+      <PlaceArtwork imageUrl={imageUrl} />
       <View style={styles.previewBody}>
         <Text style={styles.previewName}>{place.name}</Text>
         <Text numberOfLines={2} style={styles.previewAddress}>{place.address}</Text>
@@ -266,7 +264,7 @@ const BottomNavigation = ({
   >
     <GlassSurface interactive style={styles.navigationGlass} tintColor="rgba(255,255,255,0.24)">
       <Pressable accessibilityRole="button" style={styles.navItem}>
-        <MapAsset height={24} width={22} />
+        <MapAsset color="#FF1956" height={24} width={22} />
         <Text style={[styles.navLabel, styles.navLabelActive]}>지도</Text>
       </Pressable>
       <Pressable accessibilityRole="button" onPress={onOpenLikedPlaces} style={styles.navItem}>
@@ -313,6 +311,7 @@ export default function MapBottomSheet({
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results' || snapPoint === 'expanded';
   const shownPlaces = feed === 'local' ? places : [...places].reverse();
+  const { imageUrlsByPlaceId } = usePlacePreviewImages(places);
 
   return (
     <Animated.View
@@ -342,6 +341,7 @@ export default function MapBottomSheet({
 
       {content.type === 'place-preview' && selectedPlace ? (
         <PreviewContent
+          imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
           onBack={onBackHome}
           onDetail={() => onDetailPress(selectedPlace)}
           place={selectedPlace}
@@ -362,29 +362,43 @@ export default function MapBottomSheet({
         </ScrollView>
       ) : (
         <>
-          <View style={styles.segmentOuter}>
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: feed === 'local' }}
-              onPress={() => setFeed('local')}
-              style={[styles.segment, feed === 'local' && styles.segmentActive]}
+          <View style={styles.segmentShadow}>
+            <GlassSurface
+              intensity={36}
+              style={styles.segmentOuter}
+              tintColor="rgba(228,228,230,0.12)"
             >
-              <Text style={styles.fireIcon}>♥</Text>
-              <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-                우리 지역 핫플
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: feed === 'national' }}
-              onPress={() => setFeed('national')}
-              style={[styles.segment, feed === 'national' && styles.segmentActive]}
-            >
-              <TrendPin />
-              <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-                전국 트렌드
-              </Text>
-            </Pressable>
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: feed === 'local' }}
+                onPress={() => setFeed('local')}
+                style={[styles.segment, feed === 'local' && styles.segmentActive]}
+              >
+                <HotPlaceAsset
+                  color={feed === 'local' ? '#FF1956' : '#767680'}
+                  height={20}
+                  width={16}
+                />
+                <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+                  우리 지역 핫플
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: feed === 'national' }}
+                onPress={() => setFeed('national')}
+                style={[styles.segment, feed === 'national' && styles.segmentActive]}
+              >
+                <MapAsset
+                  color={feed === 'national' ? '#FF1956' : '#767680'}
+                  height={20}
+                  width={18}
+                />
+                <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+                  전국 트렌드
+                </Text>
+              </Pressable>
+            </GlassSurface>
           </View>
 
           <ScrollView
@@ -394,6 +408,7 @@ export default function MapBottomSheet({
           >
             {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place, index) => (
               <PlaceTrendCard
+                imageUrl={imageUrlsByPlaceId[String(place.id)]}
                 index={index}
                 key={place.id}
                 onPress={() => onPlacePress(place)}
@@ -417,48 +432,11 @@ export default function MapBottomSheet({
 
 const styles = StyleSheet.create({
   artwork: {
-    height: 132,
+    backgroundColor: '#E4E4E6',
+    height: 140,
     overflow: 'hidden',
+    width: '100%',
   },
-  artworkBox: { backgroundColor: '#E6D0B1', height: 34, marginLeft: 4, width: 34 },
-  artworkBoxSmall: { backgroundColor: '#9C6D51', height: 23, marginLeft: 5, width: 25 },
-  artworkBoxTall: { backgroundColor: '#D8E1D2', height: 49, width: 29 },
-  artworkFloor: {
-    bottom: -40,
-    height: 105,
-    left: -15,
-    opacity: 0.92,
-    position: 'absolute',
-    transform: [{ rotate: '-7deg' }],
-    width: 260,
-  },
-  artworkGlow: {
-    borderRadius: 80,
-    height: 155,
-    opacity: 0.68,
-    position: 'absolute',
-    right: -36,
-    top: -42,
-    width: 155,
-  },
-  artworkShelf: {
-    alignItems: 'flex-end',
-    bottom: 13,
-    flexDirection: 'row',
-    left: 17,
-    position: 'absolute',
-  },
-  artworkSign: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    position: 'absolute',
-    right: 12,
-    top: 13,
-    transform: [{ rotate: '4deg' }],
-  },
-  artworkSignText: { color: '#292934', fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
   bottomSheet: {
     bottom: 8,
     left: 8,
@@ -488,8 +466,8 @@ const styles = StyleSheet.create({
   cardRow: {
     gap: 12,
     paddingBottom: 12,
-    paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingHorizontal: 18,
+    paddingTop: 18,
   },
   emptyCard: {
     alignItems: 'center',
@@ -500,7 +478,7 @@ const styles = StyleSheet.create({
   emptyCardIcon: {
     alignItems: 'center',
     backgroundColor: '#FFF0F4',
-    borderRadius: 22,
+    borderRadius: 20,
     height: 44,
     justifyContent: 'center',
     marginBottom: 8,
@@ -508,7 +486,6 @@ const styles = StyleSheet.create({
   },
   emptyCardTitle: { color: '#30323A', fontSize: 14, fontWeight: '800' },
   favoriteButton: { bottom: 13, position: 'absolute', right: 11 },
-  fireIcon: { color: '#FF245B', fontSize: 17, transform: [{ rotate: '-10deg' }] },
   handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
   handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
@@ -537,17 +514,17 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.95)',
     borderRadius: 16,
     borderWidth: 1,
-    height: 195,
+    height: 210,
     overflow: 'hidden',
     shadowColor: '#12161D',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
-    width: 245,
+    width: 260,
   },
   placeCardBody: { flex: 1, paddingHorizontal: 11, paddingTop: 9 },
-  placeCardDistance: { color: '#73757D', fontSize: 11, marginTop: 2 },
-  placeCardName: { color: '#25272D', fontSize: 15, fontWeight: '800', paddingRight: 35 },
+  placeCardDistance: { color: '#73757D', fontSize: 12, marginTop: 2 },
+  placeCardName: { color: '#25272D', fontSize: 16, fontWeight: '900', paddingRight: 35 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   previewAddress: { color: '#747780', fontSize: 12, marginTop: 4 },
   previewBack: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' },
@@ -589,33 +566,44 @@ const styles = StyleSheet.create({
   resultsTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingBottom: 8, paddingTop: 6 },
   segment: {
     alignItems: 'center',
+    alignSelf: 'stretch',
     borderRadius: 22,
     flex: 1,
     flexDirection: 'row',
-    gap: 6,
-    height: 40,
+    gap: 8,
     justifyContent: 'center',
   },
   segmentActive: {
-    backgroundColor: 'rgba(255,255,255,0.84)',
-    elevation: 2,
-    shadowColor: '#171A20',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.6)',
   },
-  segmentLabel: { color: '#8A8C94', fontSize: 13, fontWeight: '800' },
-  segmentLabelActive: { color: '#FF245B' },
+  segmentLabel: {
+    color: '#767680',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 21,
+  },
+  segmentLabelActive: { color: '#FF1956', fontWeight: '700' },
   segmentOuter: {
-    alignSelf: 'center',
-    backgroundColor: 'rgba(222,224,228,0.54)',
-    borderColor: 'rgba(255,255,255,0.72)',
+    alignItems: 'stretch',
+    backgroundColor: 'rgba(228,228,230,0.48)',
+    borderColor: 'rgba(255,255,255,0.52)',
     borderRadius: 24,
     borderWidth: 1,
     flexDirection: 'row',
-    height: 44,
-    padding: 2,
-    width: '88%',
+    height: 52,
+    overflow: 'hidden',
+    padding: 3,
+    width: '100%',
+  },
+  segmentShadow: {
+    alignSelf: 'center',
+    borderRadius: 24,
+    maxWidth: 370,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    width: '100%',
   },
   sendButton: {
     borderRadius: 31,
