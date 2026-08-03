@@ -332,8 +332,10 @@ export default function MapScreen({
       />
       <MapBottomSheet
         activeFilters={activeFilters}
+        collapsedTranslateY={collapsedTranslateY}
         content={content}
         height={fullSheetHeight}
+        mediumTranslateY={mediumTranslateY}
         onBackHome={handleBackHome}
         onCouponPress={handleCoupon}
         onCreatePlace={onCreatePlace}
@@ -361,6 +363,7 @@ export default function MapScreen({
         sheetChromeBottom={sheetChromeBottom}
         sheetTranslateY={sheetTranslateY}
         snapPoint={snapPoint}
+        userName={profile?.username}
       />
     </View>
   );

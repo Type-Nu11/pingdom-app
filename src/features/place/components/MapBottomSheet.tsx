@@ -12,9 +12,14 @@ import {
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
+import ArtAsset from '../../../assets/v2icon/art_svg.svg';
+import FashionAsset from '../../../assets/v2icon/fashion_svg.svg';
+import FoodAsset from '../../../assets/v2icon/food_svg.svg';
 import HotPlaceAsset from '../../../assets/v2icon/hotplace.svg';
 import MapAsset from '../../../assets/v2icon/maping_svg.svg';
+import MusicAsset from '../../../assets/v2icon/music_svg.svg';
 import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend_svg.svg';
+import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
 import StarAsset from '../../../assets/v2icon/star_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
@@ -46,8 +51,10 @@ export type DecisionPlace = {
 
 type MapBottomSheetProps = {
   activeFilters: VisitFilter[];
+  collapsedTranslateY: number;
   content: BottomSheetContent;
   height: number;
+  mediumTranslateY: number;
   onBackHome: () => void;
   onCouponPress: (place: DecisionPlace) => void;
   onCreatePlace?: () => void;
@@ -68,12 +75,23 @@ type MapBottomSheetProps = {
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
+  userName?: string;
 };
 
 type IconProps = {
   active?: boolean;
   size?: number;
 };
+
+type SheetCategory = 'art' | 'fashion' | 'food' | 'music' | 'popup';
+
+const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
+  { id: 'popup', label: '팝업' },
+  { id: 'music', label: '음악' },
+  { id: 'food', label: '음식점' },
+  { id: 'fashion', label: '패션' },
+  { id: 'art', label: '전시' },
+];
 
 const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
   <Svg height={size} viewBox="0 0 24 24" width={size}>
@@ -101,6 +119,70 @@ const FavoriteStarIcon = ({ active = false, size = 30 }: IconProps) => (
   </Svg>
 );
 
+const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCategory }) => {
+  const color = active ? '#FF1956' : '#5E5E66';
+
+  switch (category) {
+    case 'popup':
+      return <PopupAsset color={color} height={19} width={20} />;
+    case 'music':
+      return <MusicAsset color={color} height={18} width={21} />;
+    case 'food':
+      return <FoodAsset color={color} height={18} width={15} />;
+    case 'fashion':
+      return <FashionAsset color={color} height={18} width={24} />;
+    case 'art':
+      return <ArtAsset color={color} height={18} width={18} />;
+  }
+};
+
+const FeedSegment = ({
+  feed,
+  onChange,
+}: {
+  feed: 'local' | 'national';
+  onChange: (feed: 'local' | 'national') => void;
+}) => (
+  <View style={styles.segmentShadow}>
+    <GlassSurface
+      intensity={36}
+      style={styles.segmentOuter}
+      tintColor="rgba(228,228,230,0.12)"
+    >
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'local' }}
+        onPress={() => onChange('local')}
+        style={[styles.segment, feed === 'local' && styles.segmentActive]}
+      >
+        <HotPlaceAsset
+          color={feed === 'local' ? '#FF1956' : '#767680'}
+          height={20}
+          width={16}
+        />
+        <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+          우리 지역 핫플
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'national' }}
+        onPress={() => onChange('national')}
+        style={[styles.segment, feed === 'national' && styles.segmentActive]}
+      >
+        <MapAsset
+          color={feed === 'national' ? '#FF1956' : '#767680'}
+          height={20}
+          width={18}
+        />
+        <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+          전국 트렌드
+        </Text>
+      </Pressable>
+    </GlassSurface>
+  </View>
+);
+
 const CARD_FALLBACKS = [
   '오아시스 팝업 스토어',
   '성수 스튜디오 마켓',
@@ -120,7 +202,13 @@ const formatDistance = (place: DecisionPlace) => {
   return place.distance;
 };
 
-const PlaceArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+const PlaceArtwork = ({
+  imageUrl,
+  variant = 'trend',
+}: {
+  imageUrl?: string;
+  variant?: 'grid' | 'trend';
+}) => {
   const [hasImageError, setHasImageError] = useState(false);
 
   useEffect(() => {
@@ -136,7 +224,7 @@ const PlaceArtwork = ({ imageUrl }: { imageUrl?: string }) => {
       }}
       resizeMode="cover"
       source={{ uri: sourceUrl }}
-      style={styles.artwork}
+      style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
     />
   );
 };
@@ -183,6 +271,149 @@ const PlaceTrendCard = ({
         </Pressable>
       </View>
     </Pressable>
+  );
+};
+
+const ExpandedPlaceCard = ({
+  imageUrl,
+  onPress,
+  place,
+}: {
+  imageUrl?: string;
+  onPress: () => void;
+  place: DecisionPlace;
+}) => {
+  const [liked, setLiked] = useState(false);
+
+  return (
+    <Pressable
+      accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.gridCard, pressed && styles.pressed]}
+    >
+      <PlaceArtwork imageUrl={imageUrl} variant="grid" />
+      <View style={styles.gridCardBody}>
+        <Text numberOfLines={2} style={styles.gridCardName}>{place.name}</Text>
+        <Text numberOfLines={1} style={styles.gridCardDistance}>여기서 {formatDistance(place)}</Text>
+        <Pressable
+          accessibilityLabel={liked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={(event) => {
+            event.stopPropagation();
+            setLiked((current) => !current);
+          }}
+          style={styles.gridFavoriteButton}
+        >
+          <FavoriteStarIcon active={liked} size={27} />
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+};
+
+const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => {
+  const value = place.category.trim().toLowerCase();
+  const aliases: Record<SheetCategory, string[]> = {
+    art: ['art', 'exhibit', 'exhibition', '전시'],
+    fashion: ['fashion', '패션'],
+    food: ['cafe', 'dining', 'food', 'restaurant', '음식', '카페'],
+    music: ['music', '음악'],
+    popup: ['pop-up', 'popup', '팝업'],
+  };
+
+  return aliases[category].some((alias) => value.includes(alias));
+};
+
+const ExpandedHomeContent = ({
+  activeCategory,
+  feed,
+  imageUrlsByPlaceId,
+  onCategoryChange,
+  onFeedChange,
+  onPlacePress,
+  places,
+  userName,
+}: {
+  activeCategory: SheetCategory;
+  feed: 'local' | 'national';
+  imageUrlsByPlaceId: Record<string, string>;
+  onCategoryChange: (category: SheetCategory) => void;
+  onFeedChange: (feed: 'local' | 'national') => void;
+  onPlacePress: (place: DecisionPlace) => void;
+  places: DecisionPlace[];
+  userName: string;
+}) => {
+  const categoryPlaces = places.filter((place) => placeMatchesCategory(place, activeCategory));
+  const gridPlaces = categoryPlaces.length > 0 ? categoryPlaces : places;
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.expandedContent}
+      nestedScrollEnabled
+      showsVerticalScrollIndicator={false}
+      style={styles.expandedScroll}
+    >
+      <FeedSegment feed={feed} onChange={onFeedChange} />
+      <ScrollView
+        contentContainerStyle={styles.expandedFeaturedRow}
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={false}
+      >
+        {places.length > 0 ? places.slice(0, 6).map((place, index) => (
+          <PlaceTrendCard
+            imageUrl={imageUrlsByPlaceId[String(place.id)]}
+            index={index}
+            key={`featured-${place.id}`}
+            onPress={() => onPlacePress(place)}
+            place={place}
+          />
+        )) : <EmptyCard />}
+      </ScrollView>
+
+      <Text style={styles.expandedTitle}>
+        카테고리별 <Text style={styles.expandedTitleAccent}>{userName}님</Text> 주변 인기 장소들
+      </Text>
+
+      <ScrollView
+        contentContainerStyle={styles.categoryRow}
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={false}
+      >
+        {CATEGORY_OPTIONS.map((category) => {
+          const active = category.id === activeCategory;
+
+          return (
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              key={category.id}
+              onPress={() => onCategoryChange(category.id)}
+              style={[styles.categoryChip, active && styles.categoryChipActive]}
+            >
+              <CategoryIcon active={active} category={category.id} />
+              <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
+                {category.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <View style={styles.gridRow}>
+        {gridPlaces.slice(0, 8).map((place) => (
+          <ExpandedPlaceCard
+            imageUrl={imageUrlsByPlaceId[String(place.id)]}
+            key={`grid-${place.id}`}
+            onPress={() => onPlacePress(place)}
+            place={place}
+          />
+        ))}
+      </View>
+    </ScrollView>
   );
 };
 
@@ -290,8 +521,10 @@ const BottomNavigation = ({
 );
 
 export default function MapBottomSheet({
+  collapsedTranslateY,
   content,
   height,
+  mediumTranslateY,
   onBackHome,
   onCreatePlace,
   onDetailPress,
@@ -305,13 +538,27 @@ export default function MapBottomSheet({
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
+  userName,
 }: MapBottomSheetProps) {
   const insets = useSafeAreaInsets();
   const [feed, setFeed] = useState<'local' | 'national'>('local');
+  const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
-  const isSearchMode = content.type === 'search' || content.type === 'results' || snapPoint === 'expanded';
+  const isSearchMode = content.type === 'search' || content.type === 'results';
   const shownPlaces = feed === 'local' ? places : [...places].reverse();
   const { imageUrlsByPlaceId } = usePlacePreviewImages(places);
+  const contentFadeStart = mediumTranslateY
+    + ((collapsedTranslateY - mediumTranslateY) * 0.42);
+  const contentOpacity = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [mediumTranslateY, contentFadeStart, collapsedTranslateY],
+    outputRange: [1, 0.78, 0],
+  });
+  const contentTranslateY = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [mediumTranslateY, collapsedTranslateY],
+    outputRange: [0, 22],
+  });
 
   return (
     <Animated.View
@@ -339,6 +586,13 @@ export default function MapBottomSheet({
         </Pressable>
       </View>
 
+      <Animated.View
+        pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
+        style={[
+          styles.sheetContent,
+          { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] },
+        ]}
+      >
       {content.type === 'place-preview' && selectedPlace ? (
         <PreviewContent
           imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
@@ -360,46 +614,20 @@ export default function MapBottomSheet({
             <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
           )) : <EmptyCard />}
         </ScrollView>
+      ) : snapPoint === 'expanded' ? (
+        <ExpandedHomeContent
+          activeCategory={activeCategory}
+          feed={feed}
+          imageUrlsByPlaceId={imageUrlsByPlaceId}
+          onCategoryChange={setActiveCategory}
+          onFeedChange={setFeed}
+          onPlacePress={onPlacePress}
+          places={shownPlaces}
+          userName={userName?.trim() || 'user'}
+        />
       ) : (
         <>
-          <View style={styles.segmentShadow}>
-            <GlassSurface
-              intensity={36}
-              style={styles.segmentOuter}
-              tintColor="rgba(228,228,230,0.12)"
-            >
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: feed === 'local' }}
-                onPress={() => setFeed('local')}
-                style={[styles.segment, feed === 'local' && styles.segmentActive]}
-              >
-                <HotPlaceAsset
-                  color={feed === 'local' ? '#FF1956' : '#767680'}
-                  height={20}
-                  width={16}
-                />
-                <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-                  우리 지역 핫플
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: feed === 'national' }}
-                onPress={() => setFeed('national')}
-                style={[styles.segment, feed === 'national' && styles.segmentActive]}
-              >
-                <MapAsset
-                  color={feed === 'national' ? '#FF1956' : '#767680'}
-                  height={20}
-                  width={18}
-                />
-                <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-                  전국 트렌드
-                </Text>
-              </Pressable>
-            </GlassSurface>
-          </View>
+          <FeedSegment feed={feed} onChange={setFeed} />
 
           <ScrollView
             contentContainerStyle={styles.cardRow}
@@ -418,6 +646,7 @@ export default function MapBottomSheet({
           </ScrollView>
         </>
       )}
+      </Animated.View>
 
       <BottomNavigation
         bottomInset={insets.bottom}
@@ -485,7 +714,77 @@ const styles = StyleSheet.create({
     width: 44,
   },
   emptyCardTitle: { color: '#30323A', fontSize: 14, fontWeight: '800' },
+  expandedContent: { paddingBottom: 112 },
+  expandedFeaturedRow: {
+    gap: 12,
+    paddingBottom: 18,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+  },
+  expandedScroll: { flex: 1 },
+  expandedTitle: {
+    color: '#363840',
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 27,
+    paddingHorizontal: 18,
+  },
+  expandedTitleAccent: { color: '#FF1956' },
   favoriteButton: { bottom: 13, position: 'absolute', right: 11 },
+  categoryChip: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.76)',
+    borderColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 22,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 7,
+    height: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+    shadowColor: '#15181E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 9,
+  },
+  categoryChipActive: {
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderColor: '#FF1956',
+  },
+  categoryChipLabel: { color: '#5E5E66', fontSize: 14, fontWeight: '700' },
+  categoryChipLabelActive: { color: '#FF1956' },
+  categoryRow: {
+    gap: 9,
+    paddingBottom: 16,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+  },
+  gridArtwork: { height: 128 },
+  gridCard: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    borderWidth: 1,
+    flexBasis: '47%',
+    flexGrow: 1,
+    height: 210,
+    maxWidth: '48%',
+    overflow: 'hidden',
+    shadowColor: '#12161D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.09,
+    shadowRadius: 9,
+  },
+  gridCardBody: { flex: 1, paddingHorizontal: 10, paddingTop: 9 },
+  gridCardDistance: { color: '#73757D', fontSize: 11, marginTop: 2, paddingRight: 29 },
+  gridCardName: { color: '#25272D', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
+  gridFavoriteButton: { bottom: 12, position: 'absolute', right: 10 },
+  gridRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingHorizontal: 18,
+  },
   handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
   handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
@@ -631,6 +930,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 48,
     overflow: 'hidden',
   },
+  sheetContent: { flex: 1 },
   sheetTint: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(247,249,251,0.18)',
