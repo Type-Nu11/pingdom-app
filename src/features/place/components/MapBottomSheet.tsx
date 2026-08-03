@@ -62,6 +62,7 @@ type MapBottomSheetProps = {
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
   selectedPlace: DecisionPlace | null;
+  sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
 };
@@ -246,13 +247,23 @@ const BottomNavigation = ({
   onCreatePlace,
   onOpenLikedPlaces,
   onOpenSavedPlaces,
+  sheetTranslateY,
 }: {
   bottomInset: number;
   onCreatePlace?: () => void;
   onOpenLikedPlaces?: () => void;
   onOpenSavedPlaces?: () => void;
+  sheetTranslateY: Animated.Value;
 }) => (
-  <View style={[styles.navigationRow, { bottom: Math.max(12, bottomInset) }]}>
+  <Animated.View
+    style={[
+      styles.navigationRow,
+      {
+        bottom: Math.max(12, bottomInset),
+        transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
+      },
+    ]}
+  >
     <GlassSurface interactive style={styles.navigationGlass} tintColor="rgba(255,255,255,0.24)">
       <Pressable accessibilityRole="button" style={styles.navItem}>
         <MapAsset height={24} width={22} />
@@ -277,7 +288,7 @@ const BottomNavigation = ({
         <PlaceRecommendAsset height={27} width={27} />
       </GlassSurface>
     </Pressable>
-  </View>
+  </Animated.View>
 );
 
 export default function MapBottomSheet({
@@ -293,6 +304,7 @@ export default function MapBottomSheet({
   panHandlers,
   places,
   selectedPlace,
+  sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
 }: MapBottomSheetProps) {
@@ -303,14 +315,20 @@ export default function MapBottomSheet({
   const shownPlaces = feed === 'local' ? places : [...places].reverse();
 
   return (
-    <Animated.View style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}>
-      <GlassSurface
-        intensity={82}
+    <Animated.View
+      style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}
+    >
+      <Animated.View
         pointerEvents="none"
-        style={styles.sheetGlass}
-        tintColor="rgba(255,255,255,0.22)"
-      />
-      <View pointerEvents="none" style={styles.sheetTint} />
+        style={[styles.sheetChrome, { bottom: sheetChromeBottom }]}
+      >
+        <GlassSurface
+          intensity={82}
+          style={styles.sheetGlass}
+          tintColor="rgba(255,255,255,0.22)"
+        />
+        <View style={styles.sheetTint} />
+      </Animated.View>
       <View style={styles.handleArea} {...panHandlers}>
         <Pressable
           accessibilityLabel="추천 패널 크기 조절"
@@ -391,6 +409,7 @@ export default function MapBottomSheet({
         onCreatePlace={onCreatePlace}
         onOpenLikedPlaces={onOpenLikedPlaces}
         onOpenSavedPlaces={onOpenSavedPlaces}
+        sheetTranslateY={sheetTranslateY}
       />
     </Animated.View>
   );
@@ -441,12 +460,20 @@ const styles = StyleSheet.create({
   },
   artworkSignText: { color: '#292934', fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
   bottomSheet: {
+    bottom: 8,
+    left: 8,
+    overflow: 'visible',
+    position: 'absolute',
+    right: 8,
+    zIndex: 50,
+  },
+  sheetChrome: {
     backgroundColor: 'rgba(244,246,248,0.44)',
     borderColor: 'rgba(255,255,255,0.86)',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    borderTopWidth: 1,
-    bottom: 0,
+    borderRadius: 36,
+    borderBottomLeftRadius: 48,
+    borderBottomRightRadius: 48,
+    borderWidth: 1,
     elevation: 22,
     left: 0,
     overflow: 'hidden',
@@ -456,7 +483,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -7 },
     shadowOpacity: 0.17,
     shadowRadius: 24,
-    zIndex: 50,
+    top: 0,
   },
   cardRow: {
     gap: 12,
@@ -611,8 +638,9 @@ const styles = StyleSheet.create({
   },
   sheetGlass: {
     ...StyleSheet.absoluteFillObject,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderRadius: 36,
+    borderBottomLeftRadius: 48,
+    borderBottomRightRadius: 48,
     overflow: 'hidden',
   },
   sheetTint: {

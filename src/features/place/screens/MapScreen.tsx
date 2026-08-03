@@ -123,7 +123,7 @@ export default function MapScreen({
   const mediumVisibleHeight = Math.round(Math.min(Math.max(height * 0.46, 390), 430));
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
-  const { panHandlers, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
+  const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
     collapsedTranslateY,
     initialSnapPoint: 'medium',
     mediumTranslateY,
@@ -348,6 +348,7 @@ export default function MapScreen({
         panHandlers={panHandlers}
         places={visiblePlaces}
         selectedPlace={selectedPlace}
+        sheetChromeBottom={sheetChromeBottom}
         sheetTranslateY={sheetTranslateY}
         snapPoint={snapPoint}
       />
