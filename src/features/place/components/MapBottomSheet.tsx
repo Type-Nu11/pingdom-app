@@ -10,6 +10,10 @@ import {
 } from 'react-native';
 import Svg, { Circle, Path, Polygon } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
+import MapAsset from '../../../assets/v2icon/maping_svg.svg';
+import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend_svg.svg';
+import StarAsset from '../../../assets/v2icon/star_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import GlassSurface from './GlassSurface';
 
@@ -80,7 +84,7 @@ const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
   </Svg>
 );
 
-const StarIcon = ({ active = false, size = 25 }: IconProps) => (
+const FilledStarIcon = ({ active = false, size = 25 }: IconProps) => (
   <Svg height={size} viewBox="0 0 24 24" width={size}>
     <Polygon
       fill={active ? '#FF245B' : 'none'}
@@ -89,19 +93,6 @@ const StarIcon = ({ active = false, size = 25 }: IconProps) => (
       strokeLinejoin="round"
       strokeWidth="1.8"
     />
-  </Svg>
-);
-
-const CheckInIcon = ({ active = false, size = 24 }: IconProps) => (
-  <Svg height={size} viewBox="0 0 24 24" width={size}>
-    <Path d="M4 10.2 12 4l8 6.2V21H4V10.2Z" fill="none" stroke={active ? '#FF245B' : '#383B43'} strokeLinejoin="round" strokeWidth="1.8" />
-    <Path d="m8.2 14.2 2.4 2.4 5.3-5.3" fill="none" stroke={active ? '#FF245B' : '#383B43'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-  </Svg>
-);
-
-const SendIcon = ({ size = 27 }: IconProps) => (
-  <Svg height={size} viewBox="0 0 24 24" width={size}>
-    <Path d="m3 3 18 8.2-7.7 2.2-2.4 7.6L3 3Z" fill="none" stroke="#383B43" strokeLinejoin="round" strokeWidth="2" />
   </Svg>
 );
 
@@ -191,7 +182,7 @@ const PlaceTrendCard = ({
           }}
           style={styles.favoriteButton}
         >
-          <StarIcon active={liked} size={29} />
+          {liked ? <FilledStarIcon active size={29} /> : <StarAsset height={29} width={30} />}
         </Pressable>
       </View>
     </Pressable>
@@ -264,15 +255,15 @@ const BottomNavigation = ({
   <View style={[styles.navigationRow, { bottom: Math.max(12, bottomInset) }]}>
     <GlassSurface interactive style={styles.navigationGlass} tintColor="rgba(255,255,255,0.24)">
       <Pressable accessibilityRole="button" style={styles.navItem}>
-        <MapPinIcon active />
+        <MapAsset height={24} width={22} />
         <Text style={[styles.navLabel, styles.navLabelActive]}>지도</Text>
       </Pressable>
       <Pressable accessibilityRole="button" onPress={onOpenLikedPlaces} style={styles.navItem}>
-        <StarIcon />
+        <StarAsset height={24} width={25} />
         <Text style={styles.navLabel}>즐겨찾기</Text>
       </Pressable>
       <Pressable accessibilityRole="button" onPress={onOpenSavedPlaces} style={styles.navItem}>
-        <CheckInIcon />
+        <CheckInAsset height={24} width={23} />
         <Text style={styles.navLabel}>체크인</Text>
       </Pressable>
     </GlassSurface>
@@ -283,7 +274,7 @@ const BottomNavigation = ({
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
     >
       <GlassSurface interactive style={styles.sendGlass} tintColor="rgba(255,255,255,0.25)">
-        <SendIcon />
+        <PlaceRecommendAsset height={27} width={27} />
       </GlassSurface>
     </Pressable>
   </View>

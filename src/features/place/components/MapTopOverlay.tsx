@@ -10,17 +10,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
-import type { PlaceCategory } from '../model/place.types';
-import {
-  EtcGlyph,
-  FashionGlyph,
-  FoodGlyph,
-  GameGlyph,
-  MusicGlyph,
-} from './CategoryGlyphs';
+import ArtIcon from '../../../assets/v2icon/art_svg.svg';
+import BeautyIcon from '../../../assets/v2icon/beati_svg.svg';
+import CafeIcon from '../../../assets/v2icon/cafe_svg.svg';
+import FashionIcon from '../../../assets/v2icon/fashion_svg.svg';
+import FoodIcon from '../../../assets/v2icon/food_svg.svg';
+import MusicIcon from '../../../assets/v2icon/music_svg.svg';
+import PopupIcon from '../../../assets/v2icon/popup_svg.svg';
 import GlassSurface from './GlassSurface';
 
-export type MapCategoryId = 'all' | 'beauty' | PlaceCategory;
+export type MapCategoryId =
+  | 'all'
+  | 'art'
+  | 'beauty'
+  | 'cafe'
+  | 'fashion'
+  | 'food'
+  | 'music'
+  | 'popup';
 
 type MapTopOverlayProps = {
   activeCategory: MapCategoryId;
@@ -38,12 +45,13 @@ const categories: Array<{
   label: string;
 }> = [
   { id: 'all', label: '전체' },
-  { Icon: MusicGlyph, id: 'music', label: '음악' },
-  { Icon: FoodGlyph, id: 'food', label: '음식점' },
-  { Icon: FashionGlyph, id: 'fashion', label: '패션' },
-  { id: 'beauty', label: '뷰티' },
-  { Icon: GameGlyph, id: 'game', label: '게임' },
-  { Icon: EtcGlyph, id: 'etc', label: '기타' },
+  { Icon: FoodIcon, id: 'food', label: '음식점' },
+  { Icon: MusicIcon, id: 'music', label: '음악' },
+  { Icon: FashionIcon, id: 'fashion', label: '패션' },
+  { Icon: ArtIcon, id: 'art', label: '전시' },
+  { Icon: BeautyIcon, id: 'beauty', label: '뷰티' },
+  { Icon: CafeIcon, id: 'cafe', label: '카페' },
+  { Icon: PopupIcon, id: 'popup', label: '팝업' },
 ];
 
 const SearchIcon = () => (

@@ -9,7 +9,7 @@ import MapBottomSheet, {
   type VisitFilter,
 } from '../components/MapBottomSheet';
 import MapCanvas from '../components/MapCanvas';
-import MapControlRail from '../components/MapControlRail';
+import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
@@ -101,9 +101,11 @@ type MapScreenProps = {
 
 export default function MapScreen({
   onCreatePlace,
+  onOpenLikedPlaces,
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
+  onOpenSavedPlaces,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
@@ -114,11 +116,11 @@ export default function MapScreen({
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
-  const [mapType, setMapType] = useState<'Map' | 'Transit'>('Map');
+  const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
 
   const fullSheetHeight = Math.round(Math.min(height * 0.9, height - 36));
-  const collapsedVisibleHeight = Math.round(Math.min(168, height * 0.21));
-  const mediumVisibleHeight = Math.round(Math.min(Math.max(height * 0.5, 390), 470));
+  const collapsedVisibleHeight = Math.round(Math.min(116, height * 0.15));
+  const mediumVisibleHeight = Math.round(Math.min(Math.max(height * 0.46, 390), 430));
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
   const { panHandlers, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
@@ -185,14 +187,27 @@ export default function MapScreen({
         markerType: index === 0 ? 'hot' as const : 'default' as const,
       }));
 
-    return [
+    const markers = [
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
       ...mockMarkers,
     ];
-  }, [apiMarkers, mockPlaces]);
+
+    if (activeCategory === 'all') return markers;
+    const markerCategory: MapMarker['category'] = activeCategory === 'cafe'
+      ? 'food'
+      : activeCategory === 'fashion'
+        ? 'fashion'
+        : activeCategory === 'music'
+          ? 'music'
+          : activeCategory === 'food'
+            ? 'food'
+            : 'etc';
+
+    return markers.filter((marker) => marker.category === markerCategory);
+  }, [activeCategory, apiMarkers, mockPlaces]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
@@ -293,16 +308,17 @@ export default function MapScreen({
         userLng={userLng}
       />
       <View pointerEvents="none" style={styles.mapTint} />
-      <MapControlRail
-        bottom={fullSheetHeight + 16}
-        mapType={mapType}
-        onLocatePress={() => {
-          setContent({ type: 'home' });
-          setIsFollowingUser(true);
-          snapTo('collapsed');
+      <MapTopOverlay
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+        onProfilePress={onOpenProfile}
+        onQueryChange={handleQueryChange}
+        onSearchFocus={handleSearchFocus}
+        onSubmitSearch={() => {
+          setContent({ type: 'results', query });
+          snapTo('expanded');
         }}
-        onMapTypePress={() => setMapType((current) => current === 'Map' ? 'Transit' : 'Map')}
-        sheetTranslateY={sheetTranslateY}
+        query={query}
       />
       <MapBottomSheet
         activeFilters={activeFilters}
@@ -319,6 +335,8 @@ export default function MapScreen({
           else if (snapPoint === 'medium') snapTo('expanded');
           else snapTo('medium');
         }}
+        onOpenLikedPlaces={onOpenLikedPlaces}
+        onOpenSavedPlaces={onOpenSavedPlaces}
         onPlacePress={handlePlacePress}
         onProfilePress={onOpenProfile}
         onQueryChange={handleQueryChange}
