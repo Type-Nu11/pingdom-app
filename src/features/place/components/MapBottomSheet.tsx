@@ -493,20 +493,22 @@ const BottomNavigation = ({
       },
     ]}
   >
-    <GlassSurface interactive style={styles.navigationGlass} tintColor="rgba(255,255,255,0.24)">
-      <Pressable accessibilityRole="button" style={styles.navItem}>
-        <MapAsset color="#FF1956" height={24} width={22} />
-        <Text style={[styles.navLabel, styles.navLabelActive]}>지도</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={onOpenLikedPlaces} style={styles.navItem}>
-        <StarAsset height={24} width={25} />
-        <Text style={styles.navLabel}>즐겨찾기</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={onOpenSavedPlaces} style={styles.navItem}>
-        <CheckInAsset height={24} width={23} />
-        <Text style={styles.navLabel}>체크인</Text>
-      </Pressable>
-    </GlassSurface>
+    <View style={styles.navigationShadow}>
+      <GlassSurface interactive style={styles.navigationGlass} tintColor="rgba(255,255,255,0.24)">
+        <Pressable accessibilityRole="button" style={styles.navItem}>
+          <MapAsset color="#FF1956" height={24} width={22} />
+          <Text style={[styles.navLabel, styles.navLabelActive]}>지도</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onOpenLikedPlaces} style={styles.navItem}>
+          <StarAsset height={24} width={25} />
+          <Text style={styles.navLabel}>즐겨찾기</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onOpenSavedPlaces} style={styles.navItem}>
+          <CheckInAsset height={24} width={23} />
+          <Text style={styles.navLabel}>체크인</Text>
+        </Pressable>
+      </GlassSurface>
+    </View>
     <Pressable
       accessibilityLabel="장소 등록"
       accessibilityRole="button"
@@ -566,14 +568,16 @@ export default function MapBottomSheet({
     >
       <Animated.View
         pointerEvents="none"
-        style={[styles.sheetChrome, { bottom: sheetChromeBottom }]}
+        style={[styles.sheetChromeShadow, { bottom: sheetChromeBottom }]}
       >
-        <GlassSurface
-          intensity={82}
-          style={styles.sheetGlass}
-          tintColor="rgba(255,255,255,0.22)"
-        />
-        <View style={styles.sheetTint} />
+        <View style={styles.sheetChrome}>
+          <GlassSurface
+            intensity={82}
+            style={styles.sheetGlass}
+            tintColor="rgba(255,255,255,0.22)"
+          />
+          <View style={styles.sheetTint} />
+        </View>
       </Animated.View>
       <View style={styles.handleArea} {...panHandlers}>
         <Pressable
@@ -681,9 +685,16 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 48,
     borderBottomRightRadius: 48,
     borderWidth: 1,
+    flex: 1,
+    overflow: 'hidden',
+  },
+  sheetChromeShadow: {
+    backgroundColor: 'rgba(244,246,248,0.08)',
+    borderRadius: 36,
+    borderBottomLeftRadius: 48,
+    borderBottomRightRadius: 48,
     elevation: 22,
     left: 0,
-    overflow: 'hidden',
     position: 'absolute',
     right: 0,
     shadowColor: '#10141A',
@@ -807,6 +818,16 @@ const styles = StyleSheet.create({
     left: 16,
     position: 'absolute',
     right: 16,
+  },
+  navigationShadow: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 30,
+    elevation: 5,
+    flex: 1,
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
   },
   placeCard: {
     backgroundColor: 'rgba(255,255,255,0.9)',

@@ -33,7 +33,7 @@ const GlassSurface = ({
         colorScheme="light"
         glassEffectStyle="clear"
         isInteractive={interactive}
-        style={style}
+        style={[style, { backgroundColor: 'transparent' }]}
         tintColor={tintColor}
         {...viewProps}
       >
@@ -45,7 +45,14 @@ const GlassSurface = ({
   return (
     <BlurView
       intensity={intensity}
-      style={[{ backgroundColor: 'rgba(247,250,252,0.68)' }, style]}
+      style={[
+        {
+          backgroundColor: Platform.OS === 'android'
+            ? 'rgba(247,250,252,0.9)'
+            : tintColor,
+        },
+        style,
+      ]}
       tint="systemUltraThinMaterialLight"
       {...viewProps}
     >
