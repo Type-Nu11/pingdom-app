@@ -5,10 +5,12 @@ import {
   GlassView,
   isGlassEffectAPIAvailable,
   isLiquidGlassAvailable,
+  type GlassViewProps,
 } from 'expo-glass-effect';
 
 type GlassSurfaceProps = ViewProps & {
   blurTarget?: BlurViewProps['blurTarget'];
+  glassEffectStyle?: GlassViewProps['glassEffectStyle'];
   intensity?: number;
   interactive?: boolean;
   tintColor?: string;
@@ -43,6 +45,7 @@ export const supportsAndroidNativeBlur = () => (
 const GlassSurface = ({
   blurTarget,
   children,
+  glassEffectStyle = 'clear',
   intensity = 90,
   interactive = false,
   style,
@@ -57,7 +60,7 @@ const GlassSurface = ({
     return (
       <GlassView
         colorScheme="light"
-        glassEffectStyle="clear"
+        glassEffectStyle={glassEffectStyle}
         isInteractive={interactive}
         style={[style, { backgroundColor: 'transparent' }]}
         tintColor={tintColor}

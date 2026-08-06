@@ -62,9 +62,9 @@ const categories: Array<{
 ];
 
 const SearchIcon = () => (
-  <Svg height={25} viewBox="0 0 24 24" width={25}>
-    <Circle cx="10.5" cy="10.5" fill="none" r="7" stroke="#555963" strokeWidth="2" />
-    <Line x1="15.7" x2="21" y1="15.7" y2="21" stroke="#555963" strokeLinecap="round" strokeWidth="2" />
+  <Svg height={27} viewBox="0 0 24 24" width={27}>
+    <Circle cx="10.5" cy="10.5" fill="none" r="7" stroke="#555963" strokeWidth="1.8" />
+    <Line x1="15.7" x2="21" y1="15.7" y2="21" stroke="#555963" strokeLinecap="round" strokeWidth="1.8" />
   </Svg>
 );
 
@@ -89,19 +89,22 @@ export default function MapTopOverlay({
     <SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.safeArea}>
       <View style={styles.header}>
         <View style={styles.headerShadow}>
-          <GlassSurface
-            intensity={94}
-            interactive
-            style={[styles.headerSurface, LIQUID_GLASS_AVAILABLE && styles.headerSurfaceLiquid]}
-            tintColor="rgba(248,248,248,0.16)"
-          >
+          <View style={styles.headerSurface}>
+            <GlassSurface
+              glassEffectStyle="regular"
+              intensity={100}
+              pointerEvents="none"
+              style={[styles.headerGlass, LIQUID_GLASS_AVAILABLE && styles.headerSurfaceLiquid]}
+              tintColor="rgba(248,248,248,0.22)"
+            />
             <View style={styles.searchShadow}>
               <GlassSurface
                 intensity={76}
-                interactive
+                pointerEvents="none"
                 style={[styles.searchSurface, LIQUID_GLASS_AVAILABLE && styles.searchSurfaceLiquid]}
                 tintColor="rgba(228,228,230,0.22)"
-              >
+              />
+              <View style={styles.searchContent}>
                 <SearchIcon />
                 <TextInput
                   accessibilityLabel="장소 검색"
@@ -115,7 +118,7 @@ export default function MapTopOverlay({
                   style={styles.searchInput}
                   value={query}
                 />
-              </GlassSurface>
+              </View>
             </View>
             <Pressable
               accessibilityLabel="프로필 열기"
@@ -126,7 +129,7 @@ export default function MapTopOverlay({
             >
               <ProfileGlyph />
             </Pressable>
-          </GlassSurface>
+          </View>
         </View>
       </View>
 
@@ -237,33 +240,37 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   header: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
   },
   headerSurface: {
     alignItems: 'center',
-    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
-      ? ANDROID_NATIVE_BLUR_AVAILABLE
-        ? 'rgba(248,248,248,0.64)'
-        : 'rgba(248,248,248,0.45)'
-      : 'rgba(248,248,248,0.92)',
-    borderColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 32,
+    borderColor: 'rgba(255,255,255,0.72)',
+    borderRadius: 34,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 9,
-    height: 64,
+    gap: 10,
+    height: 68,
     overflow: 'hidden',
     padding: 7,
   },
-  headerSurfaceLiquid: { backgroundColor: 'rgba(248,248,248,0.08)' },
+  headerGlass: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
+      ? ANDROID_NATIVE_BLUR_AVAILABLE
+        ? 'rgba(248,248,248,0.48)'
+        : 'rgba(248,248,248,0.30)'
+      : 'rgba(248,248,248,0.92)',
+    borderRadius: 34,
+  },
+  headerSurfaceLiquid: { backgroundColor: 'rgba(248,248,248,0.10)' },
   headerShadow: {
     backgroundColor: IOS ? 'rgba(248,248,248,0.16)' : 'rgba(248,248,248,0.01)',
-    borderRadius: 32,
+    borderRadius: 34,
     elevation: 6,
     shadowColor: '#11151B',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.13,
-    shadowRadius: 13,
+    shadowOpacity: 0.11,
+    shadowRadius: 14,
   },
   pressed: {
     opacity: 0.72,
@@ -271,9 +278,9 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     alignItems: 'center',
-    height: 48,
+    height: 52,
     justifyContent: 'center',
-    width: 48,
+    width: 52,
   },
   safeArea: {
     left: 0,
@@ -286,33 +293,36 @@ const styles = StyleSheet.create({
   searchInput: {
     color: '#1D1E23',
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     height: '100%',
     padding: 0,
   },
+  searchContent: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+  },
   searchSurface: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
       ? ANDROID_NATIVE_BLUR_AVAILABLE
-        ? 'rgba(228,228,230,0.60)'
-        : 'rgba(228,228,230,0.40)'
+        ? 'rgba(228,228,230,0.48)'
+        : 'rgba(228,228,230,0.34)'
       : 'rgba(228,228,230,0.96)',
-    borderColor: 'rgba(255,255,255,0.5)',
-    borderRadius: 25,
-    borderWidth: 1,
-    boxShadow: 'inset 0 3px 10px rgba(32,36,43,0.16), inset 0 -1px 3px rgba(255,255,255,0.52)',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 10,
-    height: 50,
+    borderRadius: 27,
+    boxShadow: 'inset 0 5px 13px rgba(32,36,43,0.17), inset 0 -2px 5px rgba(255,255,255,0.62)',
     overflow: 'hidden',
-    paddingHorizontal: 14,
   },
-  searchSurfaceLiquid: { backgroundColor: 'rgba(228,228,230,0.10)' },
+  searchSurfaceLiquid: { backgroundColor: 'rgba(228,228,230,0.08)' },
   searchShadow: {
     backgroundColor: 'transparent',
-    borderRadius: 25,
+    borderRadius: 27,
     flex: 1,
+    height: 54,
+    overflow: 'hidden',
   },
 });
