@@ -3,6 +3,7 @@ import {
   Animated,
   GestureResponderHandlers,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,8 @@ import StarAsset from '../../../assets/v2icon/star_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface from './GlassSurface';
+
+const ANDROID = Platform.OS === 'android';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -145,7 +148,7 @@ const FeedSegment = ({
 }) => (
   <View style={styles.segmentShadow}>
     <GlassSurface
-      intensity={36}
+      intensity={82}
       style={styles.segmentOuter}
       tintColor="rgba(228,228,230,0.12)"
     >
@@ -572,7 +575,7 @@ export default function MapBottomSheet({
       >
         <View style={styles.sheetChrome}>
           <GlassSurface
-            intensity={82}
+            intensity={100}
             style={styles.sheetGlass}
             tintColor="rgba(255,255,255,0.22)"
           />
@@ -679,7 +682,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   sheetChrome: {
-    backgroundColor: 'rgba(244,246,248,0.44)',
+    backgroundColor: ANDROID ? 'rgba(244,246,248,0.64)' : 'rgba(244,246,248,0.44)',
     borderColor: 'rgba(255,255,255,0.86)',
     borderRadius: 36,
     borderBottomLeftRadius: 48,
@@ -803,6 +806,7 @@ const styles = StyleSheet.create({
   navLabel: { color: '#3E4149', fontSize: 10, fontWeight: '700' },
   navLabelActive: { color: '#FF245B' },
   navigationGlass: {
+    backgroundColor: ANDROID ? 'rgba(255,255,255,0.56)' : 'rgba(255,255,255,0.18)',
     borderColor: 'rgba(255,255,255,0.82)',
     borderRadius: 30,
     borderWidth: 1,
@@ -905,7 +909,7 @@ const styles = StyleSheet.create({
   segmentLabelActive: { color: '#FF1956', fontWeight: '700' },
   segmentOuter: {
     alignItems: 'stretch',
-    backgroundColor: 'rgba(228,228,230,0.48)',
+    backgroundColor: ANDROID ? 'rgba(228,228,230,0.62)' : 'rgba(228,228,230,0.48)',
     borderColor: 'rgba(255,255,255,0.52)',
     borderRadius: 24,
     borderWidth: 1,
@@ -936,6 +940,7 @@ const styles = StyleSheet.create({
   },
   sendGlass: {
     alignItems: 'center',
+    backgroundColor: ANDROID ? 'rgba(255,255,255,0.56)' : 'rgba(255,255,255,0.18)',
     borderColor: 'rgba(255,255,255,0.86)',
     borderRadius: 31,
     borderWidth: 1,
@@ -954,6 +959,6 @@ const styles = StyleSheet.create({
   sheetContent: { flex: 1 },
   sheetTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(247,249,251,0.18)',
+    backgroundColor: ANDROID ? 'rgba(247,249,251,0.32)' : 'rgba(247,249,251,0.18)',
   },
 });

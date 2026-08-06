@@ -1,10 +1,4 @@
 import React from 'react';
-import { BlurView } from 'expo-blur';
-import {
-  GlassView,
-  isGlassEffectAPIAvailable,
-  isLiquidGlassAvailable,
-} from 'expo-glass-effect';
 import {
   Platform,
   Pressable,
@@ -12,7 +6,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  type ViewProps,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,47 +17,14 @@ import FashionIcon from '../../../assets/v2icon/fashion_svg.svg';
 import FoodIcon from '../../../assets/v2icon/food_svg.svg';
 import MusicIcon from '../../../assets/v2icon/music_svg.svg';
 import PopupIcon from '../../../assets/v2icon/popup_svg.svg';
+import GlassSurface, {
+  supportsAndroidNativeBlur,
+  supportsNativeLiquidGlass,
+} from './GlassSurface';
 
 const IOS = Platform.OS === 'ios';
-const LIQUID_GLASS_AVAILABLE = IOS
-  && isGlassEffectAPIAvailable()
-  && isLiquidGlassAvailable();
-
-type OpticalGlassSurfaceProps = {
-  children: React.ReactNode;
-  intensity: number;
-  interactive?: boolean;
-  style: ViewProps['style'];
-  tintColor: string;
-};
-
-const OpticalGlassSurface = ({
-  children,
-  intensity,
-  interactive = false,
-  style,
-  tintColor,
-}: OpticalGlassSurfaceProps) => {
-  if (LIQUID_GLASS_AVAILABLE) {
-    return (
-      <GlassView
-        colorScheme="light"
-        glassEffectStyle="clear"
-        isInteractive={interactive}
-        style={style}
-        tintColor={tintColor}
-      >
-        {children}
-      </GlassView>
-    );
-  }
-
-  return (
-    <BlurView intensity={IOS ? intensity : 0} style={style} tint="light">
-      {children}
-    </BlurView>
-  );
-};
+const LIQUID_GLASS_AVAILABLE = supportsNativeLiquidGlass();
+const ANDROID_NATIVE_BLUR_AVAILABLE = supportsAndroidNativeBlur();
 
 export type MapCategoryId =
   | 'all'
@@ -92,11 +52,11 @@ const categories: Array<{
   label: string;
 }> = [
   { id: 'all', label: '전체' },
-  { Icon: FoodIcon, id: 'food', label: '음식점' },
   { Icon: MusicIcon, id: 'music', label: '음악' },
+  { Icon: FoodIcon, id: 'food', label: '음식점' },
   { Icon: FashionIcon, id: 'fashion', label: '패션' },
-  { Icon: ArtIcon, id: 'art', label: '전시' },
   { Icon: BeautyIcon, id: 'beauty', label: '뷰티' },
+  { Icon: ArtIcon, id: 'art', label: '전시' },
   { Icon: CafeIcon, id: 'cafe', label: '카페' },
   { Icon: PopupIcon, id: 'popup', label: '팝업' },
 ];
@@ -129,15 +89,15 @@ export default function MapTopOverlay({
     <SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.safeArea}>
       <View style={styles.header}>
         <View style={styles.headerShadow}>
-          <OpticalGlassSurface
-            intensity={55}
+          <GlassSurface
+            intensity={94}
             interactive
             style={[styles.headerSurface, LIQUID_GLASS_AVAILABLE && styles.headerSurfaceLiquid]}
             tintColor="rgba(248,248,248,0.16)"
           >
             <View style={styles.searchShadow}>
-              <OpticalGlassSurface
-                intensity={22}
+              <GlassSurface
+                intensity={76}
                 interactive
                 style={[styles.searchSurface, LIQUID_GLASS_AVAILABLE && styles.searchSurfaceLiquid]}
                 tintColor="rgba(228,228,230,0.22)"
@@ -155,7 +115,7 @@ export default function MapTopOverlay({
                   style={styles.searchInput}
                   value={query}
                 />
-              </OpticalGlassSurface>
+              </GlassSurface>
             </View>
             <Pressable
               accessibilityLabel="프로필 열기"
@@ -166,7 +126,7 @@ export default function MapTopOverlay({
             >
               <ProfileGlyph />
             </Pressable>
-          </OpticalGlassSurface>
+          </GlassSurface>
         </View>
       </View>
 
@@ -190,8 +150,8 @@ export default function MapTopOverlay({
                 pressed && styles.pressed,
               ]}
             >
-              <OpticalGlassSurface
-                intensity={28}
+              <GlassSurface
+                intensity={74}
                 interactive
                 style={[
                   styles.categoryChip,
@@ -206,7 +166,11 @@ export default function MapTopOverlay({
                 <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
                   {label}
                 </Text>
-              </OpticalGlassSurface>
+                <View
+                  pointerEvents="none"
+                  style={[styles.categoryChipStroke, isActive && styles.categoryChipStrokeActive]}
+                />
+              </GlassSurface>
             </Pressable>
           );
         })}
@@ -218,10 +182,12 @@ export default function MapTopOverlay({
 const styles = StyleSheet.create({
   categoryChip: {
     alignItems: 'center',
-    backgroundColor: IOS ? 'rgba(248,249,250,0.32)' : 'rgba(248,249,250,0.90)',
-    borderColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
+      ? ANDROID_NATIVE_BLUR_AVAILABLE
+        ? 'rgba(248,249,250,0.56)'
+        : 'rgba(248,249,250,0.32)'
+      : 'rgba(248,249,250,0.90)',
     borderRadius: 18,
-    borderWidth: 1,
     flexDirection: 'row',
     gap: 5,
     height: 36,
@@ -229,8 +195,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
   },
   categoryChipActive: {
-    backgroundColor: IOS ? 'rgba(255,245,248,0.42)' : 'rgba(255,245,248,0.96)',
-    borderColor: '#FF3B6C',
+    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
+      ? ANDROID_NATIVE_BLUR_AVAILABLE
+        ? 'rgba(255,245,248,0.70)'
+        : 'rgba(255,245,248,0.42)'
+      : 'rgba(255,245,248,0.96)',
   },
   categoryChipLiquid: { backgroundColor: 'rgba(248,249,250,0.06)' },
   categoryChipShadow: {
@@ -242,6 +211,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.09,
     shadowRadius: 7,
   },
+  categoryChipStroke: {
+    ...StyleSheet.absoluteFillObject,
+    borderColor: 'rgba(255,255,255,0.76)',
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  categoryChipStrokeActive: { borderColor: '#FF3B6C' },
   categoryContent: {
     gap: 8,
     paddingHorizontal: 12,
@@ -265,7 +241,11 @@ const styles = StyleSheet.create({
   },
   headerSurface: {
     alignItems: 'center',
-    backgroundColor: IOS ? 'rgba(248,248,248,0.45)' : 'rgba(248,248,248,0.92)',
+    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
+      ? ANDROID_NATIVE_BLUR_AVAILABLE
+        ? 'rgba(248,248,248,0.64)'
+        : 'rgba(248,248,248,0.45)'
+      : 'rgba(248,248,248,0.92)',
     borderColor: 'rgba(255,255,255,0.9)',
     borderRadius: 32,
     borderWidth: 1,
@@ -313,10 +293,15 @@ const styles = StyleSheet.create({
   },
   searchSurface: {
     alignItems: 'center',
-    backgroundColor: IOS ? 'rgba(228,228,230,0.40)' : 'rgba(228,228,230,0.96)',
+    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
+      ? ANDROID_NATIVE_BLUR_AVAILABLE
+        ? 'rgba(228,228,230,0.60)'
+        : 'rgba(228,228,230,0.40)'
+      : 'rgba(228,228,230,0.96)',
     borderColor: 'rgba(255,255,255,0.5)',
     borderRadius: 25,
     borderWidth: 1,
+    boxShadow: 'inset 0 3px 10px rgba(32,36,43,0.16), inset 0 -1px 3px rgba(255,255,255,0.52)',
     flex: 1,
     flexDirection: 'row',
     gap: 10,
@@ -326,13 +311,8 @@ const styles = StyleSheet.create({
   },
   searchSurfaceLiquid: { backgroundColor: 'rgba(228,228,230,0.10)' },
   searchShadow: {
-    backgroundColor: IOS ? 'rgba(255,255,255,0.15)' : 'rgba(228,228,230,0.01)',
+    backgroundColor: 'transparent',
     borderRadius: 25,
-    elevation: 2,
     flex: 1,
-    shadowColor: '#20242B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
   },
 });
