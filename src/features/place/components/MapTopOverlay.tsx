@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import SearchAsset from '../../../assets/icons/search.svg';
 import ArtIcon from '../../../assets/v2icon/art_svg.svg';
 import BeautyIcon from '../../../assets/v2icon/beati_svg.svg';
 import CafeIcon from '../../../assets/v2icon/cafe_svg.svg';
@@ -17,14 +17,13 @@ import FashionIcon from '../../../assets/v2icon/fashion_svg.svg';
 import FoodIcon from '../../../assets/v2icon/food_svg.svg';
 import MusicIcon from '../../../assets/v2icon/music_svg.svg';
 import PopupIcon from '../../../assets/v2icon/popup_svg.svg';
+import ProfileAsset from '../../../assets/v2icon/profile_svg.svg';
 import GlassSurface, {
-  supportsAndroidNativeBlur,
   supportsNativeLiquidGlass,
 } from './GlassSurface';
 
 const IOS = Platform.OS === 'ios';
 const LIQUID_GLASS_AVAILABLE = supportsNativeLiquidGlass();
-const ANDROID_NATIVE_BLUR_AVAILABLE = supportsAndroidNativeBlur();
 
 export type MapCategoryId =
   | 'all'
@@ -56,25 +55,10 @@ const categories: Array<{
   { Icon: FoodIcon, id: 'food', label: '음식점' },
   { Icon: FashionIcon, id: 'fashion', label: '패션' },
   { Icon: BeautyIcon, id: 'beauty', label: '뷰티' },
+  { Icon: PopupIcon, id: 'popup', label: '팝업' },
   { Icon: ArtIcon, id: 'art', label: '전시' },
   { Icon: CafeIcon, id: 'cafe', label: '카페' },
-  { Icon: PopupIcon, id: 'popup', label: '팝업' },
 ];
-
-const SearchIcon = () => (
-  <Svg height={27} viewBox="0 0 24 24" width={27}>
-    <Circle cx="10.5" cy="10.5" fill="none" r="7" stroke="#555963" strokeWidth="1.8" />
-    <Line x1="15.7" x2="21" y1="15.7" y2="21" stroke="#555963" strokeLinecap="round" strokeWidth="1.8" />
-  </Svg>
-);
-
-const ProfileGlyph = () => (
-  <Svg height={40} viewBox="0 0 40 40" width={40}>
-    <Circle cx="20" cy="20" fill="#62636C" r="20" />
-    <Circle cx="20" cy="14.5" fill="#FFFFFF" r="6.2" />
-    <Path d="M8.8 33.2c1.1-6.1 5.2-9.5 11.2-9.5s10.1 3.4 11.2 9.5A17.8 17.8 0 0 1 20 37a17.8 17.8 0 0 1-11.2-3.8Z" fill="#FFFFFF" />
-  </Svg>
-);
 
 export default function MapTopOverlay({
   activeCategory,
@@ -95,17 +79,20 @@ export default function MapTopOverlay({
               intensity={100}
               pointerEvents="none"
               style={[styles.headerGlass, LIQUID_GLASS_AVAILABLE && styles.headerSurfaceLiquid]}
-              tintColor="rgba(248,248,248,0.22)"
+              tintColor="rgba(248,248,248,0.56)"
             />
+            <View pointerEvents="none" style={styles.headerFrost} />
             <View style={styles.searchShadow}>
               <GlassSurface
-                intensity={76}
+                glassEffectStyle="regular"
+                intensity={96}
                 pointerEvents="none"
                 style={[styles.searchSurface, LIQUID_GLASS_AVAILABLE && styles.searchSurfaceLiquid]}
-                tintColor="rgba(228,228,230,0.22)"
+                tintColor="rgba(228,228,230,0.60)"
               />
+              <View pointerEvents="none" style={styles.searchFrost} />
               <View style={styles.searchContent}>
-                <SearchIcon />
+                <SearchAsset height={18} width={18} />
                 <TextInput
                   accessibilityLabel="장소 검색"
                   autoCorrect={false}
@@ -127,7 +114,7 @@ export default function MapTopOverlay({
               onPress={onProfilePress}
               style={({ pressed }) => [styles.profileButton, pressed && styles.pressed]}
             >
-              <ProfileGlyph />
+              <ProfileAsset height={40} width={40} />
             </Pressable>
           </View>
         </View>
@@ -153,27 +140,31 @@ export default function MapTopOverlay({
                 pressed && styles.pressed,
               ]}
             >
-              <GlassSurface
-                intensity={74}
-                interactive
-                style={[
-                  styles.categoryChip,
-                  isActive && styles.categoryChipActive,
-                  LIQUID_GLASS_AVAILABLE && styles.categoryChipLiquid,
-                ]}
-                tintColor={isActive ? 'rgba(255,59,108,0.18)' : 'rgba(248,249,250,0.20)'}
-              >
-                {Icon ? (
-                  <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={18} width={20} />
-                ) : null}
-                <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
-                  {label}
-                </Text>
+              <View style={styles.categoryChipClip}>
+                <GlassSurface
+                  glassEffectStyle="regular"
+                  intensity={100}
+                  pointerEvents="none"
+                  style={styles.categoryChipGlass}
+                  tintColor={isActive ? 'rgba(255,201,211,0.24)' : 'rgba(255,255,255,0.36)'}
+                />
+                <View
+                  pointerEvents="none"
+                  style={[styles.categoryChipFrost, isActive && styles.categoryChipFrostActive]}
+                />
+                <View style={styles.categoryChipContent}>
+                  {Icon ? (
+                    <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={18} width={20} />
+                  ) : null}
+                  <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
+                    {label}
+                  </Text>
+                </View>
                 <View
                   pointerEvents="none"
                   style={[styles.categoryChipStroke, isActive && styles.categoryChipStrokeActive]}
                 />
-              </GlassSurface>
+              </View>
             </Pressable>
           );
         })}
@@ -183,53 +174,54 @@ export default function MapTopOverlay({
 }
 
 const styles = StyleSheet.create({
-  categoryChip: {
+  categoryChipContent: {
     alignItems: 'center',
-    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
-      ? ANDROID_NATIVE_BLUR_AVAILABLE
-        ? 'rgba(248,249,250,0.56)'
-        : 'rgba(248,249,250,0.32)'
-      : 'rgba(248,249,250,0.90)',
-    borderRadius: 18,
+    borderRadius: 16,
     flexDirection: 'row',
-    gap: 5,
-    height: 36,
+    gap: 6,
+    height: 34,
     justifyContent: 'center',
-    paddingHorizontal: 13,
+    paddingHorizontal: 12,
   },
-  categoryChipActive: {
-    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
-      ? ANDROID_NATIVE_BLUR_AVAILABLE
-        ? 'rgba(255,245,248,0.70)'
-        : 'rgba(255,245,248,0.42)'
-      : 'rgba(255,245,248,0.96)',
+  categoryChipClip: {
+    borderRadius: 16,
+    overflow: 'hidden',
   },
-  categoryChipLiquid: { backgroundColor: 'rgba(248,249,250,0.06)' },
+  categoryChipFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.44)',
+  },
+  categoryChipFrostActive: { backgroundColor: 'rgba(255,201,211,0.32)' },
+  categoryChipGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 16,
+  },
   categoryChipShadow: {
-    backgroundColor: IOS ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.01)',
-    borderRadius: 18,
+    backgroundColor: IOS ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.01)',
+    borderRadius: 16,
     elevation: 2,
-    shadowColor: '#1A1D24',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.09,
-    shadowRadius: 7,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
   },
   categoryChipStroke: {
     ...StyleSheet.absoluteFillObject,
-    borderColor: 'rgba(255,255,255,0.76)',
-    borderRadius: 18,
+    borderColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 16,
     borderWidth: 1,
   },
-  categoryChipStrokeActive: { borderColor: '#FF3B6C' },
+  categoryChipStrokeActive: { borderColor: 'rgba(255,74,117,0.96)' },
   categoryContent: {
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
   categoryLabel: {
-    color: '#696B74',
-    fontSize: 13,
-    fontWeight: '700',
+    color: '#5E5E66',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
   },
   categoryLabelActive: {
     color: '#FF245B',
@@ -242,35 +234,34 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 8,
   },
+  headerFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(248,248,248,0.42)',
+    borderRadius: 29,
+  },
   headerSurface: {
     alignItems: 'center',
-    borderColor: 'rgba(255,255,255,0.72)',
-    borderRadius: 34,
-    borderWidth: 1,
+    borderRadius: 29,
     flexDirection: 'row',
-    gap: 10,
-    height: 68,
+    gap: 16,
+    height: 60,
     overflow: 'hidden',
-    padding: 7,
+    padding: 8,
   },
   headerGlass: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
-      ? ANDROID_NATIVE_BLUR_AVAILABLE
-        ? 'rgba(248,248,248,0.48)'
-        : 'rgba(248,248,248,0.30)'
-      : 'rgba(248,248,248,0.92)',
-    borderRadius: 34,
+    backgroundColor: 'rgba(248,248,248,0.56)',
+    borderRadius: 29,
   },
-  headerSurfaceLiquid: { backgroundColor: 'rgba(248,248,248,0.10)' },
+  headerSurfaceLiquid: { backgroundColor: 'rgba(248,248,248,0.12)' },
   headerShadow: {
     backgroundColor: IOS ? 'rgba(248,248,248,0.16)' : 'rgba(248,248,248,0.01)',
-    borderRadius: 34,
+    borderRadius: 29,
     elevation: 6,
-    shadowColor: '#11151B',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.11,
-    shadowRadius: 14,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
   },
   pressed: {
     opacity: 0.72,
@@ -278,9 +269,9 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     alignItems: 'center',
-    height: 52,
+    height: 40,
     justifyContent: 'center',
-    width: 52,
+    width: 40,
   },
   safeArea: {
     left: 0,
@@ -294,7 +285,7 @@ const styles = StyleSheet.create({
     color: '#1D1E23',
     flex: 1,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '500',
     height: '100%',
     padding: 0,
   },
@@ -303,26 +294,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
+  },
+  searchFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(228,228,230,0.54)',
+    borderRadius: 26,
   },
   searchSurface: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    backgroundColor: IOS || ANDROID_NATIVE_BLUR_AVAILABLE
-      ? ANDROID_NATIVE_BLUR_AVAILABLE
-        ? 'rgba(228,228,230,0.48)'
-        : 'rgba(228,228,230,0.34)'
-      : 'rgba(228,228,230,0.96)',
-    borderRadius: 27,
-    boxShadow: 'inset 0 5px 13px rgba(32,36,43,0.17), inset 0 -2px 5px rgba(255,255,255,0.62)',
+    backgroundColor: 'rgba(228,228,230,0.60)',
+    borderRadius: 26,
+    boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.10)',
     overflow: 'hidden',
   },
-  searchSurfaceLiquid: { backgroundColor: 'rgba(228,228,230,0.08)' },
+  searchSurfaceLiquid: { backgroundColor: 'rgba(228,228,230,0.12)' },
   searchShadow: {
     backgroundColor: 'transparent',
-    borderRadius: 27,
+    borderRadius: 26,
     flex: 1,
-    height: 54,
+    height: 44,
     overflow: 'hidden',
   },
 });

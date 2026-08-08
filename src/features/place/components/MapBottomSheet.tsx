@@ -3,7 +3,6 @@ import {
   Animated,
   GestureResponderHandlers,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,8 +24,6 @@ import StarAsset from '../../../assets/v2icon/star_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface from './GlassSurface';
-
-const ANDROID = Platform.OS === 'android';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -148,10 +145,12 @@ const FeedSegment = ({
 }) => (
   <View style={styles.segmentShadow}>
     <GlassSurface
-      intensity={82}
+      glassEffectStyle="regular"
+      intensity={100}
       style={styles.segmentOuter}
-      tintColor="rgba(228,228,230,0.12)"
+      tintColor="rgba(228,228,230,0.48)"
     >
+      <View pointerEvents="none" style={styles.segmentFrost} />
       <Pressable
         accessibilityRole="tab"
         accessibilityState={{ selected: feed === 'local' }}
@@ -497,18 +496,25 @@ const BottomNavigation = ({
     ]}
   >
     <View style={styles.navigationShadow}>
-      <GlassSurface interactive style={styles.navigationGlass} tintColor="rgba(255,255,255,0.24)">
-        <Pressable accessibilityRole="button" style={styles.navItem}>
-          <MapAsset color="#FF1956" height={24} width={22} />
+      <GlassSurface
+        glassEffectStyle="regular"
+        intensity={100}
+        interactive
+        style={styles.navigationGlass}
+        tintColor="rgba(255,255,255,0.36)"
+      >
+        <View pointerEvents="none" style={styles.navigationFrost} />
+        <Pressable accessibilityRole="button" style={[styles.navItem, styles.navItemActive]}>
+          <MapAsset color="#FF1956" height={28} width={28} />
           <Text style={[styles.navLabel, styles.navLabelActive]}>지도</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={onOpenLikedPlaces} style={styles.navItem}>
-          <StarAsset height={24} width={25} />
+          <StarAsset height={28} width={28} />
           <Text style={styles.navLabel}>즐겨찾기</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={onOpenSavedPlaces} style={styles.navItem}>
-          <CheckInAsset height={24} width={23} />
-          <Text style={styles.navLabel}>체크인</Text>
+          <CheckInAsset height={28} width={28} />
+          <Text style={styles.navLabel}>예약</Text>
         </Pressable>
       </GlassSurface>
     </View>
@@ -518,8 +524,16 @@ const BottomNavigation = ({
       onPress={onCreatePlace}
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
     >
-      <GlassSurface interactive style={styles.sendGlass} tintColor="rgba(255,255,255,0.25)">
-        <PlaceRecommendAsset height={27} width={27} />
+      <GlassSurface
+        glassEffectStyle="regular"
+        intensity={100}
+        interactive
+        style={styles.sendGlass}
+        tintColor="rgba(255,255,255,0.36)"
+      >
+        <View pointerEvents="none" style={styles.navigationFrost} />
+        <View pointerEvents="none" style={styles.sendStroke} />
+        <PlaceRecommendAsset height={28} width={28} />
       </GlassSurface>
     </Pressable>
   </Animated.View>
@@ -575,9 +589,10 @@ export default function MapBottomSheet({
       >
         <View style={styles.sheetChrome}>
           <GlassSurface
+            glassEffectStyle="regular"
             intensity={100}
             style={styles.sheetGlass}
-            tintColor="rgba(255,255,255,0.22)"
+            tintColor="rgba(248,248,248,0.20)"
           />
           <View style={styles.sheetTint} />
         </View>
@@ -669,7 +684,7 @@ export default function MapBottomSheet({
 const styles = StyleSheet.create({
   artwork: {
     backgroundColor: '#E4E4E6',
-    height: 140,
+    height: 138,
     overflow: 'hidden',
     width: '100%',
   },
@@ -682,7 +697,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   sheetChrome: {
-    backgroundColor: ANDROID ? 'rgba(244,246,248,0.64)' : 'rgba(244,246,248,0.44)',
+    backgroundColor: 'rgba(248,248,248,0.64)',
     borderColor: 'rgba(255,255,255,0.86)',
     borderRadius: 36,
     borderBottomLeftRadius: 48,
@@ -707,9 +722,9 @@ const styles = StyleSheet.create({
     top: 0,
   },
   cardRow: {
-    gap: 12,
+    gap: 16,
     paddingBottom: 12,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingTop: 18,
   },
   emptyCard: {
@@ -730,9 +745,9 @@ const styles = StyleSheet.create({
   emptyCardTitle: { color: '#30323A', fontSize: 14, fontWeight: '800' },
   expandedContent: { paddingBottom: 112 },
   expandedFeaturedRow: {
-    gap: 12,
+    gap: 16,
     paddingBottom: 18,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingTop: 18,
   },
   expandedScroll: { flex: 1 },
@@ -773,7 +788,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 14,
   },
-  gridArtwork: { height: 128 },
+  gridArtwork: { height: 138 },
   gridCard: {
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderColor: 'rgba(255,255,255,0.95)',
@@ -781,7 +796,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexBasis: '47%',
     flexGrow: 1,
-    height: 210,
+    height: 196,
     maxWidth: '48%',
     overflow: 'hidden',
     shadowColor: '#12161D',
@@ -789,48 +804,55 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.09,
     shadowRadius: 9,
   },
-  gridCardBody: { flex: 1, paddingHorizontal: 10, paddingTop: 9 },
+  gridCardBody: { flex: 1, paddingHorizontal: 8, paddingVertical: 12 },
   gridCardDistance: { color: '#73757D', fontSize: 11, marginTop: 2, paddingRight: 29 },
   gridCardName: { color: '#25272D', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
   gridFavoriteButton: { bottom: 12, position: 'absolute', right: 10 },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    paddingHorizontal: 18,
+    gap: 16,
+    paddingHorizontal: 16,
   },
   handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
   handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
-  navItem: { alignItems: 'center', flex: 1, gap: 2, height: 59, justifyContent: 'center' },
+  navItem: { alignItems: 'center', borderRadius: 28, gap: 0, height: 56, justifyContent: 'center', width: 78 },
+  navItemActive: { backgroundColor: 'rgba(228,228,230,0.56)' },
   navLabel: { color: '#3E4149', fontSize: 10, fontWeight: '700' },
   navLabelActive: { color: '#FF245B' },
   navigationGlass: {
-    backgroundColor: ANDROID ? 'rgba(255,255,255,0.56)' : 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.36)',
     borderColor: 'rgba(255,255,255,0.82)',
-    borderRadius: 30,
+    borderRadius: 32,
     borderWidth: 1,
     flex: 1,
     flexDirection: 'row',
-    height: 62,
+    gap: 18,
+    height: 64,
     overflow: 'hidden',
+    padding: 4,
+  },
+  navigationFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.42)',
   },
   navigationRow: {
     bottom: 12,
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     left: 16,
     position: 'absolute',
     right: 16,
   },
   navigationShadow: {
     backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 30,
-    elevation: 5,
+    borderRadius: 32,
+    elevation: 2,
     flex: 1,
     shadowColor: '#11151B',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 10,
   },
   placeCard: {
@@ -838,15 +860,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.95)',
     borderRadius: 16,
     borderWidth: 1,
-    height: 210,
+    height: 199,
     overflow: 'hidden',
     shadowColor: '#12161D',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
-    width: 260,
+    width: 242,
   },
-  placeCardBody: { flex: 1, paddingHorizontal: 11, paddingTop: 9 },
+  placeCardBody: { flex: 1, paddingHorizontal: 8, paddingVertical: 12 },
   placeCardDistance: { color: '#73757D', fontSize: 12, marginTop: 2 },
   placeCardName: { color: '#25272D', fontSize: 16, fontWeight: '900', paddingRight: 35 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
@@ -898,7 +920,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segmentActive: {
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.60)',
+  },
+  segmentFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(228,228,230,0.42)',
   },
   segmentLabel: {
     color: '#767680',
@@ -909,12 +935,12 @@ const styles = StyleSheet.create({
   segmentLabelActive: { color: '#FF1956', fontWeight: '700' },
   segmentOuter: {
     alignItems: 'stretch',
-    backgroundColor: ANDROID ? 'rgba(228,228,230,0.62)' : 'rgba(228,228,230,0.48)',
+    backgroundColor: 'rgba(228,228,230,0.48)',
     borderColor: 'rgba(255,255,255,0.52)',
     borderRadius: 24,
     borderWidth: 1,
     flexDirection: 'row',
-    height: 52,
+    height: 48,
     overflow: 'hidden',
     padding: 3,
     width: '100%',
@@ -930,24 +956,34 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sendButton: {
-    borderRadius: 31,
-    height: 62,
+    borderRadius: 32,
+    height: 64,
     shadowColor: '#11151B',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.13,
+    shadowOpacity: 0.06,
     shadowRadius: 10,
-    width: 62,
+    width: 64,
   },
   sendGlass: {
     alignItems: 'center',
-    backgroundColor: ANDROID ? 'rgba(255,255,255,0.56)' : 'rgba(255,255,255,0.18)',
-    borderColor: 'rgba(255,255,255,0.86)',
-    borderRadius: 31,
+    backgroundColor: 'rgba(255,255,255,0.36)',
+    borderColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 32,
     borderWidth: 1,
-    height: 62,
+    height: 64,
     justifyContent: 'center',
     overflow: 'hidden',
-    width: 62,
+    width: 64,
+  },
+  sendStroke: {
+    ...StyleSheet.absoluteFillObject,
+    borderColor: 'rgba(94,94,102,0.08)',
+    borderRadius: 31,
+    borderWidth: 1,
+    bottom: 1,
+    left: 1,
+    right: 1,
+    top: 1,
   },
   sheetGlass: {
     ...StyleSheet.absoluteFillObject,
@@ -959,6 +995,6 @@ const styles = StyleSheet.create({
   sheetContent: { flex: 1 },
   sheetTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: ANDROID ? 'rgba(247,249,251,0.32)' : 'rgba(247,249,251,0.18)',
+    backgroundColor: 'rgba(248,248,248,0.62)',
   },
 });

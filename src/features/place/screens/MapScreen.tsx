@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BlurTargetView } from 'expo-blur';
 import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { useTranslation } from 'react-i18next';
 import MapBottomSheet, {
@@ -8,6 +10,7 @@ import MapBottomSheet, {
   type DecisionPlace,
   type VisitFilter,
 } from '../components/MapBottomSheet';
+import { GlassBlurTargetProvider } from '../components/GlassSurface';
 import MapCanvas from '../components/MapCanvas';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
@@ -111,7 +114,9 @@ export default function MapScreen({
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const mapBlurTargetRef = useRef<View | null>(null);
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
   const { places: recommendedPlaces } = usePlaceRecommendations({
@@ -126,9 +131,11 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
 
-  const fullSheetHeight = Math.round(Math.min(height * 0.9, height - 36));
-  const collapsedVisibleHeight = Math.round(Math.min(116, height * 0.15));
-  const mediumVisibleHeight = Math.round(Math.min(Math.max(height * 0.46, 390), 430));
+  const expandedSheetTop = insets.top + 2 + 60 + 8;
+  const fullSheetHeight = Math.round(height - expandedSheetTop - 8);
+  const designScale = Math.min(Math.max(width / 402, 0.9), 1.1);
+  const collapsedVisibleHeight = Math.round(101 * designScale);
+  const mediumVisibleHeight = Math.round(378 * designScale);
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
   const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
@@ -308,29 +315,32 @@ export default function MapScreen({
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
-      <MapCanvas
-        centerLat={mapCenterLat}
-        centerLng={mapCenterLng}
-        followUser={isFollowingUser}
-        markers={mapMarkers}
-        onMarkerPress={handleMarkerPress}
-        userLat={userLat}
-        userLng={userLng}
-      />
-      <View pointerEvents="none" style={styles.mapTint} />
-      <MapTopOverlay
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-        onProfilePress={onOpenProfile}
-        onQueryChange={handleQueryChange}
-        onSearchFocus={handleSearchFocus}
-        onSubmitSearch={() => {
-          setContent({ type: 'results', query });
-          snapTo('expanded');
-        }}
-        query={query}
-      />
-      <MapBottomSheet
+      <BlurTargetView ref={mapBlurTargetRef} style={styles.mapBackground}>
+        <MapCanvas
+          centerLat={mapCenterLat}
+          centerLng={mapCenterLng}
+          followUser={isFollowingUser}
+          markers={mapMarkers}
+          onMarkerPress={handleMarkerPress}
+          userLat={userLat}
+          userLng={userLng}
+        />
+        <View pointerEvents="none" style={styles.mapTint} />
+      </BlurTargetView>
+      <GlassBlurTargetProvider blurTarget={mapBlurTargetRef}>
+        <MapTopOverlay
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          onProfilePress={onOpenProfile}
+          onQueryChange={handleQueryChange}
+          onSearchFocus={handleSearchFocus}
+          onSubmitSearch={() => {
+            setContent({ type: 'results', query });
+            snapTo('expanded');
+          }}
+          query={query}
+        />
+        <MapBottomSheet
         activeFilters={activeFilters}
         collapsedTranslateY={collapsedTranslateY}
         content={content}
@@ -363,13 +373,15 @@ export default function MapScreen({
         sheetChromeBottom={sheetChromeBottom}
         sheetTranslateY={sheetTranslateY}
         snapPoint={snapPoint}
-        userName={profile?.username}
-      />
+          userName={profile?.username}
+        />
+      </GlassBlurTargetProvider>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
+  mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.12)' },
 });
