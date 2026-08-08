@@ -27,6 +27,7 @@ export const useBottomSheet = ({
   snapValuesRef.current = snapValues;
 
   const sheetTranslateY = useRef(new Animated.Value(snapValues[initialSnapPoint])).current;
+  const sheetChromeBottom = useRef(new Animated.Value(snapValues[initialSnapPoint])).current;
   const sheetOffsetY = useRef(snapValues[initialSnapPoint]);
   const snapPointRef = useRef<BottomSheetSnapPoint>(initialSnapPoint);
   const [snapPoint, setSnapPoint] = useState<BottomSheetSnapPoint>(initialSnapPoint);
@@ -38,13 +39,22 @@ export const useBottomSheet = ({
     snapPointRef.current = nextSnapPoint;
     setSnapPoint(nextSnapPoint);
 
-    Animated.spring(sheetTranslateY, {
-      damping: 26,
-      mass: 0.82,
-      stiffness: 240,
-      toValue: nextValue,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.spring(sheetTranslateY, {
+        damping: 26,
+        mass: 0.82,
+        stiffness: 240,
+        toValue: nextValue,
+        useNativeDriver: true,
+      }),
+      Animated.spring(sheetChromeBottom, {
+        damping: 26,
+        mass: 0.82,
+        stiffness: 240,
+        toValue: nextValue,
+        useNativeDriver: false,
+      }),
+    ]).start();
   };
 
   useEffect(() => {
@@ -52,13 +62,15 @@ export const useBottomSheet = ({
 
     sheetOffsetY.current = nextValue;
     sheetTranslateY.setValue(nextValue);
-  }, [sheetTranslateY, snapValues]);
+    sheetChromeBottom.setValue(nextValue);
+  }, [sheetChromeBottom, sheetTranslateY, snapValues]);
 
   const panResponder = useMemo(() => PanResponder.create({
     onMoveShouldSetPanResponder: (_, gesture) => (
       Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx)
     ),
     onPanResponderGrant: () => {
+      sheetChromeBottom.stopAnimation();
       sheetTranslateY.stopAnimation((value) => {
         sheetOffsetY.current = value;
       });
@@ -71,6 +83,7 @@ export const useBottomSheet = ({
       );
 
       sheetTranslateY.setValue(nextValue);
+      sheetChromeBottom.setValue(nextValue);
     },
     onPanResponderRelease: (_, gesture) => {
       const values = snapValuesRef.current;
@@ -102,7 +115,7 @@ export const useBottomSheet = ({
     onPanResponderTerminate: () => snapTo(snapPointRef.current),
   // PanResponder intentionally reads changing values through refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [sheetTranslateY]);
+  }), [sheetChromeBottom, sheetTranslateY]);
 
   const toggleSheet = () => {
     snapTo(snapPointRef.current === 'collapsed' ? 'medium' : 'collapsed');
@@ -111,6 +124,7 @@ export const useBottomSheet = ({
   return {
     isExpanded: snapPoint === 'expanded',
     panHandlers: panResponder.panHandlers,
+    sheetChromeBottom,
     sheetTranslateY,
     snapPoint,
     snapTo,

@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BlurTargetView } from 'expo-blur';
 import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { useTranslation } from 'react-i18next';
 import MapBottomSheet, {
@@ -8,18 +10,23 @@ import MapBottomSheet, {
   type DecisionPlace,
   type VisitFilter,
 } from '../components/MapBottomSheet';
+import { GlassBlurTargetProvider } from '../components/GlassSurface';
 import MapCanvas from '../components/MapCanvas';
-import MapControlRail from '../components/MapControlRail';
+import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
+import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
+
+// Matches SHEET_RESTING_GAP in MapBottomSheet.
+const SHEET_RESTING_GAP = 8;
 
 const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] => [
   {
@@ -30,7 +37,7 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     id: MOCK_PLACE_IDS[0],
     latitude: latitude + 0.0018,
     longitude: longitude - 0.0012,
-    name: 'Seongsu Pop-up',
+    name: '오아시스 팝업 스토어',
     tags: ['English menu', 'Coupon'],
     verifiedAgo: '18m',
     verifiedMinutes: 18,
@@ -45,7 +52,7 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     id: MOCK_PLACE_IDS[1],
     latitude: latitude - 0.0011,
     longitude: longitude + 0.0019,
-    name: 'Layered Coffee Lab',
+    name: '레이어드 커피 랩',
     tags: ['Short wait', 'Bookable'],
     verifiedAgo: '7m',
     verifiedMinutes: 7,
@@ -60,7 +67,7 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     id: MOCK_PLACE_IDS[2],
     latitude: latitude + 0.0004,
     longitude: longitude + 0.0028,
-    name: 'Common Table Seongsu',
+    name: '커먼 테이블 성수',
     tags: ['Coupon', 'Bookable'],
     verifiedAgo: '24m',
     verifiedMinutes: 24,
@@ -70,6 +77,7 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
 ];
 
 const toDecisionPlace = (place: Place): DecisionPlace => ({
+  ...place,
   address: place.address || 'Nearby place',
   category: (place.category || 'PLACE').toUpperCase(),
   distance: place.distanceMeters ? `${Math.round(place.distanceMeters)} m` : 'Nearby',
@@ -101,27 +109,41 @@ type MapScreenProps = {
 
 export default function MapScreen({
   onCreatePlace,
+  onOpenLikedPlaces,
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
+  onOpenSavedPlaces,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const mapBlurTargetRef = useRef<View | null>(null);
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
+  const { places: recommendedPlaces } = usePlaceRecommendations({
+    latitude: center.lat,
+    limit: 8,
+    longitude: center.lng,
+    radiusKm: 20,
+  });
   const { profile } = useProfile();
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
-  const [mapType, setMapType] = useState<'Map' | 'Transit'>('Map');
+  const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
 
-  const fullSheetHeight = Math.round(Math.min(height * 0.9, height - 36));
-  const collapsedVisibleHeight = Math.round(Math.min(168, height * 0.21));
-  const mediumVisibleHeight = Math.round(Math.min(Math.max(height * 0.5, 390), 470));
+  const expandedSheetTop = insets.top + 2 + 60 + 8;
+  // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
+  // so the expanded state can go edge to edge without drawing outside its parent.
+  const fullSheetHeight = Math.round(height - expandedSheetTop);
+  const designScale = Math.min(Math.max(width / 402, 0.9), 1.1);
+  const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
+  const mediumVisibleHeight = Math.round(378 * designScale) + SHEET_RESTING_GAP;
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
-  const { panHandlers, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
+  const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
     collapsedTranslateY,
     initialSnapPoint: 'medium',
     mediumTranslateY,
@@ -145,14 +167,16 @@ export default function MapScreen({
     [center.lat, center.lng],
   );
   const allPlaces = useMemo(() => {
-    const mockIds = new Set<number>(MOCK_PLACE_IDS);
+    const recommendations = recommendedPlaces
+      .slice(0, 8)
+      .map(toDecisionPlace);
     const livePlaces = apiPlaces
-      .filter((place) => !mockIds.has(place.id))
       .slice(0, 8)
       .map(toDecisionPlace);
 
-    return [...mockPlaces, ...livePlaces];
-  }, [apiPlaces, mockPlaces]);
+    if (recommendations.length > 0) return recommendations;
+    return livePlaces.length > 0 ? livePlaces : mockPlaces;
+  }, [apiPlaces, mockPlaces, recommendedPlaces]);
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
     return allPlaces.find((place) => place.id === content.placeId) ?? null;
@@ -185,14 +209,27 @@ export default function MapScreen({
         markerType: index === 0 ? 'hot' as const : 'default' as const,
       }));
 
-    return [
+    const markers = [
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
       ...mockMarkers,
     ];
-  }, [apiMarkers, mockPlaces]);
+
+    if (activeCategory === 'all') return markers;
+    const markerCategory: MapMarker['category'] = activeCategory === 'cafe'
+      ? 'food'
+      : activeCategory === 'fashion'
+        ? 'fashion'
+        : activeCategory === 'music'
+          ? 'music'
+          : activeCategory === 'food'
+            ? 'food'
+            : 'etc';
+
+    return markers.filter((marker) => marker.category === markerCategory);
+  }, [activeCategory, apiMarkers, mockPlaces]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
@@ -283,31 +320,37 @@ export default function MapScreen({
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
-      <MapCanvas
-        centerLat={mapCenterLat}
-        centerLng={mapCenterLng}
-        followUser={isFollowingUser}
-        markers={mapMarkers}
-        onMarkerPress={handleMarkerPress}
-        userLat={userLat}
-        userLng={userLng}
-      />
-      <View pointerEvents="none" style={styles.mapTint} />
-      <MapControlRail
-        bottom={fullSheetHeight + 16}
-        mapType={mapType}
-        onLocatePress={() => {
-          setContent({ type: 'home' });
-          setIsFollowingUser(true);
-          snapTo('collapsed');
-        }}
-        onMapTypePress={() => setMapType((current) => current === 'Map' ? 'Transit' : 'Map')}
-        sheetTranslateY={sheetTranslateY}
-      />
-      <MapBottomSheet
+      <BlurTargetView ref={mapBlurTargetRef} style={styles.mapBackground}>
+        <MapCanvas
+          centerLat={mapCenterLat}
+          centerLng={mapCenterLng}
+          followUser={isFollowingUser}
+          markers={mapMarkers}
+          onMarkerPress={handleMarkerPress}
+          userLat={userLat}
+          userLng={userLng}
+        />
+        <View pointerEvents="none" style={styles.mapTint} />
+      </BlurTargetView>
+      <GlassBlurTargetProvider blurTarget={mapBlurTargetRef}>
+        <MapTopOverlay
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          onProfilePress={onOpenProfile}
+          onQueryChange={handleQueryChange}
+          onSearchFocus={handleSearchFocus}
+          onSubmitSearch={() => {
+            setContent({ type: 'results', query });
+            snapTo('expanded');
+          }}
+          query={query}
+        />
+        <MapBottomSheet
         activeFilters={activeFilters}
+        collapsedTranslateY={collapsedTranslateY}
         content={content}
         height={fullSheetHeight}
+        mediumTranslateY={mediumTranslateY}
         onBackHome={handleBackHome}
         onCouponPress={handleCoupon}
         onCreatePlace={onCreatePlace}
@@ -319,6 +362,8 @@ export default function MapScreen({
           else if (snapPoint === 'medium') snapTo('expanded');
           else snapTo('medium');
         }}
+        onOpenLikedPlaces={onOpenLikedPlaces}
+        onOpenSavedPlaces={onOpenSavedPlaces}
         onPlacePress={handlePlacePress}
         onProfilePress={onOpenProfile}
         onQueryChange={handleQueryChange}
@@ -330,14 +375,18 @@ export default function MapScreen({
         panHandlers={panHandlers}
         places={visiblePlaces}
         selectedPlace={selectedPlace}
+        sheetChromeBottom={sheetChromeBottom}
         sheetTranslateY={sheetTranslateY}
         snapPoint={snapPoint}
-      />
+          userName={profile?.username}
+        />
+      </GlassBlurTargetProvider>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
+  mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.12)' },
 });

@@ -1,21 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Animated,
   GestureResponderHandlers,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import {
-  formatDistance,
-  formatMinuteRange,
-  formatRelativeMinutes,
-} from '../../../shared/i18n/formatters';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
+import ArtAsset from '../../../assets/v2icon/art_svg.svg';
+import FashionAsset from '../../../assets/v2icon/fashion_svg.svg';
+import FoodAsset from '../../../assets/v2icon/food_svg.svg';
+import HotPlaceAsset from '../../../assets/v2icon/hotplace.svg';
+import MapAsset from '../../../assets/v2icon/maping_svg.svg';
+import MusicAsset from '../../../assets/v2icon/music_svg.svg';
+import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend_svg.svg';
+import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
+import StarAsset from '../../../assets/v2icon/star_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
+import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface from './GlassSurface';
 
 export type BottomSheetContent =
@@ -44,8 +51,10 @@ export type DecisionPlace = {
 
 type MapBottomSheetProps = {
   activeFilters: VisitFilter[];
+  collapsedTranslateY: number;
   content: BottomSheetContent;
   height: number;
+  mediumTranslateY: number;
   onBackHome: () => void;
   onCouponPress: (place: DecisionPlace) => void;
   onCreatePlace?: () => void;
@@ -53,6 +62,8 @@ type MapBottomSheetProps = {
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
   onHandlePress: () => void;
+  onOpenLikedPlaces?: () => void;
+  onOpenSavedPlaces?: () => void;
   onPlacePress: (place: DecisionPlace) => void;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
@@ -61,493 +72,976 @@ type MapBottomSheetProps = {
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
   selectedPlace: DecisionPlace | null;
+  sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
+  userName?: string;
 };
 
-const FILTERS: VisitFilter[] = ['Open now', 'Short wait', 'Coupon', 'Bookable'];
-const FILTER_LABEL_KEYS: Record<VisitFilter, string> = {
-  'Open now': 'map.decision.filters.openNow',
-  'Short wait': 'map.decision.filters.shortWait',
-  Coupon: 'map.decision.filters.coupon',
-  Bookable: 'map.decision.filters.bookable',
+type IconProps = {
+  active?: boolean;
+  size?: number;
 };
 
-const SearchBar = ({
-  onFocus,
-  onProfilePress,
-  onQueryChange,
-  onSubmit,
-  query,
+type SheetCategory = 'art' | 'fashion' | 'food' | 'music' | 'popup';
+
+// Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
+const SHEET_RESTING_GAP = 8;
+const SHEET_BOTTOM_RADIUS = 48;
+
+const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
+  { id: 'popup', label: '팝업' },
+  { id: 'music', label: '음악' },
+  { id: 'food', label: '음식점' },
+  { id: 'fashion', label: '패션' },
+  { id: 'art', label: '전시' },
+];
+
+const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
+  <Svg height={size} viewBox="0 0 24 24" width={size}>
+    <Path
+      d="M12 22s7-6.1 7-13A7 7 0 0 0 5 9c0 6.9 7 13 7 13Z"
+      fill={active ? '#FF245B' : 'none'}
+      stroke={active ? '#FF245B' : '#383B43'}
+      strokeLinejoin="round"
+      strokeWidth="2"
+    />
+    <Circle cx="12" cy="9" fill={active ? '#FFFFFF' : 'none'} r="2.4" stroke={active ? '#FFFFFF' : '#383B43'} strokeWidth="1.5" />
+  </Svg>
+);
+
+const FavoriteStarIcon = ({ active = false, size = 30 }: IconProps) => (
+  <Svg height={size} viewBox="0 0 25 24" width={size}>
+    <Path
+      d="M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z"
+      fill={active ? '#FF245B' : 'none'}
+      stroke={active ? '#FF245B' : '#383B43'}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    />
+  </Svg>
+);
+
+const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCategory }) => {
+  const color = active ? '#FF1956' : '#5E5E66';
+
+  switch (category) {
+    case 'popup':
+      return <PopupAsset color={color} height={19} width={20} />;
+    case 'music':
+      return <MusicAsset color={color} height={18} width={21} />;
+    case 'food':
+      return <FoodAsset color={color} height={18} width={15} />;
+    case 'fashion':
+      return <FashionAsset color={color} height={18} width={24} />;
+    case 'art':
+      return <ArtAsset color={color} height={18} width={18} />;
+  }
+};
+
+const FeedSegment = ({
+  feed,
+  onChange,
 }: {
-  onFocus: () => void;
-  onProfilePress?: () => void;
-  onQueryChange: (query: string) => void;
-  onSubmit: () => void;
-  query: string;
+  feed: 'local' | 'national';
+  onChange: (feed: 'local' | 'national') => void;
+}) => (
+  <View style={styles.segmentShadow}>
+    <GlassSurface
+      androidBlurEnabled={false}
+      glassEffectStyle="regular"
+      intensity={100}
+      style={styles.segmentOuter}
+      tintColor="rgba(228,228,230,0.48)"
+    >
+      <View pointerEvents="none" style={styles.segmentFrost} />
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'local' }}
+        onPress={() => onChange('local')}
+        style={[styles.segment, feed === 'local' && styles.segmentActive]}
+      >
+        <HotPlaceAsset
+          color={feed === 'local' ? '#FF1956' : '#767680'}
+          height={20}
+          width={16}
+        />
+        <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+          우리 지역 핫플
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'national' }}
+        onPress={() => onChange('national')}
+        style={[styles.segment, feed === 'national' && styles.segmentActive]}
+      >
+        <MapAsset
+          color={feed === 'national' ? '#FF1956' : '#767680'}
+          height={20}
+          width={18}
+        />
+        <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+          전국 트렌드
+        </Text>
+      </Pressable>
+    </GlassSurface>
+  </View>
+);
+
+const CARD_FALLBACKS = [
+  '오아시스 팝업 스토어',
+  '성수 스튜디오 마켓',
+  '레이어드 커피 랩',
+  '커먼 테이블 성수',
+];
+
+const PLACEHOLDER_IMAGE_URL = 'https://placehold.co/520x280.png';
+
+const formatDistance = (place: DecisionPlace) => {
+  if (place.distanceMeters !== undefined) {
+    return place.distanceMeters >= 1000
+      ? `${(place.distanceMeters / 1000).toFixed(1)}km`
+      : `${Math.round(place.distanceMeters)}m`;
+  }
+
+  return place.distance;
+};
+
+const PlaceArtwork = ({
+  imageUrl,
+  variant = 'trend',
+}: {
+  imageUrl?: string;
+  variant?: 'grid' | 'trend';
 }) => {
-  const { t } = useTranslation();
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [imageUrl]);
+
+  const sourceUrl = imageUrl && !hasImageError ? imageUrl : PLACEHOLDER_IMAGE_URL;
 
   return (
-    <View style={styles.searchRow}>
-      <View style={styles.searchBar}>
-        <Text style={styles.searchIcon}>⌕</Text>
-        <TextInput
-          accessibilityLabel={t('map.decision.searchAccessibilityLabel')}
-          autoCorrect={false}
-          onChangeText={onQueryChange}
-          onFocus={onFocus}
-          onSubmitEditing={onSubmit}
-          placeholder={t('map.decision.searchPlaceholder')}
-          placeholderTextColor="#8B9099"
-          returnKeyType="search"
-          style={styles.searchInput}
-          value={query}
-        />
-      </View>
-      <Pressable
-        accessibilityLabel={t('map.decision.profileAccessibilityLabel')}
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={onProfilePress}
-        style={styles.profileIconButton}
-      >
-        <View style={styles.profileGlyph}>
-          <View style={styles.profileGlyphHead} />
-          <View style={styles.profileGlyphBody} />
-        </View>
-      </Pressable>
-    </View>
+    <Image
+      onError={() => {
+        if (sourceUrl !== PLACEHOLDER_IMAGE_URL) setHasImageError(true);
+      }}
+      resizeMode="cover"
+      source={{ uri: sourceUrl }}
+      style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
+    />
   );
 };
 
-const FilterRow = ({
-  activeFilters,
-  onFilterPress,
+const PlaceTrendCard = ({
+  imageUrl,
+  index,
+  onPress,
+  place,
 }: {
-  activeFilters: VisitFilter[];
-  onFilterPress: (filter: VisitFilter) => void;
-}) => (
-  <FilterRowContent activeFilters={activeFilters} onFilterPress={onFilterPress} />
-);
-
-const FilterRowContent = ({
-  activeFilters,
-  onFilterPress,
-}: {
-  activeFilters: VisitFilter[];
-  onFilterPress: (filter: VisitFilter) => void;
+  imageUrl?: string;
+  index: number;
+  onPress: () => void;
+  place: DecisionPlace;
 }) => {
-  const { t } = useTranslation();
+  const [liked, setLiked] = useState(false);
+
+  return (
+    <Pressable
+      accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.placeCard, pressed && styles.pressed]}
+    >
+      <PlaceArtwork imageUrl={imageUrl} />
+      <View style={styles.placeCardBody}>
+        <Text numberOfLines={1} style={styles.placeCardName}>
+          {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
+        </Text>
+        <Text numberOfLines={1} style={styles.placeCardDistance}>
+          여기서 {formatDistance(place)}
+        </Text>
+        <Pressable
+          accessibilityLabel={liked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={(event) => {
+            event.stopPropagation();
+            setLiked((current) => !current);
+          }}
+          style={styles.favoriteButton}
+        >
+          <FavoriteStarIcon active={liked} />
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+};
+
+const ExpandedPlaceCard = ({
+  imageUrl,
+  onPress,
+  place,
+}: {
+  imageUrl?: string;
+  onPress: () => void;
+  place: DecisionPlace;
+}) => {
+  const [liked, setLiked] = useState(false);
+
+  return (
+    <Pressable
+      accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.gridCard, pressed && styles.pressed]}
+    >
+      <PlaceArtwork imageUrl={imageUrl} variant="grid" />
+      <View style={styles.gridCardBody}>
+        <Text numberOfLines={2} style={styles.gridCardName}>{place.name}</Text>
+        <Text numberOfLines={1} style={styles.gridCardDistance}>여기서 {formatDistance(place)}</Text>
+        <Pressable
+          accessibilityLabel={liked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={(event) => {
+            event.stopPropagation();
+            setLiked((current) => !current);
+          }}
+          style={styles.gridFavoriteButton}
+        >
+          <FavoriteStarIcon active={liked} size={27} />
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+};
+
+const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => {
+  const value = place.category.trim().toLowerCase();
+  const aliases: Record<SheetCategory, string[]> = {
+    art: ['art', 'exhibit', 'exhibition', '전시'],
+    fashion: ['fashion', '패션'],
+    food: ['cafe', 'dining', 'food', 'restaurant', '음식', '카페'],
+    music: ['music', '음악'],
+    popup: ['pop-up', 'popup', '팝업'],
+  };
+
+  return aliases[category].some((alias) => value.includes(alias));
+};
+
+const ExpandedHomeContent = ({
+  activeCategory,
+  feed,
+  imageUrlsByPlaceId,
+  onCategoryChange,
+  onFeedChange,
+  onPlacePress,
+  places,
+  userName,
+}: {
+  activeCategory: SheetCategory;
+  feed: 'local' | 'national';
+  imageUrlsByPlaceId: Record<string, string>;
+  onCategoryChange: (category: SheetCategory) => void;
+  onFeedChange: (feed: 'local' | 'national') => void;
+  onPlacePress: (place: DecisionPlace) => void;
+  places: DecisionPlace[];
+  userName: string;
+}) => {
+  const categoryPlaces = places.filter((place) => placeMatchesCategory(place, activeCategory));
+  const gridPlaces = categoryPlaces.length > 0 ? categoryPlaces : places;
 
   return (
     <ScrollView
-    contentContainerStyle={styles.filterContent}
-    horizontal
-    keyboardShouldPersistTaps="handled"
-    showsHorizontalScrollIndicator={false}
-    style={styles.filterScroll}
-  >
-    {FILTERS.map((filter) => {
-      const isActive = activeFilters.includes(filter);
-      return (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t(FILTER_LABEL_KEYS[filter])}
-          accessibilityState={{ selected: isActive }}
-          key={filter}
-          onPress={() => onFilterPress(filter)}
-          style={[styles.filterChip, isActive && styles.filterChipActive]}
-        >
-          <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-            {t(FILTER_LABEL_KEYS[filter])}
-          </Text>
-        </Pressable>
-      );
-    })}
+      contentContainerStyle={styles.expandedContent}
+      nestedScrollEnabled
+      showsVerticalScrollIndicator={false}
+      style={styles.expandedScroll}
+    >
+      <FeedSegment feed={feed} onChange={onFeedChange} />
+      <ScrollView
+        contentContainerStyle={styles.expandedFeaturedRow}
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={false}
+      >
+        {places.length > 0 ? places.slice(0, 6).map((place, index) => (
+          <PlaceTrendCard
+            imageUrl={imageUrlsByPlaceId[String(place.id)]}
+            index={index}
+            key={`featured-${place.id}`}
+            onPress={() => onPlacePress(place)}
+            place={place}
+          />
+        )) : <EmptyCard />}
+      </ScrollView>
+
+      <Text style={styles.expandedTitle}>
+        카테고리별 <Text style={styles.expandedTitleAccent}>{userName}님</Text> 주변 인기 장소들
+      </Text>
+
+      <ScrollView
+        contentContainerStyle={styles.categoryRow}
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={false}
+      >
+        {CATEGORY_OPTIONS.map((category) => {
+          const active = category.id === activeCategory;
+
+          return (
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              key={category.id}
+              onPress={() => onCategoryChange(category.id)}
+              style={[styles.categoryChip, active && styles.categoryChipActive]}
+            >
+              <CategoryIcon active={active} category={category.id} />
+              <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
+                {category.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <View style={styles.gridRow}>
+        {gridPlaces.slice(0, 8).map((place) => (
+          <ExpandedPlaceCard
+            imageUrl={imageUrlsByPlaceId[String(place.id)]}
+            key={`grid-${place.id}`}
+            onPress={() => onPlacePress(place)}
+            place={place}
+          />
+        ))}
+      </View>
     </ScrollView>
   );
 };
 
-const PlaceMeta = ({ place }: { place: DecisionPlace }) => {
-  const { i18n, t } = useTranslation();
-  const language = i18n.resolvedLanguage ?? i18n.language;
-  const wait = place.waitMinutes
-    ? formatMinuteRange(place.waitMinutes[0], place.waitMinutes[1], language)
-    : place.wait;
-  const verifiedAgo = place.verifiedMinutes === undefined
-    ? place.verifiedAgo
-    : formatRelativeMinutes(place.verifiedMinutes, language);
+const EmptyCard = () => (
+  <View style={[styles.placeCard, styles.emptyCard]}>
+    <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
+    <Text style={styles.emptyCardTitle}>주변 핫플을 찾는 중이에요</Text>
+    <Text style={styles.emptyCardBody}>지도를 움직여 다른 지역도 둘러보세요.</Text>
+  </View>
+);
 
-  return (
-    <>
-    <View style={styles.statusRow}>
-      <View style={styles.openDot} />
-      <Text style={styles.openText}>{t('map.decision.status.openNow')}</Text>
-      <Text style={styles.metaDivider}>·</Text>
-      <Text style={styles.waitText}>{t('map.decision.status.wait', { wait })}</Text>
-    </View>
-    <Text style={styles.verifiedText}>
-      {t('map.decision.status.verified', { time: verifiedAgo })}
-    </Text>
-    </>
-  );
-};
-
-const RecommendationCard = ({
-  onCouponPress,
-  onGoNowPress,
+const ResultRow = ({
   onPress,
   place,
 }: {
-  onCouponPress: (place: DecisionPlace) => void;
-  onGoNowPress: (place: DecisionPlace) => void;
-  onPress: (place: DecisionPlace) => void;
+  onPress: () => void;
   place: DecisionPlace;
-}) => {
-  const { i18n, t } = useTranslation();
-  const distance = place.distanceMeters
-    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
-    : place.distance;
-
-  return (
-    <View style={styles.recommendationCard}>
-      <Pressable
-        accessibilityLabel={`${place.name}, ${distance}`}
-        accessibilityRole="button"
-        onPress={() => onPress(place)}
-      >
-      <View style={styles.cardTopRow}>
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryBadgeText}>{place.category}</Text>
-        </View>
-        <Text style={styles.distanceText}>{distance}</Text>
-      </View>
-      <Text numberOfLines={2} style={styles.placeName}>{place.name}</Text>
-      <PlaceMeta place={place} />
-      </Pressable>
-      <View style={styles.cardActions}>
-        <Pressable accessibilityRole="button" onPress={() => onCouponPress(place)} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>{t('map.decision.filters.coupon')}</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => onGoNowPress(place)} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
-        </Pressable>
-      </View>
+}) => (
+  <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
+    <View style={styles.resultThumbnail}><MapPinIcon active size={25} /></View>
+    <View style={styles.resultTextBody}>
+      <Text numberOfLines={1} style={styles.resultName}>{place.name}</Text>
+      <Text numberOfLines={1} style={styles.resultAddress}>{place.address}</Text>
     </View>
-  );
-};
-
-const ResultCard = ({ onPress, place }: {
-  onPress: (place: DecisionPlace) => void;
-  place: DecisionPlace;
-}) => {
-  const { i18n } = useTranslation();
-  const distance = place.distanceMeters
-    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
-    : place.distance;
-  return (
-  <Pressable accessibilityLabel={`${place.name}, ${distance}`} accessibilityRole="button" onPress={() => onPress(place)} style={styles.resultCard}>
-    <View style={styles.resultThumb}>
-      <Text style={styles.resultThumbText}>{place.category.slice(0, 1)}</Text>
-    </View>
-    <View style={styles.resultBody}>
-      <View style={styles.resultTitleRow}>
-        <Text numberOfLines={2} style={styles.resultName}>{place.name}</Text>
-        <Text style={styles.distanceText}>{distance}</Text>
-      </View>
-      <PlaceMeta place={place} />
-      <Text style={styles.resultTags}>{place.tags.join(' · ')}</Text>
-    </View>
-    <Text accessibilityElementsHidden style={styles.chevron}>{i18n.dir() === 'rtl' ? '‹' : '›'}</Text>
+    <Text style={styles.resultDistance}>{formatDistance(place)}</Text>
   </Pressable>
-  );
-};
+);
 
-const PlacePreview = ({
-  onCouponPress,
-  onDetailPress,
-  onGoNowPress,
+const PreviewContent = ({
+  imageUrl,
+  onBack,
+  onDetail,
   place,
 }: {
-  onCouponPress: (place: DecisionPlace) => void;
-  onDetailPress: (place: DecisionPlace) => void;
-  onGoNowPress: (place: DecisionPlace) => void;
+  imageUrl?: string;
+  onBack: () => void;
+  onDetail: () => void;
   place: DecisionPlace;
-}) => {
-  const { i18n, t } = useTranslation();
-  const distance = place.distanceMeters
-    ? formatDistance(place.distanceMeters, i18n.resolvedLanguage ?? i18n.language)
-    : place.distance;
-
-  return (
-    <View style={styles.previewCard}>
-      <Pressable accessibilityLabel={`${place.name}, ${distance}`} accessibilityRole="button" onPress={() => onDetailPress(place)}>
-      <View style={styles.previewImage}>
-        <View style={styles.previewImageOrb} />
-        <View style={styles.previewImageLabel}>
-          <Text style={styles.previewImageLabelText}>{place.category}</Text>
-        </View>
-      </View>
+}) => (
+  <View style={styles.previewContent}>
+    <Pressable onPress={onBack} style={styles.previewBack}>
+      <Text style={styles.previewBackText}>‹  주변 핫플로 돌아가기</Text>
+    </Pressable>
+    <Pressable onPress={onDetail} style={({ pressed }) => [styles.previewPanel, pressed && styles.pressed]}>
+      <PlaceArtwork imageUrl={imageUrl} />
       <View style={styles.previewBody}>
-        <View style={styles.previewTitleRow}>
-          <View style={styles.previewTitleBody}>
-            <Text numberOfLines={2} style={styles.previewName}>{place.name.toUpperCase()}</Text>
-            <Text style={styles.previewAddress}>{place.address}</Text>
-          </View>
-          <Text accessibilityElementsHidden style={styles.chevron}>{i18n.dir() === 'rtl' ? '‹' : '›'}</Text>
-        </View>
-        <PlaceMeta place={place} />
-        <View style={styles.tagRow}>
-          {place.tags.map((tag) => (
-            <View key={tag} style={styles.tag}><Text style={styles.tagText}>{tag}</Text></View>
-          ))}
+        <Text style={styles.previewName}>{place.name}</Text>
+        <Text numberOfLines={2} style={styles.previewAddress}>{place.address}</Text>
+        <View style={styles.previewMeta}>
+          <Text style={styles.previewDistance}>여기서 {formatDistance(place)}</Text>
+          <Text style={styles.previewMore}>상세보기  ›</Text>
         </View>
       </View>
-      </Pressable>
-      <View style={[styles.previewActions, styles.previewActionsOuter]}>
-        <Pressable accessibilityRole="button" onPress={() => onCouponPress(place)} style={styles.previewSecondaryButton}>
-          <Text style={styles.secondaryButtonText}>{t('map.decision.getCoupon')}</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => onGoNowPress(place)} style={styles.previewPrimaryButton}>
-          <Text style={styles.primaryButtonText}>{t('map.decision.goNow')}</Text>
-        </Pressable>
+    </Pressable>
+  </View>
+);
+
+const NavItem = ({
+  active = false,
+  icon,
+  label,
+  onPress,
+}: {
+  active?: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onPress?: () => void;
+}) => (
+  <Pressable
+    accessibilityRole="button"
+    accessibilityState={{ selected: active }}
+    onPress={onPress}
+    style={[styles.navItem, active && styles.navItemActive]}
+  >
+    <View style={styles.navIcon}>{icon}</View>
+    <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+  </Pressable>
+);
+
+const BottomNavigation = ({
+  bottomInset,
+  onCreatePlace,
+  onOpenLikedPlaces,
+  onOpenSavedPlaces,
+  sheetTranslateY,
+}: {
+  bottomInset: number;
+  onCreatePlace?: () => void;
+  onOpenLikedPlaces?: () => void;
+  onOpenSavedPlaces?: () => void;
+  sheetTranslateY: Animated.Value;
+}) => (
+  <Animated.View
+    style={[
+      styles.navigationRow,
+      {
+        bottom: Math.max(12, bottomInset),
+        transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
+      },
+    ]}
+  >
+    <View style={styles.navigationShadow}>
+      <View style={styles.navigationBar}>
+        <NavItem
+          active
+          icon={<MapAsset color="#FF1956" height={22} width={19} />}
+          label="지도"
+        />
+        <NavItem
+          icon={<StarAsset height={21} width={22} />}
+          label="즐겨찾기"
+          onPress={onOpenLikedPlaces}
+        />
+        <NavItem
+          icon={<CheckInAsset height={22} width={21} />}
+          label="예약"
+          onPress={onOpenSavedPlaces}
+        />
       </View>
     </View>
-  );
-};
+    <Pressable
+      accessibilityLabel="장소 등록"
+      accessibilityRole="button"
+      onPress={onCreatePlace}
+      style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
+    >
+      <View pointerEvents="none" style={styles.sendIconSurface}>
+        <PlaceRecommendAsset height={23} width={23} />
+      </View>
+    </Pressable>
+  </Animated.View>
+);
 
-const MapBottomSheet = ({
-  activeFilters,
+export default function MapBottomSheet({
+  collapsedTranslateY,
   content,
   height,
+  mediumTranslateY,
   onBackHome,
-  onCouponPress,
   onCreatePlace,
   onDetailPress,
-  onFilterPress,
-  onGoNowPress,
   onHandlePress,
+  onOpenLikedPlaces,
+  onOpenSavedPlaces,
   onPlacePress,
-  onProfilePress,
-  onQueryChange,
-  onSearchFocus,
-  onSubmitSearch,
   panHandlers,
   places,
   selectedPlace,
+  sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
-}: MapBottomSheetProps) => {
-  const { i18n, t } = useTranslation();
-  const query = content.type === 'search' || content.type === 'results' ? content.query : '';
-  const isPreview = content.type === 'place-preview' && selectedPlace;
-  const showResults = content.type === 'search' || content.type === 'results' || snapPoint === 'expanded';
+  userName,
+}: MapBottomSheetProps) {
+  const insets = useSafeAreaInsets();
+  const [feed, setFeed] = useState<'local' | 'national'>('local');
+  const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
+  const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
+  const isSearchMode = content.type === 'search' || content.type === 'results';
+  const shownPlaces = feed === 'local' ? places : [...places].reverse();
+  const { imageUrlsByPlaceId } = usePlacePreviewImages(places);
+  const contentFadeStart = mediumTranslateY
+    + ((collapsedTranslateY - mediumTranslateY) * 0.42);
+  const contentOpacity = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [mediumTranslateY, contentFadeStart, collapsedTranslateY],
+    outputRange: [1, 0.78, 0],
+  });
+  const contentTranslateY = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [mediumTranslateY, collapsedTranslateY],
+    outputRange: [0, 22],
+  });
+  // Expanded sheet goes full-bleed: resting gap and bottom corners collapse to 0.
+  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
+  const chromeGap = sheetChromeBottom.interpolate({
+    extrapolate: 'clamp',
+    inputRange: chromeGapRange,
+    outputRange: [0, SHEET_RESTING_GAP],
+  });
+  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
+  const chromeBottomRadius = sheetChromeBottom.interpolate({
+    extrapolate: 'clamp',
+    inputRange: chromeGapRange,
+    outputRange: [0, SHEET_BOTTOM_RADIUS],
+  });
 
   return (
     <Animated.View
       style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}
     >
-      <GlassSurface
-        intensity={76}
+      <Animated.View
         pointerEvents="none"
-        style={styles.sheetGlass}
-        tintColor="rgba(255,255,255,0.18)"
-      />
-      <View pointerEvents="none" style={styles.topSheen} />
+        style={[
+          styles.sheetChromeShadow,
+          {
+            bottom: chromeBottomInset,
+            left: chromeGap,
+            right: chromeGap,
+          },
+        ]}
+      >
+        <Animated.View
+          style={[
+            styles.sheetChrome,
+            {
+              borderBottomLeftRadius: chromeBottomRadius,
+              borderBottomRightRadius: chromeBottomRadius,
+            },
+          ]}
+        >
+          <GlassSurface
+            glassEffectStyle="regular"
+            intensity={100}
+            style={styles.sheetGlass}
+            tintColor="rgba(248,248,248,0.20)"
+          />
+          <View style={styles.sheetTint} />
+        </Animated.View>
+      </Animated.View>
+      <View style={styles.sheetInner}>
       <View style={styles.handleArea} {...panHandlers}>
-        <Pressable accessibilityLabel={t('map.decision.resizeSheet', { defaultValue: 'Resize place panel' })} accessibilityRole="adjustable" onPress={onHandlePress} style={styles.handleButton}>
+        <Pressable
+          accessibilityLabel="추천 패널 크기 조절"
+          accessibilityRole="adjustable"
+          onPress={onHandlePress}
+          style={styles.handleButton}
+        >
           <View style={styles.handle} />
         </Pressable>
       </View>
-      <View style={styles.headerArea}>
-        <SearchBar
-          onFocus={onSearchFocus}
-          onProfilePress={onProfilePress}
-          onQueryChange={onQueryChange}
-          onSubmit={onSubmitSearch}
-          query={query}
-        />
-        {!isPreview ? (
-          <View style={styles.sheetActionRow}>
-            <Pressable
-              accessibilityLabel={t('map.actions.addPlace')}
-              accessibilityRole="button"
-              hitSlop={6}
-              onPress={onCreatePlace}
-              style={({ pressed }) => [
-                styles.createPlaceButton,
-                pressed && styles.createPlaceButtonPressed,
-              ]}
-            >
-              <Text style={styles.createPlaceIcon}>＋</Text>
-              <Text style={styles.createPlaceText}>{t('map.actions.addPlace')}</Text>
-            </Pressable>
-            <View style={styles.filterRowBody}>
-              <FilterRow activeFilters={activeFilters} onFilterPress={onFilterPress} />
-            </View>
-          </View>
-        ) : (
-          <Pressable accessibilityRole="button" onPress={onBackHome} style={styles.backRow}>
-            <View style={styles.backContent}>
-              <Text accessibilityElementsHidden style={styles.backText}>{i18n.dir() === 'rtl' ? '›' : '‹'}</Text>
-              <Text style={styles.backText}>{t('map.decision.backToRecommendations')}</Text>
-            </View>
-          </Pressable>
-        )}
-      </View>
 
-      {isPreview ? (
-        <ScrollView contentContainerStyle={styles.previewScrollContent} showsVerticalScrollIndicator={false}>
-          <PlacePreview
-            onCouponPress={onCouponPress}
-            onDetailPress={onDetailPress}
-            onGoNowPress={onGoNowPress}
-            place={selectedPlace}
-          />
-        </ScrollView>
-      ) : showResults ? (
+      <Animated.View
+        pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
+        style={[
+          styles.sheetContent,
+          { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] },
+        ]}
+      >
+      {content.type === 'place-preview' && selectedPlace ? (
+        <PreviewContent
+          imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
+          onBack={onBackHome}
+          onDetail={() => onDetailPress(selectedPlace)}
+          place={selectedPlace}
+        />
+      ) : isSearchMode ? (
         <ScrollView
-          contentContainerStyle={styles.resultList}
+          contentContainerStyle={styles.resultsContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>
-              {query ? t('map.decision.resultsFor', { query }) : t('map.decision.placesNearYou')}
-            </Text>
-            <Pressable accessibilityRole="button" style={styles.minimumTouch}><Text style={styles.sortText}>{t('map.decision.recommended')}⌄</Text></Pressable>
+          <View style={styles.resultsTitleRow}>
+            <Text style={styles.resultsTitle}>{query ? `“${query}” 검색 결과` : '내 주변 장소'}</Text>
+            <Text style={styles.resultsCount}>{places.length}</Text>
           </View>
-          {places.length > 0 ? (
-            places.map((place) => <ResultCard key={place.id} onPress={onPlacePress} place={place} />)
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>{t('map.decision.emptyTitle')}</Text>
-              <Text style={styles.emptyBody}>{t('map.decision.emptyBody')}</Text>
-            </View>
-          )}
+          {places.length > 0 ? places.map((place) => (
+            <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
+          )) : <EmptyCard />}
         </ScrollView>
+      ) : snapPoint === 'expanded' ? (
+        <ExpandedHomeContent
+          activeCategory={activeCategory}
+          feed={feed}
+          imageUrlsByPlaceId={imageUrlsByPlaceId}
+          onCategoryChange={setActiveCategory}
+          onFeedChange={setFeed}
+          onPlacePress={onPlacePress}
+          places={shownPlaces}
+          userName={userName?.trim() || 'user'}
+        />
       ) : (
-        <View style={styles.homeContent}>
-          <View style={styles.sectionTitleRow}>
-            <View>
-              <Text style={styles.eyebrow}>{t('map.decision.livePicks')}</Text>
-              <Text style={styles.sectionTitle}>{t('map.decision.whereToGo')}</Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={onSearchFocus} style={styles.minimumTouch}><Text style={styles.seeAllText}>{t('map.decision.seeAll')}</Text></Pressable>
-          </View>
+        <>
+          <FeedSegment feed={feed} onChange={setFeed} />
+
           <ScrollView
-            contentContainerStyle={styles.recommendationRow}
+            contentContainerStyle={styles.cardRow}
             horizontal
             showsHorizontalScrollIndicator={false}
           >
-            {places.map((place) => (
-              <RecommendationCard
+            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place, index) => (
+              <PlaceTrendCard
+                imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                index={index}
                 key={place.id}
-                onCouponPress={onCouponPress}
-                onGoNowPress={onGoNowPress}
-                onPress={onPlacePress}
+                onPress={() => onPlacePress(place)}
                 place={place}
               />
-            ))}
+            )) : <EmptyCard />}
           </ScrollView>
-        </View>
+        </>
       )}
+      </Animated.View>
+      </View>
+
+      <BottomNavigation
+        bottomInset={insets.bottom}
+        onCreatePlace={onCreatePlace}
+        onOpenLikedPlaces={onOpenLikedPlaces}
+        onOpenSavedPlaces={onOpenSavedPlaces}
+        sheetTranslateY={sheetTranslateY}
+      />
     </Animated.View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  backRow: { justifyContent: 'center', minHeight: 44, paddingVertical: 8 },
-  backContent: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  backText: { color: '#5F6670', fontSize: 13, fontWeight: '700' },
-  bottomSheet: {
-    backgroundColor: 'rgba(247,250,252,0.38)', borderColor: 'rgba(255,255,255,0.76)',
-    borderTopLeftRadius: 30, borderTopRightRadius: 30, borderTopWidth: 1, bottom: 0,
-    elevation: 18, left: 0, position: 'absolute', right: 0, shadowColor: '#101820',
-    shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.16, shadowRadius: 18, zIndex: 50,
+  artwork: {
+    backgroundColor: '#E4E4E6',
+    height: 138,
+    overflow: 'hidden',
+    width: '100%',
   },
-  cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 13 },
-  cardTopRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  categoryBadge: { backgroundColor: '#FFF0F4', borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
-  categoryBadgeText: { color: '#E8245E', fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
-  chevron: { color: '#B3B7BE', fontSize: 28, fontWeight: '300' },
-  createPlaceButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 18, flexDirection: 'row', gap: 3, justifyContent: 'center', minHeight: 44, paddingHorizontal: 13, paddingVertical: 8 },
-  createPlaceButtonPressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
-  createPlaceIcon: { color: '#FFFFFF', fontSize: 17, fontWeight: '700', lineHeight: 19 },
-  createPlaceText: { color: '#FFFFFF', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
-  distanceText: { color: '#8A9099', fontSize: 11, fontWeight: '700' },
-  emptyBody: { color: '#838992', fontSize: 12, marginTop: 7, textAlign: 'center' },
-  emptyState: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 70 },
-  emptyTitle: { color: '#2B3139', fontSize: 16, fontWeight: '900' },
-  eyebrow: { color: '#F52A62', fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginBottom: 3 },
-  filterChip: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 18, borderWidth: 1, justifyContent: 'center', minHeight: 44, paddingHorizontal: 14, paddingVertical: 8 },
-  filterChipActive: { backgroundColor: '#FFF0F4', borderColor: '#FF4A75' },
-  filterContent: { gap: 8, paddingRight: 20 },
-  filterScroll: { flexGrow: 0 },
-  filterText: { color: '#5F6670', fontSize: 12, fontWeight: '800' },
-  filterTextActive: { color: '#EA235B' },
-  filterRowBody: { flex: 1, overflow: 'hidden' },
-  handle: { backgroundColor: 'rgba(75,83,94,0.3)', borderRadius: 3, height: 5, width: 42 },
-  handleArea: { alignItems: 'center', height: 24, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 64 },
-  headerArea: { paddingHorizontal: 18 },
-  homeContent: { paddingTop: 16 },
-  metaDivider: { color: '#B0B4BA', fontSize: 11 },
-  minimumTouch: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44, padding: 6 },
-  openDot: { backgroundColor: '#18B66A', borderRadius: 4, height: 7, width: 7 },
-  openText: { color: '#158B56', fontSize: 11, fontWeight: '800' },
-  placeName: { color: '#161A20', fontSize: 17, fontWeight: '900', marginBottom: 7, marginTop: 10 },
-  previewActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
-  previewActionsOuter: { marginTop: 0, padding: 18, paddingTop: 0 },
-  previewAddress: { color: '#8A9099', fontSize: 12, marginTop: 3 },
-  previewBody: { padding: 18 },
-  previewCard: { backgroundColor: 'rgba(255,255,255,0.62)', borderColor: 'rgba(255,255,255,0.82)', borderRadius: 22, borderWidth: 1, overflow: 'hidden', shadowColor: '#18202A', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.08, shadowRadius: 14 },
-  previewImage: { backgroundColor: '#26394A', height: 145, justifyContent: 'flex-end', overflow: 'hidden', padding: 14 },
-  previewImageLabel: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
-  previewImageLabelText: { color: '#D91F56', fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
-  previewImageOrb: { backgroundColor: '#F5567F', borderRadius: 90, height: 180, opacity: 0.72, position: 'absolute', right: -20, top: -55, width: 180 },
-  previewName: { color: '#151A20', fontSize: 19, fontWeight: '900' },
-  previewPrimaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 13, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 120, padding: 10 },
-  previewScrollContent: { padding: 18, paddingBottom: 48 },
-  previewSecondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 13, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 120, padding: 10 },
-  previewTitleBody: { flex: 1 },
-  previewTitleRow: { alignItems: 'center', flexDirection: 'row', marginBottom: 12 },
-  primaryButton: { alignItems: 'center', backgroundColor: '#F52A62', borderRadius: 10, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 96, padding: 8 },
-  primaryButtonText: { color: '#FFFFFF', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
-  recommendationCard: { backgroundColor: 'rgba(255,255,255,0.58)', borderColor: 'rgba(255,255,255,0.82)', borderRadius: 20, borderWidth: 1, padding: 15, shadowColor: '#151A20', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 10, width: 255 },
-  recommendationRow: { gap: 12, paddingBottom: 24, paddingHorizontal: 18, paddingTop: 12 },
-  resultBody: { flex: 1 },
-  resultCard: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.28)', borderBottomColor: 'rgba(255,255,255,0.72)', borderBottomWidth: 1, flexDirection: 'row', gap: 13, minHeight: 104, paddingHorizontal: 8, paddingVertical: 13 },
-  resultList: { paddingBottom: 40, paddingHorizontal: 18, paddingTop: 17 },
-  resultName: { color: '#181C22', flex: 1, fontSize: 15, fontWeight: '900' },
-  resultTags: { color: '#737982', fontSize: 11, marginTop: 5 },
-  resultThumb: { alignItems: 'center', backgroundColor: '#293C4E', borderRadius: 14, height: 72, justifyContent: 'center', overflow: 'hidden', width: 72 },
-  resultThumbText: { color: '#FF7599', fontSize: 25, fontWeight: '900' },
-  resultTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginBottom: 5 },
-  searchBar: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.54)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, flex: 1, flexDirection: 'row', minHeight: 48, paddingHorizontal: 14, paddingVertical: 4 },
-  sheetGlass: { ...StyleSheet.absoluteFillObject, borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden' },
-  searchIcon: { color: '#252B33', fontSize: 27, lineHeight: 29, marginRight: 8, transform: [{ rotate: '-20deg' }] },
-  searchInput: { color: '#151A20', flex: 1, fontSize: 15, fontWeight: '600', height: '100%', padding: 0 },
-  profileGlyph: { alignItems: 'center', height: 18, justifyContent: 'flex-end', overflow: 'hidden', width: 18 },
-  profileGlyphBody: { backgroundColor: '#5C636D', borderTopLeftRadius: 7, borderTopRightRadius: 7, height: 9, width: 14 },
-  profileGlyphHead: { backgroundColor: '#5C636D', borderRadius: 4, height: 8, marginBottom: 2, width: 8 },
-  profileIconButton: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1, height: 48, justifyContent: 'center', width: 48 },
-  searchRow: { flexDirection: 'row', gap: 8 },
-  sheetActionRow: { alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 11 },
-  secondaryButton: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 96, padding: 8 },
-  secondaryButtonText: { color: '#B4234D', flexShrink: 1, fontSize: 12, fontWeight: '900', textAlign: 'center' },
-  sectionTitle: { color: '#171B21', fontSize: 20, fontWeight: '900' },
-  sectionTitleRow: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 18 },
-  seeAllText: { color: '#EC245B', fontSize: 12, fontWeight: '800' },
-  sortText: { color: '#707680', fontSize: 11, fontWeight: '700' },
-  statusRow: { alignItems: 'center', flexDirection: 'row', gap: 5 },
-  tag: { backgroundColor: '#F3F4F6', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 6 },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
-  tagText: { color: '#5E6570', fontSize: 10, fontWeight: '800' },
-  topSheen: { backgroundColor: 'rgba(255,255,255,0.64)', borderRadius: 2, height: 1, left: 34, position: 'absolute', right: 34, top: 1 },
-  verifiedText: { color: '#777D86', fontSize: 11, marginTop: 5 },
-  waitText: { color: '#4E555F', fontSize: 11, fontWeight: '700' },
+  bottomSheet: {
+    bottom: 0,
+    left: 0,
+    overflow: 'visible',
+    position: 'absolute',
+    right: 0,
+    zIndex: 50,
+  },
+  sheetChrome: {
+    backgroundColor: 'rgba(248,248,248,0.64)',
+    borderColor: 'rgba(255,255,255,0.86)',
+    borderRadius: 36,
+    borderBottomLeftRadius: 48,
+    borderBottomRightRadius: 48,
+    borderWidth: 1,
+    flex: 1,
+    overflow: 'hidden',
+  },
+  sheetChromeShadow: {
+    backgroundColor: 'rgba(244,246,248,0.08)',
+    borderRadius: 36,
+    borderBottomLeftRadius: 48,
+    borderBottomRightRadius: 48,
+    elevation: 22,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    shadowColor: '#10141A',
+    shadowOffset: { width: 0, height: -7 },
+    shadowOpacity: 0.17,
+    shadowRadius: 24,
+    top: 0,
+  },
+  cardRow: {
+    gap: 16,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  emptyCardBody: { color: '#81838C', fontSize: 11, marginTop: 4, textAlign: 'center' },
+  emptyCardIcon: {
+    alignItems: 'center',
+    backgroundColor: '#FFF0F4',
+    borderRadius: 20,
+    height: 44,
+    justifyContent: 'center',
+    marginBottom: 8,
+    width: 44,
+  },
+  emptyCardTitle: { color: '#30323A', fontSize: 14, fontWeight: '800' },
+  expandedContent: { paddingBottom: 112 },
+  expandedFeaturedRow: {
+    gap: 16,
+    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+  },
+  expandedScroll: { flex: 1 },
+  expandedTitle: {
+    color: '#363840',
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 27,
+    paddingHorizontal: 18,
+  },
+  expandedTitleAccent: { color: '#FF1956' },
+  favoriteButton: { bottom: 13, position: 'absolute', right: 11 },
+  categoryChip: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.76)',
+    borderColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 22,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 7,
+    height: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+    shadowColor: '#15181E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 9,
+  },
+  categoryChipActive: {
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderColor: '#FF1956',
+  },
+  categoryChipLabel: { color: '#5E5E66', fontSize: 14, fontWeight: '700' },
+  categoryChipLabelActive: { color: '#FF1956' },
+  categoryRow: {
+    gap: 9,
+    paddingBottom: 16,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+  },
+  gridArtwork: { height: 138 },
+  gridCard: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    borderWidth: 1,
+    flexBasis: '47%',
+    flexGrow: 1,
+    height: 196,
+    maxWidth: '48%',
+    overflow: 'hidden',
+    shadowColor: '#12161D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.09,
+    shadowRadius: 9,
+  },
+  gridCardBody: { flex: 1, paddingHorizontal: 8, paddingVertical: 12 },
+  gridCardDistance: { color: '#73757D', fontSize: 11, marginTop: 2, paddingRight: 29 },
+  gridCardName: { color: '#25272D', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
+  gridFavoriteButton: { bottom: 12, position: 'absolute', right: 10 },
+  gridRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    paddingHorizontal: 16,
+  },
+  handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
+  handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
+  handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
+  navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
+  navItem: {
+    alignItems: 'center',
+    borderRadius: 27,
+    flex: 1,
+    gap: 3,
+    height: 54,
+    justifyContent: 'center',
+  },
+  navItemActive: {
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    elevation: 1,
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+  },
+  navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
+  navLabelActive: { color: '#FF245B', fontWeight: '700' },
+  navigationBar: {
+    backgroundColor: '#EFEFF2',
+    borderRadius: 32,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 0,
+    height: 64,
+    overflow: 'hidden',
+    padding: 5,
+  },
+  navigationRow: {
+    bottom: 12,
+    flexDirection: 'row',
+    gap: 12,
+    left: 24,
+    position: 'absolute',
+    right: 24,
+  },
+  navigationShadow: {
+    backgroundColor: '#EFEFF2',
+    borderRadius: 32,
+    elevation: 2,
+    flex: 1,
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+  },
+  placeCard: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 199,
+    overflow: 'hidden',
+    shadowColor: '#12161D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    width: 242,
+  },
+  placeCardBody: { flex: 1, paddingHorizontal: 8, paddingVertical: 12 },
+  placeCardDistance: { color: '#73757D', fontSize: 12, marginTop: 2 },
+  placeCardName: { color: '#25272D', fontSize: 16, fontWeight: '900', paddingRight: 35 },
+  pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
+  previewAddress: { color: '#747780', fontSize: 12, marginTop: 4 },
+  previewBack: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' },
+  previewBackText: { color: '#5E616A', fontSize: 12, fontWeight: '700' },
+  previewBody: { padding: 14 },
+  previewContent: { paddingHorizontal: 16 },
+  previewDistance: { color: '#6D7079', fontSize: 12 },
+  previewMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+  previewMore: { color: '#FF245B', fontSize: 12, fontWeight: '800' },
+  previewName: { color: '#22242A', fontSize: 18, fontWeight: '900' },
+  previewPanel: {
+    backgroundColor: 'rgba(255,255,255,0.84)',
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  resultAddress: { color: '#7A7D85', fontSize: 11, marginTop: 3 },
+  resultDistance: { color: '#686B73', fontSize: 11, fontWeight: '700' },
+  resultName: { color: '#272930', fontSize: 14, fontWeight: '800' },
+  resultRow: {
+    alignItems: 'center',
+    borderBottomColor: 'rgba(255,255,255,0.8)',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    minHeight: 72,
+  },
+  resultTextBody: { flex: 1 },
+  resultThumbnail: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,240,244,0.86)',
+    borderRadius: 13,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  resultsContent: { paddingBottom: 105, paddingHorizontal: 17 },
+  resultsCount: { color: '#FF245B', fontSize: 13, fontWeight: '900' },
+  resultsTitle: { color: '#24262C', flex: 1, fontSize: 18, fontWeight: '900' },
+  resultsTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingBottom: 8, paddingTop: 6 },
+  segment: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    borderRadius: 22,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  segmentActive: {
+    backgroundColor: 'rgba(255,255,255,0.60)',
+  },
+  segmentFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(228,228,230,0.42)',
+  },
+  segmentLabel: {
+    color: '#767680',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 21,
+  },
+  segmentLabelActive: { color: '#FF1956', fontWeight: '700' },
+  segmentOuter: {
+    alignItems: 'stretch',
+    backgroundColor: 'rgba(228,228,230,0.48)',
+    borderColor: 'rgba(255,255,255,0.52)',
+    borderRadius: 24,
+    borderWidth: 1,
+    flexDirection: 'row',
+    height: 48,
+    overflow: 'hidden',
+    padding: 3,
+    width: '100%',
+  },
+  segmentShadow: {
+    alignSelf: 'center',
+    borderRadius: 24,
+    maxWidth: 370,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    width: '100%',
+  },
+  sendButton: {
+    alignItems: 'center',
+    backgroundColor: '#EFEFF2',
+    borderRadius: 32,
+    elevation: 2,
+    height: 64,
+    justifyContent: 'center',
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    width: 64,
+  },
+  sendIconSurface: {
+    alignItems: 'center',
+    borderRadius: 28,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+  },
+  sheetGlass: {
+    // Bottom corners are clipped by the animated sheetChrome, so the blur layer stays square there.
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 36,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
+  },
+  sheetContent: { flex: 1 },
+  // Content keeps a constant inset so dragging never re-lays out the card lists.
+  sheetInner: { flex: 1, paddingHorizontal: SHEET_RESTING_GAP },
+  sheetTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(248,248,248,0.62)',
+  },
 });
-
-export default MapBottomSheet;
