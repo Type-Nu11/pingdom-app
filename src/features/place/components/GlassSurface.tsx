@@ -9,6 +9,7 @@ import {
 } from 'expo-glass-effect';
 
 type GlassSurfaceProps = ViewProps & {
+  androidBlurEnabled?: boolean;
   blurTarget?: BlurViewProps['blurTarget'];
   glassEffectStyle?: GlassViewProps['glassEffectStyle'];
   intensity?: number;
@@ -43,6 +44,7 @@ export const supportsAndroidNativeBlur = () => (
 );
 
 const GlassSurface = ({
+  androidBlurEnabled = true,
   blurTarget,
   children,
   glassEffectStyle = 'clear',
@@ -54,7 +56,9 @@ const GlassSurface = ({
 }: GlassSurfaceProps) => {
   const inheritedBlurTarget = useContext(GlassBlurTargetContext);
   const resolvedBlurTarget = blurTarget ?? inheritedBlurTarget;
-  const shouldUseAndroidBlur = Boolean(resolvedBlurTarget) && supportsAndroidNativeBlur();
+  const shouldUseAndroidBlur = androidBlurEnabled
+    && Boolean(resolvedBlurTarget)
+    && supportsAndroidNativeBlur();
 
   if (supportsNativeLiquidGlass()) {
     return (

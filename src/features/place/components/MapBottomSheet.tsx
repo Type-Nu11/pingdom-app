@@ -149,6 +149,7 @@ const FeedSegment = ({
 }) => (
   <View style={styles.segmentShadow}>
     <GlassSurface
+      androidBlurEnabled={false}
       glassEffectStyle="regular"
       intensity={100}
       style={styles.segmentOuter}
