@@ -527,14 +527,14 @@ const BottomNavigation = ({
       <GlassSurface
         glassEffectStyle="regular"
         intensity={100}
-        interactive
+        pointerEvents="none"
         style={styles.sendGlass}
         tintColor="rgba(255,255,255,0.36)"
-      >
-        <View pointerEvents="none" style={styles.navigationFrost} />
-        <View pointerEvents="none" style={styles.sendStroke} />
+      />
+      <View pointerEvents="none" style={styles.sendIconSurface}>
         <PlaceRecommendAsset height={28} width={28} />
-      </GlassSurface>
+      </View>
+      <View pointerEvents="none" style={styles.sendHighlight} />
     </Pressable>
   </Animated.View>
 );
@@ -956,8 +956,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sendButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.36)',
     borderRadius: 32,
     height: 64,
+    justifyContent: 'center',
     shadowColor: '#11151B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
@@ -965,25 +968,23 @@ const styles = StyleSheet.create({
     width: 64,
   },
   sendGlass: {
-    alignItems: 'center',
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.36)',
-    borderColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 32,
+    overflow: 'hidden',
+  },
+  sendHighlight: {
+    ...StyleSheet.absoluteFillObject,
+    borderColor: 'rgba(255,255,255,0.82)',
     borderRadius: 32,
     borderWidth: 1,
-    height: 64,
-    justifyContent: 'center',
-    overflow: 'hidden',
-    width: 64,
   },
-  sendStroke: {
-    ...StyleSheet.absoluteFillObject,
-    borderColor: 'rgba(94,94,102,0.08)',
-    borderRadius: 31,
-    borderWidth: 1,
-    bottom: 1,
-    left: 1,
-    right: 1,
-    top: 1,
+  sendIconSurface: {
+    alignItems: 'center',
+    borderRadius: 28,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
   },
   sheetGlass: {
     ...StyleSheet.absoluteFillObject,
