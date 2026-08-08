@@ -10,15 +10,18 @@ import MapBottomSheet, {
   type DecisionPlace,
   type VisitFilter,
 } from '../components/MapBottomSheet';
+import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
 import { GlassBlurTargetProvider } from '../components/GlassSurface';
 import MapCanvas from '../components/MapCanvas';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
+import { useBookmarkedPlaces } from '../hooks/useBookmarkedPlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useProfile } from '../../profile/hooks/useProfile';
+import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
@@ -100,7 +103,6 @@ type MapScreenProps = {
   } | null;
   onClearOpenedBookmarkedPlace?: () => void;
   onCreatePlace?: () => void;
-  onOpenLikedPlaces?: () => void;
   onOpenPlaceDetail?: (placeId: string) => void;
   onOpenProfile?: () => void;
   onOpenSavedPlaces?: () => void;
@@ -109,7 +111,6 @@ type MapScreenProps = {
 
 export default function MapScreen({
   onCreatePlace,
-  onOpenLikedPlaces,
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
@@ -133,6 +134,9 @@ export default function MapScreen({
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
+  const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
+  const { places: bookmarkedPlaces } = useBookmarkedPlaces(mapSection === 'favorites');
+  const { posts: bookmarkedPosts } = useBookmarkedPosts({ enabled: mapSection === 'favorites' });
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
   // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
@@ -177,6 +181,24 @@ export default function MapScreen({
     if (recommendations.length > 0) return recommendations;
     return livePlaces.length > 0 ? livePlaces : mockPlaces;
   }, [apiPlaces, mockPlaces, recommendedPlaces]);
+  const favoritePlaces = useMemo(() => {
+    if (bookmarkedPlaces.length > 0) {
+      return bookmarkedPlaces.map(toDecisionPlace);
+    }
+
+    const bookmarkedIds = new Set(bookmarkedPosts.map((post) => post.placeId));
+    return allPlaces.filter((place) => bookmarkedIds.has(place.id));
+  }, [allPlaces, bookmarkedPlaces, bookmarkedPosts]);
+  const favoriteImageUrlsByPlaceId = useMemo(() => (
+    bookmarkedPosts.reduce<Record<string, string[]>>((acc, post) => {
+      if (!post.imageUrl?.trim()) return acc;
+      const key = String(post.placeId);
+      const current = acc[key] ?? [];
+      if (!current.includes(post.imageUrl)) current.push(post.imageUrl);
+      acc[key] = current;
+      return acc;
+    }, {})
+  ), [bookmarkedPosts]);
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
     return allPlaces.find((place) => place.id === content.placeId) ?? null;
@@ -281,6 +303,12 @@ export default function MapScreen({
 
   useFocusEffect(useCallback(() => {
     return registerAndroidBackOverride(() => {
+      if (mapSection === 'favorites') {
+        setMapSection('map');
+        snapTo('medium');
+        return true;
+      }
+
       const action = getMapBackAction(content, snapPoint);
 
       if (action === 'show-home') {
@@ -297,7 +325,7 @@ export default function MapScreen({
 
       return false;
     });
-  }, [content, snapPoint, snapTo]));
+  }, [content, mapSection, snapPoint, snapTo]));
   const handleGoNow = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.goNow'),
@@ -345,41 +373,73 @@ export default function MapScreen({
           }}
           query={query}
         />
-        <MapBottomSheet
-        activeFilters={activeFilters}
-        collapsedTranslateY={collapsedTranslateY}
-        content={content}
-        height={fullSheetHeight}
-        mediumTranslateY={mediumTranslateY}
-        onBackHome={handleBackHome}
-        onCouponPress={handleCoupon}
-        onCreatePlace={onCreatePlace}
-        onDetailPress={(place) => onOpenPlaceDetail?.(String(place.id))}
-        onFilterPress={handleFilterPress}
-        onGoNowPress={handleGoNow}
-        onHandlePress={() => {
-          if (snapPoint === 'collapsed') snapTo('medium');
-          else if (snapPoint === 'medium') snapTo('expanded');
-          else snapTo('medium');
-        }}
-        onOpenLikedPlaces={onOpenLikedPlaces}
-        onOpenSavedPlaces={onOpenSavedPlaces}
-        onPlacePress={handlePlacePress}
-        onProfilePress={onOpenProfile}
-        onQueryChange={handleQueryChange}
-        onSearchFocus={handleSearchFocus}
-        onSubmitSearch={() => {
-          setContent({ type: 'results', query });
-          snapTo('expanded');
-        }}
-        panHandlers={panHandlers}
-        places={visiblePlaces}
-        selectedPlace={selectedPlace}
-        sheetChromeBottom={sheetChromeBottom}
-        sheetTranslateY={sheetTranslateY}
-        snapPoint={snapPoint}
-          userName={profile?.username}
-        />
+        {mapSection === 'favorites' ? (
+          <FavoritePlacesBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            height={fullSheetHeight}
+            imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
+            mediumTranslateY={mediumTranslateY}
+            onCreatePlace={onCreatePlace}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenMap={() => {
+              setMapSection('map');
+              snapTo('medium');
+            }}
+            onOpenReservations={onOpenSavedPlaces}
+            onPlacePress={(place) => {
+              setMapSection('map');
+              handlePlacePress(place);
+            }}
+            panHandlers={panHandlers}
+            places={favoritePlaces}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : (
+          <MapBottomSheet
+            activeFilters={activeFilters}
+            collapsedTranslateY={collapsedTranslateY}
+            content={content}
+            height={fullSheetHeight}
+            mediumTranslateY={mediumTranslateY}
+            onBackHome={handleBackHome}
+            onCouponPress={handleCoupon}
+            onCreatePlace={onCreatePlace}
+            onDetailPress={(place) => onOpenPlaceDetail?.(String(place.id))}
+            onFilterPress={handleFilterPress}
+            onGoNowPress={handleGoNow}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenLikedPlaces={() => {
+              setMapSection('favorites');
+              snapTo('medium');
+            }}
+            onOpenSavedPlaces={onOpenSavedPlaces}
+            onPlacePress={handlePlacePress}
+            onProfilePress={onOpenProfile}
+            onQueryChange={handleQueryChange}
+            onSearchFocus={handleSearchFocus}
+            onSubmitSearch={() => {
+              setContent({ type: 'results', query });
+              snapTo('expanded');
+            }}
+            panHandlers={panHandlers}
+            places={visiblePlaces}
+            selectedPlace={selectedPlace}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+            userName={profile?.username}
+          />
+        )}
       </GlassBlurTargetProvider>
     </View>
   );
