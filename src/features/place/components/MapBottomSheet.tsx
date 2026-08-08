@@ -85,6 +85,10 @@ type IconProps = {
 
 type SheetCategory = 'art' | 'fashion' | 'food' | 'music' | 'popup';
 
+// Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
+const SHEET_RESTING_GAP = 8;
+const SHEET_BOTTOM_RADIUS = 48;
+
 const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
   { id: 'popup', label: '팝업' },
   { id: 'music', label: '음악' },
@@ -473,6 +477,28 @@ const PreviewContent = ({
   </View>
 );
 
+const NavItem = ({
+  active = false,
+  icon,
+  label,
+  onPress,
+}: {
+  active?: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onPress?: () => void;
+}) => (
+  <Pressable
+    accessibilityRole="button"
+    accessibilityState={{ selected: active }}
+    onPress={onPress}
+    style={[styles.navItem, active && styles.navItemActive]}
+  >
+    <View style={styles.navIcon}>{icon}</View>
+    <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+  </Pressable>
+);
+
 const BottomNavigation = ({
   bottomInset,
   onCreatePlace,
@@ -496,27 +522,23 @@ const BottomNavigation = ({
     ]}
   >
     <View style={styles.navigationShadow}>
-      <GlassSurface
-        glassEffectStyle="regular"
-        intensity={100}
-        interactive
-        style={styles.navigationGlass}
-        tintColor="rgba(255,255,255,0.36)"
-      >
-        <View pointerEvents="none" style={styles.navigationFrost} />
-        <Pressable accessibilityRole="button" style={[styles.navItem, styles.navItemActive]}>
-          <MapAsset color="#FF1956" height={28} width={28} />
-          <Text style={[styles.navLabel, styles.navLabelActive]}>지도</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={onOpenLikedPlaces} style={styles.navItem}>
-          <StarAsset height={28} width={28} />
-          <Text style={styles.navLabel}>즐겨찾기</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" onPress={onOpenSavedPlaces} style={styles.navItem}>
-          <CheckInAsset height={28} width={28} />
-          <Text style={styles.navLabel}>예약</Text>
-        </Pressable>
-      </GlassSurface>
+      <View style={styles.navigationBar}>
+        <NavItem
+          active
+          icon={<MapAsset color="#FF1956" height={22} width={19} />}
+          label="지도"
+        />
+        <NavItem
+          icon={<StarAsset height={21} width={22} />}
+          label="즐겨찾기"
+          onPress={onOpenLikedPlaces}
+        />
+        <NavItem
+          icon={<CheckInAsset height={22} width={21} />}
+          label="예약"
+          onPress={onOpenSavedPlaces}
+        />
+      </View>
     </View>
     <Pressable
       accessibilityLabel="장소 등록"
@@ -524,17 +546,9 @@ const BottomNavigation = ({
       onPress={onCreatePlace}
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
     >
-      <GlassSurface
-        glassEffectStyle="regular"
-        intensity={100}
-        pointerEvents="none"
-        style={styles.sendGlass}
-        tintColor="rgba(255,255,255,0.36)"
-      />
       <View pointerEvents="none" style={styles.sendIconSurface}>
-        <PlaceRecommendAsset height={28} width={28} />
+        <PlaceRecommendAsset height={23} width={23} />
       </View>
-      <View pointerEvents="none" style={styles.sendHighlight} />
     </Pressable>
   </Animated.View>
 );
@@ -578,6 +592,19 @@ export default function MapBottomSheet({
     inputRange: [mediumTranslateY, collapsedTranslateY],
     outputRange: [0, 22],
   });
+  // Expanded sheet goes full-bleed: resting gap and bottom corners collapse to 0.
+  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
+  const chromeGap = sheetChromeBottom.interpolate({
+    extrapolate: 'clamp',
+    inputRange: chromeGapRange,
+    outputRange: [0, SHEET_RESTING_GAP],
+  });
+  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
+  const chromeBottomRadius = sheetChromeBottom.interpolate({
+    extrapolate: 'clamp',
+    inputRange: chromeGapRange,
+    outputRange: [0, SHEET_BOTTOM_RADIUS],
+  });
 
   return (
     <Animated.View
@@ -585,9 +612,24 @@ export default function MapBottomSheet({
     >
       <Animated.View
         pointerEvents="none"
-        style={[styles.sheetChromeShadow, { bottom: sheetChromeBottom }]}
+        style={[
+          styles.sheetChromeShadow,
+          {
+            bottom: chromeBottomInset,
+            left: chromeGap,
+            right: chromeGap,
+          },
+        ]}
       >
-        <View style={styles.sheetChrome}>
+        <Animated.View
+          style={[
+            styles.sheetChrome,
+            {
+              borderBottomLeftRadius: chromeBottomRadius,
+              borderBottomRightRadius: chromeBottomRadius,
+            },
+          ]}
+        >
           <GlassSurface
             glassEffectStyle="regular"
             intensity={100}
@@ -595,8 +637,9 @@ export default function MapBottomSheet({
             tintColor="rgba(248,248,248,0.20)"
           />
           <View style={styles.sheetTint} />
-        </View>
+        </Animated.View>
       </Animated.View>
+      <View style={styles.sheetInner}>
       <View style={styles.handleArea} {...panHandlers}>
         <Pressable
           accessibilityLabel="추천 패널 크기 조절"
@@ -669,6 +712,7 @@ export default function MapBottomSheet({
         </>
       )}
       </Animated.View>
+      </View>
 
       <BottomNavigation
         bottomInset={insets.bottom}
@@ -689,11 +733,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   bottomSheet: {
-    bottom: 8,
-    left: 8,
+    bottom: 0,
+    left: 0,
     overflow: 'visible',
     position: 'absolute',
-    right: 8,
+    right: 0,
     zIndex: 50,
   },
   sheetChrome: {
@@ -817,36 +861,45 @@ const styles = StyleSheet.create({
   handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
   handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
-  navItem: { alignItems: 'center', borderRadius: 28, gap: 0, height: 56, justifyContent: 'center', width: 78 },
-  navItemActive: { backgroundColor: 'rgba(228,228,230,0.56)' },
-  navLabel: { color: '#3E4149', fontSize: 10, fontWeight: '700' },
-  navLabelActive: { color: '#FF245B' },
-  navigationGlass: {
-    backgroundColor: 'rgba(255,255,255,0.36)',
-    borderColor: 'rgba(255,255,255,0.82)',
+  navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
+  navItem: {
+    alignItems: 'center',
+    borderRadius: 27,
+    flex: 1,
+    gap: 3,
+    height: 54,
+    justifyContent: 'center',
+  },
+  navItemActive: {
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    elevation: 1,
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+  },
+  navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
+  navLabelActive: { color: '#FF245B', fontWeight: '700' },
+  navigationBar: {
+    backgroundColor: '#EFEFF2',
     borderRadius: 32,
-    borderWidth: 1,
     flex: 1,
     flexDirection: 'row',
-    gap: 18,
+    gap: 0,
     height: 64,
     overflow: 'hidden',
-    padding: 4,
-  },
-  navigationFrost: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.42)',
+    padding: 5,
   },
   navigationRow: {
     bottom: 12,
     flexDirection: 'row',
     gap: 12,
-    left: 16,
+    left: 24,
     position: 'absolute',
-    right: 16,
+    right: 24,
   },
   navigationShadow: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#EFEFF2',
     borderRadius: 32,
     elevation: 2,
     flex: 1,
@@ -957,8 +1010,9 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.36)',
+    backgroundColor: '#EFEFF2',
     borderRadius: 32,
+    elevation: 2,
     height: 64,
     justifyContent: 'center',
     shadowColor: '#11151B',
@@ -966,18 +1020,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 10,
     width: 64,
-  },
-  sendGlass: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.36)',
-    borderRadius: 32,
-    overflow: 'hidden',
-  },
-  sendHighlight: {
-    ...StyleSheet.absoluteFillObject,
-    borderColor: 'rgba(255,255,255,0.82)',
-    borderRadius: 32,
-    borderWidth: 1,
   },
   sendIconSurface: {
     alignItems: 'center',
@@ -987,13 +1029,16 @@ const styles = StyleSheet.create({
     width: 56,
   },
   sheetGlass: {
+    // Bottom corners are clipped by the animated sheetChrome, so the blur layer stays square there.
     ...StyleSheet.absoluteFillObject,
     borderRadius: 36,
-    borderBottomLeftRadius: 48,
-    borderBottomRightRadius: 48,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   sheetContent: { flex: 1 },
+  // Content keeps a constant inset so dragging never re-lays out the card lists.
+  sheetInner: { flex: 1, paddingHorizontal: SHEET_RESTING_GAP },
   sheetTint: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(248,248,248,0.62)',

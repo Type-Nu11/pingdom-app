@@ -25,6 +25,9 @@ import { getMapBackAction } from '../utils/mapBack';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
 
+// Matches SHEET_RESTING_GAP in MapBottomSheet.
+const SHEET_RESTING_GAP = 8;
+
 const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] => [
   {
     address: 'Seongsu-dong 2-ga · 4 min walk',
@@ -132,10 +135,12 @@ export default function MapScreen({
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
-  const fullSheetHeight = Math.round(height - expandedSheetTop - 8);
+  // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
+  // so the expanded state can go edge to edge without drawing outside its parent.
+  const fullSheetHeight = Math.round(height - expandedSheetTop);
   const designScale = Math.min(Math.max(width / 402, 0.9), 1.1);
-  const collapsedVisibleHeight = Math.round(101 * designScale);
-  const mediumVisibleHeight = Math.round(378 * designScale);
+  const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
+  const mediumVisibleHeight = Math.round(378 * designScale) + SHEET_RESTING_GAP;
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
   const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
