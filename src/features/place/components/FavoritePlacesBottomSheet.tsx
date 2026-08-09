@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Animated,
   GestureResponderHandlers,
@@ -30,12 +30,15 @@ type FavoritePlacesBottomSheetProps = {
   collapsedTranslateY: number;
   height: number;
   imageUrlsByPlaceId: Record<string, string[]>;
+  isError: boolean;
+  isLoading: boolean;
   mediumTranslateY: number;
   onCreatePlace?: () => void;
   onHandlePress: () => void;
   onOpenMap: () => void;
   onOpenReservations?: () => void;
   onPlacePress: (place: DecisionPlace) => void;
+  onRetry: () => void;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
   sheetChromeBottom: Animated.Value;
@@ -45,7 +48,6 @@ type FavoritePlacesBottomSheetProps = {
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
-const FALLBACK_IMAGE_URL = 'https://placehold.co/700x360.png';
 
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
@@ -110,6 +112,29 @@ const MoreIcon = () => (
   </Svg>
 );
 
+const FavoriteImage = ({ uri }: { uri?: string }) => {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => setHasError(false), [uri]);
+
+  if (!uri || hasError) {
+    return (
+      <View style={[styles.placeImage, styles.imagePlaceholder]}>
+        <MyPlaceAsset height={30} width={30} />
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      onError={() => setHasError(true)}
+      resizeMode="cover"
+      source={{ uri }}
+      style={styles.placeImage}
+    />
+  );
+};
+
 const FavoritePlaceRow = ({
   imageUrls,
   onPress,
@@ -119,8 +144,7 @@ const FavoritePlaceRow = ({
   onPress: () => void;
   place: DecisionPlace;
 }) => {
-  const sources = imageUrls.length > 0 ? imageUrls.slice(0, 2) : [FALLBACK_IMAGE_URL];
-  if (sources.length === 1) sources.push(sources[0]);
+  const sources = imageUrls.slice(0, 2);
 
   return (
     <Pressable
@@ -139,24 +163,13 @@ const FavoritePlaceRow = ({
             {formatDistance(place)} · {place.address}
           </Text>
         </View>
-        <Pressable
-          accessibilityLabel={`${place.name} 더보기`}
-          hitSlop={8}
-          onPress={(event) => event.stopPropagation()}
-          style={styles.moreButton}
-        >
+        <View pointerEvents="none" style={styles.moreButton}>
           <MoreIcon />
-        </Pressable>
+        </View>
       </View>
       <View style={styles.imageRow}>
-        {sources.map((uri, index) => (
-          <Image
-            key={`${uri}-${index}`}
-            resizeMode="cover"
-            source={{ uri }}
-            style={styles.placeImage}
-          />
-        ))}
+        <FavoriteImage uri={sources[0]} />
+        <FavoriteImage uri={sources[1] ?? sources[0]} />
       </View>
     </Pressable>
   );
@@ -186,7 +199,7 @@ const BottomNavigation = ({
   >
     <View style={styles.navigationShadow}>
       <View style={styles.navigationBar}>
-        <Pressable onPress={onOpenMap} style={styles.navItem}>
+        <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
           <MapAsset color="#3B3B40" height={22} width={19} />
           <Text style={styles.navLabel}>지도</Text>
         </Pressable>
@@ -194,7 +207,7 @@ const BottomNavigation = ({
           <ActiveNavStar />
           <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
         </View>
-        <Pressable onPress={onOpenReservations} style={styles.navItem}>
+        <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
           <CheckInAsset height={22} width={21} />
           <Text style={styles.navLabel}>예약</Text>
         </Pressable>
@@ -202,6 +215,7 @@ const BottomNavigation = ({
     </View>
     <Pressable
       accessibilityLabel="장소 등록"
+      accessibilityRole="button"
       onPress={onCreatePlace}
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
     >
@@ -214,12 +228,15 @@ export default function FavoritePlacesBottomSheet({
   collapsedTranslateY,
   height,
   imageUrlsByPlaceId,
+  isError,
+  isLoading,
   mediumTranslateY,
   onCreatePlace,
   onHandlePress,
   onOpenMap,
   onOpenReservations,
   onPlacePress,
+  onRetry,
   panHandlers,
   places,
   sheetChromeBottom,
@@ -297,6 +314,7 @@ export default function FavoritePlacesBottomSheet({
             contentContainerStyle={styles.categoryContent}
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
           >
             {categories.map(({ Icon, id, label }) => {
               const active = activeCategory === id;
@@ -315,27 +333,45 @@ export default function FavoritePlacesBottomSheet({
             })}
           </ScrollView>
 
-          <ScrollView
-            contentContainerStyle={styles.listContent}
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={false}
-            style={styles.list}
+          <View
+            style={[
+              styles.listViewport,
+              snapPoint === 'medium' && styles.listViewportMedium,
+            ]}
           >
-            {filteredPlaces.length > 0 ? filteredPlaces.map((place) => (
-              <FavoritePlaceRow
-                imageUrls={imageUrlsByPlaceId[String(place.id)] ?? []}
-                key={place.id}
-                onPress={() => onPlacePress(place)}
-                place={place}
-              />
-            )) : (
-              <View style={styles.emptyState}>
-                <HeaderStar />
-                <Text style={styles.emptyTitle}>저장한 장소가 없어요</Text>
-                <Text style={styles.emptyBody}>마음에 드는 장소의 별을 눌러 모아보세요.</Text>
-              </View>
-            )}
-          </ScrollView>
+            <ScrollView
+              contentContainerStyle={styles.listContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+              style={styles.list}
+            >
+              {filteredPlaces.length > 0 ? filteredPlaces.map((place) => (
+                <FavoritePlaceRow
+                  imageUrls={imageUrlsByPlaceId[String(place.id)] ?? []}
+                  key={place.id}
+                  onPress={() => onPlacePress(place)}
+                  place={place}
+                />
+              )) : isLoading ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyTitle}>저장한 장소를 불러오는 중이에요</Text>
+                </View>
+              ) : isError ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyTitle}>장소를 불러오지 못했어요</Text>
+                  <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
+                    <Text style={styles.retryLabel}>다시 시도</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <HeaderStar />
+                  <Text style={styles.emptyTitle}>저장한 장소가 없어요</Text>
+                  <Text style={styles.emptyBody}>마음에 드는 장소의 별을 눌러 모아보세요.</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
         </Animated.View>
       </View>
 
@@ -360,6 +396,7 @@ const styles = StyleSheet.create({
   categoryContent: { gap: 8, paddingBottom: 12, paddingHorizontal: 16, paddingTop: 10 },
   categoryLabel: { color: '#616169', fontSize: 14, fontWeight: '700' },
   categoryLabelActive: { color: '#FF245B' },
+  categoryScroll: { flexGrow: 0, height: 58 },
   content: { flex: 1 },
   emptyBody: { color: '#777982', fontSize: 13, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingTop: 42 },
@@ -367,9 +404,12 @@ const styles = StyleSheet.create({
   handle: { backgroundColor: 'rgba(80,83,91,0.31)', borderRadius: 3, height: 5, width: 55 },
   handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
+  imagePlaceholder: { alignItems: 'center', backgroundColor: '#E7E7EA', justifyContent: 'center' },
   imageRow: { borderRadius: 15, flexDirection: 'row', height: 120, overflow: 'hidden' },
   list: { flex: 1 },
   listContent: { paddingBottom: 116, paddingHorizontal: 16 },
+  listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
+  listViewportMedium: { flex: 0, height: 182, marginBottom: 0 },
   moreButton: { alignItems: 'center', height: 30, justifyContent: 'center', width: 24 },
   nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5 },
   navItem: { alignItems: 'center', borderRadius: 27, flex: 1, gap: 3, height: 54, justifyContent: 'center' },
@@ -387,10 +427,12 @@ const styles = StyleSheet.create({
   placeRow: { marginBottom: 14 },
   placeText: { flex: 1 },
   pressed: { opacity: 0.72 },
+  retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
+  retryLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
   sendButton: { alignItems: 'center', backgroundColor: 'rgba(245,245,247,0.96)', borderRadius: 33, elevation: 4, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 12, width: 64 },
   sheetChrome: { backgroundColor: 'rgba(248,248,248,0.68)', borderColor: 'rgba(255,255,255,0.88)', borderRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, borderWidth: 1, flex: 1, overflow: 'hidden' },
   sheetChromeShadow: { backgroundColor: 'rgba(244,246,248,0.08)', borderRadius: 36, elevation: 22, left: 0, position: 'absolute', right: 0, shadowColor: '#10141A', shadowOffset: { width: 0, height: -7 }, shadowOpacity: 0.17, shadowRadius: 24, top: 0 },
-  sheetInner: { flex: 1 },
+  sheetInner: { flex: 1, overflow: 'hidden' },
   sheetTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(250,250,251,0.42)' },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
