@@ -21,12 +21,31 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useProfile } from '../../profile/hooks/useProfile';
-import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
+const FAVORITE_MOCK_PLACE_IDS = [139001, 139002, 139003, 139004] as const;
+
+const FAVORITE_MOCK_IMAGE_URLS: Record<string, string[]> = {
+  [FAVORITE_MOCK_PLACE_IDS[0]]: [
+    'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&auto=format&fit=crop',
+  ],
+  [FAVORITE_MOCK_PLACE_IDS[1]]: [
+    'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=900&auto=format&fit=crop',
+  ],
+  [FAVORITE_MOCK_PLACE_IDS[2]]: [
+    'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=900&auto=format&fit=crop',
+  ],
+  [FAVORITE_MOCK_PLACE_IDS[3]]: [
+    'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=900&auto=format&fit=crop',
+  ],
+};
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
@@ -76,6 +95,61 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     verifiedMinutes: 24,
     wait: '20–30 min',
     waitMinutes: [20, 30],
+  },
+];
+
+const makeFavoriteMockPlaces = (latitude: number, longitude: number): DecisionPlace[] => [
+  {
+    address: '경기도 고양시 일산서구 중앙로 1601',
+    category: 'MUSIC',
+    distance: '12.3km',
+    distanceMeters: 12300,
+    id: FAVORITE_MOCK_PLACE_IDS[0],
+    latitude: latitude + 0.0022,
+    longitude: longitude - 0.0015,
+    name: '고양종합운동장',
+    tags: [],
+    verifiedAgo: 'recently',
+    wait: '10–20 min',
+  },
+  {
+    address: '서울 성동구 아차산로 200',
+    category: 'FASHION',
+    distance: '850m',
+    distanceMeters: 850,
+    id: FAVORITE_MOCK_PLACE_IDS[1],
+    latitude: latitude - 0.0014,
+    longitude: longitude + 0.0018,
+    name: '성수 커먼그라운드',
+    tags: [],
+    verifiedAgo: 'recently',
+    wait: '5–10 min',
+  },
+  {
+    address: '서울 성동구 연무장길 41',
+    category: 'RESTAURANT',
+    distance: '1.2km',
+    distanceMeters: 1200,
+    id: FAVORITE_MOCK_PLACE_IDS[2],
+    latitude: latitude + 0.0011,
+    longitude: longitude + 0.0025,
+    name: '커먼 테이블 성수',
+    tags: [],
+    verifiedAgo: 'recently',
+    wait: '20–30 min',
+  },
+  {
+    address: '서울 강남구 도산대로 45길 10',
+    category: 'BEAUTY',
+    distance: '3.4km',
+    distanceMeters: 3400,
+    id: FAVORITE_MOCK_PLACE_IDS[3],
+    latitude: latitude - 0.0021,
+    longitude: longitude - 0.0019,
+    name: '어뮤즈 쇼룸',
+    tags: [],
+    verifiedAgo: 'recently',
+    wait: '10–20 min',
   },
 ];
 
@@ -135,8 +209,14 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
-  const { places: bookmarkedPlaces } = useBookmarkedPlaces(mapSection === 'favorites');
-  const { posts: bookmarkedPosts } = useBookmarkedPosts({ enabled: mapSection === 'favorites' });
+  const {
+    bookmarkedPlaceIds,
+    imageUrlsByPlaceId: favoriteImageUrlsByPlaceId,
+    isError: isFavoritesError,
+    isLoading: isFavoritesLoading,
+    places: bookmarkedPlaces,
+    refetch: refetchFavorites,
+  } = useBookmarkedPlaces(mapSection === 'favorites');
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
   // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
@@ -170,6 +250,10 @@ export default function MapScreen({
     () => makeMockPlaces(center.lat, center.lng),
     [center.lat, center.lng],
   );
+  const favoriteMockPlaces = useMemo(
+    () => makeFavoriteMockPlaces(center.lat, center.lng),
+    [center.lat, center.lng],
+  );
   const allPlaces = useMemo(() => {
     const recommendations = recommendedPlaces
       .slice(0, 8)
@@ -181,28 +265,25 @@ export default function MapScreen({
     if (recommendations.length > 0) return recommendations;
     return livePlaces.length > 0 ? livePlaces : mockPlaces;
   }, [apiPlaces, mockPlaces, recommendedPlaces]);
-  const favoritePlaces = useMemo(() => {
+  const resolvedFavoritePlaces = useMemo(() => {
     if (bookmarkedPlaces.length > 0) {
       return bookmarkedPlaces.map(toDecisionPlace);
     }
 
-    const bookmarkedIds = new Set(bookmarkedPosts.map((post) => post.placeId));
-    return allPlaces.filter((place) => bookmarkedIds.has(place.id));
-  }, [allPlaces, bookmarkedPlaces, bookmarkedPosts]);
-  const favoriteImageUrlsByPlaceId = useMemo(() => (
-    bookmarkedPosts.reduce<Record<string, string[]>>((acc, post) => {
-      if (!post.imageUrl?.trim()) return acc;
-      const key = String(post.placeId);
-      const current = acc[key] ?? [];
-      if (!current.includes(post.imageUrl)) current.push(post.imageUrl);
-      acc[key] = current;
-      return acc;
-    }, {})
-  ), [bookmarkedPosts]);
+    return allPlaces.filter((place) => bookmarkedPlaceIds[String(place.id)]);
+  }, [allPlaces, bookmarkedPlaceIds, bookmarkedPlaces]);
+  const shouldUseFavoriteMocks = resolvedFavoritePlaces.length === 0;
+  const favoritePlaces = shouldUseFavoriteMocks
+    ? favoriteMockPlaces
+    : resolvedFavoritePlaces;
+  const displayedFavoriteImageUrls = shouldUseFavoriteMocks
+    ? FAVORITE_MOCK_IMAGE_URLS
+    : favoriteImageUrlsByPlaceId;
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
-    return allPlaces.find((place) => place.id === content.placeId) ?? null;
-  }, [allPlaces, content]);
+    return [...allPlaces, ...favoritePlaces]
+      .find((place) => place.id === content.placeId) ?? null;
+  }, [allPlaces, content, favoritePlaces]);
   const query = content.type === 'search' || content.type === 'results' ? content.query : '';
   const visiblePlaces = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -219,6 +300,17 @@ export default function MapScreen({
       return matchesQuery && matchesFilters;
     });
   }, [activeFilters, allPlaces, query]);
+  const sheetPlaces = useMemo(() => {
+    if (
+      content.type === 'place-preview'
+      && selectedPlace
+      && !visiblePlaces.some((place) => place.id === selectedPlace.id)
+    ) {
+      return [selectedPlace, ...visiblePlaces];
+    }
+
+    return visiblePlaces;
+  }, [content.type, selectedPlace, visiblePlaces]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
     const mockMarkers = mockPlaces
@@ -377,7 +469,9 @@ export default function MapScreen({
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
             height={fullSheetHeight}
-            imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
+            imageUrlsByPlaceId={displayedFavoriteImageUrls}
+            isError={isFavoritesError}
+            isLoading={isFavoritesLoading}
             mediumTranslateY={mediumTranslateY}
             onCreatePlace={onCreatePlace}
             onHandlePress={() => {
@@ -390,6 +484,7 @@ export default function MapScreen({
               snapTo('medium');
             }}
             onOpenReservations={onOpenSavedPlaces}
+            onRetry={() => void refetchFavorites()}
             onPlacePress={(place) => {
               setMapSection('map');
               handlePlacePress(place);
@@ -432,7 +527,7 @@ export default function MapScreen({
               snapTo('expanded');
             }}
             panHandlers={panHandlers}
-            places={visiblePlaces}
+            places={sheetPlaces}
             selectedPlace={selectedPlace}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
