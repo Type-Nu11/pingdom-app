@@ -38,7 +38,6 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
       openedBookmarkedPlaceId={focusedPlaceId ?? null}
       onClearOpenedBookmarkedPlace={clearFocusedPlace}
       onCreatePlace={() => navigation.navigate(MAIN_ROUTES.PlaceCreate)}
-      onOpenLikedPlaces={() => navigation.navigate(MAIN_ROUTES.Profile, { initialTab: 'liked' })}
       onOpenPlaceDetail={(value) => {
         const placeId = parsePlaceId(value);
         if (placeId) {

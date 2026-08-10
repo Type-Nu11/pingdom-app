@@ -10,11 +10,13 @@ import MapBottomSheet, {
   type DecisionPlace,
   type VisitFilter,
 } from '../components/MapBottomSheet';
+import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
 import { GlassBlurTargetProvider } from '../components/GlassSurface';
 import MapCanvas from '../components/MapCanvas';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
+import { useBookmarkedPlaces } from '../hooks/useBookmarkedPlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
@@ -24,6 +26,26 @@ import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
+const FAVORITE_MOCK_PLACE_IDS = [139001, 139002, 139003, 139004] as const;
+
+const FAVORITE_MOCK_IMAGE_URLS: Record<string, string[]> = {
+  [FAVORITE_MOCK_PLACE_IDS[0]]: [
+    'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&auto=format&fit=crop',
+  ],
+  [FAVORITE_MOCK_PLACE_IDS[1]]: [
+    'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=900&auto=format&fit=crop',
+  ],
+  [FAVORITE_MOCK_PLACE_IDS[2]]: [
+    'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=900&auto=format&fit=crop',
+  ],
+  [FAVORITE_MOCK_PLACE_IDS[3]]: [
+    'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=900&auto=format&fit=crop',
+  ],
+};
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
@@ -76,6 +98,61 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
   },
 ];
 
+const makeFavoriteMockPlaces = (latitude: number, longitude: number): DecisionPlace[] => [
+  {
+    address: '경기도 고양시 일산서구 중앙로 1601',
+    category: 'MUSIC',
+    distance: '12.3km',
+    distanceMeters: 12300,
+    id: FAVORITE_MOCK_PLACE_IDS[0],
+    latitude: latitude + 0.0022,
+    longitude: longitude - 0.0015,
+    name: '고양종합운동장',
+    tags: [],
+    verifiedAgo: 'recently',
+    wait: '10–20 min',
+  },
+  {
+    address: '서울 성동구 아차산로 200',
+    category: 'FASHION',
+    distance: '850m',
+    distanceMeters: 850,
+    id: FAVORITE_MOCK_PLACE_IDS[1],
+    latitude: latitude - 0.0014,
+    longitude: longitude + 0.0018,
+    name: '성수 커먼그라운드',
+    tags: [],
+    verifiedAgo: 'recently',
+    wait: '5–10 min',
+  },
+  {
+    address: '서울 성동구 연무장길 41',
+    category: 'RESTAURANT',
+    distance: '1.2km',
+    distanceMeters: 1200,
+    id: FAVORITE_MOCK_PLACE_IDS[2],
+    latitude: latitude + 0.0011,
+    longitude: longitude + 0.0025,
+    name: '커먼 테이블 성수',
+    tags: [],
+    verifiedAgo: 'recently',
+    wait: '20–30 min',
+  },
+  {
+    address: '서울 강남구 도산대로 45길 10',
+    category: 'BEAUTY',
+    distance: '3.4km',
+    distanceMeters: 3400,
+    id: FAVORITE_MOCK_PLACE_IDS[3],
+    latitude: latitude - 0.0021,
+    longitude: longitude - 0.0019,
+    name: '어뮤즈 쇼룸',
+    tags: [],
+    verifiedAgo: 'recently',
+    wait: '10–20 min',
+  },
+];
+
 const toDecisionPlace = (place: Place): DecisionPlace => ({
   ...place,
   address: place.address || 'Nearby place',
@@ -100,7 +177,6 @@ type MapScreenProps = {
   } | null;
   onClearOpenedBookmarkedPlace?: () => void;
   onCreatePlace?: () => void;
-  onOpenLikedPlaces?: () => void;
   onOpenPlaceDetail?: (placeId: string) => void;
   onOpenProfile?: () => void;
   onOpenSavedPlaces?: () => void;
@@ -109,7 +185,6 @@ type MapScreenProps = {
 
 export default function MapScreen({
   onCreatePlace,
-  onOpenLikedPlaces,
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
@@ -133,6 +208,15 @@ export default function MapScreen({
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
+  const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
+  const {
+    bookmarkedPlaceIds,
+    imageUrlsByPlaceId: favoriteImageUrlsByPlaceId,
+    isError: isFavoritesError,
+    isLoading: isFavoritesLoading,
+    places: bookmarkedPlaces,
+    refetch: refetchFavorites,
+  } = useBookmarkedPlaces(mapSection === 'favorites');
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
   // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
@@ -166,6 +250,10 @@ export default function MapScreen({
     () => makeMockPlaces(center.lat, center.lng),
     [center.lat, center.lng],
   );
+  const favoriteMockPlaces = useMemo(
+    () => makeFavoriteMockPlaces(center.lat, center.lng),
+    [center.lat, center.lng],
+  );
   const allPlaces = useMemo(() => {
     const recommendations = recommendedPlaces
       .slice(0, 8)
@@ -177,10 +265,25 @@ export default function MapScreen({
     if (recommendations.length > 0) return recommendations;
     return livePlaces.length > 0 ? livePlaces : mockPlaces;
   }, [apiPlaces, mockPlaces, recommendedPlaces]);
+  const resolvedFavoritePlaces = useMemo(() => {
+    if (bookmarkedPlaces.length > 0) {
+      return bookmarkedPlaces.map(toDecisionPlace);
+    }
+
+    return allPlaces.filter((place) => bookmarkedPlaceIds[String(place.id)]);
+  }, [allPlaces, bookmarkedPlaceIds, bookmarkedPlaces]);
+  const shouldUseFavoriteMocks = resolvedFavoritePlaces.length === 0;
+  const favoritePlaces = shouldUseFavoriteMocks
+    ? favoriteMockPlaces
+    : resolvedFavoritePlaces;
+  const displayedFavoriteImageUrls = shouldUseFavoriteMocks
+    ? FAVORITE_MOCK_IMAGE_URLS
+    : favoriteImageUrlsByPlaceId;
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
-    return allPlaces.find((place) => place.id === content.placeId) ?? null;
-  }, [allPlaces, content]);
+    return [...allPlaces, ...favoritePlaces]
+      .find((place) => place.id === content.placeId) ?? null;
+  }, [allPlaces, content, favoritePlaces]);
   const query = content.type === 'search' || content.type === 'results' ? content.query : '';
   const visiblePlaces = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -197,6 +300,17 @@ export default function MapScreen({
       return matchesQuery && matchesFilters;
     });
   }, [activeFilters, allPlaces, query]);
+  const sheetPlaces = useMemo(() => {
+    if (
+      content.type === 'place-preview'
+      && selectedPlace
+      && !visiblePlaces.some((place) => place.id === selectedPlace.id)
+    ) {
+      return [selectedPlace, ...visiblePlaces];
+    }
+
+    return visiblePlaces;
+  }, [content.type, selectedPlace, visiblePlaces]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
     const mockMarkers = mockPlaces
@@ -281,6 +395,12 @@ export default function MapScreen({
 
   useFocusEffect(useCallback(() => {
     return registerAndroidBackOverride(() => {
+      if (mapSection === 'favorites') {
+        setMapSection('map');
+        snapTo('medium');
+        return true;
+      }
+
       const action = getMapBackAction(content, snapPoint);
 
       if (action === 'show-home') {
@@ -297,7 +417,7 @@ export default function MapScreen({
 
       return false;
     });
-  }, [content, snapPoint, snapTo]));
+  }, [content, mapSection, snapPoint, snapTo]));
   const handleGoNow = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.goNow'),
@@ -345,41 +465,76 @@ export default function MapScreen({
           }}
           query={query}
         />
-        <MapBottomSheet
-        activeFilters={activeFilters}
-        collapsedTranslateY={collapsedTranslateY}
-        content={content}
-        height={fullSheetHeight}
-        mediumTranslateY={mediumTranslateY}
-        onBackHome={handleBackHome}
-        onCouponPress={handleCoupon}
-        onCreatePlace={onCreatePlace}
-        onDetailPress={(place) => onOpenPlaceDetail?.(String(place.id))}
-        onFilterPress={handleFilterPress}
-        onGoNowPress={handleGoNow}
-        onHandlePress={() => {
-          if (snapPoint === 'collapsed') snapTo('medium');
-          else if (snapPoint === 'medium') snapTo('expanded');
-          else snapTo('medium');
-        }}
-        onOpenLikedPlaces={onOpenLikedPlaces}
-        onOpenSavedPlaces={onOpenSavedPlaces}
-        onPlacePress={handlePlacePress}
-        onProfilePress={onOpenProfile}
-        onQueryChange={handleQueryChange}
-        onSearchFocus={handleSearchFocus}
-        onSubmitSearch={() => {
-          setContent({ type: 'results', query });
-          snapTo('expanded');
-        }}
-        panHandlers={panHandlers}
-        places={visiblePlaces}
-        selectedPlace={selectedPlace}
-        sheetChromeBottom={sheetChromeBottom}
-        sheetTranslateY={sheetTranslateY}
-        snapPoint={snapPoint}
-          userName={profile?.username}
-        />
+        {mapSection === 'favorites' ? (
+          <FavoritePlacesBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            height={fullSheetHeight}
+            imageUrlsByPlaceId={displayedFavoriteImageUrls}
+            isError={isFavoritesError}
+            isLoading={isFavoritesLoading}
+            mediumTranslateY={mediumTranslateY}
+            onCreatePlace={onCreatePlace}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenMap={() => {
+              setMapSection('map');
+              snapTo('medium');
+            }}
+            onOpenReservations={onOpenSavedPlaces}
+            onRetry={() => void refetchFavorites()}
+            onPlacePress={(place) => {
+              setMapSection('map');
+              handlePlacePress(place);
+            }}
+            panHandlers={panHandlers}
+            places={favoritePlaces}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : (
+          <MapBottomSheet
+            activeFilters={activeFilters}
+            collapsedTranslateY={collapsedTranslateY}
+            content={content}
+            height={fullSheetHeight}
+            mediumTranslateY={mediumTranslateY}
+            onBackHome={handleBackHome}
+            onCouponPress={handleCoupon}
+            onCreatePlace={onCreatePlace}
+            onDetailPress={(place) => onOpenPlaceDetail?.(String(place.id))}
+            onFilterPress={handleFilterPress}
+            onGoNowPress={handleGoNow}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenLikedPlaces={() => {
+              setMapSection('favorites');
+              snapTo('medium');
+            }}
+            onOpenSavedPlaces={onOpenSavedPlaces}
+            onPlacePress={handlePlacePress}
+            onProfilePress={onOpenProfile}
+            onQueryChange={handleQueryChange}
+            onSearchFocus={handleSearchFocus}
+            onSubmitSearch={() => {
+              setContent({ type: 'results', query });
+              snapTo('expanded');
+            }}
+            panHandlers={panHandlers}
+            places={sheetPlaces}
+            selectedPlace={selectedPlace}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+            userName={profile?.username}
+          />
+        )}
       </GlassBlurTargetProvider>
     </View>
   );
