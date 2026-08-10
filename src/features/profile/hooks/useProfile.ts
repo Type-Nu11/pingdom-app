@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { userQueryKeys } from '../../../v2/features/travel-purposes/model/travelPurposeQueryKeys';
 import { profileApi } from '../api/profileApi';
 
 export const profileQueryKeys = {
-  me: () => ['profile', 'me'] as const,
+  me: userQueryKeys.me,
 };
 
 export const useProfile = () => {

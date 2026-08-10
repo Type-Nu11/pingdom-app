@@ -1,14 +1,11 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { recommendationQueryKeys } from '../../../v2/features/travel-purposes/model/travelPurposeQueryKeys';
 import { placeApi, type GetPlaceRecommendationsRequest } from '../api/placeApi';
 
 export const placeRecommendationQueryKeys = {
-  all: ['placeRecommendations'] as const,
-  list: (params: GetPlaceRecommendationsRequest) => [
-    ...placeRecommendationQueryKeys.all,
-    'list',
-    params,
-  ] as const,
+  all: recommendationQueryKeys.all,
+  list: (params: GetPlaceRecommendationsRequest) => recommendationQueryKeys.list(params),
 };
 
 export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) => {

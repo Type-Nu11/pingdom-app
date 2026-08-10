@@ -1,7 +1,17 @@
 export { ApiError, toApiError } from './ApiError';
-export { apiClient } from './apiClient';
+export {
+  apiClient,
+  configureApiAccessTokenProvider,
+  configureApiTransport,
+} from './apiClient';
 export { getApiErrorUx } from './getApiErrorUx';
-export type { ApiClient, GetRequestOptions, MutationRequestOptions } from './apiClient';
+export type {
+  ApiAccessTokenProvider,
+  ApiClient,
+  ApiTransport,
+  GetRequestOptions,
+  MutationRequestOptions,
+} from './apiClient';
 export type {
   ApiOperationName,
   ApiSchema,

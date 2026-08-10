@@ -8,6 +8,7 @@ import { createPlaceClaimApi } from '../../../features/place-claims/api/placeCla
 import { createPlaceDetailApi } from '../../../features/place-detail/api/placeDetailApi.ts';
 import { createPlaceListApi } from '../../../features/place-list/api/placeListApi.ts';
 import { createReservationApi } from '../../../features/reservations/api/reservationApi.ts';
+import { createTravelPurposeApi } from '../../../features/travel-purposes/api/travelPurposeApi.ts';
 
 test('all MVP API modules keep operation paths, params, bodies, and response identity', async () => {
   const calls = [];
@@ -22,6 +23,10 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
       calls.push({ body, method: 'POST', options, path });
       return response;
     },
+    put: async (path, body, options) => {
+      calls.push({ body, method: 'PUT', options, path });
+      return response;
+    },
   };
 
   const signal = new AbortController().signal;
@@ -32,6 +37,7 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   const offers = createOfferCouponApi(client);
   const reservations = createReservationApi(client);
   const conversion = createConversionApi(client);
+  const travelPurposes = createTravelPurposeApi(client);
 
   const checkInBody = {
     accuracyMeters: 10,
@@ -87,6 +93,8 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
     reservations.confirmOwnedReservation(901, signal),
     reservations.cancelOwnedReservation(901, signal),
     conversion.ingestEvents(conversionBody, signal),
+    travelPurposes.getTravelPurposes(signal),
+    travelPurposes.replaceTravelPurposes({ travelPurposes: ['K_POP', 'FOOD'] }, signal),
   ]);
 
   assert.ok(results.every((result) => result === response));
@@ -113,6 +121,8 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
     'POST /merchant-owner/reservations/901/confirm',
     'POST /merchant-owner/reservations/901/cancel',
     'POST /conversion-events/batch',
+    'GET /users/me/travel-purposes',
+    'PUT /users/me/travel-purposes',
   ]);
 
   assert.deepEqual(calls[0].options.params, { keyword: 'cafe', page: 1 });
@@ -123,4 +133,7 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   assert.equal(calls[13].body, redeemBody);
   assert.equal(calls[16].body, reservationBody);
   assert.equal(calls[21].body, conversionBody);
+  assert.deepEqual(calls[23].body, { travelPurposes: ['K_POP', 'FOOD'] });
+  assert.equal(calls[22].options.signal, signal);
+  assert.equal(calls[23].options.signal, signal);
 });
