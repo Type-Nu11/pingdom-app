@@ -3,6 +3,7 @@ export {
   apiClient,
   configureApiAccessTokenProvider,
   configureApiTransport,
+  createApiClient,
 } from './apiClient';
 export { getApiErrorUx } from './getApiErrorUx';
 export type {
@@ -10,6 +11,7 @@ export type {
   ApiClient,
   ApiTransport,
   GetRequestOptions,
+  HttpTransport,
   MutationRequestOptions,
 } from './apiClient';
 export type {

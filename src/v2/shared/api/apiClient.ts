@@ -19,6 +19,7 @@ export type MutationRequestOptions = {
 
 export type ApiAccessTokenProvider = () => Promise<string | null> | string | null;
 export type ApiTransport = Pick<AxiosInstance, 'get' | 'patch' | 'post' | 'put'>;
+export type HttpTransport = ApiTransport;
 
 export type ApiClient = {
   get<TResponse>(path: string, options?: GetRequestOptions): Promise<TResponse>;
@@ -162,84 +163,93 @@ function assertRelativeApiPath(path: string) {
   }
 }
 
-export const apiClient: ApiClient = {
-  async get<TResponse>(path: string, options: GetRequestOptions = {}): Promise<TResponse> {
-    assertRelativeApiPath(path);
+export function createApiClient(transport?: ApiTransport): ApiClient {
+  const getTransport = () => transport ?? apiTransport;
 
-    try {
-      const response = await apiTransport.get<TResponse>(path, await withAuthorization(options));
-      return response.data;
-    } catch (error) {
-      throw toApiError(error);
-    }
-  },
+  return {
+    async get<TResponse>(path: string, options: GetRequestOptions = {}): Promise<TResponse> {
+      assertRelativeApiPath(path);
 
-  async patch<TResponse, TBody = unknown>(
-    path: string,
-    body: TBody,
-    options: MutationRequestOptions = {},
-  ): Promise<TResponse> {
-    assertRelativeApiPath(path);
-
-    try {
-      const response = await apiTransport.patch<TResponse>(
-        path,
-        body,
-        await withAuthorization(options),
-      );
-      return response.data;
-    } catch (error) {
-      throw toApiError(error);
-    }
-  },
-
-  async post<TResponse, TBody = never>(
-    path: string,
-    body?: TBody,
-    options: MutationRequestOptions = {},
-  ): Promise<TResponse> {
-    assertRelativeApiPath(path);
-
-    try {
-      const response = await apiTransport.post<TResponse>(
-        path,
-        body,
-        await withAuthorization(options),
-      );
-      return response.data;
-    } catch (error) {
-      throw toApiError(error);
-    }
-  },
-
-  async put<TResponse, TBody = unknown>(
-    path: string,
-    body: TBody,
-    options: MutationRequestOptions = {},
-  ): Promise<TResponse> {
-    assertRelativeApiPath(path);
-
-    try {
-      const response = await apiTransport.put<TResponse>(
-        path,
-        body,
-        await withAuthorization(options),
-      );
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
-        console.info('[V2 API] Axios PUT failed; retrying idempotent request with fetch.', {
+      try {
+        const response = await getTransport().get<TResponse>(
           path,
-        });
-
-        try {
-          return await putWithFetchFallback<TResponse, TBody>(path, body, options);
-        } catch (fallbackError) {
-          throw toApiError(fallbackError);
-        }
+          await withAuthorization(options),
+        );
+        return response.data;
+      } catch (error) {
+        throw toApiError(error);
       }
+    },
 
-      throw toApiError(error);
-    }
-  },
-};
+    async patch<TResponse, TBody = unknown>(
+      path: string,
+      body: TBody,
+      options: MutationRequestOptions = {},
+    ): Promise<TResponse> {
+      assertRelativeApiPath(path);
+
+      try {
+        const response = await getTransport().patch<TResponse>(
+          path,
+          body,
+          await withAuthorization(options),
+        );
+        return response.data;
+      } catch (error) {
+        throw toApiError(error);
+      }
+    },
+
+    async post<TResponse, TBody = never>(
+      path: string,
+      body?: TBody,
+      options: MutationRequestOptions = {},
+    ): Promise<TResponse> {
+      assertRelativeApiPath(path);
+
+      try {
+        const response = await getTransport().post<TResponse>(
+          path,
+          body,
+          await withAuthorization(options),
+        );
+        return response.data;
+      } catch (error) {
+        throw toApiError(error);
+      }
+    },
+
+    async put<TResponse, TBody = unknown>(
+      path: string,
+      body: TBody,
+      options: MutationRequestOptions = {},
+    ): Promise<TResponse> {
+      assertRelativeApiPath(path);
+
+      try {
+        const response = await getTransport().put<TResponse>(
+          path,
+          body,
+          await withAuthorization(options),
+        );
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
+          console.info('[V2 API] Axios PUT failed; retrying idempotent request with fetch.', {
+            path,
+          });
+
+          try {
+            return await putWithFetchFallback<TResponse, TBody>(path, body, options);
+          } catch (fallbackError) {
+            throw toApiError(fallbackError);
+          }
+        }
+
+        throw toApiError(error);
+      }
+    },
+  };
+}
+
+export const apiClient = createApiClient();

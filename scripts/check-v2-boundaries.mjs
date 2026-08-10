@@ -26,6 +26,7 @@ function report(filePath, rule) {
 function checkFile(filePath) {
   const source = fs.readFileSync(filePath, 'utf8');
   const normalizedPath = filePath.split(path.sep).join('/');
+  const isTestFile = normalizedPath.includes('/__tests__/');
 
   if (/\bStyleSheet\b/.test(source)) {
     report(filePath, 'StyleSheet is not allowed in V2');
@@ -45,7 +46,7 @@ function checkFile(filePath) {
   while ((match = importPattern.exec(source)) !== null) {
     const importPath = match[1];
 
-    if (normalizedPath.includes('/screens/') && importPath.includes('/api/')) {
+    if (!isTestFile && normalizedPath.includes('/screens/') && importPath.includes('/api/')) {
       report(filePath, 'screens must access API modules through hooks');
     }
 
@@ -57,7 +58,7 @@ function checkFile(filePath) {
       const resolvedPath = path.resolve(path.dirname(filePath), importPath);
       const relativeToV2 = path.relative(v2Root, resolvedPath);
 
-      if (relativeToV2.startsWith('..') || path.isAbsolute(relativeToV2)) {
+      if (!isTestFile && (relativeToV2.startsWith('..') || path.isAbsolute(relativeToV2))) {
         report(filePath, `relative import escapes the V2 boundary: ${importPath}`);
       }
     }

@@ -7,3 +7,7 @@ export {
   createConversionEventMutationOptions,
   useIngestConversionEvents,
 } from './hooks/useConversionEvents';
+export {
+  getConversionRetryDelay,
+  shouldRetryConversionEventMutation,
+} from './model/conversionRetry';

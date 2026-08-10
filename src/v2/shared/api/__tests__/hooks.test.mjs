@@ -103,6 +103,14 @@ test('action Hook options forward generated request bodies and identifiers uncha
   ]);
 });
 
+test('conversion Hook keeps one error owner and opts into its idempotent retry policy', () => {
+  const options = createConversionEventMutationOptions({ ingestEvents: async () => ({}) });
+
+  assert.equal(typeof options.retry, 'function');
+  assert.equal(typeof options.retryDelay, 'function');
+  assert.equal('onError' in options, false);
+});
+
 test('travel purpose Hook options forward AbortSignal and replace body unchanged', async () => {
   const response = { travelPurposes: ['K_POP', 'FOOD'] };
   const body = { travelPurposes: ['K_POP', 'FOOD'] };
