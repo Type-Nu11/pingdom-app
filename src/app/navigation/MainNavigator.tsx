@@ -8,6 +8,7 @@ import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
+import ApiCheckScreen from '../../features/profile/screens/ApiCheckScreen';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
@@ -78,6 +79,7 @@ const ProfileRouteScreen = ({ navigation, route }: MainScreenProps<'Profile'>) =
         navigation.popTo(MAIN_ROUTES.Map, mapParams);
       }
     }}
+    onOpenApiCheck={() => navigation.navigate(MAIN_ROUTES.ApiCheck)}
     onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
   />
 );
@@ -92,6 +94,10 @@ const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
     />
   );
 };
+
+const ApiCheckRouteScreen = ({ navigation }: MainScreenProps<'ApiCheck'>) => (
+  <ApiCheckScreen onBack={navigation.goBack} />
+);
 
 const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) => (
   <CheckInScreen
@@ -126,6 +132,7 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Merchant} component={MerchantRouteScreen} />
   </Stack.Navigator>

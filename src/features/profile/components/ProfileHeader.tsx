@@ -8,6 +8,7 @@ type ProfileHeaderProps = {
   isArchive: boolean;
   isLoading?: boolean;
   onChangeTab: (tab: 'liked' | 'saved') => void;
+  onOpenApiCheck: () => void;
   onOpenArchive: () => void;
   onOpenSettings: () => void;
   profile: ProfileResponse | null;
@@ -35,6 +36,7 @@ const ProfileHeader = ({
   isArchive,
   isLoading = false,
   onChangeTab,
+  onOpenApiCheck,
   onOpenArchive,
   onOpenSettings,
   profile,
@@ -69,6 +71,9 @@ const ProfileHeader = ({
             </Pressable>
             <Pressable style={styles.actionButton} onPress={onOpenArchive}>
               <Text style={styles.actionText}>보관함 보기</Text>
+            </Pressable>
+            <Pressable style={styles.actionButton} onPress={onOpenApiCheck}>
+              <Text style={styles.actionText}>API 확인하기</Text>
             </Pressable>
           </View>
         )}

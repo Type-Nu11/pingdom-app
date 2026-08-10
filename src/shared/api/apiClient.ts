@@ -58,7 +58,10 @@ type RawRefreshResponse =
 const BASE_CONFIG = {
     baseURL: API_BASE_URL,
     timeout: REQUEST_TIMEOUT,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
+    },
 } as const;
 
 // 앱 전역에서 사용하는 메인 API 클라이언트
@@ -124,6 +127,7 @@ function shouldLogApiRequest(url?: string): boolean {
         '/places',
         '/places/recommendations',
         '/places/autocomplete',
+        '/users/me/travel-purposes',
     ].includes(path);
 }
 
@@ -358,7 +362,11 @@ api.interceptors.response.use(
                 message?: unknown;
             } | undefined;
 
-            console.warn('[api]', 'response error', {
+            const logNetworkDiagnostic = status === undefined
+                && getRequestPath(originalRequest.url) === '/users/me/travel-purposes';
+            const log = logNetworkDiagnostic ? console.info : console.warn;
+
+            log('[api]', 'response error', {
                 code: responseData?.code,
                 message: responseData?.message ?? error.message,
                 method: originalRequest.method,

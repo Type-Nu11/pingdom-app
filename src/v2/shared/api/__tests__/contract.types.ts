@@ -32,6 +32,18 @@ type ConversionResultMatchesOperation = Assert<
     OperationResponse<'ingestConversionEventBatch', 202>
   >
 >;
+type TravelPurposeRequestMatchesSchema = Assert<
+  Equal<
+    ApiSchema<'TravelPurposePreferenceUpdateRequest'>,
+    OperationRequestBody<'replaceTravelPurposes'>
+  >
+>;
+type TravelPurposeResponseMatchesOperation = Assert<
+  Equal<
+    ApiSchema<'TravelPurposePreferenceResponse'>,
+    OperationResponse<'getTravelPurposes', 200>
+  >
+>;
 
 export type ContractTypeAssertions =
   | PlacePageMatchesOperation
@@ -39,4 +51,6 @@ export type ContractTypeAssertions =
   | CheckInRequestMatchesSchema
   | CouponMatchesIssueOperation
   | ReservationMatchesCreateOperation
-  | ConversionResultMatchesOperation;
+  | ConversionResultMatchesOperation
+  | TravelPurposeRequestMatchesSchema
+  | TravelPurposeResponseMatchesOperation;
