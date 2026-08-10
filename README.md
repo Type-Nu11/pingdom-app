@@ -1,131 +1,170 @@
 <img width="7680" height="4320" alt="image" src="https://github.com/user-attachments/assets/a789ec07-981f-4d2b-a11b-f75d8d6694b6" />
 
+---
 
-# Pingdum Frontend Convention
+## Overview
 
-## 프로젝트 구조
+이 저장소는 Pingdom 프로젝트의 **{담당 영역}**을 관리합니다.
 
-핑덤 프론트엔드는 **Feature 기반 아키텍처**를 사용합니다.
-기능 단위로 코드를 분리하여 확장성과 유지보수를 고려합니다.
+{저장소를 만든 목적과 Pingdom 전체 프로젝트에서 담당하는 역할을 설명합니다.  
+특정 구현보다 저장소의 책임과 제공 결과를 중심으로 작성합니다.}
+
+## Project Status
+
+현재 **SNAPSHOT 개발 단계**입니다.
+
+프로젝트 요구사항을 검증하고 있으며, 안정화 이전까지 기능, 구성, 인터페이스 및  
+제공 결과가 예고 없이 변경될 수 있습니다.
+
+| Item | Status |
+|---|---|
+| Development | `In Progress` |
+| Release | `SNAPSHOT` |
+| Stability | `Experimental` |
+
+## Repository Role
+
+| Item | Description |
+|---|---|
+| Type | `{Application / Service / Mobile / Admin / Infrastructure / Design / Documentation / Shared}` |
+| Responsibility | `{이 저장소의 핵심 책임}` |
+| Primary Output | `{애플리케이션 / 서비스 / 패키지 / 인프라 구성 / 디자인 / 문서}` |
+| Target | `{사용자, 운영자, 개발자 또는 연결되는 시스템}` |
+
+## Scope
+
+### Included
+
+- {이 저장소가 담당하는 범위 1}
+- {이 저장소가 담당하는 범위 2}
+- {이 저장소가 담당하는 범위 3}
+
+### Not Included
+
+- {이 저장소에서 담당하지 않는 범위 1}
+- {다른 저장소가 담당하는 범위 2}
+
+## Key Capabilities
+
+- **{기능 또는 결과물 1}**: {간단한 설명}
+- **{기능 또는 결과물 2}**: {간단한 설명}
+- **{기능 또는 결과물 3}**: {간단한 설명}
+- **{기능 또는 결과물 4}**: {간단한 설명}
+
+## Technology and Tools
+
+<!-- 해당 저장소에 적용되지 않으면 이 섹션을 삭제합니다. -->
+
+| Category | Technology |
+|---|---|
+| Primary | {주요 기술 또는 도구} |
+| Framework | {프레임워크 또는 플랫폼} |
+| Build | {빌드 또는 패키지 관리 도구} |
+| Quality | {테스트, 검사 또는 품질 관리 도구} |
+| Delivery | {배포, 배포 대상 또는 결과물 제공 방식} |
+
+## Getting Started
+
+이 저장소를 확인하거나 실행하기 위해 필요한 최소 절차입니다.
+
+### Requirements
+
+- {필수 도구 또는 환경}
+- {필수 버전}
+- {필요한 접근 권한 또는 외부 의존성}
+
+### Setup
 
 ```bash
-src/
-├── app/        # 전역 설정 (navigation, store)
-├── features/   # 핵심 기능 (auth, place, record, map)
-├── shared/     # 공통 컴포넌트, 훅, 유틸
-├── services/   # 외부 로직 (api, storage, location)
-├── types/      # 전역 타입
+git clone {REPOSITORY_URL}
+cd {REPOSITORY_NAME}
+{초기 설정 명령어}
 ```
 
-## 아키텍처 원칙
+### Usage
 
-### 1. 데이터 흐름
-
-모든 데이터는 아래 흐름을 따릅니다.
-
-```
-Screen → Hook → API → Server
+```bash
+{실행, 확인, 미리보기 또는 사용 명령어}
 ```
 
-* Screen에서 API 직접 호출 금지
-* Component에 비즈니스 로직 작성 금지
-* 데이터 처리 및 로직은 Hook에서만 수행
+> 저장소 유형에 따라 실행 명령어가 없다면 확인 방법이나 결과물 위치를 작성합니다.
 
-### 2. 상태 관리
+## Configuration
 
-* 상태 관리는 Zustand를 사용합니다.
-* 전역 상태는 최소한으로 유지합니다.
+<!-- 별도 설정이 필요한 저장소에만 사용합니다. -->
 
-#### 허용
+설정에 필요한 항목은 예제 파일 또는 관련 문서를 기준으로 구성합니다.
 
-* 로그인 상태
-* 선택된 장소
-* UI 상태 (모달, 필터 등)
-
-#### 금지
-
-* 서버 데이터 저장 (장소 리스트, 기록 등)
-
-### 3. API 규칙
-
-* axios는 `api` 계층에서만 사용합니다.
-* 모든 API 요청은 함수 형태로 정의합니다.
-
-예:
-
-```ts
-getPlaces()
-createRecord()
-login()
+```text
+{설정 파일 또는 설정 문서 경로}
 ```
 
+실제 인증정보, API Key, 비밀 값 및 운영 환경 정보는 저장소에 커밋하지 않습니다.
 
-### 4. 네이밍 규칙
+## Verification
 
-| 대상        | 규칙        |
-| --------- | --------- |
-| Hook      | useXXX    |
-| API       | xxxApi    |
-| Screen    | XXXScreen |
-| Component | XXXCard   |
+저장소 변경사항은 다음 방법으로 검증합니다.
 
-
-## 브랜치 전략
-
-* `main`: 배포용 (직접 push 금지)
-* `develop`: 통합 개발 브랜치
-* `feature/<기능명>`: 기능 개발 브랜치
-
-예:
-
-* feature/auth-login
-* feature/place-list
-* feature/record-upload
-
-
-## 커밋 컨벤션
-
-커밋 메시지는 다음 형식을 따릅니다.
-
-```
-타입: 내용
+```bash
+{테스트, 빌드, 검사, 미리보기 또는 유효성 검증 명령어}
 ```
 
-### 타입 목록
+검증 방식이 여러 개인 경우 목적별로 구분합니다.
 
-* Feat: 새로운 기능 추가
-* Fix: 버그 수정
-* Docs: 문서 수정
-* Style: 코드 포맷 변경
-* Refactor: 코드 리팩토링
-* Design: 디자인 변경
-* Test: 테스트 코드
-* Chore: 설정 변경
-* Design: UI 변경
-* Rename: 파일/폴더 이름 변경
-* Remove: 파일 삭제
+| Verification | Purpose |
+|---|---|
+| `{명령어 또는 방법}` | {검증 목적} |
+| `{명령어 또는 방법}` | {검증 목적} |
 
-### 예시
+## Repository Structure
 
-```
-Feat: 장소 리스트 조회 API 연결
-Fix: 로그인 토큰 저장 오류 수정
-Refactor: record hook 구조 개선
+```text
+.
+├── {directory}       # {책임}
+├── {directory}       # {책임}
+├── docs              # 관련 문서
+├── {configuration}   # 프로젝트 구성
+└── README.md
 ```
 
+실제 구조를 기준으로 주요 디렉터리와 파일만 설명합니다.
 
-## 협업 규칙
+## Related Repositories
 
-* main 브랜치에 직접 push 하지 않습니다.
-* feature 브랜치에서 작업 후 PR을 통해 병합합니다.
-* 공통 파일 수정 시 반드시 팀원과 사전 공유합니다.
-* PR은 최소 1명 이상의 리뷰 후 merge합니다.
+| Repository | Relationship |
+|---|---|
+| [{Repository Name}]({REPOSITORY_URL}) | {이 저장소와의 관계} |
+| [{Repository Name}]({REPOSITORY_URL}) | {이 저장소와의 관계} |
 
+> 공개되어 있거나 접근 가능한 저장소만 연결합니다.
 
-## 금지 사항
+## Documentation
 
-* Component에서 API 호출
-* Zustand에 서버 데이터 저장
-* shared 폴더에 기능 로직 추가
-* axios 직접 호출
-]
+| Document | Description |
+|---|---|
+| [{문서 이름}]({DOCUMENT_URL}) | {문서 설명} |
+| [{문서 이름}]({DOCUMENT_URL}) | {문서 설명} |
+
+> 실제로 존재하며 공개 가능한 문서만 연결합니다.
+
+## Release and Compatibility
+
+현재 버전은 안정화 이전의 SNAPSHOT 버전입니다.
+
+- 정식 버전과의 호환성을 보장하지 않습니다.
+- 변경사항은 저장소의 Release 또는 변경 이력을 기준으로 확인합니다.
+- 안정화 이후 별도의 버전 정책을 적용할 예정입니다.
+
+## License
+
+<!-- 라이선스가 있는 경우에만 사용합니다. -->
+
+이 프로젝트의 사용 및 배포 조건은 [LICENSE](LICENSE)를 따릅니다.
+
+---
+
+<div align="center">
+
+Part of **Pingdom**
+
+</div>
