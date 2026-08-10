@@ -4,6 +4,30 @@
  */
 
 export interface paths {
+    "/users/me/travel-purposes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 여행 목적 선호 조회
+         * @description 현재 인증된 사용자의 여행 목적 선호 목록을 조회한다.
+         */
+        get: operations["getTravelPurposes"];
+        /**
+         * 여행 목적 선호 전체 변경
+         * @description 현재 인증된 사용자의 여행 목적 선호를 요청 목록으로 전체 교체한다. 빈 배열은 모든 선호를 해제한다.
+         */
+        put: operations["replaceTravelPurposes"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/places": {
         parameters: {
             query?: never;
@@ -368,6 +392,18 @@ export interface components {
         };
         /** @enum {string} */
         TouristCategory: "K_POP" | "FOOD" | "SHOPPING" | "CULTURE" | "NIGHTLIFE" | "NATURE" | "OTHER" | "UNKNOWN";
+        /** @enum {string} */
+        TravelPurpose: "K_POP" | "BEAUTY" | "FASHION" | "CAFE" | "FOOD" | "POP_UP" | "EXHIBITION" | "NIGHTLIFE" | "OTHER";
+        /** @description 여행 목적 선호 전체 변경 요청 */
+        TravelPurposePreferenceUpdateRequest: {
+            /** @description 선호 여행 목적 전체 목록. 빈 배열이면 모든 선호를 해제한다. */
+            travelPurposes: components["schemas"]["TravelPurpose"][];
+        };
+        /** @description 여행 목적 선호 응답 */
+        TravelPurposePreferenceResponse: {
+            /** @description 선호 여행 목적 목록 */
+            travelPurposes?: components["schemas"]["TravelPurpose"][];
+        };
         /**
          * @default LATEST
          * @enum {string}
@@ -921,6 +957,91 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getTravelPurposes: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Unix epoch seconds. Server acceptance window is ±300 seconds.
+                 * @example 1784784600
+                 */
+                "X-Timestamp": components["parameters"]["XTimestamp"];
+                /**
+                 * @description Standard Base64 encoded 32-byte HMAC-SHA256 digest.
+                 * @example xnN4E7xJ5Y7xw+H3t7q0O4JfKopdFy8FE3AgAbCDefg=
+                 */
+                "X-SignatureBase64": components["parameters"]["XSignature"];
+                /** @example 1.4.0 */
+                "X-App-Version": components["parameters"]["XAppVersion"];
+                /**
+                 * @description 앱 설치 단위 UUID. 광고 식별자로 사용하지 않는다.
+                 * @example 6f1a0f58-34b3-4f7a-81e0-9959c76283cb
+                 */
+                "X-Device-Id": components["parameters"]["XDeviceId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TravelPurposePreferenceResponse"];
+                };
+            };
+            401: components["responses"]["AuthenticationError"];
+            404: components["responses"]["NotFoundError"];
+        };
+    };
+    replaceTravelPurposes: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Unix epoch seconds. Server acceptance window is ±300 seconds.
+                 * @example 1784784600
+                 */
+                "X-Timestamp": components["parameters"]["XTimestamp"];
+                /**
+                 * @description Standard Base64 encoded 32-byte HMAC-SHA256 digest.
+                 * @example xnN4E7xJ5Y7xw+H3t7q0O4JfKopdFy8FE3AgAbCDefg=
+                 */
+                "X-SignatureBase64": components["parameters"]["XSignature"];
+                /** @example 1.4.0 */
+                "X-App-Version": components["parameters"]["XAppVersion"];
+                /**
+                 * @description 앱 설치 단위 UUID. 광고 식별자로 사용하지 않는다.
+                 * @example 6f1a0f58-34b3-4f7a-81e0-9959c76283cb
+                 */
+                "X-Device-Id": components["parameters"]["XDeviceId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TravelPurposePreferenceUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description 변경 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TravelPurposePreferenceResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["AuthenticationError"];
+            404: components["responses"]["NotFoundError"];
+        };
+    };
     listPlaces: {
         parameters: {
             query?: {

@@ -78,9 +78,14 @@ test('app composition can inject the authenticated transport after the shared cl
     get: async () => ({ data: responseBody }),
     patch: async () => ({ data: responseBody }),
     post: async () => ({ data: responseBody }),
+    put: async () => ({ data: responseBody }),
   };
 
-  configureApiTransport(transport);
+  const resetTransport = configureApiTransport(transport);
 
-  assert.equal(await apiClient.get('/places'), responseBody);
+  try {
+    assert.equal(await apiClient.get('/places'), responseBody);
+  } finally {
+    resetTransport();
+  }
 });

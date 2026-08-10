@@ -38,6 +38,7 @@ export const AUTH_ROUTES = {
 } as const;
 
 export const MAIN_ROUTES = {
+  ApiCheck: 'ApiCheck',
   CheckIn: 'CheckIn',
   CouponWallet: 'CouponWallet',
   Map: 'Map',
@@ -53,6 +54,7 @@ export type AuthStackParamList = {
 };
 
 export type MainStackParamList = {
+  ApiCheck: undefined;
   Map: {
     focusedPlaceId?: PlaceId;
     notificationContext?: NotificationNavigationContext;

@@ -19,6 +19,7 @@ type ProfileScreenProps = {
   initialTab?: ProfileTab;
   onBack: () => void;
   onOpenBookmarkedPost: (placeId: number) => void;
+  onOpenApiCheck: () => void;
   onOpenSettings: () => void;
 };
 
@@ -28,6 +29,7 @@ const ProfileScreen = ({
   initialTab = 'liked',
   onBack,
   onOpenBookmarkedPost,
+  onOpenApiCheck,
   onOpenSettings,
 }: ProfileScreenProps) => {
   const { width } = useWindowDimensions();
@@ -124,6 +126,7 @@ const ProfileScreen = ({
               isLoading={isProfileLoading}
               activeTab={activeTab}
               onChangeTab={setActiveTab}
+              onOpenApiCheck={onOpenApiCheck}
               onOpenArchive={() => setMode('archive')}
               onOpenSettings={onOpenSettings}
               profile={profile}

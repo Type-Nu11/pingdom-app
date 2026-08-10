@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { QueryClient } from '@tanstack/react-query';
 
 import {
   createCheckInMutationOptions,
@@ -14,6 +15,17 @@ import {
   createReservationMutationOptions,
   createReservationTransitionMutationOptions,
 } from '../../../features/reservations/hooks/useReservations.ts';
+import {
+  createReplaceTravelPurposesMutationOptions,
+  createTravelPurposeQueryOptions,
+  recommendationQueryKeys,
+  refreshPersonalizationCaches,
+  travelPurposeQueryKeys,
+  userQueryKeys,
+} from '../../../features/travel-purposes/hooks/useTravelPurposes.ts';
+import {
+  validateReplaceTravelPurposesBody,
+} from '../../../features/travel-purposes/model/travelPurpose.types.ts';
 
 test('place query Hook options pass API responses through without mapping', async () => {
   const listResponse = { places: [] };
@@ -97,4 +109,64 @@ test('conversion Hook keeps one error owner and opts into its idempotent retry p
   assert.equal(typeof options.retry, 'function');
   assert.equal(typeof options.retryDelay, 'function');
   assert.equal('onError' in options, false);
+});
+
+test('travel purpose Hook options forward AbortSignal and replace body unchanged', async () => {
+  const response = { travelPurposes: ['K_POP', 'FOOD'] };
+  const body = { travelPurposes: ['K_POP', 'FOOD'] };
+  const signal = new AbortController().signal;
+  let receivedSignal;
+  let receivedBody;
+
+  const queryOptions = createTravelPurposeQueryOptions({
+    getTravelPurposes: async (value) => {
+      receivedSignal = value;
+      return response;
+    },
+  });
+  const mutationOptions = createReplaceTravelPurposesMutationOptions({
+    replaceTravelPurposes: async (value) => {
+      receivedBody = value;
+      return response;
+    },
+  });
+
+  assert.equal(await queryOptions.queryFn({ signal }), response);
+  assert.equal(await mutationOptions.mutationFn(body), response);
+  assert.equal(receivedSignal, signal);
+  assert.equal(receivedBody, body);
+  assert.deepEqual(queryOptions.queryKey, ['v2', 'users', 'me', 'travel-purposes']);
+});
+
+test('travel purpose validation follows OpenAPI empty, maximum, enum, and uniqueness rules', () => {
+  const emptyBody = { travelPurposes: [] };
+
+  assert.equal(validateReplaceTravelPurposesBody(emptyBody), emptyBody);
+  assert.throws(
+    () => validateReplaceTravelPurposesBody({ travelPurposes: Array(10).fill('K_POP') }),
+    { name: 'RangeError' },
+  );
+  assert.throws(
+    () => validateReplaceTravelPurposesBody({ travelPurposes: ['FOOD', 'FOOD'] }),
+    /must not contain duplicates/,
+  );
+  assert.throws(
+    () => validateReplaceTravelPurposesBody({ travelPurposes: ['UNKNOWN'] }),
+    /unsupported value/,
+  );
+});
+
+test('travel purpose replacement restores its cache and invalidates user and recommendations', async () => {
+  const queryClient = new QueryClient();
+  const preference = { travelPurposes: ['BEAUTY', 'CAFE'] };
+
+  queryClient.setQueryData(userQueryKeys.me(), { id: 1 });
+  queryClient.setQueryData(recommendationQueryKeys.all, { places: [] });
+
+  await refreshPersonalizationCaches(queryClient, preference);
+
+  assert.equal(queryClient.getQueryData(travelPurposeQueryKeys.mine()), preference);
+  assert.equal(queryClient.getQueryState(travelPurposeQueryKeys.mine()).isInvalidated, false);
+  assert.equal(queryClient.getQueryState(userQueryKeys.me()).isInvalidated, true);
+  assert.equal(queryClient.getQueryState(recommendationQueryKeys.all).isInvalidated, true);
 });

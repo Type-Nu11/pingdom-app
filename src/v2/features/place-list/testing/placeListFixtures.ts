@@ -1,4 +1,4 @@
-import type { PlaceListPage } from '../../src/v2/features/place-list/model/placeList.types';
+import type { PlaceListPage } from '../model/placeList.types';
 
 export const emptyPlaceListPage: PlaceListPage = {
   hasNext: false,
