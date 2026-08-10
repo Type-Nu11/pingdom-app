@@ -12,8 +12,8 @@ import { ThemeProvider } from 'styled-components/native';
 import {
   resources,
   type SupportedLanguage,
-} from '../../src/v2/shared/i18n/resources';
-import { theme } from '../../src/v2/shared/theme';
+} from '../i18n/resources';
+import { theme } from '../theme';
 
 export function createTestQueryClient() {
   return new QueryClient({

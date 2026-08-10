@@ -1,8 +1,8 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 
-import { emptyPlaceListPage } from '../../../../../../test/fixtures/placeList';
-import { createTestWrapper } from '../../../../../../test/utils/testProviders';
+import { createTestWrapper } from '../../../../shared/testing/testProviders';
 import { placeListApi } from '../../api/placeListApi';
+import { emptyPlaceListPage } from '../../testing/placeListFixtures';
 import {
   normalizePlaceListParams,
   usePlaceList,

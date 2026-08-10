@@ -18,7 +18,7 @@ npm run validate:pr
 - React Native Testing Library: 사용자에게 보이는 텍스트, 접근성 역할, 상호작용 검증
 - `test/jest.setup.ts`: AsyncStorage와 native module mock
 - `test/mocks/svgMock.tsx`: SVG component mock
-- `test/utils/testProviders.tsx`: 격리된 React Query client, i18n, theme wrapper
+- `src/v2/shared/testing/testProviders.tsx`: V2 경계 안의 격리된 React Query client, i18n, theme wrapper
 - `test/fixtures`: API 성공 응답 fixture
 
 React Query wrapper는 테스트에서 retry를 끄므로 실패 상태를 즉시 재현한다. 각 테스트는
