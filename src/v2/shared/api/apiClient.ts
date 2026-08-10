@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 
 import { env } from '../config';
 import { toApiError } from './ApiError';
@@ -30,7 +30,9 @@ export type ApiClient = {
   ): Promise<TResponse>;
 };
 
-const axiosInstance = axios.create({
+export type HttpTransport = Pick<AxiosInstance, 'get' | 'patch' | 'post'>;
+
+let defaultTransport: HttpTransport = axios.create({
   baseURL: env.apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
@@ -38,51 +40,63 @@ const axiosInstance = axios.create({
   timeout: REQUEST_TIMEOUT_MS,
 });
 
+export function configureApiTransport(transport: HttpTransport): void {
+  defaultTransport = transport;
+}
+
 function assertRelativeApiPath(path: string) {
   if (!path.startsWith('/') || path.startsWith('//')) {
     throw new Error(`V2 API paths must be relative and start with a single slash: ${path}`);
   }
 }
 
-export const apiClient: ApiClient = {
-  async get<TResponse>(path: string, options: GetRequestOptions = {}): Promise<TResponse> {
-    assertRelativeApiPath(path);
+export function createApiClient(
+  transport?: HttpTransport,
+): ApiClient {
+  const getTransport = () => transport ?? defaultTransport;
 
-    try {
-      const response = await axiosInstance.get<TResponse>(path, options);
-      return response.data;
-    } catch (error) {
-      throw toApiError(error);
-    }
-  },
+  return {
+    async get<TResponse>(path: string, options: GetRequestOptions = {}): Promise<TResponse> {
+      assertRelativeApiPath(path);
 
-  async patch<TResponse, TBody = unknown>(
-    path: string,
-    body: TBody,
-    options: MutationRequestOptions = {},
-  ): Promise<TResponse> {
-    assertRelativeApiPath(path);
+      try {
+        const response = await getTransport().get<TResponse>(path, options);
+        return response.data;
+      } catch (error) {
+        throw toApiError(error);
+      }
+    },
 
-    try {
-      const response = await axiosInstance.patch<TResponse>(path, body, options);
-      return response.data;
-    } catch (error) {
-      throw toApiError(error);
-    }
-  },
+    async patch<TResponse, TBody = unknown>(
+      path: string,
+      body: TBody,
+      options: MutationRequestOptions = {},
+    ): Promise<TResponse> {
+      assertRelativeApiPath(path);
 
-  async post<TResponse, TBody = never>(
-    path: string,
-    body?: TBody,
-    options: MutationRequestOptions = {},
-  ): Promise<TResponse> {
-    assertRelativeApiPath(path);
+      try {
+        const response = await getTransport().patch<TResponse>(path, body, options);
+        return response.data;
+      } catch (error) {
+        throw toApiError(error);
+      }
+    },
 
-    try {
-      const response = await axiosInstance.post<TResponse>(path, body, options);
-      return response.data;
-    } catch (error) {
-      throw toApiError(error);
-    }
-  },
-};
+    async post<TResponse, TBody = never>(
+      path: string,
+      body?: TBody,
+      options: MutationRequestOptions = {},
+    ): Promise<TResponse> {
+      assertRelativeApiPath(path);
+
+      try {
+        const response = await getTransport().post<TResponse>(path, body, options);
+        return response.data;
+      } catch (error) {
+        throw toApiError(error);
+      }
+    },
+  };
+}
+
+export const apiClient = createApiClient();

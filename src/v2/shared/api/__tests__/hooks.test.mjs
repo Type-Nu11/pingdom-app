@@ -90,3 +90,11 @@ test('action Hook options forward generated request bodies and identifiers uncha
     ['conversion', body],
   ]);
 });
+
+test('conversion Hook keeps one error owner and opts into its idempotent retry policy', () => {
+  const options = createConversionEventMutationOptions({ ingestEvents: async () => ({}) });
+
+  assert.equal(typeof options.retry, 'function');
+  assert.equal(typeof options.retryDelay, 'function');
+  assert.equal('onError' in options, false);
+});
