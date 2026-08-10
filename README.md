@@ -1,170 +1,125 @@
-<img width="7680" height="4320" alt="image" src="https://github.com/user-attachments/assets/a789ec07-981f-4d2b-a11b-f75d8d6694b6" />
+<img width="7680" height="4320" alt="Pingdom" src="https://github.com/user-attachments/assets/a789ec07-981f-4d2b-a11b-f75d8d6694b6" />
 
 ---
 
 ## Overview
 
-이 저장소는 Pingdom 프로젝트의 **{담당 영역}**을 관리합니다.
+이 저장소는 **Pingdom 모바일 애플리케이션**을 관리합니다.
 
-{저장소를 만든 목적과 Pingdom 전체 프로젝트에서 담당하는 역할을 설명합니다.  
-특정 구현보다 저장소의 책임과 제공 결과를 중심으로 작성합니다.}
+Pingdom은 외국인 관광객이 한국의 장소와 로컬 경험을 탐색하고, 현재 방문하기 적합한 장소를 발견할 수 있도록 돕는 위치 기반 서비스입니다.
+
+본 저장소는 Pingdom의 Android 및 iOS 클라이언트를 담당하며, 사용자 인터페이스, 지도 기반 장소 탐색, 인증, 장소 상세 정보, 저장 및 기록 등의 사용자 기능과 백엔드 API 연동을 관리합니다.
 
 ## Project Status
 
 현재 **SNAPSHOT 개발 단계**입니다.
 
-프로젝트 요구사항을 검증하고 있으며, 안정화 이전까지 기능, 구성, 인터페이스 및  
-제공 결과가 예고 없이 변경될 수 있습니다.
+프로젝트 요구사항과 V2 구조를 검증 및 개발하고 있으며, 안정화 이전까지 기능, 구성, 인터페이스 및 API 연동 방식이 변경될 수 있습니다.
 
-| Item | Status |
-|---|---|
-| Development | `In Progress` |
-| Release | `SNAPSHOT` |
-| Stability | `Experimental` |
+| Item        | Status         |
+| ----------- | -------------- |
+| Development | `In Progress`  |
+| Release     | `SNAPSHOT`     |
+| Stability   | `Experimental` |
 
 ## Repository Role
 
-| Item | Description |
-|---|---|
-| Type | `{Application / Service / Mobile / Admin / Infrastructure / Design / Documentation / Shared}` |
-| Responsibility | `{이 저장소의 핵심 책임}` |
-| Primary Output | `{애플리케이션 / 서비스 / 패키지 / 인프라 구성 / 디자인 / 문서}` |
-| Target | `{사용자, 운영자, 개발자 또는 연결되는 시스템}` |
+| Item           | Description                                |
+| -------------- | ------------------------------------------ |
+| Type           | `Mobile Application`                       |
+| Responsibility | Pingdom Android / iOS 클라이언트 개발 및 사용자 경험 제공 |
+| Primary Output | React Native 기반 모바일 애플리케이션                 |
+| Target         | 한국의 장소와 로컬 경험을 탐색하는 외국인 관광객                |
 
 ## Scope
 
 ### Included
 
-- {이 저장소가 담당하는 범위 1}
-- {이 저장소가 담당하는 범위 2}
-- {이 저장소가 담당하는 범위 3}
+* Android 및 iOS 모바일 애플리케이션
+* 지도 기반 장소 탐색 및 현재 위치 기능
+* 사용자 인증 및 로그인 상태 관리
+* 장소 상세 정보 및 사용자 기록
+* 장소 저장 및 즐겨찾기
+* 다국어 사용자 인터페이스
+* 푸시 알림
+* Pingdom Backend API 연동
 
 ### Not Included
 
-- {이 저장소에서 담당하지 않는 범위 1}
-- {다른 저장소가 담당하는 범위 2}
+* Pingdom Backend API 및 서버 비즈니스 로직
+* 데이터베이스 및 서버 인프라 운영
+* 관리자용 운영 시스템
+* 외부 서비스의 서버 측 처리
 
 ## Key Capabilities
 
-- **{기능 또는 결과물 1}**: {간단한 설명}
-- **{기능 또는 결과물 2}**: {간단한 설명}
-- **{기능 또는 결과물 3}**: {간단한 설명}
-- **{기능 또는 결과물 4}**: {간단한 설명}
+* **Map Discovery**: 지도와 현재 위치를 기반으로 주변 장소를 탐색합니다.
+* **Place Information**: 장소의 상세 정보와 방문에 필요한 정보를 제공합니다.
+* **Authentication**: 사용자 인증과 로그인 상태를 관리합니다.
+* **Records**: 사용자가 방문한 장소와 경험을 기록할 수 있습니다.
+* **Favorites**: 관심 있는 장소를 저장하고 다시 확인할 수 있습니다.
+* **Localization**: 외국인 사용자를 위한 다국어 인터페이스를 제공합니다.
+* **Notifications**: 사용자에게 필요한 정보와 업데이트를 푸시 알림으로 전달합니다.
+
+## Architecture
+
+Pingdom 모바일 애플리케이션은 **Feature 기반 구조**를 사용합니다.
+
+```text
+src/
+├── app/          # 전역 설정 및 Navigation
+├── features/     # 기능 단위 도메인
+├── shared/       # 공통 Component, Hook, Utility
+├── services/     # API, Storage, Location 등 외부 서비스
+└── types/        # 전역 TypeScript 타입
+```
+
+기본적인 데이터 흐름은 다음 원칙을 따릅니다.
+
+```text
+Screen → Hook → API → Server
+```
+
+서버 데이터와 클라이언트 상태의 책임을 분리하고, 화면 컴포넌트가 직접 API를 호출하거나 비즈니스 로직을 소유하지 않도록 구성합니다.
 
 ## Technology and Tools
 
-<!-- 해당 저장소에 적용되지 않으면 이 섹션을 삭제합니다. -->
+| Category      | Technology                          |
+| ------------- | ----------------------------------- |
+| Framework     | React Native                        |
+| Language      | TypeScript                          |
+| Server State  | TanStack Query                      |
+| Client State  | Zustand                             |
+| Networking    | Axios                               |
+| Styling       | styled-components                   |
+| Localization  | i18n                                |
+| Maps          | Kakao Map                           |
+| Notifications | Firebase Cloud Messaging            |
+| Testing       | Jest / React Native Testing Library |
 
-| Category | Technology |
-|---|---|
-| Primary | {주요 기술 또는 도구} |
-| Framework | {프레임워크 또는 플랫폼} |
-| Build | {빌드 또는 패키지 관리 도구} |
-| Quality | {테스트, 검사 또는 품질 관리 도구} |
-| Delivery | {배포, 배포 대상 또는 결과물 제공 방식} |
-
-## Getting Started
-
-이 저장소를 확인하거나 실행하기 위해 필요한 최소 절차입니다.
-
-### Requirements
-
-- {필수 도구 또는 환경}
-- {필수 버전}
-- {필요한 접근 권한 또는 외부 의존성}
-
-### Setup
-
-```bash
-git clone {REPOSITORY_URL}
-cd {REPOSITORY_NAME}
-{초기 설정 명령어}
-```
-
-### Usage
-
-```bash
-{실행, 확인, 미리보기 또는 사용 명령어}
-```
-
-> 저장소 유형에 따라 실행 명령어가 없다면 확인 방법이나 결과물 위치를 작성합니다.
-
-## Configuration
-
-<!-- 별도 설정이 필요한 저장소에만 사용합니다. -->
-
-설정에 필요한 항목은 예제 파일 또는 관련 문서를 기준으로 구성합니다.
+## Branch Strategy
 
 ```text
-{설정 파일 또는 설정 문서 경로}
+main
+└── dev
+    └── feat/<feature>
 ```
 
-실제 인증정보, API Key, 비밀 값 및 운영 환경 정보는 저장소에 커밋하지 않습니다.
+* `main`: 배포 및 안정 버전
+* `dev`: 개발 통합 브랜치
+* `feat/<feature>`: 기능 단위 개발 브랜치
 
-## Verification
+모든 기능 개발은 별도의 브랜치에서 진행하고 Pull Request와 코드 리뷰를 통해 통합합니다.
 
-저장소 변경사항은 다음 방법으로 검증합니다.
+## Development Rules
 
-```bash
-{테스트, 빌드, 검사, 미리보기 또는 유효성 검증 명령어}
-```
-
-검증 방식이 여러 개인 경우 목적별로 구분합니다.
-
-| Verification | Purpose |
-|---|---|
-| `{명령어 또는 방법}` | {검증 목적} |
-| `{명령어 또는 방법}` | {검증 목적} |
-
-## Repository Structure
-
-```text
-.
-├── {directory}       # {책임}
-├── {directory}       # {책임}
-├── docs              # 관련 문서
-├── {configuration}   # 프로젝트 구성
-└── README.md
-```
-
-실제 구조를 기준으로 주요 디렉터리와 파일만 설명합니다.
-
-## Related Repositories
-
-| Repository | Relationship |
-|---|---|
-| [{Repository Name}]({REPOSITORY_URL}) | {이 저장소와의 관계} |
-| [{Repository Name}]({REPOSITORY_URL}) | {이 저장소와의 관계} |
-
-> 공개되어 있거나 접근 가능한 저장소만 연결합니다.
-
-## Documentation
-
-| Document | Description |
-|---|---|
-| [{문서 이름}]({DOCUMENT_URL}) | {문서 설명} |
-| [{문서 이름}]({DOCUMENT_URL}) | {문서 설명} |
-
-> 실제로 존재하며 공개 가능한 문서만 연결합니다.
-
-## Release and Compatibility
-
-현재 버전은 안정화 이전의 SNAPSHOT 버전입니다.
-
-- 정식 버전과의 호환성을 보장하지 않습니다.
-- 변경사항은 저장소의 Release 또는 변경 이력을 기준으로 확인합니다.
-- 안정화 이후 별도의 버전 정책을 적용할 예정입니다.
-
-## License
-
-<!-- 라이선스가 있는 경우에만 사용합니다. -->
-
-이 프로젝트의 사용 및 배포 조건은 [LICENSE](LICENSE)를 따릅니다.
+* Screen에서 API를 직접 호출하지 않습니다.
+* Component에 비즈니스 로직을 작성하지 않습니다.
+* 서버 데이터는 Zustand에 저장하지 않습니다.
+* Axios는 API 계층에서만 사용합니다.
+* 기능별 코드는 가능한 한 해당 Feature 내부에서 관리합니다.
+* 공통 로직만 `shared` 영역에 배치합니다.
 
 ---
 
-<div align="center">
-
-Part of **Pingdom**
-
-</div>
+Pingdom is developed and maintained by **Team Type:Null**.
