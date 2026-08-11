@@ -63,10 +63,12 @@ test('account and auth API modules keep the seven server operation contracts', a
   };
   const unlink = { currentPassword: 'current-password' };
 
-  await auth.requestPasswordReset(resetRequest, signal);
-  await auth.confirmPasswordReset(resetConfirm, signal);
-  await auth.logout(signal);
-  await auth.resendVerificationEmail(resetRequest, signal);
+  const noBodyResults = await Promise.all([
+    auth.requestPasswordReset(resetRequest, signal),
+    auth.confirmPasswordReset(resetConfirm, signal),
+    auth.logout(signal),
+    auth.resendVerificationEmail(resetRequest, signal),
+  ]);
   await account.startGoogleLink(signal);
   await account.unlinkGoogle(unlink, signal);
   await account.getUserDataExport(signal);
@@ -84,6 +86,7 @@ test('account and auth API modules keep the seven server operation contracts', a
   assert.equal(calls[1].body, resetConfirm);
   assert.equal(calls[5].body, unlink);
   assert.ok(calls.every(({ options }) => options.signal === signal));
+  assert.deepEqual(noBodyResults, [undefined, undefined, undefined, undefined]);
 });
 
 test('auth mutation options forward OpenAPI request bodies unchanged', async () => {

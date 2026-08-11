@@ -1,4 +1,5 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { NavigationContainer } from '@react-navigation/native';
 
 import {
   useDownloadUserDataExport,
@@ -15,7 +16,10 @@ import {
   useReplaceTravelPurposes,
   useTravelPurposes,
 } from '../../../../v2/features/travel-purposes';
-import { TemporaryAccountSessionApiCheckPage } from '../../dev/account-session-api-check';
+import {
+  TemporaryAccountSessionApiCheckFlow,
+  TemporaryAccountSessionApiCheckPage,
+} from '../../dev/account-session-api-check';
 import ApiCheckScreen from '../ApiCheckScreen';
 
 jest.mock('../../../../v2/features/account', () => ({
@@ -110,7 +114,7 @@ describe('ApiCheckScreen', () => {
       mutate,
     } as unknown as ReturnType<typeof useReplaceTravelPurposes>);
 
-    await render(<ApiCheckScreen onBack={jest.fn()} onOpenEndpoint={jest.fn()} />);
+    await render(<ApiCheckScreen onBack={jest.fn()} />);
     const user = userEvent.setup();
 
     expect(screen.getByText('200 조회 성공')).toBeVisible();
@@ -122,8 +126,7 @@ describe('ApiCheckScreen', () => {
     expect(mutate).toHaveBeenCalledWith({ travelPurposes: ['K_POP', 'FOOD'] });
   });
 
-  test('endpoint를 선택하면 전용 테스트 route에 전달한다', async () => {
-    const onOpenEndpoint = jest.fn();
+  test('endpoint를 선택하면 임시 nested route로 이동하고 목록으로 돌아온다', async () => {
     mockUseTravelPurposes.mockReturnValue({
       data: { travelPurposes: [] },
       isError: false,
@@ -135,7 +138,9 @@ describe('ApiCheckScreen', () => {
     );
 
     await render(
-      <ApiCheckScreen onBack={jest.fn()} onOpenEndpoint={onOpenEndpoint} />,
+      <NavigationContainer>
+        <TemporaryAccountSessionApiCheckFlow onExit={jest.fn()} />
+      </NavigationContainer>,
     );
     const user = userEvent.setup();
 
@@ -143,7 +148,10 @@ describe('ApiCheckScreen', () => {
       name: 'POST /auth/password-reset/request',
     }));
 
-    expect(onOpenEndpoint).toHaveBeenCalledWith('POST /auth/password-reset/request');
+    expect(screen.getByText('API 테스트')).toBeVisible();
+
+    await user.press(screen.getByLabelText('API 목록으로 돌아가기'));
+    expect(screen.getByText('API 확인하기')).toBeVisible();
   });
 
   test('전용 테스트 페이지에서 요청하고 navigation 뒤로 가기를 호출한다', async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -17,14 +17,10 @@ import {
   useReplaceTravelPurposes,
   useTravelPurposes,
 } from '../../../v2/features/travel-purposes';
-import {
-  TemporaryAccountSessionApiCheckList,
-  type TemporaryAccountSessionEndpoint,
-} from '../dev/account-session-api-check';
 
 type ApiCheckScreenProps = {
+  footer?: ReactNode;
   onBack: () => void;
-  onOpenEndpoint: (endpoint: TemporaryAccountSessionEndpoint) => void;
 };
 
 function getErrorDebug(error: unknown) {
@@ -38,7 +34,7 @@ function getErrorDebug(error: unknown) {
   ].join('\n');
 }
 
-export default function ApiCheckScreen({ onBack, onOpenEndpoint }: ApiCheckScreenProps) {
+export default function ApiCheckScreen({ footer, onBack }: ApiCheckScreenProps) {
   const travelPurposesQuery = useTravelPurposes();
   const replaceTravelPurposes = useReplaceTravelPurposes();
   const [selected, setSelected] = useState<TravelPurpose[]>([]);
@@ -162,8 +158,7 @@ export default function ApiCheckScreen({ onBack, onOpenEndpoint }: ApiCheckScree
           ) : null}
         </View>
 
-        {/* TEMPORARY #165: remove this render and the dev/account-session-api-check directory. */}
-        <TemporaryAccountSessionApiCheckList onSelect={onOpenEndpoint} />
+        {footer}
       </ScrollView>
     </SafeAreaView>
   );
