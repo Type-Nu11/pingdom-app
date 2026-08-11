@@ -44,6 +44,30 @@ type TravelPurposeResponseMatchesOperation = Assert<
     OperationResponse<'getTravelPurposes', 200>
   >
 >;
+type TravelScheduleCreateRequestMatchesSchema = Assert<
+  Equal<
+    ApiSchema<'TravelScheduleCreateRequest'>,
+    OperationRequestBody<'createTravelSchedule'>
+  >
+>;
+type TravelScheduleUpdateRequestMatchesSchema = Assert<
+  Equal<
+    ApiSchema<'TravelScheduleUpdateRequest'>,
+    OperationRequestBody<'updateTravelSchedule'>
+  >
+>;
+type TravelScheduleListMatchesOperation = Assert<
+  Equal<
+    ApiSchema<'TravelScheduleListResponse'>,
+    OperationResponse<'getTravelSchedules', 200>
+  >
+>;
+type TravelScheduleMutationResponsesMatch = Assert<
+  Equal<
+    OperationResponse<'createTravelSchedule', 201>,
+    OperationResponse<'updateTravelSchedule', 200>
+  >
+>;
 
 export type ContractTypeAssertions =
   | PlacePageMatchesOperation
@@ -53,4 +77,8 @@ export type ContractTypeAssertions =
   | ReservationMatchesCreateOperation
   | ConversionResultMatchesOperation
   | TravelPurposeRequestMatchesSchema
-  | TravelPurposeResponseMatchesOperation;
+  | TravelPurposeResponseMatchesOperation
+  | TravelScheduleCreateRequestMatchesSchema
+  | TravelScheduleUpdateRequestMatchesSchema
+  | TravelScheduleListMatchesOperation
+  | TravelScheduleMutationResponsesMatch;

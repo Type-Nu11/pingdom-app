@@ -92,6 +92,25 @@ test('domain conflict and batch-limit codes branch without relying on HTTP statu
   );
 });
 
+test('travel schedule validation and conflict codes keep distinct server meanings', () => {
+  const cases = [
+    [400, 'INVALID_TRAVEL_SCHEDULE_PERIOD', 'validation'],
+    [404, 'TRAVEL_SCHEDULE_NOT_FOUND', 'notFound'],
+    [409, 'TRAVEL_SCHEDULE_NOT_EDITABLE', 'conflict'],
+    [409, 'TRAVEL_SCHEDULE_CONCURRENT_MODIFICATION', 'conflict'],
+    [422, 'TRAVEL_SCHEDULE_RULE_VIOLATION', 'validation'],
+  ];
+
+  for (const [status, code, kind] of cases) {
+    const error = new ApiError('schedule error', { code, status });
+    const ux = getApiErrorUx(error);
+
+    assert.equal(error.code, code);
+    assert.equal(ux.error, error);
+    assert.equal(ux.kind, kind);
+  }
+});
+
 test('conversion POST retries only transient failures and has a finite retry budget', () => {
   const offline = new ApiError('offline', { isNetworkError: true });
 

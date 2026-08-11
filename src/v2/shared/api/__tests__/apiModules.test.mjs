@@ -9,6 +9,7 @@ import { createPlaceDetailApi } from '../../../features/place-detail/api/placeDe
 import { createPlaceListApi } from '../../../features/place-list/api/placeListApi.ts';
 import { createReservationApi } from '../../../features/reservations/api/reservationApi.ts';
 import { createTravelPurposeApi } from '../../../features/travel-purposes/api/travelPurposeApi.ts';
+import { createTravelScheduleApi } from '../../../features/travel-schedules/api/travelScheduleApi.ts';
 
 test('all MVP API modules keep operation paths, params, bodies, and response identity', async () => {
   const calls = [];
@@ -18,7 +19,10 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
       calls.push({ method: 'GET', options, path });
       return response;
     },
-    patch: async () => response,
+    patch: async (path, body, options) => {
+      calls.push({ body, method: 'PATCH', options, path });
+      return response;
+    },
     post: async (path, body, options) => {
       calls.push({ body, method: 'POST', options, path });
       return response;
@@ -38,6 +42,7 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   const reservations = createReservationApi(client);
   const conversion = createConversionApi(client);
   const travelPurposes = createTravelPurposeApi(client);
+  const travelSchedules = createTravelScheduleApi(client);
 
   const checkInBody = {
     accuracyMeters: 10,
@@ -69,6 +74,14 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
       sourceScreen: 'PLACE_LIST',
     }],
   };
+  const travelScheduleBody = {
+    startDate: '2026-08-12',
+    endDate: '2026-08-14',
+  };
+  const updatedTravelScheduleBody = {
+    startDate: '2026-08-13',
+    endDate: '2026-08-16',
+  };
 
   const results = await Promise.all([
     placeList.getPlaceList({ keyword: 'cafe', page: 1 }, signal),
@@ -95,6 +108,10 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
     conversion.ingestEvents(conversionBody, signal),
     travelPurposes.getTravelPurposes(signal),
     travelPurposes.replaceTravelPurposes({ travelPurposes: ['K_POP', 'FOOD'] }, signal),
+    travelSchedules.getTravelSchedules(signal),
+    travelSchedules.createTravelSchedule(travelScheduleBody, signal),
+    travelSchedules.updateTravelSchedule(1, updatedTravelScheduleBody, signal),
+    travelSchedules.cancelTravelSchedule(1, signal),
   ]);
 
   assert.ok(results.every((result) => result === response));
@@ -123,6 +140,10 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
     'POST /conversion-events/batch',
     'GET /users/me/travel-purposes',
     'PUT /users/me/travel-purposes',
+    'GET /users/me/travel-schedules',
+    'POST /users/me/travel-schedules',
+    'PATCH /users/me/travel-schedules/1',
+    'POST /users/me/travel-schedules/1/cancel',
   ]);
 
   assert.deepEqual(calls[0].options.params, { keyword: 'cafe', page: 1 });
@@ -136,4 +157,10 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   assert.deepEqual(calls[23].body, { travelPurposes: ['K_POP', 'FOOD'] });
   assert.equal(calls[22].options.signal, signal);
   assert.equal(calls[23].options.signal, signal);
+  assert.equal(calls[24].options.signal, signal);
+  assert.equal(calls[25].body, travelScheduleBody);
+  assert.equal(calls[25].options.signal, signal);
+  assert.equal(calls[26].body, updatedTravelScheduleBody);
+  assert.equal(calls[26].options.signal, signal);
+  assert.equal(calls[27].options.signal, signal);
 });

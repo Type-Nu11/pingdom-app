@@ -49,7 +49,11 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     return { action: 'none', error, kind: 'authorization' };
   }
 
-  if (code === 'VALIDATION_FAILED' || status === 400) {
+  if (
+    code === 'VALIDATION_FAILED' ||
+    code === 'INVALID_TRAVEL_SCHEDULE_PERIOD' ||
+    status === 400
+  ) {
     return { action: 'none', error, kind: 'validation' };
   }
 
@@ -57,8 +61,12 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     return { action: 'none', error, kind: 'validation' };
   }
 
-  if (code === 'CHECK_IN_OUT_OF_RANGE' || status === 422) {
+  if (code === 'CHECK_IN_OUT_OF_RANGE') {
     return { action: 'none', error, kind: 'outOfRange' };
+  }
+
+  if (status === 422) {
+    return { action: 'none', error, kind: 'validation' };
   }
 
   if (code === 'COUPON_EXPIRED' || code === 'RESOURCE_EXPIRED' || status === 410) {
