@@ -137,7 +137,12 @@ async function resolve<T>(
   const error = scenarioError();
   if (error) throw error;
 
-  const featureResult = resolveMockHandler(featureMockHandlers, { body, method, path });
+  const featureResult = resolveMockHandler(featureMockHandlers, {
+    body,
+    method,
+    path,
+    scenario: activeScenario,
+  });
   if (featureResult.found) return featureResult.response as T;
 
   if (method === 'PATCH' && path === '/firebase/fcm-token') return undefined as T;

@@ -13,12 +13,28 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('success');
   assert.equal(apiClient, mockApiClient);
 
-  const [places, detail, checkIn, coupons, travelPurposes] = await Promise.all([
+  const [
+    places,
+    detail,
+    checkIn,
+    coupons,
+    travelPurposes,
+    mapViewport,
+    placeCard,
+    operatingNotices,
+    verificationMedia,
+    explanation,
+  ] = await Promise.all([
     mockApiClient.get('/places'),
     mockApiClient.get('/places/17'),
     mockApiClient.post('/location-check-ins', {}),
     mockApiClient.get('/coupons'),
     mockApiClient.get('/users/me/travel-purposes'),
+    mockApiClient.get('/places/map'),
+    mockApiClient.get('/places/17/card'),
+    mockApiClient.get('/places/17/operating-notices'),
+    mockApiClient.get('/places/17/media/verification'),
+    mockApiClient.get('/places/recommendations/request-a/explanation'),
   ]);
 
   assert.equal(getMockScenario(), 'success');
@@ -28,6 +44,19 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.deepEqual(coupons.coupons.map(({ status }) => status), ['ISSUED', 'EXPIRED']);
   assert.equal(merchantPerformanceFixture.metrics.completedCheckIns, 31);
   assert.deepEqual(travelPurposes.travelPurposes, ['K_POP', 'CAFE']);
+  assert.equal(mapViewport.markers[0].placeId, 17);
+  assert.equal(placeCard.id, 17);
+  assert.equal(operatingNotices.notices[0].placeId, 17);
+  assert.equal(verificationMedia.media[0].purpose, 'VERIFICATION');
+  assert.equal(explanation.items[0].ranking, 1);
+  assert.equal(
+    await mockApiClient.post('/places/17/map-link-conversions', {
+      linkType: 'DIRECTIONS',
+      provider: 'KAKAO',
+      requestId: 'request-a',
+    }),
+    undefined,
+  );
   assert.deepEqual(
     await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
     travelPurposes,
@@ -36,11 +65,17 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('empty');
   const emptyPlaces = await mockApiClient.get('/places');
   const emptyCoupons = await mockApiClient.get('/coupons');
+  const emptyMap = await mockApiClient.get('/places/map');
+  const emptyNotices = await mockApiClient.get('/places/17/operating-notices');
+  const emptyMedia = await mockApiClient.get('/places/17/media/verification');
 
   assert.deepEqual(emptyPlaces.places, []);
   assert.equal(emptyPlaces.totalPages, 0);
   assert.deepEqual(emptyCoupons.coupons, []);
   assert.equal(emptyCoupons.hasNext, false);
+  assert.deepEqual(emptyMap.markers, []);
+  assert.deepEqual(emptyNotices.notices, []);
+  assert.deepEqual(emptyMedia.media, []);
 
   const cases = [
     ['forbidden', 403, 'ROLE_REQUIRED'],

@@ -4,6 +4,7 @@ export type MockRequest = {
   body?: unknown;
   method: MockMethod;
   path: string;
+  scenario: MockScenario;
 };
 
 export type MockHandler = {
@@ -36,3 +37,4 @@ export function resolveMockHandler(
     ? { found: true, response: handler.resolve(request) }
     : { found: false };
 }
+import type { MockScenario } from '../../config/env';
