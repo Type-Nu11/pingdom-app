@@ -6,6 +6,7 @@ export {
   createApiClient,
 } from './apiClient';
 export { getApiErrorUx } from './getApiErrorUx';
+export { placeQueryKeys } from '../query/placeQueryKeys';
 export { getMockScenario, mockApiClient, setMockScenario } from './mock/mockApiClient';
 export {
   merchantPerformanceFixture,
@@ -34,4 +35,16 @@ export type {
   operations,
   paths,
 } from './contract';
+export type {
+  PlaceExplorationComponents,
+  PlaceExplorationOperationName,
+  PlaceExplorationOperationPath,
+  PlaceExplorationOperationQuery,
+  PlaceExplorationOperationRequestBody,
+  PlaceExplorationOperationResponse,
+  PlaceExplorationOperations,
+  PlaceExplorationPaths,
+  PlaceExplorationSchema,
+  PlaceExplorationSchemaName,
+} from './placeExplorationContract';
 export type { ApiErrorUx, ApiErrorUxKind } from './getApiErrorUx';
