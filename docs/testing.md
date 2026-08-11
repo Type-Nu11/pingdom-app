@@ -19,7 +19,7 @@ npm run validate:pr
 - `test/jest.setup.ts`: AsyncStorage와 native module mock
 - `test/mocks/svgMock.tsx`: SVG component mock
 - `src/v2/shared/testing/testProviders.tsx`: V2 경계 안의 격리된 React Query client, i18n, theme wrapper
-- `test/fixtures`: API 성공 응답 fixture
+- `src/v2/shared/api/mock/features`: feature 단위 Mock handler와 계약 기반 fixture
 
 React Query wrapper는 테스트에서 retry를 끄므로 실패 상태를 즉시 재현한다. 각 테스트는
 새 QueryClient와 i18n 인스턴스를 사용해야 하며, 실제 운영 캐시나 언어 설정을 공유하지
@@ -41,3 +41,18 @@ React Query wrapper는 테스트에서 retry를 끄므로 실패 상태를 즉�
 
 스냅샷만으로 위 기준을 대체하지 않는다. 핵심 assertion은 사용자가 관찰하는 결과와 API
 계약을 명시적으로 확인한다.
+
+## V2 Mock API 실행
+
+로컬 개발에서는 `.env.local`에 `EXPO_PUBLIC_API_MODE=mock`을 설정하고 Expo를
+재시작한다. `real`로 바꾸면 `EXPO_PUBLIC_API_BASE_URL`의 실제 API를 사용한다.
+공통 시나리오와 지연 시간은 각각 `EXPO_PUBLIC_MOCK_SCENARIO`와
+`EXPO_PUBLIC_MOCK_LATENCY_MS`로 선택한다. 자세한 값과 Fixture 작성 규칙은
+`src/v2/shared/config/README.md`를 따른다.
+
+Mock API 자체의 테스트는 외부 서버 없이 아래 명령으로 실행한다.
+
+```bash
+npm run test:v2-api
+npm run check:mock-contract
+```

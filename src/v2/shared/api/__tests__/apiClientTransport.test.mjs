@@ -3,12 +3,13 @@ import test from 'node:test';
 import axios from 'axios';
 
 import {
-  apiClient,
   configureApiAccessTokenProvider,
   configureApiTransport,
+  createApiClient,
 } from '../apiClient.ts';
 
 test('configured app transport handles authenticated GET and PUT requests', async () => {
+  const client = createApiClient();
   const calls = [];
   const transport = {
     get: async (path, options) => {
@@ -26,8 +27,8 @@ test('configured app transport handles authenticated GET and PUT requests', asyn
   const resetTokenProvider = configureApiAccessTokenProvider(() => 'access-token');
 
   try {
-    const getResult = await apiClient.get('/users/me/travel-purposes');
-    const putResult = await apiClient.put(
+    const getResult = await client.get('/users/me/travel-purposes');
+    const putResult = await client.put(
       '/users/me/travel-purposes',
       { travelPurposes: ['K_POP'] },
     );
@@ -44,6 +45,7 @@ test('configured app transport handles authenticated GET and PUT requests', asyn
 });
 
 test('idempotent PUT falls back to fetch after an Android Axios network error', async () => {
+  const client = createApiClient();
   const originalFetch = globalThis.fetch;
   const fetchCalls = [];
   const transport = {
@@ -65,7 +67,7 @@ test('idempotent PUT falls back to fetch after an Android Axios network error', 
   };
 
   try {
-    const result = await apiClient.put(
+    const result = await client.put(
       '/users/me/travel-purposes',
       { travelPurposes: ['K_POP'] },
     );

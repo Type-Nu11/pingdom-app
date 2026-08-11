@@ -6,6 +6,11 @@ export {
   createApiClient,
 } from './apiClient';
 export { getApiErrorUx } from './getApiErrorUx';
+export { getMockScenario, mockApiClient, setMockScenario } from './mock/mockApiClient';
+export {
+  merchantPerformanceFixture,
+  trustFixture,
+} from './mock/fixtures';
 export type {
   ApiAccessTokenProvider,
   ApiClient,

@@ -3,7 +3,6 @@ import test from 'node:test';
 
 import {
   ApiError,
-  apiClient,
   configureApiTransport,
   createApiClient,
 } from '../index.ts';
@@ -74,6 +73,7 @@ test('shared client rejects absolute paths before sending credentials', async ()
 
 test('app composition can inject the authenticated transport after the shared client is created', async () => {
   const responseBody = { authenticated: true };
+  const client = createApiClient();
   const transport = {
     get: async () => ({ data: responseBody }),
     patch: async () => ({ data: responseBody }),
@@ -84,7 +84,7 @@ test('app composition can inject the authenticated transport after the shared cl
   const resetTransport = configureApiTransport(transport);
 
   try {
-    assert.equal(await apiClient.get('/places'), responseBody);
+    assert.equal(await client.get('/places'), responseBody);
   } finally {
     resetTransport();
   }

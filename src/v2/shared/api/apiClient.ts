@@ -2,6 +2,7 @@ import axios, { type AxiosInstance } from 'axios';
 
 import { env } from '../config';
 import { ApiError, toApiError } from './ApiError';
+import { mockApiClient } from './mock/mockApiClient';
 
 const REQUEST_TIMEOUT_MS = 10_000;
 const FETCH_FALLBACK_TIMEOUT_MS = 10_000;
@@ -252,4 +253,6 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
   };
 }
 
-export const apiClient = createApiClient();
+const realApiClient = createApiClient();
+
+export const apiClient: ApiClient = env.apiMode === 'mock' ? mockApiClient : realApiClient;
