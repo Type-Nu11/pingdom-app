@@ -92,6 +92,24 @@ test('domain conflict and batch-limit codes branch without relying on HTTP statu
   );
 });
 
+test('unknown domain codes are preserved and are not reclassified from status alone', () => {
+  const response = {
+    code: 'MAP_LINK_CONVERSION_CONFLICT',
+    message: 'A domain-specific conversion conflict',
+    correlationId: 'server-specific-field',
+  };
+  const error = toApiError({
+    isAxiosError: true,
+    message: 'Request failed',
+    response: { data: response, status: 409 },
+  });
+
+  assert.equal(error.code, response.code);
+  assert.equal(error.status, 409);
+  assert.equal(error.responseData, response);
+  assert.equal(getApiErrorUx(error).kind, 'generic');
+});
+
 test('conversion POST retries only transient failures and has a finite retry budget', () => {
   const offline = new ApiError('offline', { isNetworkError: true });
 
