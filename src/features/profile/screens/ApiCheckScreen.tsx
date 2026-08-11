@@ -17,9 +17,14 @@ import {
   useReplaceTravelPurposes,
   useTravelPurposes,
 } from '../../../v2/features/travel-purposes';
+import {
+  TemporaryAccountSessionApiCheckList,
+  type TemporaryAccountSessionEndpoint,
+} from '../dev/account-session-api-check';
 
 type ApiCheckScreenProps = {
   onBack: () => void;
+  onOpenEndpoint: (endpoint: TemporaryAccountSessionEndpoint) => void;
 };
 
 function getErrorDebug(error: unknown) {
@@ -33,7 +38,7 @@ function getErrorDebug(error: unknown) {
   ].join('\n');
 }
 
-export default function ApiCheckScreen({ onBack }: ApiCheckScreenProps) {
+export default function ApiCheckScreen({ onBack, onOpenEndpoint }: ApiCheckScreenProps) {
   const travelPurposesQuery = useTravelPurposes();
   const replaceTravelPurposes = useReplaceTravelPurposes();
   const [selected, setSelected] = useState<TravelPurpose[]>([]);
@@ -71,7 +76,7 @@ export default function ApiCheckScreen({ onBack }: ApiCheckScreenProps) {
         </Pressable>
         <View style={styles.headerCopy}>
           <Text style={styles.title}>API 확인하기</Text>
-          <Text style={styles.subtitle}>GET/PUT /users/me/travel-purposes</Text>
+          <Text style={styles.subtitle}>연결된 endpoint 실기기 호출</Text>
         </View>
       </View>
 
@@ -156,147 +161,60 @@ export default function ApiCheckScreen({ onBack }: ApiCheckScreenProps) {
             <Text style={styles.successText}>200 변경 성공 · 캐시 갱신 완료</Text>
           ) : null}
         </View>
+
+        {/* TEMPORARY #165: remove this render and the dev/account-session-api-check directory. */}
+        <TemporaryAccountSessionApiCheckList onSelect={onOpenEndpoint} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  backText: {
-    color: '#0c0c0d',
-    fontSize: 48,
-    fontWeight: '300',
-    lineHeight: 48,
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
+  backText: { color: '#0c0c0d', fontSize: 48, fontWeight: '300', lineHeight: 48 },
+  buttonDisabled: { opacity: 0.55 },
   card: {
-    backgroundColor: '#ffffff',
-    borderColor: '#e5e5e7',
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 14,
-    padding: 18,
+    backgroundColor: '#ffffff', borderColor: '#e5e5e7', borderRadius: 18,
+    borderWidth: 1, gap: 14, padding: 18,
   },
-  content: {
-    gap: 16,
-    padding: 20,
-    paddingBottom: 40,
-  },
+  content: { gap: 16, padding: 20, paddingBottom: 40 },
   errorText: {
-    backgroundColor: '#fff1f3',
-    borderRadius: 12,
-    color: '#b4233c',
-    fontFamily: 'monospace',
-    fontSize: 13,
-    lineHeight: 20,
-    padding: 14,
+    backgroundColor: '#fff1f3', borderRadius: 12, color: '#b4233c',
+    fontFamily: 'monospace', fontSize: 13, lineHeight: 20, padding: 14,
   },
   header: {
-    alignItems: 'center',
-    borderBottomColor: '#e5e5e7',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    alignItems: 'center', borderBottomColor: '#e5e5e7', borderBottomWidth: 1,
+    flexDirection: 'row', gap: 14, paddingHorizontal: 20, paddingVertical: 14,
   },
-  headerCopy: {
-    flex: 1,
-  },
+  headerCopy: { flex: 1 },
   jsonText: {
-    backgroundColor: '#f6f6f7',
-    borderRadius: 12,
-    color: '#3b3b40',
-    fontFamily: 'monospace',
-    fontSize: 13,
-    lineHeight: 19,
-    padding: 14,
+    backgroundColor: '#f6f6f7', borderRadius: 12, color: '#3b3b40',
+    fontFamily: 'monospace', fontSize: 13, lineHeight: 19, padding: 14,
   },
-  muted: {
-    color: '#6e6e76',
-    fontSize: 14,
-    lineHeight: 20,
-  },
+  muted: { color: '#6e6e76', fontSize: 14, lineHeight: 20 },
   primaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#ff1956',
-    borderRadius: 14,
-    justifyContent: 'center',
-    minHeight: 50,
+    alignItems: 'center', backgroundColor: '#ff1956', borderRadius: 14,
+    justifyContent: 'center', minHeight: 50,
   },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  primaryButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
   purposeButton: {
-    backgroundColor: '#f6f6f7',
-    borderColor: '#e5e5e7',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
+    backgroundColor: '#f6f6f7', borderColor: '#e5e5e7', borderRadius: 999,
+    borderWidth: 1, paddingHorizontal: 13, paddingVertical: 9,
   },
-  purposeButtonSelected: {
-    backgroundColor: '#ff1956',
-    borderColor: '#ff1956',
-  },
-  purposeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  purposeText: {
-    color: '#3b3b40',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  purposeTextSelected: {
-    color: '#ffffff',
-  },
+  purposeButtonSelected: { backgroundColor: '#ff1956', borderColor: '#ff1956' },
+  purposeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  purposeText: { color: '#3b3b40', fontSize: 13, fontWeight: '600' },
+  purposeTextSelected: { color: '#ffffff' },
   requestPreview: {
-    color: '#6e6e76',
-    fontFamily: 'monospace',
-    fontSize: 12,
-    lineHeight: 18,
+    color: '#6e6e76', fontFamily: 'monospace', fontSize: 12, lineHeight: 18,
   },
-  safeArea: {
-    backgroundColor: '#fafafa',
-    flex: 1,
-  },
+  safeArea: { backgroundColor: '#fafafa', flex: 1 },
   secondaryButton: {
-    alignItems: 'center',
-    borderColor: '#ff1956',
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: 'center',
-    minHeight: 44,
+    alignItems: 'center', borderColor: '#ff1956', borderRadius: 12,
+    borderWidth: 1, justifyContent: 'center', minHeight: 44,
   },
-  secondaryButtonText: {
-    color: '#ff1956',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  sectionTitle: {
-    color: '#202024',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  subtitle: {
-    color: '#6e6e76',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  successText: {
-    color: '#087443',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  title: {
-    color: '#202024',
-    fontSize: 22,
-    fontWeight: '800',
-  },
+  secondaryButtonText: { color: '#ff1956', fontSize: 14, fontWeight: '700' },
+  sectionTitle: { color: '#202024', fontSize: 18, fontWeight: '800' },
+  subtitle: { color: '#6e6e76', fontSize: 12, marginTop: 2 },
+  successText: { color: '#087443', fontSize: 14, fontWeight: '700' },
+  title: { color: '#202024', fontSize: 22, fontWeight: '800' },
 });

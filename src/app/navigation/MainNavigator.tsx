@@ -9,6 +9,7 @@ import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen'
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
 import ApiCheckScreen from '../../features/profile/screens/ApiCheckScreen';
+import { TemporaryAccountSessionApiCheckPage } from '../../features/profile/dev/account-session-api-check';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
@@ -96,7 +97,20 @@ const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
 };
 
 const ApiCheckRouteScreen = ({ navigation }: MainScreenProps<'ApiCheck'>) => (
-  <ApiCheckScreen onBack={navigation.goBack} />
+  <ApiCheckScreen
+    onBack={navigation.goBack}
+    onOpenEndpoint={(endpoint) => navigation.navigate(MAIN_ROUTES.ApiEndpointCheck, { endpoint })}
+  />
+);
+
+const ApiEndpointCheckRouteScreen = ({
+  navigation,
+  route,
+}: MainScreenProps<'ApiEndpointCheck'>) => (
+  <TemporaryAccountSessionApiCheckPage
+    endpoint={route.params.endpoint}
+    onBack={navigation.goBack}
+  />
 );
 
 const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) => (
@@ -133,6 +147,7 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.ApiEndpointCheck} component={ApiEndpointCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Merchant} component={MerchantRouteScreen} />
   </Stack.Navigator>

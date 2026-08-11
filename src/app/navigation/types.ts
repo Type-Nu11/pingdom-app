@@ -3,6 +3,7 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
+import type { TemporaryAccountSessionEndpoint } from '../../features/profile/dev/account-session-api-check';
 
 declare const routeIdBrand: unique symbol;
 
@@ -39,6 +40,7 @@ export const AUTH_ROUTES = {
 
 export const MAIN_ROUTES = {
   ApiCheck: 'ApiCheck',
+  ApiEndpointCheck: 'ApiEndpointCheck',
   CheckIn: 'CheckIn',
   CouponWallet: 'CouponWallet',
   Map: 'Map',
@@ -55,6 +57,9 @@ export type AuthStackParamList = {
 
 export type MainStackParamList = {
   ApiCheck: undefined;
+  ApiEndpointCheck: {
+    endpoint: TemporaryAccountSessionEndpoint;
+  };
   Map: {
     focusedPlaceId?: PlaceId;
     notificationContext?: NotificationNavigationContext;
