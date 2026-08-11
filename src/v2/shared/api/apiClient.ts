@@ -19,10 +19,11 @@ export type MutationRequestOptions = {
 };
 
 export type ApiAccessTokenProvider = () => Promise<string | null> | string | null;
-export type ApiTransport = Pick<AxiosInstance, 'get' | 'patch' | 'post' | 'put'>;
+export type ApiTransport = Pick<AxiosInstance, 'delete' | 'get' | 'patch' | 'post' | 'put'>;
 export type HttpTransport = ApiTransport;
 
 export type ApiClient = {
+  delete<TResponse>(path: string, options?: MutationRequestOptions): Promise<TResponse>;
   get<TResponse>(path: string, options?: GetRequestOptions): Promise<TResponse>;
   patch<TResponse, TBody = unknown>(
     path: string,
@@ -150,6 +151,7 @@ async function putWithFetchFallback<TResponse, TBody>(
         : `API request failed with status ${response.status}`,
       {
         code: typeof errorBody?.code === 'string' ? errorBody.code : undefined,
+        responseBody: responseData,
         status: response.status,
       },
     );
@@ -168,6 +170,23 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
   const getTransport = () => transport ?? apiTransport;
 
   return {
+    async delete<TResponse>(
+      path: string,
+      options: MutationRequestOptions = {},
+    ): Promise<TResponse> {
+      assertRelativeApiPath(path);
+
+      try {
+        const response = await getTransport().delete<TResponse>(
+          path,
+          await withAuthorization(options),
+        );
+        return response.data;
+      } catch (error) {
+        throw toApiError(error);
+      }
+    },
+
     async get<TResponse>(path: string, options: GetRequestOptions = {}): Promise<TResponse> {
       assertRelativeApiPath(path);
 

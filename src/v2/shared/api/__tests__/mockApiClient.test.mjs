@@ -13,12 +13,13 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('success');
   assert.equal(apiClient, mockApiClient);
 
-  const [places, detail, checkIn, coupons, travelPurposes] = await Promise.all([
+  const [places, detail, checkIn, coupons, travelPurposes, currentActivityIntent] = await Promise.all([
     mockApiClient.get('/places'),
     mockApiClient.get('/places/17'),
     mockApiClient.post('/location-check-ins', {}),
     mockApiClient.get('/coupons'),
     mockApiClient.get('/users/me/travel-purposes'),
+    mockApiClient.get('/users/me/current-activity-intent'),
   ]);
 
   assert.equal(getMockScenario(), 'success');
@@ -28,19 +29,29 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.deepEqual(coupons.coupons.map(({ status }) => status), ['ISSUED', 'EXPIRED']);
   assert.equal(merchantPerformanceFixture.metrics.completedCheckIns, 31);
   assert.deepEqual(travelPurposes.travelPurposes, ['K_POP', 'CAFE']);
+  assert.equal(currentActivityIntent.intent, 'CAFE');
   assert.deepEqual(
     await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
     travelPurposes,
   );
+  assert.deepEqual(
+    await mockApiClient.put('/users/me/current-activity-intent', { intent: 'SHOP' }),
+    { expiresAt: currentActivityIntent.expiresAt, intent: 'SHOP' },
+  );
+  assert.equal(await mockApiClient.delete('/users/me/current-activity-intent'), undefined);
 
   setMockScenario('empty');
   const emptyPlaces = await mockApiClient.get('/places');
   const emptyCoupons = await mockApiClient.get('/coupons');
+  const emptyCurrentActivityIntent = await mockApiClient.get(
+    '/users/me/current-activity-intent',
+  );
 
   assert.deepEqual(emptyPlaces.places, []);
   assert.equal(emptyPlaces.totalPages, 0);
   assert.deepEqual(emptyCoupons.coupons, []);
   assert.equal(emptyCoupons.hasNext, false);
+  assert.deepEqual(emptyCurrentActivityIntent, { expiresAt: null, intent: null });
 
   const cases = [
     ['forbidden', 403, 'ROLE_REQUIRED'],

@@ -29,6 +29,24 @@ test('contract ErrorResponse fields are retained for forms and support logging',
   assert.deepEqual(error.details, response.details);
 });
 
+test('unknown server error codes and payload fields are preserved losslessly', () => {
+  const response = {
+    code: 'FUTURE_ACTIVITY_INTENT_ERROR',
+    context: { expiresAt: '2026-08-11T14:00:00Z' },
+    message: 'Future server error',
+    nested: ['untouched'],
+  };
+  const error = toApiError({
+    isAxiosError: true,
+    message: 'Request failed',
+    response: { data: response, status: 409 },
+  });
+
+  assert.equal(error.code, 'FUTURE_ACTIVITY_INTENT_ERROR');
+  assert.equal(error.status, 409);
+  assert.equal(error.responseBody, response);
+});
+
 test('400/401/403/404/409/410/422/426 errors select contract UX branches', () => {
   const cases = [
     [400, 'VALIDATION_FAILED', 'validation', 'none'],

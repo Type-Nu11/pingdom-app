@@ -10,6 +10,7 @@
     "check:a11y-i18n": "node scripts/check-accessibility-i18n.mjs",
     "check:api-contract": "node scripts/check-api-contract.mjs",
     "generate:api-types": "openapi-typescript docs/api/mvp.openapi.json -o src/v2/shared/api/generated/mvp.ts",
+    "generate:current-activity-intent-api-types": "openapi-typescript docs/api/current-activity-intent.openapi.json -o src/v2/shared/api/generated/currentActivityIntent.ts",
     "check:api-types": "node scripts/check-generated-api-types.mjs",
     "check:mock-contract": "tsc --noEmit",
     "test": "jest",

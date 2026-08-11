@@ -1,9 +1,12 @@
-export type MockMethod = 'GET' | 'PATCH' | 'POST' | 'PUT';
+import type { MockScenario } from '../../config/env';
+
+export type MockMethod = 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
 
 export type MockRequest = {
   body?: unknown;
   method: MockMethod;
   path: string;
+  scenario?: MockScenario;
 };
 
 export type MockHandler = {

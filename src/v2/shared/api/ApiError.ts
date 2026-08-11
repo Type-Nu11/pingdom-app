@@ -6,6 +6,7 @@ type ApiErrorDetails = {
   code?: string;
   isNetworkError?: boolean;
   response?: ErrorResponse;
+  responseBody?: unknown;
   status?: number;
 };
 
@@ -14,6 +15,7 @@ export class ApiError extends Error {
   readonly details: Record<string, unknown> | null;
   readonly fieldErrors: FieldError[] | null;
   readonly isNetworkError: boolean;
+  readonly responseBody?: unknown;
   readonly status?: number;
   readonly traceId?: string;
 
@@ -24,6 +26,9 @@ export class ApiError extends Error {
     this.details = details.response?.details ?? null;
     this.fieldErrors = details.response?.fieldErrors ?? null;
     this.isNetworkError = details.isNetworkError ?? false;
+    this.responseBody = Object.prototype.hasOwnProperty.call(details, 'responseBody')
+      ? details.responseBody
+      : details.response;
     this.status = details.status;
     this.traceId = details.response?.traceId;
   }
@@ -90,6 +95,7 @@ export function toApiError(error: unknown): ApiError {
       code: response.code ?? error.code,
       isNetworkError: error.response === undefined && error.code !== 'ERR_CANCELED',
       response: response.response,
+      responseBody: error.response?.data,
       status: error.response?.status,
     });
   }
