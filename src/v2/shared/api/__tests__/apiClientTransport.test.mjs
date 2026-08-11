@@ -12,6 +12,10 @@ test('configured app transport handles authenticated GET and PUT requests', asyn
   const client = createApiClient();
   const calls = [];
   const transport = {
+    delete: async (path, options) => {
+      calls.push({ body: options.data, method: 'DELETE', options, path });
+      return { data: undefined };
+    },
     get: async (path, options) => {
       calls.push({ method: 'GET', options, path });
       return { data: { travelPurposes: ['K_POP'] } };
@@ -32,12 +36,15 @@ test('configured app transport handles authenticated GET and PUT requests', asyn
       '/users/me/travel-purposes',
       { travelPurposes: ['K_POP'] },
     );
+    await client.delete('/firebase/fcm-tokens', { token: 'device-token' });
 
     assert.deepEqual(getResult, { travelPurposes: ['K_POP'] });
     assert.deepEqual(putResult, { travelPurposes: ['K_POP'] });
-    assert.deepEqual(calls.map(({ method }) => method), ['GET', 'PUT']);
+    assert.deepEqual(calls.map(({ method }) => method), ['GET', 'PUT', 'DELETE']);
     assert.equal(calls[0].options.headers.Authorization, 'Bearer access-token');
     assert.equal(calls[1].options.headers.Authorization, 'Bearer access-token');
+    assert.equal(calls[2].options.headers.Authorization, 'Bearer access-token');
+    assert.deepEqual(calls[2].body, { token: 'device-token' });
   } finally {
     resetTokenProvider();
     resetTransport();
@@ -49,6 +56,7 @@ test('idempotent PUT falls back to fetch after an Android Axios network error', 
   const originalFetch = globalThis.fetch;
   const fetchCalls = [];
   const transport = {
+    delete: async () => ({ data: undefined }),
     get: async () => ({ data: undefined }),
     patch: async () => ({ data: undefined }),
     post: async () => ({ data: undefined }),

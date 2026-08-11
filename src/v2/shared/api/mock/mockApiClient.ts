@@ -148,6 +148,11 @@ async function resolve<T>(
 }
 
 export const mockApiClient: ApiClient = {
+  delete: <TResponse>(
+    path: string,
+    body?: unknown,
+    options: MutationRequestOptions = {},
+  ) => resolve<TResponse>('DELETE', path, options.signal, body),
   get: <TResponse>(path: string, options: GetRequestOptions = {}) =>
     resolve<TResponse>('GET', path, options.signal),
   patch: <TResponse>(
