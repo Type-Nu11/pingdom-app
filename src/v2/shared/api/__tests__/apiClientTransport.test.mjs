@@ -8,10 +8,14 @@ import {
   createApiClient,
 } from '../apiClient.ts';
 
-test('configured app transport handles authenticated GET and PUT requests', async () => {
+test('configured app transport handles authenticated GET, PUT, and DELETE requests', async () => {
   const client = createApiClient();
   const calls = [];
   const transport = {
+    delete: async (path, options) => {
+      calls.push({ body: options.data, method: 'DELETE', options, path });
+      return { data: { linked: false } };
+    },
     get: async (path, options) => {
       calls.push({ method: 'GET', options, path });
       return { data: { travelPurposes: ['K_POP'] } };
@@ -32,12 +36,19 @@ test('configured app transport handles authenticated GET and PUT requests', asyn
       '/users/me/travel-purposes',
       { travelPurposes: ['K_POP'] },
     );
+    const deleteResult = await client.delete(
+      '/users/me/oauth-accounts/google',
+      { currentPassword: 'password' },
+    );
 
     assert.deepEqual(getResult, { travelPurposes: ['K_POP'] });
     assert.deepEqual(putResult, { travelPurposes: ['K_POP'] });
-    assert.deepEqual(calls.map(({ method }) => method), ['GET', 'PUT']);
+    assert.deepEqual(deleteResult, { linked: false });
+    assert.deepEqual(calls.map(({ method }) => method), ['GET', 'PUT', 'DELETE']);
     assert.equal(calls[0].options.headers.Authorization, 'Bearer access-token');
     assert.equal(calls[1].options.headers.Authorization, 'Bearer access-token');
+    assert.equal(calls[2].options.headers.Authorization, 'Bearer access-token');
+    assert.deepEqual(calls[2].body, { currentPassword: 'password' });
   } finally {
     resetTokenProvider();
     resetTransport();
@@ -49,6 +60,7 @@ test('idempotent PUT falls back to fetch after an Android Axios network error', 
   const originalFetch = globalThis.fetch;
   const fetchCalls = [];
   const transport = {
+    delete: async () => ({ data: undefined }),
     get: async () => ({ data: undefined }),
     patch: async () => ({ data: undefined }),
     post: async () => ({ data: undefined }),
