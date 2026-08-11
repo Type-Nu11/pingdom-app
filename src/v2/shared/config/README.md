@@ -25,8 +25,27 @@ During development a scenario picker can call `setMockScenario(...)` from
 `src/v2/shared/api`. Invalidate the affected TanStack Query keys after changing it
 so mounted screens refetch.
 
-Fixtures live in `src/v2/shared/api/mock/fixtures.ts`. They contain synthetic names,
-UUIDs, contact values, and metrics only. Never copy production responses, access
-tokens, customer identifiers, precise visit histories, or merchant operating data
-into fixtures. Contract-backed fixtures use `satisfies ApiSchema<...>`; `npm run
-check:mock-contract` detects drift after OpenAPI type generation.
+New mocks use a feature-local pair under
+`src/v2/shared/api/mock/features/<feature>/`:
+
+```text
+features/<feature>/
+  fixtures.ts   # OpenAPI-generated type checked synthetic responses
+  handlers.ts   # method/path matching and response selection
+```
+
+Export the feature handler array from `mock/features/index.ts`. Use the shared
+`MockHandler` type so GET, PATCH, POST, and PUT routes use the same registration
+path. `travel-purposes` is the reference GET/PUT implementation. The existing
+`mock/fixtures.ts` contains the initial cross-feature MVP fixtures and can be moved
+into feature folders as those features are changed.
+
+Fixtures must contain synthetic names, UUIDs, contact values, and metrics only.
+Never copy production responses, access tokens, customer identifiers, email or
+phone values, precise visit histories, or merchant operating data into fixtures.
+Prefer conspicuous values such as `Fixture`, `Mock`, reserved UUIDs, and
+`example.com`; do not anonymize production payloads and reuse them.
+
+Contract-backed fixtures use `satisfies ApiSchema<...>` (or the corresponding
+`OperationResponse<...>` type). Run `npm run check:mock-contract`; type checking
+then detects drift after OpenAPI type generation.

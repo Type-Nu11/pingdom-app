@@ -4,6 +4,7 @@ import type { ErrorResponse, FieldError } from './contract';
 
 type ApiErrorDetails = {
   code?: string;
+  isNetworkError?: boolean;
   response?: ErrorResponse;
   status?: number;
 };
@@ -12,6 +13,7 @@ export class ApiError extends Error {
   readonly code?: string;
   readonly details: Record<string, unknown> | null;
   readonly fieldErrors: FieldError[] | null;
+  readonly isNetworkError: boolean;
   readonly status?: number;
   readonly traceId?: string;
 
@@ -21,6 +23,7 @@ export class ApiError extends Error {
     this.code = details.response?.code ?? details.code;
     this.details = details.response?.details ?? null;
     this.fieldErrors = details.response?.fieldErrors ?? null;
+    this.isNetworkError = details.isNetworkError ?? false;
     this.status = details.status;
     this.traceId = details.response?.traceId;
   }
@@ -85,6 +88,7 @@ export function toApiError(error: unknown): ApiError {
 
     return new ApiError(response.message ?? error.message, {
       code: response.code ?? error.code,
+      isNetworkError: error.response === undefined && error.code !== 'ERR_CANCELED',
       response: response.response,
       status: error.response?.status,
     });

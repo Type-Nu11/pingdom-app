@@ -1,12 +1,24 @@
 export { ApiError, toApiError } from './ApiError';
-export { apiClient } from './apiClient';
+export {
+  apiClient,
+  configureApiAccessTokenProvider,
+  configureApiTransport,
+  createApiClient,
+} from './apiClient';
 export { getApiErrorUx } from './getApiErrorUx';
 export { getMockScenario, mockApiClient, setMockScenario } from './mock/mockApiClient';
 export {
   merchantPerformanceFixture,
   trustFixture,
 } from './mock/fixtures';
-export type { ApiClient, GetRequestOptions, MutationRequestOptions } from './apiClient';
+export type {
+  ApiAccessTokenProvider,
+  ApiClient,
+  ApiTransport,
+  GetRequestOptions,
+  HttpTransport,
+  MutationRequestOptions,
+} from './apiClient';
 export type {
   ApiOperationName,
   ApiSchema,

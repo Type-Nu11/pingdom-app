@@ -25,6 +25,7 @@
     }
   ],
   "tags": [
+    { "name": "Users", "description": "현재 사용자 선호와 개인화 설정" },
     { "name": "Places", "description": "장소 Summary 및 Detail 읽기 모델" },
     { "name": "Check-ins", "description": "관광객 위치 근접 체크인" },
     { "name": "Status votes", "description": "체크인 기반 실시간 상태 투표" },
@@ -41,6 +42,67 @@
     "canonicalSigning": "HTTP_METHOD\\nPATH_WITH_SORTED_QUERY\\nX_TIMESTAMP\\nX_DEVICE_ID\\nX_APP_VERSION\\nSHA256_REQUEST_BODY"
   },
   "paths": {
+    "/users/me/travel-purposes": {
+      "get": {
+        "tags": ["Users"],
+        "operationId": "getTravelPurposes",
+        "summary": "여행 목적 선호 조회",
+        "description": "현재 인증된 사용자의 여행 목적 선호 목록을 조회한다.",
+        "x-required-roles": ["ANY_AUTHENTICATED"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTimestamp" },
+          { "$ref": "#/components/parameters/XSignature" },
+          { "$ref": "#/components/parameters/XAppVersion" },
+          { "$ref": "#/components/parameters/XDeviceId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TravelPurposePreferenceResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/AuthenticationError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "operationId": "replaceTravelPurposes",
+        "summary": "여행 목적 선호 전체 변경",
+        "description": "현재 인증된 사용자의 여행 목적 선호를 요청 목록으로 전체 교체한다. 빈 배열은 모든 선호를 해제한다.",
+        "x-required-roles": ["ANY_AUTHENTICATED"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTimestamp" },
+          { "$ref": "#/components/parameters/XSignature" },
+          { "$ref": "#/components/parameters/XAppVersion" },
+          { "$ref": "#/components/parameters/XDeviceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TravelPurposePreferenceUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "변경 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TravelPurposePreferenceResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/AuthenticationError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" }
+        }
+      }
+    },
     "/places": {
       "get": {
         "tags": ["Places"],
@@ -1238,6 +1300,37 @@
       "TouristCategory": {
         "type": "string",
         "enum": ["K_POP", "FOOD", "SHOPPING", "CULTURE", "NIGHTLIFE", "NATURE", "OTHER", "UNKNOWN"]
+      },
+      "TravelPurpose": {
+        "type": "string",
+        "enum": ["K_POP", "BEAUTY", "FASHION", "CAFE", "FOOD", "POP_UP", "EXHIBITION", "NIGHTLIFE", "OTHER"]
+      },
+      "TravelPurposePreferenceUpdateRequest": {
+        "type": "object",
+        "description": "여행 목적 선호 전체 변경 요청",
+        "required": ["travelPurposes"],
+        "properties": {
+          "travelPurposes": {
+            "type": "array",
+            "description": "선호 여행 목적 전체 목록. 빈 배열이면 모든 선호를 해제한다.",
+            "minItems": 0,
+            "maxItems": 9,
+            "uniqueItems": true,
+            "items": { "$ref": "#/components/schemas/TravelPurpose" }
+          }
+        }
+      },
+      "TravelPurposePreferenceResponse": {
+        "type": "object",
+        "description": "여행 목적 선호 응답",
+        "properties": {
+          "travelPurposes": {
+            "type": "array",
+            "description": "선호 여행 목적 목록",
+            "uniqueItems": true,
+            "items": { "$ref": "#/components/schemas/TravelPurpose" }
+          }
+        }
       },
       "PlaceSort": {
         "type": "string",

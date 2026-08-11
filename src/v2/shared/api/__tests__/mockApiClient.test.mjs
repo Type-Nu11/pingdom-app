@@ -13,11 +13,12 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('success');
   assert.equal(apiClient, mockApiClient);
 
-  const [places, detail, checkIn, coupons] = await Promise.all([
+  const [places, detail, checkIn, coupons, travelPurposes] = await Promise.all([
     mockApiClient.get('/places'),
     mockApiClient.get('/places/17'),
     mockApiClient.post('/location-check-ins', {}),
     mockApiClient.get('/coupons'),
+    mockApiClient.get('/users/me/travel-purposes'),
   ]);
 
   assert.equal(getMockScenario(), 'success');
@@ -26,6 +27,11 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.equal(checkIn.status, 'PROXIMITY_MATCHED');
   assert.deepEqual(coupons.coupons.map(({ status }) => status), ['ISSUED', 'EXPIRED']);
   assert.equal(merchantPerformanceFixture.metrics.completedCheckIns, 31);
+  assert.deepEqual(travelPurposes.travelPurposes, ['K_POP', 'CAFE']);
+  assert.deepEqual(
+    await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
+    travelPurposes,
+  );
 
   setMockScenario('empty');
   const emptyPlaces = await mockApiClient.get('/places');
@@ -46,7 +52,10 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     setMockScenario(scenario);
     await assert.rejects(
       mockApiClient.get('/places'),
-      (error) => error.status === status && error.code === code,
+      (error) =>
+        error.status === status &&
+        error.code === code &&
+        (scenario !== 'network-error' || error.isNetworkError),
     );
   }
 

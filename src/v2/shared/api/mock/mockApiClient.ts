@@ -1,6 +1,7 @@
 import { env, type MockScenario } from '../../config/env';
 import { ApiError } from '../ApiError';
 import type { ApiClient, GetRequestOptions, MutationRequestOptions } from '../apiClient';
+import { featureMockHandlers } from './features';
 import {
   availabilityFixture,
   checkInFixture,
@@ -19,6 +20,7 @@ import {
   reservationPageFixture,
   statusVoteFixture,
 } from './fixtures';
+import { resolveMockHandler, type MockMethod } from './handlers';
 
 let activeScenario: MockScenario = env.mock.scenario;
 
@@ -39,15 +41,15 @@ function wait(signal?: AbortSignal): Promise<void> {
   }
 
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(resolve, env.mock.latencyMs);
-    signal?.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timeout);
-        reject(new ApiError('Mock request aborted', { code: 'ERR_CANCELED' }));
-      },
-      { once: true },
-    );
+    const handleAbort = () => {
+      clearTimeout(timeout);
+      reject(new ApiError('Mock request aborted', { code: 'ERR_CANCELED' }));
+    };
+    const timeout = setTimeout(() => {
+      signal?.removeEventListener('abort', handleAbort);
+      resolve();
+    }, env.mock.latencyMs);
+    signal?.addEventListener('abort', handleAbort, { once: true });
   });
 }
 
@@ -58,7 +60,10 @@ function scenarioError(): ApiError | undefined {
     case 'expired':
       return new ApiError('Mock resource expired', { code: 'RESOURCE_EXPIRED', status: 410 });
     case 'network-error':
-      return new ApiError('Mock network unavailable', { code: 'ERR_NETWORK' });
+      return new ApiError('Mock network unavailable', {
+        code: 'ERR_NETWORK',
+        isNetworkError: true,
+      });
     default:
       return undefined;
   }
@@ -123,16 +128,21 @@ function postSuccess(path: string): unknown {
 }
 
 async function resolve<T>(
-  method: 'GET' | 'PATCH' | 'POST',
+  method: MockMethod,
   path: string,
   signal?: AbortSignal,
+  body?: unknown,
 ): Promise<T> {
   await wait(signal);
   const error = scenarioError();
   if (error) throw error;
 
+  const featureResult = resolveMockHandler(featureMockHandlers, { body, method, path });
+  if (featureResult.found) return featureResult.response as T;
+
   if (method === 'PATCH' && path === '/firebase/fcm-token') return undefined as T;
   if (method === 'POST') return postSuccess(path) as T;
+  if (method === 'PUT') return notFound(path);
   if (activeScenario === 'empty') return getEmpty(path) as T;
   return getSuccess(path) as T;
 }
@@ -142,12 +152,17 @@ export const mockApiClient: ApiClient = {
     resolve<TResponse>('GET', path, options.signal),
   patch: <TResponse>(
     path: string,
-    _body: unknown,
+    body: unknown,
     options: MutationRequestOptions = {},
-  ) => resolve<TResponse>('PATCH', path, options.signal),
+  ) => resolve<TResponse>('PATCH', path, options.signal, body),
   post: <TResponse>(
     path: string,
-    _body?: unknown,
+    body?: unknown,
     options: MutationRequestOptions = {},
-  ) => resolve<TResponse>('POST', path, options.signal),
+  ) => resolve<TResponse>('POST', path, options.signal, body),
+  put: <TResponse>(
+    path: string,
+    body: unknown,
+    options: MutationRequestOptions = {},
+  ) => resolve<TResponse>('PUT', path, options.signal, body),
 };

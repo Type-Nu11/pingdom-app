@@ -3,7 +3,14 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { recordApi } from '../../record/api/recordApi';
 import { postQueryKeys } from '../../record/hooks/usePlacePosts';
 import type { Post, PostsPage } from '../../record/model/record.types';
-import type { RecommendedPlace } from '../model/place.types';
+
+type PreviewPlace = {
+  id: number;
+  imageUrl?: string;
+  images?: Array<{ imageUrl?: string; url?: string } | string>;
+  mediaUrls?: string[];
+  thumbnailUrl?: string;
+};
 
 const PREVIEW_POST_PARAMS = {
   limit: 100,
@@ -16,20 +23,14 @@ const PREVIEW_POST_QUERY_KEY = [
   PREVIEW_POST_PARAMS,
 ] as const;
 
-function getInlinePreviewImage(place: RecommendedPlace) {
-  const placeWithImages = place as RecommendedPlace & {
-    imageUrl?: string;
-    images?: Array<{ imageUrl?: string; url?: string } | string>;
-    mediaUrls?: string[];
-    thumbnailUrl?: string;
-  };
-  const imageUrl = placeWithImages.imageUrl ?? placeWithImages.thumbnailUrl;
+function getInlinePreviewImage(place: PreviewPlace) {
+  const imageUrl = place.imageUrl ?? place.thumbnailUrl;
 
   if (imageUrl) {
     return imageUrl;
   }
 
-  const imageFromImages = placeWithImages.images?.find((image) => (
+  const imageFromImages = place.images?.find((image) => (
     typeof image === 'string' ? Boolean(image) : Boolean(image.imageUrl ?? image.url)
   ));
 
@@ -37,7 +38,7 @@ function getInlinePreviewImage(place: RecommendedPlace) {
     return imageFromImages;
   }
 
-  return imageFromImages?.imageUrl ?? imageFromImages?.url ?? placeWithImages.mediaUrls?.[0];
+  return imageFromImages?.imageUrl ?? imageFromImages?.url ?? place.mediaUrls?.[0];
 }
 
 function getPostPreviewImage(post: Post) {
@@ -86,7 +87,7 @@ async function getPostsForPreviewImages(): Promise<PostsPage> {
   };
 }
 
-export function usePlacePreviewImages(places: RecommendedPlace[]) {
+export function usePlacePreviewImages(places: PreviewPlace[]) {
   const placeIds = useMemo(
     () => places
       .map((place) => Number(place.id))
