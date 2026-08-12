@@ -6,6 +6,10 @@ export const TEMPORARY_ACCOUNT_SESSION_ENDPOINTS = [
   'POST /users/me/oauth-accounts/google/link',
   'DELETE /users/me/oauth-accounts/google',
   'GET /users/me/export',
+  'POST /firebase/fcm-tokens',
+  'DELETE /firebase/fcm-tokens',
+  'GET /notifications/settings',
+  'PATCH /notifications/settings',
 ] as const;
 
 export type TemporaryAccountSessionEndpoint =

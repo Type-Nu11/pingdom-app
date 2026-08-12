@@ -51,8 +51,11 @@ export function optimisticallyUpdateNotificationSettings(
   return previous;
 }
 
-export function useNotificationSettings() {
-  return useQuery(createNotificationSettingsQueryOptions());
+export function useNotificationSettings(enabled = true) {
+  return useQuery({
+    ...createNotificationSettingsQueryOptions(),
+    enabled,
+  });
 }
 
 export function useUpdateNotificationSettings() {
@@ -74,4 +77,3 @@ export function useUpdateNotificationSettings() {
     onSettled: () => queryClient.invalidateQueries({ exact: true, queryKey }),
   });
 }
-

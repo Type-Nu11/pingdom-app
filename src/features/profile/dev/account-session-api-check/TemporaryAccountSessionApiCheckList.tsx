@@ -10,23 +10,34 @@ type Props = {
 };
 
 /**
- * TEMPORARY: Remove this component and its render in ApiCheckScreen after #165 device QA.
+ * TEMPORARY: Remove this component and its render in ApiCheckScreen after #165/#166 device QA.
  * New endpoints are appended to TEMPORARY_ACCOUNT_SESSION_ENDPOINTS so the latest stays last.
  */
 export default function TemporaryAccountSessionApiCheckList({ onSelect }: Props) {
+  const accountEndpoints = TEMPORARY_ACCOUNT_SESSION_ENDPOINTS.filter(
+    (endpoint) => !endpoint.includes('/firebase/') && !endpoint.includes('/notifications/'),
+  );
+  const notificationEndpoints = TEMPORARY_ACCOUNT_SESSION_ENDPOINTS.filter(
+    (endpoint) => endpoint.includes('/firebase/') || endpoint.includes('/notifications/'),
+  );
+
+  const renderEndpoint = (endpoint: TemporaryAccountSessionEndpoint) => (
+    <Pressable
+      accessibilityRole="button"
+      key={endpoint}
+      style={({ pressed }) => [styles.endpointButton, pressed && styles.pressed]}
+      onPress={() => onSelect(endpoint)}
+    >
+      <Text style={styles.endpointText}>{endpoint}</Text>
+    </Pressable>
+  );
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>계정·세션 API · 임시 실기기 검증</Text>
-      {TEMPORARY_ACCOUNT_SESSION_ENDPOINTS.map((endpoint) => (
-        <Pressable
-          accessibilityRole="button"
-          key={endpoint}
-          style={({ pressed }) => [styles.endpointButton, pressed && styles.pressed]}
-          onPress={() => onSelect(endpoint)}
-        >
-          <Text style={styles.endpointText}>{endpoint}</Text>
-        </Pressable>
-      ))}
+      {accountEndpoints.map(renderEndpoint)}
+      <Text style={[styles.label, styles.sectionLabel]}>FCM·알림 설정 API · #166 실기기 검증</Text>
+      {notificationEndpoints.map(renderEndpoint)}
     </View>
   );
 }
@@ -56,5 +67,8 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.78,
+  },
+  sectionLabel: {
+    marginTop: 12,
   },
 });
