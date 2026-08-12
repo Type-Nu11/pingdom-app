@@ -1,4 +1,4 @@
-export type MockMethod = 'GET' | 'PATCH' | 'POST' | 'PUT';
+export type MockMethod = 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
 
 export type MockRequest = {
   body?: unknown;
