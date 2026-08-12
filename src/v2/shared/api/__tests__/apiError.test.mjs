@@ -29,6 +29,26 @@ test('contract ErrorResponse fields are retained for forms and support logging',
   assert.deepEqual(error.details, response.details);
 });
 
+test('current account validation errors normalize legacy errors maps for forms', () => {
+  const error = toApiError({
+    isAxiosError: true,
+    message: 'Request failed',
+    response: {
+      data: {
+        errors: { email: '이메일 형식이 올바르지 않습니다.' },
+        message: '입력값을 확인해주세요.',
+      },
+      status: 400,
+    },
+  });
+
+  assert.deepEqual(error.fieldErrors, [
+    { field: 'email', reason: '이메일 형식이 올바르지 않습니다.' },
+  ]);
+  assert.equal(error.message, '입력값을 확인해주세요.');
+  assert.equal(getApiErrorUx(error).kind, 'validation');
+});
+
 test('400/401/403/404/409/410/422/426 errors select contract UX branches', () => {
   const cases = [
     [400, 'VALIDATION_FAILED', 'validation', 'none'],

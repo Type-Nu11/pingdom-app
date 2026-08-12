@@ -53,6 +53,7 @@ const axiosInstance = axios.create({
     'Content-Type': 'application/json; charset=utf-8',
   },
   timeout: REQUEST_TIMEOUT_MS,
+  withCredentials: true,
 });
 
 let accessTokenProvider: ApiAccessTokenProvider = () => null;
