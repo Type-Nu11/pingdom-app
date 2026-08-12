@@ -26,7 +26,12 @@ import {
   TemporaryAccountSessionApiCheckFlow,
   TemporaryAccountSessionApiCheckPage,
 } from '../../dev/account-session-api-check';
+import { getCurrentFcmToken } from '../../../firebase/utils/getCurrentFcmToken';
 import ApiCheckScreen from '../ApiCheckScreen';
+
+jest.mock('../../../firebase/utils/getCurrentFcmToken', () => ({
+  getCurrentFcmToken: jest.fn(),
+}));
 
 jest.mock('../../../../v2/features/account', () => ({
   useDownloadUserDataExport: jest.fn(),
@@ -78,6 +83,7 @@ const mockUseDeleteFcmToken = jest.mocked(useDeleteFcmToken);
 const mockUseNotificationSettings = jest.mocked(useNotificationSettings);
 const mockUseRegisterFcmToken = jest.mocked(useRegisterFcmToken);
 const mockUseUpdateNotificationSettings = jest.mocked(useUpdateNotificationSettings);
+const mockGetCurrentFcmToken = jest.mocked(getCurrentFcmToken);
 
 function mutationResult(mutate = jest.fn()) {
   return {
@@ -93,6 +99,7 @@ function mutationResult(mutate = jest.fn()) {
 describe('ApiCheckScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetCurrentFcmToken.mockResolvedValue(null);
     mockUseDownloadUserDataExport.mockReturnValue(
       mutationResult() as unknown as ReturnType<typeof useDownloadUserDataExport>,
     );
@@ -273,6 +280,30 @@ describe('ApiCheckScreen', () => {
 
     expect(registerToken).toHaveBeenCalledWith(
       { token: 'device-fcm-token' },
+      expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
+    );
+  });
+
+  test('FCM 등록 테스트 페이지가 실기기 token을 자동 입력한다', async () => {
+    const registerToken = jest.fn();
+    mockGetCurrentFcmToken.mockResolvedValue('automatic-device-fcm-token');
+    mockUseRegisterFcmToken.mockReturnValue(
+      mutationResult(registerToken) as unknown as ReturnType<typeof useRegisterFcmToken>,
+    );
+
+    await render(
+      <TemporaryAccountSessionApiCheckPage
+        endpoint="POST /firebase/fcm-tokens"
+        onBack={jest.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    expect(await screen.findByDisplayValue('automatic-device-fcm-token')).toBeVisible();
+    await user.press(screen.getByRole('button', { name: '요청 실행' }));
+
+    expect(registerToken).toHaveBeenCalledWith(
+      { token: 'automatic-device-fcm-token' },
       expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
     );
   });

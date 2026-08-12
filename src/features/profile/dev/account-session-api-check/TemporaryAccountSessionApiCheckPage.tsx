@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -29,6 +29,7 @@ import {
   type NotificationSettingUpdateRequest,
 } from '../../../../v2/features/notifications';
 import { getApiErrorUx } from '../../../../v2/shared/api';
+import { getCurrentFcmToken } from '../../../firebase/utils/getCurrentFcmToken';
 import type { TemporaryAccountSessionEndpoint } from './model';
 
 type Props = {
@@ -69,6 +70,8 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
   const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [fcmToken, setFcmToken] = useState('');
+  const [isLoadingFcmToken, setIsLoadingFcmToken] = useState(false);
+  const [fcmTokenLoadError, setFcmTokenLoadError] = useState<string | null>(null);
   const [newHotplaceEnabled, setNewHotplaceEnabled] = useState(true);
   const [newLikeEnabled, setNewLikeEnabled] = useState(true);
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
@@ -96,6 +99,40 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
   const isUnlink = endpoint === 'DELETE /users/me/oauth-accounts/google';
   const needsFcmToken = endpoint === 'POST /firebase/fcm-tokens' ||
     endpoint === 'DELETE /firebase/fcm-tokens';
+
+  useEffect(() => {
+    if (!needsFcmToken) return;
+
+    let isActive = true;
+    setIsLoadingFcmToken(true);
+    setFcmTokenLoadError(null);
+
+    void getCurrentFcmToken()
+      .then((token) => {
+        if (!isActive) return;
+
+        if (token) {
+          setFcmToken(token);
+        } else {
+          setFcmTokenLoadError(
+            'FCM token을 자동으로 가져오지 못했습니다. 알림 권한과 네이티브 Firebase 설정을 확인하거나 직접 입력하세요.',
+          );
+        }
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        console.warn('FCM token load failed:', error);
+        setFcmTokenLoadError('FCM token 조회에 실패했습니다. 직접 입력해도 됩니다.');
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingFcmToken(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [needsFcmToken]);
+
   const isNotificationSettingsUpdate = endpoint === 'PATCH /notifications/settings';
   const isInputValid = endpoint === 'POST /auth/password-reset/request' ||
     endpoint === 'POST /auth/email/resend'
@@ -250,7 +287,10 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
               onChangeText={setFcmToken}
             />
             <Text style={styles.guide}>
-              Firebase에서 발급된 현재 기기 token을 입력합니다. OS 알림 권한과 서버 알림 설정은 별도 상태입니다.
+              {isLoadingFcmToken
+                ? '실기기 FCM token을 가져오는 중입니다.'
+                : fcmTokenLoadError ??
+                  '현재 실기기에서 발급된 FCM token을 자동으로 입력했습니다. 필요하면 직접 수정할 수 있습니다.'}
             </Text>
           </>
         ) : null}
