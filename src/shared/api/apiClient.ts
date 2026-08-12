@@ -183,6 +183,10 @@ function isPublicAuthUrl(url?: string): boolean {
     ].includes(path);
 }
 
+function isSafeToRetryAfterServerFallback(method?: string): boolean {
+    return ['get', 'head', 'options'].includes(method?.toLowerCase() ?? '');
+}
+
 function toRefreshResponse(response: RawRefreshResponse, fallbackRefreshToken: string): RefreshResponse {
     if ('data' in response && response.data?.accessToken) {
         return {
@@ -396,21 +400,29 @@ api.interceptors.response.use(
             activeApiBaseUrl = FALLBACK_API_BASE_URL;
             originalRequest._fallbackRetry = true;
             originalRequest.baseURL = FALLBACK_API_BASE_URL;
+            const shouldRetryOnFallback = isSafeToRetryAfterServerFallback(originalRequest.method);
 
             if (!hasShownFallbackAlert) {
                 hasShownFallbackAlert = true;
                 Alert.alert(
                     '서버 연결 전환',
-                    '새 서버에 연결할 수 없어 기존 서버로 전환했습니다.',
+                    shouldRetryOnFallback
+                        ? '새 서버에 연결할 수 없어 기존 서버로 전환했습니다.'
+                        : '새 서버에 연결할 수 없어 기존 서버로 전환했습니다. 중복 처리를 막기 위해 진행 중이던 요청은 자동 재시도하지 않았습니다. 다시 시도해 주세요.',
                 );
             }
 
             console.warn('[api]', 'fallback server activated', {
                 fallbackBaseUrl: FALLBACK_API_BASE_URL,
                 primaryBaseUrl: API_BASE_URL,
+                requestRetried: shouldRetryOnFallback,
             });
 
-            return api(originalRequest);
+            if (shouldRetryOnFallback) {
+                return api(originalRequest);
+            }
+
+            return Promise.reject(error);
         }
 
         if (originalRequest && (status === 401 || shouldLogApiRequest(originalRequest.url))) {
