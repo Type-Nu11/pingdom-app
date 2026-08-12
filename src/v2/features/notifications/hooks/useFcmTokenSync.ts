@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 
-import { updateFcmToken } from '../api/notificationApi';
+import { useRegisterFcmToken } from './useFcmTokenMutations';
 import { getFirebaseMessagingRuntime } from '../services/firebaseMessaging';
 import { ensureNotificationPermission } from '../services/notificationPermission';
 
 export function useFcmTokenSync(enabled = true): void {
+  const registerToken = useRegisterFcmToken();
+
   useEffect(() => {
     if (!enabled) {
       return;
@@ -33,7 +35,7 @@ export function useFcmTokenSync(enabled = true): void {
         const token = await firebaseMessaging.getToken(firebaseMessaging.messaging);
 
         if (isMounted && token) {
-          await updateFcmToken({ token });
+          await registerToken.mutateAsync({ token });
         }
       } catch (error) {
         console.warn('[V2 FCM] Token registration failed:', error);
@@ -45,7 +47,7 @@ export function useFcmTokenSync(enabled = true): void {
     const unsubscribe = firebaseMessaging.onTokenRefresh(
       firebaseMessaging.messaging,
       (token) => {
-        void updateFcmToken({ token }).catch((error) => {
+        void registerToken.mutateAsync({ token }).catch((error) => {
           console.warn('[V2 FCM] Token refresh failed:', error);
         });
       },
@@ -55,5 +57,5 @@ export function useFcmTokenSync(enabled = true): void {
       isMounted = false;
       unsubscribe();
     };
-  }, [enabled]);
+  }, [enabled, registerToken.mutateAsync]);
 }

@@ -14,7 +14,11 @@ test('configured app transport handles authenticated GET, PUT, and DELETE reques
   const transport = {
     delete: async (path, options) => {
       calls.push({ body: options.data, method: 'DELETE', options, path });
-      return { data: { linked: false } };
+      return {
+        data: path === '/users/me/oauth-accounts/google'
+          ? { linked: false }
+          : undefined,
+      };
     },
     get: async (path, options) => {
       calls.push({ method: 'GET', options, path });
@@ -36,6 +40,7 @@ test('configured app transport handles authenticated GET, PUT, and DELETE reques
       '/users/me/travel-purposes',
       { travelPurposes: ['K_POP'] },
     );
+    await client.delete('/firebase/fcm-tokens', { token: 'device-token' });
     const deleteResult = await client.delete(
       '/users/me/oauth-accounts/google',
       { currentPassword: 'password' },
@@ -44,11 +49,16 @@ test('configured app transport handles authenticated GET, PUT, and DELETE reques
     assert.deepEqual(getResult, { travelPurposes: ['K_POP'] });
     assert.deepEqual(putResult, { travelPurposes: ['K_POP'] });
     assert.deepEqual(deleteResult, { linked: false });
-    assert.deepEqual(calls.map(({ method }) => method), ['GET', 'PUT', 'DELETE']);
+    assert.deepEqual(
+      calls.map(({ method }) => method),
+      ['GET', 'PUT', 'DELETE', 'DELETE'],
+    );
     assert.equal(calls[0].options.headers.Authorization, 'Bearer access-token');
     assert.equal(calls[1].options.headers.Authorization, 'Bearer access-token');
     assert.equal(calls[2].options.headers.Authorization, 'Bearer access-token');
-    assert.deepEqual(calls[2].body, { currentPassword: 'password' });
+    assert.equal(calls[3].options.headers.Authorization, 'Bearer access-token');
+    assert.deepEqual(calls[2].body, { token: 'device-token' });
+    assert.deepEqual(calls[3].body, { currentPassword: 'password' });
   } finally {
     resetTokenProvider();
     resetTransport();

@@ -16,6 +16,19 @@ type AuthActions = {
 
 export type AuthStore = AuthState & AuthActions;
 
+export type BeforeLogoutHandler = () => Promise<void>;
+
+let beforeLogoutHandler: BeforeLogoutHandler = async () => {};
+let isLogoutInProgress = false;
+
+export function configureBeforeLogout(handler: BeforeLogoutHandler): () => void {
+  beforeLogoutHandler = handler;
+
+  return () => {
+    if (beforeLogoutHandler === handler) beforeLogoutHandler = async () => {};
+  };
+}
+
 export const useAuthStore = create<AuthStore>((set) => ({
   accessToken: null,
   isLoggedIn: false,
@@ -52,12 +65,30 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   logout: async () => {
-    await removeTokens();
-    set({
-      accessToken: null,
-      isLoggedIn: false,
-      isHydrating: false,
-    });
+    // A failed refresh can call logout again while the FCM DELETE is in flight.
+    // Returning immediately avoids a circular wait between both operations.
+    if (isLogoutInProgress) return;
+
+    isLogoutInProgress = true;
+    set({ isHydrating: true, isLoggedIn: false });
+
+    try {
+      try {
+        await beforeLogoutHandler();
+      } catch (error) {
+        // Device-token cleanup is best effort and must never trap the user in a session.
+        console.warn('Before logout cleanup failed:', error);
+      }
+
+      await removeTokens();
+      set({
+        accessToken: null,
+        isLoggedIn: false,
+        isHydrating: false,
+      });
+    } finally {
+      isLogoutInProgress = false;
+    }
   },
 }));
 

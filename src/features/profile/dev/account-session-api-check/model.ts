@@ -10,6 +10,10 @@ export const TEMPORARY_ACCOUNT_SESSION_ENDPOINTS = [
   'POST /users/me/travel-schedules',
   'PATCH /users/me/travel-schedules/{scheduleId}',
   'POST /users/me/travel-schedules/{scheduleId}/cancel',
+  'POST /firebase/fcm-tokens',
+  'DELETE /firebase/fcm-tokens',
+  'GET /notifications/settings',
+  'PATCH /notifications/settings',
 ] as const;
 
 export type TemporaryAccountSessionEndpoint =

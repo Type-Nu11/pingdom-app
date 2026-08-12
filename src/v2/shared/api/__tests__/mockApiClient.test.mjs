@@ -13,13 +13,22 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('success');
   assert.equal(apiClient, mockApiClient);
 
-  const [places, detail, checkIn, coupons, travelPurposes, travelSchedules] = await Promise.all([
+  const [
+    places,
+    detail,
+    checkIn,
+    coupons,
+    travelPurposes,
+    travelSchedules,
+    notificationSettings,
+  ] = await Promise.all([
     mockApiClient.get('/places'),
     mockApiClient.get('/places/17'),
     mockApiClient.post('/location-check-ins', {}),
     mockApiClient.get('/coupons'),
     mockApiClient.get('/users/me/travel-purposes'),
     mockApiClient.get('/users/me/travel-schedules'),
+    mockApiClient.get('/notifications/settings'),
   ]);
 
   assert.equal(getMockScenario(), 'success');
@@ -30,6 +39,7 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.equal(merchantPerformanceFixture.metrics.completedCheckIns, 31);
   assert.deepEqual(travelPurposes.travelPurposes, ['K_POP', 'CAFE']);
   assert.equal(travelSchedules.schedules[0].startDate, '2026-08-12');
+  assert.equal(notificationSettings.timezone, 'Asia/Seoul');
   assert.deepEqual(
     await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
     travelPurposes,
@@ -48,6 +58,12 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.equal(
     (await mockApiClient.post('/users/me/travel-schedules/1/cancel')).status,
     'CANCELLED',
+  );
+  assert.equal(await mockApiClient.post('/firebase/fcm-tokens', { token: 'fcm' }), undefined);
+  assert.equal(await mockApiClient.delete('/firebase/fcm-tokens', { token: 'fcm' }), undefined);
+  assert.equal(
+    (await mockApiClient.patch('/notifications/settings', { newLikeEnabled: false })).newLikeEnabled,
+    false,
   );
 
   setMockScenario('empty');

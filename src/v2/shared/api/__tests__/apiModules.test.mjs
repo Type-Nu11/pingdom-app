@@ -10,11 +10,16 @@ import { createPlaceListApi } from '../../../features/place-list/api/placeListAp
 import { createReservationApi } from '../../../features/reservations/api/reservationApi.ts';
 import { createTravelPurposeApi } from '../../../features/travel-purposes/api/travelPurposeApi.ts';
 import { createTravelScheduleApi } from '../../../features/travel-schedules/api/travelScheduleApi.ts';
+import { createNotificationApi } from '../../../features/notifications/api/notificationApi.ts';
 
 test('all MVP API modules keep operation paths, params, bodies, and response identity', async () => {
   const calls = [];
   const response = { contract: 'response-object' };
   const client = {
+    delete: async (path, body, options) => {
+      calls.push({ body, method: 'DELETE', options, path });
+      return response;
+    },
     get: async (path, options) => {
       calls.push({ method: 'GET', options, path });
       return response;
@@ -43,6 +48,7 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   const conversion = createConversionApi(client);
   const travelPurposes = createTravelPurposeApi(client);
   const travelSchedules = createTravelScheduleApi(client);
+  const notifications = createNotificationApi(client);
 
   const checkInBody = {
     accuracyMeters: 10,
@@ -112,9 +118,19 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
     travelSchedules.createTravelSchedule(travelScheduleBody, signal),
     travelSchedules.updateTravelSchedule(1, updatedTravelScheduleBody, signal),
     travelSchedules.cancelTravelSchedule(1, signal),
+    notifications.registerFcmToken({ token: 'fcm-token' }, signal),
+    notifications.deleteFcmToken({ token: 'deleted-fcm-token' }, signal),
+    notifications.getNotificationSettings(signal),
+    notifications.updateNotificationSettings({ newLikeEnabled: false }, signal),
+    notifications.updateLegacyFcmToken({ token: 'legacy-token' }, signal),
   ]);
 
-  assert.ok(results.every((result) => result === response));
+  assert.ok(
+    results.every((result, index) =>
+      index === 28 || index === 29 || index === 32
+        ? result === undefined
+        : result === response),
+  );
   assert.deepEqual(calls.map(({ method, path }) => `${method} ${path}`), [
     'GET /places',
     'GET /places/17',
@@ -144,6 +160,11 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
     'POST /users/me/travel-schedules',
     'PATCH /users/me/travel-schedules/1',
     'POST /users/me/travel-schedules/1/cancel',
+    'POST /firebase/fcm-tokens',
+    'DELETE /firebase/fcm-tokens',
+    'GET /notifications/settings',
+    'PATCH /notifications/settings',
+    'PATCH /firebase/fcm-token',
   ]);
 
   assert.deepEqual(calls[0].options.params, { keyword: 'cafe', page: 1 });
@@ -163,4 +184,57 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   assert.equal(calls[26].body, updatedTravelScheduleBody);
   assert.equal(calls[26].options.signal, signal);
   assert.equal(calls[27].options.signal, signal);
+  assert.deepEqual(calls[28].body, { token: 'fcm-token' });
+  assert.equal(calls[29].options.signal, signal);
+  assert.deepEqual(calls[31].body, { newLikeEnabled: false });
+});
+
+test('FCM registration coalesces concurrent requests for the same token', async () => {
+  let releaseRequest;
+  let postCount = 0;
+  const pending = new Promise((resolve) => { releaseRequest = resolve; });
+  const notifications = createNotificationApi({
+    delete: async () => undefined,
+    get: async () => ({}),
+    patch: async () => ({}),
+    post: async () => {
+      postCount += 1;
+      await pending;
+    },
+    put: async () => ({}),
+  });
+
+  const first = notifications.registerFcmToken({ token: 'same-token' });
+  const second = notifications.registerFcmToken({ token: 'same-token' });
+
+  assert.equal(first, second);
+  assert.equal(postCount, 1);
+  releaseRequest();
+  await Promise.all([first, second]);
+});
+
+test('FCM deletion waits for an in-flight registration of the same token', async () => {
+  let releaseRegistration;
+  const calls = [];
+  const pending = new Promise((resolve) => { releaseRegistration = resolve; });
+  const notifications = createNotificationApi({
+    delete: async () => { calls.push('delete'); },
+    get: async () => ({}),
+    patch: async () => ({}),
+    post: async () => {
+      calls.push('register:start');
+      await pending;
+      calls.push('register:end');
+    },
+    put: async () => ({}),
+  });
+
+  const registration = notifications.registerFcmToken({ token: 'same-token' });
+  const deletion = notifications.deleteFcmToken({ token: 'same-token' });
+  await Promise.resolve();
+  assert.deepEqual(calls, ['register:start']);
+
+  releaseRegistration();
+  await Promise.all([registration, deletion]);
+  assert.deepEqual(calls, ['register:start', 'register:end', 'delete']);
 });

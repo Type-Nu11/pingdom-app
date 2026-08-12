@@ -17,7 +17,7 @@ type TemporaryApiCheckStackParamList = {
 const Stack = createNativeStackNavigator<TemporaryApiCheckStackParamList>();
 
 /**
- * TEMPORARY #165: This nested navigator owns all temporary routes and parameters.
+ * TEMPORARY #165/#166: This nested navigator owns all temporary routes and parameters.
  * Removal requires only restoring ApiCheckScreen in MainNavigator and deleting this directory.
  */
 export default function TemporaryAccountSessionApiCheckFlow({ onExit }: Props) {
