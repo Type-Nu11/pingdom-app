@@ -57,6 +57,7 @@ type RawRefreshResponse =
 // api와 refreshClient가 공유하는 기본 설정
 const BASE_CONFIG = {
     baseURL: API_BASE_URL,
+    withCredentials: true,
     timeout: REQUEST_TIMEOUT,
     headers: {
         Accept: 'application/json',
@@ -158,7 +159,15 @@ function summarizeResponseData(data: unknown) {
 function isPublicAuthUrl(url?: string): boolean {
     const path = getRequestPath(url);
 
-    return path === '/auth/login' || path === '/auth/signup' || path === '/auth/token/refresh';
+    return [
+        '/auth/email/resend',
+        '/auth/login',
+        '/auth/logout',
+        '/auth/password-reset/confirm',
+        '/auth/password-reset/request',
+        '/auth/signup',
+        '/auth/token/refresh',
+    ].includes(path);
 }
 
 function toRefreshResponse(response: RawRefreshResponse, fallbackRefreshToken: string): RefreshResponse {
