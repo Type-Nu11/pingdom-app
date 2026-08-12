@@ -24,6 +24,8 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     operatingNotices,
     verificationMedia,
     explanation,
+    travelSchedules,
+    notificationSettings,
   ] = await Promise.all([
     mockApiClient.get('/places'),
     mockApiClient.get('/places/17'),
@@ -35,6 +37,8 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     mockApiClient.get('/places/17/operating-notices'),
     mockApiClient.get('/places/17/media/verification'),
     mockApiClient.get('/places/recommendations/request-a/explanation'),
+    mockApiClient.get('/users/me/travel-schedules'),
+    mockApiClient.get('/notifications/settings'),
   ]);
 
   assert.equal(getMockScenario(), 'success');
@@ -57,9 +61,32 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     }),
     undefined,
   );
+  assert.equal(travelSchedules.schedules[0].startDate, '2026-08-12');
+  assert.equal(notificationSettings.timezone, 'Asia/Seoul');
   assert.deepEqual(
     await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
     travelPurposes,
+  );
+  assert.deepEqual(
+    await mockApiClient.post('/users/me/travel-schedules', {
+      startDate: '2026-08-31',
+      endDate: '2026-09-02',
+    }),
+    {
+      ...travelSchedules.schedules[0],
+      startDate: '2026-08-31',
+      endDate: '2026-09-02',
+    },
+  );
+  assert.equal(
+    (await mockApiClient.post('/users/me/travel-schedules/1/cancel')).status,
+    'CANCELLED',
+  );
+  assert.equal(await mockApiClient.post('/firebase/fcm-tokens', { token: 'fcm' }), undefined);
+  assert.equal(await mockApiClient.delete('/firebase/fcm-tokens', { token: 'fcm' }), undefined);
+  assert.equal(
+    (await mockApiClient.patch('/notifications/settings', { newLikeEnabled: false })).newLikeEnabled,
+    false,
   );
 
   setMockScenario('empty');
@@ -68,6 +95,7 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   const emptyMap = await mockApiClient.get('/places/map');
   const emptyNotices = await mockApiClient.get('/places/17/operating-notices');
   const emptyMedia = await mockApiClient.get('/places/17/media/verification');
+  const emptyTravelSchedules = await mockApiClient.get('/users/me/travel-schedules');
 
   assert.deepEqual(emptyPlaces.places, []);
   assert.equal(emptyPlaces.totalPages, 0);
@@ -76,6 +104,7 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.deepEqual(emptyMap.markers, []);
   assert.deepEqual(emptyNotices.notices, []);
   assert.deepEqual(emptyMedia.media, []);
+  assert.deepEqual(emptyTravelSchedules.schedules, []);
 
   const cases = [
     ['forbidden', 403, 'ROLE_REQUIRED'],

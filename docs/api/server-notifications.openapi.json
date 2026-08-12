@@ -1,0 +1,285 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "OpenAPI definition - notifications contract",
+    "version": "v0",
+    "description": "Focused snapshot generated from http://54.116.166.107:8080/v3/api-docs. Do not edit DTOs by hand."
+  },
+  "servers": [
+    {
+      "url": "http://54.116.166.107:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "FCM/Notification",
+      "description": "푸시 알림 및 기기 토큰 관리 API"
+    }
+  ],
+  "paths": {
+    "/firebase/fcm-token": {
+      "patch": {
+        "tags": [
+          "FCM/Notification"
+        ],
+        "summary": "FCM 토큰 업데이트",
+        "description": "하위 호환성을 위한 기존 엔드포인트입니다. 곧 지원 중단될 예정이므로 POST /firebase/fcm-tokens를 사용하세요.",
+        "operationId": "updateFcmToken",
+        "requestBody": {
+          "description": "최신 FCM 기기 토큰",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FcmTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "토큰 업데이트 성공"
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "유효하지 않은 토큰입니다.",
+                  "code": "INVALID_TOKEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "사용자를 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "사용자를 찾을 수 없습니다.",
+                  "code": "USER_NOT_FOUND"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/firebase/fcm-tokens": {
+      "post": {
+        "tags": [
+          "FCM/Notification"
+        ],
+        "summary": "FCM 토큰 등록",
+        "description": "현재 기기의 FCM 토큰을 사용자에게 등록하거나 재등록합니다.",
+        "operationId": "registerFcmToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FcmTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FCM/Notification"
+        ],
+        "summary": "FCM 토큰 삭제",
+        "description": "로그아웃 또는 토큰 폐기 시 현재 기기의 FCM 토큰을 삭제합니다.",
+        "operationId": "deleteFcmToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FcmTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/notifications/settings": {
+      "get": {
+        "tags": [
+          "FCM/Notification"
+        ],
+        "summary": "알림 설정 조회",
+        "description": "현재 사용자의 알림 타입별 수신 여부와 quiet hours 설정을 조회합니다.",
+        "operationId": "getSetting",
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingResponse"
+                },
+                "example": {
+                  "newHotplaceEnabled": true,
+                  "newLikeEnabled": true,
+                  "quietHoursEnabled": false,
+                  "quietHoursStart": null,
+                  "quietHoursEnd": null,
+                  "timezone": "Asia/Seoul"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "FCM/Notification"
+        ],
+        "summary": "알림 설정 수정",
+        "description": "현재 사용자의 알림 타입별 수신 여부와 quiet hours 설정을 부분 수정합니다.",
+        "operationId": "updateSetting",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettingUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "수정 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "timezone 또는 quiet hours 설정 오류",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "quiet hours 설정을 확인해주세요.",
+                  "code": "INVALID_QUIET_HOURS"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FcmTokenRequest": {
+        "required": [
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "최신 기기 FCM 토큰",
+            "example": "fcm-device-token-sample"
+          }
+        },
+        "description": "FCM 토큰 업데이트 요청"
+      },
+      "NotificationSettingResponse": {
+        "type": "object",
+        "properties": {
+          "newHotplaceEnabled": {
+            "type": "boolean",
+            "description": "핫플레이스 알림 수신 여부",
+            "example": true
+          },
+          "newLikeEnabled": {
+            "type": "boolean",
+            "description": "좋아요 알림 수신 여부",
+            "example": true
+          },
+          "quietHoursEnabled": {
+            "type": "boolean",
+            "description": "quiet hours 적용 여부",
+            "example": false
+          },
+          "quietHoursStart": {
+            "type": "string",
+            "description": "quiet hours 시작 시각",
+            "format": "time",
+            "example": "22:00:00"
+          },
+          "quietHoursEnd": {
+            "type": "string",
+            "description": "quiet hours 종료 시각",
+            "format": "time",
+            "example": "08:00:00"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone",
+            "example": "Asia/Seoul"
+          }
+        },
+        "description": "알림 수신 설정 응답"
+      },
+      "NotificationSettingUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "newHotplaceEnabled": {
+            "type": "boolean",
+            "description": "핫플레이스 알림 수신 여부",
+            "example": true
+          },
+          "newLikeEnabled": {
+            "type": "boolean",
+            "description": "좋아요 알림 수신 여부",
+            "example": false
+          },
+          "quietHoursEnabled": {
+            "type": "boolean",
+            "description": "quiet hours 적용 여부",
+            "example": true
+          },
+          "quietHoursStart": {
+            "type": "string",
+            "description": "quiet hours 시작 시각",
+            "format": "time",
+            "example": "22:00:00"
+          },
+          "quietHoursEnd": {
+            "type": "string",
+            "description": "quiet hours 종료 시각",
+            "format": "time",
+            "example": "08:00:00"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone",
+            "example": "Asia/Seoul"
+          }
+        },
+        "description": "알림 수신 설정 수정 요청"
+      }
+    }
+  },
+  "x-upstream-source": "http://54.116.166.107:8080/v3/api-docs"
+}

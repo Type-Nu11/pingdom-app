@@ -1,15 +1,21 @@
 import React from 'react';
 
 import V1App from './App.v1';
-import { logout, useAuthStore } from './src/app/store/authStore';
+import {
+  configureBeforeLogout,
+  logout,
+  useAuthStore,
+} from './src/app/store/authStore';
 import { api } from './src/shared/api/apiClient';
 import V2App from './src/v2/app/App';
+import { unregisterStoredFcmToken } from './src/v2/features/notifications/services/fcmTokenLifecycle';
 import { configureApiTransport } from './src/v2/shared/api/apiClient';
 import { configureTokenSession } from './src/v2/shared/auth/tokenSession';
 
 // Keep the V2 feature boundary isolated while reusing the production transport's
 // token injection, single-flight refresh, one-request replay, and logout behavior.
 configureApiTransport(api);
+configureBeforeLogout(unregisterStoredFcmToken);
 configureTokenSession({ clear: logout });
 
 export default function App() {

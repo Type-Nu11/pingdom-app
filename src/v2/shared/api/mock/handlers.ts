@@ -1,3 +1,5 @@
+import type { MockScenario } from '../../config/env';
+
 export type MockMethod = 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
 
 export type MockRequest = {
@@ -37,4 +39,3 @@ export function resolveMockHandler(
     ? { found: true, response: handler.resolve(request) }
     : { found: false };
 }
-import type { MockScenario } from '../../config/env';

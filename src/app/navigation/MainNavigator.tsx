@@ -96,7 +96,7 @@ const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
 };
 
 const ApiCheckRouteScreen = ({ navigation }: MainScreenProps<'ApiCheck'>) => (
-  // TEMPORARY device-QA flow for the #165 account and #161 place exploration endpoints.
+  // TEMPORARY device-QA flow for the #161, #165, #166, and #168 endpoints.
   <TemporaryAccountSessionApiCheckFlow onExit={navigation.goBack} />
 );
 

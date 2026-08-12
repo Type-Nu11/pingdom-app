@@ -49,7 +49,11 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     return { action: 'none', error, kind: 'authorization' };
   }
 
-  if (code === 'VALIDATION_FAILED' || (!code && status === 400)) {
+  if (
+    code === 'VALIDATION_FAILED' ||
+    code === 'INVALID_TRAVEL_SCHEDULE_PERIOD' ||
+    (!code && status === 400)
+  ) {
     return { action: 'none', error, kind: 'validation' };
   }
 
@@ -57,8 +61,12 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     return { action: 'none', error, kind: 'validation' };
   }
 
-  if (code === 'CHECK_IN_OUT_OF_RANGE' || (!code && status === 422)) {
+  if (code === 'CHECK_IN_OUT_OF_RANGE') {
     return { action: 'none', error, kind: 'outOfRange' };
+  }
+
+  if (code === 'TRAVEL_SCHEDULE_RULE_VIOLATION' || (!code && status === 422)) {
+    return { action: 'none', error, kind: 'validation' };
   }
 
   if (
@@ -79,6 +87,8 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     code === 'CAPACITY_EXCEEDED' ||
     code === 'COUPON_ALREADY_ISSUED' ||
     code === 'COUPON_ALREADY_REDEEMED' ||
+    code === 'TRAVEL_SCHEDULE_NOT_EDITABLE' ||
+    code === 'TRAVEL_SCHEDULE_CONCURRENT_MODIFICATION' ||
     code?.endsWith('_ALREADY_EXISTS') ||
     (!code && status === 409)
   ) {

@@ -103,6 +103,142 @@
         }
       }
     },
+    "/users/me/travel-schedules": {
+      "get": {
+        "tags": ["Users"],
+        "operationId": "getTravelSchedules",
+        "summary": "내 여행 일정 목록 조회",
+        "description": "현재 인증된 사용자의 여행 일정을 조회한다.",
+        "x-required-roles": ["ANY_AUTHENTICATED"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTimestamp" },
+          { "$ref": "#/components/parameters/XSignature" },
+          { "$ref": "#/components/parameters/XAppVersion" },
+          { "$ref": "#/components/parameters/XDeviceId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TravelScheduleListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/AuthenticationError" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "operationId": "createTravelSchedule",
+        "summary": "여행 일정 생성",
+        "description": "현재 인증된 사용자에게 날짜 범위의 여행 일정을 추가한다.",
+        "x-required-roles": ["ANY_AUTHENTICATED"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTimestamp" },
+          { "$ref": "#/components/parameters/XSignature" },
+          { "$ref": "#/components/parameters/XAppVersion" },
+          { "$ref": "#/components/parameters/XDeviceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TravelScheduleCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TravelScheduleResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/AuthenticationError" }
+        }
+      }
+    },
+    "/users/me/travel-schedules/{scheduleId}": {
+      "patch": {
+        "tags": ["Users"],
+        "operationId": "updateTravelSchedule",
+        "summary": "여행 일정 기간 변경",
+        "description": "취소되지 않은 본인 여행 일정의 날짜 범위를 변경한다.",
+        "x-required-roles": ["ANY_AUTHENTICATED"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTimestamp" },
+          { "$ref": "#/components/parameters/XSignature" },
+          { "$ref": "#/components/parameters/XAppVersion" },
+          { "$ref": "#/components/parameters/XDeviceId" },
+          {
+            "name": "scheduleId",
+            "in": "path",
+            "required": true,
+            "schema": { "$ref": "#/components/schemas/PositiveId" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TravelScheduleUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "변경 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TravelScheduleResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/AuthenticationError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "409": { "$ref": "#/components/responses/ConflictError" }
+        }
+      }
+    },
+    "/users/me/travel-schedules/{scheduleId}/cancel": {
+      "post": {
+        "tags": ["Users"],
+        "operationId": "cancelTravelSchedule",
+        "summary": "여행 일정 취소",
+        "description": "본인 여행 일정을 취소 상태로 전환한다.",
+        "x-required-roles": ["ANY_AUTHENTICATED"],
+        "parameters": [
+          { "$ref": "#/components/parameters/XTimestamp" },
+          { "$ref": "#/components/parameters/XSignature" },
+          { "$ref": "#/components/parameters/XAppVersion" },
+          { "$ref": "#/components/parameters/XDeviceId" },
+          {
+            "name": "scheduleId",
+            "in": "path",
+            "required": true,
+            "schema": { "$ref": "#/components/schemas/PositiveId" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "취소 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TravelScheduleResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/AuthenticationError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "409": { "$ref": "#/components/responses/ConflictError" }
+        }
+      }
+    },
     "/places": {
       "get": {
         "tags": ["Places"],
@@ -1246,6 +1382,10 @@
           "ROLE_REQUIRED",
           "RESOURCE_OWNERSHIP_REQUIRED",
           "VALIDATION_FAILED",
+          "INVALID_TRAVEL_SCHEDULE_PERIOD",
+          "TRAVEL_SCHEDULE_NOT_FOUND",
+          "TRAVEL_SCHEDULE_NOT_EDITABLE",
+          "TRAVEL_SCHEDULE_CONCURRENT_MODIFICATION",
           "PLACE_NOT_FOUND",
           "CHECK_IN_NOT_FOUND",
           "CHECK_IN_ALREADY_EXISTS",
@@ -1329,6 +1469,84 @@
             "description": "선호 여행 목적 목록",
             "uniqueItems": true,
             "items": { "$ref": "#/components/schemas/TravelPurpose" }
+          }
+        }
+      },
+      "TravelScheduleStatus": {
+        "type": "string",
+        "enum": ["UPCOMING", "ONGOING", "ENDED", "CANCELLED"]
+      },
+      "TravelScheduleCreateRequest": {
+        "type": "object",
+        "description": "여행 일정 생성 요청",
+        "required": ["startDate", "endDate"],
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "description": "여행 시작일",
+            "example": "2026-08-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "description": "여행 종료일",
+            "example": "2026-08-04"
+          }
+        }
+      },
+      "TravelScheduleUpdateRequest": {
+        "type": "object",
+        "description": "여행 일정 기간 변경 요청",
+        "required": ["startDate", "endDate"],
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "description": "여행 시작일",
+            "example": "2026-08-02"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "description": "여행 종료일",
+            "example": "2026-08-05"
+          }
+        }
+      },
+      "TravelScheduleResponse": {
+        "type": "object",
+        "description": "여행 일정 응답",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "여행 일정 ID",
+            "example": 1
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "description": "여행 시작일",
+            "example": "2026-08-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "description": "여행 종료일",
+            "example": "2026-08-04"
+          },
+          "status": { "$ref": "#/components/schemas/TravelScheduleStatus" }
+        }
+      },
+      "TravelScheduleListResponse": {
+        "type": "object",
+        "description": "여행 일정 목록 응답",
+        "properties": {
+          "schedules": {
+            "type": "array",
+            "description": "여행 일정 목록",
+            "items": { "$ref": "#/components/schemas/TravelScheduleResponse" }
           }
         }
       },

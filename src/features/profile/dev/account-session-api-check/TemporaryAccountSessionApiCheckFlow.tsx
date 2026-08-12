@@ -23,8 +23,8 @@ type TemporaryApiCheckStackParamList = {
 const Stack = createNativeStackNavigator<TemporaryApiCheckStackParamList>();
 
 /**
- * Temporary device-QA navigator for the #165 account and #161 place exploration endpoints.
- * Keep the place routes when removing the account-only checks after #165 QA.
+ * Temporary device-QA navigator for the #161, #165, #166, and #168 endpoints.
+ * Keep the place routes when removing the account, notification, and travel-schedule checks.
  */
 export default function TemporaryAccountSessionApiCheckFlow({ onExit }: Props) {
   return (
