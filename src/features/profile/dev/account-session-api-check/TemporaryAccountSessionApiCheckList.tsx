@@ -16,7 +16,7 @@ type Props = {
 export default function TemporaryAccountSessionApiCheckList({ onSelect }: Props) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>계정·세션 API · 임시 실기기 검증</Text>
+      <Text style={styles.label}>계정·세션·여행 일정 API · 임시 실기기 검증</Text>
       {TEMPORARY_ACCOUNT_SESSION_ENDPOINTS.map((endpoint) => (
         <Pressable
           accessibilityRole="button"

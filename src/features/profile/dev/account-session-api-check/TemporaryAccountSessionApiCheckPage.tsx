@@ -21,6 +21,12 @@ import {
   usePasswordResetRequest,
   useResendVerificationEmail,
 } from '../../../../v2/features/auth';
+import {
+  useCancelTravelSchedule,
+  useCreateTravelSchedule,
+  useTravelSchedules,
+  useUpdateTravelSchedule,
+} from '../../../../v2/features/travel-schedules';
 import { getApiErrorUx } from '../../../../v2/shared/api';
 import type { TemporaryAccountSessionEndpoint } from './model';
 
@@ -51,11 +57,18 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
   const googleUnlink = useGoogleUnlink();
   const downloadUserDataExport = useDownloadUserDataExport();
   const logout = useLogout();
+  const travelSchedules = useTravelSchedules(false);
+  const createTravelSchedule = useCreateTravelSchedule();
+  const updateTravelSchedule = useUpdateTravelSchedule();
+  const cancelTravelSchedule = useCancelTravelSchedule();
   const [email, setEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
+  const [scheduleId, setScheduleId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [result, setResult] = useState<TestResult | null>(null);
 
   const callbacks = {
@@ -66,13 +79,25 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
   const isPending =
     requestPasswordReset.isPending || confirmPasswordReset.isPending ||
     resendVerificationEmail.isPending || googleLink.isPending || googleUnlink.isPending ||
-    downloadUserDataExport.isPending || logout.isPending;
+    downloadUserDataExport.isPending || logout.isPending || travelSchedules.isFetching ||
+    createTravelSchedule.isPending || updateTravelSchedule.isPending ||
+    cancelTravelSchedule.isPending;
 
   const needsEmail = endpoint === 'POST /auth/password-reset/request' ||
     endpoint === 'POST /auth/password-reset/confirm' ||
     endpoint === 'POST /auth/email/resend';
   const isConfirm = endpoint === 'POST /auth/password-reset/confirm';
   const isUnlink = endpoint === 'DELETE /users/me/oauth-accounts/google';
+  const isTravelScheduleCreate = endpoint === 'POST /users/me/travel-schedules';
+  const isTravelScheduleUpdate = endpoint ===
+    'PATCH /users/me/travel-schedules/{scheduleId}';
+  const isTravelScheduleCancel = endpoint ===
+    'POST /users/me/travel-schedules/{scheduleId}/cancel';
+  const needsScheduleId = isTravelScheduleUpdate || isTravelScheduleCancel;
+  const needsSchedulePeriod = isTravelScheduleCreate || isTravelScheduleUpdate;
+  const parsedScheduleId = Number(scheduleId);
+  const hasValidScheduleId = /^\d+$/.test(scheduleId) &&
+    Number.isSafeInteger(parsedScheduleId) && parsedScheduleId > 0;
   const isInputValid = endpoint === 'POST /auth/password-reset/request' ||
     endpoint === 'POST /auth/email/resend'
     ? Boolean(email.trim())
@@ -81,9 +106,14 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
           email.trim() && resetToken.trim() &&
           newPassword.length >= 8 && confirmPassword.length >= 8
         )
+      : needsSchedulePeriod
+        ? Boolean(startDate.trim() && endDate.trim()) &&
+          (!needsScheduleId || hasValidScheduleId)
+        : needsScheduleId
+          ? hasValidScheduleId
       : true;
 
-  const execute = () => {
+  const execute = async () => {
     setResult(null);
 
     switch (endpoint) {
@@ -112,6 +142,33 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
         break;
       case 'GET /users/me/export':
         downloadUserDataExport.mutate(undefined, callbacks);
+        break;
+      case 'GET /users/me/travel-schedules': {
+        const response = await travelSchedules.refetch();
+        if (response.error) {
+          callbacks.onError(response.error);
+        } else {
+          callbacks.onSuccess(response.data);
+        }
+        break;
+      }
+      case 'POST /users/me/travel-schedules':
+        createTravelSchedule.mutate({
+          endDate: endDate.trim(),
+          startDate: startDate.trim(),
+        }, callbacks);
+        break;
+      case 'PATCH /users/me/travel-schedules/{scheduleId}':
+        updateTravelSchedule.mutate({
+          body: {
+            endDate: endDate.trim(),
+            startDate: startDate.trim(),
+          },
+          scheduleId: parsedScheduleId,
+        }, callbacks);
+        break;
+      case 'POST /users/me/travel-schedules/{scheduleId}/cancel':
+        cancelTravelSchedule.mutate(parsedScheduleId, callbacks);
         break;
     }
   };
@@ -180,6 +237,44 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
             value={currentPassword}
             onChangeText={setCurrentPassword}
           />
+        ) : null}
+        {needsScheduleId ? (
+          <TextInput
+            keyboardType="number-pad"
+            placeholder="일정 ID"
+            placeholderTextColor="#000000"
+            style={styles.input}
+            value={scheduleId}
+            onChangeText={setScheduleId}
+          />
+        ) : null}
+        {needsSchedulePeriod ? (
+          <>
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="시작일 (YYYY-MM-DD)"
+              placeholderTextColor="#000000"
+              style={styles.input}
+              value={startDate}
+              onChangeText={setStartDate}
+            />
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="종료일 (YYYY-MM-DD)"
+              placeholderTextColor="#000000"
+              style={styles.input}
+              value={endDate}
+              onChangeText={setEndDate}
+            />
+          </>
+        ) : null}
+
+        {needsSchedulePeriod ? (
+          <Text style={styles.guide}>
+            날짜는 timezone 변환 없이 입력한 YYYY-MM-DD 문자열 그대로 전송됩니다.
+          </Text>
         ) : null}
 
         {endpoint === 'POST /users/me/oauth-accounts/google/link' ? (

@@ -65,8 +65,11 @@ export async function invalidateTravelScheduleDependencies(queryClient: QueryCli
   ]);
 }
 
-export function useTravelSchedules() {
-  return useQuery(createTravelSchedulesQueryOptions());
+export function useTravelSchedules(enabled = true) {
+  return useQuery({
+    ...createTravelSchedulesQueryOptions(),
+    enabled,
+  });
 }
 
 export function useCreateTravelSchedule() {
