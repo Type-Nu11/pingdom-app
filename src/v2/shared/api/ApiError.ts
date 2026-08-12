@@ -12,10 +12,13 @@ type ApiErrorResponse = {
 
 type ApiErrorDetails = {
   code?: string;
+  details?: Record<string, unknown> | null;
+  fieldErrors?: FieldError[] | null;
   isNetworkError?: boolean;
   response?: ApiErrorResponse;
   responseData?: unknown;
   status?: number;
+  traceId?: string;
 };
 
 export class ApiError extends Error {
@@ -31,25 +34,29 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
     this.code = details.response?.code ?? details.code;
-    this.details = details.response?.details ?? null;
-    this.fieldErrors = details.response?.fieldErrors ?? null;
+    this.details = details.response?.details ?? details.details ?? null;
+    this.fieldErrors = details.response?.fieldErrors ?? details.fieldErrors ?? null;
     this.isNetworkError = details.isNetworkError ?? false;
     this.responseData = 'responseData' in details ? details.responseData : details.response;
     this.status = details.status;
-    this.traceId = details.response?.traceId;
+    this.traceId = details.response?.traceId ?? details.traceId;
   }
 }
 
 function getErrorResponseData(value: unknown): {
   code?: string;
+  details?: Record<string, unknown> | null;
+  fieldErrors?: FieldError[] | null;
   message?: string;
   response?: ApiErrorResponse;
+  traceId?: string;
 } {
   if (!value || typeof value !== 'object') {
     return {};
   }
 
   const response = value as Record<string, unknown>;
+  const legacyErrors = (value as { errors?: unknown }).errors;
   const code = typeof response.code === 'string' ? response.code : undefined;
   const message = typeof response.message === 'string' ? response.message : undefined;
   const traceId = typeof response.traceId === 'string' ? response.traceId : undefined;
@@ -64,7 +71,11 @@ function getErrorResponseData(value: unknown): {
       )
     : response.fieldErrors === null
       ? null
-      : undefined;
+      : legacyErrors && typeof legacyErrors === 'object' && !Array.isArray(legacyErrors)
+        ? Object.entries(legacyErrors)
+            .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+            .map(([field, reason]) => ({ field, reason }))
+        : undefined;
 
   const responseDetails =
     response.details === null ||
@@ -82,8 +93,11 @@ function getErrorResponseData(value: unknown): {
 
   return {
     code,
+    details: responseDetails,
+    fieldErrors,
     message,
     response: contractResponse,
+    traceId,
   };
 }
 
@@ -97,10 +111,13 @@ export function toApiError(error: unknown): ApiError {
 
     return new ApiError(response.message ?? error.message, {
       code: response.code ?? error.code,
+      details: response.details,
+      fieldErrors: response.fieldErrors,
       isNetworkError: error.response === undefined && error.code !== 'ERR_CANCELED',
       response: response.response,
       responseData: error.response?.data,
       status: error.response?.status,
+      traceId: response.traceId,
     });
   }
 

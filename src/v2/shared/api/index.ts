@@ -48,3 +48,13 @@ export type {
   PlaceExplorationSchemaName,
 } from './placeExplorationContract';
 export type { ApiErrorUx, ApiErrorUxKind } from './getApiErrorUx';
+export type {
+  AccountApiOperationName,
+  AccountApiSchema,
+  AccountApiSchemaName,
+  AccountComponents,
+  AccountOperationRequestBody,
+  AccountOperationResponse,
+  AccountOperations,
+  AccountPaths,
+} from './accountContract';
