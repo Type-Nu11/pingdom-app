@@ -166,18 +166,18 @@ function buildUpdateRecordFormData(payload: UpdateRecordRequest) {
 export const recordApi = {
   createRecord: async (payload: CreateRecordRequest): Promise<CreateRecordResponse> => {
     const formData = buildCreateRecordFormData(payload);
-    const { data } = await api.post<CreateRecordResponse>('/map/post/create', formData, {
+    const { data } = await api.post<CreateRecordResponse>('/map/posts', formData, {
       headers: { 'Content-Type': undefined },
     });
     return data;
   },
   deleteRecord: async (id: number): Promise<string> => {
-    const { data } = await api.delete<string>(`/map/post/${id}/delete`);
+    const { data } = await api.delete<string>(`/map/posts/${id}`);
     return data;
   },
   updateRecord: async (id: number, payload: UpdateRecordRequest): Promise<string> => {
     const formData = buildUpdateRecordFormData(payload);
-    const { data } = await api.post<string>(`/map/post/${id}/update`, formData, {
+    const { data } = await api.post<string>(`/map/posts/${id}`, formData, {
       headers: { 'Content-Type': undefined },
     });
     return data;
@@ -231,7 +231,7 @@ export const recordApi = {
     return data;
   },
   reportRecord: async (id: number, payload: PostReportRequest): Promise<string> => {
-    const url = `/map/post/${id}/report`;
+    const url = `/map/posts/${id}/report`;
 
     if (__DEV__) {
       console.log('[PostReport] request', { body: payload, method: 'POST', url });
