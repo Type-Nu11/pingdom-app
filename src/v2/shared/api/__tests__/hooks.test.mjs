@@ -27,6 +27,14 @@ import {
   validateReplaceTravelPurposesBody,
 } from '../../../features/travel-purposes/model/travelPurpose.types.ts';
 import {
+  createCancelTravelScheduleMutationOptions,
+  createTravelScheduleMutationOptions,
+  createTravelSchedulesQueryOptions,
+  createUpdateTravelScheduleMutationOptions,
+  invalidateTravelScheduleDependencies,
+} from '../../../features/travel-schedules/hooks/useTravelSchedules.ts';
+import { travelScheduleQueryKeys } from '../../../features/travel-schedules/model/travelScheduleQueryKeys.ts';
+import {
   createDeleteFcmTokenMutationOptions,
   createRegisterFcmTokenMutationOptions,
 } from '../../../features/notifications/hooks/useFcmTokenMutations.ts';
@@ -179,6 +187,66 @@ test('travel purpose replacement restores its cache and invalidates user and rec
   assert.equal(queryClient.getQueryState(travelPurposeQueryKeys.mine()).isInvalidated, false);
   assert.equal(queryClient.getQueryState(userQueryKeys.me()).isInvalidated, true);
   assert.equal(queryClient.getQueryState(recommendationQueryKeys.all).isInvalidated, true);
+});
+
+test('travel schedule Hook options preserve date-only bodies, identifiers, and AbortSignal', async () => {
+  const calls = [];
+  const response = { schedules: [] };
+  const body = { startDate: '2026-08-31', endDate: '2026-09-02' };
+  const signal = new AbortController().signal;
+  const api = {
+    getTravelSchedules: async (receivedSignal) => {
+      calls.push(['list', receivedSignal]); return response;
+    },
+    createTravelSchedule: async (value) => {
+      calls.push(['create', value]); return response;
+    },
+    updateTravelSchedule: async (scheduleId, value) => {
+      calls.push(['update', scheduleId, value]); return response;
+    },
+    cancelTravelSchedule: async (scheduleId) => {
+      calls.push(['cancel', scheduleId]); return response;
+    },
+  };
+
+  const queryOptions = createTravelSchedulesQueryOptions(api);
+  const createOptions = createTravelScheduleMutationOptions(api);
+  const updateOptions = createUpdateTravelScheduleMutationOptions(api);
+  const cancelOptions = createCancelTravelScheduleMutationOptions(api);
+
+  assert.equal(await queryOptions.queryFn({ signal }), response);
+  assert.equal(await createOptions.mutationFn(body), response);
+  assert.equal(await updateOptions.mutationFn({ body, scheduleId: 7 }), response);
+  assert.equal(await cancelOptions.mutationFn(7), response);
+  assert.deepEqual(queryOptions.queryKey, [
+    'v2', 'users', 'me', 'travel-schedules', 'list',
+  ]);
+  assert.deepEqual(calls, [
+    ['list', signal],
+    ['create', body],
+    ['update', 7, body],
+    ['cancel', 7],
+  ]);
+});
+
+test('travel schedule mutations invalidate only schedule-dependent caches', async () => {
+  const queryClient = new QueryClient();
+  const unrelatedKey = ['v2', 'places', 'detail', 17];
+
+  queryClient.setQueryData(travelScheduleQueryKeys.list(), { schedules: [] });
+  queryClient.setQueryData(userQueryKeys.me(), { id: 1 });
+  queryClient.setQueryData(recommendationQueryKeys.list({ page: 1 }), { places: [] });
+  queryClient.setQueryData(unrelatedKey, { id: 17 });
+
+  await invalidateTravelScheduleDependencies(queryClient);
+
+  assert.equal(queryClient.getQueryState(travelScheduleQueryKeys.list()).isInvalidated, true);
+  assert.equal(queryClient.getQueryState(userQueryKeys.me()).isInvalidated, true);
+  assert.equal(
+    queryClient.getQueryState(recommendationQueryKeys.list({ page: 1 })).isInvalidated,
+    true,
+  );
+  assert.equal(queryClient.getQueryState(unrelatedKey).isInvalidated, false);
 });
 
 test('notification Hook options forward AbortSignal and contract bodies', async () => {

@@ -15,10 +15,16 @@ type Props = {
  */
 export default function TemporaryAccountSessionApiCheckList({ onSelect }: Props) {
   const accountEndpoints = TEMPORARY_ACCOUNT_SESSION_ENDPOINTS.filter(
-    (endpoint) => !endpoint.includes('/firebase/') && !endpoint.includes('/notifications/'),
+    (endpoint) =>
+      !endpoint.includes('/firebase/') &&
+      !endpoint.includes('/notifications/') &&
+      !endpoint.includes('/travel-schedules'),
   );
   const notificationEndpoints = TEMPORARY_ACCOUNT_SESSION_ENDPOINTS.filter(
     (endpoint) => endpoint.includes('/firebase/') || endpoint.includes('/notifications/'),
+  );
+  const travelScheduleEndpoints = TEMPORARY_ACCOUNT_SESSION_ENDPOINTS.filter(
+    (endpoint) => endpoint.includes('/travel-schedules'),
   );
 
   const renderEndpoint = (endpoint: TemporaryAccountSessionEndpoint) => (
@@ -36,6 +42,8 @@ export default function TemporaryAccountSessionApiCheckList({ onSelect }: Props)
     <View style={styles.container}>
       <Text style={styles.label}>계정·세션 API · 임시 실기기 검증</Text>
       {accountEndpoints.map(renderEndpoint)}
+      <Text style={[styles.label, styles.sectionLabel]}>여행 일정 API · #168 실기기 검증</Text>
+      {travelScheduleEndpoints.map(renderEndpoint)}
       <Text style={[styles.label, styles.sectionLabel]}>FCM·알림 설정 API · #166 실기기 검증</Text>
       {notificationEndpoints.map(renderEndpoint)}
     </View>

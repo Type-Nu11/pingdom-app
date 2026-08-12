@@ -9,6 +9,7 @@ import { createPlaceDetailApi } from '../../../features/place-detail/api/placeDe
 import { createPlaceListApi } from '../../../features/place-list/api/placeListApi.ts';
 import { createReservationApi } from '../../../features/reservations/api/reservationApi.ts';
 import { createTravelPurposeApi } from '../../../features/travel-purposes/api/travelPurposeApi.ts';
+import { createTravelScheduleApi } from '../../../features/travel-schedules/api/travelScheduleApi.ts';
 import { createNotificationApi } from '../../../features/notifications/api/notificationApi.ts';
 
 test('all MVP API modules keep operation paths, params, bodies, and response identity', async () => {
@@ -46,6 +47,7 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   const reservations = createReservationApi(client);
   const conversion = createConversionApi(client);
   const travelPurposes = createTravelPurposeApi(client);
+  const travelSchedules = createTravelScheduleApi(client);
   const notifications = createNotificationApi(client);
 
   const checkInBody = {
@@ -78,6 +80,14 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
       sourceScreen: 'PLACE_LIST',
     }],
   };
+  const travelScheduleBody = {
+    startDate: '2026-08-12',
+    endDate: '2026-08-14',
+  };
+  const updatedTravelScheduleBody = {
+    startDate: '2026-08-13',
+    endDate: '2026-08-16',
+  };
 
   const results = await Promise.all([
     placeList.getPlaceList({ keyword: 'cafe', page: 1 }, signal),
@@ -104,6 +114,10 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
     conversion.ingestEvents(conversionBody, signal),
     travelPurposes.getTravelPurposes(signal),
     travelPurposes.replaceTravelPurposes({ travelPurposes: ['K_POP', 'FOOD'] }, signal),
+    travelSchedules.getTravelSchedules(signal),
+    travelSchedules.createTravelSchedule(travelScheduleBody, signal),
+    travelSchedules.updateTravelSchedule(1, updatedTravelScheduleBody, signal),
+    travelSchedules.cancelTravelSchedule(1, signal),
     notifications.registerFcmToken({ token: 'fcm-token' }, signal),
     notifications.deleteFcmToken({ token: 'deleted-fcm-token' }, signal),
     notifications.getNotificationSettings(signal),
@@ -113,7 +127,7 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
 
   assert.ok(
     results.every((result, index) =>
-      index === 24 || index === 25 || index === 28
+      index === 28 || index === 29 || index === 32
         ? result === undefined
         : result === response),
   );
@@ -142,6 +156,10 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
     'POST /conversion-events/batch',
     'GET /users/me/travel-purposes',
     'PUT /users/me/travel-purposes',
+    'GET /users/me/travel-schedules',
+    'POST /users/me/travel-schedules',
+    'PATCH /users/me/travel-schedules/1',
+    'POST /users/me/travel-schedules/1/cancel',
     'POST /firebase/fcm-tokens',
     'DELETE /firebase/fcm-tokens',
     'GET /notifications/settings',
@@ -160,9 +178,15 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   assert.deepEqual(calls[23].body, { travelPurposes: ['K_POP', 'FOOD'] });
   assert.equal(calls[22].options.signal, signal);
   assert.equal(calls[23].options.signal, signal);
-  assert.deepEqual(calls[24].body, { token: 'fcm-token' });
+  assert.equal(calls[24].options.signal, signal);
+  assert.equal(calls[25].body, travelScheduleBody);
   assert.equal(calls[25].options.signal, signal);
-  assert.deepEqual(calls[27].body, { newLikeEnabled: false });
+  assert.equal(calls[26].body, updatedTravelScheduleBody);
+  assert.equal(calls[26].options.signal, signal);
+  assert.equal(calls[27].options.signal, signal);
+  assert.deepEqual(calls[28].body, { token: 'fcm-token' });
+  assert.equal(calls[29].options.signal, signal);
+  assert.deepEqual(calls[31].body, { newLikeEnabled: false });
 });
 
 test('FCM registration coalesces concurrent requests for the same token', async () => {

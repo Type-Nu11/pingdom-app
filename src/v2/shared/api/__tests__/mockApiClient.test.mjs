@@ -13,12 +13,21 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('success');
   assert.equal(apiClient, mockApiClient);
 
-  const [places, detail, checkIn, coupons, travelPurposes, notificationSettings] = await Promise.all([
+  const [
+    places,
+    detail,
+    checkIn,
+    coupons,
+    travelPurposes,
+    travelSchedules,
+    notificationSettings,
+  ] = await Promise.all([
     mockApiClient.get('/places'),
     mockApiClient.get('/places/17'),
     mockApiClient.post('/location-check-ins', {}),
     mockApiClient.get('/coupons'),
     mockApiClient.get('/users/me/travel-purposes'),
+    mockApiClient.get('/users/me/travel-schedules'),
     mockApiClient.get('/notifications/settings'),
   ]);
 
@@ -29,10 +38,26 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.deepEqual(coupons.coupons.map(({ status }) => status), ['ISSUED', 'EXPIRED']);
   assert.equal(merchantPerformanceFixture.metrics.completedCheckIns, 31);
   assert.deepEqual(travelPurposes.travelPurposes, ['K_POP', 'CAFE']);
+  assert.equal(travelSchedules.schedules[0].startDate, '2026-08-12');
   assert.equal(notificationSettings.timezone, 'Asia/Seoul');
   assert.deepEqual(
     await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
     travelPurposes,
+  );
+  assert.deepEqual(
+    await mockApiClient.post('/users/me/travel-schedules', {
+      startDate: '2026-08-31',
+      endDate: '2026-09-02',
+    }),
+    {
+      ...travelSchedules.schedules[0],
+      startDate: '2026-08-31',
+      endDate: '2026-09-02',
+    },
+  );
+  assert.equal(
+    (await mockApiClient.post('/users/me/travel-schedules/1/cancel')).status,
+    'CANCELLED',
   );
   assert.equal(await mockApiClient.post('/firebase/fcm-tokens', { token: 'fcm' }), undefined);
   assert.equal(await mockApiClient.delete('/firebase/fcm-tokens', { token: 'fcm' }), undefined);
@@ -44,11 +69,13 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('empty');
   const emptyPlaces = await mockApiClient.get('/places');
   const emptyCoupons = await mockApiClient.get('/coupons');
+  const emptyTravelSchedules = await mockApiClient.get('/users/me/travel-schedules');
 
   assert.deepEqual(emptyPlaces.places, []);
   assert.equal(emptyPlaces.totalPages, 0);
   assert.deepEqual(emptyCoupons.coupons, []);
   assert.equal(emptyCoupons.hasNext, false);
+  assert.deepEqual(emptyTravelSchedules.schedules, []);
 
   const cases = [
     ['forbidden', 403, 'ROLE_REQUIRED'],

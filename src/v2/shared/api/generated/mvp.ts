@@ -28,6 +28,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/me/travel-schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 내 여행 일정 목록 조회
+         * @description 현재 인증된 사용자의 여행 일정을 조회한다.
+         */
+        get: operations["getTravelSchedules"];
+        put?: never;
+        /**
+         * 여행 일정 생성
+         * @description 현재 인증된 사용자에게 날짜 범위의 여행 일정을 추가한다.
+         */
+        post: operations["createTravelSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/travel-schedules/{scheduleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 여행 일정 기간 변경
+         * @description 취소되지 않은 본인 여행 일정의 날짜 범위를 변경한다.
+         */
+        patch: operations["updateTravelSchedule"];
+        trace?: never;
+    };
+    "/users/me/travel-schedules/{scheduleId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 여행 일정 취소
+         * @description 본인 여행 일정을 취소 상태로 전환한다.
+         */
+        post: operations["cancelTravelSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/places": {
         parameters: {
             query?: never;
@@ -376,7 +440,7 @@ export interface components {
         /** Format: int64 */
         PositiveId: number;
         /** @enum {string} */
-        ErrorCode: "AUTH_REQUIRED" | "INVALID_TOKEN" | "TOKEN_EXPIRED" | "SIGNATURE_REQUIRED" | "INVALID_SIGNATURE" | "REQUEST_TIMESTAMP_OUT_OF_RANGE" | "SIGNING_KEY_EXPIRED" | "REPLAY_DETECTED" | "UNSUPPORTED_APP_VERSION" | "FORBIDDEN" | "ROLE_REQUIRED" | "RESOURCE_OWNERSHIP_REQUIRED" | "VALIDATION_FAILED" | "PLACE_NOT_FOUND" | "CHECK_IN_NOT_FOUND" | "CHECK_IN_ALREADY_EXISTS" | "CHECK_IN_OUT_OF_RANGE" | "STATUS_VOTE_ALREADY_EXISTS" | "PLACE_CLAIM_ALREADY_EXISTS" | "PLACE_CLAIM_NOT_FOUND" | "OFFER_NOT_FOUND" | "COUPON_NOT_FOUND" | "COUPON_ALREADY_ISSUED" | "COUPON_ALREADY_REDEEMED" | "COUPON_EXPIRED" | "AVAILABILITY_NOT_FOUND" | "RESERVATION_NOT_FOUND" | "CAPACITY_EXCEEDED" | "INVALID_STATE_TRANSITION" | "RESOURCE_EXPIRED" | "EVENT_BATCH_TOO_LARGE";
+        ErrorCode: "AUTH_REQUIRED" | "INVALID_TOKEN" | "TOKEN_EXPIRED" | "SIGNATURE_REQUIRED" | "INVALID_SIGNATURE" | "REQUEST_TIMESTAMP_OUT_OF_RANGE" | "SIGNING_KEY_EXPIRED" | "REPLAY_DETECTED" | "UNSUPPORTED_APP_VERSION" | "FORBIDDEN" | "ROLE_REQUIRED" | "RESOURCE_OWNERSHIP_REQUIRED" | "VALIDATION_FAILED" | "INVALID_TRAVEL_SCHEDULE_PERIOD" | "TRAVEL_SCHEDULE_NOT_FOUND" | "TRAVEL_SCHEDULE_NOT_EDITABLE" | "TRAVEL_SCHEDULE_CONCURRENT_MODIFICATION" | "PLACE_NOT_FOUND" | "CHECK_IN_NOT_FOUND" | "CHECK_IN_ALREADY_EXISTS" | "CHECK_IN_OUT_OF_RANGE" | "STATUS_VOTE_ALREADY_EXISTS" | "PLACE_CLAIM_ALREADY_EXISTS" | "PLACE_CLAIM_NOT_FOUND" | "OFFER_NOT_FOUND" | "COUPON_NOT_FOUND" | "COUPON_ALREADY_ISSUED" | "COUPON_ALREADY_REDEEMED" | "COUPON_EXPIRED" | "AVAILABILITY_NOT_FOUND" | "RESERVATION_NOT_FOUND" | "CAPACITY_EXCEEDED" | "INVALID_STATE_TRANSITION" | "RESOURCE_EXPIRED" | "EVENT_BATCH_TOO_LARGE";
         FieldError: {
             field: string;
             reason: string;
@@ -403,6 +467,65 @@ export interface components {
         TravelPurposePreferenceResponse: {
             /** @description 선호 여행 목적 목록 */
             travelPurposes?: components["schemas"]["TravelPurpose"][];
+        };
+        /** @enum {string} */
+        TravelScheduleStatus: "UPCOMING" | "ONGOING" | "ENDED" | "CANCELLED";
+        /** @description 여행 일정 생성 요청 */
+        TravelScheduleCreateRequest: {
+            /**
+             * Format: date
+             * @description 여행 시작일
+             * @example 2026-08-01
+             */
+            startDate: string;
+            /**
+             * Format: date
+             * @description 여행 종료일
+             * @example 2026-08-04
+             */
+            endDate: string;
+        };
+        /** @description 여행 일정 기간 변경 요청 */
+        TravelScheduleUpdateRequest: {
+            /**
+             * Format: date
+             * @description 여행 시작일
+             * @example 2026-08-02
+             */
+            startDate: string;
+            /**
+             * Format: date
+             * @description 여행 종료일
+             * @example 2026-08-05
+             */
+            endDate: string;
+        };
+        /** @description 여행 일정 응답 */
+        TravelScheduleResponse: {
+            /**
+             * Format: int64
+             * @description 여행 일정 ID
+             * @example 1
+             */
+            id?: number;
+            /**
+             * Format: date
+             * @description 여행 시작일
+             * @example 2026-08-01
+             */
+            startDate?: string;
+            /**
+             * Format: date
+             * @description 여행 종료일
+             * @example 2026-08-04
+             */
+            endDate?: string;
+            status?: components["schemas"]["TravelScheduleStatus"];
+        };
+        /** @description 여행 일정 목록 응답 */
+        TravelScheduleListResponse: {
+            /** @description 여행 일정 목록 */
+            schedules?: components["schemas"]["TravelScheduleResponse"][];
         };
         /**
          * @default LATEST
@@ -1040,6 +1163,180 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["AuthenticationError"];
             404: components["responses"]["NotFoundError"];
+        };
+    };
+    getTravelSchedules: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Unix epoch seconds. Server acceptance window is ±300 seconds.
+                 * @example 1784784600
+                 */
+                "X-Timestamp": components["parameters"]["XTimestamp"];
+                /**
+                 * @description Standard Base64 encoded 32-byte HMAC-SHA256 digest.
+                 * @example xnN4E7xJ5Y7xw+H3t7q0O4JfKopdFy8FE3AgAbCDefg=
+                 */
+                "X-SignatureBase64": components["parameters"]["XSignature"];
+                /** @example 1.4.0 */
+                "X-App-Version": components["parameters"]["XAppVersion"];
+                /**
+                 * @description 앱 설치 단위 UUID. 광고 식별자로 사용하지 않는다.
+                 * @example 6f1a0f58-34b3-4f7a-81e0-9959c76283cb
+                 */
+                "X-Device-Id": components["parameters"]["XDeviceId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TravelScheduleListResponse"];
+                };
+            };
+            401: components["responses"]["AuthenticationError"];
+        };
+    };
+    createTravelSchedule: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Unix epoch seconds. Server acceptance window is ±300 seconds.
+                 * @example 1784784600
+                 */
+                "X-Timestamp": components["parameters"]["XTimestamp"];
+                /**
+                 * @description Standard Base64 encoded 32-byte HMAC-SHA256 digest.
+                 * @example xnN4E7xJ5Y7xw+H3t7q0O4JfKopdFy8FE3AgAbCDefg=
+                 */
+                "X-SignatureBase64": components["parameters"]["XSignature"];
+                /** @example 1.4.0 */
+                "X-App-Version": components["parameters"]["XAppVersion"];
+                /**
+                 * @description 앱 설치 단위 UUID. 광고 식별자로 사용하지 않는다.
+                 * @example 6f1a0f58-34b3-4f7a-81e0-9959c76283cb
+                 */
+                "X-Device-Id": components["parameters"]["XDeviceId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TravelScheduleCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description 생성 성공 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TravelScheduleResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["AuthenticationError"];
+        };
+    };
+    updateTravelSchedule: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Unix epoch seconds. Server acceptance window is ±300 seconds.
+                 * @example 1784784600
+                 */
+                "X-Timestamp": components["parameters"]["XTimestamp"];
+                /**
+                 * @description Standard Base64 encoded 32-byte HMAC-SHA256 digest.
+                 * @example xnN4E7xJ5Y7xw+H3t7q0O4JfKopdFy8FE3AgAbCDefg=
+                 */
+                "X-SignatureBase64": components["parameters"]["XSignature"];
+                /** @example 1.4.0 */
+                "X-App-Version": components["parameters"]["XAppVersion"];
+                /**
+                 * @description 앱 설치 단위 UUID. 광고 식별자로 사용하지 않는다.
+                 * @example 6f1a0f58-34b3-4f7a-81e0-9959c76283cb
+                 */
+                "X-Device-Id": components["parameters"]["XDeviceId"];
+            };
+            path: {
+                scheduleId: components["schemas"]["PositiveId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TravelScheduleUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description 변경 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TravelScheduleResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["AuthenticationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
+        };
+    };
+    cancelTravelSchedule: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Unix epoch seconds. Server acceptance window is ±300 seconds.
+                 * @example 1784784600
+                 */
+                "X-Timestamp": components["parameters"]["XTimestamp"];
+                /**
+                 * @description Standard Base64 encoded 32-byte HMAC-SHA256 digest.
+                 * @example xnN4E7xJ5Y7xw+H3t7q0O4JfKopdFy8FE3AgAbCDefg=
+                 */
+                "X-SignatureBase64": components["parameters"]["XSignature"];
+                /** @example 1.4.0 */
+                "X-App-Version": components["parameters"]["XAppVersion"];
+                /**
+                 * @description 앱 설치 단위 UUID. 광고 식별자로 사용하지 않는다.
+                 * @example 6f1a0f58-34b3-4f7a-81e0-9959c76283cb
+                 */
+                "X-Device-Id": components["parameters"]["XDeviceId"];
+            };
+            path: {
+                scheduleId: components["schemas"]["PositiveId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 취소 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TravelScheduleResponse"];
+                };
+            };
+            401: components["responses"]["AuthenticationError"];
+            404: components["responses"]["NotFoundError"];
+            409: components["responses"]["ConflictError"];
         };
     };
     listPlaces: {
