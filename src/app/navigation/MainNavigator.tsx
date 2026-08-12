@@ -96,8 +96,7 @@ const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
 };
 
 const ApiCheckRouteScreen = ({ navigation }: MainScreenProps<'ApiCheck'>) => (
-  // TEMPORARY #165: replace this flow with <ApiCheckScreen onBack={navigation.goBack} />
-  // and remove the dev/account-session-api-check directory after device QA.
+  // TEMPORARY device-QA flow for the #165 account and #161 place exploration endpoints.
   <TemporaryAccountSessionApiCheckFlow onExit={navigation.goBack} />
 );
 

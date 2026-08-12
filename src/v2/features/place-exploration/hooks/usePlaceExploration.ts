@@ -90,28 +90,50 @@ export function createMapLinkConversionMutationOptions(
   };
 }
 
-export function usePlaceMap(params: MapViewportParams) {
-  return useQuery(createPlaceMapQueryOptions(params));
+type PlaceExplorationQueryConfig = {
+  enabled?: boolean;
+};
+
+export function usePlaceMap(
+  params: MapViewportParams,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceMapQueryOptions(params), enabled });
 }
 
-export function usePlaceCard(placeId: number) {
-  return useQuery(createPlaceCardQueryOptions(placeId));
+export function usePlaceCard(
+  placeId: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceCardQueryOptions(placeId), enabled });
 }
 
-export function usePlaceVisitDecision(placeId: number) {
-  return useQuery(createPlaceVisitDecisionQueryOptions(placeId));
+export function usePlaceVisitDecision(
+  placeId: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceVisitDecisionQueryOptions(placeId), enabled });
 }
 
-export function usePlaceOperatingNotices(placeId: number) {
-  return useQuery(createPlaceOperatingNoticesQueryOptions(placeId));
+export function usePlaceOperatingNotices(
+  placeId: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceOperatingNoticesQueryOptions(placeId), enabled });
 }
 
-export function usePlaceVerificationMedia(id: number) {
-  return useQuery(createPlaceVerificationMediaQueryOptions(id));
+export function usePlaceVerificationMedia(
+  id: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceVerificationMediaQueryOptions(id), enabled });
 }
 
-export function useRecommendationExplanation(requestId: string) {
-  return useQuery(createRecommendationExplanationQueryOptions(requestId));
+export function useRecommendationExplanation(
+  requestId: string,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createRecommendationExplanationQueryOptions(requestId), enabled });
 }
 
 export function usePlaceCardResources(placeId: number) {
