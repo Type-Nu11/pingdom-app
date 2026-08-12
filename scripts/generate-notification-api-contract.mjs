@@ -78,4 +78,3 @@ execFileSync(
   ['--no-install', 'openapi-typescript', CONTRACT_PATH, '-o', GENERATED_PATH],
   { stdio: 'inherit' },
 );
-

@@ -1,4 +1,5 @@
 import { accountMockHandlers } from './account/handlers';
+import { placeExplorationMockHandlers } from './place-exploration/handlers';
 import { notificationMockHandlers } from './notifications/handlers';
 import { travelPurposeMockHandlers } from './travel-purposes/handlers';
 import { travelScheduleMockHandlers } from './travel-schedules/handlers';
@@ -8,5 +9,6 @@ export const featureMockHandlers = [
   ...accountMockHandlers,
   ...notificationMockHandlers,
   ...travelPurposeMockHandlers,
+  ...placeExplorationMockHandlers,
   ...travelScheduleMockHandlers,
 ];

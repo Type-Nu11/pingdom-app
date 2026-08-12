@@ -1,6 +1,11 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import ApiCheckScreen from '../../screens/ApiCheckScreen';
+import {
+  TemporaryPlaceExplorationApiCheckList,
+  TemporaryPlaceExplorationApiCheckPage,
+  type TemporaryPlaceExplorationEndpoint,
+} from '../place-exploration-api-check';
 import TemporaryAccountSessionApiCheckList from './TemporaryAccountSessionApiCheckList';
 import TemporaryAccountSessionApiCheckPage from './TemporaryAccountSessionApiCheckPage';
 import type { TemporaryAccountSessionEndpoint } from './model';
@@ -12,13 +17,14 @@ type Props = {
 type TemporaryApiCheckStackParamList = {
   Endpoint: { endpoint: TemporaryAccountSessionEndpoint };
   List: undefined;
+  PlaceEndpoint: { endpoint: TemporaryPlaceExplorationEndpoint };
 };
 
 const Stack = createNativeStackNavigator<TemporaryApiCheckStackParamList>();
 
 /**
- * TEMPORARY #165/#166: This nested navigator owns all temporary routes and parameters.
- * Removal requires only restoring ApiCheckScreen in MainNavigator and deleting this directory.
+ * Temporary device-QA navigator for the #161, #165, #166, and #168 endpoints.
+ * Keep the place routes when removing the account, notification, and travel-schedule checks.
  */
 export default function TemporaryAccountSessionApiCheckFlow({ onExit }: Props) {
   return (
@@ -27,9 +33,14 @@ export default function TemporaryAccountSessionApiCheckFlow({ onExit }: Props) {
         {({ navigation }) => (
           <ApiCheckScreen
             footer={(
-              <TemporaryAccountSessionApiCheckList
-                onSelect={(endpoint) => navigation.navigate('Endpoint', { endpoint })}
-              />
+              <>
+                <TemporaryAccountSessionApiCheckList
+                  onSelect={(endpoint) => navigation.navigate('Endpoint', { endpoint })}
+                />
+                <TemporaryPlaceExplorationApiCheckList
+                  onSelect={(endpoint) => navigation.navigate('PlaceEndpoint', { endpoint })}
+                />
+              </>
             )}
             onBack={onExit}
           />
@@ -38,6 +49,14 @@ export default function TemporaryAccountSessionApiCheckFlow({ onExit }: Props) {
       <Stack.Screen name="Endpoint">
         {({ navigation, route }) => (
           <TemporaryAccountSessionApiCheckPage
+            endpoint={route.params.endpoint}
+            onBack={navigation.goBack}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="PlaceEndpoint">
+        {({ navigation, route }) => (
+          <TemporaryPlaceExplorationApiCheckPage
             endpoint={route.params.endpoint}
             onBack={navigation.goBack}
           />

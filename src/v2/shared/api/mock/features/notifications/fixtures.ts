@@ -8,4 +8,3 @@ export const notificationSettingFixture = {
   quietHoursEnd: '08:00:00',
   timezone: 'Asia/Seoul',
 } satisfies components['schemas']['NotificationSettingResponse'];
-

@@ -37,22 +37,22 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
   const error = toApiError(value);
   const { code, status } = error;
 
-  if (code === 'UNSUPPORTED_APP_VERSION' || status === 426) {
+  if (code === 'UNSUPPORTED_APP_VERSION' || (!code && status === 426)) {
     return { action: 'update', error, kind: 'updateRequired' };
   }
 
-  if (AUTHENTICATION_CODES.has(code ?? '') || status === 401) {
+  if (AUTHENTICATION_CODES.has(code ?? '') || (!code && status === 401)) {
     return { action: 'signIn', error, kind: 'authentication' };
   }
 
-  if (AUTHORIZATION_CODES.has(code ?? '') || status === 403) {
+  if (AUTHORIZATION_CODES.has(code ?? '') || (!code && status === 403)) {
     return { action: 'none', error, kind: 'authorization' };
   }
 
   if (
     code === 'VALIDATION_FAILED' ||
     code === 'INVALID_TRAVEL_SCHEDULE_PERIOD' ||
-    status === 400
+    (!code && status === 400)
   ) {
     return { action: 'none', error, kind: 'validation' };
   }
@@ -65,15 +65,19 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     return { action: 'none', error, kind: 'outOfRange' };
   }
 
-  if (status === 422) {
+  if (code === 'TRAVEL_SCHEDULE_RULE_VIOLATION' || (!code && status === 422)) {
     return { action: 'none', error, kind: 'validation' };
   }
 
-  if (code === 'COUPON_EXPIRED' || code === 'RESOURCE_EXPIRED' || status === 410) {
+  if (
+    code === 'COUPON_EXPIRED' ||
+    code === 'RESOURCE_EXPIRED' ||
+    (!code && status === 410)
+  ) {
     return { action: 'none', error, kind: 'expired' };
   }
 
-  if (code?.endsWith('_NOT_FOUND') || status === 404) {
+  if (code?.endsWith('_NOT_FOUND') || (!code && status === 404)) {
     return { action: 'back', error, kind: 'notFound' };
   }
 
@@ -83,8 +87,10 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     code === 'CAPACITY_EXCEEDED' ||
     code === 'COUPON_ALREADY_ISSUED' ||
     code === 'COUPON_ALREADY_REDEEMED' ||
+    code === 'TRAVEL_SCHEDULE_NOT_EDITABLE' ||
+    code === 'TRAVEL_SCHEDULE_CONCURRENT_MODIFICATION' ||
     code?.endsWith('_ALREADY_EXISTS') ||
-    status === 409
+    (!code && status === 409)
   ) {
     return { action: 'none', error, kind: 'conflict' };
   }

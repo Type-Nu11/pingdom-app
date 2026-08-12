@@ -8,4 +8,3 @@ export type NotificationSettingUpdateRequest =
   components['schemas']['NotificationSettingUpdateRequest'];
 export type NotificationSetting =
   operations['getSetting']['responses'][200]['content']['*/*'];
-

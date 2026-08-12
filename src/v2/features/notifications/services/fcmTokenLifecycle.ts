@@ -11,4 +11,3 @@ export async function unregisterStoredFcmToken(): Promise<void> {
   await notificationApi.deleteFcmToken({ token });
   await clearRegisteredFcmToken(token);
 }
-

@@ -1,13 +1,22 @@
 import axios from 'axios';
 
-import type { ErrorResponse, FieldError } from './contract';
+import type { FieldError } from './contract';
+
+type ApiErrorResponse = {
+  code?: string;
+  details?: Record<string, unknown> | null;
+  fieldErrors?: FieldError[] | null;
+  message?: string;
+  traceId?: string;
+};
 
 type ApiErrorDetails = {
   code?: string;
   details?: Record<string, unknown> | null;
   fieldErrors?: FieldError[] | null;
   isNetworkError?: boolean;
-  response?: ErrorResponse;
+  response?: ApiErrorResponse;
+  responseData?: unknown;
   status?: number;
   traceId?: string;
 };
@@ -17,6 +26,7 @@ export class ApiError extends Error {
   readonly details: Record<string, unknown> | null;
   readonly fieldErrors: FieldError[] | null;
   readonly isNetworkError: boolean;
+  readonly responseData: unknown;
   readonly status?: number;
   readonly traceId?: string;
 
@@ -27,6 +37,7 @@ export class ApiError extends Error {
     this.details = details.response?.details ?? details.details ?? null;
     this.fieldErrors = details.response?.fieldErrors ?? details.fieldErrors ?? null;
     this.isNetworkError = details.isNetworkError ?? false;
+    this.responseData = 'responseData' in details ? details.responseData : details.response;
     this.status = details.status;
     this.traceId = details.response?.traceId ?? details.traceId;
   }
@@ -37,14 +48,14 @@ function getErrorResponseData(value: unknown): {
   details?: Record<string, unknown> | null;
   fieldErrors?: FieldError[] | null;
   message?: string;
-  response?: ErrorResponse;
+  response?: ApiErrorResponse;
   traceId?: string;
 } {
   if (!value || typeof value !== 'object') {
     return {};
   }
 
-  const response = value as Partial<Record<keyof ErrorResponse, unknown>>;
+  const response = value as Record<string, unknown>;
   const legacyErrors = (value as { errors?: unknown }).errors;
   const code = typeof response.code === 'string' ? response.code : undefined;
   const message = typeof response.message === 'string' ? response.message : undefined;
@@ -72,15 +83,13 @@ function getErrorResponseData(value: unknown): {
       ? response.details as Record<string, unknown> | null
       : undefined;
 
-  const contractResponse = code && message && traceId && fieldErrors !== undefined && responseDetails !== undefined
-    ? {
-        code: code as ErrorResponse['code'],
-        details: responseDetails,
-        fieldErrors,
-        message,
-        traceId,
-      }
-    : undefined;
+  const contractResponse: ApiErrorResponse = {
+    code,
+    details: responseDetails,
+    fieldErrors,
+    message,
+    traceId,
+  };
 
   return {
     code,
@@ -106,6 +115,7 @@ export function toApiError(error: unknown): ApiError {
       fieldErrors: response.fieldErrors,
       isNetworkError: error.response === undefined && error.code !== 'ERR_CANCELED',
       response: response.response,
+      responseData: error.response?.data,
       status: error.response?.status,
       traceId: response.traceId,
     });

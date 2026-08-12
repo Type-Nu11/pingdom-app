@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
 import { placeListApi } from '../api/placeListApi';
 import type { GetPlaceListParams } from '../model/placeList.types';
 
 type PlaceListApi = Pick<typeof placeListApi, 'getPlaceList'>;
 
 export const placeListQueryKeys = {
-  all: ['v2', 'place-list'] as const,
-  list: (params: GetPlaceListParams) => [...placeListQueryKeys.all, params] as const,
+  all: placeQueryKeys.lists(),
+  list: placeQueryKeys.list<GetPlaceListParams>,
 };
 
 export function createPlaceListQueryOptions(
