@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -21,7 +21,15 @@ import {
   usePasswordResetRequest,
   useResendVerificationEmail,
 } from '../../../../v2/features/auth';
+import {
+  useDeleteFcmToken,
+  useNotificationSettings,
+  useRegisterFcmToken,
+  useUpdateNotificationSettings,
+  type NotificationSettingUpdateRequest,
+} from '../../../../v2/features/notifications';
 import { getApiErrorUx } from '../../../../v2/shared/api';
+import { getCurrentFcmToken } from '../../../firebase/utils/getCurrentFcmToken';
 import type { TemporaryAccountSessionEndpoint } from './model';
 
 type Props = {
@@ -51,11 +59,25 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
   const googleUnlink = useGoogleUnlink();
   const downloadUserDataExport = useDownloadUserDataExport();
   const logout = useLogout();
+  const registerFcmToken = useRegisterFcmToken();
+  const deleteFcmToken = useDeleteFcmToken();
+  // The API check page fires GET only when the tester presses the execute button.
+  const notificationSettings = useNotificationSettings(false);
+  const updateNotificationSettings = useUpdateNotificationSettings();
   const [email, setEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
+  const [fcmToken, setFcmToken] = useState('');
+  const [isLoadingFcmToken, setIsLoadingFcmToken] = useState(false);
+  const [fcmTokenLoadError, setFcmTokenLoadError] = useState<string | null>(null);
+  const [newHotplaceEnabled, setNewHotplaceEnabled] = useState(true);
+  const [newLikeEnabled, setNewLikeEnabled] = useState(true);
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
+  const [quietHoursStart, setQuietHoursStart] = useState('22:00:00');
+  const [quietHoursEnd, setQuietHoursEnd] = useState('08:00:00');
+  const [timezone, setTimezone] = useState('Asia/Seoul');
   const [result, setResult] = useState<TestResult | null>(null);
 
   const callbacks = {
@@ -66,13 +88,52 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
   const isPending =
     requestPasswordReset.isPending || confirmPasswordReset.isPending ||
     resendVerificationEmail.isPending || googleLink.isPending || googleUnlink.isPending ||
-    downloadUserDataExport.isPending || logout.isPending;
+    downloadUserDataExport.isPending || logout.isPending || registerFcmToken.isPending ||
+    deleteFcmToken.isPending || notificationSettings.isFetching ||
+    updateNotificationSettings.isPending;
 
   const needsEmail = endpoint === 'POST /auth/password-reset/request' ||
     endpoint === 'POST /auth/password-reset/confirm' ||
     endpoint === 'POST /auth/email/resend';
   const isConfirm = endpoint === 'POST /auth/password-reset/confirm';
   const isUnlink = endpoint === 'DELETE /users/me/oauth-accounts/google';
+  const needsFcmToken = endpoint === 'POST /firebase/fcm-tokens' ||
+    endpoint === 'DELETE /firebase/fcm-tokens';
+
+  useEffect(() => {
+    if (!needsFcmToken) return;
+
+    let isActive = true;
+    setIsLoadingFcmToken(true);
+    setFcmTokenLoadError(null);
+
+    void getCurrentFcmToken()
+      .then((token) => {
+        if (!isActive) return;
+
+        if (token) {
+          setFcmToken(token);
+        } else {
+          setFcmTokenLoadError(
+            'FCM token을 자동으로 가져오지 못했습니다. 알림 권한과 네이티브 Firebase 설정을 확인하거나 직접 입력하세요.',
+          );
+        }
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        console.warn('FCM token load failed:', error);
+        setFcmTokenLoadError('FCM token 조회에 실패했습니다. 직접 입력해도 됩니다.');
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingFcmToken(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [needsFcmToken]);
+
+  const isNotificationSettingsUpdate = endpoint === 'PATCH /notifications/settings';
   const isInputValid = endpoint === 'POST /auth/password-reset/request' ||
     endpoint === 'POST /auth/email/resend'
     ? Boolean(email.trim())
@@ -81,7 +142,13 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
           email.trim() && resetToken.trim() &&
           newPassword.length >= 8 && confirmPassword.length >= 8
         )
-      : true;
+      : needsFcmToken
+        ? Boolean(fcmToken.trim())
+        : isNotificationSettingsUpdate
+          ? Boolean(timezone.trim()) && (
+              !quietHoursEnabled || Boolean(quietHoursStart.trim() && quietHoursEnd.trim())
+            )
+          : true;
 
   const execute = () => {
     setResult(null);
@@ -113,6 +180,32 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
       case 'GET /users/me/export':
         downloadUserDataExport.mutate(undefined, callbacks);
         break;
+      case 'POST /firebase/fcm-tokens':
+        registerFcmToken.mutate({ token: fcmToken.trim() }, callbacks);
+        break;
+      case 'DELETE /firebase/fcm-tokens':
+        deleteFcmToken.mutate({ token: fcmToken.trim() }, callbacks);
+        break;
+      case 'GET /notifications/settings':
+        void notificationSettings.refetch().then(({ data, error, isError }) => {
+          if (isError) callbacks.onError(error);
+          else callbacks.onSuccess(data);
+        });
+        break;
+      case 'PATCH /notifications/settings': {
+        const body: NotificationSettingUpdateRequest = {
+          newHotplaceEnabled,
+          newLikeEnabled,
+          quietHoursEnabled,
+          timezone: timezone.trim(),
+          ...(quietHoursEnabled ? {
+            quietHoursEnd: quietHoursEnd.trim(),
+            quietHoursStart: quietHoursStart.trim(),
+          } : {}),
+        };
+        updateNotificationSettings.mutate(body, callbacks);
+        break;
+      }
     }
   };
 
@@ -180,6 +273,72 @@ export default function TemporaryAccountSessionApiCheckPage({ endpoint, onBack }
             value={currentPassword}
             onChangeText={setCurrentPassword}
           />
+        ) : null}
+        {needsFcmToken ? (
+          <>
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              multiline
+              placeholder="실기기 FCM token"
+              placeholderTextColor="#000000"
+              style={[styles.input, styles.tokenInput]}
+              value={fcmToken}
+              onChangeText={setFcmToken}
+            />
+            <Text style={styles.guide}>
+              {isLoadingFcmToken
+                ? '실기기 FCM token을 가져오는 중입니다.'
+                : fcmTokenLoadError ??
+                  '현재 실기기에서 발급된 FCM token을 자동으로 입력했습니다. 필요하면 직접 수정할 수 있습니다.'}
+            </Text>
+          </>
+        ) : null}
+        {isNotificationSettingsUpdate ? (
+          <View style={styles.settingsForm}>
+            <SettingToggle
+              label="신규 핫플레이스 알림"
+              value={newHotplaceEnabled}
+              onChange={setNewHotplaceEnabled}
+            />
+            <SettingToggle
+              label="신규 좋아요 알림"
+              value={newLikeEnabled}
+              onChange={setNewLikeEnabled}
+            />
+            <SettingToggle
+              label="방해 금지 시간"
+              value={quietHoursEnabled}
+              onChange={setQuietHoursEnabled}
+            />
+            {quietHoursEnabled ? (
+              <>
+                <TextInput
+                  placeholder="시작 시각 (예: 22:00:00)"
+                  placeholderTextColor="#000000"
+                  style={styles.input}
+                  value={quietHoursStart}
+                  onChangeText={setQuietHoursStart}
+                />
+                <TextInput
+                  placeholder="종료 시각 (예: 08:00:00)"
+                  placeholderTextColor="#000000"
+                  style={styles.input}
+                  value={quietHoursEnd}
+                  onChangeText={setQuietHoursEnd}
+                />
+              </>
+            ) : null}
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="IANA timezone (예: Asia/Seoul)"
+              placeholderTextColor="#000000"
+              style={styles.input}
+              value={timezone}
+              onChangeText={setTimezone}
+            />
+          </View>
         ) : null}
 
         {endpoint === 'POST /users/me/oauth-accounts/google/link' ? (
@@ -251,10 +410,42 @@ const styles = StyleSheet.create({
   json: { color: '#3b3b40', fontFamily: 'monospace', fontSize: 13, lineHeight: 20 },
   result: { backgroundColor: '#f0fbf5', borderRadius: 14, gap: 8, padding: 16 },
   safeArea: { backgroundColor: '#ffffff', flex: 1 },
+  settingsForm: { gap: 12 },
   success: { color: '#087443', fontSize: 15, fontWeight: '800' },
   title: { color: '#202024', fontSize: 22, fontWeight: '800' },
+  tokenInput: { minHeight: 96, textAlignVertical: 'top' },
+  toggle: {
+    alignItems: 'center', backgroundColor: '#f6f6f7', borderRadius: 14,
+    flexDirection: 'row', justifyContent: 'space-between', minHeight: 52,
+    paddingHorizontal: 16,
+  },
+  toggleLabel: { color: '#202024', fontSize: 15, fontWeight: '600' },
+  toggleValue: { color: '#ff1956', fontSize: 14, fontWeight: '800' },
   warning: {
     backgroundColor: '#fff1f3', borderRadius: 14, color: '#b4233c',
     fontSize: 15, lineHeight: 22, padding: 16,
   },
 });
+
+function SettingToggle({
+  label,
+  onChange,
+  value,
+}: {
+  label: string;
+  onChange: (value: boolean) => void;
+  value: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      style={styles.toggle}
+      onPress={() => onChange(!value)}
+    >
+      <Text style={styles.toggleLabel}>{label}</Text>
+      <Text style={styles.toggleValue}>{value ? 'ON' : 'OFF'}</Text>
+    </Pressable>
+  );
+}

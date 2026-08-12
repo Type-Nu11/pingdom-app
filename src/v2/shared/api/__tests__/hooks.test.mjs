@@ -26,6 +26,16 @@ import {
 import {
   validateReplaceTravelPurposesBody,
 } from '../../../features/travel-purposes/model/travelPurpose.types.ts';
+import {
+  createDeleteFcmTokenMutationOptions,
+  createRegisterFcmTokenMutationOptions,
+} from '../../../features/notifications/hooks/useFcmTokenMutations.ts';
+import {
+  createNotificationSettingsQueryOptions,
+  createUpdateNotificationSettingsMutationOptions,
+  notificationSettingsQueryKeys,
+  optimisticallyUpdateNotificationSettings,
+} from '../../../features/notifications/hooks/useNotificationSettings.ts';
 
 test('place query Hook options pass API responses through without mapping', async () => {
   const listResponse = { places: [] };
@@ -169,4 +179,67 @@ test('travel purpose replacement restores its cache and invalidates user and rec
   assert.equal(queryClient.getQueryState(travelPurposeQueryKeys.mine()).isInvalidated, false);
   assert.equal(queryClient.getQueryState(userQueryKeys.me()).isInvalidated, true);
   assert.equal(queryClient.getQueryState(recommendationQueryKeys.all).isInvalidated, true);
+});
+
+test('notification Hook options forward AbortSignal and contract bodies', async () => {
+  const setting = { newLikeEnabled: true, timezone: 'Asia/Seoul' };
+  const update = { newLikeEnabled: false };
+  const token = { token: 'device-token' };
+  const signal = new AbortController().signal;
+  const calls = [];
+
+  const query = createNotificationSettingsQueryOptions({
+    getNotificationSettings: async (receivedSignal) => {
+      calls.push(['get', receivedSignal]);
+      return setting;
+    },
+  });
+  const updateMutation = createUpdateNotificationSettingsMutationOptions({
+    updateNotificationSettings: async (body) => {
+      calls.push(['update', body]);
+      return { ...setting, ...body };
+    },
+  });
+  const registerMutation = createRegisterFcmTokenMutationOptions({
+    registerFcmToken: async (body) => { calls.push(['register', body]); },
+  });
+  const deleteMutation = createDeleteFcmTokenMutationOptions({
+    deleteFcmToken: async (body) => { calls.push(['delete', body]); },
+  });
+
+  assert.equal(await query.queryFn({ signal }), setting);
+  assert.equal((await updateMutation.mutationFn(update)).newLikeEnabled, false);
+  await registerMutation.mutationFn(token);
+  await deleteMutation.mutationFn(token);
+  assert.deepEqual(query.queryKey, ['v2', 'notifications', 'settings', 'me']);
+  assert.deepEqual(calls, [
+    ['get', signal],
+    ['update', update],
+    ['register', token],
+    ['delete', token],
+  ]);
+});
+
+test('notification setting optimistic update can be rolled back to server cache', () => {
+  const queryClient = new QueryClient();
+  const queryKey = notificationSettingsQueryKeys.mine();
+  const previous = {
+    newHotplaceEnabled: true,
+    newLikeEnabled: true,
+    quietHoursEnabled: false,
+    timezone: 'Asia/Seoul',
+  };
+  queryClient.setQueryData(queryKey, previous);
+
+  const snapshot = optimisticallyUpdateNotificationSettings(queryClient, {
+    newLikeEnabled: false,
+  });
+
+  assert.deepEqual(snapshot, previous);
+  assert.deepEqual(queryClient.getQueryData(queryKey), {
+    ...previous,
+    newLikeEnabled: false,
+  });
+  queryClient.setQueryData(queryKey, snapshot);
+  assert.deepEqual(queryClient.getQueryData(queryKey), previous);
 });

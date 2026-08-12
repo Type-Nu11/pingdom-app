@@ -13,6 +13,12 @@ import {
   useResendVerificationEmail,
 } from '../../../../v2/features/auth';
 import {
+  useDeleteFcmToken,
+  useNotificationSettings,
+  useRegisterFcmToken,
+  useUpdateNotificationSettings,
+} from '../../../../v2/features/notifications';
+import {
   useReplaceTravelPurposes,
   useTravelPurposes,
 } from '../../../../v2/features/travel-purposes';
@@ -20,7 +26,12 @@ import {
   TemporaryAccountSessionApiCheckFlow,
   TemporaryAccountSessionApiCheckPage,
 } from '../../dev/account-session-api-check';
+import { getCurrentFcmToken } from '../../../firebase/utils/getCurrentFcmToken';
 import ApiCheckScreen from '../ApiCheckScreen';
+
+jest.mock('../../../firebase/utils/getCurrentFcmToken', () => ({
+  getCurrentFcmToken: jest.fn(),
+}));
 
 jest.mock('../../../../v2/features/account', () => ({
   useDownloadUserDataExport: jest.fn(),
@@ -33,6 +44,13 @@ jest.mock('../../../../v2/features/auth', () => ({
   usePasswordResetConfirm: jest.fn(),
   usePasswordResetRequest: jest.fn(),
   useResendVerificationEmail: jest.fn(),
+}));
+
+jest.mock('../../../../v2/features/notifications', () => ({
+  useDeleteFcmToken: jest.fn(),
+  useNotificationSettings: jest.fn(),
+  useRegisterFcmToken: jest.fn(),
+  useUpdateNotificationSettings: jest.fn(),
 }));
 
 jest.mock('../../../../v2/features/travel-purposes', () => ({
@@ -61,6 +79,11 @@ const mockUseLogout = jest.mocked(useLogout);
 const mockUsePasswordResetConfirm = jest.mocked(usePasswordResetConfirm);
 const mockUsePasswordResetRequest = jest.mocked(usePasswordResetRequest);
 const mockUseResendVerificationEmail = jest.mocked(useResendVerificationEmail);
+const mockUseDeleteFcmToken = jest.mocked(useDeleteFcmToken);
+const mockUseNotificationSettings = jest.mocked(useNotificationSettings);
+const mockUseRegisterFcmToken = jest.mocked(useRegisterFcmToken);
+const mockUseUpdateNotificationSettings = jest.mocked(useUpdateNotificationSettings);
+const mockGetCurrentFcmToken = jest.mocked(getCurrentFcmToken);
 
 function mutationResult(mutate = jest.fn()) {
   return {
@@ -76,6 +99,7 @@ function mutationResult(mutate = jest.fn()) {
 describe('ApiCheckScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetCurrentFcmToken.mockResolvedValue(null);
     mockUseDownloadUserDataExport.mockReturnValue(
       mutationResult() as unknown as ReturnType<typeof useDownloadUserDataExport>,
     );
@@ -97,6 +121,19 @@ describe('ApiCheckScreen', () => {
     mockUseResendVerificationEmail.mockReturnValue(
       mutationResult() as unknown as ReturnType<typeof useResendVerificationEmail>,
     );
+    mockUseDeleteFcmToken.mockReturnValue(
+      mutationResult() as unknown as ReturnType<typeof useDeleteFcmToken>,
+    );
+    mockUseRegisterFcmToken.mockReturnValue(
+      mutationResult() as unknown as ReturnType<typeof useRegisterFcmToken>,
+    );
+    mockUseUpdateNotificationSettings.mockReturnValue(
+      mutationResult() as unknown as ReturnType<typeof useUpdateNotificationSettings>,
+    );
+    mockUseNotificationSettings.mockReturnValue({
+      isFetching: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useNotificationSettings>);
   });
 
   test('GET 결과를 복원하고 변경된 선택을 PUT body로 전달한다', async () => {
@@ -196,6 +233,105 @@ describe('ApiCheckScreen', () => {
 
     expect(exportData).toHaveBeenCalledWith(
       undefined,
+      expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
+    );
+  });
+
+  test('API 목록에 #166 FCM 및 알림 설정 endpoint 버튼을 표시한다', async () => {
+    mockUseTravelPurposes.mockReturnValue({
+      data: { travelPurposes: [] },
+      isError: false,
+      isPending: false,
+      isSuccess: true,
+    } as unknown as ReturnType<typeof useTravelPurposes>);
+    mockUseReplaceTravelPurposes.mockReturnValue(
+      mutationResult() as unknown as ReturnType<typeof useReplaceTravelPurposes>,
+    );
+
+    await render(
+      <NavigationContainer>
+        <TemporaryAccountSessionApiCheckFlow onExit={jest.fn()} />
+      </NavigationContainer>,
+    );
+
+    expect(screen.getByText('FCM·알림 설정 API · #166 실기기 검증')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'POST /firebase/fcm-tokens' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'DELETE /firebase/fcm-tokens' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'GET /notifications/settings' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'PATCH /notifications/settings' })).toBeVisible();
+  });
+
+  test('FCM 등록 테스트 페이지가 입력 token을 Mutation에 전달한다', async () => {
+    const registerToken = jest.fn();
+    mockUseRegisterFcmToken.mockReturnValue(
+      mutationResult(registerToken) as unknown as ReturnType<typeof useRegisterFcmToken>,
+    );
+
+    await render(
+      <TemporaryAccountSessionApiCheckPage
+        endpoint="POST /firebase/fcm-tokens"
+        onBack={jest.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.type(screen.getByPlaceholderText('실기기 FCM token'), 'device-fcm-token');
+    await user.press(screen.getByRole('button', { name: '요청 실행' }));
+
+    expect(registerToken).toHaveBeenCalledWith(
+      { token: 'device-fcm-token' },
+      expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
+    );
+  });
+
+  test('FCM 등록 테스트 페이지가 실기기 token을 자동 입력한다', async () => {
+    const registerToken = jest.fn();
+    mockGetCurrentFcmToken.mockResolvedValue('automatic-device-fcm-token');
+    mockUseRegisterFcmToken.mockReturnValue(
+      mutationResult(registerToken) as unknown as ReturnType<typeof useRegisterFcmToken>,
+    );
+
+    await render(
+      <TemporaryAccountSessionApiCheckPage
+        endpoint="POST /firebase/fcm-tokens"
+        onBack={jest.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    expect(await screen.findByDisplayValue('automatic-device-fcm-token')).toBeVisible();
+    await user.press(screen.getByRole('button', { name: '요청 실행' }));
+
+    expect(registerToken).toHaveBeenCalledWith(
+      { token: 'automatic-device-fcm-token' },
+      expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
+    );
+  });
+
+  test('알림 설정 PATCH 테스트 페이지가 화면 값을 Mutation에 전달한다', async () => {
+    const updateSettings = jest.fn();
+    mockUseUpdateNotificationSettings.mockReturnValue(
+      mutationResult(updateSettings) as unknown as ReturnType<typeof useUpdateNotificationSettings>,
+    );
+
+    await render(
+      <TemporaryAccountSessionApiCheckPage
+        endpoint="PATCH /notifications/settings"
+        onBack={jest.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.press(screen.getByRole('switch', { name: '신규 좋아요 알림' }));
+    await user.press(screen.getByRole('button', { name: '요청 실행' }));
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      {
+        newHotplaceEnabled: true,
+        newLikeEnabled: false,
+        quietHoursEnabled: false,
+        timezone: 'Asia/Seoul',
+      },
       expect.objectContaining({ onError: expect.any(Function), onSuccess: expect.any(Function) }),
     );
   });

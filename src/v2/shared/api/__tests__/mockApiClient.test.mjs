@@ -13,12 +13,13 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('success');
   assert.equal(apiClient, mockApiClient);
 
-  const [places, detail, checkIn, coupons, travelPurposes] = await Promise.all([
+  const [places, detail, checkIn, coupons, travelPurposes, notificationSettings] = await Promise.all([
     mockApiClient.get('/places'),
     mockApiClient.get('/places/17'),
     mockApiClient.post('/location-check-ins', {}),
     mockApiClient.get('/coupons'),
     mockApiClient.get('/users/me/travel-purposes'),
+    mockApiClient.get('/notifications/settings'),
   ]);
 
   assert.equal(getMockScenario(), 'success');
@@ -28,9 +29,16 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.deepEqual(coupons.coupons.map(({ status }) => status), ['ISSUED', 'EXPIRED']);
   assert.equal(merchantPerformanceFixture.metrics.completedCheckIns, 31);
   assert.deepEqual(travelPurposes.travelPurposes, ['K_POP', 'CAFE']);
+  assert.equal(notificationSettings.timezone, 'Asia/Seoul');
   assert.deepEqual(
     await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
     travelPurposes,
+  );
+  assert.equal(await mockApiClient.post('/firebase/fcm-tokens', { token: 'fcm' }), undefined);
+  assert.equal(await mockApiClient.delete('/firebase/fcm-tokens', { token: 'fcm' }), undefined);
+  assert.equal(
+    (await mockApiClient.patch('/notifications/settings', { newLikeEnabled: false })).newLikeEnabled,
+    false,
   );
 
   setMockScenario('empty');
