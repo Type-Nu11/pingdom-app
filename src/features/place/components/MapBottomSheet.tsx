@@ -51,6 +51,8 @@ export type DecisionPlace = {
 
 type MapBottomSheetProps = {
   activeFilters: VisitFilter[];
+  bookmarkedPlaceIds: Record<string, boolean>;
+  bookmarkPendingPlaceId?: number | null;
   collapsedTranslateY: number;
   content: BottomSheetContent;
   height: number;
@@ -69,6 +71,7 @@ type MapBottomSheetProps = {
   onQueryChange: (query: string) => void;
   onSearchFocus: () => void;
   onSubmitSearch: () => void;
+  onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
   selectedPlace: DecisionPlace | null;
@@ -237,19 +240,22 @@ const PlaceArtwork = ({
 };
 
 const PlaceTrendCard = ({
+  bookmarked,
   imageUrl,
   index,
   onPress,
+  onToggleBookmark,
+  pending,
   place,
 }: {
+  bookmarked: boolean;
   imageUrl?: string;
   index: number;
   onPress: () => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
   place: DecisionPlace;
-}) => {
-  const [liked, setLiked] = useState(false);
-
-  return (
+}) => (
     <Pressable
       accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
       accessibilityRole="button"
@@ -265,34 +271,38 @@ const PlaceTrendCard = ({
           여기서 {formatDistance(place)}
         </Text>
         <Pressable
-          accessibilityLabel={liked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
           accessibilityRole="button"
+          accessibilityState={{ busy: pending, disabled: pending }}
+          disabled={pending}
           hitSlop={10}
           onPress={(event) => {
             event.stopPropagation();
-            setLiked((current) => !current);
+            onToggleBookmark();
           }}
           style={styles.favoriteButton}
         >
-          <FavoriteStarIcon active={liked} />
+          <FavoriteStarIcon active={bookmarked} />
         </Pressable>
       </View>
     </Pressable>
-  );
-};
+);
 
 const ExpandedPlaceCard = ({
+  bookmarked,
   imageUrl,
   onPress,
+  onToggleBookmark,
+  pending,
   place,
 }: {
+  bookmarked: boolean;
   imageUrl?: string;
   onPress: () => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
   place: DecisionPlace;
-}) => {
-  const [liked, setLiked] = useState(false);
-
-  return (
+}) => (
     <Pressable
       accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
       accessibilityRole="button"
@@ -304,21 +314,22 @@ const ExpandedPlaceCard = ({
         <Text numberOfLines={2} style={styles.gridCardName}>{place.name}</Text>
         <Text numberOfLines={1} style={styles.gridCardDistance}>여기서 {formatDistance(place)}</Text>
         <Pressable
-          accessibilityLabel={liked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
           accessibilityRole="button"
+          accessibilityState={{ busy: pending, disabled: pending }}
+          disabled={pending}
           hitSlop={10}
           onPress={(event) => {
             event.stopPropagation();
-            setLiked((current) => !current);
+            onToggleBookmark();
           }}
           style={styles.gridFavoriteButton}
         >
-          <FavoriteStarIcon active={liked} size={27} />
+          <FavoriteStarIcon active={bookmarked} size={27} />
         </Pressable>
       </View>
     </Pressable>
-  );
-};
+);
 
 const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => {
   const value = place.category.trim().toLowerCase();
@@ -335,20 +346,26 @@ const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => 
 
 const ExpandedHomeContent = ({
   activeCategory,
+  bookmarkedPlaceIds,
+  bookmarkPendingPlaceId,
   feed,
   imageUrlsByPlaceId,
   onCategoryChange,
   onFeedChange,
   onPlacePress,
+  onToggleBookmark,
   places,
   userName,
 }: {
   activeCategory: SheetCategory;
+  bookmarkedPlaceIds: Record<string, boolean>;
+  bookmarkPendingPlaceId?: number | null;
   feed: 'local' | 'national';
   imageUrlsByPlaceId: Record<string, string>;
   onCategoryChange: (category: SheetCategory) => void;
   onFeedChange: (feed: 'local' | 'national') => void;
   onPlacePress: (place: DecisionPlace) => void;
+  onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   places: DecisionPlace[];
   userName: string;
 }) => {
@@ -371,10 +388,16 @@ const ExpandedHomeContent = ({
       >
         {places.length > 0 ? places.slice(0, 6).map((place, index) => (
           <PlaceTrendCard
+            bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
             imageUrl={imageUrlsByPlaceId[String(place.id)]}
             index={index}
             key={`featured-${place.id}`}
             onPress={() => onPlacePress(place)}
+            onToggleBookmark={() => void onToggleBookmark(
+              place,
+              !bookmarkedPlaceIds[String(place.id)],
+            )}
+            pending={bookmarkPendingPlaceId === place.id}
             place={place}
           />
         )) : <EmptyCard />}
@@ -413,9 +436,15 @@ const ExpandedHomeContent = ({
       <View style={styles.gridRow}>
         {gridPlaces.slice(0, 8).map((place) => (
           <ExpandedPlaceCard
+            bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
             imageUrl={imageUrlsByPlaceId[String(place.id)]}
             key={`grid-${place.id}`}
             onPress={() => onPlacePress(place)}
+            onToggleBookmark={() => void onToggleBookmark(
+              place,
+              !bookmarkedPlaceIds[String(place.id)],
+            )}
+            pending={bookmarkPendingPlaceId === place.id}
             place={place}
           />
         ))}
@@ -555,6 +584,8 @@ const BottomNavigation = ({
 );
 
 export default function MapBottomSheet({
+  bookmarkPendingPlaceId,
+  bookmarkedPlaceIds,
   collapsedTranslateY,
   content,
   height,
@@ -566,6 +597,7 @@ export default function MapBottomSheet({
   onOpenLikedPlaces,
   onOpenSavedPlaces,
   onPlacePress,
+  onToggleBookmark,
   panHandlers,
   places,
   selectedPlace,
@@ -683,11 +715,14 @@ export default function MapBottomSheet({
       ) : snapPoint === 'expanded' ? (
         <ExpandedHomeContent
           activeCategory={activeCategory}
+          bookmarkedPlaceIds={bookmarkedPlaceIds}
+          bookmarkPendingPlaceId={bookmarkPendingPlaceId}
           feed={feed}
           imageUrlsByPlaceId={imageUrlsByPlaceId}
           onCategoryChange={setActiveCategory}
           onFeedChange={setFeed}
           onPlacePress={onPlacePress}
+          onToggleBookmark={onToggleBookmark}
           places={shownPlaces}
           userName={userName?.trim() || 'user'}
         />
@@ -702,10 +737,16 @@ export default function MapBottomSheet({
           >
             {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place, index) => (
               <PlaceTrendCard
+                bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
                 index={index}
                 key={place.id}
                 onPress={() => onPlacePress(place)}
+                onToggleBookmark={() => void onToggleBookmark(
+                  place,
+                  !bookmarkedPlaceIds[String(place.id)],
+                )}
+                pending={bookmarkPendingPlaceId === place.id}
                 place={place}
               />
             )) : <EmptyCard />}

@@ -4,6 +4,7 @@ import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-n
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
+import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useTranslation } from 'react-i18next';
 import MapBottomSheet, {
   type BottomSheetContent,
@@ -17,6 +18,7 @@ import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { useBookmarkedPlaces } from '../hooks/useBookmarkedPlaces';
+import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
@@ -26,26 +28,6 @@ import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
-const FAVORITE_MOCK_PLACE_IDS = [139001, 139002, 139003, 139004] as const;
-
-const FAVORITE_MOCK_IMAGE_URLS: Record<string, string[]> = {
-  [FAVORITE_MOCK_PLACE_IDS[0]]: [
-    'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&auto=format&fit=crop',
-  ],
-  [FAVORITE_MOCK_PLACE_IDS[1]]: [
-    'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=900&auto=format&fit=crop',
-  ],
-  [FAVORITE_MOCK_PLACE_IDS[2]]: [
-    'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=900&auto=format&fit=crop',
-  ],
-  [FAVORITE_MOCK_PLACE_IDS[3]]: [
-    'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=900&auto=format&fit=crop',
-  ],
-};
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
@@ -95,61 +77,6 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     verifiedMinutes: 24,
     wait: '20–30 min',
     waitMinutes: [20, 30],
-  },
-];
-
-const makeFavoriteMockPlaces = (latitude: number, longitude: number): DecisionPlace[] => [
-  {
-    address: '경기도 고양시 일산서구 중앙로 1601',
-    category: 'MUSIC',
-    distance: '12.3km',
-    distanceMeters: 12300,
-    id: FAVORITE_MOCK_PLACE_IDS[0],
-    latitude: latitude + 0.0022,
-    longitude: longitude - 0.0015,
-    name: '고양종합운동장',
-    tags: [],
-    verifiedAgo: 'recently',
-    wait: '10–20 min',
-  },
-  {
-    address: '서울 성동구 아차산로 200',
-    category: 'FASHION',
-    distance: '850m',
-    distanceMeters: 850,
-    id: FAVORITE_MOCK_PLACE_IDS[1],
-    latitude: latitude - 0.0014,
-    longitude: longitude + 0.0018,
-    name: '성수 커먼그라운드',
-    tags: [],
-    verifiedAgo: 'recently',
-    wait: '5–10 min',
-  },
-  {
-    address: '서울 성동구 연무장길 41',
-    category: 'RESTAURANT',
-    distance: '1.2km',
-    distanceMeters: 1200,
-    id: FAVORITE_MOCK_PLACE_IDS[2],
-    latitude: latitude + 0.0011,
-    longitude: longitude + 0.0025,
-    name: '커먼 테이블 성수',
-    tags: [],
-    verifiedAgo: 'recently',
-    wait: '20–30 min',
-  },
-  {
-    address: '서울 강남구 도산대로 45길 10',
-    category: 'BEAUTY',
-    distance: '3.4km',
-    distanceMeters: 3400,
-    id: FAVORITE_MOCK_PLACE_IDS[3],
-    latitude: latitude - 0.0021,
-    longitude: longitude - 0.0019,
-    name: '어뮤즈 쇼룸',
-    tags: [],
-    verifiedAgo: 'recently',
-    wait: '10–20 min',
   },
 ];
 
@@ -211,12 +138,20 @@ export default function MapScreen({
   const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
   const {
     bookmarkedPlaceIds,
-    imageUrlsByPlaceId: favoriteImageUrlsByPlaceId,
+    fetchNextPage: fetchNextFavoritePage,
+    hasNextPage: hasNextFavoritePage,
     isError: isFavoritesError,
+    isFetchNextPageError: isFetchNextFavoritePageError,
+    isFetchingNextPage: isFetchingNextFavoritePage,
     isLoading: isFavoritesLoading,
+    isUnauthorized: isFavoritesUnauthorized,
     places: bookmarkedPlaces,
     refetch: refetchFavorites,
-  } = useBookmarkedPlaces(mapSection === 'favorites');
+  } = useBookmarkedPlaces();
+  const {
+    pendingPlaceId: bookmarkPendingPlaceId,
+    togglePlaceBookmark,
+  } = usePlaceBookmark();
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
   // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
@@ -250,10 +185,6 @@ export default function MapScreen({
     () => makeMockPlaces(center.lat, center.lng),
     [center.lat, center.lng],
   );
-  const favoriteMockPlaces = useMemo(
-    () => makeFavoriteMockPlaces(center.lat, center.lng),
-    [center.lat, center.lng],
-  );
   const allPlaces = useMemo(() => {
     const recommendations = recommendedPlaces
       .slice(0, 8)
@@ -265,20 +196,10 @@ export default function MapScreen({
     if (recommendations.length > 0) return recommendations;
     return livePlaces.length > 0 ? livePlaces : mockPlaces;
   }, [apiPlaces, mockPlaces, recommendedPlaces]);
-  const resolvedFavoritePlaces = useMemo(() => {
-    if (bookmarkedPlaces.length > 0) {
-      return bookmarkedPlaces.map(toDecisionPlace);
-    }
-
-    return allPlaces.filter((place) => bookmarkedPlaceIds[String(place.id)]);
-  }, [allPlaces, bookmarkedPlaceIds, bookmarkedPlaces]);
-  const shouldUseFavoriteMocks = resolvedFavoritePlaces.length === 0;
-  const favoritePlaces = shouldUseFavoriteMocks
-    ? favoriteMockPlaces
-    : resolvedFavoritePlaces;
-  const displayedFavoriteImageUrls = shouldUseFavoriteMocks
-    ? FAVORITE_MOCK_IMAGE_URLS
-    : favoriteImageUrlsByPlaceId;
+  const favoritePlaces = useMemo(
+    () => bookmarkedPlaces.map(toDecisionPlace),
+    [bookmarkedPlaces],
+  );
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
     return [...allPlaces, ...favoritePlaces]
@@ -313,8 +234,21 @@ export default function MapScreen({
   }, [content.type, selectedPlace, visiblePlaces]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
-    const mockMarkers = mockPlaces
+    const favoriteMarkers = bookmarkedPlaces
       .filter((place) => !liveMarkerIds.has(String(place.id)))
+      .map((place) => ({
+        category: normalizePlaceCategory(place.category),
+        id: String(place.id),
+        lat: place.latitude,
+        lng: place.longitude,
+        markerType: 'default' as const,
+      }));
+    const knownMarkerIds = new Set([
+      ...liveMarkerIds,
+      ...favoriteMarkers.map((marker) => marker.id),
+    ]);
+    const mockMarkers = mockPlaces
+      .filter((place) => !knownMarkerIds.has(String(place.id)))
       .map((place, index) => ({
         category: (index === 1 ? 'food' : index === 2 ? 'etc' : 'fashion') as MapMarker['category'],
         id: String(place.id),
@@ -328,6 +262,7 @@ export default function MapScreen({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
+      ...favoriteMarkers,
       ...mockMarkers,
     ];
 
@@ -343,7 +278,7 @@ export default function MapScreen({
             : 'etc';
 
     return markers.filter((marker) => marker.category === markerCategory);
-  }, [activeCategory, apiMarkers, mockPlaces]);
+  }, [activeCategory, apiMarkers, bookmarkedPlaces, mockPlaces]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
@@ -358,7 +293,10 @@ export default function MapScreen({
 
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
     const placeId = Number(event.nativeEvent.markerId);
-    if (!Number.isFinite(placeId) || !allPlaces.some((place) => place.id === placeId)) return;
+    if (
+      !Number.isFinite(placeId)
+      || ![...allPlaces, ...favoritePlaces].some((place) => place.id === placeId)
+    ) return;
 
     setContent({ type: 'place-preview', placeId });
     setIsFollowingUser(false);
@@ -432,6 +370,16 @@ export default function MapScreen({
       [{ text: t('placeCreate.alerts.confirm') }],
     );
   };
+  const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
+    try {
+      await togglePlaceBookmark(place, nextBookmarked);
+    } catch (error) {
+      Alert.alert(
+        nextBookmarked ? '장소를 저장하지 못했어요' : '저장을 해제하지 못했어요',
+        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.'),
+      );
+    }
+  };
 
   const focusedPlace = selectedPlace;
   const mapCenterLat = !isFollowingUser && focusedPlace ? focusedPlace.latitude : center.lat;
@@ -468,10 +416,14 @@ export default function MapScreen({
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
+            hasNextPage={Boolean(hasNextFavoritePage)}
             height={fullSheetHeight}
-            imageUrlsByPlaceId={displayedFavoriteImageUrls}
+            imageUrlsByPlaceId={{}}
             isError={isFavoritesError}
+            isFetchNextPageError={isFetchNextFavoritePageError}
+            isFetchingNextPage={isFetchingNextFavoritePage}
             isLoading={isFavoritesLoading}
+            isUnauthorized={isFavoritesUnauthorized}
             mediumTranslateY={mediumTranslateY}
             onCreatePlace={onCreatePlace}
             onHandlePress={() => {
@@ -484,13 +436,16 @@ export default function MapScreen({
               snapTo('medium');
             }}
             onOpenReservations={onOpenSavedPlaces}
+            onLoadMore={() => void fetchNextFavoritePage()}
             onRetry={() => void refetchFavorites()}
+            onRemovePlace={(place) => void handleToggleBookmark(place, false)}
             onPlacePress={(place) => {
               setMapSection('map');
               handlePlacePress(place);
             }}
             panHandlers={panHandlers}
             places={favoritePlaces}
+            pendingPlaceId={bookmarkPendingPlaceId}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
             snapPoint={snapPoint}
@@ -498,6 +453,8 @@ export default function MapScreen({
         ) : (
           <MapBottomSheet
             activeFilters={activeFilters}
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
+            bookmarkPendingPlaceId={bookmarkPendingPlaceId}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
             height={fullSheetHeight}
@@ -526,6 +483,7 @@ export default function MapScreen({
               setContent({ type: 'results', query });
               snapTo('expanded');
             }}
+            onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             places={sheetPlaces}
             selectedPlace={selectedPlace}
