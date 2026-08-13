@@ -22,14 +22,14 @@ jest.mock('../../../../../v2/features/place-exploration', () => ({
   useRecordMapLinkConversion: jest.fn(),
 }));
 
-const placeHooks = [
-  usePlaceCard,
-  usePlaceMap,
-  usePlaceOperatingNotices,
-  usePlaceVerificationMedia,
-  usePlaceVisitDecision,
-  useRecommendationExplanation,
-] as const;
+const placeHooks: jest.Mock[] = [
+  usePlaceCard as jest.Mock,
+  usePlaceMap as jest.Mock,
+  usePlaceOperatingNotices as jest.Mock,
+  usePlaceVerificationMedia as jest.Mock,
+  usePlaceVisitDecision as jest.Mock,
+  useRecommendationExplanation as jest.Mock,
+];
 
 function queryResult(refetch: jest.Mock = jest.fn(async () => ({
   data: { ok: true },
@@ -47,9 +47,7 @@ describe('TemporaryPlaceExplorationApiCheck', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     for (const hook of placeHooks) {
-      jest.mocked(hook).mockReturnValue(
-        queryResult() as unknown as ReturnType<typeof hook>,
-      );
+      hook.mockReturnValue(queryResult());
     }
     jest.mocked(useRecordMapLinkConversion).mockReturnValue(
       mutationResult() as unknown as ReturnType<typeof useRecordMapLinkConversion>,
