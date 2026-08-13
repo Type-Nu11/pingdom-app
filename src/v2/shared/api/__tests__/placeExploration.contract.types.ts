@@ -34,8 +34,7 @@ type _conversionBody = Expect<
 type _mapResponse = Expect<
   Equal<
     PlaceExplorationOperationResponse<'mapViewport', 200>['markers'],
-    | import('../generated/placeExploration').components['schemas']['MapMarkerItem'][]
-    | undefined
+    import('../generated/placeExploration').components['schemas']['MapMarkerItem'][]
   >
 >;
 

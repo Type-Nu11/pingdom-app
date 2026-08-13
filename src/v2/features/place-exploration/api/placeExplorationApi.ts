@@ -4,16 +4,39 @@ import type {
   MapLinkConversionResult,
   MapViewport,
   MapViewportParams,
+  PlaceAutocomplete,
+  PlaceAutocompleteParams,
   PlaceCard,
+  PlaceList,
+  PlaceListParams,
   PlaceOperatingNotices,
   PlaceVerificationMedia,
   PlaceVisitDecision,
   RecommendationExplanation,
 } from '../model/placeExploration.types';
-import { selectMapViewportParams } from '../model/placeExploration.types';
+import {
+  selectMapViewportParams,
+  selectPlaceAutocompleteParams,
+  selectPlaceListParams,
+} from '../model/placeExploration.types';
 
 export function createPlaceExplorationApi(client: ApiClient = apiClient) {
   return {
+    getPlaces: (params: PlaceListParams, signal?: AbortSignal): Promise<PlaceList> =>
+      client.get<PlaceList>('/places', {
+        params: selectPlaceListParams(params),
+        signal,
+      }),
+
+    autocompletePlaces: (
+      params: PlaceAutocompleteParams,
+      signal?: AbortSignal,
+    ): Promise<PlaceAutocomplete> =>
+      client.get<PlaceAutocomplete>('/places/autocomplete', {
+        params: selectPlaceAutocompleteParams(params),
+        signal,
+      }),
+
     getMapViewport: (
       params: MapViewportParams,
       signal?: AbortSignal,

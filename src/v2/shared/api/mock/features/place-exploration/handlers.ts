@@ -3,6 +3,7 @@ import {
   emptyPlaceExplorationFixtures,
   mapViewportFixture,
   operatingNoticesFixture,
+  placeAutocompleteFixture,
   placeCardFixture,
   recommendationExplanationFixture,
   verificationMediaFixture,
@@ -10,6 +11,13 @@ import {
 } from './fixtures';
 
 export const placeExplorationMockHandlers = [
+  {
+    method: 'GET',
+    path: '/places/autocomplete',
+    resolve: ({ scenario }) => scenario === 'empty'
+      ? emptyPlaceExplorationFixtures.autocomplete
+      : placeAutocompleteFixture,
+  },
   {
     method: 'GET',
     path: '/places/map',

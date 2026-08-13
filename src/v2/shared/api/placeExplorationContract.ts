@@ -17,8 +17,8 @@ export type PlaceExplorationOperationName = keyof operations;
 
 export type PlaceExplorationOperationQuery<
   Name extends PlaceExplorationOperationName,
-> = operations[Name]['parameters'] extends { query: infer Query }
-  ? Query
+> = operations[Name]['parameters'] extends { query?: infer Query }
+  ? NonNullable<Query>
   : never;
 
 export type PlaceExplorationOperationPath<
