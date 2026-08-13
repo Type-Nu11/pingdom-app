@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const TARGET_PATHS = [
+  '/places',
+  '/places/autocomplete',
   '/places/map',
   '/places/{placeId}/card',
   '/places/{placeId}/visit-decision',

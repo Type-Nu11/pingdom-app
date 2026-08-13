@@ -16,6 +16,7 @@ type ApiErrorDetails = {
   fieldErrors?: FieldError[] | null;
   isNetworkError?: boolean;
   response?: ApiErrorResponse;
+  responseBody?: unknown;
   responseData?: unknown;
   status?: number;
   traceId?: string;
@@ -26,6 +27,7 @@ export class ApiError extends Error {
   readonly details: Record<string, unknown> | null;
   readonly fieldErrors: FieldError[] | null;
   readonly isNetworkError: boolean;
+  readonly responseBody?: unknown;
   readonly responseData: unknown;
   readonly status?: number;
   readonly traceId?: string;
@@ -37,7 +39,13 @@ export class ApiError extends Error {
     this.details = details.response?.details ?? details.details ?? null;
     this.fieldErrors = details.response?.fieldErrors ?? details.fieldErrors ?? null;
     this.isNetworkError = details.isNetworkError ?? false;
-    this.responseData = 'responseData' in details ? details.responseData : details.response;
+    const rawResponse = 'responseData' in details
+      ? details.responseData
+      : 'responseBody' in details
+        ? details.responseBody
+        : details.response;
+    this.responseBody = rawResponse;
+    this.responseData = rawResponse;
     this.status = details.status;
     this.traceId = details.response?.traceId ?? details.traceId;
   }
@@ -115,6 +123,7 @@ export function toApiError(error: unknown): ApiError {
       fieldErrors: response.fieldErrors,
       isNetworkError: error.response === undefined && error.code !== 'ERR_CANCELED',
       response: response.response,
+      responseBody: error.response?.data,
       responseData: error.response?.data,
       status: error.response?.status,
       traceId: response.traceId,

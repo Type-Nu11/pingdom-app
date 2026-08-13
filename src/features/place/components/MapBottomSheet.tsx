@@ -9,7 +9,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient,
+  Path,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
 import ArtAsset from '../../../assets/v2icon/art_svg.svg';
@@ -18,12 +25,12 @@ import FoodAsset from '../../../assets/v2icon/food_svg.svg';
 import HotPlaceAsset from '../../../assets/v2icon/hotplace.svg';
 import MapAsset from '../../../assets/v2icon/maping_svg.svg';
 import MusicAsset from '../../../assets/v2icon/music_svg.svg';
-import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend_svg.svg';
+import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend.svg';
 import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
 import StarAsset from '../../../assets/v2icon/star_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
-import GlassSurface from './GlassSurface';
+import GlassSurface, { supportsNativeLiquidGlass } from './GlassSurface';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -59,7 +66,7 @@ type MapBottomSheetProps = {
   mediumTranslateY: number;
   onBackHome: () => void;
   onCouponPress: (place: DecisionPlace) => void;
-  onCreatePlace?: () => void;
+  onOpenRecommendations?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
@@ -91,6 +98,7 @@ type SheetCategory = 'art' | 'fashion' | 'food' | 'music' | 'popup';
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
+const LIQUID_GLASS_AVAILABLE = supportsNativeLiquidGlass();
 
 const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
   { id: 'popup', label: '팝업' },
@@ -118,12 +126,27 @@ const FavoriteStarIcon = ({ active = false, size = 30 }: IconProps) => (
     <Path
       d="M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z"
       fill={active ? '#FF245B' : 'none'}
-      stroke={active ? '#FF245B' : '#383B43'}
+      stroke={active ? '#FF245B' : '#FFFFFF'}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth="2"
     />
   </Svg>
+);
+
+const CardScrim = () => (
+  <View pointerEvents="none" style={styles.cardScrim}>
+    <Svg height="100%" preserveAspectRatio="none" viewBox="0 0 100 100" width="100%">
+      <Defs>
+        <LinearGradient id="card-scrim" x1="0" x2="0" y1="0" y2="1">
+          <Stop offset="0" stopColor="#000000" stopOpacity="0" />
+          <Stop offset="0.48" stopColor="#000000" stopOpacity="0.04" />
+          <Stop offset="1" stopColor="#000000" stopOpacity="0.88" />
+        </LinearGradient>
+      </Defs>
+      <Rect fill="url(#card-scrim)" height="100" width="100" />
+    </Svg>
+  </View>
 );
 
 const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCategory }) => {
@@ -263,6 +286,7 @@ const PlaceTrendCard = ({
       style={({ pressed }) => [styles.placeCard, pressed && styles.pressed]}
     >
       <PlaceArtwork imageUrl={imageUrl} />
+      <CardScrim />
       <View style={styles.placeCardBody}>
         <Text numberOfLines={1} style={styles.placeCardName}>
           {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
@@ -310,6 +334,7 @@ const ExpandedPlaceCard = ({
       style={({ pressed }) => [styles.gridCard, pressed && styles.pressed]}
     >
       <PlaceArtwork imageUrl={imageUrl} variant="grid" />
+      <CardScrim />
       <View style={styles.gridCardBody}>
         <Text numberOfLines={2} style={styles.gridCardName}>{place.name}</Text>
         <Text numberOfLines={1} style={styles.gridCardDistance}>여기서 {formatDistance(place)}</Text>
@@ -531,14 +556,14 @@ const NavItem = ({
 
 const BottomNavigation = ({
   bottomInset,
-  onCreatePlace,
   onOpenLikedPlaces,
+  onOpenRecommendations,
   onOpenSavedPlaces,
   sheetTranslateY,
 }: {
   bottomInset: number;
-  onCreatePlace?: () => void;
   onOpenLikedPlaces?: () => void;
+  onOpenRecommendations?: () => void;
   onOpenSavedPlaces?: () => void;
   sheetTranslateY: Animated.Value;
 }) => (
@@ -546,13 +571,18 @@ const BottomNavigation = ({
     style={[
       styles.navigationRow,
       {
-        bottom: Math.max(12, bottomInset),
+        bottom: Math.max(20, bottomInset + 8),
         transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
       },
     ]}
   >
     <View style={styles.navigationShadow}>
-      <View style={styles.navigationBar}>
+      {LIQUID_GLASS_AVAILABLE ? <GlassSurface
+        glassEffectStyle="regular"
+        intensity={96}
+        style={styles.navigationBar}
+        tintColor="rgba(238,238,242,0.42)"
+      >
         <NavItem
           active
           icon={<MapAsset color="#FF1956" height={22} width={19} />}
@@ -568,17 +598,41 @@ const BottomNavigation = ({
           label="예약"
           onPress={onOpenSavedPlaces}
         />
-      </View>
+      </GlassSurface> : <View style={[styles.navigationBar, styles.navigationBarSolid]}>
+        <NavItem
+          active
+          icon={<MapAsset color="#FF1956" height={22} width={19} />}
+          label="지도"
+        />
+        <NavItem
+          icon={<StarAsset height={21} width={22} />}
+          label="즐겨찾기"
+          onPress={onOpenLikedPlaces}
+        />
+        <NavItem
+          icon={<CheckInAsset height={22} width={21} />}
+          label="예약"
+          onPress={onOpenSavedPlaces}
+        />
+      </View>}
     </View>
     <Pressable
-      accessibilityLabel="장소 등록"
+      accessibilityLabel="장소추천"
       accessibilityRole="button"
-      onPress={onCreatePlace}
+      onPress={onOpenRecommendations}
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
     >
-      <View pointerEvents="none" style={styles.sendIconSurface}>
+      {LIQUID_GLASS_AVAILABLE ? <GlassSurface
+        glassEffectStyle="regular"
+        intensity={96}
+        pointerEvents="none"
+        style={styles.sendIconSurface}
+        tintColor="rgba(238,238,242,0.42)"
+      >
         <PlaceRecommendAsset height={23} width={23} />
-      </View>
+      </GlassSurface> : <View pointerEvents="none" style={[styles.sendIconSurface, styles.sendIconSurfaceSolid]}>
+        <PlaceRecommendAsset height={23} width={23} />
+      </View>}
     </Pressable>
   </Animated.View>
 );
@@ -591,10 +645,10 @@ export default function MapBottomSheet({
   height,
   mediumTranslateY,
   onBackHome,
-  onCreatePlace,
   onDetailPress,
   onHandlePress,
   onOpenLikedPlaces,
+  onOpenRecommendations,
   onOpenSavedPlaces,
   onPlacePress,
   onToggleBookmark,
@@ -758,8 +812,8 @@ export default function MapBottomSheet({
 
       <BottomNavigation
         bottomInset={insets.bottom}
-        onCreatePlace={onCreatePlace}
         onOpenLikedPlaces={onOpenLikedPlaces}
+        onOpenRecommendations={onOpenRecommendations}
         onOpenSavedPlaces={onOpenSavedPlaces}
         sheetTranslateY={sheetTranslateY}
       />
@@ -770,7 +824,7 @@ export default function MapBottomSheet({
 const styles = StyleSheet.create({
   artwork: {
     backgroundColor: '#E4E4E6',
-    height: 138,
+    height: '100%',
     overflow: 'hidden',
     width: '100%',
   },
@@ -813,6 +867,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 18,
   },
+  cardScrim: {
+    ...StyleSheet.absoluteFillObject,
+  },
   emptyCard: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -833,7 +890,7 @@ const styles = StyleSheet.create({
   expandedFeaturedRow: {
     gap: 16,
     paddingBottom: 18,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingTop: 18,
   },
   expandedScroll: { flex: 1 },
@@ -842,7 +899,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900',
     lineHeight: 27,
-    paddingHorizontal: 18,
+    paddingHorizontal: 8,
   },
   expandedTitleAccent: { color: '#FF1956' },
   favoriteButton: { bottom: 13, position: 'absolute', right: 11 },
@@ -871,10 +928,10 @@ const styles = StyleSheet.create({
   categoryRow: {
     gap: 9,
     paddingBottom: 16,
-    paddingHorizontal: 18,
+    paddingHorizontal: 8,
     paddingTop: 14,
   },
-  gridArtwork: { height: 138 },
+  gridArtwork: { height: '100%' },
   gridCard: {
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderColor: 'rgba(255,255,255,0.95)',
@@ -890,15 +947,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.09,
     shadowRadius: 9,
   },
-  gridCardBody: { flex: 1, paddingHorizontal: 8, paddingVertical: 12 },
-  gridCardDistance: { color: '#73757D', fontSize: 11, marginTop: 2, paddingRight: 29 },
-  gridCardName: { color: '#25272D', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
+  gridCardBody: {
+    bottom: 0,
+    left: 0,
+    paddingBottom: 12,
+    paddingHorizontal: 14,
+    position: 'absolute',
+    right: 0,
+  },
+  gridCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 11, marginTop: 2, paddingRight: 29 },
+  gridCardName: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
   gridFavoriteButton: { bottom: 12, position: 'absolute', right: 10 },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
   handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
@@ -913,7 +977,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   navItemActive: {
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    backgroundColor: 'rgba(255,255,255,0.58)',
+    borderColor: 'rgba(255,255,255,0.78)',
+    borderWidth: 1,
     elevation: 1,
     shadowColor: '#11151B',
     shadowOffset: { width: 0, height: 2 },
@@ -923,8 +989,10 @@ const styles = StyleSheet.create({
   navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
   navigationBar: {
-    backgroundColor: '#EFEFF2',
+    backgroundColor: 'rgba(238,238,242,0.34)',
+    borderColor: 'rgba(255,255,255,0.68)',
     borderRadius: 32,
+    borderWidth: 1,
     flex: 1,
     flexDirection: 'row',
     gap: 0,
@@ -932,6 +1000,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 5,
   },
+  navigationBarSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
   navigationRow: {
     bottom: 12,
     flexDirection: 'row',
@@ -941,7 +1010,7 @@ const styles = StyleSheet.create({
     right: 24,
   },
   navigationShadow: {
-    backgroundColor: '#EFEFF2',
+    backgroundColor: 'rgba(238,238,242,0.12)',
     borderRadius: 32,
     elevation: 2,
     flex: 1,
@@ -963,9 +1032,16 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     width: 242,
   },
-  placeCardBody: { flex: 1, paddingHorizontal: 8, paddingVertical: 12 },
-  placeCardDistance: { color: '#73757D', fontSize: 12, marginTop: 2 },
-  placeCardName: { color: '#25272D', fontSize: 16, fontWeight: '900', paddingRight: 35 },
+  placeCardBody: {
+    bottom: 0,
+    left: 0,
+    paddingBottom: 13,
+    paddingHorizontal: 14,
+    position: 'absolute',
+    right: 0,
+  },
+  placeCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
+  placeCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   previewAddress: { color: '#747780', fontSize: 12, marginTop: 4 },
   previewBack: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' },
@@ -1052,7 +1128,7 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     alignItems: 'center',
-    backgroundColor: '#EFEFF2',
+    backgroundColor: 'rgba(238,238,242,0.12)',
     borderRadius: 32,
     elevation: 2,
     height: 64,
@@ -1065,11 +1141,16 @@ const styles = StyleSheet.create({
   },
   sendIconSurface: {
     alignItems: 'center',
-    borderRadius: 28,
-    height: 56,
+    backgroundColor: 'rgba(238,238,242,0.34)',
+    borderColor: 'rgba(255,255,255,0.68)',
+    borderRadius: 32,
+    borderWidth: 1,
+    height: 64,
     justifyContent: 'center',
-    width: 56,
+    overflow: 'hidden',
+    width: 64,
   },
+  sendIconSurfaceSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
   sheetGlass: {
     // Bottom corners are clipped by the animated sheetChrome, so the blur layer stays square there.
     ...StyleSheet.absoluteFillObject,
@@ -1083,6 +1164,6 @@ const styles = StyleSheet.create({
   sheetInner: { flex: 1, paddingHorizontal: SHEET_RESTING_GAP },
   sheetTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(248,248,248,0.62)',
+    backgroundColor: 'rgba(248,248,248,0.92)',
   },
 });

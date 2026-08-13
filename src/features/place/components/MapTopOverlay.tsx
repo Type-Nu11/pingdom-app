@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +12,7 @@ import SearchAsset from '../../../assets/icons/search.svg';
 import ArtIcon from '../../../assets/v2icon/art_svg.svg';
 import BeautyIcon from '../../../assets/v2icon/beati_svg.svg';
 import CafeIcon from '../../../assets/v2icon/cafe_svg.svg';
+import EtcIcon from '../../../assets/v2icon/etc_svg.svg';
 import FashionIcon from '../../../assets/v2icon/fashion_svg.svg';
 import FoodIcon from '../../../assets/v2icon/food_svg.svg';
 import MusicIcon from '../../../assets/v2icon/music_svg.svg';
@@ -30,6 +30,7 @@ export type MapCategoryId =
   | 'art'
   | 'beauty'
   | 'cafe'
+  | 'etc'
   | 'fashion'
   | 'food'
   | 'music'
@@ -53,20 +54,19 @@ const categories: Array<{
   { id: 'all', label: '전체' },
   { Icon: MusicIcon, id: 'music', label: '음악' },
   { Icon: FoodIcon, id: 'food', label: '음식점' },
+  { Icon: PopupIcon, id: 'popup', label: '팝업' },
   { Icon: FashionIcon, id: 'fashion', label: '패션' },
   { Icon: BeautyIcon, id: 'beauty', label: '뷰티' },
-  { Icon: PopupIcon, id: 'popup', label: '팝업' },
   { Icon: ArtIcon, id: 'art', label: '전시' },
   { Icon: CafeIcon, id: 'cafe', label: '카페' },
+  { Icon: EtcIcon, id: 'etc', label: '기타' },
 ];
 
 export default function MapTopOverlay({
   activeCategory,
   onCategoryChange,
   onProfilePress,
-  onQueryChange,
   onSearchFocus,
-  onSubmitSearch,
   query,
 }: MapTopOverlayProps) {
   return (
@@ -91,21 +91,20 @@ export default function MapTopOverlay({
                 tintColor="rgba(228,228,230,0.60)"
               />
               <View pointerEvents="none" style={styles.searchFrost} />
-              <View style={styles.searchContent}>
-                <SearchAsset height={18} width={18} />
-                <TextInput
-                  accessibilityLabel="장소 검색"
-                  autoCorrect={false}
-                  onChangeText={onQueryChange}
-                  onFocus={onSearchFocus}
-                  onSubmitEditing={onSubmitSearch}
-                  placeholder="검색하기"
-                  placeholderTextColor="#41434A"
-                  returnKeyType="search"
-                  style={styles.searchInput}
-                  value={query}
-                />
-              </View>
+              <Pressable
+                accessibilityLabel="장소 검색"
+                accessibilityRole="button"
+                onPress={onSearchFocus}
+                style={styles.searchContent}
+              >
+                <SearchAsset height={20} width={20} />
+                <Text
+                  numberOfLines={1}
+                  style={[styles.searchInput, !query && styles.searchPlaceholder]}
+                >
+                  {query || '검색하기'}
+                </Text>
+              </Pressable>
             </View>
             <Pressable
               accessibilityLabel="프로필 열기"
@@ -284,11 +283,11 @@ const styles = StyleSheet.create({
   searchInput: {
     color: '#1D1E23',
     flex: 1,
-    fontSize: 18,
-    fontWeight: '500',
-    height: '100%',
-    padding: 0,
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 21,
   },
+  searchPlaceholder: { color: '#5E6069' },
   searchContent: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',

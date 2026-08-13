@@ -10,6 +10,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ArtAsset from '../../../assets/v2icon/art_svg.svg';
+import BeautyAsset from '../../../assets/v2icon/beati_svg.svg';
+import CafeAsset from '../../../assets/v2icon/cafe_svg.svg';
+import EtcAsset from '../../../assets/v2icon/etc_svg.svg';
+import FashionAsset from '../../../assets/v2icon/fashion_svg.svg';
+import FoodAsset from '../../../assets/v2icon/food_svg.svg';
+import MusicAsset from '../../../assets/v2icon/music_svg.svg';
+import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
 import { placeApi, type PlaceAutocompleteItem } from '../api/placeApi';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
@@ -40,13 +48,46 @@ type MapSearchOverlayProps = {
   recommendedPlaces?: RecommendedPlace[];
 };
 
-const quickActions = [
-  { id: 'food', icon: '♨', label: '음식', query: '음식' },
-  { id: 'music', icon: '♪', label: '음악', query: '음악' },
-  { id: 'fashion', icon: '♧', label: '패션', query: '패션' },
-  { id: 'game', icon: '⊙', label: '게임', query: '게임' },
-  { id: 'more', icon: '•••', label: '더보기', query: '핫플' },
-] as const;
+type SearchCategory =
+  | 'all'
+  | 'art'
+  | 'beauty'
+  | 'cafe'
+  | 'etc'
+  | 'fashion'
+  | 'food'
+  | 'music'
+  | 'popup';
+type RecentSearch = { category: Exclude<SearchCategory, 'all'>; date: string; query: string };
+
+const categories: Array<{
+  Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
+  id: SearchCategory;
+  label: string;
+}> = [
+  { id: 'all', label: '전체' },
+  { Icon: MusicAsset, id: 'music', label: '음악' },
+  { Icon: FoodAsset, id: 'food', label: '음식점' },
+  { Icon: PopupAsset, id: 'popup', label: '팝업' },
+  { Icon: FashionAsset, id: 'fashion', label: '패션' },
+  { Icon: BeautyAsset, id: 'beauty', label: '뷰티' },
+  { Icon: ArtAsset, id: 'art', label: '전시' },
+  { Icon: CafeAsset, id: 'cafe', label: '카페' },
+  { Icon: EtcAsset, id: 'etc', label: '기타' },
+];
+
+const initialRecentSearches: RecentSearch[] = [
+  { category: 'food', date: '08.12.', query: '대성반점' },
+  { category: 'music', date: '08.12.', query: '팍스뮤직' },
+  { category: 'fashion', date: '08.12.', query: '무신사' },
+  { category: 'popup', date: '08.12.', query: '오아시스 팝업' },
+  { category: 'art', date: '08.12.', query: '올 영세 입' },
+];
+
+const RecentCategoryIcon = ({ category }: { category: RecentSearch['category'] }) => {
+  const Icon = categories.find((item) => item.id === category)?.Icon ?? ArtAsset;
+  return <Icon color="#777983" height={21} width={24} />;
+};
 
 const toKakaoSelection = (item: KakaoLocalSearchItem): MapSearchSelection => ({
   address: item.address,
@@ -101,14 +142,8 @@ const MapSearchOverlay = ({
   const [query, setQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
-  const [recentQueries, setRecentQueries] = useState([
-    '대구소프트웨어마이스터고',
-    '진주성',
-    '이용인집',
-    '이용인카페',
-    '스타벅스',
-    '대소고사감실',
-  ]);
+  const [activeCategory, setActiveCategory] = useState<SearchCategory>('all');
+  const [recentQueries, setRecentQueries] = useState<RecentSearch[]>(initialRecentSearches);
   const [registeredResults, setRegisteredResults] = useState<PlaceAutocompleteItem[]>([]);
   const [isSearchingRegisteredPlaces, setIsSearchingRegisteredPlaces] = useState(false);
   const {
@@ -156,10 +191,12 @@ const MapSearchOverlay = ({
     const requestId = ++searchRequestIdRef.current;
     setHasSearched(true);
     setQuery(normalizedQuery);
-    setRecentQueries((prev) => [
-      normalizedQuery,
-      ...prev.filter((item) => item !== normalizedQuery),
-    ].slice(0, 6));
+    setRecentQueries((prev) => [{
+      category: activeCategory === 'all' ? 'art' : activeCategory,
+      date: new Intl.DateTimeFormat('ko-KR', { day: '2-digit', month: '2-digit' })
+        .format(new Date()).replace(/\s/g, ''),
+      query: normalizedQuery,
+    }, ...prev.filter((item) => item.query !== normalizedQuery)].slice(0, 6));
 
     setIsSearchingRegisteredPlaces(true);
     setRegisteredResults([]);
@@ -201,14 +238,6 @@ const MapSearchOverlay = ({
     onClose();
   };
 
-  const handleQuickAction = (id: typeof quickActions[number]['id']) => {
-    const action = quickActions.find((item) => item.id === id);
-
-    if (action) {
-      void runSearch(action.query);
-    }
-  };
-
   const handleShowRecommendations = () => {
     Keyboard.dismiss();
     setShowRecommendations(true);
@@ -226,17 +255,16 @@ const MapSearchOverlay = ({
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="검색 닫기"
-          hitSlop={10}
-          style={styles.backButton}
-          onPress={onClose}
-        >
-          <Text style={styles.backIcon}>‹</Text>
-        </Pressable>
         <View style={styles.searchField}>
-          <Text style={styles.searchIcon}>⌕</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="검색 닫기"
+            hitSlop={8}
+            style={styles.backButton}
+            onPress={onClose}
+          >
+            <Text style={styles.backIcon}>‹</Text>
+          </Pressable>
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
@@ -244,7 +272,7 @@ const MapSearchOverlay = ({
             ref={inputRef}
             returnKeyType="search"
             style={styles.searchInput}
-            placeholder="원하는 장소 검색"
+            placeholder="검색하기"
             placeholderTextColor="#717481"
             value={query}
             onChangeText={handleQueryChange}
@@ -272,109 +300,62 @@ const MapSearchOverlay = ({
       </View>
 
       <ScrollView
+        contentContainerStyle={styles.categoryContent}
+        horizontal
+        keyboardShouldPersistTaps="handled"
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoryScroll}
+      >
+        {categories.map(({ Icon, id, label }) => {
+          const active = id === activeCategory;
+          return (
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              key={id}
+              onPress={() => {
+                setActiveCategory(id);
+                if (id !== 'all') void runSearch(label);
+              }}
+              style={[styles.categoryChip, active && styles.categoryChipActive]}
+            >
+              {Icon ? <Icon color={active ? '#FF245B' : '#5E6069'} height={18} width={22} /> : null}
+              <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
         {!isResultMode ? (
           <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>최근 검색어</Text>
-              <Pressable
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={() => setRecentQueries([])}
-              >
-                <Text style={styles.deleteText}>전체 삭제</Text>
-              </Pressable>
-            </View>
-            <View style={styles.chipRow}>
-              {recentQueries.map((item) => (
-                <View key={item} style={styles.chip}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${item} 검색`}
-                    onPress={() => void runSearch(item)}
-                  >
-                    <Text style={styles.chipText}>{item}</Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${item} 최근 검색어 삭제`}
-                    hitSlop={6}
-                    onPress={() => setRecentQueries((prev) => prev.filter((query) => query !== item))}
-                  >
-                    <Text style={styles.chipRemove}>×</Text>
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-
-            <Text style={[styles.sectionTitle, styles.shortcutTitle]}>바로가기</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.shortcutRow}
-            >
-              {quickActions.map((item) => (
+            <Text style={styles.recentTitle}>최근 검색</Text>
+            {recentQueries.map((item) => (
+              <View key={`${item.query}-${item.date}`} style={styles.recentRow}>
                 <Pressable
                   accessibilityRole="button"
-                  key={item.id}
-                  style={styles.shortcut}
-                  onPress={() => handleQuickAction(item.id)}
+                  accessibilityLabel={`${item.query} 검색`}
+                  onPress={() => void runSearch(item.query)}
+                  style={styles.recentMain}
                 >
-                  <Text style={styles.shortcutIcon}>{item.icon}</Text>
-                  <Text style={styles.shortcutText}>{item.label}</Text>
+                  <View style={styles.recentIcon}><RecentCategoryIcon category={item.category} /></View>
+                  <Text numberOfLines={1} style={styles.recentQuery}>{item.query}</Text>
                 </Pressable>
-              ))}
-            </ScrollView>
-
-            <Text style={[styles.sectionTitle, styles.recommendTitle]}>장소 추천 받기</Text>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.recommendButton}
-              onPress={handleShowRecommendations}
-            >
-              <Text style={styles.recommendButtonText}>
-                {showRecommendations ? '추천 다시 받기' : '장소 추천 받아보기'}
-              </Text>
-            </Pressable>
-            {showRecommendations ? (
-              <View style={styles.recommendList}>
-                {recommendationStatusText ? (
-                  <View style={styles.recommendStateRow}>
-                    {isRecommendationsLoading ? (
-                      <ActivityIndicator color="#ff1956" size="small" />
-                    ) : null}
-                    <Text style={styles.recommendStateText}>{recommendationStatusText}</Text>
-                  </View>
-                ) : recommendedPlaces.slice(0, 5).map((place) => (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${place.name} 추천 장소 보기`}
-                    key={place.id}
-                    style={styles.recommendItem}
-                    onPress={() => handleRecommendedPlaceSelect(place)}
-                  >
-                    <View style={styles.recommendBadge}>
-                      <Text style={styles.recommendBadgeText}>P</Text>
-                    </View>
-                    <View style={styles.recommendTextGroup}>
-                      <Text numberOfLines={1} style={styles.resultName}>{place.name}</Text>
-                      <Text numberOfLines={1} style={styles.resultAddress}>
-                        {formatDistance(place.distanceMeters)} · {place.address}
-                      </Text>
-                      <Text numberOfLines={1} style={styles.resultCategory}>
-                        {formatRegistrantUsername(
-                          usernamesByPlaceId[String(place.id)] ?? place.username,
-                          isLoadingByPlaceId[String(place.id)]
-                        )}
-                      </Text>
-                    </View>
-                  </Pressable>
-                ))}
+                <Text style={styles.recentDate}>{item.date}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.query} 최근 검색어 삭제`}
+                  hitSlop={10}
+                  onPress={() => setRecentQueries((prev) => prev.filter((query) => query.query !== item.query))}
+                >
+                  <Text style={styles.recentRemove}>×</Text>
+                </Pressable>
               </View>
-            ) : null}
+            ))}
           </>
         ) : null}
 
@@ -452,16 +433,33 @@ const MapSearchOverlay = ({
 const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
-    height: 48,
+    height: 44,
     justifyContent: 'center',
-    width: 32,
+    width: 26,
   },
   backIcon: {
     color: '#5c606b',
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '300',
-    lineHeight: 44,
+    lineHeight: 40,
   },
+  categoryChip: {
+    alignItems: 'center',
+    backgroundColor: '#F7F7F8',
+    borderColor: '#F7F7F8',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    height: 38,
+    justifyContent: 'center',
+    paddingHorizontal: 13,
+  },
+  categoryChipActive: { borderColor: '#FF245B' },
+  categoryContent: { gap: 8, paddingHorizontal: 27, paddingVertical: 10 },
+  categoryLabel: { color: '#5E6069', fontSize: 14, fontWeight: '500' },
+  categoryLabelActive: { color: '#FF245B' },
+  categoryScroll: { flexGrow: 0 },
   chip: {
     alignItems: 'center',
     backgroundColor: '#f0f0f2',
@@ -501,8 +499,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 48,
-    paddingHorizontal: 31,
-    paddingTop: 16,
+    paddingHorizontal: 27,
+    paddingTop: 10,
   },
   deleteText: {
     color: '#737781',
@@ -545,9 +543,8 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 28,
-    paddingTop: 8,
+    paddingHorizontal: 27,
+    paddingTop: 10,
   },
   recommendTitle: {
     marginTop: 48,
@@ -632,12 +629,13 @@ const styles = StyleSheet.create({
   searchField: {
     alignItems: 'center',
     backgroundColor: '#e8e8eb',
-    borderRadius: 18,
+    borderRadius: 27,
     flex: 1,
     flexDirection: 'row',
-    gap: 10,
+    gap: 4,
     height: 54,
-    paddingHorizontal: 17,
+    paddingLeft: 8,
+    paddingRight: 17,
   },
   searchIcon: {
     color: '#717481',
@@ -647,10 +645,31 @@ const styles = StyleSheet.create({
   searchInput: {
     color: '#303440',
     flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '500',
     padding: 0,
   },
+  recentDate: { color: '#777A85', fontSize: 14 },
+  recentIcon: {
+    alignItems: 'center',
+    backgroundColor: '#E7E7E9',
+    borderRadius: 20,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  recentMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 14 },
+  recentQuery: { color: '#44464E', flex: 1, fontSize: 15, fontWeight: '500' },
+  recentRemove: { color: '#666A75', fontSize: 29, fontWeight: '300', lineHeight: 30 },
+  recentRow: {
+    alignItems: 'center',
+    borderBottomColor: '#E5E5E7',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 15,
+    height: 77,
+  },
+  recentTitle: { color: '#35373F', fontSize: 18, fontWeight: '800', marginBottom: 2 },
   sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',

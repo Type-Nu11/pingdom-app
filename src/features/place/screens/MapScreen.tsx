@@ -14,6 +14,7 @@ import MapBottomSheet, {
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
 import { GlassBlurTargetProvider } from '../components/GlassSurface';
 import MapCanvas from '../components/MapCanvas';
+import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
@@ -103,7 +104,6 @@ type MapScreenProps = {
     postId?: string;
   } | null;
   onClearOpenedBookmarkedPlace?: () => void;
-  onCreatePlace?: () => void;
   onOpenPlaceDetail?: (placeId: string) => void;
   onOpenProfile?: () => void;
   onOpenSavedPlaces?: () => void;
@@ -111,7 +111,6 @@ type MapScreenProps = {
 };
 
 export default function MapScreen({
-  onCreatePlace,
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
@@ -124,7 +123,12 @@ export default function MapScreen({
   const mapBlurTargetRef = useRef<View | null>(null);
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
-  const { places: recommendedPlaces } = usePlaceRecommendations({
+  const {
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    places: recommendedPlaces,
+    refetch: refetchRecommendations,
+  } = usePlaceRecommendations({
     latitude: center.lat,
     limit: 8,
     longitude: center.lng,
@@ -134,6 +138,7 @@ export default function MapScreen({
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
   const {
@@ -159,7 +164,7 @@ export default function MapScreen({
   const fullSheetHeight = Math.round(height - expandedSheetTop);
   const designScale = Math.min(Math.max(width / 402, 0.9), 1.1);
   const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
-  const mediumVisibleHeight = Math.round(378 * designScale) + SHEET_RESTING_GAP;
+  const mediumVisibleHeight = Math.round(418 * designScale) + SHEET_RESTING_GAP;
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
   const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
@@ -267,15 +272,13 @@ export default function MapScreen({
     ];
 
     if (activeCategory === 'all') return markers;
-    const markerCategory: MapMarker['category'] = activeCategory === 'cafe'
-      ? 'food'
-      : activeCategory === 'fashion'
-        ? 'fashion'
-        : activeCategory === 'music'
-          ? 'music'
-          : activeCategory === 'food'
-            ? 'food'
-            : 'etc';
+    const markerCategory: MapMarker['category'] = activeCategory === 'fashion'
+      ? 'fashion'
+      : activeCategory === 'music'
+        ? 'music'
+        : activeCategory === 'food' || activeCategory === 'cafe'
+          ? 'food'
+          : 'etc';
 
     return markers.filter((marker) => marker.category === markerCategory);
   }, [activeCategory, apiMarkers, bookmarkedPlaces, mockPlaces]);
@@ -312,11 +315,7 @@ export default function MapScreen({
     snapTo('expanded');
   };
   const handleSearchFocus = () => {
-    setContent((current) => ({
-      type: 'search',
-      query: current.type === 'search' || current.type === 'results' ? current.query : '',
-    }));
-    snapTo('expanded');
+    setIsSearchOpen(true);
   };
   const handleFilterPress = (filter: VisitFilter) => {
     setActiveFilters((current) => (
@@ -333,6 +332,11 @@ export default function MapScreen({
 
   useFocusEffect(useCallback(() => {
     return registerAndroidBackOverride(() => {
+      if (isSearchOpen) {
+        setIsSearchOpen(false);
+        return true;
+      }
+
       if (mapSection === 'favorites') {
         setMapSection('map');
         snapTo('medium');
@@ -355,7 +359,7 @@ export default function MapScreen({
 
       return false;
     });
-  }, [content, mapSection, snapPoint, snapTo]));
+  }, [content, isSearchOpen, mapSection, snapPoint, snapTo]));
   const handleGoNow = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.goNow'),
@@ -425,7 +429,6 @@ export default function MapScreen({
             isLoading={isFavoritesLoading}
             isUnauthorized={isFavoritesUnauthorized}
             mediumTranslateY={mediumTranslateY}
-            onCreatePlace={onCreatePlace}
             onHandlePress={() => {
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
@@ -434,6 +437,11 @@ export default function MapScreen({
             onOpenMap={() => {
               setMapSection('map');
               snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'home' });
+              snapTo('expanded');
             }}
             onOpenReservations={onOpenSavedPlaces}
             onLoadMore={() => void fetchNextFavoritePage()}
@@ -461,7 +469,6 @@ export default function MapScreen({
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
             onCouponPress={handleCoupon}
-            onCreatePlace={onCreatePlace}
             onDetailPress={(place) => onOpenPlaceDetail?.(String(place.id))}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}
@@ -473,6 +480,10 @@ export default function MapScreen({
             onOpenLikedPlaces={() => {
               setMapSection('favorites');
               snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setContent({ type: 'home' });
+              snapTo('expanded');
             }}
             onOpenSavedPlaces={onOpenSavedPlaces}
             onPlacePress={handlePlacePress}
@@ -494,6 +505,31 @@ export default function MapScreen({
           />
         )}
       </GlassBlurTargetProvider>
+      {isSearchOpen ? (
+        <MapSearchOverlay
+          centerLat={center.lat}
+          centerLng={center.lng}
+          isRecommendationsError={isRecommendationsError}
+          isRecommendationsLoading={isRecommendationsLoading}
+          onClose={() => setIsSearchOpen(false)}
+          onRefreshRecommendations={refetchRecommendations}
+          onSelectRecommendedPlace={(place) => {
+            setIsSearchOpen(false);
+            handlePlacePress(toDecisionPlace(place));
+          }}
+          onSelectPlace={(place) => {
+            setIsSearchOpen(false);
+            const registeredPlace = allPlaces.find((item) => String(item.id) === place.id);
+            if (registeredPlace) {
+              handlePlacePress(registeredPlace);
+              return;
+            }
+            setContent({ type: 'results', query: place.name });
+            snapTo('expanded');
+          }}
+          recommendedPlaces={recommendedPlaces}
+        />
+      ) : null}
     </View>
   );
 }

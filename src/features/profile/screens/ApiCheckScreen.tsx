@@ -11,6 +11,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getApiErrorUx } from '../../../v2/shared/api';
 import {
+  ACTIVITY_INTENT_VALUES,
+  type ActivityIntent,
+  useClearCurrentActivityIntent,
+  useCurrentActivityIntent,
+  useReplaceCurrentActivityIntent,
+} from '../../../v2/features/current-activity-intent';
+import {
   TRAVEL_PURPOSE_MAX_SELECTIONS,
   TRAVEL_PURPOSE_VALUES,
   type TravelPurpose,
@@ -37,7 +44,11 @@ function getErrorDebug(error: unknown) {
 export default function ApiCheckScreen({ footer, onBack }: ApiCheckScreenProps) {
   const travelPurposesQuery = useTravelPurposes();
   const replaceTravelPurposes = useReplaceTravelPurposes();
+  const currentActivityIntentQuery = useCurrentActivityIntent();
+  const replaceCurrentActivityIntent = useReplaceCurrentActivityIntent();
+  const clearCurrentActivityIntent = useClearCurrentActivityIntent();
   const [selected, setSelected] = useState<TravelPurpose[]>([]);
+  const [selectedIntent, setSelectedIntent] = useState<ActivityIntent>('EXPLORE');
 
   const savedTravelPurposes = useMemo(
     () => travelPurposesQuery.data?.travelPurposes ?? [],
@@ -49,6 +60,12 @@ export default function ApiCheckScreen({ footer, onBack }: ApiCheckScreenProps) 
       setSelected(savedTravelPurposes);
     }
   }, [savedTravelPurposes, travelPurposesQuery.isSuccess]);
+
+  useEffect(() => {
+    if (currentActivityIntentQuery.data?.intent) {
+      setSelectedIntent(currentActivityIntentQuery.data.intent);
+    }
+  }, [currentActivityIntentQuery.data?.intent]);
 
   const togglePurpose = (purpose: TravelPurpose) => {
     setSelected((current) => current.includes(purpose)
@@ -158,6 +175,108 @@ export default function ApiCheckScreen({ footer, onBack }: ApiCheckScreenProps) 
           ) : null}
         </View>
 
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>현재 행동 의도 API · #164</Text>
+          <Text style={styles.muted}>
+            GET 조회 후 하나를 선택해 PUT 전체 변경하거나 DELETE로 해제합니다.
+          </Text>
+
+          {currentActivityIntentQuery.isPending ? (
+            <Text style={styles.muted}>현재 행동 의도를 불러오는 중...</Text>
+          ) : currentActivityIntentQuery.isError ? (
+            <>
+              <Text selectable style={styles.errorText}>
+                {getErrorDebug(currentActivityIntentQuery.error)}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.secondaryButton}
+                onPress={() => void currentActivityIntentQuery.refetch()}
+              >
+                <Text style={styles.secondaryButtonText}>행동 의도 GET 다시 요청</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text style={styles.successText}>GET 200 조회 성공</Text>
+              <Text selectable style={styles.jsonText}>
+                {JSON.stringify(currentActivityIntentQuery.data, null, 2)}
+              </Text>
+              {currentActivityIntentQuery.data?.intent == null ? (
+                <Text style={styles.muted}>현재 설정된 행동 의도가 없습니다.</Text>
+              ) : null}
+            </>
+          )}
+
+          <View style={styles.purposeGrid}>
+            {ACTIVITY_INTENT_VALUES.map((intent) => {
+              const isSelected = selectedIntent === intent;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  key={intent}
+                  style={[styles.purposeButton, isSelected && styles.purposeButtonSelected]}
+                  onPress={() => setSelectedIntent(intent)}
+                >
+                  <Text style={[styles.purposeText, isSelected && styles.purposeTextSelected]}>
+                    {intent}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text selectable style={styles.requestPreview}>
+            {JSON.stringify({ intent: selectedIntent }, null, 2)}
+          </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            disabled={replaceCurrentActivityIntent.isPending}
+            style={[
+              styles.primaryButton,
+              replaceCurrentActivityIntent.isPending && styles.buttonDisabled,
+            ]}
+            onPress={() => replaceCurrentActivityIntent.mutate({ intent: selectedIntent })}
+          >
+            <Text style={styles.primaryButtonText}>
+              {replaceCurrentActivityIntent.isPending ? '변경 중...' : '행동 의도 PUT 변경'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            disabled={clearCurrentActivityIntent.isPending}
+            style={[
+              styles.dangerButton,
+              clearCurrentActivityIntent.isPending && styles.buttonDisabled,
+            ]}
+            onPress={() => clearCurrentActivityIntent.mutate()}
+          >
+            <Text style={styles.dangerButtonText}>
+              {clearCurrentActivityIntent.isPending ? '해제 중...' : '행동 의도 DELETE 해제'}
+            </Text>
+          </Pressable>
+
+          {replaceCurrentActivityIntent.isError ? (
+            <Text selectable style={styles.errorText}>
+              {getErrorDebug(replaceCurrentActivityIntent.error)}
+            </Text>
+          ) : null}
+          {clearCurrentActivityIntent.isError ? (
+            <Text selectable style={styles.errorText}>
+              {getErrorDebug(clearCurrentActivityIntent.error)}
+            </Text>
+          ) : null}
+          {replaceCurrentActivityIntent.isSuccess ? (
+            <Text style={styles.successText}>PUT 200 변경 성공 · 추천 캐시 갱신 완료</Text>
+          ) : null}
+          {clearCurrentActivityIntent.isSuccess ? (
+            <Text style={styles.successText}>DELETE 204 해제 성공 · GET 재조회 요청 완료</Text>
+          ) : null}
+        </View>
+
         {footer}
       </ScrollView>
     </SafeAreaView>
@@ -172,6 +291,11 @@ const styles = StyleSheet.create({
     borderWidth: 1, gap: 14, padding: 18,
   },
   content: { gap: 16, padding: 20, paddingBottom: 40 },
+  dangerButton: {
+    alignItems: 'center', borderColor: '#b4233c', borderRadius: 14,
+    borderWidth: 1, justifyContent: 'center', minHeight: 50,
+  },
+  dangerButtonText: { color: '#b4233c', fontSize: 16, fontWeight: '700' },
   errorText: {
     backgroundColor: '#fff1f3', borderRadius: 12, color: '#b4233c',
     fontFamily: 'monospace', fontSize: 13, lineHeight: 20, padding: 14,
