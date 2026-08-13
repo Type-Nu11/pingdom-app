@@ -176,7 +176,6 @@ type MapScreenProps = {
     postId?: string;
   } | null;
   onClearOpenedBookmarkedPlace?: () => void;
-  onCreatePlace?: () => void;
   onOpenPlaceDetail?: (placeId: string) => void;
   onOpenProfile?: () => void;
   onOpenSavedPlaces?: () => void;
@@ -184,7 +183,6 @@ type MapScreenProps = {
 };
 
 export default function MapScreen({
-  onCreatePlace,
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
@@ -473,7 +471,6 @@ export default function MapScreen({
             isError={isFavoritesError}
             isLoading={isFavoritesLoading}
             mediumTranslateY={mediumTranslateY}
-            onCreatePlace={onCreatePlace}
             onHandlePress={() => {
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
@@ -482,6 +479,11 @@ export default function MapScreen({
             onOpenMap={() => {
               setMapSection('map');
               snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'home' });
+              snapTo('expanded');
             }}
             onOpenReservations={onOpenSavedPlaces}
             onRetry={() => void refetchFavorites()}
@@ -504,7 +506,6 @@ export default function MapScreen({
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
             onCouponPress={handleCoupon}
-            onCreatePlace={onCreatePlace}
             onDetailPress={(place) => onOpenPlaceDetail?.(String(place.id))}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}
@@ -516,6 +517,10 @@ export default function MapScreen({
             onOpenLikedPlaces={() => {
               setMapSection('favorites');
               snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setContent({ type: 'home' });
+              snapTo('expanded');
             }}
             onOpenSavedPlaces={onOpenSavedPlaces}
             onPlacePress={handlePlacePress}
