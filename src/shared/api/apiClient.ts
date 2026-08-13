@@ -1,5 +1,6 @@
 // src/shared/api/apiClient.ts
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import { Alert } from 'react-native';
 import { logout } from '../../app/store/authStore';
 import { getTokens } from './authStorage';
 import {
@@ -23,7 +24,15 @@ if (!rawApiBaseUrl) {
 const API_BASE_URL = /^https?:\/\//i.test(rawApiBaseUrl)
     ? rawApiBaseUrl
     : `https://${rawApiBaseUrl}`;
+const rawFallbackApiBaseUrl = process.env.EXPO_PUBLIC_API_FALLBACK_URL?.trim();
+const FALLBACK_API_BASE_URL = rawFallbackApiBaseUrl
+    ? (/^https?:\/\//i.test(rawFallbackApiBaseUrl)
+        ? rawFallbackApiBaseUrl
+        : `https://${rawFallbackApiBaseUrl}`)
+    : null;
 const REQUEST_TIMEOUT = 10000;
+let activeApiBaseUrl = API_BASE_URL;
+let hasShownFallbackAlert = false;
 
 // ─────────────────────────────────────────────
 // 타입
@@ -33,6 +42,7 @@ const REQUEST_TIMEOUT = 10000;
 // _retry: 이 요청이 토큰 갱신 후 재시도된 요청인지 여부를 표시
 //         true이면 401이 다시 와도 재시도하지 않아 무한루프를 방지
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
+    _fallbackRetry?: boolean;
     _retry?: boolean;
 };
 
@@ -57,6 +67,7 @@ type RawRefreshResponse =
 // api와 refreshClient가 공유하는 기본 설정
 const BASE_CONFIG = {
     baseURL: API_BASE_URL,
+    withCredentials: true,
     timeout: REQUEST_TIMEOUT,
     headers: {
         Accept: 'application/json',
@@ -90,7 +101,10 @@ function isAllowedUrl(url?: string): boolean {
     if (!isAbsolute) return true;
 
     try {
-        return new URL(url).origin === new URL(API_BASE_URL).origin;
+        const origin = new URL(url).origin;
+        return origin === new URL(API_BASE_URL).origin ||
+            (FALLBACK_API_BASE_URL !== null &&
+                origin === new URL(FALLBACK_API_BASE_URL).origin);
     } catch {
         return false;
     }
@@ -158,7 +172,19 @@ function summarizeResponseData(data: unknown) {
 function isPublicAuthUrl(url?: string): boolean {
     const path = getRequestPath(url);
 
-    return path === '/auth/login' || path === '/auth/signup' || path === '/auth/token/refresh';
+    return [
+        '/auth/email/resend',
+        '/auth/login',
+        '/auth/logout',
+        '/auth/password-reset/confirm',
+        '/auth/password-reset/request',
+        '/auth/signup',
+        '/auth/token/refresh',
+    ].includes(path);
+}
+
+function isSafeToRetryAfterServerFallback(method?: string): boolean {
+    return ['get', 'head', 'options'].includes(method?.toLowerCase() ?? '');
 }
 
 function toRefreshResponse(response: RawRefreshResponse, fallbackRefreshToken: string): RefreshResponse {
@@ -244,7 +270,8 @@ async function fetchNewTokens(): Promise<string> {
 
     const { data } = await refreshClient.post<RawRefreshResponse>(
         '/auth/token/refresh',
-        { refreshToken: tokens.refreshToken }
+        { refreshToken: tokens.refreshToken },
+        { baseURL: activeApiBaseUrl }
     );
 
     const nextTokens = toRefreshResponse(data, tokens.refreshToken);
@@ -301,6 +328,10 @@ api.interceptors.request.use(
             throw new Error('허용되지 않은 절대 URL 요청입니다.');
         }
 
+        if (!/^https?:\/\//i.test(config.url ?? '')) {
+            config.baseURL = activeApiBaseUrl;
+        }
+
         if (isPublicAuthUrl(config.url)) {
             config.headers.delete('Authorization');
             return config;
@@ -355,6 +386,44 @@ api.interceptors.response.use(
         const originalRequest = error.config as RetryableRequestConfig | undefined;
         const status = error.response?.status;
         const isRefreshRequest = originalRequest?.url?.includes('/auth/token/refresh');
+        const isNetworkFailure = status === undefined && error.code !== 'ERR_CANCELED';
+        const canUseFallback = Boolean(
+            originalRequest &&
+            FALLBACK_API_BASE_URL &&
+            FALLBACK_API_BASE_URL !== API_BASE_URL &&
+            !originalRequest._fallbackRetry &&
+            originalRequest.baseURL !== FALLBACK_API_BASE_URL &&
+            isNetworkFailure
+        );
+
+        if (canUseFallback && originalRequest && FALLBACK_API_BASE_URL) {
+            activeApiBaseUrl = FALLBACK_API_BASE_URL;
+            originalRequest._fallbackRetry = true;
+            originalRequest.baseURL = FALLBACK_API_BASE_URL;
+            const shouldRetryOnFallback = isSafeToRetryAfterServerFallback(originalRequest.method);
+
+            if (!hasShownFallbackAlert) {
+                hasShownFallbackAlert = true;
+                Alert.alert(
+                    '서버 연결 전환',
+                    shouldRetryOnFallback
+                        ? '새 서버에 연결할 수 없어 기존 서버로 전환했습니다.'
+                        : '새 서버에 연결할 수 없어 기존 서버로 전환했습니다. 중복 처리를 막기 위해 진행 중이던 요청은 자동 재시도하지 않았습니다. 다시 시도해 주세요.',
+                );
+            }
+
+            console.warn('[api]', 'fallback server activated', {
+                fallbackBaseUrl: FALLBACK_API_BASE_URL,
+                primaryBaseUrl: API_BASE_URL,
+                requestRetried: shouldRetryOnFallback,
+            });
+
+            if (shouldRetryOnFallback) {
+                return api(originalRequest);
+            }
+
+            return Promise.reject(error);
+        }
 
         if (originalRequest && (status === 401 || shouldLogApiRequest(originalRequest.url))) {
             const responseData = error.response?.data as {

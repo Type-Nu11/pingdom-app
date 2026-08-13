@@ -32,3 +32,17 @@ npm run check:api-types
 The generated file is `shared/api/generated/mvp.ts`. Do not edit it directly. Feature model aliases
 must point to `ApiSchema`, `OperationQuery`, `OperationRequestBody`, or `OperationResponse` from
 `shared/api/contract.ts`; change the OpenAPI document and regenerate when the wire model changes.
+
+The place exploration endpoints introduced for #161 are sourced from the currently deployed
+server's `/v3/api-docs`, not from the older MVP document. The scoped server snapshot keeps the seven
+relevant paths and all recursively referenced schemas without hand-written DTOs:
+
+```sh
+npm run sync:place-exploration-openapi -- https://server.example/v3/api-docs
+npm run generate:place-exploration-api-types
+npm run check:place-exploration-api-types
+```
+
+The snapshot is `docs/api/place-exploration.openapi.json`, and its generated types are
+`shared/api/generated/placeExploration.ts`. Feature aliases must use
+`placeExplorationContract.ts`; update the snapshot from the server before regenerating.

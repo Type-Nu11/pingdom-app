@@ -10,6 +10,10 @@ const generatedContracts = [
     generatedPath: 'src/v2/shared/api/generated/mvp.ts',
   },
   {
+    contractPath: 'docs/api/account.openapi.json',
+    generatedPath: 'src/v2/shared/api/generated/account.ts',
+  },
+  {
     contractPath: 'docs/api/current-activity-intent.openapi.json',
     generatedPath: 'src/v2/shared/api/generated/currentActivityIntent.ts',
   },
@@ -30,7 +34,7 @@ try {
     ]);
 
     if (committed !== regenerated) {
-      console.error(`Generated API types are stale: ${generatedPath}`);
+      console.error(`Generated API types are stale for ${contractPath}. Run: npm run generate:api-types`);
       process.exitCode = 1;
     } else {
       console.log(`Generated API types match ${contractPath}.`);

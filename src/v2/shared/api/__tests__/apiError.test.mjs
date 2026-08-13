@@ -45,6 +45,27 @@ test('unknown server error codes and payload fields are preserved losslessly', (
   assert.equal(error.code, 'FUTURE_ACTIVITY_INTENT_ERROR');
   assert.equal(error.status, 409);
   assert.equal(error.responseBody, response);
+  assert.equal(error.responseData, response);
+});
+
+test('current account validation errors normalize legacy errors maps for forms', () => {
+  const error = toApiError({
+    isAxiosError: true,
+    message: 'Request failed',
+    response: {
+      data: {
+        errors: { email: '이메일 형식이 올바르지 않습니다.' },
+        message: '입력값을 확인해주세요.',
+      },
+      status: 400,
+    },
+  });
+
+  assert.deepEqual(error.fieldErrors, [
+    { field: 'email', reason: '이메일 형식이 올바르지 않습니다.' },
+  ]);
+  assert.equal(error.message, '입력값을 확인해주세요.');
+  assert.equal(getApiErrorUx(error).kind, 'validation');
 });
 
 test('400/401/403/404/409/410/422/426 errors select contract UX branches', () => {
@@ -108,6 +129,43 @@ test('domain conflict and batch-limit codes branch without relying on HTTP statu
     getApiErrorUx(new ApiError('batch', { code: 'EVENT_BATCH_TOO_LARGE' })).kind,
     'validation',
   );
+});
+
+test('unknown domain codes are preserved and are not reclassified from status alone', () => {
+  const response = {
+    code: 'MAP_LINK_CONVERSION_CONFLICT',
+    message: 'A domain-specific conversion conflict',
+    correlationId: 'server-specific-field',
+  };
+  const error = toApiError({
+    isAxiosError: true,
+    message: 'Request failed',
+    response: { data: response, status: 409 },
+  });
+
+  assert.equal(error.code, response.code);
+  assert.equal(error.status, 409);
+  assert.equal(error.responseData, response);
+  assert.equal(getApiErrorUx(error).kind, 'generic');
+});
+
+test('travel schedule validation and conflict codes keep distinct server meanings', () => {
+  const cases = [
+    [400, 'INVALID_TRAVEL_SCHEDULE_PERIOD', 'validation'],
+    [404, 'TRAVEL_SCHEDULE_NOT_FOUND', 'notFound'],
+    [409, 'TRAVEL_SCHEDULE_NOT_EDITABLE', 'conflict'],
+    [409, 'TRAVEL_SCHEDULE_CONCURRENT_MODIFICATION', 'conflict'],
+    [422, 'TRAVEL_SCHEDULE_RULE_VIOLATION', 'validation'],
+  ];
+
+  for (const [status, code, kind] of cases) {
+    const error = new ApiError('schedule error', { code, status });
+    const ux = getApiErrorUx(error);
+
+    assert.equal(error.code, code);
+    assert.equal(ux.error, error);
+    assert.equal(ux.kind, kind);
+  }
 });
 
 test('conversion POST retries only transient failures and has a finite retry budget', () => {

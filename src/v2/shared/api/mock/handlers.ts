@@ -6,7 +6,7 @@ export type MockRequest = {
   body?: unknown;
   method: MockMethod;
   path: string;
-  scenario?: MockScenario;
+  scenario: MockScenario;
 };
 
 export type MockHandler = {

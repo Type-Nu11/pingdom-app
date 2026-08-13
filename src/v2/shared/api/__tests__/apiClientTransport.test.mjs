@@ -13,8 +13,12 @@ test('configured app transport handles authenticated GET, PUT, and DELETE reques
   const calls = [];
   const transport = {
     delete: async (path, options) => {
-      calls.push({ method: 'DELETE', options, path });
-      return { data: undefined };
+      calls.push({ body: options.data, method: 'DELETE', options, path });
+      return {
+        data: path === '/users/me/oauth-accounts/google'
+          ? { linked: false }
+          : undefined,
+      };
     },
     get: async (path, options) => {
       calls.push({ method: 'GET', options, path });
@@ -36,15 +40,31 @@ test('configured app transport handles authenticated GET, PUT, and DELETE reques
       '/users/me/travel-purposes',
       { travelPurposes: ['K_POP'] },
     );
-    const deleteResult = await client.delete('/users/me/current-activity-intent');
+    const currentActivityIntentDeleteResult = await client.delete(
+      '/users/me/current-activity-intent',
+    );
+    await client.delete('/firebase/fcm-tokens', { token: 'device-token' });
+    const deleteResult = await client.delete(
+      '/users/me/oauth-accounts/google',
+      { currentPassword: 'password' },
+    );
 
     assert.deepEqual(getResult, { travelPurposes: ['K_POP'] });
     assert.deepEqual(putResult, { travelPurposes: ['K_POP'] });
-    assert.equal(deleteResult, undefined);
-    assert.deepEqual(calls.map(({ method }) => method), ['GET', 'PUT', 'DELETE']);
+    assert.equal(currentActivityIntentDeleteResult, undefined);
+    assert.deepEqual(deleteResult, { linked: false });
+    assert.deepEqual(
+      calls.map(({ method }) => method),
+      ['GET', 'PUT', 'DELETE', 'DELETE', 'DELETE'],
+    );
     assert.equal(calls[0].options.headers.Authorization, 'Bearer access-token');
     assert.equal(calls[1].options.headers.Authorization, 'Bearer access-token');
     assert.equal(calls[2].options.headers.Authorization, 'Bearer access-token');
+    assert.equal(calls[3].options.headers.Authorization, 'Bearer access-token');
+    assert.equal(calls[4].options.headers.Authorization, 'Bearer access-token');
+    assert.equal(calls[2].body, undefined);
+    assert.deepEqual(calls[3].body, { token: 'device-token' });
+    assert.deepEqual(calls[4].body, { currentPassword: 'password' });
   } finally {
     resetTokenProvider();
     resetTransport();

@@ -1,13 +1,25 @@
 import axios from 'axios';
 
-import type { ErrorResponse, FieldError } from './contract';
+import type { FieldError } from './contract';
+
+type ApiErrorResponse = {
+  code?: string;
+  details?: Record<string, unknown> | null;
+  fieldErrors?: FieldError[] | null;
+  message?: string;
+  traceId?: string;
+};
 
 type ApiErrorDetails = {
   code?: string;
+  details?: Record<string, unknown> | null;
+  fieldErrors?: FieldError[] | null;
   isNetworkError?: boolean;
-  response?: ErrorResponse;
+  response?: ApiErrorResponse;
   responseBody?: unknown;
+  responseData?: unknown;
   status?: number;
+  traceId?: string;
 };
 
 export class ApiError extends Error {
@@ -16,6 +28,7 @@ export class ApiError extends Error {
   readonly fieldErrors: FieldError[] | null;
   readonly isNetworkError: boolean;
   readonly responseBody?: unknown;
+  readonly responseData: unknown;
   readonly status?: number;
   readonly traceId?: string;
 
@@ -23,27 +36,35 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
     this.code = details.response?.code ?? details.code;
-    this.details = details.response?.details ?? null;
-    this.fieldErrors = details.response?.fieldErrors ?? null;
+    this.details = details.response?.details ?? details.details ?? null;
+    this.fieldErrors = details.response?.fieldErrors ?? details.fieldErrors ?? null;
     this.isNetworkError = details.isNetworkError ?? false;
-    this.responseBody = Object.prototype.hasOwnProperty.call(details, 'responseBody')
-      ? details.responseBody
-      : details.response;
+    const rawResponse = 'responseData' in details
+      ? details.responseData
+      : 'responseBody' in details
+        ? details.responseBody
+        : details.response;
+    this.responseBody = rawResponse;
+    this.responseData = rawResponse;
     this.status = details.status;
-    this.traceId = details.response?.traceId;
+    this.traceId = details.response?.traceId ?? details.traceId;
   }
 }
 
 function getErrorResponseData(value: unknown): {
   code?: string;
+  details?: Record<string, unknown> | null;
+  fieldErrors?: FieldError[] | null;
   message?: string;
-  response?: ErrorResponse;
+  response?: ApiErrorResponse;
+  traceId?: string;
 } {
   if (!value || typeof value !== 'object') {
     return {};
   }
 
-  const response = value as Partial<Record<keyof ErrorResponse, unknown>>;
+  const response = value as Record<string, unknown>;
+  const legacyErrors = (value as { errors?: unknown }).errors;
   const code = typeof response.code === 'string' ? response.code : undefined;
   const message = typeof response.message === 'string' ? response.message : undefined;
   const traceId = typeof response.traceId === 'string' ? response.traceId : undefined;
@@ -58,7 +79,11 @@ function getErrorResponseData(value: unknown): {
       )
     : response.fieldErrors === null
       ? null
-      : undefined;
+      : legacyErrors && typeof legacyErrors === 'object' && !Array.isArray(legacyErrors)
+        ? Object.entries(legacyErrors)
+            .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+            .map(([field, reason]) => ({ field, reason }))
+        : undefined;
 
   const responseDetails =
     response.details === null ||
@@ -66,20 +91,21 @@ function getErrorResponseData(value: unknown): {
       ? response.details as Record<string, unknown> | null
       : undefined;
 
-  const contractResponse = code && message && traceId && fieldErrors !== undefined && responseDetails !== undefined
-    ? {
-        code: code as ErrorResponse['code'],
-        details: responseDetails,
-        fieldErrors,
-        message,
-        traceId,
-      }
-    : undefined;
+  const contractResponse: ApiErrorResponse = {
+    code,
+    details: responseDetails,
+    fieldErrors,
+    message,
+    traceId,
+  };
 
   return {
     code,
+    details: responseDetails,
+    fieldErrors,
     message,
     response: contractResponse,
+    traceId,
   };
 }
 
@@ -93,10 +119,14 @@ export function toApiError(error: unknown): ApiError {
 
     return new ApiError(response.message ?? error.message, {
       code: response.code ?? error.code,
+      details: response.details,
+      fieldErrors: response.fieldErrors,
       isNetworkError: error.response === undefined && error.code !== 'ERR_CANCELED',
       response: response.response,
       responseBody: error.response?.data,
+      responseData: error.response?.data,
       status: error.response?.status,
+      traceId: response.traceId,
     });
   }
 

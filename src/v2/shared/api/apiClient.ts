@@ -23,7 +23,11 @@ export type ApiTransport = Pick<AxiosInstance, 'delete' | 'get' | 'patch' | 'pos
 export type HttpTransport = ApiTransport;
 
 export type ApiClient = {
-  delete<TResponse>(path: string, options?: MutationRequestOptions): Promise<TResponse>;
+  delete<TResponse, TBody = never>(
+    path: string,
+    body?: TBody,
+    options?: MutationRequestOptions,
+  ): Promise<TResponse>;
   get<TResponse>(path: string, options?: GetRequestOptions): Promise<TResponse>;
   patch<TResponse, TBody = unknown>(
     path: string,
@@ -49,6 +53,7 @@ const axiosInstance = axios.create({
     'Content-Type': 'application/json; charset=utf-8',
   },
   timeout: REQUEST_TIMEOUT_MS,
+  withCredentials: true,
 });
 
 let accessTokenProvider: ApiAccessTokenProvider = () => null;
@@ -170,17 +175,19 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
   const getTransport = () => transport ?? apiTransport;
 
   return {
-    async delete<TResponse>(
+    async delete<TResponse, TBody = never>(
       path: string,
+      body?: TBody,
       options: MutationRequestOptions = {},
     ): Promise<TResponse> {
       assertRelativeApiPath(path);
 
       try {
-        const response = await getTransport().delete<TResponse>(
-          path,
-          await withAuthorization(options),
-        );
+        const authorizedOptions = await withAuthorization(options);
+        const response = await getTransport().delete<TResponse>(path, {
+          ...authorizedOptions,
+          data: body,
+        });
         return response.data;
       } catch (error) {
         throw toApiError(error);

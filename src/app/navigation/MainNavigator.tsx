@@ -8,7 +8,7 @@ import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
-import ApiCheckScreen from '../../features/profile/screens/ApiCheckScreen';
+import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
@@ -96,7 +96,8 @@ const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
 };
 
 const ApiCheckRouteScreen = ({ navigation }: MainScreenProps<'ApiCheck'>) => (
-  <ApiCheckScreen onBack={navigation.goBack} />
+  // TEMPORARY device-QA flow for the #161, #165, #166, and #168 endpoints.
+  <TemporaryAccountSessionApiCheckFlow onExit={navigation.goBack} />
 );
 
 const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) => (

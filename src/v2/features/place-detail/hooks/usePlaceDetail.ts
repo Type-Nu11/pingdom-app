@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
 import { placeDetailApi } from '../api/placeDetailApi';
 
 type PlaceDetailApi = Pick<typeof placeDetailApi, 'getPlaceDetail'>;
 
 export const placeDetailQueryKeys = {
-  all: ['v2', 'place-detail'] as const,
-  detail: (placeId: number) => [...placeDetailQueryKeys.all, placeId] as const,
+  all: placeQueryKeys.entities(),
+  detail: placeQueryKeys.detail,
 };
 
 export function createPlaceDetailQueryOptions(

@@ -19,8 +19,8 @@ test('current activity intent API implements GET, PUT replace, and DELETE clear'
   const calls = [];
   const response = { expiresAt: '2026-08-11T14:00:00Z', intent: 'CAFE' };
   const client = {
-    delete: async (path, options) => {
-      calls.push({ method: 'DELETE', options, path });
+    delete: async (path, requestBody, options) => {
+      calls.push({ method: 'DELETE', options, path, requestBody });
     },
     get: async (path, options) => {
       calls.push({ method: 'GET', options, path });
@@ -49,6 +49,7 @@ test('current activity intent API implements GET, PUT replace, and DELETE clear'
   assert.equal(calls[1].body, body);
   assert.equal(calls[1].options.signal, signal);
   assert.equal(calls[2].options.signal, signal);
+  assert.equal(calls[2].requestBody, undefined);
 });
 
 test('current activity intent Hook options preserve query key, AbortSignal, and bodies', async () => {

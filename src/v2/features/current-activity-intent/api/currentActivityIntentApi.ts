@@ -9,7 +9,7 @@ const CURRENT_ACTIVITY_INTENT_PATH = '/users/me/current-activity-intent';
 export function createCurrentActivityIntentApi(client: ApiClient = apiClient) {
   return {
     clearCurrentActivityIntent: (signal?: AbortSignal): Promise<void> =>
-      client.delete<void>(CURRENT_ACTIVITY_INTENT_PATH, { signal }),
+      client.delete<void>(CURRENT_ACTIVITY_INTENT_PATH, undefined, { signal }),
     getCurrentActivityIntent: (signal?: AbortSignal): Promise<CurrentActivityIntent> =>
       client.get<CurrentActivityIntent>(CURRENT_ACTIVITY_INTENT_PATH, { signal }),
     replaceCurrentActivityIntent: (
