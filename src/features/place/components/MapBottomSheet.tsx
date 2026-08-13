@@ -42,6 +42,9 @@ export type DecisionPlace = {
   latitude: number;
   longitude: number;
   name: string;
+  recommendationRank?: number;
+  recommendationReason?: string;
+  recommendationSource?: string;
   tags: string[];
   verifiedAgo: string;
   verifiedMinutes?: number;
@@ -71,6 +74,11 @@ type MapBottomSheetProps = {
   onSubmitSearch: () => void;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
+  recommendationContext?: string | null;
+  recommendationLimitMessage?: string | null;
+  recommendationPlaces: DecisionPlace[];
+  recommendationsState: 'empty' | 'error' | 'loading' | 'ready';
+  onRetryRecommendations: () => void;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
@@ -264,6 +272,19 @@ const PlaceTrendCard = ({
         <Text numberOfLines={1} style={styles.placeCardDistance}>
           여기서 {formatDistance(place)}
         </Text>
+        {place.recommendationReason ? (
+          <Text numberOfLines={1} style={styles.recommendationReason}>
+            {place.recommendationReason}
+          </Text>
+        ) : null}
+        {place.recommendationRank !== undefined || place.recommendationSource ? (
+          <Text numberOfLines={1} style={styles.recommendationExplanation}>
+            {[
+              place.recommendationRank !== undefined ? `추천 순위 ${place.recommendationRank}` : null,
+              place.recommendationSource ?? null,
+            ].filter(Boolean).join(' · ')}
+          </Text>
+        ) : null}
         <Pressable
           accessibilityLabel={liked ? '즐겨찾기 해제' : '즐겨찾기'}
           accessibilityRole="button"
@@ -303,6 +324,19 @@ const ExpandedPlaceCard = ({
       <View style={styles.gridCardBody}>
         <Text numberOfLines={2} style={styles.gridCardName}>{place.name}</Text>
         <Text numberOfLines={1} style={styles.gridCardDistance}>여기서 {formatDistance(place)}</Text>
+        {place.recommendationReason ? (
+          <Text numberOfLines={1} style={styles.gridRecommendationReason}>
+            {place.recommendationReason}
+          </Text>
+        ) : null}
+        {place.recommendationRank !== undefined || place.recommendationSource ? (
+          <Text numberOfLines={1} style={styles.gridRecommendationExplanation}>
+            {[
+              place.recommendationRank !== undefined ? `추천 순위 ${place.recommendationRank}` : null,
+              place.recommendationSource ?? null,
+            ].filter(Boolean).join(' · ')}
+          </Text>
+        ) : null}
         <Pressable
           accessibilityLabel={liked ? '즐겨찾기 해제' : '즐겨찾기'}
           accessibilityRole="button"
@@ -430,6 +464,101 @@ const EmptyCard = () => (
     <Text style={styles.emptyCardTitle}>주변 핫플을 찾는 중이에요</Text>
     <Text style={styles.emptyCardBody}>지도를 움직여 다른 지역도 둘러보세요.</Text>
   </View>
+);
+
+const RecommendationState = ({
+  onRetry,
+  state,
+}: {
+  onRetry: () => void;
+  state: 'empty' | 'error' | 'loading';
+}) => (
+  <View accessibilityLiveRegion="polite" style={styles.recommendationState}>
+    <Text style={styles.emptyCardTitle}>
+      {state === 'loading'
+        ? '나만을 위한 추천 장소를 불러오고 있어요'
+        : state === 'error'
+          ? '추천 장소를 불러오지 못했어요'
+          : '현재 조건에 맞는 추천 장소가 없어요'}
+    </Text>
+    <Text style={styles.emptyCardBody}>
+      {state === 'empty'
+        ? '위치나 추천 반경을 바꾼 뒤 다시 확인해 주세요.'
+        : state === 'error'
+          ? '잠시 후 다시 시도해 주세요.'
+          : '현재 위치와 여행 맥락을 확인하고 있어요.'}
+    </Text>
+    {state === 'error' ? (
+      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
+        <Text style={styles.retryButtonText}>다시 시도</Text>
+      </Pressable>
+    ) : null}
+  </View>
+);
+
+const RecommendationContent = ({
+  context,
+  imageUrlsByPlaceId,
+  isExpanded,
+  limitMessage,
+  onPlacePress,
+  onRetry,
+  places,
+  state,
+}: {
+  context?: string | null;
+  imageUrlsByPlaceId: Record<string, string>;
+  isExpanded: boolean;
+  limitMessage?: string | null;
+  onPlacePress: (place: DecisionPlace) => void;
+  onRetry: () => void;
+  places: DecisionPlace[];
+  state: 'empty' | 'error' | 'loading' | 'ready';
+}) => (
+  <ScrollView
+    contentContainerStyle={isExpanded ? styles.expandedContent : styles.recommendationContent}
+    nestedScrollEnabled
+    showsVerticalScrollIndicator={false}
+  >
+    <View style={styles.recommendationHeader}>
+      <Text style={styles.recommendationTitle}>나만을 위한 추천 장소</Text>
+      {context ? <Text style={styles.recommendationContext}>{context}</Text> : null}
+      {limitMessage ? <Text style={styles.recommendationLimit}>{limitMessage}</Text> : null}
+    </View>
+    {state === 'ready' ? (
+      isExpanded ? (
+        <View style={styles.gridRow}>
+          {places.map((place) => (
+            <ExpandedPlaceCard
+              imageUrl={imageUrlsByPlaceId[String(place.id)]}
+              key={`recommendation-${place.id}`}
+              onPress={() => onPlacePress(place)}
+              place={place}
+            />
+          ))}
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.cardRow}
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+        >
+          {places.slice(0, 6).map((place, index) => (
+            <PlaceTrendCard
+              imageUrl={imageUrlsByPlaceId[String(place.id)]}
+              index={index}
+              key={`recommendation-${place.id}`}
+              onPress={() => onPlacePress(place)}
+              place={place}
+            />
+          ))}
+        </ScrollView>
+      )
+    ) : (
+      <RecommendationState onRetry={onRetry} state={state} />
+    )}
+  </ScrollView>
 );
 
 const ResultRow = ({
@@ -566,21 +695,24 @@ export default function MapBottomSheet({
   onOpenLikedPlaces,
   onOpenSavedPlaces,
   onPlacePress,
+  onRetryRecommendations,
   panHandlers,
   places,
+  recommendationContext,
+  recommendationLimitMessage,
+  recommendationPlaces,
+  recommendationsState,
   selectedPlace,
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
-  userName,
 }: MapBottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const [feed, setFeed] = useState<'local' | 'national'>('local');
-  const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
-  const shownPlaces = feed === 'local' ? places : [...places].reverse();
-  const { imageUrlsByPlaceId } = usePlacePreviewImages(places);
+  const previewPlaces = [...places, ...recommendationPlaces]
+    .filter((place, index, items) => items.findIndex((item) => item.id === place.id) === index);
+  const { imageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
   const contentFadeStart = mediumTranslateY
     + ((collapsedTranslateY - mediumTranslateY) * 0.42);
   const contentOpacity = sheetTranslateY.interpolate({
@@ -680,37 +812,17 @@ export default function MapBottomSheet({
             <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
           )) : <EmptyCard />}
         </ScrollView>
-      ) : snapPoint === 'expanded' ? (
-        <ExpandedHomeContent
-          activeCategory={activeCategory}
-          feed={feed}
-          imageUrlsByPlaceId={imageUrlsByPlaceId}
-          onCategoryChange={setActiveCategory}
-          onFeedChange={setFeed}
-          onPlacePress={onPlacePress}
-          places={shownPlaces}
-          userName={userName?.trim() || 'user'}
-        />
       ) : (
-        <>
-          <FeedSegment feed={feed} onChange={setFeed} />
-
-          <ScrollView
-            contentContainerStyle={styles.cardRow}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          >
-            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place, index) => (
-              <PlaceTrendCard
-                imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                index={index}
-                key={place.id}
-                onPress={() => onPlacePress(place)}
-                place={place}
-              />
-            )) : <EmptyCard />}
-          </ScrollView>
-        </>
+        <RecommendationContent
+          context={recommendationContext}
+          imageUrlsByPlaceId={imageUrlsByPlaceId}
+          isExpanded={snapPoint === 'expanded'}
+          limitMessage={recommendationLimitMessage}
+          onPlacePress={onPlacePress}
+          onRetry={onRetryRecommendations}
+          places={recommendationPlaces}
+          state={recommendationsState}
+        />
       )}
       </Animated.View>
       </View>
@@ -925,6 +1037,18 @@ const styles = StyleSheet.create({
   placeCardBody: { flex: 1, paddingHorizontal: 8, paddingVertical: 12 },
   placeCardDistance: { color: '#73757D', fontSize: 12, marginTop: 2 },
   placeCardName: { color: '#25272D', fontSize: 16, fontWeight: '900', paddingRight: 35 },
+  recommendationContent: { paddingBottom: 108 },
+  recommendationContext: { color: '#FF1956', fontSize: 12, fontWeight: '800', marginTop: 4 },
+  recommendationHeader: { paddingHorizontal: 18, paddingTop: 8 },
+  recommendationLimit: { color: '#777A83', fontSize: 11, marginTop: 5 },
+  recommendationReason: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 3, paddingRight: 34 },
+  recommendationExplanation: { color: '#8B8D94', fontSize: 9, marginTop: 2, paddingRight: 34 },
+  recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
+  recommendationTitle: { color: '#25272D', fontSize: 20, fontWeight: '900' },
+  gridRecommendationReason: { color: '#FF1956', fontSize: 9, fontWeight: '700', marginTop: 3, paddingRight: 29 },
+  gridRecommendationExplanation: { color: '#8B8D94', fontSize: 8, marginTop: 2, paddingRight: 29 },
+  retryButton: { backgroundColor: '#FF1956', borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  retryButtonText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   previewAddress: { color: '#747780', fontSize: 12, marginTop: 4 },
   previewBack: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' },

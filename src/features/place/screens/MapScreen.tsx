@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { useTranslation } from 'react-i18next';
+import { useMapSettingsStore } from '../../../app/store/mapSettingsStore';
 import MapBottomSheet, {
   type BottomSheetContent,
   type DecisionPlace,
@@ -20,10 +21,13 @@ import { useBookmarkedPlaces } from '../hooks/useBookmarkedPlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
+import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
+import { useRecommendationExplanation } from '../../../v2/features/place-exploration';
 import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
+import { createRecommendationPresentation } from '../model/recommendationPresentation';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
 const FAVORITE_MOCK_PLACE_IDS = [139001, 139002, 139003, 139004] as const;
@@ -163,6 +167,9 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
   latitude: place.latitude,
   longitude: place.longitude,
   name: place.name,
+  recommendationReason: 'reason' in place && typeof place.reason === 'string'
+    ? place.reason
+    : undefined,
   tags: ['Visitor verified'],
   verifiedAgo: 'recently',
   verifiedMinutes: 0,
@@ -197,12 +204,30 @@ export default function MapScreen({
   const mapBlurTargetRef = useRef<View | null>(null);
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
-  const { places: recommendedPlaces } = usePlaceRecommendations({
-    latitude: center.lat,
+  const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
+  const {
+    appliedActivityIntent,
+    appliedRadiusKm,
+    appliedTravelPurposes,
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    limitReasons,
+    places: recommendedPlaces,
+    recommendationRequestId,
+    recommendationVersion,
+    refetch: refetchRecommendations,
+    requestedRadiusKm,
+  } = usePlaceRecommendations({
+    latitude: userLat,
     limit: 8,
-    longitude: center.lng,
-    radiusKm: 20,
+    longitude: userLng,
+    radiusKm: recommendationRadiusKm,
   });
+  const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const recommendationExplanation = useRecommendationExplanation(
+    recommendationRequestId ?? '',
+    { enabled: Boolean(recommendationRequestId) },
+  );
   const { profile } = useProfile();
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
@@ -265,6 +290,42 @@ export default function MapScreen({
     if (recommendations.length > 0) return recommendations;
     return livePlaces.length > 0 ? livePlaces : mockPlaces;
   }, [apiPlaces, mockPlaces, recommendedPlaces]);
+  const recommendationPlaces = useMemo(() => {
+    const explanationByPlaceId = new Map(
+      (recommendationExplanation.data?.items ?? [])
+        .filter((item) => typeof item.placeId === 'number')
+        .map((item) => [item.placeId as number, item]),
+    );
+
+    return recommendedPlaces.map((place) => {
+      const explanation = explanationByPlaceId.get(place.id);
+      return {
+        ...toDecisionPlace(place),
+        recommendationRank: explanation?.ranking,
+        recommendationSource: explanation?.source,
+      };
+    });
+  }, [recommendationExplanation.data?.items, recommendedPlaces]);
+  const recommendationPresentation = useMemo(() => createRecommendationPresentation({
+    appliedActivityIntent,
+    appliedRadiusKm,
+    appliedTravelPurposes,
+    limitReasons,
+    requestedRadiusKm,
+  }), [
+    appliedActivityIntent,
+    appliedRadiusKm,
+    appliedTravelPurposes,
+    limitReasons,
+    requestedRadiusKm,
+  ]);
+  const recommendationsState = isRecommendationsLoading
+    ? 'loading' as const
+    : isRecommendationsError
+      ? 'error' as const
+      : recommendationPlaces.length === 0
+        ? 'empty' as const
+        : 'ready' as const;
   const resolvedFavoritePlaces = useMemo(() => {
     if (bookmarkedPlaces.length > 0) {
       return bookmarkedPlaces.map(toDecisionPlace);
@@ -323,11 +384,22 @@ export default function MapScreen({
         markerType: index === 0 ? 'hot' as const : 'default' as const,
       }));
 
+    const recommendationMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
+    const recommendationMarkers = recommendationPlaces
+      .filter((place) => !recommendationMarkerIds.has(String(place.id)))
+      .map((place) => ({
+        category: normalizePlaceCategory(place.category),
+        id: String(place.id),
+        lat: place.latitude,
+        lng: place.longitude,
+        markerType: 'default' as const,
+      }));
     const markers = [
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
+      ...recommendationMarkers,
       ...mockMarkers,
     ];
 
@@ -343,7 +415,7 @@ export default function MapScreen({
             : 'etc';
 
     return markers.filter((marker) => marker.category === markerCategory);
-  }, [activeCategory, apiMarkers, mockPlaces]);
+  }, [activeCategory, apiMarkers, mockPlaces, recommendationPlaces]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
@@ -365,6 +437,16 @@ export default function MapScreen({
     snapTo('medium');
   };
   const handlePlacePress = (place: DecisionPlace) => {
+    const isRecommendation = recommendedPlaces.some((item) => item.id === place.id);
+    if (isRecommendation && recommendationRequestId && recommendationVersion) {
+      void recordRecommendationClick({
+        placeId: place.id,
+        recommendationVersion,
+        requestId: recommendationRequestId,
+      }).catch((error) => {
+        if (__DEV__) console.warn('[recommendation-click]', error);
+      });
+    }
     setContent({ type: 'place-preview', placeId: place.id });
     setIsFollowingUser(false);
     snapTo('medium');
@@ -519,6 +601,7 @@ export default function MapScreen({
             }}
             onOpenSavedPlaces={onOpenSavedPlaces}
             onPlacePress={handlePlacePress}
+            onRetryRecommendations={() => void refetchRecommendations()}
             onProfilePress={onOpenProfile}
             onQueryChange={handleQueryChange}
             onSearchFocus={handleSearchFocus}
@@ -528,6 +611,10 @@ export default function MapScreen({
             }}
             panHandlers={panHandlers}
             places={sheetPlaces}
+            recommendationContext={recommendationPresentation.contextText}
+            recommendationLimitMessage={recommendationPresentation.limitText}
+            recommendationPlaces={recommendationPlaces}
+            recommendationsState={recommendationsState}
             selectedPlace={selectedPlace}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
