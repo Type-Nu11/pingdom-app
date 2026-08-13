@@ -17,7 +17,9 @@ export {
 } from './model/currentActivityIntentQueryKeys';
 export type {
   ActivityIntent,
+  ActivityIntentContractAssertion,
   CurrentActivityIntent,
   CurrentActivityIntentErrorResponse,
   ReplaceCurrentActivityIntentBody,
 } from './model/currentActivityIntent.types';
+export { ACTIVITY_INTENT_VALUES } from './model/currentActivityIntent.types';
