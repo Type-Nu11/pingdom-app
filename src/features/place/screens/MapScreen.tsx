@@ -229,7 +229,7 @@ export default function MapScreen({
   const fullSheetHeight = Math.round(height - expandedSheetTop);
   const designScale = Math.min(Math.max(width / 402, 0.9), 1.1);
   const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
-  const mediumVisibleHeight = Math.round(378 * designScale) + SHEET_RESTING_GAP;
+  const mediumVisibleHeight = Math.round(418 * designScale) + SHEET_RESTING_GAP;
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
   const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
