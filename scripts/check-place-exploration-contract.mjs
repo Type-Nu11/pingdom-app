@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 const contractPath = new URL('../docs/api/place-exploration.openapi.json', import.meta.url);
 const document = JSON.parse(await readFile(contractPath, 'utf8'));
 const expectedOperations = new Map([
+  ['/places', ['get', 'listPlaces']],
+  ['/places/autocomplete', ['get', 'autocompletePlaces']],
   ['/places/map', ['get', 'mapViewport']],
   ['/places/{placeId}/card', ['get', 'getTouristPlaceCard']],
   ['/places/{placeId}/visit-decision', ['get', 'getPlaceVisitDecision']],
@@ -26,7 +28,7 @@ if (!/^[a-f0-9]{64}$/.test(document['x-source']?.sha256 ?? '')) {
 const actualPaths = Object.keys(document.paths ?? {}).sort();
 const expectedPaths = [...expectedOperations.keys()].sort();
 if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) {
-  failures.push('scoped contract paths do not match the seven #161 endpoints');
+  failures.push('scoped contract paths do not match the place exploration endpoints');
 }
 
 for (const [path, [method, operationId]] of expectedOperations) {
@@ -59,5 +61,7 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log('Place exploration server snapshot is valid: 7 operations, all references resolved.');
+  console.log(
+    `Place exploration server snapshot is valid: ${expectedOperations.size} operations, all references resolved.`,
+  );
 }
