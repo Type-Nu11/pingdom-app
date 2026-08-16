@@ -87,7 +87,7 @@ async function getPostsForPreviewImages(): Promise<PostsPage> {
   };
 }
 
-export function usePlacePreviewImages(places: PreviewPlace[]) {
+export function usePlacePreviewImages(places: PreviewPlace[], enabled = true) {
   const placeIds = useMemo(
     () => places
       .map((place) => Number(place.id))
@@ -103,7 +103,7 @@ export function usePlacePreviewImages(places: PreviewPlace[]) {
       };
 
       return {
-        enabled: Number.isFinite(placeId),
+        enabled: enabled && Number.isFinite(placeId),
         queryFn: () => recordApi.getPosts(queryParams),
         queryKey: postQueryKeys.place(placeId, queryParams),
         staleTime: 30_000,
@@ -111,6 +111,7 @@ export function usePlacePreviewImages(places: PreviewPlace[]) {
     }),
   });
   const previewPostsQuery = useQuery({
+    enabled,
     queryFn: getPostsForPreviewImages,
     queryKey: PREVIEW_POST_QUERY_KEY,
   });

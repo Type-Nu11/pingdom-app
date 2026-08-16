@@ -27,11 +27,13 @@ import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
+import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
 import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
+import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
 
@@ -215,6 +217,14 @@ export default function MapScreen({
   const favoritePlaces = useMemo(
     () => bookmarkedPlaces.map(toDecisionPlace),
     [bookmarkedPlaces],
+  );
+  const { imageUrlsByPlaceId: favoritePreviewImages } = usePlacePreviewImages(
+    bookmarkedPlaces,
+    canQueryBookmarks && mapSection === 'favorites',
+  );
+  const favoriteImageUrlsByPlaceId = useMemo(
+    () => toFavoritePlaceImageUrls(favoritePreviewImages),
+    [favoritePreviewImages],
   );
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
@@ -436,7 +446,7 @@ export default function MapScreen({
             collapsedTranslateY={collapsedTranslateY}
             hasNextPage={Boolean(hasNextFavoritePage)}
             height={fullSheetHeight}
-            imageUrlsByPlaceId={{}}
+            imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
             isError={isFavoritesError}
             isFetchNextPageError={isFetchNextFavoritePageError}
             isFetchingNextPage={isFetchingNextFavoritePage}
