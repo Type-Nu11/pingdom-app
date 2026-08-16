@@ -179,7 +179,7 @@ const FavoritePlaceRow = ({
           }}
           style={styles.moreButton}
         >
-          <ActiveNavStar />
+          <Text style={styles.moreButtonText}>⋮</Text>
         </Pressable>
       </View>
       <View style={styles.imageRow}>
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
   },
   categoryChipActive: { backgroundColor: 'rgba(255,255,255,0.84)', borderColor: '#FF245B' },
-  categoryContent: { gap: 8, paddingBottom: 12, paddingHorizontal: 16, paddingTop: 10 },
+  categoryContent: { gap: 8, paddingBottom: 12, paddingHorizontal: 6, paddingTop: 10 },
   categoryLabel: { color: '#616169', fontSize: 14, fontWeight: '700' },
   categoryLabelActive: { color: '#FF245B' },
   categoryScroll: { flexGrow: 0, height: 58 },
@@ -483,13 +483,14 @@ const styles = StyleSheet.create({
   imagePlaceholder: { alignItems: 'center', backgroundColor: '#E7E7EA', justifyContent: 'center' },
   imageRow: { borderRadius: 15, flexDirection: 'row', height: 120, overflow: 'hidden' },
   list: { flex: 1 },
-  listContent: { paddingBottom: 116, paddingHorizontal: 16 },
+  listContent: { paddingBottom: 116, paddingHorizontal: 6 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 182, marginBottom: 0 },
   loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#FF1956', borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
   loadMoreError: { color: '#777982', fontSize: 13 },
   loadMoreState: { alignItems: 'center', gap: 8 },
   moreButton: { alignItems: 'center', height: 30, justifyContent: 'center', width: 24 },
+  moreButtonText: { color: '#3B3B40', fontSize: 22, lineHeight: 24 },
   nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5 },
   navItem: { alignItems: 'center', borderRadius: 27, flex: 1, gap: 3, height: 54, justifyContent: 'center' },
   navItemActive: { backgroundColor: 'rgba(255,255,255,0.58)', borderColor: 'rgba(255,255,255,0.78)', borderWidth: 1 },
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
   navigationBar: { backgroundColor: 'rgba(238,238,242,0.34)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 32, borderWidth: 1, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 5 },
   navigationBarSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
-  navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
+  navigationRow: { flexDirection: 'row', gap: 12, left: 6, position: 'absolute', right: 16 },
   navigationShadow: { backgroundColor: 'rgba(238,238,242,0.12)', borderRadius: 32, elevation: 2, flex: 1, shadowColor: '#11151B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 10 },
   placeCategory: { color: '#64666E', fontSize: 12 },
   placeHeading: { alignItems: 'center', flexDirection: 'row', marginBottom: 9 },
@@ -517,5 +518,5 @@ const styles = StyleSheet.create({
   sheetInner: { flex: 1, overflow: 'hidden' },
   sheetTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(250,250,251,0.92)' },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
+  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 6 },
 });
