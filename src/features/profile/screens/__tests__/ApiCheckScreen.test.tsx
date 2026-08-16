@@ -13,6 +13,11 @@ import {
   useResendVerificationEmail,
 } from '../../../../v2/features/auth';
 import {
+  useClearCurrentActivityIntent,
+  useCurrentActivityIntent,
+  useReplaceCurrentActivityIntent,
+} from '../../../../v2/features/current-activity-intent';
+import {
   useDeleteFcmToken,
   useNotificationSettings,
   useRegisterFcmToken,
@@ -59,6 +64,20 @@ jest.mock('../../../../v2/features/notifications', () => ({
   useUpdateNotificationSettings: jest.fn(),
 }));
 
+jest.mock('../../../../v2/features/current-activity-intent', () => ({
+  ACTIVITY_INTENT_VALUES: [
+    'EXPLORE',
+    'EAT',
+    'CAFE',
+    'SHOP',
+    'ATTEND_EVENT',
+    'NIGHTLIFE',
+  ],
+  useClearCurrentActivityIntent: jest.fn(),
+  useCurrentActivityIntent: jest.fn(),
+  useReplaceCurrentActivityIntent: jest.fn(),
+}));
+
 jest.mock('../../../../v2/features/travel-purposes', () => ({
   TRAVEL_PURPOSE_MAX_SELECTIONS: 9,
   TRAVEL_PURPOSE_VALUES: [
@@ -100,6 +119,9 @@ const mockUseDeleteFcmToken = jest.mocked(useDeleteFcmToken);
 const mockUseNotificationSettings = jest.mocked(useNotificationSettings);
 const mockUseRegisterFcmToken = jest.mocked(useRegisterFcmToken);
 const mockUseUpdateNotificationSettings = jest.mocked(useUpdateNotificationSettings);
+const mockUseCurrentActivityIntent = jest.mocked(useCurrentActivityIntent);
+const mockUseReplaceCurrentActivityIntent = jest.mocked(useReplaceCurrentActivityIntent);
+const mockUseClearCurrentActivityIntent = jest.mocked(useClearCurrentActivityIntent);
 const mockGetCurrentFcmToken = jest.mocked(getCurrentFcmToken);
 
 function mutationResult(mutate = jest.fn()) {
@@ -165,6 +187,20 @@ describe('ApiCheckScreen', () => {
       isFetching: false,
       refetch: jest.fn(),
     } as unknown as ReturnType<typeof useNotificationSettings>);
+    mockUseCurrentActivityIntent.mockReturnValue({
+      data: { expiresAt: null, intent: null },
+      error: null,
+      isError: false,
+      isPending: false,
+      isSuccess: true,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useCurrentActivityIntent>);
+    mockUseReplaceCurrentActivityIntent.mockReturnValue(
+      mutationResult() as unknown as ReturnType<typeof useReplaceCurrentActivityIntent>,
+    );
+    mockUseClearCurrentActivityIntent.mockReturnValue(
+      mutationResult() as unknown as ReturnType<typeof useClearCurrentActivityIntent>,
+    );
   });
 
   test('GET 결과를 복원하고 변경된 선택을 PUT body로 전달한다', async () => {
@@ -192,6 +228,50 @@ describe('ApiCheckScreen', () => {
     await user.press(screen.getByRole('button', { name: 'PUT 저장하기' }));
 
     expect(mutate).toHaveBeenCalledWith({ travelPurposes: ['K_POP', 'FOOD'] });
+  });
+
+  test('현재 행동 의도를 조회하고 PUT 변경 및 DELETE 해제를 실행한다', async () => {
+    const replaceIntent = jest.fn();
+    const clearIntent = jest.fn();
+    mockUseTravelPurposes.mockReturnValue({
+      data: { travelPurposes: [] },
+      isError: false,
+      isPending: false,
+      isSuccess: true,
+    } as unknown as ReturnType<typeof useTravelPurposes>);
+    mockUseReplaceTravelPurposes.mockReturnValue(
+      mutationResult() as unknown as ReturnType<typeof useReplaceTravelPurposes>,
+    );
+    mockUseCurrentActivityIntent.mockReturnValue({
+      data: { expiresAt: '2026-08-13T06:00:00Z', intent: 'CAFE' },
+      error: null,
+      isError: false,
+      isPending: false,
+      isSuccess: true,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useCurrentActivityIntent>);
+    mockUseReplaceCurrentActivityIntent.mockReturnValue(
+      mutationResult(replaceIntent) as unknown as ReturnType<
+        typeof useReplaceCurrentActivityIntent
+      >,
+    );
+    mockUseClearCurrentActivityIntent.mockReturnValue(
+      mutationResult(clearIntent) as unknown as ReturnType<typeof useClearCurrentActivityIntent>,
+    );
+
+    await render(<ApiCheckScreen onBack={jest.fn()} />);
+    const user = userEvent.setup();
+
+    expect(screen.getByText('현재 행동 의도 API · #164')).toBeVisible();
+    expect(screen.getByText('GET 200 조회 성공')).toBeVisible();
+    expect(screen.getByText(/2026-08-13T06:00:00Z/)).toBeVisible();
+
+    await user.press(screen.getByRole('button', { name: 'SHOP' }));
+    await user.press(screen.getByRole('button', { name: '행동 의도 PUT 변경' }));
+    await user.press(screen.getByRole('button', { name: '행동 의도 DELETE 해제' }));
+
+    expect(replaceIntent).toHaveBeenCalledWith({ intent: 'SHOP' });
+    expect(clearIntent).toHaveBeenCalledWith();
   });
 
   test('endpoint를 선택하면 임시 nested route로 이동하고 목록으로 돌아온다', async () => {

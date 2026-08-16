@@ -35,6 +35,14 @@ test('place exploration API uses current server paths, identifiers, viewport par
   };
 
   const results = await Promise.all([
+    api.getPlaces({
+      keyword: ' cafe ', category: 'CAFE', latitude: 37.5, longitude: 127,
+      radiusKm: 3, sort: 'NEAREST', ignoredRuntimeField: 'must-not-reach-server',
+    }, signal),
+    api.autocompletePlaces({
+      keyword: ' cafe ', latitude: 37.5, longitude: 127,
+      ignoredRuntimeField: 'must-not-reach-server',
+    }, signal),
     api.getMapViewport(viewport, signal),
     api.getPlaceCard(17, signal),
     api.getPlaceVisitDecision(17, signal),
@@ -46,6 +54,8 @@ test('place exploration API uses current server paths, identifiers, viewport par
 
   assert.ok(results.every((result) => result === response));
   assert.deepEqual(calls.map(({ method, path }) => `${method} ${path}`), [
+    'GET /places',
+    'GET /places/autocomplete',
     'GET /places/map',
     'GET /places/17/card',
     'GET /places/17/visit-decision',
@@ -55,6 +65,22 @@ test('place exploration API uses current server paths, identifiers, viewport par
     'POST /places/17/map-link-conversions',
   ]);
   assert.deepEqual(calls[0].options.params, {
+    page: 1,
+    limit: 100,
+    keyword: 'cafe',
+    category: 'CAFE',
+    latitude: 37.5,
+    longitude: 127,
+    radiusKm: 3,
+    sort: 'NEAREST',
+  });
+  assert.deepEqual(calls[1].options.params, {
+    keyword: 'cafe',
+    limit: 10,
+    latitude: 37.5,
+    longitude: 127,
+  });
+  assert.deepEqual(calls[2].options.params, {
     west: viewport.west,
     south: viewport.south,
     east: viewport.east,
@@ -62,5 +88,5 @@ test('place exploration API uses current server paths, identifiers, viewport par
     zoom: viewport.zoom,
   });
   assert.ok(calls.every(({ options }) => options.signal === signal));
-  assert.equal(calls[6].body, conversion);
+  assert.equal(calls[8].body, conversion);
 });

@@ -1,19 +1,15 @@
-import type { components } from '../../../generated/account';
+import type { components } from '../../../generated/currentActivityIntent';
 
-type ExportCurrentActivityIntent = NonNullable<
-  components['schemas']['ExportCurrentActivityIntentResponse']
->;
-type CurrentActivityIntent = {
-  expiresAt?: ExportCurrentActivityIntent['expiresAt'] | null;
-  intent?: ExportCurrentActivityIntent['intent'] | null;
-};
+type CurrentActivityIntentResponse =
+  components['schemas']['CurrentActivityIntentResponse'];
 
+/** Synthetic values only. */
 export const currentActivityIntentFixture = {
-  expiresAt: '2026-08-13T18:00:00Z',
+  expiresAt: '2026-08-11T14:00:00Z',
   intent: 'CAFE',
-} satisfies CurrentActivityIntent;
+} satisfies CurrentActivityIntentResponse;
 
 export const emptyCurrentActivityIntentFixture = {
   expiresAt: null,
   intent: null,
-} satisfies CurrentActivityIntent;
+} satisfies CurrentActivityIntentResponse;

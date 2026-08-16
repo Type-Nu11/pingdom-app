@@ -38,7 +38,6 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
       } : null}
       openedBookmarkedPlaceId={focusedPlaceId ?? null}
       onClearOpenedBookmarkedPlace={clearFocusedPlace}
-      onCreatePlace={() => navigation.navigate(MAIN_ROUTES.PlaceCreate)}
       onOpenPlaceDetail={(value) => {
         const placeId = parsePlaceId(value);
         if (placeId) {

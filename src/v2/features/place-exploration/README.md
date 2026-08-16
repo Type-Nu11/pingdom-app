@@ -1,12 +1,13 @@
 # Place exploration API boundary
 
-This feature connects the seven server endpoints in issue #161 without changing the map UI or the
-native Kakao bridge. Data flows from a screen to the exported hooks, then through
+This feature connects the server place-exploration endpoints without changing the native Kakao
+bridge. Data flows from a screen to the exported hooks, then through
 `placeExplorationApi` and the shared `apiClient`.
 
 ## Cache policy
 
 - All place data is rooted at `['v2', 'places']`.
+- Lists and autocomplete results are cached independently by normalized query parameters.
 - Viewports are cached by the exact generated `west`, `south`, `east`, `north`, and `zoom` object.
 - Detail, card, visit decision, operating notices, and verification media share the same place
   entity prefix but keep distinct leaf keys because the server returns different DTOs.
@@ -19,3 +20,6 @@ native Kakao bridge. Data flows from a screen to the exported hooks, then throug
 
 All query functions forward TanStack Query's `AbortSignal`. The conversion mutation accepts an
 optional signal in its variables for callers that own a navigation or link-opening lifecycle.
+
+Mock responses are selected only when `EXPO_PUBLIC_API_MODE=mock`. Real mode never falls back to
+fixtures after a server error, so loading, empty, and error UI reflects the real request outcome.

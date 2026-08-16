@@ -1,48 +1,94 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useBookmarkedPosts } from '../../record/hooks/usePostBookmark';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { placeApi } from '../api/placeApi';
 
-const BOOKMARKED_PLACES_PAGE_SIZE = 100;
+export const BOOKMARKED_PLACES_PAGE_SIZE = 20;
 
 export const bookmarkedPlaceQueryKeys = {
-  all: ['bookmarkedPlaces'] as const,
+  all: ['placeBookmarks'] as const,
   list: () => [...bookmarkedPlaceQueryKeys.all, 'list'] as const,
+  membership: () => [...bookmarkedPlaceQueryKeys.all, 'membership'] as const,
+};
+
+export function isBookmarkAuthenticationError(error: unknown) {
+  return axios.isAxiosError(error) && error.response?.status === 401;
+}
+
+export async function getBookmarkedPlaceMembership() {
+  const bookmarkedPlaceIds: Record<string, boolean> = {};
+  let page = 1;
+
+  while (true) {
+    const response = await placeApi.getBookmarkedPlaces({
+      limit: BOOKMARKED_PLACES_PAGE_SIZE,
+      page,
+    });
+
+    response.places.forEach((place) => {
+      bookmarkedPlaceIds[String(place.id)] = true;
+    });
+
+    if (!response.hasNext || page >= response.totalPages) break;
+    page += 1;
+  }
+
+  return bookmarkedPlaceIds;
+}
+
+export const useBookmarkedPlaceMembership = (enabled = true) => {
+  const membershipQuery = useQuery({
+    enabled,
+    queryFn: getBookmarkedPlaceMembership,
+    queryKey: bookmarkedPlaceQueryKeys.membership(),
+    retry: (failureCount, error) => (
+      !isBookmarkAuthenticationError(error) && failureCount < 1
+    ),
+  });
+
+  return {
+    bookmarkedPlaceIds: membershipQuery.data ?? {},
+    error: membershipQuery.error,
+    isError: membershipQuery.isError,
+    isLoading: membershipQuery.isLoading,
+    isUnauthorized: isBookmarkAuthenticationError(membershipQuery.error),
+    refetch: membershipQuery.refetch,
+  };
 };
 
 export const useBookmarkedPlaces = (enabled = true) => {
-  const placesQuery = useQuery({
+  const placesQuery = useInfiniteQuery({
     enabled,
-    queryFn: () => placeApi.getBookmarkedPlaces({ limit: BOOKMARKED_PLACES_PAGE_SIZE }),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => placeApi.getBookmarkedPlaces({
+      limit: BOOKMARKED_PLACES_PAGE_SIZE,
+      page: pageParam,
+    }),
     queryKey: bookmarkedPlaceQueryKeys.list(),
+    retry: (failureCount, error) => (
+      !isBookmarkAuthenticationError(error) && failureCount < 1
+    ),
+    getNextPageParam: (lastPage) => (
+      lastPage.hasNext && lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined
+    ),
   });
-  const postsQuery = useBookmarkedPosts({ enabled });
-  const imageUrlsByPlaceId = useMemo(() => (
-    postsQuery.posts.reduce<Record<string, string[]>>((acc, post) => {
-      const imageUrl = post.imageUrl?.trim();
-      // Server-provided image values are treated as remote URLs only. This prevents
-      // file/content URI schemes from being handed to the native image loader.
-      if (!imageUrl || !/^https:\/\//i.test(imageUrl)) return acc;
-
-      const key = String(post.placeId);
-      const current = acc[key] ?? [];
-      if (!current.includes(imageUrl)) current.push(imageUrl);
-      acc[key] = current;
-      return acc;
-    }, {})
-  ), [postsQuery.posts]);
-
-  const refetch = async () => {
-    await Promise.all([placesQuery.refetch(), postsQuery.refetch()]);
-  };
-
+  const places = useMemo(
+    () => placesQuery.data?.pages.flatMap((page) => page.places) ?? [],
+    [placesQuery.data?.pages],
+  );
   return {
-    bookmarkedPlaceIds: postsQuery.bookmarkedPlaceIds,
-    imageUrlsByPlaceId,
-    isError: placesQuery.isError || postsQuery.isError,
-    isLoading: placesQuery.isLoading || postsQuery.isLoading,
-    places: placesQuery.data?.places ?? [],
-    refetch,
+    error: placesQuery.error,
+    fetchNextPage: placesQuery.fetchNextPage,
+    hasNextPage: placesQuery.hasNextPage,
+    isError: placesQuery.isError,
+    isFetchNextPageError: placesQuery.isFetchNextPageError,
+    isFetchingNextPage: placesQuery.isFetchingNextPage,
+    isLoading: placesQuery.isLoading,
+    isUnauthorized: isBookmarkAuthenticationError(placesQuery.error),
+    places,
+    refetch: placesQuery.refetch,
   };
 };
 

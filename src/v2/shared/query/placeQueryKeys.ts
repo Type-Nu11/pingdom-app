@@ -3,6 +3,9 @@ export const placeQueryKeys = {
   lists: () => [...placeQueryKeys.all, 'list'] as const,
   list: <TParams extends object>(params: TParams) =>
     [...placeQueryKeys.lists(), params] as const,
+  autocompletes: () => [...placeQueryKeys.all, 'autocomplete'] as const,
+  autocomplete: <TParams extends object>(params: TParams) =>
+    [...placeQueryKeys.autocompletes(), params] as const,
   maps: () => [...placeQueryKeys.all, 'map'] as const,
   map: <TParams extends object>(params: TParams) =>
     [...placeQueryKeys.maps(), params] as const,

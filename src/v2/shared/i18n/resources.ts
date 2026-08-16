@@ -62,6 +62,28 @@ export const resources = {
         trustScore: 'Trust score: {{score}}/100',
       },
       map: {
+        card: {
+          closed: 'Closed now',
+          error: 'Could not load this place.',
+          open: 'Open now',
+          statusUnknown: 'Status unknown',
+        },
+        data: {
+          emptyDescription: 'Move the map or change the search filters.',
+          emptyTitle: 'No places in this area',
+          errorDescription: 'Check your connection and try again.',
+          errorTitle: 'Could not load places',
+          loading: 'Loading places...',
+          retry: 'Try again',
+        },
+        distanceMeters: '{{count}} m',
+        filters: {
+          all: 'All',
+          cafe: 'Cafe',
+          fashion: 'Fashion',
+          food: 'Food',
+          music: 'Music',
+        },
         locate: 'My location',
         location: {
           deniedDescription: 'The map is using a default area. Allow location access to show your position.',
@@ -72,7 +94,10 @@ export const resources = {
           openSettings: 'Open settings',
           retry: 'Check again',
         },
-        testPlace: 'Test place',
+        search: {
+          accessibilityLabel: 'Search places on the map',
+          placeholder: 'Search places',
+        },
         title: 'Nearby map',
         visibleCenter: '{{lat}}, {{lng}}',
       },
@@ -175,6 +200,28 @@ export const resources = {
         trustScore: '신뢰 점수: {{score}}/100',
       },
       map: {
+        card: {
+          closed: '영업 종료',
+          error: '장소 정보를 불러오지 못했습니다.',
+          open: '영업 중',
+          statusUnknown: '영업 상태 미확인',
+        },
+        data: {
+          emptyDescription: '지도를 이동하거나 검색 필터를 바꿔 보세요.',
+          emptyTitle: '이 지역에 장소가 없습니다',
+          errorDescription: '네트워크를 확인한 후 다시 시도해 주세요.',
+          errorTitle: '장소를 불러오지 못했습니다',
+          loading: '장소를 불러오는 중입니다...',
+          retry: '다시 시도',
+        },
+        distanceMeters: '{{count}}m',
+        filters: {
+          all: '전체',
+          cafe: '카페',
+          fashion: '패션',
+          food: '음식',
+          music: '음악',
+        },
         locate: '내 위치',
         location: {
           deniedDescription: '기본 지역을 표시하고 있습니다. 현재 위치를 보려면 위치 권한을 허용해 주세요.',
@@ -185,7 +232,10 @@ export const resources = {
           openSettings: '설정 열기',
           retry: '다시 확인',
         },
-        testPlace: '테스트 장소',
+        search: {
+          accessibilityLabel: '지도 장소 검색',
+          placeholder: '장소를 검색하세요',
+        },
         title: '주변 지도',
         visibleCenter: '{{lat}}, {{lng}}',
       },

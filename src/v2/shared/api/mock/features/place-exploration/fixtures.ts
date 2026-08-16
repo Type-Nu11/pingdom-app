@@ -1,5 +1,21 @@
 import type { PlaceExplorationSchema } from '../../../placeExplorationContract';
 
+export const placeAutocompleteFixture = {
+  keyword: 'PingDom',
+  limit: 10,
+  totalCount: 1,
+  places: [{
+    id: 17,
+    name: 'PingDom Test Place',
+    address: 'Jinju-si',
+    roadAddress: null,
+    category: 'CAFE',
+    latitude: 35.18,
+    longitude: 128.1,
+    distanceMeters: 128,
+  }],
+} satisfies PlaceExplorationSchema<'PlaceAutocompleteResponse'>;
+
 export const mapViewportFixture = {
   mode: 'MARKERS',
   zoom: 15,
@@ -94,12 +110,32 @@ export const visitDecisionFixture = {
   place: {
     id: 17,
     name: 'PingDom Test Place',
+    englishName: 'PingDom Test Place',
     address: 'Jinju-si',
+    roadAddress: null,
+    jibunAddress: null,
+    postalCode: null,
+    geocodingSource: 'KAKAO',
+    operatingStatus: 'OPERATING',
+    operatingStatusCheckedAt: '2026-08-11T03:00:00Z',
+    currentlyOperating: true,
+    currentlyOperatingCheckedAt: '2026-08-11T03:00:00Z',
     regularHours: [],
     operatingExceptions: [],
     activeOperatingNotices: operatingNoticesFixture.notices,
+    touristSummary: 'Synthetic place used by the V2 mock transport.',
+    touristCategories: ['CAFE'],
+    primaryInformationSource: 'ADMIN',
+    informationVerificationStatus: 'ADMIN_VERIFIED',
+    informationVerifiedAt: '2026-08-10T03:00:00Z',
+    informationEvidenceUpdatedAt: '2026-08-10T03:00:00Z',
+    verifiedEvidenceCount: 1,
+    lastVerifiedAt: '2026-08-10T03:00:00Z',
+    lastVerifiedSourceType: 'ADMIN',
     latitude: 35.18,
     longitude: 128.1,
+    registrant: 'mock-user',
+    merchantOwner: null,
   },
   merchantInformation: null,
   ongoingEvents: [],
@@ -116,6 +152,7 @@ export const visitDecisionFixture = {
 } satisfies PlaceExplorationSchema<'PlaceVisitDecisionResponse'>;
 
 export const emptyPlaceExplorationFixtures = {
+  autocomplete: { ...placeAutocompleteFixture, places: [], totalCount: 0 },
   mapViewport: { ...mapViewportFixture, clusters: [], markers: [] },
   operatingNotices: { ...operatingNoticesFixture, notices: [] },
   verificationMedia: { ...verificationMediaFixture, media: [] },

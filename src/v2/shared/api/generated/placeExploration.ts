@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/places": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 장소 목록 조회
+         * @description 앱에서 사용할 장소 목록을 조회합니다.
+         */
+        get: operations["listPlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/places/autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 장소 검색 자동완성
+         * @description 검색어 입력 중 장소 후보를 자동완성으로 조회합니다.
+         */
+        get: operations["autocompletePlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/places/map": {
         parameters: {
             query?: never;
@@ -133,6 +173,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * 지도 링크 전환 기록
+         * @description 같은 사용자·장소·전환 유형에서 requestId가 같은 재시도는 중복 집계하지 않고 204를 반환합니다.
+         */
         post: operations["record"];
         delete?: never;
         options?: never;
@@ -170,48 +214,67 @@ export interface components {
              * @description 에러 메시지
              * @example 유효하지 않은 토큰입니다.
              */
-            message?: string;
+            message: string;
             /**
-             * @description 에러 코드
+             * @description 도메인 에러 코드. 일부 공통 검증 오류에서는 제공되지 않을 수 있습니다.
              * @example INVALID_TOKEN
              */
-            code?: string;
+            code?: string | null;
         };
         MapClusterItem: {
-            clusterId?: string;
+            clusterId: string;
             /** Format: double */
-            latitude?: number;
+            latitude: number;
             /** Format: double */
-            longitude?: number;
+            longitude: number;
             /** Format: int64 */
-            placeCount?: number;
+            placeCount: number;
         };
         MapLinkConversionRequest: {
-            /** @enum {string} */
+            /**
+             * @description 지도 링크 전환 유형
+             * @enum {string}
+             */
             linkType: "DIRECTIONS" | "EXTERNAL_MAP";
+            /**
+             * @description 지도 제공자
+             * @example KAKAO
+             */
             provider: string;
+            /**
+             * @description 같은 사용자·장소·전환 유형의 재시도에서 재사용하는 멱등성 식별자
+             * @example 9f7263d5-65f1-4834-9ca3-86ad2fc4e7d0
+             */
             requestId: string;
         };
         MapMarkerItem: {
             /** Format: int64 */
-            placeId?: number;
-            name?: string;
-            category?: string;
-            imageUrl?: string;
+            placeId: number;
+            name: string;
+            category: string | null;
+            imageUrl: string | null;
             /** Format: double */
-            latitude?: number;
+            latitude: number;
             /** Format: double */
-            longitude?: number;
+            longitude: number;
             /** Format: int64 */
-            photoCount?: number;
+            photoCount: number;
         };
         MapViewportResponse: {
-            mode?: string;
-            /** Format: int32 */
-            zoom?: number;
-            clusters?: components["schemas"]["MapClusterItem"][];
-            markers?: components["schemas"]["MapMarkerItem"][];
-            truncated?: boolean;
+            /**
+             * @description zoom에 따른 응답 표현 방식
+             * @enum {string}
+             */
+            mode: "MARKERS" | "CLUSTERS";
+            /**
+             * Format: int32
+             * @description 요청한 지도 zoom 단계
+             */
+            zoom: number;
+            clusters: components["schemas"]["MapClusterItem"][];
+            markers: components["schemas"]["MapMarkerItem"][];
+            /** @description 최대 500개 결과로 잘렸는지 여부 */
+            truncated: boolean;
         };
         /** @description 장소에 연결된 Merchant Owner 공개 프로필 */
         MerchantOwnerPublicResponse: {
@@ -282,8 +345,7 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
         };
-        /** @description 장소 상세 조회 응답 */
-        PlaceDetailResponse: {
+        PlaceAutocompleteItem: {
             /** Format: int64 */
             id?: number;
             name?: string;
@@ -298,12 +360,93 @@ export interface components {
             operatingStatus?: "OPERATING" | "TEMPORARILY_CLOSED" | "PERMANENTLY_CLOSED";
             /** Format: date-time */
             operatingStatusCheckedAt?: string | null;
-            currentlyOperating?: boolean;
+            category?: string;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
+            /** Format: double */
+            distanceMeters?: number;
+        };
+        PlaceAutocompleteResponse: {
+            keyword?: string;
+            /** Format: int32 */
+            limit?: number;
+            /** Format: int32 */
+            totalCount?: number;
+            places?: components["schemas"]["PlaceAutocompleteItem"][];
+        };
+        /** @description 장소 상세 조회 응답 */
+        PlaceDetailResponse: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            englishName: string | null;
+            address: string;
+            roadAddress: string | null;
+            jibunAddress: string | null;
+            postalCode: string | null;
+            /** @enum {string} */
+            geocodingSource: "KAKAO" | "USER_PIN" | "ADMIN" | "LEGACY";
+            /** @enum {string} */
+            operatingStatus: "OPERATING" | "TEMPORARILY_CLOSED" | "PERMANENTLY_CLOSED";
             /** Format: date-time */
-            currentlyOperatingCheckedAt?: string;
-            regularHours?: components["schemas"]["PlaceRegularOperatingHourResponse"][];
-            operatingExceptions?: components["schemas"]["PlaceOperatingExceptionResponse"][];
-            activeOperatingNotices?: components["schemas"]["PlaceOperatingNoticeResponse"][];
+            operatingStatusCheckedAt: string | null;
+            currentlyOperating: boolean;
+            /** Format: date-time */
+            currentlyOperatingCheckedAt: string;
+            regularHours: components["schemas"]["PlaceRegularOperatingHourResponse"][];
+            operatingExceptions: components["schemas"]["PlaceOperatingExceptionResponse"][];
+            activeOperatingNotices: components["schemas"]["PlaceOperatingNoticeResponse"][];
+            touristSummary: string | null;
+            touristCategories: ("K_POP" | "BEAUTY" | "FASHION" | "CAFE" | "FOOD" | "POP_UP" | "EXHIBITION" | "NIGHTLIFE" | "OTHER")[];
+            /** @enum {string} */
+            primaryInformationSource: "LEGACY" | "KAKAO" | "MERCHANT_OWNER" | "ADMIN" | "USER_REPORT" | "SYSTEM";
+            /** @enum {string} */
+            informationVerificationStatus: "UNVERIFIED" | "SOURCE_CONFIRMED" | "OWNER_SUBMITTED" | "ADMIN_VERIFIED" | "REJECTED" | "DISPUTED" | "EXPIRED";
+            /** Format: date-time */
+            informationVerifiedAt: string | null;
+            /** Format: date-time */
+            informationEvidenceUpdatedAt: string | null;
+            /**
+             * Format: int32
+             * @description 검증 완료된 근거 수
+             * @example 3
+             */
+            verifiedEvidenceCount: number;
+            /**
+             * Format: date-time
+             * @description 가장 최근 검증이 완료된 시각
+             */
+            lastVerifiedAt: string | null;
+            /**
+             * @description 가장 최근 검증 근거의 출처
+             * @enum {string|null}
+             */
+            lastVerifiedSourceType: "LEGACY" | "KAKAO" | "MERCHANT_OWNER" | "ADMIN" | "USER_REPORT" | "SYSTEM" | null;
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            registrant: string;
+            merchantOwner: components["schemas"]["MerchantOwnerPublicResponse"];
+        };
+        PlaceListItem: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            englishName?: string | null;
+            address?: string;
+            roadAddress?: string | null;
+            jibunAddress?: string | null;
+            postalCode?: string | null;
+            /** @enum {string} */
+            geocodingSource?: "KAKAO" | "USER_PIN" | "ADMIN" | "LEGACY";
+            /** @enum {string} */
+            operatingStatus?: "OPERATING" | "TEMPORARILY_CLOSED" | "PERMANENTLY_CLOSED";
+            /** Format: date-time */
+            operatingStatusCheckedAt?: string | null;
+            category?: string;
             touristSummary?: string | null;
             touristCategories?: ("K_POP" | "BEAUTY" | "FASHION" | "CAFE" | "FOOD" | "POP_UP" | "EXHIBITION" | "NIGHTLIFE" | "OTHER")[];
             /** @enum {string} */
@@ -334,35 +477,48 @@ export interface components {
             latitude?: number;
             /** Format: double */
             longitude?: number;
-            registrant?: string;
-            merchantOwner?: components["schemas"]["MerchantOwnerPublicResponse"];
+            /** Format: int64 */
+            distanceMeters?: number;
+        };
+        /** @description 장소 목록 조회 응답 */
+        PlaceListResponse: {
+            places?: components["schemas"]["PlaceListItem"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            limit?: number;
+            /** Format: int64 */
+            totalCount?: number;
+            /** Format: int64 */
+            totalPages?: number;
+            hasNext?: boolean;
         };
         /** @description 장소 미디어 항목 */
         PlaceMediaItem: {
             /** Format: int64 */
-            id?: number;
+            id: number;
             /** Format: int64 */
-            placeId?: number;
+            placeId: number;
             /** @enum {string} */
-            purpose?: "VERIFICATION" | "EXPLORATION";
-            imageUrl?: string;
-            s3Key?: string | null;
-            thumbnailUrl?: string | null;
-            thumbnailS3Key?: string | null;
+            purpose: "VERIFICATION" | "EXPLORATION";
+            imageUrl: string;
+            s3Key: string | null;
+            thumbnailUrl: string | null;
+            thumbnailS3Key: string | null;
             /** Format: int64 */
-            sourceMapImageId?: number | null;
+            sourceMapImageId: number | null;
             /** Format: int32 */
-            displayOrder?: number;
+            displayOrder: number;
             /** Format: date-time */
-            createdAt?: string;
+            createdAt: string;
             /** Format: date-time */
-            updatedAt?: string;
+            updatedAt: string;
         };
         /** @description 장소 미디어 목록 응답 */
         PlaceMediaResponse: {
             /** Format: int64 */
-            placeId?: number;
-            media?: components["schemas"]["PlaceMediaItem"][];
+            placeId: number;
+            media: components["schemas"]["PlaceMediaItem"][];
         };
         /** @description 특정 날짜의 휴무 또는 대체 영업 시간 */
         PlaceOperatingExceptionResponse: {
@@ -378,35 +534,35 @@ export interface components {
         /** @description 상점 운영 상태 공지 목록 응답 */
         PlaceOperatingNoticeListResponse: {
             /** Format: int64 */
-            placeId?: number;
-            currentlyOperating?: boolean;
+            placeId: number;
+            currentlyOperating: boolean;
             /** Format: date-time */
-            checkedAt?: string;
-            notices?: components["schemas"]["PlaceOperatingNoticeResponse"][];
+            checkedAt: string;
+            notices: components["schemas"]["PlaceOperatingNoticeResponse"][];
         };
         /** @description 상점 운영 상태 공지 응답 */
         PlaceOperatingNoticeResponse: {
             /** Format: int64 */
-            id?: number;
+            id: number;
             /** Format: int64 */
-            placeId?: number;
+            placeId: number;
             /** @enum {string} */
-            noticeType?: "TEMPORARY_CLOSURE" | "HOURS_CHANGE" | "CROWDING" | "REOPENING" | "GENERAL";
+            noticeType: "TEMPORARY_CLOSURE" | "HOURS_CHANGE" | "CROWDING" | "REOPENING" | "GENERAL";
             /** @enum {string} */
-            severity?: "INFO" | "WARNING" | "CRITICAL";
+            severity: "INFO" | "WARNING" | "CRITICAL";
             /** @enum {string} */
-            status?: "SCHEDULED" | "ACTIVE" | "EXPIRED" | "CANCELED";
-            message?: string;
+            status: "SCHEDULED" | "ACTIVE" | "EXPIRED" | "CANCELED";
+            message: string;
             /** Format: date-time */
-            startsAt?: string;
+            startsAt: string;
             /** Format: date-time */
-            expiresAt?: string;
+            expiresAt: string;
             /** Format: date-time */
-            expiredAt?: string | null;
+            expiredAt: string | null;
             /** Format: date-time */
-            canceledAt?: string | null;
-            cancelReason?: string | null;
-            visibleNow?: boolean;
+            canceledAt: string | null;
+            cancelReason: string | null;
+            visibleNow: boolean;
         };
         /** @description 하루 중 장소 운영 시간대 */
         PlaceOperatingTimeRangeResponse: {
@@ -442,7 +598,7 @@ export interface components {
             ranking?: number;
             /**
              * @description 후보 소스
-             * @example PERSONALIZED
+             * @example PERSONAL
              * @enum {string}
              */
             source?: "PERSONAL" | "POPULAR" | "FRESH" | "GEO" | "FALLBACK";
@@ -562,87 +718,87 @@ export interface components {
         /** @description 방문 결정 화면에 노출하는 진행 중 장소 이벤트 */
         PlaceVisitDecisionEventResponse: {
             /** Format: int64 */
-            eventId?: number;
-            title?: string;
-            description?: string | null;
+            eventId: number;
+            title: string;
+            description: string | null;
             /** @enum {string} */
-            eventType?: "POP_UP" | "PERFORMANCE" | "EXHIBITION";
+            eventType: "POP_UP" | "PERFORMANCE" | "EXHIBITION";
             /** Format: date-time */
-            startAt?: string;
+            startAt: string;
             /** Format: date-time */
-            endAt?: string;
+            endAt: string;
             /** @enum {string} */
-            scheduleStatus?: "UPCOMING" | "ONGOING" | "ENDED";
+            scheduleStatus: "UPCOMING" | "ONGOING" | "ENDED";
         };
         /** @description 관광객에게 공개하는 Merchant 장소 안내 정보 */
         PlaceVisitDecisionMerchantInformationResponse: {
-            description?: string | null;
-            contactPhone?: string | null;
-            websiteUrl?: string | null;
-            reservationUrl?: string | null;
+            description: string | null;
+            contactPhone: string | null;
+            websiteUrl: string | null;
+            reservationUrl: string | null;
             /** Format: date-time */
-            updatedAt?: string;
+            updatedAt: string;
         } | null;
         /** @description 관광객 장소 상세 방문 결정 화면 응답 */
         PlaceVisitDecisionResponse: {
-            place?: components["schemas"]["PlaceDetailResponse"];
-            merchantInformation?: components["schemas"]["PlaceVisitDecisionMerchantInformationResponse"];
-            ongoingEvents?: components["schemas"]["PlaceVisitDecisionEventResponse"][];
-            reservableAvailabilities?: components["schemas"]["AvailabilityResponse"][];
-            availableOffers?: components["schemas"]["OfferPageResponse"];
+            place: components["schemas"]["PlaceDetailResponse"];
+            merchantInformation: components["schemas"]["PlaceVisitDecisionMerchantInformationResponse"];
+            ongoingEvents: components["schemas"]["PlaceVisitDecisionEventResponse"][];
+            reservableAvailabilities: components["schemas"]["AvailabilityResponse"][];
+            availableOffers: components["schemas"]["OfferPageResponse"];
             /**
              * Format: date-time
              * @description 응답의 상태성 데이터를 조회한 시각
              */
-            checkedAt?: string;
+            checkedAt: string;
         };
         /** @description 관광객용 장소 카드 조회 응답 */
         TouristPlaceCardResponse: {
             /** Format: int64 */
-            id?: number;
-            name?: string;
-            englishName?: string | null;
-            imageUrl?: string | null;
-            address?: string;
-            roadAddress?: string | null;
+            id: number;
+            name: string;
+            englishName: string | null;
+            imageUrl: string | null;
+            address: string;
+            roadAddress: string | null;
             /** @enum {string} */
-            geocodingSource?: "KAKAO" | "USER_PIN" | "ADMIN" | "LEGACY";
+            geocodingSource: "KAKAO" | "USER_PIN" | "ADMIN" | "LEGACY";
             /** @enum {string} */
-            operatingStatus?: "OPERATING" | "TEMPORARILY_CLOSED" | "PERMANENTLY_CLOSED";
-            currentlyOperating?: boolean;
+            operatingStatus: "OPERATING" | "TEMPORARILY_CLOSED" | "PERMANENTLY_CLOSED";
+            currentlyOperating: boolean;
             /** Format: date-time */
-            currentlyOperatingCheckedAt?: string;
-            category?: string | null;
-            touristSummary?: string | null;
-            touristCategories?: ("K_POP" | "BEAUTY" | "FASHION" | "CAFE" | "FOOD" | "POP_UP" | "EXHIBITION" | "NIGHTLIFE" | "OTHER")[];
+            currentlyOperatingCheckedAt: string;
+            category: string | null;
+            touristSummary: string | null;
+            touristCategories: ("K_POP" | "BEAUTY" | "FASHION" | "CAFE" | "FOOD" | "POP_UP" | "EXHIBITION" | "NIGHTLIFE" | "OTHER")[];
             /** @enum {string} */
-            primaryInformationSource?: "LEGACY" | "KAKAO" | "MERCHANT_OWNER" | "ADMIN" | "USER_REPORT" | "SYSTEM";
+            primaryInformationSource: "LEGACY" | "KAKAO" | "MERCHANT_OWNER" | "ADMIN" | "USER_REPORT" | "SYSTEM";
             /** @enum {string} */
-            informationVerificationStatus?: "UNVERIFIED" | "SOURCE_CONFIRMED" | "OWNER_SUBMITTED" | "ADMIN_VERIFIED" | "REJECTED" | "DISPUTED" | "EXPIRED";
+            informationVerificationStatus: "UNVERIFIED" | "SOURCE_CONFIRMED" | "OWNER_SUBMITTED" | "ADMIN_VERIFIED" | "REJECTED" | "DISPUTED" | "EXPIRED";
             /** Format: date-time */
-            informationVerifiedAt?: string | null;
+            informationVerifiedAt: string | null;
             /** Format: date-time */
-            informationEvidenceUpdatedAt?: string | null;
+            informationEvidenceUpdatedAt: string | null;
             /**
              * Format: int32
              * @description 검증 완료된 근거 수
              * @example 3
              */
-            verifiedEvidenceCount?: number;
+            verifiedEvidenceCount: number;
             /**
              * Format: date-time
              * @description 가장 최근 검증이 완료된 시각
              */
-            lastVerifiedAt?: string | null;
+            lastVerifiedAt: string | null;
             /**
              * @description 가장 최근 검증 근거의 출처
              * @enum {string|null}
              */
-            lastVerifiedSourceType?: "LEGACY" | "KAKAO" | "MERCHANT_OWNER" | "ADMIN" | "USER_REPORT" | "SYSTEM" | null;
+            lastVerifiedSourceType: "LEGACY" | "KAKAO" | "MERCHANT_OWNER" | "ADMIN" | "USER_REPORT" | "SYSTEM" | null;
             /** Format: double */
-            latitude?: number;
+            latitude: number;
             /** Format: double */
-            longitude?: number;
+            longitude: number;
         };
     };
     responses: never;
@@ -653,13 +809,184 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listPlaces: {
+        parameters: {
+            query?: {
+                /**
+                 * @description 페이지 번호
+                 * @example 1
+                 */
+                page?: number;
+                /**
+                 * @description 페이지 크기
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description 장소명 또는 주소 검색어
+                 * @example 카페
+                 */
+                keyword?: string;
+                /**
+                 * @description 카테고리 필터
+                 * @example 카페
+                 */
+                category?: string;
+                /**
+                 * @description 관광 카테고리 필터
+                 * @example K_POP
+                 */
+                touristCategory?: string;
+                /**
+                 * @description 현재 위도. 거리 검색 시 longitude, radiusKm와 함께 전달합니다.
+                 * @example 35.1801
+                 */
+                latitude?: number;
+                /**
+                 * @description 현재 경도. 거리 검색 시 latitude, radiusKm와 함께 전달합니다.
+                 * @example 128.1078
+                 */
+                longitude?: number;
+                /**
+                 * @description 검색 반경(km). 거리 검색 시 latitude, longitude와 함께 전달합니다.
+                 * @example 3
+                 */
+                radiusKm?: number;
+                /**
+                 * @description 정렬 기준. LATEST, NEAREST 또는 POPULAR
+                 * @example LATEST
+                 */
+                sort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 장소 목록 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceListResponse"];
+                };
+            };
+            /** @description 유효하지 않은 토큰 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "유효하지 않은 토큰입니다.",
+                     *       "code": "INVALID_TOKEN"
+                     *     }
+                     */
+                    "*/*": unknown;
+                };
+            };
+        };
+    };
+    autocompletePlaces: {
+        parameters: {
+            query: {
+                /**
+                 * @description 검색어
+                 * @example 진주
+                 */
+                keyword: string;
+                /**
+                 * @description 최대 반환 개수
+                 * @example 10
+                 */
+                limit?: number;
+                /**
+                 * @description 현재 위도
+                 * @example 35.1801
+                 */
+                latitude?: number;
+                /**
+                 * @description 현재 경도
+                 * @example 128.1078
+                 */
+                longitude?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 장소 자동완성 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceAutocompleteResponse"];
+                };
+            };
+            /** @description 잘못된 요청값 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "latitude와 longitude는 함께 전달해야 합니다."
+                     *     }
+                     */
+                    "*/*": unknown;
+                };
+            };
+            /** @description 유효하지 않은 토큰 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "유효하지 않은 토큰입니다.",
+                     *       "code": "INVALID_TOKEN"
+                     *     }
+                     */
+                    "*/*": unknown;
+                };
+            };
+        };
+    };
     mapViewport: {
         parameters: {
             query: {
+                /**
+                 * @description 서쪽 경도 경계
+                 * @example 128
+                 */
                 west: number;
+                /**
+                 * @description 남쪽 위도 경계
+                 * @example 35
+                 */
                 south: number;
+                /**
+                 * @description 동쪽 경도 경계
+                 * @example 129
+                 */
                 east: number;
+                /**
+                 * @description 북쪽 위도 경계
+                 * @example 36
+                 */
                 north: number;
+                /**
+                 * @description 지도 zoom 단계
+                 * @example 14
+                 */
                 zoom: number;
             };
             header?: never;
@@ -668,13 +995,31 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description 지도 viewport 조회 성공 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["MapViewportResponse"];
+                };
+            };
+            /** @description 지도 경계 또는 zoom 조건이 올바르지 않음 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -697,6 +1042,15 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TouristPlaceCardResponse"];
+                };
+            };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description 공개 중인 장소를 찾을 수 없음 */
@@ -769,13 +1123,31 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description 활성 운영 상태 공지 조회 성공 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "*/*": components["schemas"]["PlaceOperatingNoticeListResponse"];
+                };
+            };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 장소를 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -804,6 +1176,33 @@ export interface operations {
                     "*/*": components["schemas"]["PlaceMediaResponse"];
                 };
             };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 본인 소유가 아닌 장소의 검증 미디어 조회 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 장소를 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getRecommendationExplanation: {
@@ -830,19 +1229,22 @@ export interface operations {
                     "*/*": components["schemas"]["PlaceRecommendationExplanationResponse"];
                 };
             };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description 추천 설명 정보를 찾을 수 없음 */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "message": "추천 설명 정보를 찾을 수 없습니다.",
-                     *       "code": "RECOMMENDATION_EXPLANATION_NOT_FOUND"
-                     *     }
-                     */
-                    "*/*": unknown;
+                    "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -852,6 +1254,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description 장소 ID
+                 * @example 1
+                 */
                 placeId: number;
             };
             cookie?: never;
@@ -862,12 +1268,30 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description 전환 기록 또는 동일 요청 재처리 성공 */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description 전환 요청값 검증 실패 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };

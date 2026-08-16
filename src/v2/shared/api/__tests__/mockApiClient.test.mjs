@@ -19,6 +19,7 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     checkIn,
     coupons,
     travelPurposes,
+    currentActivityIntent,
     mapViewport,
     placeCard,
     operatingNotices,
@@ -32,6 +33,7 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     mockApiClient.post('/location-check-ins', {}),
     mockApiClient.get('/coupons'),
     mockApiClient.get('/users/me/travel-purposes'),
+    mockApiClient.get('/users/me/current-activity-intent'),
     mockApiClient.get('/places/map'),
     mockApiClient.get('/places/17/card'),
     mockApiClient.get('/places/17/operating-notices'),
@@ -48,6 +50,7 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.deepEqual(coupons.coupons.map(({ status }) => status), ['ISSUED', 'EXPIRED']);
   assert.equal(merchantPerformanceFixture.metrics.completedCheckIns, 31);
   assert.deepEqual(travelPurposes.travelPurposes, ['K_POP', 'CAFE']);
+  assert.equal(currentActivityIntent.intent, 'CAFE');
   assert.equal(mapViewport.markers[0].placeId, 17);
   assert.equal(placeCard.id, 17);
   assert.equal(operatingNotices.notices[0].placeId, 17);
@@ -67,6 +70,11 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
     travelPurposes,
   );
+  assert.deepEqual(
+    await mockApiClient.put('/users/me/current-activity-intent', { intent: 'SHOP' }),
+    { expiresAt: currentActivityIntent.expiresAt, intent: 'SHOP' },
+  );
+  assert.equal(await mockApiClient.delete('/users/me/current-activity-intent'), undefined);
   assert.deepEqual(
     await mockApiClient.post('/users/me/travel-schedules', {
       startDate: '2026-08-31',
@@ -92,6 +100,9 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   setMockScenario('empty');
   const emptyPlaces = await mockApiClient.get('/places');
   const emptyCoupons = await mockApiClient.get('/coupons');
+  const emptyCurrentActivityIntent = await mockApiClient.get(
+    '/users/me/current-activity-intent',
+  );
   const emptyMap = await mockApiClient.get('/places/map');
   const emptyNotices = await mockApiClient.get('/places/17/operating-notices');
   const emptyMedia = await mockApiClient.get('/places/17/media/verification');
@@ -101,6 +112,7 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.equal(emptyPlaces.totalPages, 0);
   assert.deepEqual(emptyCoupons.coupons, []);
   assert.equal(emptyCoupons.hasNext, false);
+  assert.deepEqual(emptyCurrentActivityIntent, { expiresAt: null, intent: null });
   assert.deepEqual(emptyMap.markers, []);
   assert.deepEqual(emptyNotices.notices, []);
   assert.deepEqual(emptyMedia.media, []);
