@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BlurTargetView } from 'expo-blur';
-import { Alert, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
@@ -424,23 +424,6 @@ export default function MapScreen({
           }}
           query={query}
         />
-        {__DEV__ && mapSection === 'map' ? (
-          <Pressable
-            accessibilityLabel="내 장소 테스트 화면 열기"
-            accessibilityRole="button"
-            onPress={() => {
-              setMapSection('favorites');
-              snapTo('medium');
-            }}
-            style={({ pressed }) => [
-              styles.bookmarkTestButton,
-              { top: insets.top + 126 },
-              pressed && styles.bookmarkTestButtonPressed,
-            ]}
-          >
-            <Text style={styles.bookmarkTestButtonText}>★ 내 장소 테스트</Text>
-          </Pressable>
-        ) : null}
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
@@ -560,25 +543,6 @@ export default function MapScreen({
 }
 
 const styles = StyleSheet.create({
-  bookmarkTestButton: {
-    alignItems: 'center',
-    backgroundColor: '#FF1956',
-    borderColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 2,
-    elevation: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    position: 'absolute',
-    right: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 7,
-    zIndex: 45,
-  },
-  bookmarkTestButtonPressed: { opacity: 0.72 },
-  bookmarkTestButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.12)' },
