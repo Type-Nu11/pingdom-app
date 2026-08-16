@@ -4,7 +4,11 @@ import { QueryClient, QueryClientProvider, type InfiniteData } from '@tanstack/r
 import { placeApi } from '../../api/placeApi';
 import type { Place, PlacesPage } from '../../model/place.types';
 import { bookmarkedPlaceQueryKeys } from '../useBookmarkedPlaces';
-import { updateBookmarkedPlaces, usePlaceBookmark } from '../usePlaceBookmark';
+import {
+  updateBookmarkedPlaceMembership,
+  updateBookmarkedPlaces,
+  usePlaceBookmark,
+} from '../usePlaceBookmark';
 
 const firstPlace: Place = {
   address: '서울 성동구',
@@ -69,6 +73,18 @@ describe('updateBookmarkedPlaces', () => {
   });
 });
 
+describe('updateBookmarkedPlaceMembership', () => {
+  test('목록 pagination과 무관하게 장소 ID 상태를 갱신한다', () => {
+    expect(updateBookmarkedPlaceMembership({ '1': true }, 2, true)).toEqual({
+      '1': true,
+      '2': true,
+    });
+    expect(updateBookmarkedPlaceMembership({ '1': true, '2': true }, 1, false)).toEqual({
+      '2': true,
+    });
+  });
+});
+
 describe('usePlaceBookmark', () => {
   test('POST 성공을 장소 북마크 캐시에 반영한다', async () => {
     const createBookmark = jest.spyOn(placeApi, 'createBookmark').mockResolvedValue({
@@ -78,6 +94,7 @@ describe('usePlaceBookmark', () => {
     });
     const { queryClient, wrapper } = createWrapper();
     queryClient.setQueryData(bookmarkedPlaceQueryKeys.list(), data);
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), { '1': true });
     const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
 
     await act(async () => result.current.togglePlaceBookmark(secondPlace, true));
@@ -87,6 +104,28 @@ describe('usePlaceBookmark', () => {
       bookmarkedPlaceQueryKeys.list(),
     );
     expect(cached?.pages[0].places.map((place) => place.id)).toEqual([2, 1]);
+    expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.membership())).toEqual({
+      '1': true,
+      '2': true,
+    });
+  });
+
+  test('BOOKMARK_ALREADY_EXISTS 응답도 membership을 저장 상태로 수렴시킨다', async () => {
+    jest.spyOn(placeApi, 'createBookmark').mockRejectedValue({
+      isAxiosError: true,
+      response: { data: { code: 'BOOKMARK_ALREADY_EXISTS' } },
+    });
+    const { queryClient, wrapper } = createWrapper();
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.list(), data);
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), { '1': true });
+    const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
+
+    await act(async () => result.current.togglePlaceBookmark(secondPlace, true));
+
+    expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.membership())).toEqual({
+      '1': true,
+      '2': true,
+    });
   });
 
   test('DELETE 실패 시 낙관적으로 제거한 장소를 복원한다', async () => {
@@ -94,6 +133,7 @@ describe('usePlaceBookmark', () => {
     const removeBookmark = jest.spyOn(placeApi, 'removeBookmark').mockRejectedValue(networkError);
     const { queryClient, wrapper } = createWrapper();
     queryClient.setQueryData(bookmarkedPlaceQueryKeys.list(), data);
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), { '1': true });
     const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
 
     await act(async () => {
@@ -102,5 +142,6 @@ describe('usePlaceBookmark', () => {
 
     expect(removeBookmark).toHaveBeenCalledWith(firstPlace.id);
     expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.list())).toEqual(data);
+    expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.membership())).toEqual({ '1': true });
   });
 });

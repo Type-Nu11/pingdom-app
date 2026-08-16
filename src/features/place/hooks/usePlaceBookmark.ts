@@ -13,6 +13,19 @@ export type TogglePlaceBookmarkPayload = {
 
 type BookmarkSnapshot = Array<[QueryKey, InfiniteData<PlacesPage> | undefined]>;
 
+export function updateBookmarkedPlaceMembership(
+  data: Record<string, boolean> | undefined,
+  placeId: number,
+  nextBookmarked: boolean,
+) {
+  if (!data) return data;
+
+  const nextData = { ...data };
+  if (nextBookmarked) nextData[String(placeId)] = true;
+  else delete nextData[String(placeId)];
+  return nextData;
+}
+
 function isExpectedBookmarkStateError(error: unknown, nextBookmarked: boolean) {
   if (!axios.isAxiosError(error)) return false;
 
@@ -62,19 +75,30 @@ export const usePlaceBookmark = () => {
     onMutate: async ({ nextBookmarked, place }) => {
       await queryClient.cancelQueries({ queryKey: bookmarkedPlaceQueryKeys.all });
       const previousBookmarks = queryClient.getQueriesData<InfiniteData<PlacesPage>>({
-        queryKey: bookmarkedPlaceQueryKeys.all,
+        queryKey: bookmarkedPlaceQueryKeys.list(),
       }) as BookmarkSnapshot;
+      const previousMembership = queryClient.getQueryData<Record<string, boolean>>(
+        bookmarkedPlaceQueryKeys.membership(),
+      );
 
       queryClient.setQueriesData<InfiniteData<PlacesPage>>(
-        { queryKey: bookmarkedPlaceQueryKeys.all },
+        { queryKey: bookmarkedPlaceQueryKeys.list() },
         (data) => updateBookmarkedPlaces(data, place, nextBookmarked),
       );
-      return { previousBookmarks };
+      queryClient.setQueryData<Record<string, boolean>>(
+        bookmarkedPlaceQueryKeys.membership(),
+        (data) => updateBookmarkedPlaceMembership(data, place.id, nextBookmarked),
+      );
+      return { previousBookmarks, previousMembership };
     },
     onError: (_error, _payload, context) => {
       context?.previousBookmarks.forEach(([queryKey, data]) => {
         queryClient.setQueryData(queryKey, data);
       });
+      queryClient.setQueryData(
+        bookmarkedPlaceQueryKeys.membership(),
+        context?.previousMembership,
+      );
     },
     onSettled: async () => {
       await Promise.all([

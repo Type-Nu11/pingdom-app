@@ -6,6 +6,7 @@ import { placeApi } from '../../api/placeApi';
 import type { Place, PlacesPage } from '../../model/place.types';
 import {
   bookmarkedPlaceQueryKeys,
+  useBookmarkedPlaceMembership,
   useBookmarkedPlaces,
 } from '../useBookmarkedPlaces';
 
@@ -59,7 +60,6 @@ describe('useBookmarkedPlaces', () => {
 
     expect(bookmarkedPlaceQueryKeys.list()[0]).toBe('placeBookmarks');
     expect(result.current.places).toEqual(places);
-    expect(result.current.bookmarkedPlaceIds).toEqual({ '11': true, '12': true });
     expect(placeApi.getBookmarkedPlaces).toHaveBeenCalledWith({ limit: 20, page: 1 });
   });
 
@@ -87,7 +87,6 @@ describe('useBookmarkedPlaces', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.places).toEqual([]);
-    expect(result.current.bookmarkedPlaceIds).toEqual({});
     expect(result.current.isError).toBe(false);
   });
 
@@ -103,5 +102,38 @@ describe('useBookmarkedPlaces', () => {
 
     expect(result.current.isUnauthorized).toBe(unauthorized);
     expect(result.current.places).toEqual([]);
+  });
+});
+
+describe('useBookmarkedPlaceMembership', () => {
+  test('21번째 이후 장소까지 모든 페이지를 조회해 membership을 완성한다', async () => {
+    const manyPlaces = Array.from({ length: 21 }, (_, index): Place => ({
+      address: `서울 ${index + 1}`,
+      id: index + 1,
+      latitude: 37.5,
+      longitude: 127,
+      name: `장소 ${index + 1}`,
+    }));
+    jest.spyOn(placeApi, 'getBookmarkedPlaces').mockImplementation(async (params) => (
+      params?.page === 1
+        ? {
+          ...page(1, manyPlaces.slice(0, 20), true),
+          totalCount: 21,
+          totalPages: 2,
+        }
+        : {
+          ...page(2, manyPlaces.slice(20)),
+          totalCount: 21,
+          totalPages: 2,
+        }
+    ));
+    const { wrapper } = createWrapper();
+    const { result } = await renderHook(() => useBookmarkedPlaceMembership(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(placeApi.getBookmarkedPlaces).toHaveBeenCalledTimes(2);
+    expect(result.current.bookmarkedPlaceIds['21']).toBe(true);
+    expect(Object.keys(result.current.bookmarkedPlaceIds)).toHaveLength(21);
   });
 });

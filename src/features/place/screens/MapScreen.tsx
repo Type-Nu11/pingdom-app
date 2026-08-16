@@ -18,7 +18,10 @@ import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
-import { useBookmarkedPlaces } from '../hooks/useBookmarkedPlaces';
+import {
+  useBookmarkedPlaceMembership,
+  useBookmarkedPlaces,
+} from '../hooks/useBookmarkedPlaces';
 import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
@@ -142,7 +145,6 @@ export default function MapScreen({
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
   const {
-    bookmarkedPlaceIds,
     fetchNextPage: fetchNextFavoritePage,
     hasNextPage: hasNextFavoritePage,
     isError: isFavoritesError,
@@ -153,6 +155,10 @@ export default function MapScreen({
     places: bookmarkedPlaces,
     refetch: refetchFavorites,
   } = useBookmarkedPlaces();
+  const {
+    bookmarkedPlaceIds,
+    isLoading: isBookmarkMembershipLoading,
+  } = useBookmarkedPlaceMembership();
   const {
     pendingPlaceId: bookmarkPendingPlaceId,
     togglePlaceBookmark,
@@ -480,6 +486,7 @@ export default function MapScreen({
             activeFilters={activeFilters}
             bookmarkedPlaceIds={bookmarkedPlaceIds}
             bookmarkPendingPlaceId={bookmarkPendingPlaceId}
+            isBookmarkStateLoading={isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
             height={fullSheetHeight}
