@@ -41,6 +41,7 @@ import {
 } from '../model/recommendationPresentation';
 import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
+import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
 
@@ -311,8 +312,16 @@ export default function MapScreen({
   }, [content.type, selectedPlace, visiblePlaces]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
+    const recommendationPlaceIds = new Set(recommendationPlaces.map((place) => place.id));
+    const focusedRecommendationMarker = createFocusedRecommendationMarker(
+      content.type === 'place-preview' ? selectedPlace : null,
+      recommendationPlaceIds,
+      liveMarkerIds,
+    );
+    const visibleMarkerIds = new Set(liveMarkerIds);
+    if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
     const mockMarkers = mockPlaces
-      .filter((place) => !liveMarkerIds.has(String(place.id)))
+      .filter((place) => !visibleMarkerIds.has(String(place.id)))
       .map((place, index) => ({
         category: (index === 1 ? 'food' : index === 2 ? 'etc' : 'fashion') as MapMarker['category'],
         id: String(place.id),
@@ -321,22 +330,12 @@ export default function MapScreen({
         markerType: index === 0 ? 'hot' as const : 'default' as const,
       }));
 
-    const recommendationMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
-    const recommendationMarkers = recommendationPlaces
-      .filter((place) => !recommendationMarkerIds.has(String(place.id)))
-      .map((place) => ({
-        category: normalizePlaceCategory(place.category),
-        id: String(place.id),
-        lat: place.latitude,
-        lng: place.longitude,
-        markerType: 'default' as const,
-      }));
     const markers = applyBookmarkStateToMarkers([
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
-      ...recommendationMarkers,
+      ...(focusedRecommendationMarker ? [focusedRecommendationMarker] : []),
       ...mockMarkers,
     ], bookmarkedPlaceIds);
 
@@ -350,7 +349,15 @@ export default function MapScreen({
           : 'etc';
 
     return markers.filter((marker) => marker.category === markerCategory);
-  }, [activeCategory, apiMarkers, bookmarkedPlaceIds, mockPlaces, recommendationPlaces]);
+  }, [
+    activeCategory,
+    apiMarkers,
+    bookmarkedPlaceIds,
+    content.type,
+    mockPlaces,
+    recommendationPlaces,
+    selectedPlace,
+  ]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
