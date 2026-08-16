@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-import { claimRecommendationClick } from '../../../../features/place/model/recommendationClick.ts';
+import {
+  claimRecommendationClick,
+  recordRecommendationClickOnce,
+} from '../../../../features/place/model/recommendationClick.ts';
 import {
   createRecommendationPresentation,
   getRecommendationState,
@@ -77,6 +80,22 @@ test('recommendation clicks are claimed once per request, version, and place', (
   assert.equal(claimRecommendationClick(payload, sent), false);
   assert.equal(claimRecommendationClick({ ...payload, placeId: 18 }, sent), true);
   assert.equal(claimRecommendationClick({ ...payload, requestId: 'request-b' }, sent), true);
+});
+
+test('failed recommendation clicks release their claim and can be retried', async () => {
+  const sent = new Set();
+  const payload = { placeId: 17, recommendationVersion: 'place-rec-v2', requestId: 'request-a' };
+  let attempts = 0;
+  const send = async () => {
+    attempts += 1;
+    if (attempts === 1) throw new Error('temporary network error');
+    return { recorded: true };
+  };
+
+  await assert.rejects(recordRecommendationClickOnce(payload, sent, send));
+  assert.deepEqual(await recordRecommendationClickOnce(payload, sent, send), { recorded: true });
+  assert.equal(await recordRecommendationClickOnce(payload, sent, send), undefined);
+  assert.equal(attempts, 2);
 });
 
 test('current activity intent API preserves endpoint, nullable response, body, and signal', async () => {
