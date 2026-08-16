@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ArtAsset from '../../../assets/v2icon/art_svg.svg';
 import BeautyAsset from '../../../assets/v2icon/beati_svg.svg';
@@ -30,17 +30,24 @@ type FavoritePlacesBottomSheetProps = {
   collapsedTranslateY: number;
   height: number;
   imageUrlsByPlaceId: Record<string, string[]>;
+  hasNextPage: boolean;
   isError: boolean;
+  isFetchNextPageError: boolean;
+  isFetchingNextPage: boolean;
   isLoading: boolean;
+  isUnauthorized: boolean;
   mediumTranslateY: number;
   onHandlePress: () => void;
   onOpenMap: () => void;
   onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
   onPlacePress: (place: DecisionPlace) => void;
+  onLoadMore: () => void;
+  onRemovePlace: (place: DecisionPlace) => void;
   onRetry: () => void;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
+  pendingPlaceIds?: Record<string, boolean>;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
@@ -105,14 +112,6 @@ const ActiveNavStar = () => (
   </Svg>
 );
 
-const MoreIcon = () => (
-  <Svg height={22} viewBox="0 0 20 24" width={18}>
-    <Circle cx="10" cy="5" fill="#35363D" r="1.5" />
-    <Circle cx="10" cy="12" fill="#35363D" r="1.5" />
-    <Circle cx="10" cy="19" fill="#35363D" r="1.5" />
-  </Svg>
-);
-
 const FavoriteImage = ({ uri }: { uri?: string }) => {
   const [hasError, setHasError] = useState(false);
 
@@ -139,10 +138,14 @@ const FavoriteImage = ({ uri }: { uri?: string }) => {
 const FavoritePlaceRow = ({
   imageUrls,
   onPress,
+  onRemove,
+  pending,
   place,
 }: {
   imageUrls: string[];
   onPress: () => void;
+  onRemove: () => void;
+  pending: boolean;
   place: DecisionPlace;
 }) => {
   const sources = imageUrls.slice(0, 2);
@@ -164,9 +167,20 @@ const FavoritePlaceRow = ({
             {formatDistance(place)} · {place.address}
           </Text>
         </View>
-        <View pointerEvents="none" style={styles.moreButton}>
-          <MoreIcon />
-        </View>
+        <Pressable
+          accessibilityLabel={`${place.name} 즐겨찾기 해제`}
+          accessibilityRole="button"
+          accessibilityState={{ busy: pending, disabled: pending }}
+          disabled={pending}
+          hitSlop={10}
+          onPress={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+          style={styles.moreButton}
+        >
+          <ActiveNavStar />
+        </Pressable>
       </View>
       <View style={styles.imageRow}>
         <FavoriteImage uri={sources[0]} />
@@ -255,19 +269,26 @@ const BottomNavigation = ({
 
 export default function FavoritePlacesBottomSheet({
   collapsedTranslateY,
+  hasNextPage,
   height,
   imageUrlsByPlaceId,
   isError,
+  isFetchNextPageError,
+  isFetchingNextPage,
   isLoading,
+  isUnauthorized,
   mediumTranslateY,
   onHandlePress,
   onOpenMap,
   onOpenRecommendations,
   onOpenReservations,
   onPlacePress,
+  onLoadMore,
+  onRemovePlace,
   onRetry,
   panHandlers,
   places,
+  pendingPlaceIds = {},
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
@@ -379,11 +400,18 @@ export default function FavoritePlacesBottomSheet({
                   imageUrls={imageUrlsByPlaceId[String(place.id)] ?? []}
                   key={place.id}
                   onPress={() => onPlacePress(place)}
+                  onRemove={() => onRemovePlace(place)}
+                  pending={Boolean(pendingPlaceIds[String(place.id)])}
                   place={place}
                 />
               )) : isLoading ? (
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyTitle}>저장한 장소를 불러오는 중이에요</Text>
+                </View>
+              ) : isUnauthorized ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyTitle}>로그인이 만료됐어요</Text>
+                  <Text style={styles.emptyBody}>다시 로그인한 뒤 저장한 장소를 확인해 주세요.</Text>
                 </View>
               ) : isError ? (
                 <View style={styles.emptyState}>
@@ -399,6 +427,25 @@ export default function FavoritePlacesBottomSheet({
                   <Text style={styles.emptyBody}>마음에 드는 장소의 별을 눌러 모아보세요.</Text>
                 </View>
               )}
+              {filteredPlaces.length > 0 && hasNextPage ? (
+                <View style={styles.loadMoreState}>
+                  {isFetchNextPageError ? (
+                    <Text style={styles.loadMoreError}>다음 장소를 불러오지 못했어요</Text>
+                  ) : null}
+                  <Pressable
+                    accessibilityLabel="저장한 장소 더 불러오기"
+                    accessibilityRole="button"
+                    accessibilityState={{ busy: isFetchingNextPage, disabled: isFetchingNextPage }}
+                    disabled={isFetchingNextPage}
+                    onPress={onLoadMore}
+                    style={styles.loadMoreButton}
+                  >
+                    <Text style={styles.retryLabel}>
+                      {isFetchingNextPage ? '불러오는 중…' : isFetchNextPageError ? '다시 시도' : '더 보기'}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
             </ScrollView>
           </View>
         </Animated.View>
@@ -439,6 +486,9 @@ const styles = StyleSheet.create({
   listContent: { paddingBottom: 116, paddingHorizontal: 16 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 182, marginBottom: 0 },
+  loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#FF1956', borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
+  loadMoreError: { color: '#777982', fontSize: 13 },
+  loadMoreState: { alignItems: 'center', gap: 8 },
   moreButton: { alignItems: 'center', height: 30, justifyContent: 'center', width: 24 },
   nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5 },
   navItem: { alignItems: 'center', borderRadius: 27, flex: 1, gap: 3, height: 54, justifyContent: 'center' },

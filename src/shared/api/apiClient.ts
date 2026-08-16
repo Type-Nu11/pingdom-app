@@ -137,10 +137,11 @@ function shouldLogAuthRequest(url?: string): boolean {
 function shouldLogApiRequest(url?: string): boolean {
     const path = getRequestPath(url);
 
-    return shouldLogAuthRequest(url) || [
+    return shouldLogAuthRequest(url) || path.startsWith('/users/me/bookmarks/') || [
         '/places',
         '/places/recommendations',
         '/places/autocomplete',
+        '/users/me/bookmarks',
         '/users/me/travel-purposes',
     ].includes(path);
 }
