@@ -515,11 +515,12 @@ export default function MapScreen({
             }}
             onOpenMap={() => {
               setMapSection('map');
+              setContent({ type: 'home' });
               snapTo('medium');
             }}
             onOpenRecommendations={() => {
               setMapSection('map');
-              setContent({ type: 'home' });
+              setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
             onOpenReservations={onOpenSavedPlaces}
@@ -562,7 +563,7 @@ export default function MapScreen({
               snapTo('medium');
             }}
             onOpenRecommendations={() => {
-              setContent({ type: 'home' });
+              setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
             onOpenSavedPlaces={onOpenSavedPlaces}

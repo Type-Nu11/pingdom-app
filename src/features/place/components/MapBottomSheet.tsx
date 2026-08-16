@@ -28,12 +28,14 @@ import MusicAsset from '../../../assets/v2icon/music_svg.svg';
 import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend.svg';
 import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
 import StarAsset from '../../../assets/v2icon/star_svg.svg';
+import RecommendationTitleAsset from '../../../assets/v2icon/Subtract.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface, { supportsNativeLiquidGlass } from './GlassSurface';
 
 export type BottomSheetContent =
   | { type: 'home' }
+  | { type: 'recommendations' }
   | { type: 'search'; query: string }
   | { type: 'results'; query: string }
   | { type: 'place-preview'; placeId: number };
@@ -219,6 +221,21 @@ const CARD_FALLBACKS = [
   '커먼 테이블 성수',
 ];
 
+const HOME_BOOKMARK_STAR_PATH = 'M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z';
+
+const HomeBookmarkStar = ({ selected }: { selected: boolean }) => (
+  <Svg fill="none" height={35} viewBox="0 0 25 24" width={36}>
+    <Path
+      d={HOME_BOOKMARK_STAR_PATH}
+      fill={selected ? '#FF1956' : 'none'}
+      stroke={selected ? '#FF1956' : '#FFFFFF'}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+    />
+  </Svg>
+);
+
 const PLACEHOLDER_IMAGE_URL = 'https://placehold.co/520x280.png';
 
 const formatDistance = (place: DecisionPlace) => {
@@ -258,7 +275,7 @@ const PlaceArtwork = ({
   );
 };
 
-const PlaceTrendCard = ({
+const RecommendationFeaturedCard = ({
   bookmarked,
   imageUrl,
   index,
@@ -281,49 +298,50 @@ const PlaceTrendCard = ({
       onPress={onPress}
       style={({ pressed }) => [styles.placeCard, pressed && styles.pressed]}
     >
-      <PlaceArtwork imageUrl={imageUrl} />
-      <CardScrim />
-      <Pressable
-        accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
-        accessibilityRole="button"
-        accessibilityState={{ busy: pending, disabled: pending }}
-        disabled={pending}
-        hitSlop={10}
-        onPress={(event) => {
-          event.stopPropagation();
-          onToggleBookmark();
-        }}
-        style={[styles.bookmarkPill, bookmarked && styles.bookmarkPillActive]}
-      >
-        <Text style={[styles.bookmarkPillText, bookmarked && styles.bookmarkPillTextActive]}>
-          {pending ? '처리 중…' : bookmarked ? '★ 저장됨' : '☆ 저장'}
-        </Text>
-      </Pressable>
-      <View style={styles.placeCardBody}>
-        <Text numberOfLines={1} style={styles.placeCardName}>
-          {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
-        </Text>
-        <Text numberOfLines={1} style={styles.placeCardDistance}>
-          여기서 {formatDistance(place)}
-        </Text>
-        {place.recommendationReason ? (
-          <Text numberOfLines={1} style={styles.recommendationReason}>
-            {place.recommendationReason}
+      <View style={styles.placeCardArtwork}>
+        <PlaceArtwork imageUrl={imageUrl} />
+        <CardScrim />
+        <Pressable
+          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityRole="button"
+          accessibilityState={{ busy: pending, disabled: pending }}
+          disabled={pending}
+          hitSlop={10}
+          onPress={(event) => {
+            event.stopPropagation();
+            onToggleBookmark();
+          }}
+          style={styles.cardBookmarkStar}
+        >
+          <Text style={styles.cardBookmarkStarText}>
+            {pending ? '…' : bookmarked ? '★' : '☆'}
           </Text>
-        ) : null}
-        {place.recommendationRank !== undefined || place.recommendationSource ? (
-          <Text numberOfLines={1} style={styles.recommendationExplanation}>
-            {[
-              place.recommendationRank !== undefined ? `추천 순위 ${place.recommendationRank}` : null,
-              place.recommendationSource ?? null,
-            ].filter(Boolean).join(' · ')}
+        </Pressable>
+        <View style={styles.placeCardBody}>
+          <Text numberOfLines={2} style={styles.placeCardName}>
+            {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
           </Text>
-        ) : null}
+        </View>
       </View>
+      {place.recommendationReason ? (
+        <Text numberOfLines={1} style={styles.recommendationReason}>
+          {place.recommendationReason}
+        </Text>
+      ) : place.recommendationRank !== undefined || place.recommendationSource ? (
+        <Text numberOfLines={1} style={styles.recommendationExplanation}>
+          {[
+            place.recommendationRank !== undefined ? `추천 순위 ${place.recommendationRank}` : null,
+            place.recommendationSource ?? null,
+          ].filter(Boolean).join(' · ')}
+        </Text>
+      ) : null}
+      <Text numberOfLines={1} style={styles.placeCardDistance}>
+        여기서 {formatDistance(place)}
+      </Text>
     </Pressable>
 );
 
-const ExpandedPlaceCard = ({
+const RecommendationGridCard = ({
   bookmarked,
   imageUrl,
   onPress,
@@ -356,15 +374,15 @@ const ExpandedPlaceCard = ({
           event.stopPropagation();
           onToggleBookmark();
         }}
-        style={[styles.bookmarkPill, styles.gridBookmarkPill, bookmarked && styles.bookmarkPillActive]}
+        style={styles.gridBookmarkStar}
       >
-        <Text style={[styles.bookmarkPillText, bookmarked && styles.bookmarkPillTextActive]}>
-          {pending ? '처리 중…' : bookmarked ? '★ 저장됨' : '☆ 저장'}
+        <Text style={styles.gridBookmarkStarText}>
+          {pending ? '…' : bookmarked ? '★' : '☆'}
         </Text>
       </Pressable>
       <View style={styles.gridCardBody}>
         <Text numberOfLines={2} style={styles.gridCardName}>{place.name}</Text>
-        <Text numberOfLines={1} style={styles.gridCardDistance}>여기서 {formatDistance(place)}</Text>
+        <Text numberOfLines={1} style={styles.gridCardDistance}>{place.address}</Text>
         {place.recommendationReason ? (
           <Text numberOfLines={1} style={styles.gridRecommendationReason}>
             {place.recommendationReason}
@@ -380,6 +398,104 @@ const ExpandedPlaceCard = ({
         ) : null}
       </View>
     </Pressable>
+);
+
+const PlaceTrendCard = ({
+  bookmarked,
+  imageUrl,
+  index,
+  onPress,
+  onToggleBookmark,
+  pending,
+  place,
+}: {
+  bookmarked: boolean;
+  imageUrl?: string;
+  index: number;
+  onPress: () => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
+  place: DecisionPlace;
+}) => (
+  <Pressable
+    accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+    accessibilityRole="button"
+    onPress={onPress}
+    style={({ pressed }) => [styles.homeTrendCard, pressed && styles.pressed]}
+  >
+    <PlaceArtwork imageUrl={imageUrl} />
+    <CardScrim />
+    <Pressable
+      accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+      accessibilityRole="button"
+      accessibilityState={{ busy: pending, disabled: pending }}
+      disabled={pending}
+      hitSlop={10}
+      onPress={(event) => {
+        event.stopPropagation();
+        onToggleBookmark();
+      }}
+      style={styles.homeBookmarkStar}
+    >
+      {pending ? <Text style={styles.homeBookmarkPending}>…</Text> : (
+        <HomeBookmarkStar selected={bookmarked} />
+      )}
+    </Pressable>
+    <View style={styles.homeTrendCardBody}>
+      <Text numberOfLines={1} style={styles.homeTrendCardName}>
+        {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
+      </Text>
+      <Text numberOfLines={1} style={styles.homeTrendCardDistance}>
+        여기서 {formatDistance(place)}
+      </Text>
+    </View>
+  </Pressable>
+);
+
+const ExpandedPlaceCard = ({
+  bookmarked,
+  imageUrl,
+  onPress,
+  onToggleBookmark,
+  pending,
+  place,
+}: {
+  bookmarked: boolean;
+  imageUrl?: string;
+  onPress: () => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
+  place: DecisionPlace;
+}) => (
+  <Pressable
+    accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+    accessibilityRole="button"
+    onPress={onPress}
+    style={({ pressed }) => [styles.homeGridCard, pressed && styles.pressed]}
+  >
+    <PlaceArtwork imageUrl={imageUrl} variant="grid" />
+    <CardScrim />
+    <Pressable
+      accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+      accessibilityRole="button"
+      accessibilityState={{ busy: pending, disabled: pending }}
+      disabled={pending}
+      hitSlop={10}
+      onPress={(event) => {
+        event.stopPropagation();
+        onToggleBookmark();
+      }}
+      style={styles.homeBookmarkStar}
+    >
+      {pending ? <Text style={styles.homeBookmarkPending}>…</Text> : (
+        <HomeBookmarkStar selected={bookmarked} />
+      )}
+    </Pressable>
+    <View style={styles.homeGridCardBody}>
+      <Text numberOfLines={2} style={styles.homeGridCardName}>{place.name}</Text>
+      <Text numberOfLines={1} style={styles.homeGridCardDistance}>여기서 {formatDistance(place)}</Text>
+    </View>
+  </Pressable>
 );
 
 const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => {
@@ -557,6 +673,7 @@ const RecommendationContent = ({
   onToggleBookmark,
   places,
   state,
+  userName,
 }: {
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds: Record<string, boolean>;
@@ -570,64 +687,87 @@ const RecommendationContent = ({
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   places: DecisionPlace[];
   state: 'empty' | 'error' | 'loading' | 'ready';
-}) => (
-  <ScrollView
-    contentContainerStyle={isExpanded ? styles.expandedContent : styles.recommendationContent}
-    nestedScrollEnabled
-    showsVerticalScrollIndicator={false}
-  >
-    <View style={styles.recommendationHeader}>
-      <Text style={styles.recommendationTitle}>나만을 위한 추천 장소</Text>
-      {context ? <Text style={styles.recommendationContext}>{context}</Text> : null}
-      {limitMessage ? <Text style={styles.recommendationLimit}>{limitMessage}</Text> : null}
-    </View>
-    {state === 'ready' ? (
-      isExpanded ? (
-        <View style={styles.gridRow}>
-          {places.map((place) => (
-            <ExpandedPlaceCard
-              bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-              imageUrl={imageUrlsByPlaceId[String(place.id)]}
-              key={`recommendation-${place.id}`}
-              onPress={() => onPlacePress(place)}
-              onToggleBookmark={() => void onToggleBookmark(
-                place,
-                !bookmarkedPlaceIds[String(place.id)],
-              )}
-              pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-              place={place}
-            />
-          ))}
+  userName: string;
+}) => {
+  const featuredPlaces = places.slice(0, 3);
+  const gridPlaces = places.slice(3);
+
+  return (
+    <ScrollView
+      contentContainerStyle={isExpanded ? styles.expandedContent : styles.recommendationContent}
+      nestedScrollEnabled
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.recommendationHeader}>
+        <View style={styles.recommendationTitleRow}>
+          <RecommendationTitleAsset height={22} width={22} />
+          <Text style={styles.recommendationTitle}>나만을 위한 추천 장소</Text>
         </View>
+        <Text numberOfLines={1} style={styles.recommendationSubtitle}>
+          핑덤이 {userName}님이 좋아할만한 장소를 추천해드려요!
+        </Text>
+        {context ? <Text style={styles.recommendationContext}>{context}</Text> : null}
+        {limitMessage ? <Text style={styles.recommendationLimit}>{limitMessage}</Text> : null}
+      </View>
+      {state === 'ready' ? (
+        <>
+          <ScrollView
+            contentContainerStyle={styles.cardRow}
+            horizontal
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator={false}
+          >
+            {featuredPlaces.map((place, index) => (
+              <RecommendationFeaturedCard
+                bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                index={index}
+                key={`recommendation-featured-${place.id}`}
+                onPress={() => onPlacePress(place)}
+                onToggleBookmark={() => void onToggleBookmark(
+                  place,
+                  !bookmarkedPlaceIds[String(place.id)],
+                )}
+                pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                place={place}
+              />
+            ))}
+          </ScrollView>
+          {isExpanded && gridPlaces.length > 0 ? (
+            <>
+              <Text style={styles.recommendationGridTitle}>오늘 검증하고 쿠폰 받자!</Text>
+              <ScrollView
+                contentContainerStyle={styles.recommendationGridScroll}
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+              >
+                <View style={styles.recommendationGrid}>
+                  {gridPlaces.map((place) => (
+                    <RecommendationGridCard
+                      bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                      imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                      key={`recommendation-grid-${place.id}`}
+                      onPress={() => onPlacePress(place)}
+                      onToggleBookmark={() => void onToggleBookmark(
+                        place,
+                        !bookmarkedPlaceIds[String(place.id)],
+                      )}
+                      pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                      place={place}
+                    />
+                  ))}
+                </View>
+              </ScrollView>
+            </>
+          ) : null}
+        </>
       ) : (
-        <ScrollView
-          contentContainerStyle={styles.cardRow}
-          horizontal
-          nestedScrollEnabled
-          showsHorizontalScrollIndicator={false}
-        >
-          {places.slice(0, 6).map((place, index) => (
-            <PlaceTrendCard
-              bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-              imageUrl={imageUrlsByPlaceId[String(place.id)]}
-              index={index}
-              key={`recommendation-${place.id}`}
-              onPress={() => onPlacePress(place)}
-              onToggleBookmark={() => void onToggleBookmark(
-                place,
-                !bookmarkedPlaceIds[String(place.id)],
-              )}
-              pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-              place={place}
-            />
-          ))}
-        </ScrollView>
-      )
-    ) : (
-      <RecommendationState onRetry={onRetry} state={state} />
-    )}
-  </ScrollView>
-);
+        <RecommendationState onRetry={onRetry} state={state} />
+      )}
+    </ScrollView>
+  );
+};
 
 const ResultRow = ({
   onPress,
@@ -721,15 +861,19 @@ const NavItem = ({
 
 const BottomNavigation = ({
   bottomInset,
+  onOpenMap,
   onOpenLikedPlaces,
   onOpenRecommendations,
   onOpenSavedPlaces,
+  recommendationsActive,
   sheetTranslateY,
 }: {
   bottomInset: number;
+  onOpenMap?: () => void;
   onOpenLikedPlaces?: () => void;
   onOpenRecommendations?: () => void;
   onOpenSavedPlaces?: () => void;
+  recommendationsActive: boolean;
   sheetTranslateY: Animated.Value;
 }) => (
   <Animated.View
@@ -749,12 +893,13 @@ const BottomNavigation = ({
         tintColor="rgba(238,238,242,0.42)"
       >
         <NavItem
-          active
-          icon={<MapAsset color="#FF1956" height={22} width={19} />}
+          active={!recommendationsActive}
+          icon={<MapAsset color={recommendationsActive ? '#56575E' : '#FF1956'} height={22} width={19} />}
           label="지도"
+          onPress={recommendationsActive ? onOpenMap : undefined}
         />
         <NavItem
-          icon={<StarAsset height={21} width={22} />}
+          icon={<StarAsset color="#3B3B40" height={21} width={22} />}
           label="즐겨찾기"
           onPress={onOpenLikedPlaces}
         />
@@ -765,12 +910,13 @@ const BottomNavigation = ({
         />
       </GlassSurface> : <View style={[styles.navigationBar, styles.navigationBarSolid]}>
         <NavItem
-          active
-          icon={<MapAsset color="#FF1956" height={22} width={19} />}
+          active={!recommendationsActive}
+          icon={<MapAsset color={recommendationsActive ? '#56575E' : '#FF1956'} height={22} width={19} />}
           label="지도"
+          onPress={recommendationsActive ? onOpenMap : undefined}
         />
         <NavItem
-          icon={<StarAsset height={21} width={22} />}
+          icon={<StarAsset color="#3B3B40" height={21} width={22} />}
           label="즐겨찾기"
           onPress={onOpenLikedPlaces}
         />
@@ -784,8 +930,12 @@ const BottomNavigation = ({
     <Pressable
       accessibilityLabel="장소추천"
       accessibilityRole="button"
+      accessibilityState={{ selected: recommendationsActive }}
       onPress={onOpenRecommendations}
-      style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.sendButton,
+        pressed && styles.pressed,
+      ]}
     >
       {LIQUID_GLASS_AVAILABLE ? <GlassSurface
         glassEffectStyle="regular"
@@ -794,9 +944,23 @@ const BottomNavigation = ({
         style={styles.sendIconSurface}
         tintColor="rgba(238,238,242,0.42)"
       >
-        <PlaceRecommendAsset height={23} width={23} />
-      </GlassSurface> : <View pointerEvents="none" style={[styles.sendIconSurface, styles.sendIconSurfaceSolid]}>
-        <PlaceRecommendAsset height={23} width={23} />
+        <PlaceRecommendAsset
+          color={recommendationsActive ? '#FF1755' : '#3B3B40'}
+          height={23}
+          width={23}
+        />
+      </GlassSurface> : <View
+        pointerEvents="none"
+        style={[
+          styles.sendIconSurface,
+          styles.sendIconSurfaceSolid,
+        ]}
+      >
+        <PlaceRecommendAsset
+          color={recommendationsActive ? '#FF1755' : '#3B3B40'}
+          height={23}
+          width={23}
+        />
       </View>}
     </Pressable>
   </Animated.View>
@@ -829,10 +993,14 @@ export default function MapBottomSheet({
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
+  userName,
 }: MapBottomSheetProps) {
   const insets = useSafeAreaInsets();
+  const [feed, setFeed] = useState<'local' | 'national'>('local');
+  const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
+  const shownPlaces = feed === 'local' ? places : [...places].reverse();
   const previewPlaces = [...places, ...recommendationPlaces]
     .filter((place, index, items) => items.findIndex((item) => item.id === place.id) === index);
   const { imageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
@@ -941,7 +1109,7 @@ export default function MapBottomSheet({
             <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
           )) : <EmptyCard />}
         </ScrollView>
-      ) : (
+      ) : content.type === 'recommendations' ? (
         <RecommendationContent
           bookmarkedPlaceIds={bookmarkedPlaceIds}
           bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
@@ -955,16 +1123,59 @@ export default function MapBottomSheet({
           onToggleBookmark={onToggleBookmark}
           places={recommendationPlaces}
           state={recommendationsState}
+          userName={userName?.trim() || 'user'}
         />
+      ) : snapPoint === 'expanded' ? (
+        <ExpandedHomeContent
+          activeCategory={activeCategory}
+          bookmarkedPlaceIds={bookmarkedPlaceIds}
+          bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+          feed={feed}
+          imageUrlsByPlaceId={imageUrlsByPlaceId}
+          isBookmarkStateLoading={isBookmarkStateLoading}
+          onCategoryChange={setActiveCategory}
+          onFeedChange={setFeed}
+          onPlacePress={onPlacePress}
+          onToggleBookmark={onToggleBookmark}
+          places={shownPlaces}
+          userName={userName?.trim() || 'user'}
+        />
+      ) : (
+        <>
+          <FeedSegment feed={feed} onChange={setFeed} />
+          <ScrollView
+            contentContainerStyle={styles.cardRow}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place, index) => (
+              <PlaceTrendCard
+                bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                index={index}
+                key={place.id}
+                onPress={() => onPlacePress(place)}
+                onToggleBookmark={() => void onToggleBookmark(
+                  place,
+                  !bookmarkedPlaceIds[String(place.id)],
+                )}
+                pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                place={place}
+              />
+            )) : <EmptyCard />}
+          </ScrollView>
+        </>
       )}
       </Animated.View>
       </View>
 
       <BottomNavigation
         bottomInset={insets.bottom}
+        onOpenMap={onBackHome}
         onOpenLikedPlaces={onOpenLikedPlaces}
         onOpenRecommendations={onOpenRecommendations}
         onOpenSavedPlaces={onOpenSavedPlaces}
+        recommendationsActive={content.type === 'recommendations'}
         sheetTranslateY={sheetTranslateY}
       />
     </Animated.View>
@@ -1012,10 +1223,10 @@ const styles = StyleSheet.create({
     top: 0,
   },
   cardRow: {
-    gap: 16,
-    paddingBottom: 12,
+    gap: 12,
+    paddingBottom: 10,
     paddingHorizontal: 16,
-    paddingTop: 18,
+    paddingTop: 12,
   },
   cardScrim: {
     ...StyleSheet.absoluteFillObject,
@@ -1036,7 +1247,7 @@ const styles = StyleSheet.create({
     width: 44,
   },
   emptyCardTitle: { color: '#30323A', fontSize: 14, fontWeight: '800' },
-  expandedContent: { paddingBottom: 112 },
+  expandedContent: { paddingBottom: 116 },
   expandedFeaturedRow: {
     gap: 16,
     paddingBottom: 18,
@@ -1104,6 +1315,35 @@ const styles = StyleSheet.create({
   },
   gridArtwork: { height: '100%' },
   gridCard: {
+    backgroundColor: '#161616',
+    borderRadius: 13,
+    height: 184,
+    overflow: 'hidden',
+    shadowColor: '#12161D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.09,
+    shadowRadius: 9,
+    width: 244,
+  },
+  gridCardBody: {
+    bottom: 0,
+    left: 0,
+    paddingBottom: 9,
+    paddingHorizontal: 10,
+    position: 'absolute',
+    right: 0,
+  },
+  gridCardDistance: { color: 'rgba(255,255,255,0.9)', fontSize: 9, marginTop: 1, paddingRight: 24 },
+  gridCardName: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16, paddingRight: 24 },
+  gridBookmarkStar: { bottom: 7, padding: 4, position: 'absolute', right: 7, zIndex: 3 },
+  gridBookmarkStarText: { color: '#FF1755', fontSize: 28, lineHeight: 30 },
+  gridRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    paddingHorizontal: 8,
+  },
+  homeGridCard: {
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderColor: 'rgba(255,255,255,0.95)',
     borderRadius: 16,
@@ -1113,28 +1353,22 @@ const styles = StyleSheet.create({
     height: 196,
     maxWidth: '48%',
     overflow: 'hidden',
-    shadowColor: '#12161D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.09,
-    shadowRadius: 9,
   },
-  gridCardBody: {
-    bottom: 0,
-    left: 0,
-    paddingBottom: 12,
-    paddingHorizontal: 14,
-    position: 'absolute',
-    right: 0,
+  homeGridCardBody: { bottom: 0, left: 0, paddingBottom: 12, paddingHorizontal: 14, position: 'absolute', right: 0 },
+  homeGridCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 11, marginTop: 2, paddingRight: 29 },
+  homeGridCardName: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
+  homeBookmarkStar: { bottom: 9, padding: 4, position: 'absolute', right: 10, zIndex: 3 },
+  homeBookmarkPending: { color: '#FFFFFF', fontSize: 24, lineHeight: 35 },
+  homeTrendCard: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 16,
+    height: 199,
+    overflow: 'hidden',
+    width: 242,
   },
-  gridCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 11, marginTop: 2, paddingRight: 29 },
-  gridCardName: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
-  gridBookmarkPill: { minWidth: 60, paddingHorizontal: 8 },
-  gridRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    paddingHorizontal: 8,
-  },
+  homeTrendCardBody: { bottom: 0, left: 0, paddingBottom: 13, paddingHorizontal: 14, position: 'absolute', right: 0 },
+  homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
+  homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
   handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
   handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
@@ -1191,36 +1425,45 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   placeCard: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 16,
-    borderWidth: 1,
-    height: 199,
+    backgroundColor: 'transparent',
+    minHeight: 222,
+    width: 172,
+  },
+  placeCardArtwork: {
+    backgroundColor: '#161616',
+    borderRadius: 13,
+    height: 172,
     overflow: 'hidden',
     shadowColor: '#12161D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    width: 242,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
   },
   placeCardBody: {
     bottom: 0,
     left: 0,
-    paddingBottom: 13,
-    paddingHorizontal: 14,
+    paddingBottom: 9,
+    paddingHorizontal: 10,
     position: 'absolute',
     right: 0,
   },
-  placeCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
-  placeCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
+  placeCardDistance: { color: '#7E8088', fontSize: 11, marginTop: 1 },
+  placeCardName: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16, paddingRight: 25 },
+  cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
+  cardBookmarkStarText: { color: '#FF1755', fontSize: 28, lineHeight: 30 },
   recommendationContent: { paddingBottom: 108 },
-  recommendationContext: { color: '#FF1956', fontSize: 12, fontWeight: '800', marginTop: 4 },
-  recommendationHeader: { paddingHorizontal: 18, paddingTop: 8 },
-  recommendationLimit: { color: '#777A83', fontSize: 11, marginTop: 5 },
-  recommendationReason: { color: '#FFB2C8', fontSize: 10, fontWeight: '700', marginTop: 3, paddingRight: 34 },
-  recommendationExplanation: { color: 'rgba(255,255,255,0.78)', fontSize: 9, marginTop: 2, paddingRight: 34 },
+  recommendationContext: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 4 },
+  recommendationGrid: { flexDirection: 'column', flexWrap: 'wrap', gap: 12, height: 380 },
+  recommendationGridScroll: { paddingBottom: 12, paddingHorizontal: 16 },
+  recommendationGridTitle: { color: '#202127', fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 16 },
+  recommendationHeader: { paddingHorizontal: 16, paddingTop: 5 },
+  recommendationLimit: { color: '#777A83', fontSize: 10, marginTop: 3 },
+  recommendationReason: { color: '#35363C', fontSize: 11, fontWeight: '600', marginTop: 7 },
+  recommendationExplanation: { color: '#55575F', fontSize: 10, fontWeight: '600', marginTop: 7 },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
-  recommendationTitle: { color: '#25272D', fontSize: 20, fontWeight: '900' },
+  recommendationSubtitle: { color: '#73757D', fontSize: 12, marginTop: 5 },
+  recommendationTitle: { color: '#202127', fontSize: 20, fontWeight: '900' },
+  recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   gridRecommendationReason: { color: '#FFB2C8', fontSize: 9, fontWeight: '700', marginTop: 3, paddingRight: 29 },
   gridRecommendationExplanation: { color: 'rgba(255,255,255,0.78)', fontSize: 8, marginTop: 2, paddingRight: 29 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
@@ -1256,7 +1499,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,240,244,0.86)',
     borderRadius: 13,
-    height: 48,
+    height: 64,
     justifyContent: 'center',
     width: 48,
   },
