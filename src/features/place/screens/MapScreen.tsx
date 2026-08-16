@@ -35,7 +35,10 @@ import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
-import { createRecommendationPresentation } from '../model/recommendationPresentation';
+import {
+  createRecommendationPresentation,
+  getRecommendationState,
+} from '../model/recommendationPresentation';
 import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 
@@ -140,7 +143,6 @@ export default function MapScreen({
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
     appliedActivityIntent,
-    appliedRadiusKm,
     appliedTravelPurposes,
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
@@ -149,7 +151,6 @@ export default function MapScreen({
     recommendationRequestId,
     recommendationVersion,
     refetch: refetchRecommendations,
-    requestedRadiusKm,
   } = usePlaceRecommendations({
     latitude: userLat,
     limit: 8,
@@ -252,24 +253,18 @@ export default function MapScreen({
   }, [recommendationExplanation.data?.items, recommendedPlaces]);
   const recommendationPresentation = useMemo(() => createRecommendationPresentation({
     appliedActivityIntent,
-    appliedRadiusKm,
     appliedTravelPurposes,
     limitReasons,
-    requestedRadiusKm,
   }), [
     appliedActivityIntent,
-    appliedRadiusKm,
     appliedTravelPurposes,
     limitReasons,
-    requestedRadiusKm,
   ]);
-  const recommendationsState = isRecommendationsLoading
-    ? 'loading' as const
-    : isRecommendationsError
-      ? 'error' as const
-      : recommendationPlaces.length === 0
-        ? 'empty' as const
-        : 'ready' as const;
+  const recommendationsState = getRecommendationState({
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    places: recommendationPlaces,
+  });
   const favoritePlaces = useMemo(
     () => bookmarkedPlaces.map(toDecisionPlace),
     [bookmarkedPlaces],

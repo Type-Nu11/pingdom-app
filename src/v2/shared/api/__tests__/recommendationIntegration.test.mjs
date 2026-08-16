@@ -3,7 +3,10 @@ import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
 import { claimRecommendationClick } from '../../../../features/place/model/recommendationClick.ts';
-import { createRecommendationPresentation } from '../../../../features/place/model/recommendationPresentation.ts';
+import {
+  createRecommendationPresentation,
+  getRecommendationState,
+} from '../../../../features/place/model/recommendationPresentation.ts';
 import { createCurrentActivityIntentApi } from '../../../features/current-activity-intent/api/currentActivityIntentApi.ts';
 import {
   createCurrentActivityIntentQueryOptions,
@@ -13,7 +16,7 @@ import {
 import { currentActivityIntentQueryKeys } from '../../../features/current-activity-intent/model/currentActivityIntentQueryKeys.ts';
 import { recommendationQueryKeys } from '../../../features/travel-purposes/model/travelPurposeQueryKeys.ts';
 
-test('recommendation presentation uses only applied context and radius expansion fields', () => {
+test('recommendation presentation uses only applied personalization and limit reasons', () => {
   assert.deepEqual(createRecommendationPresentation({}), {
     contextText: null,
     limitText: null,
@@ -36,8 +39,34 @@ test('recommendation presentation uses only applied context and radius expansion
     requestedRadiusKm: 5,
   }), {
     contextText: 'K-POP · 맛집 · 카페 방문',
-    limitText: '추천 결과를 찾기 위해 반경을 10km로 넓혔어요.',
+    limitText: '추천 결과를 찾기 위해 검색 반경을 넓혔어요.',
   });
+});
+
+test('recommendation presentation describes only limit reasons returned by the server', () => {
+  assert.deepEqual(createRecommendationPresentation({
+    appliedRadiusKm: null,
+    limitReasons: ['FALLBACK_CANDIDATE_POOL', 'REQUEST_LIMIT_CLAMPED'],
+    requestedRadiusKm: undefined,
+  }), {
+    contextText: null,
+    limitText: '조건에 맞는 장소가 적어 후보 범위를 넓혀 추천했어요. 서버 기준에 맞춰 추천 개수를 조정했어요.',
+  });
+  assert.deepEqual(createRecommendationPresentation({
+    appliedRadiusKm: null,
+    limitReasons: ['RADIUS_EXPANDED'],
+    requestedRadiusKm: null,
+  }), {
+    contextText: null,
+    limitText: '추천 결과를 찾기 위해 검색 반경을 넓혔어요.',
+  });
+});
+
+test('recommendation state covers loading, error, empty, and ready results', () => {
+  assert.equal(getRecommendationState({ isError: false, isLoading: true, places: [] }), 'loading');
+  assert.equal(getRecommendationState({ isError: true, isLoading: false, places: [] }), 'error');
+  assert.equal(getRecommendationState({ isError: false, isLoading: false, places: [] }), 'empty');
+  assert.equal(getRecommendationState({ isError: false, isLoading: false, places: [{ id: 1 }] }), 'ready');
 });
 
 test('recommendation clicks are claimed once per request, version, and place', () => {
