@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../../app/store/authStore';
 import MapBottomSheet, {
   type BottomSheetContent,
   type DecisionPlace,
@@ -138,12 +139,15 @@ export default function MapScreen({
     radiusKm: 20,
   });
   const { profile } = useProfile();
+  const isAuthHydrating = useAuthStore((state) => state.isHydrating);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
+  const canQueryBookmarks = isLoggedIn && !isAuthHydrating;
   const {
     fetchNextPage: fetchNextFavoritePage,
     hasNextPage: hasNextFavoritePage,
@@ -154,11 +158,11 @@ export default function MapScreen({
     isUnauthorized: isFavoritesUnauthorized,
     places: bookmarkedPlaces,
     refetch: refetchFavorites,
-  } = useBookmarkedPlaces();
+  } = useBookmarkedPlaces(canQueryBookmarks && mapSection === 'favorites');
   const {
     bookmarkedPlaceIds,
     isLoading: isBookmarkMembershipLoading,
-  } = useBookmarkedPlaceMembership();
+  } = useBookmarkedPlaceMembership(canQueryBookmarks);
   const {
     pendingPlaceId: bookmarkPendingPlaceId,
     togglePlaceBookmark,
@@ -449,8 +453,8 @@ export default function MapScreen({
             isError={isFavoritesError}
             isFetchNextPageError={isFetchNextFavoritePageError}
             isFetchingNextPage={isFetchingNextFavoritePage}
-            isLoading={isFavoritesLoading}
-            isUnauthorized={isFavoritesUnauthorized}
+            isLoading={isAuthHydrating || isFavoritesLoading}
+            isUnauthorized={(!isAuthHydrating && !isLoggedIn) || isFavoritesUnauthorized}
             mediumTranslateY={mediumTranslateY}
             onHandlePress={() => {
               if (snapPoint === 'collapsed') snapTo('medium');
@@ -486,7 +490,7 @@ export default function MapScreen({
             activeFilters={activeFilters}
             bookmarkedPlaceIds={bookmarkedPlaceIds}
             bookmarkPendingPlaceId={bookmarkPendingPlaceId}
-            isBookmarkStateLoading={isBookmarkMembershipLoading}
+            isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
             height={fullSheetHeight}

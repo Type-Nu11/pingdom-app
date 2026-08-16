@@ -51,6 +51,15 @@ function createWrapper() {
 }
 
 describe('useBookmarkedPlaces', () => {
+  test('비활성 상태에서는 인증 endpoint를 호출하지 않는다', async () => {
+    const getBookmarkedPlaces = jest.spyOn(placeApi, 'getBookmarkedPlaces');
+    const { wrapper } = createWrapper();
+    const { result } = await renderHook(() => useBookmarkedPlaces(false), { wrapper });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(getBookmarkedPlaces).not.toHaveBeenCalled();
+  });
+
   test('장소 북마크 전용 query key로 서버 목록을 복원한다', async () => {
     jest.spyOn(placeApi, 'getBookmarkedPlaces').mockResolvedValue(page(1, places));
     const { wrapper } = createWrapper();
@@ -106,6 +115,16 @@ describe('useBookmarkedPlaces', () => {
 });
 
 describe('useBookmarkedPlaceMembership', () => {
+  test('비로그인 상태를 나타내는 비활성 조건에서는 요청하지 않는다', async () => {
+    const getBookmarkedPlaces = jest.spyOn(placeApi, 'getBookmarkedPlaces');
+    const { wrapper } = createWrapper();
+    const { result } = await renderHook(() => useBookmarkedPlaceMembership(false), { wrapper });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.bookmarkedPlaceIds).toEqual({});
+    expect(getBookmarkedPlaces).not.toHaveBeenCalled();
+  });
+
   test('21번째 이후 장소까지 모든 페이지를 조회해 membership을 완성한다', async () => {
     const manyPlaces = Array.from({ length: 21 }, (_, index): Place => ({
       address: `서울 ${index + 1}`,
