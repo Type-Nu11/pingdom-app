@@ -1,5 +1,5 @@
 import React, { type PropsWithChildren } from 'react';
-import { act, renderHook } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider, type InfiniteData } from '@tanstack/react-query';
 import { placeApi } from '../../api/placeApi';
 import type { Place, PlacesPage } from '../../model/place.types';
@@ -98,6 +98,7 @@ describe('usePlaceBookmark', () => {
     const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
 
     await act(async () => result.current.togglePlaceBookmark(secondPlace, true));
+    await waitFor(() => expect(result.current.pendingPlaceIds).toEqual({}));
 
     expect(createBookmark).toHaveBeenCalledWith({ placeId: secondPlace.id });
     const cached = queryClient.getQueryData<InfiniteData<PlacesPage>>(
@@ -121,6 +122,7 @@ describe('usePlaceBookmark', () => {
     const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
 
     await act(async () => result.current.togglePlaceBookmark(secondPlace, true));
+    await waitFor(() => expect(result.current.pendingPlaceIds).toEqual({}));
 
     expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.membership())).toEqual({
       '1': true,
@@ -139,9 +141,60 @@ describe('usePlaceBookmark', () => {
     await act(async () => {
       await expect(result.current.togglePlaceBookmark(firstPlace, false)).rejects.toBe(networkError);
     });
+    await waitFor(() => expect(result.current.pendingPlaceIds).toEqual({}));
 
     expect(removeBookmark).toHaveBeenCalledWith(firstPlace.id);
     expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.list())).toEqual(data);
     expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.membership())).toEqual({ '1': true });
+  });
+
+  test('서로 다른 장소의 동시 mutation pending과 rollback을 격리한다', async () => {
+    const networkError = new Error('offline');
+    let rejectRemove!: (reason?: unknown) => void;
+    let resolveCreate!: (value: { id: number; message: string; placeId: number }) => void;
+    jest.spyOn(placeApi, 'removeBookmark').mockImplementation(() => new Promise((_, reject) => {
+      rejectRemove = reject;
+    }));
+    jest.spyOn(placeApi, 'createBookmark').mockImplementation(() => new Promise((resolve) => {
+      resolveCreate = resolve;
+    }));
+    const { queryClient, wrapper } = createWrapper();
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.list(), data);
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), { '1': true });
+    const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
+
+    let removePromise!: Promise<void>;
+    let createPromise!: Promise<void>;
+    await act(async () => {
+      removePromise = result.current.togglePlaceBookmark(firstPlace, false);
+      createPromise = result.current.togglePlaceBookmark(secondPlace, true);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(result.current.pendingPlaceIds).toEqual({
+      '1': true,
+      '2': true,
+    }));
+
+    await act(async () => {
+      resolveCreate({ id: 2, message: 'created', placeId: 2 });
+      await createPromise;
+    });
+    await waitFor(() => expect(result.current.pendingPlaceIds).toEqual({ '1': true }));
+
+    await act(async () => {
+      rejectRemove(networkError);
+      await expect(removePromise).rejects.toBe(networkError);
+    });
+    await waitFor(() => expect(result.current.pendingPlaceIds).toEqual({}));
+
+    expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.membership())).toEqual({
+      '1': true,
+      '2': true,
+    });
+    const cached = queryClient.getQueryData<InfiniteData<PlacesPage>>(
+      bookmarkedPlaceQueryKeys.list(),
+    );
+    expect(cached?.pages[0].places.map((place) => place.id).sort()).toEqual([1, 2]);
   });
 });

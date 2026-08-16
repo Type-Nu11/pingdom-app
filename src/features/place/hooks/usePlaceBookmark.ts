@@ -1,5 +1,6 @@
-import type { InfiniteData, QueryKey } from '@tanstack/react-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import type { InfiniteData } from '@tanstack/react-query';
+import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import type { PlacesPage, Place } from '../model/place.types';
 import { placeApi } from '../api/placeApi';
@@ -11,7 +12,7 @@ export type TogglePlaceBookmarkPayload = {
   place: Place;
 };
 
-type BookmarkSnapshot = Array<[QueryKey, InfiniteData<PlacesPage> | undefined]>;
+const PLACE_BOOKMARK_MUTATION_KEY = ['placeBookmarkMutation'] as const;
 
 export function updateBookmarkedPlaceMembership(
   data: Record<string, boolean> | undefined,
@@ -64,6 +65,7 @@ export function updateBookmarkedPlaces(
 export const usePlaceBookmark = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
+    mutationKey: PLACE_BOOKMARK_MUTATION_KEY,
     mutationFn: async ({ nextBookmarked, place }: TogglePlaceBookmarkPayload) => {
       try {
         if (nextBookmarked) await placeApi.createBookmark({ placeId: place.id });
@@ -74,12 +76,10 @@ export const usePlaceBookmark = () => {
     },
     onMutate: async ({ nextBookmarked, place }) => {
       await queryClient.cancelQueries({ queryKey: bookmarkedPlaceQueryKeys.all });
-      const previousBookmarks = queryClient.getQueriesData<InfiniteData<PlacesPage>>({
-        queryKey: bookmarkedPlaceQueryKeys.list(),
-      }) as BookmarkSnapshot;
       const previousMembership = queryClient.getQueryData<Record<string, boolean>>(
         bookmarkedPlaceQueryKeys.membership(),
       );
+      const previousBookmarked = Boolean(previousMembership?.[String(place.id)]);
 
       queryClient.setQueriesData<InfiniteData<PlacesPage>>(
         { queryKey: bookmarkedPlaceQueryKeys.list() },
@@ -89,29 +89,52 @@ export const usePlaceBookmark = () => {
         bookmarkedPlaceQueryKeys.membership(),
         (data) => updateBookmarkedPlaceMembership(data, place.id, nextBookmarked),
       );
-      return { previousBookmarks, previousMembership };
+      return { previousBookmarked };
     },
-    onError: (_error, _payload, context) => {
-      context?.previousBookmarks.forEach(([queryKey, data]) => {
-        queryClient.setQueryData(queryKey, data);
-      });
-      queryClient.setQueryData(
+    onError: (_error, { place }, context) => {
+      if (!context) return;
+
+      queryClient.setQueriesData<InfiniteData<PlacesPage>>(
+        { queryKey: bookmarkedPlaceQueryKeys.list() },
+        (data) => updateBookmarkedPlaces(data, place, context.previousBookmarked),
+      );
+      queryClient.setQueryData<Record<string, boolean>>(
         bookmarkedPlaceQueryKeys.membership(),
-        context?.previousMembership,
+        (data) => updateBookmarkedPlaceMembership(
+          data,
+          place.id,
+          context.previousBookmarked,
+        ),
       );
     },
     onSettled: async () => {
+      if (queryClient.isMutating({ mutationKey: PLACE_BOOKMARK_MUTATION_KEY }) > 1) return;
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: bookmarkedPlaceQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: placeQueryKeys.all }),
       ]);
     },
   });
+  const pendingMutations = useMutationState<TogglePlaceBookmarkPayload>({
+    filters: {
+      mutationKey: PLACE_BOOKMARK_MUTATION_KEY,
+      status: 'pending',
+    },
+    select: (pendingMutation) => pendingMutation.state.variables as TogglePlaceBookmarkPayload,
+  });
+  const pendingPlaceIds = useMemo(() => pendingMutations.reduce<Record<string, boolean>>(
+    (result, payload) => {
+      if (payload?.place.id !== undefined) result[String(payload.place.id)] = true;
+      return result;
+    },
+    {},
+  ), [pendingMutations]);
 
   return {
     error: mutation.error,
     isPending: mutation.isPending,
-    pendingPlaceId: mutation.isPending ? mutation.variables?.place.id ?? null : null,
+    pendingPlaceIds,
     togglePlaceBookmark: (place: Place, nextBookmarked: boolean) => (
       mutation.mutateAsync({ nextBookmarked, place }).then(() => undefined)
     ),

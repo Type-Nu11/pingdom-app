@@ -59,7 +59,7 @@ export type DecisionPlace = {
 type MapBottomSheetProps = {
   activeFilters: VisitFilter[];
   bookmarkedPlaceIds: Record<string, boolean>;
-  bookmarkPendingPlaceId?: number | null;
+  bookmarkPendingPlaceIds?: Record<string, boolean>;
   isBookmarkStateLoading?: boolean;
   collapsedTranslateY: number;
   content: BottomSheetContent;
@@ -364,7 +364,7 @@ const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => 
 const ExpandedHomeContent = ({
   activeCategory,
   bookmarkedPlaceIds,
-  bookmarkPendingPlaceId,
+  bookmarkPendingPlaceIds,
   feed,
   imageUrlsByPlaceId,
   isBookmarkStateLoading,
@@ -377,7 +377,7 @@ const ExpandedHomeContent = ({
 }: {
   activeCategory: SheetCategory;
   bookmarkedPlaceIds: Record<string, boolean>;
-  bookmarkPendingPlaceId?: number | null;
+  bookmarkPendingPlaceIds: Record<string, boolean>;
   feed: 'local' | 'national';
   imageUrlsByPlaceId: Record<string, string>;
   isBookmarkStateLoading: boolean;
@@ -416,7 +416,7 @@ const ExpandedHomeContent = ({
               place,
               !bookmarkedPlaceIds[String(place.id)],
             )}
-            pending={isBookmarkStateLoading || bookmarkPendingPlaceId === place.id}
+            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
             place={place}
           />
         )) : <EmptyCard />}
@@ -463,7 +463,7 @@ const ExpandedHomeContent = ({
               place,
               !bookmarkedPlaceIds[String(place.id)],
             )}
-            pending={isBookmarkStateLoading || bookmarkPendingPlaceId === place.id}
+            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
             place={place}
           />
         ))}
@@ -654,7 +654,7 @@ const BottomNavigation = ({
 );
 
 export default function MapBottomSheet({
-  bookmarkPendingPlaceId,
+  bookmarkPendingPlaceIds = {},
   bookmarkedPlaceIds,
   collapsedTranslateY,
   content,
@@ -772,7 +772,7 @@ export default function MapBottomSheet({
             selectedPlace,
             !bookmarkedPlaceIds[String(selectedPlace.id)],
           )}
-          pending={isBookmarkStateLoading || bookmarkPendingPlaceId === selectedPlace.id}
+          pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(selectedPlace.id)])}
           place={selectedPlace}
         />
       ) : isSearchMode ? (
@@ -793,7 +793,7 @@ export default function MapBottomSheet({
         <ExpandedHomeContent
           activeCategory={activeCategory}
           bookmarkedPlaceIds={bookmarkedPlaceIds}
-          bookmarkPendingPlaceId={bookmarkPendingPlaceId}
+          bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
           feed={feed}
           imageUrlsByPlaceId={imageUrlsByPlaceId}
           isBookmarkStateLoading={isBookmarkStateLoading}
@@ -824,7 +824,7 @@ export default function MapBottomSheet({
                   place,
                   !bookmarkedPlaceIds[String(place.id)],
                 )}
-                pending={isBookmarkStateLoading || bookmarkPendingPlaceId === place.id}
+                pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
                 place={place}
               />
             )) : <EmptyCard />}

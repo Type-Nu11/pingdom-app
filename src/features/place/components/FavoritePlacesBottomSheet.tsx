@@ -47,7 +47,7 @@ type FavoritePlacesBottomSheetProps = {
   onRetry: () => void;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
-  pendingPlaceId?: number | null;
+  pendingPlaceIds?: Record<string, boolean>;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
@@ -288,7 +288,7 @@ export default function FavoritePlacesBottomSheet({
   onRetry,
   panHandlers,
   places,
-  pendingPlaceId,
+  pendingPlaceIds = {},
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
@@ -401,7 +401,7 @@ export default function FavoritePlacesBottomSheet({
                   key={place.id}
                   onPress={() => onPlacePress(place)}
                   onRemove={() => onRemovePlace(place)}
-                  pending={pendingPlaceId === place.id}
+                  pending={Boolean(pendingPlaceIds[String(place.id)])}
                   place={place}
                 />
               )) : isLoading ? (

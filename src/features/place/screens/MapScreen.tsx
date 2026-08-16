@@ -167,7 +167,7 @@ export default function MapScreen({
     isLoading: isBookmarkMembershipLoading,
   } = useBookmarkedPlaceMembership(canQueryBookmarks);
   const {
-    pendingPlaceId: bookmarkPendingPlaceId,
+    pendingPlaceIds: bookmarkPendingPlaceIds,
     togglePlaceBookmark,
   } = usePlaceBookmark();
 
@@ -477,7 +477,7 @@ export default function MapScreen({
             }}
             panHandlers={panHandlers}
             places={favoritePlaces}
-            pendingPlaceId={bookmarkPendingPlaceId}
+            pendingPlaceIds={bookmarkPendingPlaceIds}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
             snapPoint={snapPoint}
@@ -486,7 +486,7 @@ export default function MapScreen({
           <MapBottomSheet
             activeFilters={activeFilters}
             bookmarkedPlaceIds={bookmarkedPlaceIds}
-            bookmarkPendingPlaceId={bookmarkPendingPlaceId}
+            bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
