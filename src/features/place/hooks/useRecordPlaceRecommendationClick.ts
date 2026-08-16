@@ -5,7 +5,7 @@ import {
   type RecordRecommendationClickRequest,
   type RecordRecommendationClickResponse,
 } from '../api/placeApi';
-import { claimRecommendationClick } from '../model/recommendationClick';
+import { recordRecommendationClickOnce } from '../model/recommendationClick';
 
 export const useRecordPlaceRecommendationClick = () => {
   const sentClickKeys = useRef(new Set<string>());
@@ -19,10 +19,11 @@ export const useRecordPlaceRecommendationClick = () => {
   });
 
   const recordRecommendationClick = useCallback((payload: RecordRecommendationClickRequest) => {
-    if (!claimRecommendationClick(payload, sentClickKeys.current)) {
-      return Promise.resolve(undefined);
-    }
-    return recommendationClickMutation.mutateAsync(payload);
+    return recordRecommendationClickOnce(
+      payload,
+      sentClickKeys.current,
+      recommendationClickMutation.mutateAsync,
+    );
   }, [recommendationClickMutation]);
 
   return {
