@@ -33,23 +33,23 @@ export type RecommendedPlace = Place & {
   currentlyOperating?: boolean | null;
   hasActiveBenefit?: boolean;
   placeGrowth?: PlaceGrowth;
-  reason?: string;
-  reasonCode?: string;
+  reason?: string | null;
+  reasonCode?: string | null;
   reservable?: boolean;
   userId?: number;
 };
 
 export type PlaceRecommendations = {
   appliedActivityIntent?: ActivityIntent | null;
-  appliedRadiusKm?: number;
-  appliedTravelPurposes?: TravelPurpose[];
-  limit?: number;
-  limitReasons?: RecommendationLimitReason[];
-  places?: RecommendedPlace[];
-  recommendationRequestId?: string;
-  recommendedCount?: number;
-  recommendationVersion?: string;
-  requestedRadiusKm?: number;
+  appliedRadiusKm?: number | null;
+  appliedTravelPurposes?: TravelPurpose[] | null;
+  limit?: number | null;
+  limitReasons?: RecommendationLimitReason[] | null;
+  places?: RecommendedPlace[] | null;
+  recommendationRequestId?: string | null;
+  recommendedCount?: number | null;
+  recommendationVersion?: string | null;
+  requestedRadiusKm?: number | null;
 };
 
 export type TravelPurpose =
