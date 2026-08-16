@@ -31,6 +31,7 @@ import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
+import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
 
@@ -249,21 +250,8 @@ export default function MapScreen({
   }, [content.type, selectedPlace, visiblePlaces]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
-    const favoriteMarkers = bookmarkedPlaces
-      .filter((place) => !liveMarkerIds.has(String(place.id)))
-      .map((place) => ({
-        category: normalizePlaceCategory(place.category),
-        id: String(place.id),
-        lat: place.latitude,
-        lng: place.longitude,
-        markerType: 'default' as const,
-      }));
-    const knownMarkerIds = new Set([
-      ...liveMarkerIds,
-      ...favoriteMarkers.map((marker) => marker.id),
-    ]);
     const mockMarkers = mockPlaces
-      .filter((place) => !knownMarkerIds.has(String(place.id)))
+      .filter((place) => !liveMarkerIds.has(String(place.id)))
       .map((place, index) => ({
         category: (index === 1 ? 'food' : index === 2 ? 'etc' : 'fashion') as MapMarker['category'],
         id: String(place.id),
@@ -272,14 +260,13 @@ export default function MapScreen({
         markerType: index === 0 ? 'hot' as const : 'default' as const,
       }));
 
-    const markers = [
+    const markers = applyBookmarkStateToMarkers([
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
-      ...favoriteMarkers,
       ...mockMarkers,
-    ];
+    ], bookmarkedPlaceIds);
 
     if (activeCategory === 'all') return markers;
     const markerCategory: MapMarker['category'] = activeCategory === 'fashion'
@@ -291,7 +278,7 @@ export default function MapScreen({
           : 'etc';
 
     return markers.filter((marker) => marker.category === markerCategory);
-  }, [activeCategory, apiMarkers, bookmarkedPlaces, mockPlaces]);
+  }, [activeCategory, apiMarkers, bookmarkedPlaceIds, mockPlaces]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;

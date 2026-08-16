@@ -62,6 +62,7 @@ export type PlaceUploadPhoto = {
 export type PlaceCategory = 'etc' | 'fashion' | 'food' | 'game' | 'music';
 
 export type MapMarker = {
+  bookmarked?: boolean;
   category: PlaceCategory;
   id: string;
   lat: number;
