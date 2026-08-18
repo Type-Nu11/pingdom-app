@@ -1,7 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
-import { placeDetailQueryKeys } from '../../place-detail/hooks/usePlaceDetail';
-import { placeListQueryKeys } from '../../place-list/hooks/usePlaceList';
+import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
 import {
   checkInApi,
   type CreateCheckInBody,
@@ -31,7 +35,17 @@ export function createCheckInMutationOptions(
 ) {
   return {
     mutationFn: (body: CreateCheckInBody) => api.createCheckIn(body),
+    retry: false,
   };
+}
+
+export async function invalidateCheckInDependencies(
+  queryClient: QueryClient,
+) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: checkInQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: placeQueryKeys.all }),
+  ]);
 }
 
 export function createStatusVoteMutationOptions(
@@ -53,7 +67,7 @@ export function useCreateCheckIn() {
   return useMutation({
     ...createCheckInMutationOptions(),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: checkInQueryKeys.all });
+      await invalidateCheckInDependencies(queryClient);
     },
   });
 }
@@ -65,8 +79,8 @@ export function useCreateStatusVote() {
     ...createStatusVoteMutationOptions(),
     onSuccess: async (_vote, variables) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: placeDetailQueryKeys.detail(variables.placeId) }),
-        queryClient.invalidateQueries({ queryKey: placeListQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: placeQueryKeys.detail(variables.placeId) }),
+        queryClient.invalidateQueries({ queryKey: placeQueryKeys.lists() }),
       ]);
     },
   });

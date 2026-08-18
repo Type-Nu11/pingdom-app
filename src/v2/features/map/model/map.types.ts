@@ -1,6 +1,8 @@
 export type Coordinate = {
+  accuracyMeters?: number;
   lat: number;
   lng: number;
+  observedAt?: string;
 };
 
 export type MapMarkerCategory = 'etc' | 'fashion' | 'food' | 'game' | 'music';

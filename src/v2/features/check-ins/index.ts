@@ -12,6 +12,7 @@ export {
   createCheckInListQueryOptions,
   createCheckInMutationOptions,
   createStatusVoteMutationOptions,
+  invalidateCheckInDependencies,
   useCheckIns,
   useCreateCheckIn,
   useCreateStatusVote,

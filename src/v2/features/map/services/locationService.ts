@@ -3,10 +3,20 @@ import * as Location from 'expo-location';
 import type { Coordinate } from '../model/map.types';
 import { resolveCurrentLocation } from './locationWorkflow';
 
-const toCoordinate = (location: Location.LocationObject): Coordinate => ({
-  lat: location.coords.latitude,
-  lng: location.coords.longitude,
-});
+const toCoordinate = (location: Location.LocationObject): Coordinate => {
+  const accuracyMeters = location.coords.accuracy;
+
+  if (accuracyMeters === null || !Number.isFinite(accuracyMeters) || accuracyMeters < 0) {
+    throw new Error('[location] A valid horizontal accuracy is required.');
+  }
+
+  return {
+    accuracyMeters,
+    lat: location.coords.latitude,
+    lng: location.coords.longitude,
+    observedAt: new Date(location.timestamp).toISOString(),
+  };
+};
 
 export function getCurrentLocation() {
   return resolveCurrentLocation({
