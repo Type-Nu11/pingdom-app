@@ -52,8 +52,8 @@ const categories: Array<{
   label: string;
 }> = [
   { id: 'all', label: '전체' },
-  { Icon: MusicIcon, id: 'music', label: '음악' },
   { Icon: FoodIcon, id: 'food', label: '음식점' },
+  { Icon: MusicIcon, id: 'music', label: '음악' },
   { Icon: PopupIcon, id: 'popup', label: '팝업' },
   { Icon: FashionIcon, id: 'fashion', label: '패션' },
   { Icon: BeautyIcon, id: 'beauty', label: '뷰티' },
@@ -97,7 +97,7 @@ export default function MapTopOverlay({
                 onPress={onSearchFocus}
                 style={styles.searchContent}
               >
-                <SearchAsset height={20} width={20} />
+                <SearchAsset height={18} width={18} />
                 <Text
                   numberOfLines={1}
                   style={[styles.searchInput, !query && styles.searchPlaceholder]}
@@ -113,7 +113,7 @@ export default function MapTopOverlay({
               onPress={onProfilePress}
               style={({ pressed }) => [styles.profileButton, pressed && styles.pressed]}
             >
-              <ProfileAsset height={40} width={40} />
+              <ProfileAsset height={36} width={36} />
             </Pressable>
           </View>
         </View>
@@ -153,7 +153,7 @@ export default function MapTopOverlay({
                 />
                 <View style={styles.categoryChipContent}>
                   {Icon ? (
-                    <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={18} width={20} />
+                    <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={17} width={19} />
                   ) : null}
                   <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
                     {label}
@@ -177,10 +177,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 16,
     flexDirection: 'row',
-    gap: 6,
-    height: 34,
+    gap: 5,
+    height: 32,
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
   },
   categoryChipClip: {
     borderRadius: 16,
@@ -212,15 +212,15 @@ const styles = StyleSheet.create({
   },
   categoryChipStrokeActive: { borderColor: 'rgba(255,74,117,0.96)' },
   categoryContent: {
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    gap: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   categoryLabel: {
     color: '#5E5E66',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    lineHeight: 18,
+    lineHeight: 17,
   },
   categoryLabelActive: {
     color: '#FF245B',
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   categoryScroll: {
     flexGrow: 0,
     marginTop: 3,
-    overflow: 'visible',
+    overflow: 'hidden',
   },
   header: {
     paddingHorizontal: 8,
@@ -242,10 +242,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 29,
     flexDirection: 'row',
-    gap: 16,
-    height: 60,
+    gap: 12,
+    height: 54,
     overflow: 'hidden',
-    padding: 8,
+    padding: 7,
   },
   headerGlass: {
     ...StyleSheet.absoluteFillObject,
@@ -268,9 +268,9 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     alignItems: 'center',
-    height: 40,
+    height: 36,
     justifyContent: 'center',
-    width: 40,
+    width: 36,
   },
   safeArea: {
     left: 0,
@@ -283,17 +283,17 @@ const styles = StyleSheet.create({
   searchInput: {
     color: '#1D1E23',
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '400',
-    lineHeight: 21,
+    lineHeight: 20,
   },
   searchPlaceholder: { color: '#5E6069' },
   searchContent: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 12,
+    gap: 10,
+    paddingHorizontal: 11,
   },
   searchFrost: {
     ...StyleSheet.absoluteFillObject,
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderRadius: 26,
     flex: 1,
-    height: 44,
+    height: 40,
     overflow: 'hidden',
   },
 });
