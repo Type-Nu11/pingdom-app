@@ -1,5 +1,6 @@
 import {
   type QueryClient,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -17,6 +18,7 @@ type CheckInApi = typeof checkInApi;
 
 export const checkInQueryKeys = {
   all: ['v2', 'check-ins'] as const,
+  infinite: (limit: number) => [...checkInQueryKeys.all, 'infinite', { limit }] as const,
   list: (params: ListCheckInsParams) => [...checkInQueryKeys.all, 'list', params] as const,
 };
 
@@ -36,6 +38,24 @@ export function createCheckInMutationOptions(
   return {
     mutationFn: (body: CreateCheckInBody) => api.createCheckIn(body),
     retry: false,
+  };
+}
+
+export function createInfiniteCheckInListQueryOptions(
+  limit = 20,
+  api: Pick<CheckInApi, 'listCheckIns'> = checkInApi,
+) {
+  return {
+    getNextPageParam: (lastPage: Awaited<ReturnType<CheckInApi['listCheckIns']>>) => (
+      lastPage.hasNext && lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined
+    ),
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }: { pageParam: number; signal?: AbortSignal }) => (
+      api.listCheckIns({ limit, page: pageParam }, signal)
+    ),
+    queryKey: checkInQueryKeys.infinite(limit),
   };
 }
 
@@ -59,6 +79,10 @@ export function createStatusVoteMutationOptions(
 
 export function useCheckIns(params: ListCheckInsParams = {}) {
   return useQuery(createCheckInListQueryOptions(params));
+}
+
+export function useInfiniteCheckIns(limit = 20) {
+  return useInfiniteQuery(createInfiniteCheckInListQueryOptions(limit));
 }
 
 export function useCreateCheckIn() {

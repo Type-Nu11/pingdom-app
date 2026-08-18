@@ -1,12 +1,15 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import { getApiErrorUx, toApiError } from '../../../v2/shared/api';
 import {
   type CreateCheckInBody,
   useCreateCheckIn,
+  useInfiniteCheckIns,
 } from '../../../v2/features/check-ins';
 import { useCurrentLocation } from '../../../v2/features/map/hooks/useCurrentLocation';
 import type { Coordinate } from '../../../v2/features/map/model/map.types';
+
+export const CHECK_IN_PAGE_SIZE = 20;
 
 export type CheckInFailure =
   | 'authentication'
@@ -58,8 +61,14 @@ export function classifyCheckInError(error: unknown): CheckInFailure {
 
 export function useLocationCheckIn(placeId: number) {
   const location = useCurrentLocation();
+  const checkInsQuery = useInfiniteCheckIns(CHECK_IN_PAGE_SIZE);
   const createCheckIn = useCreateCheckIn();
   const submissionLock = useRef(false);
+
+  const checkIns = useMemo(
+    () => checkInsQuery.data?.pages.flatMap((page) => page.checkIns) ?? [],
+    [checkInsQuery.data?.pages],
+  );
 
   const submit = useCallback(async () => {
     if (submissionLock.current || location.status !== 'granted') return null;
@@ -78,8 +87,16 @@ export function useLocationCheckIn(placeId: number) {
   return {
     checkInError: createCheckIn.error,
     checkInFailure: createCheckIn.error ? classifyCheckInError(createCheckIn.error) : null,
+    checkIns,
+    fetchNextPage: checkInsQuery.fetchNextPage,
+    hasNextPage: checkInsQuery.hasNextPage,
     isCheckingIn: createCheckIn.isPending,
+    isFetchingNextPage: checkInsQuery.isFetchingNextPage,
+    isListError: checkInsQuery.isError,
+    isListLoading: checkInsQuery.isLoading,
+    listError: checkInsQuery.error,
     location,
+    refetchCheckIns: checkInsQuery.refetch,
     submit,
     successfulCheckIn: createCheckIn.data ?? null,
   };
