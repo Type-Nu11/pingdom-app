@@ -30,9 +30,16 @@ export type UseMapPlaceRankingsParams = {
   scope: PlaceRankingScope;
 };
 
+export type UseMapPlaceRankingsOptions = {
+  enabled?: boolean;
+};
+
 const EMPTY_ITEMS: PlaceRankingItem[] = [];
 
-export const useMapPlaceRankings = (params: UseMapPlaceRankingsParams) => {
+export const useMapPlaceRankings = (
+  params: UseMapPlaceRankingsParams,
+  options: UseMapPlaceRankingsOptions = {}
+) => {
   const hasCoordinates = Number.isFinite(params.latitude) && Number.isFinite(params.longitude);
   const request = useMemo<GetPlaceRankingsRequest>(() => {
     const common = {
@@ -65,7 +72,7 @@ export const useMapPlaceRankings = (params: UseMapPlaceRankingsParams) => {
   ]);
 
   // 우리 지역 랭킹은 좌표가 준비되기 전에 호출하면 서버가 400을 응답하는 계약이라 조회를 막는다.
-  const enabled = params.scope === 'NATIONAL' || hasCoordinates;
+  const enabled = (options.enabled ?? true) && (params.scope === 'NATIONAL' || hasCoordinates);
   const rankingsQuery = useQuery({
     enabled,
     queryKey: placeRankingQueryKeys.list(request),

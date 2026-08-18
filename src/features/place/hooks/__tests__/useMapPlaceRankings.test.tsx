@@ -139,6 +139,23 @@ describe('useMapPlaceRankings', () => {
     expect(result.current.criteria).toBeNull();
   });
 
+  test('enabled=false면 수동 실행 전까지 조회하지 않는다', async () => {
+    const getPlaceRankings = jest.spyOn(placeRankingApi, 'getPlaceRankings')
+      .mockResolvedValue(page('NATIONAL', 22));
+    const { wrapper } = createWrapper();
+
+    const { result } = await renderHook(
+      () => useMapPlaceRankings({ scope: 'NATIONAL' }, { enabled: false }),
+      { wrapper },
+    );
+
+    expect(getPlaceRankings).not.toHaveBeenCalled();
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(getPlaceRankings).toHaveBeenCalledTimes(1));
+  });
+
   test('빈 결과는 빈 배열과 isEmpty로 노출한다', async () => {
     jest.spyOn(placeRankingApi, 'getPlaceRankings').mockResolvedValue({
       ...page('NATIONAL', 22),
