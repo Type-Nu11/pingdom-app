@@ -11,8 +11,11 @@ export {
   checkInQueryKeys,
   createCheckInListQueryOptions,
   createCheckInMutationOptions,
+  createInfiniteCheckInListQueryOptions,
   createStatusVoteMutationOptions,
+  invalidateCheckInDependencies,
   useCheckIns,
   useCreateCheckIn,
   useCreateStatusVote,
+  useInfiniteCheckIns,
 } from './hooks/useCheckIns';

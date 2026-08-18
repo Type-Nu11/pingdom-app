@@ -52,8 +52,8 @@ const categories: Array<{
   label: string;
 }> = [
   { id: 'all', label: '전체' },
-  { Icon: MusicIcon, id: 'music', label: '음악' },
   { Icon: FoodIcon, id: 'food', label: '음식점' },
+  { Icon: MusicIcon, id: 'music', label: '음악' },
   { Icon: PopupIcon, id: 'popup', label: '팝업' },
   { Icon: FashionIcon, id: 'fashion', label: '패션' },
   { Icon: BeautyIcon, id: 'beauty', label: '뷰티' },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   categoryScroll: {
     flexGrow: 0,
     marginTop: 3,
-    overflow: 'visible',
+    overflow: 'hidden',
   },
   header: {
     paddingHorizontal: 8,

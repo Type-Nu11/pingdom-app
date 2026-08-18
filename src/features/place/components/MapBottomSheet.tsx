@@ -171,46 +171,48 @@ const FeedSegment = ({
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
 }) => (
-  <View style={styles.segmentShadow}>
-    <GlassSurface
-      androidBlurEnabled={false}
-      glassEffectStyle="regular"
-      intensity={100}
-      style={styles.segmentOuter}
-      tintColor="rgba(228,228,230,0.48)"
-    >
-      <View pointerEvents="none" style={styles.segmentFrost} />
-      <Pressable
-        accessibilityRole="tab"
-        accessibilityState={{ selected: feed === 'local' }}
-        onPress={() => onChange('local')}
-        style={[styles.segment, feed === 'local' && styles.segmentActive]}
+  <View style={styles.segmentInset}>
+    <View style={styles.segmentShadow}>
+      <GlassSurface
+        androidBlurEnabled={false}
+        glassEffectStyle="regular"
+        intensity={100}
+        style={styles.segmentOuter}
+        tintColor="rgba(228,228,230,0.48)"
       >
-        <HotPlaceAsset
-          color={feed === 'local' ? '#FF1956' : '#767680'}
-          height={20}
-          width={16}
-        />
-        <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-          우리 지역 핫플
-        </Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="tab"
-        accessibilityState={{ selected: feed === 'national' }}
-        onPress={() => onChange('national')}
-        style={[styles.segment, feed === 'national' && styles.segmentActive]}
-      >
-        <MapAsset
-          color={feed === 'national' ? '#FF1956' : '#767680'}
-          height={20}
-          width={18}
-        />
-        <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-          전국 트렌드
-        </Text>
-      </Pressable>
-    </GlassSurface>
+        <View pointerEvents="none" style={styles.segmentFrost} />
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: feed === 'local' }}
+          onPress={() => onChange('local')}
+          style={[styles.segment, feed === 'local' && styles.segmentActive]}
+        >
+          <HotPlaceAsset
+            color={feed === 'local' ? '#FF1956' : '#767680'}
+            height={20}
+            width={16}
+          />
+          <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+            우리 지역 핫플
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: feed === 'national' }}
+          onPress={() => onChange('national')}
+          style={[styles.segment, feed === 'national' && styles.segmentActive]}
+        >
+          <MapAsset
+            color={feed === 'national' ? '#FF1956' : '#767680'}
+            height={20}
+            width={18}
+          />
+          <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+            전국 트렌드
+          </Text>
+        </Pressable>
+      </GlassSurface>
+    </View>
   </View>
 );
 
@@ -223,8 +225,13 @@ const CARD_FALLBACKS = [
 
 const HOME_BOOKMARK_STAR_PATH = 'M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z';
 
-const HomeBookmarkStar = ({ selected }: { selected: boolean }) => (
-  <Svg fill="none" height={35} viewBox="0 0 25 24" width={36}>
+const BookmarkStar = ({ selected, size = 35 }: { selected: boolean; size?: number }) => (
+  <Svg
+    fill="none"
+    height={size}
+    viewBox="0 0 25 24"
+    width={Math.round((size * 25) / 24)}
+  >
     <Path
       d={HOME_BOOKMARK_STAR_PATH}
       fill={selected ? '#FF1956' : 'none'}
@@ -313,9 +320,9 @@ const RecommendationFeaturedCard = ({
           }}
           style={styles.cardBookmarkStar}
         >
-          <Text style={styles.cardBookmarkStarText}>
-            {pending ? '…' : bookmarked ? '★' : '☆'}
-          </Text>
+          {pending ? <Text style={styles.bookmarkPending}>…</Text> : (
+            <BookmarkStar selected={bookmarked} size={28} />
+          )}
         </Pressable>
         <View style={styles.placeCardBody}>
           <Text numberOfLines={2} style={styles.placeCardName}>
@@ -376,9 +383,9 @@ const RecommendationGridCard = ({
         }}
         style={styles.gridBookmarkStar}
       >
-        <Text style={styles.gridBookmarkStarText}>
-          {pending ? '…' : bookmarked ? '★' : '☆'}
-        </Text>
+        {pending ? <Text style={styles.bookmarkPending}>…</Text> : (
+          <BookmarkStar selected={bookmarked} size={28} />
+        )}
       </Pressable>
       <View style={styles.gridCardBody}>
         <Text numberOfLines={2} style={styles.gridCardName}>{place.name}</Text>
@@ -438,7 +445,7 @@ const PlaceTrendCard = ({
       style={styles.homeBookmarkStar}
     >
       {pending ? <Text style={styles.homeBookmarkPending}>…</Text> : (
-        <HomeBookmarkStar selected={bookmarked} />
+        <BookmarkStar selected={bookmarked} />
       )}
     </Pressable>
     <View style={styles.homeTrendCardBody}>
@@ -488,7 +495,7 @@ const ExpandedPlaceCard = ({
       style={styles.homeBookmarkStar}
     >
       {pending ? <Text style={styles.homeBookmarkPending}>…</Text> : (
-        <HomeBookmarkStar selected={bookmarked} />
+        <BookmarkStar selected={bookmarked} />
       )}
     </Pressable>
     <View style={styles.homeGridCardBody}>
@@ -706,8 +713,10 @@ const RecommendationContent = ({
         <Text numberOfLines={1} style={styles.recommendationSubtitle}>
           핑덤이 {userName}님이 좋아할만한 장소를 추천해드려요!
         </Text>
-        {context ? <Text style={styles.recommendationContext}>{context}</Text> : null}
-        {limitMessage ? <Text style={styles.recommendationLimit}>{limitMessage}</Text> : null}
+        {isExpanded && context ? <Text style={styles.recommendationContext}>{context}</Text> : null}
+        {isExpanded && limitMessage ? (
+          <Text style={styles.recommendationLimit}>{limitMessage}</Text>
+        ) : null}
       </View>
       {state === 'ready' ? (
         <>
@@ -1336,7 +1345,7 @@ const styles = StyleSheet.create({
   gridCardDistance: { color: 'rgba(255,255,255,0.9)', fontSize: 9, marginTop: 1, paddingRight: 24 },
   gridCardName: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16, paddingRight: 24 },
   gridBookmarkStar: { bottom: 7, padding: 4, position: 'absolute', right: 7, zIndex: 3 },
-  gridBookmarkStarText: { color: '#FF1755', fontSize: 28, lineHeight: 30 },
+  bookmarkPending: { color: '#FFFFFF', fontSize: 24, lineHeight: 28 },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1450,7 +1459,6 @@ const styles = StyleSheet.create({
   placeCardDistance: { color: '#7E8088', fontSize: 11, marginTop: 1 },
   placeCardName: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16, paddingRight: 25 },
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
-  cardBookmarkStarText: { color: '#FF1755', fontSize: 28, lineHeight: 30 },
   recommendationContent: { paddingBottom: 108 },
   recommendationContext: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 4 },
   recommendationGrid: { flexDirection: 'column', flexWrap: 'wrap', gap: 12, height: 380 },
@@ -1530,6 +1538,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   segmentLabelActive: { color: '#FF1956', fontWeight: '700' },
+  segmentInset: { paddingHorizontal: 16 },
   segmentOuter: {
     alignItems: 'stretch',
     backgroundColor: 'rgba(228,228,230,0.48)',
