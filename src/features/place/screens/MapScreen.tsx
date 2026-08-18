@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useTranslation } from 'react-i18next';
+import { useMapSettingsStore } from '../../../app/store/mapSettingsStore';
 import { useAuthStore } from '../../../app/store/authStore';
 import MapBottomSheet, {
   type BottomSheetContent,
@@ -27,13 +28,20 @@ import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
+import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
+import { useRecommendationExplanation } from '../../../v2/features/place-exploration';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
+import {
+  createRecommendationPresentation,
+  getRecommendationState,
+} from '../model/recommendationPresentation';
 import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
+import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
 
@@ -98,6 +106,9 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
   latitude: place.latitude,
   longitude: place.longitude,
   name: place.name,
+  recommendationReason: 'reason' in place && typeof place.reason === 'string'
+    ? place.reason
+    : undefined,
   tags: ['Visitor verified'],
   verifiedAgo: 'recently',
   verifiedMinutes: 0,
@@ -130,17 +141,28 @@ export default function MapScreen({
   const mapBlurTargetRef = useRef<View | null>(null);
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
+  const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
+    appliedActivityIntent,
+    appliedTravelPurposes,
     isError: isRecommendationsError,
     isLoading: isRecommendationsLoading,
+    limitReasons,
     places: recommendedPlaces,
+    recommendationRequestId,
+    recommendationVersion,
     refetch: refetchRecommendations,
   } = usePlaceRecommendations({
-    latitude: center.lat,
+    latitude: userLat,
     limit: 8,
-    longitude: center.lng,
-    radiusKm: 20,
+    longitude: userLng,
+    radiusKm: recommendationRadiusKm,
   });
+  const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const recommendationExplanation = useRecommendationExplanation(
+    recommendationRequestId ?? '',
+    { enabled: Boolean(recommendationRequestId) },
+  );
   const { profile } = useProfile();
   const isAuthHydrating = useAuthStore((state) => state.isHydrating);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -214,6 +236,36 @@ export default function MapScreen({
     if (recommendations.length > 0) return recommendations;
     return livePlaces.length > 0 ? livePlaces : mockPlaces;
   }, [apiPlaces, mockPlaces, recommendedPlaces]);
+  const recommendationPlaces = useMemo(() => {
+    const explanationByPlaceId = new Map(
+      (recommendationExplanation.data?.items ?? [])
+        .filter((item) => typeof item.placeId === 'number')
+        .map((item) => [item.placeId as number, item]),
+    );
+
+    return recommendedPlaces.map((place) => {
+      const explanation = explanationByPlaceId.get(place.id);
+      return {
+        ...toDecisionPlace(place),
+        recommendationRank: explanation?.ranking,
+        recommendationSource: explanation?.source,
+      };
+    });
+  }, [recommendationExplanation.data?.items, recommendedPlaces]);
+  const recommendationPresentation = useMemo(() => createRecommendationPresentation({
+    appliedActivityIntent,
+    appliedTravelPurposes,
+    limitReasons,
+  }), [
+    appliedActivityIntent,
+    appliedTravelPurposes,
+    limitReasons,
+  ]);
+  const recommendationsState = getRecommendationState({
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    places: recommendationPlaces,
+  });
   const favoritePlaces = useMemo(
     () => bookmarkedPlaces.map(toDecisionPlace),
     [bookmarkedPlaces],
@@ -260,8 +312,16 @@ export default function MapScreen({
   }, [content.type, selectedPlace, visiblePlaces]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
+    const recommendationPlaceIds = new Set(recommendationPlaces.map((place) => place.id));
+    const focusedRecommendationMarker = createFocusedRecommendationMarker(
+      content.type === 'place-preview' ? selectedPlace : null,
+      recommendationPlaceIds,
+      liveMarkerIds,
+    );
+    const visibleMarkerIds = new Set(liveMarkerIds);
+    if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
     const mockMarkers = mockPlaces
-      .filter((place) => !liveMarkerIds.has(String(place.id)))
+      .filter((place) => !visibleMarkerIds.has(String(place.id)))
       .map((place, index) => ({
         category: (index === 1 ? 'food' : index === 2 ? 'etc' : 'fashion') as MapMarker['category'],
         id: String(place.id),
@@ -275,6 +335,7 @@ export default function MapScreen({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
+      ...(focusedRecommendationMarker ? [focusedRecommendationMarker] : []),
       ...mockMarkers,
     ], bookmarkedPlaceIds);
 
@@ -288,7 +349,15 @@ export default function MapScreen({
           : 'etc';
 
     return markers.filter((marker) => marker.category === markerCategory);
-  }, [activeCategory, apiMarkers, bookmarkedPlaceIds, mockPlaces]);
+  }, [
+    activeCategory,
+    apiMarkers,
+    bookmarkedPlaceIds,
+    content.type,
+    mockPlaces,
+    recommendationPlaces,
+    selectedPlace,
+  ]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
@@ -313,6 +382,16 @@ export default function MapScreen({
     snapTo('medium');
   };
   const handlePlacePress = (place: DecisionPlace) => {
+    const isRecommendation = recommendedPlaces.some((item) => item.id === place.id);
+    if (isRecommendation && recommendationRequestId && recommendationVersion) {
+      void recordRecommendationClick({
+        placeId: place.id,
+        recommendationVersion,
+        requestId: recommendationRequestId,
+      }).catch((error) => {
+        if (__DEV__) console.warn('[recommendation-click]', error);
+      });
+    }
     setContent({ type: 'place-preview', placeId: place.id });
     setIsFollowingUser(false);
     snapTo('medium');
@@ -443,11 +522,12 @@ export default function MapScreen({
             }}
             onOpenMap={() => {
               setMapSection('map');
+              setContent({ type: 'home' });
               snapTo('medium');
             }}
             onOpenRecommendations={() => {
               setMapSection('map');
-              setContent({ type: 'home' });
+              setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
             onOpenReservations={onOpenSavedPlaces}
@@ -490,11 +570,12 @@ export default function MapScreen({
               snapTo('medium');
             }}
             onOpenRecommendations={() => {
-              setContent({ type: 'home' });
+              setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
             onOpenSavedPlaces={onOpenSavedPlaces}
             onPlacePress={handlePlacePress}
+            onRetryRecommendations={() => void refetchRecommendations()}
             onProfilePress={onOpenProfile}
             onQueryChange={handleQueryChange}
             onSearchFocus={handleSearchFocus}
@@ -505,6 +586,10 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             places={sheetPlaces}
+            recommendationContext={recommendationPresentation.contextText}
+            recommendationLimitMessage={recommendationPresentation.limitText}
+            recommendationPlaces={recommendationPlaces}
+            recommendationsState={recommendationsState}
             selectedPlace={selectedPlace}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}

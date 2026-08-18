@@ -8,6 +8,7 @@ export {
   createReplaceCurrentActivityIntentMutationOptions,
   refreshCachesAfterCurrentActivityIntentClear,
   refreshCachesAfterCurrentActivityIntentReplace,
+  refreshCurrentActivityIntentCaches,
   useClearCurrentActivityIntent,
   useCurrentActivityIntent,
   useReplaceCurrentActivityIntent,

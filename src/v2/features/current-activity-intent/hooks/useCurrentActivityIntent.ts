@@ -63,6 +63,19 @@ export async function refreshCachesAfterCurrentActivityIntentClear(
   ]);
 }
 
+/** Backward-compatible entry point for recommendation integrations. */
+export async function refreshCurrentActivityIntentCaches(
+  queryClient: QueryClient,
+  intent?: CurrentActivityIntent,
+) {
+  if (intent) {
+    await refreshCachesAfterCurrentActivityIntentReplace(queryClient, intent);
+    return;
+  }
+
+  await refreshCachesAfterCurrentActivityIntentClear(queryClient);
+}
+
 export function useCurrentActivityIntent() {
   return useQuery(createCurrentActivityIntentQueryOptions());
 }
