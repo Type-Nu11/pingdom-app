@@ -8,6 +8,7 @@
 | Trust | `TrustSummary`, 투표 집계·만료·신뢰도 | 지정 필요 | PENDING | - |
 | 쿠폰 | Offer/Coupon 상태, 중복 발급, 사용·만료 | 지정 필요 | PENDING | - |
 | 상점 | Claim, availability, merchant reservation 권한·전이 | 지정 필요 | PENDING | - |
+| Map 랭킹 | `scope`/`period`/`criteria`, 카드 이미지 source, 빈 결과·400 계약 | 지정 필요 | PENDING | #190 |
 
 승인 기준:
 
