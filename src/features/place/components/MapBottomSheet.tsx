@@ -171,46 +171,48 @@ const FeedSegment = ({
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
 }) => (
-  <View style={styles.segmentShadow}>
-    <GlassSurface
-      androidBlurEnabled={false}
-      glassEffectStyle="regular"
-      intensity={100}
-      style={styles.segmentOuter}
-      tintColor="rgba(228,228,230,0.48)"
-    >
-      <View pointerEvents="none" style={styles.segmentFrost} />
-      <Pressable
-        accessibilityRole="tab"
-        accessibilityState={{ selected: feed === 'local' }}
-        onPress={() => onChange('local')}
-        style={[styles.segment, feed === 'local' && styles.segmentActive]}
+  <View style={styles.segmentInset}>
+    <View style={styles.segmentShadow}>
+      <GlassSurface
+        androidBlurEnabled={false}
+        glassEffectStyle="regular"
+        intensity={100}
+        style={styles.segmentOuter}
+        tintColor="rgba(228,228,230,0.48)"
       >
-        <HotPlaceAsset
-          color={feed === 'local' ? '#FF1956' : '#767680'}
-          height={20}
-          width={16}
-        />
-        <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-          우리 지역 핫플
-        </Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="tab"
-        accessibilityState={{ selected: feed === 'national' }}
-        onPress={() => onChange('national')}
-        style={[styles.segment, feed === 'national' && styles.segmentActive]}
-      >
-        <MapAsset
-          color={feed === 'national' ? '#FF1956' : '#767680'}
-          height={20}
-          width={18}
-        />
-        <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-          전국 트렌드
-        </Text>
-      </Pressable>
-    </GlassSurface>
+        <View pointerEvents="none" style={styles.segmentFrost} />
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: feed === 'local' }}
+          onPress={() => onChange('local')}
+          style={[styles.segment, feed === 'local' && styles.segmentActive]}
+        >
+          <HotPlaceAsset
+            color={feed === 'local' ? '#FF1956' : '#767680'}
+            height={20}
+            width={16}
+          />
+          <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+            우리 지역 핫플
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: feed === 'national' }}
+          onPress={() => onChange('national')}
+          style={[styles.segment, feed === 'national' && styles.segmentActive]}
+        >
+          <MapAsset
+            color={feed === 'national' ? '#FF1956' : '#767680'}
+            height={20}
+            width={18}
+          />
+          <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+            전국 트렌드
+          </Text>
+        </Pressable>
+      </GlassSurface>
+    </View>
   </View>
 );
 
@@ -705,7 +707,7 @@ const RecommendationContent = ({
     >
       <View style={styles.recommendationHeader}>
         <View style={styles.recommendationTitleRow}>
-          <RecommendationTitleAsset height={20} width={20} />
+          <RecommendationTitleAsset height={22} width={22} />
           <Text style={styles.recommendationTitle}>나만을 위한 추천 장소</Text>
         </View>
         <Text numberOfLines={1} style={styles.recommendationSubtitle}>
@@ -1230,7 +1232,7 @@ const styles = StyleSheet.create({
     top: 0,
   },
   cardRow: {
-    gap: 14,
+    gap: 12,
     paddingBottom: 10,
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -1296,13 +1298,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.76)',
     borderColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    height: 36,
+    gap: 7,
+    height: 44,
     justifyContent: 'center',
-    paddingHorizontal: 13,
+    paddingHorizontal: 15,
     shadowColor: '#15181E',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -1315,10 +1317,10 @@ const styles = StyleSheet.create({
   categoryChipLabel: { color: '#5E5E66', fontSize: 14, fontWeight: '700' },
   categoryChipLabelActive: { color: '#FF1956' },
   categoryRow: {
-    gap: 8,
-    paddingBottom: 12,
+    gap: 9,
+    paddingBottom: 16,
     paddingHorizontal: 8,
-    paddingTop: 10,
+    paddingTop: 14,
   },
   gridArtwork: { height: '100%' },
   gridCard: {
@@ -1433,13 +1435,13 @@ const styles = StyleSheet.create({
   },
   placeCard: {
     backgroundColor: 'transparent',
-    minHeight: 202,
-    width: 156,
+    minHeight: 222,
+    width: 172,
   },
   placeCardArtwork: {
     backgroundColor: '#161616',
     borderRadius: 13,
-    height: 156,
+    height: 172,
     overflow: 'hidden',
     shadowColor: '#12161D',
     shadowOffset: { width: 0, height: 3 },
@@ -1467,8 +1469,8 @@ const styles = StyleSheet.create({
   recommendationReason: { color: '#35363C', fontSize: 11, fontWeight: '600', marginTop: 7 },
   recommendationExplanation: { color: '#55575F', fontSize: 10, fontWeight: '600', marginTop: 7 },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
-  recommendationSubtitle: { color: '#73757D', fontSize: 11, marginTop: 4 },
-  recommendationTitle: { color: '#202127', fontSize: 18, fontWeight: '900' },
+  recommendationSubtitle: { color: '#73757D', fontSize: 12, marginTop: 5 },
+  recommendationTitle: { color: '#202127', fontSize: 20, fontWeight: '900' },
   recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   gridRecommendationReason: { color: '#FFB2C8', fontSize: 9, fontWeight: '700', marginTop: 3, paddingRight: 29 },
   gridRecommendationExplanation: { color: 'rgba(255,255,255,0.78)', fontSize: 8, marginTop: 2, paddingRight: 29 },
@@ -1536,6 +1538,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   segmentLabelActive: { color: '#FF1956', fontWeight: '700' },
+  segmentInset: { paddingHorizontal: 16 },
   segmentOuter: {
     alignItems: 'stretch',
     backgroundColor: 'rgba(228,228,230,0.48)',

@@ -105,7 +105,7 @@ const formatDistance = (place: DecisionPlace) => {
     : `${Math.round(place.distanceMeters)}m`;
 };
 
-const HeaderStar = () => <MyPlaceAsset height={38} width={38} />;
+const HeaderStar = () => <MyPlaceAsset height={42} width={42} />;
 
 const ActiveNavStar = () => (
   <Svg height={21} viewBox="0 0 25 24" width={22}>
@@ -124,7 +124,7 @@ const FavoriteImage = ({ uri }: { uri?: string }) => {
   if (!uri || hasError) {
     return (
       <View style={[styles.placeImage, styles.imagePlaceholder]}>
-        <MyPlaceAsset height={30} width={100} />
+        <MyPlaceAsset height={30} width={30} />
       </View>
     );
   }
@@ -224,28 +224,28 @@ const BottomNavigation = ({
         tintColor="rgba(238,238,242,0.42)"
       >
         <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
-          <MapAsset color="#3B3B40" height={22} width={19} />
+          <View style={styles.navIcon}><MapAsset color="#3B3B40" height={22} width={19} /></View>
           <Text style={styles.navLabel}>지도</Text>
         </Pressable>
         <View style={[styles.navItem, styles.navItemActive]}>
-          <ActiveNavStar />
+          <View style={styles.navIcon}><ActiveNavStar /></View>
           <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
         </View>
         <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
-          <CheckInAsset height={22} width={21} />
+          <View style={styles.navIcon}><CheckInAsset height={22} width={21} /></View>
           <Text style={styles.navLabel}>예약</Text>
         </Pressable>
       </GlassSurface> : <View style={[styles.navigationBar, styles.navigationBarSolid]}>
         <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
-          <MapAsset color="#3B3B40" height={22} width={19} />
+          <View style={styles.navIcon}><MapAsset color="#3B3B40" height={22} width={19} /></View>
           <Text style={styles.navLabel}>지도</Text>
         </Pressable>
         <View style={[styles.navItem, styles.navItemActive]}>
-          <ActiveNavStar />
+          <View style={styles.navIcon}><ActiveNavStar /></View>
           <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
         </View>
         <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
-          <CheckInAsset height={22} width={21} />
+          <View style={styles.navIcon}><CheckInAsset height={22} width={21} /></View>
           <Text style={styles.navLabel}>예약</Text>
         </Pressable>
       </View>}
@@ -380,7 +380,7 @@ export default function FavoritePlacesBottomSheet({
                   onPress={() => setActiveCategory(id)}
                   style={[styles.categoryChip, active && styles.categoryChipActive]}
                 >
-                  {Icon ? <Icon color={active ? '#FF245B' : '#616169'} height={17} width={20} /> : null}
+                  {Icon ? <Icon color={active ? '#FF245B' : '#616169'} height={18} width={21} /> : null}
                   <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</Text>
                 </Pressable>
               );
@@ -470,13 +470,13 @@ const styles = StyleSheet.create({
   bottomSheet: { bottom: 0, left: 0, overflow: 'visible', position: 'absolute', right: 0, zIndex: 50 },
   categoryChip: {
     alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 17, borderWidth: 1, flexDirection: 'row', gap: 5, height: 34, justifyContent: 'center', paddingHorizontal: 12,
+    borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
   },
   categoryChipActive: { backgroundColor: 'rgba(255,255,255,0.84)', borderColor: '#FF245B' },
-  categoryContent: { gap: 7, paddingBottom: 10, paddingHorizontal: 0, paddingTop: 9 },
-  categoryLabel: { color: '#616169', fontSize: 13, fontWeight: '700' },
+  categoryContent: { gap: 8, paddingBottom: 12, paddingHorizontal: 16, paddingTop: 10 },
+  categoryLabel: { color: '#616169', fontSize: 14, fontWeight: '700' },
   categoryLabelActive: { color: '#FF245B' },
-  categoryScroll: { flexGrow: 0, height: 53, overflow: 'hidden' },
+  categoryScroll: { flexGrow: 0, height: 58, overflow: 'hidden' },
   content: { flex: 1 },
   emptyBody: { color: '#777982', fontSize: 13, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingTop: 42 },
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   imagePlaceholder: { alignItems: 'center', backgroundColor: '#E7E7EA', justifyContent: 'center' },
   imageRow: { borderRadius: 15, flexDirection: 'row', height: 120, overflow: 'hidden' },
   list: { flex: 1 },
-  listContent: { paddingBottom: 116, paddingHorizontal: 6 },
+  listContent: { paddingBottom: 116, paddingHorizontal: 16 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 182, marginBottom: 0 },
   loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#FF1956', borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
@@ -496,14 +496,15 @@ const styles = StyleSheet.create({
   moreButton: { alignItems: 'center', height: 30, justifyContent: 'center', width: 24 },
   moreButtonText: { color: '#3B3B40', fontSize: 22, lineHeight: 24 },
   nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5 },
+  navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: { alignItems: 'center', borderRadius: 27, flex: 1, gap: 3, height: 54, justifyContent: 'center' },
-  navItemActive: { backgroundColor: 'rgba(255,255,255,0.58)', borderColor: 'rgba(255,255,255,0.78)', borderWidth: 1 },
-  navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600' },
+  navItemActive: { backgroundColor: 'rgba(255,255,255,0.58)', borderColor: 'rgba(255,255,255,0.78)', borderWidth: 1, elevation: 1, shadowColor: '#11151B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 5 },
+  navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
-  navigationBar: { backgroundColor: 'rgba(238,238,242,0.34)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 32, borderWidth: 1, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 5 },
+  navigationBar: { backgroundColor: 'rgba(238,238,242,0.34)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 32, borderWidth: 1, flex: 1, flexDirection: 'row', gap: 0, height: 64, overflow: 'hidden', padding: 5 },
   navigationBarSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
-  navigationRow: { flexDirection: 'row', gap: 12, left: 6, position: 'absolute', right: 16 },
-  navigationShadow: { backgroundColor: 'rgba(238,238,242,0.12)', borderRadius: 32, elevation: 2, flex: 1, shadowColor: '#11151B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 10 },
+  navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
+  navigationShadow: { backgroundColor: 'rgba(238,238,242,0.12)', borderRadius: 32, elevation: 2, flex: 1, shadowColor: '#11151B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
   placeCategory: { color: '#64666E', fontSize: 12 },
   placeHeading: { alignItems: 'center', flexDirection: 'row', marginBottom: 9 },
   placeImage: { borderRightColor: 'rgba(255,255,255,0.9)', borderRightWidth: 1, flex: 1, height: '100%' },
@@ -514,13 +515,13 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.72 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  sendButton: { alignItems: 'center', backgroundColor: 'rgba(238,238,242,0.12)', borderRadius: 32, elevation: 4, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 12, width: 64 },
+  sendButton: { alignItems: 'center', backgroundColor: 'rgba(238,238,242,0.12)', borderRadius: 32, elevation: 2, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10, width: 64 },
   sendButtonGlass: { alignItems: 'center', backgroundColor: 'rgba(238,238,242,0.34)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 32, borderWidth: 1, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   sendButtonSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
   sheetChrome: { backgroundColor: 'rgba(248,248,248,0.68)', borderColor: 'rgba(255,255,255,0.88)', borderRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, borderWidth: 1, flex: 1, overflow: 'hidden' },
   sheetChromeShadow: { backgroundColor: 'rgba(244,246,248,0.08)', borderRadius: 36, elevation: 22, left: 0, position: 'absolute', right: 0, shadowColor: '#10141A', shadowOffset: { width: 0, height: -7 }, shadowOpacity: 0.17, shadowRadius: 24, top: 0 },
   sheetInner: { flex: 1, overflow: 'hidden', paddingHorizontal: SHEET_RESTING_GAP },
   sheetTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(250,250,251,0.92)' },
-  title: { color: '#111217', fontSize: 22, fontWeight: '900', letterSpacing: -0.6 },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
+  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
 });
