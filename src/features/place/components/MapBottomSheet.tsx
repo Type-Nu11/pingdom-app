@@ -87,6 +87,11 @@ type MapBottomSheetProps = {
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
+  feed?: 'local' | 'national';
+  onFeedChange?: (feed: 'local' | 'national') => void;
+  rankingImageUrlsByPlaceId?: Record<string, string>;
+  rankingPlaces?: DecisionPlace[];
+  rankingState?: 'empty' | 'error' | 'loading' | 'ready';
   recommendationContext?: string | null;
   recommendationLimitMessage?: string | null;
   recommendationPlaces: DecisionPlace[];
@@ -530,6 +535,7 @@ const ExpandedHomeContent = ({
   onPlacePress,
   onToggleBookmark,
   places,
+  state,
   userName,
 }: {
   activeCategory: SheetCategory;
@@ -543,6 +549,7 @@ const ExpandedHomeContent = ({
   onPlacePress: (place: DecisionPlace) => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   places: DecisionPlace[];
+  state?: 'empty' | 'error' | 'loading' | 'ready';
   userName: string;
 }) => {
   const categoryPlaces = places.filter((place) => placeMatchesCategory(place, activeCategory));
@@ -561,6 +568,7 @@ const ExpandedHomeContent = ({
         horizontal
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
+        style={styles.rowScroll}
       >
         {places.length > 0 ? places.slice(0, 6).map((place, index) => (
           <PlaceTrendCard
@@ -576,7 +584,7 @@ const ExpandedHomeContent = ({
             pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
             place={place}
           />
-        )) : <EmptyCard />}
+        )) : <EmptyCard state={state} variant="row" />}
       </ScrollView>
 
       <Text style={styles.expandedTitle}>
@@ -629,13 +637,29 @@ const ExpandedHomeContent = ({
   );
 };
 
-const EmptyCard = () => (
-  <View style={[styles.placeCard, styles.emptyCard]}>
-    <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
-    <Text style={styles.emptyCardTitle}>주변 핫플을 찾는 중이에요</Text>
-    <Text style={styles.emptyCardBody}>지도를 움직여 다른 지역도 둘러보세요.</Text>
-  </View>
-);
+const EMPTY_CARD_COPY: Record<'empty' | 'error' | 'loading', { body: string; title: string }> = {
+  empty: { body: '지도를 움직여 다른 지역도 둘러보세요.', title: '표시할 핫플이 아직 없어요' },
+  error: { body: '잠시 후 다시 시도해 주세요.', title: '목록을 불러오지 못했어요' },
+  loading: { body: '지도를 움직여 다른 지역도 둘러보세요.', title: '주변 핫플을 찾는 중이에요' },
+};
+
+const EmptyCard = ({
+  state = 'loading',
+  variant = 'list',
+}: {
+  state?: 'empty' | 'error' | 'loading' | 'ready';
+  variant?: 'list' | 'row';
+}) => {
+  const copy = EMPTY_CARD_COPY[state === 'ready' ? 'empty' : state];
+
+  return (
+    <View style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}>
+      <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
+      <Text style={styles.emptyCardTitle}>{copy.title}</Text>
+      <Text style={styles.emptyCardBody}>{copy.body}</Text>
+    </View>
+  );
+};
 
 const RecommendationState = ({
   onRetry,
@@ -1003,16 +1027,31 @@ export default function MapBottomSheet({
   sheetTranslateY,
   snapPoint,
   userName,
+  feed: controlledFeed,
+  onFeedChange,
+  rankingImageUrlsByPlaceId,
+  rankingPlaces,
+  rankingState,
 }: MapBottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const [feed, setFeed] = useState<'local' | 'national'>('local');
+  const [uncontrolledFeed, setUncontrolledFeed] = useState<'local' | 'national'>('local');
+  const feed = controlledFeed ?? uncontrolledFeed;
+  const setFeed = (next: 'local' | 'national') => {
+    setUncontrolledFeed(next);
+    onFeedChange?.(next);
+  };
   const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
-  const shownPlaces = feed === 'local' ? places : [...places].reverse();
-  const previewPlaces = [...places, ...recommendationPlaces]
+  // 서버 랭킹이 붙어 있으면 그대로 쓰고, 없을 때만 기존 목록으로 대체한다.
+  const shownPlaces = rankingPlaces ?? (feed === 'local' ? places : [...places].reverse());
+  const previewPlaces = [...places, ...recommendationPlaces, ...(rankingPlaces ?? [])]
     .filter((place, index, items) => items.findIndex((item) => item.id === place.id) === index);
-  const { imageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
+  const { imageUrlsByPlaceId: previewImageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
+  const imageUrlsByPlaceId = {
+    ...previewImageUrlsByPlaceId,
+    ...(rankingImageUrlsByPlaceId ?? {}),
+  };
   const contentFadeStart = mediumTranslateY
     + ((collapsedTranslateY - mediumTranslateY) * 0.42);
   const contentOpacity = sheetTranslateY.interpolate({
@@ -1147,6 +1186,7 @@ export default function MapBottomSheet({
           onPlacePress={onPlacePress}
           onToggleBookmark={onToggleBookmark}
           places={shownPlaces}
+          state={rankingState}
           userName={userName?.trim() || 'user'}
         />
       ) : (
@@ -1156,6 +1196,7 @@ export default function MapBottomSheet({
             contentContainerStyle={styles.cardRow}
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.rowScroll}
           >
             {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place, index) => (
               <PlaceTrendCard
@@ -1171,7 +1212,7 @@ export default function MapBottomSheet({
                 pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
                 place={place}
               />
-            )) : <EmptyCard />}
+            )) : <EmptyCard state={rankingState} variant="row" />}
           </ScrollView>
         </>
       )}
@@ -1237,6 +1278,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
+  rowScroll: {
+    flexGrow: 0,
+  },
   cardScrim: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -1246,6 +1290,12 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   emptyCardBody: { color: '#81838C', fontSize: 11, marginTop: 4, textAlign: 'center' },
+  emptyCardRow: {
+    backgroundColor: '#F6F6F7',
+    borderRadius: 16,
+    height: 199,
+    width: 242,
+  },
   emptyCardIcon: {
     alignItems: 'center',
     backgroundColor: '#FFF0F4',
