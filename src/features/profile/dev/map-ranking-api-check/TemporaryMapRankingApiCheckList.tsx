@@ -12,7 +12,7 @@ type Props = {
 export default function TemporaryMapRankingApiCheckList({ onSelect }: Props) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Map 랭킹 API · #190 계약 검증(서버 미확정)</Text>
+      <Text style={styles.label}>Map 랭킹 API · #190 확정 계약 검증</Text>
       {TEMPORARY_MAP_RANKING_ENDPOINTS.map((endpoint) => (
         <Pressable
           accessibilityRole="button"

@@ -74,7 +74,7 @@ describe('TemporaryMapRankingApiCheck', () => {
     expect(screen.getByLabelText('radiusKm')).toBeTruthy();
   });
 
-  test('서버 미확정 계약임을 화면에 안내한다', async () => {
+  test('로그인 토큰이 필요한 endpoint임을 화면에 안내한다', async () => {
     await render(
       <TemporaryMapRankingApiCheckPage
         endpoint="GET /map/place-rankings (NATIONAL)"
@@ -82,7 +82,7 @@ describe('TemporaryMapRankingApiCheck', () => {
       />,
     );
 
-    expect(screen.getByText(/서버가 아직 이 계약을 확정하지 않았습니다/)).toBeTruthy();
+    expect(screen.getByText(/로그인 토큰이 필요합니다/)).toBeTruthy();
   });
 
   test('요청 실행은 수동 refetch로 호출하고 응답과 집계 메타를 보여준다', async () => {
