@@ -98,7 +98,7 @@ export default function TemporaryMapRankingApiCheckPage({ endpoint, onBack }: Pr
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.warning}>
-          서버가 아직 이 계약을 확정하지 않았습니다. 배포 spec에 반영되기 전에는 404 또는 400이 정상 결과입니다.
+          이 endpoint는 로그인 토큰이 필요합니다. 토큰 없이 호출하면 401 INVALID_TOKEN이 옵니다.
         </Text>
 
         {isLocal ? (
