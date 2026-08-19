@@ -1,1 +1,0 @@
-export const HOT_PLACE_MIN_POST_LIKE_COUNT = 5;
