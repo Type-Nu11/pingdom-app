@@ -1,5 +1,6 @@
-// 이슈 #190 제안 계약(docs/api/map-hotplace-trend.proposal.openapi.json) 기준 타입.
-// 서버가 /v3/api-docs에 계약을 반영하면 배포 명세 기준으로 갱신한다.
+// 배포 계약(GET /map/place-rankings, 2026-08-19 /v3/api-docs 확인) 기준 타입.
+// 서버 schema는 required와 nullable을 표기하지 않고 criteria·imageSource도 자유 string이라
+// 식별자 외 필드는 선택으로 두고 enum은 normalizer로 좁힌다.
 
 export type PlaceRankingScope = 'LOCAL' | 'NATIONAL';
 
@@ -17,36 +18,36 @@ export type PlaceRankingItem = {
   bookmarked?: boolean | null;
   category?: string | null;
   distanceMeters?: number | null;
-  imageSource: PlaceRankingImageSource;
-  imageUrl: string | null;
-  latitude: number;
-  likeCount?: number;
-  longitude: number;
+  imageSource?: string | null;
+  imageUrl?: string | null;
+  latitude?: number | null;
+  likeCount?: number | null;
+  longitude?: number | null;
   placeId: number;
-  placeName: string;
-  postCount?: number;
-  rank: number;
+  placeName?: string | null;
+  postCount?: number | null;
+  rank?: number | null;
   registrantUsername?: string | null;
   representativeMediaId?: number | null;
   representativePostId?: number | null;
-  score: number;
-  thumbnailUrl: string | null;
+  score?: number | null;
+  thumbnailUrl?: string | null;
 };
 
 export type PlaceRankingPage = {
   appliedRadiusKm?: number | null;
-  criteria: PlaceRankingCriteria;
-  generatedAt: string;
-  hasNext: boolean;
-  items: PlaceRankingItem[];
-  limit: number;
-  page: number;
-  period: PlaceRankingPeriod;
-  periodEnd: string;
-  periodStart: string;
-  radiusExpanded: boolean;
+  criteria?: string | null;
+  generatedAt?: string | null;
+  hasNext?: boolean | null;
+  items?: PlaceRankingItem[] | null;
+  limit?: number | null;
+  page?: number | null;
+  period?: string | null;
+  periodEnd?: string | null;
+  periodStart?: string | null;
+  radiusExpanded?: boolean | null;
   requestedRadiusKm?: number | null;
-  scope: PlaceRankingScope;
-  totalCount: number;
-  totalPages: number;
+  scope?: PlaceRankingScope | null;
+  totalCount?: number | null;
+  totalPages?: number | null;
 };
