@@ -6,7 +6,6 @@ export type PostLikeState = Record<string, boolean>;
 
 export const postQueryKeys = {
   all: ['posts'] as const,
-  hotPlaces: () => [...postQueryKeys.all, 'hotPlaces'] as const,
   likes: () => ['postLikes'] as const,
   list: (params: GetPostsRequest) => [...postQueryKeys.all, 'list', params] as const,
   place: (placeId: number | null, params: GetPostsRequest) => [
