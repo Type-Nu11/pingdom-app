@@ -7,9 +7,14 @@ import {
   isLiquidGlassAvailable,
   type GlassViewProps,
 } from 'expo-glass-effect';
+import {
+  AndroidStaticSurface,
+  MaterialTint,
+} from '../styles/GlassSurface.styles';
 
 type GlassSurfaceProps = ViewProps & {
   androidBlurEnabled?: boolean;
+  androidFallbackTintColor?: string;
   blurTarget?: BlurViewProps['blurTarget'];
   glassEffectStyle?: GlassViewProps['glassEffectStyle'];
   intensity?: number;
@@ -45,10 +50,11 @@ export const supportsAndroidNativeBlur = () => (
 
 const GlassSurface = ({
   androidBlurEnabled = true,
+  androidFallbackTintColor = 'rgba(247,250,252,0.9)',
   blurTarget,
   children,
   glassEffectStyle = 'clear',
-  intensity = 90,
+  intensity = 56,
   interactive = false,
   style,
   tintColor = 'rgba(255,255,255,0.18)',
@@ -75,23 +81,49 @@ const GlassSurface = ({
     );
   }
 
+  if (Platform.OS === 'android') {
+    // Keep the material tint independent from the blur backend. During map motion we
+    // disable only the expensive backdrop blur, leaving this tint in place so the
+    // surface does not flash into a different colour.
+    if (!shouldUseAndroidBlur) {
+      const preserveMaterialTint = !androidBlurEnabled
+        || (Boolean(resolvedBlurTarget) && supportsAndroidNativeBlur());
+      const fallbackTint = preserveMaterialTint
+        ? tintColor
+        : androidFallbackTintColor;
+
+      return (
+        <AndroidStaticSurface $backgroundColor={fallbackTint} style={style} {...viewProps}>
+          {children}
+        </AndroidStaticSurface>
+      );
+    }
+
+    return (
+      <BlurView
+        blurMethod="dimezisBlurViewSdk31Plus"
+        blurReductionFactor={4}
+        blurTarget={resolvedBlurTarget}
+        intensity={intensity}
+        style={[style, { backgroundColor: 'transparent' }]}
+        tint="systemUltraThinMaterial"
+        {...viewProps}
+      >
+        <MaterialTint $tintColor={tintColor} pointerEvents="none" />
+        {children}
+      </BlurView>
+    );
+  }
+
   return (
     <BlurView
-      blurMethod={shouldUseAndroidBlur
-        ? 'dimezisBlurViewSdk31Plus'
-        : 'none'}
-      blurReductionFactor={Platform.OS === 'android' ? 1 : undefined}
+      blurMethod="none"
+      blurReductionFactor={undefined}
       blurTarget={resolvedBlurTarget}
       intensity={intensity}
       style={[
-        {
-          backgroundColor: Platform.OS === 'android'
-            ? shouldUseAndroidBlur
-              ? tintColor
-              : 'rgba(247,250,252,0.9)'
-            : tintColor,
-        },
         style,
+        { backgroundColor: tintColor },
       ]}
       tint="systemUltraThinMaterialLight"
       {...viewProps}
