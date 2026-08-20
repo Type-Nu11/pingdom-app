@@ -4,7 +4,7 @@ import process from 'node:process';
 
 const projectRoot = process.cwd();
 const v2Root = path.join(projectRoot, 'src', 'v2');
-const sourceExtensions = new Set(['.ts', '.tsx']);
+const sourceExtensions = new Set(['.ts', '.tsx', '.mjs']);
 const violations = [];
 
 function visit(directory) {
@@ -40,11 +40,15 @@ function checkFile(filePath) {
     report(filePath, 'axios may only be imported by the shared API layer');
   }
 
-  const importPattern = /from\s+['"]([^'"]+)['"]/g;
+  const importPattern = /(?:from\s*|import\s*\(|require\s*\()\s*['"]([^'"]+)['"]/g;
   let match;
 
   while ((match = importPattern.exec(source)) !== null) {
     const importPath = match[1];
+
+    if (/^(?:@\/|~\/)?(?:src\/)?features(?:\/|$)/.test(importPath) || /^(?:@|~)features(?:\/|$)/.test(importPath)) {
+      report(filePath, `V2 must not import V1 feature code: ${importPath}`);
+    }
 
     if (!isTestFile && normalizedPath.includes('/screens/') && importPath.includes('/api/')) {
       report(filePath, 'screens must access API modules through hooks');
