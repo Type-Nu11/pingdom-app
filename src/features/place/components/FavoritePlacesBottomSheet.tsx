@@ -23,7 +23,8 @@ import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend.svg';
 import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import type { DecisionPlace } from './MapBottomSheet';
-import GlassSurface, { supportsNativeLiquidGlass } from './GlassSurface';
+import FrostedSurface from './FrostedSurface';
+import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 
 type FavoriteCategory = 'all' | 'music' | 'food' | 'popup' | 'fashion' | 'beauty' | 'art';
 
@@ -56,8 +57,6 @@ type FavoritePlacesBottomSheetProps = {
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
-const LIQUID_GLASS_AVAILABLE = supportsNativeLiquidGlass();
-
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: FavoriteCategory;
@@ -112,6 +111,9 @@ const ActiveNavStar = () => (
     <Path
       d="M1.19 9.917c-.366-.338-.167-.949.327-1.008l7.004-.83a.58.58 0 0 0 .462-.335l2.954-6.405c.209-.452.852-.452 1.06 0l2.954 6.405a.58.58 0 0 0 .46.335l7.005.83c.494.06.692.67.327 1.008l-5.178 4.789a.58.58 0 0 0-.176.542l1.374 6.918c.097.488-.423.866-.857.623l-6.154-3.446a.58.58 0 0 0-.57 0l-6.155 3.445c-.434.243-.955-.134-.858-.622l1.375-6.918a.58.58 0 0 0-.176-.542L1.19 9.917Z"
       fill="#FF245B"
+      stroke="#FF245B"
+      strokeLinejoin="round"
+      strokeWidth={0.7}
     />
   </Svg>
 );
@@ -211,44 +213,35 @@ const BottomNavigation = ({
     style={[
       styles.navigationRow,
       {
-        bottom: Math.max(20, bottomInset + 8),
+        bottom: Math.max(24, bottomInset + 10),
         transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
       },
     ]}
   >
     <View style={styles.navigationShadow}>
-      {LIQUID_GLASS_AVAILABLE ? <GlassSurface
+      <FrostedSurface
+        cornerRadius={32}
         glassEffectStyle="regular"
-        intensity={96}
+        highlightOpacity={0}
+        rimColor="rgba(0,0,0,0.06)"
         style={styles.navigationBar}
-        tintColor="rgba(238,238,242,0.42)"
+        tintColor="#FFFFFF"
       >
         <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
           <View style={styles.navIcon}><MapAsset color="#3B3B40" height={22} width={19} /></View>
           <Text style={styles.navLabel}>지도</Text>
         </Pressable>
-        <View style={[styles.navItem, styles.navItemActive]}>
-          <View style={styles.navIcon}><ActiveNavStar /></View>
-          <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
+        <View style={styles.navItem}>
+          <View style={[styles.navItemSurface, styles.navItemActive]}>
+            <View style={styles.navIcon}><ActiveNavStar /></View>
+            <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
+          </View>
         </View>
         <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
           <View style={styles.navIcon}><CheckInAsset height={22} width={21} /></View>
           <Text style={styles.navLabel}>예약</Text>
         </Pressable>
-      </GlassSurface> : <View style={[styles.navigationBar, styles.navigationBarSolid]}>
-        <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
-          <View style={styles.navIcon}><MapAsset color="#3B3B40" height={22} width={19} /></View>
-          <Text style={styles.navLabel}>지도</Text>
-        </Pressable>
-        <View style={[styles.navItem, styles.navItemActive]}>
-          <View style={styles.navIcon}><ActiveNavStar /></View>
-          <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
-        </View>
-        <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
-          <View style={styles.navIcon}><CheckInAsset height={22} width={21} /></View>
-          <Text style={styles.navLabel}>예약</Text>
-        </Pressable>
-      </View>}
+      </FrostedSurface>
     </View>
     <Pressable
       accessibilityLabel="장소추천"
@@ -256,17 +249,17 @@ const BottomNavigation = ({
       onPress={onOpenRecommendations}
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
     >
-      {LIQUID_GLASS_AVAILABLE ? <GlassSurface
+      <FrostedSurface
+        cornerRadius={32}
         glassEffectStyle="regular"
-        intensity={96}
+        highlightOpacity={0}
         pointerEvents="none"
+        rimColor="rgba(0,0,0,0.06)"
         style={styles.sendButtonGlass}
-        tintColor="rgba(238,238,242,0.42)"
+        tintColor="#FFFFFF"
       >
         <PlaceRecommendAsset height={23} width={23} />
-      </GlassSurface> : <View pointerEvents="none" style={[styles.sendButtonGlass, styles.sendButtonSolid]}>
-        <PlaceRecommendAsset height={23} width={23} />
-      </View>}
+      </FrostedSurface>
     </Pressable>
   </Animated.View>
 );
@@ -324,28 +317,30 @@ export default function FavoritePlacesBottomSheet({
   });
 
   return (
-    <Animated.View style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}>
-      <Animated.View
+    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
+      <GlassStyles.SheetChromeShadow
         pointerEvents="none"
-        style={[styles.sheetChromeShadow, { bottom: chromeBottomInset, left: chromeGap, right: chromeGap }]}
+        style={{ bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
       >
-        <Animated.View
+        <GlassStyles.SheetChrome
+          $borderColor="transparent"
           style={[
-            styles.sheetChrome,
             { borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius },
           ]}
         >
-          <GlassSurface
+          <GlassStyles.SheetGlass
+            cornerRadius={34}
             glassEffectStyle="regular"
-            intensity={100}
-            style={StyleSheet.absoluteFill}
-            tintColor="rgba(248,248,248,0.28)"
+            highlightHeight={40}
+            highlightOpacity={0.10}
+            rimColor="rgba(255,255,255,0.60)"
+            tintColor="rgba(255,255,255,0.92)"
+            topRimOnly
           />
-          <View style={styles.sheetTint} />
-        </Animated.View>
-      </Animated.View>
+        </GlassStyles.SheetChrome>
+      </GlassStyles.SheetChromeShadow>
 
-      <View style={styles.sheetInner}>
+      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
             accessibilityLabel="즐겨찾기 패널 크기 조절"
@@ -453,7 +448,7 @@ export default function FavoritePlacesBottomSheet({
             </ScrollView>
           </View>
         </Animated.View>
-      </View>
+      </GlassStyles.SheetInner>
 
       <BottomNavigation
         bottomInset={insets.bottom}
@@ -462,12 +457,11 @@ export default function FavoritePlacesBottomSheet({
         onOpenReservations={onOpenReservations}
         sheetTranslateY={sheetTranslateY}
       />
-    </Animated.View>
+    </GlassStyles.BottomSheetContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  bottomSheet: { bottom: 0, left: 0, overflow: 'visible', position: 'absolute', right: 0, zIndex: 50 },
   categoryChip: {
     alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.92)',
     borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
@@ -497,14 +491,23 @@ const styles = StyleSheet.create({
   moreButtonText: { color: '#3B3B40', fontSize: 22, lineHeight: 24 },
   nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5 },
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
-  navItem: { alignItems: 'center', borderRadius: 27, flex: 1, gap: 3, height: 54, justifyContent: 'center' },
-  navItemActive: { backgroundColor: 'rgba(255,255,255,0.58)', borderColor: 'rgba(255,255,255,0.78)', borderWidth: 1, elevation: 1, shadowColor: '#11151B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 5 },
+  navItem: { alignItems: 'center', flex: 1, gap: 3, justifyContent: 'center' },
+  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', width: 80 },
+  navItemActive: { backgroundColor: '#F7F7F8' },
   navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
-  navigationBar: { backgroundColor: 'rgba(238,238,242,0.34)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 32, borderWidth: 1, flex: 1, flexDirection: 'row', gap: 0, height: 64, overflow: 'hidden', padding: 5 },
-  navigationBarSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
+  navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', gap: 0, height: 64, overflow: 'hidden', padding: 5 },
   navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
-  navigationShadow: { backgroundColor: 'rgba(238,238,242,0.12)', borderRadius: 32, elevation: 2, flex: 1, shadowColor: '#11151B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
+  navigationShadow: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    elevation: 4,
+    flex: 1,
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+  },
   placeCategory: { color: '#64666E', fontSize: 12 },
   placeHeading: { alignItems: 'center', flexDirection: 'row', marginBottom: 9 },
   placeImage: { borderRightColor: 'rgba(255,255,255,0.9)', borderRightWidth: 1, flex: 1, height: '100%' },
@@ -515,13 +518,20 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.72 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  sendButton: { alignItems: 'center', backgroundColor: 'rgba(238,238,242,0.12)', borderRadius: 32, elevation: 2, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10, width: 64 },
-  sendButtonGlass: { alignItems: 'center', backgroundColor: 'rgba(238,238,242,0.34)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 32, borderWidth: 1, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
-  sendButtonSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
-  sheetChrome: { backgroundColor: 'rgba(248,248,248,0.68)', borderColor: 'rgba(255,255,255,0.88)', borderRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, borderWidth: 1, flex: 1, overflow: 'hidden' },
-  sheetChromeShadow: { backgroundColor: 'rgba(244,246,248,0.08)', borderRadius: 36, elevation: 22, left: 0, position: 'absolute', right: 0, shadowColor: '#10141A', shadowOffset: { width: 0, height: -7 }, shadowOpacity: 0.17, shadowRadius: 24, top: 0 },
-  sheetInner: { flex: 1, overflow: 'hidden', paddingHorizontal: SHEET_RESTING_GAP },
-  sheetTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(250,250,251,0.92)' },
+  sendButton: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    elevation: 4,
+    height: 64,
+    justifyContent: 'center',
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    width: 64,
+  },
+  sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
 });
