@@ -47,6 +47,10 @@ import {
 } from '../model/recommendationPresentation';
 import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
+import {
+  findMapPreviewPlace,
+  mergeMapPreviewPlaces,
+} from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
@@ -232,17 +236,7 @@ export default function MapScreen({
     () => makeMockPlaces(center.lat, center.lng),
     [center.lat, center.lng],
   );
-  const allPlaces = useMemo(() => {
-    const recommendations = recommendedPlaces
-      .slice(0, 8)
-      .map(toDecisionPlace);
-    const livePlaces = apiPlaces
-      .slice(0, 8)
-      .map(toDecisionPlace);
 
-    if (recommendations.length > 0) return recommendations;
-    return livePlaces.length > 0 ? livePlaces : mockPlaces;
-  }, [apiPlaces, mockPlaces, recommendedPlaces]);
   // 우리 지역 핫플과 전국 트렌드는 서버 랭킹 계약(GET /map/place-rankings)만 사용한다.
   const rankings = useMapPlaceRankings(rankingFeed === 'local'
     ? {
@@ -281,6 +275,16 @@ export default function MapScreen({
       };
     });
   }, [recommendationExplanation.data?.items, recommendedPlaces]);
+  const allPlaces = useMemo(() => {
+    const serverPlaces = mergeMapPreviewPlaces(
+      recommendationPlaces,
+      apiPlaces.map(toDecisionPlace),
+    );
+
+    // Keep the map demonstrable on an empty development database. These markers are
+    // only rendered with their matching preview places and disappear once server data exists.
+    return serverPlaces.length > 0 ? serverPlaces : mockPlaces;
+  }, [apiPlaces, mockPlaces, recommendationPlaces]);
   const recommendationPresentation = useMemo(() => createRecommendationPresentation({
     appliedActivityIntent,
     appliedTravelPurposes,
@@ -312,6 +316,13 @@ export default function MapScreen({
     return [...allPlaces, ...favoritePlaces]
       .find((place) => place.id === content.placeId) ?? null;
   }, [allPlaces, content, favoritePlaces]);
+  useEffect(() => {
+    if (content.type !== 'place-preview' || selectedPlace) return;
+
+    setContent({ type: 'home' });
+    setIsFollowingUser(true);
+    snapTo('medium');
+  }, [content, selectedPlace, snapTo]);
   const query = content.type === 'search' || content.type === 'results' ? content.query : '';
   const visiblePlaces = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -349,16 +360,15 @@ export default function MapScreen({
     );
     const visibleMarkerIds = new Set(liveMarkerIds);
     if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
-    const mockMarkers = mockPlaces
-      .filter((place) => !visibleMarkerIds.has(String(place.id)))
-      .map((place, index) => ({
+    const mockMarkers = recommendationPlaces.length === 0 && apiPlaces.length === 0
+      ? mockPlaces.map((place, index) => ({
         category: (index === 1 ? 'food' : index === 2 ? 'etc' : 'fashion') as MapMarker['category'],
         id: String(place.id),
         lat: place.latitude,
         lng: place.longitude,
         markerType: index === 0 ? 'hot' as const : 'default' as const,
-      }));
-
+      }))
+      : [];
     const markers = applyBookmarkStateToMarkers([
       ...apiMarkers.map((marker) => ({
         ...marker,
@@ -383,6 +393,7 @@ export default function MapScreen({
     apiMarkers,
     bookmarkedPlaceIds,
     content.type,
+    apiPlaces.length,
     mockPlaces,
     recommendationPlaces,
     selectedPlace,
@@ -400,13 +411,20 @@ export default function MapScreen({
   }, [openedBookmarkedPlaceId]);
 
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
-    const placeId = Number(event.nativeEvent.markerId);
-    if (
-      !Number.isFinite(placeId)
-      || ![...allPlaces, ...favoritePlaces].some((place) => place.id === placeId)
-    ) return;
+    const place = findMapPreviewPlace(event.nativeEvent.markerId, [
+      ...allPlaces,
+      ...favoritePlaces,
+    ]);
+    if (!place) return;
 
-    setContent({ type: 'place-preview', placeId });
+    if (content.type === 'place-preview' && content.placeId === place.id) {
+      setContent({ type: 'home' });
+      setIsFollowingUser(true);
+      snapTo('medium');
+      return;
+    }
+
+    setContent({ type: 'place-preview', placeId: place.id });
     setIsFollowingUser(false);
     snapTo('medium');
   };
