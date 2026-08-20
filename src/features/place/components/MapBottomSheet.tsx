@@ -32,6 +32,7 @@ import RecommendationTitleAsset from '../../../assets/v2icon/Subtract.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface, { supportsNativeLiquidGlass } from './GlassSurface';
+import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -63,6 +64,7 @@ export type DecisionPlace = {
 
 type MapBottomSheetProps = {
   activeFilters: VisitFilter[];
+  androidBlurEnabled?: boolean;
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds?: Record<string, boolean>;
   isBookmarkStateLoading?: boolean;
@@ -1000,6 +1002,7 @@ const BottomNavigation = ({
 );
 
 export default function MapBottomSheet({
+  androidBlurEnabled = true,
   bookmarkPendingPlaceIds = {},
   bookmarkedPlaceIds,
   collapsedTranslateY,
@@ -1079,13 +1082,12 @@ export default function MapBottomSheet({
   });
 
   return (
-    <Animated.View
-      style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}
+    <GlassStyles.BottomSheetContainer
+      style={{ height, transform: [{ translateY: sheetTranslateY }] }}
     >
-      <Animated.View
+      <GlassStyles.SheetChromeShadow
         pointerEvents="none"
         style={[
-          styles.sheetChromeShadow,
           {
             bottom: chromeBottomInset,
             left: chromeGap,
@@ -1093,25 +1095,25 @@ export default function MapBottomSheet({
           },
         ]}
       >
-        <Animated.View
+        <GlassStyles.SheetChrome
+          $borderColor="rgba(255,255,255,0.86)"
           style={[
-            styles.sheetChrome,
             {
               borderBottomLeftRadius: chromeBottomRadius,
               borderBottomRightRadius: chromeBottomRadius,
             },
           ]}
         >
-          <GlassSurface
+          <GlassStyles.SheetGlass
+            androidBlurEnabled={androidBlurEnabled}
+            androidFallbackTintColor="rgba(248,248,248,0.88)"
             glassEffectStyle="regular"
-            intensity={100}
-            style={styles.sheetGlass}
-            tintColor="rgba(248,248,248,0.20)"
+            intensity={48}
+            tintColor="rgba(248,248,248,0.48)"
           />
-          <View style={styles.sheetTint} />
-        </Animated.View>
-      </Animated.View>
-      <View style={styles.sheetInner}>
+        </GlassStyles.SheetChrome>
+      </GlassStyles.SheetChromeShadow>
+      <GlassStyles.SheetInner $inset={SHEET_RESTING_GAP}>
       <View style={styles.handleArea} {...panHandlers}>
         <Pressable
           accessibilityLabel="추천 패널 크기 조절"
@@ -1217,7 +1219,7 @@ export default function MapBottomSheet({
         </>
       )}
       </Animated.View>
-      </View>
+      </GlassStyles.SheetInner>
 
       <BottomNavigation
         bottomInset={insets.bottom}
@@ -1228,7 +1230,7 @@ export default function MapBottomSheet({
         recommendationsActive={content.type === 'recommendations'}
         sheetTranslateY={sheetTranslateY}
       />
-    </Animated.View>
+    </GlassStyles.BottomSheetContainer>
   );
 }
 
@@ -1238,39 +1240,6 @@ const styles = StyleSheet.create({
     height: '100%',
     overflow: 'hidden',
     width: '100%',
-  },
-  bottomSheet: {
-    bottom: 0,
-    left: 0,
-    overflow: 'visible',
-    position: 'absolute',
-    right: 0,
-    zIndex: 50,
-  },
-  sheetChrome: {
-    backgroundColor: 'rgba(248,248,248,0.64)',
-    borderColor: 'rgba(255,255,255,0.86)',
-    borderRadius: 36,
-    borderBottomLeftRadius: 48,
-    borderBottomRightRadius: 48,
-    borderWidth: 1,
-    flex: 1,
-    overflow: 'hidden',
-  },
-  sheetChromeShadow: {
-    backgroundColor: 'rgba(244,246,248,0.08)',
-    borderRadius: 36,
-    borderBottomLeftRadius: 48,
-    borderBottomRightRadius: 48,
-    elevation: 22,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    shadowColor: '#10141A',
-    shadowOffset: { width: 0, height: -7 },
-    shadowOpacity: 0.17,
-    shadowRadius: 24,
-    top: 0,
   },
   cardRow: {
     gap: 12,
@@ -1636,19 +1605,5 @@ const styles = StyleSheet.create({
     width: 64,
   },
   sendIconSurfaceSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
-  sheetGlass: {
-    // Bottom corners are clipped by the animated sheetChrome, so the blur layer stays square there.
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 36,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    overflow: 'hidden',
-  },
   sheetContent: { flex: 1 },
-  // Content keeps a constant inset so dragging never re-lays out the card lists.
-  sheetInner: { flex: 1, paddingHorizontal: SHEET_RESTING_GAP },
-  sheetTint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(248,248,248,0.92)',
-  },
 });

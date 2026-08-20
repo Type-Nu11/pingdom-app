@@ -24,10 +24,12 @@ import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import type { DecisionPlace } from './MapBottomSheet';
 import GlassSurface, { supportsNativeLiquidGlass } from './GlassSurface';
+import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 
 type FavoriteCategory = 'all' | 'music' | 'food' | 'popup' | 'fashion' | 'beauty' | 'art';
 
 type FavoritePlacesBottomSheetProps = {
+  androidBlurEnabled?: boolean;
   collapsedTranslateY: number;
   height: number;
   imageUrlsByPlaceId: Record<string, string[]>;
@@ -272,6 +274,7 @@ const BottomNavigation = ({
 );
 
 export default function FavoritePlacesBottomSheet({
+  androidBlurEnabled = true,
   collapsedTranslateY,
   hasNextPage,
   height,
@@ -324,28 +327,28 @@ export default function FavoritePlacesBottomSheet({
   });
 
   return (
-    <Animated.View style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}>
-      <Animated.View
+    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
+      <GlassStyles.SheetChromeShadow
         pointerEvents="none"
-        style={[styles.sheetChromeShadow, { bottom: chromeBottomInset, left: chromeGap, right: chromeGap }]}
+        style={{ bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
       >
-        <Animated.View
+        <GlassStyles.SheetChrome
+          $borderColor="rgba(255,255,255,0.88)"
           style={[
-            styles.sheetChrome,
             { borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius },
           ]}
         >
-          <GlassSurface
+          <GlassStyles.SheetGlass
+            androidBlurEnabled={androidBlurEnabled}
+            androidFallbackTintColor="rgba(250,250,251,0.88)"
             glassEffectStyle="regular"
-            intensity={100}
-            style={StyleSheet.absoluteFill}
-            tintColor="rgba(248,248,248,0.28)"
+            intensity={48}
+            tintColor="rgba(250,250,251,0.48)"
           />
-          <View style={styles.sheetTint} />
-        </Animated.View>
-      </Animated.View>
+        </GlassStyles.SheetChrome>
+      </GlassStyles.SheetChromeShadow>
 
-      <View style={styles.sheetInner}>
+      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
             accessibilityLabel="즐겨찾기 패널 크기 조절"
@@ -453,7 +456,7 @@ export default function FavoritePlacesBottomSheet({
             </ScrollView>
           </View>
         </Animated.View>
-      </View>
+      </GlassStyles.SheetInner>
 
       <BottomNavigation
         bottomInset={insets.bottom}
@@ -462,12 +465,11 @@ export default function FavoritePlacesBottomSheet({
         onOpenReservations={onOpenReservations}
         sheetTranslateY={sheetTranslateY}
       />
-    </Animated.View>
+    </GlassStyles.BottomSheetContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  bottomSheet: { bottom: 0, left: 0, overflow: 'visible', position: 'absolute', right: 0, zIndex: 50 },
   categoryChip: {
     alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.92)',
     borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
@@ -518,10 +520,6 @@ const styles = StyleSheet.create({
   sendButton: { alignItems: 'center', backgroundColor: 'rgba(238,238,242,0.12)', borderRadius: 32, elevation: 2, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10, width: 64 },
   sendButtonGlass: { alignItems: 'center', backgroundColor: 'rgba(238,238,242,0.34)', borderColor: 'rgba(255,255,255,0.68)', borderRadius: 32, borderWidth: 1, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   sendButtonSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
-  sheetChrome: { backgroundColor: 'rgba(248,248,248,0.68)', borderColor: 'rgba(255,255,255,0.88)', borderRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, borderWidth: 1, flex: 1, overflow: 'hidden' },
-  sheetChromeShadow: { backgroundColor: 'rgba(244,246,248,0.08)', borderRadius: 36, elevation: 22, left: 0, position: 'absolute', right: 0, shadowColor: '#10141A', shadowOffset: { width: 0, height: -7 }, shadowOpacity: 0.17, shadowRadius: 24, top: 0 },
-  sheetInner: { flex: 1, overflow: 'hidden', paddingHorizontal: SHEET_RESTING_GAP },
-  sheetTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(250,250,251,0.92)' },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
 });
