@@ -39,15 +39,17 @@ test('place and card mappers tolerate optional and nullable server fields', () =
   ] });
   const card = toPlaceCardViewModel({
     id: 17, name: 'Place', address: 'Address', roadAddress: null,
-    category: null, currentlyOperating: true, touristSummary: null,
+    category: null, currentlyOperating: true, imageUrl: 'https://cdn.example.test/places/17.jpg',
+    touristSummary: null,
   }, undefined, {
     placeId: 17, currentlyOperating: false, checkedAt: '2026-08-13T00:00:00Z',
     notices: [{ message: 'Temporary notice', visibleNow: true }],
-  });
+  }, 120);
   assert.equal(results.length, 1);
   assert.equal(results[0].address, '');
   assert.deepEqual(card, {
-    address: 'Address', category: 'OTHER', currentlyOperating: false, id: 17,
+    address: 'Address', category: 'OTHER', currentlyOperating: false, distanceMeters: 120,
+    id: 17, imageUrl: 'https://cdn.example.test/places/17.jpg',
     name: 'Place', notice: 'Temporary notice', summary: null,
   });
 });
