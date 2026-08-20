@@ -31,7 +31,8 @@ import StarAsset from '../../../assets/v2icon/star_svg.svg';
 import RecommendationTitleAsset from '../../../assets/v2icon/Subtract.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
-import GlassSurface, { supportsNativeLiquidGlass } from './GlassSurface';
+import GlassSurface from './GlassSurface';
+import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 
 export type BottomSheetContent =
@@ -64,7 +65,6 @@ export type DecisionPlace = {
 
 type MapBottomSheetProps = {
   activeFilters: VisitFilter[];
-  androidBlurEnabled?: boolean;
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds?: Record<string, boolean>;
   isBookmarkStateLoading?: boolean;
@@ -116,8 +116,6 @@ type SheetCategory = 'art' | 'fashion' | 'food' | 'music' | 'popup';
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
-const LIQUID_GLASS_AVAILABLE = supportsNativeLiquidGlass();
-
 const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
   { id: 'popup', label: '팝업' },
   { id: 'music', label: '음악' },
@@ -181,7 +179,6 @@ const FeedSegment = ({
   <View style={styles.segmentInset}>
     <View style={styles.segmentShadow}>
       <GlassSurface
-        androidBlurEnabled={false}
         glassEffectStyle="regular"
         intensity={100}
         style={styles.segmentOuter}
@@ -887,10 +884,12 @@ const NavItem = ({
     accessibilityRole="button"
     accessibilityState={{ selected: active }}
     onPress={onPress}
-    style={[styles.navItem, active && styles.navItemActive]}
+    style={styles.navItem}
   >
-    <View style={styles.navIcon}>{icon}</View>
-    <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+    <View style={[styles.navItemSurface, active && styles.navItemActive]}>
+      <View style={styles.navIcon}>{icon}</View>
+      <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+    </View>
   </Pressable>
 );
 
@@ -915,17 +914,19 @@ const BottomNavigation = ({
     style={[
       styles.navigationRow,
       {
-        bottom: Math.max(20, bottomInset + 8),
+        bottom: Math.max(24, bottomInset + 10),
         transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
       },
     ]}
   >
     <View style={styles.navigationShadow}>
-      {LIQUID_GLASS_AVAILABLE ? <GlassSurface
+      <FrostedSurface
+        cornerRadius={32}
         glassEffectStyle="regular"
-        intensity={96}
+        highlightOpacity={0}
+        rimColor="rgba(0,0,0,0.06)"
         style={styles.navigationBar}
-        tintColor="rgba(238,238,242,0.42)"
+        tintColor="#FFFFFF"
       >
         <NavItem
           active={!recommendationsActive}
@@ -943,24 +944,7 @@ const BottomNavigation = ({
           label="예약"
           onPress={onOpenSavedPlaces}
         />
-      </GlassSurface> : <View style={[styles.navigationBar, styles.navigationBarSolid]}>
-        <NavItem
-          active={!recommendationsActive}
-          icon={<MapAsset color={recommendationsActive ? '#56575E' : '#FF1956'} height={22} width={19} />}
-          label="지도"
-          onPress={recommendationsActive ? onOpenMap : undefined}
-        />
-        <NavItem
-          icon={<StarAsset color="#3B3B40" height={21} width={22} />}
-          label="즐겨찾기"
-          onPress={onOpenLikedPlaces}
-        />
-        <NavItem
-          icon={<CheckInAsset height={22} width={21} />}
-          label="예약"
-          onPress={onOpenSavedPlaces}
-        />
-      </View>}
+      </FrostedSurface>
     </View>
     <Pressable
       accessibilityLabel="장소추천"
@@ -972,37 +956,26 @@ const BottomNavigation = ({
         pressed && styles.pressed,
       ]}
     >
-      {LIQUID_GLASS_AVAILABLE ? <GlassSurface
+      <FrostedSurface
+        cornerRadius={32}
         glassEffectStyle="regular"
-        intensity={96}
+        highlightOpacity={0}
         pointerEvents="none"
+        rimColor="rgba(0,0,0,0.06)"
         style={styles.sendIconSurface}
-        tintColor="rgba(238,238,242,0.42)"
+        tintColor="#FFFFFF"
       >
         <PlaceRecommendAsset
           color={recommendationsActive ? '#FF1755' : '#3B3B40'}
           height={23}
           width={23}
         />
-      </GlassSurface> : <View
-        pointerEvents="none"
-        style={[
-          styles.sendIconSurface,
-          styles.sendIconSurfaceSolid,
-        ]}
-      >
-        <PlaceRecommendAsset
-          color={recommendationsActive ? '#FF1755' : '#3B3B40'}
-          height={23}
-          width={23}
-        />
-      </View>}
+      </FrostedSurface>
     </Pressable>
   </Animated.View>
 );
 
 export default function MapBottomSheet({
-  androidBlurEnabled = true,
   bookmarkPendingPlaceIds = {},
   bookmarkedPlaceIds,
   collapsedTranslateY,
@@ -1096,7 +1069,7 @@ export default function MapBottomSheet({
         ]}
       >
         <GlassStyles.SheetChrome
-          $borderColor="rgba(255,255,255,0.86)"
+          $borderColor="transparent"
           style={[
             {
               borderBottomLeftRadius: chromeBottomRadius,
@@ -1105,11 +1078,13 @@ export default function MapBottomSheet({
           ]}
         >
           <GlassStyles.SheetGlass
-            androidBlurEnabled={androidBlurEnabled}
-            androidFallbackTintColor="rgba(248,248,248,0.88)"
+            cornerRadius={24}
             glassEffectStyle="regular"
-            intensity={48}
-            tintColor="rgba(248,248,248,0.48)"
+            highlightHeight={40}
+            highlightOpacity={0.10}
+            rimColor="rgba(255,255,255,0.60)"
+            tintColor="rgba(255,255,255,0.92)"
+            topRimOnly
           />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
@@ -1403,29 +1378,18 @@ const styles = StyleSheet.create({
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: {
     alignItems: 'center',
-    borderRadius: 27,
-    flex: 1,
     gap: 3,
-    height: 54,
+    flex: 1,
     justifyContent: 'center',
   },
+  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', width: 80 },
   navItemActive: {
-    backgroundColor: 'rgba(255,255,255,0.58)',
-    borderColor: 'rgba(255,255,255,0.78)',
-    borderWidth: 1,
-    elevation: 1,
-    shadowColor: '#11151B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
+    backgroundColor: '#F7F7F8',
   },
   navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
   navigationBar: {
-    backgroundColor: 'rgba(238,238,242,0.34)',
-    borderColor: 'rgba(255,255,255,0.68)',
     borderRadius: 32,
-    borderWidth: 1,
     flex: 1,
     flexDirection: 'row',
     gap: 0,
@@ -1433,7 +1397,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 5,
   },
-  navigationBarSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
   navigationRow: {
     bottom: 12,
     flexDirection: 'row',
@@ -1443,14 +1406,14 @@ const styles = StyleSheet.create({
     right: 24,
   },
   navigationShadow: {
-    backgroundColor: 'rgba(238,238,242,0.12)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 32,
-    elevation: 2,
+    elevation: 4,
     flex: 1,
     shadowColor: '#11151B',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
   },
   placeCard: {
     backgroundColor: 'transparent',
@@ -1582,28 +1545,24 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(238,238,242,0.12)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 32,
-    elevation: 2,
+    elevation: 4,
     height: 64,
     justifyContent: 'center',
     shadowColor: '#11151B',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
     width: 64,
   },
   sendIconSurface: {
     alignItems: 'center',
-    backgroundColor: 'rgba(238,238,242,0.34)',
-    borderColor: 'rgba(255,255,255,0.68)',
     borderRadius: 32,
-    borderWidth: 1,
     height: 64,
     justifyContent: 'center',
     overflow: 'hidden',
     width: 64,
   },
-  sendIconSurfaceSolid: { backgroundColor: '#EFEFF2', borderColor: '#EFEFF2' },
   sheetContent: { flex: 1 },
 });

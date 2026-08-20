@@ -24,7 +24,6 @@ export type MapCategoryId =
 
 type MapTopOverlayProps = {
   activeCategory: MapCategoryId;
-  androidBlurEnabled?: boolean;
   onCategoryChange: (category: MapCategoryId) => void;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
@@ -51,7 +50,6 @@ const categories: Array<{
 
 export default function MapTopOverlay({
   activeCategory,
-  androidBlurEnabled = true,
   onCategoryChange,
   onProfilePress,
   onSearchFocus,
@@ -63,18 +61,24 @@ export default function MapTopOverlay({
         <S.HeaderShadow>
           <S.HeaderSurface>
             <S.HeaderGlass
-              androidBlurEnabled={androidBlurEnabled}
+              bottomShade={false}
+              cornerRadius={29}
               glassEffectStyle="regular"
-              intensity={48}
+              highlightOpacity={0.16}
+              intensity={32}
               pointerEvents="none"
-              tintColor="rgba(248,248,248,0.12)"
+              rimColor="transparent"
+              tintColor="rgba(255,255,255,0.76)"
             />
             <S.SearchShadow>
               <S.SearchGlass
-                androidBlurEnabled={false}
+                bottomShade={false}
+                cornerRadius={26}
                 glassEffectStyle="regular"
+                highlightOpacity={0.20}
                 pointerEvents="none"
-                tintColor="rgba(238,238,242,0.22)"
+                rimColor="transparent"
+                tintColor="rgba(242,242,245,0.86)"
               />
               <S.SearchContent
                 accessibilityLabel="장소 검색"
@@ -121,10 +125,12 @@ export default function MapTopOverlay({
               >
                 <S.CategoryChipClip>
                   <S.CategoryChipGlass
-                    androidBlurEnabled={false}
+                    cornerRadius={16}
                     glassEffectStyle="regular"
+                    highlightOpacity={isActive ? 0.18 : 0.14}
                     pointerEvents="none"
-                    tintColor={isActive ? 'rgba(255,201,211,0.34)' : 'rgba(255,255,255,0.30)'}
+                    rimColor="rgba(0,0,0,0.05)"
+                    tintColor="rgba(255,255,255,0.95)"
                   />
                   <S.CategoryChipContent>
                     {Icon ? (
@@ -132,7 +138,6 @@ export default function MapTopOverlay({
                     ) : null}
                     <S.CategoryLabel $active={isActive}>{label}</S.CategoryLabel>
                   </S.CategoryChipContent>
-                  <S.CategoryChipStroke $active={isActive} pointerEvents="none" />
                 </S.CategoryChipClip>
               </S.CategoryChipButton>
             );

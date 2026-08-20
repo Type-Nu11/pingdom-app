@@ -107,9 +107,6 @@ class KakaoMapView(
         object : KakaoMapReadyCallback() {
             override fun onMapReady(kakaoMap: KakaoMap) {
                 this@KakaoMapView.kakaoMap = kakaoMap
-                kakaoMap.setOnCameraMoveStartListener { _, _ ->
-                    emitCameraMoveStart()
-                }
                 kakaoMap.setOnCameraMoveEndListener { _, cameraPosition, _ ->
                     val position = cameraPosition.position
                     emitCameraIdle(position.latitude, position.longitude)
@@ -208,25 +205,6 @@ class KakaoMapView(
         UIManagerHelper
             .getEventDispatcherForReactTag(reactContext, viewId)
             ?.dispatchEvent(CameraIdleEvent(UIManagerHelper.getSurfaceId(this), viewId, event))
-    }
-
-    private fun emitCameraMoveStart() {
-        val viewId = id
-        if (viewId == NO_ID) {
-            Log.w(TAG, "emitCameraMoveStart skipped: view id is not assigned")
-            return
-        }
-
-        UIManagerHelper
-            .getEventDispatcherForReactTag(reactContext, viewId)
-            ?.dispatchEvent(
-                MapDirectEvent(
-                    "topCameraMoveStart",
-                    UIManagerHelper.getSurfaceId(this),
-                    viewId,
-                    Arguments.createMap()
-                )
-            )
     }
 
     private fun emitMarkerPress(markerId: String) {

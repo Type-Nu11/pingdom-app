@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BlurTargetView } from 'expo-blur';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +13,6 @@ import MapBottomSheet, {
   type VisitFilter,
 } from '../components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
-import { GlassBlurTargetProvider } from '../components/GlassSurface';
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
@@ -144,9 +142,6 @@ export default function MapScreen({
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const mapBlurTargetRef = useRef<View | null>(null);
-  const mapBlurRestoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isMapMoving, setIsMapMoving] = useState(false);
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
   const [rankingFeed, setRankingFeed] = useState<'local' | 'national'>('local');
@@ -201,30 +196,6 @@ export default function MapScreen({
     pendingPlaceIds: bookmarkPendingPlaceIds,
     togglePlaceBookmark,
   } = usePlaceBookmark();
-
-  const handleMapMoveStart = useCallback(() => {
-    if (mapBlurRestoreTimeoutRef.current) {
-      clearTimeout(mapBlurRestoreTimeoutRef.current);
-      mapBlurRestoreTimeoutRef.current = null;
-    }
-    setIsMapMoving(true);
-  }, []);
-
-  const handleMapMoveEnd = useCallback(() => {
-    if (mapBlurRestoreTimeoutRef.current) {
-      clearTimeout(mapBlurRestoreTimeoutRef.current);
-    }
-    mapBlurRestoreTimeoutRef.current = setTimeout(() => {
-      mapBlurRestoreTimeoutRef.current = null;
-      setIsMapMoving(false);
-    }, 150);
-  }, []);
-
-  useEffect(() => () => {
-    if (mapBlurRestoreTimeoutRef.current) {
-      clearTimeout(mapBlurRestoreTimeoutRef.current);
-    }
-  }, []);
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
   // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
@@ -533,24 +504,20 @@ export default function MapScreen({
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
-      <BlurTargetView ref={mapBlurTargetRef} style={styles.mapBackground}>
+      <View style={styles.mapBackground}>
         <MapCanvas
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
           markers={mapMarkers}
-          onCameraIdle={handleMapMoveEnd}
-          onCameraMoveStart={handleMapMoveStart}
           onMarkerPress={handleMarkerPress}
           userLat={userLat}
           userLng={userLng}
         />
         <View pointerEvents="none" style={styles.mapTint} />
-      </BlurTargetView>
-      <GlassBlurTargetProvider blurTarget={mapBlurTargetRef}>
+      </View>
           <MapTopOverlay
             activeCategory={activeCategory}
-            androidBlurEnabled={!isMapMoving}
           onCategoryChange={setActiveCategory}
           onProfilePress={onOpenProfile}
           onQueryChange={handleQueryChange}
@@ -563,7 +530,6 @@ export default function MapScreen({
         />
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
-            androidBlurEnabled={!isMapMoving}
             collapsedTranslateY={collapsedTranslateY}
             hasNextPage={Boolean(hasNextFavoritePage)}
             height={fullSheetHeight}
@@ -607,7 +573,6 @@ export default function MapScreen({
         ) : (
           <MapBottomSheet
             activeFilters={activeFilters}
-            androidBlurEnabled={!isMapMoving}
             bookmarkedPlaceIds={bookmarkedPlaceIds}
             bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
@@ -662,7 +627,6 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
-      </GlassBlurTargetProvider>
       {isSearchOpen ? (
         <MapSearchOverlay
           centerLat={center.lat}
@@ -695,5 +659,5 @@ export default function MapScreen({
 const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
-  mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.12)' },
+  mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
 });

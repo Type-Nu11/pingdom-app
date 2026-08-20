@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import GlassSurface from '../components/GlassSurface';
+import FrostedSurface from '../components/FrostedSurface';
 
 const IOS = Platform.OS === 'ios';
 
@@ -23,11 +23,6 @@ export const Header = styled.View`
 export const HeaderShadow = styled.View`
   border-radius: 29px;
   background-color: ${IOS ? 'rgba(248,248,248,0.16)' : 'rgba(248,248,248,0.01)'};
-  elevation: 6;
-  shadow-color: #000000;
-  shadow-offset: 0px 4px;
-  shadow-opacity: 0.15;
-  shadow-radius: 10px;
 `;
 
 export const HeaderSurface = styled.View`
@@ -40,7 +35,7 @@ export const HeaderSurface = styled.View`
   overflow: hidden;
 `;
 
-export const HeaderGlass = styled(GlassSurface)`
+export const HeaderGlass = styled(FrostedSurface)`
   position: absolute;
   top: 0;
   right: 0;
@@ -57,7 +52,7 @@ export const SearchShadow = styled.View`
   overflow: hidden;
 `;
 
-export const SearchGlass = styled(GlassSurface)`
+export const SearchGlass = styled(FrostedSurface)`
   position: absolute;
   top: 0;
   right: 0;
@@ -65,7 +60,6 @@ export const SearchGlass = styled(GlassSurface)`
   left: 0;
   align-items: center;
   border-radius: 26px;
-  box-shadow: inset 0px 4px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 `;
 
@@ -117,9 +111,9 @@ export const CategoryChipButton = styled.Pressable`
   background-color: ${IOS ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.01)'};
   elevation: 2;
   shadow-color: #000000;
-  shadow-offset: 0px 4px;
-  shadow-opacity: 0.12;
-  shadow-radius: 10px;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.08;
+  shadow-radius: 8px;
 `;
 
 export const CategoryChipClip = styled.View`
@@ -127,7 +121,7 @@ export const CategoryChipClip = styled.View`
   overflow: hidden;
 `;
 
-export const CategoryChipGlass = styled(GlassSurface)`
+export const CategoryChipGlass = styled(FrostedSurface)`
   position: absolute;
   top: 0;
   right: 0;
@@ -152,15 +146,4 @@ export const CategoryLabel = styled.Text<{ $active: boolean }>`
   font-size: 14px;
   font-weight: 500;
   line-height: 18px;
-`;
-
-export const CategoryChipStroke = styled.View<{ $active: boolean }>`
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  border-width: 1px;
-  border-color: ${({ $active }) => ($active ? 'rgba(255,74,117,0.96)' : 'rgba(255,255,255,0.92)')};
-  border-radius: 16px;
 `;
