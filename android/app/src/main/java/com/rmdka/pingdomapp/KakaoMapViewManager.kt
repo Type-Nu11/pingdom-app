@@ -18,6 +18,8 @@ class KakaoMapViewManager : SimpleViewManager<KakaoMapView>() {
         return MapBuilder.of(
             "topCameraIdle",
             MapBuilder.of("registrationName", "onCameraIdle"),
+            "topCameraMoveStart",
+            MapBuilder.of("registrationName", "onCameraMoveStart"),
             "topMarkerPress",
             MapBuilder.of("registrationName", "onMarkerPress")
         )
