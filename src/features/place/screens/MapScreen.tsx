@@ -123,6 +123,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 });
 
 type MapScreenProps = {
+  initialSection?: 'favorites' | 'map';
   notificationLikeContext?: {
     notificationsId?: string;
     postId?: string;
@@ -130,15 +131,16 @@ type MapScreenProps = {
   onClearOpenedBookmarkedPlace?: () => void;
   onOpenPlaceDetail?: (placeId: string) => void;
   onOpenProfile?: () => void;
-  onOpenSavedPlaces?: () => void;
+  onOpenReservations?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
 
 export default function MapScreen({
+  initialSection = 'map',
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
-  onOpenSavedPlaces,
+  onOpenReservations,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
@@ -178,7 +180,11 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
-  const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
+  const [mapSection, setMapSection] = useState<'map' | 'favorites'>(initialSection);
+
+  useEffect(() => {
+    setMapSection(initialSection);
+  }, [initialSection]);
   const canQueryBookmarks = isLoggedIn && !isAuthHydrating;
   const {
     fetchNextPage: fetchNextFavoritePage,
@@ -559,7 +565,7 @@ export default function MapScreen({
               setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
-            onOpenReservations={onOpenSavedPlaces}
+            onOpenReservations={onOpenReservations}
             onLoadMore={() => void fetchNextFavoritePage()}
             onRetry={() => void refetchFavorites()}
             onRemovePlace={(place) => void handleToggleBookmark(place, false)}
@@ -602,7 +608,7 @@ export default function MapScreen({
               setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
-            onOpenSavedPlaces={onOpenSavedPlaces}
+            onOpenSavedPlaces={onOpenReservations}
             onPlacePress={handlePlacePress}
             onRetryRecommendations={() => void refetchRecommendations()}
             onProfilePress={onOpenProfile}

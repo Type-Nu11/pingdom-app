@@ -6,6 +6,8 @@ import PlaceCreateFlowScreen from '../../features/place/screens/PlaceCreateFlowS
 import PlaceDetailScreen from '../../features/place/screens/PlaceDetailScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
+import ReservationDetailScreen from '../../features/reservation/screens/ReservationDetailScreen';
+import ReservationsScreen from '../../features/reservation/screens/ReservationsScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
 import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
@@ -14,6 +16,7 @@ import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
   MAIN_ROUTES,
   parsePlaceId,
+  parseReservationId,
   type MainScreenProps,
   type MainStackParamList,
 } from './types';
@@ -22,16 +25,19 @@ const Stack = createNativeStackNavigator<MainStackParamList>();
 
 const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
   const focusedPlaceId = route.params?.focusedPlaceId;
+  const initialSection = route.params?.initialSection;
   const notificationContext = route.params?.notificationContext;
   const clearFocusedPlace = useCallback(() => {
     navigation.setParams({
       focusedPlaceId: undefined,
+      initialSection,
       notificationContext,
     });
-  }, [navigation, notificationContext]);
+  }, [initialSection, navigation, notificationContext]);
 
   return (
     <MapScreen
+      initialSection={initialSection}
       notificationLikeContext={notificationContext ? {
         notificationsId: notificationContext.notificationId?.toString(),
         postId: notificationContext.postId?.toString(),
@@ -45,7 +51,7 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
         }
       }}
       onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
-      onOpenSavedPlaces={() => navigation.navigate(MAIN_ROUTES.Profile, { initialTab: 'saved' })}
+      onOpenReservations={() => navigation.navigate(MAIN_ROUTES.Reservations)}
     />
   );
 };
@@ -113,6 +119,29 @@ const CouponWalletRouteScreen = ({ navigation }: MainScreenProps<'CouponWallet'>
   />
 );
 
+const ReservationsRouteScreen = ({ navigation }: MainScreenProps<'Reservations'>) => (
+  <ReservationsScreen
+    onOpenFavorites={() => navigation.popTo(MAIN_ROUTES.Map, { initialSection: 'favorites' })}
+    onOpenMap={() => navigation.popTo(MAIN_ROUTES.Map, { initialSection: 'map' })}
+    onOpenReservation={(value) => {
+      const reservationId = parseReservationId(value);
+      if (reservationId) {
+        navigation.navigate(MAIN_ROUTES.ReservationDetail, { reservationId });
+      }
+    }}
+  />
+);
+
+const ReservationDetailRouteScreen = ({
+  navigation,
+  route,
+}: MainScreenProps<'ReservationDetail'>) => (
+  <ReservationDetailScreen
+    onBack={navigation.goBack}
+    reservationId={route.params.reservationId}
+  />
+);
+
 const MerchantRouteScreen = ({ navigation, route }: MainScreenProps<'Merchant'>) => (
   <RoutePlaceholderScreen
     description={`merchantId: ${route.params.merchantId}`}
@@ -131,6 +160,8 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.PlaceDetail} component={PlaceDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.Reservations} component={ReservationsRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
