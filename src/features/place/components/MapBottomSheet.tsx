@@ -19,6 +19,16 @@ import Svg, {
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
+import CallAsset from '../../../assets/icons/ion_call.svg';
+import CameraAsset from '../../../assets/v2icon/Camera.svg';
+import CleanAsset from '../../../assets/v2icon/Clean.svg';
+import DeliciousAsset from '../../../assets/v2icon/Delicious.svg';
+import DownAsset from '../../../assets/v2icon/Down.svg';
+import GroupAsset from '../../../assets/v2icon/Group.svg';
+import KindAsset from '../../../assets/v2icon/Kind.svg';
+import ParkAsset from '../../../assets/v2icon/Park.svg';
+import PinAsset from '../../../assets/v2icon/Pin.svg';
+import TicketAsset from '../../../assets/v2icon/Tiket.svg';
 import ArtAsset from '../../../assets/v2icon/art_svg.svg';
 import FashionAsset from '../../../assets/v2icon/fashion_svg.svg';
 import FoodAsset from '../../../assets/v2icon/food_svg.svg';
@@ -43,6 +53,29 @@ export type BottomSheetContent =
   | { type: 'place-preview'; placeId: number };
 
 export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
+
+export type MapPreviewFallbackContent = {
+  amenities: Array<'english' | 'parking'>;
+  businessHours?: string;
+  coupons?: Array<{ period: string; title: string }>;
+  imageUrls: string[];
+  menuItems?: Array<{ description: string; name: string; price: string }>;
+  phone?: string;
+  reviewCount?: number;
+  reviewHighlights?: Array<{ count: number; label: string }>;
+  reviewParticipantCount?: number;
+  reviews?: Array<{
+    author: string;
+    avatarUrl?: string;
+    createdAt: string;
+    hiddenTags?: string[];
+    photoCount?: number;
+    tags: string[];
+    text: string;
+  }>;
+  statusDescription: string;
+  statusEmphasis: string;
+};
 
 export type DecisionPlace = {
   address: string;
@@ -89,6 +122,7 @@ type MapBottomSheetProps = {
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
+  previewFallbackContentByPlaceId?: Record<string, MapPreviewFallbackContent>;
   feed?: 'local' | 'national';
   onFeedChange?: (feed: 'local' | 'national') => void;
   rankingImageUrlsByPlaceId?: Record<string, string>;
@@ -229,7 +263,15 @@ const CARD_FALLBACKS = [
 
 const HOME_BOOKMARK_STAR_PATH = 'M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z';
 
-const BookmarkStar = ({ selected, size = 35 }: { selected: boolean; size?: number }) => (
+const BookmarkStar = ({
+  selected,
+  size = 35,
+  strokeColor = '#FFFFFF',
+}: {
+  selected: boolean;
+  size?: number;
+  strokeColor?: string;
+}) => (
   <Svg
     fill="none"
     height={size}
@@ -239,7 +281,7 @@ const BookmarkStar = ({ selected, size = 35 }: { selected: boolean; size?: numbe
     <Path
       d={HOME_BOOKMARK_STAR_PATH}
       fill={selected ? '#FF1956' : 'none'}
-      stroke={selected ? '#FF1956' : '#FFFFFF'}
+      stroke={selected ? '#FF1956' : strokeColor}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={2}
@@ -282,6 +324,35 @@ const PlaceArtwork = ({
       resizeMode="cover"
       source={{ uri: sourceUrl }}
       style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
+    />
+  );
+};
+
+const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [imageUrl]);
+
+  if (!imageUrl || hasImageError) {
+    const fallbackMessage = hasImageError ? '이미지를 불러오지 못했어요' : '이미지 없음';
+
+    return (
+      <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
+        <MapPinIcon active size={28} />
+        <Text style={styles.previewArtworkFallbackText}>{fallbackMessage}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      accessibilityLabel="장소 이미지"
+      onError={() => setHasImageError(true)}
+      resizeMode="cover"
+      source={{ uri: imageUrl }}
+      style={styles.previewArtwork}
     />
   );
 };
@@ -818,8 +889,90 @@ const ResultRow = ({
   </Pressable>
 );
 
+const PreviewAmenity = ({ type }: { type: 'english' | 'parking' }) => (
+  <View style={styles.previewAmenityChip}>
+    {type === 'english'
+      ? <GroupAsset height={20} width={20} />
+      : <ParkAsset height={20} width={20} />}
+    <Text style={styles.previewAmenityText}>{type === 'english' ? '영어응대 가능' : '주차가능'}</Text>
+  </View>
+);
+
+const ReviewHighlightIcon = ({ label }: { label: string }) => {
+  if (label.includes('사진')) return <CameraAsset height={16} width={19} />;
+  if (label.includes('깨끗')) return <CleanAsset height={16} width={16} />;
+  if (label.includes('다국어')) return <GroupAsset height={16} width={16} />;
+  if (label.includes('친절')) return <KindAsset height={16} width={15} />;
+  return <DeliciousAsset height={16} width={16} />;
+};
+
+const InfoClockIcon = () => (
+  <Svg height={16} viewBox="0 0 16 16" width={16}>
+    <Circle cx={8} cy={8} fill="none" r={6.5} stroke="#7B7F88" strokeWidth={1.5} />
+    <Path d="M8 4.5V8L10.5 9.5" fill="none" stroke="#7B7F88" strokeLinecap="round" strokeWidth={1.5} />
+  </Svg>
+);
+
+const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
+  const [hasError, setHasError] = useState(false);
+
+  if (!url || hasError) {
+    return (
+      <View style={styles.detailReviewerAvatar}>
+        <Text style={styles.detailReviewerInitial}>{name.slice(0, 1)}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      onError={() => setHasError(true)}
+      resizeMode="cover"
+      source={{ uri: url }}
+      style={styles.detailReviewerAvatarImage}
+    />
+  );
+};
+
+const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: string[] }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const visibleTags = isExpanded ? [...tags, ...hiddenTags] : tags;
+
+  return (
+    <View style={styles.detailReviewTagRow}>
+      {visibleTags.map((tag, index) => (
+        <View key={`${tag}-${index}`} style={styles.detailReviewTag}>
+          <ReviewHighlightIcon label={tag} />
+          <Text style={styles.detailReviewTagText}>{tag}</Text>
+        </View>
+      ))}
+      {hiddenTags.length > 0 ? (
+        <Pressable
+          accessibilityLabel={isExpanded
+            ? '추가 태그 접기'
+            : `숨겨진 태그 ${hiddenTags.length}개 펼치기`}
+          accessibilityRole="button"
+          onPress={() => setIsExpanded((current) => !current)}
+          style={({ pressed }) => [styles.detailReviewTag, pressed && styles.pressed]}
+        >
+          <Text style={styles.detailReviewTagText}>
+            {isExpanded ? '접기' : `+${hiddenTags.length}`}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+};
+
+const PreviewActionChip = ({ active = false, label }: { active?: boolean; label: string }) => (
+  <View style={[styles.previewActionChip, active && styles.previewActionChipActive]}>
+    <Text style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</Text>
+  </View>
+);
+
 const PreviewContent = ({
   bookmarked,
+  fallbackContent,
   imageUrl,
   onBack,
   onDetail,
@@ -828,46 +981,357 @@ const PreviewContent = ({
   place,
 }: {
   bookmarked: boolean;
+  fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
   onDetail: () => void;
   onToggleBookmark: () => void;
   pending: boolean;
   place: DecisionPlace;
-}) => (
-  <View style={styles.previewContent}>
-    <Pressable onPress={onBack} style={styles.previewBack}>
-      <Text style={styles.previewBackText}>‹  주변 핫플로 돌아가기</Text>
-    </Pressable>
-    <Pressable onPress={onDetail} style={({ pressed }) => [styles.previewPanel, pressed && styles.pressed]}>
-      <PlaceArtwork imageUrl={imageUrl} />
-      <Pressable
-        accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
-        accessibilityRole="button"
-        accessibilityState={{ busy: pending, disabled: pending }}
-        disabled={pending}
-        hitSlop={10}
-        onPress={(event) => {
-          event.stopPropagation();
-          onToggleBookmark();
-        }}
-        style={[styles.bookmarkPill, bookmarked && styles.bookmarkPillActive]}
-      >
-        <Text style={[styles.bookmarkPillText, bookmarked && styles.bookmarkPillTextActive]}>
-          {pending ? '처리 중…' : bookmarked ? '★ 저장됨' : '☆ 저장'}
-        </Text>
-      </Pressable>
-      <View style={styles.previewBody}>
-        <Text style={styles.previewName}>{place.name}</Text>
-        <Text numberOfLines={2} style={styles.previewAddress}>{place.address}</Text>
-        <View style={styles.previewMeta}>
-          <Text style={styles.previewDistance}>여기서 {formatDistance(place)}</Text>
-          <Text style={styles.previewMore}>상세보기  ›</Text>
-        </View>
+}) => {
+  const imageUrls = fallbackContent?.imageUrls.length
+    ? fallbackContent.imageUrls
+    : [imageUrl];
+
+  return (
+    <View style={styles.previewContent}>
+      <View style={styles.previewHeader}>
+        <Pressable
+          accessibilityLabel={`${place.name} 상세 보기`}
+          accessibilityRole="button"
+          onPress={onDetail}
+          style={styles.previewSummary}
+        >
+          <View style={styles.previewTitleRow}>
+            <Text numberOfLines={1} style={styles.previewName}>{place.name}</Text>
+            <Text numberOfLines={1} style={styles.previewCategory}>{place.category}</Text>
+          </View>
+          {fallbackContent ? (
+            <Text numberOfLines={1} style={styles.previewStatus}>
+              {fallbackContent.statusDescription}
+              <Text style={styles.previewStatusEmphasis}> · {fallbackContent.statusEmphasis}</Text>
+            </Text>
+          ) : null}
+          <Text numberOfLines={1} style={styles.previewAddress}>
+            {formatDistance(place)} · {place.address}
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityRole="button"
+          accessibilityState={{ busy: pending, disabled: pending }}
+          disabled={pending}
+          hitSlop={10}
+          onPress={onToggleBookmark}
+          style={styles.previewBookmarkButton}
+        >
+          <BookmarkStar selected={bookmarked} size={22} strokeColor="#FF245B" />
+        </Pressable>
+        <Pressable
+          accessibilityLabel="장소 미리보기 닫기"
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={onBack}
+          style={styles.previewCloseButton}
+        >
+          <Text style={styles.previewCloseText}>×</Text>
+        </Pressable>
       </View>
-    </Pressable>
-  </View>
-);
+      {fallbackContent?.amenities.length ? (
+        <View style={styles.previewAmenityRow}>
+          {fallbackContent.amenities.map((amenity) => <PreviewAmenity key={amenity} type={amenity} />)}
+        </View>
+      ) : null}
+      <ScrollView
+        contentContainerStyle={styles.previewActionRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        <PreviewActionChip active label="출발" />
+        <PreviewActionChip label="도착" />
+        <PreviewActionChip label="공유" />
+        <PreviewActionChip label="예약" />
+        <PreviewActionChip label="길찾기" />
+      </ScrollView>
+      <ScrollView
+        contentContainerStyle={styles.previewImageRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        {imageUrls.map((url, index) => (
+          <Pressable
+            accessibilityLabel={`${place.name} 사진 ${index + 1} 상세 보기`}
+            accessibilityRole="button"
+            key={`${url ?? 'missing'}-${index}`}
+            onPress={onDetail}
+            style={[styles.previewImagePanel, index === 0 && styles.previewImagePanelPrimary]}
+          >
+            <PreviewArtwork imageUrl={url} />
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
+type PlaceDetailTab = 'info' | 'reviews';
+
+const ExpandedPlaceContent = ({
+  activeTab,
+  bookmarked,
+  fallbackContent,
+  imageUrl,
+  onBack,
+  onTabChange,
+  onToggleBookmark,
+  pending,
+  place,
+}: {
+  activeTab: PlaceDetailTab;
+  bookmarked: boolean;
+  fallbackContent?: MapPreviewFallbackContent;
+  imageUrl?: string;
+  onBack: () => void;
+  onTabChange: (tab: PlaceDetailTab) => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
+  place: DecisionPlace;
+}) => {
+  const imageUrls = fallbackContent?.imageUrls.length
+    ? fallbackContent.imageUrls
+    : [imageUrl];
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.detailContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.detailTopBar}>
+        <Pressable
+          accessibilityLabel="지도로 돌아가기"
+          accessibilityRole="button"
+          hitSlop={12}
+          onPress={onBack}
+          style={styles.detailRoundButton}
+        >
+          <Text style={styles.detailBackText}>‹</Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityRole="button"
+          disabled={pending}
+          hitSlop={12}
+          onPress={onToggleBookmark}
+          style={styles.detailRoundButton}
+        >
+          <BookmarkStar selected={bookmarked} size={22} strokeColor="#FF245B" />
+        </Pressable>
+      </View>
+
+      <View style={styles.detailHeading}>
+        <View style={styles.detailTitleRow}>
+          <Text style={styles.detailTitle}>{place.name}</Text>
+          <Text style={styles.detailCategory}>{place.category}</Text>
+        </View>
+        {fallbackContent ? (
+          <Text style={styles.detailVerified}>{fallbackContent.statusDescription}</Text>
+        ) : null}
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.detailActionRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        <PreviewActionChip active label="출발" />
+        <PreviewActionChip label="도착" />
+        <PreviewActionChip label="공유" />
+        <PreviewActionChip label="예약" />
+        <PreviewActionChip label="길찾기" />
+      </ScrollView>
+
+      <ScrollView
+        contentContainerStyle={styles.detailPhotoRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        {imageUrls.map((url, index) => (
+          <View
+            key={`${url ?? 'missing'}-${index}`}
+            style={[styles.detailPhoto, index === 0 && styles.detailPhotoPrimary]}
+          >
+            <PreviewArtwork imageUrl={url} />
+          </View>
+        ))}
+      </ScrollView>
+
+      <View style={styles.detailTabs}>
+        {(['info', 'reviews'] as const).map((tab) => (
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === tab }}
+            key={tab}
+            onPress={() => onTabChange(tab)}
+            style={[styles.detailTab, activeTab === tab && styles.detailTabActive]}
+          >
+            <Text style={[styles.detailTabText, activeTab === tab && styles.detailTabTextActive]}>
+              {tab === 'info' ? '정보' : '리뷰'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {activeTab === 'info' ? (
+        <View>
+          <View style={styles.detailInfoBlock}>
+            <View style={styles.detailInfoRow}>
+              <PinAsset height={16} width={14} />
+              <Text style={styles.detailInfoText}>{place.address}</Text>
+            </View>
+            {fallbackContent ? (
+              <>
+                <View style={styles.detailInfoRow}>
+                  <InfoClockIcon />
+                  <Text style={styles.detailInfoText}>
+                    <Text style={styles.detailOpenText}>{fallbackContent.statusEmphasis}</Text>
+                    {fallbackContent.businessHours ? ` · ${fallbackContent.businessHours}` : ''}
+                  </Text>
+                </View>
+                {fallbackContent.phone ? (
+                  <View style={styles.detailInfoRow}>
+                    <CallAsset height={16} width={16} />
+                    <Text style={styles.detailInfoText}>{fallbackContent.phone}</Text>
+                  </View>
+                ) : null}
+              </>
+            ) : null}
+            {fallbackContent?.amenities.length ? (
+              <View style={styles.detailAmenityRow}>
+                {fallbackContent.amenities.map((amenity) => (
+                  <PreviewAmenity key={amenity} type={amenity} />
+                ))}
+              </View>
+            ) : null}
+          </View>
+
+          {fallbackContent?.coupons?.length ? (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>쿠폰</Text>
+              {fallbackContent.coupons.map((coupon, index) => (
+                <View key={`${coupon.title}-${index}`} style={styles.detailCouponRow}>
+                  <View style={styles.detailCouponIcon}><TicketAsset height={24} width={24} /></View>
+                  <View style={styles.detailCouponBody}>
+                    <Text style={styles.detailCouponTitle}>{coupon.title}</Text>
+                    <Text style={styles.detailCouponPeriod}>{coupon.period}</Text>
+                  </View>
+                  <DownAsset height={17} width={14} />
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {fallbackContent?.menuItems?.length ? (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>메뉴</Text>
+              {fallbackContent.menuItems.map((menu, index) => (
+                <View key={`${menu.name}-${index}`} style={styles.detailMenuRow}>
+                  <View style={styles.detailMenuBody}>
+                    <Text style={styles.detailMenuName}>{menu.name}</Text>
+                    <Text style={styles.detailMenuDescription}>{menu.description}</Text>
+                    <Text style={styles.detailMenuPrice}>{menu.price}</Text>
+                  </View>
+                  <View style={styles.detailMenuImage}>
+                    <PreviewArtwork imageUrl={imageUrls[index % imageUrls.length]} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      ) : (
+        <View>
+          <View style={styles.detailReviewSection}>
+            <Text style={styles.detailReviewTitle}>
+              이런 점을 좋아해요!
+              {fallbackContent?.reviewParticipantCount ? (
+                <Text style={styles.detailReviewCount}> {fallbackContent.reviewParticipantCount}명 참여</Text>
+              ) : null}
+            </Text>
+            {(fallbackContent?.reviewHighlights ?? []).map((highlight, index, items) => {
+              const maxCount = Math.max(...items.map((item) => item.count), 1);
+              const scoreRatio = Math.min(1, Math.max(0, highlight.count / maxCount));
+              const fillOpacity = 0.16 + (scoreRatio * 0.62);
+              return (
+                <View key={highlight.label} style={styles.detailHighlightRow}>
+                  <View
+                    style={[
+                      styles.detailHighlightFill,
+                      {
+                        backgroundColor: `rgba(255,36,91,${fillOpacity.toFixed(2)})`,
+                        width: `${Math.max(24, scoreRatio * 100)}%`,
+                      },
+                    ]}
+                  />
+                  <View style={styles.detailHighlightLabelRow}>
+                    <ReviewHighlightIcon label={highlight.label} />
+                    <Text style={styles.detailHighlightLabel}>{highlight.label}</Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.detailHighlightCount,
+                      scoreRatio >= 0.88 && styles.detailHighlightCountOnStrong,
+                    ]}
+                  >
+                    {highlight.count}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={styles.detailReviewSection}>
+            <Text style={styles.detailSectionTitle}>사진 리뷰</Text>
+            <ScrollView contentContainerStyle={styles.detailReviewPhotos} horizontal showsHorizontalScrollIndicator={false}>
+              {imageUrls.concat(imageUrls).map((url, index) => (
+                <View key={`${url ?? 'missing'}-review-${index}`} style={styles.detailReviewPhoto}>
+                  <PreviewArtwork imageUrl={url} />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.detailReviewSection}>
+            <Text style={styles.detailSectionTitle}>리뷰 {fallbackContent?.reviewCount ?? 0}</Text>
+            {fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
+              <View key={`${review.author}-${review.createdAt}-${index}`} style={styles.detailReviewItem}>
+                <View style={styles.detailReviewerRow}>
+                  <ReviewerAvatar name={review.author} url={review.avatarUrl} />
+                  <View style={styles.detailReviewBody}>
+                    <Text style={styles.detailReviewerName}>{review.author}</Text>
+                    <Text style={styles.detailReviewMeta}>{review.createdAt}</Text>
+                  </View>
+                </View>
+                <Text style={styles.detailReviewText}>{review.text}</Text>
+                {review.photoCount ? (
+                  <View style={styles.detailReviewImageGrid}>
+                    {Array.from({ length: review.photoCount }, (_, photoIndex) => (
+                      <View key={photoIndex} style={styles.detailReviewImageCell}>
+                        <PreviewArtwork imageUrl={imageUrls[photoIndex % imageUrls.length]} />
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                <ReviewTags hiddenTags={review.hiddenTags} tags={review.tags} />
+              </View>
+            )) : (
+                <Text style={styles.detailEmptyText}>등록된 리뷰 정보가 없어요.</Text>
+              )}
+          </View>
+        </View>
+      )}
+    </ScrollView>
+  );
+};
 
 const NavItem = ({
   active = false,
@@ -994,6 +1458,7 @@ export default function MapBottomSheet({
   onToggleBookmark,
   panHandlers,
   places,
+  previewFallbackContentByPlaceId,
   recommendationContext,
   recommendationLimitMessage,
   recommendationPlaces,
@@ -1017,6 +1482,10 @@ export default function MapBottomSheet({
     onFeedChange?.(next);
   };
   const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
+  const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
+  useEffect(() => {
+    setActivePlaceDetailTab('info');
+  }, [selectedPlace?.id]);
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
   // 서버 랭킹이 붙어 있으면 그대로 쓰고, 없을 때만 기존 목록으로 대체한다.
@@ -1108,18 +1577,36 @@ export default function MapBottomSheet({
         ]}
       >
       {content.type === 'place-preview' && selectedPlace ? (
-        <PreviewContent
-          bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
-          imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
-          onBack={onBackHome}
-          onDetail={() => onDetailPress(selectedPlace)}
-          onToggleBookmark={() => void onToggleBookmark(
-            selectedPlace,
-            !bookmarkedPlaceIds[String(selectedPlace.id)],
-          )}
-          pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(selectedPlace.id)])}
-          place={selectedPlace}
-        />
+        snapPoint === 'expanded' ? (
+          <ExpandedPlaceContent
+            activeTab={activePlaceDetailTab}
+            bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
+            fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
+            imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
+            onBack={onBackHome}
+            onTabChange={setActivePlaceDetailTab}
+            onToggleBookmark={() => void onToggleBookmark(
+              selectedPlace,
+              !bookmarkedPlaceIds[String(selectedPlace.id)],
+            )}
+            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(selectedPlace.id)])}
+            place={selectedPlace}
+          />
+        ) : (
+          <PreviewContent
+            bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
+            fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
+            imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
+            onBack={onBackHome}
+            onDetail={() => onDetailPress(selectedPlace)}
+            onToggleBookmark={() => void onToggleBookmark(
+              selectedPlace,
+              !bookmarkedPlaceIds[String(selectedPlace.id)],
+            )}
+            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(selectedPlace.id)])}
+            place={selectedPlace}
+          />
+        )
       ) : isSearchMode ? (
         <ScrollView
           contentContainerStyle={styles.resultsContent}
@@ -1196,15 +1683,17 @@ export default function MapBottomSheet({
       </Animated.View>
       </GlassStyles.SheetInner>
 
-      <BottomNavigation
-        bottomInset={insets.bottom}
-        onOpenMap={onBackHome}
-        onOpenLikedPlaces={onOpenLikedPlaces}
-        onOpenRecommendations={onOpenRecommendations}
-        onOpenSavedPlaces={onOpenSavedPlaces}
-        recommendationsActive={content.type === 'recommendations'}
-        sheetTranslateY={sheetTranslateY}
-      />
+      {content.type !== 'place-preview' ? (
+        <BottomNavigation
+          bottomInset={insets.bottom}
+          onOpenMap={onBackHome}
+          onOpenLikedPlaces={onOpenLikedPlaces}
+          onOpenRecommendations={onOpenRecommendations}
+          onOpenSavedPlaces={onOpenSavedPlaces}
+          recommendationsActive={content.type === 'recommendations'}
+          sheetTranslateY={sheetTranslateY}
+        />
+      ) : null}
     </GlassStyles.BottomSheetContainer>
   );
 }
@@ -1216,6 +1705,163 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     width: '100%',
   },
+  detailActionRow: { columnGap: 8, paddingBottom: 12, paddingHorizontal: 16 },
+  detailAmenityRow: { columnGap: 10, flexDirection: 'row', paddingTop: 16 },
+  detailBackText: { color: '#555860', fontSize: 34, fontWeight: '300', lineHeight: 36, marginTop: -4 },
+  detailCategory: { color: '#63666E', fontSize: 13, fontWeight: '600', marginLeft: 4, paddingTop: 5 },
+  detailContent: { backgroundColor: '#FFFFFF', paddingBottom: 48 },
+  detailCouponBody: { flex: 1 },
+  detailCouponIcon: {
+    alignItems: 'center',
+    backgroundColor: '#FFD9E4',
+    borderRadius: 8,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  detailCouponIconText: { color: '#FF245B', fontSize: 18, fontWeight: '900' },
+  detailCouponPeriod: { color: '#8B8E96', fontSize: 10, marginTop: 2 },
+  detailCouponRow: {
+    alignItems: 'center',
+    backgroundColor: '#F7F7F8',
+    borderRadius: 10,
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+    minHeight: 58,
+    paddingHorizontal: 10,
+  },
+  detailCouponTitle: { color: '#2F3137', fontSize: 12, fontWeight: '700' },
+  detailEmptyText: { color: '#8A8D95', fontSize: 12, paddingVertical: 24, textAlign: 'center' },
+  detailHeading: { paddingBottom: 12, paddingHorizontal: 16 },
+  detailHighlightCount: { color: '#FF245B', fontSize: 11, fontWeight: '700', position: 'absolute', right: 14 },
+  detailHighlightCountOnStrong: { color: '#FFFFFF' },
+  detailHighlightFill: {
+    backgroundColor: '#FFDDE6',
+    borderBottomLeftRadius: 9,
+    borderTopLeftRadius: 9,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 0,
+  },
+  detailHighlightLabel: { color: '#3B3E45', fontSize: 12, fontWeight: '700' },
+  detailHighlightLabelRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingLeft: 14 },
+  detailHighlightRow: {
+    backgroundColor: '#F7F7F8',
+    borderRadius: 9,
+    height: 39,
+    justifyContent: 'center',
+    marginTop: 9,
+    overflow: 'hidden',
+  },
+  detailInfoBlock: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, padding: 16 },
+  detailInfoRow: { alignItems: 'center', flexDirection: 'row', gap: 11, minHeight: 31 },
+  detailInfoText: { color: '#5F636C', flex: 1, fontSize: 14, lineHeight: 21 },
+  detailMenuBody: { flex: 1 },
+  detailMenuDescription: { color: '#858891', fontSize: 11, marginTop: 4 },
+  detailMenuImage: { borderRadius: 10, height: 64, overflow: 'hidden', width: 72 },
+  detailMenuName: { color: '#303238', fontSize: 13, fontWeight: '800' },
+  detailMenuPrice: { color: '#303238', fontSize: 12, fontWeight: '800', marginTop: 7 },
+  detailMenuRow: {
+    alignItems: 'center',
+    borderBottomColor: '#ECEDEF',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    minHeight: 105,
+    paddingVertical: 12,
+  },
+  detailOpenText: { color: '#23B95B', fontWeight: '800' },
+  detailPhoto: { borderRadius: 11, height: 129, overflow: 'hidden', width: 118 },
+  detailPhotoPrimary: { width: 250 },
+  detailPhotoRow: { columnGap: 10, paddingBottom: 12, paddingHorizontal: 16 },
+  detailReviewBody: { flex: 1 },
+  detailReviewCount: { color: '#797C84', fontSize: 11, fontWeight: '500' },
+  detailReviewItem: {
+    borderBottomColor: '#ECEDEF',
+    borderBottomWidth: 1,
+    paddingVertical: 13,
+  },
+  detailReviewImageCell: { aspectRatio: 1.15, flex: 1, overflow: 'hidden' },
+  detailReviewImageGrid: {
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 2,
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  detailReviewMeta: { color: '#9A9CA3', fontSize: 9, marginTop: 2 },
+  detailReviewPhoto: { borderRadius: 10, height: 124, overflow: 'hidden', width: 124 },
+  detailReviewPhotos: { columnGap: 10, paddingTop: 12 },
+  detailReviewSection: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, padding: 16 },
+  detailReviewTag: {
+    alignItems: 'center',
+    backgroundColor: '#F1F2F4',
+    borderRadius: 9,
+    flexDirection: 'row',
+    gap: 4,
+    minHeight: 27,
+    paddingHorizontal: 9,
+  },
+  detailReviewTagRow: {
+    columnGap: 6,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingTop: 10,
+    rowGap: 6,
+  },
+  detailReviewTagText: { color: '#555A63', fontSize: 11, fontWeight: '600' },
+  detailReviewText: { color: '#30333A', fontSize: 14, lineHeight: 21, marginTop: 10 },
+  detailReviewTitle: { color: '#2C2E34', fontSize: 15, fontWeight: '900' },
+  detailReviewerAvatar: {
+    alignItems: 'center',
+    backgroundColor: '#E5E5E7',
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  detailReviewerAvatarImage: { borderRadius: 22, height: 44, width: 44 },
+  detailReviewerInitial: { color: '#6F727A', fontSize: 13, fontWeight: '800' },
+  detailReviewerName: { color: '#202228', fontSize: 15, fontWeight: '700' },
+  detailReviewerRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+  detailRoundButton: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    elevation: 2,
+    height: 42,
+    justifyContent: 'center',
+    shadowColor: '#11151B',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    width: 42,
+  },
+  detailSection: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, padding: 16 },
+  detailSectionTitle: { color: '#303238', fontSize: 14, fontWeight: '900' },
+  detailTab: {
+    alignItems: 'center',
+    borderBottomColor: 'transparent',
+    borderBottomWidth: 2,
+    flex: 1,
+    height: 44,
+    justifyContent: 'center',
+  },
+  detailTabActive: { borderBottomColor: '#FF245B' },
+  detailTabText: { color: '#6D7078', fontSize: 13, fontWeight: '700' },
+  detailTabTextActive: { color: '#FF245B' },
+  detailTabs: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, flexDirection: 'row' },
+  detailTitle: { color: '#17191D', fontSize: 22, fontWeight: '900' },
+  detailTitleRow: { alignItems: 'flex-start', flexDirection: 'row' },
+  detailTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 2,
+  },
+  detailVerified: { color: '#777A82', fontSize: 11, marginTop: 4 },
   cardRow: {
     gap: 12,
     paddingBottom: 10,
@@ -1459,20 +2105,91 @@ const styles = StyleSheet.create({
   retryButton: { backgroundColor: '#FF1956', borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
   retryButtonText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
-  previewAddress: { color: '#747780', fontSize: 12, marginTop: 4 },
-  previewBack: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' },
-  previewBackText: { color: '#5E616A', fontSize: 12, fontWeight: '700' },
-  previewBody: { padding: 14 },
-  previewContent: { paddingHorizontal: 16 },
-  previewDistance: { color: '#6D7079', fontSize: 12 },
-  previewMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
-  previewMore: { color: '#FF245B', fontSize: 12, fontWeight: '800' },
-  previewName: { color: '#22242A', fontSize: 18, fontWeight: '900' },
-  previewPanel: {
-    backgroundColor: 'rgba(255,255,255,0.84)',
-    borderRadius: 18,
-    overflow: 'hidden',
+  previewActionChip: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderColor: 'rgba(231,232,236,0.90)',
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 39,
+    justifyContent: 'center',
+    minWidth: 58,
+    paddingHorizontal: 15,
   },
+  previewActionChipActive: { borderColor: '#FF245B' },
+  previewActionRow: { columnGap: 8, paddingBottom: 12, paddingHorizontal: 1 },
+  previewActionText: { color: '#595C64', fontSize: 12, fontWeight: '700' },
+  previewActionTextActive: { color: '#FF245B' },
+  previewAddress: { color: '#5D6068', fontSize: 13, fontWeight: '600', marginTop: 4 },
+  previewAmenityChip: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderColor: 'rgba(234,235,238,0.90)',
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    height: 40,
+    paddingHorizontal: 13,
+  },
+  previewAmenityIcon: {
+    alignItems: 'center',
+    backgroundColor: '#2398EF',
+    borderRadius: 10,
+    height: 20,
+    justifyContent: 'center',
+    width: 20,
+  },
+  previewAmenityIconText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', lineHeight: 16 },
+  previewAmenityRow: { columnGap: 8, flexDirection: 'row', paddingBottom: 11 },
+  previewAmenityText: { color: '#5A5D65', fontSize: 12, fontWeight: '600' },
+  previewArtwork: { height: '100%', width: '100%' },
+  previewArtworkFallback: {
+    alignItems: 'center',
+    backgroundColor: '#FFF0F4',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  previewArtworkFallbackText: { color: '#FF245B', fontSize: 10, fontWeight: '700', marginTop: 5 },
+  previewBookmarkButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderRadius: 20,
+    height: 36,
+    justifyContent: 'center',
+    marginRight: 4,
+    marginTop: 13,
+    width: 36,
+  },
+  previewCategory: { color: '#575A62', fontSize: 13, fontWeight: '700', marginLeft: 4, paddingTop: 4 },
+  previewCloseButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderRadius: 20,
+    height: 32,
+    justifyContent: 'center',
+    marginTop: 15,
+    width: 32,
+  },
+  previewCloseText: { color: '#5E616A', fontSize: 25, fontWeight: '300', lineHeight: 29 },
+  previewContent: { paddingHorizontal: 16 },
+  previewHeader: { alignItems: 'flex-start', flexDirection: 'row', minHeight: 102 },
+  previewImagePanel: {
+    backgroundColor: '#FFF0F4',
+    borderRadius: 17,
+    height: 174,
+    overflow: 'hidden',
+    width: 120,
+  },
+  previewImagePanelPrimary: { width: 248 },
+  previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
+  previewName: { color: '#1B1D22', fontSize: 21, fontWeight: '900' },
+  previewParkingIcon: { borderRadius: 5 },
+  previewStatus: { color: '#61646C', fontSize: 13, fontWeight: '600', marginTop: 6 },
+  previewStatusEmphasis: { color: '#1CB957', fontWeight: '800' },
+  previewSummary: { flex: 1, paddingTop: 11 },
+  previewTitleRow: { alignItems: 'flex-start', flexDirection: 'row', paddingRight: 4 },
   resultAddress: { color: '#7A7D85', fontSize: 11, marginTop: 3 },
   resultDistance: { color: '#686B73', fontSize: 11, fontWeight: '700' },
   resultName: { color: '#272930', fontSize: 14, fontWeight: '800' },

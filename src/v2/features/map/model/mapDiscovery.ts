@@ -26,11 +26,15 @@ export type MapPlaceCardViewModel = {
   address: string;
   category: string;
   currentlyOperating: boolean | null;
+  distanceMeters: number | null;
   id: number;
+  imageUrl: string | null;
   name: string;
   notice: string | null;
   summary: string | null;
 };
+
+export type MapPlaceSelection = Pick<MapPlaceResult, 'distanceMeters' | 'id'>;
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
@@ -147,6 +151,7 @@ export function toPlaceCardViewModel(
   card: PlaceCard | undefined,
   decision: PlaceVisitDecision | undefined,
   operatingNotices: PlaceOperatingNotices | undefined,
+  distanceMeters: number | null = null,
 ): MapPlaceCardViewModel | null {
   if (!card || !isFiniteNumber(card.id)) return null;
   const decisionPlace = decision?.place;
@@ -165,7 +170,9 @@ export function toPlaceCardViewModel(
     address: text(card.roadAddress, text(card.address)),
     category: text(card.category, 'OTHER'),
     currentlyOperating,
+    distanceMeters: isFiniteNumber(distanceMeters) ? distanceMeters : null,
     id: card.id,
+    imageUrl: text(card.imageUrl) || null,
     name: text(card.name, 'Place'),
     notice: text(notices.find((notice) => notice?.visibleNow !== false)?.message) || null,
     summary: text(card.touristSummary) || null,

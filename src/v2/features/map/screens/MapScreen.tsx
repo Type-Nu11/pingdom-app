@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
+import { V2_ROUTES, parsePlaceId, type V2ScreenProps } from '../../../app/navigation/types';
 import MapDiscoverySearch from '../components/MapDiscoverySearch';
 import KakaoMapAdapter from '../components/KakaoMapAdapter';
 import MapSelectedPlaceCard from '../components/MapSelectedPlaceCard';
@@ -12,35 +13,51 @@ import {
 } from '../components/MapStatusOverlays';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { useMapDiscovery } from '../hooks/useMapDiscovery';
-import type { MapPlaceResult } from '../model/mapDiscovery';
+import type { MapPlaceResult, MapPlaceSelection } from '../model/mapDiscovery';
 import { FALLBACK_COORDINATE } from '../model/mapFixtures';
 
 const RADIUS_KM = 3;
 
-export default function MapScreen() {
+type MapScreenProps = Pick<V2ScreenProps<'Map'>, 'navigation'>;
+
+export default function MapScreen({ navigation }: MapScreenProps) {
   const { t } = useTranslation();
   const location = useCurrentLocation();
   const [center, setCenter] = useState(FALLBACK_COORDINATE);
   const [searchText, setSearchText] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [category, setCategory] = useState<string | null>(null);
-  const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<MapPlaceSelection | null>(null);
   const discovery = useMapDiscovery({
     category,
     center,
     keyword: searchText,
     radiusKm: RADIUS_KM,
-    selectedPlaceId,
+    selectedPlace,
   });
 
   useEffect(() => {
-    if (location.status === 'granted' && selectedPlaceId === null) {
+    if (location.status === 'granted' && selectedPlace === null) {
       setCenter(location.coordinate);
     }
-  }, [location.coordinate, location.status, selectedPlaceId]);
+  }, [location.coordinate, location.status, selectedPlace]);
 
-  const selectPlace = ({ coordinate, id }: Pick<MapPlaceResult, 'coordinate' | 'id'>) => {
-    setSelectedPlaceId(id);
+  useEffect(() => {
+    if (!selectedPlace || !discovery.hasResolvedMarkers) return;
+
+    const isSelectedPlaceVisible = discovery.markers.some(
+      (marker) => marker.kind === 'place' && marker.placeId === selectedPlace.id,
+    );
+
+    if (!isSelectedPlaceVisible) setSelectedPlace(null);
+  }, [discovery.hasResolvedMarkers, discovery.markers, selectedPlace]);
+
+  const selectPlace = ({
+    coordinate,
+    distanceMeters,
+    id,
+  }: Pick<MapPlaceResult, 'coordinate' | 'distanceMeters' | 'id'>) => {
+    setSelectedPlace({ distanceMeters, id });
     setCenter(coordinate);
     setSearchFocused(false);
   };
@@ -51,11 +68,15 @@ export default function MapScreen() {
     const coordinate = { lat: marker.lat, lng: marker.lng };
 
     if (marker.kind === 'cluster' || marker.placeId === null) {
-      setSelectedPlaceId(null);
+      setSelectedPlace(null);
       setCenter(coordinate);
       return;
     }
-    selectPlace({ coordinate, id: marker.placeId });
+    if (selectedPlace?.id === marker.placeId) {
+      setSelectedPlace(null);
+      return;
+    }
+    selectPlace({ coordinate, distanceMeters: null, id: marker.placeId });
   };
 
   const visibleResults = searchFocused && searchText.trim().length >= 2
@@ -68,7 +89,7 @@ export default function MapScreen() {
     <Container testID="v2-map-screen">
       <KakaoMapAdapter
         center={center}
-        followUser={location.status === 'granted' && selectedPlaceId === null}
+        followUser={location.status === 'granted' && selectedPlace === null}
         markers={discovery.markers}
         onCameraIdle={setCenter}
         onMarkerSelect={handleMarkerSelect}
@@ -81,12 +102,12 @@ export default function MapScreen() {
           isBusy={discovery.isAutocompleteLoading || discovery.isRefreshing}
           onCategoryChange={(value) => {
             setCategory(value);
-            setSelectedPlaceId(null);
+            setSelectedPlace(null);
           }}
           onFocusChange={setSearchFocused}
           onQueryChange={(value) => {
             setSearchText(value);
-            setSelectedPlaceId(null);
+            setSelectedPlace(null);
           }}
           onSelectPlace={selectPlace}
           query={searchText}
@@ -97,7 +118,7 @@ export default function MapScreen() {
           accessibilityLabel={t('map.locate')}
           accessibilityRole="button"
           onPress={() => {
-            setSelectedPlaceId(null);
+            setSelectedPlace(null);
             setCenter(location.coordinate ?? FALLBACK_COORDINATE);
           }}
           testID="v2-map-locate"
@@ -118,8 +139,15 @@ export default function MapScreen() {
         <MapSelectedPlaceCard
           error={discovery.selectedPlaceError}
           loading={discovery.selectedPlaceLoading}
+          onDismiss={() => setSelectedPlace(null)}
+          onOpenPlace={(value) => {
+            const placeId = parsePlaceId(value);
+            if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
+          }}
+          onRetry={() => void discovery.selectedPlaceRefetch()}
           place={discovery.selectedPlace}
-          visible={selectedPlaceId !== null}
+          selectedPlaceId={selectedPlace?.id ?? null}
+          visible={selectedPlace !== null}
         />
       </SafeOverlay>
     </Container>

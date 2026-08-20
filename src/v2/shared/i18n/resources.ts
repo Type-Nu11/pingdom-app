@@ -64,8 +64,14 @@ export const resources = {
       map: {
         card: {
           closed: 'Closed now',
+          dismiss: 'Dismiss place preview',
           error: 'Could not load this place.',
+          imageLabel: '{{name}} photo',
+          imageUnavailable: 'No photo',
+          loading: 'Loading place preview...',
           open: 'Open now',
+          openHint: 'Opens place details',
+          preview: 'Place preview',
           statusUnknown: 'Status unknown',
         },
         data: {
@@ -202,8 +208,14 @@ export const resources = {
       map: {
         card: {
           closed: '영업 종료',
+          dismiss: '장소 미리보기 닫기',
           error: '장소 정보를 불러오지 못했습니다.',
+          imageLabel: '{{name}} 사진',
+          imageUnavailable: '사진 없음',
+          loading: '장소 미리보기를 불러오는 중입니다...',
           open: '영업 중',
+          openHint: '장소 상세를 엽니다',
+          preview: '장소 미리보기',
           statusUnknown: '영업 상태 미확인',
         },
         data: {

@@ -117,6 +117,7 @@ export default function MapTopOverlay({
 
             return (
               <S.CategoryChipButton
+                $active={isActive}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isActive }}
                 key={`${id}-${index}`}
