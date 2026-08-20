@@ -19,4 +19,13 @@ describe('map preview selection', () => {
     expect(findMapPreviewPlace('138001', [apiPlace])).toBeNull();
     expect(findMapPreviewPlace('not-a-place', [apiPlace])).toBeNull();
   });
+
+  test('실제 장소와 임시 장소 모두 실제 마커 ID로 미리보기를 선택한다', () => {
+    const apiPlace = { id: 18, name: '실제 장소' };
+    const temporaryPlace = { id: 138001, name: '대성반점' };
+    const selectablePlaces = [apiPlace, temporaryPlace];
+
+    expect(findMapPreviewPlace('18', selectablePlaces)).toBe(apiPlace);
+    expect(findMapPreviewPlace('138001', selectablePlaces)).toBe(temporaryPlace);
+  });
 });

@@ -106,7 +106,9 @@ export const CategoryContent = styled.View`
   padding-left: 12px;
 `;
 
-export const CategoryChipButton = styled.Pressable`
+export const CategoryChipButton = styled.Pressable<{ $active: boolean }>`
+  border-width: 1px;
+  border-color: ${({ $active }) => ($active ? '#FF245B' : 'transparent')};
   border-radius: 16px;
   background-color: ${IOS ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.01)'};
   elevation: 2;
@@ -144,6 +146,6 @@ export const CategoryChipContent = styled.View`
 export const CategoryLabel = styled.Text<{ $active: boolean }>`
   color: ${({ $active }) => ($active ? '#FF245B' : '#5E5E66')};
   font-size: 14px;
-  font-weight: 500;
+  font-weight: ${({ $active }) => ($active ? 700 : 500)};
   line-height: 18px;
 `;

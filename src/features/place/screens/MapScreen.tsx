@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import RestaurantMarkerAsset from '../../../assets/v2icon/Restaurant.svg';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +11,7 @@ import { useAuthStore } from '../../../app/store/authStore';
 import MapBottomSheet, {
   type BottomSheetContent,
   type DecisionPlace,
+  type MapPreviewFallbackContent,
   type VisitFilter,
 } from '../components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
@@ -53,20 +55,86 @@ import { createFocusedRecommendationMarker } from '../utils/recommendationMarker
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
 
+const MOCK_PLACE_PREVIEW_CONTENT_BY_ID: Record<string, MapPreviewFallbackContent> = {
+  [String(MOCK_PLACE_IDS[0])]: {
+    amenities: ['english', 'parking'],
+    businessHours: '20:00에 영업 종료',
+    coupons: [
+      { period: '26.08.18~27.08.18', title: '생일 10% 할인 쿠폰' },
+      { period: '26.08.18~27.08.18', title: '생일 10% 할인 쿠폰' },
+    ],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=600&q=85',
+    ],
+    menuItems: [
+      { description: '성능좋은 짜장면', name: '짜장면', price: '9,000원' },
+      { description: '성능좋은 짜장면', name: '짜장면', price: '9,000원' },
+      { description: '성능좋은 짜장면', name: '짜장면', price: '9,000원' },
+    ],
+    phone: '0507-1418-9977 · 010-1234-5678',
+    reviewCount: 123,
+    reviewHighlights: [
+      { count: 132, label: '사진 찍기 좋아요' },
+      { count: 98, label: '매장이 깨끗해요' },
+      { count: 76, label: '다국어 설명이 잘 되어 있어요' },
+      { count: 54, label: '친절해요' },
+      { count: 41, label: '음식이 맛있어요' },
+    ],
+    reviewParticipantCount: 284,
+    reviews: [
+      {
+        author: '이용인',
+        avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=160&q=80',
+        createdAt: '26.08.18 · 2시간 전',
+        hiddenTags: ['사진 찍기 좋아요', '친절해요', '매장이 깨끗해요'],
+        tags: ['음식이 맛있어요'],
+        text: '암소 된장찌개가 더 맛있는 것 같아요...',
+      },
+      {
+        author: '이용인',
+        avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=160&q=80',
+        createdAt: '26.08.18 · 2시간 전',
+        hiddenTags: ['사진 찍기 좋아요', '친절해요', '매장이 깨끗해요'],
+        photoCount: 2,
+        tags: ['음식이 맛있어요'],
+        text: '암소 된장찌개가 더 맛있는 것 같아요...',
+      },
+      {
+        author: '이용인',
+        avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=160&q=80',
+        createdAt: '26.08.18 · 2시간 전',
+        tags: ['음식이 맛있어요', '사진 찍기 좋아요', '친절해요', '매장이 깨끗해요'],
+        text: '먼 옛날, 한 고을에 이용인(李龍人)이라 불리는 자가 있었다. 사람들은 그를 두고 이르길, 태어날 때 하늘에서 청룡이 내려와 그의 이름 석 자에 용(龍) 자를 새기고 갔다 하였다.',
+      },
+      {
+        author: '이용인',
+        avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=160&q=80',
+        createdAt: '26.08.18 · 2시간 전',
+        hiddenTags: ['사진 찍기 좋아요', '친절해요', '매장이 깨끗해요'],
+        tags: ['음식이 맛있어요'],
+        text: '암소 된장찌개가 더 맛있는 것 같아요...',
+      },
+    ],
+    statusDescription: '23명이 검증했어요!',
+    statusEmphasis: '영업 중',
+  },
+};
+
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
 
 const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] => [
   {
-    address: 'Seongsu-dong 2-ga · 4 min walk',
-    category: 'POP-UP',
-    distance: '320 m',
-    distanceMeters: 320,
+    address: '대구 달성군 구지면',
+    category: '음식점',
+    distance: '12.3km',
+    distanceMeters: 12300,
     id: MOCK_PLACE_IDS[0],
-    latitude: latitude + 0.0018,
-    longitude: longitude - 0.0012,
-    name: '오아시스 팝업 스토어',
-    tags: ['English menu', 'Coupon'],
+    latitude: latitude + 0.006,
+    longitude: longitude - 0.006,
+    name: '대성반점',
+    tags: ['English menu', 'Parking'],
     verifiedAgo: '18m',
     verifiedMinutes: 18,
     wait: '10–20 min',
@@ -78,8 +146,8 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     distance: '580 m',
     distanceMeters: 580,
     id: MOCK_PLACE_IDS[1],
-    latitude: latitude - 0.0011,
-    longitude: longitude + 0.0019,
+    latitude: latitude - 0.004,
+    longitude: longitude + 0.008,
     name: '레이어드 커피 랩',
     tags: ['Short wait', 'Bookable'],
     verifiedAgo: '7m',
@@ -93,8 +161,8 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     distance: '810 m',
     distanceMeters: 810,
     id: MOCK_PLACE_IDS[2],
-    latitude: latitude + 0.0004,
-    longitude: longitude + 0.0028,
+    latitude: latitude + 0.002,
+    longitude: longitude + 0.012,
     name: '커먼 테이블 성수',
     tags: ['Coupon', 'Bookable'],
     verifiedAgo: '24m',
@@ -310,9 +378,16 @@ export default function MapScreen({
   );
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
-    return [...allPlaces, ...favoritePlaces]
-      .find((place) => place.id === content.placeId) ?? null;
-  }, [allPlaces, content, favoritePlaces]);
+    const selectedFromCurrentData = [...allPlaces, ...favoritePlaces]
+      .find((place) => place.id === content.placeId);
+
+    // A recommendation response can replace an empty list immediately after a
+    // temporary marker is tapped. Preserve that selected mock place until the
+    // user closes it so the response cannot dismiss the preview underneath them.
+    return selectedFromCurrentData
+      ?? mockPlaces.find((place) => place.id === content.placeId)
+      ?? null;
+  }, [allPlaces, content, favoritePlaces, mockPlaces]);
   useEffect(() => {
     if (content.type !== 'place-preview' || selectedPlace) return;
 
@@ -357,22 +432,12 @@ export default function MapScreen({
     );
     const visibleMarkerIds = new Set(liveMarkerIds);
     if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
-    const mockMarkers = recommendationPlaces.length === 0 && apiPlaces.length === 0
-      ? mockPlaces.map((place, index) => ({
-        category: (index === 1 ? 'food' : index === 2 ? 'etc' : 'fashion') as MapMarker['category'],
-        id: String(place.id),
-        lat: place.latitude,
-        lng: place.longitude,
-        markerType: index === 0 ? 'hot' as const : 'default' as const,
-      }))
-      : [];
     const markers = applyBookmarkStateToMarkers([
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
       ...(focusedRecommendationMarker ? [focusedRecommendationMarker] : []),
-      ...mockMarkers,
     ], bookmarkedPlaceIds);
 
     if (activeCategory === 'all') return markers;
@@ -411,6 +476,7 @@ export default function MapScreen({
     const place = findMapPreviewPlace(event.nativeEvent.markerId, [
       ...allPlaces,
       ...favoritePlaces,
+      ...mockPlaces,
     ]);
     if (!place) return;
 
@@ -518,6 +584,10 @@ export default function MapScreen({
   const focusedPlace = selectedPlace;
   const mapCenterLat = !isFollowingUser && focusedPlace ? focusedPlace.latitude : center.lat;
   const mapCenterLng = !isFollowingUser && focusedPlace ? focusedPlace.longitude : center.lng;
+  const showTemporaryMarker = mapSection === 'map'
+    && apiMarkers.length === 0
+    && !isSearchOpen
+    && (activeCategory === 'all' || activeCategory === 'food');
 
   return (
     <View style={styles.container}>
@@ -546,6 +616,21 @@ export default function MapScreen({
           }}
           query={query}
         />
+        {showTemporaryMarker ? (
+          <Pressable
+            accessibilityLabel="임시 장소 대성반점 열기"
+            accessibilityRole="button"
+            hitSlop={18}
+            onPress={() => handlePlacePress(mockPlaces[0])}
+            style={({ pressed }) => [
+              styles.temporaryMarkerButton,
+              pressed && styles.temporaryMarkerPressed,
+            ]}
+            testID="temporary-place-marker"
+          >
+            <RestaurantMarkerAsset height={62} pointerEvents="none" width={46} />
+          </Pressable>
+        ) : null}
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
@@ -629,6 +714,7 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             places={sheetPlaces}
+            previewFallbackContentByPlaceId={MOCK_PLACE_PREVIEW_CONTENT_BY_ID}
             feed={rankingFeed}
             onFeedChange={setRankingFeed}
             rankingImageUrlsByPlaceId={rankingImageUrlsByPlaceId}
@@ -678,4 +764,14 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
+  temporaryMarkerButton: {
+    alignItems: 'center',
+    left: '50%',
+    marginLeft: -41,
+    padding: 18,
+    position: 'absolute',
+    top: '37%',
+    zIndex: 20,
+  },
+  temporaryMarkerPressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
 });
