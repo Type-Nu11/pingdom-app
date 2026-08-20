@@ -230,7 +230,15 @@ const CARD_FALLBACKS = [
 
 const HOME_BOOKMARK_STAR_PATH = 'M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z';
 
-const BookmarkStar = ({ selected, size = 35 }: { selected: boolean; size?: number }) => (
+const BookmarkStar = ({
+  selected,
+  size = 35,
+  strokeColor = '#FFFFFF',
+}: {
+  selected: boolean;
+  size?: number;
+  strokeColor?: string;
+}) => (
   <Svg
     fill="none"
     height={size}
@@ -240,7 +248,7 @@ const BookmarkStar = ({ selected, size = 35 }: { selected: boolean; size?: numbe
     <Path
       d={HOME_BOOKMARK_STAR_PATH}
       fill={selected ? '#FF1956' : 'none'}
-      stroke={selected ? '#FF1956' : '#FFFFFF'}
+      stroke={selected ? '#FF1956' : strokeColor}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={2}
@@ -283,6 +291,35 @@ const PlaceArtwork = ({
       resizeMode="cover"
       source={{ uri: sourceUrl }}
       style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
+    />
+  );
+};
+
+const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [imageUrl]);
+
+  if (!imageUrl || hasImageError) {
+    const fallbackMessage = hasImageError ? '이미지를 불러오지 못했어요' : '이미지 없음';
+
+    return (
+      <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
+        <MapPinIcon active size={28} />
+        <Text style={styles.previewArtworkFallbackText}>{fallbackMessage}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      accessibilityLabel="장소 이미지"
+      onError={() => setHasImageError(true)}
+      resizeMode="cover"
+      source={{ uri: imageUrl }}
+      style={styles.previewArtwork}
     />
   );
 };
@@ -837,34 +874,48 @@ const PreviewContent = ({
   place: DecisionPlace;
 }) => (
   <View style={styles.previewContent}>
-    <Pressable onPress={onBack} style={styles.previewBack}>
-      <Text style={styles.previewBackText}>‹  주변 핫플로 돌아가기</Text>
-    </Pressable>
-    <Pressable onPress={onDetail} style={({ pressed }) => [styles.previewPanel, pressed && styles.pressed]}>
-      <PlaceArtwork imageUrl={imageUrl} />
+    <View style={styles.previewHeader}>
+      <Pressable
+        accessibilityLabel={`${place.name} 상세 보기`}
+        accessibilityRole="button"
+        onPress={onDetail}
+        style={styles.previewSummary}
+      >
+        <Text numberOfLines={1} style={styles.previewName}>{place.name}</Text>
+        <Text numberOfLines={1} style={styles.previewCategory}>{place.category}</Text>
+        <Text numberOfLines={1} style={styles.previewAddress}>{place.address}</Text>
+        <Text style={styles.previewDistance}>여기서 {formatDistance(place)}</Text>
+      </Pressable>
       <Pressable
         accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
         accessibilityRole="button"
         accessibilityState={{ busy: pending, disabled: pending }}
         disabled={pending}
         hitSlop={10}
-        onPress={(event) => {
-          event.stopPropagation();
-          onToggleBookmark();
-        }}
-        style={[styles.bookmarkPill, bookmarked && styles.bookmarkPillActive]}
+        onPress={onToggleBookmark}
+        style={styles.previewBookmarkButton}
       >
-        <Text style={[styles.bookmarkPillText, bookmarked && styles.bookmarkPillTextActive]}>
-          {pending ? '처리 중…' : bookmarked ? '★ 저장됨' : '☆ 저장'}
-        </Text>
+        <BookmarkStar selected={bookmarked} size={22} strokeColor="#FF245B" />
       </Pressable>
-      <View style={styles.previewBody}>
-        <Text style={styles.previewName}>{place.name}</Text>
-        <Text numberOfLines={2} style={styles.previewAddress}>{place.address}</Text>
-        <View style={styles.previewMeta}>
-          <Text style={styles.previewDistance}>여기서 {formatDistance(place)}</Text>
-          <Text style={styles.previewMore}>상세보기  ›</Text>
-        </View>
+      <Pressable
+        accessibilityLabel="장소 미리보기 닫기"
+        accessibilityRole="button"
+        hitSlop={10}
+        onPress={onBack}
+        style={styles.previewCloseButton}
+      >
+        <Text style={styles.previewCloseText}>×</Text>
+      </Pressable>
+    </View>
+    <Pressable
+      accessibilityLabel={`${place.name} 상세 보기`}
+      accessibilityRole="button"
+      onPress={onDetail}
+      style={({ pressed }) => [styles.previewPanel, pressed && styles.pressed]}
+    >
+      <PreviewArtwork imageUrl={imageUrl} />
+      <View pointerEvents="none" style={styles.previewDetailScrim}>
+        <Text style={styles.previewMore}>상세보기  ›</Text>
       </View>
     </Pressable>
   </View>
@@ -1527,20 +1578,56 @@ const styles = StyleSheet.create({
   retryButton: { backgroundColor: '#FF1956', borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
   retryButtonText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
-  previewAddress: { color: '#747780', fontSize: 12, marginTop: 4 },
-  previewBack: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' },
-  previewBackText: { color: '#5E616A', fontSize: 12, fontWeight: '700' },
-  previewBody: { padding: 14 },
+  previewAddress: { color: '#747780', fontSize: 12, marginTop: 2 },
+  previewArtwork: { height: '100%', width: '100%' },
+  previewArtworkFallback: {
+    alignItems: 'center',
+    backgroundColor: '#FFF0F4',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  previewArtworkFallbackText: { color: '#FF245B', fontSize: 10, fontWeight: '700', marginTop: 5 },
+  previewBookmarkButton: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    marginRight: 4,
+    marginTop: 11,
+    width: 36,
+  },
+  previewCategory: { color: '#FF245B', fontSize: 11, fontWeight: '700', marginTop: 4 },
+  previewCloseButton: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    marginTop: 9,
+    width: 32,
+  },
+  previewCloseText: { color: '#5E616A', fontSize: 25, fontWeight: '300', lineHeight: 29 },
   previewContent: { paddingHorizontal: 16 },
+  previewDetailScrim: {
+    alignItems: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.10)',
+    bottom: 0,
+    justifyContent: 'flex-end',
+    left: 0,
+    padding: 12,
+    position: 'absolute',
+    right: 0,
+  },
   previewDistance: { color: '#6D7079', fontSize: 12 },
-  previewMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
-  previewMore: { color: '#FF245B', fontSize: 12, fontWeight: '800' },
-  previewName: { color: '#22242A', fontSize: 18, fontWeight: '900' },
+  previewHeader: { alignItems: 'flex-start', flexDirection: 'row', minHeight: 93 },
+  previewMore: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  previewName: { color: '#22242A', fontSize: 17, fontWeight: '900' },
   previewPanel: {
     backgroundColor: 'rgba(255,255,255,0.84)',
     borderRadius: 18,
+    height: 196,
     overflow: 'hidden',
+    position: 'relative',
   },
+  previewSummary: { flex: 1, paddingTop: 12 },
   resultAddress: { color: '#7A7D85', fontSize: 11, marginTop: 3 },
   resultDistance: { color: '#686B73', fontSize: 11, fontWeight: '700' },
   resultName: { color: '#272930', fontSize: 14, fontWeight: '800' },
