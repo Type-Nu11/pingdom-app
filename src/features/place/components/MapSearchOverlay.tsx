@@ -629,11 +629,11 @@ const styles = StyleSheet.create({
   searchField: {
     alignItems: 'center',
     backgroundColor: '#e8e8eb',
-    borderRadius: 27,
+    borderRadius: 26,
     flex: 1,
     flexDirection: 'row',
     gap: 4,
-    height: 54,
+    height: 44,
     paddingLeft: 8,
     paddingRight: 17,
   },
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: '#303440',
     flex: 1,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '500',
     padding: 0,
   },

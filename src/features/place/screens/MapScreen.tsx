@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BlurTargetView } from 'expo-blur';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +13,6 @@ import MapBottomSheet, {
   type VisitFilter,
 } from '../components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
-import { GlassBlurTargetProvider } from '../components/GlassSurface';
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
@@ -144,7 +142,6 @@ export default function MapScreen({
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const mapBlurTargetRef = useRef<View | null>(null);
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
   const [rankingFeed, setRankingFeed] = useState<'local' | 'national'>('local');
@@ -507,7 +504,7 @@ export default function MapScreen({
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
-      <BlurTargetView ref={mapBlurTargetRef} style={styles.mapBackground}>
+      <View style={styles.mapBackground}>
         <MapCanvas
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
@@ -518,10 +515,9 @@ export default function MapScreen({
           userLng={userLng}
         />
         <View pointerEvents="none" style={styles.mapTint} />
-      </BlurTargetView>
-      <GlassBlurTargetProvider blurTarget={mapBlurTargetRef}>
-        <MapTopOverlay
-          activeCategory={activeCategory}
+      </View>
+          <MapTopOverlay
+            activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
           onProfilePress={onOpenProfile}
           onQueryChange={handleQueryChange}
@@ -631,7 +627,6 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
-      </GlassBlurTargetProvider>
       {isSearchOpen ? (
         <MapSearchOverlay
           centerLat={center.lat}
@@ -664,5 +659,5 @@ export default function MapScreen({
 const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
-  mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.12)' },
+  mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
 });
