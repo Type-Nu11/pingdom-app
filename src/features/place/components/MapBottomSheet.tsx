@@ -1078,7 +1078,7 @@ export default function MapBottomSheet({
           ]}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={24}
+            cornerRadius={34}
             glassEffectStyle="regular"
             highlightHeight={40}
             highlightOpacity={0.10}
