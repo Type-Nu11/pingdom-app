@@ -16,6 +16,7 @@ import {
   toResultMarkers,
   toViewportMarkers,
 } from '../model/mapDiscovery';
+import type { MapPlaceSelection } from '../model/mapDiscovery';
 import type { Coordinate } from '../model/map.types';
 
 type MapDiscoveryParams = {
@@ -24,7 +25,7 @@ type MapDiscoveryParams = {
   center: Coordinate;
   keyword: string;
   radiusKm: number;
-  selectedPlaceId: number | null;
+  selectedPlace: MapPlaceSelection | null;
 };
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
@@ -44,7 +45,7 @@ export function useMapDiscovery({
   center,
   keyword,
   radiusKm,
-  selectedPlaceId,
+  selectedPlace: selectedPlaceSelection,
 }: MapDiscoveryParams) {
   const normalizedKeyword = keyword.trim();
   const debouncedKeyword = useDebouncedValue(normalizedKeyword, 250);
@@ -75,8 +76,8 @@ export function useMapDiscovery({
   const autocompleteQuery = usePlaceAutocomplete(autocompleteParams, {
     enabled: debouncedKeyword.length >= 2,
   });
-  const detailId = selectedPlaceId ?? 0;
-  const detailEnabled = selectedPlaceId !== null;
+  const detailId = selectedPlaceSelection?.id ?? 0;
+  const detailEnabled = selectedPlaceSelection !== null;
   const cardQuery = usePlaceCard(detailId, { enabled: detailEnabled });
   const decisionQuery = usePlaceVisitDecision(detailId, { enabled: detailEnabled });
   const noticesQuery = usePlaceOperatingNotices(detailId, { enabled: detailEnabled });
@@ -87,14 +88,22 @@ export function useMapDiscovery({
     [isFiltered, mapQuery.data, results],
   );
   const selectedPlace = useMemo(
-    () => toPlaceCardViewModel(cardQuery.data, decisionQuery.data, noticesQuery.data),
-    [cardQuery.data, decisionQuery.data, noticesQuery.data],
+    () => selectedPlaceSelection && cardQuery.data?.id === selectedPlaceSelection.id
+      ? toPlaceCardViewModel(
+        cardQuery.data,
+        decisionQuery.data,
+        noticesQuery.data,
+        selectedPlaceSelection.distanceMeters,
+      )
+      : null,
+    [cardQuery.data, decisionQuery.data, noticesQuery.data, selectedPlaceSelection],
   );
   const activeQuery = isFiltered ? listQuery : mapQuery;
 
   return {
     autocomplete: toAutocompleteResults(autocompleteQuery.data),
     autocompleteError: autocompleteQuery.error,
+    hasResolvedMarkers: activeQuery.isSuccess && !activeQuery.isFetching,
     isAutocompleteLoading: autocompleteQuery.isFetching,
     isEmpty: !activeQuery.isLoading && !activeQuery.error && markers.length === 0,
     isLoading: activeQuery.isLoading,
@@ -106,5 +115,6 @@ export function useMapDiscovery({
     selectedPlace,
     selectedPlaceError: cardQuery.error,
     selectedPlaceLoading: cardQuery.isLoading,
+    selectedPlaceRefetch: cardQuery.refetch,
   };
 }

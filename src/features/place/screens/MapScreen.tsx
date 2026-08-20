@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BlurTargetView } from 'expo-blur';
-import { Alert, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import RestaurantMarkerAsset from '../../../assets/v2icon/Restaurant.svg';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useTranslation } from 'react-i18next';
@@ -11,10 +11,10 @@ import { useAuthStore } from '../../../app/store/authStore';
 import MapBottomSheet, {
   type BottomSheetContent,
   type DecisionPlace,
+  type MapPreviewFallbackContent,
   type VisitFilter,
 } from '../components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
-import { GlassBlurTargetProvider } from '../components/GlassSurface';
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
@@ -47,24 +47,94 @@ import {
 } from '../model/recommendationPresentation';
 import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
+import {
+  findMapPreviewPlace,
+  mergeMapPreviewPlaces,
+} from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
+
+const MOCK_PLACE_PREVIEW_CONTENT_BY_ID: Record<string, MapPreviewFallbackContent> = {
+  [String(MOCK_PLACE_IDS[0])]: {
+    amenities: ['english', 'parking'],
+    businessHours: '20:00에 영업 종료',
+    coupons: [
+      { period: '26.08.18~27.08.18', title: '생일 10% 할인 쿠폰' },
+      { period: '26.08.18~27.08.18', title: '생일 10% 할인 쿠폰' },
+    ],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85',
+      'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=600&q=85',
+    ],
+    menuItems: [
+      { description: '성능좋은 짜장면', name: '짜장면', price: '9,000원' },
+      { description: '성능좋은 짜장면', name: '짜장면', price: '9,000원' },
+      { description: '성능좋은 짜장면', name: '짜장면', price: '9,000원' },
+    ],
+    phone: '0507-1418-9977 · 010-1234-5678',
+    reviewCount: 123,
+    reviewHighlights: [
+      { count: 132, label: '사진 찍기 좋아요' },
+      { count: 98, label: '매장이 깨끗해요' },
+      { count: 76, label: '다국어 설명이 잘 되어 있어요' },
+      { count: 54, label: '친절해요' },
+      { count: 41, label: '음식이 맛있어요' },
+    ],
+    reviewParticipantCount: 284,
+    reviews: [
+      {
+        author: '이용인',
+        avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=160&q=80',
+        createdAt: '26.08.18 · 2시간 전',
+        hiddenTags: ['사진 찍기 좋아요', '친절해요', '매장이 깨끗해요'],
+        tags: ['음식이 맛있어요'],
+        text: '암소 된장찌개가 더 맛있는 것 같아요...',
+      },
+      {
+        author: '이용인',
+        avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=160&q=80',
+        createdAt: '26.08.18 · 2시간 전',
+        hiddenTags: ['사진 찍기 좋아요', '친절해요', '매장이 깨끗해요'],
+        photoCount: 2,
+        tags: ['음식이 맛있어요'],
+        text: '암소 된장찌개가 더 맛있는 것 같아요...',
+      },
+      {
+        author: '이용인',
+        avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=160&q=80',
+        createdAt: '26.08.18 · 2시간 전',
+        tags: ['음식이 맛있어요', '사진 찍기 좋아요', '친절해요', '매장이 깨끗해요'],
+        text: '먼 옛날, 한 고을에 이용인(李龍人)이라 불리는 자가 있었다. 사람들은 그를 두고 이르길, 태어날 때 하늘에서 청룡이 내려와 그의 이름 석 자에 용(龍) 자를 새기고 갔다 하였다.',
+      },
+      {
+        author: '이용인',
+        avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=160&q=80',
+        createdAt: '26.08.18 · 2시간 전',
+        hiddenTags: ['사진 찍기 좋아요', '친절해요', '매장이 깨끗해요'],
+        tags: ['음식이 맛있어요'],
+        text: '암소 된장찌개가 더 맛있는 것 같아요...',
+      },
+    ],
+    statusDescription: '23명이 검증했어요!',
+    statusEmphasis: '영업 중',
+  },
+};
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
 
 const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] => [
   {
-    address: 'Seongsu-dong 2-ga · 4 min walk',
-    category: 'POP-UP',
-    distance: '320 m',
-    distanceMeters: 320,
+    address: '대구 달성군 구지면',
+    category: '음식점',
+    distance: '12.3km',
+    distanceMeters: 12300,
     id: MOCK_PLACE_IDS[0],
-    latitude: latitude + 0.0018,
-    longitude: longitude - 0.0012,
-    name: '오아시스 팝업 스토어',
-    tags: ['English menu', 'Coupon'],
+    latitude: latitude + 0.006,
+    longitude: longitude - 0.006,
+    name: '대성반점',
+    tags: ['English menu', 'Parking'],
     verifiedAgo: '18m',
     verifiedMinutes: 18,
     wait: '10–20 min',
@@ -76,8 +146,8 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     distance: '580 m',
     distanceMeters: 580,
     id: MOCK_PLACE_IDS[1],
-    latitude: latitude - 0.0011,
-    longitude: longitude + 0.0019,
+    latitude: latitude - 0.004,
+    longitude: longitude + 0.008,
     name: '레이어드 커피 랩',
     tags: ['Short wait', 'Bookable'],
     verifiedAgo: '7m',
@@ -91,8 +161,8 @@ const makeMockPlaces = (latitude: number, longitude: number): DecisionPlace[] =>
     distance: '810 m',
     distanceMeters: 810,
     id: MOCK_PLACE_IDS[2],
-    latitude: latitude + 0.0004,
-    longitude: longitude + 0.0028,
+    latitude: latitude + 0.002,
+    longitude: longitude + 0.012,
     name: '커먼 테이블 성수',
     tags: ['Coupon', 'Bookable'],
     verifiedAgo: '24m',
@@ -146,7 +216,6 @@ export default function MapScreen({
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const mapBlurTargetRef = useRef<View | null>(null);
   const { center, userLat, userLng } = useCurrentLocation();
   const { markers: apiMarkers, places: apiPlaces } = usePlaces();
   const [rankingFeed, setRankingFeed] = useState<'local' | 'national'>('local');
@@ -238,17 +307,7 @@ export default function MapScreen({
     () => makeMockPlaces(center.lat, center.lng),
     [center.lat, center.lng],
   );
-  const allPlaces = useMemo(() => {
-    const recommendations = recommendedPlaces
-      .slice(0, 8)
-      .map(toDecisionPlace);
-    const livePlaces = apiPlaces
-      .slice(0, 8)
-      .map(toDecisionPlace);
 
-    if (recommendations.length > 0) return recommendations;
-    return livePlaces.length > 0 ? livePlaces : mockPlaces;
-  }, [apiPlaces, mockPlaces, recommendedPlaces]);
   // 우리 지역 핫플과 전국 트렌드는 서버 랭킹 계약(GET /map/place-rankings)만 사용한다.
   const rankings = useMapPlaceRankings(rankingFeed === 'local'
     ? {
@@ -287,6 +346,16 @@ export default function MapScreen({
       };
     });
   }, [recommendationExplanation.data?.items, recommendedPlaces]);
+  const allPlaces = useMemo(() => {
+    const serverPlaces = mergeMapPreviewPlaces(
+      recommendationPlaces,
+      apiPlaces.map(toDecisionPlace),
+    );
+
+    // Keep the map demonstrable on an empty development database. These markers are
+    // only rendered with their matching preview places and disappear once server data exists.
+    return serverPlaces.length > 0 ? serverPlaces : mockPlaces;
+  }, [apiPlaces, mockPlaces, recommendationPlaces]);
   const recommendationPresentation = useMemo(() => createRecommendationPresentation({
     appliedActivityIntent,
     appliedTravelPurposes,
@@ -315,9 +384,23 @@ export default function MapScreen({
   );
   const selectedPlace = useMemo(() => {
     if (content.type !== 'place-preview') return null;
-    return [...allPlaces, ...favoritePlaces]
-      .find((place) => place.id === content.placeId) ?? null;
-  }, [allPlaces, content, favoritePlaces]);
+    const selectedFromCurrentData = [...allPlaces, ...favoritePlaces]
+      .find((place) => place.id === content.placeId);
+
+    // A recommendation response can replace an empty list immediately after a
+    // temporary marker is tapped. Preserve that selected mock place until the
+    // user closes it so the response cannot dismiss the preview underneath them.
+    return selectedFromCurrentData
+      ?? mockPlaces.find((place) => place.id === content.placeId)
+      ?? null;
+  }, [allPlaces, content, favoritePlaces, mockPlaces]);
+  useEffect(() => {
+    if (content.type !== 'place-preview' || selectedPlace) return;
+
+    setContent({ type: 'home' });
+    setIsFollowingUser(true);
+    snapTo('medium');
+  }, [content, selectedPlace, snapTo]);
   const query = content.type === 'search' || content.type === 'results' ? content.query : '';
   const visiblePlaces = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -355,23 +438,12 @@ export default function MapScreen({
     );
     const visibleMarkerIds = new Set(liveMarkerIds);
     if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
-    const mockMarkers = mockPlaces
-      .filter((place) => !visibleMarkerIds.has(String(place.id)))
-      .map((place, index) => ({
-        category: (index === 1 ? 'food' : index === 2 ? 'etc' : 'fashion') as MapMarker['category'],
-        id: String(place.id),
-        lat: place.latitude,
-        lng: place.longitude,
-        markerType: index === 0 ? 'hot' as const : 'default' as const,
-      }));
-
     const markers = applyBookmarkStateToMarkers([
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
       ...(focusedRecommendationMarker ? [focusedRecommendationMarker] : []),
-      ...mockMarkers,
     ], bookmarkedPlaceIds);
 
     if (activeCategory === 'all') return markers;
@@ -389,6 +461,7 @@ export default function MapScreen({
     apiMarkers,
     bookmarkedPlaceIds,
     content.type,
+    apiPlaces.length,
     mockPlaces,
     recommendationPlaces,
     selectedPlace,
@@ -406,13 +479,21 @@ export default function MapScreen({
   }, [openedBookmarkedPlaceId]);
 
   const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
-    const placeId = Number(event.nativeEvent.markerId);
-    if (
-      !Number.isFinite(placeId)
-      || ![...allPlaces, ...favoritePlaces].some((place) => place.id === placeId)
-    ) return;
+    const place = findMapPreviewPlace(event.nativeEvent.markerId, [
+      ...allPlaces,
+      ...favoritePlaces,
+      ...mockPlaces,
+    ]);
+    if (!place) return;
 
-    setContent({ type: 'place-preview', placeId });
+    if (content.type === 'place-preview' && content.placeId === place.id) {
+      setContent({ type: 'home' });
+      setIsFollowingUser(true);
+      snapTo('medium');
+      return;
+    }
+
+    setContent({ type: 'place-preview', placeId: place.id });
     setIsFollowingUser(false);
     snapTo('medium');
   };
@@ -509,11 +590,15 @@ export default function MapScreen({
   const focusedPlace = selectedPlace;
   const mapCenterLat = !isFollowingUser && focusedPlace ? focusedPlace.latitude : center.lat;
   const mapCenterLng = !isFollowingUser && focusedPlace ? focusedPlace.longitude : center.lng;
+  const showTemporaryMarker = mapSection === 'map'
+    && apiMarkers.length === 0
+    && !isSearchOpen
+    && (activeCategory === 'all' || activeCategory === 'food');
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
-      <BlurTargetView ref={mapBlurTargetRef} style={styles.mapBackground}>
+      <View style={styles.mapBackground}>
         <MapCanvas
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
@@ -524,10 +609,9 @@ export default function MapScreen({
           userLng={userLng}
         />
         <View pointerEvents="none" style={styles.mapTint} />
-      </BlurTargetView>
-      <GlassBlurTargetProvider blurTarget={mapBlurTargetRef}>
-        <MapTopOverlay
-          activeCategory={activeCategory}
+      </View>
+          <MapTopOverlay
+            activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
           onProfilePress={onOpenProfile}
           onQueryChange={handleQueryChange}
@@ -538,6 +622,21 @@ export default function MapScreen({
           }}
           query={query}
         />
+        {showTemporaryMarker ? (
+          <Pressable
+            accessibilityLabel="임시 장소 대성반점 열기"
+            accessibilityRole="button"
+            hitSlop={18}
+            onPress={() => handlePlacePress(mockPlaces[0])}
+            style={({ pressed }) => [
+              styles.temporaryMarkerButton,
+              pressed && styles.temporaryMarkerPressed,
+            ]}
+            testID="temporary-place-marker"
+          >
+            <RestaurantMarkerAsset height={62} pointerEvents="none" width={46} />
+          </Pressable>
+        ) : null}
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
@@ -621,6 +720,7 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             places={sheetPlaces}
+            previewFallbackContentByPlaceId={MOCK_PLACE_PREVIEW_CONTENT_BY_ID}
             feed={rankingFeed}
             onFeedChange={setRankingFeed}
             rankingImageUrlsByPlaceId={rankingImageUrlsByPlaceId}
@@ -637,7 +737,6 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
-      </GlassBlurTargetProvider>
       {isSearchOpen ? (
         <MapSearchOverlay
           centerLat={center.lat}
@@ -670,5 +769,15 @@ export default function MapScreen({
 const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
-  mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.12)' },
+  mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
+  temporaryMarkerButton: {
+    alignItems: 'center',
+    left: '50%',
+    marginLeft: -41,
+    padding: 18,
+    position: 'absolute',
+    top: '37%',
+    zIndex: 20,
+  },
+  temporaryMarkerPressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
 });

@@ -1,37 +1,22 @@
-import React, { createContext, useContext } from 'react';
-import { Platform, type View, type ViewProps } from 'react-native';
-import { BlurView, type BlurViewProps } from 'expo-blur';
+import React from 'react';
+import { Platform, type ViewProps } from 'react-native';
+import { BlurView } from 'expo-blur';
 import {
   GlassView,
   isGlassEffectAPIAvailable,
   isLiquidGlassAvailable,
   type GlassViewProps,
 } from 'expo-glass-effect';
+import {
+  AndroidStaticSurface,
+} from '../styles/GlassSurface.styles';
 
 type GlassSurfaceProps = ViewProps & {
-  androidBlurEnabled?: boolean;
-  blurTarget?: BlurViewProps['blurTarget'];
   glassEffectStyle?: GlassViewProps['glassEffectStyle'];
   intensity?: number;
   interactive?: boolean;
   tintColor?: string;
 };
-
-type GlassBlurTargetProviderProps = {
-  blurTarget: React.RefObject<View | null>;
-  children: React.ReactNode;
-};
-
-const GlassBlurTargetContext = createContext<BlurViewProps['blurTarget']>(undefined);
-
-export const GlassBlurTargetProvider = ({
-  blurTarget,
-  children,
-}: GlassBlurTargetProviderProps) => (
-  <GlassBlurTargetContext.Provider value={blurTarget}>
-    {children}
-  </GlassBlurTargetContext.Provider>
-);
 
 export const supportsNativeLiquidGlass = () => (
   Platform.OS === 'ios'
@@ -39,27 +24,15 @@ export const supportsNativeLiquidGlass = () => (
   && isLiquidGlassAvailable()
 );
 
-export const supportsAndroidNativeBlur = () => (
-  Platform.OS === 'android' && Number(Platform.Version) >= 31
-);
-
 const GlassSurface = ({
-  androidBlurEnabled = true,
-  blurTarget,
   children,
   glassEffectStyle = 'clear',
-  intensity = 90,
+  intensity = 56,
   interactive = false,
   style,
   tintColor = 'rgba(255,255,255,0.18)',
   ...viewProps
 }: GlassSurfaceProps) => {
-  const inheritedBlurTarget = useContext(GlassBlurTargetContext);
-  const resolvedBlurTarget = blurTarget ?? inheritedBlurTarget;
-  const shouldUseAndroidBlur = androidBlurEnabled
-    && Boolean(resolvedBlurTarget)
-    && supportsAndroidNativeBlur();
-
   if (supportsNativeLiquidGlass()) {
     return (
       <GlassView
@@ -75,23 +48,22 @@ const GlassSurface = ({
     );
   }
 
+  if (Platform.OS === 'android') {
+    return (
+      <AndroidStaticSurface $backgroundColor={tintColor} style={style} {...viewProps}>
+        {children}
+      </AndroidStaticSurface>
+    );
+  }
+
   return (
     <BlurView
-      blurMethod={shouldUseAndroidBlur
-        ? 'dimezisBlurViewSdk31Plus'
-        : 'none'}
-      blurReductionFactor={Platform.OS === 'android' ? 1 : undefined}
-      blurTarget={resolvedBlurTarget}
+      blurMethod="none"
+      blurReductionFactor={undefined}
       intensity={intensity}
       style={[
-        {
-          backgroundColor: Platform.OS === 'android'
-            ? shouldUseAndroidBlur
-              ? tintColor
-              : 'rgba(247,250,252,0.9)'
-            : tintColor,
-        },
         style,
+        { backgroundColor: tintColor },
       ]}
       tint="systemUltraThinMaterialLight"
       {...viewProps}
