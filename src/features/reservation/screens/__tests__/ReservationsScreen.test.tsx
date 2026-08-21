@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { type ReactElement, type PropsWithChildren } from 'react';
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { Animated, type GestureResponderHandlers } from 'react-native';
+import { I18nextProvider } from 'react-i18next';
 
 import { useReservations } from '../../../../v2/features/reservations';
+import { registerReservationResources } from '../../../../v2/features/reservations/i18n/reservationResources';
+import { createTestI18n } from '../../../../v2/shared/testing/testProviders';
 import ReservationBottomSheet from '../../components/ReservationBottomSheet';
 
 jest.mock('../../../../v2/features/reservations', () => ({ useReservations: jest.fn() }));
@@ -36,10 +39,20 @@ function queryResult(overrides: Record<string, unknown> = {}) {
   return ({ data: undefined, isError: false, isLoading: false, refetch: jest.fn(), ...overrides } as unknown as ReturnType<typeof useReservations>);
 }
 
+async function renderReservations(ui: ReactElement, language: 'ko' | 'en' = 'ko') {
+  const i18n = await createTestI18n(language);
+  registerReservationResources(i18n);
+  return render(ui, {
+    wrapper: ({ children }: PropsWithChildren) => (
+      <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
+    ),
+  });
+}
+
 describe('ReservationBottomSheet', () => {
   test('loading, empty, error 상태를 구분한다', async () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({ isLoading: true }));
-    const view = await render(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    const view = await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
     expect(screen.getByTestId('reservations-loading')).toBeVisible();
 
     jest.mocked(useReservations).mockReturnValue(queryResult({
@@ -58,7 +71,7 @@ describe('ReservationBottomSheet', () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [reservation], totalCount: 1, totalPages: 1 },
     }));
-    await render(<ReservationBottomSheet {...bottomSheet} {...navigation} onOpenReservation={onOpenReservation} />);
+    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} onOpenReservation={onOpenReservation} />);
     await userEvent.setup().press(screen.getByTestId('reservation-card-901'));
     expect(onOpenReservation).toHaveBeenCalledWith(901);
     expect(screen.getByText('확정 대기')).toBeVisible();
@@ -68,7 +81,7 @@ describe('ReservationBottomSheet', () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [{ ...reservation, status: 'UNKNOWN' }], totalCount: 1, totalPages: 1 },
     }));
-    await render(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
     expect(screen.getByText('상태 확인 필요')).toBeVisible();
   });
 
@@ -77,7 +90,7 @@ describe('ReservationBottomSheet', () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
     }));
-    await render(<ReservationBottomSheet {...bottomSheet} {...navigation} onOpenMap={onOpenMap} />);
+    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} onOpenMap={onOpenMap} />);
     expect(screen.getByRole('tab', { name: '예약', selected: true })).toBeVisible();
     await userEvent.setup().press(screen.getByRole('button', { name: '지도' }));
     expect(onOpenMap).toHaveBeenCalledTimes(1);
@@ -87,7 +100,7 @@ describe('ReservationBottomSheet', () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
     }));
-    await render(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
 
     const firstBookmark = screen.getAllByRole('button', { name: '즐겨찾기 해제' })[0];
     await userEvent.setup().press(firstBookmark);
@@ -101,7 +114,7 @@ describe('ReservationBottomSheet', () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
     }));
-    await render(
+    await renderReservations(
       <ReservationBottomSheet
         {...bottomSheet}
         {...navigation}
@@ -120,7 +133,7 @@ describe('ReservationBottomSheet', () => {
       data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
     }));
 
-    const view = await render(
+    const view = await renderReservations(
       <ReservationBottomSheet {...bottomSheet} {...navigation} showPreviewFixtures />,
     );
     expect(screen.queryByRole('button', { name: '검증하기' })).toBeNull();
@@ -129,5 +142,19 @@ describe('ReservationBottomSheet', () => {
       <ReservationBottomSheet {...bottomSheet} {...navigation} showPreviewFixtures snapPoint="expanded" />,
     );
     expect(screen.getByRole('button', { name: '검증하기' })).toBeVisible();
+  });
+
+  test('영어에서는 예약 탭과 목록 제목을 영어로 표시한다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+
+    await renderReservations(
+      <ReservationBottomSheet {...bottomSheet} {...navigation} />,
+      'en',
+    );
+
+    expect(screen.getByText('Reservations near Daegu Guji')).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Reservations', selected: true })).toBeVisible();
   });
 });

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   GestureResponderHandlers,
@@ -51,12 +52,6 @@ const PREVIEW_IMAGE_URLS = [
   'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=900&q=85',
 ] as const;
 
-const PREVIEW_PLACES: DecisionPlace[] = [
-  { address: '대구 구지면', category: 'POPUP', distance: '12.3km', id: 91001, latitude: 35.65, longitude: 128.41, name: '오아시스\n팝업 스토어', recommendationReason: '영어응대 가능', tags: ['Bookable'], verifiedAgo: 'recently', wait: '예약 가능' },
-  { address: '대구 구지면', category: 'POPUP', distance: '1.23km', id: 91002, latitude: 35.65, longitude: 128.41, name: '오아시스\n팝업 스토어', recommendationReason: '리뷰 많은', tags: ['Bookable'], verifiedAgo: 'recently', wait: '예약 가능' },
-  { address: '대구 구지면', category: 'CAFE', distance: '2.1km', id: 91003, latitude: 35.65, longitude: 128.41, name: '레이어드\n커피 랩', recommendationReason: '주차 가능', tags: ['Bookable'], verifiedAgo: 'recently', wait: '예약 가능' },
-];
-
 const ActiveReservationIcon = () => (
   <Svg height={23} viewBox="0 0 24 24" width={23}>
     <Path d="M3 10.2 12 2l9 8.2v8.3A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5Z" fill="#FF1956" />
@@ -65,18 +60,18 @@ const ActiveReservationIcon = () => (
 );
 
 
-const STATUS_PRESENTATION: Record<Reservation['status'], { label: string; color: string }> = {
-  CANCELED: { label: '취소됨', color: '#73757D' },
-  COMPLETED: { label: '이용 완료', color: '#157F3D' },
-  CONFIRMED: { label: '예약 확정', color: '#157F3D' },
-  EXPIRED: { label: '기간 만료', color: '#73757D' },
-  NO_SHOW: { label: '미방문', color: '#B54708' },
-  PENDING: { label: '확정 대기', color: '#FF1956' },
-  UNKNOWN: { label: '상태 확인 필요', color: '#B42318' },
+const STATUS_PRESENTATION: Record<Reservation['status'], { labelKey: string; color: string }> = {
+  CANCELED: { labelKey: 'reservation.list.statuses.canceled', color: '#73757D' },
+  COMPLETED: { labelKey: 'reservation.list.statuses.completed', color: '#157F3D' },
+  CONFIRMED: { labelKey: 'reservation.list.statuses.confirmed', color: '#157F3D' },
+  EXPIRED: { labelKey: 'reservation.list.statuses.expired', color: '#73757D' },
+  NO_SHOW: { labelKey: 'reservation.list.statuses.noShow', color: '#B54708' },
+  PENDING: { labelKey: 'reservation.list.statuses.pending', color: '#FF1956' },
+  UNKNOWN: { labelKey: 'reservation.list.statuses.unknown', color: '#B42318' },
 };
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('ko-KR', {
+function formatDate(value: string, language: string) {
+  return new Intl.DateTimeFormat(language.startsWith('en') ? 'en-US' : 'ko-KR', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
@@ -86,12 +81,14 @@ function ReservationCard({ onPress, reservation }: {
   onPress: () => void;
   reservation: Reservation;
 }) {
+  const { i18n, t } = useTranslation();
   const status = STATUS_PRESENTATION[reservation.status] ?? STATUS_PRESENTATION.UNKNOWN;
+  const statusLabel = t(status.labelKey);
 
   return (
     <Pressable
-      accessibilityHint="예약 상세 화면으로 이동합니다"
-      accessibilityLabel={`예약 ${reservation.id}, ${status.label}`}
+      accessibilityHint={t('reservation.list.card.hint')}
+      accessibilityLabel={t('reservation.list.card.label', { id: reservation.id, status: statusLabel })}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
@@ -100,32 +97,38 @@ function ReservationCard({ onPress, reservation }: {
       <View style={styles.cardHeading}>
         <View style={styles.cardIcon}><Text style={styles.cardIconText}>R</Text></View>
         <View style={styles.cardTitleCopy}>
-          <Text style={styles.cardEyebrow}>내 예약</Text>
-          <Text style={styles.cardTitle}>예약 번호 {reservation.id}</Text>
+          <Text style={styles.cardEyebrow}>{t('reservation.list.card.eyebrow')}</Text>
+          <Text style={styles.cardTitle}>{t('reservation.list.card.number', { id: reservation.id })}</Text>
         </View>
-        <Text style={[styles.status, { color: status.color }]}>{status.label}</Text>
+        <Text style={[styles.status, { color: status.color }]}>{statusLabel}</Text>
       </View>
       <View style={styles.divider} />
       <View style={styles.metaRow}>
-        <Text style={styles.metaLabel}>상품 유형</Text>
+        <Text style={styles.metaLabel}>{t('reservation.list.card.productType')}</Text>
         <Text style={styles.metaValue}>{reservation.productType}</Text>
       </View>
       <View style={styles.metaRow}>
-        <Text style={styles.metaLabel}>예약 수량</Text>
+        <Text style={styles.metaLabel}>{t('reservation.list.card.quantity')}</Text>
         <Text style={styles.metaValue}>{reservation.quantity}</Text>
       </View>
       <View style={styles.metaRow}>
-        <Text style={styles.metaLabel}>접수 일시</Text>
-        <Text style={styles.metaValue}>{formatDate(reservation.createdAt)}</Text>
+        <Text style={styles.metaLabel}>{t('reservation.list.card.createdAt')}</Text>
+        <Text style={styles.metaValue}>{formatDate(reservation.createdAt, i18n.resolvedLanguage ?? i18n.language)}</Text>
       </View>
-      <Text style={styles.detailLink}>예약 상세 보기  ›</Text>
+      <Text style={styles.detailLink}>{t('reservation.list.card.detail')}</Text>
     </Pressable>
   );
 }
 
 function NearbyReservationRail() {
+  const { t } = useTranslation();
+  const previewPlaces = useMemo<DecisionPlace[]>(() => [
+    { address: t('reservation.fixtures.daeseong.shortAddress'), category: 'POPUP', distance: '12.3km', id: 91001, latitude: 35.65, longitude: 128.41, name: t('reservation.fixtures.oasis.name'), recommendationReason: t('reservation.fixtures.reasons.english'), tags: ['Bookable'], verifiedAgo: 'recently', wait: t('reservation.list.available') },
+    { address: t('reservation.fixtures.daeseong.shortAddress'), category: 'POPUP', distance: '1.23km', id: 91002, latitude: 35.65, longitude: 128.41, name: t('reservation.fixtures.oasis.name'), recommendationReason: t('reservation.fixtures.reasons.reviews'), tags: ['Bookable'], verifiedAgo: 'recently', wait: t('reservation.list.available') },
+    { address: t('reservation.fixtures.daeseong.shortAddress'), category: 'CAFE', distance: '2.1km', id: 91003, latitude: 35.65, longitude: 128.41, name: t('reservation.fixtures.layered.name'), recommendationReason: t('reservation.fixtures.reasons.parking'), tags: ['Bookable'], verifiedAgo: 'recently', wait: t('reservation.list.available') },
+  ], [t]);
   const [bookmarkedPlaceIds, setBookmarkedPlaceIds] = useState(
-    () => new Set(PREVIEW_PLACES.map((place) => place.id)),
+    () => new Set([91001, 91002, 91003]),
   );
 
   const toggleBookmark = (placeId: number) => {
@@ -139,7 +142,7 @@ function NearbyReservationRail() {
 
   return (
     <ScrollView contentContainerStyle={styles.nearbyRail} horizontal showsHorizontalScrollIndicator={false}>
-      {PREVIEW_PLACES.map((place, index) => (
+      {previewPlaces.map((place, index) => (
         <RecommendationFeaturedCard
           bookmarked={bookmarkedPlaceIds.has(place.id)}
           fontSizeOffset={3}
@@ -157,13 +160,15 @@ function NearbyReservationRail() {
 }
 
 function PreviewReservationCard({ index }: { index: number }) {
-  const name = index === 0 ? '고양종합운동장' : '대성반점';
+  const { t } = useTranslation();
+  const fixture = index === 0 ? 'goyang' : 'daeseong';
+  const name = t(`reservation.fixtures.${fixture}.name`);
   return (
-    <View accessible accessibilityLabel={`${name} 예약 미리보기`} style={styles.previewReservation}>
+    <View accessible accessibilityLabel={t('reservation.list.previewLabel', { name })} style={styles.previewReservation}>
       <View style={styles.previewHeading}>
         <View>
-          <Text style={styles.previewName}>{name} <Text style={styles.previewCategory}>{index === 0 ? '음악' : '음식점'}</Text></Text>
-          <Text numberOfLines={1} style={styles.previewMeta}>{index === 0 ? '12.3km · 경기도 고양시 일산서구 중앙로 1601' : '123m · 대구광역시 달성군 구지면'}</Text>
+          <Text style={styles.previewName}>{name} <Text style={styles.previewCategory}>{t(`reservation.fixtures.${fixture}.category`)}</Text></Text>
+          <Text numberOfLines={1} style={styles.previewMeta}>{t(`reservation.fixtures.${fixture}.address`)}</Text>
         </View>
         <Text style={styles.more}>⋮</Text>
       </View>
@@ -186,6 +191,7 @@ function VerificationFloatingButton({
   opacity: Animated.AnimatedInterpolation<number>;
   sheetTranslateY: Animated.Value;
 }) {
+  const { t } = useTranslation();
   return (
     <Animated.View
       style={[
@@ -197,9 +203,9 @@ function VerificationFloatingButton({
         },
       ]}
     >
-      <Pressable accessibilityLabel="검증하기" accessibilityRole="button" onPress={onPress} style={styles.verifyButton}>
+      <Pressable accessibilityLabel={t('reservation.common.verify')} accessibilityRole="button" onPress={onPress} style={styles.verifyButton}>
         <VerificationAsset height={21} width={21} />
-        <Text style={styles.verifyLabel}>검증하기</Text>
+        <Text style={styles.verifyLabel}>{t('reservation.common.verify')}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -218,6 +224,7 @@ function BottomNavigation({
   onOpenRecommendations: () => void;
   sheetTranslateY: Animated.Value;
 }) {
+  const { t } = useTranslation();
   return (
     <Animated.View
       style={[
@@ -237,23 +244,23 @@ function BottomNavigation({
           style={styles.navigationBar}
           tintColor="#FFFFFF"
         >
-          <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
+          <Pressable accessibilityLabel={t('reservation.common.map')} accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
             <MapAsset color="#3B3B40" height={22} width={19} />
-            <Text style={styles.navLabel}>지도</Text>
+            <Text style={styles.navLabel}>{t('reservation.common.map')}</Text>
           </Pressable>
-          <Pressable accessibilityLabel="즐겨찾기" accessibilityRole="button" onPress={onOpenFavorites} style={styles.navItem}>
+          <Pressable accessibilityLabel={t('reservation.common.favorites')} accessibilityRole="button" onPress={onOpenFavorites} style={styles.navItem}>
             <StarAsset color="#3B3B40" height={21} width={22} />
-            <Text style={styles.navLabel}>즐겨찾기</Text>
+            <Text style={styles.navLabel}>{t('reservation.common.favorites')}</Text>
           </Pressable>
-          <View accessible accessibilityLabel="예약" accessibilityRole="tab" accessibilityState={{ selected: true }} style={styles.navItem}>
+          <View accessible accessibilityLabel={t('reservation.common.reservations')} accessibilityRole="tab" accessibilityState={{ selected: true }} style={styles.navItem}>
             <View style={[styles.navItemSurface, styles.navItemActive]}>
               <ActiveReservationIcon />
-              <Text style={[styles.navLabel, styles.navLabelActive]}>예약</Text>
+              <Text style={[styles.navLabel, styles.navLabelActive]}>{t('reservation.common.reservations')}</Text>
             </View>
           </View>
         </FrostedSurface>
       </View>
-      <Pressable accessibilityLabel="장소추천" accessibilityRole="button" onPress={onOpenRecommendations} style={styles.sendButton}>
+      <Pressable accessibilityLabel={t('reservation.common.recommendations')} accessibilityRole="button" onPress={onOpenRecommendations} style={styles.sendButton}>
         <FrostedSurface
           cornerRadius={32}
           glassEffectStyle="regular"
@@ -286,6 +293,7 @@ export default function ReservationBottomSheet({
   snapPoint,
   showPreviewFixtures = __DEV__,
 }: ReservationBottomSheetProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const reservations = useReservations({ limit: 20, page: 1 });
   const items = reservations.data?.reservations ?? [];
@@ -332,26 +340,26 @@ export default function ReservationBottomSheet({
 
       <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
         <View style={styles.handleArea} {...panHandlers}>
-          <Pressable accessibilityLabel="예약 패널 크기 조절" accessibilityRole="adjustable" onPress={onHandlePress} style={styles.handleButton}>
+          <Pressable accessibilityLabel={t('reservation.list.panelAdjust')} accessibilityRole="adjustable" onPress={onHandlePress} style={styles.handleButton}>
             <View style={styles.handle} />
           </Pressable>
         </View>
         <Animated.View pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={[styles.content, { opacity }]}>
           <View style={styles.titleRow}>
             <MapAsset color="#FF1956" height={20} width={18} />
-            <Text accessibilityRole="header" style={styles.title}>대구 구지 주변 예약</Text>
+            <Text accessibilityRole="header" style={styles.title}>{t('reservation.list.nearbyTitle')}</Text>
           </View>
-          <Text style={styles.subtitle}>현재 예약 가능 장소를 찾아드려요!</Text>
+          <Text style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</Text>
           <View style={[styles.listViewport, snapPoint === 'medium' && styles.listViewportMedium]}>
             <ScrollView contentContainerStyle={styles.listContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               <NearbyReservationRail />
-              <Text style={styles.savedTitle}>예약함</Text>
+              <Text style={styles.savedTitle}>{t('reservation.list.savedTitle')}</Text>
               {reservations.isLoading ? (
-                <View style={styles.state} testID="reservations-loading"><Text style={styles.stateTitle}>예약을 불러오는 중이에요</Text></View>
+                <View style={styles.state} testID="reservations-loading"><Text style={styles.stateTitle}>{t('reservation.list.loading')}</Text></View>
               ) : reservations.isError ? (
                 <View style={styles.state} testID="reservations-error">
-                  <Text style={styles.stateTitle}>예약을 불러오지 못했어요</Text>
-                  <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><Text style={styles.retryLabel}>다시 시도</Text></Pressable>
+                  <Text style={styles.stateTitle}>{t('reservation.list.error')}</Text>
+                  <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><Text style={styles.retryLabel}>{t('reservation.list.retry')}</Text></Pressable>
                 </View>
               ) : items.length === 0 && showPreviewFixtures ? (
                 <View testID="reservations-preview">
@@ -361,8 +369,8 @@ export default function ReservationBottomSheet({
               ) : items.length === 0 ? (
                 <View style={styles.state} testID="reservations-empty">
                   <Text style={styles.stateMark}>R</Text>
-                  <Text style={styles.stateTitle}>아직 예약 내역이 없어요</Text>
-                  <Text style={styles.stateBody}>지도에서 마음에 드는 장소를 찾아보세요.</Text>
+                  <Text style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</Text>
+                  <Text style={styles.stateBody}>{t('reservation.list.emptyDescription')}</Text>
                 </View>
               ) : items.map((reservation) => (
                 <ReservationCard key={reservation.id} onPress={() => onOpenReservation(reservation.id)} reservation={reservation} />
