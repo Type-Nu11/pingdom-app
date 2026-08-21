@@ -121,57 +121,6 @@ const resources = {
           passwordMismatch: 'Passwords do not match',
         },
       },
-      placeCreate: {
-        alerts: {
-          cancel: 'Cancel',
-          confirm: 'OK',
-          coordinateFailedFallback: 'Could not issue a coordinate token for this place.',
-          coordinateFailedTitle: 'Could not verify this place',
-          openSettings: 'Open Settings',
-          photoLibraryFailedBody: 'Please try again in a moment.',
-          photoLibraryFailedTitle: 'Could not open your photo library',
-          photoPermissionBlockedBody: 'To upload a photo, allow photo access in Settings.',
-          photoPermissionBlockedTitle: 'Photo access is off',
-          photoPermissionBody: 'Photo library access is required to upload a photo.',
-          photoPermissionTitle: 'Photo permission needed',
-          photoRequiredBody: 'Choose a photo from your library before continuing.',
-          photoRequiredTitle: 'Please select a photo first',
-          photoSelectFailedBody: 'Could not read the selected photo. Please try again.',
-          photoSelectFailedTitle: 'Photo selection failed',
-          uploadAlreadyExists: 'You already posted to this place.',
-          uploadFailedFallback: 'Could not save the photo to the server.',
-          uploadFailedTitle: 'Photo upload failed',
-          uploadSuccessBody: '{{placeName}} post upload complete.\n{{message}}',
-          uploadSuccessTitle: 'Upload complete',
-        },
-        caption: {
-          captionPlaceholder: 'Write a caption...',
-          category: 'Category',
-          upload: 'Upload',
-        },
-        location: {
-          detailAddressPlaceholder: '(Optional) Enter detailed address',
-          noSelectableResultsBody: 'Try a more specific store or building name.',
-          noSelectableResultsTitle: 'No selectable place results',
-          placeholderAddress: 'Search for a place or move the map to select one',
-          searchAccessibilityLabel: 'Search address',
-          searchEmpty: 'No search results',
-          searchFailed: 'Address search failed',
-          searchPlaceholder: 'Enter an address...',
-          searching: 'Searching for address',
-          select: 'Select',
-          selectChecking: 'Checking...',
-          title: 'Select the location\nof the place to post',
-        },
-        photo: {
-          chooseAgain: 'Choose another photo',
-          description: 'Allow photo library access to upload photos from your phone.',
-          emptyBody: 'Tap the button below to choose a photo from your library.',
-          emptyTitle: 'No photo selected yet',
-          pickFromLibrary: 'Choose from library',
-          title: 'Select a photo\nfor this place.',
-        },
-      },
       map: {
         decision: {
           backToRecommendations: 'Back to recommendations',
@@ -211,6 +160,10 @@ const resources = {
         search: {
           placeholder: 'Enter a search term...',
           accessibilityLabel: 'Enter a search term',
+          confirm: 'OK',
+          empty: 'No search results',
+          failed: 'Address search failed',
+          statusPlaceholder: 'Enter an address...',
         },
         categories: {
           etc: 'Etc',
@@ -222,7 +175,6 @@ const resources = {
         actions: {
           likedPlaces: 'View liked places',
           savedPlaces: 'View saved places',
-          addPlace: 'Add place',
         },
       },
       apiErrors: {
@@ -350,57 +302,6 @@ const resources = {
           passwordMismatch: '비밀번호가 일치하지 않습니다',
         },
       },
-      placeCreate: {
-        alerts: {
-          cancel: '취소',
-          confirm: '확인',
-          coordinateFailedFallback: '장소 좌표 토큰을 발급받지 못했습니다.',
-          coordinateFailedTitle: '장소 좌표 확인에 실패했어요',
-          openSettings: '설정 열기',
-          photoLibraryFailedBody: '잠시 후 다시 시도해 주세요.',
-          photoLibraryFailedTitle: '사진함을 열지 못했어요',
-          photoPermissionBlockedBody: '내 사진을 올리려면 설정에서 사진 접근 권한을 허용해 주세요.',
-          photoPermissionBlockedTitle: '사진 권한이 꺼져 있어요',
-          photoPermissionBody: '사진함에서 사진을 불러오려면 접근 권한을 허용해 주세요.',
-          photoPermissionTitle: '사진 권한이 필요해요',
-          photoRequiredBody: '사진함에서 사진을 골라야 다음 단계로 이동할 수 있어요.',
-          photoRequiredTitle: '사진을 먼저 선택해 주세요',
-          photoSelectFailedBody: '선택한 사진 정보를 읽지 못했습니다. 다시 시도해 주세요.',
-          photoSelectFailedTitle: '사진 선택에 실패했어요',
-          uploadAlreadyExists: '이미 이 장소에 게시글을 올렸어요.',
-          uploadFailedFallback: '사진을 서버에 저장하지 못했습니다.',
-          uploadFailedTitle: '사진 업로드에 실패했어요',
-          uploadSuccessBody: '{{placeName}} 게시물 업로드를 완료했어요.\n{{message}}',
-          uploadSuccessTitle: '업로드 완료',
-        },
-        caption: {
-          captionPlaceholder: '캡션을 입력하세요...',
-          category: '카테고리',
-          upload: '업로드',
-        },
-        location: {
-          detailAddressPlaceholder: '(선택) 상세 주소 입력',
-          noSelectableResultsBody: '상호명이나 건물명을 조금 더 구체적으로 입력해 주세요.',
-          noSelectableResultsTitle: '선택 가능한 장소 결과가 없어요',
-          placeholderAddress: '장소를 검색하거나 지도를 움직여 선택해 주세요',
-          searchAccessibilityLabel: '주소 검색',
-          searchEmpty: '검색 결과가 없습니다',
-          searchFailed: '주소 검색에 실패했습니다',
-          searchPlaceholder: '주소를 입력하세요...',
-          searching: '주소를 찾고 있어요',
-          select: '선택',
-          selectChecking: '확인 중...',
-          title: '새로 게시할 장소의\n위치를 선택해 주세요',
-        },
-        photo: {
-          chooseAgain: '사진 다시 고르기',
-          description: '사진함 권한을 허용하면 내 휴대폰에 있는 사진을 불러와 업로드할 수 있어요.',
-          emptyBody: '아래 버튼을 눌러 사진함에서 사진을 골라 주세요.',
-          emptyTitle: '아직 선택된 사진이 없어요',
-          pickFromLibrary: '사진함에서 선택',
-          title: '새로 게시할 장소의\n사진을 선택해 주세요.',
-        },
-      },
       map: {
         decision: {
           backToRecommendations: '추천으로 돌아가기',
@@ -440,6 +341,10 @@ const resources = {
         search: {
           placeholder: '검색어를 입력하세요...',
           accessibilityLabel: '검색어를 입력하세요',
+          confirm: '확인',
+          empty: '검색 결과가 없습니다',
+          failed: '주소 검색에 실패했습니다',
+          statusPlaceholder: '주소를 입력하세요...',
         },
         categories: {
           etc: '기타',
@@ -451,7 +356,6 @@ const resources = {
         actions: {
           likedPlaces: '좋아요 장소 보기',
           savedPlaces: '저장한 장소 보기',
-          addPlace: '장소 등록',
         },
       },
       apiErrors: {
@@ -557,7 +461,6 @@ const resources = {
         actions: {
           likedPlaces: 'いいねした場所を見る',
           savedPlaces: '保存した場所を見る',
-          addPlace: '投稿する',
         },
       },
       apiErrors: {
@@ -661,7 +564,6 @@ const resources = {
         actions: {
           likedPlaces: '查看喜欢的地点',
           savedPlaces: '查看已保存地点',
-          addPlace: '发布',
         },
       },
       apiErrors: {
@@ -766,7 +668,6 @@ const resources = {
         actions: {
           likedPlaces: 'Xem địa điểm đã thích',
           savedPlaces: 'Xem địa điểm đã lưu',
-          addPlace: 'Đăng',
         },
       },
       apiErrors: {
@@ -871,7 +772,6 @@ const resources = {
         actions: {
           likedPlaces: 'ดูสถานที่ที่ถูกใจ',
           savedPlaces: 'ดูสถานที่ที่บันทึกไว้',
-          addPlace: 'โพสต์',
         },
       },
       apiErrors: {

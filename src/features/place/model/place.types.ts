@@ -78,21 +78,6 @@ export type RecommendationLimitReason =
   | 'INTERACTED_PLACE_EXCLUDED'
   | 'FALLBACK_CANDIDATE_POOL';
 
-export type PlaceCreateDraft = {
-  address: string;
-  coordinateToken?: string;
-  kakaoPlaceId?: string;
-  latitude: number;
-  longitude: number;
-  name: string;
-};
-
-export type PlaceUploadPhoto = {
-  name?: string;
-  type?: string;
-  uri: string;
-};
-
 export type PlaceCategory = 'etc' | 'fashion' | 'food' | 'game' | 'music';
 
 export type MapMarker = {

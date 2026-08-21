@@ -569,14 +569,14 @@ export default function MapScreen({
     Alert.alert(
       t('map.decision.goNow'),
       t('map.decision.goNowMessage', { placeName: place.name, defaultValue: `Directions to ${place.name} are ready.` }),
-      [{ text: t('placeCreate.alerts.confirm') }],
+      [{ text: t('map.search.confirm') }],
     );
   };
   const handleCoupon = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.getCoupon'),
       t('map.decision.couponMessage', { placeName: place.name, defaultValue: `${place.name} coupon will be available here.` }),
-      [{ text: t('placeCreate.alerts.confirm') }],
+      [{ text: t('map.search.confirm') }],
     );
   };
   const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {

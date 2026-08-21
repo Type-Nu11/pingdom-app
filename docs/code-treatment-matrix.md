@@ -99,7 +99,6 @@
 | `src/features/firebase/utils/*`, `hooks/*` | Firebase/Expo Notifications orchestration | **PORT** | 권한 거부/재허용, 토큰 refresh, notification route 중복 방지 |
 | `src/shared/api/authStorage.ts`, `authTokens.ts` | `react-native-keychain` | **PORT** | 신규/기존 설치, 손상 JSON, logout, refresh-token rotation |
 | `src/features/place/hooks/useCurrentLocation.ts`, `src/features/settings/hooks/useDevicePermissions.ts` | `expo-location` 및 OS 설정 | **PORT** | denied/blocked/limited, fallback 노출, watcher 해제와 배터리 정책 |
-| `src/features/place/components/create-flow/PhotoSelectStep.tsx` | `expo-image-picker` | **REWRITE**(UI) / **PORT**(권한 로직) | limited library, 취소, 대용량 이미지, metadata/URI 차이 |
 
 ## 4. 서버·외부 API 의존 파일
 
@@ -109,7 +108,6 @@
 | `src/features/auth/api/authApi.ts` | `/auth/login`, `/auth/signup`, `/auth/email/verify`, 사용자 변경 | **PORT** | DTO와 오류 코드, logout/revoke 여부, change endpoint 중복 |
 | `src/features/auth/api/phoneVerificationApi.ts` | 전화 인증 예정 | **PORT 보류** | 현재 본문이 미구현이므로 서버 endpoint 확정 전 production 이식 금지 |
 | `src/features/place/api/placeApi.ts` | `/places/*`, `/users/me/bookmarks`, `/map/bookmarks` | **PORT 선별** | place/post ID 의미, pagination, recommendation/click 추적과 함께 새 Decision/Trust/Offer 필드 수용 여부 |
-| `src/features/place/api/pictureApi.ts` | `/map/pictures/create` multipart | **PORT** | 업로드 제한, MIME/filename, 재시도·중복 생성 정책 |
 | `src/features/place/api/kakaoLocalApi.ts` | Kakao Local REST API | **PORT** | 키 노출 정책, quota, timeout, 좌표계, 오류 로깅에서 응답정보 제거 |
 | `src/features/record/api/recordApi.ts` | `/map/post`, like, report | **PORT 선별** | 장소 흐름에 필요한 endpoint만 유지; 요청/응답 로그는 production 제거 |
 | `src/features/profile/api/profileApi.ts` | `/users/me`, 계정 수정/삭제 | **PORT** | 재인증 필요 여부, 삭제 복구/확인 정책, authApi와 중복 제거 |

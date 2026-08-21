@@ -62,7 +62,7 @@ export const useKakaoLocalSearch = () => {
 
     if (!trimmedQuery) {
       console.log('[KakaoLocalSearch] search skipped: empty query');
-      setSearchStatusMessage(t('placeCreate.location.searchPlaceholder'));
+      setSearchStatusMessage(t('map.search.statusPlaceholder'));
       return;
     }
 
@@ -88,7 +88,7 @@ export const useKakaoLocalSearch = () => {
           centerLng: options.centerLng,
           query: trimmedQuery,
         });
-        setSearchStatusMessage(t('placeCreate.location.searchEmpty'));
+        setSearchStatusMessage(t('map.search.empty'));
         return;
       }
 
@@ -112,7 +112,7 @@ export const useKakaoLocalSearch = () => {
         query: trimmedQuery,
       });
       if (requestId === searchRequestIdRef.current) {
-        setSearchStatusMessage(t('placeCreate.location.searchFailed'));
+        setSearchStatusMessage(t('map.search.failed'));
       }
     } finally {
       if (requestId === searchRequestIdRef.current) {
