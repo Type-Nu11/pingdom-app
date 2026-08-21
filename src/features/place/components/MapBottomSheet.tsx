@@ -839,6 +839,10 @@ const RecommendationContent = ({
 }) => {
   const featuredPlaces = places.slice(0, 3);
   const gridPlaces = places.slice(3);
+  const gridRows = [
+    gridPlaces.filter((_, index) => index % 2 === 0),
+    gridPlaces.filter((_, index) => index % 2 === 1),
+  ].filter((row) => row.length > 0);
 
   return (
     <ScrollView
@@ -886,29 +890,33 @@ const RecommendationContent = ({
           {isExpanded && gridPlaces.length > 0 ? (
             <>
               <Text style={styles.recommendationGridTitle}>오늘 검증하고 쿠폰 받자!</Text>
-              <ScrollView
-                contentContainerStyle={styles.recommendationGridScroll}
-                horizontal
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-              >
-                <View style={styles.recommendationGrid}>
-                  {gridPlaces.map((place) => (
-                    <RecommendationGridCard
-                      bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-                      imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                      key={`recommendation-grid-${place.id}`}
-                      onPress={() => onPlacePress(place)}
-                      onToggleBookmark={() => void onToggleBookmark(
-                        place,
-                        !bookmarkedPlaceIds[String(place.id)],
-                      )}
-                      pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-                      place={place}
-                    />
-                  ))}
-                </View>
-              </ScrollView>
+              <View style={styles.recommendationGridRows}>
+                {gridRows.map((row, rowIndex) => (
+                  <ScrollView
+                    contentContainerStyle={styles.recommendationGridScroll}
+                    horizontal
+                    key={`recommendation-grid-row-${rowIndex}`}
+                    nestedScrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    testID={`recommendation-grid-row-${rowIndex + 1}`}
+                  >
+                    {row.map((place) => (
+                      <RecommendationGridCard
+                        bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                        imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                        key={`recommendation-grid-${place.id}`}
+                        onPress={() => onPlacePress(place)}
+                        onToggleBookmark={() => void onToggleBookmark(
+                          place,
+                          !bookmarkedPlaceIds[String(place.id)],
+                        )}
+                        pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                        place={place}
+                      />
+                    ))}
+                  </ScrollView>
+                ))}
+              </View>
             </>
           ) : null}
         </>
@@ -2136,8 +2144,8 @@ const styles = StyleSheet.create({
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   recommendationContent: { paddingBottom: 108 },
   recommendationContext: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 4 },
-  recommendationGrid: { flexDirection: 'column', flexWrap: 'wrap', gap: 12, height: 380 },
-  recommendationGridScroll: { paddingBottom: 12, paddingHorizontal: 16 },
+  recommendationGridRows: { gap: 12 },
+  recommendationGridScroll: { gap: 12, paddingHorizontal: 16 },
   recommendationGridTitle: { color: '#202127', fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 16 },
   recommendationHeader: { paddingHorizontal: 16, paddingTop: 5 },
   recommendationLimit: { color: '#777A83', fontSize: 10, marginTop: 3 },
