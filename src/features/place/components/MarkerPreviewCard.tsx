@@ -14,10 +14,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import LikeIcon from '../../../assets/icons/actions/Like.svg';
-import SavedIcon from '../../../assets/icons/actions/Saved.svg';
-import ShareIcon from '../../../assets/icons/actions/share.svg';
-import ReportIcon from '../../../assets/icons/actions/tlsrh.svg';
+import LikeIcon from '../../../assets/v2/icons/actions/Like.svg';
+import SavedIcon from '../../../assets/v2/icons/actions/Saved.svg';
+import ShareIcon from '../../../assets/v2/icons/actions/share.svg';
+import ReportIcon from '../../../assets/v2/icons/actions/tlsrh.svg';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import type { Post } from '../../record/model/record.types';
 import { usePostTranslation } from '../../translation/hooks/usePostTranslation';

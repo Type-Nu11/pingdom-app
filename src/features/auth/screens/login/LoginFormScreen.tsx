@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
-import OpenEyeIcon from '../../../../assets/icons/openEye.svg';
-import CloseEyeIcon from '../../../../assets/icons/closeEye.svg';
+import OpenEyeIcon from '../../../../assets/v2/icons/openEye.svg';
+import CloseEyeIcon from '../../../../assets/v2/icons/closeEye.svg';
 import { colors } from '../../../../styles/colors';
 import useLogin from '../../hooks/useLogin';
 

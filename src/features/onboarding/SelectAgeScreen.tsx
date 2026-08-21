@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import EscapeIcon from '../../assets/icons/escape.svg';
+import EscapeIcon from '../../assets/v2/icons/escape.svg';
 import ProgressBar from './components/ProgressBar';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../styles/colors';

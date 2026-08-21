@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
-import ImageIcon from '../../../assets/icons/edit/image.svg';
-import PencilIcon from '../../../assets/icons/edit/peril.svg';
+import ImageIcon from '../../../assets/v2/icons/edit/image.svg';
+import PencilIcon from '../../../assets/v2/icons/edit/peril.svg';
 import type { ProfileResponse } from '../api/profileApi';
 
 type ProfileEditViewProps = {
