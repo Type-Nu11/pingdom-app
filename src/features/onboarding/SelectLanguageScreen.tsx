@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import CheckIcon from '../../assets/icons/check.svg';
-import EscapeIcon from '../../assets/icons/escape.svg';
-import SearchIcon from '../../assets/icons/search.svg';
+import CheckIcon from '../../assets/v2/icons/check.svg';
+import EscapeIcon from '../../assets/v2/icons/escape.svg';
+import SearchIcon from '../../assets/v2/icons/search.svg';
 import ProgressBar from './components/ProgressBar';
 import type { Language } from './types';
 import { colors } from '../../styles/colors';

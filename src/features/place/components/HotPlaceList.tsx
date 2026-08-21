@@ -1,9 +1,9 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import FirstPlaceIcon from '../../../assets/icons/FirstPlace.svg';
-import HotPlaceIcon from '../../../assets/icons/hotplace.svg';
-import SecondPlaceIcon from '../../../assets/icons/SecondPlace.svg';
-import ThirdPlaceIcon from '../../../assets/icons/ThirdPlace.svg';
+import FirstPlaceIcon from '../../../assets/v2/icons/FirstPlace.svg';
+import HotPlaceIcon from '../../../assets/v2/icons/hotplace.svg';
+import SecondPlaceIcon from '../../../assets/v2/icons/SecondPlace.svg';
+import ThirdPlaceIcon from '../../../assets/v2/icons/ThirdPlace.svg';
 import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
 import type { RecommendedPlace } from '../model/place.types';
 

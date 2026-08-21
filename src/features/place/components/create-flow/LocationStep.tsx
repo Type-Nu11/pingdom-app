@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import MypingIcon from '../../../../assets/icons/map/Myping.svg';
+import MypingIcon from '../../../../assets/v2/icons/map/Myping.svg';
 import type { KakaoLocalSearchItem } from '../../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
 import type { PlaceCreateDraft } from '../../model/place.types';

@@ -7,8 +7,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import LikeIcon from '../../../assets/icons/actions/Like.svg';
-import SavedIcon from '../../../assets/icons/actions/Saved.svg';
+import LikeIcon from '../../../assets/v2/icons/actions/Like.svg';
+import SavedIcon from '../../../assets/v2/icons/actions/Saved.svg';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
 import type { RecommendedPlace } from '../model/place.types';

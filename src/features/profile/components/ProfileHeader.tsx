@@ -1,6 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import LikeIcon from '../../../assets/icons/actions/Like.svg';
-import SavedIcon from '../../../assets/icons/actions/Saved.svg';
+import LikeIcon from '../../../assets/v2/icons/actions/Like.svg';
+import SavedIcon from '../../../assets/v2/icons/actions/Saved.svg';
 import type { ProfileResponse } from '../api/profileApi';
 
 type ProfileHeaderProps = {

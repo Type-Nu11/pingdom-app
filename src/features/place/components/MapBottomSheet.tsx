@@ -18,27 +18,27 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
-import CallAsset from '../../../assets/icons/ion_call.svg';
-import CameraAsset from '../../../assets/v2icon/Camera.svg';
-import CleanAsset from '../../../assets/v2icon/Clean.svg';
-import DeliciousAsset from '../../../assets/v2icon/Delicious.svg';
-import DownAsset from '../../../assets/v2icon/Down.svg';
-import GroupAsset from '../../../assets/v2icon/Group.svg';
-import KindAsset from '../../../assets/v2icon/Kind.svg';
-import ParkAsset from '../../../assets/v2icon/Park.svg';
-import PinAsset from '../../../assets/v2icon/Pin.svg';
-import TicketAsset from '../../../assets/v2icon/Tiket.svg';
-import ArtAsset from '../../../assets/v2icon/art_svg.svg';
-import FashionAsset from '../../../assets/v2icon/fashion_svg.svg';
-import FoodAsset from '../../../assets/v2icon/food_svg.svg';
-import HotPlaceAsset from '../../../assets/v2icon/hotplace.svg';
-import MapAsset from '../../../assets/v2icon/maping_svg.svg';
-import MusicAsset from '../../../assets/v2icon/music_svg.svg';
-import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend.svg';
-import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
-import StarAsset from '../../../assets/v2icon/star_svg.svg';
-import RecommendationTitleAsset from '../../../assets/v2icon/Subtract.svg';
+import CheckInAsset from '../../../assets/v2/icons/place/checkin_svg.svg';
+import CallAsset from '../../../assets/v2/icons/ion_call.svg';
+import CameraAsset from '../../../assets/v2/icons/place/Camera.svg';
+import CleanAsset from '../../../assets/v2/icons/place/Clean.svg';
+import DeliciousAsset from '../../../assets/v2/icons/place/Delicious.svg';
+import DownAsset from '../../../assets/v2/icons/place/Down.svg';
+import GroupAsset from '../../../assets/v2/icons/place/Group.svg';
+import KindAsset from '../../../assets/v2/icons/place/Kind.svg';
+import ParkAsset from '../../../assets/v2/icons/place/Park.svg';
+import PinAsset from '../../../assets/v2/icons/place/Pin.svg';
+import TicketAsset from '../../../assets/v2/icons/place/Tiket.svg';
+import ArtAsset from '../../../assets/v2/icons/place/art_svg.svg';
+import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
+import HotPlaceAsset from '../../../assets/v2/icons/place/hotplace.svg';
+import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
+import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
+import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.svg';
+import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
+import StarAsset from '../../../assets/v2/icons/place/star_svg.svg';
+import RecommendationTitleAsset from '../../../assets/v2/icons/place/Subtract.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface from './GlassSurface';
@@ -158,7 +158,7 @@ const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
   { id: 'art', label: '전시' },
 ];
 
-const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
+export const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
   <Svg height={size} viewBox="0 0 24 24" width={size}>
     <Path
       d="M12 22s7-6.1 7-13A7 7 0 0 0 5 9c0 6.9 7 13 7 13Z"
@@ -185,6 +185,27 @@ const CardScrim = () => (
     </Svg>
   </View>
 );
+
+const RecommendationMetaIcon = ({ label }: { label: string }) => {
+  if (label.includes('영어') || label.includes('다국어')) {
+    return <GroupAsset height={16} width={16} />;
+  }
+  if (label.includes('주차')) {
+    return (
+      <View style={styles.recommendationParkingIcon}>
+        <Text style={styles.recommendationParkingText}>P</Text>
+      </View>
+    );
+  }
+  return (
+    <Svg height={16} viewBox="0 0 18 18" width={16}>
+      <Path d="M3 3.5h12v8H8l-3.5 3v-3H3z" fill="#E4E7EC" stroke="#777982" strokeLinejoin="round" />
+      <Circle cx="6.5" cy="7.5" fill="#777982" r=".8" />
+      <Circle cx="9" cy="7.5" fill="#777982" r=".8" />
+      <Circle cx="11.5" cy="7.5" fill="#777982" r=".8" />
+    </Svg>
+  );
+};
 
 const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCategory }) => {
   const color = active ? '#FF1956' : '#5E5E66';
@@ -357,8 +378,9 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
   );
 };
 
-const RecommendationFeaturedCard = ({
+export const RecommendationFeaturedCard = ({
   bookmarked,
+  fontSizeOffset = 0,
   imageUrl,
   index,
   onPress,
@@ -367,6 +389,7 @@ const RecommendationFeaturedCard = ({
   place,
 }: {
   bookmarked: boolean;
+  fontSizeOffset?: number;
   imageUrl?: string;
   index: number;
   onPress: () => void;
@@ -400,15 +423,33 @@ const RecommendationFeaturedCard = ({
           )}
         </Pressable>
         <View style={styles.placeCardBody}>
-          <Text numberOfLines={2} style={styles.placeCardName}>
+          <Text
+            numberOfLines={2}
+            style={[
+              styles.placeCardName,
+              fontSizeOffset > 0 && {
+                fontSize: 13 + fontSizeOffset,
+                lineHeight: 16 + fontSizeOffset,
+              },
+            ]}
+          >
             {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
           </Text>
         </View>
       </View>
       {place.recommendationReason ? (
-        <Text numberOfLines={1} style={styles.recommendationReason}>
-          {place.recommendationReason}
-        </Text>
+        <View style={styles.recommendationMetaRow}>
+          <RecommendationMetaIcon label={place.recommendationReason} />
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.recommendationReason,
+              fontSizeOffset > 0 && { fontSize: 11 + fontSizeOffset },
+            ]}
+          >
+            {place.recommendationReason}
+          </Text>
+        </View>
       ) : place.recommendationRank !== undefined || place.recommendationSource ? (
         <Text numberOfLines={1} style={styles.recommendationExplanation}>
           {[
@@ -417,7 +458,13 @@ const RecommendationFeaturedCard = ({
           ].filter(Boolean).join(' · ')}
         </Text>
       ) : null}
-      <Text numberOfLines={1} style={styles.placeCardDistance}>
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.placeCardDistance,
+          fontSizeOffset > 0 && { fontSize: 11 + fontSizeOffset },
+        ]}
+      >
         여기서 {formatDistance(place)}
       </Text>
     </Pressable>
@@ -792,6 +839,10 @@ const RecommendationContent = ({
 }) => {
   const featuredPlaces = places.slice(0, 3);
   const gridPlaces = places.slice(3);
+  const gridRows = [
+    gridPlaces.filter((_, index) => index % 2 === 0),
+    gridPlaces.filter((_, index) => index % 2 === 1),
+  ].filter((row) => row.length > 0);
 
   return (
     <ScrollView
@@ -839,29 +890,33 @@ const RecommendationContent = ({
           {isExpanded && gridPlaces.length > 0 ? (
             <>
               <Text style={styles.recommendationGridTitle}>오늘 검증하고 쿠폰 받자!</Text>
-              <ScrollView
-                contentContainerStyle={styles.recommendationGridScroll}
-                horizontal
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-              >
-                <View style={styles.recommendationGrid}>
-                  {gridPlaces.map((place) => (
-                    <RecommendationGridCard
-                      bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-                      imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                      key={`recommendation-grid-${place.id}`}
-                      onPress={() => onPlacePress(place)}
-                      onToggleBookmark={() => void onToggleBookmark(
-                        place,
-                        !bookmarkedPlaceIds[String(place.id)],
-                      )}
-                      pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-                      place={place}
-                    />
-                  ))}
-                </View>
-              </ScrollView>
+              <View style={styles.recommendationGridRows}>
+                {gridRows.map((row, rowIndex) => (
+                  <ScrollView
+                    contentContainerStyle={styles.recommendationGridScroll}
+                    horizontal
+                    key={`recommendation-grid-row-${rowIndex}`}
+                    nestedScrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    testID={`recommendation-grid-row-${rowIndex + 1}`}
+                  >
+                    {row.map((place) => (
+                      <RecommendationGridCard
+                        bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                        imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                        key={`recommendation-grid-${place.id}`}
+                        onPress={() => onPlacePress(place)}
+                        onToggleBookmark={() => void onToggleBookmark(
+                          place,
+                          !bookmarkedPlaceIds[String(place.id)],
+                        )}
+                        pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                        place={place}
+                      />
+                    ))}
+                  </ScrollView>
+                ))}
+              </View>
             </>
           ) : null}
         </>
@@ -2089,12 +2144,15 @@ const styles = StyleSheet.create({
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   recommendationContent: { paddingBottom: 108 },
   recommendationContext: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 4 },
-  recommendationGrid: { flexDirection: 'column', flexWrap: 'wrap', gap: 12, height: 380 },
-  recommendationGridScroll: { paddingBottom: 12, paddingHorizontal: 16 },
+  recommendationGridRows: { gap: 12 },
+  recommendationGridScroll: { gap: 12, paddingHorizontal: 16 },
   recommendationGridTitle: { color: '#202127', fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 16 },
   recommendationHeader: { paddingHorizontal: 16, paddingTop: 5 },
   recommendationLimit: { color: '#777A83', fontSize: 10, marginTop: 3 },
-  recommendationReason: { color: '#35363C', fontSize: 11, fontWeight: '600', marginTop: 7 },
+  recommendationReason: { color: '#35363C', flexShrink: 1, fontSize: 11, fontWeight: '600' },
+  recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5 },
+  recommendationParkingIcon: { alignItems: 'center', backgroundColor: '#2489F5', borderRadius: 4, height: 16, justifyContent: 'center', width: 16 },
+  recommendationParkingText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', lineHeight: 14 },
   recommendationExplanation: { color: '#55575F', fontSize: 10, fontWeight: '600', marginTop: 7 },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
   recommendationSubtitle: { color: '#73757D', fontSize: 12, marginTop: 5 },

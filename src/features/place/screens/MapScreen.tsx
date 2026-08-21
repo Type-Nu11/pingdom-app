@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import RestaurantMarkerAsset from '../../../assets/v2icon/Restaurant.svg';
+import RestaurantMarkerAsset from '../../../assets/v2/icons/place/Restaurant.svg';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorMessage } from '../../../shared/api/getApiErrorMessage';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import MapBottomSheet, {
   type VisitFilter,
 } from '../components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
+import ReservationBottomSheet from '../../reservation/components/ReservationBottomSheet';
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
@@ -193,6 +194,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 });
 
 type MapScreenProps = {
+  initialSection?: 'favorites' | 'map' | 'reservations';
   notificationLikeContext?: {
     notificationsId?: string;
     postId?: string;
@@ -200,15 +202,18 @@ type MapScreenProps = {
   onClearOpenedBookmarkedPlace?: () => void;
   onOpenPlaceDetail?: (placeId: string) => void;
   onOpenProfile?: () => void;
-  onOpenSavedPlaces?: () => void;
+  onOpenReservation?: (reservationId: number) => void;
+  onOpenVerification?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
 
 export default function MapScreen({
+  initialSection = 'map',
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
-  onOpenSavedPlaces,
+  onOpenReservation,
+  onOpenVerification,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
@@ -247,7 +252,11 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
-  const [mapSection, setMapSection] = useState<'map' | 'favorites'>('map');
+  const [mapSection, setMapSection] = useState<'map' | 'favorites' | 'reservations'>(initialSection);
+
+  useEffect(() => {
+    setMapSection(initialSection);
+  }, [initialSection]);
   const canQueryBookmarks = isLoggedIn && !isAuthHydrating;
   const {
     fetchNextPage: fetchNextFavoritePage,
@@ -658,7 +667,10 @@ export default function MapScreen({
               setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
-            onOpenReservations={onOpenSavedPlaces}
+            onOpenReservations={() => {
+              setMapSection('reservations');
+              snapTo('medium');
+            }}
             onLoadMore={() => void fetchNextFavoritePage()}
             onRetry={() => void refetchFavorites()}
             onRemovePlace={(place) => void handleToggleBookmark(place, false)}
@@ -669,6 +681,37 @@ export default function MapScreen({
             panHandlers={panHandlers}
             places={favoritePlaces}
             pendingPlaceIds={bookmarkPendingPlaceIds}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : mapSection === 'reservations' ? (
+          <ReservationBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            height={fullSheetHeight}
+            mediumTranslateY={mediumTranslateY}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenFavorites={() => {
+              setMapSection('favorites');
+              snapTo('medium');
+            }}
+            onOpenMap={() => {
+              setMapSection('map');
+              setContent({ type: 'home' });
+              snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservation={(reservationId) => onOpenReservation?.(reservationId)}
+            onOpenVerification={() => onOpenVerification?.()}
+            panHandlers={panHandlers}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
             snapPoint={snapPoint}
@@ -701,7 +744,10 @@ export default function MapScreen({
               setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
-            onOpenSavedPlaces={onOpenSavedPlaces}
+            onOpenSavedPlaces={() => {
+              setMapSection('reservations');
+              snapTo('medium');
+            }}
             onPlacePress={handlePlacePress}
             onRetryRecommendations={() => void refetchRecommendations()}
             onProfilePress={onOpenProfile}

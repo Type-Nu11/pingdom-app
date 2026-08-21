@@ -16,12 +16,12 @@ export default function SignUpWelcomeScreen({
     <View style={styles.container}>
       {/* 배경 블롭 */}
       <Image
-        source={require('../../../../assets/images/bg_ellipse_top.png')}
+        source={require('../../../../assets/v2/images/bg_ellipse_top.png')}
         style={styles.blobTop}
         resizeMode="contain"
       />
       <Image
-        source={require('../../../../assets/images/bg_ellipse_bottom.png')}
+        source={require('../../../../assets/v2/images/bg_ellipse_bottom.png')}
         style={styles.blobBottom}
         resizeMode="contain"
       />
@@ -33,7 +33,7 @@ export default function SignUpWelcomeScreen({
       <View style={styles.body}>
         <View style={styles.centerGroup}>
           <Image
-            source={require('../../../../assets/images/pingDomLogo.png')}
+            source={require('../../../../assets/v2/images/pingDomLogo.png')}
             style={styles.logo}
             resizeMode="contain"
           />

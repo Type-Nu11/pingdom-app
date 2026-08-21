@@ -1,6 +1,6 @@
 import { Image, StyleSheet, View } from 'react-native';
 
-const examplePhotoSource = require('../../../../assets/images/spki.webp');
+const examplePhotoSource = require('../../../../assets/v2/images/spki.webp');
 
 type ExamplePhotoProps = {
   large?: boolean;

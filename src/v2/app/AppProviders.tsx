@@ -5,19 +5,20 @@ import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from 'styled-components/native';
 
-import { i18n, initializeI18n } from '../shared/i18n';
+import { i18n } from '../shared/i18n';
+import { initializeReservationI18n } from '../features/reservations/i18n/reservationResources';
 import { theme } from '../shared/theme';
 import AppErrorBoundary from './AppErrorBoundary';
 import { createQueryClient } from './queryClient';
 
 export default function AppProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(createQueryClient);
-  const [isI18nReady, setIsI18nReady] = useState(i18n.isInitialized);
+  const [isI18nReady, setIsI18nReady] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    void initializeI18n()
+    void initializeReservationI18n()
       .catch((error) => {
         console.warn('[V2 i18n] Initialization failed:', error);
       })

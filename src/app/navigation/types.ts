@@ -18,6 +18,7 @@ export type PlaceId = RouteId<'Place'>;
 export type MerchantId = RouteId<'Merchant'>;
 export type PostId = RouteId<'Post'>;
 export type NotificationId = RouteId<'Notification'>;
+export type ReservationId = RouteId<'Reservation'>;
 
 export type ProfileTab = 'liked' | 'saved';
 
@@ -46,7 +47,10 @@ export const MAIN_ROUTES = {
   PlaceCreate: 'PlaceCreate',
   PlaceDetail: 'PlaceDetail',
   Profile: 'Profile',
+  ReservationDetail: 'ReservationDetail',
   Settings: 'Settings',
+  Verification: 'Verification',
+  VerificationReview: 'VerificationReview',
 } as const;
 
 export type AuthStackParamList = {
@@ -57,6 +61,7 @@ export type MainStackParamList = {
   ApiCheck: undefined;
   Map: {
     focusedPlaceId?: PlaceId;
+    initialSection?: 'favorites' | 'map' | 'reservations';
     notificationContext?: NotificationNavigationContext;
   } | undefined;
   PlaceDetail: {
@@ -71,7 +76,16 @@ export type MainStackParamList = {
   Profile: {
     initialTab?: ProfileTab;
   } | undefined;
+  ReservationDetail: {
+    reservationId: ReservationId;
+  };
   Settings: undefined;
+  Verification: undefined;
+  VerificationReview: {
+    category: string;
+    imageUrl?: string;
+    placeName: string;
+  };
   Merchant: {
     merchantId: MerchantId;
   };
@@ -121,4 +135,8 @@ export function parsePostId(value: unknown): PostId | null {
 
 export function parseNotificationId(value: unknown): NotificationId | null {
   return parsePositiveInteger(value) as NotificationId | null;
+}
+
+export function parseReservationId(value: unknown): ReservationId | null {
+  return parsePositiveInteger(value) as ReservationId | null;
 }

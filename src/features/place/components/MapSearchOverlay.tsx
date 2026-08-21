@@ -10,14 +10,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ArtAsset from '../../../assets/v2icon/art_svg.svg';
-import BeautyAsset from '../../../assets/v2icon/beati_svg.svg';
-import CafeAsset from '../../../assets/v2icon/cafe_svg.svg';
-import EtcAsset from '../../../assets/v2icon/etc_svg.svg';
-import FashionAsset from '../../../assets/v2icon/fashion_svg.svg';
-import FoodAsset from '../../../assets/v2icon/food_svg.svg';
-import MusicAsset from '../../../assets/v2icon/music_svg.svg';
-import PopupAsset from '../../../assets/v2icon/popup_svg.svg';
+import ArtAsset from '../../../assets/v2/icons/place/art_svg.svg';
+import BeautyAsset from '../../../assets/v2/icons/place/beati_svg.svg';
+import CafeAsset from '../../../assets/v2/icons/place/cafe_svg.svg';
+import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
+import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
+import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
+import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
 import { placeApi, type PlaceAutocompleteItem } from '../api/placeApi';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';

@@ -1,4 +1,4 @@
-export const profileImageSource = require('../../../assets/images/spki.webp');
+export const profileImageSource = require('../../../assets/v2/images/spki.webp');
 
 export const PROFILE_USERNAME = '사용자';
 export const PROFILE_PLACE = '고양종합운동장';
