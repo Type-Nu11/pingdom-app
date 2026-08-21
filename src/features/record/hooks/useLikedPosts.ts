@@ -1,17 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
-import { recordApi } from '../api/recordApi';
+import { recordApi, type GetLikedPostsRequest } from '../api/recordApi';
 
 const LIKED_POSTS_PAGE_SIZE = 100;
+const DEFAULT_LIKED_POSTS_PARAMS = { limit: LIKED_POSTS_PAGE_SIZE } as const;
 
 export const likedPostQueryKeys = {
-  all: ['likedPosts'] as const,
-  list: () => [...likedPostQueryKeys.all, 'list'] as const,
+  all: ['posts', 'liked'] as const,
+  list: (params: GetLikedPostsRequest = {}) => [
+    ...likedPostQueryKeys.all,
+    'list',
+    params,
+  ] as const,
 };
+
+export const createLikedPostsQueryOptions = (
+  params: GetLikedPostsRequest = DEFAULT_LIKED_POSTS_PARAMS,
+) => ({
+  queryFn: () => recordApi.getLikedPosts(params),
+  queryKey: likedPostQueryKeys.list(params),
+});
 
 export const useLikedPosts = (options?: { enabled?: boolean }) => {
   const likedPostsQuery = useQuery({
-    queryKey: likedPostQueryKeys.list(),
-    queryFn: () => recordApi.getLikedPosts({ limit: LIKED_POSTS_PAGE_SIZE }),
+    ...createLikedPostsQueryOptions(),
     enabled: options?.enabled,
   });
 

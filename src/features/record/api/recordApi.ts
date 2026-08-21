@@ -195,7 +195,7 @@ export const recordApi = {
     return data;
   },
   getLikedPosts: async (params: GetLikedPostsRequest = {}): Promise<PostsPage> => {
-    const { data } = await api.get<PostsPage>('/map/like', {
+    const { data } = await api.get<PostsPage>('/map/likes', {
       params: {
         limit: params.limit ?? 100,
         page: params.page ?? 1,

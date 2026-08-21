@@ -9,38 +9,47 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ArtAsset from '../../../assets/v2icon/art_svg.svg';
-import BeautyAsset from '../../../assets/v2icon/beati_svg.svg';
-import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
-import FashionAsset from '../../../assets/v2icon/fashion_svg.svg';
-import FoodAsset from '../../../assets/v2icon/food_svg.svg';
-import MapAsset from '../../../assets/v2icon/maping_svg.svg';
-import MusicAsset from '../../../assets/v2icon/music_svg.svg';
-import MyPlaceAsset from '../../../assets/v2icon/my_place.svg';
-import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend_svg.svg';
+import ArtAsset from '../../../assets/v2/icons/place/art_svg.svg';
+import BeautyAsset from '../../../assets/v2/icons/place/beati_svg.svg';
+import CheckInAsset from '../../../assets/v2/icons/place/checkin_svg.svg';
+import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
+import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
+import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
+import MyPlaceAsset from '../../../assets/v2/icons/place/my_place.svg';
+import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.svg';
+import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import type { DecisionPlace } from './MapBottomSheet';
-import GlassSurface from './GlassSurface';
+import FrostedSurface from './FrostedSurface';
+import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 
-type FavoriteCategory = 'all' | 'music' | 'food' | 'fashion' | 'beauty' | 'art';
+type FavoriteCategory = 'all' | 'music' | 'food' | 'popup' | 'fashion' | 'beauty' | 'art';
 
 type FavoritePlacesBottomSheetProps = {
   collapsedTranslateY: number;
   height: number;
   imageUrlsByPlaceId: Record<string, string[]>;
+  hasNextPage: boolean;
   isError: boolean;
+  isFetchNextPageError: boolean;
+  isFetchingNextPage: boolean;
   isLoading: boolean;
+  isUnauthorized: boolean;
   mediumTranslateY: number;
-  onCreatePlace?: () => void;
   onHandlePress: () => void;
   onOpenMap: () => void;
+  onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
   onPlacePress: (place: DecisionPlace) => void;
+  onLoadMore: () => void;
+  onRemovePlace: (place: DecisionPlace) => void;
   onRetry: () => void;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
+  pendingPlaceIds?: Record<string, boolean>;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
@@ -48,7 +57,6 @@ type FavoritePlacesBottomSheetProps = {
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
-
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: FavoriteCategory;
@@ -57,6 +65,7 @@ const categories: Array<{
   { id: 'all', label: '전체' },
   { Icon: MusicAsset, id: 'music', label: '음악' },
   { Icon: FoodAsset, id: 'food', label: '음식점' },
+  { Icon: PopupAsset, id: 'popup', label: '팝업' },
   { Icon: FashionAsset, id: 'fashion', label: '패션' },
   { Icon: BeautyAsset, id: 'beauty', label: '뷰티' },
   { Icon: ArtAsset, id: 'art', label: '전시' },
@@ -68,12 +77,14 @@ const categoryAliases: Record<Exclude<FavoriteCategory, 'all'>, string[]> = {
   fashion: ['fashion', '패션'],
   food: ['cafe', 'dining', 'food', 'restaurant', '음식', '카페'],
   music: ['music', '음악'],
+  popup: ['pop-up', 'popup', '팝업'],
 };
 
 const getCategoryLabel = (place: DecisionPlace) => {
   const category = place.category.toLowerCase();
   if (categoryAliases.music.some((alias) => category.includes(alias))) return '음악';
   if (categoryAliases.food.some((alias) => category.includes(alias))) return '음식점';
+  if (categoryAliases.popup.some((alias) => category.includes(alias))) return '팝업';
   if (categoryAliases.fashion.some((alias) => category.includes(alias))) return '패션';
   if (categoryAliases.beauty.some((alias) => category.includes(alias))) return '뷰티';
   if (categoryAliases.art.some((alias) => category.includes(alias))) return '전시';
@@ -100,15 +111,10 @@ const ActiveNavStar = () => (
     <Path
       d="M1.19 9.917c-.366-.338-.167-.949.327-1.008l7.004-.83a.58.58 0 0 0 .462-.335l2.954-6.405c.209-.452.852-.452 1.06 0l2.954 6.405a.58.58 0 0 0 .46.335l7.005.83c.494.06.692.67.327 1.008l-5.178 4.789a.58.58 0 0 0-.176.542l1.374 6.918c.097.488-.423.866-.857.623l-6.154-3.446a.58.58 0 0 0-.57 0l-6.155 3.445c-.434.243-.955-.134-.858-.622l1.375-6.918a.58.58 0 0 0-.176-.542L1.19 9.917Z"
       fill="#FF245B"
+      stroke="#FF245B"
+      strokeLinejoin="round"
+      strokeWidth={0.7}
     />
-  </Svg>
-);
-
-const MoreIcon = () => (
-  <Svg height={22} viewBox="0 0 20 24" width={18}>
-    <Circle cx="10" cy="5" fill="#35363D" r="1.5" />
-    <Circle cx="10" cy="12" fill="#35363D" r="1.5" />
-    <Circle cx="10" cy="19" fill="#35363D" r="1.5" />
   </Svg>
 );
 
@@ -138,10 +144,14 @@ const FavoriteImage = ({ uri }: { uri?: string }) => {
 const FavoritePlaceRow = ({
   imageUrls,
   onPress,
+  onRemove,
+  pending,
   place,
 }: {
   imageUrls: string[];
   onPress: () => void;
+  onRemove: () => void;
+  pending: boolean;
   place: DecisionPlace;
 }) => {
   const sources = imageUrls.slice(0, 2);
@@ -163,9 +173,20 @@ const FavoritePlaceRow = ({
             {formatDistance(place)} · {place.address}
           </Text>
         </View>
-        <View pointerEvents="none" style={styles.moreButton}>
-          <MoreIcon />
-        </View>
+        <Pressable
+          accessibilityLabel={`${place.name} 즐겨찾기 해제`}
+          accessibilityRole="button"
+          accessibilityState={{ busy: pending, disabled: pending }}
+          disabled={pending}
+          hitSlop={10}
+          onPress={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+          style={styles.moreButton}
+        >
+          <Text style={styles.moreButtonText}>⋮</Text>
+        </Pressable>
       </View>
       <View style={styles.imageRow}>
         <FavoriteImage uri={sources[0]} />
@@ -177,14 +198,14 @@ const FavoritePlaceRow = ({
 
 const BottomNavigation = ({
   bottomInset,
-  onCreatePlace,
   onOpenMap,
+  onOpenRecommendations,
   onOpenReservations,
   sheetTranslateY,
 }: {
   bottomInset: number;
-  onCreatePlace?: () => void;
   onOpenMap: () => void;
+  onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
   sheetTranslateY: Animated.Value;
 }) => (
@@ -192,53 +213,79 @@ const BottomNavigation = ({
     style={[
       styles.navigationRow,
       {
-        bottom: Math.max(12, bottomInset),
+        bottom: Math.max(24, bottomInset + 10),
         transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
       },
     ]}
   >
     <View style={styles.navigationShadow}>
-      <View style={styles.navigationBar}>
+      <FrostedSurface
+        cornerRadius={32}
+        glassEffectStyle="regular"
+        highlightOpacity={0}
+        rimColor="rgba(0,0,0,0.06)"
+        style={styles.navigationBar}
+        tintColor="#FFFFFF"
+      >
         <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
-          <MapAsset color="#3B3B40" height={22} width={19} />
+          <View style={styles.navIcon}><MapAsset color="#3B3B40" height={22} width={19} /></View>
           <Text style={styles.navLabel}>지도</Text>
         </Pressable>
-        <View style={[styles.navItem, styles.navItemActive]}>
-          <ActiveNavStar />
-          <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
+        <View style={styles.navItem}>
+          <View style={[styles.navItemSurface, styles.navItemActive]}>
+            <View style={styles.navIcon}><ActiveNavStar /></View>
+            <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
+          </View>
         </View>
         <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
-          <CheckInAsset height={22} width={21} />
+          <View style={styles.navIcon}><CheckInAsset height={22} width={21} /></View>
           <Text style={styles.navLabel}>예약</Text>
         </Pressable>
-      </View>
+      </FrostedSurface>
     </View>
     <Pressable
-      accessibilityLabel="장소 등록"
+      accessibilityLabel="장소추천"
       accessibilityRole="button"
-      onPress={onCreatePlace}
+      onPress={onOpenRecommendations}
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
     >
-      <PlaceRecommendAsset height={23} width={23} />
+      <FrostedSurface
+        cornerRadius={32}
+        glassEffectStyle="regular"
+        highlightOpacity={0}
+        pointerEvents="none"
+        rimColor="rgba(0,0,0,0.06)"
+        style={styles.sendButtonGlass}
+        tintColor="#FFFFFF"
+      >
+        <PlaceRecommendAsset height={23} width={23} />
+      </FrostedSurface>
     </Pressable>
   </Animated.View>
 );
 
 export default function FavoritePlacesBottomSheet({
   collapsedTranslateY,
+  hasNextPage,
   height,
   imageUrlsByPlaceId,
   isError,
+  isFetchNextPageError,
+  isFetchingNextPage,
   isLoading,
+  isUnauthorized,
   mediumTranslateY,
-  onCreatePlace,
   onHandlePress,
   onOpenMap,
+  onOpenRecommendations,
   onOpenReservations,
   onPlacePress,
+  onLoadMore,
+  onRemovePlace,
   onRetry,
   panHandlers,
   places,
+  pendingPlaceIds = {},
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
@@ -270,28 +317,30 @@ export default function FavoritePlacesBottomSheet({
   });
 
   return (
-    <Animated.View style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}>
-      <Animated.View
+    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
+      <GlassStyles.SheetChromeShadow
         pointerEvents="none"
-        style={[styles.sheetChromeShadow, { bottom: chromeBottomInset, left: chromeGap, right: chromeGap }]}
+        style={{ bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
       >
-        <Animated.View
+        <GlassStyles.SheetChrome
+          $borderColor="transparent"
           style={[
-            styles.sheetChrome,
             { borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius },
           ]}
         >
-          <GlassSurface
+          <GlassStyles.SheetGlass
+            cornerRadius={34}
             glassEffectStyle="regular"
-            intensity={100}
-            style={StyleSheet.absoluteFill}
-            tintColor="rgba(248,248,248,0.28)"
+            highlightHeight={40}
+            highlightOpacity={0.10}
+            rimColor="rgba(255,255,255,0.60)"
+            tintColor="rgba(255,255,255,0.92)"
+            topRimOnly
           />
-          <View style={styles.sheetTint} />
-        </Animated.View>
-      </Animated.View>
+        </GlassStyles.SheetChrome>
+      </GlassStyles.SheetChromeShadow>
 
-      <View style={styles.sheetInner}>
+      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
             accessibilityLabel="즐겨찾기 패널 크기 조절"
@@ -350,11 +399,18 @@ export default function FavoritePlacesBottomSheet({
                   imageUrls={imageUrlsByPlaceId[String(place.id)] ?? []}
                   key={place.id}
                   onPress={() => onPlacePress(place)}
+                  onRemove={() => onRemovePlace(place)}
+                  pending={Boolean(pendingPlaceIds[String(place.id)])}
                   place={place}
                 />
               )) : isLoading ? (
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyTitle}>저장한 장소를 불러오는 중이에요</Text>
+                </View>
+              ) : isUnauthorized ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyTitle}>로그인이 만료됐어요</Text>
+                  <Text style={styles.emptyBody}>다시 로그인한 뒤 저장한 장소를 확인해 주세요.</Text>
                 </View>
               ) : isError ? (
                 <View style={styles.emptyState}>
@@ -370,24 +426,42 @@ export default function FavoritePlacesBottomSheet({
                   <Text style={styles.emptyBody}>마음에 드는 장소의 별을 눌러 모아보세요.</Text>
                 </View>
               )}
+              {filteredPlaces.length > 0 && hasNextPage ? (
+                <View style={styles.loadMoreState}>
+                  {isFetchNextPageError ? (
+                    <Text style={styles.loadMoreError}>다음 장소를 불러오지 못했어요</Text>
+                  ) : null}
+                  <Pressable
+                    accessibilityLabel="저장한 장소 더 불러오기"
+                    accessibilityRole="button"
+                    accessibilityState={{ busy: isFetchingNextPage, disabled: isFetchingNextPage }}
+                    disabled={isFetchingNextPage}
+                    onPress={onLoadMore}
+                    style={styles.loadMoreButton}
+                  >
+                    <Text style={styles.retryLabel}>
+                      {isFetchingNextPage ? '불러오는 중…' : isFetchNextPageError ? '다시 시도' : '더 보기'}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
             </ScrollView>
           </View>
         </Animated.View>
-      </View>
+      </GlassStyles.SheetInner>
 
       <BottomNavigation
         bottomInset={insets.bottom}
-        onCreatePlace={onCreatePlace}
         onOpenMap={onOpenMap}
+        onOpenRecommendations={onOpenRecommendations}
         onOpenReservations={onOpenReservations}
         sheetTranslateY={sheetTranslateY}
       />
-    </Animated.View>
+    </GlassStyles.BottomSheetContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  bottomSheet: { bottom: 0, left: 0, overflow: 'visible', position: 'absolute', right: 0, zIndex: 50 },
   categoryChip: {
     alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.92)',
     borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
@@ -396,7 +470,7 @@ const styles = StyleSheet.create({
   categoryContent: { gap: 8, paddingBottom: 12, paddingHorizontal: 16, paddingTop: 10 },
   categoryLabel: { color: '#616169', fontSize: 14, fontWeight: '700' },
   categoryLabelActive: { color: '#FF245B' },
-  categoryScroll: { flexGrow: 0, height: 58 },
+  categoryScroll: { flexGrow: 0, height: 58, overflow: 'hidden' },
   content: { flex: 1 },
   emptyBody: { color: '#777982', fontSize: 13, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingTop: 42 },
@@ -410,15 +484,30 @@ const styles = StyleSheet.create({
   listContent: { paddingBottom: 116, paddingHorizontal: 16 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 182, marginBottom: 0 },
+  loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#FF1956', borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
+  loadMoreError: { color: '#777982', fontSize: 13 },
+  loadMoreState: { alignItems: 'center', gap: 8 },
   moreButton: { alignItems: 'center', height: 30, justifyContent: 'center', width: 24 },
+  moreButtonText: { color: '#3B3B40', fontSize: 22, lineHeight: 24 },
   nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5 },
-  navItem: { alignItems: 'center', borderRadius: 27, flex: 1, gap: 3, height: 54, justifyContent: 'center' },
-  navItemActive: { backgroundColor: 'rgba(255,255,255,0.94)' },
-  navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600' },
+  navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
+  navItem: { alignItems: 'center', flex: 1, gap: 3, justifyContent: 'center' },
+  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', width: 80 },
+  navItemActive: { backgroundColor: '#F7F7F8' },
+  navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
-  navigationBar: { backgroundColor: '#EFEFF2', borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 5 },
+  navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', gap: 0, height: 64, overflow: 'hidden', padding: 5 },
   navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
-  navigationShadow: { backgroundColor: '#EFEFF2', borderRadius: 32, elevation: 2, flex: 1, shadowColor: '#11151B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 10 },
+  navigationShadow: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    elevation: 4,
+    flex: 1,
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+  },
   placeCategory: { color: '#64666E', fontSize: 12 },
   placeHeading: { alignItems: 'center', flexDirection: 'row', marginBottom: 9 },
   placeImage: { borderRightColor: 'rgba(255,255,255,0.9)', borderRightWidth: 1, flex: 1, height: '100%' },
@@ -429,11 +518,20 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.72 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  sendButton: { alignItems: 'center', backgroundColor: 'rgba(245,245,247,0.96)', borderRadius: 33, elevation: 4, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 12, width: 64 },
-  sheetChrome: { backgroundColor: 'rgba(248,248,248,0.68)', borderColor: 'rgba(255,255,255,0.88)', borderRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, borderWidth: 1, flex: 1, overflow: 'hidden' },
-  sheetChromeShadow: { backgroundColor: 'rgba(244,246,248,0.08)', borderRadius: 36, elevation: 22, left: 0, position: 'absolute', right: 0, shadowColor: '#10141A', shadowOffset: { width: 0, height: -7 }, shadowOpacity: 0.17, shadowRadius: 24, top: 0 },
-  sheetInner: { flex: 1, overflow: 'hidden' },
-  sheetTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(250,250,251,0.42)' },
+  sendButton: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    elevation: 4,
+    height: 64,
+    justifyContent: 'center',
+    shadowColor: '#11151B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    width: 64,
+  },
+  sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
 });

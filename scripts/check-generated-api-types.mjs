@@ -4,14 +4,24 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const temporaryDirectory = await mkdtemp(join(tmpdir(), 'pingdom-openapi-'));
-const contracts = [
-  ['docs/api/mvp.openapi.json', 'src/v2/shared/api/generated/mvp.ts'],
-  ['docs/api/account.openapi.json', 'src/v2/shared/api/generated/account.ts'],
+const generatedContracts = [
+  {
+    contractPath: 'docs/api/mvp.openapi.json',
+    generatedPath: 'src/v2/shared/api/generated/mvp.ts',
+  },
+  {
+    contractPath: 'docs/api/account.openapi.json',
+    generatedPath: 'src/v2/shared/api/generated/account.ts',
+  },
+  {
+    contractPath: 'docs/api/current-activity-intent.openapi.json',
+    generatedPath: 'src/v2/shared/api/generated/currentActivityIntent.ts',
+  },
 ];
 
 try {
-  for (const [contractPath, generatedPath] of contracts) {
-    const temporaryPath = join(temporaryDirectory, generatedPath.split('/').at(-1));
+  for (const [index, { contractPath, generatedPath }] of generatedContracts.entries()) {
+    const temporaryPath = join(temporaryDirectory, `${index}.ts`);
     execFileSync(
       process.platform === 'win32' ? 'npx.cmd' : 'npx',
       ['--no-install', 'openapi-typescript', contractPath, '-o', temporaryPath],

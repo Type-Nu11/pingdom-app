@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -30,3 +32,19 @@ jobs:
 
       - name: Typecheck and test
         run: npm run validate:pr
+
+  v1-change-policy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require an exception for V1 source changes
+        run: npm run check:v1-changes -- --base "origin/${{ github.base_ref }}"
+        env:
+          V1_EXCEPTION_APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'legacy-exception') }}

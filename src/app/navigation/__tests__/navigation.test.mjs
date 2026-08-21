@@ -15,6 +15,7 @@ import {
   parseNotificationId,
   parsePlaceId,
   parsePostId,
+  parseReservationId,
 } from '../types.ts';
 import { getProfileBackAction } from '../../../features/profile/utils/profileBack.ts';
 import { getSettingsBackAction } from '../../../features/settings/utils/settingsBack.ts';
@@ -30,6 +31,7 @@ test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parseMerchantId('456'), 456);
   assert.equal(parsePostId('7'), 7);
   assert.equal(parseNotificationId('8'), 8);
+  assert.equal(parseReservationId('901'), 901);
 
   for (const invalidId of [undefined, null, '', '0', '01', '-1', '1.2', 0, -1, 1.2, Number.MAX_SAFE_INTEGER + 1]) {
     assert.equal(parsePlaceId(invalidId), null);

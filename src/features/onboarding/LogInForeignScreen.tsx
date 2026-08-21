@@ -19,7 +19,7 @@ export default function LogInForeignScreen({ onBack, onStart }: Props) {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/pingDomBackGround.png')}
+        source={require('../../assets/v2/images/pingDomBackGround.png')}
         style={[styles.background, { width, height }]}
         resizeMode="stretch"
       />
@@ -34,7 +34,7 @@ export default function LogInForeignScreen({ onBack, onStart }: Props) {
       <View style={styles.body}>
         <View style={styles.centerGroup}>
           <Image
-            source={require('../../assets/images/pingDomLogo.png')}
+            source={require('../../assets/v2/images/pingDomLogo.png')}
             style={styles.logo}
             resizeMode="contain"
           />

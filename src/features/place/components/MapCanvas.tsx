@@ -9,6 +9,7 @@ type MapCanvasProps = {
   centerLng: number;
   followUser: boolean;
   markers: MapMarker[];
+  onCameraIdle?: () => void;
   onMarkerPress: (event: KakaoMapMarkerPressEvent) => void;
   style?: StyleProp<ViewStyle>;
   userLat: number;
@@ -20,6 +21,7 @@ const MapCanvas = ({
   centerLng,
   followUser,
   markers,
+  onCameraIdle,
   onMarkerPress,
   style,
   userLat,
@@ -30,6 +32,7 @@ const MapCanvas = ({
     centerLng={centerLng}
     followUser={followUser}
     markers={markers}
+    onCameraIdle={() => onCameraIdle?.()}
     onMarkerPress={onMarkerPress}
     style={[styles.map, style]}
     userLat={userLat}

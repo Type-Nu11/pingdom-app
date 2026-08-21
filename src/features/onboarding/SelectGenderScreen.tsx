@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import CheckGenderIcon from '../../assets/icons/checkgender.svg';
-import EscapeIcon from '../../assets/icons/escape.svg';
-import FemaleIcon from '../../assets/icons/female.svg';
-import MaleIcon from '../../assets/icons/male.svg';
-import OtherIcon from '../../assets/icons/other.svg';
+import CheckGenderIcon from '../../assets/v2/icons/checkgender.svg';
+import EscapeIcon from '../../assets/v2/icons/escape.svg';
+import FemaleIcon from '../../assets/v2/icons/female.svg';
+import MaleIcon from '../../assets/v2/icons/male.svg';
+import OtherIcon from '../../assets/v2/icons/other.svg';
 import ProgressBar from './components/ProgressBar';
 import { useTranslation } from 'react-i18next';
 import type { Gender } from './types';

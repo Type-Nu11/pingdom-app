@@ -2,8 +2,15 @@ import { readFile } from 'node:fs/promises';
 import { createHash, createHmac } from 'node:crypto';
 
 const CONTRACT_PATH = new URL('../docs/api/mvp.openapi.json', import.meta.url);
+const CURRENT_ACTIVITY_INTENT_CONTRACT_PATH = new URL(
+  '../docs/api/current-activity-intent.openapi.json',
+  import.meta.url,
+);
 const SIGNING_FIXTURE_PATH = new URL('../docs/api/signing-fixture.json', import.meta.url);
 const document = JSON.parse(await readFile(CONTRACT_PATH, 'utf8'));
+const currentActivityIntentDocument = JSON.parse(
+  await readFile(CURRENT_ACTIVITY_INTENT_CONTRACT_PATH, 'utf8'),
+);
 const signingFixture = JSON.parse(await readFile(SIGNING_FIXTURE_PATH, 'utf8'));
 
 const failures = [];
@@ -125,6 +132,47 @@ if (fixtureSignature !== signingFixture.signatureBase64) {
 
 visit(document);
 
+const currentActivityIntentPath =
+  currentActivityIntentDocument.paths?.['/users/me/current-activity-intent'];
+const currentActivityIntentSchemas = currentActivityIntentDocument.components?.schemas;
+const expectedStatuses = {
+  delete: ['204', '401'],
+  get: ['200', '401'],
+  put: ['200', '400', '401'],
+};
+
+for (const [method, statuses] of Object.entries(expectedStatuses)) {
+  const operation = currentActivityIntentPath?.[method];
+  if (!operation) {
+    failures.push(`Current activity intent contract is missing ${method.toUpperCase()}`);
+    continue;
+  }
+
+  const actualStatuses = Object.keys(operation.responses ?? {}).sort();
+  if (JSON.stringify(actualStatuses) !== JSON.stringify(statuses)) {
+    failures.push(
+      `Current activity intent ${method.toUpperCase()} statuses changed: ${actualStatuses.join(', ')}`,
+    );
+  }
+}
+
+const currentActivityIntentResponse = currentActivityIntentSchemas?.CurrentActivityIntentResponse;
+if (currentActivityIntentResponse?.nullable === true) {
+  failures.push('Current activity intent GET body must not be nullable');
+}
+if (currentActivityIntentResponse?.properties?.intent?.nullable !== true) {
+  failures.push('Current activity intent response intent must remain nullable');
+}
+if (currentActivityIntentResponse?.properties?.expiresAt?.nullable !== true) {
+  failures.push('Current activity intent response expiresAt must remain nullable');
+}
+if (currentActivityIntentResponse?.properties?.expiresAt?.format !== 'date-time') {
+  failures.push('Current activity intent expiresAt must remain an unmodified date-time string');
+}
+if (!currentActivityIntentSchemas?.CurrentActivityIntentUpdateRequest?.required?.includes('intent')) {
+  failures.push('Current activity intent PUT request must require intent');
+}
+
 if (operations.length === 0) failures.push('No API operations were found');
 
 if (failures.length > 0) {
@@ -132,5 +180,7 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log(`MVP API contract is valid: ${operations.length} operations, all local references resolved.`);
+  console.log(
+    `MVP API contract is valid: ${operations.length} operations; current activity intent contract is valid.`,
+  );
 }

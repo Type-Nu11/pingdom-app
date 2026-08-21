@@ -47,7 +47,7 @@ export default function KoreanWelcomeScreen({ onStart, onBack }: KoreanWelcomeSc
         <View style={styles.centerContent}>
           <Image
             resizeMode="contain"
-            source={require('../../../../assets/images/pingDomLogo.png')}
+            source={require('../../../../assets/v2/images/pingDomLogo.png')}
             style={styles.logo}
           />
           <Text style={styles.headline}>Only Pingdom</Text>

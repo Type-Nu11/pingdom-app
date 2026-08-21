@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { recordApi } from '../api/recordApi';
 import type { Post, PostsPage } from '../model/record.types';
+import { placeRankingQueryKeys } from '../../place/hooks/useMapPlaceRankings';
 import { likedPostQueryKeys } from './useLikedPosts';
 import { postQueryKeys, type PostLikeState } from './usePlacePosts';
 
@@ -145,7 +146,8 @@ export const usePostLike = () => {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: likedPostQueryKeys.all });
-      void queryClient.invalidateQueries({ queryKey: postQueryKeys.hotPlaces() });
+      // 좋아요는 서버 랭킹 집계에 반영되므로 핫플·트렌드 목록을 무효화한다.
+      void queryClient.invalidateQueries({ queryKey: placeRankingQueryKeys.all });
     },
   });
 

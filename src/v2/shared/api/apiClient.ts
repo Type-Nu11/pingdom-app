@@ -156,6 +156,7 @@ async function putWithFetchFallback<TResponse, TBody>(
         : `API request failed with status ${response.status}`,
       {
         code: typeof errorBody?.code === 'string' ? errorBody.code : undefined,
+        responseBody: responseData,
         status: response.status,
       },
     );

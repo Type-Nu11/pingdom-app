@@ -12,9 +12,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import LikeIcon from '../../../assets/icons/actions/Like.svg';
-import EditIcon from '../../../assets/icons/edit/Vector.svg';
-import TrashIcon from '../../../assets/icons/edit/gg_trash.svg';
+import LikeIcon from '../../../assets/v2/icons/actions/Like.svg';
+import EditIcon from '../../../assets/v2/icons/edit/Vector.svg';
+import TrashIcon from '../../../assets/v2/icons/edit/gg_trash.svg';
 import type { UpdateRecordRequest } from '../../record/api/recordApi';
 import type { RecordUploadFile } from '../../record/model/record.types';
 import ProfileMini from './ProfileMini';
