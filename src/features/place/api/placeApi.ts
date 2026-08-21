@@ -51,34 +51,6 @@ export type GetPlaceRecommendationsRequest = {
   recommendationVersion?: string;
 };
 
-export type CoordinateTokenRequest = {
-  baseLatitude: number;
-  baseLongitude: number;
-  kakaoPlaceId?: string;
-};
-
-export type CoordinateTokenResponse = {
-  coordinateToken: string;
-  kakaoPlaceId?: string;
-};
-
-export type UploadPlaceWithTokenRequest = {
-  address: string;
-  category: string;
-  coordinateToken: string;
-  imageUrl?: string;
-  kakaoPlaceId?: string;
-  name: string;
-};
-
-export type CreatePlaceResponse = {
-  address: string;
-  id: number;
-  latitude: number;
-  longitude: number;
-  name: string;
-};
-
 export type CreateBookmarkRequest = {
   placeId: number;
 };
@@ -156,16 +128,6 @@ export const placeApi = {
   },
   removeBookmark: async (placeId: number): Promise<RemoveBookmarkResponse> => {
     const { data } = await api.delete<RemoveBookmarkResponse>(`/users/me/bookmarks/${placeId}`);
-    return data;
-  },
-  createPlaceCoordinates: async (payload: CoordinateTokenRequest): Promise<CoordinateTokenResponse> => {
-    const { data } = await api.post<CoordinateTokenResponse>('/places/coordinates', payload);
-    return data;
-  },
-  createPlaceWithCoordinateToken: async (
-    payload: UploadPlaceWithTokenRequest
-  ): Promise<CreatePlaceResponse> => {
-    const { data } = await api.post<CreatePlaceResponse>('/places/upload', payload);
     return data;
   },
   deletePlace: async (id: number): Promise<string> => {

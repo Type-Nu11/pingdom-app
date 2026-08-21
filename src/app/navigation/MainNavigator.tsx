@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../features/place/screens/MapScreen';
-import PlaceCreateFlowScreen from '../../features/place/screens/PlaceCreateFlowScreen';
 import PlaceDetailScreen from '../../features/place/screens/PlaceDetailScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
@@ -68,10 +67,6 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
     />
   );
 };
-
-const PlaceCreateRouteScreen = ({ navigation }: MainScreenProps<'PlaceCreate'>) => (
-  <PlaceCreateFlowScreen onClose={navigation.goBack} />
-);
 
 const PlaceDetailRouteScreen = ({
   navigation,
@@ -181,7 +176,6 @@ const MainNavigator = () => (
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.PlaceCreate} component={PlaceCreateRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.PlaceDetail} component={PlaceDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />

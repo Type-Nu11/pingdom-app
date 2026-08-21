@@ -40,7 +40,6 @@ type MapSearchOverlayProps = {
   isRecommendationsError?: boolean;
   isRecommendationsLoading?: boolean;
   onClose: () => void;
-  onCreatePlace?: () => void;
   onOpenProfile?: () => void;
   onRefreshRecommendations?: () => Promise<unknown> | void;
   onSelectRecommendedPlace?: (place: RecommendedPlace) => void;
@@ -131,7 +130,6 @@ const MapSearchOverlay = ({
   isRecommendationsError = false,
   isRecommendationsLoading = false,
   onClose,
-  onCreatePlace,
   onRefreshRecommendations,
   onSelectRecommendedPlace,
   onSelectPlace,
@@ -409,18 +407,8 @@ const MapSearchOverlay = ({
 
         {shouldShowEmptyState ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>아직 장소를 추가 안 했나봐요!</Text>
-            <Text style={styles.emptyDescription}>먼저 하실래요?</Text>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.emptyButton}
-              onPress={() => {
-                onClose();
-                onCreatePlace?.();
-              }}
-            >
-              <Text style={styles.emptyButtonText}>장소 추가하기</Text>
-            </Pressable>
+            <Text style={styles.emptyTitle}>검색 결과가 없어요</Text>
+            <Text style={styles.emptyDescription}>다른 검색어를 입력해 보세요.</Text>
           </View>
         ) : !isSearching && !hasResults && searchStatusMessage && !hasSearched ? (
           <Text style={styles.statusText}>{searchStatusMessage}</Text>
@@ -506,21 +494,6 @@ const styles = StyleSheet.create({
     color: '#737781',
     fontSize: 12,
     fontWeight: '600',
-  },
-  emptyButton: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#ff1956',
-    borderRadius: 13,
-    height: 46,
-    justifyContent: 'center',
-    marginTop: 18,
-    paddingHorizontal: 22,
-  },
-  emptyButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '900',
   },
   emptyDescription: {
     color: '#777a84',
