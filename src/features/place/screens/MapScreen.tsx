@@ -15,6 +15,7 @@ import MapBottomSheet, {
   type VisitFilter,
 } from '../components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
+import ReservationBottomSheet from '../../reservation/components/ReservationBottomSheet';
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
@@ -193,7 +194,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 });
 
 type MapScreenProps = {
-  initialSection?: 'favorites' | 'map';
+  initialSection?: 'favorites' | 'map' | 'reservations';
   notificationLikeContext?: {
     notificationsId?: string;
     postId?: string;
@@ -201,7 +202,8 @@ type MapScreenProps = {
   onClearOpenedBookmarkedPlace?: () => void;
   onOpenPlaceDetail?: (placeId: string) => void;
   onOpenProfile?: () => void;
-  onOpenReservations?: () => void;
+  onOpenReservation?: (reservationId: number) => void;
+  onOpenVerification?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
 
@@ -210,7 +212,8 @@ export default function MapScreen({
   onClearOpenedBookmarkedPlace,
   onOpenPlaceDetail,
   onOpenProfile,
-  onOpenReservations,
+  onOpenReservation,
+  onOpenVerification,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
@@ -249,7 +252,7 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
-  const [mapSection, setMapSection] = useState<'map' | 'favorites'>(initialSection);
+  const [mapSection, setMapSection] = useState<'map' | 'favorites' | 'reservations'>(initialSection);
 
   useEffect(() => {
     setMapSection(initialSection);
@@ -664,7 +667,10 @@ export default function MapScreen({
               setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
-            onOpenReservations={onOpenReservations}
+            onOpenReservations={() => {
+              setMapSection('reservations');
+              snapTo('medium');
+            }}
             onLoadMore={() => void fetchNextFavoritePage()}
             onRetry={() => void refetchFavorites()}
             onRemovePlace={(place) => void handleToggleBookmark(place, false)}
@@ -675,6 +681,37 @@ export default function MapScreen({
             panHandlers={panHandlers}
             places={favoritePlaces}
             pendingPlaceIds={bookmarkPendingPlaceIds}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : mapSection === 'reservations' ? (
+          <ReservationBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            height={fullSheetHeight}
+            mediumTranslateY={mediumTranslateY}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenFavorites={() => {
+              setMapSection('favorites');
+              snapTo('medium');
+            }}
+            onOpenMap={() => {
+              setMapSection('map');
+              setContent({ type: 'home' });
+              snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservation={(reservationId) => onOpenReservation?.(reservationId)}
+            onOpenVerification={() => onOpenVerification?.()}
+            panHandlers={panHandlers}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
             snapPoint={snapPoint}
@@ -707,7 +744,10 @@ export default function MapScreen({
               setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
-            onOpenSavedPlaces={onOpenReservations}
+            onOpenSavedPlaces={() => {
+              setMapSection('reservations');
+              snapTo('medium');
+            }}
             onPlacePress={handlePlacePress}
             onRetryRecommendations={() => void refetchRecommendations()}
             onProfilePress={onOpenProfile}

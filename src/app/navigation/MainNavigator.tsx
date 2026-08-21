@@ -7,7 +7,8 @@ import PlaceDetailScreen from '../../features/place/screens/PlaceDetailScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../features/reservation/screens/ReservationDetailScreen';
-import ReservationsScreen from '../../features/reservation/screens/ReservationsScreen';
+import VerificationScreen from '../../features/reservation/screens/VerificationScreen';
+import VerificationReviewScreen from '../../features/reservation/screens/VerificationReviewScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
 import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
@@ -51,7 +52,13 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
         }
       }}
       onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
-      onOpenReservations={() => navigation.navigate(MAIN_ROUTES.Reservations)}
+      onOpenVerification={() => navigation.navigate(MAIN_ROUTES.Verification)}
+      onOpenReservation={(value) => {
+        const reservationId = parseReservationId(value);
+        if (reservationId) {
+          navigation.navigate(MAIN_ROUTES.ReservationDetail, { reservationId });
+        }
+      }}
     />
   );
 };
@@ -119,19 +126,6 @@ const CouponWalletRouteScreen = ({ navigation }: MainScreenProps<'CouponWallet'>
   />
 );
 
-const ReservationsRouteScreen = ({ navigation }: MainScreenProps<'Reservations'>) => (
-  <ReservationsScreen
-    onOpenFavorites={() => navigation.popTo(MAIN_ROUTES.Map, { initialSection: 'favorites' })}
-    onOpenMap={() => navigation.popTo(MAIN_ROUTES.Map, { initialSection: 'map' })}
-    onOpenReservation={(value) => {
-      const reservationId = parseReservationId(value);
-      if (reservationId) {
-        navigation.navigate(MAIN_ROUTES.ReservationDetail, { reservationId });
-      }
-    }}
-  />
-);
-
 const ReservationDetailRouteScreen = ({
   navigation,
   route,
@@ -139,6 +133,25 @@ const ReservationDetailRouteScreen = ({
   <ReservationDetailScreen
     onBack={navigation.goBack}
     reservationId={route.params.reservationId}
+  />
+);
+
+const VerificationRouteScreen = ({ navigation }: MainScreenProps<'Verification'>) => (
+  <VerificationScreen
+    onBack={navigation.goBack}
+    onOpenPlace={(place) => navigation.navigate(MAIN_ROUTES.VerificationReview, place)}
+  />
+);
+
+const VerificationReviewRouteScreen = ({
+  navigation,
+  route,
+}: MainScreenProps<'VerificationReview'>) => (
+  <VerificationReviewScreen
+    category={route.params.category}
+    imageUrl={route.params.imageUrl}
+    onBack={navigation.goBack}
+    placeName={route.params.placeName}
   />
 );
 
@@ -160,8 +173,9 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.PlaceDetail} component={PlaceDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.Reservations} component={ReservationsRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.Verification} component={VerificationRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.VerificationReview} component={VerificationReviewRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />

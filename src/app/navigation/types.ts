@@ -48,8 +48,9 @@ export const MAIN_ROUTES = {
   PlaceDetail: 'PlaceDetail',
   Profile: 'Profile',
   ReservationDetail: 'ReservationDetail',
-  Reservations: 'Reservations',
   Settings: 'Settings',
+  Verification: 'Verification',
+  VerificationReview: 'VerificationReview',
 } as const;
 
 export type AuthStackParamList = {
@@ -60,7 +61,7 @@ export type MainStackParamList = {
   ApiCheck: undefined;
   Map: {
     focusedPlaceId?: PlaceId;
-    initialSection?: 'favorites' | 'map';
+    initialSection?: 'favorites' | 'map' | 'reservations';
     notificationContext?: NotificationNavigationContext;
   } | undefined;
   PlaceDetail: {
@@ -75,11 +76,16 @@ export type MainStackParamList = {
   Profile: {
     initialTab?: ProfileTab;
   } | undefined;
-  Reservations: undefined;
   ReservationDetail: {
     reservationId: ReservationId;
   };
   Settings: undefined;
+  Verification: undefined;
+  VerificationReview: {
+    category: string;
+    imageUrl?: string;
+    placeName: string;
+  };
   Merchant: {
     merchantId: MerchantId;
   };
