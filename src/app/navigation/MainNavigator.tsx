@@ -1,14 +1,16 @@
 import React, { useCallback } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../features/place/screens/MapScreen';
 import PlaceCreateFlowScreen from '../../features/place/screens/PlaceCreateFlowScreen';
 import PlaceDetailScreen from '../../features/place/screens/PlaceDetailScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
-import ReservationDetailScreen from '../../features/reservation/screens/ReservationDetailScreen';
-import VerificationScreen from '../../features/reservation/screens/VerificationScreen';
-import VerificationReviewScreen from '../../features/reservation/screens/VerificationReviewScreen';
+import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
+import VerificationScreen from '../../v2/features/reservations/screens/VerificationScreen';
+import VerificationReviewScreen from '../../v2/features/reservations/screens/VerificationReviewScreen';
+import { theme as v2Theme } from '../../v2/shared/theme';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
 import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
@@ -23,6 +25,10 @@ import {
 } from './types';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
+
+const V2ScreenBoundary = ({ children }: React.PropsWithChildren) => (
+  <ThemeProvider theme={v2Theme}>{children}</ThemeProvider>
+);
 
 const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
   const focusedPlaceId = route.params?.focusedPlaceId;
@@ -130,29 +136,35 @@ const ReservationDetailRouteScreen = ({
   navigation,
   route,
 }: MainScreenProps<'ReservationDetail'>) => (
-  <ReservationDetailScreen
-    onBack={navigation.goBack}
-    reservationId={route.params.reservationId}
-  />
+  <V2ScreenBoundary>
+    <ReservationDetailScreen
+      onBack={navigation.goBack}
+      reservationId={route.params.reservationId}
+    />
+  </V2ScreenBoundary>
 );
 
 const VerificationRouteScreen = ({ navigation }: MainScreenProps<'Verification'>) => (
-  <VerificationScreen
-    onBack={navigation.goBack}
-    onOpenPlace={(place) => navigation.navigate(MAIN_ROUTES.VerificationReview, place)}
-  />
+  <V2ScreenBoundary>
+    <VerificationScreen
+      onBack={navigation.goBack}
+      onOpenPlace={(place) => navigation.navigate(MAIN_ROUTES.VerificationReview, place)}
+    />
+  </V2ScreenBoundary>
 );
 
 const VerificationReviewRouteScreen = ({
   navigation,
   route,
 }: MainScreenProps<'VerificationReview'>) => (
-  <VerificationReviewScreen
-    category={route.params.category}
-    imageUrl={route.params.imageUrl}
-    onBack={navigation.goBack}
-    placeName={route.params.placeName}
-  />
+  <V2ScreenBoundary>
+    <VerificationReviewScreen
+      category={route.params.category}
+      imageUrl={route.params.imageUrl}
+      onBack={navigation.goBack}
+      placeName={route.params.placeName}
+    />
+  </V2ScreenBoundary>
 );
 
 const MerchantRouteScreen = ({ navigation, route }: MainScreenProps<'Merchant'>) => (
