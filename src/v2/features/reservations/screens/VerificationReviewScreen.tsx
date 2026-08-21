@@ -1,28 +1,20 @@
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 const REASONS = [
-  '친절해요',
-  '찾기 쉬워요',
-  '맛있어요',
-  '다국어 설명이 잘 되어 있어요',
-  '주차하기 편해요',
-  '사진 찍기 좋아요',
-  '매장이 깨끗해요',
+  { icon: '😇', id: 'kind' },
+  { icon: '📌', id: 'easyToFind' },
+  { icon: '😋', id: 'delicious' },
+  { icon: '🌐', id: 'multilingual' },
+  { icon: 'P', id: 'parking' },
+  { icon: '📷', id: 'photoSpot' },
+  { icon: '✨', id: 'clean' },
 ] as const;
-
-const REASON_ICONS: Record<typeof REASONS[number], string> = {
-  '친절해요': '😇',
-  '찾기 쉬워요': '📌',
-  '맛있어요': '😋',
-  '다국어 설명이 잘 되어 있어요': '🌐',
-  '주차하기 편해요': 'P',
-  '사진 찍기 좋아요': '📷',
-  '매장이 깨끗해요': '✨',
-};
+type ReasonId = typeof REASONS[number]['id'];
 
 type Props = {
   category: string;
@@ -33,15 +25,19 @@ type Props = {
 
 export default function VerificationReviewScreen({ category, imageUrl, onBack, placeName }: Props) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [photos, setPhotos] = useState<string[]>([]);
-  const [selectedReasons, setSelectedReasons] = useState<string[]>(['친절해요', '맛있어요']);
+  const [selectedReasons, setSelectedReasons] = useState<ReasonId[]>(['kind', 'delicious']);
   const [review, setReview] = useState('');
 
   const pickPhotos = async () => {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('사진 권한이 필요합니다', '설정에서 사진 접근을 허용해 주세요.');
+        Alert.alert(
+          t('reservation.verification.alerts.permissionTitle'),
+          t('reservation.verification.alerts.permissionBody'),
+        );
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -52,11 +48,14 @@ export default function VerificationReviewScreen({ category, imageUrl, onBack, p
       });
       if (!result.canceled) setPhotos(result.assets.slice(0, 3).map((asset) => asset.uri));
     } catch {
-      Alert.alert('사진을 불러오지 못했습니다', '잠시 후 다시 시도해 주세요.');
+      Alert.alert(
+        t('reservation.verification.alerts.photoErrorTitle'),
+        t('reservation.verification.alerts.photoErrorBody'),
+      );
     }
   };
 
-  const toggleReason = (reason: string) => {
+  const toggleReason = (reason: ReasonId) => {
     setSelectedReasons((current) => {
       if (current.includes(reason)) return current.filter((item) => item !== reason);
       if (current.length >= 5) return current;
@@ -67,10 +66,16 @@ export default function VerificationReviewScreen({ category, imageUrl, onBack, p
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
       <Header>
-        <BackButton accessibilityLabel="뒤로 가기" accessibilityRole="button" onPress={onBack}>
+        <BackButton
+          accessibilityLabel={t('reservation.common.back')}
+          accessibilityRole="button"
+          onPress={onBack}
+        >
           <BackText>‹</BackText>
         </BackButton>
-        <HeaderTitle accessibilityRole="header">검증하기</HeaderTitle>
+        <HeaderTitle accessibilityRole="header">
+          {t('reservation.verification.title')}
+        </HeaderTitle>
         <HeaderSpacer />
       </Header>
 
@@ -88,11 +93,11 @@ export default function VerificationReviewScreen({ category, imageUrl, onBack, p
             </PlaceCopy>
           </PlaceCard>
 
-          <SectionTitle>사진 첨부</SectionTitle>
+          <SectionTitle>{t('reservation.verification.photo.title')}</SectionTitle>
           <PhotoRow>
             {photos.map((uri) => (
               <PhotoDeleteButton
-                accessibilityLabel="첨부 사진 삭제"
+                accessibilityLabel={t('reservation.verification.photo.delete')}
                 accessibilityRole="button"
                 key={uri}
                 onPress={() => setPhotos((items) => items.filter((item) => item !== uri))}
@@ -102,7 +107,7 @@ export default function VerificationReviewScreen({ category, imageUrl, onBack, p
             ))}
             {photos.length < 3 ? (
               <PhotoPicker
-                accessibilityLabel="사진 첨부"
+                accessibilityLabel={t('reservation.verification.photo.add')}
                 accessibilityRole="button"
                 onPress={() => void pickPhotos()}
               >
@@ -113,37 +118,42 @@ export default function VerificationReviewScreen({ category, imageUrl, onBack, p
           </PhotoRow>
 
           <Divider />
-          <SectionTitle>추천 이유</SectionTitle>
-          <SectionDescription>최대 5개까지 선택할 수 있어요</SectionDescription>
+          <SectionTitle>{t('reservation.verification.reasons.title')}</SectionTitle>
+          <SectionDescription>
+            {t('reservation.verification.reasons.description')}
+          </SectionDescription>
           <ReasonWrap>
             {REASONS.map((reason) => {
-              const selected = selectedReasons.includes(reason);
+              const selected = selectedReasons.includes(reason.id);
+              const label = t(`reservation.verification.reasons.${reason.id}`);
               return (
                 <Reason
                   $selected={selected}
-                  accessibilityLabel={reason}
+                  accessibilityLabel={label}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: selected }}
-                  key={reason}
-                  onPress={() => toggleReason(reason)}
+                  key={reason.id}
+                  onPress={() => toggleReason(reason.id)}
                 >
-                  <ReasonIcon>{REASON_ICONS[reason]}</ReasonIcon>
-                  <ReasonText $selected={selected}>{reason}</ReasonText>
+                  <ReasonIcon>{reason.icon}</ReasonIcon>
+                  <ReasonText $selected={selected}>{label}</ReasonText>
                 </Reason>
               );
             })}
           </ReasonWrap>
           <SelectedCount>
-            <SelectedCountAccent>{selectedReasons.length}</SelectedCountAccent>/5개 선택됨
+            {t('reservation.verification.reasons.selectedCount', {
+              count: selectedReasons.length,
+            })}
           </SelectedCount>
 
           <Divider />
-          <SectionTitle>후기 작성</SectionTitle>
+          <SectionTitle>{t('reservation.verification.review.title')}</SectionTitle>
           <ReviewInput
-            accessibilityLabel="후기 작성"
+            accessibilityLabel={t('reservation.verification.review.title')}
             multiline
             onChangeText={setReview}
-            placeholder="다른 사람들에게 user님의 후기를 알려주세요"
+            placeholder={t('reservation.verification.review.placeholder')}
             placeholderTextColor={theme.colors.textMuted}
             textAlignVertical="top"
             value={review}
@@ -154,9 +164,12 @@ export default function VerificationReviewScreen({ category, imageUrl, onBack, p
       <SubmitWrap>
         <SubmitButton
           accessibilityRole="button"
-          onPress={() => Alert.alert('작성 완료', '리뷰 제출 API가 연결되면 등록할 수 있어요.')}
+          onPress={() => Alert.alert(
+            t('reservation.verification.alerts.completeTitle'),
+            t('reservation.verification.alerts.completeBody'),
+          )}
         >
-          <SubmitLabel>리뷰하기</SubmitLabel>
+          <SubmitLabel>{t('reservation.verification.review.submit')}</SubmitLabel>
         </SubmitButton>
       </SubmitWrap>
     </Screen>
@@ -332,11 +345,6 @@ const SelectedCount = styled.Text`
   margin-top: ${({ theme }) => theme.spacing.md}px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-`;
-
-const SelectedCountAccent = styled.Text`
-  color: ${({ theme }) => theme.colors.primary};
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
 const ReviewInput = styled.TextInput`

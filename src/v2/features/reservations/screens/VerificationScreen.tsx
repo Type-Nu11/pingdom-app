@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
@@ -10,10 +11,10 @@ const IMAGE_URLS = [
 ] as const;
 
 const VISITS = [
-  { address: '12.3km · 경기도 고양시 일산서구 중앙로 1601 …', category: '음악', name: '고양종합운동장', pair: 0 },
-  { address: '123m · 대구광역시 달성군 구지면 창리로11길 79-3', category: '음식점', name: '대성반점', pair: 2 },
-  { address: '12.3km · 경기도 고양시 일산서구 중앙로 1601 …', category: '음악', name: '고양종합운동장', pair: 0 },
-  { address: '123m · 대구광역시 달성군 구지면 창리로11길 79-3', category: '음식점', name: '대성반점', pair: 2 },
+  { fixture: 'goyang', pair: 0 },
+  { fixture: 'daeseong', pair: 2 },
+  { fixture: 'goyang', pair: 0 },
+  { fixture: 'daeseong', pair: 2 },
 ] as const;
 
 type VerificationPlace = {
@@ -22,21 +23,33 @@ type VerificationPlace = {
   placeName: string;
 };
 
-function VisitCard({ onPress, visit }: { onPress: () => void; visit: typeof VISITS[number] }) {
+function VisitCard({
+  address,
+  category,
+  name,
+  onPress,
+  pair,
+}: {
+  address: string;
+  category: string;
+  name: string;
+  onPress: () => void;
+  pair: number;
+}) {
   return (
     <Card
-      accessibilityLabel={`${visit.name}, ${visit.address}`}
+      accessibilityLabel={`${name}, ${address}`}
       accessibilityRole="button"
       onPress={onPress}
     >
       <CardHeading>
-        <Name>{visit.name} <Category>{visit.category}</Category></Name>
+        <Name>{name} <Category>{category}</Category></Name>
         <More>⋮</More>
       </CardHeading>
-      <Address numberOfLines={1}>{visit.address}</Address>
+      <Address numberOfLines={1}>{address}</Address>
       <Images>
-        <VisitImage source={{ uri: IMAGE_URLS[visit.pair] }} />
-        <VisitImage source={{ uri: IMAGE_URLS[visit.pair + 1] }} />
+        <VisitImage source={{ uri: IMAGE_URLS[pair] }} />
+        <VisitImage source={{ uri: IMAGE_URLS[pair + 1] }} />
       </Images>
     </Card>
   );
@@ -49,33 +62,47 @@ export default function VerificationScreen({
   onBack: () => void;
   onOpenPlace: (place: VerificationPlace) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
       <Header>
         <BackButton
-          accessibilityLabel="뒤로 가기"
+          accessibilityLabel={t('reservation.common.back')}
           accessibilityRole="button"
           hitSlop={12}
           onPress={onBack}
         >
           <BackText>‹</BackText>
         </BackButton>
-        <Title accessibilityRole="header">검증하기</Title>
+        <Title accessibilityRole="header">{t('reservation.verification.title')}</Title>
         <HeaderSpacer />
       </Header>
       <List showsVerticalScrollIndicator={false}>
-        <SectionTitle accessibilityRole="header">최근 방문</SectionTitle>
-        {VISITS.map((visit, index) => (
-          <VisitCard
-            key={`${visit.name}-${index}`}
-            onPress={() => onOpenPlace({
-              category: visit.category,
-              imageUrl: IMAGE_URLS[visit.pair],
-              placeName: visit.name,
-            })}
-            visit={visit}
-          />
-        ))}
+        <SectionTitle accessibilityRole="header">
+          {t('reservation.verification.recentVisits')}
+        </SectionTitle>
+        {VISITS.map((visit, index) => {
+          const prefix = `reservation.fixtures.${visit.fixture}`;
+          const address = t(`${prefix}.address`);
+          const category = t(`${prefix}.category`);
+          const name = t(`${prefix}.name`);
+
+          return (
+            <VisitCard
+              address={address}
+              category={category}
+              key={`${visit.fixture}-${index}`}
+              name={name}
+              onPress={() => onOpenPlace({
+                category,
+                imageUrl: IMAGE_URLS[visit.pair],
+                placeName: name,
+              })}
+              pair={visit.pair}
+            />
+          );
+        })}
       </List>
     </Screen>
   );

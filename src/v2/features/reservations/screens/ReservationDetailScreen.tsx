@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
@@ -11,29 +12,29 @@ export default function ReservationDetailScreen({
   onBack,
   reservationId,
 }: ReservationDetailScreenProps) {
+  const { t } = useTranslation();
+
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
       <Header>
         <BackButton
-          accessibilityLabel="뒤로 가기"
+          accessibilityLabel={t('reservation.common.back')}
           accessibilityRole="button"
           hitSlop={12}
           onPress={onBack}
         >
           <BackText>‹</BackText>
         </BackButton>
-        <Title accessibilityRole="header">예약 상세</Title>
+        <Title accessibilityRole="header">{t('reservation.detail.title')}</Title>
         <HeaderSpacer />
       </Header>
       <Content>
         <Card>
-          <Eyebrow>예약 식별자</Eyebrow>
+          <Eyebrow>{t('reservation.detail.identifier')}</Eyebrow>
           <ReservationId>{reservationId}</ReservationId>
           <Divider />
-          <NoticeTitle>상세·결제 내역 준비 중</NoticeTitle>
-          <Notice>
-            서버의 예약 상세 및 결제 조회 계약이 연결되면 이 예약 식별자로 정보를 불러옵니다.
-          </Notice>
+          <NoticeTitle>{t('reservation.detail.pending')}</NoticeTitle>
+          <Notice>{t('reservation.detail.description')}</Notice>
         </Card>
       </Content>
     </Screen>
