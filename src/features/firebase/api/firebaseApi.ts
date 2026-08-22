@@ -5,5 +5,5 @@ export type UpdateFcmTokenRequest = {
 };
 
 export async function updateFcmToken(payload: UpdateFcmTokenRequest): Promise<void> {
-  await api.patch('/firebase/fcm-token', payload);
+  await api.post('/firebase/fcm-tokens', payload);
 }
