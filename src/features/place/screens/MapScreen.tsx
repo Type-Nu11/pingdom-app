@@ -200,7 +200,6 @@ type MapScreenProps = {
     postId?: string;
   } | null;
   onClearOpenedBookmarkedPlace?: () => void;
-  onOpenPlaceDetail?: (placeId: string) => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
   onOpenVerification?: () => void;
@@ -210,7 +209,6 @@ type MapScreenProps = {
 export default function MapScreen({
   initialSection = 'map',
   onClearOpenedBookmarkedPlace,
-  onOpenPlaceDetail,
   onOpenProfile,
   onOpenReservation,
   onOpenVerification,
@@ -728,7 +726,7 @@ export default function MapScreen({
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
             onCouponPress={handleCoupon}
-            onDetailPress={(place) => onOpenPlaceDetail?.(String(place.id))}
+            onDetailPress={() => snapTo('expanded')}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}
             onHandlePress={() => {

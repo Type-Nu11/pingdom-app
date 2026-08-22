@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../features/place/screens/MapScreen';
-import PlaceDetailScreen from '../../features/place/screens/PlaceDetailScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
@@ -17,7 +16,6 @@ import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
   MAIN_ROUTES,
-  parsePlaceId,
   parseReservationId,
   type MainScreenProps,
   type MainStackParamList,
@@ -50,12 +48,6 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
       } : null}
       openedBookmarkedPlaceId={focusedPlaceId ?? null}
       onClearOpenedBookmarkedPlace={clearFocusedPlace}
-      onOpenPlaceDetail={(value) => {
-        const placeId = parsePlaceId(value);
-        if (placeId) {
-          navigation.navigate(MAIN_ROUTES.PlaceDetail, { placeId });
-        }
-      }}
       onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
       onOpenVerification={() => navigation.navigate(MAIN_ROUTES.Verification)}
       onOpenReservation={(value) => {
@@ -67,20 +59,6 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
     />
   );
 };
-
-const PlaceDetailRouteScreen = ({
-  navigation,
-  route,
-}: MainScreenProps<'PlaceDetail'>) => (
-  <PlaceDetailScreen
-    notificationBody={route.params.notificationContext?.body}
-    notificationTitle={route.params.notificationContext?.title}
-    placeId={String(route.params.placeId)}
-    onBack={navigation.goBack}
-    onCheckIn={() => navigation.navigate(MAIN_ROUTES.CheckIn, { placeId: route.params.placeId })}
-    onCoupon={() => navigation.navigate(MAIN_ROUTES.CouponWallet)}
-  />
-);
 
 const ProfileRouteScreen = ({ navigation, route }: MainScreenProps<'Profile'>) => (
   <ProfileScreen
@@ -176,7 +154,6 @@ const MainNavigator = () => (
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.PlaceDetail} component={PlaceDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />

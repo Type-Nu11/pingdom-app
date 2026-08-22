@@ -15,7 +15,6 @@ type ProfileParams = Exclude<MainStackParamList['Profile'], undefined>;
 
 export type MainNavigationIntent =
   | { params?: MapParams; screen: typeof MAIN_ROUTES.Map }
-  | { params: MainStackParamList['PlaceDetail']; screen: typeof MAIN_ROUTES.PlaceDetail }
   | { params: MainStackParamList['CheckIn']; screen: typeof MAIN_ROUTES.CheckIn }
   | { screen: typeof MAIN_ROUTES.CouponWallet }
   | { params?: ProfileParams; screen: typeof MAIN_ROUTES.Profile }
@@ -79,10 +78,10 @@ export function createNotificationNavigationIntent(
   if (rawRoute.screen === 'place-detail' && placeId) {
     return {
       params: {
+        focusedPlaceId: placeId,
         notificationContext,
-        placeId,
       },
-      screen: MAIN_ROUTES.PlaceDetail,
+      screen: MAIN_ROUTES.Map,
     };
   }
 
@@ -109,8 +108,6 @@ export function toMainNavigatorParams(
       return { params: intent.params, screen: MAIN_ROUTES.Map };
     case MAIN_ROUTES.Profile:
       return { params: intent.params, screen: MAIN_ROUTES.Profile };
-    case MAIN_ROUTES.PlaceDetail:
-      return { params: intent.params, screen: MAIN_ROUTES.PlaceDetail };
     case MAIN_ROUTES.CheckIn:
       return { params: intent.params, screen: MAIN_ROUTES.CheckIn };
     case MAIN_ROUTES.Merchant:
