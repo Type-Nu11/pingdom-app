@@ -6,9 +6,18 @@ import {
   renderWithProviders,
 } from '../../../../shared/testing/testProviders';
 import { registerReservationResources } from '../../i18n/reservationResources';
+import CreateReservationScreen from '../CreateReservationScreen';
 import ReservationDetailScreen from '../ReservationDetailScreen';
 import VerificationReviewScreen from '../VerificationReviewScreen';
 import VerificationScreen from '../VerificationScreen';
+import { usePlaceDetail } from '../../../place-detail/hooks/usePlaceDetail';
+import { useAvailabilities, useCreateReservation } from '../../hooks/useReservations';
+
+jest.mock('../../../place-detail/hooks/usePlaceDetail', () => ({ usePlaceDetail: jest.fn() }));
+jest.mock('../../hooks/useReservations', () => ({
+  useAvailabilities: jest.fn(),
+  useCreateReservation: jest.fn(),
+}));
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
@@ -22,6 +31,53 @@ async function renderReservationScreen(ui: ReactElement, language: 'ko' | 'en' =
 }
 
 describe('V2 reservation screens', () => {
+  test('예약 생성 화면은 장소, 인원, 날짜, 시간, 예약자 입력을 한 흐름으로 표시한다', async () => {
+    const startsAt = new Date();
+    startsAt.setHours(12, 0, 0, 0);
+    jest.mocked(usePlaceDetail).mockReturnValue({
+      data: { name: '대성반점', thumbnailUrl: null },
+    } as ReturnType<typeof usePlaceDetail>);
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [{
+        id: 77,
+        placeId: 17,
+        productId: 9,
+        productType: 'TABLE',
+        startsAt: startsAt.toISOString(),
+        endsAt: new Date(startsAt.getTime() + 30 * 60_000).toISOString(),
+        totalCapacity: 8,
+        remainingCapacity: 8,
+        status: 'ACTIVE',
+      }],
+      isPending: false,
+    } as ReturnType<typeof useAvailabilities>);
+    jest.mocked(useCreateReservation).mockReturnValue({
+      isError: false,
+      isPending: false,
+      isSuccess: false,
+      mutate: jest.fn(),
+    } as unknown as ReturnType<typeof useCreateReservation>);
+
+    await renderReservationScreen(
+      <CreateReservationScreen
+        navigation={{ goBack: jest.fn() } as never}
+        route={{ key: 'create', name: 'CreateReservation', params: {
+          category: '음식점',
+          imageUrl: 'https://example.com/daeseong.jpg',
+          placeId: 17,
+          placeName: '대성반점',
+        } } as never}
+      />,
+    );
+
+    expect(screen.getByTestId('v2-create-reservation-screen')).toBeVisible();
+    expect(screen.getByText('대성반점')).toBeVisible();
+    expect(screen.getByText('예약인원: 2~12명 · 음식점')).toBeVisible();
+    expect(screen.getByTestId('v2-reservation-place-image')).toBeVisible();
+    expect(screen.getByPlaceholderText('이름을 입력하세요')).toBeVisible();
+    expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
+  });
+
   test('예약 상세는 전달받은 실제 예약 식별자를 표시한다', async () => {
     const onBack = jest.fn();
     const { user } = await renderReservationScreen(
