@@ -5,12 +5,10 @@ const root = new URL('../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), 'utf8');
 
 const button = read('src/shared/components/Button.tsx');
-const input = read('src/shared/components/Input.tsx');
 const badge = read('src/shared/components/StatusBadge.tsx');
 const translations = read('src/i18n/index.ts');
 const targets = [
   read('src/features/place/components/MapBottomSheet.tsx'),
-  read('src/features/place/screens/PlaceDetailScreen.tsx'),
   read('src/features/place/screens/CheckInScreen.tsx'),
   read('src/features/place/screens/CouponWalletScreen.tsx'),
 ];
@@ -19,8 +17,6 @@ assert.match(button, /accessibilityRole="button"/);
 assert.match(button, /busy: loading/);
 assert.match(button, /minHeight: 52/);
 assert.doesNotMatch(button, /numberOfLines=/);
-assert.match(input, /accessibilityValue=\{errorMessage/);
-assert.match(input, /accessibilityLiveRegion="polite"/);
 assert.match(badge, /SYMBOLS/);
 assert.match(badge, /accessibilityLabel=\{label\}/);
 

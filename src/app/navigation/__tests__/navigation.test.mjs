@@ -43,7 +43,7 @@ test('authentication state selects an exclusive root stack', () => {
   assert.equal(getRootRouteName(true), ROOT_ROUTES.Main);
 });
 
-test('notification payload creates a validated place detail intent', () => {
+test('notification payload focuses the place in the map detail sheet', () => {
   const intent = createNotificationNavigationIntent({
     body: 'body',
     messageId: 'message-1',
@@ -57,19 +57,19 @@ test('notification payload creates a validated place detail intent', () => {
 
   assert.deepEqual(intent, {
     params: {
+      focusedPlaceId: 42,
       notificationContext: {
         body: 'body',
         notificationId: 8,
         postId: 7,
         title: 'title',
       },
-      placeId: 42,
     },
-    screen: MAIN_ROUTES.PlaceDetail,
+    screen: MAIN_ROUTES.Map,
   });
   assert.deepEqual(toMainNavigatorParams(intent), {
     params: intent.params,
-    screen: MAIN_ROUTES.PlaceDetail,
+    screen: MAIN_ROUTES.Map,
   });
 });
 
@@ -104,8 +104,8 @@ test('bookmark IDs produce Map focus params without creating string IDs', () => 
 test('custom deep links map to typed navigation intents', () => {
   assert.deepEqual(parseDeepLink('pingdom://map'), { screen: MAIN_ROUTES.Map });
   assert.deepEqual(parseDeepLink('pingdom://places/123'), {
-    params: { placeId: 123 },
-    screen: MAIN_ROUTES.PlaceDetail,
+    params: { focusedPlaceId: 123 },
+    screen: MAIN_ROUTES.Map,
   });
   assert.deepEqual(parseDeepLink('pingdom://places/123/check-in'), {
     params: { placeId: 123 },

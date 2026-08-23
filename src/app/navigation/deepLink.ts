@@ -55,7 +55,7 @@ export function parseDeepLink(url: string): MainNavigationIntent | null {
     const placeId = parsePlaceId(rawId);
 
     if (placeId && segments.length === 2) {
-      return { params: { placeId }, screen: MAIN_ROUTES.PlaceDetail };
+      return { params: { focusedPlaceId: placeId }, screen: MAIN_ROUTES.Map };
     }
 
     if (placeId && segments.length === 3 && action?.toLowerCase() === 'check-in') {
