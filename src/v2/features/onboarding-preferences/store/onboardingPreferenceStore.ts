@@ -39,6 +39,8 @@ type OnboardingPreferenceActions = {
   persistPreferences: () => Promise<void>;
   setSelectedPurposes: (selectedPurposes: TravelPurposeSelection) => Promise<void>;
   setSelectedSchedule: (selectedSchedule: TravelDateInput) => Promise<void>;
+  updateSelectedPurposes: (selectedPurposes: TravelPurposeSelection) => void;
+  updateSelectedSchedule: (selectedSchedule: TravelDateInput) => void;
 };
 
 export type OnboardingPreferenceStore = OnboardingPreferenceState
@@ -160,6 +162,22 @@ export const useOnboardingPreferenceStore = create<OnboardingPreferenceStore>(
         set({ selectedSchedule: { ...selectedSchedule } });
         const values = readCurrentValues();
         await save(() => persistOnboardingPreferences(values));
+      },
+
+      updateSelectedPurposes: (selectedPurposes) => {
+        localChangeRevision += 1;
+        set({
+          saveError: null,
+          selectedPurposes: [...selectedPurposes],
+        });
+      },
+
+      updateSelectedSchedule: (selectedSchedule) => {
+        localChangeRevision += 1;
+        set({
+          saveError: null,
+          selectedSchedule: { ...selectedSchedule },
+        });
       },
     };
   },

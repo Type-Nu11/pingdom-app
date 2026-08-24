@@ -29,6 +29,8 @@ const ICON_GLYPHS = {
 
 export type TravelPurposeSelectionScreenProps = Readonly<{
   currentStep?: number;
+  errorMessage?: string | null;
+  isContinuing?: boolean;
   onBack: () => void;
   onChange: (selectedPurposes: TravelPurposeSelection) => void;
   onContinue: () => void;
@@ -38,6 +40,8 @@ export type TravelPurposeSelectionScreenProps = Readonly<{
 
 export default function TravelPurposeSelectionScreen({
   currentStep = DEFAULT_CURRENT_STEP,
+  errorMessage = null,
+  isContinuing = false,
   onBack,
   onChange,
   onContinue,
@@ -127,6 +131,12 @@ export default function TravelPurposeSelectionScreen({
               );
             })}
           </Options>
+
+          {errorMessage ? (
+            <ErrorMessage accessibilityLiveRegion="polite" testID="travel-purpose-error">
+              {errorMessage}
+            </ErrorMessage>
+          ) : null}
         </Content>
       </ContentScroll>
 
@@ -135,6 +145,7 @@ export default function TravelPurposeSelectionScreen({
           disabled={selectedPurposes.length === 0}
           fullWidth
           label={t('onboarding.travelPurposeScreen.continue')}
+          loading={isContinuing}
           onPress={onContinue}
           shape="pill"
         />
@@ -217,6 +228,13 @@ const Description = styled.Text`
 
 const Options = styled.View`
   gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+const ErrorMessage = styled.Text`
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.caption.fontWeight};
+  line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
 `;
 
 const Option = styled.Pressable<{ $selected: boolean }>`

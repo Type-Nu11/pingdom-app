@@ -86,6 +86,37 @@ describe('onboarding preference store', () => {
     });
   });
 
+  test('keeps draft edits in memory until the flow explicitly persists them', async () => {
+    const store = useOnboardingPreferenceStore.getState();
+
+    store.updateSelectedPurposes(['FOOD']);
+    store.updateSelectedSchedule({
+      endDateText: '2026-09-12',
+      startDateText: '2026-09-05',
+    });
+
+    expect(await AsyncStorage.getItem(ONBOARDING_PREFERENCE_STORAGE_KEY)).toBeNull();
+    expect(useOnboardingPreferenceStore.getState()).toMatchObject({
+      selectedPurposes: ['FOOD'],
+      selectedSchedule: {
+        endDateText: '2026-09-12',
+        startDateText: '2026-09-05',
+      },
+    });
+
+    await useOnboardingPreferenceStore.getState().persistPreferences();
+
+    expect(JSON.parse(
+      await AsyncStorage.getItem(ONBOARDING_PREFERENCE_STORAGE_KEY) ?? '{}',
+    )).toMatchObject({
+      selectedPurposes: ['FOOD'],
+      selectedSchedule: {
+        endDateText: '2026-09-12',
+        startDateText: '2026-09-05',
+      },
+    });
+  });
+
   test('does not overwrite a newer selection when hydration finishes late', async () => {
     let finishRead: ((value: string | null) => void) | undefined;
     jest.spyOn(AsyncStorage, 'getItem').mockImplementationOnce(

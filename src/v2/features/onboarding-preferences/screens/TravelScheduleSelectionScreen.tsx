@@ -26,6 +26,8 @@ const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
 export type TravelScheduleSelectionScreenProps = Readonly<{
   currentStep?: number;
+  errorMessage?: string | null;
+  isContinuing?: boolean;
   onBack: () => void;
   onChange: (selectedSchedule: TravelDateInput) => void;
   onContinue: () => void;
@@ -35,6 +37,8 @@ export type TravelScheduleSelectionScreenProps = Readonly<{
 
 export default function TravelScheduleSelectionScreen({
   currentStep = DEFAULT_CURRENT_STEP,
+  errorMessage = null,
+  isContinuing = false,
   onBack,
   onChange,
   onContinue,
@@ -136,6 +140,16 @@ export default function TravelScheduleSelectionScreen({
             </SelectionMessage>
           ) : null}
 
+          {errorMessage ? (
+            <SelectionMessage
+              accessibilityLiveRegion="polite"
+              $error
+              testID="travel-schedule-error"
+            >
+              {errorMessage}
+            </SelectionMessage>
+          ) : null}
+
           <Calendar accessibilityLabel={t('onboarding.travelScheduleScreen.calendar')}>
             <MonthHeader>
               <MonthButton
@@ -221,6 +235,7 @@ export default function TravelScheduleSelectionScreen({
           disabled={!canContinue}
           fullWidth
           label={t('onboarding.travelScheduleScreen.continue')}
+          loading={isContinuing}
           onPress={onContinue}
           shape="pill"
         />
