@@ -9,12 +9,14 @@ import styled, { useTheme } from 'styled-components/native';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 export type ButtonSize = 'medium' | 'large';
+export type ButtonShape = 'rounded' | 'pill';
 
 export type ButtonProps = Omit<PressableProps, 'children' | 'disabled' | 'style'> & {
   disabled?: boolean;
   fullWidth?: boolean;
   label: string;
   loading?: boolean;
+  shape?: ButtonShape;
   size?: ButtonSize;
   variant?: ButtonVariant;
 };
@@ -28,6 +30,7 @@ const Button = forwardRef<View, ButtonProps>(function Button(
     loading = false,
     onPressIn,
     onPressOut,
+    shape = 'rounded',
     size = 'large',
     variant = 'primary',
     ...pressableProps
@@ -56,6 +59,7 @@ const Button = forwardRef<View, ButtonProps>(function Button(
       $backgroundColor={palette.background}
       $borderColor={palette.border}
       $fullWidth={fullWidth}
+      $shape={shape}
       $size={size}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityRole="button"
@@ -114,6 +118,7 @@ type ContainerProps = {
   $backgroundColor: string;
   $borderColor: string;
   $fullWidth: boolean;
+  $shape: ButtonShape;
   $size: ButtonSize;
 };
 
@@ -126,7 +131,8 @@ const Container = styled.Pressable<ContainerProps>`
   padding: ${({ theme }) => theme.spacing.none}px ${({ theme }) => theme.spacing.lg}px;
   border-width: 1px;
   border-color: ${({ $borderColor }) => $borderColor};
-  border-radius: ${({ theme }) => theme.radius.md}px;
+  border-radius: ${({ $shape, theme }) =>
+    $shape === 'pill' ? theme.radius.full : theme.radius.md}px;
   background-color: ${({ $backgroundColor }) => $backgroundColor};
 `;
 
