@@ -8,7 +8,7 @@ import {
 import styled, { useTheme } from 'styled-components/native';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
-export type ButtonSize = 'medium' | 'large';
+export type ButtonSize = 'medium' | 'large' | 'onboarding';
 export type ButtonShape = 'rounded' | 'pill';
 
 export type ButtonProps = Omit<PressableProps, 'children' | 'disabled' | 'style'> & {
@@ -71,7 +71,7 @@ const Button = forwardRef<View, ButtonProps>(function Button(
       {loading ? (
         <ActivityIndicator color={palette.content} />
       ) : (
-        <Label $color={palette.content}>{label}</Label>
+        <Label $color={palette.content} $size={size}>{label}</Label>
       )}
     </Container>
   );
@@ -125,7 +125,11 @@ type ContainerProps = {
 const Container = styled.Pressable<ContainerProps>`
   width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
   min-height: ${({ $size, theme }) =>
-    $size === 'large' ? theme.spacing.xxl : theme.spacing.xl + theme.spacing.sm}px;
+    $size === 'onboarding'
+      ? theme.spacing.xxl + theme.spacing.md
+      : $size === 'large'
+        ? theme.spacing.xxl
+        : theme.spacing.xl + theme.spacing.sm}px;
   align-items: center;
   justify-content: center;
   padding: ${({ theme }) => theme.spacing.none}px ${({ theme }) => theme.spacing.lg}px;
@@ -136,11 +140,20 @@ const Container = styled.Pressable<ContainerProps>`
   background-color: ${({ $backgroundColor }) => $backgroundColor};
 `;
 
-const Label = styled.Text<{ $color: string }>`
+const Label = styled.Text<{ $color: string; $size: ButtonSize }>`
   color: ${({ $color }) => $color};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
+  font-size: ${({ $size, theme }) =>
+    $size === 'onboarding'
+      ? theme.typography.onboardingAction.fontSize
+      : theme.typography.label.fontSize}px;
+  font-weight: ${({ $size, theme }) =>
+    $size === 'onboarding'
+      ? theme.typography.onboardingAction.fontWeight
+      : theme.typography.label.fontWeight};
+  line-height: ${({ $size, theme }) =>
+    $size === 'onboarding'
+      ? theme.typography.onboardingAction.lineHeight
+      : theme.typography.label.lineHeight}px;
 `;
 
 export default Button;
