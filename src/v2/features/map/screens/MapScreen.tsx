@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Linking, Share } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
@@ -139,12 +140,22 @@ export default function MapScreen({ navigation }: MapScreenProps) {
         <MapSelectedPlaceCard
           error={discovery.selectedPlaceError}
           loading={discovery.selectedPlaceLoading}
+          onDirections={(place) => {
+            void Linking.openURL(`https://map.kakao.com/link/search/${encodeURIComponent(place.address || place.name)}`);
+          }}
           onDismiss={() => setSelectedPlace(null)}
           onOpenPlace={(value) => {
             const placeId = parsePlaceId(value);
             if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
           }}
+          onReserve={(value) => {
+            const placeId = parsePlaceId(value);
+            if (placeId) navigation.navigate(V2_ROUTES.CreateReservation, { placeId });
+          }}
           onRetry={() => void discovery.selectedPlaceRefetch()}
+          onShare={(place) => {
+            void Share.share({ message: `${place.name}\n${place.address}` });
+          }}
           place={discovery.selectedPlace}
           selectedPlaceId={selectedPlace?.id ?? null}
           visible={selectedPlace !== null}

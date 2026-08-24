@@ -11,9 +11,12 @@ const place = {
   distanceMeters: null,
   id: 17,
   imageUrl: null,
+  imageUrls: [],
   name: '이미지 없는 카페',
   notice: null,
+  reservable: false,
   summary: null,
+  supportTags: [],
 };
 
 describe('MapSelectedPlaceCard', () => {
@@ -23,8 +26,11 @@ describe('MapSelectedPlaceCard', () => {
         error={null}
         loading={false}
         onDismiss={jest.fn()}
+        onDirections={jest.fn()}
         onOpenPlace={jest.fn()}
+        onReserve={jest.fn()}
         onRetry={jest.fn()}
+        onShare={jest.fn()}
         place={place}
         selectedPlaceId={17}
         visible
@@ -41,8 +47,11 @@ describe('MapSelectedPlaceCard', () => {
         error={new Error('network')}
         loading={false}
         onDismiss={jest.fn()}
+        onDirections={jest.fn()}
         onOpenPlace={jest.fn()}
+        onReserve={jest.fn()}
         onRetry={onRetry}
+        onShare={jest.fn()}
         place={null}
         selectedPlaceId={17}
         visible

@@ -20,6 +20,6 @@ export function createPlaceDetailQueryOptions(
   };
 }
 
-export function usePlaceDetail(placeId: number) {
-  return useQuery(createPlaceDetailQueryOptions(placeId));
+export function usePlaceDetail(placeId: number, { enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({ ...createPlaceDetailQueryOptions(placeId), enabled });
 }

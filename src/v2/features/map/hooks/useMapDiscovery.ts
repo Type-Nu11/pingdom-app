@@ -6,8 +6,10 @@ import {
   usePlaceList,
   usePlaceMap,
   usePlaceOperatingNotices,
+  usePlaceVerificationMedia,
   usePlaceVisitDecision,
 } from '../../place-exploration';
+import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
 import {
   createViewport,
   toAutocompleteResults,
@@ -81,6 +83,8 @@ export function useMapDiscovery({
   const cardQuery = usePlaceCard(detailId, { enabled: detailEnabled });
   const decisionQuery = usePlaceVisitDecision(detailId, { enabled: detailEnabled });
   const noticesQuery = usePlaceOperatingNotices(detailId, { enabled: detailEnabled });
+  const mediaQuery = usePlaceVerificationMedia(detailId, { enabled: detailEnabled });
+  const detailQuery = usePlaceDetail(detailId, { enabled: detailEnabled });
 
   const results = useMemo(() => toPlaceResults(listQuery.data), [listQuery.data]);
   const markers = useMemo(
@@ -94,9 +98,18 @@ export function useMapDiscovery({
         decisionQuery.data,
         noticesQuery.data,
         selectedPlaceSelection.distanceMeters,
+        detailQuery.data,
+        mediaQuery.data,
       )
       : null,
-    [cardQuery.data, decisionQuery.data, noticesQuery.data, selectedPlaceSelection],
+    [
+      cardQuery.data,
+      decisionQuery.data,
+      detailQuery.data,
+      mediaQuery.data,
+      noticesQuery.data,
+      selectedPlaceSelection,
+    ],
   );
   const activeQuery = isFiltered ? listQuery : mapQuery;
 

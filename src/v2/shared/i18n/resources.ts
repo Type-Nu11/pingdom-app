@@ -63,9 +63,17 @@ export const resources = {
       },
       map: {
         card: {
+          actions: {
+            arrive: 'Arrive',
+            directions: 'Directions',
+            reserve: 'Reserve',
+            share: 'Share',
+            start: 'Start',
+          },
           closed: 'Closed now',
           dismiss: 'Dismiss place preview',
           error: 'Could not load this place.',
+          favorite: 'Save place',
           imageLabel: '{{name}} photo',
           imageUnavailable: 'No photo',
           loading: 'Loading place preview...',
@@ -73,6 +81,14 @@ export const resources = {
           openHint: 'Opens place details',
           preview: 'Place preview',
           statusUnknown: 'Status unknown',
+          support: {
+            coupon: 'Coupons available',
+            english: 'English support',
+            englishMenu: 'English menu',
+            foreignCard: 'Foreign cards',
+            reservation: 'Reservations',
+            wifi: 'Free Wi-Fi',
+          },
         },
         data: {
           emptyDescription: 'Move the map or change the search filters.',
@@ -207,9 +223,17 @@ export const resources = {
       },
       map: {
         card: {
+          actions: {
+            arrive: '도착',
+            directions: '길찾기',
+            reserve: '예약',
+            share: '공유',
+            start: '출발',
+          },
           closed: '영업 종료',
           dismiss: '장소 미리보기 닫기',
           error: '장소 정보를 불러오지 못했습니다.',
+          favorite: '장소 저장',
           imageLabel: '{{name}} 사진',
           imageUnavailable: '사진 없음',
           loading: '장소 미리보기를 불러오는 중입니다...',
@@ -217,6 +241,14 @@ export const resources = {
           openHint: '장소 상세를 엽니다',
           preview: '장소 미리보기',
           statusUnknown: '영업 상태 미확인',
+          support: {
+            coupon: '쿠폰 사용 가능',
+            english: '영어응대 가능',
+            englishMenu: '영문 메뉴',
+            foreignCard: '해외카드 가능',
+            reservation: '예약 가능',
+            wifi: '무료 Wi-Fi',
+          },
         },
         data: {
           emptyDescription: '지도를 이동하거나 검색 필터를 바꿔 보세요.',
