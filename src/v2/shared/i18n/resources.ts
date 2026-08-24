@@ -108,6 +108,14 @@ export const resources = {
             wed: 'W',
           },
         },
+        travelPurposeScreen: {
+          back: 'Back',
+          continue: 'Continue',
+          description: 'We will recommend hot places that match your interests.',
+          progress: 'Onboarding progress',
+          progressValue: 'Step {{current}} of {{total}}',
+          title: 'Choose your travel interests',
+        },
       },
       map: {
         card: {
@@ -315,6 +323,14 @@ export const resources = {
             tue: '화',
             wed: '수',
           },
+        },
+        travelPurposeScreen: {
+          back: '뒤로 가기',
+          continue: '계속',
+          description: '관심사에 맞는 핫플레이스를 추천해드릴게요',
+          progress: '온보딩 진행 단계',
+          progressValue: '{{total}}단계 중 {{current}}단계',
+          title: '여행 목적을 선택해 주세요',
         },
       },
       map: {
