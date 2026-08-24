@@ -7,8 +7,10 @@ import {
   usePlaceList,
   usePlaceMap,
   usePlaceOperatingNotices,
+  usePlaceVerificationMedia,
   usePlaceVisitDecision,
 } from '../../../place-exploration';
+import { usePlaceDetail } from '../../../place-detail/hooks/usePlaceDetail';
 import { useMapDiscovery } from '../useMapDiscovery';
 
 jest.mock('../../../place-exploration', () => ({
@@ -17,7 +19,12 @@ jest.mock('../../../place-exploration', () => ({
   usePlaceList: jest.fn(),
   usePlaceMap: jest.fn(),
   usePlaceOperatingNotices: jest.fn(),
+  usePlaceVerificationMedia: jest.fn(),
   usePlaceVisitDecision: jest.fn(),
+}));
+
+jest.mock('../../../place-detail/hooks/usePlaceDetail', () => ({
+  usePlaceDetail: jest.fn(),
 }));
 
 const query = (data: unknown) => ({
@@ -61,7 +68,9 @@ describe('useMapDiscovery', () => {
       notices: [],
       placeId: 17,
     }));
+    jest.mocked(usePlaceVerificationMedia).mockReturnValue(query(undefined));
     jest.mocked(usePlaceVisitDecision).mockReturnValue(query(undefined));
+    jest.mocked(usePlaceDetail).mockReturnValue(query(undefined));
   });
 
   test('선택한 장소의 서버 카드와 검색 응답 거리를 하나의 ViewModel로 연결한다', async () => {
