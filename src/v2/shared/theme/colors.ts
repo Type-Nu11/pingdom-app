@@ -5,6 +5,7 @@ export const colors = {
   dangerSoft: '#FFF0F0',
   disabled: '#D1D4D5',
   focus: '#FF4A75',
+  info: '#168CFF',
   inputBackground: '#F8F8F8',
   onDisabled: '#767680',
   onPrimary: '#FFFFFF',
