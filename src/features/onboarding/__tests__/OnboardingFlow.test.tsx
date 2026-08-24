@@ -4,9 +4,8 @@ import { Pressable as MockPressable, Text as MockText } from 'react-native';
 
 import OnboardingFlow from '../OnboardingFlow';
 
-jest.mock('i18next', () => ({
-  __esModule: true,
-  default: { changeLanguage: jest.fn().mockResolvedValue(undefined) },
+jest.mock('../../../v2/shared/i18n', () => ({
+  setLanguage: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../SelectFirstScreen', () => ({ onNext }: { onNext: () => void }) => (
   <MockPressable onPress={onNext} testID="first-next"><MockText>first</MockText></MockPressable>

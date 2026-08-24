@@ -442,6 +442,6 @@ export const resources = {
   },
 } as const;
 
-export const supportedLanguages = ['en', 'ko'] as const;
+export const supportedLanguages = ['en', 'ko', 'ja', 'zh', 'vi', 'th'] as const;
 
 export type SupportedLanguage = (typeof supportedLanguages)[number];

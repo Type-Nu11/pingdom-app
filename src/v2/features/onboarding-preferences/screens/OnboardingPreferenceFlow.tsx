@@ -4,14 +4,15 @@ import { BackHandler, Platform } from 'react-native';
 import { ThemeProvider } from 'styled-components/native';
 
 import LoadingState from '../../../shared/components/LoadingState';
+import { isSupportedLanguage } from '../../../shared/i18n';
 import { theme } from '../../../shared/theme';
 import TravelPurposeSelectionScreen from './TravelPurposeSelectionScreen';
 import TravelScheduleSelectionScreen from './TravelScheduleSelectionScreen';
 import { useOnboardingPreferenceStore } from '../store/onboardingPreferenceStore';
 
-const CURRENT_PURPOSE_STEP = 5;
-const CURRENT_SCHEDULE_STEP = 6;
-const TOTAL_STEPS = 6;
+const CURRENT_PURPOSE_STEP = 6;
+const CURRENT_SCHEDULE_STEP = 7;
+const TOTAL_STEPS = 7;
 
 export type OnboardingPreferenceStep = 'purpose' | 'schedule';
 
@@ -59,13 +60,12 @@ function OnboardingPreferenceFlowContent({
   );
 
   useEffect(() => {
-    if (!language) {
+    if (!isSupportedLanguage(language)) {
       return;
     }
 
-    const supportedLanguage = language === 'ko' ? 'ko' : 'en';
-    if (i18n.resolvedLanguage !== supportedLanguage) {
-      void i18n.changeLanguage(supportedLanguage);
+    if (i18n.resolvedLanguage !== language) {
+      void i18n.changeLanguage(language);
     }
   }, [i18n, language]);
 

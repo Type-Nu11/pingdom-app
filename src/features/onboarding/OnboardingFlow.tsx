@@ -1,6 +1,6 @@
-import i18n from 'i18next';
 import React, { useState } from 'react';
 import { OnboardingPreferenceFlow } from '../../v2/features/onboarding-preferences';
+import { setLanguage as setV2Language } from '../../v2/shared/i18n';
 import { LoginFormScreen } from '../auth/screens/login';
 import SignUpDetailsScreen from '../auth/screens/signup/SignUpDetailsScreen';
 import LogInForeignScreen from './LogInForeignScreen';
@@ -47,7 +47,7 @@ export default function OnboardingFlow() {
           onBack={() => setStep('first')}
           onNext={(lang) => {
             setLanguage(lang);
-            void i18n.changeLanguage(lang);
+            void setV2Language(lang);
             setStep('country');
           }}
         />

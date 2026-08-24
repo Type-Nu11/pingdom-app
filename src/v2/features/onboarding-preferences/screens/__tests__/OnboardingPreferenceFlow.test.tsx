@@ -32,7 +32,7 @@ describe('OnboardingPreferenceFlow', () => {
     resetStoreMemory();
   });
 
-  test('restores values and connects purpose, schedule, back, and completion as steps 5 and 6', async () => {
+  test('restores values and connects purpose, schedule, back, and completion as steps 6 and 7', async () => {
     await seedPreferences();
     const onBack = jest.fn();
     const onComplete = jest.fn();
@@ -43,19 +43,19 @@ describe('OnboardingPreferenceFlow', () => {
     const cafe = await screen.findByRole('checkbox', { name: '카페' });
     expect(cafe.props.accessibilityState).toEqual({ checked: true });
     expect(screen.getByRole('progressbar').props.accessibilityValue).toEqual({
-      max: 6,
+      max: 7,
       min: 1,
-      now: 5,
-      text: '6단계 중 5단계',
+      now: 6,
+      text: '7단계 중 6단계',
     });
 
     await user.press(screen.getByRole('button', { name: '계속' }));
     expect(await screen.findByTestId('travel-schedule-screen')).toBeVisible();
     expect(screen.getByRole('progressbar').props.accessibilityValue).toEqual({
-      max: 6,
+      max: 7,
       min: 1,
-      now: 6,
-      text: '6단계 중 6단계',
+      now: 7,
+      text: '7단계 중 7단계',
     });
 
     await user.press(screen.getByRole('button', { name: '뒤로 가기' }));

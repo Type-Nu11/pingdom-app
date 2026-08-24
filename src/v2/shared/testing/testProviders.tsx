@@ -11,6 +11,7 @@ import { ThemeProvider } from 'styled-components/native';
 
 import {
   resources,
+  supportedLanguages,
   type SupportedLanguage,
 } from '../i18n/resources';
 import { theme } from '../theme';
@@ -33,14 +34,14 @@ export async function createTestI18n(language: SupportedLanguage = 'ko') {
   const instance = createInstance();
 
   await instance.use(initReactI18next).init({
-    fallbackLng: 'ko',
+    fallbackLng: 'en',
     initAsync: false,
     interpolation: {
       escapeValue: false,
     },
     lng: language,
     resources,
-    supportedLngs: ['ko', 'en'],
+    supportedLngs: [...supportedLanguages],
   });
 
   return instance;
