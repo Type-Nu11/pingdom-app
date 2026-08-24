@@ -61,6 +61,29 @@ export const resources = {
         title: 'Place list example',
         trustScore: 'Trust score: {{score}}/100',
       },
+      onboarding: {
+        preferences: {
+          currentNeeds: {
+            attendEvent: 'Events',
+            cafe: 'Cafe',
+            eat: 'Food',
+            explore: 'Explore',
+            nightlife: 'Nightlife',
+            shop: 'Shopping',
+          },
+          travelPurposes: {
+            beauty: 'Beauty',
+            cafe: 'Cafe',
+            exhibition: 'Exhibitions',
+            fashion: 'Fashion',
+            food: 'Food',
+            kPop: 'K-pop',
+            nightlife: 'Nightlife',
+            other: 'Other',
+            popUp: 'Pop-ups',
+          },
+        },
+      },
       map: {
         card: {
           actions: {
@@ -220,6 +243,29 @@ export const resources = {
         loading: '장소를 불러오는 중입니다...',
         title: '장소 목록 예제',
         trustScore: '신뢰 점수: {{score}}/100',
+      },
+      onboarding: {
+        preferences: {
+          currentNeeds: {
+            attendEvent: '이벤트 관람',
+            cafe: '카페',
+            eat: '식사',
+            explore: '둘러보기',
+            nightlife: '나이트라이프',
+            shop: '쇼핑',
+          },
+          travelPurposes: {
+            beauty: '뷰티',
+            cafe: '카페',
+            exhibition: '전시',
+            fashion: '패션',
+            food: '음식',
+            kPop: 'K-pop',
+            nightlife: '나이트라이프',
+            other: '기타',
+            popUp: '팝업',
+          },
+        },
       },
       map: {
         card: {

@@ -1,3 +1,4 @@
+import { resources } from '../../../shared/i18n/resources';
 import {
   CURRENT_NEED_OPTIONS,
   TRAVEL_PURPOSE_OPTIONS,
@@ -9,10 +10,29 @@ import {
   toCreateTravelScheduleBody,
 } from '..';
 
+function readTranslation(path: string, language: 'en' | 'ko'): unknown {
+  return path.split('.').reduce<unknown>((current, key) => {
+    if (!current || typeof current !== 'object') {
+      return undefined;
+    }
+
+    return (current as Record<string, unknown>)[key];
+  }, resources[language].translation);
+}
+
 describe('onboarding preference options', () => {
   it('lists every OpenAPI travel purpose in server order', () => {
     expect(TRAVEL_PURPOSE_OPTIONS.map(({ value }) => value)).toEqual(TRAVEL_PURPOSE_VALUES);
     expect(TRAVEL_PURPOSE_OPTIONS.map(({ order }) => order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('provides translated labels for every option', () => {
+    const options = [...TRAVEL_PURPOSE_OPTIONS, ...CURRENT_NEED_OPTIONS];
+
+    for (const option of options) {
+      expect(readTranslation(option.labelKey, 'en')).toEqual(expect.any(String));
+      expect(readTranslation(option.labelKey, 'ko')).toEqual(expect.any(String));
+    }
   });
 });
 
