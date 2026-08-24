@@ -41,18 +41,32 @@ describe('travel schedule selection state', () => {
     })).toEqual({ kind: 'invalid' });
   });
 
-  test('only accepts an end date on or after the selected start date', () => {
+  test('clears a repeated start date and only accepts a later end date', () => {
     const startOnly = { endDateText: '', startDateText: '2026-07-05' };
 
     expect(selectTravelDate(startOnly, serverDate('2026-07-04'))).toBe(startOnly);
     expect(selectTravelDate(startOnly, serverDate('2026-07-05'))).toEqual({
-      endDateText: '2026-07-05',
-      startDateText: '2026-07-05',
+      endDateText: '',
+      startDateText: '',
     });
     expect(selectTravelDate(startOnly, serverDate('2026-07-18'))).toEqual({
       endDateText: '2026-07-18',
       startDateText: '2026-07-05',
     });
+  });
+
+  test('clears the complete range when either selected endpoint is pressed again', () => {
+    const complete = {
+      endDateText: '2026-07-18',
+      startDateText: '2026-07-05',
+    };
+
+    for (const selectedDate of ['2026-07-05', '2026-07-18']) {
+      expect(selectTravelDate(complete, serverDate(selectedDate))).toEqual({
+        endDateText: '',
+        startDateText: '',
+      });
+    }
   });
 
   test('starts a fresh range from empty, complete, or invalid input', () => {

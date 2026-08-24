@@ -21,6 +21,8 @@ describe('TravelScheduleSelectionScreen', () => {
 
     expect(screen.getByText('2026.07.05')).toBeVisible();
     expect(screen.getByText('2026.07.18')).toBeVisible();
+    expect(screen.getByText('시작일과 같거나 이후인 종료일을 선택해 주세요.'))
+      .toBeVisible();
     expect(screen.getByTestId('travel-schedule-day-2026-07-05').props.accessibilityState)
       .toEqual({ disabled: false, selected: true });
     expect(screen.getByTestId('travel-schedule-day-2026-07-18').props.accessibilityState)
@@ -58,6 +60,27 @@ describe('TravelScheduleSelectionScreen', () => {
     });
   });
 
+  test('clears both dates when a selected endpoint is pressed again', async () => {
+    const onChange = jest.fn();
+    const { user } = await renderWithProviders(
+      <TravelScheduleSelectionScreen
+        onBack={jest.fn()}
+        onChange={onChange}
+        onContinue={jest.fn()}
+        selectedSchedule={{
+          endDateText: '2026-07-18',
+          startDateText: '2026-07-05',
+        }}
+      />,
+    );
+
+    await user.press(screen.getByTestId('travel-schedule-day-2026-07-05'));
+    expect(onChange).toHaveBeenCalledWith({
+      endDateText: '',
+      startDateText: '',
+    });
+  });
+
   test('moves between months without changing the selected schedule', async () => {
     const onChange = jest.fn();
     const { user } = await renderWithProviders(
@@ -91,6 +114,8 @@ describe('TravelScheduleSelectionScreen', () => {
     );
 
     expect(screen.getAllByText('선택 전')).toHaveLength(2);
+    expect(screen.getByText('시작일과 같거나 이후인 종료일을 선택해 주세요.'))
+      .toBeVisible();
     expect(screen.getByTestId('travel-schedule-scroll-view')).toBeVisible();
     expect(screen.getByRole('button', { name: '계속' }).props.accessibilityState.disabled)
       .toBe(true);
