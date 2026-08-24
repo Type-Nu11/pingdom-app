@@ -7,12 +7,19 @@ export type PlaceId = number & {
 };
 
 export const V2_ROUTES = {
+  CreateReservation: 'CreateReservation',
   Home: 'Home',
   Map: 'Map',
   PlaceDetail: 'PlaceDetail',
 } as const;
 
 export type V2StackParamList = {
+  CreateReservation: {
+    category?: string;
+    imageUrl?: string;
+    placeId: PlaceId;
+    placeName?: string;
+  };
   Home: undefined;
   Map: undefined;
   PlaceDetail: {

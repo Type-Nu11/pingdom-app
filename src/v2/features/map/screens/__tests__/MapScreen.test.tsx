@@ -64,9 +64,12 @@ const baseDiscovery: ReturnType<typeof useMapDiscovery> = {
     distanceMeters: 120,
     id: 17,
     imageUrl: 'https://cdn.example.test/places/17.jpg',
+    imageUrls: ['https://cdn.example.test/places/17.jpg'],
     name: place.name,
     notice: null,
+    reservable: true,
     summary: null,
+    supportTags: ['english'],
   },
   selectedPlaceError: null,
   selectedPlaceLoading: false,
@@ -109,7 +112,7 @@ describe('MapScreen', () => {
     }));
     const selectedCard = screen.getByTestId('v2-selected-place');
     expect(selectedCard).toBeVisible();
-    expect(within(selectedCard).getByText('120m')).toBeVisible();
+    expect(within(selectedCard).getByText(/^120m/)).toBeVisible();
   });
 
   test('마커 재탭 또는 닫기 버튼으로 선택을 해제하고, 카드에서 실제 장소 식별자로 상세에 진입한다', async () => {
@@ -120,6 +123,9 @@ describe('MapScreen', () => {
 
     await user.press(screen.getByTestId('v2-selected-place-open'));
     expect(navigation.navigate).toHaveBeenCalledWith(V2_ROUTES.PlaceDetail, { placeId: 17 });
+
+    await user.press(screen.getByTestId('v2-selected-place-reserve'));
+    expect(navigation.navigate).toHaveBeenCalledWith(V2_ROUTES.CreateReservation, { placeId: 17 });
 
     await user.press(screen.getByTestId('v2-selected-place-dismiss'));
     expect(screen.queryByTestId('v2-selected-place')).toBeNull();

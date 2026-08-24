@@ -6,6 +6,7 @@ import MapScreen from '../../features/place/screens/MapScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
+import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
 import VerificationScreen from '../../v2/features/reservations/screens/VerificationScreen';
 import VerificationReviewScreen from '../../v2/features/reservations/screens/VerificationReviewScreen';
 import { theme as v2Theme } from '../../v2/shared/theme';
@@ -16,6 +17,7 @@ import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
   MAIN_ROUTES,
+  parsePlaceId,
   parseReservationId,
   type MainScreenProps,
   type MainStackParamList,
@@ -49,6 +51,15 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
       openedBookmarkedPlaceId={focusedPlaceId ?? null}
       onClearOpenedBookmarkedPlace={clearFocusedPlace}
       onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
+      onCreateReservation={(place) => {
+        const placeId = parsePlaceId(place.id);
+        if (placeId) navigation.navigate(MAIN_ROUTES.CreateReservation, {
+          category: place.category,
+          imageUrl: place.imageUrl,
+          placeId,
+          placeName: place.name,
+        });
+      }}
       onOpenVerification={() => navigation.navigate(MAIN_ROUTES.Verification)}
       onOpenReservation={(value) => {
         const reservationId = parseReservationId(value);
@@ -117,6 +128,15 @@ const ReservationDetailRouteScreen = ({
   </V2ScreenBoundary>
 );
 
+const CreateReservationRouteScreen = ({
+  navigation,
+  route,
+}: MainScreenProps<'CreateReservation'>) => (
+  <V2ScreenBoundary>
+    <CreateReservationScreen navigation={navigation} route={route} />
+  </V2ScreenBoundary>
+);
+
 const VerificationRouteScreen = ({ navigation }: MainScreenProps<'Verification'>) => (
   <V2ScreenBoundary>
     <VerificationScreen
@@ -156,6 +176,7 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Verification} component={VerificationRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.VerificationReview} component={VerificationReviewRouteScreen} />

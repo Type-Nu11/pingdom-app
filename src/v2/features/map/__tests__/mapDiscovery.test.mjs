@@ -50,6 +50,7 @@ test('place and card mappers tolerate optional and nullable server fields', () =
   assert.deepEqual(card, {
     address: 'Address', category: 'OTHER', currentlyOperating: false, distanceMeters: 120,
     id: 17, imageUrl: 'https://cdn.example.test/places/17.jpg',
-    name: 'Place', notice: 'Temporary notice', summary: null,
+    imageUrls: ['https://cdn.example.test/places/17.jpg'], name: 'Place',
+    notice: 'Temporary notice', reservable: false, summary: null, supportTags: [],
   });
 });

@@ -5,7 +5,9 @@ import type {
   PlaceList,
   PlaceOperatingNotices,
   PlaceVisitDecision,
+  PlaceVerificationMedia,
 } from '../../place-exploration';
+import type { PlaceDetail } from '../../place-detail/model/placeDetail.types';
 import type { Coordinate, MapMarker, MapMarkerCategory } from './map.types';
 
 export type MapPlaceMarker = MapMarker & {
@@ -29,10 +31,21 @@ export type MapPlaceCardViewModel = {
   distanceMeters: number | null;
   id: number;
   imageUrl: string | null;
+  imageUrls: string[];
   name: string;
   notice: string | null;
+  reservable: boolean;
   summary: string | null;
+  supportTags: MapPlaceSupportTag[];
 };
+
+export type MapPlaceSupportTag =
+  | 'coupon'
+  | 'english'
+  | 'englishMenu'
+  | 'foreignCard'
+  | 'reservation'
+  | 'wifi';
 
 export type MapPlaceSelection = Pick<MapPlaceResult, 'distanceMeters' | 'id'>;
 
@@ -152,6 +165,8 @@ export function toPlaceCardViewModel(
   decision: PlaceVisitDecision | undefined,
   operatingNotices: PlaceOperatingNotices | undefined,
   distanceMeters: number | null = null,
+  detail?: PlaceDetail,
+  verificationMedia?: PlaceVerificationMedia,
 ): MapPlaceCardViewModel | null {
   if (!card || !isFiniteNumber(card.id)) return null;
   const decisionPlace = decision?.place;
@@ -165,6 +180,30 @@ export function toPlaceCardViewModel(
   const notices = Array.isArray(operatingNotices?.notices)
     ? operatingNotices.notices
     : [];
+  const mediaUrls = Array.isArray(verificationMedia?.media)
+    ? verificationMedia.media
+      .flatMap((item) => [text(item?.thumbnailUrl), text(item?.imageUrl)])
+      .filter(Boolean)
+    : [];
+  const imageUrls = [...new Set([text(card.imageUrl), text(detail?.thumbnailUrl), ...mediaUrls])]
+    .filter(Boolean);
+  const support = detail?.touristSupport;
+  const supportTags: MapPlaceSupportTag[] = [];
+
+  if (support?.supportedLanguages.some((language) => language.toLowerCase().startsWith('en'))) {
+    supportTags.push('english');
+  }
+  if (support?.englishMenu === 'AVAILABLE') supportTags.push('englishMenu');
+  if (support?.foreignCard === 'AVAILABLE') supportTags.push('foreignCard');
+  if (support?.freeWifi === 'AVAILABLE') supportTags.push('wifi');
+  if (support?.couponAvailable) supportTags.push('coupon');
+  if (support?.reservationAvailable) supportTags.push('reservation');
+
+  const reservable = Boolean(
+    support?.reservationAvailable
+      || decision?.reservableAvailabilities?.some((availability) =>
+        availability.status === 'ACTIVE' && (availability.remainingCapacity ?? 0) > 0),
+  );
 
   return {
     address: text(card.roadAddress, text(card.address)),
@@ -172,9 +211,12 @@ export function toPlaceCardViewModel(
     currentlyOperating,
     distanceMeters: isFiniteNumber(distanceMeters) ? distanceMeters : null,
     id: card.id,
-    imageUrl: text(card.imageUrl) || null,
+    imageUrl: imageUrls[0] ?? null,
+    imageUrls,
     name: text(card.name, 'Place'),
     notice: text(notices.find((notice) => notice?.visibleNow !== false)?.message) || null,
+    reservable,
     summary: text(card.touristSummary) || null,
+    supportTags,
   };
 }
