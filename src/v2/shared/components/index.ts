@@ -1,5 +1,5 @@
 export { default as Button } from './Button';
-export type { ButtonProps, ButtonSize, ButtonVariant } from './Button';
+export type { ButtonProps, ButtonShape, ButtonSize, ButtonVariant } from './Button';
 export { default as EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 export { default as ErrorState } from './ErrorState';
