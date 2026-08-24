@@ -107,6 +107,7 @@ type MapBottomSheetProps = {
   mediumTranslateY: number;
   onBackHome: () => void;
   onCouponPress: (place: DecisionPlace) => void;
+  onCreateReservation?: (place: DecisionPlace, imageUrl?: string) => void;
   onOpenRecommendations?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
   onFilterPress: (filter: VisitFilter) => void;
@@ -1019,10 +1020,15 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
   );
 };
 
-const PreviewActionChip = ({ active = false, label }: { active?: boolean; label: string }) => (
-  <View style={[styles.previewActionChip, active && styles.previewActionChipActive]}>
+const PreviewActionChip = ({ active = false, label, onPress }: { active?: boolean; label: string; onPress?: () => void }) => (
+  <Pressable
+    accessibilityLabel={label}
+    accessibilityRole={onPress ? 'button' : undefined}
+    onPress={onPress}
+    style={[styles.previewActionChip, active && styles.previewActionChipActive]}
+  >
     <Text style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</Text>
-  </View>
+  </Pressable>
 );
 
 const PreviewContent = ({
@@ -1031,6 +1037,7 @@ const PreviewContent = ({
   imageUrl,
   onBack,
   onDetail,
+  onReserve,
   onToggleBookmark,
   pending,
   place,
@@ -1040,6 +1047,7 @@ const PreviewContent = ({
   imageUrl?: string;
   onBack: () => void;
   onDetail: () => void;
+  onReserve: () => void;
   onToggleBookmark: () => void;
   pending: boolean;
   place: DecisionPlace;
@@ -1105,7 +1113,7 @@ const PreviewContent = ({
         <PreviewActionChip active label="출발" />
         <PreviewActionChip label="도착" />
         <PreviewActionChip label="공유" />
-        <PreviewActionChip label="예약" />
+        <PreviewActionChip label="예약" onPress={onReserve} />
         <PreviewActionChip label="길찾기" />
       </ScrollView>
       <ScrollView
@@ -1137,6 +1145,7 @@ const ExpandedPlaceContent = ({
   fallbackContent,
   imageUrl,
   onBack,
+  onReserve,
   onTabChange,
   onToggleBookmark,
   pending,
@@ -1147,6 +1156,7 @@ const ExpandedPlaceContent = ({
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
+  onReserve: () => void;
   onTabChange: (tab: PlaceDetailTab) => void;
   onToggleBookmark: () => void;
   pending: boolean;
@@ -1201,7 +1211,7 @@ const ExpandedPlaceContent = ({
         <PreviewActionChip active label="출발" />
         <PreviewActionChip label="도착" />
         <PreviewActionChip label="공유" />
-        <PreviewActionChip label="예약" />
+        <PreviewActionChip label="예약" onPress={onReserve} />
         <PreviewActionChip label="길찾기" />
       </ScrollView>
 
@@ -1503,6 +1513,7 @@ export default function MapBottomSheet({
   isBookmarkStateLoading = false,
   mediumTranslateY,
   onBackHome,
+  onCreateReservation,
   onDetailPress,
   onHandlePress,
   onOpenLikedPlaces,
@@ -1639,6 +1650,11 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
+            onReserve={() => onCreateReservation?.(
+              selectedPlace,
+              previewFallbackContentByPlaceId?.[String(selectedPlace.id)]?.imageUrls[0]
+                ?? imageUrlsByPlaceId[String(selectedPlace.id)],
+            )}
             onTabChange={setActivePlaceDetailTab}
             onToggleBookmark={() => void onToggleBookmark(
               selectedPlace,
@@ -1654,6 +1670,11 @@ export default function MapBottomSheet({
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
             onDetail={() => onDetailPress(selectedPlace)}
+            onReserve={() => onCreateReservation?.(
+              selectedPlace,
+              previewFallbackContentByPlaceId?.[String(selectedPlace.id)]?.imageUrls[0]
+                ?? imageUrlsByPlaceId[String(selectedPlace.id)],
+            )}
             onToggleBookmark={() => void onToggleBookmark(
               selectedPlace,
               !bookmarkedPlaceIds[String(selectedPlace.id)],

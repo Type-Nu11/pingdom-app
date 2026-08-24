@@ -24,6 +24,45 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
+  test('장소 미리보기의 예약 캡슐은 선택 장소로 예약 생성을 요청한다', async () => {
+    const onCreateReservation = jest.fn();
+    const selectedPlace = places[0];
+    const { user } = await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onCouponPress={jest.fn()}
+        onCreateReservation={onCreateReservation}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={places}
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={selectedPlace}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(0)}
+        snapPoint="medium"
+      />,
+    );
+
+    await user.press(screen.getByRole('button', { name: '예약' }));
+    expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
+  });
+
   test('확장 추천 목록의 두 행은 각각 독립된 가로 스크롤로 렌더링된다', async () => {
     await renderWithProviders(
       <MapBottomSheet
