@@ -6,12 +6,14 @@ export type {
   ListOwnedReservationsParams,
   ListReservationsParams,
   Reservation,
+  ReservationDetail,
   ReservationPage,
 } from './api/reservationApi';
 export {
   createAvailabilitiesQueryOptions,
   createOwnedReservationsQueryOptions,
   createReservationMutationOptions,
+  createReservationDetailQueryOptions,
   createReservationsQueryOptions,
   createReservationTransitionMutationOptions,
   reservationQueryKeys,
@@ -19,5 +21,6 @@ export {
   useCreateReservation,
   useOwnedReservations,
   useReservations,
+  useReservationDetail,
   useReservationTransition,
 } from './hooks/useReservations';

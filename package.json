@@ -17,6 +17,7 @@
     "generate:place-exploration-api-types": "openapi-typescript docs/api/place-exploration.openapi.json -o src/v2/shared/api/generated/placeExploration.ts",
     "check:place-exploration-api-types": "node scripts/check-generated-place-exploration-api-types.mjs",
     "generate:notification-api": "node scripts/generate-notification-api-contract.mjs",
+    "generate:reservation-payment-api-types": "openapi-typescript docs/api/reservation-payment.openapi.json -o src/v2/shared/api/generated/reservationPayment.ts",
     "check:api-types": "node scripts/check-generated-api-types.mjs",
     "check:notification-api-types": "node scripts/check-notification-api-types.mjs",
     "check:mock-contract": "tsc --noEmit",
