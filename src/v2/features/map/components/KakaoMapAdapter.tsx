@@ -1,27 +1,8 @@
 import React from 'react';
-import {
-  type NativeSyntheticEvent,
-  requireNativeComponent,
-  type ViewProps,
-} from 'react-native';
 import styled from 'styled-components/native';
 
+import KakaoMapNativeView from '../../../shared/native/KakaoMapNativeView';
 import type { Coordinate, MapMarker } from '../model/map.types';
-
-type NativeCameraIdleEvent = NativeSyntheticEvent<Coordinate>;
-type NativeMarkerPressEvent = NativeSyntheticEvent<{ markerId: string }>;
-
-type NativeKakaoMapProps = ViewProps & {
-  centerLat: number;
-  centerLng: number;
-  followUser?: boolean;
-  markers?: Omit<MapMarker, 'name'>[];
-  onCameraIdle?: (event: NativeCameraIdleEvent) => void;
-  onMarkerPress?: (event: NativeMarkerPressEvent) => void;
-  userLat?: number;
-  userLng?: number;
-  zoomLevel?: number;
-};
 
 export type KakaoMapAdapterProps = {
   center: Coordinate;
@@ -33,8 +14,7 @@ export type KakaoMapAdapterProps = {
   zoomLevel?: number;
 };
 
-const NativeKakaoMap = requireNativeComponent<NativeKakaoMapProps>('KakaoMapView');
-const MapView = styled(NativeKakaoMap)`
+const MapView = styled(KakaoMapNativeView)`
   flex: 1;
 `;
 

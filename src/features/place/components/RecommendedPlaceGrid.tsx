@@ -7,7 +7,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import LikeIcon from '../../../assets/v2/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/v2/icons/actions/Saved.svg';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
@@ -91,7 +90,6 @@ const RecommendedPlaceCard = ({
           </Text>
         </View>
         <View style={styles.cardActions}>
-          <LikeIcon color="#fff" height={21} width={23} />
           <SavedIcon color="#fff" height={22} width={19} />
         </View>
       </View>
