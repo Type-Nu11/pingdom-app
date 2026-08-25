@@ -244,6 +244,11 @@ export default function MapScreen({
     initialSnapPoint: 'medium',
     mediumTranslateY,
   });
+  const mapActionOpacity = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [0, Math.max(mediumTranslateY, 1)],
+    outputRange: [0, 1],
+  });
   useEffect(() => {
     const language = profile?.language?.trim().toLowerCase();
     const nextLanguage = language === 'korean' || language === '한국어'
@@ -592,11 +597,12 @@ export default function MapScreen({
         />
         {mapAction ? (
           <Animated.View
-            pointerEvents="box-none"
+            pointerEvents={snapPoint === 'expanded' ? 'none' : 'box-none'}
             style={[
               styles.mapActionLayer,
               {
                 height: fullSheetHeight + MAP_ACTION_HEIGHT + MAP_ACTION_SHEET_GAP,
+                opacity: mapActionOpacity,
                 transform: [{ translateY: sheetTranslateY }],
               },
             ]}
