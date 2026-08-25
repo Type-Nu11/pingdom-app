@@ -305,9 +305,6 @@ export default function MapScreen({
     initialSnapPoint: 'medium',
     mediumTranslateY,
   });
-  const mapActionTop = height - mediumVisibleHeight - MAP_ACTION_HEIGHT - MAP_ACTION_SHEET_GAP;
-  const mapActionTranslateY = Animated.subtract(sheetTranslateY, mediumTranslateY);
-
   useEffect(() => {
     const language = profile?.language?.trim().toLowerCase();
     const nextLanguage = language === 'korean' || language === '한국어'
@@ -659,13 +656,15 @@ export default function MapScreen({
           <Animated.View
             pointerEvents="box-none"
             style={[
-              styles.mapAction,
-              { top: mapActionTop },
-              { transform: [{ translateY: mapActionTranslateY }] },
+              styles.mapActionLayer,
+              {
+                height: fullSheetHeight + MAP_ACTION_HEIGHT + MAP_ACTION_SHEET_GAP,
+                transform: [{ translateY: sheetTranslateY }],
+              },
             ]}
             testID="map-sheet-following-action"
           >
-            {mapAction}
+            <View style={styles.mapAction}>{mapAction}</View>
           </Animated.View>
         ) : null}
         {mapSection === 'favorites' ? (
@@ -844,10 +843,17 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
+  mapActionLayer: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    zIndex: 51,
+  },
   mapAction: {
     position: 'absolute',
     right: 12,
-    zIndex: 30,
+    top: 0,
   },
   temporaryMarkerButton: {
     alignItems: 'center',
