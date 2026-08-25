@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import Button from '../../../shared/components/Button';
+import OnboardingProgressHeader from '../components/OnboardingProgressHeader';
 import {
   TRAVEL_PURPOSE_OPTIONS,
   type OnboardingPreferenceIconId,
@@ -11,8 +12,8 @@ import {
   type TravelPurposeSelection,
 } from '../model/onboardingPreference';
 
-const DEFAULT_CURRENT_STEP = 5;
-const DEFAULT_TOTAL_STEPS = 6;
+const DEFAULT_CURRENT_STEP = 6;
+const DEFAULT_TOTAL_STEPS = 7;
 
 const ICON_GLYPHS = {
   art_svg: '🖼️',
@@ -29,6 +30,8 @@ const ICON_GLYPHS = {
 
 export type TravelPurposeSelectionScreenProps = Readonly<{
   currentStep?: number;
+  errorMessage?: string | null;
+  isContinuing?: boolean;
   onBack: () => void;
   onChange: (selectedPurposes: TravelPurposeSelection) => void;
   onContinue: () => void;
@@ -38,6 +41,8 @@ export type TravelPurposeSelectionScreenProps = Readonly<{
 
 export default function TravelPurposeSelectionScreen({
   currentStep = DEFAULT_CURRENT_STEP,
+  errorMessage = null,
+  isContinuing = false,
   onBack,
   onChange,
   onContinue,
@@ -56,43 +61,18 @@ export default function TravelPurposeSelectionScreen({
   };
 
   return (
-    <Screen edges={['top', 'right', 'bottom', 'left']} testID="travel-purpose-screen">
-      <TopBar>
-        <BackButton
-          accessibilityLabel={t('onboarding.travelPurposeScreen.back')}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={onBack}
-        >
-          <BackArrow aria-hidden>‹</BackArrow>
-        </BackButton>
-        <Progress
-          accessibilityLabel={t('onboarding.travelPurposeScreen.progress')}
-          accessibilityRole="progressbar"
-          accessibilityValue={{
-            max: totalSteps,
-            min: 1,
-            now: currentStep,
-            text: t('onboarding.travelPurposeScreen.progressValue', {
-              current: currentStep,
-              total: totalSteps,
-            }),
-          }}
-          accessible
-        >
-          {Array.from({ length: totalSteps }, (_, index) => {
-            const step = index + 1;
-            return (
-              <ProgressSegment
-                key={step}
-                $active={step <= currentStep}
-                $current={step === currentStep}
-              />
-            );
-          })}
-        </Progress>
-        <TopBarSpacer />
-      </TopBar>
+    <Screen edges={['right', 'left']} testID="travel-purpose-screen">
+      <OnboardingProgressHeader
+        backLabel={t('onboarding.travelPurposeScreen.back')}
+        currentStep={currentStep}
+        onBack={onBack}
+        progressLabel={t('onboarding.travelPurposeScreen.progress')}
+        progressValueText={t('onboarding.travelPurposeScreen.progressValue', {
+          current: currentStep,
+          total: totalSteps,
+        })}
+        totalSteps={totalSteps}
+      />
 
       <ContentScroll testID="travel-purpose-scroll-view">
         <Content>
@@ -127,6 +107,12 @@ export default function TravelPurposeSelectionScreen({
               );
             })}
           </Options>
+
+          {errorMessage ? (
+            <ErrorMessage accessibilityLiveRegion="polite" testID="travel-purpose-error">
+              {errorMessage}
+            </ErrorMessage>
+          ) : null}
         </Content>
       </ContentScroll>
 
@@ -135,8 +121,10 @@ export default function TravelPurposeSelectionScreen({
           disabled={selectedPurposes.length === 0}
           fullWidth
           label={t('onboarding.travelPurposeScreen.continue')}
+          loading={isContinuing}
           onPress={onContinue}
-          shape="pill"
+          shape="rounded"
+          size="onboarding"
         />
       </Footer>
     </Screen>
@@ -146,46 +134,6 @@ export default function TravelPurposeSelectionScreen({
 const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const TopBar = styled.View`
-  min-height: ${({ theme }) => theme.spacing.xxl}px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing.none}px ${({ theme }) => theme.spacing.md}px;
-`;
-
-const BackButton = styled.Pressable`
-  width: ${({ theme }) => theme.spacing.xxl}px;
-  min-height: ${({ theme }) => theme.spacing.xxl}px;
-  align-items: flex-start;
-  justify-content: center;
-`;
-
-const BackArrow = styled.Text`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.display.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.body.fontWeight};
-  line-height: ${({ theme }) => theme.typography.display.lineHeight}px;
-`;
-
-const TopBarSpacer = styled.View`
-  width: ${({ theme }) => theme.spacing.xxl}px;
-`;
-
-const Progress = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-`;
-
-const ProgressSegment = styled.View<{ $active: boolean; $current: boolean }>`
-  width: ${({ $current, theme }) => ($current ? theme.spacing.xl : theme.spacing.sm)}px;
-  height: ${({ theme }) => theme.spacing.sm}px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ $active, theme }) =>
-    $active ? theme.colors.primary : theme.colors.surfacePressed};
 `;
 
 const ContentScroll = styled.ScrollView`
@@ -217,6 +165,13 @@ const Description = styled.Text`
 
 const Options = styled.View`
   gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+const ErrorMessage = styled.Text`
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.caption.fontWeight};
+  line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
 `;
 
 const Option = styled.Pressable<{ $selected: boolean }>`
@@ -269,6 +224,6 @@ const CheckMark = styled.Text`
 
 const Footer = styled.View`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.md}px;
+    ${({ theme }) => theme.spacing.xxl + theme.spacing.xs}px;
   background-color: ${({ theme }) => theme.colors.background};
 `;

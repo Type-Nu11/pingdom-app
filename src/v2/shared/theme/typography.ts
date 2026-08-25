@@ -1,4 +1,9 @@
 export const typography = {
+  onboardingAction: {
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 26,
+  },
   display: {
     fontSize: 32,
     fontWeight: '700',

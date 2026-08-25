@@ -22,6 +22,11 @@ export type {
 } from './model/onboardingPreference';
 export { default as TravelScheduleSelectionScreen } from './screens/TravelScheduleSelectionScreen';
 export type { TravelScheduleSelectionScreenProps } from './screens/TravelScheduleSelectionScreen';
+export { default as OnboardingPreferenceFlow } from './screens/OnboardingPreferenceFlow';
+export type {
+  OnboardingPreferenceFlowProps,
+  OnboardingPreferenceStep,
+} from './screens/OnboardingPreferenceFlow';
 export { default as TravelPurposeSelectionScreen } from './screens/TravelPurposeSelectionScreen';
 export type { TravelPurposeSelectionScreenProps } from './screens/TravelPurposeSelectionScreen';
 export {
