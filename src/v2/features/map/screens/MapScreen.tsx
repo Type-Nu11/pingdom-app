@@ -137,6 +137,14 @@ export default function MapScreen({ navigation }: MapScreenProps) {
           isLoading={discovery.isLoading}
           onRetry={() => void discovery.refetch()}
         />
+        <PlaceReportButton
+          accessibilityLabel={t('placeReport.mapEntry')}
+          accessibilityRole="button"
+          onPress={() => navigation.navigate(V2_ROUTES.PlaceReport)}
+          testID="v2-map-place-report"
+        >
+          <PlaceReportButtonText>{t('placeReport.mapEntry')}</PlaceReportButtonText>
+        </PlaceReportButton>
         <MapSelectedPlaceCard
           error={discovery.selectedPlaceError}
           loading={discovery.selectedPlaceLoading}
@@ -189,5 +197,20 @@ const LocateButton = styled.Pressable`
 `;
 const LocateButtonText = styled.Text`
   color: ${({ theme }) => theme.colors.primary};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+`;
+const PlaceReportButton = styled.Pressable`
+  position: absolute;
+  left: ${({ theme }) => theme.spacing.md}px;
+  top: ${({ theme }) => theme.spacing.xxl * 4}px;
+  min-height: ${({ theme }) => theme.spacing.xxl}px;
+  justify-content: center;
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ theme }) => theme.colors.primary};
+`;
+const PlaceReportButtonText = styled.Text`
+  color: ${({ theme }) => theme.colors.onPrimary};
+  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
