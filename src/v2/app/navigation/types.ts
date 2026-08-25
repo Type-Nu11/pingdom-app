@@ -10,6 +10,7 @@ export const V2_ROUTES = {
   CreateReservation: 'CreateReservation',
   Home: 'Home',
   Map: 'Map',
+  MyPage: 'MyPage',
   PlaceDetail: 'PlaceDetail',
 } as const;
 
@@ -22,6 +23,7 @@ export type V2StackParamList = {
   };
   Home: undefined;
   Map: undefined;
+  MyPage: undefined;
   PlaceDetail: {
     placeId: PlaceId;
   };

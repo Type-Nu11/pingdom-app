@@ -8,6 +8,7 @@ import { useNotificationOpenSync } from '../../features/notifications/hooks/useN
 import type { NotificationRoute } from '../../features/notifications/model/notification.types';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
+import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
 import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
@@ -68,6 +69,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
         <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageScreen} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>

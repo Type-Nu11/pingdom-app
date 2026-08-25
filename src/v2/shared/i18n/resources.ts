@@ -179,6 +179,28 @@ export const resources = {
         title: 'Nearby map',
         visibleCenter: '{{lat}}, {{lng}}',
       },
+      myPage: {
+        back: 'Back',
+        profileUnavailable: 'Profile unavailable',
+        settings: 'Settings',
+        stats: {
+          coupons: 'Coupons',
+          reservations: 'Reservations',
+          reviews: 'Reviews',
+        },
+        title: 'My page',
+        travel: {
+          nextMonth: 'Next month',
+          previousMonth: 'Previous month',
+          title: 'My trips',
+        },
+        verifiedPlaces: {
+          empty: 'No verified places yet',
+          favorite: 'Save place',
+          title: 'Verified places',
+          unfavorite: 'Remove saved place',
+        },
+      },
       placeDetail: {
         back: 'Back',
         couponUsage: 'Coupon use: {{value}}',
@@ -394,6 +416,28 @@ export const resources = {
         },
         title: '주변 지도',
         visibleCenter: '{{lat}}, {{lng}}',
+      },
+      myPage: {
+        back: '뒤로가기',
+        profileUnavailable: '프로필 정보 없음',
+        settings: '설정',
+        stats: {
+          coupons: '쿠폰',
+          reservations: '예약',
+          reviews: '리뷰',
+        },
+        title: '마이 페이지',
+        travel: {
+          nextMonth: '다음 달',
+          previousMonth: '이전 달',
+          title: '나의 여행',
+        },
+        verifiedPlaces: {
+          empty: '아직 검증한 장소가 없어요',
+          favorite: '장소 저장',
+          title: '검증한 장소',
+          unfavorite: '저장 취소',
+        },
       },
       placeDetail: {
         back: '뒤로',

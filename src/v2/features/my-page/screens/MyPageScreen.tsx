@@ -1,0 +1,264 @@
+import React, { useMemo, useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import styled from 'styled-components/native';
+
+import type { V2ScreenProps } from '../../../app/navigation/types';
+import { getInitialCalendarMonth } from '../../onboarding-preferences/model/travelScheduleCalendar';
+import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
+import { useCheckIns } from '../../check-ins/hooks/useCheckIns';
+import { useCoupons } from '../../offers-coupons/hooks/useOffersCoupons';
+import { useReservations } from '../../reservations/hooks/useReservations';
+import { useTravelSchedules } from '../../travel-schedules/hooks/useTravelSchedules';
+import TravelCalendar from '../components/TravelCalendar';
+import VerifiedPlaceCard from '../components/VerifiedPlaceCard';
+import { getTodayServerTravelDate, selectFeaturedTravelSchedule } from '../model/myPageTravel';
+import BackIcon from '../../../shared/assets/icons/back.svg';
+import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
+import DividerIcon from '../../../shared/assets/icons/divider.svg';
+import SettingsIcon from '../../../shared/assets/icons/settings.svg';
+import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
+
+const VERIFIED_PLACES_LIMIT = 4;
+
+export default function MyPageScreen({ navigation }: V2ScreenProps<'MyPage'>) {
+  const { t } = useTranslation();
+  const reservationsQuery = useReservations();
+  const couponsQuery = useCoupons();
+  const travelSchedulesQuery = useTravelSchedules();
+  const checkInsQuery = useCheckIns({ limit: VERIFIED_PLACES_LIMIT });
+
+  const featuredSchedule = useMemo(
+    () => selectFeaturedTravelSchedule(
+      travelSchedulesQuery.data?.schedules ?? [],
+      getTodayServerTravelDate(),
+    ),
+    [travelSchedulesQuery.data],
+  );
+
+  const initialCalendarMonth = useMemo(
+    () => getInitialCalendarMonth({
+      endDateText: featuredSchedule?.endDate ?? '',
+      startDateText: featuredSchedule?.startDate ?? '',
+    }),
+    [featuredSchedule],
+  );
+
+  const placeIds = useMemo(() => {
+    const ids = (checkInsQuery.data?.checkIns ?? []).map((checkIn) => checkIn.placeId);
+    return Array.from(new Set(ids));
+  }, [checkInsQuery.data]);
+
+  const placeDetailQueries = useQueries({
+    queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
+  });
+
+  const verifiedPlaces = placeDetailQueries
+    .map((query) => query.data)
+    .filter((place): place is NonNullable<typeof place> => Boolean(place));
+
+  const [favoritedPlaceIds, setFavoritedPlaceIds] = useState<ReadonlySet<number>>(new Set());
+
+  const toggleFavorite = (placeId: number) => {
+    setFavoritedPlaceIds((current) => {
+      const next = new Set(current);
+      if (next.has(placeId)) {
+        next.delete(placeId);
+      } else {
+        next.add(placeId);
+      }
+      return next;
+    });
+  };
+
+  return (
+    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-my-page-screen">
+      <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
+        <TopBar>
+          <IconButton
+            accessibilityLabel={t('myPage.back')}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={navigation.goBack}
+          >
+            <BackIcon height={44} width={44} />
+          </IconButton>
+          <TopBarTitle>{t('myPage.title')}</TopBarTitle>
+          <SettingsIcon height={44} width={44} />
+        </TopBar>
+
+        <Section $borderWidth={8}>
+          <SectionContent>
+            <ProfileRow>
+              <ProfileInfo>
+                <AvatarPlaceholder height={56} width={56} />
+                <ProfileText>
+                  <Username numberOfLines={1}>{t('myPage.profileUnavailable')}</Username>
+                </ProfileText>
+              </ProfileInfo>
+              <ChevronIcon height={24} width={24} />
+            </ProfileRow>
+
+            <StatsCard>
+              <StatItem>
+                <StatLabel>{t('myPage.stats.reservations')}</StatLabel>
+                <StatValue>{reservationsQuery.data?.totalCount ?? 0}</StatValue>
+              </StatItem>
+              <DividerIcon height={48} width={1} />
+              <StatItem>
+                <StatLabel>{t('myPage.stats.reviews')}</StatLabel>
+                <StatValue>0</StatValue>
+              </StatItem>
+              <DividerIcon height={48} width={1} />
+              <StatItem>
+                <StatLabel>{t('myPage.stats.coupons')}</StatLabel>
+                <StatValue>{couponsQuery.data?.totalCount ?? 0}</StatValue>
+              </StatItem>
+            </StatsCard>
+          </SectionContent>
+        </Section>
+
+        <Section $borderWidth={8}>
+          <SectionContent>
+            <SectionTitle>{t('myPage.travel.title')}</SectionTitle>
+            <TravelCalendar highlightedRange={featuredSchedule} initialMonth={initialCalendarMonth} />
+          </SectionContent>
+        </Section>
+
+        <Section $borderWidth={0}>
+          <SectionContent>
+            <SectionHeaderRow>
+              <SectionTitle>{t('myPage.verifiedPlaces.title')}</SectionTitle>
+              <ChevronIcon height={24} width={24} />
+            </SectionHeaderRow>
+            {verifiedPlaces.length > 0 ? (
+              <PlacesScroll horizontal showsHorizontalScrollIndicator={false}>
+                {verifiedPlaces.map((place) => (
+                  <VerifiedPlaceCard
+                    address={place.address}
+                    favorited={favoritedPlaceIds.has(place.id)}
+                    imageUrl={place.thumbnailUrl}
+                    key={place.id}
+                    name={place.name}
+                    onToggleFavorite={() => toggleFavorite(place.id)}
+                  />
+                ))}
+              </PlacesScroll>
+            ) : (
+              <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText>
+            )}
+          </SectionContent>
+        </Section>
+      </Content>
+    </Screen>
+  );
+}
+
+const CONTENT_CONTAINER_STYLE = { flexGrow: 1 } as const;
+
+const Screen = styled(SafeAreaView)`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const Content = styled.ScrollView`
+  flex: 1;
+`;
+
+const TopBar = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
+`;
+
+const IconButton = styled.Pressable`
+  align-items: center;
+  justify-content: center;
+`;
+
+const TopBarTitle = styled.Text`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-weight: 500;
+`;
+
+const Section = styled.View<{ $borderWidth: number }>`
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.md}px 0;
+  border-bottom-width: ${({ $borderWidth }) => $borderWidth}px;
+  border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
+`;
+
+const SectionContent = styled.View`
+  gap: ${({ theme }) => theme.spacing.md}px;
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
+`;
+
+const SectionTitle = styled.Text`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-weight: 700;
+`;
+
+const SectionHeaderRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const ProfileRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const ProfileInfo = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+const ProfileText = styled.View``;
+
+const Username = styled.Text`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-weight: 500;
+`;
+
+const StatsCard = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+  height: 85px;
+  border-radius: ${({ theme }) => theme.radius.lg}px;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+`;
+
+const StatItem = styled.View`
+  align-items: center;
+  gap: 6px;
+`;
+
+const StatLabel = styled.Text`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+  font-weight: 500;
+`;
+
+const StatValue = styled.Text`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: 20px;
+  font-weight: 700;
+`;
+
+const PlacesScroll = styled.ScrollView.attrs({
+  contentContainerStyle: { gap: 16 },
+})``;
+
+const EmptyPlacesText = styled.Text`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+`;
