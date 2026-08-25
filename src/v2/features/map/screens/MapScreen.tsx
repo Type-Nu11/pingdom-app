@@ -133,8 +133,10 @@ export default function MapScreen({ navigation }: MapScreenProps) {
         />
         <MapDataStatusOverlay
           error={discovery.queryError}
+          isDisabled={discovery.isDisabled}
           isEmpty={discovery.isEmpty}
           isLoading={discovery.isLoading}
+          isMock={discovery.dataSource === 'mock'}
           onRetry={() => void discovery.refetch()}
         />
         <MapSelectedPlaceCard

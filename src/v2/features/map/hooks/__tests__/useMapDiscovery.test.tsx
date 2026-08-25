@@ -101,4 +101,27 @@ describe('useMapDiscovery', () => {
 
     expect(result.current.selectedPlace).toBeNull();
   });
+
+  test('필터가 없으면 지도 endpoint, 필터가 있으면 GET /places 목록을 활성화한다', async () => {
+    const renderDiscovery = (category: string | null) => renderHook(() => useMapDiscovery({
+      category,
+      center: { lat: 37.5, lng: 127 },
+      keyword: '',
+      radiusKm: 3,
+      selectedPlace: null,
+    }));
+
+    await renderDiscovery(null);
+
+    expect(usePlaceMap).toHaveBeenLastCalledWith(expect.any(Object), { enabled: true });
+    expect(usePlaceList).toHaveBeenLastCalledWith(expect.any(Object), { enabled: false });
+
+    await renderDiscovery('FOOD');
+
+    expect(usePlaceMap).toHaveBeenLastCalledWith(expect.any(Object), { enabled: false });
+    expect(usePlaceList).toHaveBeenLastCalledWith(
+      expect.objectContaining({ category: 'FOOD' }),
+      { enabled: true },
+    );
+  });
 });

@@ -1,17 +1,15 @@
 import { useEffect, useMemo } from 'react';
-import axios from 'axios';
-import { useQuery } from '@tanstack/react-query';
-import { placeApi, type GetPlacesRequest } from '../api/placeApi';
+import {
+  getPlaceListRuntimeState,
+  usePlaceList,
+} from '../../../v2/features/place-exploration';
+import { toPlaceResults } from '../../../v2/features/map/model/mapDiscovery';
+import { env } from '../../../v2/shared/config';
+import type { GetPlacesRequest } from '../api/placeApi';
 import type { MapMarker } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 
-// GET /places 서버 오류가 해결될 때까지 개발 환경에서 기본 마커 조회만 끌 수 있다.
-const isPlaceListEnabled = process.env.EXPO_PUBLIC_ENABLE_PLACE_LIST !== 'false';
-
-export const placeQueryKeys = {
-  all: ['places'] as const,
-  list: (params: GetPlacesRequest) => [...placeQueryKeys.all, 'list', params] as const,
-};
+export { placeQueryKeys } from '../../../v2/features/place-exploration';
 
 function toMapMarker(place: {
   category?: string;
@@ -28,27 +26,10 @@ function toMapMarker(place: {
   };
 }
 
-function getPlacesErrorLog(error: unknown) {
-  if (axios.isAxiosError(error)) {
-    const responseData = error.response?.data as {
-      code?: unknown;
-      message?: unknown;
-    } | undefined;
-
-    return {
-      code: responseData?.code,
-      message: responseData?.message ?? error.message,
-      status: error.response?.status,
-      url: error.config?.url,
-    };
-  }
-
-  return {
-    message: error instanceof Error ? error.message : String(error),
-  };
-}
-
-export const usePlaces = (params: GetPlacesRequest = {}) => {
+export const usePlaces = (
+  params: GetPlacesRequest = {},
+  enabled = env.featureFlags.placeList,
+) => {
   const queryParams = useMemo(() => ({
     limit: params.limit ?? 100,
     page: params.page ?? 1,
@@ -68,11 +49,16 @@ export const usePlaces = (params: GetPlacesRequest = {}) => {
     params.radiusKm,
     params.sort,
   ]);
-  const placesQuery = useQuery({
-    queryKey: placeQueryKeys.list(queryParams),
-    queryFn: () => placeApi.getPlaces(queryParams),
-    enabled: isPlaceListEnabled,
-  });
+  const placesQuery = usePlaceList(queryParams, { enabled });
+  const places = useMemo(() => toPlaceResults(placesQuery.data).map((place) => ({
+    address: place.address,
+    category: place.category,
+    distanceMeters: place.distanceMeters ?? undefined,
+    id: place.id,
+    latitude: place.coordinate.lat,
+    longitude: place.coordinate.lng,
+    name: place.name,
+  })), [placesQuery.data]);
 
   useEffect(() => {
     if (!placesQuery.isError) {
@@ -80,22 +66,29 @@ export const usePlaces = (params: GetPlacesRequest = {}) => {
     }
 
     console.warn('[places]', 'failed to load place list', {
-      enabled: isPlaceListEnabled,
-      error: getPlacesErrorLog(placesQuery.error),
-      params: queryParams,
+      enabled,
+      message: placesQuery.error instanceof Error ? placesQuery.error.message : 'Unknown error',
     });
-  }, [placesQuery.error, placesQuery.isError, queryParams]);
+  }, [enabled, placesQuery.error, placesQuery.isError]);
 
-  const places = placesQuery.data?.places ?? [];
   const markers = useMemo(() => places.map(toMapMarker), [places]);
+  const status = getPlaceListRuntimeState({
+    enabled,
+    isError: placesQuery.isError,
+    isLoading: placesQuery.isLoading,
+    placeCount: places.length,
+  });
 
   return {
+    dataSource: env.apiMode,
+    enabled,
     error: placesQuery.error,
     isError: placesQuery.isError,
     isLoading: placesQuery.isLoading,
     markers,
     places,
     refetch: placesQuery.refetch,
+    status,
   };
 };
 

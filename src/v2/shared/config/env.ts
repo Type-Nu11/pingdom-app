@@ -101,6 +101,22 @@ function readHttpUrl(name: string, value: string | undefined): string {
   }
 }
 
+export function resolvePlaceListEnabled({
+  apiMode,
+  appEnvironment,
+  value,
+}: {
+  apiMode: ApiMode;
+  appEnvironment: AppEnvironment;
+  value?: string;
+}): boolean {
+  return readBoolean(
+    'EXPO_PUBLIC_ENABLE_PLACE_LIST',
+    value,
+    appEnvironment === 'development' && apiMode === 'real',
+  );
+}
+
 const appEnvironment = readAppEnvironment(process.env.EXPO_PUBLIC_APP_ENV);
 const apiMode = readApiMode(process.env.EXPO_PUBLIC_API_MODE);
 
@@ -115,11 +131,11 @@ export const env = Object.freeze({
   apiMode,
   appEnvironment,
   featureFlags: Object.freeze({
-    placeList: readBoolean(
-      'EXPO_PUBLIC_ENABLE_PLACE_LIST',
-      process.env.EXPO_PUBLIC_ENABLE_PLACE_LIST,
-      false,
-    ),
+    placeList: resolvePlaceListEnabled({
+      apiMode,
+      appEnvironment,
+      value: process.env.EXPO_PUBLIC_ENABLE_PLACE_LIST,
+    }),
   }),
   isDevelopment: appEnvironment === 'development',
   isProduction: appEnvironment === 'production',
