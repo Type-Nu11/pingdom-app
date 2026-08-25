@@ -11,7 +11,11 @@ jest.mock('../../../features/place/screens/MapScreen', () => {
   const ReactNative = require('react-native');
   return {
     __esModule: true,
-    default: () => ReactLibrary.createElement(ReactNative.View, { testID: 'current-map-screen' }),
+    default: ({ mapAction }: { mapAction?: React.ReactNode }) => ReactLibrary.createElement(
+      ReactNative.View,
+      { testID: 'current-map-screen' },
+      mapAction,
+    ),
   };
 });
 

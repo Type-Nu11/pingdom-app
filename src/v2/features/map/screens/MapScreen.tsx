@@ -200,6 +200,6 @@ const LocateButtonText = styled.Text`
 `;
 const PlaceReportEntry = styled(PlaceReportEntryButton)`
   position: absolute;
-  left: ${({ theme }) => theme.spacing.md}px;
-  top: ${({ theme }) => theme.spacing.xxl * 4}px;
+  right: 12px;
+  top: 49.4%;
 `;

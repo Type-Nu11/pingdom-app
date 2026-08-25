@@ -49,6 +49,15 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
     <MapRouteContainer>
       <MapScreen
         initialSection={initialSection}
+        mapAction={(
+          <V2ScreenBoundary>
+            <PlaceReportEntryButton
+              label={t('placeReport.mapEntry')}
+              onPress={() => navigation.navigate(MAIN_ROUTES.PlaceReport)}
+              testID="current-map-place-report"
+            />
+          </V2ScreenBoundary>
+        )}
         openedBookmarkedPlaceId={focusedPlaceId ?? null}
         onClearOpenedBookmarkedPlace={clearFocusedPlace}
         onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
@@ -69,13 +78,6 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
           }
         }}
       />
-      <V2ScreenBoundary>
-        <CurrentMapPlaceReportEntry
-          label={t('placeReport.mapEntry')}
-          onPress={() => navigation.navigate(MAIN_ROUTES.PlaceReport)}
-          testID="current-map-place-report"
-        />
-      </V2ScreenBoundary>
     </MapRouteContainer>
   );
 };
@@ -206,10 +208,4 @@ export default MainNavigator;
 
 const MapRouteContainer = styled.View`
   flex: 1;
-`;
-
-const CurrentMapPlaceReportEntry = styled(PlaceReportEntryButton)`
-  position: absolute;
-  left: ${({ theme }) => theme.spacing.md}px;
-  top: 45%;
 `;

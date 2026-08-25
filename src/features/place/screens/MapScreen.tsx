@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StatusBar, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  Alert,
+  Animated,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RestaurantMarkerAsset from '../../../assets/v2/icons/place/Restaurant.svg';
@@ -55,6 +63,8 @@ import {
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 
 const MOCK_PLACE_IDS = [138001, 138002, 138003] as const;
+const MAP_ACTION_HEIGHT = 48;
+const MAP_ACTION_SHEET_GAP = 10;
 
 const MOCK_PLACE_PREVIEW_CONTENT_BY_ID: Record<string, MapPreviewFallbackContent> = {
   [String(MOCK_PLACE_IDS[0])]: {
@@ -195,6 +205,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 
 type MapScreenProps = {
   initialSection?: 'favorites' | 'map' | 'reservations';
+  mapAction?: React.ReactNode;
   onClearOpenedBookmarkedPlace?: () => void;
   onCreateReservation?: (place: {
     category: string;
@@ -210,6 +221,7 @@ type MapScreenProps = {
 
 export default function MapScreen({
   initialSection = 'map',
+  mapAction,
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
   onOpenProfile,
@@ -293,6 +305,8 @@ export default function MapScreen({
     initialSnapPoint: 'medium',
     mediumTranslateY,
   });
+  const mapActionTop = height - mediumVisibleHeight - MAP_ACTION_HEIGHT - MAP_ACTION_SHEET_GAP;
+  const mapActionTranslateY = Animated.subtract(sheetTranslateY, mediumTranslateY);
 
   useEffect(() => {
     const language = profile?.language?.trim().toLowerCase();
@@ -641,6 +655,19 @@ export default function MapScreen({
             <RestaurantMarkerAsset height={62} pointerEvents="none" width={46} />
           </Pressable>
         ) : null}
+        {mapAction ? (
+          <Animated.View
+            pointerEvents="box-none"
+            style={[
+              styles.mapAction,
+              { top: mapActionTop },
+              { transform: [{ translateY: mapActionTranslateY }] },
+            ]}
+            testID="map-sheet-following-action"
+          >
+            {mapAction}
+          </Animated.View>
+        ) : null}
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
@@ -817,6 +844,11 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
+  mapAction: {
+    position: 'absolute',
+    right: 12,
+    zIndex: 30,
+  },
   temporaryMarkerButton: {
     alignItems: 'center',
     left: '50%',

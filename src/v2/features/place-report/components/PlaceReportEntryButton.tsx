@@ -2,6 +2,8 @@ import React from 'react';
 import type { PressableProps } from 'react-native';
 import styled from 'styled-components/native';
 
+import NoteEditIcon from '../../../../assets/v2/icons/place/note_edit.svg';
+
 type Props = Omit<PressableProps, 'children'> & {
   label: string;
 };
@@ -13,21 +15,27 @@ export default function PlaceReportEntryButton({ label, ...pressableProps }: Pro
       accessibilityLabel={pressableProps.accessibilityLabel ?? label}
       accessibilityRole="button"
     >
+      <NoteEditIcon aria-hidden height={24} width={24} />
       <EntryButtonText>{label}</EntryButtonText>
     </EntryButton>
   );
 }
 
 const EntryButton = styled.Pressable`
-  min-height: ${({ theme }) => theme.spacing.xxl}px;
+  width: 120px;
+  height: 48px;
+  flex-direction: row;
+  align-items: center;
   justify-content: center;
-  padding: 0 ${({ theme }) => theme.spacing.md}px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.primary};
+  gap: 4px;
+  padding: 8px 18px;
+  border-radius: 24px;
+  background-color: rgba(255, 25, 86, 0.88);
 `;
 
 const EntryButtonText = styled.Text`
   color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 21px;
 `;
