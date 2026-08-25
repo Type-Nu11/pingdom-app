@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from 'styled-components/native';
 
 import { i18n } from '../shared/i18n';
+import { initializePlaceReportI18n } from '../features/place-report/i18n/placeReportResources';
 import { initializeReservationI18n } from '../features/reservations/i18n/reservationResources';
 import { theme } from '../shared/theme';
 import AppErrorBoundary from './AppErrorBoundary';
@@ -18,7 +19,7 @@ export default function AppProviders({ children }: PropsWithChildren) {
   useEffect(() => {
     let isMounted = true;
 
-    void initializeReservationI18n()
+    void Promise.all([initializeReservationI18n(), initializePlaceReportI18n()])
       .catch((error) => {
         console.warn('[V2 i18n] Initialization failed:', error);
       })
