@@ -33,7 +33,8 @@ export type PlaceReportDraft = {
   detailAddress: string;
   features: PlaceReportFeatureId[];
   locationQuery: string;
-  operationHours: string;
+  closingTime: string;
+  openingTime: string;
   photoUri: string | null;
   placeName: string;
 };
@@ -50,7 +51,8 @@ export const initialPlaceReportDraft: PlaceReportDraft = {
   detailAddress: '',
   features: [],
   locationQuery: '',
-  operationHours: '',
+  closingTime: '',
+  openingTime: '',
   photoUri: null,
   placeName: '',
 };
@@ -66,11 +68,16 @@ export function validatePlaceReportStep(
     };
   }
 
-  if (step === 2) return {
-    ...(!draft.placeName.trim() ? { placeName: true } : {}),
-    ...(!draft.category ? { category: true } : {}),
-    ...(!draft.operationHours.trim() ? { operationHours: true } : {}),
-  };
+  if (step === 2) {
+    const validTime = /^([01]\d|2[0-3]):[0-5]\d$/;
+    return {
+      ...(!draft.placeName.trim() ? { placeName: true } : {}),
+      ...(!draft.category ? { category: true } : {}),
+      ...(!validTime.test(draft.openingTime) || !validTime.test(draft.closingTime)
+        ? { operationHours: true }
+        : {}),
+    };
+  }
 
   return !draft.photoUri ? { photo: true } : {};
 }

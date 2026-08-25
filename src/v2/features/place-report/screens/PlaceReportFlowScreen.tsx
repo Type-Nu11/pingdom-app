@@ -7,6 +7,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -86,6 +87,29 @@ const CATEGORY_ROWS: PlaceReportCategoryId[][] = [
   ['heritage', 'other'],
 ];
 
+const toBoundedTime = (hourDigits: string, minuteDigits: string) => {
+  const hour = Math.min(Number(hourDigits), 23).toString().padStart(2, '0');
+  const minute = Math.min(Number(minuteDigits), 59).toString().padStart(2, '0');
+  return `${hour}:${minute}`;
+};
+
+const formatTimeInput = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) return digits;
+  if (digits.length === 3) {
+    return Number(digits.slice(0, 2)) > 23
+      ? toBoundedTime(digits[0], digits.slice(1))
+      : digits;
+  }
+  return toBoundedTime(digits.slice(0, 2), digits.slice(2));
+};
+
+const normalizeTimeInput = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  return digits.length === 3
+    ? toBoundedTime(digits[0], digits.slice(1))
+    : formatTimeInput(value);
+};
 export default function PlaceReportFlowScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<PlaceReportDraft>(initialPlaceReportDraft);
@@ -207,6 +231,29 @@ function SelectSpotStep({
     draft.coordinate ?? location.coordinate ?? FALLBACK_COORDINATE,
   );
   const didResolveInitialCamera = useRef(false);
+  const bottomSectionRef = useRef<View>(null);
+  const [addressKeyboardOffset, setAddressKeyboardOffset] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return undefined;
+
+    const shown = Keyboard.addListener('keyboardDidShow', ({ endCoordinates }) => {
+      requestAnimationFrame(() => {
+        bottomSectionRef.current?.measureInWindow((_x, y, _width, height) => {
+          const overlap = Math.max(0, y + height - endCoordinates.screenY + 8);
+          setAddressKeyboardOffset(overlap);
+        });
+      });
+    });
+    const hidden = Keyboard.addListener('keyboardDidHide', () => {
+      setAddressKeyboardOffset(0);
+    });
+
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (location.status === 'granted' && !draft.coordinate) setCenter(location.coordinate);
@@ -281,27 +328,30 @@ function SelectSpotStep({
           </MapMessage>
         ) : null}
       </MapArea>
-      <BottomSection>
-        <ReportField
-          accessibilityLabel={t('placeReport.field.detailAddress')}
-          error={errors.detailAddress ? t('placeReport.validation.detailAddress') : undefined}
-          label={t('placeReport.field.detailAddress')}
-          maxLength={120}
-          onChangeText={(detailAddress) => onUpdate({ detailAddress })}
-          placeholder={t('placeReport.field.detailAddressPlaceholder')}
-          returnKeyType="done"
-          testID="v2-place-report-address"
-          value={draft.detailAddress}
-        />
-        <Button
-          fullWidth
-          label={t('placeReport.selectSpot.choose')}
-          onPress={onContinue}
-          shape="pill"
-          size="onboarding"
-          testID="v2-place-report-step1-next"
-        />
-      </BottomSection>
+      <View ref={bottomSectionRef}>
+        <BottomSection $keyboardOffset={addressKeyboardOffset}>
+          <ReportField
+            accessibilityLabel={t('placeReport.field.detailAddress')}
+            error={errors.detailAddress ? t('placeReport.validation.detailAddress') : undefined}
+            label={t('placeReport.field.detailAddress')}
+            maxLength={120}
+            onBlur={() => setAddressKeyboardOffset(0)}
+            onChangeText={(detailAddress) => onUpdate({ detailAddress })}
+            placeholder={t('placeReport.field.detailAddressPlaceholder')}
+            returnKeyType="done"
+            testID="v2-place-report-address"
+            value={draft.detailAddress}
+          />
+          <Button
+            fullWidth
+            label={t('placeReport.selectSpot.choose')}
+            onPress={onContinue}
+            shape="pill"
+            size="onboarding"
+            testID="v2-place-report-step1-next"
+          />
+        </BottomSection>
+      </View>
     </StepRoot>
   );
 }
@@ -317,6 +367,8 @@ function PlaceInfoStep({
   onContinue: () => void;
 }>) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const [focusedTime, setFocusedTime] = useState<'closing' | 'opening' | null>(null);
   return (
     <StepRoot>
       <StepScroll keyboardShouldPersistTaps="handled">
@@ -366,15 +418,64 @@ function PlaceInfoStep({
               </ValidationText>
             ) : null}
           </FieldGroup>
-          <ReportField
-            error={errors.operationHours ? t('placeReport.validation.operationHours') : undefined}
-            label={t('placeReport.field.operationHours')}
-            maxLength={80}
-            onChangeText={(operationHours) => onUpdate({ operationHours })}
-            placeholder={t('placeReport.field.operationHoursPlaceholder')}
-            testID="v2-place-report-hours"
-            value={draft.operationHours}
-          />
+          <FieldGroup>
+            <FieldLabel>{t('placeReport.field.operationHours')}</FieldLabel>
+            <TimeRow>
+              <TimeField>
+                <TimeLabel>{t('placeReport.field.openingTime')}</TimeLabel>
+                <TimeInput
+                  accessibilityLabel={t('placeReport.field.openingTime')}
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  onBlur={() => {
+                    setFocusedTime(null);
+                    onUpdate({ openingTime: normalizeTimeInput(draft.openingTime) });
+                  }}
+                  onChangeText={(openingTime) => onUpdate({
+                    openingTime: formatTimeInput(openingTime),
+                  })}
+                  onFocus={() => setFocusedTime('opening')}
+                  placeholder={focusedTime === 'opening'
+                    ? ''
+                    : t('placeReport.field.openingTimePlaceholder')}
+                  placeholderTextColor={theme.colors.textMuted}
+                  returnKeyType="next"
+                  selectionColor={theme.colors.primary}
+                  testID="v2-place-report-opening-time"
+                  value={draft.openingTime}
+                />
+              </TimeField>
+              <TimeField>
+                <TimeLabel>{t('placeReport.field.closingTime')}</TimeLabel>
+                <TimeInput
+                  accessibilityLabel={t('placeReport.field.closingTime')}
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  onBlur={() => {
+                    setFocusedTime(null);
+                    onUpdate({ closingTime: normalizeTimeInput(draft.closingTime) });
+                  }}
+                  onChangeText={(closingTime) => onUpdate({
+                    closingTime: formatTimeInput(closingTime),
+                  })}
+                  onFocus={() => setFocusedTime('closing')}
+                  placeholder={focusedTime === 'closing'
+                    ? ''
+                    : t('placeReport.field.closingTimePlaceholder')}
+                  placeholderTextColor={theme.colors.textMuted}
+                  returnKeyType="done"
+                  selectionColor={theme.colors.primary}
+                  testID="v2-place-report-closing-time"
+                  value={draft.closingTime}
+                />
+              </TimeField>
+            </TimeRow>
+            {errors.operationHours ? (
+              <ValidationText accessibilityLiveRegion="polite">
+                {t('placeReport.validation.operationHours')}
+              </ValidationText>
+            ) : null}
+          </FieldGroup>
         </ScrollBody>
       </StepScroll>
       <Footer>
@@ -626,10 +727,11 @@ const MapMessage = styled.Text<{ $error: boolean }>`
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   text-align: center;
 `;
-const BottomSection = styled.View`
+const BottomSection = styled.View<{ $keyboardOffset: number }>`
   gap: 24px;
   padding: 20px 16px 24px;
   background-color: ${({ theme }) => theme.colors.surface};
+  transform: translateY(-${({ $keyboardOffset }) => $keyboardOffset}px);
 `;
 const StepScroll = styled.ScrollView`flex: 1;`;
 const ScrollBody = styled.View`
@@ -646,6 +748,33 @@ const FieldLabel = styled.Text`
   font-size: 14px;
   font-weight: 500;
   line-height: 18px;
+`;
+const TimeRow = styled.View`
+  flex-direction: row;
+  gap: 12px;
+`;
+const TimeField = styled.View`
+  height: 72px;
+  flex: 1;
+  justify-content: center;
+  gap: 2px;
+  padding: 9px 16px;
+  border-radius: 18px;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+`;
+const TimeLabel = styled.Text`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+`;
+const TimeInput = styled.TextInput`
+  min-height: 27px;
+  padding: 0;
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 23px;
 `;
 const ChipWrap = styled.View`
   flex-direction: row;

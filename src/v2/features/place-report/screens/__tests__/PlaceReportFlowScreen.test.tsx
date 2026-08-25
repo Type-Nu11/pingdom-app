@@ -51,7 +51,8 @@ async function moveToFirstRecord() {
   await user.press(screen.getByTestId('v2-place-report-step1-next'));
   await user.type(screen.getByTestId('v2-place-report-name'), '오아시스 팝업 스토어');
   await user.press(screen.getByTestId('v2-place-report-category-popup'));
-  await user.type(screen.getByTestId('v2-place-report-hours'), '09:00 ~ 20:00');
+  await user.type(screen.getByTestId('v2-place-report-opening-time'), '900');
+  await user.type(screen.getByTestId('v2-place-report-closing-time'), '2000');
   await user.press(screen.getByTestId('v2-place-report-step2-next'));
 
   return rendered;
@@ -87,16 +88,23 @@ describe('PlaceReportFlowScreen', () => {
     await user.press(screen.getByTestId('v2-place-report-step2-next'));
     expect(screen.getByText('장소 이름을 입력해 주세요.')).toBeVisible();
     expect(screen.getByText('카테고리를 선택해 주세요.')).toBeVisible();
-    expect(screen.getByText('운영 시간을 입력해 주세요.')).toBeVisible();
+    expect(screen.getByText('오픈 시간과 마감 시간을 올바르게 입력해 주세요.')).toBeVisible();
+
+    const openingTime = screen.getByTestId('v2-place-report-opening-time');
+    await user.type(openingTime, '999');
+    expect(screen.getByDisplayValue('09:59')).toBeVisible();
+    await user.clear(screen.getByTestId('v2-place-report-opening-time'));
+    await user.type(screen.getByTestId('v2-place-report-opening-time'), '900');
 
     await user.type(screen.getByTestId('v2-place-report-name'), '오아시스 팝업 스토어');
     await user.press(screen.getByTestId('v2-place-report-category-popup'));
-    await user.type(screen.getByTestId('v2-place-report-hours'), '09:00 ~ 20:00');
+    await user.type(screen.getByTestId('v2-place-report-closing-time'), '2000');
     await user.press(screen.getByTestId('v2-place-report-step2-next'));
     await user.press(screen.getByLabelText('뒤로'));
 
     expect(screen.getByDisplayValue('오아시스 팝업 스토어')).toBeVisible();
-    expect(screen.getByDisplayValue('09:00 ~ 20:00')).toBeVisible();
+    expect(screen.getByDisplayValue('09:00')).toBeVisible();
+    expect(screen.getByDisplayValue('20:00')).toBeVisible();
     expect(screen.getByTestId('v2-place-report-category-popup').props.accessibilityState)
       .toEqual({ checked: true });
 
