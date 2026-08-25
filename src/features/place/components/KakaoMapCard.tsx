@@ -1,32 +1,7 @@
-// components/KakaoMapCard.tsx
-import { NativeSyntheticEvent, requireNativeComponent, ViewProps } from 'react-native';
-
-export type KakaoMapCameraIdleEvent = NativeSyntheticEvent<{
-  lat: number;
-  lng: number;
-}>;
-
-export type KakaoMapMarkerPressEvent = NativeSyntheticEvent<{
-  markerId: string;
-}>;
-
-export type KakaoMapCardProps = ViewProps & {
-  centerLat: number;
-  centerLng: number;
-  zoomLevel?: number;
-
-  userLat?: number;
-  userLng?: number;
-  followUser?: boolean;
-  onCameraIdle?: (event: KakaoMapCameraIdleEvent) => void;
-  onMarkerPress?: (event: KakaoMapMarkerPressEvent) => void;
-  markers?: Array<{
-    category: 'etc' | 'fashion' | 'food' | 'game' | 'music';
-    id: string;
-    lat: number;
-    lng: number;
-    markerType?: 'default' | 'hot' | 'search';
-  }>;
-};
-
-export default requireNativeComponent<KakaoMapCardProps>('KakaoMapView');
+// V1 compatibility re-export. The native view is registered once in the V2/shared boundary.
+export { default } from '../../../v2/shared/native/KakaoMapNativeView';
+export type {
+  KakaoMapCameraIdleEvent,
+  KakaoMapMarkerPressEvent,
+  KakaoMapNativeViewProps as KakaoMapCardProps,
+} from '../../../v2/shared/native/KakaoMapNativeView';
