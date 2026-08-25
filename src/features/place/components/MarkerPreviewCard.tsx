@@ -14,7 +14,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import LikeIcon from '../../../assets/v2/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/v2/icons/actions/Saved.svg';
 import ShareIcon from '../../../assets/v2/icons/actions/share.svg';
 import ReportIcon from '../../../assets/v2/icons/actions/tlsrh.svg';
@@ -27,15 +26,10 @@ type MarkerPreviewCardProps = {
   hiddenPostIds: Record<string, boolean>;
   isError?: boolean;
   isLoading?: boolean;
-  notificationLikeContext?: {
-    notificationsId?: string;
-    postId?: string;
-  } | null;
   onClose: () => void;
   onReport: (postId: number, reason: string, hideAfterReport: boolean) => Promise<void>;
   onRetry?: () => void;
   onToggleBookmark: (placeId: number, nextBookmarked: boolean) => Promise<void>;
-  onToggleLike?: (postId: number, nextLiked: boolean, notificationsId?: number) => Promise<void>;
   placeName?: string;
   posts: Post[];
   reportedPostIds: Record<string, boolean>;
@@ -60,66 +54,9 @@ const REPORT_REASONS = [
 
 type ReportReason = typeof REPORT_REASONS[number];
 
-type LocalLikeOverride = {
-  baseLiked: boolean;
-  baseLikeCount: number;
-  liked: boolean;
-};
-
 const defaultReaction = {
   shared: false,
 };
-
-function formatLikeCount(count: number) {
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}K`;
-  }
-
-  return String(count);
-}
-
-function getServerLiked(post: Post) {
-  return Boolean(post.liked ?? post.isLiked ?? post.likedByMe);
-}
-
-function getPostNotificationsId(post: Post) {
-  return post.notificationsId ?? post.notificationId;
-}
-
-function toNumberId(value: number | string | undefined) {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value !== 'string' || value.length === 0) {
-    return undefined;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function getDisplayLiked(post: Post, override?: LocalLikeOverride) {
-  return override?.liked ?? getServerLiked(post);
-}
-
-function getDisplayLikeCount(post: Post, override?: LocalLikeOverride) {
-  if (!override) {
-    return post.likeCount;
-  }
-
-  if (post.likeCount !== override.baseLikeCount) {
-    return Math.max(0, post.likeCount);
-  }
-
-  const delta = override.liked === override.baseLiked
-    ? 0
-    : override.liked
-      ? 1
-      : -1;
-
-  return Math.max(0, post.likeCount + delta);
-}
 
 function getDisplayBookmarked(
   post: Post,
@@ -190,34 +127,15 @@ function getReportErrorMessage(error: unknown) {
   return getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.');
 }
 
-function isAlreadyLikedError(error: unknown) {
-  if (!axios.isAxiosError(error)) {
-    return false;
-  }
-
-  const responseData = error.response?.data as { code?: unknown; message?: unknown } | undefined;
-  const code = String(responseData?.code ?? '').toUpperCase();
-  const message = String(responseData?.message ?? '');
-  const lowerMessage = message.toLowerCase();
-
-  return (
-    (code.includes('ALREADY') && code.includes('LIKE')) ||
-    message.includes('이미 좋아요') ||
-    (lowerMessage.includes('already') && lowerMessage.includes('like'))
-  );
-}
-
 const MarkerPreviewCard = ({
   bookmarkedPlaceIds,
   hiddenPostIds,
   isError = false,
   isLoading = false,
-  notificationLikeContext,
   onClose,
   onReport,
   onRetry,
   onToggleBookmark,
-  onToggleLike,
   placeName,
   posts,
   reportedPostIds,
@@ -228,8 +146,6 @@ const MarkerPreviewCard = ({
   const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
   const [bookmarkPendingByPlaceId, setBookmarkPendingByPlaceId] = useState<Record<string, boolean>>({});
   const isMountedRef = useRef(true);
-  const [likePendingById, setLikePendingById] = useState<Record<string, boolean>>({});
-  const [likeOverrides, setLikeOverrides] = useState<Record<string, LocalLikeOverride>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [hideReportedPost, setHideReportedPost] = useState(false);
   const [selectedReportReason, setSelectedReportReason] = useState<ReportReason | null>(null);
@@ -270,67 +186,6 @@ const MarkerPreviewCard = ({
         [key]: nextValue ?? !prev[feedId]?.[key],
       },
     }));
-  };
-
-  const handleLikePress = async (item: Post) => {
-    const feedId = String(item.id);
-    const previousOverride = likeOverrides[feedId];
-    const currentLiked = getDisplayLiked(item, previousOverride);
-    const nextLiked = !currentLiked;
-
-    if (likePendingById[feedId]) {
-      return;
-    }
-
-    setLikePendingById((prev) => ({ ...prev, [feedId]: true }));
-    setLikeOverrides((prev) => ({
-      ...prev,
-      [feedId]: {
-        baseLiked: currentLiked,
-        baseLikeCount: item.likeCount,
-        liked: nextLiked,
-      },
-    }));
-
-    try {
-      const routePostId = toNumberId(notificationLikeContext?.postId);
-      const routeNotificationsId = toNumberId(notificationLikeContext?.notificationsId);
-      const notificationsId = routePostId === item.id
-        ? routeNotificationsId ?? getPostNotificationsId(item)
-        : getPostNotificationsId(item);
-
-      await onToggleLike?.(item.id, nextLiked, notificationsId);
-    } catch (error) {
-      if (nextLiked && isAlreadyLikedError(error)) {
-        setLikeOverrides((prev) => ({
-          ...prev,
-          [feedId]: {
-            baseLiked: true,
-            baseLikeCount: item.likeCount,
-            liked: true,
-          },
-        }));
-        return;
-      }
-
-      setLikeOverrides((prev) => {
-        const nextOverrides = { ...prev };
-
-        if (previousOverride) {
-          nextOverrides[feedId] = previousOverride;
-        } else {
-          delete nextOverrides[feedId];
-        }
-
-        return nextOverrides;
-      });
-      Alert.alert(
-        '좋아요에 실패했어요',
-        getApiErrorMessage(error, '잠시 후 다시 시도해 주세요.'),
-      );
-    } finally {
-      setLikePendingById((prev) => ({ ...prev, [feedId]: false }));
-    }
   };
 
   const handleBookmarkPress = async (item: Post) => {
@@ -619,9 +474,6 @@ const MarkerPreviewCard = ({
             bookmarkedPlaceIds,
             bookmarkOverrides[bookmarkPlaceKey],
           );
-          const likeOverride = likeOverrides[feedId];
-          const isLiked = getDisplayLiked(item, likeOverride);
-          const displayLikeCount = getDisplayLikeCount(item, likeOverride);
           const isMenuOpen = openMenuId === feedId;
           const isReportPending = reportPendingPostIds[feedId] ?? false;
           const isReported = reportedPostIds[feedId] ?? false;
@@ -712,24 +564,6 @@ const MarkerPreviewCard = ({
                 <View style={styles.leftActions}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="좋아요"
-                    disabled={likePendingById[feedId]}
-                    hitSlop={10}
-                    style={[styles.actionButton, likePendingById[feedId] && styles.disabledActionButton]}
-                    onPress={() => void handleLikePress(item)}
-                  >
-                    <LikeIcon
-                      color={isLiked ? '#ff1956' : '#5e5e66'}
-                      fill={isLiked ? '#ff1956' : 'none'}
-                      width={20}
-                      height={18}
-                    />
-                  </Pressable>
-                  <Text style={[styles.likeCount, isLiked && styles.activeText]}>
-                    {formatLikeCount(displayLikeCount)}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
                     accessibilityLabel="공유"
                     hitSlop={10}
                     style={styles.actionButton}
@@ -812,9 +646,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
   },
-  activeText: {
-    color: '#ff1956',
-  },
   caption: {
     color: '#3b3b40',
     fontSize: 12,
@@ -895,13 +726,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-  },
-  likeCount: {
-    color: '#5e5e66',
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
-    marginRight: 7,
   },
   menuCard: {
     backgroundColor: '#fff',

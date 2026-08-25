@@ -79,13 +79,7 @@ export function usePostBackedPlaces() {
 
     (postsQuery.data?.posts ?? [])
       .filter((post) => Boolean(post.imageUrl?.trim()))
-      .sort((a, b) => {
-        if (b.likeCount !== a.likeCount) {
-          return b.likeCount - a.likeCount;
-        }
-
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .forEach((post) => {
         if (!postsByPlaceId.has(post.placeId)) {
           postsByPlaceId.set(post.placeId, post);

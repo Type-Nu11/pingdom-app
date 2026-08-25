@@ -13,6 +13,7 @@ import {
 import { configureTokenSession } from '../../v2/shared/auth/tokenSession';
 import { i18n } from '../../v2/shared/i18n';
 import { initializeReservationI18n } from '../../v2/features/reservations/i18n/reservationResources';
+import { initializePlaceReportI18n } from '../../v2/features/place-report/i18n/placeReportResources';
 import { resources as legacyResources } from '../../i18n';
 
 function registerLegacyTranslationBridge() {
@@ -36,10 +37,13 @@ const AppProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     let isMounted = true;
 
-    void initializeReservationI18n()
+    void Promise.all([
+      initializeReservationI18n(),
+      initializePlaceReportI18n(),
+    ])
       .then(registerLegacyTranslationBridge)
       .catch((error) => {
-        console.warn('[V2 reservation i18n] Initialization failed:', error);
+        console.warn('[App i18n] Initialization failed:', error);
       })
       .finally(() => {
         if (isMounted) setIsI18nReady(true);

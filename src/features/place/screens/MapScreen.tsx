@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -62,6 +63,8 @@ import {
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 
+const MAP_ACTION_HEIGHT = 48;
+const MAP_ACTION_SHEET_GAP = 10;
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
 
@@ -126,10 +129,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 
 type MapScreenProps = {
   initialSection?: 'favorites' | 'map' | 'reservations';
-  notificationLikeContext?: {
-    notificationsId?: string;
-    postId?: string;
-  } | null;
+  mapAction?: React.ReactNode;
   onClearOpenedBookmarkedPlace?: () => void;
   onCreateReservation?: (place: {
     category: string;
@@ -145,6 +145,7 @@ type MapScreenProps = {
 
 export default function MapScreen({
   initialSection = 'map',
+  mapAction,
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
   onOpenProfile,
@@ -234,7 +235,6 @@ export default function MapScreen({
     initialSnapPoint: 'medium',
     mediumTranslateY,
   });
-
   useEffect(() => {
     const language = profile?.language?.trim().toLowerCase();
     const nextLanguage = language === 'korean' || language === '한국어'
@@ -555,6 +555,21 @@ export default function MapScreen({
           }}
           query={query}
         />
+        {mapAction ? (
+          <Animated.View
+            pointerEvents="box-none"
+            style={[
+              styles.mapActionLayer,
+              {
+                height: fullSheetHeight + MAP_ACTION_HEIGHT + MAP_ACTION_SHEET_GAP,
+                transform: [{ translateY: sheetTranslateY }],
+              },
+            ]}
+            testID="map-sheet-following-action"
+          >
+            <View style={styles.mapAction}>{mapAction}</View>
+          </Animated.View>
+        ) : null}
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
@@ -747,4 +762,16 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   placeListStatusText: { color: '#454750', fontSize: 13, textAlign: 'center' },
+  mapActionLayer: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    zIndex: 51,
+  },
+  mapAction: {
+    position: 'absolute',
+    right: 12,
+    top: 0,
+  },
 });

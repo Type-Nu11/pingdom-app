@@ -128,10 +128,9 @@ test('invalid app links fall back to Map and unrelated schemes are ignored', () 
 });
 
 test('Profile and Settings consume hardware back only for local UI state', () => {
-  assert.equal(getProfileBackAction(true, 'profile'), 'close-likes');
-  assert.equal(getProfileBackAction(false, 'archive-detail'), 'show-archive');
-  assert.equal(getProfileBackAction(false, 'archive'), 'show-profile');
-  assert.equal(getProfileBackAction(false, 'profile'), 'navigate-back');
+  assert.equal(getProfileBackAction('archive-detail'), 'show-archive');
+  assert.equal(getProfileBackAction('archive'), 'show-profile');
+  assert.equal(getProfileBackAction('profile'), 'navigate-back');
   assert.equal(getSettingsBackAction(2), 'pop-page');
   assert.equal(getSettingsBackAction(1), 'navigate-back');
 });
