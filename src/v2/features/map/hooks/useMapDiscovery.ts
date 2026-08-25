@@ -10,6 +10,7 @@ import {
   usePlaceVisitDecision,
 } from '../../place-exploration';
 import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
+import { env } from '../../../shared/config';
 import {
   createViewport,
   toAutocompleteResults,
@@ -73,13 +74,14 @@ export function useMapDiscovery({
     longitude: center.lng,
   }), [center.lat, center.lng, debouncedKeyword]);
 
-  const mapQuery = usePlaceMap(viewportParams, { enabled: !isFiltered });
-  const listQuery = usePlaceList(listParams, { enabled: isFiltered });
+  const discoveryEnabled = env.featureFlags.placeList;
+  const mapQuery = usePlaceMap(viewportParams, { enabled: discoveryEnabled && !isFiltered });
+  const listQuery = usePlaceList(listParams, { enabled: discoveryEnabled && isFiltered });
   const autocompleteQuery = usePlaceAutocomplete(autocompleteParams, {
-    enabled: debouncedKeyword.length >= 2,
+    enabled: discoveryEnabled && debouncedKeyword.length >= 2,
   });
   const detailId = selectedPlaceSelection?.id ?? 0;
-  const detailEnabled = selectedPlaceSelection !== null;
+  const detailEnabled = discoveryEnabled && selectedPlaceSelection !== null;
   const cardQuery = usePlaceCard(detailId, { enabled: detailEnabled });
   const decisionQuery = usePlaceVisitDecision(detailId, { enabled: detailEnabled });
   const noticesQuery = usePlaceOperatingNotices(detailId, { enabled: detailEnabled });
@@ -116,8 +118,10 @@ export function useMapDiscovery({
   return {
     autocomplete: toAutocompleteResults(autocompleteQuery.data),
     autocompleteError: autocompleteQuery.error,
+    dataSource: env.apiMode,
     hasResolvedMarkers: activeQuery.isSuccess && !activeQuery.isFetching,
     isAutocompleteLoading: autocompleteQuery.isFetching,
+    isDisabled: !discoveryEnabled,
     isEmpty: !activeQuery.isLoading && !activeQuery.error && markers.length === 0,
     isLoading: activeQuery.isLoading,
     isRefreshing: activeQuery.isFetching && !activeQuery.isLoading,

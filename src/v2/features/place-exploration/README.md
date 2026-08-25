@@ -23,3 +23,5 @@ optional signal in its variables for callers that own a navigation or link-openi
 
 Mock responses are selected only when `EXPO_PUBLIC_API_MODE=mock`. Real mode never falls back to
 fixtures after a server error, so loading, empty, and error UI reflects the real request outcome.
+The `EXPO_PUBLIC_ENABLE_PLACE_LIST` runtime flag gates list and registered-place search consumers;
+disabled is a distinct presentation state and does not issue either request.

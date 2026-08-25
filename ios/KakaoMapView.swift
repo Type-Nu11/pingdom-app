@@ -394,10 +394,10 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
 
     private func normalizeMarkerCategory(_ value: String?) -> String {
         switch value {
-        case "etc", "fashion", "food", "game", "music":
-            return value ?? "music"
+        case "art", "beauty", "cafe", "etc", "fashion", "food", "game", "heritage", "music", "popup":
+            return value ?? "etc"
         default:
-            return "music"
+            return "etc"
         }
     }
 
@@ -445,23 +445,18 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
     }
 
     private func makePlaceMarkerImage(category: String, markerType: String) -> UIImage {
-        if let image = UIImage(named: markerImageName(category: category, markerType: markerType)) {
+        // V2 marker artwork is shared across default/hot/search states. Selected-state
+        // emphasis is handled by marker visibility and camera movement in JS.
+        if let image = UIImage(named: markerImageName(category: category)) {
             return image
         }
 
-        if markerType == "hot" {
-            return makeHotMarkerImage(category: category)
-        }
-
-        if markerType == "search" {
-            return makeSearchMarkerImage()
-        }
-
-        return makeDefaultMarkerImage(category: category)
+        return UIImage(named: markerImageName(category: "etc"))
+            ?? makeDefaultMarkerImage(category: "etc")
     }
 
-    private func markerImageName(category: String, markerType: String) -> String {
-        return "map_marker_\(markerType)_\(category)"
+    private func markerImageName(category: String) -> String {
+        return "map_marker_default_\(category)"
     }
 
     private func makeDefaultMarkerImage(category: String) -> UIImage {

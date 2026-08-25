@@ -14,7 +14,17 @@ export type KakaoMapMarkerPressEvent = NativeSyntheticEvent<{
 }>;
 
 export type KakaoMapNativeMarker = {
-  category: 'etc' | 'fashion' | 'food' | 'game' | 'music';
+  category:
+    | 'art'
+    | 'beauty'
+    | 'cafe'
+    | 'etc'
+    | 'fashion'
+    | 'food'
+    | 'game'
+    | 'heritage'
+    | 'music'
+    | 'popup';
   id: string;
   lat: number;
   lng: number;

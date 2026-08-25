@@ -14,7 +14,7 @@ describe('createFocusedRecommendationMarker', () => {
 
   test('사용자가 선택한 추천 장소만 focus marker로 만든다', () => {
     expect(createFocusedRecommendationMarker(recommendation, new Set([17]), new Set())).toEqual({
-      category: 'food',
+      category: 'cafe',
       id: '17',
       lat: 37.5,
       lng: 127,

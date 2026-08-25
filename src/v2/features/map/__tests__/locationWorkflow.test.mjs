@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createTestPlaceMarkers, FALLBACK_COORDINATE } from '../model/mapFixtures.ts';
 import { resolveCurrentLocation } from '../services/locationWorkflow.ts';
 
 test('granted permission resolves the current coordinate without requesting again', async () => {
@@ -52,12 +51,4 @@ test('denied permission is distinct from a location lookup failure', async () =>
 
   assert.deepEqual(denied, { status: 'denied', coordinate: null, canAskAgain: false });
   assert.deepEqual(failed, { status: 'failed', coordinate: null, canAskAgain: true });
-});
-
-test('test markers remain visible around the fallback coordinate', () => {
-  const markers = createTestPlaceMarkers(FALLBACK_COORDINATE);
-
-  assert.equal(markers.length, 2);
-  assert.ok(markers.every((marker) => marker.lat !== FALLBACK_COORDINATE.lat));
-  assert.ok(markers.every((marker) => marker.lng !== FALLBACK_COORDINATE.lng));
 });

@@ -76,7 +76,7 @@ export const SearchContent = styled.Pressable`
   padding-left: 12px;
 `;
 
-export const SearchInput = styled.Text<{ $isPlaceholder: boolean }>`
+export const SearchInput = styled.Text.attrs({ maxFontSizeMultiplier: 1 })<{ $isPlaceholder: boolean }>`
   flex: 1;
   color: ${({ $isPlaceholder }) => ($isPlaceholder ? '#5E6069' : '#1D1E23')};
   font-size: 16px;
@@ -143,7 +143,7 @@ export const CategoryChipContent = styled.View`
   border-radius: 16px;
 `;
 
-export const CategoryLabel = styled.Text<{ $active: boolean }>`
+export const CategoryLabel = styled.Text.attrs({ maxFontSizeMultiplier: 1 })<{ $active: boolean }>`
   color: ${({ $active }) => ($active ? '#FF245B' : '#5E5E66')};
   font-size: 14px;
   font-weight: ${({ $active }) => ($active ? 700 : 500)};

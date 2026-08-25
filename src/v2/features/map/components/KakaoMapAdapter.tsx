@@ -1,4 +1,5 @@
 import React from 'react';
+import type { StyleProp, ViewStyle } from 'react-native';
 import styled from 'styled-components/native';
 
 import KakaoMapNativeView from '../../../shared/native/KakaoMapNativeView';
@@ -10,6 +11,7 @@ export type KakaoMapAdapterProps = {
   markers: MapMarker[];
   onCameraIdle?: (coordinate: Coordinate) => void;
   onMarkerSelect?: (markerId: string) => void;
+  style?: StyleProp<ViewStyle>;
   userCoordinate?: Coordinate;
   zoomLevel?: number;
 };
@@ -24,6 +26,7 @@ export default function KakaoMapAdapter({
   markers,
   onCameraIdle,
   onMarkerSelect,
+  style,
   userCoordinate,
   zoomLevel = 4,
 }: KakaoMapAdapterProps) {
@@ -35,6 +38,7 @@ export default function KakaoMapAdapter({
       markers={markers.map(({ name: _name, ...marker }) => marker)}
       onCameraIdle={(event) => onCameraIdle?.(event.nativeEvent)}
       onMarkerPress={(event) => onMarkerSelect?.(event.nativeEvent.markerId)}
+      style={style}
       testID="v2-kakao-map"
       userLat={userCoordinate?.lat}
       userLng={userCoordinate?.lng}

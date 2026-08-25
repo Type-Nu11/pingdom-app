@@ -40,3 +40,7 @@ export type {
   PlaceVisitDecision,
   RecommendationExplanation,
 } from './model/placeExploration.types';
+export {
+  getPlaceListRuntimeState,
+  type PlaceListRuntimeState,
+} from './model/placeListRuntime';

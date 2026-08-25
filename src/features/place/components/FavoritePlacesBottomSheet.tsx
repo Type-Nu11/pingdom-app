@@ -6,16 +6,20 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
+  Text as NativeText,
+  type TextProps,
   View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ArtAsset from '../../../assets/v2/icons/place/art_svg.svg';
 import BeautyAsset from '../../../assets/v2/icons/place/beati_svg.svg';
+import CafeAsset from '../../../assets/v2/icons/place/cafe_svg.svg';
 import CheckInAsset from '../../../assets/v2/icons/place/checkin_svg.svg';
+import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
 import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
+import HeritageAsset from '../../../assets/v2/icons/place/heritage.svg';
 import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
 import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
 import MyPlaceAsset from '../../../assets/v2/icons/place/my_place.svg';
@@ -25,8 +29,9 @@ import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import type { DecisionPlace } from './MapBottomSheet';
 import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
+import { normalizePlaceCategory } from '../utils/placeCategory';
 
-type FavoriteCategory = 'all' | 'music' | 'food' | 'popup' | 'fashion' | 'beauty' | 'art';
+type FavoriteCategory = 'all' | 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 'food' | 'heritage' | 'music' | 'popup';
 
 type FavoritePlacesBottomSheetProps = {
   collapsedTranslateY: number;
@@ -57,6 +62,7 @@ type FavoritePlacesBottomSheetProps = {
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
+const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: FavoriteCategory;
@@ -69,32 +75,33 @@ const categories: Array<{
   { Icon: FashionAsset, id: 'fashion', label: '패션' },
   { Icon: BeautyAsset, id: 'beauty', label: '뷰티' },
   { Icon: ArtAsset, id: 'art', label: '전시' },
+  { Icon: CafeAsset, id: 'cafe', label: '카페' },
+  { Icon: HeritageAsset, id: 'heritage', label: '문화재' },
+  { Icon: EtcAsset, id: 'etc', label: '기타' },
 ];
 
-const categoryAliases: Record<Exclude<FavoriteCategory, 'all'>, string[]> = {
-  art: ['art', 'exhibit', 'exhibition', '전시'],
-  beauty: ['beauty', '뷰티'],
-  fashion: ['fashion', '패션'],
-  food: ['cafe', 'dining', 'food', 'restaurant', '음식', '카페'],
-  music: ['music', '음악'],
-  popup: ['pop-up', 'popup', '팝업'],
+const categoryLabels: Record<Exclude<FavoriteCategory, 'all'>, string> = {
+  art: '전시',
+  beauty: '뷰티',
+  cafe: '카페',
+  etc: '기타',
+  fashion: '패션',
+  food: '음식점',
+  heritage: '문화재',
+  music: '음악',
+  popup: '팝업',
 };
 
-const getCategoryLabel = (place: DecisionPlace) => {
-  const category = place.category.toLowerCase();
-  if (categoryAliases.music.some((alias) => category.includes(alias))) return '음악';
-  if (categoryAliases.food.some((alias) => category.includes(alias))) return '음식점';
-  if (categoryAliases.popup.some((alias) => category.includes(alias))) return '팝업';
-  if (categoryAliases.fashion.some((alias) => category.includes(alias))) return '패션';
-  if (categoryAliases.beauty.some((alias) => category.includes(alias))) return '뷰티';
-  if (categoryAliases.art.some((alias) => category.includes(alias))) return '전시';
-  return place.category;
+const getFavoriteCategory = (place: DecisionPlace): Exclude<FavoriteCategory, 'all'> => {
+  const category = normalizePlaceCategory(place.category);
+  return category === 'game' ? 'popup' : category;
 };
+
+const getCategoryLabel = (place: DecisionPlace) => categoryLabels[getFavoriteCategory(place)];
 
 const matchesCategory = (place: DecisionPlace, category: FavoriteCategory) => {
   if (category === 'all') return true;
-  const value = place.category.toLowerCase();
-  return categoryAliases[category].some((alias) => value.includes(alias));
+  return getFavoriteCategory(place) === category;
 };
 
 const formatDistance = (place: DecisionPlace) => {
