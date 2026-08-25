@@ -20,8 +20,6 @@ export type PostId = RouteId<'Post'>;
 export type NotificationId = RouteId<'Notification'>;
 export type ReservationId = RouteId<'Reservation'>;
 
-export type ProfileTab = 'liked' | 'saved';
-
 export type NotificationNavigationContext = {
   body?: string;
   notificationId?: NotificationId;
@@ -44,6 +42,7 @@ export const MAIN_ROUTES = {
   CouponWallet: 'CouponWallet',
   Map: 'Map',
   Merchant: 'Merchant',
+  PlaceReport: 'PlaceReport',
   Profile: 'Profile',
   CreateReservation: 'CreateReservation',
   ReservationDetail: 'ReservationDetail',
@@ -73,9 +72,8 @@ export type MainStackParamList = {
     placeId: PlaceId;
     placeName?: string;
   };
-  Profile: {
-    initialTab?: ProfileTab;
-  } | undefined;
+  Profile: undefined;
+  PlaceReport: undefined;
   ReservationDetail: {
     reservationId: ReservationId;
   };

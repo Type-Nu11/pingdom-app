@@ -8,7 +8,6 @@ import ArchiveFeedItem, { type ArchivePost } from './ArchiveFeedItem';
 
 type ArchiveDetailViewProps = {
   initialPostId: number | null;
-  onOpenLikes: () => void;
   posts?: Post[];
 };
 
@@ -26,22 +25,12 @@ function formatArchiveDate(createdAt: string) {
   return `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}`;
 }
 
-function formatLikeCount(likeCount: number) {
-  if (likeCount >= 1000) {
-    const compactCount = Math.floor(likeCount / 100) / 10;
-    return `${compactCount % 1 === 0 ? Math.floor(compactCount) : compactCount}K`;
-  }
-
-  return String(likeCount);
-}
-
 function toArchivePost(post: Post): ArchivePost {
   return {
     date: formatArchiveDate(post.createdAt),
     description: post.description ?? '',
     id: post.id,
     imageSource: { uri: post.imageUrl },
-    likeCount: formatLikeCount(post.likeCount),
     title: post.title || post.placeName,
     username: post.username,
   };
@@ -49,7 +38,6 @@ function toArchivePost(post: Post): ArchivePost {
 
 const ArchiveDetailView = ({
   initialPostId,
-  onOpenLikes,
   posts: sourcePosts,
 }: ArchiveDetailViewProps) => {
   const archivePosts = useMemo(() => {
@@ -112,7 +100,6 @@ const ArchiveDetailView = ({
             isUpdating={isUpdating}
             item={post}
             onDelete={handleDelete}
-            onOpenLikes={onOpenLikes}
             onUpdate={handleUpdate}
           />
         ))

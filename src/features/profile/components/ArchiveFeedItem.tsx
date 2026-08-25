@@ -12,7 +12,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import LikeIcon from '../../../assets/v2/icons/actions/Like.svg';
 import EditIcon from '../../../assets/v2/icons/edit/Vector.svg';
 import TrashIcon from '../../../assets/v2/icons/edit/gg_trash.svg';
 import type { UpdateRecordRequest } from '../../record/api/recordApi';
@@ -24,7 +23,6 @@ export type ArchivePost = {
   description: string;
   id: number;
   imageSource: ImageSourcePropType;
-  likeCount: string;
   title: string;
   username: string;
 };
@@ -35,7 +33,6 @@ type ArchiveFeedItemProps = {
   isUpdating?: boolean;
   item: ArchivePost;
   onDelete: (id: number) => Promise<void>;
-  onOpenLikes: () => void;
   onUpdate: (id: number, payload: UpdateRecordRequest) => Promise<void>;
 };
 
@@ -45,7 +42,6 @@ const ArchiveFeedItem = ({
   isUpdating = false,
   item,
   onDelete,
-  onOpenLikes,
   onUpdate,
 }: ArchiveFeedItemProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -191,11 +187,6 @@ const ArchiveFeedItem = ({
       </View>
 
       <View style={styles.content}>
-        <Pressable style={styles.likeRow} onPress={onOpenLikes}>
-          <LikeIcon color="#5e5e66" fill="none" width={20} height={18} />
-          <Text style={styles.likeText}>{item.likeCount}</Text>
-        </Pressable>
-
         <Text style={styles.caption}>
           <Text style={styles.captionAuthor}>{item.username} </Text>
           {item.description}
@@ -369,17 +360,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     minHeight: 48,
     paddingHorizontal: 12,
-  },
-  likeRow: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  likeText: {
-    color: '#5e5e66',
-    fontSize: 12,
-    fontWeight: '500',
   },
   menu: {
     backgroundColor: '#fff',

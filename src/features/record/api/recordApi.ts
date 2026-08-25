@@ -15,24 +15,10 @@ const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
   webp: 'image/webp',
 };
 
-export type CreateRecordRequest = {
-  description?: string;
-  file: RecordUploadFile;
-  kakaoPlaceId?: string;
-  placeId?: number;
-  title: string;
-  validPlace?: boolean;
-};
-
 export type UpdateRecordRequest = {
   description?: string;
   file?: RecordUploadFile;
   title: string;
-};
-
-export type CreateRecordResponse = {
-  id: number;
-  message: string;
 };
 
 export type GetPostsRequest = {
@@ -42,38 +28,13 @@ export type GetPostsRequest = {
   userId?: number;
 };
 
-export type GetLikedPostsRequest = {
-  limit?: number;
-  page?: number;
-};
-
 export type GetReportsRequest = {
   limit?: number;
   page?: number;
 };
 
-export type RecordLikeRequest = {
-  mapImageId: number;
-};
-
 export type PostReportRequest = {
   reason: string;
-};
-
-export type RecordLikeResponse = {
-  message?: string;
-  mapImageId: number;
-  userId: number;
-};
-
-export type PostLikeResponse = RecordLikeResponse;
-
-export type PostLikeReturnResponse = PostLikeResponse | {
-  isLiked?: boolean;
-  likeCount?: number;
-  liked?: boolean;
-  likedByMe?: boolean;
-  message?: string;
 };
 
 export type RecordApiErrorCode =
@@ -104,38 +65,6 @@ function getMimeType(fileName: string) {
   return MIME_TYPE_BY_EXTENSION[extension] ?? 'image/jpeg';
 }
 
-function buildCreateRecordFormData(payload: CreateRecordRequest) {
-  const formData = new FormData();
-  const fileName = payload.file.name ?? getFileNameFromUri(payload.file.uri);
-  const mimeType = payload.file.type ?? getMimeType(fileName);
-
-  formData.append('title', payload.title);
-
-  if (payload.description) {
-    formData.append('description', payload.description);
-  }
-
-  if (payload.kakaoPlaceId) {
-    formData.append('kakaoPlaceId', payload.kakaoPlaceId);
-  }
-
-  if (payload.placeId !== undefined) {
-    formData.append('placeId', String(payload.placeId));
-  }
-
-  if (payload.validPlace !== undefined) {
-    formData.append('validPlace', String(payload.validPlace));
-  }
-
-  formData.append('file', {
-    name: fileName,
-    type: mimeType,
-    uri: payload.file.uri,
-  } as any);
-
-  return formData;
-}
-
 function appendRecordFile(formData: FormData, file: RecordUploadFile) {
   const fileName = file.name ?? getFileNameFromUri(file.uri);
   const mimeType = file.type ?? getMimeType(fileName);
@@ -164,13 +93,6 @@ function buildUpdateRecordFormData(payload: UpdateRecordRequest) {
 }
 
 export const recordApi = {
-  createRecord: async (payload: CreateRecordRequest): Promise<CreateRecordResponse> => {
-    const formData = buildCreateRecordFormData(payload);
-    const { data } = await api.post<CreateRecordResponse>('/map/posts', formData, {
-      headers: { 'Content-Type': undefined },
-    });
-    return data;
-  },
   deleteRecord: async (id: number): Promise<string> => {
     const { data } = await api.delete<string>(`/map/posts/${id}`);
     return data;
@@ -192,42 +114,6 @@ export const recordApi = {
       },
     });
 
-    return data;
-  },
-  getLikedPosts: async (params: GetLikedPostsRequest = {}): Promise<PostsPage> => {
-    const { data } = await api.get<PostsPage>('/map/likes', {
-      params: {
-        limit: params.limit ?? 100,
-        page: params.page ?? 1,
-      },
-    });
-
-    return data;
-  },
-  likeRecord: async (payload: RecordLikeRequest): Promise<RecordLikeResponse> => {
-    const { data } = await api.post<RecordLikeResponse>('/map/like', payload);
-    return data;
-  },
-  unlikeRecord: async (postId: number): Promise<void> => {
-    await api.delete(`/map/like/${postId}`);
-  },
-  likePost: async (postId: number): Promise<PostLikeResponse> => {
-    const { data } = await api.post<PostLikeResponse>('/map/like', {
-      mapImageId: postId,
-    });
-    return data;
-  },
-  likeReturnPost: async (
-    postId: number,
-    notificationsId: number
-  ): Promise<PostLikeReturnResponse> => {
-    const { data } = await api.post<PostLikeReturnResponse>(
-      `/map/like/return/${postId}/${notificationsId}`
-    );
-    return data;
-  },
-  unlikePost: async (postId: number): Promise<PostLikeResponse> => {
-    const { data } = await api.delete<PostLikeResponse>(`/map/like/${postId}`);
     return data;
   },
   reportRecord: async (id: number, payload: PostReportRequest): Promise<string> => {
