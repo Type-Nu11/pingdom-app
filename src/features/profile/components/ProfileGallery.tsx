@@ -17,16 +17,11 @@ type ProfileGalleryProps = {
   isArchivePostsLoading?: boolean;
   isBookmarkedPostsError?: boolean;
   isBookmarkedPostsLoading?: boolean;
-  isLikedPostsError?: boolean;
-  isLikedPostsLoading?: boolean;
   itemSize: number;
-  likedPosts?: Post[];
   onArchiveItemPress: (post?: Post) => void;
   onBookmarkedPostPress?: (post: Post) => void;
-  onLikedPostPress?: (post: Post) => void;
   onRetryArchivePosts?: () => void;
   onRetryBookmarkedPosts?: () => void;
-  onRetryLikedPosts?: () => void;
 };
 
 function getDateBadge(createdAt: string) {
@@ -54,20 +49,14 @@ const ProfileGallery = ({
   isArchivePostsLoading = false,
   isBookmarkedPostsError = false,
   isBookmarkedPostsLoading = false,
-  isLikedPostsError = false,
-  isLikedPostsLoading = false,
   itemSize,
-  likedPosts,
   onArchiveItemPress,
   onBookmarkedPostPress,
-  onLikedPostPress,
   onRetryArchivePosts,
   onRetryBookmarkedPosts,
-  onRetryLikedPosts,
 }: ProfileGalleryProps) => {
   const isBookmarkedPostsView = bookmarkedPosts !== undefined;
   const isArchivePostsView = isArchive && archivePosts !== undefined;
-  const isLikedPostsView = likedPosts !== undefined;
 
   return (
     <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
@@ -120,50 +109,6 @@ const ProfileGallery = ({
                 </Pressable>
               );
             })}
-          </View>
-        )
-      ) : isLikedPostsView ? (
-        isLikedPostsLoading ? (
-          <View style={styles.stateContainer}>
-            <ActivityIndicator color="#ff1956" />
-            <Text style={styles.stateText}>좋아요한 게시글을 불러오고 있어요</Text>
-          </View>
-        ) : isLikedPostsError ? (
-          <View style={styles.stateContainer}>
-            <Text style={styles.stateText}>좋아요한 게시글을 불러오지 못했어요</Text>
-            {onRetryLikedPosts ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="좋아요한 게시글 다시 불러오기"
-                style={styles.retryButton}
-                onPress={onRetryLikedPosts}
-              >
-                <Text style={styles.retryText}>다시 시도</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : likedPosts.length === 0 ? (
-          <View style={styles.stateContainer}>
-            <Text style={styles.stateText}>좋아요한 게시글이 없어요</Text>
-          </View>
-        ) : (
-          <View style={styles.gallery}>
-            {likedPosts.map((post) => (
-              <Pressable
-                key={post.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${post.title} 게시글 보기`}
-                disabled={!onLikedPostPress}
-                style={[styles.tile, { height: itemSize, width: itemSize }]}
-                onPress={() => onLikedPostPress?.(post)}
-              >
-                <Image
-                  source={{ uri: post.imageUrl }}
-                  resizeMode="cover"
-                  style={styles.fullImage}
-                />
-              </Pressable>
-            ))}
           </View>
         )
       ) : isBookmarkedPostsView ? (

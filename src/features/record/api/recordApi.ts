@@ -28,38 +28,13 @@ export type GetPostsRequest = {
   userId?: number;
 };
 
-export type GetLikedPostsRequest = {
-  limit?: number;
-  page?: number;
-};
-
 export type GetReportsRequest = {
   limit?: number;
   page?: number;
 };
 
-export type RecordLikeRequest = {
-  mapImageId: number;
-};
-
 export type PostReportRequest = {
   reason: string;
-};
-
-export type RecordLikeResponse = {
-  message?: string;
-  mapImageId: number;
-  userId: number;
-};
-
-export type PostLikeResponse = RecordLikeResponse;
-
-export type PostLikeReturnResponse = PostLikeResponse | {
-  isLiked?: boolean;
-  likeCount?: number;
-  liked?: boolean;
-  likedByMe?: boolean;
-  message?: string;
 };
 
 export type RecordApiErrorCode =
@@ -139,42 +114,6 @@ export const recordApi = {
       },
     });
 
-    return data;
-  },
-  getLikedPosts: async (params: GetLikedPostsRequest = {}): Promise<PostsPage> => {
-    const { data } = await api.get<PostsPage>('/map/likes', {
-      params: {
-        limit: params.limit ?? 100,
-        page: params.page ?? 1,
-      },
-    });
-
-    return data;
-  },
-  likeRecord: async (payload: RecordLikeRequest): Promise<RecordLikeResponse> => {
-    const { data } = await api.post<RecordLikeResponse>('/map/like', payload);
-    return data;
-  },
-  unlikeRecord: async (postId: number): Promise<void> => {
-    await api.delete(`/map/like/${postId}`);
-  },
-  likePost: async (postId: number): Promise<PostLikeResponse> => {
-    const { data } = await api.post<PostLikeResponse>('/map/like', {
-      mapImageId: postId,
-    });
-    return data;
-  },
-  likeReturnPost: async (
-    postId: number,
-    notificationsId: number
-  ): Promise<PostLikeReturnResponse> => {
-    const { data } = await api.post<PostLikeReturnResponse>(
-      `/map/like/return/${postId}/${notificationsId}`
-    );
-    return data;
-  },
-  unlikePost: async (postId: number): Promise<PostLikeResponse> => {
-    const { data } = await api.delete<PostLikeResponse>(`/map/like/${postId}`);
     return data;
   },
   reportRecord: async (id: number, payload: PostReportRequest): Promise<string> => {

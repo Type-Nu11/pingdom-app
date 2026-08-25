@@ -1,13 +1,10 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import LikeIcon from '../../../assets/v2/icons/actions/Like.svg';
 import SavedIcon from '../../../assets/v2/icons/actions/Saved.svg';
 import type { ProfileResponse } from '../api/profileApi';
 
 type ProfileHeaderProps = {
-  activeTab: 'liked' | 'saved';
   isArchive: boolean;
   isLoading?: boolean;
-  onChangeTab: (tab: 'liked' | 'saved') => void;
   onOpenApiCheck: () => void;
   onOpenArchive: () => void;
   onOpenSettings: () => void;
@@ -32,10 +29,8 @@ function getAvatarInitial(displayName: string) {
 }
 
 const ProfileHeader = ({
-  activeTab,
   isArchive,
   isLoading = false,
-  onChangeTab,
   onOpenApiCheck,
   onOpenArchive,
   onOpenSettings,
@@ -81,24 +76,15 @@ const ProfileHeader = ({
 
       {showTabs && (
         <View style={styles.tabBar}>
-          <Pressable style={styles.tabItem} onPress={() => onChangeTab('liked')}>
-            <LikeIcon
-              color={activeTab === 'liked' ? '#ff1956' : '#c7c8cc'}
-              fill={activeTab === 'liked' ? '#ff1956' : 'none'}
-              width={34}
-              height={31}
-            />
-            {activeTab === 'liked' && <View style={styles.activeTabLine} />}
-          </Pressable>
-          <Pressable style={styles.tabItem} onPress={() => onChangeTab('saved')}>
+          <View style={styles.tabItem}>
             <SavedIcon
-              color={activeTab === 'saved' ? '#ff1956' : '#c7c8cc'}
-              fill={activeTab === 'saved' ? '#ff1956' : 'none'}
+              color="#ff1956"
+              fill="#ff1956"
               width={29}
               height={34}
             />
-            {activeTab === 'saved' && <View style={styles.activeTabLine} />}
-          </Pressable>
+            <View style={styles.activeTabLine} />
+          </View>
         </View>
       )}
     </>

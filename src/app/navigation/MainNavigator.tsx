@@ -49,10 +49,6 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
     <MapRouteContainer>
       <MapScreen
         initialSection={initialSection}
-        notificationLikeContext={notificationContext ? {
-          notificationsId: notificationContext.notificationId?.toString(),
-          postId: notificationContext.postId?.toString(),
-        } : null}
         openedBookmarkedPlaceId={focusedPlaceId ?? null}
         onClearOpenedBookmarkedPlace={clearFocusedPlace}
         onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
@@ -90,9 +86,8 @@ const PlaceReportRouteScreen = ({ navigation }: MainScreenProps<'PlaceReport'>) 
   </V2ScreenBoundary>
 );
 
-const ProfileRouteScreen = ({ navigation, route }: MainScreenProps<'Profile'>) => (
+const ProfileRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
   <ProfileScreen
-    initialTab={route.params?.initialTab}
     onBack={navigation.goBack}
     onOpenBookmarkedPost={(value) => {
       const mapParams = createFocusedPlaceMapParams(value);

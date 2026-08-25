@@ -195,10 +195,6 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 
 type MapScreenProps = {
   initialSection?: 'favorites' | 'map' | 'reservations';
-  notificationLikeContext?: {
-    notificationsId?: string;
-    postId?: string;
-  } | null;
   onClearOpenedBookmarkedPlace?: () => void;
   onCreateReservation?: (place: {
     category: string;
