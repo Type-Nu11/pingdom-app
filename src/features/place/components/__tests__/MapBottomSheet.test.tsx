@@ -98,4 +98,78 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('recommendation-grid-row-1')).toBeVisible();
     expect(screen.getByTestId('recommendation-grid-row-2')).toBeVisible();
   });
+
+  test('랭킹 응답이 비어 있으면 GET /places 장소 목록을 기본 피드에 표시한다', async () => {
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'home' }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onCouponPress={jest.fn()}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={places}
+        rankingPlaces={[]}
+        rankingState="empty"
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={null}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(0)}
+        snapPoint="medium"
+      />,
+    );
+
+    expect(screen.getByText('추천 장소 1')).toBeVisible();
+    expect(screen.queryByText('표시할 핫플이 아직 없어요')).not.toBeOnTheScreen();
+  });
+
+  test('확장 홈에서 서버 장소의 전체 카테고리 필터를 제공한다', async () => {
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'home' }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onCouponPress={jest.fn()}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={places}
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={null}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(0)}
+        snapPoint="expanded"
+      />,
+    );
+
+    ['팝업', '음악', '음식점', '패션', '뷰티', '전시', '카페', '문화재', '기타']
+      .forEach((name) => expect(screen.getByRole('tab', { name })).toBeVisible());
+  });
 });

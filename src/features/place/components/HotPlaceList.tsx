@@ -1,9 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import FirstPlaceIcon from '../../../assets/v2/icons/FirstPlace.svg';
 import HotPlaceIcon from '../../../assets/v2/icons/hotplace.svg';
-import SecondPlaceIcon from '../../../assets/v2/icons/SecondPlace.svg';
-import ThirdPlaceIcon from '../../../assets/v2/icons/ThirdPlace.svg';
 import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
 import type { RecommendedPlace } from '../model/place.types';
 
@@ -60,22 +57,14 @@ const HotPlaceList = ({
             onPress={() => onPlacePress?.(place)}
           >
             <View style={styles.rankColumn}>
-              {rank === 1 ? (
-                <FirstPlaceIcon height={36} width={25} />
-              ) : rank === 2 ? (
-                <SecondPlaceIcon height={36} width={25} />
-              ) : rank === 3 ? (
-                <ThirdPlaceIcon height={36} width={25} />
-              ) : (
-                <Text
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.78}
-                  numberOfLines={1}
-                  style={styles.rankNumber}
-                >
-                  {rank}.
-                </Text>
-              )}
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.78}
+                numberOfLines={1}
+                style={styles.rankNumber}
+              >
+                {rank}.
+              </Text>
             </View>
             <View style={styles.profileIcon}>
               <View style={styles.profileHead} />

@@ -6,7 +6,8 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
+  Text as NativeText,
+  type TextProps,
   View,
 } from 'react-native';
 import Svg, {
@@ -30,8 +31,12 @@ import ParkAsset from '../../../assets/v2/icons/place/Park.svg';
 import PinAsset from '../../../assets/v2/icons/place/Pin.svg';
 import TicketAsset from '../../../assets/v2/icons/place/Tiket.svg';
 import ArtAsset from '../../../assets/v2/icons/place/art_svg.svg';
+import BeautyAsset from '../../../assets/v2/icons/place/beati_svg.svg';
+import CafeAsset from '../../../assets/v2/icons/place/cafe_svg.svg';
+import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
 import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
+import HeritageAsset from '../../../assets/v2/icons/place/heritage.svg';
 import HotPlaceAsset from '../../../assets/v2/icons/place/hotplace.svg';
 import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
 import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
@@ -146,7 +151,10 @@ type IconProps = {
   size?: number;
 };
 
-type SheetCategory = 'art' | 'fashion' | 'food' | 'music' | 'popup';
+type SheetCategory = 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 'food' | 'heritage' | 'music' | 'popup';
+
+// Keep the Figma typography stable when an Android device uses a larger system font scale.
+const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
@@ -156,7 +164,11 @@ const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
   { id: 'music', label: '음악' },
   { id: 'food', label: '음식점' },
   { id: 'fashion', label: '패션' },
+  { id: 'beauty', label: '뷰티' },
   { id: 'art', label: '전시' },
+  { id: 'cafe', label: '카페' },
+  { id: 'heritage', label: '문화재' },
+  { id: 'etc', label: '기타' },
 ];
 
 export const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
@@ -222,6 +234,14 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
       return <FashionAsset color={color} height={18} width={24} />;
     case 'art':
       return <ArtAsset color={color} height={18} width={18} />;
+    case 'beauty':
+      return <BeautyAsset color={color} height={18} width={12} />;
+    case 'cafe':
+      return <CafeAsset color={color} height={18} width={19} />;
+    case 'heritage':
+      return <HeritageAsset color={color} height={18} width={21} />;
+    case 'etc':
+      return <EtcAsset color={color} height={18} width={18} />;
   }
 };
 
@@ -276,18 +296,11 @@ const FeedSegment = ({
   </View>
 );
 
-const CARD_FALLBACKS = [
-  '오아시스 팝업 스토어',
-  '성수 스튜디오 마켓',
-  '레이어드 커피 랩',
-  '커먼 테이블 성수',
-];
-
 const HOME_BOOKMARK_STAR_PATH = 'M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z';
 
 const BookmarkStar = ({
   selected,
-  size = 35,
+  size = 28,
   strokeColor = '#FFFFFF',
 }: {
   selected: boolean;
@@ -310,8 +323,6 @@ const BookmarkStar = ({
     />
   </Svg>
 );
-
-const PLACEHOLDER_IMAGE_URL = 'https://placehold.co/520x280.png';
 
 const formatDistance = (place: DecisionPlace) => {
   if (place.distanceMeters !== undefined) {
@@ -336,15 +347,25 @@ const PlaceArtwork = ({
     setHasImageError(false);
   }, [imageUrl]);
 
-  const sourceUrl = imageUrl && !hasImageError ? imageUrl : PLACEHOLDER_IMAGE_URL;
+  if (!imageUrl || hasImageError) {
+    const fallbackMessage = hasImageError ? '이미지를 불러오지 못했어요' : '이미지 없음';
+
+    return (
+      <View
+        accessibilityLabel={fallbackMessage}
+        style={[styles.artwork, styles.artworkFallback, variant === 'grid' && styles.gridArtwork]}
+      >
+        <MapPinIcon active size={24} />
+        <Text style={styles.artworkFallbackText}>{fallbackMessage}</Text>
+      </View>
+    );
+  }
 
   return (
     <Image
-      onError={() => {
-        if (sourceUrl !== PLACEHOLDER_IMAGE_URL) setHasImageError(true);
-      }}
+      onError={() => setHasImageError(true)}
       resizeMode="cover"
-      source={{ uri: sourceUrl }}
+      source={{ uri: imageUrl }}
       style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
     />
   );
@@ -381,18 +402,14 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
 
 export const RecommendationFeaturedCard = ({
   bookmarked,
-  fontSizeOffset = 0,
   imageUrl,
-  index,
   onPress,
   onToggleBookmark,
   pending,
   place,
 }: {
   bookmarked: boolean;
-  fontSizeOffset?: number;
   imageUrl?: string;
-  index: number;
   onPress: () => void;
   onToggleBookmark: () => void;
   pending: boolean;
@@ -424,30 +441,15 @@ export const RecommendationFeaturedCard = ({
           )}
         </Pressable>
         <View style={styles.placeCardBody}>
-          <Text
-            numberOfLines={2}
-            style={[
-              styles.placeCardName,
-              fontSizeOffset > 0 && {
-                fontSize: 13 + fontSizeOffset,
-                lineHeight: 16 + fontSizeOffset,
-              },
-            ]}
-          >
-            {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
+          <Text numberOfLines={2} style={styles.placeCardName}>
+            {place.name || '장소명 없음'}
           </Text>
         </View>
       </View>
       {place.recommendationReason ? (
         <View style={styles.recommendationMetaRow}>
           <RecommendationMetaIcon label={place.recommendationReason} />
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.recommendationReason,
-              fontSizeOffset > 0 && { fontSize: 11 + fontSizeOffset },
-            ]}
-          >
+          <Text numberOfLines={1} style={styles.recommendationReason}>
             {place.recommendationReason}
           </Text>
         </View>
@@ -459,13 +461,7 @@ export const RecommendationFeaturedCard = ({
           ].filter(Boolean).join(' · ')}
         </Text>
       ) : null}
-      <Text
-        numberOfLines={1}
-        style={[
-          styles.placeCardDistance,
-          fontSizeOffset > 0 && { fontSize: 11 + fontSizeOffset },
-        ]}
-      >
+      <Text numberOfLines={1} style={styles.placeCardDistance}>
         여기서 {formatDistance(place)}
       </Text>
     </Pressable>
@@ -533,7 +529,6 @@ const RecommendationGridCard = ({
 const PlaceTrendCard = ({
   bookmarked,
   imageUrl,
-  index,
   onPress,
   onToggleBookmark,
   pending,
@@ -541,7 +536,6 @@ const PlaceTrendCard = ({
 }: {
   bookmarked: boolean;
   imageUrl?: string;
-  index: number;
   onPress: () => void;
   onToggleBookmark: () => void;
   pending: boolean;
@@ -573,7 +567,7 @@ const PlaceTrendCard = ({
     </Pressable>
     <View style={styles.homeTrendCardBody}>
       <Text numberOfLines={1} style={styles.homeTrendCardName}>
-        {place.name || CARD_FALLBACKS[index % CARD_FALLBACKS.length]}
+        {place.name || '장소명 없음'}
       </Text>
       <Text numberOfLines={1} style={styles.homeTrendCardDistance}>
         여기서 {formatDistance(place)}
@@ -632,8 +626,12 @@ const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => 
   const value = place.category.trim().toLowerCase();
   const aliases: Record<SheetCategory, string[]> = {
     art: ['art', 'exhibit', 'exhibition', '전시'],
+    beauty: ['beauty', '뷰티', '미용'],
+    cafe: ['cafe', 'coffee', '카페', '커피'],
+    etc: ['etc', 'other', '기타'],
     fashion: ['fashion', '패션'],
-    food: ['cafe', 'dining', 'food', 'restaurant', '음식', '카페'],
+    food: ['dining', 'food', 'restaurant', '음식', '식당'],
+    heritage: ['heritage', 'historic', 'ruin', '문화재', '유적'],
     music: ['music', '음악'],
     popup: ['pop-up', 'popup', '팝업'],
   };
@@ -688,11 +686,10 @@ const ExpandedHomeContent = ({
         showsHorizontalScrollIndicator={false}
         style={styles.rowScroll}
       >
-        {places.length > 0 ? places.slice(0, 6).map((place, index) => (
+        {places.length > 0 ? places.slice(0, 6).map((place) => (
           <PlaceTrendCard
             bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
             imageUrl={imageUrlsByPlaceId[String(place.id)]}
-            index={index}
             key={`featured-${place.id}`}
             onPress={() => onPlacePress(place)}
             onToggleBookmark={() => void onToggleBookmark(
@@ -872,11 +869,10 @@ const RecommendationContent = ({
             nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
           >
-            {featuredPlaces.map((place, index) => (
+            {featuredPlaces.map((place) => (
               <RecommendationFeaturedCard
                 bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                index={index}
                 key={`recommendation-featured-${place.id}`}
                 onPress={() => onPlacePress(place)}
                 onToggleBookmark={() => void onToggleBookmark(
@@ -1555,7 +1551,12 @@ export default function MapBottomSheet({
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
   // 서버 랭킹이 붙어 있으면 그대로 쓰고, 없을 때만 기존 목록으로 대체한다.
-  const shownPlaces = rankingPlaces ?? (feed === 'local' ? places : [...places].reverse());
+  const fallbackPlaces = feed === 'local' ? places : [...places].reverse();
+  const hasRankingPlaces = Boolean(rankingPlaces?.length);
+  const shownPlaces = hasRankingPlaces ? rankingPlaces! : fallbackPlaces;
+  const shownPlacesState = hasRankingPlaces || fallbackPlaces.length > 0
+    ? 'ready'
+    : rankingState;
   const previewPlaces = [...places, ...recommendationPlaces, ...(rankingPlaces ?? [])]
     .filter((place, index, items) => items.findIndex((item) => item.id === place.id) === index);
   const { imageUrlsByPlaceId: previewImageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
@@ -1726,7 +1727,7 @@ export default function MapBottomSheet({
           onPlacePress={onPlacePress}
           onToggleBookmark={onToggleBookmark}
           places={shownPlaces}
-          state={rankingState}
+          state={shownPlacesState}
           userName={userName?.trim() || 'user'}
         />
       ) : (
@@ -1738,11 +1739,10 @@ export default function MapBottomSheet({
             showsHorizontalScrollIndicator={false}
             style={styles.rowScroll}
           >
-            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place, index) => (
+            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place) => (
               <PlaceTrendCard
                 bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                index={index}
                 key={place.id}
                 onPress={() => onPlacePress(place)}
                 onToggleBookmark={() => void onToggleBookmark(
@@ -1752,7 +1752,7 @@ export default function MapBottomSheet({
                 pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
                 place={place}
               />
-            )) : <EmptyCard state={rankingState} variant="row" />}
+            )) : <EmptyCard state={shownPlacesState} variant="row" />}
           </ScrollView>
         </>
       )}
@@ -1781,6 +1781,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     width: '100%',
   },
+  artworkFallback: { alignItems: 'center', justifyContent: 'center' },
+  artworkFallbackText: { color: '#FF245B', fontSize: 10, fontWeight: '700', marginTop: 5 },
   detailActionRow: { columnGap: 8, paddingBottom: 12, paddingHorizontal: 16 },
   detailAmenityRow: { columnGap: 10, flexDirection: 'row', paddingTop: 16 },
   detailBackText: { color: '#555860', fontSize: 34, fontWeight: '300', lineHeight: 36, marginTop: -4 },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import KakaoMapCard, { type KakaoMapMarkerPressEvent } from './KakaoMapCard';
+import KakaoMapAdapter from '../../../v2/features/map/components/KakaoMapAdapter';
 import type { MapMarker } from '../model/place.types';
 
 type MapCanvasProps = {
@@ -10,10 +10,11 @@ type MapCanvasProps = {
   followUser: boolean;
   markers: MapMarker[];
   onCameraIdle?: () => void;
-  onMarkerPress: (event: KakaoMapMarkerPressEvent) => void;
+  onMarkerPress: (markerId: string) => void;
   style?: StyleProp<ViewStyle>;
   userLat: number;
   userLng: number;
+  zoomLevel: number;
 };
 
 const MapCanvas = ({
@@ -26,18 +27,17 @@ const MapCanvas = ({
   style,
   userLat,
   userLng,
+  zoomLevel,
 }: MapCanvasProps) => (
-  <KakaoMapCard
-    centerLat={centerLat}
-    centerLng={centerLng}
+  <KakaoMapAdapter
+    center={{ lat: centerLat, lng: centerLng }}
     followUser={followUser}
-    markers={markers}
+    markers={markers.map((marker) => ({ ...marker, name: marker.id }))}
     onCameraIdle={() => onCameraIdle?.()}
-    onMarkerPress={onMarkerPress}
+    onMarkerSelect={onMarkerPress}
     style={[styles.map, style]}
-    userLat={userLat}
-    userLng={userLng}
-    zoomLevel={4}
+    userCoordinate={{ lat: userLat, lng: userLng }}
+    zoomLevel={zoomLevel}
   />
 );
 

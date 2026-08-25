@@ -6,6 +6,7 @@ import CafeIcon from '../../../assets/v2/icons/place/cafe_svg.svg';
 import EtcIcon from '../../../assets/v2/icons/place/etc_svg.svg';
 import FashionIcon from '../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodIcon from '../../../assets/v2/icons/place/food_svg.svg';
+import HeritageIcon from '../../../assets/v2/icons/place/heritage.svg';
 import MusicIcon from '../../../assets/v2/icons/place/music_svg.svg';
 import PopupIcon from '../../../assets/v2/icons/place/popup_svg.svg';
 import ProfileAsset from '../../../assets/v2/icons/place/profile_svg.svg';
@@ -19,6 +20,7 @@ export type MapCategoryId =
   | 'etc'
   | 'fashion'
   | 'food'
+  | 'heritage'
   | 'music'
   | 'popup';
 
@@ -45,6 +47,7 @@ const categories: Array<{
   { Icon: BeautyIcon, id: 'beauty', label: '뷰티' },
   { Icon: ArtIcon, id: 'art', label: '전시' },
   { Icon: CafeIcon, id: 'cafe', label: '카페' },
+  { Icon: HeritageIcon, id: 'heritage', label: '문화재' },
   { Icon: EtcIcon, id: 'etc', label: '기타' },
 ];
 

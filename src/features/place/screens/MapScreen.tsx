@@ -27,7 +27,6 @@ import ReservationBottomSheet from '../../reservation/components/ReservationBott
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
-import type { KakaoMapMarkerPressEvent } from '../components/KakaoMapCard';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import {
   useBookmarkedPlaceMembership,
@@ -41,6 +40,11 @@ import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import { useRecommendationExplanation } from '../../../v2/features/place-exploration';
 import type { PlaceListRuntimeState } from '../../../v2/features/place-exploration';
+import {
+  MAP_DISMISSED_ZOOM_LEVEL,
+  MAP_PREVIEW_ZOOM_LEVEL,
+  markersForSelectedPlace,
+} from '../../../v2/features/map/model/mapSelection';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
@@ -196,6 +200,11 @@ export default function MapScreen({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'map' | 'favorites' | 'reservations'>(initialSection);
+  const [dismissedMarkerCenter, setDismissedMarkerCenter] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [mapZoomLevel, setMapZoomLevel] = useState(MAP_PREVIEW_ZOOM_LEVEL);
 
   useEffect(() => {
     setMapSection(initialSection);
@@ -286,6 +295,10 @@ export default function MapScreen({
       };
     });
   }, [recommendationExplanation.data?.items, recommendedPlaces]);
+  const nearbyReservationPlaces = useMemo(
+    () => recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
+    [recommendedPlaces],
+  );
   const allPlaces = useMemo(() => {
     const serverPlaces = mergeMapPreviewPlaces(
       recommendationPlaces,
@@ -380,13 +393,7 @@ export default function MapScreen({
     ], bookmarkedPlaceIds);
 
     if (activeCategory === 'all') return markers;
-    const markerCategory: MapMarker['category'] = activeCategory === 'fashion'
-      ? 'fashion'
-      : activeCategory === 'music'
-        ? 'music'
-        : activeCategory === 'food' || activeCategory === 'cafe'
-          ? 'food'
-          : 'etc';
+    const markerCategory: MapMarker['category'] = activeCategory;
 
     return markers.filter((marker) => marker.category === markerCategory);
   }, [
@@ -398,10 +405,15 @@ export default function MapScreen({
     recommendationPlaces,
     selectedPlace,
   ]);
+  const visibleMapMarkers = useMemo(() => markersForSelectedPlace(
+    mapMarkers,
+    content.type === 'place-preview' ? content.placeId : null,
+  ), [content, mapMarkers]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
 
+    setMapSection('map');
     setContent({ type: 'place-preview', placeId: openedBookmarkedPlaceId });
     setIsFollowingUser(false);
     snapTo('medium');
@@ -410,22 +422,32 @@ export default function MapScreen({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openedBookmarkedPlaceId]);
 
-  const handleMarkerPress = (event: KakaoMapMarkerPressEvent) => {
-    const place = findMapPreviewPlace(event.nativeEvent.markerId, [
+  const dismissPlaceAt = useCallback((place: DecisionPlace) => {
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter({ lat: place.latitude, lng: place.longitude });
+    setIsFollowingUser(false);
+    setMapZoomLevel(MAP_DISMISSED_ZOOM_LEVEL);
+    snapTo('medium');
+  }, [snapTo]);
+
+  const handleMarkerPress = (markerId: string) => {
+    const place = findMapPreviewPlace(markerId, [
       ...allPlaces,
       ...favoritePlaces,
     ]);
     if (!place) return;
 
+    setMapSection('map');
+
     if (content.type === 'place-preview' && content.placeId === place.id) {
-      setContent({ type: 'home' });
-      setIsFollowingUser(true);
-      snapTo('medium');
+      dismissPlaceAt(place);
       return;
     }
 
     setContent({ type: 'place-preview', placeId: place.id });
+    setDismissedMarkerCenter(null);
     setIsFollowingUser(false);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     snapTo('medium');
   };
   const handlePlacePress = (place: DecisionPlace) => {
@@ -439,8 +461,11 @@ export default function MapScreen({
         if (__DEV__) console.warn('[recommendation-click]', error);
       });
     }
+    setMapSection('map');
     setContent({ type: 'place-preview', placeId: place.id });
+    setDismissedMarkerCenter(null);
     setIsFollowingUser(false);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     snapTo('medium');
   };
   const handleQueryChange = (nextQuery: string) => {
@@ -457,11 +482,18 @@ export default function MapScreen({
         : [...current, filter]
     ));
   };
-  const handleBackHome = () => {
+  const handleBackHome = useCallback(() => {
+    if (selectedPlace) {
+      dismissPlaceAt(selectedPlace);
+      return;
+    }
+
     setContent({ type: 'home' });
     setIsFollowingUser(true);
+    setDismissedMarkerCenter(null);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     snapTo('medium');
-  };
+  }, [dismissPlaceAt, selectedPlace, snapTo]);
 
   useFocusEffect(useCallback(() => {
     return registerAndroidBackOverride(() => {
@@ -479,9 +511,7 @@ export default function MapScreen({
       const action = getMapBackAction(content, snapPoint);
 
       if (action === 'show-home') {
-        setContent({ type: 'home' });
-        setIsFollowingUser(true);
-        snapTo('medium');
+        handleBackHome();
         return true;
       }
 
@@ -492,7 +522,7 @@ export default function MapScreen({
 
       return false;
     });
-  }, [content, isSearchOpen, mapSection, snapPoint, snapTo]));
+  }, [content, handleBackHome, isSearchOpen, mapSection, snapPoint, snapTo]));
   const handleGoNow = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.goNow'),
@@ -519,8 +549,12 @@ export default function MapScreen({
   };
 
   const focusedPlace = selectedPlace;
-  const mapCenterLat = !isFollowingUser && focusedPlace ? focusedPlace.latitude : center.lat;
-  const mapCenterLng = !isFollowingUser && focusedPlace ? focusedPlace.longitude : center.lng;
+  const mapCenterLat = !isFollowingUser && focusedPlace
+    ? focusedPlace.latitude
+    : dismissedMarkerCenter?.lat ?? center.lat;
+  const mapCenterLng = !isFollowingUser && focusedPlace
+    ? focusedPlace.longitude
+    : dismissedMarkerCenter?.lng ?? center.lng;
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
@@ -529,10 +563,11 @@ export default function MapScreen({
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
-          markers={mapMarkers}
+          markers={visibleMapMarkers}
           onMarkerPress={handleMarkerPress}
           userLat={userLat}
           userLng={userLng}
+          zoomLevel={mapZoomLevel}
         />
         <View pointerEvents="none" style={styles.mapTint} />
       </View>
@@ -617,9 +652,13 @@ export default function MapScreen({
           />
         ) : mapSection === 'reservations' ? (
           <ReservationBottomSheet
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
+            bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
             collapsedTranslateY={collapsedTranslateY}
             height={fullSheetHeight}
+            isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             mediumTranslateY={mediumTranslateY}
+            nearbyPlaces={nearbyReservationPlaces}
             onHandlePress={() => {
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
@@ -641,6 +680,8 @@ export default function MapScreen({
             }}
             onOpenReservation={(reservationId) => onOpenReservation?.(reservationId)}
             onOpenVerification={() => onOpenVerification?.()}
+            onPlacePress={handlePlacePress}
+            onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}

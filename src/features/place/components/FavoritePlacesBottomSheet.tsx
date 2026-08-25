@@ -6,7 +6,8 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
+  Text as NativeText,
+  type TextProps,
   View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -57,6 +58,7 @@ type FavoritePlacesBottomSheetProps = {
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
+const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: FavoriteCategory;

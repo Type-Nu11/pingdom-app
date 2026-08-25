@@ -342,8 +342,8 @@ class KakaoMapView(
 
     private fun normalizeMarkerCategory(value: String?): String {
         return when (value) {
-            "etc", "fashion", "food", "game", "music" -> value
-            else -> "music"
+            "art", "beauty", "cafe", "etc", "fashion", "food", "game", "heritage", "music", "popup" -> value
+            else -> "etc"
         }
     }
 
@@ -355,18 +355,19 @@ class KakaoMapView(
     }
 
     private fun createPlaceMarkerBitmapSpec(category: String, markerType: String): PlaceMarkerBitmapSpec {
-        val resourceName = "map_marker_${markerType}_$category"
+        // All marker states share the V2 category artwork. Selection is expressed by
+        // visibility/camera state in JS instead of falling back to legacy native artwork.
+        val resourceName = "map_marker_default_$category"
         val resourceId = resources.getIdentifier(resourceName, "drawable", reactContext.packageName)
-        val sourceBitmap = if (resourceId != 0) BitmapFactory.decodeResource(resources, resourceId) else null
-        val originalBitmap = if (sourceBitmap != null) {
-            sourceBitmap
-        } else {
-            when (markerType) {
-                "hot" -> createHotMarkerBitmap(category)
-                "search" -> createSearchMarkerBitmap()
-                else -> createDefaultMarkerBitmap(category)
-            }
-        }
+        val fallbackResourceId = resources.getIdentifier(
+            "map_marker_default_etc",
+            "drawable",
+            reactContext.packageName
+        )
+        val originalBitmap = BitmapFactory.decodeResource(
+            resources,
+            if (resourceId != 0) resourceId else fallbackResourceId
+        )
         val bottomSafePaddingPx =
             if (markerType == "hot") HOT_MARKER_BOTTOM_SAFE_PADDING_PX else NORMAL_MARKER_BOTTOM_SAFE_PADDING_PX
         val canvasBitmap = createMarkerCanvasBitmap(
@@ -374,13 +375,7 @@ class KakaoMapView(
             sideSafePaddingPx = PLACE_MARKER_SIDE_SAFE_PADDING_PX,
             bottomSafePaddingPx = bottomSafePaddingPx
         )
-        val rawAnchorY = if (sourceBitmap != null) {
-            PLACE_MARKER_TIP_RATIO_Y
-        } else if (markerType == "hot") {
-            HOT_MARKER_FALLBACK_TIP_RATIO_Y
-        } else {
-            DEFAULT_MARKER_FALLBACK_TIP_RATIO_Y
-        }
+        val rawAnchorY = PLACE_MARKER_TIP_RATIO_Y
         val anchorY = computePaddedAnchorY(
             rawHeightPx = originalBitmap.height,
             rawAnchorY = rawAnchorY,

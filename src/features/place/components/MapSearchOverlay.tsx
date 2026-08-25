@@ -16,6 +16,7 @@ import CafeAsset from '../../../assets/v2/icons/place/cafe_svg.svg';
 import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
 import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
+import HeritageAsset from '../../../assets/v2/icons/place/heritage.svg';
 import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
 import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
 import {
@@ -63,6 +64,7 @@ type SearchCategory =
   | 'etc'
   | 'fashion'
   | 'food'
+  | 'heritage'
   | 'music'
   | 'popup';
 type RecentSearch = { category: Exclude<SearchCategory, 'all'>; date: string; query: string };
@@ -80,6 +82,7 @@ const categories: Array<{
   { Icon: BeautyAsset, id: 'beauty', label: '뷰티' },
   { Icon: ArtAsset, id: 'art', label: '전시' },
   { Icon: CafeAsset, id: 'cafe', label: '카페' },
+  { Icon: HeritageAsset, id: 'heritage', label: '문화재' },
   { Icon: EtcAsset, id: 'etc', label: '기타' },
 ];
 
