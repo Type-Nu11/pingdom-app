@@ -12,12 +12,16 @@ import VerificationReviewScreen from '../VerificationReviewScreen';
 import VerificationScreen from '../VerificationScreen';
 import { usePlaceDetail } from '../../../place-detail/hooks/usePlaceDetail';
 import { useAvailabilities, useCreateReservation } from '../../hooks/useReservations';
+import { useReservationDetail } from '../../hooks/useReservations';
+import { usePayments } from '../../../payments/hooks/usePayments';
 
 jest.mock('../../../place-detail/hooks/usePlaceDetail', () => ({ usePlaceDetail: jest.fn() }));
 jest.mock('../../hooks/useReservations', () => ({
   useAvailabilities: jest.fn(),
   useCreateReservation: jest.fn(),
+  useReservationDetail: jest.fn(),
 }));
+jest.mock('../../../payments/hooks/usePayments', () => ({ usePayments: jest.fn() }));
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
@@ -31,6 +35,38 @@ async function renderReservationScreen(ui: ReactElement, language: 'ko' | 'en' =
 }
 
 describe('V2 reservation screens', () => {
+  beforeEach(() => {
+    jest.mocked(useReservationDetail).mockReturnValue({
+      data: {
+        availabilityId: 801,
+        canceledAt: null,
+        confirmedAt: null,
+        createdAt: '2026-08-25T04:00:00Z',
+        id: 901,
+        productId: 501,
+        productType: 'TICKET',
+        quantity: 2,
+        status: 'PENDING',
+        touristUserId: 101,
+        updatedAt: '2026-08-25T04:00:00Z',
+      },
+      isError: false,
+      isPending: false,
+    } as ReturnType<typeof useReservationDetail>);
+    jest.mocked(usePayments).mockReturnValue({
+      data: {
+        hasNext: false,
+        limit: 100,
+        page: 1,
+        payments: [],
+        totalElements: 0,
+        totalPages: 0,
+      },
+      isError: false,
+      isPending: false,
+    } as unknown as ReturnType<typeof usePayments>);
+  });
+
   test('예약 생성 화면은 장소, 인원, 날짜, 시간, 예약자 입력을 한 흐름으로 표시한다', async () => {
     const startsAt = new Date();
     startsAt.setHours(12, 0, 0, 0);
@@ -85,8 +121,44 @@ describe('V2 reservation screens', () => {
     );
 
     expect(screen.getByText('901')).toBeVisible();
+    expect(screen.getByText('결제 내역이 없어요')).toBeVisible();
     await user.press(screen.getByRole('button', { name: '뒤로 가기' }));
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('연결된 결제의 서버 상태와 최소 단위 금액·통화를 변환 없이 표시한다', async () => {
+    jest.mocked(usePayments).mockReturnValue({
+      data: {
+        hasNext: false,
+        limit: 100,
+        page: 1,
+        payments: [{
+          amountMinor: 25000,
+          createdAt: '2026-08-25T04:02:00Z',
+          currency: 'KRW',
+          failedAt: null,
+          failureCode: null,
+          id: 1002,
+          paidAt: '2026-08-25T04:03:00Z',
+          provider: 'TOSS_PAYMENTS',
+          providerPaymentId: 'pay_1002',
+          refundedAt: null,
+          reservationId: 901,
+          status: 'REFUND_PROCESSING',
+        }],
+        totalElements: 1,
+        totalPages: 1,
+      },
+      isError: false,
+      isPending: false,
+    } as unknown as ReturnType<typeof usePayments>);
+
+    await renderReservationScreen(
+      <ReservationDetailScreen onBack={jest.fn()} reservationId={901} />,
+    );
+
+    expect(screen.getByText('REFUND_PROCESSING')).toBeVisible();
+    expect(screen.getByText('최소 화폐 단위 금액·통화: 25000 KRW')).toBeVisible();
   });
 
   test('최근 방문 장소를 누르면 실제 장소 정보로 작성 화면을 연다', async () => {
