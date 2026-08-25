@@ -2,7 +2,8 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-
 import React from 'react';
 
 import { V2_ROUTES, type V2ScreenProps } from '../../../../app/navigation/types';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { createTestI18n, renderWithProviders } from '../../../../shared/testing/testProviders';
+import { registerPlaceReportResources } from '../../../place-report/i18n/placeReportResources';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
 import { useMapDiscovery } from '../../hooks/useMapDiscovery';
 import MapScreen from '../MapScreen';
@@ -80,8 +81,10 @@ const navigation = {
   navigate: jest.fn(),
 } as unknown as V2ScreenProps<'Map'>['navigation'];
 
-function renderMapScreen() {
-  return renderWithProviders(<MapScreen navigation={navigation} />);
+async function renderMapScreen() {
+  const i18n = await createTestI18n();
+  registerPlaceReportResources(i18n);
+  return renderWithProviders(<MapScreen navigation={navigation} />, { i18n });
 }
 
 describe('MapScreen', () => {
@@ -183,5 +186,13 @@ describe('MapScreen', () => {
     expect(screen.getByTestId('v2-location-denied')).toBeVisible();
     expect(screen.getByTestId('v2-map-empty')).toBeVisible();
     fireEvent.press(screen.getByTestId('v2-map-locate'));
+  });
+
+  test('관광객 장소 제보 흐름으로 진입한다', async () => {
+    const { user } = await renderMapScreen();
+
+    await user.press(screen.getByTestId('v2-map-place-report'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith(V2_ROUTES.PlaceReport);
   });
 });
