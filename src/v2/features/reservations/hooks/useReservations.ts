@@ -17,7 +17,20 @@ export const reservationQueryKeys = {
   list: (params: ListReservationsParams) => [...reservationQueryKeys.all, 'mine', params] as const,
   owned: (params: ListOwnedReservationsParams) =>
     [...reservationQueryKeys.all, 'owned', params] as const,
+  detail: (reservationId: number) =>
+    [...reservationQueryKeys.all, 'detail', reservationId] as const,
 };
+
+export function createReservationDetailQueryOptions(
+  reservationId: number,
+  api: Pick<ReservationApi, 'getReservation'> = reservationApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getReservation(reservationId, signal),
+    queryKey: reservationQueryKeys.detail(reservationId),
+  };
+}
 
 export function createAvailabilitiesQueryOptions(
   placeId: number,
@@ -75,6 +88,10 @@ export function useAvailabilities(placeId: number, params: ListAvailabilitiesPar
 
 export function useReservations(params: ListReservationsParams = {}) {
   return useQuery(createReservationsQueryOptions(params));
+}
+
+export function useReservationDetail(reservationId: number) {
+  return useQuery(createReservationDetailQueryOptions(reservationId));
 }
 
 export function useOwnedReservations(params: ListOwnedReservationsParams = {}) {

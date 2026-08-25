@@ -47,6 +47,16 @@ export type {
   PlaceExplorationSchema,
   PlaceExplorationSchemaName,
 } from './placeExplorationContract';
+export type {
+  ReservationPaymentComponents,
+  ReservationPaymentOperationName,
+  ReservationPaymentOperationQuery,
+  ReservationPaymentOperationResponse,
+  ReservationPaymentOperations,
+  ReservationPaymentPaths,
+  ReservationPaymentSchema,
+  ReservationPaymentSchemaName,
+} from './reservationPaymentContract';
 export type { ApiErrorUx, ApiErrorUxKind } from './getApiErrorUx';
 export type {
   AccountApiOperationName,
