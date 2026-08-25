@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,15 +20,18 @@ import CameraIcon from '../../../../assets/v2/icons/place/Camera.svg';
 import CleanIcon from '../../../../assets/v2/icons/place/Clean.svg';
 import DeliciousIcon from '../../../../assets/v2/icons/place/Delicious.svg';
 import EtcIcon from '../../../../assets/v2/icons/place/etc_svg.svg';
-import BackIcon from '../../../../assets/v2/icons/escape.svg';
 import FashionIcon from '../../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodIcon from '../../../../assets/v2/icons/place/food_svg.svg';
+import HeritageIcon from '../../../../assets/v2/icons/place/heritage.svg';
 import MultilingualIcon from '../../../../assets/v2/icons/place/Group.svg';
 import KindIcon from '../../../../assets/v2/icons/place/Kind.svg';
 import MusicIcon from '../../../../assets/v2/icons/place/music_svg.svg';
 import ParkingIcon from '../../../../assets/v2/icons/place/Park.svg';
 import EasyToFindIcon from '../../../../assets/v2/icons/place/Pin.svg';
 import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
+import ReportPinIcon from '../../../../assets/v2/icons/place/report_pin.svg';
+import SearchBackIcon from '../../../../assets/v2/icons/place/search_back.svg';
+import UploaderCameraIcon from '../../../../assets/v2/icons/place/uploader_camera.svg';
 import SuccessPlaceIcon from '../../../../assets/v2/icons/place/sucessplace.svg';
 import Button from '../../../shared/components/Button';
 import KakaoMapAdapter from '../../map/components/KakaoMapAdapter';
@@ -62,6 +65,7 @@ const CATEGORY_ICONS: Partial<Record<PlaceReportCategoryId, CategoryIcon>> = {
   cafe: CafeIcon,
   exhibition: ArtIcon,
   fashion: FashionIcon,
+  heritage: HeritageIcon,
   music: MusicIcon,
   other: EtcIcon,
   popup: PopupIcon,
@@ -76,6 +80,11 @@ const FEATURE_ICONS: Record<PlaceReportFeatureId, CategoryIcon> = {
   parking: ParkingIcon,
   photoSpot: CameraIcon,
 };
+const CATEGORY_ROWS: PlaceReportCategoryId[][] = [
+  ['restaurant', 'music', 'popup'],
+  ['beauty', 'exhibition', 'cafe', 'fashion'],
+  ['heritage', 'other'],
+];
 
 export default function PlaceReportFlowScreen({ navigation }: Props) {
   const { t } = useTranslation();
@@ -107,6 +116,12 @@ export default function PlaceReportFlowScreen({ navigation }: Props) {
     const nextErrors = validatePlaceReportStep(draft, currentStep);
     setErrors(nextErrors);
     if (!hasValidationErrors(nextErrors)) setStep(currentStep === 1 ? 2 : 3);
+  };
+
+  const submit = () => {
+    const nextErrors = validatePlaceReportStep(draft, 3);
+    setErrors(nextErrors);
+    if (!hasValidationErrors(nextErrors)) setStep('complete');
   };
 
   const showPreparedState = () => {
@@ -145,8 +160,9 @@ export default function PlaceReportFlowScreen({ navigation }: Props) {
         ) : (
           <FirstRecordStep
             draft={draft}
+            errors={errors}
             onBack={handleBack}
-            onSubmit={() => setStep('complete')}
+            onSubmit={submit}
             onUpdate={updateDraft}
           />
         )}
@@ -190,13 +206,19 @@ function SelectSpotStep({
   const [center, setCenter] = useState<Coordinate>(
     draft.coordinate ?? location.coordinate ?? FALLBACK_COORDINATE,
   );
+  const didResolveInitialCamera = useRef(false);
 
   useEffect(() => {
     if (location.status === 'granted' && !draft.coordinate) setCenter(location.coordinate);
   }, [draft.coordinate, location.coordinate, location.status]);
 
   const selectCoordinate = (coordinate: Coordinate) => {
-    setCenter(coordinate);
+    if (!didResolveInitialCamera.current) {
+      const isNearRequestedCenter = Math.abs(coordinate.lat - center.lat) < 0.5
+        && Math.abs(coordinate.lng - center.lng) < 0.5;
+      if (!isNearRequestedCenter) return;
+      didResolveInitialCamera.current = true;
+    }
     onUpdate({ coordinate });
   };
   const markers: MapMarker[] = draft.coordinate ? [{
@@ -213,17 +235,19 @@ function SelectSpotStep({
         <StepHeader currentStep={1} onBack={onBack} />
         <Headline accessibilityRole="header">{t('placeReport.selectSpot.title')}</Headline>
         <SearchShell>
-          <BackIcon aria-hidden height={16} width={8} />
-          <SearchInput
-            accessibilityLabel={t('placeReport.selectSpot.searchAccessibility')}
-            onChangeText={(locationQuery) => onUpdate({ locationQuery })}
-            onSubmitEditing={Keyboard.dismiss}
-            placeholder={t('placeReport.selectSpot.search')}
-            placeholderTextColor={theme.colors.textMuted}
-            returnKeyType="search"
-            testID="v2-place-report-location-search"
-            value={draft.locationQuery}
-          />
+          <SearchControl>
+            <SearchBackIcon aria-hidden height={18} width={10} />
+            <SearchInput
+              accessibilityLabel={t('placeReport.selectSpot.searchAccessibility')}
+              onChangeText={(locationQuery) => onUpdate({ locationQuery })}
+              onSubmitEditing={Keyboard.dismiss}
+              placeholder={t('placeReport.selectSpot.search')}
+              placeholderTextColor={theme.colors.textMuted}
+              returnKeyType="search"
+              testID="v2-place-report-location-search"
+              value={draft.locationQuery}
+            />
+          </SearchControl>
         </SearchShell>
       </TopSection>
       <MapArea accessibilityLabel={t('placeReport.selectSpot.searchAccessibility')}>
@@ -233,7 +257,11 @@ function SelectSpotStep({
           markers={markers}
           onCameraIdle={selectCoordinate}
           userCoordinate={location.coordinate ?? undefined}
+          zoomLevel={16}
         />
+        <ReportPin pointerEvents="none">
+          <ReportPinIcon aria-hidden height={49} width={43} />
+        </ReportPin>
         {location.status === 'loading' ? (
           <MapLoading accessibilityLiveRegion="polite">
             <ActivityIndicator color={theme.colors.primary} />
@@ -242,10 +270,6 @@ function SelectSpotStep({
         {errors.location ? (
           <MapMessage accessibilityLiveRegion="polite" $error>
             {t('placeReport.selectSpot.locationError')}
-          </MapMessage>
-        ) : draft.coordinate ? (
-          <MapMessage accessibilityLiveRegion="polite" $error={false}>
-            {t('placeReport.selectSpot.locationReady')}
           </MapMessage>
         ) : location.status === 'denied' ? (
           <MapMessage accessibilityLiveRegion="polite" $error>
@@ -310,27 +334,32 @@ function PlaceInfoStep({
           />
           <FieldGroup>
             <FieldLabel>{t('placeReport.field.category')}</FieldLabel>
-            <ChipWrap>
-              {PLACE_REPORT_CATEGORIES.map((category) => {
-                const selected = draft.category === category.id;
-                const Icon = CATEGORY_ICONS[category.id];
-                const label = t(`placeReport.category.${category.id}`);
-                return (
-                  <ChoiceChip
-                    key={category.id}
-                    $selected={selected}
-                    accessibilityLabel={label}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: selected }}
-                    onPress={() => onUpdate({ category: category.id })}
-                    testID={`v2-place-report-category-${category.id}`}
-                  >
-                    {Icon ? <Icon aria-hidden color={selected ? '#FF1956' : '#767680'} height={18} width={20} /> : null}
-                    <ChoiceLabel $selected={selected}>{label}</ChoiceLabel>
-                  </ChoiceChip>
-                );
-              })}
-            </ChipWrap>
+            <CategoryRows>
+              {CATEGORY_ROWS.map((row) => (
+                <CategoryRow key={row.join('-')}>
+                  {row.map((categoryId) => {
+                    const category = PLACE_REPORT_CATEGORIES.find(({ id }) => id === categoryId)!;
+                    const selected = draft.category === category.id;
+                    const Icon = CATEGORY_ICONS[category.id];
+                    const label = t(`placeReport.category.${category.id}`);
+                    return (
+                      <ChoiceChip
+                        key={category.id}
+                        $selected={selected}
+                        accessibilityLabel={label}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: selected }}
+                        onPress={() => onUpdate({ category: category.id })}
+                        testID={`v2-place-report-category-${category.id}`}
+                      >
+                        {Icon ? <Icon aria-hidden color={selected ? '#FF1956' : '#767680'} height={18} width={20} /> : null}
+                        <ChoiceLabel $selected={selected}>{label}</ChoiceLabel>
+                      </ChoiceChip>
+                    );
+                  })}
+                </CategoryRow>
+              ))}
+            </CategoryRows>
             {errors.category ? (
               <ValidationText accessibilityLiveRegion="polite">
                 {t('placeReport.validation.category')}
@@ -362,7 +391,8 @@ function PlaceInfoStep({
   );
 }
 
-function FirstRecordStep({ draft, onBack, onSubmit, onUpdate }: SharedStepProps & {
+function FirstRecordStep({ draft, errors, onBack, onSubmit, onUpdate }: SharedStepProps & {
+  errors: PlaceReportValidationErrors;
   onSubmit: () => void;
 }) {
   const { t } = useTranslation();
@@ -419,10 +449,15 @@ function FirstRecordStep({ draft, onBack, onSubmit, onUpdate }: SharedStepProps 
               onPress={() => void pickPhoto()}
               testID="v2-place-report-photo-picker"
             >
-              <CameraIcon aria-hidden color="#767680" height={28} width={28} />
+              <UploaderCameraIcon aria-hidden height={28} width={28} />
               <PhotoLabel>{t('placeReport.field.photo')}</PhotoLabel>
             </PhotoPicker>
           )}
+          {errors.photo ? (
+            <ValidationText accessibilityLiveRegion="polite">
+              {t('placeReport.validation.photo')}
+            </ValidationText>
+          ) : null}
           <ReportField
             label={t('placeReport.field.caption')}
             maxLength={160}
@@ -534,19 +569,23 @@ const Headline = styled.Text`
   line-height: 31px;
 `;
 const SearchShell = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
   padding: 8px;
   border-radius: 30px;
   background-color: ${({ theme }) => theme.colors.inputBackground};
 `;
+const SearchControl = styled.View`
+  height: 46px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: 26px;
+  background-color: ${({ theme }) => theme.colors.border};
+`;
 const SearchInput = styled.TextInput`
   flex: 1;
   height: 46px;
-  padding: 0 20px;
-  border-radius: 26px;
-  background-color: ${({ theme }) => theme.colors.border};
+  padding: 0;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 500;
@@ -556,6 +595,15 @@ const MapArea = styled.View`
   flex: 1;
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
+`;
+const ReportPin = styled.View`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 43px;
+  height: 49px;
+  margin-top: -39px;
+  margin-left: -22px;
 `;
 const MapLoading = styled.View`
   position: absolute;
@@ -602,6 +650,12 @@ const FieldLabel = styled.Text`
 const ChipWrap = styled.View`
   flex-direction: row;
   flex-wrap: wrap;
+  gap: 8px;
+`;
+const CategoryRows = styled.View`gap: 8px;`;
+const CategoryRow = styled.View`
+  flex-direction: row;
+  align-items: center;
   gap: 8px;
 `;
 const ChoiceChip = styled.Pressable<{ $selected: boolean }>`

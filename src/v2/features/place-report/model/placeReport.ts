@@ -39,7 +39,7 @@ export type PlaceReportDraft = {
 };
 
 export type PlaceReportValidationErrors = Partial<Record<
-  'category' | 'detailAddress' | 'location' | 'operationHours' | 'placeName',
+  'category' | 'detailAddress' | 'location' | 'operationHours' | 'photo' | 'placeName',
   true
 >>;
 
@@ -57,7 +57,7 @@ export const initialPlaceReportDraft: PlaceReportDraft = {
 
 export function validatePlaceReportStep(
   draft: PlaceReportDraft,
-  step: 1 | 2,
+  step: 1 | 2 | 3,
 ): PlaceReportValidationErrors {
   if (step === 1) {
     return {
@@ -66,11 +66,13 @@ export function validatePlaceReportStep(
     };
   }
 
-  return {
+  if (step === 2) return {
     ...(!draft.placeName.trim() ? { placeName: true } : {}),
     ...(!draft.category ? { category: true } : {}),
     ...(!draft.operationHours.trim() ? { operationHours: true } : {}),
   };
+
+  return !draft.photoUri ? { photo: true } : {};
 }
 
 export function hasValidationErrors(errors: PlaceReportValidationErrors) {

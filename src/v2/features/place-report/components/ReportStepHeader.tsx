@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components/native';
 
-import BackIcon from '../../../../assets/v2/icons/escape.svg';
+import BackIcon from '../../../../assets/v2/icons/place/report_back.svg';
 
 type Props = Readonly<{
   currentStep: 1 | 2 | 3;
@@ -57,6 +57,11 @@ const BackButton = styled.Pressable`
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.surface};
+  shadow-color: #000000;
+  shadow-offset: 0 4px;
+  shadow-opacity: 0.06;
+  shadow-radius: 10px;
+  elevation: 2;
 `;
 const HeaderSide = styled.View`width: 44px;`;
 const Progress = styled.View`

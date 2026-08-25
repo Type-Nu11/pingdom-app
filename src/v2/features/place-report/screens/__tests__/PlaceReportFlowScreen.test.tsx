@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react-native';
+import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
 import { Alert } from 'react-native';
 
@@ -103,11 +104,23 @@ describe('PlaceReportFlowScreen', () => {
     expect(screen.getByDisplayValue('종로구 테스트로 12 1층')).toBeVisible();
   });
 
-  test('첫 기록을 비워도 로컬 완료 상태로 제출하고 CTA는 준비 상태를 안내한다', async () => {
+  test('필수 사진을 추가하면 로컬 완료 상태로 제출하고 CTA는 준비 상태를 안내한다', async () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     const { user } = await moveToFirstRecord();
 
-    expect(screen.getByText('사진 1장 추가 (선택)')).toBeVisible();
+    expect(screen.getByText('사진 1장 추가 (필수)')).toBeVisible();
+    await user.press(screen.getByTestId('v2-place-report-submit'));
+    expect(screen.getByText('사진 1장을 추가해 주세요.')).toBeVisible();
+    expect(screen.queryByTestId('v2-place-report-complete')).toBeNull();
+
+    jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync).mockResolvedValue({
+      granted: true,
+    } as ImagePicker.MediaLibraryPermissionResponse);
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
+      assets: [{ uri: 'file:///test-place.jpg' }],
+      canceled: false,
+    } as ImagePicker.ImagePickerSuccessResult);
+    await user.press(screen.getByTestId('v2-place-report-photo-picker'));
     await user.press(screen.getByTestId('v2-place-report-submit'));
 
     expect(screen.getByTestId('v2-place-report-complete')).toBeVisible();
