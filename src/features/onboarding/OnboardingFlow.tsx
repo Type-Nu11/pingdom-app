@@ -1,5 +1,6 @@
-import i18n from 'i18next';
 import React, { useState } from 'react';
+import { OnboardingPreferenceFlow } from '../../v2/features/onboarding-preferences';
+import { setLanguage as setV2Language } from '../../v2/shared/i18n';
 import { LoginFormScreen } from '../auth/screens/login';
 import SignUpDetailsScreen from '../auth/screens/signup/SignUpDetailsScreen';
 import LogInForeignScreen from './LogInForeignScreen';
@@ -17,10 +18,13 @@ type Step =
   | 'country'
   | 'age'
   | 'gender'
+  | 'travel-preferences'
   | 'login-kr'
   | 'login-foreign'
   | 'login'
   | 'signup-details';
+
+type PreferenceEntryStep = 'purpose' | 'schedule';
 
 export default function OnboardingFlow() {
   const [step, setStep] = useState<Step>('first');
@@ -28,6 +32,8 @@ export default function OnboardingFlow() {
   const [country, setCountry] = useState<Country>('US');
   const [birthYear, setBirthYear] = useState(2000);
   const [gender, setGender] = useState<Gender>('male');
+  const [preferenceEntryStep, setPreferenceEntryStep] =
+    useState<PreferenceEntryStep>('purpose');
 
   const loginStep = country === 'KR' ? 'login-kr' : 'login-foreign';
 
@@ -41,7 +47,7 @@ export default function OnboardingFlow() {
           onBack={() => setStep('first')}
           onNext={(lang) => {
             setLanguage(lang);
-            void i18n.changeLanguage(lang);
+            void setV2Language(lang);
             setStep('country');
           }}
         />
@@ -69,7 +75,24 @@ export default function OnboardingFlow() {
           onBack={() => setStep('age')}
           onNext={(g) => {
             setGender(g);
-            setStep(country === 'KR' ? 'login-kr' : 'login-foreign');
+            setPreferenceEntryStep('purpose');
+            setStep('travel-preferences');
+          }}
+        />
+      );
+
+    case 'travel-preferences':
+      return (
+        <OnboardingPreferenceFlow
+          initialStep={preferenceEntryStep}
+          language={language}
+          onBack={() => {
+            setPreferenceEntryStep('purpose');
+            setStep('gender');
+          }}
+          onComplete={() => {
+            setPreferenceEntryStep('schedule');
+            setStep(loginStep);
           }}
         />
       );
@@ -77,7 +100,10 @@ export default function OnboardingFlow() {
     case 'login-kr':
       return (
         <LogInKrScreen
-          onBack={() => setStep('gender')}
+          onBack={() => {
+            setPreferenceEntryStep('schedule');
+            setStep('travel-preferences');
+          }}
           onSignup={() => setStep('signup-details')}
           onLogin={() => setStep('login')}
         />
@@ -86,7 +112,10 @@ export default function OnboardingFlow() {
     case 'login-foreign':
       return (
         <LogInForeignScreen
-          onBack={() => setStep('gender')}
+          onBack={() => {
+            setPreferenceEntryStep('schedule');
+            setStep('travel-preferences');
+          }}
           onStart={() => setStep('signup-details')}
         />
       );

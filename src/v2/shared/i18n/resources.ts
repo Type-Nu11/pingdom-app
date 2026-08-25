@@ -62,6 +62,11 @@ export const resources = {
         trustScore: 'Trust score: {{score}}/100',
       },
       onboarding: {
+        preferenceFlow: {
+          loading: 'Restoring your saved travel preferences...',
+          restoreError: 'Saved preferences could not be restored. You can continue with new selections.',
+          saveError: 'Your selections could not be saved. Please try Continue again.',
+        },
         preferences: {
           currentNeeds: {
             attendEvent: 'Events',
@@ -300,6 +305,11 @@ export const resources = {
         trustScore: '신뢰 점수: {{score}}/100',
       },
       onboarding: {
+        preferenceFlow: {
+          loading: '저장된 여행 선호를 불러오는 중입니다...',
+          restoreError: '저장된 선택을 불러오지 못했어요. 새로 선택해 계속할 수 있어요.',
+          saveError: '선택값을 저장하지 못했어요. 계속 버튼을 다시 눌러 주세요.',
+        },
         preferences: {
           currentNeeds: {
             attendEvent: '이벤트 관람',
@@ -476,6 +486,6 @@ export const resources = {
   },
 } as const;
 
-export const supportedLanguages = ['en', 'ko'] as const;
+export const supportedLanguages = ['en', 'ko', 'ja', 'zh', 'vi', 'th'] as const;
 
 export type SupportedLanguage = (typeof supportedLanguages)[number];

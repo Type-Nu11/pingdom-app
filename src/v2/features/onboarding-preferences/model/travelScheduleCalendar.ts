@@ -24,6 +24,10 @@ export type TravelScheduleSelectionState =
   | Readonly<{ kind: 'start-only'; startDate: ServerTravelDate }>;
 
 const EMPTY_END_DATE = '';
+const EMPTY_SCHEDULE: TravelDateInput = {
+  endDateText: EMPTY_END_DATE,
+  startDateText: '',
+};
 
 export function getTravelScheduleSelectionState(
   schedule: TravelDateInput,
@@ -54,6 +58,10 @@ export function selectTravelDate(
   const state = getTravelScheduleSelectionState(schedule);
 
   if (state.kind === 'start-only') {
+    if (date === state.startDate) {
+      return EMPTY_SCHEDULE;
+    }
+
     if (date < state.startDate) {
       return schedule;
     }
@@ -62,6 +70,13 @@ export function selectTravelDate(
       endDateText: date,
       startDateText: state.startDate,
     };
+  }
+
+  if (
+    state.kind === 'complete'
+    && (date === state.range.startDate || date === state.range.endDate)
+  ) {
+    return EMPTY_SCHEDULE;
   }
 
   return {

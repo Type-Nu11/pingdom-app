@@ -7,7 +7,7 @@ const GRAY = colors.fillAlternative;
 
 type ProgressBarProps = { total?: number; current: number };
 
-export default function ProgressBar({ total = 5, current }: ProgressBarProps) {
+export default function ProgressBar({ total = 7, current }: ProgressBarProps) {
   return (
     <View style={styles.row}>
       {Array.from({ length: total }, (_, i) => {

@@ -13,6 +13,21 @@ import {
 import { configureTokenSession } from '../../v2/shared/auth/tokenSession';
 import { i18n } from '../../v2/shared/i18n';
 import { initializeReservationI18n } from '../../v2/features/reservations/i18n/reservationResources';
+import { resources as legacyResources } from '../../i18n';
+
+function registerLegacyTranslationBridge() {
+  const languages = ['en', 'ko', 'ja', 'zh', 'vi', 'th'] as const;
+
+  for (const language of languages) {
+    i18n.addResourceBundle(
+      language,
+      'translation',
+      legacyResources[language].translation,
+      true,
+      false,
+    );
+  }
+}
 
 const AppProvider = ({ children }: PropsWithChildren) => {
   const [queryClient] = useState(() => createQueryClient());
@@ -22,6 +37,7 @@ const AppProvider = ({ children }: PropsWithChildren) => {
     let isMounted = true;
 
     void initializeReservationI18n()
+      .then(registerLegacyTranslationBridge)
       .catch((error) => {
         console.warn('[V2 reservation i18n] Initialization failed:', error);
       })

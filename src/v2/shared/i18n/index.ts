@@ -9,7 +9,7 @@ import {
 } from './resources';
 
 export const LANGUAGE_STORAGE_KEY = 'language';
-export const DEFAULT_LANGUAGE: SupportedLanguage = 'ko';
+export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
 
 export const i18n = createInstance();
 
@@ -36,7 +36,7 @@ export function initializeI18n(): Promise<void> {
       const language = await readStoredLanguage();
 
       await i18n.use(initReactI18next).init({
-        fallbackLng: DEFAULT_LANGUAGE,
+        fallbackLng: 'en',
         interpolation: {
           escapeValue: false,
         },

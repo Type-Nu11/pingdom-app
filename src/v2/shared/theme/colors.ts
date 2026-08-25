@@ -11,6 +11,7 @@ export const colors = {
   onPrimary: '#FFFFFF',
   primary: '#FF1956',
   primaryPressed: '#E9164E',
+  primaryRange: '#FFC2D0',
   primarySoft: '#FFF0F4',
   success: '#1F9D55',
   successSoft: '#EAF8F0',
