@@ -33,6 +33,21 @@ function collectSchemaReferences(value, names) {
   }
 }
 
+function collectSecuritySchemeNames(value, names) {
+  if (!value || typeof value !== 'object') return;
+
+  if (Array.isArray(value.security)) {
+    for (const requirement of value.security) {
+      if (!requirement || typeof requirement !== 'object' || Array.isArray(requirement)) continue;
+      for (const name of Object.keys(requirement)) names.add(name);
+    }
+  }
+
+  for (const child of Object.values(value)) {
+    collectSecuritySchemeNames(child, names);
+  }
+}
+
 const sourceText = await readSource(source);
 const document = JSON.parse(sourceText);
 const pathItem = document.paths?.[TARGET_PATH];
@@ -43,11 +58,21 @@ if (!pathItem) {
 
 const schemaNames = new Set();
 collectSchemaReferences(pathItem, schemaNames);
+const securitySchemeNames = new Set();
+collectSecuritySchemeNames(pathItem, securitySchemeNames);
 
 for (const schemaName of schemaNames) {
   const schema = document.components?.schemas?.[schemaName];
   if (!schema) throw new Error(`Latest OpenAPI has an unresolved schema: ${schemaName}`);
   collectSchemaReferences(schema, schemaNames);
+}
+
+for (const securitySchemeName of securitySchemeNames) {
+  if (!document.components?.securitySchemes?.[securitySchemeName]) {
+    throw new Error(
+      `Latest OpenAPI has an unresolved security scheme: ${securitySchemeName}`,
+    );
+  }
 }
 
 const scopedDocument = {
@@ -67,10 +92,16 @@ const scopedDocument = {
     schemas: Object.fromEntries(
       [...schemaNames].sort().map((name) => [name, document.components.schemas[name]]),
     ),
+    securitySchemes: Object.fromEntries(
+      [...securitySchemeNames]
+        .sort()
+        .map((name) => [name, document.components.securitySchemes[name]]),
+    ),
   },
 };
 
 await writeFile(outputPath, `${JSON.stringify(scopedDocument, null, 2)}\n`, 'utf8');
 console.log(
-  `Wrote Scout profile path and ${schemaNames.size} referenced schemas to ${outputPath.pathname}`,
+  `Wrote Scout profile path, ${schemaNames.size} referenced schemas, and ` +
+    `${securitySchemeNames.size} security schemes to ${outputPath.pathname}`,
 );

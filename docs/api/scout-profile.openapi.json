@@ -360,6 +360,13 @@
         },
         "description": "Scout 프로필 및 활동 자격 응답"
       }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     }
   }
 }

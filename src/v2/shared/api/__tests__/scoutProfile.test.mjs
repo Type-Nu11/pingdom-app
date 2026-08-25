@@ -28,10 +28,24 @@ test('live Scout contract snapshot preserves operations, constraints, and nullab
   const path = contract.paths['/users/me/scout-profile'];
   const request = contract.components.schemas.ScoutProfileRequest;
   const response = contract.components.schemas.ScoutProfileResponse;
+  const securitySchemes = contract.components.securitySchemes;
 
   assert.deepEqual(Object.keys(path.get.responses).sort(), ['200', '404']);
   assert.deepEqual(Object.keys(path.post.responses).sort(), ['201', '403', '409']);
   assert.deepEqual(Object.keys(path.put.responses).sort(), ['200', '403', '404', '409']);
+  for (const method of ['get', 'post', 'put']) {
+    assert.deepEqual(path[method].security, [{ bearerAuth: [] }]);
+    for (const requirement of path[method].security) {
+      for (const schemeName of Object.keys(requirement)) {
+        assert.equal(Object.hasOwn(securitySchemes, schemeName), true);
+      }
+    }
+  }
+  assert.deepEqual(securitySchemes.bearerAuth, {
+    bearerFormat: 'JWT',
+    scheme: 'bearer',
+    type: 'http',
+  });
   assert.equal(path.post.requestBody.content['application/json'].schema.$ref,
     '#/components/schemas/ScoutProfileRequest');
   assert.equal(path.put.requestBody.content['application/json'].schema.$ref,
