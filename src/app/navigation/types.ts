@@ -44,6 +44,7 @@ export const MAIN_ROUTES = {
   CouponWallet: 'CouponWallet',
   Map: 'Map',
   Merchant: 'Merchant',
+  PlaceReport: 'PlaceReport',
   Profile: 'Profile',
   CreateReservation: 'CreateReservation',
   ReservationDetail: 'ReservationDetail',
@@ -76,6 +77,7 @@ export type MainStackParamList = {
   Profile: {
     initialTab?: ProfileTab;
   } | undefined;
+  PlaceReport: undefined;
   ReservationDetail: {
     reservationId: ReservationId;
   };

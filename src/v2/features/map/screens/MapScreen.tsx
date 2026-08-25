@@ -8,6 +8,7 @@ import { V2_ROUTES, parsePlaceId, type V2ScreenProps } from '../../../app/naviga
 import MapDiscoverySearch from '../components/MapDiscoverySearch';
 import KakaoMapAdapter from '../components/KakaoMapAdapter';
 import MapSelectedPlaceCard from '../components/MapSelectedPlaceCard';
+import PlaceReportEntryButton from '../../place-report/components/PlaceReportEntryButton';
 import {
   LocationStatusOverlay,
   MapDataStatusOverlay,
@@ -137,14 +138,12 @@ export default function MapScreen({ navigation }: MapScreenProps) {
           isLoading={discovery.isLoading}
           onRetry={() => void discovery.refetch()}
         />
-        <PlaceReportButton
+        <PlaceReportEntry
           accessibilityLabel={t('placeReport.mapEntry')}
-          accessibilityRole="button"
           onPress={() => navigation.navigate(V2_ROUTES.PlaceReport)}
           testID="v2-map-place-report"
-        >
-          <PlaceReportButtonText>{t('placeReport.mapEntry')}</PlaceReportButtonText>
-        </PlaceReportButton>
+          label={t('placeReport.mapEntry')}
+        />
         <MapSelectedPlaceCard
           error={discovery.selectedPlaceError}
           loading={discovery.selectedPlaceLoading}
@@ -199,18 +198,8 @@ const LocateButtonText = styled.Text`
   color: ${({ theme }) => theme.colors.primary};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
-const PlaceReportButton = styled.Pressable`
+const PlaceReportEntry = styled(PlaceReportEntryButton)`
   position: absolute;
   left: ${({ theme }) => theme.spacing.md}px;
   top: ${({ theme }) => theme.spacing.xxl * 4}px;
-  min-height: ${({ theme }) => theme.spacing.xxl}px;
-  justify-content: center;
-  padding: 0 ${({ theme }) => theme.spacing.md}px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.primary};
-`;
-const PlaceReportButtonText = styled.Text`
-  color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;

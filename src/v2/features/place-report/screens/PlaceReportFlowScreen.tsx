@@ -30,7 +30,6 @@ import ParkingIcon from '../../../../assets/v2/icons/place/Park.svg';
 import EasyToFindIcon from '../../../../assets/v2/icons/place/Pin.svg';
 import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
 import SuccessPlaceIcon from '../../../../assets/v2/icons/place/sucessplace.svg';
-import type { V2ScreenProps } from '../../../app/navigation/types';
 import Button from '../../../shared/components/Button';
 import KakaoMapAdapter from '../../map/components/KakaoMapAdapter';
 import { useCurrentLocation } from '../../map/hooks/useCurrentLocation';
@@ -51,7 +50,11 @@ import {
   validatePlaceReportStep,
 } from '../model/placeReport';
 
-type Props = Pick<V2ScreenProps<'PlaceReport'>, 'navigation'>;
+type Props = {
+  navigation: {
+    goBack: () => void;
+  };
+};
 type CategoryIcon = React.ComponentType<SvgProps>;
 
 const CATEGORY_ICONS: Partial<Record<PlaceReportCategoryId, CategoryIcon>> = {

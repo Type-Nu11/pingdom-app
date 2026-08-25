@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ThemeProvider } from 'styled-components/native';
+import { useTranslation } from 'react-i18next';
+import styled, { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../features/place/screens/MapScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
@@ -9,6 +10,8 @@ import ReservationDetailScreen from '../../v2/features/reservations/screens/Rese
 import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
 import VerificationScreen from '../../v2/features/reservations/screens/VerificationScreen';
 import VerificationReviewScreen from '../../v2/features/reservations/screens/VerificationReviewScreen';
+import PlaceReportEntryButton from '../../v2/features/place-report/components/PlaceReportEntryButton';
+import PlaceReportFlowScreen from '../../v2/features/place-report/screens/PlaceReportFlowScreen';
 import { theme as v2Theme } from '../../v2/shared/theme';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
@@ -29,7 +32,8 @@ const V2ScreenBoundary = ({ children }: React.PropsWithChildren) => (
   <ThemeProvider theme={v2Theme}>{children}</ThemeProvider>
 );
 
-const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
+export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
+  const { t } = useTranslation();
   const focusedPlaceId = route.params?.focusedPlaceId;
   const initialSection = route.params?.initialSection;
   const notificationContext = route.params?.notificationContext;
@@ -42,34 +46,49 @@ const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
   }, [initialSection, navigation, notificationContext]);
 
   return (
-    <MapScreen
-      initialSection={initialSection}
-      notificationLikeContext={notificationContext ? {
-        notificationsId: notificationContext.notificationId?.toString(),
-        postId: notificationContext.postId?.toString(),
-      } : null}
-      openedBookmarkedPlaceId={focusedPlaceId ?? null}
-      onClearOpenedBookmarkedPlace={clearFocusedPlace}
-      onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
-      onCreateReservation={(place) => {
-        const placeId = parsePlaceId(place.id);
-        if (placeId) navigation.navigate(MAIN_ROUTES.CreateReservation, {
-          category: place.category,
-          imageUrl: place.imageUrl,
-          placeId,
-          placeName: place.name,
-        });
-      }}
-      onOpenVerification={() => navigation.navigate(MAIN_ROUTES.Verification)}
-      onOpenReservation={(value) => {
-        const reservationId = parseReservationId(value);
-        if (reservationId) {
-          navigation.navigate(MAIN_ROUTES.ReservationDetail, { reservationId });
-        }
-      }}
-    />
+    <MapRouteContainer>
+      <MapScreen
+        initialSection={initialSection}
+        notificationLikeContext={notificationContext ? {
+          notificationsId: notificationContext.notificationId?.toString(),
+          postId: notificationContext.postId?.toString(),
+        } : null}
+        openedBookmarkedPlaceId={focusedPlaceId ?? null}
+        onClearOpenedBookmarkedPlace={clearFocusedPlace}
+        onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
+        onCreateReservation={(place) => {
+          const placeId = parsePlaceId(place.id);
+          if (placeId) navigation.navigate(MAIN_ROUTES.CreateReservation, {
+            category: place.category,
+            imageUrl: place.imageUrl,
+            placeId,
+            placeName: place.name,
+          });
+        }}
+        onOpenVerification={() => navigation.navigate(MAIN_ROUTES.Verification)}
+        onOpenReservation={(value) => {
+          const reservationId = parseReservationId(value);
+          if (reservationId) {
+            navigation.navigate(MAIN_ROUTES.ReservationDetail, { reservationId });
+          }
+        }}
+      />
+      <V2ScreenBoundary>
+        <CurrentMapPlaceReportEntry
+          label={t('placeReport.mapEntry')}
+          onPress={() => navigation.navigate(MAIN_ROUTES.PlaceReport)}
+          testID="current-map-place-report"
+        />
+      </V2ScreenBoundary>
+    </MapRouteContainer>
   );
 };
+
+const PlaceReportRouteScreen = ({ navigation }: MainScreenProps<'PlaceReport'>) => (
+  <V2ScreenBoundary>
+    <PlaceReportFlowScreen navigation={navigation} />
+  </V2ScreenBoundary>
+);
 
 const ProfileRouteScreen = ({ navigation, route }: MainScreenProps<'Profile'>) => (
   <ProfileScreen
@@ -174,6 +193,7 @@ const MainNavigator = () => (
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.PlaceReport} component={PlaceReportRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
@@ -188,3 +208,13 @@ const MainNavigator = () => (
 );
 
 export default MainNavigator;
+
+const MapRouteContainer = styled.View`
+  flex: 1;
+`;
+
+const CurrentMapPlaceReportEntry = styled(PlaceReportEntryButton)`
+  position: absolute;
+  left: ${({ theme }) => theme.spacing.md}px;
+  top: 45%;
+`;
