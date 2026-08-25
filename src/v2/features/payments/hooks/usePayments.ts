@@ -6,6 +6,15 @@ import type { ListPaymentsParams } from '../model/payment.types';
 
 type PaymentApi = typeof paymentApi;
 
+export function createAllPaymentsQueryOptions(
+  api: Pick<PaymentApi, 'listAllPayments'> = paymentApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) => api.listAllPayments(signal),
+    queryKey: paymentQueryKeys.allPages(),
+  };
+}
+
 export function createPaymentsQueryOptions(
   params: ListPaymentsParams = {},
   api: Pick<PaymentApi, 'listPayments'> = paymentApi,
@@ -28,6 +37,10 @@ export function createPaymentDetailQueryOptions(
 
 export function usePayments(params: ListPaymentsParams = {}) {
   return useQuery(createPaymentsQueryOptions(params));
+}
+
+export function useAllPayments() {
+  return useQuery(createAllPaymentsQueryOptions());
 }
 
 export function usePaymentDetail(paymentId: number) {

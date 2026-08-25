@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import { createPaymentApi } from '../../../features/payments/api/paymentApi.ts';
 import {
+  createAllPaymentsQueryOptions,
   createPaymentDetailQueryOptions,
   createPaymentsQueryOptions,
 } from '../../../features/payments/hooks/usePayments.ts';
@@ -39,6 +40,37 @@ test('reservation detail and tourist payment APIs forward identifiers, params, a
   ]);
 });
 
+test('all-payments API follows hasNext until the final page and forwards one AbortSignal', async () => {
+  const calls = [];
+  const signal = new AbortController().signal;
+  const client = {
+    delete: async () => undefined,
+    get: async (path, options) => {
+      calls.push({ options, path });
+      const page = options.params.page;
+      return {
+        hasNext: page === 1,
+        limit: 100,
+        page,
+        payments: [{ id: page, reservationId: 901 }],
+        totalElements: 2,
+        totalPages: 2,
+      };
+    },
+    patch: async () => undefined,
+    post: async () => undefined,
+    put: async () => undefined,
+  };
+
+  const result = await createPaymentApi(client).listAllPayments(signal);
+
+  assert.deepEqual(result.map(({ id }) => id), [1, 2]);
+  assert.deepEqual(calls, [
+    { options: { params: { limit: 100, page: 1 }, signal }, path: '/payments' },
+    { options: { params: { limit: 100, page: 2 }, signal }, path: '/payments' },
+  ]);
+});
+
 test('reservation and payment Query options use stable keys and forward AbortSignal', async () => {
   const calls = [];
   const signal = new AbortController().signal;
@@ -58,17 +90,25 @@ test('reservation and payment Query options use stable keys and forward AbortSig
       calls.push(['payment', id, receivedSignal]); return response;
     },
   });
+  const allPayments = createAllPaymentsQueryOptions({
+    listAllPayments: async (receivedSignal) => {
+      calls.push(['allPayments', receivedSignal]); return [response];
+    },
+  });
 
   assert.equal(await reservation.queryFn({ signal }), response);
   assert.equal(await payments.queryFn({ signal }), response);
   assert.equal(await payment.queryFn({ signal }), response);
+  assert.deepEqual(await allPayments.queryFn({ signal }), [response]);
   assert.deepEqual(reservation.queryKey, reservationQueryKeys.detail(901));
   assert.deepEqual(payments.queryKey, ['v2', 'payments', 'list', { page: 1 }]);
   assert.deepEqual(payment.queryKey, ['v2', 'payments', 'detail', 1002]);
+  assert.deepEqual(allPayments.queryKey, ['v2', 'payments', 'all-pages']);
   assert.deepEqual(calls, [
     ['reservation', 901, signal],
     ['payments', { page: 1 }, signal],
     ['payment', 1002, signal],
+    ['allPayments', signal],
   ]);
 });
 

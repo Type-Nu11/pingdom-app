@@ -1,7 +1,9 @@
 export { createPaymentApi, paymentApi } from './api/paymentApi';
 export {
+  createAllPaymentsQueryOptions,
   createPaymentDetailQueryOptions,
   createPaymentsQueryOptions,
+  useAllPayments,
   usePaymentDetail,
   usePayments,
 } from './hooks/usePayments';

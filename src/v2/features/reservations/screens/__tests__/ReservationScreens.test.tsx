@@ -13,7 +13,7 @@ import VerificationScreen from '../VerificationScreen';
 import { usePlaceDetail } from '../../../place-detail/hooks/usePlaceDetail';
 import { useAvailabilities, useCreateReservation } from '../../hooks/useReservations';
 import { useReservationDetail } from '../../hooks/useReservations';
-import { usePayments } from '../../../payments/hooks/usePayments';
+import { useAllPayments } from '../../../payments/hooks/usePayments';
 
 jest.mock('../../../place-detail/hooks/usePlaceDetail', () => ({ usePlaceDetail: jest.fn() }));
 jest.mock('../../hooks/useReservations', () => ({
@@ -21,7 +21,7 @@ jest.mock('../../hooks/useReservations', () => ({
   useCreateReservation: jest.fn(),
   useReservationDetail: jest.fn(),
 }));
-jest.mock('../../../payments/hooks/usePayments', () => ({ usePayments: jest.fn() }));
+jest.mock('../../../payments/hooks/usePayments', () => ({ useAllPayments: jest.fn() }));
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
@@ -53,18 +53,11 @@ describe('V2 reservation screens', () => {
       isError: false,
       isPending: false,
     } as ReturnType<typeof useReservationDetail>);
-    jest.mocked(usePayments).mockReturnValue({
-      data: {
-        hasNext: false,
-        limit: 100,
-        page: 1,
-        payments: [],
-        totalElements: 0,
-        totalPages: 0,
-      },
+    jest.mocked(useAllPayments).mockReturnValue({
+      data: [],
       isError: false,
       isPending: false,
-    } as unknown as ReturnType<typeof usePayments>);
+    } as unknown as ReturnType<typeof useAllPayments>);
   });
 
   test('예약 생성 화면은 장소, 인원, 날짜, 시간, 예약자 입력을 한 흐름으로 표시한다', async () => {
@@ -126,13 +119,24 @@ describe('V2 reservation screens', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  test('연결된 결제의 서버 상태와 최소 단위 금액·통화를 변환 없이 표시한다', async () => {
-    jest.mocked(usePayments).mockReturnValue({
-      data: {
-        hasNext: false,
-        limit: 100,
-        page: 1,
-        payments: [{
+  test('모든 페이지에서 합쳐진 결제 중 예약에 연결된 내역만 표시한다', async () => {
+    jest.mocked(useAllPayments).mockReturnValue({
+      data: [
+        {
+          amountMinor: 10000,
+          createdAt: '2026-08-25T03:02:00Z',
+          currency: 'KRW',
+          failedAt: null,
+          failureCode: null,
+          id: 1001,
+          paidAt: '2026-08-25T03:03:00Z',
+          provider: 'TOSS_PAYMENTS',
+          providerPaymentId: 'pay_1001',
+          refundedAt: null,
+          reservationId: 999,
+          status: 'PAID',
+        },
+        {
           amountMinor: 25000,
           createdAt: '2026-08-25T04:02:00Z',
           currency: 'KRW',
@@ -145,13 +149,11 @@ describe('V2 reservation screens', () => {
           refundedAt: null,
           reservationId: 901,
           status: 'REFUND_PROCESSING',
-        }],
-        totalElements: 1,
-        totalPages: 1,
-      },
+        },
+      ],
       isError: false,
       isPending: false,
-    } as unknown as ReturnType<typeof usePayments>);
+    } as unknown as ReturnType<typeof useAllPayments>);
 
     await renderReservationScreen(
       <ReservationDetailScreen onBack={jest.fn()} reservationId={901} />,
@@ -159,6 +161,8 @@ describe('V2 reservation screens', () => {
 
     expect(screen.getByText('REFUND_PROCESSING')).toBeVisible();
     expect(screen.getByText('최소 화폐 단위 금액·통화: 25000 KRW')).toBeVisible();
+    expect(screen.queryByText('결제 번호 1001')).not.toBeOnTheScreen();
+    expect(screen.queryByText('결제 내역이 없어요')).not.toBeOnTheScreen();
   });
 
   test('최근 방문 장소를 누르면 실제 장소 정보로 작성 화면을 연다', async () => {

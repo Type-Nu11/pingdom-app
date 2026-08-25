@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { usePayments } from '../../payments/hooks/usePayments';
+import { useAllPayments } from '../../payments/hooks/usePayments';
 import { ApiErrorState, EmptyState, LoadingState } from '../../../shared/components';
 import { useReservationDetail } from '../hooks/useReservations';
 
@@ -18,7 +18,7 @@ export default function ReservationDetailScreen({
 }: ReservationDetailScreenProps) {
   const { t } = useTranslation();
   const reservationQuery = useReservationDetail(reservationId);
-  const paymentsQuery = usePayments({ limit: 100, page: 1 });
+  const paymentsQuery = useAllPayments();
 
   if (reservationQuery.isPending) {
     return (
@@ -42,7 +42,7 @@ export default function ReservationDetailScreen({
   }
 
   const reservation = reservationQuery.data;
-  const linkedPayments = paymentsQuery.data?.payments.filter(
+  const linkedPayments = paymentsQuery.data?.filter(
     (payment) => payment.reservationId === reservation.id,
   ) ?? [];
 
