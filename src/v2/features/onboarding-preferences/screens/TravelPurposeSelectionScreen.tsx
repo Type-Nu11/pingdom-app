@@ -1,8 +1,19 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import type { SvgProps } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
+import ArtIcon from '../../../../assets/v2/icons/place/art_svg.svg';
+import BeautyIcon from '../../../../assets/v2/icons/place/beati_svg.svg';
+import CafeIcon from '../../../../assets/v2/icons/place/cafe_svg.svg';
+import EtcIcon from '../../../../assets/v2/icons/place/etc_svg.svg';
+import FashionIcon from '../../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodIcon from '../../../../assets/v2/icons/place/food_svg.svg';
+import HotPlaceIcon from '../../../../assets/v2/icons/place/hotplace.svg';
+import MapIcon from '../../../../assets/v2/icons/place/maping_svg.svg';
+import MusicIcon from '../../../../assets/v2/icons/place/music_svg.svg';
+import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
 import Button from '../../../shared/components/Button';
 import OnboardingProgressHeader from '../components/OnboardingProgressHeader';
 import {
@@ -15,18 +26,18 @@ import {
 const DEFAULT_CURRENT_STEP = 6;
 const DEFAULT_TOTAL_STEPS = 7;
 
-const ICON_GLYPHS = {
-  art_svg: '🖼️',
-  beati_svg: '💄',
-  cafe_svg: '☕',
-  etc_svg: '✨',
-  fashion_svg: '👗',
-  food_svg: '🍜',
-  hotplace: '🌙',
-  maping_svg: '📍',
-  music_svg: '🎤',
-  popup_svg: '🎪',
-} as const satisfies Record<OnboardingPreferenceIconId, string>;
+const ICON_COMPONENTS = {
+  art_svg: ArtIcon,
+  beati_svg: BeautyIcon,
+  cafe_svg: CafeIcon,
+  etc_svg: EtcIcon,
+  fashion_svg: FashionIcon,
+  food_svg: FoodIcon,
+  hotplace: HotPlaceIcon,
+  maping_svg: MapIcon,
+  music_svg: MusicIcon,
+  popup_svg: PopupIcon,
+} as const satisfies Record<OnboardingPreferenceIconId, React.ComponentType<SvgProps>>;
 
 export type TravelPurposeSelectionScreenProps = Readonly<{
   currentStep?: number;
@@ -83,6 +94,7 @@ export default function TravelPurposeSelectionScreen({
 
           <Options accessibilityRole="list">
             {TRAVEL_PURPOSE_OPTIONS.map((option) => {
+              const Icon = ICON_COMPONENTS[option.iconId];
               const label = t(option.labelKey);
               const selected = selectedPurposeSet.has(option.value);
 
@@ -96,7 +108,18 @@ export default function TravelPurposeSelectionScreen({
                   onPress={() => togglePurpose(option.value)}
                   testID={`travel-purpose-option-${option.value}`}
                 >
-                  <OptionIcon aria-hidden>{ICON_GLYPHS[option.iconId]}</OptionIcon>
+                  <OptionIcon
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                    testID={`travel-purpose-icon-${option.value}`}
+                  >
+                    <Icon
+                      accessible={false}
+                      color={selected ? '#FF1956' : '#5E5E66'}
+                      height={24}
+                      width={24}
+                    />
+                  </OptionIcon>
                   <OptionLabel>{label}</OptionLabel>
                   {selected ? (
                     <CheckCircle aria-hidden>
@@ -188,12 +211,11 @@ const Option = styled.Pressable<{ $selected: boolean }>`
     $selected ? theme.colors.primarySoft : theme.colors.background};
 `;
 
-const OptionIcon = styled.Text`
+const OptionIcon = styled.View`
   width: ${({ theme }) => theme.spacing.xl}px;
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.title.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.title.lineHeight}px;
-  text-align: center;
+  height: ${({ theme }) => theme.spacing.xl}px;
+  align-items: center;
+  justify-content: center;
 `;
 
 const OptionLabel = styled.Text`

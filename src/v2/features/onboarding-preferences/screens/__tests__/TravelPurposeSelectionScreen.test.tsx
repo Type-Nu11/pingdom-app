@@ -27,6 +27,28 @@ describe('TravelPurposeSelectionScreen', () => {
         '기타',
       ]);
     expect(screen.getByTestId('travel-purpose-scroll-view')).toBeVisible();
+    expect([
+      'K_POP',
+      'BEAUTY',
+      'FASHION',
+      'CAFE',
+      'FOOD',
+      'POP_UP',
+      'EXHIBITION',
+      'NIGHTLIFE',
+      'OTHER',
+    ].map((purpose) => screen.getByTestId(
+      `travel-purpose-icon-${purpose}`,
+      { includeHiddenElements: true },
+    ))).toHaveLength(9);
+    expect(screen.queryByText('🎤')).not.toBeOnTheScreen();
+    expect(screen.getByTestId(
+      'travel-purpose-icon-K_POP',
+      { includeHiddenElements: true },
+    ).props).toMatchObject({
+      accessibilityElementsHidden: true,
+      importantForAccessibility: 'no-hide-descendants',
+    });
   });
 
   test('목적을 선택하거나 해제한 결과를 부모에 전달한다', async () => {
