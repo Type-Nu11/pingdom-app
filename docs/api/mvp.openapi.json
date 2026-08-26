@@ -824,9 +824,9 @@
             "application/json": {
               "schema": { "$ref": "#/components/schemas/CreateReservationRequest" },
               "examples": {
-                "valid": { "value": { "availabilityId": 801, "quantity": 2 } }
+                "valid": { "value": { "availabilityId": 801, "idempotencyKey": "reservation-01992f4c-31f6-7c42-ae8d-9d892c31e32d", "quantity": 2 } }
               },
-              "x-invalid-examples": { "invalidQuantity": { "availabilityId": 801, "quantity": 0 } }
+              "x-invalid-examples": { "invalidQuantity": { "availabilityId": 801, "idempotencyKey": "reservation-01992f4c-31f6-7c42-ae8d-9d892c31e32d", "quantity": 0 } }
             }
           }
         },
@@ -2072,12 +2072,12 @@
           "id": { "$ref": "#/components/schemas/PositiveId" },
           "placeId": { "$ref": "#/components/schemas/PositiveId" },
           "productId": { "$ref": "#/components/schemas/PositiveId" },
-          "productType": { "$ref": "#/components/schemas/ProductType" },
+          "productType": { "type": "string", "enum": ["GENERAL", "TICKET", "CLASS"] },
           "startsAt": { "type": "string", "format": "date-time" },
           "endsAt": { "type": "string", "format": "date-time" },
           "totalCapacity": { "type": "integer", "format": "int32", "minimum": 1 },
           "remainingCapacity": { "type": "integer", "format": "int32", "minimum": 0 },
-          "status": { "$ref": "#/components/schemas/AvailabilityStatus" }
+          "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] }
         }
       },
       "ReservationStatus": {
@@ -2087,10 +2087,11 @@
       "CreateReservationRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["availabilityId", "quantity"],
+        "required": ["availabilityId", "idempotencyKey"],
         "properties": {
           "availabilityId": { "$ref": "#/components/schemas/PositiveId" },
-          "quantity": { "type": "integer", "format": "int32", "minimum": 1, "maximum": 20 }
+          "idempotencyKey": { "type": "string", "minLength": 0, "maxLength": 100 },
+          "quantity": { "type": "integer", "format": "int32", "minimum": 1 }
         }
       },
       "Reservation": {
