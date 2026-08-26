@@ -190,6 +190,7 @@ export const resources = {
         search: {
           accessibilityLabel: 'Search places on the map',
           placeholder: 'Search places',
+          profileAccessibilityLabel: 'Open my page',
         },
         title: 'Nearby map',
         visibleCenter: '{{lat}}, {{lng}}',
@@ -443,6 +444,7 @@ export const resources = {
         search: {
           accessibilityLabel: '지도 장소 검색',
           placeholder: '장소를 검색하세요',
+          profileAccessibilityLabel: '마이페이지 열기',
         },
         title: '주변 지도',
         visibleCenter: '{{lat}}, {{lng}}',

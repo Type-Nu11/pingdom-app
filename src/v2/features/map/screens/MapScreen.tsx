@@ -106,6 +106,7 @@ export default function MapScreen({ navigation }: MapScreenProps) {
             setSelectedPlace(null);
           }}
           onFocusChange={setSearchFocused}
+          onOpenProfile={() => navigation.navigate(V2_ROUTES.MyPage)}
           onQueryChange={(value) => {
             setSearchText(value);
             setSelectedPlace(null);
