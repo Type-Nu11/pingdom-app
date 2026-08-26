@@ -35,7 +35,6 @@ import {
 import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
-import { useMapPlaceRankings } from '../hooks/useMapPlaceRankings';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import { useRecommendationExplanation } from '../../../v2/features/place-exploration';
@@ -48,11 +47,6 @@ import {
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import { useProfile } from '../../profile/hooks/useProfile';
 import type { MapMarker, Place } from '../model/place.types';
-import {
-  getPlaceRankingState,
-  toRankingDecisionPlaces,
-  toRankingImageUrls,
-} from '../model/placeRankingPresentation';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { getMapBackAction } from '../utils/mapBack';
 import {
@@ -168,7 +162,6 @@ export default function MapScreen({
     refetch: refetchPlaces,
     status: placeListStatus,
   } = usePlaces();
-  const [rankingFeed, setRankingFeed] = useState<'local' | 'national'>('local');
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
     appliedActivityIntent,
@@ -262,28 +255,6 @@ export default function MapScreen({
     }
   }, [i18n, profile?.language]);
 
-  // 우리 지역 핫플과 전국 트렌드는 서버 랭킹 계약(GET /map/place-rankings)만 사용한다.
-  const rankings = useMapPlaceRankings(rankingFeed === 'local'
-    ? {
-      latitude: userLat ?? center.lat,
-      longitude: userLng ?? center.lng,
-      radiusKm: recommendationRadiusKm,
-      scope: 'LOCAL',
-    }
-    : { scope: 'NATIONAL' });
-  const rankingPlaces = useMemo(
-    () => toRankingDecisionPlaces(rankings.items),
-    [rankings.items],
-  );
-  const rankingImageUrlsByPlaceId = useMemo(
-    () => toRankingImageUrls(rankings.items),
-    [rankings.items],
-  );
-  const rankingState = getPlaceRankingState({
-    isEmpty: rankings.isEmpty,
-    isError: rankings.isError,
-    isLoading: rankings.isLoading,
-  });
   const recommendationPlaces = useMemo(() => {
     const explanationByPlaceId = new Map(
       (recommendationExplanation.data?.items ?? [])
@@ -743,11 +714,6 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             places={sheetPlaces}
-            feed={rankingFeed}
-            onFeedChange={setRankingFeed}
-            rankingImageUrlsByPlaceId={rankingImageUrlsByPlaceId}
-            rankingPlaces={rankingPlaces}
-            rankingState={rankingState}
             recommendationContext={recommendationPresentation.contextText}
             recommendationLimitMessage={recommendationPresentation.limitText}
             recommendationPlaces={recommendationPlaces}
