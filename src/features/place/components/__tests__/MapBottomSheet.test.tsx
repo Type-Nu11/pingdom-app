@@ -27,7 +27,7 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
-  test('긴 추천 텍스트를 표시 계층에서 제한하고 카드와 즐겨찾기 동작을 분리한다', async () => {
+  test('긴 장소명을 제한하고 추천 이유 없이 카드와 즐겨찾기 동작을 분리한다', async () => {
     const longName = '이름이 매우 긴 추천 장소 '.repeat(8);
     const longReason = '사용자의 여행 취향과 현재 위치를 반영한 추천 이유 '.repeat(8);
     const longSource = 'PERSONALIZED_LOCATION_RECOMMENDATION_SOURCE_'.repeat(8);
@@ -49,10 +49,7 @@ describe('MapBottomSheet recommendations', () => {
       ellipsizeMode: 'tail',
       numberOfLines: 2,
     });
-    expect(screen.getByText(longReason).props).toMatchObject({
-      ellipsizeMode: 'tail',
-      numberOfLines: 1,
-    });
+    expect(screen.queryByText(longReason)).not.toBeOnTheScreen();
     expect(screen.getByText('여기서 1km').props).toMatchObject({
       ellipsizeMode: 'tail',
       numberOfLines: 1,
@@ -90,10 +87,7 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
-    expect(screen.getByText(`추천 순위 1 · ${longSource}`).props).toMatchObject({
-      ellipsizeMode: 'tail',
-      numberOfLines: 1,
-    });
+    expect(screen.queryByText(`추천 순위 1 · ${longSource}`)).not.toBeOnTheScreen();
     expect(screen.getByText('장소명 없음')).toBeVisible();
     expect(screen.getByText('이미지 없음')).toBeVisible();
   });
@@ -171,11 +165,15 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.getByTestId('recommendation-grid-row-1')).toBeVisible();
     expect(screen.getByTestId('recommendation-grid-row-2')).toBeVisible();
-    expect(screen.getByText('현재 위치와 가까운 장소입니다')).toBeVisible();
-    expect(screen.queryByText('오늘 검증하고 쿠폰 받자!')).not.toBeOnTheScreen();
+    expect(screen.getByText('핑덤이 user님이 좋아할만한 장소를 추천해드려요!')).toBeVisible();
+    expect(screen.getAllByText('user님 취향 저격')).toHaveLength(2);
+    expect(screen.getAllByText('user님 주변 숨은 장소들')).toHaveLength(1);
+    expect(screen.queryByText('테스트 추천 이유')).not.toBeOnTheScreen();
+    expect(screen.queryByText('현재 위치와 가까운 장소입니다')).not.toBeOnTheScreen();
+    expect(screen.getByText('오늘 검증하고 쿠폰 받자!')).toBeVisible();
   });
 
-  test('위치 안내는 실제 추천 목록에만 노출하고 영어 리소스를 제공한다', async () => {
+  test('추천 목록 헤더에 별도 위치 안내 문구를 표시하지 않는다', async () => {
     const commonProps = {
       activeFilters: [],
       bookmarkedPlaceIds: {},
@@ -223,11 +221,11 @@ describe('MapBottomSheet recommendations', () => {
       { language: 'en' },
     );
 
-    expect(screen.getByText('These places are close to your current location.')).toBeVisible();
+    expect(screen.queryByText('These places are close to your current location.')).not.toBeOnTheScreen();
   });
 
-  test('GET /places 장소 목록을 기본 피드에 표시하고 랭킹 탭은 렌더링하지 않는다', async () => {
-    await renderWithProviders(
+  test('GET /places 장소 목록에 지역·전국 피드 탭을 표시하고 선택 상태를 전환한다', async () => {
+    const { user } = await renderWithProviders(
       <MapBottomSheet
         activeFilters={[]}
         bookmarkedPlaceIds={{}}
@@ -259,8 +257,16 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     expect(screen.getByText('추천 장소 1')).toBeVisible();
-    expect(screen.queryByText('우리 지역 핫플')).not.toBeOnTheScreen();
-    expect(screen.queryByText('전국 트렌드')).not.toBeOnTheScreen();
+    const localFeed = screen.getByRole('tab', { name: '우리 지역 핫플' });
+    const nationalFeed = screen.getByRole('tab', { name: '전국 트렌드' });
+    expect(localFeed.props.accessibilityState).toEqual({ selected: true });
+    expect(nationalFeed.props.accessibilityState).toEqual({ selected: false });
+
+    await user.press(nationalFeed);
+    expect(screen.getByRole('tab', { name: '우리 지역 핫플' }).props.accessibilityState)
+      .toEqual({ selected: false });
+    expect(screen.getByRole('tab', { name: '전국 트렌드' }).props.accessibilityState)
+      .toEqual({ selected: true });
   });
 
   test('확장 홈에서 서버 장소의 전체 카테고리 필터를 제공한다', async () => {
