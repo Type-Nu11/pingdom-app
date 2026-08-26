@@ -19,6 +19,8 @@ export const placeQueryKeys = {
     [...placeQueryKeys.entity(placeId), 'operating-notices'] as const,
   verificationMedia: (id: number) =>
     [...placeQueryKeys.entity(id), 'verification-media'] as const,
+  explorationMedia: (id: number) =>
+    [...placeQueryKeys.entity(id), 'exploration-media'] as const,
   recommendations: () => [...placeQueryKeys.all, 'recommendations'] as const,
   recommendationExplanations: () =>
     [...placeQueryKeys.recommendations(), 'explanation'] as const,

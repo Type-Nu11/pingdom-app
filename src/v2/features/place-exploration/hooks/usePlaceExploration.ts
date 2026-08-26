@@ -102,6 +102,17 @@ export function createPlaceVerificationMediaQueryOptions(
   };
 }
 
+export function createPlaceExplorationMediaQueryOptions(
+  id: number,
+  api: Pick<PlaceExplorationApi, 'getPlaceExplorationMedia'> = placeExplorationApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getPlaceExplorationMedia(id, signal),
+    queryKey: placeQueryKeys.explorationMedia(id),
+  };
+}
+
 export function createRecommendationExplanationQueryOptions(
   requestId: string,
   api: Pick<PlaceExplorationApi, 'getRecommendationExplanation'> = placeExplorationApi,
@@ -175,6 +186,13 @@ export function usePlaceVerificationMedia(
   { enabled = true }: PlaceExplorationQueryConfig = {},
 ) {
   return useQuery({ ...createPlaceVerificationMediaQueryOptions(id), enabled });
+}
+
+export function usePlaceExplorationMedia(
+  id: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceExplorationMediaQueryOptions(id), enabled });
 }
 
 export function useRecommendationExplanation(

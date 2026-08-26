@@ -76,10 +76,21 @@ function notFound(path: string): never {
   });
 }
 
+function toLocationCheckInWirePage(page: typeof checkInPageFixture) {
+  return {
+    hasNext: page.hasNext,
+    items: page.checkIns,
+    limit: page.limit,
+    page: page.page,
+    totalElements: page.totalCount,
+    totalPages: page.totalPages,
+  };
+}
+
 function getSuccess(path: string): unknown {
   if (path === '/places') return placePageFixture;
   if (/^\/places\/\d+$/.test(path)) return placeDetailFixture;
-  if (path === '/location-check-ins') return checkInPageFixture;
+  if (path === '/location-check-ins') return toLocationCheckInWirePage(checkInPageFixture);
   if (path === '/merchant-owner/place-claims') return placeClaimPageFixture;
   if (/^\/merchant-owner\/place-claims\/\d+$/.test(path)) return placeClaimFixture;
   if (path === '/offers') return offerPageFixture;
@@ -94,7 +105,7 @@ function getSuccess(path: string): unknown {
 
 function getEmpty(path: string): unknown {
   if (path === '/places') return emptyPageFixtures.places;
-  if (path === '/location-check-ins') return emptyPageFixtures.checkIns;
+  if (path === '/location-check-ins') return toLocationCheckInWirePage(emptyPageFixtures.checkIns);
   if (path === '/merchant-owner/place-claims') return emptyPageFixtures.claims;
   if (path === '/offers') return emptyPageFixtures.offers;
   if (path === '/coupons') return emptyPageFixtures.coupons;

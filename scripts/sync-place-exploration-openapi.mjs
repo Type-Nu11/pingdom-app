@@ -1,17 +1,20 @@
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 
-const TARGET_PATHS = [
-  '/places',
-  '/places/autocomplete',
-  '/places/map',
-  '/places/{placeId}/card',
-  '/places/{placeId}/visit-decision',
-  '/places/{placeId}/operating-notices',
-  '/places/{id}/media/verification',
-  '/places/recommendations/{requestId}/explanation',
-  '/places/{placeId}/map-link-conversions',
-];
+const TARGET_OPERATIONS = new Map([
+  ['/location-check-ins', ['get']],
+  ['/places', ['get']],
+  ['/places/autocomplete', ['get']],
+  ['/places/map', ['get']],
+  ['/places/{placeId}/card', ['get']],
+  ['/places/{placeId}/visit-decision', ['get']],
+  ['/places/{placeId}/operating-notices', ['get']],
+  ['/places/{id}/media/exploration', ['get']],
+  ['/places/{id}/media/verification', ['get']],
+  ['/places/recommendations/{requestId}/explanation', ['get']],
+  ['/places/{placeId}/map-link-conversions', ['post']],
+  ['/places/{placeId}/reviews', ['post']],
+]);
 
 const source = process.argv[2];
 const sourceLocation = process.argv[3] ?? source;
@@ -51,10 +54,17 @@ function collectSchemaReferences(value, names) {
 const sourceText = await readSource(source);
 const document = JSON.parse(sourceText);
 const paths = Object.fromEntries(
-  TARGET_PATHS.map((path) => {
+  [...TARGET_OPERATIONS].map(([path, methods]) => {
     const pathItem = document.paths?.[path];
     if (!pathItem) throw new Error(`Latest OpenAPI is missing required path: ${path}`);
-    return [path, pathItem];
+    const operations = Object.fromEntries(methods.map((method) => {
+      const operation = pathItem[method];
+      if (!operation) {
+        throw new Error(`Latest OpenAPI is missing required operation: ${method} ${path}`);
+      }
+      return [method, operation];
+    }));
+    return [path, operations];
   }),
 );
 
@@ -89,5 +99,5 @@ const scopedDocument = {
 
 await writeFile(outputPath, `${JSON.stringify(scopedDocument, null, 2)}\n`, 'utf8');
 console.log(
-  `Wrote ${TARGET_PATHS.length} paths and ${schemaNames.size} referenced schemas to ${outputPath.pathname}`,
+  `Wrote ${TARGET_OPERATIONS.size} paths and ${schemaNames.size} referenced schemas to ${outputPath.pathname}`,
 );

@@ -73,6 +73,8 @@ export const operatingNoticesFixture = {
     expiredAt: null,
     canceledAt: null,
     cancelReason: null,
+    createdAt: '2026-08-11T03:00:00Z',
+    updatedAt: '2026-08-11T03:00:00Z',
     visibleNow: true,
   }],
 } satisfies PlaceExplorationSchema<'PlaceOperatingNoticeListResponse'>;
@@ -93,6 +95,26 @@ export const verificationMediaFixture = {
     updatedAt: '2026-08-10T03:00:00Z',
   }],
 } satisfies PlaceExplorationSchema<'PlaceMediaResponse'>;
+
+export const explorationMediaFixture = {
+  ...verificationMediaFixture,
+  media: verificationMediaFixture.media.map((item) => ({
+    ...item,
+    id: 82,
+    imageUrl: 'https://cdn.example.test/places/17/exploration.jpg',
+    purpose: 'EXPLORATION' as const,
+  })),
+} satisfies PlaceExplorationSchema<'PlaceMediaResponse'>;
+
+export const placeReviewFixture = {
+  reviewId: 91,
+  placeId: 17,
+  userId: 101,
+  recommendReason: 'Friendly',
+  content: 'Synthetic review used only by the explicit development mock.',
+  imageUrls: [],
+  createdAt: '2026-08-26T03:00:00Z',
+} satisfies PlaceExplorationSchema<'PlaceReviewResponse'>;
 
 export const recommendationExplanationFixture = {
   requestId: '9f7263d5-65f1-4834-9ca3-86ad2fc4e7d0',
@@ -156,6 +178,7 @@ export const emptyPlaceExplorationFixtures = {
   mapViewport: { ...mapViewportFixture, clusters: [], markers: [] },
   operatingNotices: { ...operatingNoticesFixture, notices: [] },
   verificationMedia: { ...verificationMediaFixture, media: [] },
+  explorationMedia: { ...explorationMediaFixture, media: [] },
   recommendationExplanation: { ...recommendationExplanationFixture, items: [] },
   visitDecision: {
     ...visitDecisionFixture,

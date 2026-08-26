@@ -7,6 +7,7 @@ import type {
   PlaceAutocomplete,
   PlaceAutocompleteParams,
   PlaceCard,
+  PlaceExplorationMedia,
   PlaceList,
   PlaceListParams,
   PlaceOperatingNotices,
@@ -60,6 +61,12 @@ export function createPlaceExplorationApi(client: ApiClient = apiClient) {
       signal?: AbortSignal,
     ): Promise<PlaceOperatingNotices> =>
       client.get<PlaceOperatingNotices>(`/places/${placeId}/operating-notices`, { signal }),
+
+    getPlaceExplorationMedia: (
+      id: number,
+      signal?: AbortSignal,
+    ): Promise<PlaceExplorationMedia> =>
+      client.get<PlaceExplorationMedia>(`/places/${id}/media/exploration`, { signal }),
 
     getPlaceVerificationMedia: (
       id: number,

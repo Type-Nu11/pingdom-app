@@ -4,6 +4,7 @@ export type {
   CreateStatusVoteBody,
   ListCheckInsParams,
   LocationCheckIn,
+  LocationCheckInListItem,
   LocationCheckInPage,
   StatusVote,
 } from './api/checkInApi';

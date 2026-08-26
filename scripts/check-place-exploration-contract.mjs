@@ -3,18 +3,21 @@ import { readFile } from 'node:fs/promises';
 const contractPath = new URL('../docs/api/place-exploration.openapi.json', import.meta.url);
 const document = JSON.parse(await readFile(contractPath, 'utf8'));
 const expectedOperations = new Map([
+  ['/location-check-ins', ['get', 'listMine_4']],
   ['/places', ['get', 'listPlaces']],
   ['/places/autocomplete', ['get', 'autocompletePlaces']],
   ['/places/map', ['get', 'mapViewport']],
   ['/places/{placeId}/card', ['get', 'getTouristPlaceCard']],
   ['/places/{placeId}/visit-decision', ['get', 'getPlaceVisitDecision']],
   ['/places/{placeId}/operating-notices', ['get', 'listOperatingNotices']],
+  ['/places/{id}/media/exploration', ['get', 'getExplorationMedia']],
   ['/places/{id}/media/verification', ['get', 'getVerificationMedia']],
   [
     '/places/recommendations/{requestId}/explanation',
     ['get', 'getRecommendationExplanation'],
   ],
   ['/places/{placeId}/map-link-conversions', ['post', 'record']],
+  ['/places/{placeId}/reviews', ['post', 'create_3']],
 ]);
 const failures = [];
 
