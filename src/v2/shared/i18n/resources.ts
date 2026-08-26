@@ -182,7 +182,10 @@ export const resources = {
           retry: 'Check again',
         },
         recommendations: {
-          nearbyDescription: 'These places are close to your current location.',
+          affinityLabel: 'Picked for {{userName}}',
+          hiddenLabel: 'Hidden gems near {{userName}}',
+          subtitle: 'Pingdom recommends places {{userName}} might like!',
+          verificationTitle: 'Verify today and get a coupon!',
         },
         search: {
           accessibilityLabel: 'Search places on the map',
@@ -410,7 +413,10 @@ export const resources = {
           retry: '다시 확인',
         },
         recommendations: {
-          nearbyDescription: '현재 위치와 가까운 장소입니다',
+          affinityLabel: '{{userName}}님 취향 저격',
+          hiddenLabel: '{{userName}}님 주변 숨은 장소들',
+          subtitle: '핑덤이 {{userName}}님이 좋아할만한 장소를 추천해드려요!',
+          verificationTitle: '오늘 검증하고 쿠폰 받자!',
         },
         search: {
           accessibilityLabel: '지도 장소 검색',

@@ -320,23 +320,27 @@ export default function ReservationBottomSheet({
                 onToggleBookmark={onToggleBookmark}
                 places={nearbyPlaces}
               />
-              <Text style={styles.savedTitle}>{t('reservation.list.savedTitle')}</Text>
-              {reservations.isLoading ? (
-                <View style={styles.state} testID="reservations-loading"><Text style={styles.stateTitle}>{t('reservation.list.loading')}</Text></View>
-              ) : reservations.isError ? (
-                <View style={styles.state} testID="reservations-error">
-                  <Text style={styles.stateTitle}>{t('reservation.list.error')}</Text>
-                  <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><Text style={styles.retryLabel}>{t('reservation.list.retry')}</Text></Pressable>
-                </View>
-              ) : items.length === 0 ? (
-                <View style={styles.state} testID="reservations-empty">
-                  <Text style={styles.stateMark}>R</Text>
-                  <Text style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</Text>
-                  <Text style={styles.stateBody}>{t('reservation.list.emptyDescription')}</Text>
-                </View>
-              ) : items.map((reservation) => (
-                <ReservationCard key={reservation.id} onPress={() => onOpenReservation(reservation.id)} reservation={reservation} />
-              ))}
+              {snapPoint === 'expanded' ? (
+                <>
+                  <Text style={styles.savedTitle}>{t('reservation.list.savedTitle')}</Text>
+                  {reservations.isLoading ? (
+                    <View style={styles.state} testID="reservations-loading"><Text style={styles.stateTitle}>{t('reservation.list.loading')}</Text></View>
+                  ) : reservations.isError ? (
+                    <View style={styles.state} testID="reservations-error">
+                      <Text style={styles.stateTitle}>{t('reservation.list.error')}</Text>
+                      <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><Text style={styles.retryLabel}>{t('reservation.list.retry')}</Text></Pressable>
+                    </View>
+                  ) : items.length === 0 ? (
+                    <View style={styles.state} testID="reservations-empty">
+                      <Text style={styles.stateMark}>R</Text>
+                      <Text style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</Text>
+                      <Text style={styles.stateBody}>{t('reservation.list.emptyDescription')}</Text>
+                    </View>
+                  ) : items.map((reservation) => (
+                    <ReservationCard key={reservation.id} onPress={() => onOpenReservation(reservation.id)} reservation={reservation} />
+                  ))}
+                </>
+              ) : null}
             </ScrollView>
           </View>
         </Animated.View>
@@ -382,12 +386,12 @@ const styles = StyleSheet.create({
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 5 },
   navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
-  navigationShadow: { backgroundColor: '#FFFFFF', borderRadius: 32, elevation: 4, flex: 1, shadowColor: '#11151B', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.12, shadowRadius: 16 },
+  navigationShadow: { backgroundColor: '#FFFFFF', borderRadius: 32, elevation: 2, flex: 1, shadowColor: '#11151B', shadowOffset: { height: 2, width: 0 }, shadowOpacity: 0.06, shadowRadius: 8 },
   pressed: { opacity: 0.72 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   savedTitle: { color: '#1D1E22', fontSize: 17, fontWeight: '900', marginBottom: 8, marginTop: 0 },
-  sendButton: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 32, elevation: 4, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.12, shadowRadius: 16, width: 64 },
+  sendButton: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 32, elevation: 2, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { height: 2, width: 0 }, shadowOpacity: 0.06, shadowRadius: 8, width: 64 },
   sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   state: { alignItems: 'center', paddingTop: 34 },
   stateBody: { color: '#777982', fontSize: 11, marginTop: 4 },
@@ -395,6 +399,6 @@ const styles = StyleSheet.create({
   stateTitle: { color: '#27292F', fontSize: 14, fontWeight: '800', marginTop: 6 },
   status: { fontSize: 11, fontWeight: '800' },
   subtitle: { color: '#777982', fontSize: 13, marginTop: 2, paddingHorizontal: 16 },
-  title: { color: '#111217', fontSize: 20, fontWeight: '900' },
+  title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
 });
