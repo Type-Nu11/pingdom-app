@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Animated,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -61,8 +60,6 @@ import {
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 
-const MAP_ACTION_HEIGHT = 48;
-const MAP_ACTION_SHEET_GAP = 10;
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
 
@@ -127,7 +124,6 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 
 type MapScreenProps = {
   initialSection?: 'favorites' | 'map' | 'reservations';
-  mapAction?: React.ReactNode;
   onClearOpenedBookmarkedPlace?: () => void;
   onCreateReservation?: (place: {
     category: string;
@@ -137,18 +133,15 @@ type MapScreenProps = {
   }) => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
-  onOpenVerification?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
 
 export default function MapScreen({
   initialSection = 'map',
-  mapAction,
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
   onOpenProfile,
   onOpenReservation,
-  onOpenVerification,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
@@ -236,11 +229,6 @@ export default function MapScreen({
     collapsedTranslateY,
     initialSnapPoint: 'medium',
     mediumTranslateY,
-  });
-  const mapActionOpacity = sheetTranslateY.interpolate({
-    extrapolate: 'clamp',
-    inputRange: [0, Math.max(mediumTranslateY, 1)],
-    outputRange: [0, 1],
   });
   useEffect(() => {
     const language = profile?.language?.trim().toLowerCase();
@@ -566,22 +554,6 @@ export default function MapScreen({
           }}
           query={query}
         />
-        {mapAction ? (
-          <Animated.View
-            pointerEvents={snapPoint === 'expanded' ? 'none' : 'box-none'}
-            style={[
-              styles.mapActionLayer,
-              {
-                height: fullSheetHeight + MAP_ACTION_HEIGHT + MAP_ACTION_SHEET_GAP,
-                opacity: mapActionOpacity,
-                transform: [{ translateY: sheetTranslateY }],
-              },
-            ]}
-            testID="map-sheet-following-action"
-          >
-            <View style={styles.mapAction}>{mapAction}</View>
-          </Animated.View>
-        ) : null}
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
@@ -656,7 +628,6 @@ export default function MapScreen({
               snapTo('expanded');
             }}
             onOpenReservation={(reservationId) => onOpenReservation?.(reservationId)}
-            onOpenVerification={() => onOpenVerification?.()}
             onPlacePress={handlePlacePress}
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
@@ -775,16 +746,4 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   placeListStatusText: { color: '#454750', fontSize: 13, textAlign: 'center' },
-  mapActionLayer: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    zIndex: 51,
-  },
-  mapAction: {
-    position: 'absolute',
-    right: 12,
-    top: 0,
-  },
 });

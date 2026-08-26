@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useTranslation } from 'react-i18next';
 import styled, { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../features/place/screens/MapScreen';
@@ -8,10 +7,6 @@ import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
 import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
-import VerificationScreen from '../../v2/features/reservations/screens/VerificationScreen';
-import VerificationReviewScreen from '../../v2/features/reservations/screens/VerificationReviewScreen';
-import PlaceReportEntryButton from '../../v2/features/place-report/components/PlaceReportEntryButton';
-import PlaceReportFlowScreen from '../../v2/features/place-report/screens/PlaceReportFlowScreen';
 import { theme as v2Theme } from '../../v2/shared/theme';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
@@ -33,7 +28,6 @@ const V2ScreenBoundary = ({ children }: React.PropsWithChildren) => (
 );
 
 export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
-  const { t } = useTranslation();
   const focusedPlaceId = route.params?.focusedPlaceId;
   const initialSection = route.params?.initialSection;
   const notificationContext = route.params?.notificationContext;
@@ -49,15 +43,6 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
     <MapRouteContainer>
       <MapScreen
         initialSection={initialSection}
-        mapAction={(
-          <V2ScreenBoundary>
-            <PlaceReportEntryButton
-              label={t('placeReport.mapEntry')}
-              onPress={() => navigation.navigate(MAIN_ROUTES.PlaceReport)}
-              testID="current-map-place-report"
-            />
-          </V2ScreenBoundary>
-        )}
         openedBookmarkedPlaceId={focusedPlaceId ?? null}
         onClearOpenedBookmarkedPlace={clearFocusedPlace}
         onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
@@ -70,7 +55,6 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
             placeName: place.name,
           });
         }}
-        onOpenVerification={() => navigation.navigate(MAIN_ROUTES.Verification)}
         onOpenReservation={(value) => {
           const reservationId = parseReservationId(value);
           if (reservationId) {
@@ -81,12 +65,6 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
     </MapRouteContainer>
   );
 };
-
-const PlaceReportRouteScreen = ({ navigation }: MainScreenProps<'PlaceReport'>) => (
-  <V2ScreenBoundary>
-    <PlaceReportFlowScreen navigation={navigation} />
-  </V2ScreenBoundary>
-);
 
 const ProfileRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
   <ProfileScreen
@@ -153,29 +131,6 @@ const CreateReservationRouteScreen = ({
   </V2ScreenBoundary>
 );
 
-const VerificationRouteScreen = ({ navigation }: MainScreenProps<'Verification'>) => (
-  <V2ScreenBoundary>
-    <VerificationScreen
-      onBack={navigation.goBack}
-      onOpenPlace={(place) => navigation.navigate(MAIN_ROUTES.VerificationReview, place)}
-    />
-  </V2ScreenBoundary>
-);
-
-const VerificationReviewRouteScreen = ({
-  navigation,
-  route,
-}: MainScreenProps<'VerificationReview'>) => (
-  <V2ScreenBoundary>
-    <VerificationReviewScreen
-      category={route.params.category}
-      imageUrl={route.params.imageUrl}
-      onBack={navigation.goBack}
-      placeName={route.params.placeName}
-    />
-  </V2ScreenBoundary>
-);
-
 const MerchantRouteScreen = ({ navigation, route }: MainScreenProps<'Merchant'>) => (
   <RoutePlaceholderScreen
     description={`merchantId: ${route.params.merchantId}`}
@@ -190,13 +145,10 @@ const MainNavigator = () => (
     screenOptions={{ headerShown: false }}
   >
     <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.PlaceReport} component={PlaceReportRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.Verification} component={VerificationRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.VerificationReview} component={VerificationReviewRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
