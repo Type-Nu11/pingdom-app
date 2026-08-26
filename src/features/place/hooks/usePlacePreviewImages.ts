@@ -26,11 +26,7 @@ export function getInlinePreviewImage(place: PreviewPlace) {
   return imageFromImages?.imageUrl ?? imageFromImages?.url ?? place.mediaUrls?.[0];
 }
 
-/**
- * Place previews only consume media included in the place contract.
- * The removed `/map/posts` fallback caused an N+1 request and coupled discovery UI
- * to a legacy record endpoint that is not part of the V2 place flow.
- */
+/** Place previews only consume media included in the place contract. */
 export function usePlacePreviewImages(places: PreviewPlace[], enabled = true) {
   return useMemo(() => {
     const imageUrlsByPlaceId: Record<string, string> = {};

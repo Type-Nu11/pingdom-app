@@ -10,7 +10,6 @@ import LegalTextPage from '../components/LegalTextPage';
 import LicensesView from '../components/LicensesView';
 import MapRadiusView from '../components/MapRadiusView';
 import PasswordChangeView from '../components/PasswordChangeView';
-import ReportHistoryView from '../components/ReportHistoryView';
 import SettingsNavBar from '../components/SettingsNavBar';
 import SettingsRootView from '../components/SettingsRootView';
 import UsernameChangeView from '../components/UsernameChangeView';
@@ -27,7 +26,6 @@ export type SettingsPage =
   | 'username'
   | 'password'
   | 'delete-account'
-  | 'report-history'
   | 'block-policy'
   | 'map-radius'
   | 'terms'
@@ -87,7 +85,6 @@ const SettingsScreen = ({ onBack, onLogout }: SettingsScreenProps) => {
         {currentPage === 'delete-account' && (
           <DeleteAccountView onBack={goBack} onDeleted={handleAccountDeleted} />
         )}
-        {currentPage === 'report-history' && <ReportHistoryView onBack={goBack} />}
         {currentPage === 'block-policy' && (
           <LegalTextPage
             meta={BLOCK_POLICY_CONTENT.meta}
