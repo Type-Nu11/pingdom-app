@@ -4,6 +4,7 @@ import {
   type OperationQuery,
   type OperationRequestBody,
   type OperationResponse,
+  type ReservationPaymentOperationResponse,
 } from '../../../shared/api';
 
 export type ListAvailabilitiesParams = OperationQuery<'listPlaceAvailabilities'>;
@@ -13,6 +14,7 @@ export type CreateReservationBody = OperationRequestBody<'createReservation'>;
 export type AvailabilityList = OperationResponse<'listPlaceAvailabilities', 200>;
 export type ReservationPage = OperationResponse<'listMyReservations', 200>;
 export type Reservation = OperationResponse<'createReservation', 201>;
+export type ReservationDetail = ReservationPaymentOperationResponse<'get_5', 200>;
 
 export function createReservationApi(client: ApiClient = apiClient) {
   const postReservationTransition = (
@@ -55,6 +57,12 @@ export function createReservationApi(client: ApiClient = apiClient) {
       signal?: AbortSignal,
     ): Promise<ReservationPage> =>
       client.get<ReservationPage>('/merchant-owner/reservations', { params, signal }),
+
+    getReservation: (
+      reservationId: number,
+      signal?: AbortSignal,
+    ): Promise<ReservationDetail> =>
+      client.get<ReservationDetail>(`/reservations/${reservationId}`, { signal }),
 
     listReservations: (
       params: ListReservationsParams = {},

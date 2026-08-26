@@ -105,6 +105,35 @@ if (document.components?.parameters?.Page?.schema?.minimum !== 1) {
   failures.push('Pagination must remain 1-based');
 }
 
+const createReservationRequest = document.components?.schemas?.CreateReservationRequest;
+if (JSON.stringify(createReservationRequest?.required?.sort()) !== JSON.stringify([
+  'availabilityId',
+  'idempotencyKey',
+])) {
+  failures.push('CreateReservationRequest required fields must match the live server contract');
+}
+if (createReservationRequest?.properties?.idempotencyKey?.maxLength !== 100) {
+  failures.push('CreateReservationRequest idempotencyKey must have maxLength 100');
+}
+if (createReservationRequest?.properties?.quantity?.minimum !== 1) {
+  failures.push('CreateReservationRequest quantity must have minimum 1');
+}
+
+const availability = document.components?.schemas?.Availability;
+if (JSON.stringify(availability?.properties?.productType?.enum) !== JSON.stringify([
+  'GENERAL',
+  'TICKET',
+  'CLASS',
+])) {
+  failures.push('Availability productType must match the live server contract');
+}
+if (JSON.stringify(availability?.properties?.status?.enum) !== JSON.stringify([
+  'ACTIVE',
+  'INACTIVE',
+])) {
+  failures.push('Availability status must match the live server contract');
+}
+
 const fixtureBodyHash = createHash('sha256')
   .update(signingFixture.canonicalJsonBody, 'utf8')
   .digest('hex');

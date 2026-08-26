@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-
 import React from 'react';
 
 import { V2_ROUTES, type V2ScreenProps } from '../../../../app/navigation/types';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { createTestI18n, renderWithProviders } from '../../../../shared/testing/testProviders';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
 import { useMapDiscovery } from '../../hooks/useMapDiscovery';
 import MapScreen from '../MapScreen';
@@ -45,7 +45,9 @@ const place = {
 const baseDiscovery: ReturnType<typeof useMapDiscovery> = {
   autocomplete: [place],
   autocompleteError: null,
+  dataSource: 'real',
   isAutocompleteLoading: false,
+  isDisabled: false,
   hasResolvedMarkers: true,
   isEmpty: false,
   isLoading: false,
@@ -80,8 +82,9 @@ const navigation = {
   navigate: jest.fn(),
 } as unknown as V2ScreenProps<'Map'>['navigation'];
 
-function renderMapScreen() {
-  return renderWithProviders(<MapScreen navigation={navigation} />);
+async function renderMapScreen() {
+  const i18n = await createTestI18n();
+  return renderWithProviders(<MapScreen navigation={navigation} />, { i18n });
 }
 
 describe('MapScreen', () => {
@@ -183,5 +186,38 @@ describe('MapScreen', () => {
     expect(screen.getByTestId('v2-location-denied')).toBeVisible();
     expect(screen.getByTestId('v2-map-empty')).toBeVisible();
     fireEvent.press(screen.getByTestId('v2-map-locate'));
+  });
+
+  test('장소 기능 비활성과 네트워크 오류를 서로 다른 상태로 표시한다', async () => {
+    const rendered = await renderMapScreen();
+
+    jest.mocked(useMapDiscovery).mockReturnValue({
+      ...baseDiscovery,
+      isDisabled: true,
+      markers: [],
+    });
+    await act(async () => {
+      rendered.rerender(<MapScreen navigation={navigation} />);
+    });
+    expect(screen.getByTestId('v2-map-disabled')).toBeVisible();
+
+    jest.mocked(useMapDiscovery).mockReturnValue({
+      ...baseDiscovery,
+      isDisabled: false,
+      markers: [],
+      queryError: new Error('network unavailable'),
+    });
+    await act(async () => {
+      rendered.rerender(<MapScreen navigation={navigation} />);
+    });
+    expect(screen.getByTestId('v2-map-error')).toBeVisible();
+  });
+
+  test('명시적으로 활성화한 mock marker는 서버 장소처럼 보이지 않게 표시한다', async () => {
+    jest.mocked(useMapDiscovery).mockReturnValue({ ...baseDiscovery, dataSource: 'mock' });
+
+    await renderMapScreen();
+
+    expect(screen.getByTestId('v2-map-mock')).toBeVisible();
   });
 });

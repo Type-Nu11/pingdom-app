@@ -17,6 +17,10 @@ const generatedContracts = [
     contractPath: 'docs/api/current-activity-intent.openapi.json',
     generatedPath: 'src/v2/shared/api/generated/currentActivityIntent.ts',
   },
+  {
+    contractPath: 'docs/api/scout-profile.openapi.json',
+    generatedPath: 'src/v2/shared/api/generated/scoutProfile.ts',
+  },
 ];
 
 try {

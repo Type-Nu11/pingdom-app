@@ -61,8 +61,15 @@ function checkFile(filePath) {
     if (importPath.startsWith('.')) {
       const resolvedPath = path.resolve(path.dirname(filePath), importPath);
       const relativeToV2 = path.relative(v2Root, resolvedPath);
+      const relativeToV2Assets = path.relative(
+        path.join(projectRoot, 'src', 'assets', 'v2'),
+        resolvedPath,
+      );
+      const isV2Asset = !relativeToV2Assets.startsWith('..')
+        && !path.isAbsolute(relativeToV2Assets);
 
-      if (!isTestFile && (relativeToV2.startsWith('..') || path.isAbsolute(relativeToV2))) {
+      if (!isTestFile && !isV2Asset
+        && (relativeToV2.startsWith('..') || path.isAbsolute(relativeToV2))) {
         report(filePath, `relative import escapes the V2 boundary: ${importPath}`);
       }
     }

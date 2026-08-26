@@ -22,13 +22,15 @@ test('viewport mapper uses only valid server markers and tolerates unknown categ
     markers: [
       { placeId: 1, name: 'Cafe', category: 'CAFE', latitude: 37.5, longitude: 127 },
       { placeId: 2, name: 'Future', category: 'NEW_ENUM', latitude: 37.6, longitude: 127.1 },
+      { placeId: 4, name: 'Palace', category: 'CULTURAL_HERITAGE', latitude: 37.7, longitude: 127.2 },
       { placeId: 3, name: 'Invalid', category: 'FOOD', latitude: null, longitude: 127.2 },
     ],
     clusters: [],
   });
   assert.deepEqual(markers.map(({ category, placeId }) => ({ category, placeId })), [
-    { category: 'food', placeId: 1 },
+    { category: 'cafe', placeId: 1 },
     { category: 'etc', placeId: 2 },
+    { category: 'heritage', placeId: 4 },
   ]);
 });
 

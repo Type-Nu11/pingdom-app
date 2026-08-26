@@ -57,9 +57,21 @@ const text = (value: unknown, fallback = '') =>
 
 export function toMarkerCategory(value: unknown): MapMarkerCategory {
   const category = text(value).toUpperCase();
-  if (category.includes('FASHION') || category.includes('BEAUTY')) return 'fashion';
-  if (category.includes('FOOD') || category.includes('CAFE')) return 'food';
-  if (category.includes('MUSIC') || category.includes('K_POP')) return 'music';
+  if (category.includes('CULTURAL_HERITAGE')
+    || category.includes('CULTURAL_PROPERTY')
+    || category.includes('CULTURAL_ASSET')
+    || category.includes('HERITAGE')
+    || category.includes('HISTORIC')
+    || category.includes('RUIN')
+    || category.includes('문화재')
+    || category.includes('유적')) return 'heritage';
+  if (category.includes('EXHIBITION') || category.includes('SHOWING') || category.includes('ART')) return 'art';
+  if (category.includes('BEAUTY')) return 'beauty';
+  if (category.includes('CAFE')) return 'cafe';
+  if (category.includes('FASHION')) return 'fashion';
+  if (category.includes('FOOD') || category.includes('RESTAURANT')) return 'food';
+  if (category.includes('POP_UP') || category.includes('POPUP')) return 'popup';
+  if (category.includes('MUSIC') || category.includes('K_POP') || category.includes('NIGHTLIFE')) return 'music';
   if (category.includes('GAME')) return 'game';
   return 'etc';
 }

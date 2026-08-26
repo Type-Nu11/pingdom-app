@@ -152,13 +152,6 @@ const SettingsRootView = ({ onLogout, onNavigate }: SettingsRootViewProps) => {
       <SettingsSection title="신고">
         <SettingsRow
           chevron
-          subtitle="내가 신고한 내역과 처리 결과를 확인합니다."
-          title="신고 내역"
-          onPress={() => onNavigate('report-history')}
-        />
-        <SettingsDivider />
-        <SettingsRow
-          chevron
           subtitle="차단 및 신고 처리에 대한 정책을 확인합니다."
           title="차단/신고 정책"
           onPress={() => onNavigate('block-policy')}

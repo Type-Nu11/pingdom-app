@@ -78,7 +78,17 @@ export type RecommendationLimitReason =
   | 'INTERACTED_PLACE_EXCLUDED'
   | 'FALLBACK_CANDIDATE_POOL';
 
-export type PlaceCategory = 'etc' | 'fashion' | 'food' | 'game' | 'music';
+export type PlaceCategory =
+  | 'art'
+  | 'beauty'
+  | 'cafe'
+  | 'etc'
+  | 'fashion'
+  | 'food'
+  | 'game'
+  | 'heritage'
+  | 'music'
+  | 'popup';
 
 export type MapMarker = {
   bookmarked?: boolean;

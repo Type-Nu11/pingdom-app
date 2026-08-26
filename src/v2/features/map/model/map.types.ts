@@ -5,7 +5,17 @@ export type Coordinate = {
   observedAt?: string;
 };
 
-export type MapMarkerCategory = 'etc' | 'fashion' | 'food' | 'game' | 'music';
+export type MapMarkerCategory =
+  | 'art'
+  | 'beauty'
+  | 'cafe'
+  | 'etc'
+  | 'fashion'
+  | 'food'
+  | 'game'
+  | 'heritage'
+  | 'music'
+  | 'popup';
 export type MapMarkerType = 'default' | 'hot' | 'search';
 
 export type MapMarker = Coordinate & {

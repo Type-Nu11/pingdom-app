@@ -39,7 +39,7 @@ const AppProvider = ({ children }: PropsWithChildren) => {
     void initializeReservationI18n()
       .then(registerLegacyTranslationBridge)
       .catch((error) => {
-        console.warn('[V2 reservation i18n] Initialization failed:', error);
+        console.warn('[App i18n] Initialization failed:', error);
       })
       .finally(() => {
         if (isMounted) setIsI18nReady(true);

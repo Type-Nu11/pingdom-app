@@ -1,13 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
   GestureResponderHandlers,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
+  Text as NativeText,
+  type TextProps,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,13 +16,13 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
 import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.svg';
 import StarAsset from '../../../assets/v2/icons/place/star_svg.svg';
-import VerificationAsset from '../../../assets/v2/icons/place/gamju.svg';
 import type { BottomSheetSnapPoint } from '../../place/hooks/useBottomSheet';
 import FrostedSurface from '../../place/components/FrostedSurface';
 import {
   RecommendationFeaturedCard,
   type DecisionPlace,
 } from '../../place/components/MapBottomSheet';
+import { usePlacePreviewImages } from '../../place/hooks/usePlacePreviewImages';
 import * as GlassStyles from '../../place/styles/BottomSheetGlass.styles';
 import type { Reservation } from '../../../v2/features/reservations';
 import { useReservations } from '../../../v2/features/reservations';
@@ -30,27 +30,28 @@ import { useReservations } from '../../../v2/features/reservations';
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
 
+const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
+
 type ReservationBottomSheetProps = {
+  bookmarkedPlaceIds: Record<string, boolean>;
+  bookmarkPendingPlaceIds: Record<string, boolean>;
   collapsedTranslateY: number;
   height: number;
+  isBookmarkStateLoading: boolean;
   mediumTranslateY: number;
+  nearbyPlaces: DecisionPlace[];
   onHandlePress: () => void;
   onOpenFavorites: () => void;
   onOpenMap: () => void;
   onOpenRecommendations: () => void;
   onOpenReservation: (reservationId: number) => void;
-  onOpenVerification: () => void;
+  onPlacePress: (place: DecisionPlace) => void;
+  onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   panHandlers: GestureResponderHandlers;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
-  showPreviewFixtures?: boolean;
 };
-
-const PREVIEW_IMAGE_URLS = [
-  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85',
-  'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=900&q=85',
-] as const;
 
 const ActiveReservationIcon = () => (
   <Svg height={23} viewBox="0 0 24 24" width={23}>
@@ -120,94 +121,49 @@ function ReservationCard({ onPress, reservation }: {
   );
 }
 
-function NearbyReservationRail() {
+function NearbyReservationRail({
+  bookmarkedPlaceIds,
+  bookmarkPendingPlaceIds,
+  isBookmarkStateLoading,
+  onPlacePress,
+  onToggleBookmark,
+  places,
+}: {
+  bookmarkedPlaceIds: Record<string, boolean>;
+  bookmarkPendingPlaceIds: Record<string, boolean>;
+  isBookmarkStateLoading: boolean;
+  onPlacePress: (place: DecisionPlace) => void;
+  onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
+  places: DecisionPlace[];
+}) {
   const { t } = useTranslation();
-  const previewPlaces = useMemo<DecisionPlace[]>(() => [
-    { address: t('reservation.fixtures.daeseong.shortAddress'), category: 'POPUP', distance: '12.3km', id: 91001, latitude: 35.65, longitude: 128.41, name: t('reservation.fixtures.oasis.name'), recommendationReason: t('reservation.fixtures.reasons.english'), tags: ['Bookable'], verifiedAgo: 'recently', wait: t('reservation.list.available') },
-    { address: t('reservation.fixtures.daeseong.shortAddress'), category: 'POPUP', distance: '1.23km', id: 91002, latitude: 35.65, longitude: 128.41, name: t('reservation.fixtures.oasis.name'), recommendationReason: t('reservation.fixtures.reasons.reviews'), tags: ['Bookable'], verifiedAgo: 'recently', wait: t('reservation.list.available') },
-    { address: t('reservation.fixtures.daeseong.shortAddress'), category: 'CAFE', distance: '2.1km', id: 91003, latitude: 35.65, longitude: 128.41, name: t('reservation.fixtures.layered.name'), recommendationReason: t('reservation.fixtures.reasons.parking'), tags: ['Bookable'], verifiedAgo: 'recently', wait: t('reservation.list.available') },
-  ], [t]);
-  const [bookmarkedPlaceIds, setBookmarkedPlaceIds] = useState(
-    () => new Set([91001, 91002, 91003]),
-  );
+  const { imageUrlsByPlaceId } = usePlacePreviewImages(places);
 
-  const toggleBookmark = (placeId: number) => {
-    setBookmarkedPlaceIds((current) => {
-      const next = new Set(current);
-      if (next.has(placeId)) next.delete(placeId);
-      else next.add(placeId);
-      return next;
-    });
-  };
+  if (places.length === 0) {
+    return (
+      <View style={styles.nearbyEmpty} testID="nearby-reservations-empty">
+        <Text style={styles.nearbyEmptyText}>{t('reservation.list.nearbyEmpty')}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.nearbyRail} horizontal showsHorizontalScrollIndicator={false}>
-      {previewPlaces.map((place, index) => (
+      {places.map((place) => (
         <RecommendationFeaturedCard
-          bookmarked={bookmarkedPlaceIds.has(place.id)}
-          fontSizeOffset={3}
-          imageUrl={PREVIEW_IMAGE_URLS[index % PREVIEW_IMAGE_URLS.length]}
-          index={index}
+          bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+          imageUrl={imageUrlsByPlaceId[String(place.id)]}
           key={place.id}
-          onPress={() => undefined}
-          onToggleBookmark={() => toggleBookmark(place.id)}
-          pending={false}
+          onPress={() => onPlacePress(place)}
+          onToggleBookmark={() => void onToggleBookmark(
+            place,
+            !bookmarkedPlaceIds[String(place.id)],
+          )}
+          pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
           place={place}
         />
       ))}
     </ScrollView>
-  );
-}
-
-function PreviewReservationCard({ index }: { index: number }) {
-  const { t } = useTranslation();
-  const fixture = index === 0 ? 'goyang' : 'daeseong';
-  const name = t(`reservation.fixtures.${fixture}.name`);
-  return (
-    <View accessible accessibilityLabel={t('reservation.list.previewLabel', { name })} style={styles.previewReservation}>
-      <View style={styles.previewHeading}>
-        <View>
-          <Text style={styles.previewName}>{name} <Text style={styles.previewCategory}>{t(`reservation.fixtures.${fixture}.category`)}</Text></Text>
-          <Text numberOfLines={1} style={styles.previewMeta}>{t(`reservation.fixtures.${fixture}.address`)}</Text>
-        </View>
-        <Text style={styles.more}>⋮</Text>
-      </View>
-      <View style={styles.previewImages}>
-        <Image source={{ uri: PREVIEW_IMAGE_URLS[0] }} style={styles.previewImage} />
-        <Image source={{ uri: PREVIEW_IMAGE_URLS[1] }} style={styles.previewImage} />
-      </View>
-    </View>
-  );
-}
-
-function VerificationFloatingButton({
-  bottomInset,
-  onPress,
-  opacity,
-  sheetTranslateY,
-}: {
-  bottomInset: number;
-  onPress: () => void;
-  opacity: Animated.AnimatedInterpolation<number>;
-  sheetTranslateY: Animated.Value;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Animated.View
-      style={[
-        styles.verifyButtonWrap,
-        {
-          bottom: Math.max(24, bottomInset + 10) + 78,
-          opacity,
-          transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
-        },
-      ]}
-    >
-      <Pressable accessibilityLabel={t('reservation.common.verify')} accessibilityRole="button" onPress={onPress} style={styles.verifyButton}>
-        <VerificationAsset height={21} width={21} />
-        <Text style={styles.verifyLabel}>{t('reservation.common.verify')}</Text>
-      </Pressable>
-    </Animated.View>
   );
 }
 
@@ -278,20 +234,24 @@ function BottomNavigation({
 }
 
 export default function ReservationBottomSheet({
+  bookmarkedPlaceIds,
+  bookmarkPendingPlaceIds,
   collapsedTranslateY,
   height,
+  isBookmarkStateLoading,
   mediumTranslateY,
+  nearbyPlaces,
   onHandlePress,
   onOpenFavorites,
   onOpenMap,
   onOpenRecommendations,
   onOpenReservation,
-  onOpenVerification,
+  onPlacePress,
+  onToggleBookmark,
   panHandlers,
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
-  showPreviewFixtures = __DEV__,
 }: ReservationBottomSheetProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -352,41 +312,39 @@ export default function ReservationBottomSheet({
           <Text style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</Text>
           <View style={[styles.listViewport, snapPoint === 'medium' && styles.listViewportMedium]}>
             <ScrollView contentContainerStyle={styles.listContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-              <NearbyReservationRail />
-              <Text style={styles.savedTitle}>{t('reservation.list.savedTitle')}</Text>
-              {reservations.isLoading ? (
-                <View style={styles.state} testID="reservations-loading"><Text style={styles.stateTitle}>{t('reservation.list.loading')}</Text></View>
-              ) : reservations.isError ? (
-                <View style={styles.state} testID="reservations-error">
-                  <Text style={styles.stateTitle}>{t('reservation.list.error')}</Text>
-                  <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><Text style={styles.retryLabel}>{t('reservation.list.retry')}</Text></Pressable>
-                </View>
-              ) : items.length === 0 && showPreviewFixtures ? (
-                <View testID="reservations-preview">
-                  <PreviewReservationCard index={0} />
-                  <PreviewReservationCard index={1} />
-                </View>
-              ) : items.length === 0 ? (
-                <View style={styles.state} testID="reservations-empty">
-                  <Text style={styles.stateMark}>R</Text>
-                  <Text style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</Text>
-                  <Text style={styles.stateBody}>{t('reservation.list.emptyDescription')}</Text>
-                </View>
-              ) : items.map((reservation) => (
-                <ReservationCard key={reservation.id} onPress={() => onOpenReservation(reservation.id)} reservation={reservation} />
-              ))}
+              <NearbyReservationRail
+                bookmarkedPlaceIds={bookmarkedPlaceIds}
+                bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+                isBookmarkStateLoading={isBookmarkStateLoading}
+                onPlacePress={onPlacePress}
+                onToggleBookmark={onToggleBookmark}
+                places={nearbyPlaces}
+              />
+              {snapPoint === 'expanded' ? (
+                <>
+                  <Text style={styles.savedTitle}>{t('reservation.list.savedTitle')}</Text>
+                  {reservations.isLoading ? (
+                    <View style={styles.state} testID="reservations-loading"><Text style={styles.stateTitle}>{t('reservation.list.loading')}</Text></View>
+                  ) : reservations.isError ? (
+                    <View style={styles.state} testID="reservations-error">
+                      <Text style={styles.stateTitle}>{t('reservation.list.error')}</Text>
+                      <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><Text style={styles.retryLabel}>{t('reservation.list.retry')}</Text></Pressable>
+                    </View>
+                  ) : items.length === 0 ? (
+                    <View style={styles.state} testID="reservations-empty">
+                      <Text style={styles.stateMark}>R</Text>
+                      <Text style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</Text>
+                      <Text style={styles.stateBody}>{t('reservation.list.emptyDescription')}</Text>
+                    </View>
+                  ) : items.map((reservation) => (
+                    <ReservationCard key={reservation.id} onPress={() => onOpenReservation(reservation.id)} reservation={reservation} />
+                  ))}
+                </>
+              ) : null}
             </ScrollView>
           </View>
         </Animated.View>
       </GlassStyles.SheetInner>
-      {snapPoint === 'expanded' && items.length === 0 && showPreviewFixtures && !reservations.isLoading && !reservations.isError ? (
-        <VerificationFloatingButton
-          bottomInset={insets.bottom}
-          onPress={onOpenVerification}
-          opacity={opacity}
-          sheetTranslateY={sheetTranslateY}
-        />
-      ) : null}
       <BottomNavigation
         bottomInset={insets.bottom}
         onOpenFavorites={onOpenFavorites}
@@ -399,27 +357,28 @@ export default function ReservationBottomSheet({
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#FFFFFF', borderColor: '#ECEDEF', borderRadius: 17, borderWidth: 1, gap: 9, marginBottom: 13, padding: 16 },
-  cardEyebrow: { color: '#8A8C93', fontSize: 11, fontWeight: '600' },
+  card: { backgroundColor: '#FFFFFF', borderColor: '#ECEDEF', borderRadius: 17, borderWidth: 1, gap: 8, marginBottom: 11, padding: 14 },
+  cardEyebrow: { color: '#8A8C93', fontSize: 10, fontWeight: '600' },
   cardHeading: { alignItems: 'center', flexDirection: 'row', gap: 10 },
-  cardIcon: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 11, height: 40, justifyContent: 'center', width: 40 },
-  cardIconText: { color: '#FF1956', fontSize: 17, fontWeight: '900' },
-  cardTitle: { color: '#1E1F23', fontSize: 16, fontWeight: '800' },
+  cardIcon: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, height: 36, justifyContent: 'center', width: 36 },
+  cardIconText: { color: '#FF1956', fontSize: 15, fontWeight: '900' },
+  cardTitle: { color: '#1E1F23', fontSize: 14, fontWeight: '800' },
   cardTitleCopy: { flex: 1, gap: 2 },
   content: { flex: 1 },
-  detailLink: { alignSelf: 'flex-end', color: '#EC245B', fontSize: 13, fontWeight: '800' },
+  detailLink: { alignSelf: 'flex-end', color: '#EC245B', fontSize: 11, fontWeight: '800' },
   divider: { backgroundColor: '#ECEDEF', height: 1 },
   handle: { backgroundColor: 'rgba(80,83,91,0.31)', borderRadius: 3, height: 5, width: 55 },
   handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
-  listContent: { paddingBottom: 120, paddingHorizontal: 16, paddingTop: 12 },
+  listContent: { paddingBottom: 120, paddingHorizontal: 16, paddingTop: 2 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 250, marginBottom: 0 },
-  metaLabel: { color: '#8A8C93', fontSize: 12 },
+  metaLabel: { color: '#8A8C93', fontSize: 11 },
   metaRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  metaValue: { color: '#3B3B40', fontSize: 12, fontWeight: '700' },
-  more: { color: '#3B3B40', fontSize: 22 },
-  nearbyRail: { gap: 12, paddingBottom: 10, paddingTop: 12 },
+  metaValue: { color: '#3B3B40', fontSize: 11, fontWeight: '700' },
+  nearbyEmpty: { alignItems: 'center', minHeight: 72, justifyContent: 'center' },
+  nearbyEmptyText: { color: '#777982', fontSize: 12, fontWeight: '600' },
+  nearbyRail: { gap: 12, paddingBottom: 4, paddingTop: 2 },
   navItem: { alignItems: 'center', flex: 1, gap: 3, justifyContent: 'center' },
   navItemActive: { backgroundColor: '#F7F7F8' },
   navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', width: 80 },
@@ -427,29 +386,19 @@ const styles = StyleSheet.create({
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 5 },
   navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
-  navigationShadow: { backgroundColor: '#FFFFFF', borderRadius: 32, elevation: 4, flex: 1, shadowColor: '#11151B', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.12, shadowRadius: 16 },
+  navigationShadow: { backgroundColor: '#FFFFFF', borderRadius: 32, elevation: 2, flex: 1, shadowColor: '#11151B', shadowOffset: { height: 2, width: 0 }, shadowOpacity: 0.06, shadowRadius: 8 },
   pressed: { opacity: 0.72 },
-  previewCategory: { color: '#73757D', fontSize: 11, fontWeight: '500' },
-  previewHeading: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 7 },
-  previewImage: { flex: 1, height: '100%' },
-  previewImages: { borderRadius: 13, flexDirection: 'row', gap: 2, height: 105, overflow: 'hidden' },
-  previewMeta: { color: '#73757D', fontSize: 11, marginTop: 3, maxWidth: 300 },
-  previewName: { color: '#2B2C31', fontSize: 16, fontWeight: '800' },
-  previewReservation: { marginBottom: 15 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
-  retryLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  savedTitle: { color: '#1D1E22', fontSize: 21, fontWeight: '900', marginBottom: 10, marginTop: 2 },
-  sendButton: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 32, elevation: 4, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.12, shadowRadius: 16, width: 64 },
+  retryLabel: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  savedTitle: { color: '#1D1E22', fontSize: 17, fontWeight: '900', marginBottom: 8, marginTop: 0 },
+  sendButton: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 32, elevation: 2, height: 64, justifyContent: 'center', shadowColor: '#11151B', shadowOffset: { height: 2, width: 0 }, shadowOpacity: 0.06, shadowRadius: 8, width: 64 },
   sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   state: { alignItems: 'center', paddingTop: 34 },
-  stateBody: { color: '#777982', fontSize: 13, marginTop: 5 },
-  stateMark: { color: '#FF1956', fontSize: 24, fontWeight: '900' },
-  stateTitle: { color: '#27292F', fontSize: 16, fontWeight: '800', marginTop: 8 },
-  status: { fontSize: 12, fontWeight: '800' },
-  subtitle: { color: '#777982', fontSize: 16, marginTop: 4, paddingHorizontal: 16 },
-  title: { color: '#111217', fontSize: 25, fontWeight: '900' },
+  stateBody: { color: '#777982', fontSize: 11, marginTop: 4 },
+  stateMark: { color: '#FF1956', fontSize: 20, fontWeight: '900' },
+  stateTitle: { color: '#27292F', fontSize: 14, fontWeight: '800', marginTop: 6 },
+  status: { fontSize: 11, fontWeight: '800' },
+  subtitle: { color: '#777982', fontSize: 13, marginTop: 2, paddingHorizontal: 16 },
+  title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
-  verifyButton: { alignItems: 'center', backgroundColor: '#E91E55', borderRadius: 28, elevation: 4, flexDirection: 'row', gap: 6, paddingHorizontal: 17, paddingVertical: 11, shadowColor: '#101828', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.18, shadowRadius: 8 },
-  verifyButtonWrap: { position: 'absolute', right: 30, zIndex: 4 },
-  verifyLabel: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
 });

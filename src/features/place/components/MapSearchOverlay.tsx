@@ -16,9 +16,18 @@ import CafeAsset from '../../../assets/v2/icons/place/cafe_svg.svg';
 import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
 import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
+import HeritageAsset from '../../../assets/v2/icons/place/heritage.svg';
 import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
 import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
-import { placeApi, type PlaceAutocompleteItem } from '../api/placeApi';
+import {
+  getPlaceListRuntimeState,
+  usePlaceAutocomplete,
+} from '../../../v2/features/place-exploration';
+import {
+  toAutocompleteResults,
+  type MapPlaceResult,
+} from '../../../v2/features/map/model/mapDiscovery';
+import { env } from '../../../v2/shared/config';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
 import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
@@ -55,6 +64,7 @@ type SearchCategory =
   | 'etc'
   | 'fashion'
   | 'food'
+  | 'heritage'
   | 'music'
   | 'popup';
 type RecentSearch = { category: Exclude<SearchCategory, 'all'>; date: string; query: string };
@@ -72,6 +82,7 @@ const categories: Array<{
   { Icon: BeautyAsset, id: 'beauty', label: '뷰티' },
   { Icon: ArtAsset, id: 'art', label: '전시' },
   { Icon: CafeAsset, id: 'cafe', label: '카페' },
+  { Icon: HeritageAsset, id: 'heritage', label: '문화재' },
   { Icon: EtcAsset, id: 'etc', label: '기타' },
 ];
 
@@ -98,12 +109,12 @@ const toKakaoSelection = (item: KakaoLocalSearchItem): MapSearchSelection => ({
   roadAddress: item.roadAddress,
 });
 
-const toRegisteredSelection = (item: PlaceAutocompleteItem): MapSearchSelection => ({
+const toRegisteredSelection = (item: MapPlaceResult): MapSearchSelection => ({
   address: item.address,
   id: String(item.id),
   isRegisteredPlace: true,
-  lat: item.latitude,
-  lng: item.longitude,
+  lat: item.coordinate.lat,
+  lng: item.coordinate.lng,
   name: item.name,
   roadAddress: item.address,
 });
@@ -136,14 +147,20 @@ const MapSearchOverlay = ({
   recommendedPlaces = [],
 }: MapSearchOverlayProps) => {
   const inputRef = useRef<TextInput>(null);
-  const searchRequestIdRef = useRef(0);
   const [query, setQuery] = useState('');
+  const [registeredQuery, setRegisteredQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('all');
   const [recentQueries, setRecentQueries] = useState<RecentSearch[]>(initialRecentSearches);
-  const [registeredResults, setRegisteredResults] = useState<PlaceAutocompleteItem[]>([]);
-  const [isSearchingRegisteredPlaces, setIsSearchingRegisteredPlaces] = useState(false);
+  const registeredSearch = usePlaceAutocomplete({
+    keyword: registeredQuery,
+    latitude: centerLat,
+    longitude: centerLng,
+  }, {
+    enabled: env.featureFlags.placeList && registeredQuery.length > 0,
+  });
+  const registeredResults = toAutocompleteResults(registeredSearch.data);
   const {
     clearSearchResults,
     isSearchingAddress,
@@ -151,17 +168,22 @@ const MapSearchOverlay = ({
     searchResults,
     searchStatusMessage,
   } = useKakaoLocalSearch();
-  const isSearching = isSearchingAddress || isSearchingRegisteredPlaces;
+  const isSearching = isSearchingAddress || registeredSearch.isFetching;
   const trimmedQuery = query.trim();
   const hasResults = registeredResults.length > 0 || searchResults.length > 0;
   const isResultMode = hasSearched || trimmedQuery.length > 0;
   const shouldShowEmptyState = hasSearched && !isSearching && !hasResults;
+  const registeredStatus = getPlaceListRuntimeState({
+    enabled: env.featureFlags.placeList,
+    isError: registeredSearch.isError,
+    isLoading: registeredSearch.isFetching,
+    placeCount: registeredResults.length,
+  });
   const { isLoadingByPlaceId, usernamesByPlaceId } = usePlaceRegistrantUsernames(
     showRecommendations ? recommendedPlaces.slice(0, 5) : []
   );
 
   const handleQueryChange = (nextQuery: string) => {
-    searchRequestIdRef.current += 1;
     setQuery(nextQuery);
 
     if (!nextQuery.trim()) {
@@ -169,8 +191,7 @@ const MapSearchOverlay = ({
     }
 
     setShowRecommendations(false);
-    setRegisteredResults([]);
-    setIsSearchingRegisteredPlaces(false);
+    setRegisteredQuery('');
     clearSearchResults();
   };
 
@@ -179,14 +200,12 @@ const MapSearchOverlay = ({
 
     if (!normalizedQuery) {
       setHasSearched(false);
-      setRegisteredResults([]);
-      setIsSearchingRegisteredPlaces(false);
+      setRegisteredQuery('');
       await searchPlaces(normalizedQuery, { centerLat, centerLng });
       return;
     }
 
     Keyboard.dismiss();
-    const requestId = ++searchRequestIdRef.current;
     setHasSearched(true);
     setQuery(normalizedQuery);
     setRecentQueries((prev) => [{
@@ -196,32 +215,10 @@ const MapSearchOverlay = ({
       query: normalizedQuery,
     }, ...prev.filter((item) => item.query !== normalizedQuery)].slice(0, 6));
 
-    setIsSearchingRegisteredPlaces(true);
-    setRegisteredResults([]);
-
-    const registeredSearch = placeApi.autocompletePlaces({
-      keyword: normalizedQuery,
-      latitude: centerLat,
-      longitude: centerLng,
-    })
-      .then(({ places }) => {
-        if (requestId === searchRequestIdRef.current) {
-          setRegisteredResults(places);
-        }
-      })
-      .catch(() => {
-        if (requestId === searchRequestIdRef.current) {
-          setRegisteredResults([]);
-        }
-      })
-      .finally(() => {
-        if (requestId === searchRequestIdRef.current) {
-          setIsSearchingRegisteredPlaces(false);
-        }
-      });
+    setRegisteredQuery(normalizedQuery);
     const localSearch = searchPlaces(normalizedQuery, { centerLat, centerLng });
 
-    await Promise.all([registeredSearch, localSearch]);
+    await localSearch;
   };
 
   const handleSelect = (place: MapSearchSelection) => {
@@ -282,11 +279,10 @@ const MapSearchOverlay = ({
               accessibilityLabel="검색어 지우기"
               hitSlop={8}
               onPress={() => {
-                searchRequestIdRef.current += 1;
                 setQuery('');
                 setHasSearched(false);
                 setShowRecommendations(false);
-                setRegisteredResults([]);
+                setRegisteredQuery('');
                 clearSearchResults();
                 inputRef.current?.focus();
               }}
@@ -361,6 +357,24 @@ const MapSearchOverlay = ({
           <View style={styles.statusRow}>
             <ActivityIndicator color="#ff1956" size="small" />
             <Text style={styles.statusInlineText}>장소를 찾고 있어요</Text>
+          </View>
+        ) : null}
+
+        {hasSearched && !isSearching && (
+          registeredStatus !== 'ready' || env.apiMode === 'mock'
+        ) ? (
+          <View style={styles.registeredStatus} testID={`registered-place-status-${
+            env.apiMode === 'mock' && registeredStatus === 'ready' ? 'mock' : registeredStatus
+          }`}>
+            <Text style={styles.statusInlineText}>
+              {env.apiMode === 'mock' && registeredStatus === 'ready'
+                ? '개발 Mock 핑덤 장소 검색 결과예요.'
+                : registeredStatus === 'disabled'
+                  ? '핑덤 장소 검색 기능이 비활성화되어 있어요.'
+                  : registeredStatus === 'error'
+                    ? '핑덤 장소 검색 요청에 실패했어요.'
+                    : '서버에 등록된 핑덤 장소 검색 결과가 없어요.'}
+            </Text>
           </View>
         ) : null}
 
@@ -598,6 +612,13 @@ const styles = StyleSheet.create({
     color: '#1d2028',
     fontSize: 16,
     fontWeight: '900',
+  },
+  registeredStatus: {
+    backgroundColor: '#F7F7F8',
+    borderRadius: 10,
+    marginTop: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   searchField: {
     alignItems: 'center',

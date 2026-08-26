@@ -20,8 +20,6 @@ export type PostId = RouteId<'Post'>;
 export type NotificationId = RouteId<'Notification'>;
 export type ReservationId = RouteId<'Reservation'>;
 
-export type ProfileTab = 'liked' | 'saved';
-
 export type NotificationNavigationContext = {
   body?: string;
   notificationId?: NotificationId;
@@ -48,8 +46,6 @@ export const MAIN_ROUTES = {
   CreateReservation: 'CreateReservation',
   ReservationDetail: 'ReservationDetail',
   Settings: 'Settings',
-  Verification: 'Verification',
-  VerificationReview: 'VerificationReview',
 } as const;
 
 export type AuthStackParamList = {
@@ -73,19 +69,11 @@ export type MainStackParamList = {
     placeId: PlaceId;
     placeName?: string;
   };
-  Profile: {
-    initialTab?: ProfileTab;
-  } | undefined;
+  Profile: undefined;
   ReservationDetail: {
     reservationId: ReservationId;
   };
   Settings: undefined;
-  Verification: undefined;
-  VerificationReview: {
-    category: string;
-    imageUrl?: string;
-    placeName: string;
-  };
   Merchant: {
     merchantId: MerchantId;
   };

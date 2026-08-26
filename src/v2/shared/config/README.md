@@ -21,6 +21,12 @@ requests. Its default scenario is `success`; set `EXPO_PUBLIC_MOCK_SCENARIO` to
 `EXPO_PUBLIC_MOCK_LATENCY_MS` controls artificial latency. Mock mode is rejected in
 staging and production builds.
 
+`EXPO_PUBLIC_ENABLE_PLACE_LIST` controls the server-backed place list and registered-place
+search. When omitted it is enabled only for `development` + `real` API mode, the normal
+app-linked development setup. Set it explicitly to `false` to verify the disabled state. Mock data
+is available only when both this flag is `true` and `EXPO_PUBLIC_API_MODE=mock` is selected; a real
+request never falls back to mock fixtures after an empty response or error.
+
 During development a scenario picker can call `setMockScenario(...)` from
 `src/v2/shared/api`. Invalidate the affected TanStack Query keys after changing it
 so mounted screens refetch.

@@ -42,20 +42,32 @@ export function LocationStatusOverlay({ location, onRefresh }: LocationStatusOve
 
 type MapDataStatusOverlayProps = {
   error: unknown;
+  isDisabled?: boolean;
   isEmpty: boolean;
   isLoading: boolean;
+  isMock?: boolean;
   onRetry: () => void;
 };
 
 export function MapDataStatusOverlay({
   error,
+  isDisabled = false,
   isEmpty,
   isLoading,
+  isMock = false,
   onRetry,
 }: MapDataStatusOverlayProps) {
   const { t } = useTranslation();
   const theme = useTheme();
 
+  if (isDisabled) {
+    return (
+      <MapCard accessibilityLiveRegion="polite" testID="v2-map-disabled">
+        <Title>{t('map.data.disabledTitle')}</Title>
+        <BodyText>{t('map.data.disabledDescription')}</BodyText>
+      </MapCard>
+    );
+  }
   if (isLoading) {
     return (
       <MapCard accessibilityLiveRegion="polite" testID="v2-map-loading">
@@ -73,14 +85,24 @@ export function MapDataStatusOverlay({
       </MapCard>
     );
   }
-  if (!isEmpty) return null;
+  if (isEmpty) {
+    return (
+      <MapCard accessibilityLiveRegion="polite" testID="v2-map-empty">
+        <Title>{t('map.data.emptyTitle')}</Title>
+        <BodyText>{t('map.data.emptyDescription')}</BodyText>
+      </MapCard>
+    );
+  }
+  if (isMock) {
+    return (
+      <MapCard accessibilityLiveRegion="polite" testID="v2-map-mock">
+        <Title>{t('map.data.mockTitle')}</Title>
+        <BodyText>{t('map.data.mockDescription')}</BodyText>
+      </MapCard>
+    );
+  }
 
-  return (
-    <MapCard accessibilityLiveRegion="polite" testID="v2-map-empty">
-      <Title>{t('map.data.emptyTitle')}</Title>
-      <BodyText>{t('map.data.emptyDescription')}</BodyText>
-    </MapCard>
-  );
+  return null;
 }
 
 const Card = styled.View`
