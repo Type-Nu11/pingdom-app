@@ -129,7 +129,6 @@ function shouldLogAuthRequest(url?: string): boolean {
 
     return [
         '/auth/token/refresh',
-        '/map/posts',
     ].includes(path);
 }
 

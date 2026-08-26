@@ -27,10 +27,7 @@ export function getInlineRegistrantUsername(place: RecommendedPlace) {
   );
 }
 
-/**
- * Registrant names must come from the place response. Looking them up through
- * `/map/posts` created an N+1 dependency on a removed legacy endpoint.
- */
+/** Registrant names come directly from the place response. */
 export function usePlaceRegistrantUsernames(places: RecommendedPlace[]) {
   return useMemo(() => {
     const isLoadingByPlaceId: Record<string, boolean> = {};

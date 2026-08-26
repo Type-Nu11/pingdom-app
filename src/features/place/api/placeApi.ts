@@ -3,7 +3,6 @@ import type {
   ApiCodeErrorResponse as CommonApiCodeErrorResponse,
   ApiFieldErrorResponse as CommonApiFieldErrorResponse,
 } from '../../../types/api.types';
-import type { PostsPage } from '../../record/model/record.types';
 import type { PlaceRecommendations, PlacesPage } from '../model/place.types';
 
 export type PlaceAutocompleteItem = {
@@ -72,11 +71,6 @@ export type GetBookmarkedPlacesRequest = {
   page?: number;
 };
 
-export type GetBookmarkedPostsRequest = {
-  limit?: number;
-  page?: number;
-};
-
 export type RecordRecommendationClickRequest = {
   placeId: number;
   recommendationVersion: string;
@@ -110,17 +104,6 @@ export const placeApi = {
     const { data } = await api.get<PlacesPage>('/users/me/bookmarks', {
       params: {
         limit: params.limit ?? 20,
-        page: params.page ?? 1,
-      },
-    });
-    return data;
-  },
-  getBookmarkedPosts: async (
-    params: GetBookmarkedPostsRequest = {},
-  ): Promise<PostsPage> => {
-    const { data } = await api.get<PostsPage>('/map/bookmarks', {
-      params: {
-        limit: params.limit ?? 100,
         page: params.page ?? 1,
       },
     });

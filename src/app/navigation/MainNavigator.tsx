@@ -91,7 +91,7 @@ const PlaceReportRouteScreen = ({ navigation }: MainScreenProps<'PlaceReport'>) 
 const ProfileRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
   <ProfileScreen
     onBack={navigation.goBack}
-    onOpenBookmarkedPost={(value) => {
+    onOpenBookmarkedPlace={(value) => {
       const mapParams = createFocusedPlaceMapParams(value);
       if (mapParams) {
         navigation.popTo(MAIN_ROUTES.Map, mapParams);

@@ -99,7 +99,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('recommendation-grid-row-2')).toBeVisible();
   });
 
-  test('랭킹 응답이 비어 있으면 GET /places 장소 목록을 기본 피드에 표시한다', async () => {
+  test('GET /places 장소 목록을 기본 피드에 표시하고 랭킹 탭은 렌더링하지 않는다', async () => {
     await renderWithProviders(
       <MapBottomSheet
         activeFilters={[]}
@@ -122,8 +122,6 @@ describe('MapBottomSheet recommendations', () => {
         onToggleBookmark={jest.fn(async () => undefined)}
         panHandlers={{} as GestureResponderHandlers}
         places={places}
-        rankingPlaces={[]}
-        rankingState="empty"
         recommendationPlaces={[]}
         recommendationsState="ready"
         selectedPlace={null}
@@ -134,7 +132,8 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     expect(screen.getByText('추천 장소 1')).toBeVisible();
-    expect(screen.queryByText('표시할 핫플이 아직 없어요')).not.toBeOnTheScreen();
+    expect(screen.queryByText('우리 지역 핫플')).not.toBeOnTheScreen();
+    expect(screen.queryByText('전국 트렌드')).not.toBeOnTheScreen();
   });
 
   test('확장 홈에서 서버 장소의 전체 카테고리 필터를 제공한다', async () => {

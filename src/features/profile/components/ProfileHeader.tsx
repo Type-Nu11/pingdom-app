@@ -3,13 +3,10 @@ import SavedIcon from '../../../assets/v2/icons/actions/Saved.svg';
 import type { ProfileResponse } from '../api/profileApi';
 
 type ProfileHeaderProps = {
-  isArchive: boolean;
   isLoading?: boolean;
   onOpenApiCheck: () => void;
-  onOpenArchive: () => void;
   onOpenSettings: () => void;
   profile: ProfileResponse | null;
-  showTabs: boolean;
 };
 
 function getDisplayName(profile: ProfileResponse | null) {
@@ -29,13 +26,10 @@ function getAvatarInitial(displayName: string) {
 }
 
 const ProfileHeader = ({
-  isArchive,
   isLoading = false,
   onOpenApiCheck,
-  onOpenArchive,
   onOpenSettings,
   profile,
-  showTabs,
 }: ProfileHeaderProps) => {
   const displayName = isLoading ? '불러오는 중...' : getDisplayName(profile);
   const avatarInitial = getAvatarInitial(displayName);
@@ -43,39 +37,33 @@ const ProfileHeader = ({
 
   return (
     <>
-      <View style={[styles.header, isArchive && styles.archiveHeader]}>
+      <View style={styles.header}>
         {profileImageUrl ? (
           <Image
             source={{ uri: profileImageUrl }}
             resizeMode="cover"
-            style={[styles.avatar, isArchive && styles.archiveAvatar]}
+            style={styles.avatar}
           />
         ) : (
-          <View style={[styles.avatar, styles.defaultAvatar, isArchive && styles.archiveAvatar]}>
-            <Text style={[styles.avatarInitial, isArchive && styles.archiveAvatarInitial]}>
+          <View style={[styles.avatar, styles.defaultAvatar]}>
+            <Text style={styles.avatarInitial}>
               {avatarInitial}
             </Text>
           </View>
         )}
-        <Text style={[styles.username, isArchive && styles.archiveUsername]}>{displayName}</Text>
+        <Text style={styles.username}>{displayName}</Text>
 
-        {!isArchive && (
-          <View style={styles.actions}>
+        <View style={styles.actions}>
             <Pressable style={styles.actionButton} onPress={onOpenSettings}>
               <Text style={styles.actionText}>프로필 설정</Text>
-            </Pressable>
-            <Pressable style={styles.actionButton} onPress={onOpenArchive}>
-              <Text style={styles.actionText}>보관함 보기</Text>
             </Pressable>
             <Pressable style={styles.actionButton} onPress={onOpenApiCheck}>
               <Text style={styles.actionText}>API 확인하기</Text>
             </Pressable>
-          </View>
-        )}
+        </View>
       </View>
 
-      {showTabs && (
-        <View style={styles.tabBar}>
+      <View style={styles.tabBar}>
           <View style={styles.tabItem}>
             <SavedIcon
               color="#ff1956"
@@ -85,8 +73,7 @@ const ProfileHeader = ({
             />
             <View style={styles.activeTabLine} />
           </View>
-        </View>
-      )}
+      </View>
     </>
   );
 };
@@ -124,13 +111,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 100,
   },
-  archiveHeader: {
-    height: 235,
-    justifyContent: 'flex-start',
-    overflow: 'hidden',
-    paddingBottom: 0,
-    paddingTop: 68,
-  },
   avatar: {
     borderRadius: 48,
     height: 96,
@@ -143,25 +123,11 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingTop: 118,
   },
-  archiveAvatar: {
-    borderRadius: 38,
-    height: 76,
-    width: 76,
-  },
-  archiveUsername: {
-    fontSize: 22,
-    lineHeight: 29,
-    marginTop: 12,
-  },
   avatarInitial: {
     color: '#fff',
     fontSize: 36,
     fontWeight: '900',
     lineHeight: 44,
-  },
-  archiveAvatarInitial: {
-    fontSize: 28,
-    lineHeight: 34,
   },
   defaultAvatar: {
     alignItems: 'center',

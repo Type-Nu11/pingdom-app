@@ -37,7 +37,6 @@ import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
 import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
 import HeritageAsset from '../../../assets/v2/icons/place/heritage.svg';
-import HotPlaceAsset from '../../../assets/v2/icons/place/hotplace.svg';
 import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
 import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
 import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.svg';
@@ -129,11 +128,6 @@ type MapBottomSheetProps = {
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
   previewFallbackContentByPlaceId?: Record<string, MapPreviewFallbackContent>;
-  feed?: 'local' | 'national';
-  onFeedChange?: (feed: 'local' | 'national') => void;
-  rankingImageUrlsByPlaceId?: Record<string, string>;
-  rankingPlaces?: DecisionPlace[];
-  rankingState?: 'empty' | 'error' | 'loading' | 'ready';
   recommendationContext?: string | null;
   recommendationLimitMessage?: string | null;
   recommendationPlaces: DecisionPlace[];
@@ -244,57 +238,6 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
       return <EtcAsset color={color} height={18} width={18} />;
   }
 };
-
-const FeedSegment = ({
-  feed,
-  onChange,
-}: {
-  feed: 'local' | 'national';
-  onChange: (feed: 'local' | 'national') => void;
-}) => (
-  <View style={styles.segmentInset}>
-    <View style={styles.segmentShadow}>
-      <GlassSurface
-        glassEffectStyle="regular"
-        intensity={100}
-        style={styles.segmentOuter}
-        tintColor="rgba(228,228,230,0.48)"
-      >
-        <View pointerEvents="none" style={styles.segmentFrost} />
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: feed === 'local' }}
-          onPress={() => onChange('local')}
-          style={[styles.segment, feed === 'local' && styles.segmentActive]}
-        >
-          <HotPlaceAsset
-            color={feed === 'local' ? '#FF1956' : '#767680'}
-            height={20}
-            width={16}
-          />
-          <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-            우리 지역 핫플
-          </Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: feed === 'national' }}
-          onPress={() => onChange('national')}
-          style={[styles.segment, feed === 'national' && styles.segmentActive]}
-        >
-          <MapAsset
-            color={feed === 'national' ? '#FF1956' : '#767680'}
-            height={20}
-            width={18}
-          />
-          <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-            전국 트렌드
-          </Text>
-        </Pressable>
-      </GlassSurface>
-    </View>
-  </View>
-);
 
 const HOME_BOOKMARK_STAR_PATH = 'M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z';
 
@@ -643,11 +586,9 @@ const ExpandedHomeContent = ({
   activeCategory,
   bookmarkedPlaceIds,
   bookmarkPendingPlaceIds,
-  feed,
   imageUrlsByPlaceId,
   isBookmarkStateLoading,
   onCategoryChange,
-  onFeedChange,
   onPlacePress,
   onToggleBookmark,
   places,
@@ -657,11 +598,9 @@ const ExpandedHomeContent = ({
   activeCategory: SheetCategory;
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds: Record<string, boolean>;
-  feed: 'local' | 'national';
   imageUrlsByPlaceId: Record<string, string>;
   isBookmarkStateLoading: boolean;
   onCategoryChange: (category: SheetCategory) => void;
-  onFeedChange: (feed: 'local' | 'national') => void;
   onPlacePress: (place: DecisionPlace) => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   places: DecisionPlace[];
@@ -678,7 +617,6 @@ const ExpandedHomeContent = ({
       showsVerticalScrollIndicator={false}
       style={styles.expandedScroll}
     >
-      <FeedSegment feed={feed} onChange={onFeedChange} />
       <ScrollView
         contentContainerStyle={styles.expandedFeaturedRow}
         horizontal
@@ -1530,19 +1468,8 @@ export default function MapBottomSheet({
   sheetTranslateY,
   snapPoint,
   userName,
-  feed: controlledFeed,
-  onFeedChange,
-  rankingImageUrlsByPlaceId,
-  rankingPlaces,
-  rankingState,
 }: MapBottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const [uncontrolledFeed, setUncontrolledFeed] = useState<'local' | 'national'>('local');
-  const feed = controlledFeed ?? uncontrolledFeed;
-  const setFeed = (next: 'local' | 'national') => {
-    setUncontrolledFeed(next);
-    onFeedChange?.(next);
-  };
   const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
   useEffect(() => {
@@ -1550,20 +1477,11 @@ export default function MapBottomSheet({
   }, [selectedPlace?.id]);
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
-  // 서버 랭킹이 붙어 있으면 그대로 쓰고, 없을 때만 기존 목록으로 대체한다.
-  const fallbackPlaces = feed === 'local' ? places : [...places].reverse();
-  const hasRankingPlaces = Boolean(rankingPlaces?.length);
-  const shownPlaces = hasRankingPlaces ? rankingPlaces! : fallbackPlaces;
-  const shownPlacesState = hasRankingPlaces || fallbackPlaces.length > 0
-    ? 'ready'
-    : rankingState;
-  const previewPlaces = [...places, ...recommendationPlaces, ...(rankingPlaces ?? [])]
+  const placesState = places.length > 0 ? 'ready' : 'empty';
+  const previewPlaces = [...places, ...recommendationPlaces]
     .filter((place, index, items) => items.findIndex((item) => item.id === place.id) === index);
   const { imageUrlsByPlaceId: previewImageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
-  const imageUrlsByPlaceId = {
-    ...previewImageUrlsByPlaceId,
-    ...(rankingImageUrlsByPlaceId ?? {}),
-  };
+  const imageUrlsByPlaceId = previewImageUrlsByPlaceId;
   const contentFadeStart = mediumTranslateY
     + ((collapsedTranslateY - mediumTranslateY) * 0.42);
   const contentOpacity = sheetTranslateY.interpolate({
@@ -1719,27 +1637,23 @@ export default function MapBottomSheet({
           activeCategory={activeCategory}
           bookmarkedPlaceIds={bookmarkedPlaceIds}
           bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
-          feed={feed}
           imageUrlsByPlaceId={imageUrlsByPlaceId}
           isBookmarkStateLoading={isBookmarkStateLoading}
           onCategoryChange={setActiveCategory}
-          onFeedChange={setFeed}
           onPlacePress={onPlacePress}
           onToggleBookmark={onToggleBookmark}
-          places={shownPlaces}
-          state={shownPlacesState}
+          places={places}
+          state={placesState}
           userName={userName?.trim() || 'user'}
         />
       ) : (
-        <>
-          <FeedSegment feed={feed} onChange={setFeed} />
-          <ScrollView
+        <ScrollView
             contentContainerStyle={styles.cardRow}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.rowScroll}
           >
-            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place) => (
+            {places.length > 0 ? places.slice(0, 6).map((place) => (
               <PlaceTrendCard
                 bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
@@ -1752,9 +1666,8 @@ export default function MapBottomSheet({
                 pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
                 place={place}
               />
-            )) : <EmptyCard state={shownPlacesState} variant="row" />}
+            )) : <EmptyCard state={placesState} variant="row" />}
           </ScrollView>
-        </>
       )}
       </Animated.View>
       </GlassStyles.SheetInner>
