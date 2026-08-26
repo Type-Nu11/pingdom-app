@@ -16,7 +16,6 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
 import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.svg';
 import StarAsset from '../../../assets/v2/icons/place/star_svg.svg';
-import VerificationAsset from '../../../assets/v2/icons/place/gamju.svg';
 import type { BottomSheetSnapPoint } from '../../place/hooks/useBottomSheet';
 import FrostedSurface from '../../place/components/FrostedSurface';
 import {
@@ -46,7 +45,6 @@ type ReservationBottomSheetProps = {
   onOpenMap: () => void;
   onOpenRecommendations: () => void;
   onOpenReservation: (reservationId: number) => void;
-  onOpenVerification: () => void;
   onPlacePress: (place: DecisionPlace) => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   panHandlers: GestureResponderHandlers;
@@ -169,37 +167,6 @@ function NearbyReservationRail({
   );
 }
 
-function VerificationFloatingButton({
-  bottomInset,
-  onPress,
-  opacity,
-  sheetTranslateY,
-}: {
-  bottomInset: number;
-  onPress: () => void;
-  opacity: Animated.AnimatedInterpolation<number>;
-  sheetTranslateY: Animated.Value;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Animated.View
-      style={[
-        styles.verifyButtonWrap,
-        {
-          bottom: Math.max(24, bottomInset + 10) + 78,
-          opacity,
-          transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
-        },
-      ]}
-    >
-      <Pressable accessibilityLabel={t('reservation.common.verify')} accessibilityRole="button" onPress={onPress} style={styles.verifyButton}>
-        <VerificationAsset height={21} width={21} />
-        <Text style={styles.verifyLabel}>{t('reservation.common.verify')}</Text>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
 function BottomNavigation({
   bottomInset,
   onOpenFavorites,
@@ -279,7 +246,6 @@ export default function ReservationBottomSheet({
   onOpenMap,
   onOpenRecommendations,
   onOpenReservation,
-  onOpenVerification,
   onPlacePress,
   onToggleBookmark,
   panHandlers,
@@ -375,14 +341,6 @@ export default function ReservationBottomSheet({
           </View>
         </Animated.View>
       </GlassStyles.SheetInner>
-      {snapPoint === 'expanded' && nearbyPlaces.length > 0 && !reservations.isLoading && !reservations.isError ? (
-        <VerificationFloatingButton
-          bottomInset={insets.bottom}
-          onPress={onOpenVerification}
-          opacity={opacity}
-          sheetTranslateY={sheetTranslateY}
-        />
-      ) : null}
       <BottomNavigation
         bottomInset={insets.bottom}
         onOpenFavorites={onOpenFavorites}
@@ -439,7 +397,4 @@ const styles = StyleSheet.create({
   subtitle: { color: '#777982', fontSize: 13, marginTop: 2, paddingHorizontal: 16 },
   title: { color: '#111217', fontSize: 20, fontWeight: '900' },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
-  verifyButton: { alignItems: 'center', backgroundColor: '#E91E55', borderRadius: 28, elevation: 4, flexDirection: 'row', gap: 6, paddingHorizontal: 17, paddingVertical: 11, shadowColor: '#101828', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.18, shadowRadius: 8 },
-  verifyButtonWrap: { position: 'absolute', right: 30, zIndex: 4 },
-  verifyLabel: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
 });

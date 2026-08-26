@@ -8,7 +8,6 @@ import { V2_ROUTES, parsePlaceId, type V2ScreenProps } from '../../../app/naviga
 import MapDiscoverySearch from '../components/MapDiscoverySearch';
 import KakaoMapAdapter from '../components/KakaoMapAdapter';
 import MapSelectedPlaceCard from '../components/MapSelectedPlaceCard';
-import PlaceReportEntryButton from '../../place-report/components/PlaceReportEntryButton';
 import {
   LocationStatusOverlay,
   MapDataStatusOverlay,
@@ -140,12 +139,6 @@ export default function MapScreen({ navigation }: MapScreenProps) {
           isMock={discovery.dataSource === 'mock'}
           onRetry={() => void discovery.refetch()}
         />
-        <PlaceReportEntry
-          accessibilityLabel={t('placeReport.mapEntry')}
-          onPress={() => navigation.navigate(V2_ROUTES.PlaceReport)}
-          testID="v2-map-place-report"
-          label={t('placeReport.mapEntry')}
-        />
         <MapSelectedPlaceCard
           error={discovery.selectedPlaceError}
           loading={discovery.selectedPlaceLoading}
@@ -199,9 +192,4 @@ const LocateButton = styled.Pressable`
 const LocateButtonText = styled.Text`
   color: ${({ theme }) => theme.colors.primary};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-`;
-const PlaceReportEntry = styled(PlaceReportEntryButton)`
-  position: absolute;
-  right: 12px;
-  top: 49.4%;
 `;

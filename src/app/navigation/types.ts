@@ -42,13 +42,10 @@ export const MAIN_ROUTES = {
   CouponWallet: 'CouponWallet',
   Map: 'Map',
   Merchant: 'Merchant',
-  PlaceReport: 'PlaceReport',
   Profile: 'Profile',
   CreateReservation: 'CreateReservation',
   ReservationDetail: 'ReservationDetail',
   Settings: 'Settings',
-  Verification: 'Verification',
-  VerificationReview: 'VerificationReview',
 } as const;
 
 export type AuthStackParamList = {
@@ -73,17 +70,10 @@ export type MainStackParamList = {
     placeName?: string;
   };
   Profile: undefined;
-  PlaceReport: undefined;
   ReservationDetail: {
     reservationId: ReservationId;
   };
   Settings: undefined;
-  Verification: undefined;
-  VerificationReview: {
-    category: string;
-    imageUrl?: string;
-    placeName: string;
-  };
   Merchant: {
     merchantId: MerchantId;
   };

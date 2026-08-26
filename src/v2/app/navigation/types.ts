@@ -11,7 +11,6 @@ export const V2_ROUTES = {
   Home: 'Home',
   Map: 'Map',
   PlaceDetail: 'PlaceDetail',
-  PlaceReport: 'PlaceReport',
 } as const;
 
 export type V2StackParamList = {
@@ -26,7 +25,6 @@ export type V2StackParamList = {
   PlaceDetail: {
     placeId: PlaceId;
   };
-  PlaceReport: undefined;
 };
 
 export type V2ScreenProps<RouteName extends keyof V2StackParamList> =

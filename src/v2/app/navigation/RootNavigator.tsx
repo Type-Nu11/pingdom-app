@@ -10,7 +10,6 @@ import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
 import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
-import PlaceReportFlowScreen from '../../features/place-report/screens/PlaceReportFlowScreen';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
 import { env } from '../../shared/config';
 import {
@@ -70,7 +69,6 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
-        <Stack.Screen name={V2_ROUTES.PlaceReport} component={PlaceReportFlowScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
