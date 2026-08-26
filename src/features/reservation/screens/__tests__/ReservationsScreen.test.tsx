@@ -37,6 +37,11 @@ const bottomSheet = {
   sheetTranslateY: new Animated.Value(300),
   snapPoint: 'medium' as const,
 };
+const expandedBottomSheet = {
+  ...bottomSheet,
+  sheetTranslateY: new Animated.Value(0),
+  snapPoint: 'expanded' as const,
+};
 const reservation = {
   availabilityId: 801, canceledAt: null, completedAt: null, confirmedAt: null,
   createdAt: '2026-07-23T05:30:00Z', id: 901, productId: 601,
@@ -61,17 +66,17 @@ async function renderReservations(ui: ReactElement, language: 'ko' | 'en' = 'ko'
 describe('ReservationBottomSheet', () => {
   test('loading, empty, error 상태를 구분한다', async () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({ isLoading: true }));
-    const view = await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    const view = await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
     expect(screen.getByTestId('reservations-loading')).toBeVisible();
 
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
     }));
-    await view.rerender(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    await view.rerender(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
     expect(screen.getByTestId('reservations-empty')).toBeVisible();
 
     jest.mocked(useReservations).mockReturnValue(queryResult({ isError: true }));
-    await view.rerender(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    await view.rerender(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
     expect(screen.getByTestId('reservations-error')).toBeVisible();
   });
 
@@ -80,7 +85,7 @@ describe('ReservationBottomSheet', () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [reservation], totalCount: 1, totalPages: 1 },
     }));
-    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} onOpenReservation={onOpenReservation} />);
+    await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} onOpenReservation={onOpenReservation} />);
     await userEvent.setup().press(screen.getByTestId('reservation-card-901'));
     expect(onOpenReservation).toHaveBeenCalledWith(901);
     expect(screen.getByText('확정 대기')).toBeVisible();
@@ -90,7 +95,7 @@ describe('ReservationBottomSheet', () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [{ ...reservation, status: 'UNKNOWN' }], totalCount: 1, totalPages: 1 },
     }));
-    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
     expect(screen.getByText('상태 확인 필요')).toBeVisible();
   });
 
@@ -103,6 +108,17 @@ describe('ReservationBottomSheet', () => {
     expect(screen.getByRole('tab', { name: '예약', selected: true })).toBeVisible();
     await userEvent.setup().press(screen.getByRole('button', { name: '지도' }));
     expect(onOpenMap).toHaveBeenCalledTimes(1);
+  });
+
+  test('예약함은 패널을 확장했을 때만 표시한다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+    const view = await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    expect(screen.queryByText('예약함')).toBeNull();
+
+    await view.rerender(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
+    expect(screen.getByText('예약함')).toBeVisible();
   });
 
   test('실제 주변 예약 가능 장소를 열고 북마크를 해제한다', async () => {
