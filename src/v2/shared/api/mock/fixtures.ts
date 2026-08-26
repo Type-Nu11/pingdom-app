@@ -204,7 +204,7 @@ export const availabilityFixture = {
   id: 801,
   placeId: 17,
   productId: 601,
-  productType: 'SERVICE',
+  productType: 'GENERAL',
   startsAt: '2026-07-25T05:00:00Z',
   endsAt: '2026-07-25T06:00:00Z',
   totalCapacity: 10,

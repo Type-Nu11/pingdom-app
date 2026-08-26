@@ -26,6 +26,12 @@ type CouponMatchesIssueOperation = Assert<
 type ReservationMatchesCreateOperation = Assert<
   Equal<ApiSchema<'Reservation'>, OperationResponse<'createReservation', 201>>
 >;
+type ReservationCreateRequestMatchesLiveContract = Assert<
+  Equal<
+    OperationRequestBody<'createReservation'>,
+    { availabilityId: number; idempotencyKey: string; quantity?: number }
+  >
+>;
 type ConversionResultMatchesOperation = Assert<
   Equal<
     ApiSchema<'ConversionEventBatchResult'>,
@@ -75,6 +81,7 @@ export type ContractTypeAssertions =
   | CheckInRequestMatchesSchema
   | CouponMatchesIssueOperation
   | ReservationMatchesCreateOperation
+  | ReservationCreateRequestMatchesLiveContract
   | ConversionResultMatchesOperation
   | TravelPurposeRequestMatchesSchema
   | TravelPurposeResponseMatchesOperation

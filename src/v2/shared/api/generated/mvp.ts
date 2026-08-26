@@ -860,7 +860,8 @@ export interface components {
             id: components["schemas"]["PositiveId"];
             placeId: components["schemas"]["PositiveId"];
             productId: components["schemas"]["PositiveId"];
-            productType: components["schemas"]["ProductType"];
+            /** @enum {string} */
+            productType: "GENERAL" | "TICKET" | "CLASS";
             /** Format: date-time */
             startsAt: string;
             /** Format: date-time */
@@ -869,14 +870,16 @@ export interface components {
             totalCapacity: number;
             /** Format: int32 */
             remainingCapacity: number;
-            status: components["schemas"]["AvailabilityStatus"];
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
         };
         /** @enum {string} */
         ReservationStatus: "PENDING" | "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELED" | "EXPIRED" | "UNKNOWN";
         CreateReservationRequest: {
             availabilityId: components["schemas"]["PositiveId"];
+            idempotencyKey: string;
             /** Format: int32 */
-            quantity: number;
+            quantity?: number;
         };
         Reservation: {
             id: components["schemas"]["PositiveId"];

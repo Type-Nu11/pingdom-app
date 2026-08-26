@@ -64,7 +64,11 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   };
   const claimBody = { placeId: 17, reason: 'Business registration proof' };
   const redeemBody = { code: '11111111-1111-4111-8111-111111111111' };
-  const reservationBody = { availabilityId: 801, quantity: 2 };
+  const reservationBody = {
+    availabilityId: 801,
+    idempotencyKey: 'reservation-01992f4c-31f6-7c42-ae8d-9d892c31e32d',
+    quantity: 2,
+  };
   const conversionBody = {
     events: [{
       checkInId: null,
@@ -173,6 +177,7 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
   assert.equal(calls[4].body, voteBody);
   assert.equal(calls[6].body, claimBody);
   assert.equal(calls[13].body, redeemBody);
+  assert.equal(calls[14].options.signal, signal);
   assert.equal(calls[16].body, reservationBody);
   assert.equal(calls[21].body, conversionBody);
   assert.deepEqual(calls[23].body, { travelPurposes: ['K_POP', 'FOOD'] });
