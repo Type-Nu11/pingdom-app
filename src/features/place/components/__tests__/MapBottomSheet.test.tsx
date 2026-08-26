@@ -3,7 +3,10 @@ import React from 'react';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../v2/shared/testing/testProviders';
-import MapBottomSheet, { type DecisionPlace } from '../MapBottomSheet';
+import MapBottomSheet, {
+  RecommendationFeaturedCard,
+  type DecisionPlace,
+} from '../MapBottomSheet';
 
 jest.mock('../../hooks/usePlacePreviewImages', () => ({
   usePlacePreviewImages: () => ({ imageUrlsByPlaceId: {} }),
@@ -24,6 +27,77 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
+  test('긴 추천 텍스트를 표시 계층에서 제한하고 카드와 즐겨찾기 동작을 분리한다', async () => {
+    const longName = '이름이 매우 긴 추천 장소 '.repeat(8);
+    const longReason = '사용자의 여행 취향과 현재 위치를 반영한 추천 이유 '.repeat(8);
+    const longSource = 'PERSONALIZED_LOCATION_RECOMMENDATION_SOURCE_'.repeat(8);
+    const onPress = jest.fn();
+    const onToggleBookmark = jest.fn();
+    const place = { ...places[0], name: longName, recommendationReason: longReason };
+    const result = await renderWithProviders(
+      <RecommendationFeaturedCard
+        bookmarked={false}
+        imageUrl="https://example.com/place.jpg"
+        onPress={onPress}
+        onToggleBookmark={onToggleBookmark}
+        pending={false}
+        place={place}
+      />,
+    );
+
+    expect(screen.getByText(longName).props).toMatchObject({
+      ellipsizeMode: 'tail',
+      numberOfLines: 2,
+    });
+    expect(screen.getByText(longReason).props).toMatchObject({
+      ellipsizeMode: 'tail',
+      numberOfLines: 1,
+    });
+    expect(screen.getByText('여기서 1km').props).toMatchObject({
+      ellipsizeMode: 'tail',
+      numberOfLines: 1,
+    });
+    expect(screen.getByTestId('recommendation-featured-image').props.source)
+      .toEqual({ uri: 'https://example.com/place.jpg' });
+    expect(screen.getByTestId('recommendation-featured-blur-image').props).toMatchObject({
+      blurRadius: 10,
+      source: { uri: 'https://example.com/place.jpg' },
+    });
+    expect(screen.getByTestId('recommendation-featured-image').props.onError)
+      .toEqual(expect.any(Function));
+
+    await result.user.press(screen.getByRole('button', { name: '즐겨찾기' }));
+    expect(onToggleBookmark).toHaveBeenCalledTimes(1);
+    expect(onPress).not.toHaveBeenCalled();
+
+    await result.user.press(screen.getByRole('button', { name: `${longName}, 1km` }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+
+    result.unmount();
+    await renderWithProviders(
+      <RecommendationFeaturedCard
+        bookmarked={false}
+        onPress={onPress}
+        onToggleBookmark={onToggleBookmark}
+        pending={false}
+        place={{
+          ...place,
+          name: '',
+          recommendationRank: 1,
+          recommendationReason: undefined,
+          recommendationSource: longSource,
+        }}
+      />,
+    );
+
+    expect(screen.getByText(`추천 순위 1 · ${longSource}`).props).toMatchObject({
+      ellipsizeMode: 'tail',
+      numberOfLines: 1,
+    });
+    expect(screen.getByText('장소명 없음')).toBeVisible();
+    expect(screen.getByText('이미지 없음')).toBeVisible();
+  });
+
   test('장소 미리보기의 예약 캡슐은 선택 장소로 예약 생성을 요청한다', async () => {
     const onCreateReservation = jest.fn();
     const selectedPlace = places[0];
@@ -97,6 +171,59 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.getByTestId('recommendation-grid-row-1')).toBeVisible();
     expect(screen.getByTestId('recommendation-grid-row-2')).toBeVisible();
+    expect(screen.getByText('현재 위치와 가까운 장소입니다')).toBeVisible();
+    expect(screen.queryByText('오늘 검증하고 쿠폰 받자!')).not.toBeOnTheScreen();
+  });
+
+  test('위치 안내는 실제 추천 목록에만 노출하고 영어 리소스를 제공한다', async () => {
+    const commonProps = {
+      activeFilters: [],
+      bookmarkedPlaceIds: {},
+      collapsedTranslateY: 600,
+      content: { type: 'recommendations' } as const,
+      height: 700,
+      mediumTranslateY: 300,
+      onBackHome: jest.fn(),
+      onCouponPress: jest.fn(),
+      onDetailPress: jest.fn(),
+      onFilterPress: jest.fn(),
+      onGoNowPress: jest.fn(),
+      onHandlePress: jest.fn(),
+      onPlacePress: jest.fn(),
+      onQueryChange: jest.fn(),
+      onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(),
+      onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined),
+      panHandlers: {} as GestureResponderHandlers,
+      places: [],
+      selectedPlace: null,
+      sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(0),
+      snapPoint: 'medium' as const,
+    };
+    const loading = await renderWithProviders(
+      <MapBottomSheet
+        {...commonProps}
+        recommendationPlaces={[]}
+        recommendationsState="loading"
+      />,
+    );
+
+    expect(screen.getByText('나만을 위한 추천 장소를 불러오고 있어요')).toBeVisible();
+    expect(screen.queryByText('현재 위치와 가까운 장소입니다')).not.toBeOnTheScreen();
+    loading.unmount();
+
+    await renderWithProviders(
+      <MapBottomSheet
+        {...commonProps}
+        recommendationPlaces={places.slice(0, 1)}
+        recommendationsState="ready"
+      />,
+      { language: 'en' },
+    );
+
+    expect(screen.getByText('These places are close to your current location.')).toBeVisible();
   });
 
   test('GET /places 장소 목록을 기본 피드에 표시하고 랭킹 탭은 렌더링하지 않는다', async () => {

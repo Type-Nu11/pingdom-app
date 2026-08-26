@@ -181,6 +181,9 @@ export const resources = {
           openSettings: 'Open settings',
           retry: 'Check again',
         },
+        recommendations: {
+          nearbyDescription: 'These places are close to your current location.',
+        },
         search: {
           accessibilityLabel: 'Search places on the map',
           placeholder: 'Search places',
@@ -405,6 +408,9 @@ export const resources = {
           loading: '현재 위치를 찾는 중입니다...',
           openSettings: '설정 열기',
           retry: '다시 확인',
+        },
+        recommendations: {
+          nearbyDescription: '현재 위치와 가까운 장소입니다',
         },
         search: {
           accessibilityLabel: '지도 장소 검색',

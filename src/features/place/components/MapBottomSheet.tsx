@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   GestureResponderHandlers,
@@ -278,9 +279,11 @@ const formatDistance = (place: DecisionPlace) => {
 };
 
 const PlaceArtwork = ({
+  blurBottom = false,
   imageUrl,
   variant = 'trend',
 }: {
+  blurBottom?: boolean;
   imageUrl?: string;
   variant?: 'grid' | 'trend';
 }) => {
@@ -304,13 +307,30 @@ const PlaceArtwork = ({
     );
   }
 
+  const imageSource = { uri: imageUrl };
+
   return (
-    <Image
-      onError={() => setHasImageError(true)}
-      resizeMode="cover"
-      source={{ uri: imageUrl }}
-      style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
-    />
+    <>
+      <Image
+        onError={() => setHasImageError(true)}
+        resizeMode="cover"
+        source={imageSource}
+        style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
+        testID={blurBottom ? 'recommendation-featured-image' : undefined}
+      />
+      {blurBottom ? (
+        <View pointerEvents="none" style={styles.artworkBlurClip}>
+          <Image
+            blurRadius={10}
+            onError={() => setHasImageError(true)}
+            resizeMode="cover"
+            source={imageSource}
+            style={styles.artworkBlurImage}
+            testID="recommendation-featured-blur-image"
+          />
+        </View>
+      ) : null}
+    </>
   );
 };
 
@@ -365,7 +385,7 @@ export const RecommendationFeaturedCard = ({
       style={({ pressed }) => [styles.placeCard, pressed && styles.pressed]}
     >
       <View style={styles.placeCardArtwork}>
-        <PlaceArtwork imageUrl={imageUrl} />
+        <PlaceArtwork blurBottom imageUrl={imageUrl} />
         <CardScrim />
         <Pressable
           accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
@@ -384,7 +404,7 @@ export const RecommendationFeaturedCard = ({
           )}
         </Pressable>
         <View style={styles.placeCardBody}>
-          <Text numberOfLines={2} style={styles.placeCardName}>
+          <Text ellipsizeMode="tail" numberOfLines={2} style={styles.placeCardName}>
             {place.name || '장소명 없음'}
           </Text>
         </View>
@@ -392,19 +412,19 @@ export const RecommendationFeaturedCard = ({
       {place.recommendationReason ? (
         <View style={styles.recommendationMetaRow}>
           <RecommendationMetaIcon label={place.recommendationReason} />
-          <Text numberOfLines={1} style={styles.recommendationReason}>
+          <Text ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationReason}>
             {place.recommendationReason}
           </Text>
         </View>
       ) : place.recommendationRank !== undefined || place.recommendationSource ? (
-        <Text numberOfLines={1} style={styles.recommendationExplanation}>
+        <Text ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationExplanation}>
           {[
             place.recommendationRank !== undefined ? `추천 순위 ${place.recommendationRank}` : null,
             place.recommendationSource ?? null,
           ].filter(Boolean).join(' · ')}
         </Text>
       ) : null}
-      <Text numberOfLines={1} style={styles.placeCardDistance}>
+      <Text ellipsizeMode="tail" numberOfLines={1} style={styles.placeCardDistance}>
         여기서 {formatDistance(place)}
       </Text>
     </Pressable>
@@ -450,15 +470,17 @@ const RecommendationGridCard = ({
         )}
       </Pressable>
       <View style={styles.gridCardBody}>
-        <Text numberOfLines={2} style={styles.gridCardName}>{place.name}</Text>
-        <Text numberOfLines={1} style={styles.gridCardDistance}>{place.address}</Text>
+        <Text ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
+          {place.name || '장소명 없음'}
+        </Text>
+        <Text ellipsizeMode="tail" numberOfLines={1} style={styles.gridCardDistance}>{place.address}</Text>
         {place.recommendationReason ? (
-          <Text numberOfLines={1} style={styles.gridRecommendationReason}>
+          <Text ellipsizeMode="tail" numberOfLines={1} style={styles.gridRecommendationReason}>
             {place.recommendationReason}
           </Text>
         ) : null}
         {place.recommendationRank !== undefined || place.recommendationSource ? (
-          <Text numberOfLines={1} style={styles.gridRecommendationExplanation}>
+          <Text ellipsizeMode="tail" numberOfLines={1} style={styles.gridRecommendationExplanation}>
             {[
               place.recommendationRank !== undefined ? `추천 순위 ${place.recommendationRank}` : null,
               place.recommendationSource ?? null,
@@ -757,7 +779,6 @@ const RecommendationContent = ({
   onToggleBookmark,
   places,
   state,
-  userName,
 }: {
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds: Record<string, boolean>;
@@ -771,8 +792,8 @@ const RecommendationContent = ({
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   places: DecisionPlace[];
   state: 'empty' | 'error' | 'loading' | 'ready';
-  userName: string;
 }) => {
+  const { t } = useTranslation();
   const featuredPlaces = places.slice(0, 3);
   const gridPlaces = places.slice(3);
   const gridRows = [
@@ -791,9 +812,11 @@ const RecommendationContent = ({
           <RecommendationTitleAsset height={22} width={22} />
           <Text style={styles.recommendationTitle}>나만을 위한 추천 장소</Text>
         </View>
-        <Text numberOfLines={1} style={styles.recommendationSubtitle}>
-          핑덤이 {userName}님이 좋아할만한 장소를 추천해드려요!
-        </Text>
+        {state === 'ready' ? (
+          <Text style={styles.recommendationSubtitle}>
+            {t('map.recommendations.nearbyDescription')}
+          </Text>
+        ) : null}
         {isExpanded && context ? <Text style={styles.recommendationContext}>{context}</Text> : null}
         {isExpanded && limitMessage ? (
           <Text style={styles.recommendationLimit}>{limitMessage}</Text>
@@ -824,7 +847,6 @@ const RecommendationContent = ({
           </ScrollView>
           {isExpanded && gridPlaces.length > 0 ? (
             <>
-              <Text style={styles.recommendationGridTitle}>오늘 검증하고 쿠폰 받자!</Text>
               <View style={styles.recommendationGridRows}>
                 {gridRows.map((row, rowIndex) => (
                   <ScrollView
@@ -1630,7 +1652,6 @@ export default function MapBottomSheet({
           onToggleBookmark={onToggleBookmark}
           places={recommendationPlaces}
           state={recommendationsState}
-          userName={userName?.trim() || 'user'}
         />
       ) : snapPoint === 'expanded' ? (
         <ExpandedHomeContent
@@ -1692,6 +1713,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#E4E4E6',
     height: '100%',
     overflow: 'hidden',
+    width: '100%',
+  },
+  artworkBlurClip: {
+    bottom: 0,
+    height: '50%',
+    left: 0,
+    overflow: 'hidden',
+    position: 'absolute',
+    right: 0,
+  },
+  artworkBlurImage: {
+    bottom: 0,
+    height: '200%',
+    left: 0,
+    position: 'absolute',
     width: '100%',
   },
   artworkFallback: { alignItems: 'center', justifyContent: 'center' },
@@ -1973,8 +2009,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
   },
-  gridCardDistance: { color: 'rgba(255,255,255,0.9)', fontSize: 9, marginTop: 1, paddingRight: 24 },
-  gridCardName: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16, paddingRight: 24 },
+  gridCardDistance: { color: 'rgba(255,255,255,0.9)', flexShrink: 1, fontSize: 9, marginTop: 1, maxWidth: '100%', paddingRight: 24 },
+  gridCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 24 },
   gridBookmarkStar: { bottom: 7, padding: 4, position: 'absolute', right: 7, zIndex: 3 },
   bookmarkPending: { color: '#FFFFFF', fontSize: 24, lineHeight: 28 },
   gridRow: {
@@ -2054,7 +2090,9 @@ const styles = StyleSheet.create({
   },
   placeCard: {
     backgroundColor: 'transparent',
+    height: 222,
     minHeight: 222,
+    overflow: 'hidden',
     width: 172,
   },
   placeCardArtwork: {
@@ -2075,27 +2113,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
   },
-  placeCardDistance: { color: '#7E8088', fontSize: 11, marginTop: 1 },
-  placeCardName: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16, paddingRight: 25 },
+  placeCardDistance: { color: '#7E8088', flexShrink: 1, fontSize: 11, marginTop: 1, maxWidth: '100%' },
+  placeCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 25 },
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   recommendationContent: { paddingBottom: 108 },
   recommendationContext: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 4 },
   recommendationGridRows: { gap: 12 },
   recommendationGridScroll: { gap: 12, paddingHorizontal: 16 },
-  recommendationGridTitle: { color: '#202127', fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 16 },
   recommendationHeader: { paddingHorizontal: 16, paddingTop: 5 },
   recommendationLimit: { color: '#777A83', fontSize: 10, marginTop: 3 },
-  recommendationReason: { color: '#35363C', flexShrink: 1, fontSize: 11, fontWeight: '600' },
-  recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5 },
+  recommendationReason: { color: '#35363C', flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
+  recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5, maxWidth: '100%' },
   recommendationParkingIcon: { alignItems: 'center', backgroundColor: '#2489F5', borderRadius: 4, height: 16, justifyContent: 'center', width: 16 },
   recommendationParkingText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', lineHeight: 14 },
-  recommendationExplanation: { color: '#55575F', fontSize: 10, fontWeight: '600', marginTop: 7 },
+  recommendationExplanation: { color: '#55575F', flexShrink: 1, fontSize: 10, fontWeight: '600', marginTop: 7, maxWidth: '100%' },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
   recommendationSubtitle: { color: '#73757D', fontSize: 12, marginTop: 5 },
   recommendationTitle: { color: '#202127', fontSize: 20, fontWeight: '900' },
   recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  gridRecommendationReason: { color: '#FFB2C8', fontSize: 9, fontWeight: '700', marginTop: 3, paddingRight: 29 },
-  gridRecommendationExplanation: { color: 'rgba(255,255,255,0.78)', fontSize: 8, marginTop: 2, paddingRight: 29 },
+  gridRecommendationReason: { color: '#FFB2C8', flexShrink: 1, fontSize: 9, fontWeight: '700', marginTop: 3, maxWidth: '100%', paddingRight: 29 },
+  gridRecommendationExplanation: { color: 'rgba(255,255,255,0.78)', flexShrink: 1, fontSize: 8, marginTop: 2, maxWidth: '100%', paddingRight: 29 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
   retryButtonText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
