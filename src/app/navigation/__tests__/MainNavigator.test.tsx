@@ -10,9 +10,13 @@ jest.mock('../../../features/place/screens/MapScreen', () => {
   const ReactNative = require('react-native');
   return {
     __esModule: true,
-    default: () => ReactLibrary.createElement(
+    default: ({ onOpenVisitVerification }: { onOpenVisitVerification: () => void }) => ReactLibrary.createElement(
       ReactNative.View,
       { testID: 'current-map-screen' },
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: onOpenVisitVerification, testID: 'current-map-verification-entry' },
+      ),
     ),
   };
 });
@@ -29,6 +33,8 @@ const route = {
 } as MainScreenProps<'Map'>['route'];
 
 describe('현재 지도 경계', () => {
+  beforeEach(() => jest.clearAllMocks());
+
   test('MainNavigator의 지도 화면을 렌더링한다', async () => {
     const i18n = await createTestI18n();
     await renderWithProviders(
@@ -37,5 +43,16 @@ describe('현재 지도 경계', () => {
     );
 
     expect(screen.getByTestId('current-map-screen')).toBeVisible();
+  });
+
+  test('방문 검증 CTA callback을 명확한 후보 route로 연결한다', async () => {
+    const i18n = await createTestI18n();
+    const view = await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { i18n },
+    );
+
+    await view.user.press(screen.getByTestId('current-map-verification-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.VisitVerificationPlaces);
   });
 });

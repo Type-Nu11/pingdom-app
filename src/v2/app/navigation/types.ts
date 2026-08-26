@@ -5,12 +5,17 @@ declare const routeIdBrand: unique symbol;
 export type PlaceId = number & {
   readonly [routeIdBrand]: 'Place';
 };
+export type CheckInId = number & {
+  readonly [routeIdBrand]: 'CheckIn';
+};
 
 export const V2_ROUTES = {
   CreateReservation: 'CreateReservation',
   Home: 'Home',
   Map: 'Map',
   PlaceDetail: 'PlaceDetail',
+  VisitVerificationPlaces: 'VisitVerificationPlaces',
+  VisitVerificationReview: 'VisitVerificationReview',
 } as const;
 
 export type V2StackParamList = {
@@ -23,6 +28,11 @@ export type V2StackParamList = {
   Home: undefined;
   Map: undefined;
   PlaceDetail: {
+    placeId: PlaceId;
+  };
+  VisitVerificationPlaces: undefined;
+  VisitVerificationReview: {
+    checkInId?: CheckInId;
     placeId: PlaceId;
   };
 };
@@ -41,4 +51,9 @@ export function parsePlaceId(value: unknown): PlaceId | null {
 
   const parsedValue = Number(value);
   return Number.isSafeInteger(parsedValue) ? parsedValue as PlaceId : null;
+}
+
+export function parseCheckInId(value: unknown): CheckInId | null {
+  const valueAsPlaceId = parsePlaceId(value);
+  return valueAsPlaceId as CheckInId | null;
 }

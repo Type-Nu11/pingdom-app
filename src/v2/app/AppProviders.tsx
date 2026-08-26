@@ -7,6 +7,7 @@ import { ThemeProvider } from 'styled-components/native';
 
 import { i18n } from '../shared/i18n';
 import { initializeReservationI18n } from '../features/reservations/i18n/reservationResources';
+import { initializeVisitVerificationI18n } from '../features/place-visit-verification/i18n/visitVerificationResources';
 import { theme } from '../shared/theme';
 import AppErrorBoundary from './AppErrorBoundary';
 import { createQueryClient } from './queryClient';
@@ -18,7 +19,7 @@ export default function AppProviders({ children }: PropsWithChildren) {
   useEffect(() => {
     let isMounted = true;
 
-    void initializeReservationI18n()
+    void Promise.all([initializeReservationI18n(), initializeVisitVerificationI18n()])
       .catch((error) => {
         console.warn('[V2 i18n] Initialization failed:', error);
       })

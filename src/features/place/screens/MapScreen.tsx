@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Alert,
   Pressable,
   StatusBar,
@@ -59,6 +60,7 @@ import {
   mergeMapPreviewPlaces,
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
+import { VisitVerificationMapCta } from '../../../v2/features/place-visit-verification';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
@@ -133,6 +135,7 @@ type MapScreenProps = {
   }) => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
+  onOpenVisitVerification?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
 
@@ -142,6 +145,7 @@ export default function MapScreen({
   onCreateReservation,
   onOpenProfile,
   onOpenReservation,
+  onOpenVisitVerification,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
@@ -229,6 +233,11 @@ export default function MapScreen({
     collapsedTranslateY,
     initialSnapPoint: 'medium',
     mediumTranslateY,
+  });
+  const verificationCtaOpacity = sheetTranslateY.interpolate({
+    inputRange: [0, Math.max(mediumTranslateY, 1)],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
   });
   useEffect(() => {
     const language = profile?.language?.trim().toLowerCase();
@@ -696,6 +705,25 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
+      {!isSearchOpen && onOpenVisitVerification ? (
+        <Animated.View
+          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
+          style={{
+            bottom: fullSheetHeight + 12,
+            opacity: verificationCtaOpacity,
+            position: 'absolute',
+            right: 16,
+            transform: [{ translateY: sheetTranslateY }],
+            zIndex: 30,
+          }}
+          testID="visit-verification-map-cta-motion"
+        >
+          <VisitVerificationMapCta
+            label={t('visitVerification.title')}
+            onPress={onOpenVisitVerification}
+          />
+        </Animated.View>
+      ) : null}
       {isSearchOpen ? (
         <MapSearchOverlay
           centerLat={center.lat}
