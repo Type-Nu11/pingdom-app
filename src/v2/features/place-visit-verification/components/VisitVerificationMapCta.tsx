@@ -29,29 +29,29 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
       style={style}
       testID="visit-verification-map-cta"
     >
-      <VerificationIcon height={20} width={20} />
+      <VerificationIcon height={18} width={18} />
       <Label>{label}</Label>
     </Container>
   );
 }
 
 const Container = styled.Pressable`
-  min-height: ${({ theme }) => theme.spacing.xxl}px;
-  min-width: 116px;
+  min-height: 44px;
+  min-width: 108px;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-  padding: 0 ${({ theme }) => theme.spacing.md}px;
+  gap: 6px;
+  padding: 0 12px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.primary};
   shadow-color: #101828;
-  shadow-opacity: 0.18;
-  shadow-radius: 8px;
-  elevation: 5;
+  shadow-opacity: 0.14;
+  shadow-radius: 6px;
+  elevation: 3;
 `;
 const Label = styled.Text`
   color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-size: 13px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;

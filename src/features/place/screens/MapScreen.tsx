@@ -20,6 +20,7 @@ import { useAuthStore } from '../../../app/store/authStore';
 import MapBottomSheet, {
   type BottomSheetContent,
   type DecisionPlace,
+  type MapPreviewFallbackContent,
   type VisitFilter,
 } from '../components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
@@ -37,8 +38,17 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
-import { useRecommendationExplanation } from '../../../v2/features/place-exploration';
+import {
+  usePlaceCard,
+  usePlaceExplorationMedia,
+  usePlaceExplorationMediaList,
+  usePlaceOperatingNotices,
+  usePlaceVisitDecision,
+  useRecommendationExplanation,
+} from '../../../v2/features/place-exploration';
+import { usePlaceDetail } from '../../../v2/features/place-detail';
 import type { PlaceListRuntimeState } from '../../../v2/features/place-exploration';
+import { toPlaceCardViewModel } from '../../../v2/features/map/model/mapDiscovery';
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
   MAP_PREVIEW_ZOOM_LEVEL,
@@ -60,7 +70,10 @@ import {
   mergeMapPreviewPlaces,
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
-import { VisitVerificationMapCta } from '../../../v2/features/place-visit-verification';
+import {
+  VisitVerificationMapCta,
+  usePlaceReviews,
+} from '../../../v2/features/place-visit-verification';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
@@ -224,9 +237,12 @@ export default function MapScreen({
   // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
   // so the expanded state can go edge to edge without drawing outside its parent.
   const fullSheetHeight = Math.round(height - expandedSheetTop);
-  const designScale = Math.min(Math.max(width / 402, 0.9), 1.1);
+  const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
-  const mediumVisibleHeight = Math.round(418 * designScale) + SHEET_RESTING_GAP;
+  const mediumVisibleHeight = Math.min(
+    Math.round(418 * designScale) + SHEET_RESTING_GAP,
+    Math.round(height * 0.52),
+  );
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
   const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
@@ -280,6 +296,18 @@ export default function MapScreen({
 
     return serverPlaces;
   }, [apiPlaces, recommendationPlaces]);
+  const mapExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList([
+    ...(content.type === 'place-preview' ? [content.placeId] : []),
+    ...allPlaces.map((place) => place.id),
+  ], { enabled: mapSection === 'map' });
+  const mapExplorationPreviewImageUrlsByPlaceId = useMemo(
+    () => Object.entries(mapExplorationImageUrlsByPlaceId)
+      .reduce<Record<string, string>>((result, [placeId, imageUrls]) => {
+        if (imageUrls[0]) result[placeId] = imageUrls[0];
+        return result;
+      }, {}),
+    [mapExplorationImageUrlsByPlaceId],
+  );
   const recommendationPresentation = useMemo(() => createRecommendationPresentation({
     appliedActivityIntent,
     appliedTravelPurposes,
@@ -298,21 +326,88 @@ export default function MapScreen({
     () => bookmarkedPlaces.map(toDecisionPlace),
     [bookmarkedPlaces],
   );
+  const favoriteExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList(
+    bookmarkedPlaces.map((place) => place.id),
+    { enabled: canQueryBookmarks && mapSection === 'favorites' },
+  );
   const { imageUrlsByPlaceId: favoritePreviewImages } = usePlacePreviewImages(
     bookmarkedPlaces,
     canQueryBookmarks && mapSection === 'favorites',
   );
   const favoriteImageUrlsByPlaceId = useMemo(
-    () => toFavoritePlaceImageUrls(favoritePreviewImages),
-    [favoritePreviewImages],
+    () => ({
+      ...favoriteExplorationImageUrlsByPlaceId,
+      ...toFavoritePlaceImageUrls(favoritePreviewImages),
+    }),
+    [favoriteExplorationImageUrlsByPlaceId, favoritePreviewImages],
   );
-  const selectedPlace = useMemo(() => {
+  const selectedPlaceBase = useMemo(() => {
     if (content.type !== 'place-preview') return null;
     const selectedFromCurrentData = [...allPlaces, ...favoritePlaces]
       .find((place) => place.id === content.placeId);
 
     return selectedFromCurrentData ?? null;
   }, [allPlaces, content, favoritePlaces]);
+  const selectedPlaceId = selectedPlaceBase?.id ?? 0;
+  const hasSelectedPlace = selectedPlaceBase !== null;
+  const selectedCard = usePlaceCard(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedDecision = usePlaceVisitDecision(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedNotices = usePlaceOperatingNotices(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedMedia = usePlaceExplorationMedia(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedDetail = usePlaceDetail(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedReviews = usePlaceReviews(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedPlacePresentation = useMemo(() => toPlaceCardViewModel(
+    selectedCard.data,
+    selectedDecision.data,
+    selectedNotices.data,
+    selectedPlaceBase?.distanceMeters ?? null,
+    selectedDetail.data,
+    selectedMedia.data,
+  ), [
+    selectedCard.data,
+    selectedDecision.data,
+    selectedDetail.data,
+    selectedMedia.data,
+    selectedNotices.data,
+    selectedPlaceBase?.distanceMeters,
+  ]);
+  const selectedPlace = useMemo<DecisionPlace | null>(() => {
+    if (!selectedPlaceBase) return null;
+    if (!selectedPlacePresentation) return selectedPlaceBase;
+
+    return {
+      ...selectedPlaceBase,
+      address: selectedPlacePresentation.address || selectedPlaceBase.address,
+      category: selectedPlacePresentation.category || selectedPlaceBase.category,
+      distanceMeters: selectedPlacePresentation.distanceMeters ?? selectedPlaceBase.distanceMeters,
+      name: selectedPlacePresentation.name || selectedPlaceBase.name,
+    };
+  }, [selectedPlaceBase, selectedPlacePresentation]);
+  const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
+    if (!selectedPlace || !selectedPlacePresentation) return undefined;
+    const reviewCount = selectedReviews.isSuccess
+      ? Math.max(0, selectedReviews.data?.totalElements ?? 0)
+      : null;
+    const statusEmphasis = selectedPlacePresentation.currentlyOperating === true
+      ? '영업 중'
+      : selectedPlacePresentation.currentlyOperating === false
+        ? '영업 종료'
+        : '';
+
+    return {
+      [String(selectedPlace.id)]: {
+        amenities: selectedPlacePresentation.supportTags.includes('english') ? ['english'] : [],
+        imageUrls: selectedPlacePresentation.imageUrls,
+        reviewCount: reviewCount ?? undefined,
+        statusDescription: reviewCount === null
+          ? ''
+          : reviewCount > 0
+            ? `${reviewCount}명이 검증했어요!`
+            : '아직 검증을 하지 않았어요!',
+        statusEmphasis,
+      },
+    };
+  }, [selectedPlace, selectedPlacePresentation, selectedReviews.data?.totalElements, selectedReviews.isSuccess]);
   useEffect(() => {
     if (content.type !== 'place-preview' || selectedPlace) return;
 
@@ -523,7 +618,7 @@ export default function MapScreen({
 
   const focusedPlace = selectedPlace;
   const mapCenterLat = !isFollowingUser && focusedPlace
-    ? focusedPlace.latitude
+    ? focusedPlace.latitude - (0.00072 * designScale)
     : dismissedMarkerCenter?.lat ?? center.lat;
   const mapCenterLng = !isFollowingUser && focusedPlace
     ? focusedPlace.longitude
@@ -652,6 +747,7 @@ export default function MapScreen({
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
+            explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
@@ -694,6 +790,7 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             places={sheetPlaces}
+            previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
             recommendationContext={recommendationPresentation.contextText}
             recommendationLimitMessage={recommendationPresentation.limitText}
             recommendationPlaces={recommendationPlaces}
@@ -709,12 +806,12 @@ export default function MapScreen({
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
           style={{
-            bottom: fullSheetHeight + 12,
+            bottom: fullSheetHeight + 8,
             opacity: verificationCtaOpacity,
             position: 'absolute',
-            right: 16,
+            right: 12,
             transform: [{ translateY: sheetTranslateY }],
-            zIndex: 30,
+            zIndex: 60,
           }}
           testID="visit-verification-map-cta-motion"
         >

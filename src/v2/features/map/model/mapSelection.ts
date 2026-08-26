@@ -1,5 +1,7 @@
-export const MAP_PREVIEW_ZOOM_LEVEL = 4;
-export const MAP_DISMISSED_ZOOM_LEVEL = 2;
+// Kakao VectorMap follows the conventional scale where a larger level is closer.
+// Keep both the resting map and a selected place at a neighborhood scale.
+export const MAP_PREVIEW_ZOOM_LEVEL = 17;
+export const MAP_DISMISSED_ZOOM_LEVEL = 15;
 
 export function markersForSelectedPlace<TMarker extends { id: string }>(
   markers: TMarker[],

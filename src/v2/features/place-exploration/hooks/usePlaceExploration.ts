@@ -139,6 +139,8 @@ type PlaceExplorationQueryConfig = {
   enabled?: boolean;
 };
 
+const MAX_PARALLEL_EXPLORATION_MEDIA_QUERIES = 20;
+
 export function usePlaceMap(
   params: MapViewportParams,
   { enabled = true }: PlaceExplorationQueryConfig = {},
@@ -193,6 +195,35 @@ export function usePlaceExplorationMedia(
   { enabled = true }: PlaceExplorationQueryConfig = {},
 ) {
   return useQuery({ ...createPlaceExplorationMediaQueryOptions(id), enabled });
+}
+
+export function usePlaceExplorationMediaList(
+  placeIds: number[],
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  const uniquePlaceIds = [...new Set(placeIds.filter((id) => Number.isFinite(id) && id > 0))]
+    .slice(0, MAX_PARALLEL_EXPLORATION_MEDIA_QUERIES);
+
+  return useQueries({
+    queries: uniquePlaceIds.map((placeId) => ({
+      ...createPlaceExplorationMediaQueryOptions(placeId),
+      enabled,
+    })),
+    combine: (results) => results.reduce<Record<string, string[]>>((imageUrlsByPlaceId, result, index) => {
+      const media = result.data?.media ?? [];
+      const imageUrls = media
+        .slice()
+        .sort((left, right) => left.displayOrder - right.displayOrder)
+        .map((item) => item.imageUrl || item.thumbnailUrl)
+        .filter((url): url is string => Boolean(url));
+
+      if (imageUrls.length > 0) {
+        imageUrlsByPlaceId[String(uniquePlaceIds[index])] = [...new Set(imageUrls)];
+      }
+
+      return imageUrlsByPlaceId;
+    }, {}),
+  });
 }
 
 export function useRecommendationExplanation(
