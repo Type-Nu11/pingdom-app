@@ -228,10 +228,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** 장소 리뷰 목록 조회 */
+        get: operations["list_4"];
         put?: never;
         /** 장소 리뷰 작성 */
-        post: operations["create_3"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -426,6 +427,35 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+        };
+        PagePlaceReviewResponse: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["PlaceReviewResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"][];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
+        };
+        PageableObject: {
+            /** Format: int64 */
+            offset?: number;
+            sort?: components["schemas"]["SortObject"][];
+            paged?: boolean;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            unpaged?: boolean;
         };
         PlaceAutocompleteItem: {
             /** Format: int64 */
@@ -855,6 +885,13 @@ export interface components {
              * @description 응답의 상태성 데이터를 조회한 시각
              */
             checkedAt: string;
+        };
+        SortObject: {
+            direction?: string;
+            nullHandling?: string;
+            ascending?: boolean;
+            property?: string;
+            ignoreCase?: boolean;
         };
         /** @description 관광객용 장소 카드 조회 응답 */
         TouristPlaceCardResponse: {
@@ -1448,7 +1485,32 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    list_4: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                placeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePlaceReviewResponse"];
+                };
+            };
+        };
+    };
+    create_2: {
         parameters: {
             query?: never;
             header?: never;

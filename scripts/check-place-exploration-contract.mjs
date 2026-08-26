@@ -17,7 +17,10 @@ const expectedOperations = new Map([
     ['get', 'getRecommendationExplanation'],
   ],
   ['/places/{placeId}/map-link-conversions', ['post', 'record']],
-  ['/places/{placeId}/reviews', ['post', 'create_3']],
+  ['/places/{placeId}/reviews', [
+    ['get', 'list_4'],
+    ['post', 'create_2'],
+  ]],
 ]);
 const failures = [];
 
@@ -34,11 +37,17 @@ if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) {
   failures.push('scoped contract paths do not match the place exploration endpoints');
 }
 
-for (const [path, [method, operationId]] of expectedOperations) {
-  const operation = document.paths?.[path]?.[method];
-  if (!operation) failures.push(`${method.toUpperCase()} ${path} is missing`);
-  if (operation?.operationId !== operationId) {
-    failures.push(`${method.toUpperCase()} ${path} operationId changed from ${operationId}`);
+for (const [path, expectedMethods] of expectedOperations) {
+  const operations = typeof expectedMethods[0] === 'string'
+    ? [expectedMethods]
+    : expectedMethods;
+
+  for (const [method, operationId] of operations) {
+    const operation = document.paths?.[path]?.[method];
+    if (!operation) failures.push(`${method.toUpperCase()} ${path} is missing`);
+    if (operation?.operationId !== operationId) {
+      failures.push(`${method.toUpperCase()} ${path} operationId changed from ${operationId}`);
+    }
   }
 }
 

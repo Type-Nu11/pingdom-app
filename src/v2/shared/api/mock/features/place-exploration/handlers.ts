@@ -6,6 +6,7 @@ import {
   operatingNoticesFixture,
   placeAutocompleteFixture,
   placeCardFixture,
+  placeReviewPageFixture,
   placeReviewFixture,
   recommendationExplanationFixture,
   verificationMediaFixture,
@@ -64,6 +65,13 @@ export const placeExplorationMockHandlers = [
     resolve: ({ scenario }) => scenario === 'empty'
       ? emptyPlaceExplorationFixtures.recommendationExplanation
       : recommendationExplanationFixture,
+  },
+  {
+    method: 'GET',
+    path: /^\/places\/\d+\/reviews$/,
+    resolve: ({ scenario }) => scenario === 'empty'
+      ? emptyPlaceExplorationFixtures.reviewPage
+      : placeReviewPageFixture,
   },
   {
     method: 'POST',

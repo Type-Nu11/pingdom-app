@@ -13,7 +13,7 @@ const TARGET_OPERATIONS = new Map([
   ['/places/{id}/media/verification', ['get']],
   ['/places/recommendations/{requestId}/explanation', ['get']],
   ['/places/{placeId}/map-link-conversions', ['post']],
-  ['/places/{placeId}/reviews', ['post']],
+  ['/places/{placeId}/reviews', ['get', 'post']],
 ]);
 
 const source = process.argv[2];

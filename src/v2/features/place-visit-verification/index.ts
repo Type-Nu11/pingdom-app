@@ -1,7 +1,13 @@
 export { createVisitVerificationApi, visitVerificationApi } from './api/visitVerificationApi';
-export type { CreatePlaceReviewBody, PlaceReview } from './api/visitVerificationApi';
+export type {
+  CreatePlaceReviewBody,
+  PlaceReview,
+  PlaceReviewListParams,
+  PlaceReviewPage,
+} from './api/visitVerificationApi';
 export { default as VisitVerificationMapCta } from './components/VisitVerificationMapCta';
 export { createVisitVerificationMutationOptions, useSubmitVisitVerification } from './hooks/useSubmitVisitVerification';
+export { createPlaceReviewsQueryOptions, usePlaceReviews } from './hooks/usePlaceReviews';
 export { useVisitVerificationCandidates } from './hooks/useVisitVerificationCandidates';
 export { useLocationPermissionStatus } from './hooks/useLocationPermissionStatus';
 export * from './model/visitVerification';

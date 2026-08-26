@@ -1,5 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
 import {
   visitVerificationApi,
   type CreatePlaceReviewBody,
@@ -23,5 +24,12 @@ export function createVisitVerificationMutationOptions(
 }
 
 export function useSubmitVisitVerification() {
-  return useMutation(createVisitVerificationMutationOptions());
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...createVisitVerificationMutationOptions(),
+    onSuccess: (_review, variables) => queryClient.invalidateQueries({
+      queryKey: placeQueryKeys.reviews(variables.placeId),
+    }),
+  });
 }

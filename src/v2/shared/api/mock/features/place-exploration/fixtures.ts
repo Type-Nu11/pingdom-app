@@ -116,6 +116,18 @@ export const placeReviewFixture = {
   createdAt: '2026-08-26T03:00:00Z',
 } satisfies PlaceExplorationSchema<'PlaceReviewResponse'>;
 
+export const placeReviewPageFixture = {
+  content: [placeReviewFixture],
+  empty: false,
+  first: true,
+  last: true,
+  number: 0,
+  numberOfElements: 1,
+  size: 1,
+  totalElements: 1,
+  totalPages: 1,
+} satisfies PlaceExplorationSchema<'PagePlaceReviewResponse'>;
+
 export const recommendationExplanationFixture = {
   requestId: '9f7263d5-65f1-4834-9ca3-86ad2fc4e7d0',
   items: [{
@@ -177,6 +189,14 @@ export const emptyPlaceExplorationFixtures = {
   autocomplete: { ...placeAutocompleteFixture, places: [], totalCount: 0 },
   mapViewport: { ...mapViewportFixture, clusters: [], markers: [] },
   operatingNotices: { ...operatingNoticesFixture, notices: [] },
+  reviewPage: {
+    ...placeReviewPageFixture,
+    content: [],
+    empty: true,
+    numberOfElements: 0,
+    totalElements: 0,
+    totalPages: 0,
+  },
   verificationMedia: { ...verificationMediaFixture, media: [] },
   explorationMedia: { ...explorationMediaFixture, media: [] },
   recommendationExplanation: { ...recommendationExplanationFixture, items: [] },

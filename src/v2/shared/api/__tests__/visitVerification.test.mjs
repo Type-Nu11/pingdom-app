@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { createVisitVerificationApi } from '../../../features/place-visit-verification/api/visitVerificationApi.ts';
 import { createVisitVerificationMutationOptions } from '../../../features/place-visit-verification/hooks/useSubmitVisitVerification.ts';
+import { createPlaceReviewsQueryOptions } from '../../../features/place-visit-verification/hooks/usePlaceReviews.ts';
 import {
   appendPhotos,
   RECOMMEND_REASONS,
@@ -30,6 +31,27 @@ test('visit review API forwards the confirmed body, place ID, and signal unchang
 
   assert.equal(await api.createReview(17, body, signal), response);
   assert.deepEqual(calls, [{ body, options: { signal }, path: '/places/17/reviews' }]);
+});
+
+test('review count query requests one review and uses server totalElements', async () => {
+  const calls = [];
+  const response = { content: [], totalElements: 7 };
+  const api = createVisitVerificationApi({
+    delete: async () => response,
+    get: async (path, options) => { calls.push({ options, path }); return response; },
+    patch: async () => response,
+    post: async () => response,
+    put: async () => response,
+  });
+  const signal = new AbortController().signal;
+  const options = createPlaceReviewsQueryOptions(17, undefined, api);
+
+  assert.equal(await options.queryFn({ signal }), response);
+  assert.deepEqual(calls, [{
+    options: { params: { limit: 1, page: 1 }, signal },
+    path: '/places/17/reviews',
+  }]);
+  assert.deepEqual(options.queryKey, ['v2', 'places', 'entity', 17, 'reviews', { limit: 1, page: 1 }]);
 });
 
 test('candidate enrichment preserves server check-in order while deduplicating place requests', () => {

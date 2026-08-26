@@ -21,6 +21,10 @@ export const placeQueryKeys = {
     [...placeQueryKeys.entity(id), 'verification-media'] as const,
   explorationMedia: (id: number) =>
     [...placeQueryKeys.entity(id), 'exploration-media'] as const,
+  reviews: (placeId: number) =>
+    [...placeQueryKeys.entity(placeId), 'reviews'] as const,
+  reviewList: <TParams extends object>(placeId: number, params: TParams) =>
+    [...placeQueryKeys.reviews(placeId), params] as const,
   recommendations: () => [...placeQueryKeys.all, 'recommendations'] as const,
   recommendationExplanations: () =>
     [...placeQueryKeys.recommendations(), 'explanation'] as const,
