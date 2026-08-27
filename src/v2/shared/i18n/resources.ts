@@ -197,6 +197,20 @@ export const resources = {
       },
       myPage: {
         back: 'Back',
+        profileEdit: {
+          avatarUnsupported: 'Changing your profile photo isn\'t supported yet.',
+          confirmPassword: 'Confirm password',
+          confirmPasswordPlaceholder: 'Re-enter new password',
+          infoTitle: 'Edit info',
+          newPassword: 'New password',
+          newPasswordPlaceholder: 'Enter new password',
+          passwordChangeUnsupported: 'Password can\'t be changed here yet. Use Settings > Change password.',
+          save: 'Save changes',
+          saving: 'Saving...',
+          title: 'Edit profile',
+          username: 'Username',
+          usernameRequired: 'Enter a username.',
+        },
         profileUnavailable: 'Profile unavailable',
         settings: 'Settings',
         stats: {
@@ -451,6 +465,20 @@ export const resources = {
       },
       myPage: {
         back: '뒤로가기',
+        profileEdit: {
+          avatarUnsupported: '프로필 사진 변경 기능은 아직 지원되지 않아요.',
+          confirmPassword: '비밀번호 확인',
+          confirmPasswordPlaceholder: '새 비밀번호 다시 입력',
+          infoTitle: '정보 수정',
+          newPassword: '비밀번호',
+          newPasswordPlaceholder: '새 비밀번호 입력',
+          passwordChangeUnsupported: '비밀번호는 여기서 바로 변경할 수 없어요. 설정 > 비밀번호 변경을 이용해주세요.',
+          save: '변경 사항 저장하기',
+          saving: '저장 중...',
+          title: '프로필 편집',
+          username: '아이디',
+          usernameRequired: '아이디를 입력해주세요.',
+        },
         profileUnavailable: '프로필 정보 없음',
         settings: '설정',
         stats: {
