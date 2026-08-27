@@ -32,6 +32,7 @@ import {
   canDeliverProtectedIntent,
   resolveProductionRootState,
 } from './runtimeState';
+import { claimDeepLinkEvent, type DeepLinkEventReceipt } from './deepLinkDedupe';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -47,7 +48,7 @@ export default function RootNavigator() {
   const [pendingNotification, setPendingNotification] = useState<NotificationRoute | null>(null);
   const [pendingDeepLinkIntent, setPendingDeepLinkIntent] = useState<MainNavigationIntent | null>(null);
   const handledNotificationIds = useRef(new Set<string>());
-  const handledDeepLinks = useRef(new Set<string>());
+  const lastDeepLinkEvent = useRef<DeepLinkEventReceipt | null>(null);
   const previousIsLoggedIn = useRef(isLoggedIn);
   const rootState = resolveProductionRootState(isHydrating, isLoggedIn, onboardingState);
 
@@ -66,11 +67,13 @@ export default function RootNavigator() {
     let isActive = true;
 
     const receiveUrl = (url: string) => {
-      if (handledDeepLinks.current.has(url)) return;
       const intent = parseDeepLink(url);
       if (!intent) return;
 
-      handledDeepLinks.current.add(url);
+      const receipt = claimDeepLinkEvent(url, Date.now(), lastDeepLinkEvent.current);
+      if (!receipt) return;
+
+      lastDeepLinkEvent.current = receipt;
       setPendingDeepLinkIntent(intent);
     };
 
@@ -125,7 +128,6 @@ export default function RootNavigator() {
       setPendingNotification(null);
       setPendingDeepLinkIntent(null);
       handledNotificationIds.current.clear();
-      handledDeepLinks.current.clear();
     }
     previousIsLoggedIn.current = isLoggedIn;
   }, [isLoggedIn]);
