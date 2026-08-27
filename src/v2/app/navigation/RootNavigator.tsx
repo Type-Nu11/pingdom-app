@@ -17,7 +17,7 @@ import {
   claimNotificationMessage,
   createNotificationNavigationIntent,
 } from './notificationIntent';
-import { V2_ROUTES, type V2StackParamList } from './types';
+import { V2_ROUTES, type V2ScreenProps, type V2StackParamList } from './types';
 import { useAndroidBackHandler } from './useAndroidBackHandler';
 
 const Stack = createNativeStackNavigator<V2StackParamList>();
@@ -25,6 +25,16 @@ const navigationRef = createNavigationContainerRef<V2StackParamList>();
 
 function HomeRouteScreen() {
   return env.featureFlags.placeList ? <PlaceListExampleScreen /> : <HomeScreen />;
+}
+
+function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
+  return (
+    <MyPageScreen
+      onBack={navigation.goBack}
+      onOpenProfileEdit={() => {}}
+      onOpenSettings={() => {}}
+    />
+  );
 }
 
 export default function RootNavigator() {
@@ -69,7 +79,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
         <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
-        <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageScreen} />
+        <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>

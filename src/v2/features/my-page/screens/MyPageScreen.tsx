@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
+import { Image } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import type { V2ScreenProps } from '../../../app/navigation/types';
+import { useProfile } from '../../../../features/profile/hooks/useProfile';
 import { getInitialCalendarMonth } from '../../onboarding-preferences/model/travelScheduleCalendar';
 import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
 import { useCheckIns } from '../../check-ins/hooks/useCheckIns';
@@ -22,8 +23,15 @@ import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.s
 
 const VERIFIED_PLACES_LIMIT = 4;
 
-export default function MyPageScreen({ navigation }: V2ScreenProps<'MyPage'>) {
+export type MyPageScreenProps = {
+  onBack: () => void;
+  onOpenProfileEdit: () => void;
+  onOpenSettings: () => void;
+};
+
+export default function MyPageScreen({ onBack, onOpenProfileEdit, onOpenSettings }: MyPageScreenProps) {
   const { t } = useTranslation();
+  const { profile } = useProfile();
   const reservationsQuery = useReservations();
   const couponsQuery = useCoupons();
   const travelSchedulesQuery = useTravelSchedules();
@@ -80,21 +88,39 @@ export default function MyPageScreen({ navigation }: V2ScreenProps<'MyPage'>) {
             accessibilityLabel={t('myPage.back')}
             accessibilityRole="button"
             hitSlop={8}
-            onPress={navigation.goBack}
+            onPress={onBack}
           >
             <BackIcon height={44} width={44} />
           </IconButton>
           <TopBarTitle>{t('myPage.title')}</TopBarTitle>
-          <SettingsIcon height={44} width={44} />
+          <IconButton
+            accessibilityLabel={t('myPage.settings')}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onOpenSettings}
+          >
+            <SettingsIcon height={44} width={44} />
+          </IconButton>
         </TopBar>
 
         <Section $borderWidth={8}>
           <SectionContent>
-            <ProfileRow>
+            <ProfileRow accessibilityRole="button" onPress={onOpenProfileEdit}>
               <ProfileInfo>
-                <AvatarPlaceholder height={56} width={56} />
+                {profile?.profileImageUrl ? (
+                  <Avatar source={{ uri: profile.profileImageUrl }} />
+                ) : (
+                  <AvatarPlaceholder height={56} width={56} />
+                )}
                 <ProfileText>
-                  <Username numberOfLines={1}>{t('myPage.profileUnavailable')}</Username>
+                  <Username numberOfLines={1}>
+                    {profile?.username ?? t('myPage.profileUnavailable')}
+                  </Username>
+                  {profile?.country ? (
+                    <UserCountry numberOfLines={1}>
+                      {t(`countries.${profile.country.toLowerCase()}`, { defaultValue: profile.country })}
+                    </UserCountry>
+                  ) : null}
                 </ProfileText>
               </ProfileInfo>
               <ChevronIcon height={24} width={24} />
@@ -170,7 +196,7 @@ const TopBar = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 0 ${({ theme }) => theme.spacing.md}px;
+  padding: 0 ${({ theme }) => theme.spacing.lg}px;
 `;
 
 const IconButton = styled.Pressable`
@@ -193,7 +219,7 @@ const Section = styled.View<{ $borderWidth: number }>`
 
 const SectionContent = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
-  padding: 0 ${({ theme }) => theme.spacing.md}px;
+  padding: 0 ${({ theme }) => theme.spacing.lg}px;
 `;
 
 const SectionTitle = styled.Text`
@@ -208,7 +234,7 @@ const SectionHeaderRow = styled.View`
   justify-content: space-between;
 `;
 
-const ProfileRow = styled.View`
+const ProfileRow = styled.Pressable`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -222,10 +248,21 @@ const ProfileInfo = styled.View`
 
 const ProfileText = styled.View``;
 
+const Avatar = styled(Image)`
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+`;
+
 const Username = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;
+`;
+
+const UserCountry = styled.Text`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
 
 const StatsCard = styled.View`
