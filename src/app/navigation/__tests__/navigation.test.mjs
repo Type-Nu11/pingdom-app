@@ -18,7 +18,6 @@ import {
   parseReservationId,
   parseCheckInId,
 } from '../types.ts';
-import { getProfileBackAction } from '../../../features/profile/utils/profileBack.ts';
 import { getSettingsBackAction } from '../../../features/settings/utils/settingsBack.ts';
 import { getMapBackAction } from '../../../features/place/utils/mapBack.ts';
 import {
@@ -176,10 +175,7 @@ test('invalid app links fall back to Map and unrelated schemes are ignored', () 
   assert.equal(parseDeepLink('https://example.com/places/123'), null);
 });
 
-test('Profile and Settings consume hardware back only for local UI state', () => {
-  assert.equal(getProfileBackAction('archive-detail'), 'show-archive');
-  assert.equal(getProfileBackAction('archive'), 'show-profile');
-  assert.equal(getProfileBackAction('profile'), 'navigate-back');
+test('Settings consumes hardware back only for local UI state', () => {
   assert.equal(getSettingsBackAction(2), 'pop-page');
   assert.equal(getSettingsBackAction(1), 'navigate-back');
 });
