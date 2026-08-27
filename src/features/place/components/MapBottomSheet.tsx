@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -46,6 +46,11 @@ import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.s
 import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
 import StarAsset from '../../../assets/v2/icons/place/star_svg.svg';
 import RecommendationTitleAsset from '../../../assets/v2/icons/place/Subtract.svg';
+import {
+  MOTION_DURATION,
+  runTimingMotion,
+  useReducedMotion,
+} from '../../../v2/shared/motion';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface from './GlassSurface';
@@ -157,6 +162,7 @@ const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...pro
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
+const RECOMMENDATION_NAVIGATION_LOCK_MS = 500;
 const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
   { id: 'popup', label: '팝업' },
   { id: 'music', label: '음악' },
@@ -330,10 +336,16 @@ const PlaceArtwork = ({
   variant?: 'grid' | 'trend';
 }) => {
   const [hasImageError, setHasImageError] = useState(false);
+  const imageOpacity = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setHasImageError(false);
-  }, [imageUrl]);
+    imageOpacity.stopAnimation();
+    imageOpacity.setValue(0);
+
+    return () => imageOpacity.stopAnimation();
+  }, [imageOpacity, imageUrl]);
 
   if (!imageUrl || hasImageError) {
     const fallbackMessage = hasImageError ? '이미지를 불러오지 못했어요' : '이미지 없음';
@@ -350,14 +362,27 @@ const PlaceArtwork = ({
   }
 
   const imageSource = { uri: imageUrl };
+  const handleLoad = () => {
+    runTimingMotion(imageOpacity, 1, {
+      reduceMotion,
+      useNativeDriver: true,
+    });
+  };
 
   return (
-    <>
-      <Image
+    <Animated.View
+      style={[
+        styles.artwork,
+        variant === 'grid' && styles.gridArtwork,
+        { opacity: imageOpacity },
+      ]}
+    >
+      <Animated.Image
         onError={() => setHasImageError(true)}
+        onLoad={handleLoad}
         resizeMode="cover"
         source={imageSource}
-        style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
+        style={styles.artworkImage}
         testID={blurBottom ? 'recommendation-featured-image' : undefined}
       />
       {blurBottom ? (
@@ -372,7 +397,137 @@ const PlaceArtwork = ({
           />
         </View>
       ) : null}
-    </>
+    </Animated.View>
+  );
+};
+
+const RecommendationCardPressable = ({
+  accessibilityLabel,
+  children,
+  onPress,
+  style,
+  testID,
+}: {
+  accessibilityLabel: string;
+  children: React.ReactNode;
+  onPress: () => void;
+  style: object;
+  testID: string;
+}) => {
+  const reduceMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const navigationLocked = useRef(false);
+  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    scale.stopAnimation();
+    if (unlockTimer.current) clearTimeout(unlockTimer.current);
+  }, [scale]);
+
+  const animateScale = (toValue: number) => {
+    runTimingMotion(scale, toValue, {
+      duration: MOTION_DURATION.press,
+      reduceMotion,
+      useNativeDriver: true,
+    });
+  };
+
+  const handlePress = () => {
+    if (navigationLocked.current) return;
+    navigationLocked.current = true;
+    onPress();
+    unlockTimer.current = setTimeout(() => {
+      navigationLocked.current = false;
+      unlockTimer.current = null;
+    }, RECOMMENDATION_NAVIGATION_LOCK_MS);
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+        onPress={handlePress}
+        onPressIn={() => animateScale(0.985)}
+        onPressOut={() => animateScale(1)}
+        style={style}
+        testID={testID}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+const RecommendationBookmarkButton = ({
+  bookmarked,
+  onToggleBookmark,
+  pending,
+  size = 28,
+  style,
+}: {
+  bookmarked: boolean;
+  onToggleBookmark: () => Promise<void> | void;
+  pending: boolean;
+  size?: number;
+  style: object;
+}) => {
+  const reduceMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const mutationLocked = useRef(false);
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    scale.stopAnimation();
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+  }, [scale]);
+
+  const handlePress = async () => {
+    if (pending || mutationLocked.current) return;
+    mutationLocked.current = true;
+
+    if (!reduceMotion) {
+      runTimingMotion(scale, 0.88, {
+        duration: MOTION_DURATION.press,
+        reduceMotion: false,
+        useNativeDriver: true,
+      });
+      feedbackTimer.current = setTimeout(() => {
+        runTimingMotion(scale, 1, {
+          duration: MOTION_DURATION.press,
+          reduceMotion: false,
+          useNativeDriver: true,
+        });
+        feedbackTimer.current = null;
+      }, MOTION_DURATION.press);
+    }
+
+    try {
+      await onToggleBookmark();
+    } finally {
+      mutationLocked.current = false;
+    }
+  };
+
+  return (
+    <Animated.View style={[style, { transform: [{ scale }] }]}>
+      <Pressable
+        accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+        accessibilityRole="button"
+        accessibilityState={{ busy: pending, disabled: pending, checked: bookmarked }}
+        disabled={pending}
+        hitSlop={10}
+        onPress={(event) => {
+          event.stopPropagation();
+          void handlePress();
+        }}
+        style={({ pressed }) => reduceMotion && pressed ? styles.bookmarkPressed : undefined}
+      >
+        {pending ? <Text style={styles.bookmarkPending}>…</Text> : (
+          <BookmarkStar selected={bookmarked} size={size} />
+        )}
+      </Pressable>
+    </Animated.View>
   );
 };
 
@@ -417,36 +572,26 @@ export const RecommendationFeaturedCard = ({
   bookmarked: boolean;
   imageUrl?: string;
   onPress: () => void;
-  onToggleBookmark: () => void;
+  onToggleBookmark: () => Promise<void> | void;
   pending: boolean;
   place: DecisionPlace;
   recommendationLabel?: string;
 }) => (
-    <Pressable
+    <RecommendationCardPressable
       accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
-      accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.placeCard, pressed && styles.pressed]}
+      style={styles.placeCard}
+      testID={`recommendation-card-${place.id}`}
     >
       <View style={styles.placeCardArtwork}>
         <PlaceArtwork blurBottom imageUrl={imageUrl} />
         <CardScrim />
-        <Pressable
-          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
-          accessibilityRole="button"
-          accessibilityState={{ busy: pending, disabled: pending }}
-          disabled={pending}
-          hitSlop={10}
-          onPress={(event) => {
-            event.stopPropagation();
-            onToggleBookmark();
-          }}
+        <RecommendationBookmarkButton
+          bookmarked={bookmarked}
+          onToggleBookmark={onToggleBookmark}
+          pending={pending}
           style={styles.cardBookmarkStar}
-        >
-          {pending ? <Text style={styles.bookmarkPending}>…</Text> : (
-            <BookmarkStar selected={bookmarked} size={28} />
-          )}
-        </Pressable>
+        />
         <View style={styles.placeCardBody}>
           <Text ellipsizeMode="tail" numberOfLines={2} style={styles.placeCardName}>
             {place.name || '장소명 없음'}
@@ -464,7 +609,7 @@ export const RecommendationFeaturedCard = ({
       <Text ellipsizeMode="tail" numberOfLines={1} style={styles.placeCardDistance}>
         여기서 {formatDistance(place)}
       </Text>
-    </Pressable>
+    </RecommendationCardPressable>
 );
 
 const RecommendationGridCard = ({
@@ -478,41 +623,31 @@ const RecommendationGridCard = ({
   bookmarked: boolean;
   imageUrl?: string;
   onPress: () => void;
-  onToggleBookmark: () => void;
+  onToggleBookmark: () => Promise<void> | void;
   pending: boolean;
   place: DecisionPlace;
 }) => (
-    <Pressable
+    <RecommendationCardPressable
       accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
-      accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.gridCard, pressed && styles.pressed]}
+      style={styles.gridCard}
+      testID={`recommendation-grid-card-${place.id}`}
     >
       <PlaceArtwork imageUrl={imageUrl} variant="grid" />
       <CardScrim />
-      <Pressable
-        accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
-        accessibilityRole="button"
-        accessibilityState={{ busy: pending, disabled: pending }}
-        disabled={pending}
-        hitSlop={10}
-        onPress={(event) => {
-          event.stopPropagation();
-          onToggleBookmark();
-        }}
+      <RecommendationBookmarkButton
+        bookmarked={bookmarked}
+        onToggleBookmark={onToggleBookmark}
+        pending={pending}
         style={styles.gridBookmarkStar}
-      >
-        {pending ? <Text style={styles.bookmarkPending}>…</Text> : (
-          <BookmarkStar selected={bookmarked} size={28} />
-        )}
-      </Pressable>
+      />
       <View style={styles.gridCardBody}>
         <Text ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
           {place.name || '장소명 없음'}
         </Text>
         <Text ellipsizeMode="tail" numberOfLines={1} style={styles.gridCardDistance}>{place.address}</Text>
       </View>
-    </Pressable>
+    </RecommendationCardPressable>
 );
 
 const PlaceTrendCard = ({
@@ -772,7 +907,11 @@ const RecommendationState = ({
   onRetry: () => void;
   state: 'empty' | 'error' | 'loading';
 }) => (
-  <View accessibilityLiveRegion="polite" style={styles.recommendationState}>
+  <View
+    accessibilityLiveRegion="polite"
+    style={styles.recommendationState}
+    testID={`recommendation-state-${state}`}
+  >
     <Text style={styles.emptyCardTitle}>
       {state === 'loading'
         ? '나만을 위한 추천 장소를 불러오고 있어요'
@@ -794,6 +933,29 @@ const RecommendationState = ({
     ) : null}
   </View>
 );
+
+const RecommendationStateTransition = ({
+  children,
+  state,
+}: {
+  children: React.ReactNode;
+  state: 'empty' | 'error' | 'loading' | 'ready';
+}) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    opacity.setValue(0);
+    runTimingMotion(opacity, 1, {
+      reduceMotion,
+      useNativeDriver: true,
+    });
+
+    return () => opacity.stopAnimation();
+  }, [opacity, reduceMotion, state]);
+
+  return <Animated.View style={{ opacity }}>{children}</Animated.View>;
+};
 
 const RecommendationContent = ({
   bookmarkedPlaceIds,
@@ -849,8 +1011,9 @@ const RecommendationContent = ({
           {t('map.recommendations.subtitle', { userName })}
         </Text>
       </View>
-      {state === 'ready' ? (
-        <>
+      <RecommendationStateTransition state={state}>
+        {state === 'ready' ? (
+          <>
           <ScrollView
             contentContainerStyle={styles.recommendationCardRow}
             horizontal
@@ -863,7 +1026,7 @@ const RecommendationContent = ({
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
                 key={`recommendation-featured-${place.id}`}
                 onPress={() => onPlacePress(place)}
-                onToggleBookmark={() => void onToggleBookmark(
+                onToggleBookmark={() => onToggleBookmark(
                   place,
                   !bookmarkedPlaceIds[String(place.id)],
                 )}
@@ -894,7 +1057,7 @@ const RecommendationContent = ({
                         imageUrl={imageUrlsByPlaceId[String(place.id)]}
                         key={`recommendation-grid-${place.id}`}
                         onPress={() => onPlacePress(place)}
-                        onToggleBookmark={() => void onToggleBookmark(
+                        onToggleBookmark={() => onToggleBookmark(
                           place,
                           !bookmarkedPlaceIds[String(place.id)],
                         )}
@@ -907,10 +1070,11 @@ const RecommendationContent = ({
               </View>
             </>
           ) : null}
-        </>
-      ) : (
-        <RecommendationState onRetry={onRetry} state={state} />
-      )}
+          </>
+        ) : (
+          <RecommendationState onRetry={onRetry} state={state} />
+        )}
+      </RecommendationStateTransition>
     </ScrollView>
   );
 };
@@ -1809,6 +1973,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     width: '100%',
   },
+  artworkImage: {
+    height: '100%',
+    width: '100%',
+  },
   artworkBlurClip: {
     bottom: 0,
     height: '50%',
@@ -2205,6 +2373,7 @@ const styles = StyleSheet.create({
   placeCardDistance: { color: '#7E8088', flexShrink: 1, fontSize: 11, marginTop: 1, maxWidth: '100%' },
   placeCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 25 },
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
+  bookmarkPressed: { opacity: 0.64 },
   recommendationContent: { paddingBottom: 108 },
   recommendationCardRow: { gap: 12, paddingBottom: 10, paddingHorizontal: 8, paddingTop: 12 },
   recommendationContext: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 4 },
