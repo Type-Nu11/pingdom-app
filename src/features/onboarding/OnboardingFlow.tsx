@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { OnboardingPreferenceFlow } from '../../v2/features/onboarding-preferences';
+import type { SignupOnboardingContext } from '../../v2/features/onboarding-entry';
 import { setLanguage as setV2Language } from '../../v2/shared/i18n';
-import { LoginFormScreen } from '../auth/screens/login';
-import SignUpDetailsScreen from '../auth/screens/signup/SignUpDetailsScreen';
-import LogInForeignScreen from './LogInForeignScreen';
-import LogInKrScreen from './LogInKrScreen';
 import SelectAgeScreen from './SelectAgeScreen';
 import SelectCountryScreen from './SelectCountryScreen';
 import SelectFirstScreen from './SelectFirstScreen';
@@ -18,24 +15,24 @@ type Step =
   | 'country'
   | 'age'
   | 'gender'
-  | 'travel-preferences'
-  | 'login-kr'
-  | 'login-foreign'
-  | 'login'
-  | 'signup-details';
+  | 'travel-preferences';
 
 type PreferenceEntryStep = 'purpose' | 'schedule';
 
-export default function OnboardingFlow() {
+type OnboardingFlowProps = Readonly<{
+  onComplete: (
+    signupContext: Omit<SignupOnboardingContext, 'entryVariant'>,
+  ) => Promise<void>;
+}>;
+
+export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [step, setStep] = useState<Step>('first');
   const [language, setLanguage] = useState<Language>('en');
   const [country, setCountry] = useState<Country>('US');
   const [birthYear, setBirthYear] = useState(2000);
-  const [gender, setGender] = useState<Gender>('male');
+  const [, setGender] = useState<Gender>('male');
   const [preferenceEntryStep, setPreferenceEntryStep] =
     useState<PreferenceEntryStep>('purpose');
-
-  const loginStep = country === 'KR' ? 'login-kr' : 'login-foreign';
 
   switch (step) {
     case 'first':
@@ -90,49 +87,10 @@ export default function OnboardingFlow() {
             setPreferenceEntryStep('purpose');
             setStep('gender');
           }}
-          onComplete={() => {
+          onComplete={async () => {
             setPreferenceEntryStep('schedule');
-            setStep(loginStep);
+            await onComplete({ birthYear, country, language });
           }}
-        />
-      );
-
-    case 'login-kr':
-      return (
-        <LogInKrScreen
-          onBack={() => {
-            setPreferenceEntryStep('schedule');
-            setStep('travel-preferences');
-          }}
-          onSignup={() => setStep('signup-details')}
-          onLogin={() => setStep('login')}
-        />
-      );
-
-    case 'login-foreign':
-      return (
-        <LogInForeignScreen
-          onBack={() => {
-            setPreferenceEntryStep('schedule');
-            setStep('travel-preferences');
-          }}
-          onStart={() => setStep('signup-details')}
-        />
-      );
-
-    case 'login':
-      return (
-        <LoginFormScreen
-          onBack={() => setStep('login-kr')}
-          onSignup={() => setStep('signup-details')}
-        />
-      );
-
-    case 'signup-details':
-      return (
-        <SignUpDetailsScreen
-          onBack={() => setStep(loginStep)}
-          onboardingData={{ language, country, birthYear, gender }}
         />
       );
   }

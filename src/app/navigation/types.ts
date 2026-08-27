@@ -34,7 +34,10 @@ export const ROOT_ROUTES = {
 } as const;
 
 export const AUTH_ROUTES = {
+  AuthLanding: 'AuthLanding',
+  Login: 'Login',
   Onboarding: 'Onboarding',
+  Signup: 'Signup',
 } as const;
 
 export const MAIN_ROUTES = {
@@ -52,7 +55,10 @@ export const MAIN_ROUTES = {
 } as const;
 
 export type AuthStackParamList = {
+  AuthLanding: undefined;
+  Login: undefined;
   Onboarding: undefined;
+  Signup: undefined;
 };
 
 export type MainStackParamList = {
