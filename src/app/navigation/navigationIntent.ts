@@ -1,5 +1,4 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
-import type { NotificationRoute } from '../../features/firebase/model/notification.types';
 import {
   MAIN_ROUTES,
   parseNotificationId,
@@ -20,6 +19,17 @@ export type MainNavigationIntent =
   | { params?: ProfileParams; screen: typeof MAIN_ROUTES.Profile }
   | { screen: typeof MAIN_ROUTES.Settings }
   | { params: MainStackParamList['Merchant']; screen: typeof MAIN_ROUTES.Merchant };
+
+export type NotificationNavigationRoute = Readonly<{
+  body?: string;
+  messageId?: string;
+  notificationId?: string;
+  notificationsId?: string;
+  placeId?: string;
+  postId?: string;
+  screen?: string;
+  title?: string;
+}>;
 
 function toOptionalText(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
@@ -48,10 +58,12 @@ export function claimNotificationMessage(
 }
 
 function createNotificationContext(
-  route: NotificationRoute,
+  route: NotificationNavigationRoute,
 ): NotificationNavigationContext | undefined {
   const rawRoute = route as unknown as Record<string, unknown>;
-  const notificationId = parseNotificationId(rawRoute.notificationsId);
+  const notificationId = parseNotificationId(
+    rawRoute.notificationId ?? rawRoute.notificationsId,
+  );
   const postId = parsePostId(rawRoute.postId);
   const body = toOptionalText(rawRoute.body);
   const title = toOptionalText(rawRoute.title);
@@ -69,7 +81,7 @@ function createNotificationContext(
 }
 
 export function createNotificationNavigationIntent(
-  route: NotificationRoute,
+  route: NotificationNavigationRoute,
 ): MainNavigationIntent {
   const rawRoute = route as unknown as Record<string, unknown>;
   const notificationContext = createNotificationContext(route);

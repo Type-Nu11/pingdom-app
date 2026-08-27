@@ -11,6 +11,7 @@ import {
   ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
   getAndroidBackAction,
 } from '../androidBack.ts';
+import { selectInitialNotificationRoute } from '../../../features/notifications/services/initialNotification.ts';
 
 test('V2 place route parameters accept only positive safe integers', () => {
   assert.equal(parsePlaceId('42'), 42);
@@ -86,4 +87,15 @@ test('notification message IDs are handled once', () => {
   assert.equal(claimNotificationMessage('same-message', handled), true);
   assert.equal(claimNotificationMessage('same-message', handled), false);
   assert.equal(claimNotificationMessage(undefined, handled), true);
+});
+
+test('cold-start notification sources produce exactly one pending intent', () => {
+  const firebase = { messageId: 'firebase', placeId: '17', screen: 'place-detail', source: 'quit-open' };
+  const expo = { messageId: 'expo', placeId: '18', screen: 'place-detail', source: 'quit-open' };
+  const background = { messageId: 'background', placeId: '19', screen: 'place-detail', source: 'background' };
+
+  assert.equal(selectInitialNotificationRoute({ background, expo, firebase }), firebase);
+  assert.equal(selectInitialNotificationRoute({ background, expo, firebase: null }), expo);
+  assert.equal(selectInitialNotificationRoute({ background, expo: null, firebase: null }), background);
+  assert.equal(selectInitialNotificationRoute({ background: null, expo: null, firebase: null }), null);
 });
