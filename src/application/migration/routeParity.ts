@@ -40,7 +40,7 @@ export const PRODUCTION_ROOT_POLICY = Object.freeze({
 export const ISSUE_262_STATUS = Object.freeze({
   bridgeFreeStandaloneV2: 'incomplete',
   codeCompositionRootCutover: 'complete',
-  iosBuild: 'incomplete-pods',
+  iosBuild: 'simulator-complete-device-incomplete',
   physicalDeviceQa: 'incomplete',
   wholeIssue: 'incomplete',
 });

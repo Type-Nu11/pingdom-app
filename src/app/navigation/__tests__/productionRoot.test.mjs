@@ -105,7 +105,7 @@ test('production entrypoint has one composition root with no mock or implicit V1
   assert.deepEqual(ISSUE_262_STATUS, {
     bridgeFreeStandaloneV2: 'incomplete',
     codeCompositionRootCutover: 'complete',
-    iosBuild: 'incomplete-pods',
+    iosBuild: 'simulator-complete-device-incomplete',
     physicalDeviceQa: 'incomplete',
     wholeIssue: 'incomplete',
   });

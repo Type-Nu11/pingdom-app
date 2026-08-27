@@ -15,7 +15,9 @@ Current #262 status:
 - Code-level production composition root cutover: **complete**.
 - Bridge-free standalone V2 cutover: **incomplete**.
 - Physical-device QA: **incomplete**.
-- iOS build: **incomplete** because local Pods are inconsistent with `Podfile.lock`.
+- iOS simulator build: **complete** after regenerating `Podfile.lock` from the installed React
+  Native 0.83.6 dependency graph. The unsigned x86_64 simulator build succeeds; physical-device
+  build and QA remain **incomplete**.
 - Therefore #262 as a whole is not reported as complete.
 
 ## Production dependency graph
@@ -135,6 +137,12 @@ V2 screen, hook, store, API, and style modules do not import these V1 modules.
 
 Automated cutover gates are `check:v2`, V1 change policy, typecheck, navigation/notification/map/API
 tests, `validate:pr`, and `git diff --check`. Release still requires the device checklist below.
+
+The checked-in iOS lockfile must be regenerated with `npx pod-install` whenever JavaScript native
+dependencies change. GoogleMLKit 8.0.0 excludes arm64 for the simulator, so the current Apple
+Silicon verification uses an x86_64 simulator build. Do not remove that generated exclusion as a
+local workaround; revisit the constraint when the MLKit dependency is upgraded. A clean native
+build also needs several gigabytes of free disk space for Pods and Xcode DerivedData.
 
 Rollback is a one-line entrypoint change: make `App.tsx` export `App.v1.tsx`. This is an explicit
 code rollback that requires review and a new build; production contains no runtime fallback flag.
