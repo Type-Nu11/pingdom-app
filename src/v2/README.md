@@ -2,15 +2,17 @@
 
 V2 is isolated from the legacy application and follows a feature-first structure.
 
+Production entrypoint ownership and active composition bridges are documented in
+[`docs/v2-production-entrypoint-migration.md`](../../docs/v2-production-entrypoint-migration.md).
+
 ## Import boundaries
 
 - `app` composes providers and feature screens.
 - `features` may import from `shared` and `types`.
 - `shared` may import from `types`, but never from `features` or legacy code.
 - V2 code must not import legacy screens, stores, hooks, API clients, or styles.
-- `App.v2.tsx` is the composition boundary that injects the existing authenticated transport into
-  V2. This keeps both versions on one access-token cache, refresh lock, and logout path without
-  allowing feature code to cross the V2 boundary.
+- `src/application` is the composition boundary that injects the production transport and active
+  bridge screens. `App.v2.tsx` is only an alias to that single production root.
 - V2 screens use `styled-components`; `StyleSheet.create` and screen-local design values are not allowed.
 - V2 application code reads environment values only through `shared/config/env.ts`.
 
