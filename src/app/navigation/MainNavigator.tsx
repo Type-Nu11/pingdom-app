@@ -7,6 +7,8 @@ import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
 import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
+import MyPageScreen from '../../v2/features/my-page/screens/MyPageScreen';
+import ProfileEditScreen from '../../v2/features/my-page/screens/ProfileEditScreen';
 import { theme as v2Theme } from '../../v2/shared/theme';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
@@ -45,7 +47,7 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
         initialSection={initialSection}
         openedBookmarkedPlaceId={focusedPlaceId ?? null}
         onClearOpenedBookmarkedPlace={clearFocusedPlace}
-        onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
+        onOpenProfile={() => navigation.navigate(MAIN_ROUTES.MyPage)}
         onCreateReservation={(place) => {
           const placeId = parsePlaceId(place.id);
           if (placeId) navigation.navigate(MAIN_ROUTES.CreateReservation, {
@@ -78,6 +80,22 @@ const ProfileRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
     onOpenApiCheck={() => navigation.navigate(MAIN_ROUTES.ApiCheck)}
     onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
   />
+);
+
+const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => (
+  <V2ScreenBoundary>
+    <MyPageScreen
+      onBack={navigation.goBack}
+      onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+      onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
+    />
+  </V2ScreenBoundary>
+);
+
+const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileEdit'>) => (
+  <V2ScreenBoundary>
+    <ProfileEditScreen onBack={navigation.goBack} />
+  </V2ScreenBoundary>
 );
 
 const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
@@ -149,6 +167,8 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.MyPage} component={MyPageRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
