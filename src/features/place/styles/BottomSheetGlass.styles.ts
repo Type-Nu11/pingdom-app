@@ -21,11 +21,11 @@ export const SheetChromeShadow = styled(Animated.View)`
   border-bottom-right-radius: 48px;
   border-bottom-left-radius: 48px;
   background-color: rgba(244, 246, 248, 0.08);
-  elevation: 22;
+  elevation: 8;
   shadow-color: #10141A;
-  shadow-offset: 0px -7px;
-  shadow-opacity: 0.17;
-  shadow-radius: 24px;
+  shadow-offset: 0px -3px;
+  shadow-opacity: 0.08;
+  shadow-radius: 14px;
 `;
 
 export const SheetChrome = styled(Animated.View)<{ $borderColor: string }>`

@@ -65,7 +65,7 @@ export default function MapTopOverlay({
           <S.HeaderSurface>
             <S.HeaderGlass
               bottomShade={false}
-              cornerRadius={29}
+              cornerRadius={25}
               glassEffectStyle="regular"
               highlightOpacity={0.16}
               intensity={32}
@@ -76,7 +76,7 @@ export default function MapTopOverlay({
             <S.SearchShadow>
               <S.SearchGlass
                 bottomShade={false}
-                cornerRadius={26}
+                cornerRadius={20}
                 glassEffectStyle="regular"
                 highlightOpacity={0.20}
                 pointerEvents="none"
@@ -88,7 +88,7 @@ export default function MapTopOverlay({
                 accessibilityRole="button"
                 onPress={onSearchFocus}
               >
-                <SearchAsset height={20} width={20} />
+                <SearchAsset height={18} width={18} />
                 <S.SearchInput
                   $isPlaceholder={!query}
                   numberOfLines={1}
@@ -104,7 +104,7 @@ export default function MapTopOverlay({
               onPress={onProfilePress}
               style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
             >
-              <ProfileAsset height={40} width={40} />
+              <ProfileAsset height={34} width={34} />
             </S.ProfileButton>
           </S.HeaderSurface>
         </S.HeaderShadow>
@@ -129,16 +129,17 @@ export default function MapTopOverlay({
               >
                 <S.CategoryChipClip>
                   <S.CategoryChipGlass
-                    cornerRadius={16}
+                    bottomShade={false}
+                    cornerRadius={15}
                     glassEffectStyle="regular"
                     highlightOpacity={isActive ? 0.18 : 0.14}
                     pointerEvents="none"
-                    rimColor="rgba(0,0,0,0.05)"
-                    tintColor="rgba(255,255,255,0.95)"
+                    rimColor="transparent"
+                    tintColor={isActive ? 'rgba(255,201,211,0.24)' : 'rgba(255,255,255,0.95)'}
                   />
                   <S.CategoryChipContent>
                     {Icon ? (
-                      <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={18} width={20} />
+                      <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={16} width={17} />
                     ) : null}
                     <S.CategoryLabel $active={isActive}>{label}</S.CategoryLabel>
                   </S.CategoryChipContent>

@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text as NativeText,
   type TextProps,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Svg, {
@@ -130,6 +131,7 @@ type MapBottomSheetProps = {
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
   previewFallbackContentByPlaceId?: Record<string, MapPreviewFallbackContent>;
+  explorationImageUrlsByPlaceId?: Record<string, string>;
   recommendationContext?: string | null;
   recommendationLimitMessage?: string | null;
   recommendationPlaces: DecisionPlace[];
@@ -1005,16 +1007,58 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
   );
 };
 
-const PreviewActionChip = ({ active = false, label, onPress }: { active?: boolean; label: string; onPress?: () => void }) => (
+type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
+
+const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
+  if (kind === 'share') {
+    return (
+      <Svg height={13} viewBox="0 0 16 16" width={13}>
+        <Path d="M6 3H3.8A1.8 1.8 0 0 0 2 4.8v7.4A1.8 1.8 0 0 0 3.8 14h7.4a1.8 1.8 0 0 0 1.8-1.8V10M8 2h6v6M14 2 7.5 8.5" fill="none" stroke="#5A5D65" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
+      </Svg>
+    );
+  }
+  if (kind === 'reservation') {
+    return (
+      <Svg height={13} viewBox="0 0 16 16" width={13}>
+        <Path d="M3 4.2A1.7 1.7 0 0 1 4.7 2.5h6.6A1.7 1.7 0 0 1 13 4.2v7.1a1.7 1.7 0 0 1-1.7 1.7H4.7A1.7 1.7 0 0 1 3 11.3V4.2Z" fill="none" stroke="#5A5D65" strokeWidth={1.4} />
+        <Path d="m6 8 1.3 1.3L10.4 6" fill="none" stroke="#5A5D65" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
+      </Svg>
+    );
+  }
+  if (kind === 'directions') {
+    return (
+      <Svg height={14} viewBox="0 0 16 16" width={14}>
+        <Path d="m2.2 2.7 11.6 4.7-5 1.2-1.4 4.7-5.2-10.6Z" fill="none" stroke="#5A5D65" strokeLinejoin="round" strokeWidth={1.4} />
+      </Svg>
+    );
+  }
+  return null;
+};
+
+const PreviewActionChip = ({ active = false, kind, label, onPress }: { active?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => (
   <Pressable
     accessibilityLabel={label}
     accessibilityRole={onPress ? 'button' : undefined}
     onPress={onPress}
     style={[styles.previewActionChip, active && styles.previewActionChipActive]}
   >
+    <PreviewActionIcon kind={kind} />
     <Text style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</Text>
   </Pressable>
 );
+
+const formatPreviewCategory = (category: string) => {
+  const normalized = category.trim().toUpperCase();
+  if (normalized.includes('FOOD') || normalized.includes('RESTAURANT') || normalized === '음식점') return '음식점';
+  if (normalized.includes('CAFE') || normalized === '카페') return '카페';
+  if (normalized.includes('MUSIC') || normalized.includes('NIGHTLIFE') || normalized === '음악') return '음악';
+  if (normalized.includes('POP')) return '팝업';
+  if (normalized.includes('FASHION')) return '패션';
+  if (normalized.includes('BEAUTY')) return '뷰티';
+  if (normalized.includes('ART') || normalized.includes('EXHIBITION')) return '전시';
+  if (normalized.includes('HERITAGE') || normalized.includes('CULTURAL')) return '문화재';
+  return category;
+};
 
 const PreviewContent = ({
   bookmarked,
@@ -1037,9 +1081,14 @@ const PreviewContent = ({
   pending: boolean;
   place: DecisionPlace;
 }) => {
+  const { width: windowWidth } = useWindowDimensions();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
     : [imageUrl];
+  const contentWidth = Math.min(windowWidth, 480) - 32;
+  const imageHeight = Math.min(188, Math.max(158, Math.round(contentWidth * 0.47)));
+  const primaryImageWidth = Math.min(252, Math.max(218, Math.round(contentWidth * 0.64)));
+  const secondaryImageWidth = Math.min(184, Math.max(150, Math.round(contentWidth * 0.46)));
 
   return (
     <View style={styles.previewContent}>
@@ -1052,12 +1101,17 @@ const PreviewContent = ({
         >
           <View style={styles.previewTitleRow}>
             <Text numberOfLines={1} style={styles.previewName}>{place.name}</Text>
-            <Text numberOfLines={1} style={styles.previewCategory}>{place.category}</Text>
+            <Text numberOfLines={1} style={styles.previewCategory}>{formatPreviewCategory(place.category)}</Text>
           </View>
-          {fallbackContent ? (
+          {fallbackContent && (fallbackContent.statusDescription || fallbackContent.statusEmphasis) ? (
             <Text numberOfLines={1} style={styles.previewStatus}>
               {fallbackContent.statusDescription}
-              <Text style={styles.previewStatusEmphasis}> · {fallbackContent.statusEmphasis}</Text>
+              {fallbackContent.statusEmphasis ? (
+                <Text style={styles.previewStatusEmphasis}>
+                  {fallbackContent.statusDescription ? ' - ' : ''}
+                  {fallbackContent.statusEmphasis}
+                </Text>
+              ) : null}
             </Text>
           ) : null}
           <Text numberOfLines={1} style={styles.previewAddress}>
@@ -1095,11 +1149,11 @@ const PreviewContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        <PreviewActionChip active label="출발" />
-        <PreviewActionChip label="도착" />
-        <PreviewActionChip label="공유" />
-        <PreviewActionChip label="예약" onPress={onReserve} />
-        <PreviewActionChip label="길찾기" />
+        <PreviewActionChip active kind="departure" label="출발" />
+        <PreviewActionChip kind="arrival" label="도착" />
+        <PreviewActionChip kind="share" label="공유" />
+        <PreviewActionChip kind="reservation" label="예약" onPress={onReserve} />
+        <PreviewActionChip kind="directions" label="길찾기" />
       </ScrollView>
       <ScrollView
         contentContainerStyle={styles.previewImageRow}
@@ -1112,7 +1166,10 @@ const PreviewContent = ({
             accessibilityRole="button"
             key={`${url ?? 'missing'}-${index}`}
             onPress={onDetail}
-            style={[styles.previewImagePanel, index === 0 && styles.previewImagePanelPrimary]}
+            style={[
+              styles.previewImagePanel,
+              { height: imageHeight, width: index === 0 ? primaryImageWidth : secondaryImageWidth },
+            ]}
           >
             <PreviewArtwork imageUrl={url} />
           </Pressable>
@@ -1193,11 +1250,11 @@ const ExpandedPlaceContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        <PreviewActionChip active label="출발" />
-        <PreviewActionChip label="도착" />
-        <PreviewActionChip label="공유" />
-        <PreviewActionChip label="예약" onPress={onReserve} />
-        <PreviewActionChip label="길찾기" />
+        <PreviewActionChip active kind="departure" label="출발" />
+        <PreviewActionChip kind="arrival" label="도착" />
+        <PreviewActionChip kind="share" label="공유" />
+        <PreviewActionChip kind="reservation" label="예약" onPress={onReserve} />
+        <PreviewActionChip kind="directions" label="길찾기" />
       </ScrollView>
 
       <ScrollView
@@ -1476,8 +1533,8 @@ const BottomNavigation = ({
         highlightOpacity={0}
         pointerEvents="none"
         rimColor="rgba(0,0,0,0.06)"
-        style={styles.sendIconSurface}
-        tintColor="#FFFFFF"
+        style={[styles.sendIconSurface, recommendationsActive && styles.sendIconSurfaceActive]}
+        tintColor={recommendationsActive ? '#E5E6EA' : '#FFFFFF'}
       >
         <PlaceRecommendAsset
           color={recommendationsActive ? '#FF1755' : '#3B3B40'}
@@ -1510,6 +1567,7 @@ export default function MapBottomSheet({
   panHandlers,
   places,
   previewFallbackContentByPlaceId,
+  explorationImageUrlsByPlaceId = {},
   recommendationPlaces,
   recommendationsState,
   selectedPlace,
@@ -1532,7 +1590,10 @@ export default function MapBottomSheet({
   const previewPlaces = [...places, ...recommendationPlaces]
     .filter((place, index, items) => items.findIndex((item) => item.id === place.id) === index);
   const { imageUrlsByPlaceId: previewImageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
-  const imageUrlsByPlaceId = previewImageUrlsByPlaceId;
+  const imageUrlsByPlaceId = {
+    ...explorationImageUrlsByPlaceId,
+    ...previewImageUrlsByPlaceId,
+  };
   const contentFadeStart = mediumTranslateY
     + ((collapsedTranslateY - mediumTranslateY) * 0.42);
   const contentOpacity = sheetTranslateY.interpolate({
@@ -2114,12 +2175,7 @@ const styles = StyleSheet.create({
   navigationShadow: {
     backgroundColor: '#FFFFFF',
     borderRadius: 32,
-    elevation: 2,
     flex: 1,
-    shadowColor: '#11151B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
   },
   placeCard: {
     backgroundColor: 'transparent',
@@ -2169,15 +2225,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.82)',
     borderColor: 'rgba(231,232,236,0.90)',
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 39,
+    flexDirection: 'row',
+    gap: 4,
+    height: 36,
     justifyContent: 'center',
     minWidth: 58,
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
   },
   previewActionChipActive: { borderColor: '#FF245B' },
-  previewActionRow: { columnGap: 8, paddingBottom: 12, paddingHorizontal: 1 },
+  previewActionRow: { columnGap: 7, paddingBottom: 12, paddingHorizontal: 1 },
   previewActionText: { color: '#595C64', fontSize: 12, fontWeight: '700' },
   previewActionTextActive: { color: '#FF245B' },
   previewAddress: { color: '#5D6068', fontSize: 13, fontWeight: '600', marginTop: 4 },
@@ -2185,12 +2243,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.82)',
     borderColor: 'rgba(234,235,238,0.90)',
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    height: 40,
-    paddingHorizontal: 13,
+    gap: 5,
+    height: 32,
+    paddingHorizontal: 11,
   },
   previewAmenityIcon: {
     alignItems: 'center',
@@ -2201,7 +2259,7 @@ const styles = StyleSheet.create({
     width: 20,
   },
   previewAmenityIconText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', lineHeight: 16 },
-  previewAmenityRow: { columnGap: 8, flexDirection: 'row', paddingBottom: 11 },
+  previewAmenityRow: { columnGap: 7, flexDirection: 'row', paddingBottom: 10 },
   previewAmenityText: { color: '#5A5D65', fontSize: 12, fontWeight: '600' },
   previewArtwork: { height: '100%', width: '100%' },
   previewArtworkFallback: {
@@ -2240,9 +2298,8 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     height: 174,
     overflow: 'hidden',
-    width: 120,
+    width: 180,
   },
-  previewImagePanelPrimary: { width: 248 },
   previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
   previewName: { color: '#1B1D22', fontSize: 21, fontWeight: '900' },
   previewParkingIcon: { borderRadius: 5 },
@@ -2327,13 +2384,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 32,
-    elevation: 2,
     height: 64,
     justifyContent: 'center',
-    shadowColor: '#11151B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
     width: 64,
   },
   sendIconSurface: {
@@ -2343,6 +2395,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     width: 64,
+  },
+  sendIconSurfaceActive: {
+    backgroundColor: '#E5E6EA',
   },
   sheetContent: { flex: 1 },
 });

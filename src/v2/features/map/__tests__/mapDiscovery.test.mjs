@@ -56,3 +56,28 @@ test('place and card mappers tolerate optional and nullable server fields', () =
     notice: 'Temporary notice', reservable: false, summary: null, supportTags: [],
   });
 });
+
+test('one exploration media item is rendered as one image instead of thumbnail duplication', () => {
+  const card = toPlaceCardViewModel({
+    id: 18,
+    name: '경복궁',
+    address: '서울 종로구 사직로 161',
+  }, undefined, undefined, null, undefined, {
+    placeId: 18,
+    media: [{
+      id: 1,
+      placeId: 18,
+      purpose: 'EXPLORATION',
+      imageUrl: 'https://cdn.example.test/gyeongbokgung.jpg',
+      thumbnailUrl: 'https://cdn.example.test/gyeongbokgung-thumb.jpg',
+      s3Key: null,
+      thumbnailS3Key: null,
+      sourceMapImageId: null,
+      displayOrder: 0,
+      createdAt: '2026-08-26T00:00:00Z',
+      updatedAt: '2026-08-26T00:00:00Z',
+    }],
+  });
+
+  assert.deepEqual(card.imageUrls, ['https://cdn.example.test/gyeongbokgung.jpg']);
+});

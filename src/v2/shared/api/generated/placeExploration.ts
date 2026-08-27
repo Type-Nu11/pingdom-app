@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/location-check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 내 위치 체크인 목록 조회 */
+        get: operations["listMine_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/places": {
         parameters: {
             query?: never;
@@ -124,6 +141,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/places/{id}/media/exploration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 장소 탐색용 미디어 조회
+         * @description 탐색 화면에 노출할 장소 미디어만 조회합니다.
+         */
+        get: operations["getExplorationMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/places/{id}/media/verification": {
         parameters: {
             query?: never;
@@ -184,6 +221,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/places/{placeId}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 장소 리뷰 목록 조회 */
+        get: operations["list_4"];
+        put?: never;
+        /** 장소 리뷰 작성 */
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -220,6 +275,34 @@ export interface components {
              * @example INVALID_TOKEN
              */
             code?: string | null;
+        };
+        LocationCheckInPageResponse: {
+            items?: components["schemas"]["LocationCheckInResponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            limit?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            hasNext?: boolean;
+        };
+        LocationCheckInResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            placeId?: number;
+            /** Format: date */
+            checkInDate?: string;
+            /** Format: date-time */
+            observedAt?: string;
+            /** Format: date-time */
+            recordedAt?: string;
+            /** Format: double */
+            distanceMeters?: number;
+            /** @enum {string} */
+            status?: "PROXIMITY_MATCHED";
         };
         MapClusterItem: {
             clusterId: string;
@@ -344,6 +427,35 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+        };
+        PagePlaceReviewResponse: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["PlaceReviewResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"][];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
+        };
+        PageableObject: {
+            /** Format: int64 */
+            offset?: number;
+            sort?: components["schemas"]["SortObject"][];
+            paged?: boolean;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            unpaged?: boolean;
         };
         PlaceAutocompleteItem: {
             /** Format: int64 */
@@ -562,6 +674,10 @@ export interface components {
             /** Format: date-time */
             canceledAt: string | null;
             cancelReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
             visibleNow: boolean;
         };
         /** @description 하루 중 장소 운영 시간대 */
@@ -715,6 +831,24 @@ export interface components {
              */
             closesAt?: string;
         };
+        PlaceReviewCreateRequest: {
+            recommendReason: string;
+            content: string;
+            imageUrls?: string[];
+        };
+        PlaceReviewResponse: {
+            /** Format: int64 */
+            reviewId?: number;
+            /** Format: int64 */
+            placeId?: number;
+            /** Format: int64 */
+            userId?: number;
+            recommendReason?: string;
+            content?: string;
+            imageUrls?: string[];
+            /** Format: date-time */
+            createdAt?: string;
+        };
         /** @description 방문 결정 화면에 노출하는 진행 중 장소 이벤트 */
         PlaceVisitDecisionEventResponse: {
             /** Format: int64 */
@@ -751,6 +885,13 @@ export interface components {
              * @description 응답의 상태성 데이터를 조회한 시각
              */
             checkedAt: string;
+        };
+        SortObject: {
+            direction?: string;
+            nullHandling?: string;
+            ascending?: boolean;
+            property?: string;
+            ignoreCase?: boolean;
         };
         /** @description 관광객용 장소 카드 조회 응답 */
         TouristPlaceCardResponse: {
@@ -809,6 +950,29 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listMine_4: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LocationCheckInPageResponse"];
+                };
+            };
+        };
+    };
     listPlaces: {
         parameters: {
             query?: {
@@ -1152,6 +1316,32 @@ export interface operations {
             };
         };
     };
+    getExplorationMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 장소 ID
+                 * @example 1
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 탐색용 미디어 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceMediaResponse"];
+                };
+            };
+        };
+    };
     getVerificationMedia: {
         parameters: {
             query?: never;
@@ -1291,6 +1481,57 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_4: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                placeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePlaceReviewResponse"];
+                };
+            };
+        };
+    };
+    create_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                placeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaceReviewCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceReviewResponse"];
                 };
             };
         };

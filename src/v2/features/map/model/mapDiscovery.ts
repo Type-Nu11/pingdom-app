@@ -194,7 +194,7 @@ export function toPlaceCardViewModel(
     : [];
   const mediaUrls = Array.isArray(verificationMedia?.media)
     ? verificationMedia.media
-      .flatMap((item) => [text(item?.thumbnailUrl), text(item?.imageUrl)])
+      .map((item) => text(item?.imageUrl, text(item?.thumbnailUrl)))
       .filter(Boolean)
     : [];
   const imageUrls = [...new Set([text(card.imageUrl), text(detail?.thumbnailUrl), ...mediaUrls])]

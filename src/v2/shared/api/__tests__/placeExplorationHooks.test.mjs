@@ -7,6 +7,7 @@ import {
   createMapLinkConversionMutationOptions,
   createPlaceAutocompleteQueryOptions,
   createPlaceCardQueryOptions,
+  createPlaceExplorationMediaQueryOptions,
   createPlaceListQueryOptions,
   createPlaceMapQueryOptions,
   createPlaceOperatingNoticesQueryOptions,
@@ -42,6 +43,7 @@ test('all place query options forward identifiers and TanStack AbortSignal uncha
     getPlaceCard: async (placeId, signal) => { calls.push(['card', placeId, signal]); return response; },
     getPlaceVisitDecision: async (placeId, signal) => { calls.push(['visit', placeId, signal]); return response; },
     getPlaceOperatingNotices: async (placeId, signal) => { calls.push(['notices', placeId, signal]); return response; },
+    getPlaceExplorationMedia: async (id, signal) => { calls.push(['exploration-media', id, signal]); return response; },
     getPlaceVerificationMedia: async (id, signal) => { calls.push(['media', id, signal]); return response; },
     getRecommendationExplanation: async (requestId, signal) => { calls.push(['explanation', requestId, signal]); return response; },
   };
@@ -54,6 +56,7 @@ test('all place query options forward identifiers and TanStack AbortSignal uncha
     createPlaceCardQueryOptions(17, api),
     createPlaceVisitDecisionQueryOptions(17, api),
     createPlaceOperatingNoticesQueryOptions(17, api),
+    createPlaceExplorationMediaQueryOptions(18, api),
     createPlaceVerificationMediaQueryOptions(18, api),
     createRecommendationExplanationQueryOptions('request-a', api),
   ];
@@ -69,6 +72,7 @@ test('all place query options forward identifiers and TanStack AbortSignal uncha
     ['card', 17],
     ['visit', 17],
     ['notices', 17],
+    ['exploration-media', 18],
     ['media', 18],
     ['explanation', 'request-a'],
   ]);

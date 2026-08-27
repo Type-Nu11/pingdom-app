@@ -19,6 +19,7 @@ export type MerchantId = RouteId<'Merchant'>;
 export type PostId = RouteId<'Post'>;
 export type NotificationId = RouteId<'Notification'>;
 export type ReservationId = RouteId<'Reservation'>;
+export type CheckInId = RouteId<'CheckIn'>;
 
 export type NotificationNavigationContext = {
   body?: string;
@@ -46,6 +47,8 @@ export const MAIN_ROUTES = {
   CreateReservation: 'CreateReservation',
   ReservationDetail: 'ReservationDetail',
   Settings: 'Settings',
+  VisitVerificationPlaces: 'VisitVerificationPlaces',
+  VisitVerificationReview: 'VisitVerificationReview',
 } as const;
 
 export type AuthStackParamList = {
@@ -76,6 +79,11 @@ export type MainStackParamList = {
   Settings: undefined;
   Merchant: {
     merchantId: MerchantId;
+  };
+  VisitVerificationPlaces: undefined;
+  VisitVerificationReview: {
+    checkInId?: CheckInId;
+    placeId: PlaceId;
   };
 };
 
@@ -127,4 +135,8 @@ export function parseNotificationId(value: unknown): NotificationId | null {
 
 export function parseReservationId(value: unknown): ReservationId | null {
   return parsePositiveInteger(value) as ReservationId | null;
+}
+
+export function parseCheckInId(value: unknown): CheckInId | null {
+  return parsePositiveInteger(value) as CheckInId | null;
 }

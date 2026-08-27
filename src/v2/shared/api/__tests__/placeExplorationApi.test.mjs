@@ -47,6 +47,7 @@ test('place exploration API uses current server paths, identifiers, viewport par
     api.getPlaceCard(17, signal),
     api.getPlaceVisitDecision(17, signal),
     api.getPlaceOperatingNotices(17, signal),
+    api.getPlaceExplorationMedia(18, signal),
     api.getPlaceVerificationMedia(18, signal),
     api.getRecommendationExplanation('request/with space', signal),
     api.recordMapLinkConversion(17, conversion, signal),
@@ -60,6 +61,7 @@ test('place exploration API uses current server paths, identifiers, viewport par
     'GET /places/17/card',
     'GET /places/17/visit-decision',
     'GET /places/17/operating-notices',
+    'GET /places/18/media/exploration',
     'GET /places/18/media/verification',
     'GET /places/recommendations/request%2Fwith%20space/explanation',
     'POST /places/17/map-link-conversions',
@@ -88,5 +90,5 @@ test('place exploration API uses current server paths, identifiers, viewport par
     zoom: viewport.zoom,
   });
   assert.ok(calls.every(({ options }) => options.signal === signal));
-  assert.equal(calls[8].body, conversion);
+  assert.equal(calls[9].body, conversion);
 });

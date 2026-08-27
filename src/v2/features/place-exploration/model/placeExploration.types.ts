@@ -72,6 +72,9 @@ export type PlaceVerificationMediaPath =
 export type PlaceVerificationMedia =
   PlaceExplorationOperationResponse<'getVerificationMedia', 200>;
 
+export type PlaceExplorationMedia =
+  PlaceExplorationOperationResponse<'getExplorationMedia', 200>;
+
 export type RecommendationExplanationPath =
   PlaceExplorationOperationPath<'getRecommendationExplanation'>;
 export type RecommendationExplanation =
