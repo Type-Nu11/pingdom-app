@@ -25,6 +25,12 @@ import {
   ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
   getAndroidBackAction,
 } from '../androidBack.ts';
+import {
+  createOnboardingCompletion,
+  getAuthInitialRoute,
+  getInitialAppRoute,
+  getUnauthenticatedNavigationKey,
+} from '../../../v2/features/onboarding-entry/model/onboardingEntry.ts';
 
 test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parsePlaceId(123), 123);
@@ -50,6 +56,40 @@ test('visit verification routes carry numeric server identifiers', () => {
 test('authentication state selects an exclusive root stack', () => {
   assert.equal(getRootRouteName(false), ROOT_ROUTES.Auth);
   assert.equal(getRootRouteName(true), ROOT_ROUTES.Main);
+});
+
+test('auth and onboarding hydration gate every initial route without onboarding flicker', () => {
+  const hydrating = { kind: 'hydrating' };
+  const incomplete = { kind: 'incomplete' };
+  const completion = createOnboardingCompletion({
+    birthYear: 2000,
+    country: 'KR',
+    language: 'ko',
+  });
+  const completed = { completion, kind: 'completed' };
+
+  assert.equal(getInitialAppRoute(true, false, incomplete), 'loading');
+  assert.equal(getInitialAppRoute(false, false, hydrating), 'loading');
+  assert.equal(getInitialAppRoute(false, false, incomplete), 'onboarding');
+  assert.equal(getInitialAppRoute(false, false, completed), 'auth-landing');
+  assert.equal(getInitialAppRoute(false, true, completed), 'main');
+});
+
+test('completion replaces the onboarding stack and logout returns to auth landing', () => {
+  const completion = createOnboardingCompletion({
+    birthYear: 2000,
+    country: 'US',
+    language: 'en',
+  });
+
+  assert.equal(getAuthInitialRoute(), 'Onboarding');
+  assert.equal(getAuthInitialRoute(completion), 'AuthLanding');
+  assert.equal(getUnauthenticatedNavigationKey(), 'unauthenticated-incomplete');
+  assert.equal(
+    getUnauthenticatedNavigationKey(completion),
+    'unauthenticated-completed',
+  );
+  assert.equal(getInitialAppRoute(false, false, { completion, kind: 'completed' }), 'auth-landing');
 });
 
 test('notification payload focuses the place in the map detail sheet', () => {

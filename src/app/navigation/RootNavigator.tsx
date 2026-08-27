@@ -11,6 +11,11 @@ import { useFcmTokenSync } from '../../features/firebase/hooks/useFcmTokenSync';
 import { useForegroundFcmNotifications } from '../../features/firebase/hooks/useForegroundFcmNotifications';
 import { useNotificationOpenSync } from '../../features/firebase/hooks/useNotificationOpenSync';
 import useNotificationState from '../../features/firebase/hooks/useNotificationState';
+import {
+  getInitialAppRoute,
+  getUnauthenticatedNavigationKey,
+  useOnboardingEntry,
+} from '../../v2/features/onboarding-entry';
 import AuthNavigator from './AuthNavigator';
 import { parseDeepLink } from './deepLink';
 import MainNavigator from './MainNavigator';
@@ -32,6 +37,8 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const RootNavigator = () => {
   const { bootstrapAuth, isHydrating, isLoggedIn } = useAuth();
+  const { complete: completeOnboarding, hydrate: hydrateOnboarding, state: onboardingState } =
+    useOnboardingEntry();
   const hydrateMapSettings = useMapSettingsStore((state) => state.hydrateMapSettings);
   const { pendingRoute, consumePendingNotificationRoute } = useNotificationState();
   const [isNavigationReady, setIsNavigationReady] = useState(false);
@@ -47,8 +54,9 @@ const RootNavigator = () => {
 
   useEffect(() => {
     void bootstrapAuth();
+    void hydrateOnboarding();
     void hydrateMapSettings();
-  }, [bootstrapAuth, hydrateMapSettings]);
+  }, [bootstrapAuth, hydrateMapSettings, hydrateOnboarding]);
 
   useEffect(() => {
     let isActive = true;
@@ -134,11 +142,20 @@ const RootNavigator = () => {
     previousIsLoggedIn.current = isLoggedIn;
   }, [consumePendingNotificationRoute, isLoggedIn, pendingRoute]);
 
-  if (isHydrating) {
+  const initialAppRoute = getInitialAppRoute(
+    isHydrating,
+    isLoggedIn,
+    onboardingState,
+  );
+
+  if (initialAppRoute === 'loading') {
     return null;
   }
 
-  const rootRouteName = getRootRouteName(isLoggedIn);
+  const rootRouteName = getRootRouteName(initialAppRoute === 'main');
+  const completion = onboardingState.kind === 'completed'
+    ? onboardingState.completion
+    : undefined;
 
   return (
     <NavigationContainer
@@ -154,10 +171,16 @@ const RootNavigator = () => {
           />
         ) : (
           <Stack.Screen
-            navigationKey="unauthenticated"
+            navigationKey={getUnauthenticatedNavigationKey(completion)}
             name={ROOT_ROUTES.Auth}
-            component={AuthNavigator}
-          />
+          >
+            {() => (
+              <AuthNavigator
+                completion={completion}
+                onComplete={completeOnboarding}
+              />
+            )}
+          </Stack.Screen>
         )}
       </Stack.Navigator>
     </NavigationContainer>

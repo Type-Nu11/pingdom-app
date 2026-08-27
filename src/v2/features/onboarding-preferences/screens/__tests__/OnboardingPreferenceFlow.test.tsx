@@ -113,6 +113,30 @@ describe('OnboardingPreferenceFlow', () => {
     expect(await screen.findByTestId('travel-schedule-screen')).toBeVisible();
   });
 
+  test('stays on the final step when host completion storage fails and allows retry', async () => {
+    await seedPreferences();
+    const onComplete = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('completion write failed'))
+      .mockResolvedValueOnce(undefined);
+    const { user } = await renderWithProviders(
+      <OnboardingPreferenceFlow onBack={jest.fn()} onComplete={onComplete} />,
+    );
+
+    await screen.findByRole('checkbox', { name: '카페' });
+    await user.press(screen.getByRole('button', { name: '계속' }));
+    expect(await screen.findByTestId('travel-schedule-screen')).toBeVisible();
+    await user.press(screen.getByRole('button', { name: '계속' }));
+
+    expect(await screen.findByTestId('travel-schedule-error')).toHaveTextContent(
+      '선택값을 저장하지 못했어요. 계속 버튼을 다시 눌러 주세요.',
+    );
+    expect(onComplete).toHaveBeenCalledTimes(1);
+
+    await user.press(screen.getByRole('button', { name: '계속' }));
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(2));
+  });
+
   test('recovers from a restore failure with safe empty values', async () => {
     jest.spyOn(AsyncStorage, 'getItem').mockRejectedValueOnce(new Error('read failed'));
     await renderWithProviders(

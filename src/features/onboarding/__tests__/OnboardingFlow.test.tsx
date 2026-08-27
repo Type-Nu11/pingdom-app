@@ -46,18 +46,6 @@ jest.mock('../SelectGenderScreen', () => ({
     <MockText>gender</MockText>
   </MockPressable>
 ));
-jest.mock('../LogInForeignScreen', () => ({ onBack }: { onBack: () => void }) => (
-  <MockPressable onPress={onBack} testID="foreign-back">
-    <MockText>foreign login</MockText>
-  </MockPressable>
-));
-jest.mock('../LogInKrScreen', () => () => <MockText>Korean login</MockText>);
-jest.mock('../../auth/screens/login', () => ({
-  LoginFormScreen: () => <MockText>login form</MockText>,
-}));
-jest.mock('../../auth/screens/signup/SignUpDetailsScreen', () => () => (
-  <MockText>signup details</MockText>
-));
 jest.mock('../../../v2/features/onboarding-preferences', () => ({
   OnboardingPreferenceFlow: ({
     initialStep,
@@ -66,7 +54,7 @@ jest.mock('../../../v2/features/onboarding-preferences', () => ({
   }: {
     initialStep?: 'purpose' | 'schedule';
     onBack: () => void;
-    onComplete: () => void;
+    onComplete: () => Promise<void> | void;
   }) => (
     <>
       <MockPressable onPress={onBack} testID="preferences-back">
@@ -81,8 +69,9 @@ jest.mock('../../../v2/features/onboarding-preferences', () => ({
 }));
 
 describe('OnboardingFlow', () => {
-  test('connects gender to V2 preferences and returns login Back to that flow', async () => {
-    await render(<OnboardingFlow />);
+  test('completes only after demographics and V2 preferences are finished', async () => {
+    const onComplete = jest.fn().mockResolvedValue(undefined);
+    await render(<OnboardingFlow onComplete={onComplete} />);
 
     await fireEvent.press(screen.getByTestId('first-next'));
     await fireEvent.press(screen.getByTestId('language-next'));
@@ -91,16 +80,17 @@ describe('OnboardingFlow', () => {
     await fireEvent.press(screen.getByTestId('gender-next'));
     expect(screen.getByTestId('preferences-complete')).toBeVisible();
     expect(screen.getByTestId('preferences-entry-step')).toHaveTextContent('purpose');
+    expect(onComplete).not.toHaveBeenCalled();
 
     await fireEvent.press(screen.getByTestId('preferences-back'));
     expect(screen.getByTestId('gender-next')).toBeVisible();
 
     await fireEvent.press(screen.getByTestId('gender-next'));
     await fireEvent.press(screen.getByTestId('preferences-complete'));
-    expect(screen.getByTestId('foreign-back')).toBeVisible();
-
-    await fireEvent.press(screen.getByTestId('foreign-back'));
-    expect(screen.getByTestId('preferences-complete')).toBeVisible();
-    expect(screen.getByTestId('preferences-entry-step')).toHaveTextContent('schedule');
+    expect(onComplete).toHaveBeenCalledWith({
+      birthYear: 2000,
+      country: 'US',
+      language: 'en',
+    });
   });
 });

@@ -20,7 +20,7 @@ export type OnboardingPreferenceFlowProps = Readonly<{
   initialStep?: OnboardingPreferenceStep;
   language?: string;
   onBack: () => void;
-  onComplete: () => void;
+  onComplete: () => Promise<void> | void;
 }>;
 
 export default function OnboardingPreferenceFlow(props: OnboardingPreferenceFlowProps) {
@@ -39,6 +39,8 @@ function OnboardingPreferenceFlowContent({
 }: OnboardingPreferenceFlowProps) {
   const { i18n, t } = useTranslation();
   const [step, setStep] = useState<OnboardingPreferenceStep>(initialStep);
+  const [completionSaveError, setCompletionSaveError] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const hydrationError = useOnboardingPreferenceStore((state) => state.hydrationError);
   const hydrationStatus = useOnboardingPreferenceStore((state) => state.hydrationStatus);
   const isHydrated = useOnboardingPreferenceStore((state) => state.isHydrated);
@@ -96,15 +98,25 @@ function OnboardingPreferenceFlowContent({
     return () => subscription.remove();
   }, [handleBack]);
 
-  const continueAfterSave = async (next: () => void) => {
-    if (saveStatus === 'saving') {
+  const continueAfterSave = async (next: () => Promise<void> | void) => {
+    if (saveStatus === 'saving' || isCompleting) {
       return;
     }
 
     await persistPreferences();
 
     if (useOnboardingPreferenceStore.getState().saveStatus !== 'error') {
-      next();
+      try {
+        setCompletionSaveError(false);
+        setIsCompleting(true);
+        await next();
+      } catch {
+        // Completion storage is required before leaving onboarding. The caller
+        // intentionally remains on this screen so the user can retry.
+        setCompletionSaveError(true);
+      } finally {
+        setIsCompleting(false);
+      }
     }
   };
 
@@ -117,7 +129,7 @@ function OnboardingPreferenceFlowContent({
     );
   }
 
-  const errorMessage = saveError
+  const errorMessage = saveError || completionSaveError
     ? t('onboarding.preferenceFlow.saveError')
     : hydrationError
       ? t('onboarding.preferenceFlow.restoreError')
@@ -128,7 +140,7 @@ function OnboardingPreferenceFlowContent({
       <TravelPurposeSelectionScreen
         currentStep={CURRENT_PURPOSE_STEP}
         errorMessage={errorMessage}
-        isContinuing={saveStatus === 'saving'}
+        isContinuing={saveStatus === 'saving' || isCompleting}
         onBack={handleBack}
         onChange={updateSelectedPurposes}
         onContinue={() => void continueAfterSave(() => setStep('schedule'))}
@@ -142,7 +154,7 @@ function OnboardingPreferenceFlowContent({
     <TravelScheduleSelectionScreen
       currentStep={CURRENT_SCHEDULE_STEP}
       errorMessage={errorMessage}
-      isContinuing={saveStatus === 'saving'}
+      isContinuing={saveStatus === 'saving' || isCompleting}
       onBack={handleBack}
       onChange={updateSelectedSchedule}
       onContinue={() => void continueAfterSave(onComplete)}
