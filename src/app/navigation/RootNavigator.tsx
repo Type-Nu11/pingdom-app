@@ -11,6 +11,7 @@ import { useFcmTokenSync } from '../../features/firebase/hooks/useFcmTokenSync';
 import { useForegroundFcmNotifications } from '../../features/firebase/hooks/useForegroundFcmNotifications';
 import { useNotificationOpenSync } from '../../features/firebase/hooks/useNotificationOpenSync';
 import useNotificationState from '../../features/firebase/hooks/useNotificationState';
+import { useSyncOnboardingTravelSchedule } from '../../v2/features/onboarding-preferences';
 import AuthNavigator from './AuthNavigator';
 import { parseDeepLink } from './deepLink';
 import MainNavigator from './MainNavigator';
@@ -44,6 +45,7 @@ const RootNavigator = () => {
   useFcmTokenSync(isLoggedIn);
   useForegroundFcmNotifications(isLoggedIn);
   useNotificationOpenSync();
+  useSyncOnboardingTravelSchedule(isLoggedIn);
 
   useEffect(() => {
     void bootstrapAuth();
