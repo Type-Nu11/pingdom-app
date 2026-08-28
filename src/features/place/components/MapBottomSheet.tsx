@@ -523,9 +523,7 @@ const RecommendationBookmarkButton = ({
         }}
         style={({ pressed }) => reduceMotion && pressed ? styles.bookmarkPressed : undefined}
       >
-        {pending ? <Text style={styles.bookmarkPending}>…</Text> : (
-          <BookmarkStar selected={bookmarked} size={size} />
-        )}
+        <BookmarkStar selected={bookmarked} size={size} />
       </Pressable>
     </Animated.View>
   );
@@ -676,7 +674,7 @@ const PlaceTrendCard = ({
     <Pressable
       accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
       accessibilityRole="button"
-      accessibilityState={{ busy: pending, disabled: pending }}
+      accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
       disabled={pending}
       hitSlop={10}
       onPress={(event) => {
@@ -685,9 +683,7 @@ const PlaceTrendCard = ({
       }}
       style={styles.homeBookmarkStar}
     >
-      {pending ? <Text style={styles.homeBookmarkPending}>…</Text> : (
-        <BookmarkStar selected={bookmarked} />
-      )}
+      <BookmarkStar selected={bookmarked} />
     </Pressable>
     <View style={styles.homeTrendCardBody}>
       <Text numberOfLines={1} style={styles.homeTrendCardName}>
@@ -726,7 +722,7 @@ const ExpandedPlaceCard = ({
     <Pressable
       accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
       accessibilityRole="button"
-      accessibilityState={{ busy: pending, disabled: pending }}
+      accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
       disabled={pending}
       hitSlop={10}
       onPress={(event) => {
@@ -735,9 +731,7 @@ const ExpandedPlaceCard = ({
       }}
       style={styles.homeBookmarkStar}
     >
-      {pending ? <Text style={styles.homeBookmarkPending}>…</Text> : (
-        <BookmarkStar selected={bookmarked} />
-      )}
+      <BookmarkStar selected={bookmarked} />
     </Pressable>
     <View style={styles.homeGridCardBody}>
       <Text numberOfLines={2} style={styles.homeGridCardName}>{place.name}</Text>
@@ -1285,7 +1279,7 @@ const PreviewContent = ({
         <Pressable
           accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
           accessibilityRole="button"
-          accessibilityState={{ busy: pending, disabled: pending }}
+          accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
           disabled={pending}
           hitSlop={10}
           onPress={onToggleBookmark}
@@ -1390,6 +1384,7 @@ const ExpandedPlaceContent = ({
         <Pressable
           accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
           accessibilityRole="button"
+          accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
           disabled={pending}
           hitSlop={12}
           onPress={onToggleBookmark}
@@ -2274,7 +2269,6 @@ const styles = StyleSheet.create({
   gridCardDistance: { color: 'rgba(255,255,255,0.9)', flexShrink: 1, fontSize: 9, marginTop: 1, maxWidth: '100%', paddingRight: 24 },
   gridCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 24 },
   gridBookmarkStar: { bottom: 7, padding: 4, position: 'absolute', right: 7, zIndex: 3 },
-  bookmarkPending: { color: '#FFFFFF', fontSize: 24, lineHeight: 28 },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2296,7 +2290,6 @@ const styles = StyleSheet.create({
   homeGridCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 11, marginTop: 2, paddingRight: 29 },
   homeGridCardName: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
   homeBookmarkStar: { bottom: 9, padding: 4, position: 'absolute', right: 10, zIndex: 3 },
-  homeBookmarkPending: { color: '#FFFFFF', fontSize: 24, lineHeight: 35 },
   homeTrendCard: {
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderRadius: 16,

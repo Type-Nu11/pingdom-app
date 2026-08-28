@@ -226,6 +226,26 @@ describe('MapBottomSheet recommendations', () => {
     await act(async () => resolveBookmark());
   });
 
+  test('즐겨찾기 mutation 중에도 낙관적으로 변경된 별 상태를 그대로 표시한다', async () => {
+    await renderWithProviders(
+      <RecommendationFeaturedCard
+        bookmarked
+        onPress={jest.fn()}
+        onToggleBookmark={jest.fn()}
+        pending
+        place={places[0]}
+      />,
+    );
+
+    const bookmark = screen.getByRole('button', { name: '즐겨찾기 해제' });
+    expect(bookmark.props.accessibilityState).toEqual({
+      busy: true,
+      checked: true,
+      disabled: true,
+    });
+    expect(screen.queryByText('…')).not.toBeOnTheScreen();
+  });
+
   test('장소 미리보기의 예약 캡슐은 선택 장소로 예약 생성을 요청한다', async () => {
     const onCreateReservation = jest.fn();
     const selectedPlace = places[0];
