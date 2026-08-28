@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Image } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import { useProfile } from '../../../../features/profile/hooks/useProfile';
+import { useMyReviews } from '../../../../features/profile/hooks/useMyReviews';
+import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
 import { getInitialCalendarMonth } from '../../onboarding-preferences/model/travelScheduleCalendar';
 import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
 import { useCheckIns } from '../../check-ins/hooks/useCheckIns';
@@ -27,13 +29,20 @@ export type MyPageScreenProps = {
   onBack: () => void;
   onOpenProfileEdit: () => void;
   onOpenSettings: () => void;
+  onOpenVerifiedPlaces: () => void;
 };
 
-export default function MyPageScreen({ onBack, onOpenProfileEdit, onOpenSettings }: MyPageScreenProps) {
+export default function MyPageScreen({
+  onBack,
+  onOpenProfileEdit,
+  onOpenSettings,
+  onOpenVerifiedPlaces,
+}: MyPageScreenProps) {
   const { t } = useTranslation();
   const { profile } = useProfile();
   const reservationsQuery = useReservations();
   const couponsQuery = useCoupons();
+  const { reviewCount } = useMyReviews({ limit: 1 });
   const travelSchedulesQuery = useTravelSchedules();
   const checkInsQuery = useCheckIns({ limit: VERIFIED_PLACES_LIMIT });
 
@@ -66,18 +75,11 @@ export default function MyPageScreen({ onBack, onOpenProfileEdit, onOpenSettings
     .map((query) => query.data)
     .filter((place): place is NonNullable<typeof place> => Boolean(place));
 
-  const [favoritedPlaceIds, setFavoritedPlaceIds] = useState<ReadonlySet<number>>(new Set());
+  const { bookmarkedPlaceIds } = useBookmarkedPlaceIds();
+  const toggleBookmark = useToggleBookmark();
 
   const toggleFavorite = (placeId: number) => {
-    setFavoritedPlaceIds((current) => {
-      const next = new Set(current);
-      if (next.has(placeId)) {
-        next.delete(placeId);
-      } else {
-        next.add(placeId);
-      }
-      return next;
-    });
+    toggleBookmark.mutate({ nextBookmarked: !bookmarkedPlaceIds.has(placeId), placeId });
   };
 
   return (
@@ -134,7 +136,7 @@ export default function MyPageScreen({ onBack, onOpenProfileEdit, onOpenSettings
               <DividerIcon height={48} width={1} />
               <StatItem>
                 <StatLabel>{t('myPage.stats.reviews')}</StatLabel>
-                <StatValue>0</StatValue>
+                <StatValue>{reviewCount}</StatValue>
               </StatItem>
               <DividerIcon height={48} width={1} />
               <StatItem>
@@ -154,7 +156,7 @@ export default function MyPageScreen({ onBack, onOpenProfileEdit, onOpenSettings
 
         <Section $borderWidth={0}>
           <SectionContent>
-            <SectionHeaderRow>
+            <SectionHeaderRow accessibilityRole="button" onPress={onOpenVerifiedPlaces}>
               <SectionTitle>{t('myPage.verifiedPlaces.title')}</SectionTitle>
               <ChevronIcon height={24} width={24} />
             </SectionHeaderRow>
@@ -163,7 +165,7 @@ export default function MyPageScreen({ onBack, onOpenProfileEdit, onOpenSettings
                 {verifiedPlaces.map((place) => (
                   <VerifiedPlaceCard
                     address={place.address}
-                    favorited={favoritedPlaceIds.has(place.id)}
+                    favorited={bookmarkedPlaceIds.has(place.id)}
                     imageUrl={place.thumbnailUrl}
                     key={place.id}
                     name={place.name}
@@ -228,7 +230,7 @@ const SectionTitle = styled.Text`
   font-weight: 700;
 `;
 
-const SectionHeaderRow = styled.View`
+const SectionHeaderRow = styled.Pressable`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
