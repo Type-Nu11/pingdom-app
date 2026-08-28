@@ -16,7 +16,12 @@ import { useReservations } from '../../reservations/hooks/useReservations';
 import { useTravelSchedules } from '../../travel-schedules/hooks/useTravelSchedules';
 import TravelCalendar from '../components/TravelCalendar';
 import VerifiedPlaceCard from '../components/VerifiedPlaceCard';
+import VerifiedPlaceCardSkeleton from '../components/VerifiedPlaceCardSkeleton';
 import { getTodayServerTravelDate, selectFeaturedTravelSchedule } from '../model/myPageTravel';
+import {
+  toRenderableVerifiedPlaceEntries,
+  toVerifiedPlaceEntries,
+} from '../model/verifiedPlaceEntries';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
 import DividerIcon from '../../../shared/assets/icons/divider.svg';
@@ -24,6 +29,7 @@ import SettingsIcon from '../../../shared/assets/icons/settings.svg';
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
 
 const VERIFIED_PLACES_LIMIT = 4;
+const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3'] as const;
 
 export type MyPageScreenProps = {
   onBack: () => void;
@@ -71,9 +77,10 @@ export default function MyPageScreen({
     queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
   });
 
-  const verifiedPlaces = placeDetailQueries
-    .map((query) => query.data)
-    .filter((place): place is NonNullable<typeof place> => Boolean(place));
+  const verifiedPlaceEntries = toRenderableVerifiedPlaceEntries(
+    toVerifiedPlaceEntries(placeIds, placeDetailQueries),
+  );
+  const isLoadingCheckIns = checkInsQuery.isLoading;
 
   const { bookmarkedPlaceIds } = useBookmarkedPlaceIds();
   const toggleBookmark = useToggleBookmark();
@@ -160,17 +167,25 @@ export default function MyPageScreen({
               <SectionTitle>{t('myPage.verifiedPlaces.title')}</SectionTitle>
               <ChevronIcon height={24} width={24} />
             </SectionHeaderRow>
-            {verifiedPlaces.length > 0 ? (
+            {isLoadingCheckIns ? (
               <PlacesScroll horizontal showsHorizontalScrollIndicator={false}>
-                {verifiedPlaces.map((place) => (
-                  <VerifiedPlaceCard
-                    address={place.address}
-                    favorited={bookmarkedPlaceIds.has(place.id)}
-                    imageUrl={place.thumbnailUrl}
-                    key={place.id}
-                    name={place.name}
-                    onToggleFavorite={() => toggleFavorite(place.id)}
-                  />
+                {SKELETON_KEYS.map((key) => <VerifiedPlaceCardSkeleton key={key} />)}
+              </PlacesScroll>
+            ) : verifiedPlaceEntries.length > 0 ? (
+              <PlacesScroll horizontal showsHorizontalScrollIndicator={false}>
+                {verifiedPlaceEntries.map((entry) => (
+                  entry.place ? (
+                    <VerifiedPlaceCard
+                      address={entry.place.address}
+                      favorited={bookmarkedPlaceIds.has(entry.placeId)}
+                      imageUrl={entry.place.thumbnailUrl}
+                      key={entry.placeId}
+                      name={entry.place.name}
+                      onToggleFavorite={() => toggleFavorite(entry.placeId)}
+                    />
+                  ) : (
+                    <VerifiedPlaceCardSkeleton key={entry.placeId} />
+                  )
                 ))}
               </PlacesScroll>
             ) : (

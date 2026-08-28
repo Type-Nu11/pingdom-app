@@ -157,6 +157,7 @@ export const resources = {
         verifiedPlaces: {
           title: 'Verified places',
           empty: 'No verified places yet',
+          loading: 'Loading verified places',
           favorite: 'Add to favorites',
           unfavorite: 'Remove from favorites',
         },
@@ -401,6 +402,7 @@ export const resources = {
         verifiedPlaces: {
           title: '인증한 장소',
           empty: '아직 인증한 장소가 없어요',
+          loading: '인증한 장소를 불러오는 중',
           favorite: '즐겨찾기 추가',
           unfavorite: '즐겨찾기 해제',
         },
