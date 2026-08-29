@@ -14,13 +14,15 @@ import { useCheckIns } from '../../check-ins/hooks/useCheckIns';
 import { useCoupons } from '../../offers-coupons/hooks/useOffersCoupons';
 import { useReservations } from '../../reservations/hooks/useReservations';
 import { useTravelSchedules } from '../../travel-schedules/hooks/useTravelSchedules';
+import { ErrorState, LoadingState } from '../../../shared/components';
+import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../components/TravelCalendar';
 import VerifiedPlaceCard from '../components/VerifiedPlaceCard';
 import VerifiedPlaceCardSkeleton from '../components/VerifiedPlaceCardSkeleton';
 import { getTodayServerTravelDate, selectFeaturedTravelSchedule } from '../model/myPageTravel';
 import {
-  toRenderableVerifiedPlaceEntries,
   toVerifiedPlaceEntries,
+  toVerifiedPlaceListState,
 } from '../model/verifiedPlaceEntries';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
@@ -30,6 +32,12 @@ import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.s
 
 const VERIFIED_PLACES_LIMIT = 4;
 const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3'] as const;
+
+// Loading, error and empty slots reserve the height of the content they stand in
+// for, so resolving a section does not shift everything below it.
+const PROFILE_ROW_HEIGHT = 56;
+const TRAVEL_CALENDAR_HEIGHT = 376;
+const VERIFIED_PLACE_CARD_HEIGHT = 222;
 
 export type MyPageScreenProps = {
   onBack: () => void;
@@ -45,10 +53,15 @@ export default function MyPageScreen({
   onOpenVerifiedPlaces,
 }: MyPageScreenProps) {
   const { t } = useTranslation();
-  const { profile } = useProfile();
+  const {
+    isError: isProfileError,
+    isLoading: isProfileLoading,
+    profile,
+    refetch: refetchProfile,
+  } = useProfile();
   const reservationsQuery = useReservations();
   const couponsQuery = useCoupons();
-  const { reviewCount } = useMyReviews({ limit: 1 });
+  const reviewsQuery = useMyReviews({ limit: 1 });
   const travelSchedulesQuery = useTravelSchedules();
   const checkInsQuery = useCheckIns({ limit: VERIFIED_PLACES_LIMIT });
 
@@ -77,10 +90,15 @@ export default function MyPageScreen({
     queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
   });
 
-  const verifiedPlaceEntries = toRenderableVerifiedPlaceEntries(
+  const verifiedPlaceListState = toVerifiedPlaceListState(
     toVerifiedPlaceEntries(placeIds, placeDetailQueries),
   );
   const isLoadingCheckIns = checkInsQuery.isLoading;
+
+  const retryVerifiedPlaces = () => {
+    void checkInsQuery.refetch();
+    placeDetailQueries.forEach((query) => void query.refetch());
+  };
 
   const { bookmarkedPlaceIds } = useBookmarkedPlaceIds();
   const toggleBookmark = useToggleBookmark();
@@ -114,41 +132,79 @@ export default function MyPageScreen({
 
         <Section $borderWidth={8}>
           <SectionContent>
-            <ProfileRow accessibilityRole="button" onPress={onOpenProfileEdit}>
-              <ProfileInfo>
-                {profile?.profileImageUrl ? (
-                  <Avatar source={{ uri: profile.profileImageUrl }} />
-                ) : (
-                  <AvatarPlaceholder height={56} width={56} />
-                )}
-                <ProfileText>
-                  <Username numberOfLines={1}>
-                    {profile?.username ?? t('myPage.profileUnavailable')}
-                  </Username>
-                  {profile?.country ? (
-                    <UserCountry numberOfLines={1}>
-                      {t(`countries.${profile.country.toLowerCase()}`, { defaultValue: profile.country })}
-                    </UserCountry>
-                  ) : null}
-                </ProfileText>
-              </ProfileInfo>
-              <ChevronIcon height={24} width={24} />
-            </ProfileRow>
+            {isProfileLoading ? (
+              <Slot $minHeight={PROFILE_ROW_HEIGHT}>
+                <LoadingState description={t('myPage.profileLoading')} />
+              </Slot>
+            ) : (
+              <>
+                {/*
+                  The row stays tappable even when the profile failed to load:
+                  changing a password or a profile image does not depend on the
+                  profile response, and replacing the row with an error box would
+                  make the edit screen unreachable.
+                */}
+                <ProfileRow accessibilityRole="button" onPress={onOpenProfileEdit}>
+                  <ProfileInfo>
+                    {profile?.profileImageUrl ? (
+                      <Avatar source={{ uri: profile.profileImageUrl }} />
+                    ) : (
+                      <AvatarPlaceholder height={56} width={56} />
+                    )}
+                    <ProfileText>
+                      <Username numberOfLines={1}>
+                        {profile?.username ?? t('myPage.profileUnavailable')}
+                      </Username>
+                      {profile?.country ? (
+                        <UserCountry numberOfLines={1}>
+                          {t(`countries.${profile.country.toLowerCase()}`, { defaultValue: profile.country })}
+                        </UserCountry>
+                      ) : null}
+                    </ProfileText>
+                  </ProfileInfo>
+                  <ChevronIcon height={24} width={24} />
+                </ProfileRow>
+                {isProfileError ? (
+                  <InlineRetryRow>
+                    <InlineRetryText>{t('myPage.profileError')}</InlineRetryText>
+                    <InlineRetryButton
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={() => void refetchProfile()}
+                    >
+                      <InlineRetryLabel>{t('myPage.retry')}</InlineRetryLabel>
+                    </InlineRetryButton>
+                  </InlineRetryRow>
+                ) : null}
+              </>
+            )}
 
             <StatsCard>
               <StatItem>
                 <StatLabel>{t('myPage.stats.reservations')}</StatLabel>
-                <StatValue>{reservationsQuery.data?.totalCount ?? 0}</StatValue>
+                <MyPageStatValue
+                  isError={reservationsQuery.isError}
+                  isLoading={reservationsQuery.isLoading}
+                  value={reservationsQuery.data?.totalCount ?? 0}
+                />
               </StatItem>
               <DividerIcon height={48} width={1} />
               <StatItem>
                 <StatLabel>{t('myPage.stats.reviews')}</StatLabel>
-                <StatValue>{reviewCount}</StatValue>
+                <MyPageStatValue
+                  isError={reviewsQuery.isError}
+                  isLoading={reviewsQuery.isLoading}
+                  value={reviewsQuery.reviewCount}
+                />
               </StatItem>
               <DividerIcon height={48} width={1} />
               <StatItem>
                 <StatLabel>{t('myPage.stats.coupons')}</StatLabel>
-                <StatValue>{couponsQuery.data?.totalCount ?? 0}</StatValue>
+                <MyPageStatValue
+                  isError={couponsQuery.isError}
+                  isLoading={couponsQuery.isLoading}
+                  value={couponsQuery.data?.totalCount ?? 0}
+                />
               </StatItem>
             </StatsCard>
           </SectionContent>
@@ -157,7 +213,21 @@ export default function MyPageScreen({
         <Section $borderWidth={8}>
           <SectionContent>
             <SectionTitle>{t('myPage.travel.title')}</SectionTitle>
-            <TravelCalendar highlightedRange={featuredSchedule} initialMonth={initialCalendarMonth} />
+            {travelSchedulesQuery.isLoading ? (
+              <Slot $minHeight={TRAVEL_CALENDAR_HEIGHT}>
+                <LoadingState description={t('myPage.travel.loading')} />
+              </Slot>
+            ) : travelSchedulesQuery.isError ? (
+              <Slot $minHeight={TRAVEL_CALENDAR_HEIGHT}>
+                <ErrorState
+                  actionLabel={t('myPage.retry')}
+                  description={t('myPage.travel.error')}
+                  onAction={() => void travelSchedulesQuery.refetch()}
+                />
+              </Slot>
+            ) : (
+              <TravelCalendar highlightedRange={featuredSchedule} initialMonth={initialCalendarMonth} />
+            )}
           </SectionContent>
         </Section>
 
@@ -171,9 +241,17 @@ export default function MyPageScreen({
               <PlacesScroll horizontal showsHorizontalScrollIndicator={false}>
                 {SKELETON_KEYS.map((key) => <VerifiedPlaceCardSkeleton key={key} />)}
               </PlacesScroll>
-            ) : verifiedPlaceEntries.length > 0 ? (
+            ) : checkInsQuery.isError || verifiedPlaceListState.kind === 'error' ? (
+              <Slot $minHeight={VERIFIED_PLACE_CARD_HEIGHT}>
+                <ErrorState
+                  actionLabel={t('myPage.retry')}
+                  description={t('myPage.verifiedPlaces.error')}
+                  onAction={retryVerifiedPlaces}
+                />
+              </Slot>
+            ) : verifiedPlaceListState.kind === 'ready' ? (
               <PlacesScroll horizontal showsHorizontalScrollIndicator={false}>
-                {verifiedPlaceEntries.map((entry) => (
+                {verifiedPlaceListState.entries.map((entry) => (
                   entry.place ? (
                     <VerifiedPlaceCard
                       address={entry.place.address}
@@ -189,7 +267,9 @@ export default function MyPageScreen({
                 ))}
               </PlacesScroll>
             ) : (
-              <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText>
+              <Slot $minHeight={VERIFIED_PLACE_CARD_HEIGHT}>
+                <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText>
+              </Slot>
             )}
           </SectionContent>
         </Section>
@@ -249,6 +329,41 @@ const SectionHeaderRow = styled.Pressable`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+`;
+
+const Slot = styled.View<{ $minHeight: number }>`
+  width: 100%;
+  min-height: ${({ $minHeight }) => $minHeight}px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const InlineRetryRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  background-color: ${({ theme }) => theme.colors.dangerSoft};
+`;
+
+const InlineRetryText = styled.Text`
+  flex: 1;
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+`;
+
+const InlineRetryButton = styled.Pressable`
+  align-items: center;
+  justify-content: center;
+`;
+
+const InlineRetryLabel = styled.Text`
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  font-weight: 700;
+  text-decoration-line: underline;
 `;
 
 const ProfileRow = styled.Pressable`

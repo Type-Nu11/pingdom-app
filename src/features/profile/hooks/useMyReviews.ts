@@ -16,6 +16,7 @@ export const useMyReviews = (params: ListMyReviewsParams = {}) => {
   return {
     isError: query.isError,
     isLoading: query.isLoading,
+    refetch: query.refetch,
     reviewCount: query.data?.totalElements ?? 0,
     reviews: query.data?.reviews ?? [],
   };

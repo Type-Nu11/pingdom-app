@@ -8,11 +8,12 @@ import styled from 'styled-components/native';
 import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
 import { useInfiniteCheckIns } from '../../check-ins/hooks/useCheckIns';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
+import { ErrorState } from '../../../shared/components';
 import VerifiedPlaceCard from '../components/VerifiedPlaceCard';
 import VerifiedPlaceCardSkeleton from '../components/VerifiedPlaceCardSkeleton';
 import {
-  toRenderableVerifiedPlaceEntries,
   toVerifiedPlaceEntries,
+  toVerifiedPlaceListState,
   type VerifiedPlaceEntry,
 } from '../model/verifiedPlaceEntries';
 import BackIcon from '../../../shared/assets/icons/back.svg';
@@ -23,7 +24,10 @@ export type VerifiedPlacesScreenProps = {
 
 export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenProps) {
   const { t } = useTranslation();
-  const checkInsQuery = useInfiniteCheckIns();
+  // Each check-in costs one place detail request, so a page here is a fan-out of
+  // the same size. A page of 10 keeps that burst to roughly one screen's worth
+  // of cards instead of loading two screens ahead.
+  const checkInsQuery = useInfiniteCheckIns(VERIFIED_PLACES_PAGE_SIZE);
   const { bookmarkedPlaceIds } = useBookmarkedPlaceIds();
   const toggleBookmark = useToggleBookmark();
 
@@ -38,12 +42,17 @@ export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenPro
     queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
   });
 
-  const entries = toRenderableVerifiedPlaceEntries(
+  const listState = toVerifiedPlaceListState(
     toVerifiedPlaceEntries(placeIds, placeDetailQueries),
   );
   const listData: VerifiedPlaceEntry[] = checkInsQuery.isLoading
     ? SKELETON_ENTRIES
-    : entries;
+    : listState.kind === 'ready' ? listState.entries : [];
+
+  const retry = () => {
+    void checkInsQuery.refetch();
+    placeDetailQueries.forEach((query) => void query.refetch());
+  };
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-verified-places-screen">
@@ -60,6 +69,14 @@ export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenPro
         <Spacer />
       </TopBar>
 
+      {checkInsQuery.isError || listState.kind === 'error' ? (
+        <ErrorState
+          actionLabel={t('myPage.retry')}
+          description={t('myPage.verifiedPlaces.error')}
+          fill
+          onAction={retry}
+        />
+      ) : (
       <FlatList
         columnWrapperStyle={COLUMN_WRAPPER_STYLE}
         contentContainerStyle={CONTENT_CONTAINER_STYLE}
@@ -91,9 +108,12 @@ export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenPro
           )
         )}
       />
+      )}
     </Screen>
   );
 }
+
+const VERIFIED_PLACES_PAGE_SIZE = 10;
 
 // Negative ids cannot collide with a real place id, so the skeleton placeholders
 // keep stable FlatList keys while the first check-in page loads.

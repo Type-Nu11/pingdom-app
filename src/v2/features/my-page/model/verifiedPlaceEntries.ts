@@ -34,13 +34,27 @@ export function toVerifiedPlaceEntries(
   });
 }
 
+export type VerifiedPlaceListState =
+  | Readonly<{ entries: VerifiedPlaceEntry[]; kind: 'ready' }>
+  | Readonly<{ kind: 'empty' }>
+  | Readonly<{ kind: 'error' }>;
+
 /**
- * A slot that failed is dropped: the place cannot be rendered and retrying it
- * inline would stall the rest of the list. Loading slots are kept so the
- * skeleton holds their position.
+ * Separates "the user has no verified places" from "we could not load them".
+ * Dropping every failed slot and falling through to the empty copy would tell a
+ * user with verified places that they have none, so a list whose slots all
+ * failed reports an error instead. A partial failure still renders what loaded.
  */
-export function toRenderableVerifiedPlaceEntries(
+export function toVerifiedPlaceListState(
   entries: readonly VerifiedPlaceEntry[],
-): VerifiedPlaceEntry[] {
-  return entries.filter((entry) => !entry.isError);
+): VerifiedPlaceListState {
+  if (entries.length === 0) {
+    return { kind: 'empty' };
+  }
+
+  if (entries.every((entry) => entry.isError)) {
+    return { kind: 'error' };
+  }
+
+  return { entries: entries.filter((entry) => !entry.isError), kind: 'ready' };
 }
