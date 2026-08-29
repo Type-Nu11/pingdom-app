@@ -33,6 +33,7 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
       onBack={navigation.goBack}
       onOpenProfileEdit={() => {}}
       onOpenSettings={() => {}}
+      onOpenVerifiedPlaces={() => {}}
     />
   );
 }
