@@ -2352,9 +2352,9 @@ const styles = StyleSheet.create({
   homeTrendCardBody: { bottom: 0, left: 0, paddingBottom: 13, paddingHorizontal: 14, position: 'absolute', right: 0 },
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
-  handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 6, width: 64 },
-  handleArea: { alignItems: 'center', height: 48, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 48, justifyContent: 'center', width: 128 },
+  handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 5, width: 56 },
+  handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
+  handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: {
     alignItems: 'center',
