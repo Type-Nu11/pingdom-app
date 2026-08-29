@@ -2,11 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { bookmarkApi } from '../api/bookmarkApi';
 
-// Fetch membership in the largest page the server accepts so a typical account
-// resolves in a single request. The loop below is still capped so an account with
-// an unusually large bookmark list cannot stall the My Page entry.
+// Ask for a large page so a typical account resolves in a single request. The
+// server is free to cap the page size below what we ask for, so the loop is
+// bounded by request count as well as by id count: an account whose bookmarks
+// exceed either bound simply shows the first page's worth of stars rather than
+// holding up the My Page entry with a long request chain.
 const BOOKMARK_MEMBERSHIP_PAGE_SIZE = 100;
 const BOOKMARK_MEMBERSHIP_MAX_IDS = 500;
+const BOOKMARK_MEMBERSHIP_MAX_REQUESTS = 5;
 const BOOKMARK_MEMBERSHIP_STALE_TIME_MS = 5 * 60 * 1000;
 
 export const bookmarkQueryKeys = {
@@ -24,6 +27,7 @@ async function fetchBookmarkedPlaceIds(): Promise<ReadonlySet<number>> {
 
     if (!response.hasNext || page >= response.totalPages) break;
     if (placeIds.size >= BOOKMARK_MEMBERSHIP_MAX_IDS) break;
+    if (page >= BOOKMARK_MEMBERSHIP_MAX_REQUESTS) break;
     page += 1;
   }
 

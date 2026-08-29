@@ -1,11 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing } from 'react-native';
+import React from 'react';
+import { Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
+import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
+
 const CARD_WIDTH = 177;
 const CARD_HEIGHT = 222;
-const PULSE_DURATION_MS = 750;
 
 /**
  * Holds a verified place slot while its place detail loads, so the list keeps a
@@ -14,31 +15,7 @@ const PULSE_DURATION_MS = 750;
  */
 export default function VerifiedPlaceCardSkeleton() {
   const { t } = useTranslation();
-  const pulse = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          duration: PULSE_DURATION_MS,
-          easing: Easing.inOut(Easing.ease),
-          toValue: 1,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          duration: PULSE_DURATION_MS,
-          easing: Easing.inOut(Easing.ease),
-          toValue: 0,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    animation.start();
-    return () => animation.stop();
-  }, [pulse]);
-
-  const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] });
+  const opacity = useSharedPulse();
 
   return (
     <Card
