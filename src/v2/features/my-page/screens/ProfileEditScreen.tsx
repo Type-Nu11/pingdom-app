@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -54,11 +54,17 @@ function getPasswordErrorMessage(
 export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const { profile } = useProfile();
+  const { isLoading: isProfileLoading, profile } = useProfile();
 
   const changeProfileImage = useChangeProfileImage();
 
   const [username, setUsername] = useState(profile?.username ?? '');
+  // The screen can mount before the profile query resolves (a cold entry, or the
+  // cached profile having been garbage collected), which would otherwise leave
+  // the field permanently blank because useState only reads its initial value
+  // once. Seed it when the profile first arrives, and never again, so a value
+  // the user has already typed is not overwritten by a later refetch.
+  const hasSeededUsername = useRef(profile !== null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -66,6 +72,13 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (hasSeededUsername.current || !profile) return;
+
+    hasSeededUsername.current = true;
+    setUsername(profile.username);
+  }, [profile]);
 
   const handleEditAvatar = async () => {
     if (changeProfileImage.isPending) return;
@@ -84,7 +97,9 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   };
 
   const handleSave = async () => {
-    if (isSubmitting) return;
+    // Saving before the profile resolves would compare the typed username
+    // against an unknown current one and could send a redundant change request.
+    if (isSubmitting || isProfileLoading) return;
 
     const trimmedUsername = username.trim();
     const wantsPasswordChange = currentPassword.length > 0
@@ -162,7 +177,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
           <IconButton
             accessibilityLabel={t('myPage.profileEdit.save')}
             accessibilityRole="button"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isProfileLoading}
             hitSlop={8}
             onPress={() => void handleSave()}
           >
@@ -282,7 +297,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
 
         <SaveButton
           accessibilityRole="button"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isProfileLoading}
           onPress={() => void handleSave()}
         >
           <SaveButtonText>
