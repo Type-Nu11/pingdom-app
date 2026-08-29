@@ -1,6 +1,8 @@
 import { api } from '../../../shared/api/apiClient';
 import type { ApiCodeErrorResponse, ApiFieldErrorResponse } from '../../../types/api.types';
 
+export type UserRole = 'ADMIN' | 'MERCHANT_OWNER' | 'USER';
+
 export type ProfileResponse = {
   birthYear: number;
   country: string;
@@ -8,6 +10,8 @@ export type ProfileResponse = {
   id: number;
   language: string;
   profileImageUrl: string | null;
+  /** Absent on older server builds; treat missing as a plain user. */
+  role?: UserRole;
   username: string;
 };
 

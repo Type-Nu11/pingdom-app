@@ -9,6 +9,9 @@ import ReservationDetailScreen from '../../v2/features/reservations/screens/Rese
 import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
 import MyPageScreen from '../../v2/features/my-page/screens/MyPageScreen';
 import ProfileEditScreen from '../../v2/features/my-page/screens/ProfileEditScreen';
+import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlacesScreen';
+import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/MerchantMyPageContainer';
+import { useProfile } from '../../features/profile/hooks/useProfile';
 import { theme as v2Theme } from '../../v2/shared/theme';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
@@ -82,19 +85,50 @@ const ProfileRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
   />
 );
 
-const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => (
-  <V2ScreenBoundary>
-    <MyPageScreen
-      onBack={navigation.goBack}
-      onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
-      onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
-    />
-  </V2ScreenBoundary>
-);
+const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
+  const { profile } = useProfile();
+
+  if (profile?.role === 'MERCHANT_OWNER') {
+    return (
+      <V2ScreenBoundary>
+        <MerchantMyPageContainer
+          onBack={navigation.goBack}
+          onCreateEvent={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+          onEditAddress={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+          onEditBusinessHours={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+          onEditPhoneNumber={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+          onOpenAllReviews={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
+          onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+          onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
+          onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
+          userProfileImageUrl={profile.profileImageUrl}
+          username={profile.username}
+        />
+      </V2ScreenBoundary>
+    );
+  }
+
+  return (
+    <V2ScreenBoundary>
+      <MyPageScreen
+        onBack={navigation.goBack}
+        onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+        onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
+        onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
+      />
+    </V2ScreenBoundary>
+  );
+};
 
 const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileEdit'>) => (
   <V2ScreenBoundary>
     <ProfileEditScreen onBack={navigation.goBack} />
+  </V2ScreenBoundary>
+);
+
+const VerifiedPlacesRouteScreen = ({ navigation }: MainScreenProps<'VerifiedPlaces'>) => (
+  <V2ScreenBoundary>
+    <VerifiedPlacesScreen onBack={navigation.goBack} />
   </V2ScreenBoundary>
 );
 
@@ -169,6 +203,7 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.MyPage} component={MyPageRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
