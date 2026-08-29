@@ -1,8 +1,9 @@
-import { screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../v2/shared/testing/testProviders';
+import { runTimingMotion } from '../../../../v2/shared/motion';
 import MapBottomSheet, {
   RecommendationFeaturedCard,
   type DecisionPlace,
@@ -11,6 +12,17 @@ import MapBottomSheet, {
 jest.mock('../../hooks/usePlacePreviewImages', () => ({
   usePlacePreviewImages: () => ({ imageUrlsByPlaceId: {} }),
 }));
+
+jest.mock('../../../../v2/shared/motion', () => {
+  const actual = jest.requireActual('../../../../v2/shared/motion');
+  return {
+    ...actual,
+    runTimingMotion: jest.fn((value: Animated.Value, toValue: number) => {
+      value.setValue(toValue);
+      return null;
+    }),
+  };
+});
 
 const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
   address: `테스트 주소 ${index + 1}`,
@@ -70,7 +82,7 @@ describe('MapBottomSheet recommendations', () => {
     await result.user.press(screen.getByRole('button', { name: `${longName}, 1km` }));
     expect(onPress).toHaveBeenCalledTimes(1);
 
-    result.unmount();
+    await result.unmount();
     await renderWithProviders(
       <RecommendationFeaturedCard
         bookmarked={false}
@@ -90,6 +102,148 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryByText(`추천 순위 1 · ${longSource}`)).not.toBeOnTheScreen();
     expect(screen.getByText('장소명 없음')).toBeVisible();
     expect(screen.getByText('이미지 없음')).toBeVisible();
+  });
+
+  test('원격 이미지 load/error와 URI 변경 시 fade 및 fallback 상태를 초기화한다', async () => {
+    const props = {
+      bookmarked: false,
+      onPress: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined),
+      pending: false,
+      place: places[0],
+    };
+    const result = await renderWithProviders(
+      <RecommendationFeaturedCard {...props} imageUrl="https://example.com/a.jpg" />,
+    );
+
+    const firstImage = result.getByTestId('recommendation-featured-image');
+    await fireEvent(firstImage, 'load');
+    expect(jest.mocked(runTimingMotion)).toHaveBeenCalledWith(
+      expect.any(Animated.Value),
+      1,
+      expect.objectContaining({ useNativeDriver: true }),
+    );
+
+    await fireEvent(firstImage, 'error');
+    expect(result.getByText('이미지를 불러오지 못했어요')).toBeVisible();
+
+    await result.rerender(
+      <RecommendationFeaturedCard {...props} imageUrl="https://example.com/b.jpg" />,
+    );
+    expect(result.queryByText('이미지를 불러오지 못했어요')).not.toBeOnTheScreen();
+    expect(result.getByTestId('recommendation-featured-image').props.source)
+      .toEqual({ uri: 'https://example.com/b.jpg' });
+  });
+
+  test('loading/error/empty/ready 전환에서 현재 상태만 렌더링한다', async () => {
+    const commonProps = {
+      activeFilters: [],
+      bookmarkedPlaceIds: {},
+      collapsedTranslateY: 600,
+      content: { type: 'recommendations' } as const,
+      height: 700,
+      mediumTranslateY: 300,
+      onBackHome: jest.fn(),
+      onCouponPress: jest.fn(),
+      onDetailPress: jest.fn(),
+      onFilterPress: jest.fn(),
+      onGoNowPress: jest.fn(),
+      onHandlePress: jest.fn(),
+      onPlacePress: jest.fn(),
+      onQueryChange: jest.fn(),
+      onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(),
+      onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined),
+      panHandlers: {} as GestureResponderHandlers,
+      places: [],
+      selectedPlace: null,
+      sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(0),
+      snapPoint: 'medium' as const,
+    };
+    const result = await renderWithProviders(
+      <MapBottomSheet {...commonProps} recommendationPlaces={[]} recommendationsState="loading" />,
+    );
+
+    expect(result.getByTestId('recommendation-state-loading')).toBeVisible();
+    expect(result.queryByTestId('recommendation-card-1')).not.toBeOnTheScreen();
+    await result.rerender(
+      <MapBottomSheet {...commonProps} recommendationPlaces={[]} recommendationsState="error" />,
+    );
+    expect(result.getByTestId('recommendation-state-error')).toBeVisible();
+    expect(result.queryByTestId('recommendation-state-loading')).not.toBeOnTheScreen();
+    await result.rerender(
+      <MapBottomSheet {...commonProps} recommendationPlaces={[]} recommendationsState="empty" />,
+    );
+    expect(result.getByTestId('recommendation-state-empty')).toBeVisible();
+    await result.rerender(
+      <MapBottomSheet
+        {...commonProps}
+        recommendationPlaces={places.slice(0, 1)}
+        recommendationsState="ready"
+      />,
+    );
+    expect(result.getByTestId('recommendation-card-1')).toBeVisible();
+    expect(result.queryByTestId('recommendation-state-empty')).not.toBeOnTheScreen();
+    expect(result.queryByText('PlaceReport')).not.toBeOnTheScreen();
+  });
+
+  test('카드 연속 탭과 nested 즐겨찾기 mutation 중복을 각각 차단한다', async () => {
+    const onPress = jest.fn();
+    let resolveBookmark!: () => void;
+    const bookmarkPromise = new Promise<void>((resolve) => {
+      resolveBookmark = resolve;
+    });
+    const onToggleBookmark = jest.fn(() => bookmarkPromise);
+    const result = await renderWithProviders(
+      <RecommendationFeaturedCard
+        bookmarked={false}
+        onPress={onPress}
+        onToggleBookmark={onToggleBookmark}
+        pending={false}
+        place={places[0]}
+      />,
+    );
+
+    const card = result.getByTestId('recommendation-card-1');
+    await fireEvent.press(card);
+    await fireEvent.press(card);
+    expect(onPress).toHaveBeenCalledTimes(1);
+
+    const bookmark = result.getByRole('button', { name: '즐겨찾기' });
+    const event = { stopPropagation: jest.fn() };
+    await fireEvent.press(bookmark, event);
+    await fireEvent.press(bookmark, event);
+    expect(onToggleBookmark).toHaveBeenCalledTimes(1);
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(bookmark.props.accessibilityState).toEqual({
+      busy: false,
+      checked: false,
+      disabled: false,
+    });
+
+    await act(async () => resolveBookmark());
+  });
+
+  test('즐겨찾기 mutation 중에도 낙관적으로 변경된 별 상태를 그대로 표시한다', async () => {
+    await renderWithProviders(
+      <RecommendationFeaturedCard
+        bookmarked
+        onPress={jest.fn()}
+        onToggleBookmark={jest.fn()}
+        pending
+        place={places[0]}
+      />,
+    );
+
+    const bookmark = screen.getByRole('button', { name: '즐겨찾기 해제' });
+    expect(bookmark.props.accessibilityState).toEqual({
+      busy: true,
+      checked: true,
+      disabled: true,
+    });
+    expect(screen.queryByText('…')).not.toBeOnTheScreen();
   });
 
   test('장소 미리보기의 예약 캡슐은 선택 장소로 예약 생성을 요청한다', async () => {
@@ -210,7 +364,7 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.getByText('나만을 위한 추천 장소를 불러오고 있어요')).toBeVisible();
     expect(screen.queryByText('현재 위치와 가까운 장소입니다')).not.toBeOnTheScreen();
-    loading.unmount();
+    await loading.unmount();
 
     await renderWithProviders(
       <MapBottomSheet
@@ -261,12 +415,25 @@ describe('MapBottomSheet recommendations', () => {
     const nationalFeed = screen.getByRole('tab', { name: '전국 트렌드' });
     expect(localFeed.props.accessibilityState).toEqual({ selected: true });
     expect(nationalFeed.props.accessibilityState).toEqual({ selected: false });
+    fireEvent(screen.getByTestId('feed-segment-control'), 'layout', {
+      nativeEvent: { layout: { height: 48, width: 360, x: 0, y: 0 } },
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('feed-segment-indicator')).toBeOnTheScreen();
+    });
+    expect(screen.getByTestId('feed-content-transition')).toBeOnTheScreen();
 
+    (runTimingMotion as jest.Mock).mockClear();
     await user.press(nationalFeed);
     expect(screen.getByRole('tab', { name: '우리 지역 핫플' }).props.accessibilityState)
       .toEqual({ selected: false });
     expect(screen.getByRole('tab', { name: '전국 트렌드' }).props.accessibilityState)
       .toEqual({ selected: true });
+    expect(runTimingMotion).toHaveBeenCalledWith(
+      expect.any(Animated.Value),
+      1,
+      expect.objectContaining({ useNativeDriver: true }),
+    );
   });
 
   test('확장 홈에서 서버 장소의 전체 카테고리 필터를 제공한다', async () => {

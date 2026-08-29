@@ -24,7 +24,6 @@ export async function configureForegroundNotifications(): Promise<void> {
   await Notifications.setNotificationChannelAsync(FOREGROUND_CHANNEL_ID, {
     importance: Notifications.AndroidImportance.HIGH,
     name: 'Foreground Notifications',
-    sound: 'default',
     vibrationPattern: [0, 250, 250, 250],
   });
 }
