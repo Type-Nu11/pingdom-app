@@ -11,15 +11,12 @@ import { useFcmTokenSync } from '../../features/firebase/hooks/useFcmTokenSync';
 import { useForegroundFcmNotifications } from '../../features/firebase/hooks/useForegroundFcmNotifications';
 import { useNotificationOpenSync } from '../../features/firebase/hooks/useNotificationOpenSync';
 import useNotificationState from '../../features/firebase/hooks/useNotificationState';
-<<<<<<< HEAD
 import { useSyncOnboardingTravelSchedule } from '../../v2/features/onboarding-preferences';
-=======
 import {
   getInitialAppRoute,
   getUnauthenticatedNavigationKey,
   useOnboardingEntry,
 } from '../../v2/features/onboarding-entry';
->>>>>>> origin/dev
 import AuthNavigator from './AuthNavigator';
 import { parseDeepLink } from './deepLink';
 import MainNavigator from './MainNavigator';

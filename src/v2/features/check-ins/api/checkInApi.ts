@@ -73,26 +73,12 @@ export function createCheckInApi(client: ApiClient = apiClient) {
         { signal },
       ),
 
-    listCheckIns: async (
+    listCheckIns: (
       params: ListCheckInsParams = {},
       signal?: AbortSignal,
-<<<<<<< HEAD
-    ): Promise<LocationCheckInPage> => {
-      // The live server responds with `items`/`totalElements`; the generated
-      // contract (last regenerated against an older spec) still expects
-      // `checkIns`/`totalCount`. Normalize so callers can rely on either.
-      const raw = await client.get<Record<string, unknown>>('/location-check-ins', { params, signal });
-      return {
-        ...raw,
-        checkIns: (raw.items ?? raw.checkIns ?? []) as LocationCheckInPage['checkIns'],
-        totalCount: (raw.totalElements ?? raw.totalCount ?? 0) as LocationCheckInPage['totalCount'],
-      } as LocationCheckInPage;
-    },
-=======
     ): Promise<LocationCheckInPage> => client
       .get<LocationCheckInWirePage>('/location-check-ins', { params, signal })
       .then((page) => normalizeLocationCheckInPage(page, params)),
->>>>>>> origin/dev
   };
 }
 

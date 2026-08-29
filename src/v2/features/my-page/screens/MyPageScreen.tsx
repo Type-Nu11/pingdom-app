@@ -117,7 +117,7 @@ export default function MyPageScreen({
             hitSlop={8}
             onPress={onBack}
           >
-            <BackIcon height={44} width={44} />
+            <BackIcon height={84} style={TOP_BAR_ICON_STYLE} width={80} />
           </IconButton>
           <TopBarTitle>{t('myPage.title')}</TopBarTitle>
           <IconButton
@@ -126,7 +126,7 @@ export default function MyPageScreen({
             hitSlop={8}
             onPress={onOpenSettings}
           >
-            <SettingsIcon height={44} width={44} />
+            <SettingsIcon height={84} style={TOP_BAR_ICON_STYLE} width={80} />
           </IconButton>
         </TopBar>
 
@@ -282,6 +282,7 @@ export default function MyPageScreen({
 }
 
 const CONTENT_CONTAINER_STYLE = { flexGrow: 1 } as const;
+const TOP_BAR_ICON_STYLE = { position: 'absolute' } as const;
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -296,17 +297,27 @@ const TopBar = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 0 ${({ theme }) => theme.spacing.lg}px;
+  height: 84px;
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
 `;
 
 const IconButton = styled.Pressable`
   align-items: center;
   justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ theme }) => theme.colors.background};
+  shadow-color: #000;
+  shadow-offset: 0 4px;
+  shadow-opacity: 0.06;
+  shadow-radius: 10px;
+  elevation: 2;
 `;
 
 const TopBarTitle = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
 `;
 
@@ -324,7 +335,7 @@ const SectionContent = styled.View`
 
 const SectionTitle = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-size: 20px;
   font-weight: 700;
 `;
 

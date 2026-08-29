@@ -134,7 +134,7 @@ const NavButton = styled.Pressable`
 
 const MonthLabel = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-size: 20px;
   font-weight: 700;
 `;
 
@@ -159,7 +159,7 @@ const Grid = styled.View`
 const WeekRow = styled.View<{ $highlighted: boolean }>`
   flex-direction: row;
   align-items: center;
-  height: 48px;
+  height: 44px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ $highlighted }) => ($highlighted ? 'rgba(255, 201, 211, 0.48)' : 'transparent')};
 `;
@@ -179,8 +179,8 @@ const DayText = styled.Text<{ $inRange: boolean; $weekday: number }>`
 const DayBadge = styled.View`
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.primary};
 `;
