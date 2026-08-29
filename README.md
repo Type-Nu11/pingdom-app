@@ -12,15 +12,15 @@ Pingdom은 외국인 관광객이 한국의 장소와 로컬 경험을 탐색하
 
 ## Project Status
 
-현재 **SNAPSHOT 개발 단계**입니다.
+현재 **GA(General Availability)** 단계입니다.
 
-프로젝트 요구사항과 V2 구조를 검증 및 개발하고 있으며, 안정화 이전까지 기능, 구성, 인터페이스 및 API 연동 방식이 변경될 수 있습니다.
+안정화된 서비스를 제공하며, 기능, 구성, 인터페이스 및 API 연동 방식의 변경은 Release와 변경 이력을 통해 관리합니다.
 
 | Item        | Status         |
 | ----------- | -------------- |
-| Development | `In Progress`  |
-| Release     | `SNAPSHOT`     |
-| Stability   | `Experimental` |
+| Development | `Generally Available` |
+| Release     | `GA` |
+| Stability   | `Stable` |
 
 ## Repository Role
 
