@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { OnboardingPreferenceFlow } from '../../v2/features/onboarding-preferences';
 import { setLanguage as setV2Language } from '../../v2/shared/i18n';
 import { LoginFormScreen } from '../auth/screens/login';
+import { PasswordResetScreen } from '../auth/screens/password-reset';
 import SignUpDetailsScreen from '../auth/screens/signup/SignUpDetailsScreen';
 import LogInForeignScreen from './LogInForeignScreen';
 import LogInKrScreen from './LogInKrScreen';
@@ -22,6 +23,7 @@ type Step =
   | 'login-kr'
   | 'login-foreign'
   | 'login'
+  | 'password-reset'
   | 'signup-details';
 
 type PreferenceEntryStep = 'purpose' | 'schedule';
@@ -124,7 +126,16 @@ export default function OnboardingFlow() {
       return (
         <LoginFormScreen
           onBack={() => setStep('login-kr')}
+          onFindPassword={() => setStep('password-reset')}
           onSignup={() => setStep('signup-details')}
+        />
+      );
+
+    case 'password-reset':
+      return (
+        <PasswordResetScreen
+          onBack={() => setStep('login')}
+          onCompleted={() => setStep('login')}
         />
       );
 

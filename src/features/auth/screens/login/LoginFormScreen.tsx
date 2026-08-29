@@ -23,10 +23,11 @@ const BACK_SVG = `<svg width="9" height="18" viewBox="0 0 9 18" fill="none" xmln
 
 type Props = {
   onBack: () => void;
+  onFindPassword?: () => void;
   onSignup?: () => void;
 };
 
-export default function LoginFormScreen({ onBack, onSignup }: Props) {
+export default function LoginFormScreen({ onBack, onFindPassword, onSignup }: Props) {
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -132,7 +133,9 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
         <View style={styles.linkRow}>
           <Pressable><Text style={styles.linkText}>{t('auth.login.findUsername')}</Text></Pressable>
           <View style={styles.linkSeparator} />
-          <Pressable><Text style={styles.linkText}>{t('auth.login.findPassword')}</Text></Pressable>
+          <Pressable onPress={onFindPassword}>
+            <Text style={styles.linkText}>{t('auth.login.findPassword')}</Text>
+          </Pressable>
           <View style={styles.linkSeparator} />
           <Pressable onPress={onSignup}><Text style={styles.linkText}>{t('auth.login.signup')}</Text></Pressable>
         </View>
