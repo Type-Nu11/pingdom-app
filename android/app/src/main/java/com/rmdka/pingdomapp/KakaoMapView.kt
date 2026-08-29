@@ -64,6 +64,7 @@ class KakaoMapView(
         private const val USER_LOCATION_COLOR = 0xFFFF1956.toInt()
         private const val PLACE_MARKER_ANCHOR_X = 0.5f
         private const val PLACE_MARKER_TIP_RATIO_Y = 0.62f
+        private const val PLACE_MARKER_WIDTH_DP = 32f
         private const val DEFAULT_MARKER_FALLBACK_TIP_RATIO_Y = 35f / 37f
         private const val HOT_MARKER_FALLBACK_TIP_RATIO_Y = 49f / 81f
         private const val PLACE_MARKER_SIDE_SAFE_PADDING_PX = 12
@@ -364,31 +365,41 @@ class KakaoMapView(
             "drawable",
             reactContext.packageName
         )
-        val originalBitmap = BitmapFactory.decodeResource(
+        val decodedBitmap = BitmapFactory.decodeResource(
             resources,
             if (resourceId != 0) resourceId else fallbackResourceId
         )
+        val targetWidthPx = (PLACE_MARKER_WIDTH_DP * resources.displayMetrics.density).roundToInt()
+        val targetHeightPx = (decodedBitmap.height * (targetWidthPx.toFloat() / decodedBitmap.width)).roundToInt()
+        val markerBitmap = if (decodedBitmap.width == targetWidthPx) {
+            decodedBitmap
+        } else {
+            Bitmap.createScaledBitmap(decodedBitmap, targetWidthPx, targetHeightPx, true)
+        }
         val bottomSafePaddingPx =
             if (markerType == "hot") HOT_MARKER_BOTTOM_SAFE_PADDING_PX else NORMAL_MARKER_BOTTOM_SAFE_PADDING_PX
         val canvasBitmap = createMarkerCanvasBitmap(
-            source = originalBitmap,
+            source = markerBitmap,
             sideSafePaddingPx = PLACE_MARKER_SIDE_SAFE_PADDING_PX,
             bottomSafePaddingPx = bottomSafePaddingPx
         )
         val rawAnchorY = PLACE_MARKER_TIP_RATIO_Y
         val anchorY = computePaddedAnchorY(
-            rawHeightPx = originalBitmap.height,
+            rawHeightPx = markerBitmap.height,
             rawAnchorY = rawAnchorY,
             topPaddingPx = 0,
             bottomPaddingPx = bottomSafePaddingPx
         )
 
-        if (originalBitmap != canvasBitmap) {
-            originalBitmap.recycle()
+        if (decodedBitmap != markerBitmap) {
+            decodedBitmap.recycle()
+        }
+        if (markerBitmap != canvasBitmap) {
+            markerBitmap.recycle()
         }
         Log.d(
             TAG,
-            "placeMarkerBitmap type=$markerType originalSize=${originalBitmap.width}x${originalBitmap.height} canvasSize=${canvasBitmap.width}x${canvasBitmap.height} anchorY=$anchorY"
+            "placeMarkerBitmap type=$markerType canvasSize=${canvasBitmap.width}x${canvasBitmap.height} anchorY=$anchorY"
         )
 
         return PlaceMarkerBitmapSpec(

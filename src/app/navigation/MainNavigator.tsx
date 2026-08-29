@@ -13,6 +13,10 @@ import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlac
 import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/MerchantMyPageContainer';
 import { useProfile } from '../../features/profile/hooks/useProfile';
 import { theme as v2Theme } from '../../v2/shared/theme';
+import {
+  VisitVerificationPlacesScreen,
+  VisitVerificationReviewScreen,
+} from '../../v2/features/place-visit-verification';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../features/settings/screens/SettingsScreen';
 import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
@@ -20,6 +24,7 @@ import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
   MAIN_ROUTES,
+  parseCheckInId,
   parsePlaceId,
   parseReservationId,
   type MainScreenProps,
@@ -46,6 +51,7 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
 
   return (
     <MapRouteContainer>
+<<<<<<< HEAD
       <MapScreen
         initialSection={initialSection}
         openedBookmarkedPlaceId={focusedPlaceId ?? null}
@@ -67,6 +73,32 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
           }
         }}
       />
+=======
+      <V2ScreenBoundary>
+        <MapScreen
+          initialSection={initialSection}
+          openedBookmarkedPlaceId={focusedPlaceId ?? null}
+          onClearOpenedBookmarkedPlace={clearFocusedPlace}
+          onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
+          onCreateReservation={(place) => {
+            const placeId = parsePlaceId(place.id);
+            if (placeId) navigation.navigate(MAIN_ROUTES.CreateReservation, {
+              category: place.category,
+              imageUrl: place.imageUrl,
+              placeId,
+              placeName: place.name,
+            });
+          }}
+          onOpenReservation={(value) => {
+            const reservationId = parseReservationId(value);
+            if (reservationId) {
+              navigation.navigate(MAIN_ROUTES.ReservationDetail, { reservationId });
+            }
+          }}
+          onOpenVisitVerification={() => navigation.navigate(MAIN_ROUTES.VisitVerificationPlaces)}
+        />
+      </V2ScreenBoundary>
+>>>>>>> origin/dev
     </MapRouteContainer>
   );
 };
@@ -191,6 +223,32 @@ const MerchantRouteScreen = ({ navigation, route }: MainScreenProps<'Merchant'>)
   />
 );
 
+const VisitVerificationPlacesRouteScreen = ({ navigation }: MainScreenProps<'VisitVerificationPlaces'>) => (
+  <V2ScreenBoundary>
+    <VisitVerificationPlacesScreen
+      onBack={navigation.goBack}
+      onSelectPlace={({ checkInId: value, placeId: placeValue }) => {
+        const checkInId = parseCheckInId(value);
+        const placeId = parsePlaceId(placeValue);
+        if (checkInId && placeId) {
+          navigation.navigate(MAIN_ROUTES.VisitVerificationReview, { checkInId, placeId });
+        }
+      }}
+    />
+  </V2ScreenBoundary>
+);
+
+const VisitVerificationReviewRouteScreen = ({ navigation, route }: MainScreenProps<'VisitVerificationReview'>) => (
+  <V2ScreenBoundary>
+    <VisitVerificationReviewScreen
+      checkInId={route.params.checkInId}
+      onBack={navigation.goBack}
+      onComplete={() => navigation.popTo(MAIN_ROUTES.Map)}
+      placeId={route.params.placeId}
+    />
+  </V2ScreenBoundary>
+);
+
 const MainNavigator = () => (
   <Stack.Navigator
     initialRouteName={MAIN_ROUTES.Map}
@@ -208,6 +266,8 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Merchant} component={MerchantRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRouteScreen} />
   </Stack.Navigator>
 );
 

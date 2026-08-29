@@ -118,6 +118,15 @@ describe('MapScreen', () => {
     expect(within(selectedCard).getByText(/^120m/)).toBeVisible();
   });
 
+  test('방문 검증 CTA가 명확한 route로 한 번만 이동한다', async () => {
+    const { user } = await renderMapScreen();
+
+    await user.press(screen.getByTestId('visit-verification-map-cta'));
+    await user.press(screen.getByTestId('visit-verification-map-cta'));
+    expect(navigation.navigate).toHaveBeenCalledTimes(1);
+    expect(navigation.navigate).toHaveBeenCalledWith(V2_ROUTES.VisitVerificationPlaces);
+  });
+
   test('마커 재탭 또는 닫기 버튼으로 선택을 해제하고, 카드에서 실제 장소 식별자로 상세에 진입한다', async () => {
     const { user } = await renderMapScreen();
 

@@ -32,6 +32,7 @@ type MapTopOverlayProps = {
   onSearchFocus: () => void;
   onSubmitSearch: () => void;
   query: string;
+  showCategories?: boolean;
 };
 
 const categories: Array<{
@@ -57,6 +58,7 @@ export default function MapTopOverlay({
   onProfilePress,
   onSearchFocus,
   query,
+  showCategories = true,
 }: MapTopOverlayProps) {
   return (
     <S.SafeOverlay edges={['top']} pointerEvents="box-none">
@@ -65,7 +67,7 @@ export default function MapTopOverlay({
           <S.HeaderSurface>
             <S.HeaderGlass
               bottomShade={false}
-              cornerRadius={29}
+              cornerRadius={25}
               glassEffectStyle="regular"
               highlightOpacity={0.16}
               intensity={32}
@@ -76,7 +78,7 @@ export default function MapTopOverlay({
             <S.SearchShadow>
               <S.SearchGlass
                 bottomShade={false}
-                cornerRadius={26}
+                cornerRadius={20}
                 glassEffectStyle="regular"
                 highlightOpacity={0.20}
                 pointerEvents="none"
@@ -88,7 +90,7 @@ export default function MapTopOverlay({
                 accessibilityRole="button"
                 onPress={onSearchFocus}
               >
-                <SearchAsset height={20} width={20} />
+                <SearchAsset height={18} width={18} />
                 <S.SearchInput
                   $isPlaceholder={!query}
                   numberOfLines={1}
@@ -104,50 +106,53 @@ export default function MapTopOverlay({
               onPress={onProfilePress}
               style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
             >
-              <ProfileAsset height={40} width={40} />
+              <ProfileAsset height={34} width={34} />
             </S.ProfileButton>
           </S.HeaderSurface>
         </S.HeaderShadow>
       </S.Header>
 
-      <S.CategoryScroll
-        horizontal
-        showsHorizontalScrollIndicator={false}
-      >
-        <S.CategoryContent>
-          {categories.map(({ Icon, id, label }, index) => {
-            const isActive = activeCategory === id;
+      {showCategories ? (
+        <S.CategoryScroll
+          horizontal
+          showsHorizontalScrollIndicator={false}
+        >
+          <S.CategoryContent>
+            {categories.map(({ Icon, id, label }, index) => {
+              const isActive = activeCategory === id;
 
-            return (
-              <S.CategoryChipButton
-                $active={isActive}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isActive }}
-                key={`${id}-${index}`}
-                onPress={() => onCategoryChange(id)}
-                style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
-              >
-                <S.CategoryChipClip>
-                  <S.CategoryChipGlass
-                    cornerRadius={16}
-                    glassEffectStyle="regular"
-                    highlightOpacity={isActive ? 0.18 : 0.14}
-                    pointerEvents="none"
-                    rimColor="rgba(0,0,0,0.05)"
-                    tintColor="rgba(255,255,255,0.95)"
-                  />
-                  <S.CategoryChipContent>
-                    {Icon ? (
-                      <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={18} width={20} />
-                    ) : null}
-                    <S.CategoryLabel $active={isActive}>{label}</S.CategoryLabel>
-                  </S.CategoryChipContent>
-                </S.CategoryChipClip>
-              </S.CategoryChipButton>
-            );
-          })}
-        </S.CategoryContent>
-      </S.CategoryScroll>
+              return (
+                <S.CategoryChipButton
+                  $active={isActive}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                  key={`${id}-${index}`}
+                  onPress={() => onCategoryChange(id)}
+                  style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
+                >
+                  <S.CategoryChipClip>
+                    <S.CategoryChipGlass
+                      bottomShade={false}
+                      cornerRadius={15}
+                      glassEffectStyle="regular"
+                      highlightOpacity={isActive ? 0.18 : 0.14}
+                      pointerEvents="none"
+                      rimColor="transparent"
+                      tintColor={isActive ? 'rgba(255,201,211,0.24)' : 'rgba(255,255,255,0.95)'}
+                    />
+                    <S.CategoryChipContent>
+                      {Icon ? (
+                        <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={16} width={17} />
+                      ) : null}
+                      <S.CategoryLabel $active={isActive}>{label}</S.CategoryLabel>
+                    </S.CategoryChipContent>
+                  </S.CategoryChipClip>
+                </S.CategoryChipButton>
+              );
+            })}
+          </S.CategoryContent>
+        </S.CategoryScroll>
+      ) : null}
     </S.SafeOverlay>
   );
 }

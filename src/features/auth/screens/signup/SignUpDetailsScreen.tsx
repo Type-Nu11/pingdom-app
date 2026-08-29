@@ -29,7 +29,7 @@ const BG = colors.bgAssistive;
 
 type SignUpDetailsScreenProps = {
   onBack?: () => void;
-  onboardingData?: OnboardingData;
+  onboardingData?: Pick<OnboardingData, 'birthYear' | 'country' | 'language'>;
 };
 
 type FieldError = {

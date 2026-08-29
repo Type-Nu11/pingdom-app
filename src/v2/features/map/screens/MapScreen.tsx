@@ -16,6 +16,7 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { useMapDiscovery } from '../hooks/useMapDiscovery';
 import type { MapPlaceResult, MapPlaceSelection } from '../model/mapDiscovery';
 import { FALLBACK_COORDINATE } from '../model/mapFixtures';
+import { VisitVerificationMapCta } from '../../place-visit-verification';
 
 const RADIUS_KM = 3;
 
@@ -140,6 +141,13 @@ export default function MapScreen({ navigation }: MapScreenProps) {
           isMock={discovery.dataSource === 'mock'}
           onRetry={() => void discovery.refetch()}
         />
+        {selectedPlace === null ? (
+          <VisitVerificationMapCta
+            label={t('visitVerification.title')}
+            onPress={() => navigation.navigate(V2_ROUTES.VisitVerificationPlaces)}
+            style={{ bottom: 24, position: 'absolute', right: 16 }}
+          />
+        ) : null}
         <MapSelectedPlaceCard
           error={discovery.selectedPlaceError}
           loading={discovery.selectedPlaceLoading}

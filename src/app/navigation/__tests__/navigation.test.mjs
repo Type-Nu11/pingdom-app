@@ -16,14 +16,20 @@ import {
   parsePlaceId,
   parsePostId,
   parseReservationId,
+  parseCheckInId,
 } from '../types.ts';
-import { getProfileBackAction } from '../../../features/profile/utils/profileBack.ts';
 import { getSettingsBackAction } from '../../../features/settings/utils/settingsBack.ts';
 import { getMapBackAction } from '../../../features/place/utils/mapBack.ts';
 import {
   ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
   getAndroidBackAction,
 } from '../androidBack.ts';
+import {
+  createOnboardingCompletion,
+  getAuthInitialRoute,
+  getInitialAppRoute,
+  getUnauthenticatedNavigationKey,
+} from '../../../v2/features/onboarding-entry/model/onboardingEntry.ts';
 
 test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parsePlaceId(123), 123);
@@ -32,15 +38,57 @@ test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parsePostId('7'), 7);
   assert.equal(parseNotificationId('8'), 8);
   assert.equal(parseReservationId('901'), 901);
+  assert.equal(parseCheckInId('7001'), 7001);
 
   for (const invalidId of [undefined, null, '', '0', '01', '-1', '1.2', 0, -1, 1.2, Number.MAX_SAFE_INTEGER + 1]) {
     assert.equal(parsePlaceId(invalidId), null);
   }
 });
 
+test('visit verification routes carry numeric server identifiers', () => {
+  assert.equal(MAIN_ROUTES.VisitVerificationPlaces, 'VisitVerificationPlaces');
+  assert.equal(MAIN_ROUTES.VisitVerificationReview, 'VisitVerificationReview');
+  assert.equal(parsePlaceId(17), 17);
+  assert.equal(parseCheckInId(7001), 7001);
+});
+
 test('authentication state selects an exclusive root stack', () => {
   assert.equal(getRootRouteName(false), ROOT_ROUTES.Auth);
   assert.equal(getRootRouteName(true), ROOT_ROUTES.Main);
+});
+
+test('auth and onboarding hydration gate every initial route without onboarding flicker', () => {
+  const hydrating = { kind: 'hydrating' };
+  const incomplete = { kind: 'incomplete' };
+  const completion = createOnboardingCompletion({
+    birthYear: 2000,
+    country: 'KR',
+    language: 'ko',
+  });
+  const completed = { completion, kind: 'completed' };
+
+  assert.equal(getInitialAppRoute(true, false, incomplete), 'loading');
+  assert.equal(getInitialAppRoute(false, false, hydrating), 'loading');
+  assert.equal(getInitialAppRoute(false, false, incomplete), 'onboarding');
+  assert.equal(getInitialAppRoute(false, false, completed), 'auth-landing');
+  assert.equal(getInitialAppRoute(false, true, completed), 'main');
+});
+
+test('completion replaces the onboarding stack and logout returns to auth landing', () => {
+  const completion = createOnboardingCompletion({
+    birthYear: 2000,
+    country: 'US',
+    language: 'en',
+  });
+
+  assert.equal(getAuthInitialRoute(), 'Onboarding');
+  assert.equal(getAuthInitialRoute(completion), 'AuthLanding');
+  assert.equal(getUnauthenticatedNavigationKey(), 'unauthenticated-incomplete');
+  assert.equal(
+    getUnauthenticatedNavigationKey(completion),
+    'unauthenticated-completed',
+  );
+  assert.equal(getInitialAppRoute(false, false, { completion, kind: 'completed' }), 'auth-landing');
 });
 
 test('notification payload focuses the place in the map detail sheet', () => {
@@ -127,10 +175,7 @@ test('invalid app links fall back to Map and unrelated schemes are ignored', () 
   assert.equal(parseDeepLink('https://example.com/places/123'), null);
 });
 
-test('Profile and Settings consume hardware back only for local UI state', () => {
-  assert.equal(getProfileBackAction('archive-detail'), 'show-archive');
-  assert.equal(getProfileBackAction('archive'), 'show-profile');
-  assert.equal(getProfileBackAction('profile'), 'navigate-back');
+test('Settings consumes hardware back only for local UI state', () => {
   assert.equal(getSettingsBackAction(2), 'pop-page');
   assert.equal(getSettingsBackAction(1), 'navigate-back');
 });

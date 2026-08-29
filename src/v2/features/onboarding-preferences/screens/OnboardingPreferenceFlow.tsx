@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BackHandler, Platform } from 'react-native';
 import { ThemeProvider } from 'styled-components/native';
@@ -20,7 +20,7 @@ export type OnboardingPreferenceFlowProps = Readonly<{
   initialStep?: OnboardingPreferenceStep;
   language?: string;
   onBack: () => void;
-  onComplete: () => void;
+  onComplete: () => Promise<void> | void;
 }>;
 
 export default function OnboardingPreferenceFlow(props: OnboardingPreferenceFlowProps) {
@@ -39,6 +39,9 @@ function OnboardingPreferenceFlowContent({
 }: OnboardingPreferenceFlowProps) {
   const { i18n, t } = useTranslation();
   const [step, setStep] = useState<OnboardingPreferenceStep>(initialStep);
+  const [completionSaveError, setCompletionSaveError] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const continuationInFlight = useRef(false);
   const hydrationError = useOnboardingPreferenceStore((state) => state.hydrationError);
   const hydrationStatus = useOnboardingPreferenceStore((state) => state.hydrationStatus);
   const isHydrated = useOnboardingPreferenceStore((state) => state.isHydrated);
@@ -96,15 +99,31 @@ function OnboardingPreferenceFlowContent({
     return () => subscription.remove();
   }, [handleBack]);
 
-  const continueAfterSave = async (next: () => void) => {
-    if (saveStatus === 'saving') {
+  const continueAfterSave = async (next: () => Promise<void> | void) => {
+    if (saveStatus === 'saving' || isCompleting || continuationInFlight.current) {
       return;
     }
 
-    await persistPreferences();
+    continuationInFlight.current = true;
 
-    if (useOnboardingPreferenceStore.getState().saveStatus !== 'error') {
-      next();
+    try {
+      await persistPreferences();
+
+      if (useOnboardingPreferenceStore.getState().saveStatus !== 'error') {
+        try {
+          setCompletionSaveError(false);
+          setIsCompleting(true);
+          await next();
+        } catch {
+          // Completion storage is required before leaving onboarding. The caller
+          // intentionally remains on this screen so the user can retry.
+          setCompletionSaveError(true);
+        } finally {
+          setIsCompleting(false);
+        }
+      }
+    } finally {
+      continuationInFlight.current = false;
     }
   };
 
@@ -117,7 +136,7 @@ function OnboardingPreferenceFlowContent({
     );
   }
 
-  const errorMessage = saveError
+  const errorMessage = saveError || completionSaveError
     ? t('onboarding.preferenceFlow.saveError')
     : hydrationError
       ? t('onboarding.preferenceFlow.restoreError')
@@ -128,7 +147,7 @@ function OnboardingPreferenceFlowContent({
       <TravelPurposeSelectionScreen
         currentStep={CURRENT_PURPOSE_STEP}
         errorMessage={errorMessage}
-        isContinuing={saveStatus === 'saving'}
+        isContinuing={saveStatus === 'saving' || isCompleting}
         onBack={handleBack}
         onChange={updateSelectedPurposes}
         onContinue={() => void continueAfterSave(() => setStep('schedule'))}
@@ -142,7 +161,7 @@ function OnboardingPreferenceFlowContent({
     <TravelScheduleSelectionScreen
       currentStep={CURRENT_SCHEDULE_STEP}
       errorMessage={errorMessage}
-      isContinuing={saveStatus === 'saving'}
+      isContinuing={saveStatus === 'saving' || isCompleting}
       onBack={handleBack}
       onChange={updateSelectedSchedule}
       onContinue={() => void continueAfterSave(onComplete)}

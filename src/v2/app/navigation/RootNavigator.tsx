@@ -12,12 +12,20 @@ import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
 import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
+import {
+  VisitVerificationPlacesScreen,
+  VisitVerificationReviewScreen,
+} from '../../features/place-visit-verification';
 import { env } from '../../shared/config';
 import {
   claimNotificationMessage,
   createNotificationNavigationIntent,
 } from './notificationIntent';
+<<<<<<< HEAD
 import { V2_ROUTES, type V2ScreenProps, type V2StackParamList } from './types';
+=======
+import { V2_ROUTES, parseCheckInId, parsePlaceId, type V2ScreenProps, type V2StackParamList } from './types';
+>>>>>>> origin/dev
 import { useAndroidBackHandler } from './useAndroidBackHandler';
 
 const Stack = createNativeStackNavigator<V2StackParamList>();
@@ -27,6 +35,7 @@ function HomeRouteScreen() {
   return env.featureFlags.placeList ? <PlaceListExampleScreen /> : <HomeScreen />;
 }
 
+<<<<<<< HEAD
 function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
   return (
     <MyPageScreen
@@ -36,6 +45,18 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
       onOpenVerifiedPlaces={() => {}}
     />
   );
+=======
+function VisitVerificationPlacesRoute({ navigation }: V2ScreenProps<'VisitVerificationPlaces'>) {
+  return <VisitVerificationPlacesScreen onBack={navigation.goBack} onSelectPlace={({ checkInId: value, placeId: placeValue }) => {
+    const checkInId = parseCheckInId(value);
+    const placeId = parsePlaceId(placeValue);
+    if (checkInId && placeId) navigation.navigate(V2_ROUTES.VisitVerificationReview, { checkInId, placeId });
+  }} />;
+}
+
+function VisitVerificationReviewRoute({ navigation, route }: V2ScreenProps<'VisitVerificationReview'>) {
+  return <VisitVerificationReviewScreen checkInId={route.params.checkInId} onBack={navigation.goBack} onComplete={() => navigation.popTo(V2_ROUTES.Map)} placeId={route.params.placeId} />;
+>>>>>>> origin/dev
 }
 
 export default function RootNavigator() {
@@ -82,6 +103,8 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
+        <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
+        <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />
       </Stack.Navigator>
     </NavigationContainer>
   );

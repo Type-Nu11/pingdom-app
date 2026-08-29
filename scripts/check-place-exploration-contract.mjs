@@ -3,18 +3,24 @@ import { readFile } from 'node:fs/promises';
 const contractPath = new URL('../docs/api/place-exploration.openapi.json', import.meta.url);
 const document = JSON.parse(await readFile(contractPath, 'utf8'));
 const expectedOperations = new Map([
+  ['/location-check-ins', ['get', 'listMine_4']],
   ['/places', ['get', 'listPlaces']],
   ['/places/autocomplete', ['get', 'autocompletePlaces']],
   ['/places/map', ['get', 'mapViewport']],
   ['/places/{placeId}/card', ['get', 'getTouristPlaceCard']],
   ['/places/{placeId}/visit-decision', ['get', 'getPlaceVisitDecision']],
   ['/places/{placeId}/operating-notices', ['get', 'listOperatingNotices']],
+  ['/places/{id}/media/exploration', ['get', 'getExplorationMedia']],
   ['/places/{id}/media/verification', ['get', 'getVerificationMedia']],
   [
     '/places/recommendations/{requestId}/explanation',
     ['get', 'getRecommendationExplanation'],
   ],
   ['/places/{placeId}/map-link-conversions', ['post', 'record']],
+  ['/places/{placeId}/reviews', [
+    ['get', 'list_4'],
+    ['post', 'create_2'],
+  ]],
 ]);
 const failures = [];
 
@@ -31,11 +37,17 @@ if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) {
   failures.push('scoped contract paths do not match the place exploration endpoints');
 }
 
-for (const [path, [method, operationId]] of expectedOperations) {
-  const operation = document.paths?.[path]?.[method];
-  if (!operation) failures.push(`${method.toUpperCase()} ${path} is missing`);
-  if (operation?.operationId !== operationId) {
-    failures.push(`${method.toUpperCase()} ${path} operationId changed from ${operationId}`);
+for (const [path, expectedMethods] of expectedOperations) {
+  const operations = typeof expectedMethods[0] === 'string'
+    ? [expectedMethods]
+    : expectedMethods;
+
+  for (const [method, operationId] of operations) {
+    const operation = document.paths?.[path]?.[method];
+    if (!operation) failures.push(`${method.toUpperCase()} ${path} is missing`);
+    if (operation?.operationId !== operationId) {
+      failures.push(`${method.toUpperCase()} ${path} operationId changed from ${operationId}`);
+    }
   }
 }
 

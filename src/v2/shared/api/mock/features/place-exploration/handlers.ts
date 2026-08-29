@@ -1,16 +1,26 @@
 import type { MockHandler } from '../../handlers';
 import {
   emptyPlaceExplorationFixtures,
+  explorationMediaFixture,
   mapViewportFixture,
   operatingNoticesFixture,
   placeAutocompleteFixture,
   placeCardFixture,
+  placeReviewPageFixture,
+  placeReviewFixture,
   recommendationExplanationFixture,
   verificationMediaFixture,
   visitDecisionFixture,
 } from './fixtures';
 
 export const placeExplorationMockHandlers = [
+  {
+    method: 'GET',
+    path: /^\/places\/\d+\/media\/exploration$/,
+    resolve: ({ scenario }) => scenario === 'empty'
+      ? emptyPlaceExplorationFixtures.explorationMedia
+      : explorationMediaFixture,
+  },
   {
     method: 'GET',
     path: '/places/autocomplete',
@@ -55,6 +65,18 @@ export const placeExplorationMockHandlers = [
     resolve: ({ scenario }) => scenario === 'empty'
       ? emptyPlaceExplorationFixtures.recommendationExplanation
       : recommendationExplanationFixture,
+  },
+  {
+    method: 'GET',
+    path: /^\/places\/\d+\/reviews$/,
+    resolve: ({ scenario }) => scenario === 'empty'
+      ? emptyPlaceExplorationFixtures.reviewPage
+      : placeReviewPageFixture,
+  },
+  {
+    method: 'POST',
+    path: /^\/places\/\d+\/reviews$/,
+    resolve: ({ body }) => ({ ...placeReviewFixture, ...(body as object) }),
   },
   {
     method: 'POST',

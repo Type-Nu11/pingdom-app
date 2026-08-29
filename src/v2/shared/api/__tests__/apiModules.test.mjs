@@ -12,7 +12,7 @@ import { createTravelPurposeApi } from '../../../features/travel-purposes/api/tr
 import { createTravelScheduleApi } from '../../../features/travel-schedules/api/travelScheduleApi.ts';
 import { createNotificationApi } from '../../../features/notifications/api/notificationApi.ts';
 
-test('all MVP API modules keep operation paths, params, bodies, and response identity', async () => {
+test('API modules keep operation paths, params, bodies, and documented response mapping', async () => {
   const calls = [];
   const response = { contract: 'response-object' };
   const client = {
@@ -131,7 +131,9 @@ test('all MVP API modules keep operation paths, params, bodies, and response ide
 
   assert.ok(
     results.every((result, index) =>
-      index === 28 || index === 29 || index === 32
+      index === 2
+        ? result.checkIns.length === 0 && result.page === 1
+        : index === 28 || index === 29 || index === 32
         ? result === undefined
         : result === response),
   );
