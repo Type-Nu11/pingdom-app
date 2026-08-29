@@ -659,6 +659,7 @@ export default function MapScreen({
             snapTo('expanded');
           }}
           query={query}
+          showCategories={snapPoint !== 'expanded'}
         />
         <FadeSlideTransition
           direction={MAP_SECTION_DIRECTION[mapSection]}
@@ -864,7 +865,7 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
-  sectionTransition: StyleSheet.absoluteFillObject,
+  sectionTransition: { ...StyleSheet.absoluteFillObject, zIndex: 50 },
   placeListRetryText: { color: '#ff1956', fontSize: 13, fontWeight: '700' },
   placeListStatus: {
     alignItems: 'center',
