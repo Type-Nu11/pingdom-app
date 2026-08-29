@@ -185,6 +185,7 @@ export default function MyPageScreen({
                 <MyPageStatValue
                   isError={reservationsQuery.isError}
                   isLoading={reservationsQuery.isLoading}
+                  testID="v2-my-page-stat-reservations"
                   value={reservationsQuery.data?.totalCount ?? 0}
                 />
               </StatItem>
@@ -194,6 +195,7 @@ export default function MyPageScreen({
                 <MyPageStatValue
                   isError={reviewsQuery.isError}
                   isLoading={reviewsQuery.isLoading}
+                  testID="v2-my-page-stat-reviews"
                   value={reviewsQuery.reviewCount}
                 />
               </StatItem>
@@ -203,6 +205,7 @@ export default function MyPageScreen({
                 <MyPageStatValue
                   isError={couponsQuery.isError}
                   isLoading={couponsQuery.isLoading}
+                  testID="v2-my-page-stat-coupons"
                   value={couponsQuery.data?.totalCount ?? 0}
                 />
               </StatItem>

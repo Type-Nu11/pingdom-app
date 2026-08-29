@@ -7,6 +7,7 @@ const UNAVAILABLE_VALUE = '-';
 export type MyPageStatValueProps = {
   isError: boolean;
   isLoading: boolean;
+  testID?: string;
   value: number;
 };
 
@@ -15,14 +16,23 @@ export type MyPageStatValueProps = {
  * withheld until it is known: a spinner while loading, a dash when the request
  * failed.
  */
-export default function MyPageStatValue({ isError, isLoading, value }: MyPageStatValueProps) {
+export default function MyPageStatValue({
+  isError,
+  isLoading,
+  testID,
+  value,
+}: MyPageStatValueProps) {
   const theme = useTheme();
 
   if (isLoading) {
-    return <Slot><ActivityIndicator color={theme.colors.primary} size="small" /></Slot>;
+    return (
+      <Slot testID={testID}>
+        <ActivityIndicator color={theme.colors.primary} size="small" />
+      </Slot>
+    );
   }
 
-  return <Value>{isError ? UNAVAILABLE_VALUE : value}</Value>;
+  return <Value testID={testID}>{isError ? UNAVAILABLE_VALUE : value}</Value>;
 }
 
 const Slot = styled.View`
