@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import { ApiErrorState, Button, LoadingState } from '../../../shared/components';
 import VisitPlaceCard from '../components/VisitPlaceCard';
 import { useVisitVerificationCandidates } from '../hooks/useVisitVerificationCandidates';
@@ -25,7 +26,7 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
       <Header>
-        <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackText>‹</BackText></BackButton>
+        <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackIcon width={44} height={44} /></BackButton>
         <Title accessibilityRole="header">{t('visitVerification.title')}</Title>
         <HeaderSpacer />
       </Header>
@@ -84,8 +85,7 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
 
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const Header = styled.View`height: 56px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
-const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px;`;
-const BackText = styled.Text`color: ${({ theme }) => theme.colors.text}; font-size: 34px; line-height: 36px; font-weight: 300;`;
+const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
 const Title = styled.Text`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const HeaderSpacer = styled.View`width: 44px;`;
 const Body = styled.View`flex: 1;`;

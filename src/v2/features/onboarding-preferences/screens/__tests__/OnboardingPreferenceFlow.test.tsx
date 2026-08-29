@@ -188,6 +188,6 @@ describe('OnboardingPreferenceFlow', () => {
       { language: 'ko' },
     );
 
-    expect(await screen.findByText('Choose your travel interests')).toBeVisible();
+    expect(await screen.findByText('Select Travel Purpose')).toBeVisible();
   });
 });

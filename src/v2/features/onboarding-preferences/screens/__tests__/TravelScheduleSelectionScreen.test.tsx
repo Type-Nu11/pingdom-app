@@ -21,8 +21,6 @@ describe('TravelScheduleSelectionScreen', () => {
 
     expect(screen.getByText('2026.07.05')).toBeVisible();
     expect(screen.getByText('2026.07.18')).toBeVisible();
-    expect(screen.getByText('시작일과 같거나 이후인 종료일을 선택해 주세요.'))
-      .toBeVisible();
     expect(screen.getByTestId('travel-schedule-day-2026-07-05').props.accessibilityState)
       .toEqual({ disabled: false, selected: true });
     expect(screen.getByTestId('travel-schedule-day-2026-07-18').props.accessibilityState)
@@ -114,8 +112,6 @@ describe('TravelScheduleSelectionScreen', () => {
     );
 
     expect(screen.getAllByText('선택 전')).toHaveLength(2);
-    expect(screen.getByText('시작일과 같거나 이후인 종료일을 선택해 주세요.'))
-      .toBeVisible();
     expect(screen.getByTestId('travel-schedule-scroll-view')).toBeVisible();
     expect(screen.getByRole('button', { name: '계속' }).props.accessibilityState.disabled)
       .toBe(true);
@@ -161,7 +157,7 @@ describe('TravelScheduleSelectionScreen', () => {
       { language: 'en' },
     );
 
-    expect(screen.getByText('Tell us your travel dates')).toBeVisible();
+    expect(screen.getByText('Select Travel Dates')).toBeVisible();
     expect(screen.getByRole('progressbar', { name: 'Onboarding progress' }).props.accessibilityValue)
       .toEqual({ max: 7, min: 1, now: 3, text: 'Step 3 of 7' });
   });

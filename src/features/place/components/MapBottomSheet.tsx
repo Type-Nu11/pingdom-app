@@ -21,6 +21,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BackIcon from '../../../assets/v2/icons/header/back.svg';
 import CheckInAsset from '../../../assets/v2/icons/place/checkin_svg.svg';
 import CallAsset from '../../../assets/v2/icons/ion_call.svg';
 import CameraAsset from '../../../assets/v2/icons/place/Camera.svg';
@@ -1221,7 +1222,7 @@ const ExpandedPlaceContent = ({
           onPress={onBack}
           style={styles.detailRoundButton}
         >
-          <Text style={styles.detailBackText}>‹</Text>
+          <BackIcon width={44} height={44} />
         </Pressable>
         <Pressable
           accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}

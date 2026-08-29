@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import CheckGenderIcon from '../../assets/v2/icons/checkgender.svg';
-import EscapeIcon from '../../assets/v2/icons/escape.svg';
+import BackIcon from '../../assets/v2/icons/header/back.svg';
 import FemaleIcon from '../../assets/v2/icons/female.svg';
 import MaleIcon from '../../assets/v2/icons/male.svg';
 import OtherIcon from '../../assets/v2/icons/other.svg';
@@ -32,7 +32,7 @@ export default function SelectGenderScreen({ onBack, onNext }: Props) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.headerSide}>
-          <EscapeIcon width={12} height={21} />
+          <BackIcon width={44} height={44} />
         </Pressable>
         <ProgressBar current={4} />
         <View style={styles.headerSide} />
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'space-between',
   },
-  headerSide: { width: 40, alignItems: 'flex-start' },
+  headerSide: { width: 44, alignItems: 'flex-start' },
   body: {
     flex: 1,
     paddingHorizontal: 16,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   button: {
     height: 64,
     backgroundColor: colors.primaryNormal,
-    borderRadius: 16,
+    borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },

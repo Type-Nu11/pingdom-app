@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import CheckIcon from '../../assets/v2/icons/check.svg';
-import EscapeIcon from '../../assets/v2/icons/escape.svg';
-import SearchIcon from '../../assets/v2/icons/search.svg';
+import BackIcon from '../../assets/v2/icons/header/back.svg';
+import SearchIcon from '../../assets/v2/icons/mypage/Search.svg';
 import ProgressBar from './components/ProgressBar';
 import type { Language } from './types';
 import { colors } from '../../styles/colors';
@@ -44,7 +44,7 @@ export default function SelectLanguageScreen({ onBack, onNext }: Props) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.headerSide}>
-          <EscapeIcon width={12} height={21} />
+          <BackIcon width={44} height={44} />
         </Pressable>
         <ProgressBar current={1} />
         <View style={styles.headerSide} />
@@ -61,7 +61,7 @@ export default function SelectLanguageScreen({ onBack, onNext }: Props) {
           <TextInput
             style={styles.searchInput}
             placeholder={tr.search}
-            placeholderTextColor={colors.labelAssistive}
+            placeholderTextColor={colors.labelAlternative}
             value={query}
             onChangeText={setQuery}
           />
@@ -70,6 +70,7 @@ export default function SelectLanguageScreen({ onBack, onNext }: Props) {
         <ScrollView
           style={styles.list}
           contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {filtered.map((lang) => {
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'space-between',
   },
-  headerSide: { width: 40, alignItems: 'flex-start' },
+  headerSide: { width: 44, alignItems: 'flex-start' },
   body: {
     flex: 1,
     paddingHorizontal: 16,
@@ -122,16 +123,16 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 13,
+    gap: 12,
     backgroundColor: colors.fillAlternative,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     marginBottom: 18,
   },
-  searchInput: { flex: 1, fontSize: 20, fontWeight: '500', color: colors.labelStrong, padding: 0 },
+  searchInput: { flex: 1, fontSize: 18, fontWeight: '500', color: colors.labelNeutral, padding: 0 },
   list: { flex: 1 },
-  listContent: { gap: 26 },
+  listContent: { gap: 26, flexGrow: 1, paddingBottom: 8 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
   button: {
     height: 64,
     backgroundColor: PINK,
-    borderRadius: 16,
+    borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },
