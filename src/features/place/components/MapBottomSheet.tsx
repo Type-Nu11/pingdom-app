@@ -47,6 +47,7 @@ import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
 import StarAsset from '../../../assets/v2/icons/place/star_svg.svg';
 import RecommendationTitleAsset from '../../../assets/v2/icons/place/Subtract.svg';
 import {
+  FadeSlideTransition,
   MOTION_DURATION,
   runTimingMotion,
   useReducedMotion,
@@ -243,50 +244,87 @@ const FeedSegment = ({
 }: {
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
-}) => (
-  <View style={styles.segmentInset}>
-    <View style={styles.segmentShadow}>
-      <GlassSurface
-        glassEffectStyle="regular"
-        intensity={100}
-        style={styles.segmentOuter}
-        tintColor="rgba(228,228,230,0.48)"
-      >
-        <View pointerEvents="none" style={styles.segmentFrost} />
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: feed === 'local' }}
-          onPress={() => onChange('local')}
-          style={[styles.segment, feed === 'local' && styles.segmentActive]}
+}) => {
+  const [segmentWidth, setSegmentWidth] = useState(0);
+  const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
+  const reduceMotion = useReducedMotion();
+  const indicatorWidth = Math.max(0, (segmentWidth - 6) / 2);
+
+  useEffect(() => {
+    const animation = runTimingMotion(indicatorProgress, feed === 'local' ? 0 : 1, {
+      duration: MOTION_DURATION.transition,
+      reduceMotion,
+      useNativeDriver: true,
+    });
+
+    return () => animation?.stop();
+  }, [feed, indicatorProgress, reduceMotion]);
+
+  return (
+    <View style={styles.segmentInset}>
+      <View style={styles.segmentShadow}>
+        <GlassSurface
+          glassEffectStyle="regular"
+          intensity={100}
+          onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
+          style={styles.segmentOuter}
+          testID="feed-segment-control"
+          tintColor="rgba(228,228,230,0.48)"
         >
-          <HotPlaceAsset
-            color={feed === 'local' ? '#FF1956' : '#767680'}
-            height={20}
-            width={16}
-          />
-          <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-            우리 지역 핫플
-          </Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: feed === 'national' }}
-          onPress={() => onChange('national')}
-          style={[styles.segment, feed === 'national' && styles.segmentActive]}
-        >
-          <MapAsset
-            color={feed === 'national' ? '#FF1956' : '#767680'}
-            height={20}
-            width={18}
-          />
-          <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-            전국 트렌드
-          </Text>
-        </Pressable>
-      </GlassSurface>
+          <View pointerEvents="none" style={styles.segmentFrost} />
+          {indicatorWidth > 0 ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.segmentIndicator,
+                {
+                  transform: [{
+                    translateX: indicatorProgress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, indicatorWidth],
+                    }),
+                  }],
+                  width: indicatorWidth,
+                },
+              ]}
+              testID="feed-segment-indicator"
+            />
+          ) : null}
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: feed === 'local' }}
+            onPress={() => onChange('local')}
+            style={styles.segment}
+          >
+            <HotPlaceAsset
+              color={feed === 'local' ? '#FF1956' : '#767680'}
+              height={20}
+              width={16}
+            />
+            <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+              우리 지역 핫플
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: feed === 'national' }}
+            onPress={() => onChange('national')}
+            style={styles.segment}
+          >
+            <MapAsset
+              color={feed === 'national' ? '#FF1956' : '#767680'}
+              height={20}
+              width={18}
+            />
+            <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+              전국 트렌드
+            </Text>
+          </Pressable>
+        </GlassSurface>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const HOME_BOOKMARK_STAR_PATH = 'M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z';
 
@@ -797,75 +835,82 @@ const ExpandedHomeContent = ({
       style={styles.expandedScroll}
     >
       <FeedSegment feed={feed} onChange={onFeedChange} />
-      <ScrollView
-        contentContainerStyle={styles.expandedFeaturedRow}
-        horizontal
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}
-        style={styles.rowScroll}
+      <FadeSlideTransition
+        direction={feed === 'local' ? 0 : 1}
+        stateKey={feed}
+        style={styles.feedTransition}
+        testID="expanded-feed-content-transition"
       >
-        {places.length > 0 ? places.slice(0, 6).map((place) => (
-          <PlaceTrendCard
-            bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-            imageUrl={imageUrlsByPlaceId[String(place.id)]}
-            key={`featured-${place.id}`}
-            onPress={() => onPlacePress(place)}
-            onToggleBookmark={() => void onToggleBookmark(
-              place,
-              !bookmarkedPlaceIds[String(place.id)],
-            )}
-            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-            place={place}
-          />
-        )) : <EmptyCard state={state} variant="row" />}
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={styles.expandedFeaturedRow}
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          style={styles.rowScroll}
+        >
+          {places.length > 0 ? places.slice(0, 6).map((place) => (
+            <PlaceTrendCard
+              bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+              imageUrl={imageUrlsByPlaceId[String(place.id)]}
+              key={`featured-${place.id}`}
+              onPress={() => onPlacePress(place)}
+              onToggleBookmark={() => void onToggleBookmark(
+                place,
+                !bookmarkedPlaceIds[String(place.id)],
+              )}
+              pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+              place={place}
+            />
+          )) : <EmptyCard state={state} variant="row" />}
+        </ScrollView>
 
-      <Text style={styles.expandedTitle}>
-        카테고리별 <Text style={styles.expandedTitleAccent}>{userName}님</Text> 주변 인기 장소들
-      </Text>
+        <Text style={styles.expandedTitle}>
+          카테고리별 <Text style={styles.expandedTitleAccent}>{userName}님</Text> 주변 인기 장소들
+        </Text>
 
-      <ScrollView
-        contentContainerStyle={styles.categoryRow}
-        horizontal
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}
-      >
-        {CATEGORY_OPTIONS.map((category) => {
-          const active = category.id === activeCategory;
+        <ScrollView
+          contentContainerStyle={styles.categoryRow}
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+        >
+          {CATEGORY_OPTIONS.map((category) => {
+            const active = category.id === activeCategory;
 
-          return (
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              key={category.id}
-              onPress={() => onCategoryChange(category.id)}
-              style={[styles.categoryChip, active && styles.categoryChipActive]}
-            >
-              <CategoryIcon active={active} category={category.id} />
-              <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
-                {category.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+            return (
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                key={category.id}
+                onPress={() => onCategoryChange(category.id)}
+                style={[styles.categoryChip, active && styles.categoryChipActive]}
+              >
+                <CategoryIcon active={active} category={category.id} />
+                <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
+                  {category.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
-      <View style={styles.gridRow}>
-        {gridPlaces.slice(0, 8).map((place) => (
-          <ExpandedPlaceCard
-            bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-            imageUrl={imageUrlsByPlaceId[String(place.id)]}
-            key={`grid-${place.id}`}
-            onPress={() => onPlacePress(place)}
-            onToggleBookmark={() => void onToggleBookmark(
-              place,
-              !bookmarkedPlaceIds[String(place.id)],
-            )}
-            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-            place={place}
-          />
-        ))}
-      </View>
+        <View style={styles.gridRow}>
+          {gridPlaces.slice(0, 8).map((place) => (
+            <ExpandedPlaceCard
+              bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+              imageUrl={imageUrlsByPlaceId[String(place.id)]}
+              key={`grid-${place.id}`}
+              onPress={() => onPlacePress(place)}
+              onToggleBookmark={() => void onToggleBookmark(
+                place,
+                !bookmarkedPlaceIds[String(place.id)],
+              )}
+              pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+              place={place}
+            />
+          ))}
+        </View>
+      </FadeSlideTransition>
     </ScrollView>
   );
 };
@@ -1920,27 +1965,34 @@ export default function MapBottomSheet({
       ) : (
         <>
           <FeedSegment feed={feed} onChange={setFeed} />
-          <ScrollView
-            contentContainerStyle={styles.cardRow}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.rowScroll}
+          <FadeSlideTransition
+            direction={feed === 'local' ? 0 : 1}
+            stateKey={feed}
+            style={styles.feedTransition}
+            testID="feed-content-transition"
           >
-            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place) => (
-              <PlaceTrendCard
-                bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-                imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                key={place.id}
-                onPress={() => onPlacePress(place)}
-                onToggleBookmark={() => void onToggleBookmark(
-                  place,
-                  !bookmarkedPlaceIds[String(place.id)],
-                )}
-                pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-                place={place}
-              />
-            )) : <EmptyCard state={placesState} variant="row" />}
-          </ScrollView>
+            <ScrollView
+              contentContainerStyle={styles.cardRow}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.rowScroll}
+            >
+              {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place) => (
+                <PlaceTrendCard
+                  bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                  imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                  key={place.id}
+                  onPress={() => onPlacePress(place)}
+                  onToggleBookmark={() => void onToggleBookmark(
+                    place,
+                    !bookmarkedPlaceIds[String(place.id)],
+                  )}
+                  pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                  place={place}
+                />
+              )) : <EmptyCard state={placesState} variant="row" />}
+            </ScrollView>
+          </FadeSlideTransition>
         </>
       )}
       </Animated.View>
@@ -2501,9 +2553,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-  },
-  segmentActive: {
-    backgroundColor: 'rgba(255,255,255,0.60)',
+    zIndex: 1,
   },
   segmentFrost: {
     ...StyleSheet.absoluteFillObject,
@@ -2520,6 +2570,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 6,
   },
+  segmentIndicator: {
+    backgroundColor: 'rgba(255,255,255,0.60)',
+    borderRadius: 22,
+    bottom: 3,
+    left: 3,
+    position: 'absolute',
+    top: 3,
+  },
+  feedTransition: { width: '100%' },
   segmentOuter: {
     alignItems: 'stretch',
     backgroundColor: 'rgba(228,228,230,0.48)',

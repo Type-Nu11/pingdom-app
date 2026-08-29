@@ -3,6 +3,7 @@ import { Animated, Easing } from 'react-native';
 export const MOTION_DURATION = Object.freeze({
   press: 90,
   state: 180,
+  transition: 240,
 });
 
 export const MOTION_EASING = Easing.out(Easing.cubic);

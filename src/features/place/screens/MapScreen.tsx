@@ -74,9 +74,11 @@ import {
   VisitVerificationMapCta,
   usePlaceReviews,
 } from '../../../v2/features/place-visit-verification';
+import { FadeSlideTransition } from '../../../v2/shared/motion';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
+const MAP_SECTION_DIRECTION = { map: 0, favorites: 1, reservations: 2 } as const;
 
 const PLACE_LIST_STATUS_COPY: Record<Exclude<PlaceListRuntimeState, 'ready'>, string> = {
   disabled: '장소 목록 기능이 비활성화되어 있어요.',
@@ -658,6 +660,13 @@ export default function MapScreen({
           }}
           query={query}
         />
+        <FadeSlideTransition
+          direction={MAP_SECTION_DIRECTION[mapSection]}
+          pointerEvents="box-none"
+          stateKey={mapSection}
+          style={styles.sectionTransition}
+          testID={`map-section-transition-${mapSection}`}
+        >
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
@@ -802,6 +811,7 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
+        </FadeSlideTransition>
       {!isSearchOpen && onOpenVisitVerification ? (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
@@ -854,6 +864,7 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
+  sectionTransition: StyleSheet.absoluteFillObject,
   placeListRetryText: { color: '#ff1956', fontSize: 13, fontWeight: '700' },
   placeListStatus: {
     alignItems: 'center',

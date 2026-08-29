@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 
@@ -415,12 +415,25 @@ describe('MapBottomSheet recommendations', () => {
     const nationalFeed = screen.getByRole('tab', { name: '전국 트렌드' });
     expect(localFeed.props.accessibilityState).toEqual({ selected: true });
     expect(nationalFeed.props.accessibilityState).toEqual({ selected: false });
+    fireEvent(screen.getByTestId('feed-segment-control'), 'layout', {
+      nativeEvent: { layout: { height: 48, width: 360, x: 0, y: 0 } },
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('feed-segment-indicator')).toBeOnTheScreen();
+    });
+    expect(screen.getByTestId('feed-content-transition')).toBeOnTheScreen();
 
+    (runTimingMotion as jest.Mock).mockClear();
     await user.press(nationalFeed);
     expect(screen.getByRole('tab', { name: '우리 지역 핫플' }).props.accessibilityState)
       .toEqual({ selected: false });
     expect(screen.getByRole('tab', { name: '전국 트렌드' }).props.accessibilityState)
       .toEqual({ selected: true });
+    expect(runTimingMotion).toHaveBeenCalledWith(
+      expect.any(Animated.Value),
+      1,
+      expect.objectContaining({ useNativeDriver: true }),
+    );
   });
 
   test('확장 홈에서 서버 장소의 전체 카테고리 필터를 제공한다', async () => {
