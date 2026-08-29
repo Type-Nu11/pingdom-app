@@ -45,6 +45,7 @@ export const MAIN_ROUTES = {
   MyPage: 'MyPage',
   Profile: 'Profile',
   ProfileEdit: 'ProfileEdit',
+  VerifiedPlaces: 'VerifiedPlaces',
   CreateReservation: 'CreateReservation',
   ReservationDetail: 'ReservationDetail',
   Settings: 'Settings',
@@ -74,6 +75,7 @@ export type MainStackParamList = {
   MyPage: undefined;
   Profile: undefined;
   ProfileEdit: undefined;
+  VerifiedPlaces: undefined;
   ReservationDetail: {
     reservationId: ReservationId;
   };
