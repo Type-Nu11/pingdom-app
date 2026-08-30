@@ -10,11 +10,13 @@ const FETCH_FALLBACK_TIMEOUT_MS = 10_000;
 type QueryValue = boolean | number | string | null | undefined;
 
 export type GetRequestOptions = {
+  headers?: Record<string, string>;
   params?: Record<string, QueryValue>;
   signal?: AbortSignal;
 };
 
 export type MutationRequestOptions = {
+  headers?: Record<string, string>;
   signal?: AbortSignal;
 };
 
@@ -93,6 +95,7 @@ async function withAuthorization(
   return {
     ...options,
     headers: {
+      ...options.headers,
       Authorization: `Bearer ${token}`,
     },
   };
