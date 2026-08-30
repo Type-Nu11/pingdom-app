@@ -3,7 +3,8 @@ import { Alert } from 'react-native';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi, type ProfileResponse } from '../../../../../features/profile/api/profileApi';
+import { profileApi } from '../../api/profileApi';
+import type { Profile } from '../../model/profile.types';
 import ProfileEditScreen from '../ProfileEditScreen';
 
 jest.mock('expo-image-picker', () => ({
@@ -11,7 +12,7 @@ jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),
 }));
 
-const PROFILE: ProfileResponse = {
+const PROFILE: Profile = {
   birthYear: 1998,
   country: 'KR',
   email: 'pingdom@example.com',
@@ -27,9 +28,9 @@ function alertMessages(spy: jest.SpyInstance) {
 
 describe('ProfileEditScreen', () => {
   test('프로필이 늦게 도착해도 아이디 입력칸을 채운다', async () => {
-    let resolveProfile: (profile: ProfileResponse) => void = () => {};
+    let resolveProfile: (profile: Profile) => void = () => {};
     jest.spyOn(profileApi, 'getProfile').mockImplementation(
-      () => new Promise<ProfileResponse>((resolve) => { resolveProfile = resolve; }),
+      () => new Promise<Profile>((resolve) => { resolveProfile = resolve; }),
     );
 
     await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);

@@ -1,18 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert } from 'react-native';
-import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
-import axios from 'axios';
 
-import { profileApi } from '../../../../features/profile/api/profileApi';
-import { profileQueryKeys, useProfile } from '../../../../features/profile/hooks/useProfile';
+import { ApiError } from '../../../shared/api';
 import {
   pickProfileImage,
   ProfileImagePermissionError,
   useChangeProfileImage,
-} from '../../../../features/profile/hooks/useChangeProfileImage';
+  useProfile,
+  useSaveProfile,
+} from '../hooks/useProfile';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import CheckmarkIcon from '../../../shared/assets/icons/checkmark.svg';
 import PencilIcon from '../../../shared/assets/icons/pencil.svg';
@@ -25,9 +24,10 @@ export type ProfileEditScreenProps = {
 };
 
 function getUsernameErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { errors?: Record<string, string>; message?: string } | undefined;
-    return data?.errors?.newUsername ?? data?.message ?? fallback;
+  if (error instanceof ApiError) {
+    return error.fieldErrors?.find(({ field }) => field === 'newUsername')?.reason
+      ?? error.message
+      ?? fallback;
   }
   return fallback;
 }
@@ -36,27 +36,22 @@ function getPasswordErrorMessage(
   error: unknown,
   messages: { currentPasswordInvalid: string; fallback: string; mismatch: string },
 ): string {
-  if (axios.isAxiosError(error)) {
-    const status = error.response?.status;
-    const data = error.response?.data as
-      | { code?: string; errors?: Record<string, string>; message?: string }
-      | undefined;
-
-    if (data?.code === 'PASSWORD_MISMATCH') return messages.mismatch;
-    if (status === 401) return messages.currentPasswordInvalid;
-
-    const fieldError = data?.errors ? Object.values(data.errors).find(Boolean) : undefined;
-    return fieldError ?? data?.message ?? messages.fallback;
+  if (error instanceof ApiError) {
+    if (error.code === 'PASSWORD_MISMATCH') return messages.mismatch;
+    if (error.status === 401) return messages.currentPasswordInvalid;
+    return error.fieldErrors?.find(({ reason }) => Boolean(reason))?.reason
+      ?? error.message
+      ?? messages.fallback;
   }
   return messages.fallback;
 }
 
 export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const { isLoading: isProfileLoading, profile } = useProfile();
 
   const changeProfileImage = useChangeProfileImage();
+  const saveProfile = useSaveProfile();
 
   const [username, setUsername] = useState(profile?.username ?? '');
   // The screen can mount before the profile query resolves (a cold entry, or the
@@ -71,7 +66,6 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (hasSeededUsername.current || !profile) return;
@@ -99,7 +93,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const handleSave = async () => {
     // Saving before the profile resolves would compare the typed username
     // against an unknown current one and could send a redundant change request.
-    if (isSubmitting || isProfileLoading) return;
+    if (saveProfile.isPending || isProfileLoading) return;
 
     const trimmedUsername = username.trim();
     const wantsPasswordChange = currentPassword.length > 0
@@ -132,23 +126,15 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
       return;
     }
 
-    setIsSubmitting(true);
-    let usernameChanged = false;
     try {
-      if (wantsUsernameChange) {
-        await profileApi.changeUsername(trimmedUsername);
-        usernameChanged = true;
-      }
-      if (wantsPasswordChange) {
-        await profileApi.changePassword({ confirmPassword, currentPassword, newPassword });
-      }
-      await queryClient.invalidateQueries({ queryKey: profileQueryKeys.me() });
+      await saveProfile.mutateAsync({
+        password: wantsPasswordChange
+          ? { confirmPassword, currentPassword, newPassword }
+          : undefined,
+        username: wantsUsernameChange ? trimmedUsername : undefined,
+      });
       onBack();
     } catch (error) {
-      setIsSubmitting(false);
-      if (usernameChanged) {
-        await queryClient.invalidateQueries({ queryKey: profileQueryKeys.me() });
-      }
       Alert.alert(
         wantsPasswordChange
           ? getPasswordErrorMessage(error, {
@@ -177,7 +163,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
           <IconButton
             accessibilityLabel={t('myPage.profileEdit.save')}
             accessibilityRole="button"
-            disabled={isSubmitting || isProfileLoading}
+            disabled={saveProfile.isPending || isProfileLoading}
             hitSlop={8}
             onPress={() => void handleSave()}
           >
@@ -297,11 +283,11 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
 
         <SaveButton
           accessibilityRole="button"
-          disabled={isSubmitting || isProfileLoading}
+          disabled={saveProfile.isPending || isProfileLoading}
           onPress={() => void handleSave()}
         >
           <SaveButtonText>
-            {isSubmitting ? t('myPage.profileEdit.saving') : t('myPage.profileEdit.save')}
+            {saveProfile.isPending ? t('myPage.profileEdit.saving') : t('myPage.profileEdit.save')}
           </SaveButtonText>
         </SaveButton>
       </Content>
