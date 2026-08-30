@@ -404,6 +404,6 @@ const DayText = styled.Text<{
 
 const Footer = styled.View`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.xxl + theme.spacing.xs}px;
+    ${({ theme }) => theme.spacing.xl + theme.spacing.xs}px;
   background-color: ${({ theme }) => theme.colors.background};
 `;

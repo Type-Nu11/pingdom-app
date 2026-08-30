@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingBottom: 52,
+    paddingBottom: 36,
     alignItems: 'center',
     justifyContent: 'space-between',
   },

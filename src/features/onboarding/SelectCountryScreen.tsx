@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 52,
+    paddingBottom: 36,
   },
   titleGroup: { gap: 0, marginBottom: 18 },
   title: { fontSize: 32, fontWeight: '700', color: colors.labelBlack, lineHeight: 41.6 },

@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 52,
+    paddingBottom: 36,
     gap: 18,
   },
   titleGroup: {
