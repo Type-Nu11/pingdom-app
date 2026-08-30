@@ -46,6 +46,12 @@ export function createUpdateTravelScheduleMutationOptions(
   return {
     mutationFn: ({ body, scheduleId }: UpdateTravelScheduleVariables) =>
       api.updateTravelSchedule(scheduleId, body),
+    retry: (failureCount: number, error: unknown) =>
+      failureCount < 1
+      && typeof error === 'object'
+      && error !== null
+      && 'isNetworkError' in error
+      && error.isNetworkError === true,
   };
 }
 

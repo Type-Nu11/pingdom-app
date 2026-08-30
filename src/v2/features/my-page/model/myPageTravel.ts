@@ -13,6 +13,7 @@ type TravelScheduleCandidate = Readonly<{
   endDate?: string;
   id?: number;
   startDate?: string;
+  status?: 'CANCELLED' | 'ENDED' | 'ONGOING' | 'UPCOMING';
 }>;
 
 export function selectFeaturedTravelSchedule(
@@ -20,10 +21,15 @@ export function selectFeaturedTravelSchedule(
   today: ServerTravelDate,
 ): FeaturedTravelSchedule | null {
   const valid: FeaturedTravelSchedule[] = schedules
-    .filter((schedule): schedule is Required<TravelScheduleCandidate> =>
+    .filter((schedule): schedule is TravelScheduleCandidate & {
+      endDate: string;
+      id: number;
+      startDate: string;
+    } =>
       isServerTravelDate(schedule.startDate)
       && isServerTravelDate(schedule.endDate)
-      && typeof schedule.id === 'number')
+      && typeof schedule.id === 'number'
+      && schedule.status !== 'CANCELLED')
     .map((schedule) => ({
       endDate: schedule.endDate as ServerTravelDate,
       id: schedule.id,
