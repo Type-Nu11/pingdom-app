@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { useProfile } from '../../../../features/profile/hooks/useProfile';
-import { useMyReviews } from '../../../../features/profile/hooks/useMyReviews';
+import { useMyReviews, useProfile } from '../hooks/useProfile';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
 import { getInitialCalendarMonth } from '../../onboarding-preferences/model/travelScheduleCalendar';
 import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';

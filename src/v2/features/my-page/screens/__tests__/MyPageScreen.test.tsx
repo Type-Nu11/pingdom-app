@@ -2,7 +2,8 @@ import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi, type ProfileResponse } from '../../../../../features/profile/api/profileApi';
+import { profileApi } from '../../api/profileApi';
+import type { Profile } from '../../model/profile.types';
 import { bookmarkApi } from '../../api/bookmarkApi';
 import { checkInApi } from '../../../check-ins/api/checkInApi';
 import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
@@ -11,7 +12,7 @@ import { reservationApi } from '../../../reservations/api/reservationApi';
 import { travelScheduleApi } from '../../../travel-schedules/api/travelScheduleApi';
 import MyPageScreen from '../MyPageScreen';
 
-const PROFILE: ProfileResponse = {
+const PROFILE: Profile = {
   birthYear: 1998,
   country: 'KR',
   email: 'pingdom@example.com',
