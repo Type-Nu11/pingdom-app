@@ -8,12 +8,33 @@ import type {
   ProfileImageFile,
   ProfileImageUploadResponse,
   SaveProfileInput,
+  SaveProfileResult,
 } from '../model/profile.types';
 
 export class ProfileImagePermissionError extends Error {
   constructor() {
     super('MEDIA_LIBRARY_PERMISSION_DENIED');
     this.name = 'ProfileImagePermissionError';
+  }
+}
+
+export type SaveProfileOperation = 'password' | 'username';
+
+export class SaveProfileError extends Error {
+  readonly operation: SaveProfileOperation;
+  readonly originalError: unknown;
+  readonly usernameChanged: boolean;
+
+  constructor(
+    operation: SaveProfileOperation,
+    originalError: unknown,
+    { usernameChanged = false }: { usernameChanged?: boolean } = {},
+  ) {
+    super(originalError instanceof Error ? originalError.message : 'PROFILE_SAVE_FAILED');
+    this.name = 'SaveProfileError';
+    this.operation = operation;
+    this.originalError = originalError;
+    this.usernameChanged = usernameChanged;
   }
 }
 
@@ -31,7 +52,18 @@ export async function pickProfileImage(): Promise<ProfileImageFile | null> {
   if (result.canceled || result.assets.length === 0) return null;
 
   const asset = result.assets[0];
-  const type = asset.mimeType ?? 'image/jpeg';
+  const normalizedMimeType = asset.mimeType?.toLowerCase() === 'image/jpg'
+    ? 'image/jpeg'
+    : asset.mimeType?.toLowerCase();
+  const filenameExtension = asset.fileName?.split('.').pop()?.toLowerCase();
+  const type = normalizedMimeType
+    ?? (filenameExtension === 'png' ? 'image/png' : undefined)
+    ?? (filenameExtension === 'jpg' || filenameExtension === 'jpeg' ? 'image/jpeg' : undefined);
+
+  if (type !== 'image/jpeg' && type !== 'image/png') {
+    throw new Error('PROFILE_IMAGE_TYPE_UNSUPPORTED');
+  }
+
   const extension = type.split('/')[1] ?? 'jpg';
   return {
     name: asset.fileName ?? `profile-image.${extension}`,
@@ -73,13 +105,31 @@ export function useMyReviews(params: ListMyReviewsParams = {}) {
 export function useSaveProfile() {
   const queryClient = useQueryClient();
 
-  return useMutation<void, unknown, SaveProfileInput>({
+  return useMutation<SaveProfileResult, SaveProfileError, SaveProfileInput>({
     mutationFn: async ({ password, username }) => {
-      if (username) await profileApi.changeUsername(username);
-      if (password) await profileApi.changePassword(password);
+      let usernameChanged = false;
+
+      if (username) {
+        try {
+          await profileApi.changeUsername(username);
+          usernameChanged = true;
+        } catch (error) {
+          throw new SaveProfileError('username', error);
+        }
+      }
+
+      if (password) {
+        try {
+          await profileApi.changePassword(password);
+        } catch (error) {
+          throw new SaveProfileError('password', error, { usernameChanged });
+        }
+      }
+
+      return { passwordChanged: Boolean(password), usernameChanged };
     },
-    onSettled: async (_data, _error, variables) => {
-      if (variables.username) {
+    onSettled: async (data, error) => {
+      if (data?.usernameChanged || error?.usernameChanged) {
         await queryClient.invalidateQueries({ queryKey: profileQueryKeys.me() });
       }
     },

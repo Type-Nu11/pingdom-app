@@ -25,6 +25,7 @@ export default function TravelCalendar({ highlightedRange, initialMonth }: Trave
   const { i18n, t } = useTranslation();
   const [calendarMonth, setCalendarMonth] = useState(initialMonth);
   const weeks = chunkIntoWeeks(buildCalendarDays(calendarMonth));
+  const daySize = getCalendarDaySize(weeks.length);
 
   return (
     <Container testID="v2-my-page-calendar">
@@ -59,12 +60,13 @@ export default function TravelCalendar({ highlightedRange, initialMonth }: Trave
       <Grid>
         {weeks.map((week, weekIndex) => (
           <WeekRow
+            $height={daySize}
             $highlighted={week.some((day) => day !== null && isWithinRange(day.date, highlightedRange))}
             key={`week-${weekIndex}`}
           >
             {week.map((day, dayIndex) => (
               <DayCell key={day?.date ?? `empty-${weekIndex}-${dayIndex}`}>
-                {day ? <Day day={day} highlightedRange={highlightedRange} /> : null}
+                {day ? <Day day={day} highlightedRange={highlightedRange} size={daySize} /> : null}
               </DayCell>
             ))}
           </WeekRow>
@@ -77,9 +79,11 @@ export default function TravelCalendar({ highlightedRange, initialMonth }: Trave
 function Day({
   day,
   highlightedRange,
+  size,
 }: {
   day: CalendarDay;
   highlightedRange: HighlightedRange | null;
+  size: number;
 }) {
   const inRange = isWithinRange(day.date, highlightedRange);
   const isEndpoint = highlightedRange !== null
@@ -87,13 +91,17 @@ function Day({
 
   if (isEndpoint) {
     return (
-      <DayBadge>
+      <DayBadge $size={size}>
         <DayBadgeText>{day.day}</DayBadgeText>
       </DayBadge>
     );
   }
 
   return <DayText $inRange={inRange} $weekday={day.weekday}>{day.day}</DayText>;
+}
+
+export function getCalendarDaySize(weekCount: number): number {
+  return weekCount > 5 ? 38 : 44;
 }
 
 function isWithinRange(date: ServerTravelDate, range: HighlightedRange | null): boolean {
@@ -156,10 +164,10 @@ const Grid = styled.View`
   padding: 0 ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.sm}px;
 `;
 
-const WeekRow = styled.View<{ $highlighted: boolean }>`
+const WeekRow = styled.View<{ $height: number; $highlighted: boolean }>`
   flex-direction: row;
   align-items: center;
-  height: 44px;
+  height: ${({ $height }) => $height}px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ $highlighted }) => ($highlighted ? 'rgba(255, 201, 211, 0.48)' : 'transparent')};
 `;
@@ -176,11 +184,11 @@ const DayText = styled.Text<{ $inRange: boolean; $weekday: number }>`
   color: ${({ $inRange, $weekday, theme }) => ($inRange ? theme.colors.primary : weekdayColor($weekday, theme))};
 `;
 
-const DayBadge = styled.View`
+const DayBadge = styled.View<{ $size: number }>`
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: ${({ $size }) => $size}px;
+  height: ${({ $size }) => $size}px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.primary};
 `;

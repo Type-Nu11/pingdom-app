@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled, { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
@@ -18,7 +18,7 @@ import {
   VisitVerificationReviewScreen,
 } from '../../v2/features/place-visit-verification';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
-import SettingsScreen from '../../features/settings/screens/SettingsScreen';
+import SettingsScreen from '../../v2/features/settings/screens/SettingsScreen';
 import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import { createFocusedPlaceMapParams } from './navigationIntent';
@@ -93,20 +93,33 @@ const ProfileRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
   />
 );
 
-const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
+export const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
   const { profile } = useProfile();
+  const profileEditNavigationLock = useRef(false);
+  const openProfileEdit = useCallback(() => {
+    if (profileEditNavigationLock.current) return;
+    profileEditNavigationLock.current = true;
+    navigation.navigate(MAIN_ROUTES.ProfileEdit);
+  }, [navigation]);
+
+  useEffect(
+    () => navigation.addListener('focus', () => {
+      profileEditNavigationLock.current = false;
+    }),
+    [navigation],
+  );
 
   if (profile?.role === 'MERCHANT_OWNER') {
     return (
       <V2ScreenBoundary>
         <MerchantMyPageContainer
           onBack={navigation.goBack}
-          onCreateEvent={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
-          onEditAddress={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
-          onEditBusinessHours={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
-          onEditPhoneNumber={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+          onCreateEvent={openProfileEdit}
+          onEditAddress={openProfileEdit}
+          onEditBusinessHours={openProfileEdit}
+          onEditPhoneNumber={openProfileEdit}
           onOpenAllReviews={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
-          onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+          onOpenProfileEdit={openProfileEdit}
           onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
           onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
           userProfileImageUrl={profile.profileImageUrl}
@@ -120,7 +133,7 @@ const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
     <V2ScreenBoundary>
       <MyPageScreen
         onBack={navigation.goBack}
-        onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+        onOpenProfileEdit={openProfileEdit}
         onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
         onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
       />
@@ -128,7 +141,7 @@ const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
   );
 };
 
-const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileEdit'>) => (
+export const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileEdit'>) => (
   <V2ScreenBoundary>
     <ProfileEditScreen onBack={navigation.goBack} />
   </V2ScreenBoundary>
@@ -140,14 +153,17 @@ const VerifiedPlacesRouteScreen = ({ navigation }: MainScreenProps<'VerifiedPlac
   </V2ScreenBoundary>
 );
 
-const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
+export const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
   const logout = useAuthStore((state) => state.logout);
 
   return (
-    <SettingsScreen
-      onBack={navigation.goBack}
-      onLogout={logout}
-    />
+    <V2ScreenBoundary>
+      <SettingsScreen
+        onBack={navigation.goBack}
+        onLogout={logout}
+        onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+      />
+    </V2ScreenBoundary>
   );
 };
 

@@ -1,7 +1,16 @@
 import {
   findMapPreviewPlace,
   mergeMapPreviewPlaces,
+  shouldPresentMapSelection,
 } from '../mapPreviewSelection';
+
+describe('shouldPresentMapSelection', () => {
+  test('바텀시트가 내려가면 지도 선택 표현을 해제하고 다시 올리면 복원한다', () => {
+    expect(shouldPresentMapSelection('collapsed')).toBe(false);
+    expect(shouldPresentMapSelection('medium')).toBe(true);
+    expect(shouldPresentMapSelection('expanded')).toBe(true);
+  });
+});
 
 describe('map preview selection', () => {
   test('추천과 실제 API 장소를 중복 없이 선택 가능한 목록으로 합친다', () => {

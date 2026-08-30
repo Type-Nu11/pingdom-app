@@ -67,7 +67,7 @@ export default function MapTopOverlay({
           <S.HeaderSurface>
             <S.HeaderGlass
               bottomShade={false}
-              cornerRadius={25}
+              cornerRadius={31}
               glassEffectStyle="regular"
               highlightOpacity={0.16}
               intensity={32}
@@ -78,7 +78,7 @@ export default function MapTopOverlay({
             <S.SearchShadow>
               <S.SearchGlass
                 bottomShade={false}
-                cornerRadius={20}
+                cornerRadius={24}
                 glassEffectStyle="regular"
                 highlightOpacity={0.20}
                 pointerEvents="none"
@@ -90,7 +90,10 @@ export default function MapTopOverlay({
                 accessibilityRole="button"
                 onPress={onSearchFocus}
               >
-                <SearchAsset height={18} width={18} />
+                <SearchAsset
+                  height={S.MAP_TOP_OVERLAY_METRICS.searchIconSize}
+                  width={S.MAP_TOP_OVERLAY_METRICS.searchIconSize}
+                />
                 <S.SearchInput
                   $isPlaceholder={!query}
                   numberOfLines={1}
@@ -106,7 +109,10 @@ export default function MapTopOverlay({
               onPress={onProfilePress}
               style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
             >
-              <ProfileAsset height={34} width={34} />
+              <ProfileAsset
+                height={S.MAP_TOP_OVERLAY_METRICS.profileIconSize}
+                width={S.MAP_TOP_OVERLAY_METRICS.profileIconSize}
+              />
             </S.ProfileButton>
           </S.HeaderSurface>
         </S.HeaderShadow>
@@ -133,7 +139,7 @@ export default function MapTopOverlay({
                   <S.CategoryChipClip>
                     <S.CategoryChipGlass
                       bottomShade={false}
-                      cornerRadius={15}
+                      cornerRadius={19}
                       glassEffectStyle="regular"
                       highlightOpacity={isActive ? 0.18 : 0.14}
                       pointerEvents="none"
@@ -142,7 +148,11 @@ export default function MapTopOverlay({
                     />
                     <S.CategoryChipContent>
                       {Icon ? (
-                        <Icon color={isActive ? '#FF245B' : '#5E5E66'} height={16} width={17} />
+                        <Icon
+                          color={isActive ? '#FF245B' : '#5E5E66'}
+                          height={S.MAP_TOP_OVERLAY_METRICS.categoryIconHeight}
+                          width={S.MAP_TOP_OVERLAY_METRICS.categoryIconWidth}
+                        />
                       ) : null}
                       <S.CategoryLabel $active={isActive}>{label}</S.CategoryLabel>
                     </S.CategoryChipContent>

@@ -68,6 +68,7 @@ import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 import {
   findMapPreviewPlace,
   mergeMapPreviewPlaces,
+  shouldPresentMapSelection,
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 import {
@@ -385,6 +386,7 @@ export default function MapScreen({
       name: selectedPlacePresentation.name || selectedPlaceBase.name,
     };
   }, [selectedPlaceBase, selectedPlacePresentation]);
+  const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;
     const reviewCount = selectedReviews.isSuccess
@@ -448,7 +450,7 @@ export default function MapScreen({
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
     const recommendationPlaceIds = new Set(recommendationPlaces.map((place) => place.id));
     const focusedRecommendationMarker = createFocusedRecommendationMarker(
-      content.type === 'place-preview' ? selectedPlace : null,
+      content.type === 'place-preview' ? mapSelectedPlace : null,
       recommendationPlaceIds,
       liveMarkerIds,
     );
@@ -473,12 +475,12 @@ export default function MapScreen({
     content.type,
     apiPlaces.length,
     recommendationPlaces,
-    selectedPlace,
+    mapSelectedPlace,
   ]);
   const visibleMapMarkers = useMemo(() => markersForSelectedPlace(
     mapMarkers,
-    content.type === 'place-preview' ? content.placeId : null,
-  ), [content, mapMarkers]);
+    content.type === 'place-preview' ? mapSelectedPlace?.id ?? null : null,
+  ), [content.type, mapMarkers, mapSelectedPlace?.id]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
@@ -618,7 +620,7 @@ export default function MapScreen({
     }
   };
 
-  const focusedPlace = selectedPlace;
+  const focusedPlace = mapSelectedPlace;
   const mapCenterLat = !isFollowingUser && focusedPlace
     ? focusedPlace.latitude - (0.00072 * designScale)
     : dismissedMarkerCenter?.lat ?? center.lat;

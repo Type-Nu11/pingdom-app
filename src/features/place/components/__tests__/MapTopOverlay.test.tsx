@@ -3,6 +3,7 @@ import React from 'react';
 
 import { renderWithProviders } from '../../../../v2/shared/testing/testProviders';
 import MapTopOverlay from '../MapTopOverlay';
+import { MAP_TOP_OVERLAY_METRICS } from '../../styles/MapTopOverlay.styles';
 
 const props = {
   activeCategory: 'all' as const,
@@ -15,6 +16,13 @@ const props = {
 };
 
 describe('MapTopOverlay', () => {
+  test('검색바와 카테고리를 최소 터치 크기 이상으로 표시한다', () => {
+    expect(MAP_TOP_OVERLAY_METRICS.searchHeight).toBe(48);
+    expect(MAP_TOP_OVERLAY_METRICS.categoryHeight).toBeGreaterThanOrEqual(38);
+    expect(MAP_TOP_OVERLAY_METRICS.searchLabelSize).toBe(17);
+    expect(MAP_TOP_OVERLAY_METRICS.categoryLabelSize).toBe(14);
+  });
+
   test('expanded 시트에서는 검색창을 유지하고 지도 카테고리를 숨긴다', async () => {
     await renderWithProviders(<MapTopOverlay {...props} showCategories={false} />);
 
