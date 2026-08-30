@@ -133,6 +133,8 @@ test('API modules keep operation paths, params, bodies, and documented response 
     results.every((result, index) =>
       index === 2
         ? result.checkIns.length === 0 && result.page === 1
+        : index === 12 || index === 15 || index === 18
+        ? result.contract === response.contract && result.totalCount === 0
         : index === 28 || index === 29 || index === 32
         ? result === undefined
         : result === response),

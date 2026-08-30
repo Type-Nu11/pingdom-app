@@ -26,6 +26,27 @@ test('shared client unwraps responses and forwards bodies and abort signals unch
   assert.deepEqual(calls, [{ body, options: { signal }, path: '/conversion-events/batch' }]);
 });
 
+test('shared client preserves request content type for multipart bodies', async () => {
+  const calls = [];
+  const transport = {
+    get: async () => ({ data: null }),
+    patch: async () => ({ data: null }),
+    post: async (path, body, options) => {
+      calls.push({ body, options, path });
+      return { data: { profileImageUrl: 'https://cdn.example.com/profile.jpg' } };
+    },
+  };
+  const client = createApiClient(transport);
+  const body = new FormData();
+
+  await client.post('/users/me/profile-image', body, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  assert.equal(calls[0].body, body);
+  assert.deepEqual(calls[0].options.headers, { 'Content-Type': 'multipart/form-data' });
+});
+
 test('shared client converts transport failures to the common contract error', async () => {
   const client = createApiClient({
     get: async () => { throw new Error('unused'); },

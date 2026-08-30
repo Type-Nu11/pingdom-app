@@ -10,6 +10,12 @@ export const placeDetailQueryKeys = {
   detail: placeQueryKeys.detail,
 };
 
+// A place detail is fetched one id at a time, so a list that resolves many of
+// them at once (the verified places list) issues one request per row. Holding
+// each result well past the global 30s default keeps scrolling back through an
+// already-loaded list from re-issuing that whole fan-out.
+const PLACE_DETAIL_STALE_TIME_MS = 5 * 60 * 1000;
+
 export function createPlaceDetailQueryOptions(
   placeId: number,
   api: PlaceDetailApi = placeDetailApi,
@@ -17,6 +23,7 @@ export function createPlaceDetailQueryOptions(
   return {
     queryFn: ({ signal }: { signal?: AbortSignal }) => api.getPlaceDetail(placeId, signal),
     queryKey: placeDetailQueryKeys.detail(placeId),
+    staleTime: PLACE_DETAIL_STALE_TIME_MS,
   };
 }
 

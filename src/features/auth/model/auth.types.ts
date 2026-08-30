@@ -46,6 +46,17 @@ export type ChangeUsernameRequest = {
   newUsername: string;
 };
 
+export type PasswordResetRequest = {
+  email: string;
+};
+
+export type PasswordResetConfirmRequest = {
+  confirmPassword: string;
+  email: string;
+  newPassword: string;
+  token: string;
+};
+
 export type PhoneSendRequest = {
   phoneNumber: string;
 };

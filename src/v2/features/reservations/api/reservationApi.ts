@@ -16,6 +16,16 @@ export type ReservationPage = OperationResponse<'listMyReservations', 200>;
 export type Reservation = OperationResponse<'createReservation', 201>;
 export type ReservationDetail = ReservationPaymentOperationResponse<'get_5', 200>;
 
+// The live server responds with `totalElements`; the generated contract (last
+// regenerated against an older spec) still expects `totalCount`. Normalize so
+// callers can rely on either.
+function normalizeReservationPage(raw: Record<string, unknown>): ReservationPage {
+  return {
+    ...raw,
+    totalCount: (raw.totalElements ?? raw.totalCount ?? 0) as ReservationPage['totalCount'],
+  } as ReservationPage;
+}
+
 export function createReservationApi(client: ApiClient = apiClient) {
   const postReservationTransition = (
     scope: '' | '/merchant-owner',
@@ -52,11 +62,13 @@ export function createReservationApi(client: ApiClient = apiClient) {
     ): Promise<AvailabilityList> =>
       client.get<AvailabilityList>(`/places/${placeId}/availabilities`, { params, signal }),
 
-    listOwnedReservations: (
+    listOwnedReservations: async (
       params: ListOwnedReservationsParams = {},
       signal?: AbortSignal,
     ): Promise<ReservationPage> =>
-      client.get<ReservationPage>('/merchant-owner/reservations', { params, signal }),
+      normalizeReservationPage(
+        await client.get<Record<string, unknown>>('/merchant-owner/reservations', { params, signal }),
+      ),
 
     getReservation: (
       reservationId: number,
@@ -64,11 +76,13 @@ export function createReservationApi(client: ApiClient = apiClient) {
     ): Promise<ReservationDetail> =>
       client.get<ReservationDetail>(`/reservations/${reservationId}`, { signal }),
 
-    listReservations: (
+    listReservations: async (
       params: ListReservationsParams = {},
       signal?: AbortSignal,
     ): Promise<ReservationPage> =>
-      client.get<ReservationPage>('/reservations', { params, signal }),
+      normalizeReservationPage(
+        await client.get<Record<string, unknown>>('/reservations', { params, signal }),
+      ),
   };
 }
 

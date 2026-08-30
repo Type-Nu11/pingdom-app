@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
 import type { MapPlaceResult } from '../model/mapDiscovery';
+import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
 
 const CATEGORY_FILTERS = [
   { labelKey: 'map.filters.all', value: null },
@@ -18,6 +19,7 @@ type MapDiscoverySearchProps = {
   isBusy: boolean;
   onCategoryChange: (category: string | null) => void;
   onFocusChange: (focused: boolean) => void;
+  onOpenProfile: () => void;
   onQueryChange: (query: string) => void;
   onSelectPlace: (place: MapPlaceResult) => void;
   query: string;
@@ -29,6 +31,7 @@ export default function MapDiscoverySearch({
   isBusy,
   onCategoryChange,
   onFocusChange,
+  onOpenProfile,
   onQueryChange,
   onSelectPlace,
   query,
@@ -52,6 +55,14 @@ export default function MapDiscoverySearch({
           value={query}
         />
         {isBusy ? <ActivityIndicator color={theme.colors.primary} size="small" /> : null}
+        <ProfileButton
+          accessibilityLabel={t('map.search.profileAccessibilityLabel')}
+          accessibilityRole="button"
+          onPress={onOpenProfile}
+          testID="v2-map-profile-button"
+        >
+          <AvatarPlaceholder height={28} width={28} />
+        </ProfileButton>
       </SearchRow>
 
       <FilterScroll horizontal showsHorizontalScrollIndicator={false}>
@@ -116,6 +127,10 @@ const SearchInput = styled.TextInput`
   flex: 1;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+`;
+const ProfileButton = styled.Pressable`
+  align-items: center;
+  justify-content: center;
 `;
 const FilterScroll = styled.ScrollView`flex-grow: 0;`;
 const FilterChip = styled.Pressable<{ $selected: boolean }>`

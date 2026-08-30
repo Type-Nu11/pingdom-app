@@ -22,11 +22,19 @@ export function createOfferCouponApi(client: ApiClient = apiClient) {
     issueCoupon: (offerId: number, signal?: AbortSignal): Promise<Coupon> =>
       client.post<Coupon>(`/offers/${offerId}/coupons`, undefined, { signal }),
 
-    listCoupons: (
+    listCoupons: async (
       params: ListCouponsParams = {},
       signal?: AbortSignal,
-    ): Promise<CouponPage> =>
-      client.get<CouponPage>('/coupons', { params, signal }),
+    ): Promise<CouponPage> => {
+      // The live server responds with `totalElements`; the generated contract
+      // (last regenerated against an older spec) still expects `totalCount`.
+      // Normalize so callers can rely on either.
+      const raw = await client.get<Record<string, unknown>>('/coupons', { params, signal });
+      return {
+        ...raw,
+        totalCount: (raw.totalElements ?? raw.totalCount ?? 0) as CouponPage['totalCount'],
+      } as CouponPage;
+    },
 
     listOffers: (params: ListOffersParams = {}, signal?: AbortSignal): Promise<OfferPage> =>
       client.get<OfferPage>('/offers', { params, signal }),
