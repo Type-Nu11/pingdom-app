@@ -193,6 +193,55 @@ export const resources = {
         title: 'Nearby map',
         visibleCenter: '{{lat}}, {{lng}}',
       },
+      notificationSettings: {
+        back: 'Back',
+        error: 'Could not load notification settings.',
+        loading: 'Loading notification settings',
+        retry: 'Try again',
+        sections: {
+          interests: 'Saved places & areas',
+          other: 'Other',
+          records: 'My records & places',
+          reports: 'Reports',
+        },
+        settings: {
+          favoriteMoodChange: {
+            description: 'When recent tags and record trends change',
+            label: 'Changes around a saved place',
+          },
+          firstRecordTrending: {
+            description: 'Get notified when a place you First Recorded starts trending',
+            label: 'A place I recorded first is trending',
+          },
+          frequentAreaHotPlace: {
+            description: 'When a new trending place appears in an area you frequent',
+            label: 'New hot place in a frequent area',
+          },
+          marketingEvents: {
+            label: 'Marketing & event updates',
+          },
+          nightNotifications: {
+            description: 'Allow notifications between 21:00 and 08:00',
+            label: 'Receive notifications at night',
+          },
+          pushAll: {
+            description: 'Turning this off disables all notifications below',
+            label: 'Allow all push notifications',
+          },
+          recordNewTags: {
+            description: 'When the status of a place you recorded changes',
+            label: 'New tags added to my recorded place',
+          },
+          todayMissionArea: {
+            label: 'Today’s mission area',
+          },
+          weeklyReport: {
+            description: 'A weekly summary of this week’s discoveries and your records',
+            label: 'Weekly report',
+          },
+        },
+        title: 'Notification settings',
+      },
       myPage: {
         back: 'Back',
         profileEdit: {
@@ -599,6 +648,55 @@ export const resources = {
         },
         title: '주변 지도',
         visibleCenter: '{{lat}}, {{lng}}',
+      },
+      notificationSettings: {
+        back: '뒤로가기',
+        error: '알림 설정을 불러오지 못했어요.',
+        loading: '알림 설정을 불러오는 중',
+        retry: '다시 시도',
+        sections: {
+          interests: '관심 장소 · 구역',
+          other: '기타',
+          records: '내 기록 · 장소',
+          reports: '리포트',
+        },
+        settings: {
+          favoriteMoodChange: {
+            description: '최근 태그와 기록 추세가 바뀌었을 때',
+            label: '관심 장소 분위기 변화',
+          },
+          firstRecordTrending: {
+            description: 'First Recorder로 남긴 장소가 뜨면 알려드려요',
+            label: '내가 먼저 기록한 장소 급상승',
+          },
+          frequentAreaHotPlace: {
+            description: '내 생활권에 새로 뜨는 장소가 생기면',
+            label: '자주 가는 구역 새 핫플',
+          },
+          marketingEvents: {
+            label: '마케팅 · 이벤트 정보',
+          },
+          nightNotifications: {
+            description: '21:00 – 08:00 사이 알림 허용',
+            label: '야간 알림 받기',
+          },
+          pushAll: {
+            description: '끄면 아래 알림이 모두 발송되지 않아요',
+            label: '푸시 알림 전체 허용',
+          },
+          recordNewTags: {
+            description: '내가 남긴 장소의 상태가 바뀔 때',
+            label: '내 기록 장소에 새 태그 누적',
+          },
+          todayMissionArea: {
+            label: '오늘의 미션 구역',
+          },
+          weeklyReport: {
+            description: '이번 주 발자국과 내 기록을 정리해 보내드려요',
+            label: '주간 리포트',
+          },
+        },
+        title: '알림 설정',
       },
       myPage: {
         back: '뒤로가기',
