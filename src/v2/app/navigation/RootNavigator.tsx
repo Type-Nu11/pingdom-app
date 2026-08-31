@@ -6,6 +6,7 @@ import { useFcmTokenSync } from '../../features/notifications/hooks/useFcmTokenS
 import { useForegroundNotifications } from '../../features/notifications/hooks/useForegroundNotifications';
 import { useNotificationOpenSync } from '../../features/notifications/hooks/useNotificationOpenSync';
 import type { NotificationRoute } from '../../features/notifications/model/notification.types';
+import NotificationSettingsScreen from '../../features/notifications/screens/NotificationSettingsScreen';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
@@ -36,10 +37,14 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
     <MyPageScreen
       onBack={navigation.goBack}
       onOpenProfileEdit={() => {}}
-      onOpenSettings={() => {}}
+      onOpenSettings={() => navigation.navigate(V2_ROUTES.NotificationSettings)}
       onOpenVerifiedPlaces={() => {}}
     />
   );
+}
+
+function NotificationSettingsRoute({ navigation }: V2ScreenProps<'NotificationSettings'>) {
+  return <NotificationSettingsScreen onBack={navigation.goBack} />;
 }
 
 function VisitVerificationPlacesRoute({ navigation }: V2ScreenProps<'VisitVerificationPlaces'>) {
@@ -97,6 +102,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.NotificationSettings} component={NotificationSettingsRoute} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />

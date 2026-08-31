@@ -14,6 +14,7 @@ export const V2_ROUTES = {
   Home: 'Home',
   Map: 'Map',
   MyPage: 'MyPage',
+  NotificationSettings: 'NotificationSettings',
   PlaceDetail: 'PlaceDetail',
   VisitVerificationPlaces: 'VisitVerificationPlaces',
   VisitVerificationReview: 'VisitVerificationReview',
@@ -29,6 +30,7 @@ export type V2StackParamList = {
   Home: undefined;
   Map: undefined;
   MyPage: undefined;
+  NotificationSettings: undefined;
   PlaceDetail: {
     placeId: PlaceId;
   };
