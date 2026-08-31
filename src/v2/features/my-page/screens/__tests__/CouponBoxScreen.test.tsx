@@ -8,6 +8,9 @@ import CouponBoxScreen from '../CouponBoxScreen';
 type CouponInput = {
   id: number;
   offerId?: number;
+  offerTitle?: string | null;
+  placeName?: string | null;
+  benefitDescription?: string | null;
   status?: 'ISSUED' | 'REDEEMED' | 'EXPIRED';
   issuedAt?: string;
   expiresAt?: string;
@@ -17,10 +20,14 @@ type CouponInput = {
 function couponPage(coupons: CouponInput[], overrides: Partial<CouponPage> = {}): CouponPage {
   return {
     coupons: coupons.map((coupon) => ({
+      benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
       code: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
       expiresAt: '2027-08-18T23:59:59',
       issuedAt: '2026-08-18T09:00:00',
       offerId: 10,
+      offerTitle: '생일 할인 쿠폰',
+      placeId: 100,
+      placeName: '대성반점',
       redeemedAt: null,
       status: 'ISSUED',
       ...coupon,
@@ -32,10 +39,6 @@ function couponPage(coupons: CouponInput[], overrides: Partial<CouponPage> = {})
     totalPages: 1,
     ...overrides,
   } as CouponPage;
-}
-
-function offer(id: number, title: string) {
-  return { benefitDescription: '4만원 이상 결제 시, 최대 10% 할인', id, placeId: 100, title } as never;
 }
 
 describe('CouponBoxScreen', () => {
@@ -57,46 +60,28 @@ describe('CouponBoxScreen', () => {
     expect(screen.queryByText('보유한 쿠폰이 없어요')).toBeNull();
   });
 
-  test('ISSUED는 사용 CTA, REDEEMED는 사용 불가 문구를 보여준다', async () => {
+  test('매장명·쿠폰명·기간을 쿠폰 응답 하나로 그린다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(
-      couponPage([
-        { id: 1, offerId: 10, status: 'ISSUED' },
-        { id: 2, offerId: 20, status: 'REDEEMED', redeemedAt: '2026-08-20T15:00:00' },
-      ]),
+      couponPage([{ id: 1, offerId: 10, status: 'ISSUED' }]),
     );
-    jest.spyOn(offerCouponApi, 'getOffer').mockImplementation(async (offerId) =>
-      offer(offerId, offerId === 10 ? '생일 할인 쿠폰' : '가입 축하 쿠폰'));
+    const getOffer = jest.spyOn(offerCouponApi, 'getOffer');
 
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} onUseCoupon={jest.fn()} />);
+    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
 
     await waitFor(() => expect(screen.getByText('생일 할인 쿠폰')).toBeTruthy());
-    expect(screen.getByTestId('v2-coupon-card-use')).toBeTruthy();
-    expect(screen.getByTestId('v2-coupon-card-unusable')).toBeTruthy();
-    expect(screen.getAllByTestId('v2-coupon-card-use')).toHaveLength(1);
+    // 디자인상 카드 최상단은 발급 매장명이다.
+    expect(screen.getByText('대성반점')).toBeTruthy();
+    expect(screen.getByTestId('v2-coupon-card-period')).toHaveTextContent('26.08.18~27.08.18');
     // 전체 코드는 목록에 노출하지 않는다.
     expect(screen.queryByText('3fa85f64-5717-4562-b3fc-2c963f66afa6')).toBeNull();
-  });
-
-  test('상태 탭을 누르면 해당 status로 다시 조회한다', async () => {
-    const listCoupons = jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([]));
-
-    const { user } = await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
-    await waitFor(() => expect(screen.getByText('보유한 쿠폰이 없어요')).toBeTruthy());
-
-    await user.press(screen.getByText('사용 완료'));
-
-    await waitFor(() => expect(listCoupons).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'REDEEMED' }),
-      expect.anything(),
-    ));
-    await waitFor(() => expect(screen.getByText('사용 완료한 쿠폰이 없어요')).toBeTruthy());
+    // 목록은 offer/place를 행마다 다시 조회하지 않는다.
+    expect(getOffer).not.toHaveBeenCalled();
   });
 
   test('카드를 누르면 상세로 넘길 수 있게 쿠폰 전체를 넘긴다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(
       couponPage([{ id: 7, offerId: 10 }]),
     );
-    jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer(10, '생일 할인 쿠폰'));
     const onOpenCoupon = jest.fn();
 
     const { user } = await renderWithProviders(
@@ -122,7 +107,6 @@ describe('CouponBoxScreen', () => {
         { hasNext: params?.page !== 2, page: params?.page ?? 1, totalPages: 2 },
       ),
     );
-    jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer(10, '쿠폰 A'));
 
     await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
     await waitFor(() => expect(screen.getByTestId('v2-coupon-box-list')).toBeTruthy());
@@ -142,7 +126,6 @@ describe('CouponBoxScreen', () => {
         return couponPage([{ id: 1, offerId: 10 }], { hasNext: true, page: 1, totalPages: 2 });
       },
     );
-    jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer(10, '쿠폰 A'));
 
     await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
     await waitFor(() => expect(screen.getByTestId('v2-coupon-box-list')).toBeTruthy());

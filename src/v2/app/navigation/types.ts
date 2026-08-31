@@ -24,13 +24,7 @@ export const V2_ROUTES = {
 export type V2StackParamList = {
   CouponBox: undefined;
   CouponDetail: {
-    code: string;
     couponId: number;
-    expiresAt: string;
-    issuedAt: string;
-    offerId: number;
-    redeemedAt: string | null;
-    status: string;
   };
   CreateReservation: {
     category?: string;

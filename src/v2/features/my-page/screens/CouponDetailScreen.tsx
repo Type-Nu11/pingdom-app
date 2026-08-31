@@ -20,7 +20,10 @@ export type CouponDetailScreenProps = {
   periodText: string;
   code: string;
   infoRows: readonly CouponDetailInfoRow[];
-  reservable: boolean;
+  /** `ISSUED` only. A terminal coupon must not be presentable as a valid one. */
+  usable: boolean;
+  /** Already localized. Replaces the barcode when the coupon can no longer be used. */
+  stateNotice?: string;
 };
 
 export default function CouponDetailScreen({
@@ -32,7 +35,8 @@ export default function CouponDetailScreen({
   periodText,
   code,
   infoRows,
-  reservable,
+  usable,
+  stateNotice,
 }: CouponDetailScreenProps) {
   const { t } = useTranslation();
   // i18next hands back the key itself when a resource is missing, so an
@@ -79,15 +83,28 @@ export default function CouponDetailScreen({
           <Perforation />
 
           <BarcodeArea>
-            <CouponBarcode code={code} unavailableLabel={t('myPage.couponDetail.barcodeUnavailable')} />
-            <BarcodeHint>{t('myPage.couponDetail.barcodeHint')}</BarcodeHint>
+            {usable ? (
+              <>
+                <CouponBarcode
+                  code={code}
+                  unavailableLabel={t('myPage.couponDetail.barcodeUnavailable')}
+                />
+                <BarcodeHint>{t('myPage.couponDetail.barcodeHint')}</BarcodeHint>
+              </>
+            ) : (
+              // A used or expired coupon keeps its ticket details so the user can
+              // still tell which coupon it was, but never shows a scannable code.
+              <StateNotice testID="v2-coupon-detail-unavailable">
+                {stateNotice ?? t('myPage.couponDetail.unavailable')}
+              </StateNotice>
+            )}
           </BarcodeArea>
 
           <Notch $side="left" />
           <Notch $side="right" />
         </Ticket>
 
-        {reservable && onReserve ? (
+        {usable && onReserve ? (
           <Button
             fullWidth
             label={t('myPage.couponDetail.reserve')}
@@ -95,11 +112,7 @@ export default function CouponDetailScreen({
             size="large"
             testID="v2-coupon-detail-reserve"
           />
-        ) : (
-          <UnavailableNote testID="v2-coupon-detail-unavailable">
-            {t('myPage.couponDetail.unavailable')}
-          </UnavailableNote>
-        )}
+        ) : null}
 
         <Section>
           <SectionHeading>{t('myPage.couponDetail.infoHeading')}</SectionHeading>
@@ -254,12 +267,12 @@ const Notch = styled.View<{ $side: 'left' | 'right' }>`
   ${({ $side }) => ($side === 'left' ? 'left: -11px;' : 'right: -11px;')}
 `;
 
-const UnavailableNote = styled.Text`
+const StateNotice = styled.Text`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
   font-weight: 600;
   text-align: center;
-  padding: ${({ theme }) => theme.spacing.md}px 0;
+  padding: ${({ theme }) => theme.spacing.lg}px 0;
 `;
 
 const Section = styled.View`

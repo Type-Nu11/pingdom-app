@@ -1,15 +1,17 @@
-import type { Coupon, CouponStatus, Offer } from '../../offers-coupons';
+import type { Coupon, CouponStatus } from '../../offers-coupons';
 
 /**
  * A coupon box row in render order. The coupon list is the source of truth for
- * which rows exist and their status; the offer it points at is looked up
- * separately, so a row whose offer is still loading (or failed) keeps its slot
- * with fallback copy instead of vanishing.
+ * which rows exist and their status; the offer and place it points at are looked
+ * up separately, so a row whose lookups are still loading (or failed) keeps its
+ * slot with fallback copy instead of vanishing.
  */
 export type CouponBoxEntry = Readonly<{
   couponId: number;
   offerId: number;
   status: CouponStatus;
+  /** Undefined while the place is unknown — a placeholder would misread as real. */
+  placeName: string | undefined;
   title: string;
   description: string;
   issuedAt: string;
@@ -31,27 +33,25 @@ export function isCouponUsable(status: CouponStatus): boolean {
   return status === 'ISSUED';
 }
 
-type OfferLookup = ReadonlyMap<number, Offer>;
-
+/**
+ * `GET /coupons` embeds the offer title, benefit and place name, so a row needs
+ * no per-coupon lookup. `fallback` covers the fields the server marks nullable.
+ */
 export function toCouponBoxEntries(
   coupons: readonly Coupon[],
-  offersById: OfferLookup,
   fallback: Readonly<{ title: string; description: string }>,
 ): CouponBoxEntry[] {
-  return coupons.map((coupon) => {
-    const offer = offersById.get(coupon.offerId);
-
-    return {
-      couponId: coupon.id,
-      description: offer?.benefitDescription || fallback.description,
-      expiresAt: coupon.expiresAt,
-      issuedAt: coupon.issuedAt,
-      offerId: coupon.offerId,
-      redeemedAt: coupon.redeemedAt ?? null,
-      status: coupon.status,
-      title: offer?.title || fallback.title,
-    };
-  });
+  return coupons.map((coupon) => ({
+    couponId: coupon.id,
+    description: coupon.benefitDescription || fallback.description,
+    expiresAt: coupon.expiresAt,
+    issuedAt: coupon.issuedAt,
+    offerId: coupon.offerId,
+    placeName: coupon.placeName ?? undefined,
+    redeemedAt: coupon.redeemedAt ?? null,
+    status: coupon.status,
+    title: coupon.offerTitle || fallback.title,
+  }));
 }
 
 export type CouponBoxListState =
@@ -105,15 +105,16 @@ export function formatCouponInstant(
 }
 
 /**
- * A closed date range for display, e.g. the coupon validity period. `weekday`
- * appends the localized short weekday to each end, matching the coupon detail
- * "사용 기간" row. Empty string if either end cannot be parsed.
+ * The offer period as the design writes it: `2026.08.18 ~ 2027.08.18`, or
+ * `26.08.18~27.08.18` when `compact`. Digits and separators are fixed because
+ * the design specifies them; only the weekday name follows the viewer's locale.
+ * Returns an empty string when neither end parses.
  */
-export function formatCouponDateRange(
-  fromIso: string | null | undefined,
-  toIso: string | null | undefined,
+export function formatOfferPeriod(
+  startIso: string | null | undefined,
+  endIso: string | null | undefined,
   locale: string,
-  { weekday = false }: { weekday?: boolean } = {},
+  { compact = false, weekday = false }: { compact?: boolean; weekday?: boolean } = {},
 ): string {
   const format = (iso: string | null | undefined): string => {
     if (!iso) {
@@ -123,15 +124,24 @@ export function formatCouponDateRange(
     if (Number.isNaN(parsed.getTime())) {
       return '';
     }
-    const date = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(parsed);
+
+    const year = compact
+      ? String(parsed.getFullYear()).slice(-2)
+      : String(parsed.getFullYear());
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const date = `${year}.${month}.${day}`;
+
     if (!weekday) {
       return date;
     }
-    const day = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(parsed);
-    return `${date} (${day})`;
+
+    return `${date}(${new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(parsed)})`;
   };
 
-  const from = format(fromIso);
-  const to = format(toIso);
-  return from && to ? `${from} ~ ${to}` : from || to;
+  const from = format(startIso);
+  const to = format(endIso);
+  const separator = compact ? '~' : ' ~ ';
+  return from && to ? `${from}${separator}${to}` : from || to;
 }
+

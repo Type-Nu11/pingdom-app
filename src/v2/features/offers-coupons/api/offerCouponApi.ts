@@ -21,13 +21,38 @@ export type ListCouponsParams = OperationQuery<'listMyCoupons'> & {
 
 export type RedeemCouponBody = OperationRequestBody<'redeemCoupon'>;
 export type OfferPage = OperationResponse<'listIssuableOffers', 200>;
-export type Offer = OperationResponse<'getIssuableOffer', 200>;
-export type CouponPage = OperationResponse<'listMyCoupons', 200>;
-export type Coupon = OperationResponse<'issueCoupon', 201>;
+/**
+ * The generated contract predates the offer policy fields the live server now
+ * returns. They are widened here rather than by regenerating the app-wide
+ * contract, matching how `listCoupons` absorbs the page envelope difference.
+ */
+export type Offer = OperationResponse<'getIssuableOffer', 200> & {
+  eligibilityPolicy?: 'ACTIVE_TRAVEL_SCHEDULE' | 'PUBLIC';
+  expiryPolicy?: 'ISSUE_PLUS_DAYS' | 'ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END' | 'OFFER_END';
+  inventoryPolicy?: 'LIMITED' | 'UNLIMITED';
+};
+export type CouponPage = Omit<OperationResponse<'listMyCoupons', 200>, 'coupons'> & {
+  coupons: Coupon[];
+};
+
+/**
+ * The live `/coupons` payload embeds the offer and place summary the box and
+ * detail screens render, so neither has to fan out per row. The generated
+ * contract predates those fields, so they are widened in here.
+ */
+export type Coupon = OperationResponse<'issueCoupon', 201> & {
+  benefitDescription: string | null;
+  offerTitle: string | null;
+  placeId: number | null;
+  placeName: string | null;
+};
 export type CouponStatus = Coupon['status'];
 
 export function createOfferCouponApi(client: ApiClient = apiClient) {
   return {
+    getCoupon: (couponId: number, signal?: AbortSignal): Promise<Coupon> =>
+      client.get<Coupon>(`/coupons/${couponId}`, { signal }),
+
     getOffer: (offerId: number, signal?: AbortSignal): Promise<Offer> =>
       client.get<Offer>(`/offers/${offerId}`, { signal }),
 

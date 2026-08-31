@@ -7,15 +7,20 @@ const BAR_WIDTH = 2;
 
 type CouponBarcodeProps = {
   /**
-   * The coupon code exactly as the server issued it. It is encoded verbatim so a
-   * scan produces the value `POST /merchant-owner/offers/coupons/redeem` accepts
-   * — that endpoint requires the dashed UUID form, so it must not be reformatted.
+   * The coupon code exactly as the server issued it. The readable line below the
+   * bars is the functional part — staff read it into
+   * `POST /merchant-owner/offers/coupons/redeem`, which requires the dashed UUID
+   * form — so it must not be reformatted.
    */
   code: string;
-  /** Shown when the code cannot be encoded, so staff can still read it out. */
+  /** Shown when the bars cannot be drawn. The readable code stays either way. */
   unavailableLabel: string;
 };
 
+/**
+ * The bars are decorative: nothing scans them, so they are hidden from screen
+ * readers and the readable code below carries the meaning.
+ */
 export default function CouponBarcode({ code, unavailableLabel }: CouponBarcodeProps) {
   // jsbarcode lays the bars out at their intrinsic width, so the plate measures
   // itself and caps the barcode instead of letting a long code overflow.
@@ -41,9 +46,13 @@ export default function CouponBarcode({ code, unavailableLabel }: CouponBarcodeP
       testID="v2-coupon-barcode"
     >
       {availableWidth > 0 && !failed ? (
-        // The library's component does not forward a testID, so the wrapper
-        // carries it.
-        <BarSlot testID="v2-coupon-barcode-svg">
+        // The library's component does not forward a testID or accessibility
+        // props, so the wrapper carries them.
+        <BarSlot
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          testID="v2-coupon-barcode-svg"
+        >
           <Barcode
             background="rgba(0,0,0,0)"
             format="CODE128"

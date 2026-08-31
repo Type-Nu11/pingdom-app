@@ -12,7 +12,6 @@ import MyPageScreen from '../../v2/features/my-page/screens/MyPageScreen';
 import ProfileEditScreen from '../../v2/features/my-page/screens/ProfileEditScreen';
 import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlacesScreen';
 import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/MerchantMyPageContainer';
-import type { Coupon } from '../../v2/features/offers-coupons';
 import { useProfile } from '../../features/profile/hooks/useProfile';
 import { theme as v2Theme } from '../../v2/shared/theme';
 import {
@@ -167,34 +166,17 @@ const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) =
 );
 
 const CouponBoxRouteScreen = ({ navigation }: MainScreenProps<'CouponBox'>) => (
-  // The on-site present (QR) flow is tracked separately in #100; until it lands
-  // the box still surfaces the real couponId through onUseCoupon.
   <CouponBoxScreen
     onBack={navigation.goBack}
     onOpenCoupon={(coupon) => navigation.navigate(MAIN_ROUTES.CouponDetail, {
-      code: coupon.code,
       couponId: coupon.id,
-      expiresAt: coupon.expiresAt,
-      issuedAt: coupon.issuedAt,
-      offerId: coupon.offerId,
-      redeemedAt: coupon.redeemedAt,
-      status: coupon.status,
     })}
-    onUseCoupon={(couponId) => console.info('[CouponBox] present coupon', couponId)}
   />
 );
 
 const CouponDetailRouteScreen = ({ navigation, route }: MainScreenProps<'CouponDetail'>) => (
   <CouponDetailContainer
-    coupon={{
-      code: route.params.code,
-      expiresAt: route.params.expiresAt,
-      id: route.params.couponId,
-      issuedAt: route.params.issuedAt,
-      offerId: route.params.offerId,
-      redeemedAt: route.params.redeemedAt,
-      status: route.params.status as Coupon['status'],
-    }}
+    couponId={route.params.couponId}
     onBack={navigation.goBack}
     onReserve={(placeId) => {
       const parsed = parsePlaceId(placeId);

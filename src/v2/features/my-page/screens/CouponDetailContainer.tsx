@@ -3,38 +3,42 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { useOffer, type Coupon } from '../../offers-coupons';
-import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
+import { useCoupon, useOffer } from '../../offers-coupons';
 import { ErrorState, LoadingState } from '../../../shared/components';
-import { formatCouponDateRange, isCouponUsable } from '../model/couponBoxEntries';
+import {
+  formatCouponInstant,
+  formatOfferPeriod,
+  isCouponUsable,
+} from '../model/couponBoxEntries';
 import CouponDetailScreen, { type CouponDetailInfoRow } from './CouponDetailScreen';
 
 export type CouponDetailContainerProps = {
-  coupon: Coupon;
+  couponId: number;
   onBack: () => void;
   onReserve: (placeId: number) => void;
 };
 
 /**
- * Joins a coupon (passed from the box — there is no `GET /coupons/{id}`) to its
- * offer and place for the detail view. The offer supplies the title, benefit and
- * usage copy; the place supplies the store name. Rows the server does not model
- * fall back to localized defaults so the screen still matches the design.
+ * `GET /coupons/{couponId}` already carries the offer title, benefit and place
+ * name, so the screen renders from one request and reflects a redemption that
+ * happened while the user was on this screen. The offer is fetched only for the
+ * secondary info rows; it 404s once the merchant closes the offer, which leaves
+ * those rows out without breaking the coupon itself.
  */
 export default function CouponDetailContainer({
-  coupon,
+  couponId,
   onBack,
   onReserve,
 }: CouponDetailContainerProps) {
   const { i18n, t } = useTranslation();
   const locale = i18n.language;
 
-  const offerQuery = useOffer(coupon.offerId);
+  const couponQuery = useCoupon(couponId);
+  const coupon = couponQuery.data;
+  const offerQuery = useOffer(coupon?.offerId ?? 0);
   const offer = offerQuery.data;
-  const placeQuery = usePlaceDetail(offer?.placeId ?? 0, { enabled: Boolean(offer?.placeId) });
-  const place = placeQuery.data;
 
-  if (offerQuery.isLoading) {
+  if (couponQuery.isLoading) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <LoadingState description={t('myPage.couponDetail.loading')} fill />
@@ -42,59 +46,80 @@ export default function CouponDetailContainer({
     );
   }
 
-  if (offerQuery.isError) {
+  if (couponQuery.isError || !coupon) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <ErrorState
           actionLabel={t('myPage.retry')}
           description={t('myPage.couponDetail.error')}
           fill
-          onAction={() => void offerQuery.refetch()}
+          onAction={() => void couponQuery.refetch()}
         />
       </Screen>
     );
   }
 
-  const title = offer?.title || t('myPage.couponBox.fallbackTitle');
-  const benefit = offer?.benefitDescription || t('myPage.couponBox.fallbackDescription');
+  const usable = isCouponUsable(coupon.status);
+  // A terminal coupon says why it cannot be presented, dated where the server
+  // gives a date. `redeemedAt` is nullable even for a REDEEMED coupon.
+  const stateNotice = (() => {
+    if (usable) return undefined;
+    if (coupon.status === 'REDEEMED') {
+      return coupon.redeemedAt
+        ? t('myPage.couponDetail.redeemedNotice', {
+          date: formatCouponInstant(coupon.redeemedAt, locale, { withTime: true }),
+        })
+        : t('myPage.couponDetail.redeemedNoticeUnknown');
+    }
+    if (coupon.status === 'EXPIRED') {
+      return t('myPage.couponDetail.expiredNotice', {
+        date: formatCouponInstant(coupon.expiresAt, locale, { withTime: true }),
+      });
+    }
+    return t('myPage.couponDetail.unavailable');
+  })();
 
-  const infoRows: CouponDetailInfoRow[] = [
-    {
-      label: t('myPage.couponDetail.rows.stores'),
-      value: place?.name || t('myPage.couponDetail.defaults.stores'),
-    },
-    {
-      label: t('myPage.couponDetail.rows.usage'),
-      value: offer?.description || t('myPage.couponDetail.defaults.usage'),
-    },
-    {
-      label: t('myPage.couponDetail.rows.period'),
-      value: formatCouponDateRange(coupon.issuedAt, coupon.expiresAt, locale, { weekday: true }),
-    },
-    {
-      // The server has no per-offer usage condition; the benefit line above
-      // already carries `benefitDescription`, so repeating it here would just
-      // print the same sentence twice.
-      label: t('myPage.couponDetail.rows.condition'),
-      value: t('myPage.couponDetail.defaults.condition'),
-    },
-    {
-      label: t('myPage.couponDetail.rows.exclusion'),
-      value: t('myPage.couponDetail.defaults.exclusion'),
-    },
-  ];
+  // Every row is server data the merchant registered on the offer. A row the
+  // server has nothing for is dropped rather than filled with invented copy.
+  const infoRows: CouponDetailInfoRow[] = [];
+
+  if (coupon.placeName) {
+    infoRows.push({ label: t('myPage.couponDetail.rows.stores'), value: coupon.placeName });
+  }
+  if (offer?.description) {
+    infoRows.push({ label: t('myPage.couponDetail.rows.usage'), value: offer.description });
+  }
+  const offerPeriod = formatOfferPeriod(offer?.startsAt, offer?.endsAt, locale, { weekday: true });
+  if (offerPeriod) {
+    infoRows.push({ label: t('myPage.couponDetail.rows.period'), value: offerPeriod });
+  }
+  if (offer?.couponValidityDays) {
+    infoRows.push({
+      label: t('myPage.couponDetail.rows.validity'),
+      value: t('myPage.couponDetail.validityDays', { count: offer.couponValidityDays }),
+    });
+  }
+  if (offer?.eligibilityPolicy) {
+    infoRows.push({
+      label: t('myPage.couponDetail.rows.eligibility'),
+      value: t(`myPage.couponDetail.eligibility.${offer.eligibilityPolicy}`),
+    });
+  }
+
+  const placeId = coupon.placeId ?? offer?.placeId;
 
   return (
     <CouponDetailScreen
-      benefit={benefit}
+      benefit={coupon.benefitDescription || t('myPage.couponBox.fallbackDescription')}
       code={coupon.code}
       infoRows={infoRows}
       onBack={onBack}
-      onReserve={offer ? () => onReserve(offer.placeId) : undefined}
-      periodText={formatCouponDateRange(coupon.issuedAt, coupon.expiresAt, locale)}
-      placeName={place?.name}
-      reservable={isCouponUsable(coupon.status)}
-      title={title}
+      onReserve={placeId ? () => onReserve(placeId) : undefined}
+      periodText={formatOfferPeriod(coupon.issuedAt, coupon.expiresAt, locale)}
+      placeName={coupon.placeName ?? undefined}
+      stateNotice={stateNotice}
+      title={coupon.offerTitle || t('myPage.couponBox.fallbackTitle')}
+      usable={usable}
     />
   );
 }

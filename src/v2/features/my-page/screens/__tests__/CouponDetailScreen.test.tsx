@@ -3,16 +3,19 @@ import { screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { offerCouponApi, type Coupon } from '../../../offers-coupons';
-import { placeDetailApi } from '../../../place-detail/api/placeDetailApi';
 import CouponDetailContainer from '../CouponDetailContainer';
 
 function coupon(overrides: Partial<Coupon> = {}): Coupon {
   return {
+    benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
     code: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
     expiresAt: '2027-08-18T23:59:59',
     id: 1,
     issuedAt: '2026-08-18T09:00:00',
     offerId: 10,
+    offerTitle: '생일 10% 할인 쿠폰',
+    placeId: 100,
+    placeName: '대성반점',
     redeemedAt: null,
     status: 'ISSUED',
     ...overrides,
@@ -22,28 +25,28 @@ function coupon(overrides: Partial<Coupon> = {}): Coupon {
 function offer() {
   return {
     benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
-    description: '매장 방문 전용',
+    couponValidityDays: 30,
+    description: '매장 방문 · 핑덤 예약 전용',
+    eligibilityPolicy: 'ACTIVE_TRAVEL_SCHEDULE',
+    endsAt: '2027-08-18T23:59:59',
     id: 10,
     placeId: 100,
+    startsAt: '2026-08-18T09:00:00',
     title: '생일 10% 할인 쿠폰',
   } as never;
 }
 
-function place() {
-  return { address: '진주시', id: 100, name: '대성반점', thumbnailUrl: null } as never;
-}
-
-function mockOfferAndPlace() {
+function mockCoupon(overrides: Partial<Coupon> = {}) {
+  jest.spyOn(offerCouponApi, 'getCoupon').mockResolvedValue(coupon(overrides));
   jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer());
-  jest.spyOn(placeDetailApi, 'getPlaceDetail').mockResolvedValue(place());
 }
 
 describe('CouponDetailContainer', () => {
-  test('offer 조회 실패는 오류와 재시도로 표시한다', async () => {
-    jest.spyOn(offerCouponApi, 'getOffer').mockRejectedValue(new Error('실패'));
+  test('쿠폰 조회 실패는 오류와 재시도로 표시한다', async () => {
+    jest.spyOn(offerCouponApi, 'getCoupon').mockRejectedValue(new Error('실패'));
 
     await renderWithProviders(
-      <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
     await waitFor(() => expect(screen.getByText('쿠폰 정보를 불러오지 못했어요.')).toBeTruthy());
@@ -51,10 +54,10 @@ describe('CouponDetailContainer', () => {
   });
 
   test('매장명·쿠폰명·혜택·기간과 바코드를 보여준다', async () => {
-    mockOfferAndPlace();
+    mockCoupon();
 
     await renderWithProviders(
-      <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
     await waitFor(() => expect(screen.getByText('생일 10% 할인 쿠폰')).toBeTruthy());
@@ -68,31 +71,45 @@ describe('CouponDetailContainer', () => {
       .toHaveTextContent('3FA85F64-5717-4562-B3FC-2C963F66AFA6');
   });
 
-  test('쿠폰 정보 행과 유의사항을 보여준다', async () => {
-    mockOfferAndPlace();
+  test('쿠폰 정보 행을 상점주가 등록한 offer 값으로 채운다', async () => {
+    mockCoupon();
 
     await renderWithProviders(
-      <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
     await waitFor(() => expect(screen.getByText('쿠폰 정보')).toBeTruthy());
     expect(screen.getByText('사용 가능 매장')).toBeTruthy();
-    expect(screen.getByText('사용처')).toBeTruthy();
-    expect(screen.getByText('사용 기간')).toBeTruthy();
-    expect(screen.getByText('사용 조건')).toBeTruthy();
-    expect(screen.getByText('제외 대상')).toBeTruthy();
+    expect(screen.getByText('매장 방문 · 핑덤 예약 전용')).toBeTruthy();
+    // 행사 기간은 offer의 startsAt~endsAt이고 요일까지 붙는다.
+    expect(screen.getByText('2026.08.18(화) ~ 2027.08.18(수)')).toBeTruthy();
+    expect(screen.getByText('발급 후 30일')).toBeTruthy();
+    expect(screen.getByText('진행 중인 여행 일정이 있는 계정')).toBeTruthy();
     expect(screen.getByText('유의사항')).toBeTruthy();
-    expect(screen.getByText('쿠폰은 계정당 1회만 사용할 수 있어요.')).toBeTruthy();
-    // 사용 기간 행은 요일까지 붙여 보여준다.
-    expect(screen.getByText(/\(화\).*~.*\(수\)/)).toBeTruthy();
+  });
+
+  test('서버가 값을 주지 않은 행은 지어내지 않고 아예 빼버린다', async () => {
+    jest.spyOn(offerCouponApi, 'getCoupon').mockResolvedValue(coupon({ placeName: null }));
+    // 상점주가 offer를 종료하면 /offers/{id}가 404다. 부가 행만 빠져야 한다.
+    jest.spyOn(offerCouponApi, 'getOffer').mockRejectedValue(new Error('404'));
+
+    await renderWithProviders(
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByText('쿠폰 정보')).toBeTruthy());
+    expect(screen.queryByText('사용 가능 매장')).toBeNull();
+    expect(screen.queryByText('사용처')).toBeNull();
+    expect(screen.queryByText('행사 기간')).toBeNull();
+    expect(screen.queryByText('발급 대상')).toBeNull();
   });
 
   test('유의사항 번역이 없어도 화면이 죽지 않는다', async () => {
-    mockOfferAndPlace();
+    mockCoupon();
 
     // 번역이 비면 i18next가 키 문자열을 그대로 돌려주므로 배열이 아닐 수 있다.
     const { i18n } = await renderWithProviders(
-      <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
     i18n.addResourceBundle('ko', 'translation', {
       myPage: { couponDetail: { notices: undefined } },
@@ -103,11 +120,11 @@ describe('CouponDetailContainer', () => {
   });
 
   test('ISSUED 쿠폰은 예약 CTA로 offer의 placeId를 넘긴다', async () => {
-    mockOfferAndPlace();
+    mockCoupon();
     const onReserve = jest.fn();
 
     const { user } = await renderWithProviders(
-      <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={onReserve} />,
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={onReserve} />,
     );
 
     await waitFor(() => expect(screen.getByTestId('v2-coupon-detail-reserve')).toBeTruthy());
@@ -116,33 +133,55 @@ describe('CouponDetailContainer', () => {
     expect(onReserve).toHaveBeenCalledWith(100);
   });
 
-  test('REDEEMED 쿠폰은 예약 CTA 대신 사용 불가 문구를 보여준다', async () => {
-    mockOfferAndPlace();
+  test('REDEEMED 쿠폰은 바코드를 감추고 사용 시각을 알려준다', async () => {
+    mockCoupon({ redeemedAt: '2026-08-20T15:00:00', status: 'REDEEMED' });
 
     await renderWithProviders(
-      <CouponDetailContainer
-        coupon={coupon({ redeemedAt: '2026-08-20T15:00:00', status: 'REDEEMED' })}
-        onBack={jest.fn()}
-        onReserve={jest.fn()}
-      />,
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
     await waitFor(() => expect(screen.getByTestId('v2-coupon-detail-unavailable')).toBeTruthy());
+    // 이미 쓴 쿠폰을 매장에 제시할 수 없어야 한다.
+    expect(screen.queryByTestId('v2-coupon-barcode')).toBeNull();
+    expect(screen.queryByTestId('v2-coupon-barcode-code')).toBeNull();
+    expect(screen.queryByText('결제 전 매장 직원에게 바코드를 보여주세요')).toBeNull();
     expect(screen.queryByTestId('v2-coupon-detail-reserve')).toBeNull();
   });
 
-  test('place 조회가 실패해도 화면은 유지하고 매장명을 지어내지 않는다', async () => {
-    jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer());
-    jest.spyOn(placeDetailApi, 'getPlaceDetail').mockRejectedValue(new Error('실패'));
+  test('EXPIRED 쿠폰도 바코드를 감추고 만료 시각을 알려준다', async () => {
+    mockCoupon({ status: 'EXPIRED' });
 
     await renderWithProviders(
-      <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('v2-coupon-detail-unavailable')).toBeTruthy());
+    expect(screen.queryByTestId('v2-coupon-barcode')).toBeNull();
+    // 어떤 쿠폰이었는지는 계속 보여준다.
+    expect(screen.getByText('생일 10% 할인 쿠폰')).toBeTruthy();
+  });
+
+  test('redeemedAt이 없어도 사용 완료 안내를 보여준다', async () => {
+    mockCoupon({ redeemedAt: null, status: 'REDEEMED' });
+
+    await renderWithProviders(
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByText('이미 사용한 쿠폰이에요')).toBeTruthy());
+  });
+
+  test('매장명이 없으면 지어내지 않고 그 줄을 빼버린다', async () => {
+    mockCoupon({ placeName: null });
+
+    await renderWithProviders(
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
     // 매장명을 모르면 티켓 헤더의 매장 줄은 아예 그리지 않고, 쿠폰명 하나만 남는다.
     await waitFor(() => expect(screen.getAllByText('생일 10% 할인 쿠폰')).toHaveLength(1));
-    // "사용 가능 매장" 행만 안내 문구로 대체한다.
-    expect(screen.getByText('가맹 매장')).toBeTruthy();
+    // 매장명을 지어내지 않으므로 "사용 가능 매장" 행 자체가 사라진다.
+    expect(screen.queryByText('사용 가능 매장')).toBeNull();
     expect(screen.queryByText('쿠폰 정보를 불러오지 못했어요.')).toBeNull();
   });
 });

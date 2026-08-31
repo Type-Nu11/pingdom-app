@@ -1,43 +1,31 @@
 import React from 'react';
 import styled from 'styled-components/native';
 
-import Button from '../../../shared/components/Button';
-import type { CouponStatus } from '../../offers-coupons';
 import CouponIcon from '../../../shared/assets/icons/coupon.svg';
 
 export type CouponCardProps = {
+  /** Omitted while the place is unknown — a placeholder store name would misread as real. */
+  placeName?: string;
   title: string;
   description: string;
-  status: CouponStatus;
-  statusLabel: string;
-  issuedLabel: string;
-  expiryLabel: string;
-  redeemedLabel?: string;
-  usable: boolean;
-  useCtaLabel: string;
-  unusableLabel: string;
-  onUse?: () => void;
+  /** Validity period, already localized. Carries the terminal state for a used or expired coupon. */
+  periodText: string;
+  /** A coupon that can no longer be used is dimmed so the list reads at a glance. */
+  muted: boolean;
   onPress?: () => void;
 };
 
 /**
- * A single coupon in the box: benefit name next to its ticket badge, a status
- * chip, the issued / expiry (and redemption) instants, and — only for a usable
- * `ISSUED` coupon — a CTA into the present flow. Terminal states say so in text
- * instead of offering an action. The full coupon code is never shown here.
+ * A single coupon in the box: issuing place, benefit name next to its ticket
+ * badge, the benefit line, and the validity period. The full coupon code is
+ * never shown here — it belongs to the detail screen.
  */
 export default function CouponCard({
+  placeName,
   title,
   description,
-  status,
-  statusLabel,
-  issuedLabel,
-  expiryLabel,
-  redeemedLabel,
-  usable,
-  useCtaLabel,
-  unusableLabel,
-  onUse,
+  periodText,
+  muted,
   onPress,
 }: CouponCardProps) {
   return (
@@ -47,41 +35,23 @@ export default function CouponCard({
       onPress={onPress}
       testID="v2-coupon-card"
     >
-      <HeaderRow>
-        <IconBadge $muted={!usable}>
-          {/* coupon.svg is a 22×16 ticket — keep that ratio so it is not stretched. */}
-          <CouponIcon height={16} width={22} />
-        </IconBadge>
-        <Title numberOfLines={2}>{title}</Title>
-        <StatusChip $status={status}>
-          <StatusChipText $status={status}>{statusLabel}</StatusChipText>
-        </StatusChip>
-      </HeaderRow>
-
-      <Description numberOfLines={2}>{description}</Description>
-
-      <MetaBlock>
-        <Meta numberOfLines={1}>{issuedLabel}</Meta>
-        <Meta numberOfLines={1}>{expiryLabel}</Meta>
-        {redeemedLabel ? <Meta numberOfLines={1}>{redeemedLabel}</Meta> : null}
-      </MetaBlock>
-
-      {usable ? (
-        <Button
-          fullWidth
-          label={useCtaLabel}
-          onPress={onUse}
-          size="medium"
-          testID="v2-coupon-card-use"
-        />
-      ) : (
-        <UnusableText testID="v2-coupon-card-unusable">{unusableLabel}</UnusableText>
-      )}
+      {placeName ? <PlaceName numberOfLines={1}>{placeName}</PlaceName> : null}
+      <Body>
+        <TitleRow>
+          <IconBadge $muted={muted}>
+            {/* coupon.svg is a 22×16 ticket — keep that ratio so it is not stretched. */}
+            <CouponIcon height={16} width={22} />
+          </IconBadge>
+          <Title numberOfLines={2}>{title}</Title>
+        </TitleRow>
+        <Description numberOfLines={2}>{description}</Description>
+        <Period numberOfLines={1} testID="v2-coupon-card-period">{periodText}</Period>
+      </Body>
     </Card>
   );
 }
 
-const Card = styled.Pressable`
+const Card = styled.Pressable<{ disabled?: boolean }>`
   gap: 10px;
   padding: ${({ theme }) => theme.spacing.md - 4}px;
   border-radius: ${({ theme }) => theme.radius.md}px;
@@ -89,7 +59,17 @@ const Card = styled.Pressable`
   overflow: hidden;
 `;
 
-const HeaderRow = styled.View`
+const PlaceName = styled.Text`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: 18px;
+  font-weight: 700;
+`;
+
+const Body = styled.View`
+  gap: ${({ theme }) => theme.spacing.xs}px;
+`;
+
+const TitleRow = styled.View`
   flex-direction: row;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm}px;
@@ -113,41 +93,14 @@ const Title = styled.Text`
   font-weight: 700;
 `;
 
-const StatusChip = styled.View<{ $status: CouponStatus }>`
-  padding: 3px ${({ theme }) => theme.spacing.sm}px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ $status, theme }) => (
-    $status === 'ISSUED' ? theme.colors.primarySoft : theme.colors.surfacePressed
-  )};
-`;
-
-const StatusChipText = styled.Text<{ $status: CouponStatus }>`
-  font-size: 12px;
-  font-weight: 600;
-  color: ${({ $status, theme }) => (
-    $status === 'ISSUED' ? theme.colors.primary : theme.colors.textMuted
-  )};
-`;
-
 const Description = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
   font-weight: 500;
 `;
 
-const MetaBlock = styled.View`
-  gap: 2px;
-`;
-
-const Meta = styled.Text`
+const Period = styled.Text`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   font-weight: 500;
-`;
-
-const UnusableText = styled.Text`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 13px;
-  font-weight: 600;
-  padding-top: ${({ theme }) => theme.spacing.xs}px;
 `;

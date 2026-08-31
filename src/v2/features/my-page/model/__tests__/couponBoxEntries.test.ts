@@ -1,8 +1,7 @@
-import type { Coupon, Offer } from '../../../offers-coupons';
+import type { Coupon } from '../../../offers-coupons';
 import {
-  COUPON_STATUS_FILTERS,
-  formatCouponDateRange,
   formatCouponInstant,
+  formatOfferPeriod,
   isCouponUsable,
   toCouponBoxEntries,
   toCouponBoxListState,
@@ -10,48 +9,45 @@ import {
 
 function coupon(overrides: Partial<Coupon> = {}): Coupon {
   return {
+    benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
     code: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
     expiresAt: '2027-08-18T23:59:59',
     id: 1,
     issuedAt: '2026-08-18T09:00:00',
     offerId: 10,
+    offerTitle: '생일 10% 할인 쿠폰',
+    placeId: 100,
+    placeName: '대성반점',
     redeemedAt: null,
     status: 'ISSUED',
     ...overrides,
   } as Coupon;
 }
 
-function offer(overrides: Partial<Offer> = {}): Offer {
-  return {
-    benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
-    id: 10,
-    placeId: 100,
-    title: '생일 10% 할인 쿠폰',
-    ...overrides,
-  } as Offer;
-}
-
 const FALLBACK = { description: '할인 쿠폰', title: '쿠폰' } as const;
 
 describe('toCouponBoxEntries', () => {
-  test('쿠폰에 offer 정보를 결합하고 순서를 유지한다', () => {
+  test('쿠폰 응답에 담긴 매장·쿠폰명·혜택을 그대로 쓰고 순서를 지킨다', () => {
     const entries = toCouponBoxEntries(
-      [coupon({ id: 1, offerId: 10 }), coupon({ id: 2, offerId: 20 })],
-      new Map([[10, offer({ id: 10, title: 'A' })]]),
+      [
+        coupon({ id: 1, offerTitle: 'A', placeName: '대성반점' }),
+        coupon({ benefitDescription: null, id: 2, offerTitle: null, placeName: null }),
+      ],
       FALLBACK,
     );
 
     expect(entries.map((entry) => entry.couponId)).toEqual([1, 2]);
     expect(entries[0].title).toBe('A');
-    // offer 미로딩 행은 사라지지 않고 fallback 카피를 쓴다.
+    expect(entries[0].placeName).toBe('대성반점');
+    // 서버가 null을 주면 대체 카피를 쓰되, 매장명은 지어내지 않는다.
     expect(entries[1].title).toBe('쿠폰');
     expect(entries[1].description).toBe('할인 쿠폰');
+    expect(entries[1].placeName).toBeUndefined();
   });
 
   test('nullable redeemedAt을 null로 정규화한다', () => {
     const [entry] = toCouponBoxEntries(
       [coupon({ redeemedAt: undefined as unknown as null })],
-      new Map(),
       FALLBACK,
     );
     expect(entry.redeemedAt).toBeNull();
@@ -76,7 +72,7 @@ describe('toCouponBoxListState', () => {
   });
 
   test('항목이 있으면 ready', () => {
-    const state = toCouponBoxListState(false, toCouponBoxEntries([coupon()], new Map(), FALLBACK));
+    const state = toCouponBoxListState(false, toCouponBoxEntries([coupon()], FALLBACK));
     expect(state.kind).toBe('ready');
   });
 });
@@ -102,31 +98,28 @@ describe('formatCouponInstant', () => {
   });
 });
 
-describe('formatCouponDateRange', () => {
-  test('시작과 끝을 ~로 잇는다', () => {
-    const range = formatCouponDateRange('2026-08-18T09:00:00', '2027-08-18T23:59:59', 'ko');
-    expect(range).toMatch(/2026.*~.*2027/);
+describe('formatOfferPeriod', () => {
+  test('디자인 표기대로 마침표 구분 날짜를 ~로 잇는다', () => {
+    expect(formatOfferPeriod('2026-08-18T09:00:00', '2027-08-18T23:59:59', 'ko'))
+      .toBe('2026.08.18 ~ 2027.08.18');
   });
 
-  test('weekday면 양 끝에 요일을 괄호로 붙인다', () => {
-    const range = formatCouponDateRange(
-      '2026-08-18T09:00:00',
-      '2027-08-18T23:59:59',
-      'ko',
-      { weekday: true },
-    );
+  test('compact면 두 자리 연도에 공백 없는 구분자를 쓴다', () => {
+    expect(formatOfferPeriod('2026-08-18T09:00:00', '2027-08-18T23:59:59', 'ko', { compact: true }))
+      .toBe('26.08.18~27.08.18');
+  });
+
+  test('weekday면 요일을 붙이고, 요일 이름만 locale을 따른다', () => {
     // 2026-08-18은 화요일, 2027-08-18은 수요일.
-    expect(range).toContain('(화)');
-    expect(range).toContain('(수)');
+    expect(formatOfferPeriod('2026-08-18T09:00:00', '2027-08-18T23:59:59', 'ko', { weekday: true }))
+      .toBe('2026.08.18(화) ~ 2027.08.18(수)');
+    expect(formatOfferPeriod('2026-08-18T09:00:00', '2027-08-18T23:59:59', 'en', { weekday: true }))
+      .toBe('2026.08.18(Tue) ~ 2027.08.18(Wed)');
   });
 
-  test('한쪽만 유효하면 그 값만 반환하고 ~를 붙이지 않는다', () => {
-    expect(formatCouponDateRange('2026-08-18T09:00:00', null, 'ko')).not.toContain('~');
-    expect(formatCouponDateRange(null, null, 'ko')).toBe('');
-    expect(formatCouponDateRange('not-a-date', 'also-bad', 'ko')).toBe('');
+  test('한쪽만 유효하면 그 값만 반환하고 구분자를 붙이지 않는다', () => {
+    expect(formatOfferPeriod('2026-08-18T09:00:00', null, 'ko')).toBe('2026.08.18');
+    expect(formatOfferPeriod(null, null, 'ko')).toBe('');
+    expect(formatOfferPeriod('not-a-date', 'also-bad', 'ko')).toBe('');
   });
-});
-
-test('상태 필터 목록은 전체 + 서버 enum 3종', () => {
-  expect(COUPON_STATUS_FILTERS).toEqual(['ALL', 'ISSUED', 'REDEEMED', 'EXPIRED']);
 });
