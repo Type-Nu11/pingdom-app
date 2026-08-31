@@ -2,7 +2,6 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { Alert } from 'react-native';
 import { clearExpiredSession } from '../../app/store/authStore';
-import { getTokens } from './authStorage';
 import {
     getCachedAccessToken,
     getRefreshPromise,
@@ -49,7 +48,6 @@ type RetryableRequestConfig = InternalAxiosRequestConfig & {
 // 토큰 갱신 API(/auth/token/refresh)의 응답 타입
 type RefreshResponse = {
     accessToken: string;
-    refreshToken: string;
 };
 
 type RawRefreshResponse =
@@ -57,7 +55,6 @@ type RawRefreshResponse =
     | {
         data?: RefreshResponse;
         accessToken?: string;
-        refreshToken?: string;
     };
 
 // ─────────────────────────────────────────────
@@ -186,18 +183,16 @@ function isSafeToRetryAfterServerFallback(method?: string): boolean {
     return ['get', 'head', 'options'].includes(method?.toLowerCase() ?? '');
 }
 
-function toRefreshResponse(response: RawRefreshResponse, fallbackRefreshToken: string): RefreshResponse {
+function toRefreshResponse(response: RawRefreshResponse): RefreshResponse {
     if ('data' in response && response.data?.accessToken) {
         return {
             accessToken: response.data.accessToken,
-            refreshToken: response.data.refreshToken ?? fallbackRefreshToken,
         };
     }
 
     if ('accessToken' in response && response.accessToken) {
         return {
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken ?? fallbackRefreshToken,
         };
     }
 
@@ -256,32 +251,18 @@ async function resolveAccessToken(): Promise<string | null> {
 // 실제 갱신 API 호출만 담당
 // 잠금(중복 방지) 관리는 refreshAccessToken이 담당
 async function fetchNewTokens(): Promise<string> {
-    const tokens = await getTokens();
-
-    console.info('[auth-refresh]', 'start', {
-        hasRefreshToken: Boolean(tokens?.refreshToken),
-        refreshToken: getTokenDebug(tokens?.refreshToken ?? null),
-    });
-
-    if (!tokens?.refreshToken) {
-        throw new Error('refreshToken 없음');
-    }
+    console.info('[auth-refresh]', 'start');
 
     const { data } = await refreshClient.post<RawRefreshResponse>(
         '/auth/token/refresh',
-        { refreshToken: tokens.refreshToken },
+        undefined,
         { baseURL: activeApiBaseUrl }
     );
 
-    const nextTokens = toRefreshResponse(data, tokens.refreshToken);
+    const nextTokens = toRefreshResponse(data);
 
     console.info('[auth-refresh]', 'success', {
         accessToken: getTokenDebug(nextTokens.accessToken),
-        receivedRefreshToken: Boolean(
-            ('data' in data && data.data?.refreshToken) ||
-            ('refreshToken' in data && data.refreshToken)
-        ),
-        refreshToken: getTokenDebug(nextTokens.refreshToken),
     });
 
     await persistTokens(nextTokens);

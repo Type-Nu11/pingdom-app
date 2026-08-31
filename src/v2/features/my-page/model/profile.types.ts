@@ -22,6 +22,11 @@ export type SaveProfileInput = {
   username?: string;
 };
 
+export type SaveProfileResult = {
+  passwordChanged: boolean;
+  usernameChanged: boolean;
+};
+
 export type ProfileImageFile = {
   name: string;
   type: string;

@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingBottom: 52,
+    paddingBottom: 36,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 64,
     backgroundColor: PINK,
-    borderRadius: 16,
+    borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },

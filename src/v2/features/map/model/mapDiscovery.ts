@@ -194,28 +194,22 @@ export function toPlaceCardViewModel(
     : [];
   const mediaUrls = Array.isArray(verificationMedia?.media)
     ? verificationMedia.media
-      .map((item) => text(item?.imageUrl, text(item?.thumbnailUrl)))
+      .slice()
+      .sort((left, right) => (left.displayOrder - right.displayOrder) || (left.id - right.id))
+      .map((item) => text(item?.imageUrl))
       .filter(Boolean)
     : [];
-  const imageUrls = [...new Set([text(card.imageUrl), text(detail?.thumbnailUrl), ...mediaUrls])]
+  const imageUrls = [...new Set([...mediaUrls, text(card.imageUrl)])]
     .filter(Boolean);
-  const support = detail?.touristSupport;
   const supportTags: MapPlaceSupportTag[] = [];
-
-  if (support?.supportedLanguages.some((language) => language.toLowerCase().startsWith('en'))) {
-    supportTags.push('english');
-  }
-  if (support?.englishMenu === 'AVAILABLE') supportTags.push('englishMenu');
-  if (support?.foreignCard === 'AVAILABLE') supportTags.push('foreignCard');
-  if (support?.freeWifi === 'AVAILABLE') supportTags.push('wifi');
-  if (support?.couponAvailable) supportTags.push('coupon');
-  if (support?.reservationAvailable) supportTags.push('reservation');
-
-  const reservable = Boolean(
-    support?.reservationAvailable
-      || decision?.reservableAvailabilities?.some((availability) =>
-        availability.status === 'ACTIVE' && (availability.remainingCapacity ?? 0) > 0),
-  );
+  if ((decision?.availableOffers?.offers?.length ?? 0) > 0) supportTags.push('coupon');
+  const now = Date.now();
+  const reservable = Boolean(decision?.reservableAvailabilities?.some((availability) =>
+    availability.status === 'ACTIVE'
+      && typeof availability.endsAt === 'string'
+      && Date.parse(availability.endsAt) > now
+      && (availability.remainingCapacity ?? 0) > 0));
+  if (reservable) supportTags.push('reservation');
 
   return {
     address: text(card.roadAddress, text(card.address)),

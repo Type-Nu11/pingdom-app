@@ -96,7 +96,7 @@ export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenPro
             <VerifiedPlaceCard
               address={entry.place.address}
               favorited={bookmarkedPlaceIds.has(entry.placeId)}
-              imageUrl={entry.place.thumbnailUrl}
+              imageUrl={null}
               name={entry.place.name}
               onToggleFavorite={() => toggleBookmark.mutate({
                 nextBookmarked: !bookmarkedPlaceIds.has(entry.placeId),

@@ -1,204 +1,862 @@
-import React, { useEffect, useState } from 'react';
-import { Linking, Share } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import styled from 'styled-components/native';
-
-import { V2_ROUTES, parsePlaceId, type V2ScreenProps } from '../../../app/navigation/types';
-import MapDiscoverySearch from '../components/MapDiscoverySearch';
-import KakaoMapAdapter from '../components/KakaoMapAdapter';
-import MapSelectedPlaceCard from '../components/MapSelectedPlaceCard';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  LocationStatusOverlay,
-  MapDataStatusOverlay,
-} from '../components/MapStatusOverlays';
+  Animated,
+  Alert,
+  StatusBar,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
+import { getApiErrorUx } from '../../../shared/api';
+import { useTranslation } from 'react-i18next';
+import { useMapSettingsStore } from '../store/mapSettingsStore';
+import MapBottomSheet, {
+  type BottomSheetContent,
+  type DecisionPlace,
+  type MapPreviewFallbackContent,
+  type VisitFilter,
+} from '../components/MapBottomSheet';
+import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
+import ReservationBottomSheet from '../../reservations/components/ReservationBottomSheet';
+import MapCanvas from '../components/MapCanvas';
+import MapSearchOverlay from '../components/MapSearchOverlay';
+import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
+import { useBottomSheet } from '../hooks/useBottomSheet';
+import {
+  useBookmarkedPlaceMembership,
+  useBookmarkedPlaces,
+} from '../hooks/useBookmarkedPlaces';
+import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
-import { useMapDiscovery } from '../hooks/useMapDiscovery';
-import type { MapPlaceResult, MapPlaceSelection } from '../model/mapDiscovery';
-import { FALLBACK_COORDINATE } from '../model/mapFixtures';
+import { usePlaces } from '../hooks/usePlaces';
+import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
+import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
+import {
+  usePlaceExplorationMediaList,
+  useRecommendationExplanation,
+} from '../../place-exploration';
+import { usePlaceDetailPresentation } from '../../place-detail';
+import {
+  MAP_DISMISSED_ZOOM_LEVEL,
+  MAP_LOCATE_ZOOM_LEVEL,
+  MAP_PREVIEW_ZOOM_LEVEL,
+  markersForSelectedPlace,
+} from '../model/mapSelection';
+import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
+import { useProfile } from '../../my-page/hooks/useProfile';
+import type { MapMarker, Place } from '../model/place.types';
+import { normalizePlaceCategory } from '../utils/placeCategory';
+import { getMapBackAction } from '../utils/mapBack';
+import {
+  createRecommendationPresentation,
+  getRecommendationState,
+} from '../model/recommendationPresentation';
+import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
+import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
+import {
+  findMapPreviewPlace,
+  mergeMapPreviewPlaces,
+  shouldPresentMapSelection,
+} from '../utils/mapPreviewSelection';
+import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
+import { FadeSlideTransition } from '../../../shared/motion';
+import { LocationStatusOverlay } from '../components/MapStatusOverlays';
 
-const RADIUS_KM = 3;
+// Matches SHEET_RESTING_GAP in MapBottomSheet.
+const SHEET_RESTING_GAP = 8;
+const MAP_SECTION_DIRECTION = { map: 0, favorites: 1, reservations: 2 } as const;
 
-type MapScreenProps = Pick<V2ScreenProps<'Map'>, 'navigation'>;
+const toDecisionPlace = (place: Place): DecisionPlace => ({
+  ...place,
+  address: place.address || '',
+  category: (place.category || 'PLACE').toUpperCase(),
+  distance: place.distanceMeters ? `${Math.round(place.distanceMeters)} m` : '',
+  distanceMeters: place.distanceMeters,
+  id: place.id,
+  latitude: place.latitude,
+  longitude: place.longitude,
+  name: place.name,
+  recommendationReason: 'reason' in place && typeof place.reason === 'string'
+    ? place.reason
+    : undefined,
+  tags: ['Visitor verified'],
+  verifiedAgo: 'recently',
+  verifiedMinutes: 0,
+  wait: '10–20 min',
+  waitMinutes: [10, 20],
+});
 
-export default function MapScreen({ navigation }: MapScreenProps) {
-  const { t } = useTranslation();
+type MapScreenProps = {
+  canQueryBookmarks?: boolean;
+  initialSection?: 'favorites' | 'map' | 'reservations';
+  onClearOpenedBookmarkedPlace?: () => void;
+  onCreateReservation?: (place: {
+    category: string;
+    id: number;
+    imageUrl?: string;
+    name: string;
+  }) => void;
+  onOpenProfile?: () => void;
+  onOpenReservation?: (reservationId: number) => void;
+  onOpenVisitVerification?: () => void;
+  openedBookmarkedPlaceId?: number | null;
+};
+
+export default function MapScreen({
+  canQueryBookmarks = true,
+  initialSection = 'map',
+  onClearOpenedBookmarkedPlace,
+  onCreateReservation,
+  onOpenProfile,
+  onOpenReservation,
+  onOpenVisitVerification,
+  openedBookmarkedPlaceId,
+}: MapScreenProps) {
+  const { i18n, t } = useTranslation();
+  const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const reservationNavigationLock = useRef(false);
+  const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation();
-  const [center, setCenter] = useState(FALLBACK_COORDINATE);
-  const [searchText, setSearchText] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [category, setCategory] = useState<string | null>(null);
-  const [selectedPlace, setSelectedPlace] = useState<MapPlaceSelection | null>(null);
-  const discovery = useMapDiscovery({
-    category,
-    center,
-    keyword: searchText,
-    radiusKm: RADIUS_KM,
-    selectedPlace,
+  const center = location.coordinate;
+  const userLat = center?.lat;
+  const userLng = center?.lng;
+  const {
+    markers: apiMarkers,
+    places: apiPlaces,
+  } = usePlaces();
+  const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
+  const {
+    appliedActivityIntent,
+    appliedTravelPurposes,
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    limitReasons,
+    places: recommendedPlaces,
+    recommendationRequestId,
+    recommendationVersion,
+    refetch: refetchRecommendations,
+  } = usePlaceRecommendations({
+    latitude: userLat ?? Number.NaN,
+    limit: 8,
+    longitude: userLng ?? Number.NaN,
+    radiusKm: recommendationRadiusKm,
   });
+  const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const recommendationExplanation = useRecommendationExplanation(
+    recommendationRequestId ?? '',
+    { enabled: Boolean(recommendationRequestId) },
+  );
+  const { profile } = useProfile();
+  const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
+  const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
+  const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
+  const [mapSection, setMapSection] = useState<'map' | 'favorites' | 'reservations'>(initialSection);
+  const [dismissedMarkerCenter, setDismissedMarkerCenter] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [mapZoomLevel, setMapZoomLevel] = useState(MAP_PREVIEW_ZOOM_LEVEL);
 
   useEffect(() => {
-    if (location.status === 'granted' && selectedPlace === null) {
-      setCenter(location.coordinate);
+    setMapSection(initialSection);
+  }, [initialSection]);
+  useEffect(() => () => {
+    if (locateFollowFrame.current !== null) {
+      cancelAnimationFrame(locateFollowFrame.current);
     }
-  }, [location.coordinate, location.status, selectedPlace]);
+  }, []);
+  const {
+    fetchNextPage: fetchNextFavoritePage,
+    hasNextPage: hasNextFavoritePage,
+    isError: isFavoritesError,
+    isFetchNextPageError: isFetchNextFavoritePageError,
+    isFetchingNextPage: isFetchingNextFavoritePage,
+    isLoading: isFavoritesLoading,
+    isUnauthorized: isFavoritesUnauthorized,
+    places: bookmarkedPlaces,
+    refetch: refetchFavorites,
+  } = useBookmarkedPlaces(canQueryBookmarks && mapSection === 'favorites');
+  const {
+    bookmarkedPlaceIds,
+    isLoading: isBookmarkMembershipLoading,
+  } = useBookmarkedPlaceMembership(canQueryBookmarks);
+  const {
+    pendingPlaceIds: bookmarkPendingPlaceIds,
+    togglePlaceBookmark,
+  } = usePlaceBookmark();
 
+  const expandedSheetTop = insets.top + 2 + 60 + 8;
+  const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
+  // Keep one stable sheet geometry while content changes. Only the expanded destination moves:
+  // place detail can fill the screen, while other expanded content remains below the top overlay.
+  const fullSheetHeight = Math.round(height);
+  const expandedTranslateY = isPlacePreview ? 0 : expandedSheetTop;
+  const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
+  const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
+  const mediumVisibleHeight = Math.min(
+    Math.round(418 * designScale) + SHEET_RESTING_GAP,
+    Math.round(height * 0.52),
+  );
+  const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
+  const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
+  const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
+    collapsedTranslateY,
+    expandedTranslateY,
+    initialSnapPoint: 'medium',
+    mediumTranslateY,
+  });
+  const verificationCtaOpacity = sheetTranslateY.interpolate({
+    inputRange: [
+      expandedTranslateY,
+      Math.max(mediumTranslateY, expandedTranslateY + 1),
+    ],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
   useEffect(() => {
-    if (!selectedPlace || !discovery.hasResolvedMarkers) return;
+    const language = profile?.language?.trim().toLowerCase();
+    const nextLanguage = language === 'korean' || language === '한국어'
+      ? 'ko'
+      : language === 'english' || language === '영어'
+        ? 'en'
+        : language?.split('-')[0];
 
-    const isSelectedPlaceVisible = discovery.markers.some(
-      (marker) => marker.kind === 'place' && marker.placeId === selectedPlace.id,
+    if (nextLanguage && i18n.language !== nextLanguage) {
+      void i18n.changeLanguage(nextLanguage);
+    }
+  }, [i18n, profile?.language]);
+
+  const recommendationPlaces = useMemo(() => {
+    const explanationByPlaceId = new Map(
+      (recommendationExplanation.data?.items ?? [])
+        .filter((item) => typeof item.placeId === 'number')
+        .map((item) => [item.placeId as number, item]),
     );
 
-    if (!isSelectedPlaceVisible) setSelectedPlace(null);
-  }, [discovery.hasResolvedMarkers, discovery.markers, selectedPlace]);
+    return recommendedPlaces.map((place) => {
+      const explanation = explanationByPlaceId.get(place.id);
+      return {
+        ...toDecisionPlace(place),
+        recommendationRank: explanation?.ranking,
+        recommendationSource: explanation?.source,
+      };
+    });
+  }, [recommendationExplanation.data?.items, recommendedPlaces]);
+  const nearbyReservationPlaces = useMemo(
+    () => recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
+    [recommendedPlaces],
+  );
+  const allPlaces = useMemo(() => {
+    const serverPlaces = mergeMapPreviewPlaces(
+      recommendationPlaces,
+      apiPlaces.map(toDecisionPlace),
+    );
 
-  const selectPlace = ({
-    coordinate,
-    distanceMeters,
-    id,
-  }: Pick<MapPlaceResult, 'coordinate' | 'distanceMeters' | 'id'>) => {
-    setSelectedPlace({ distanceMeters, id });
-    setCenter(coordinate);
-    setSearchFocused(false);
-  };
+    return serverPlaces;
+  }, [apiPlaces, recommendationPlaces]);
+  const mapExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList([
+    ...(content.type === 'place-preview' ? [content.placeId] : []),
+    ...allPlaces.map((place) => place.id),
+  ], { enabled: mapSection === 'map' });
+  const mapExplorationPreviewImageUrlsByPlaceId = useMemo(
+    () => Object.entries(mapExplorationImageUrlsByPlaceId)
+      .reduce<Record<string, string>>((result, [placeId, imageUrls]) => {
+        if (imageUrls[0]) result[placeId] = imageUrls[0];
+        return result;
+      }, {}),
+    [mapExplorationImageUrlsByPlaceId],
+  );
+  const recommendationPresentation = useMemo(() => createRecommendationPresentation({
+    appliedActivityIntent,
+    appliedTravelPurposes,
+    limitReasons,
+  }), [
+    appliedActivityIntent,
+    appliedTravelPurposes,
+    limitReasons,
+  ]);
+  const recommendationsState = getRecommendationState({
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    places: recommendationPlaces,
+  });
+  const favoritePlaces = useMemo(
+    () => bookmarkedPlaces.map(toDecisionPlace),
+    [bookmarkedPlaces],
+  );
+  const favoriteExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList(
+    bookmarkedPlaces.map((place) => place.id),
+    { enabled: canQueryBookmarks && mapSection === 'favorites' },
+  );
+  const { imageUrlsByPlaceId: favoritePreviewImages } = usePlacePreviewImages(
+    bookmarkedPlaces,
+    canQueryBookmarks && mapSection === 'favorites',
+  );
+  const favoriteImageUrlsByPlaceId = useMemo(
+    () => ({
+      ...favoriteExplorationImageUrlsByPlaceId,
+      ...toFavoritePlaceImageUrls(favoritePreviewImages),
+    }),
+    [favoriteExplorationImageUrlsByPlaceId, favoritePreviewImages],
+  );
+  const selectedPlaceBase = useMemo(() => {
+    if (content.type !== 'place-preview') return null;
+    const selectedFromCurrentData = [...allPlaces, ...favoritePlaces]
+      .find((place) => place.id === content.placeId);
 
-  const handleMarkerSelect = (markerId: string) => {
-    const marker = discovery.markers.find((item) => item.id === markerId);
-    if (!marker) return;
-    const coordinate = { lat: marker.lat, lng: marker.lng };
+    return selectedFromCurrentData ?? null;
+  }, [allPlaces, content, favoritePlaces]);
+  const selectedPlaceId = selectedPlaceBase?.id ?? 0;
+  const hasSelectedPlace = selectedPlaceBase !== null;
+  const {
+    presentation: selectedPlacePresentation,
+    refetchAvailability,
+    refetchMedia,
+    refetchReviews,
+  } = usePlaceDetailPresentation(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedPlace = useMemo<DecisionPlace | null>(() => {
+    if (!selectedPlaceBase) return null;
+    if (!selectedPlacePresentation) return selectedPlaceBase;
 
-    if (marker.kind === 'cluster' || marker.placeId === null) {
-      setSelectedPlace(null);
-      setCenter(coordinate);
+    return {
+      ...selectedPlaceBase,
+      address: selectedPlacePresentation.address || selectedPlaceBase.address,
+      category: selectedPlacePresentation.category || selectedPlaceBase.category,
+      name: selectedPlacePresentation.name || selectedPlaceBase.name,
+    };
+  }, [selectedPlaceBase, selectedPlacePresentation]);
+  const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
+  const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
+    if (!selectedPlace || !selectedPlacePresentation) return undefined;
+    const statusEmphasis = selectedPlacePresentation.isCurrentlyOperating === true
+      ? '영업 중'
+      : selectedPlacePresentation.isCurrentlyOperating === false
+        ? '영업 종료'
+        : '';
+
+    return {
+      [String(selectedPlace.id)]: {
+        amenities: [],
+        businessHours: selectedPlacePresentation.businessHours ?? undefined,
+        coupons: selectedPlacePresentation.coupons,
+        email: selectedPlacePresentation.merchant?.contactEmail ?? undefined,
+        englishName: selectedPlacePresentation.englishName ?? undefined,
+        events: selectedPlacePresentation.events,
+        imageState: selectedPlacePresentation.imageState,
+        imageUrls: selectedPlacePresentation.imageUrls,
+        jibunAddress: selectedPlacePresentation.jibunAddress ?? undefined,
+        notice: selectedPlacePresentation.notice ?? undefined,
+        phone: selectedPlacePresentation.merchant?.contactPhone ?? undefined,
+        reservation: selectedPlacePresentation.reservation,
+        reviewCount: selectedPlacePresentation.reviewTotal ?? undefined,
+        reviewState: selectedPlacePresentation.reviewState,
+        roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
+        reviews: selectedPlacePresentation.reviews.map((review) => ({
+          author: review.author,
+          createdAt: review.createdAt,
+          imageUrls: review.imageUrls,
+          tags: review.tags,
+          text: review.text,
+        })),
+        summary: selectedPlacePresentation.touristSummary
+          ?? selectedPlacePresentation.description
+          ?? undefined,
+        statusDescription: selectedPlacePresentation.verificationLabel ?? '',
+        statusEmphasis,
+        website: selectedPlacePresentation.merchant?.websiteUrl ?? undefined,
+      },
+    };
+  }, [selectedPlace, selectedPlacePresentation]);
+  useEffect(() => {
+    if (content.type !== 'place-preview' || selectedPlace) return;
+
+    setContent({ type: 'home' });
+    setIsFollowingUser(true);
+    snapTo('medium');
+  }, [content, selectedPlace, snapTo]);
+  const query = content.type === 'search' || content.type === 'results' ? content.query : '';
+  const visiblePlaces = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return allPlaces.filter((place) => {
+      const matchesQuery = !normalizedQuery || [place.name, place.category, place.address]
+        .some((value) => value.toLowerCase().includes(normalizedQuery));
+      const matchesFilters = activeFilters.every((filter) => {
+        if (filter === 'Open now') return true;
+        if (filter === 'Short wait') return place.wait.startsWith('5') || place.wait.startsWith('10');
+        return place.tags.includes(filter);
+      });
+
+      return matchesQuery && matchesFilters;
+    });
+  }, [activeFilters, allPlaces, query]);
+  const sheetPlaces = useMemo(() => {
+    if (
+      content.type === 'place-preview'
+      && selectedPlace
+      && !visiblePlaces.some((place) => place.id === selectedPlace.id)
+    ) {
+      return [selectedPlace, ...visiblePlaces];
+    }
+
+    return visiblePlaces;
+  }, [content.type, selectedPlace, visiblePlaces]);
+  const mapMarkers = useMemo<MapMarker[]>(() => {
+    const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
+    const recommendationPlaceIds = new Set(recommendationPlaces.map((place) => place.id));
+    const focusedRecommendationMarker = createFocusedRecommendationMarker(
+      content.type === 'place-preview' ? mapSelectedPlace : null,
+      recommendationPlaceIds,
+      liveMarkerIds,
+    );
+    const visibleMarkerIds = new Set(liveMarkerIds);
+    if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
+    const markers = applyBookmarkStateToMarkers([
+      ...apiMarkers.map((marker) => ({
+        ...marker,
+        category: normalizePlaceCategory(marker.category),
+      })),
+      ...(focusedRecommendationMarker ? [focusedRecommendationMarker] : []),
+    ], bookmarkedPlaceIds);
+
+    if (activeCategory === 'all') return markers;
+    const markerCategory: MapMarker['category'] = activeCategory;
+
+    return markers.filter((marker) => marker.category === markerCategory);
+  }, [
+    activeCategory,
+    apiMarkers,
+    bookmarkedPlaceIds,
+    content.type,
+    apiPlaces.length,
+    recommendationPlaces,
+    mapSelectedPlace,
+  ]);
+  const visibleMapMarkers = useMemo(() => markersForSelectedPlace(
+    mapMarkers,
+    content.type === 'place-preview' ? mapSelectedPlace?.id ?? null : null,
+  ), [content.type, mapMarkers, mapSelectedPlace?.id]);
+
+  useEffect(() => {
+    if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
+
+    setMapSection('map');
+    setContent({ type: 'place-preview', placeId: openedBookmarkedPlaceId });
+    setIsFollowingUser(false);
+    snapTo('medium');
+    onClearOpenedBookmarkedPlace?.();
+  // Only react when a bookmarked place is explicitly opened.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openedBookmarkedPlaceId]);
+
+  const dismissPlaceAt = useCallback((place: DecisionPlace) => {
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter({ lat: place.latitude, lng: place.longitude });
+    setIsFollowingUser(false);
+    setMapZoomLevel(MAP_DISMISSED_ZOOM_LEVEL);
+    snapTo('medium');
+  }, [snapTo]);
+
+  const handleMarkerPress = (markerId: string) => {
+    const place = findMapPreviewPlace(markerId, [
+      ...allPlaces,
+      ...favoritePlaces,
+    ]);
+    if (!place) return;
+
+    setMapSection('map');
+
+    if (content.type === 'place-preview' && content.placeId === place.id) {
+      dismissPlaceAt(place);
       return;
     }
-    if (selectedPlace?.id === marker.placeId) {
-      setSelectedPlace(null);
+
+    setContent({ type: 'place-preview', placeId: place.id });
+    setDismissedMarkerCenter(null);
+    setIsFollowingUser(false);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    snapTo('medium');
+  };
+  const handlePlacePress = (place: DecisionPlace) => {
+    const isRecommendation = recommendedPlaces.some((item) => item.id === place.id);
+    if (isRecommendation && recommendationRequestId && recommendationVersion) {
+      void recordRecommendationClick({
+        placeId: place.id,
+        recommendationVersion,
+        requestId: recommendationRequestId,
+      }).catch((error) => {
+        if (__DEV__) console.warn('[recommendation-click]', error);
+      });
+    }
+    setMapSection('map');
+    setContent({ type: 'place-preview', placeId: place.id });
+    setDismissedMarkerCenter(null);
+    setIsFollowingUser(false);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    snapTo('medium');
+  };
+  const handleQueryChange = (nextQuery: string) => {
+    setContent({ type: 'search', query: nextQuery });
+    snapTo('expanded');
+  };
+  const handleSearchFocus = () => {
+    setIsSearchOpen(true);
+  };
+  const handleFilterPress = (filter: VisitFilter) => {
+    setActiveFilters((current) => (
+      current.includes(filter)
+        ? current.filter((item) => item !== filter)
+        : [...current, filter]
+    ));
+  };
+  const handleBackHome = useCallback(() => {
+    if (selectedPlace) {
+      dismissPlaceAt(selectedPlace);
       return;
     }
-    selectPlace({ coordinate, distanceMeters: null, id: marker.placeId });
+
+    setContent({ type: 'home' });
+    setIsFollowingUser(true);
+    setDismissedMarkerCenter(null);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    snapTo('medium');
+  }, [dismissPlaceAt, selectedPlace, snapTo]);
+
+  const handleLocatePress = useCallback(() => {
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter(null);
+    setMapZoomLevel(MAP_LOCATE_ZOOM_LEVEL);
+
+    // Native map props only react when followUser changes. Pulse the value so an
+    // unchanged current coordinate can still be re-centered on every button press.
+    setIsFollowingUser(false);
+    if (locateFollowFrame.current !== null) {
+      cancelAnimationFrame(locateFollowFrame.current);
+    }
+    locateFollowFrame.current = requestAnimationFrame(() => {
+      locateFollowFrame.current = null;
+      setIsFollowingUser(true);
+    });
+
+    snapTo('medium');
+  }, [snapTo]);
+
+  useFocusEffect(useCallback(() => {
+    reservationNavigationLock.current = false;
+    return registerAndroidBackOverride(() => {
+      if (isSearchOpen) {
+        setIsSearchOpen(false);
+        return true;
+      }
+
+      if (mapSection === 'favorites') {
+        setMapSection('map');
+        snapTo('medium');
+        return true;
+      }
+
+      const action = getMapBackAction(content, snapPoint);
+
+      if (action === 'show-home') {
+        handleBackHome();
+        return true;
+      }
+
+      if (action === 'collapse-sheet') {
+        snapTo('collapsed');
+        return true;
+      }
+
+      return false;
+    });
+  }, [content, handleBackHome, isSearchOpen, mapSection, snapPoint, snapTo]));
+  const handleGoNow = (place: DecisionPlace) => {
+    Alert.alert(
+      t('map.decision.goNow'),
+      t('map.decision.goNowMessage', { placeName: place.name, defaultValue: `Directions to ${place.name} are ready.` }),
+      [{ text: t('map.search.confirm') }],
+    );
+  };
+  const handleCoupon = (place: DecisionPlace) => {
+    Alert.alert(
+      t('map.decision.getCoupon'),
+      t('map.decision.couponMessage', { placeName: place.name, defaultValue: `${place.name} coupon will be available here.` }),
+      [{ text: t('map.search.confirm') }],
+    );
+  };
+  const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
+    try {
+      await togglePlaceBookmark(place, nextBookmarked);
+    } catch (error) {
+      Alert.alert(
+        nextBookmarked ? '장소를 저장하지 못했어요' : '저장을 해제하지 못했어요',
+        getApiErrorUx(error).error.message || '잠시 후 다시 시도해 주세요.',
+      );
+    }
   };
 
-  const visibleResults = searchFocused && searchText.trim().length >= 2
-    ? discovery.autocomplete
-    : searchText.trim() || category
-      ? discovery.results
-      : [];
-
+  const focusedPlace = mapSelectedPlace;
+  const mapCenterLat = !isFollowingUser && focusedPlace
+    ? focusedPlace.latitude - (0.00072 * designScale)
+    : dismissedMarkerCenter?.lat ?? center?.lat;
+  const mapCenterLng = !isFollowingUser && focusedPlace
+    ? focusedPlace.longitude
+    : dismissedMarkerCenter?.lng ?? center?.lng;
+  const isExpandedPlaceDetail = mapSection === 'map'
+    && content.type === 'place-preview'
+    && snapPoint === 'expanded';
   return (
-    <Container testID="v2-map-screen">
-      <KakaoMapAdapter
-        center={center}
-        followUser={location.status === 'granted' && selectedPlace === null}
-        markers={discovery.markers}
-        onCameraIdle={setCenter}
-        onMarkerSelect={handleMarkerSelect}
-        userCoordinate={location.coordinate ?? undefined}
+    <View style={styles.container}>
+      <StatusBar
+        backgroundColor={isExpandedPlaceDetail ? '#FFFFFF' : 'transparent'}
+        barStyle="dark-content"
+        translucent
       />
-
-      <SafeOverlay edges={['top', 'right', 'bottom', 'left']} pointerEvents="box-none">
-        <MapDiscoverySearch
-          category={category}
-          isBusy={discovery.isAutocompleteLoading || discovery.isRefreshing}
-          onCategoryChange={(value) => {
-            setCategory(value);
-            setSelectedPlace(null);
+      <View style={styles.mapBackground}>
+        {mapCenterLat !== undefined && mapCenterLng !== undefined && userLat !== undefined && userLng !== undefined ? <MapCanvas
+          centerLat={mapCenterLat}
+          centerLng={mapCenterLng}
+          followUser={isFollowingUser}
+          markers={visibleMapMarkers}
+          onMarkerPress={handleMarkerPress}
+          userLat={userLat}
+          userLng={userLng}
+          zoomLevel={mapZoomLevel}
+        /> : null}
+        <View pointerEvents="none" style={styles.mapTint} />
+      </View>
+      <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
+        <MapTopOverlay
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          onLocatePress={handleLocatePress}
+          onProfilePress={onOpenProfile}
+          onQueryChange={handleQueryChange}
+          onSearchFocus={handleSearchFocus}
+          onSubmitSearch={() => {
+            setContent({ type: 'results', query });
+            snapTo('expanded');
           }}
-          onFocusChange={setSearchFocused}
-          onOpenProfile={() => navigation.navigate(V2_ROUTES.MyPage)}
-          onQueryChange={(value) => {
-            setSearchText(value);
-            setSelectedPlace(null);
-          }}
-          onSelectPlace={selectPlace}
-          query={searchText}
-          results={visibleResults}
+          query={query}
+          showCategories={snapPoint !== 'expanded'}
         />
-
-        <LocateButton
-          accessibilityLabel={t('map.locate')}
-          accessibilityRole="button"
-          onPress={() => {
-            setSelectedPlace(null);
-            setCenter(location.coordinate ?? FALLBACK_COORDINATE);
-          }}
-          testID="v2-map-locate"
+        <FadeSlideTransition
+          direction={MAP_SECTION_DIRECTION[mapSection]}
+          pointerEvents="box-none"
+          stateKey={mapSection}
+          style={styles.sectionTransition}
+          testID={`map-section-transition-${mapSection}`}
         >
-          <LocateButtonText>{t('map.locate')}</LocateButtonText>
-        </LocateButton>
-
-        <LocationStatusOverlay
-          location={location}
-          onRefresh={() => void location.refresh()}
-        />
-        <MapDataStatusOverlay
-          error={discovery.queryError}
-          isDisabled={discovery.isDisabled}
-          isEmpty={discovery.isEmpty}
-          isLoading={discovery.isLoading}
-          isMock={discovery.dataSource === 'mock'}
-          onRetry={() => void discovery.refetch()}
-        />
-        {selectedPlace === null ? (
+        {mapSection === 'favorites' ? (
+          <FavoritePlacesBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            hasNextPage={Boolean(hasNextFavoritePage)}
+            height={fullSheetHeight}
+            imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
+            isError={isFavoritesError}
+            isFetchNextPageError={isFetchNextFavoritePageError}
+            isFetchingNextPage={isFetchingNextFavoritePage}
+            isLoading={isFavoritesLoading}
+            isUnauthorized={!canQueryBookmarks || isFavoritesUnauthorized}
+            mediumTranslateY={mediumTranslateY}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenMap={() => {
+              setMapSection('map');
+              setContent({ type: 'home' });
+              snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservations={() => {
+              setMapSection('reservations');
+              snapTo('medium');
+            }}
+            onLoadMore={() => void fetchNextFavoritePage()}
+            onRetry={() => void refetchFavorites()}
+            onRemovePlace={(place) => void handleToggleBookmark(place, false)}
+            onPlacePress={(place) => {
+              setMapSection('map');
+              handlePlacePress(place);
+            }}
+            panHandlers={panHandlers}
+            places={favoritePlaces}
+            pendingPlaceIds={bookmarkPendingPlaceIds}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : mapSection === 'reservations' ? (
+          <ReservationBottomSheet
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
+            bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+            collapsedTranslateY={collapsedTranslateY}
+            height={fullSheetHeight}
+            isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
+            mediumTranslateY={mediumTranslateY}
+            nearbyPlaces={nearbyReservationPlaces}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenFavorites={() => {
+              setMapSection('favorites');
+              snapTo('medium');
+            }}
+            onOpenMap={() => {
+              setMapSection('map');
+              setContent({ type: 'home' });
+              snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservation={(reservationId) => onOpenReservation?.(reservationId)}
+            onPlacePress={handlePlacePress}
+            onToggleBookmark={handleToggleBookmark}
+            panHandlers={panHandlers}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : (
+          <MapBottomSheet
+            activeFilters={activeFilters}
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
+            bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+            isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
+            collapsedTranslateY={collapsedTranslateY}
+            content={content}
+            explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
+            height={fullSheetHeight}
+            mediumTranslateY={mediumTranslateY}
+            onBackHome={handleBackHome}
+            onCouponPress={handleCoupon}
+            onCreateReservation={(place, imageUrl) => {
+              if (!onCreateReservation || reservationNavigationLock.current) return;
+              reservationNavigationLock.current = true;
+              onCreateReservation({
+                category: place.category,
+                id: place.id,
+                imageUrl,
+                name: place.name,
+              });
+            }}
+            onDetailPress={() => snapTo('expanded')}
+            onFilterPress={handleFilterPress}
+            onGoNowPress={handleGoNow}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenLikedPlaces={() => {
+              setMapSection('favorites');
+              snapTo('medium');
+            }}
+            onOpenRecommendations={() => {
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenSavedPlaces={() => {
+              setMapSection('reservations');
+              snapTo('medium');
+            }}
+            onPlacePress={handlePlacePress}
+            onRetryRecommendations={() => void refetchRecommendations()}
+            onRetryAvailability={() => void refetchAvailability()}
+            onRetryMedia={() => void refetchMedia()}
+            onRetryReviews={() => void refetchReviews()}
+            onProfilePress={onOpenProfile}
+            onQueryChange={handleQueryChange}
+            onSearchFocus={handleSearchFocus}
+            onSubmitSearch={() => {
+              setContent({ type: 'results', query });
+              snapTo('expanded');
+            }}
+            onToggleBookmark={handleToggleBookmark}
+            panHandlers={panHandlers}
+            places={sheetPlaces}
+            previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
+            recommendationContext={recommendationPresentation.contextText}
+            recommendationLimitMessage={recommendationPresentation.limitText}
+            recommendationPlaces={recommendationPlaces}
+            recommendationsState={recommendationsState}
+            selectedPlace={selectedPlace}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+            userName={profile?.username}
+          />
+        )}
+        </FadeSlideTransition>
+      {!isSearchOpen && content.type !== 'place-preview' && onOpenVisitVerification ? (
+        <Animated.View
+          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
+          style={{
+            bottom: fullSheetHeight + 8,
+            opacity: verificationCtaOpacity,
+            position: 'absolute',
+            right: 12,
+            transform: [{ translateY: sheetTranslateY }],
+            zIndex: 60,
+          }}
+          testID="visit-verification-map-cta-motion"
+        >
           <VisitVerificationMapCta
             label={t('visitVerification.title')}
-            onPress={() => navigation.navigate(V2_ROUTES.VisitVerificationPlaces)}
-            style={{ bottom: 24, position: 'absolute', right: 16 }}
+            onPress={onOpenVisitVerification}
           />
-        ) : null}
-        <MapSelectedPlaceCard
-          error={discovery.selectedPlaceError}
-          loading={discovery.selectedPlaceLoading}
-          onDirections={(place) => {
-            void Linking.openURL(`https://map.kakao.com/link/search/${encodeURIComponent(place.address || place.name)}`);
+        </Animated.View>
+      ) : null}
+      {isSearchOpen && center ? (
+        <MapSearchOverlay
+          centerLat={center.lat}
+          centerLng={center.lng}
+          isRecommendationsError={isRecommendationsError}
+          isRecommendationsLoading={isRecommendationsLoading}
+          onClose={() => setIsSearchOpen(false)}
+          onRefreshRecommendations={refetchRecommendations}
+          onSelectRecommendedPlace={(place) => {
+            setIsSearchOpen(false);
+            handlePlacePress(toDecisionPlace(place));
           }}
-          onDismiss={() => setSelectedPlace(null)}
-          onOpenPlace={(value) => {
-            const placeId = parsePlaceId(value);
-            if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
+          onSelectPlace={(place) => {
+            setIsSearchOpen(false);
+            const registeredPlace = allPlaces.find((item) => String(item.id) === place.id);
+            if (registeredPlace) {
+              handlePlacePress(registeredPlace);
+              return;
+            }
+            setContent({ type: 'results', query: place.name });
+            snapTo('expanded');
           }}
-          onReserve={(value) => {
-            const placeId = parsePlaceId(value);
-            if (placeId) navigation.navigate(V2_ROUTES.CreateReservation, { placeId });
-          }}
-          onRetry={() => void discovery.selectedPlaceRefetch()}
-          onShare={(place) => {
-            void Share.share({ message: `${place.name}\n${place.address}` });
-          }}
-          place={discovery.selectedPlace}
-          selectedPlaceId={selectedPlace?.id ?? null}
-          visible={selectedPlace !== null}
+          recommendedPlaces={recommendedPlaces}
         />
-      </SafeOverlay>
-    </Container>
+      ) : null}
+    </View>
   );
 }
 
-const Container = styled.View`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
-`;
-const SafeOverlay = styled(SafeAreaView)`
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: ${({ theme }) => theme.spacing.md}px;
-`;
-const LocateButton = styled.Pressable`
-  position: absolute;
-  right: ${({ theme }) => theme.spacing.md}px;
-  top: ${({ theme }) => theme.spacing.xxl * 4}px;
-  min-height: ${({ theme }) => theme.spacing.xxl}px;
-  justify-content: center;
-  padding: 0 ${({ theme }) => theme.spacing.md}px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.surface};
-`;
-const LocateButtonText = styled.Text`
-  color: ${({ theme }) => theme.colors.primary};
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-`;
+const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
+const styles: Record<string, object> = {
+  container: { backgroundColor: '#E7ECEF', flex: 1 },
+  mapBackground: absoluteFill,
+  mapTint: { ...absoluteFill, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
+  sectionTransition: { ...absoluteFill, zIndex: 50 },
+};

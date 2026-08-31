@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import EscapeIcon from '../../assets/v2/icons/escape.svg';
+import BackIcon from '../../assets/v2/icons/header/back.svg';
 import ProgressBar from './components/ProgressBar';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../styles/colors';
@@ -56,7 +56,7 @@ export default function SelectAgeScreen({ onBack, onNext }: Props) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.headerSide}>
-          <EscapeIcon width={12} height={21} />
+          <BackIcon width={44} height={44} />
         </Pressable>
         <ProgressBar current={3} />
         <View style={styles.headerSide} />
@@ -125,14 +125,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerSide: {
-    width: 40,
+    width: 44,
     alignItems: 'flex-start',
   },
   body: {
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 52,
+    paddingBottom: 36,
     gap: 18,
   },
   titleGroup: {
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   button: {
     height: 64,
     backgroundColor: PINK,
-    borderRadius: 16,
+    borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },

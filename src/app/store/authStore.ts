@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { hydrateAccessToken, persistTokens, removeTokens } from '../../shared/api/authTokens';
+import { hydrateAuthTokens, persistTokens, removeTokens } from '../../shared/api/authTokens';
 import { normalizeAuthTokens, type AuthTokens } from '../../shared/api/authStorage';
 
 export type AuthState = {
@@ -38,10 +38,16 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isHydrating: true });
 
     try {
-      const accessToken = await hydrateAccessToken();
+      const tokens = await hydrateAuthTokens();
+      const hasCompleteSession = Boolean(tokens?.accessToken);
+
+      if (tokens && !hasCompleteSession) {
+        await removeTokens();
+      }
+
       set({
-        accessToken,
-        isLoggedIn: Boolean(accessToken),
+        accessToken: hasCompleteSession ? tokens?.accessToken ?? null : null,
+        isLoggedIn: hasCompleteSession,
         isHydrating: false,
       });
     } catch {
@@ -55,6 +61,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   login: async (tokens: AuthTokens) => {
     const normalizedTokens = normalizeAuthTokens(tokens);
+
+    if (!normalizedTokens.accessToken) {
+      throw new Error('로그인 응답에 accessToken이 없습니다.');
+    }
 
     await persistTokens(normalizedTokens);
     set({

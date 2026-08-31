@@ -21,9 +21,11 @@ function readTranslation(path: string, language: 'en' | 'ko'): unknown {
 }
 
 describe('onboarding preference options', () => {
-  it('lists every OpenAPI travel purpose in server order', () => {
-    expect(TRAVEL_PURPOSE_OPTIONS.map(({ value }) => value)).toEqual(TRAVEL_PURPOSE_VALUES);
-    expect(TRAVEL_PURPOSE_OPTIONS.map(({ order }) => order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  it('lists the offered travel purposes in server order, omitting NIGHTLIFE', () => {
+    expect(TRAVEL_PURPOSE_OPTIONS.map(({ value }) => value)).toEqual(
+      TRAVEL_PURPOSE_VALUES.filter((value) => value !== 'NIGHTLIFE'),
+    );
+    expect(TRAVEL_PURPOSE_OPTIONS.map(({ order }) => order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });
 
   it('provides translated labels for every option', () => {

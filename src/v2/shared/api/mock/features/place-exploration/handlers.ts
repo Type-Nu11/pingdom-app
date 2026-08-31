@@ -1,7 +1,9 @@
 import type { MockHandler } from '../../handlers';
 import {
+  availabilityFixture,
   emptyPlaceExplorationFixtures,
   explorationMediaFixture,
+  livePlaceDetailFixture,
   mapViewportFixture,
   operatingNoticesFixture,
   placeAutocompleteFixture,
@@ -14,6 +16,16 @@ import {
 } from './fixtures';
 
 export const placeExplorationMockHandlers = [
+  {
+    method: 'GET',
+    path: /^\/places\/\d+$/,
+    resolve: () => livePlaceDetailFixture,
+  },
+  {
+    method: 'GET',
+    path: /^\/places\/\d+\/availabilities$/,
+    resolve: ({ scenario }) => scenario === 'empty' ? [] : [availabilityFixture],
+  },
   {
     method: 'GET',
     path: /^\/places\/\d+\/media\/exploration$/,

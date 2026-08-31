@@ -19,7 +19,7 @@ import {
   parseCheckInId,
 } from '../types.ts';
 import { getSettingsBackAction } from '../../../features/settings/utils/settingsBack.ts';
-import { getMapBackAction } from '../../../features/place/utils/mapBack.ts';
+import { getMapBackAction } from '../../../v2/features/map/utils/mapBack.ts';
 import {
   ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
   getAndroidBackAction,

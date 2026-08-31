@@ -32,6 +32,8 @@ import {
 const DEFAULT_CURRENT_STEP = 6;
 const DEFAULT_TOTAL_STEPS = 7;
 
+const contentScrollContainer = { flexGrow: 1, paddingBottom: 16 } as const;
+
 const ICON_COMPONENTS = {
   art_svg: ArtIcon,
   beati_svg: BeautyIcon,
@@ -90,11 +92,7 @@ function TravelPurposeOption({
     <OptionSurface style={{
       backgroundColor: colorProgress.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#FFFFFF', '#FFF0F4'],
-      }),
-      borderColor: colorProgress.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['#FFFFFF', '#FFF0F4'],
+        outputRange: ['rgba(248, 248, 248, 0)', 'rgba(255, 25, 86, 0.08)'],
       }),
     }}>
       <Option
@@ -118,7 +116,7 @@ function TravelPurposeOption({
           >
             <Icon
               accessible={false}
-              color={selected ? '#FF1956' : '#5E5E66'}
+              color={selected ? '#FF1956' : '#3B3B40'}
               height={24}
               width={24}
             />
@@ -171,7 +169,7 @@ function ContinueButtonTransition({
         label={label}
         loading={isContinuing}
         onPress={onContinue}
-        shape="rounded"
+        shape="pill"
         size="onboarding"
       />
     </Animated.View>
@@ -225,7 +223,12 @@ export default function TravelPurposeSelectionScreen({
         totalSteps={totalSteps}
       />
 
-      <ContentScroll testID="travel-purpose-scroll-view">
+      <ContentScroll
+        contentContainerStyle={contentScrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        testID="travel-purpose-scroll-view"
+      >
         <Content>
           <Heading>
             <Title>{t('onboarding.travelPurposeScreen.title')}</Title>
@@ -273,7 +276,7 @@ export default function TravelPurposeSelectionScreen({
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
-  background-color: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;
 
 const ContentScroll = styled.ScrollView`
@@ -281,7 +284,7 @@ const ContentScroll = styled.ScrollView`
 `;
 
 const Content = styled.View`
-  gap: ${({ theme }) => theme.spacing.lg}px;
+  gap: 18px;
   padding: ${({ theme }) => theme.spacing.md}px;
 `;
 
@@ -304,7 +307,7 @@ const Description = styled.Text`
 `;
 
 const Options = styled.View`
-  gap: ${({ theme }) => theme.spacing.sm}px;
+  gap: 12px;
 `;
 
 const ErrorMessage = styled.Text`
@@ -315,24 +318,23 @@ const ErrorMessage = styled.Text`
 `;
 
 const OptionSurface = styled(Animated.View)`
-  min-height: ${({ theme }) => theme.spacing.xxl + theme.spacing.md}px;
-  border-width: 1px;
-  border-radius: ${({ theme }) => theme.radius.lg}px;
+  min-height: 56px;
+  border-radius: 16px;
   overflow: hidden;
 `;
 
 const Option = styled.Pressable`
-  min-height: ${({ theme }) => theme.spacing.xxl + theme.spacing.md}px;
+  min-height: 56px;
   flex-direction: row;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md}px;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
-  border-radius: ${({ theme }) => theme.radius.lg}px;
+  gap: 12px;
+  padding: 15px ${({ theme }) => theme.spacing.md}px;
+  border-radius: 16px;
 `;
 
 const OptionIcon = styled.View`
-  width: ${({ theme }) => theme.spacing.xl}px;
-  height: ${({ theme }) => theme.spacing.xl}px;
+  width: ${({ theme }) => theme.spacing.lg}px;
+  height: ${({ theme }) => theme.spacing.lg}px;
   align-items: center;
   justify-content: center;
 `;
@@ -341,14 +343,14 @@ const OptionLabel = styled.Text`
   flex: 1;
   flex-shrink: 1;
   color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.title.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.title.fontWeight};
-  line-height: ${({ theme }) => theme.typography.title.lineHeight}px;
+  font-size: ${({ theme }) => theme.typography.onboardingAction.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.onboardingAction.fontWeight};
+  line-height: ${({ theme }) => theme.typography.onboardingAction.lineHeight}px;
 `;
 
 const CheckCircle = styled.View`
-  width: ${({ theme }) => theme.spacing.xl}px;
-  height: ${({ theme }) => theme.spacing.xl}px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -365,6 +367,6 @@ const CheckMark = styled.Text`
 
 const Footer = styled.View`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.xxl + theme.spacing.xs}px;
-  background-color: ${({ theme }) => theme.colors.background};
+    ${({ theme }) => theme.spacing.xl + theme.spacing.xs}px;
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;

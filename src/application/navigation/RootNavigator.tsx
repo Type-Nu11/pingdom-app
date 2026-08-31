@@ -18,7 +18,7 @@ import {
 } from '../../app/navigation/navigationIntent';
 import { ROOT_ROUTES, type RootStackParamList } from '../../app/navigation/types';
 import { useAndroidBackHandler } from '../../app/navigation/useAndroidBackHandler';
-import { useMapSettingsStore } from '../../app/store/mapSettingsStore';
+import { useMapSettingsStore } from '../../v2/features/map/store/mapSettingsStore';
 import { useAuthStore } from '../../app/store/authStore';
 import { useFcmTokenSync } from '../../v2/features/notifications/hooks/useFcmTokenSync';
 import { useForegroundNotifications } from '../../v2/features/notifications/hooks/useForegroundNotifications';

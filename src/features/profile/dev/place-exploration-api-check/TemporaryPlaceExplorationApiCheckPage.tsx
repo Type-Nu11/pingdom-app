@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import {
   usePlaceCard,
   usePlaceMap,
@@ -133,7 +134,7 @@ export default function TemporaryPlaceExplorationApiCheckPage({ endpoint, onBack
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <View style={styles.header}>
         <Pressable accessibilityLabel="API 목록으로 돌아가기" hitSlop={12} onPress={onBack}>
-          <Text style={styles.backText}>‹</Text>
+          <BackIcon width={44} height={44} />
         </Pressable>
         <View style={styles.headerCopy}>
           <Text style={styles.title}>장소 탐색 API 테스트</Text>

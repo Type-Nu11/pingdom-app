@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Image } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Image } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,12 +7,22 @@ import styled from 'styled-components/native';
 
 import { useMyReviews, useProfile } from '../hooks/useProfile';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
-import { getInitialCalendarMonth } from '../../onboarding-preferences/model/travelScheduleCalendar';
+import {
+  getInitialCalendarMonth,
+  getTravelScheduleSelectionState,
+  selectTravelDate,
+} from '../../onboarding-preferences/model/travelScheduleCalendar';
+import type { TravelDateInput } from '../../onboarding-preferences/model/onboardingPreference';
 import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
 import { useCheckIns } from '../../check-ins/hooks/useCheckIns';
 import { useCoupons } from '../../offers-coupons/hooks/useOffersCoupons';
 import { useReservations } from '../../reservations/hooks/useReservations';
-import { useTravelSchedules } from '../../travel-schedules/hooks/useTravelSchedules';
+import {
+  useCreateTravelSchedule,
+  useTravelSchedules,
+  useUpdateTravelSchedule,
+} from '../../travel-schedules/hooks/useTravelSchedules';
+import { ApiError } from '../../../shared/api';
 import { ErrorState, LoadingState } from '../../../shared/components';
 import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../components/TravelCalendar';
@@ -35,7 +45,7 @@ const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3'] a
 // Loading, error and empty slots reserve the height of the content they stand in
 // for, so resolving a section does not shift everything below it.
 const PROFILE_ROW_HEIGHT = 56;
-const TRAVEL_CALENDAR_HEIGHT = 376;
+const TRAVEL_CALENDAR_HEIGHT = 320;
 const VERIFIED_PLACE_CARD_HEIGHT = 222;
 
 export type MyPageScreenProps = {
@@ -64,14 +74,17 @@ export default function MyPageScreen({
   const couponsQuery = useCoupons();
   const reviewsQuery = useMyReviews({ limit: 1 });
   const travelSchedulesQuery = useTravelSchedules();
+  const createTravelScheduleMutation = useCreateTravelSchedule();
+  const updateTravelScheduleMutation = useUpdateTravelSchedule();
   const checkInsQuery = useCheckIns({ limit: VERIFIED_PLACES_LIMIT });
+  const todayTravelDate = useMemo(() => getTodayServerTravelDate(), []);
 
   const featuredSchedule = useMemo(
     () => selectFeaturedTravelSchedule(
       travelSchedulesQuery.data?.schedules ?? [],
-      getTodayServerTravelDate(),
+      todayTravelDate,
     ),
-    [travelSchedulesQuery.data],
+    [todayTravelDate, travelSchedulesQuery.data],
   );
 
   const initialCalendarMonth = useMemo(
@@ -81,6 +94,81 @@ export default function MyPageScreen({
     }),
     [featuredSchedule],
   );
+  const serverTravelDateInput = useMemo<TravelDateInput>(() => ({
+    endDateText: featuredSchedule?.endDate ?? '',
+    startDateText: featuredSchedule?.startDate ?? '',
+  }), [featuredSchedule]);
+  const [draftTravelDateInput, setDraftTravelDateInput] = useState<TravelDateInput>(
+    serverTravelDateInput,
+  );
+  const travelUpdateLocked = useRef(false);
+
+  useEffect(() => {
+    setDraftTravelDateInput(serverTravelDateInput);
+  }, [serverTravelDateInput]);
+
+  const draftTravelSelection = getTravelScheduleSelectionState(draftTravelDateInput);
+  const draftTravelRange = draftTravelSelection.kind === 'complete'
+    ? draftTravelSelection.range
+    : null;
+  const draftTravelStartDate = draftTravelSelection.kind === 'start-only'
+    ? draftTravelSelection.startDate
+    : draftTravelRange?.startDate ?? null;
+  const isTravelScheduleSaving = createTravelScheduleMutation.isPending
+    || updateTravelScheduleMutation.isPending;
+
+  const handleTravelDatePress = (date: Parameters<typeof selectTravelDate>[1]) => {
+    if (
+      travelUpdateLocked.current
+      || isTravelScheduleSaving
+    ) return;
+
+    const nextInput = draftTravelSelection.kind === 'complete'
+      ? { endDateText: '', startDateText: date }
+      : selectTravelDate(draftTravelDateInput, date);
+    setDraftTravelDateInput(nextInput);
+    const nextSelection = getTravelScheduleSelectionState(nextInput);
+    if (nextSelection.kind !== 'complete') return;
+
+    travelUpdateLocked.current = true;
+    const body = {
+      endDate: nextSelection.range.endDate,
+      startDate: nextSelection.range.startDate,
+    };
+    const mutationOptions = {
+      onError: (error: unknown) => {
+        setDraftTravelDateInput(serverTravelDateInput);
+        if (error instanceof ApiError) {
+          if (error.code === 'TRAVEL_SCHEDULE_START_DATE_IN_PAST') {
+            Alert.alert(t('myPage.travel.startDateInPast'));
+            return;
+          }
+          if (error.code === 'TRAVEL_SCHEDULE_PERIOD_OVERLAP') {
+            Alert.alert(t('myPage.travel.periodOverlap'));
+            return;
+          }
+          if (error.code === 'TRAVEL_SCHEDULE_NOT_EDITABLE') {
+            Alert.alert(t('myPage.travel.notEditable'));
+            return;
+          }
+        }
+        Alert.alert(t('myPage.travel.updateError'));
+      },
+      onSettled: () => {
+        travelUpdateLocked.current = false;
+      },
+    };
+
+    if (featuredSchedule) {
+      updateTravelScheduleMutation.mutate({
+        body,
+        scheduleId: featuredSchedule.id,
+      }, mutationOptions);
+      return;
+    }
+
+    createTravelScheduleMutation.mutate(body, mutationOptions);
+  };
 
   const placeIds = useMemo(() => {
     const ids = (checkInsQuery.data?.checkIns ?? []).map((checkIn) => checkIn.placeId);
@@ -219,8 +307,15 @@ export default function MyPageScreen({
         </Section>
 
         <Section $borderWidth={8}>
-          <SectionContent>
-            <SectionTitle>{t('myPage.travel.title')}</SectionTitle>
+          <TravelSectionContent>
+            <TravelTitleRow>
+              <TravelSectionTitle>{t('myPage.travel.title')}</TravelSectionTitle>
+              {isTravelScheduleSaving ? (
+                <TravelSavingText accessibilityLiveRegion="polite">
+                  {t('myPage.travel.saving')}
+                </TravelSavingText>
+              ) : null}
+            </TravelTitleRow>
             {travelSchedulesQuery.isLoading ? (
               <Slot $minHeight={TRAVEL_CALENDAR_HEIGHT}>
                 <LoadingState description={t('myPage.travel.loading')} />
@@ -234,9 +329,16 @@ export default function MyPageScreen({
                 />
               </Slot>
             ) : (
-              <TravelCalendar highlightedRange={featuredSchedule} initialMonth={initialCalendarMonth} />
+              <TravelCalendar
+                highlightedRange={draftTravelRange}
+                initialMonth={initialCalendarMonth}
+                isUpdating={isTravelScheduleSaving}
+                minimumDate={todayTravelDate}
+                onDatePress={handleTravelDatePress}
+                selectedStartDate={draftTravelStartDate}
+              />
             )}
-          </SectionContent>
+          </TravelSectionContent>
         </Section>
 
         <Section $borderWidth={0}>
@@ -264,7 +366,7 @@ export default function MyPageScreen({
                     <VerifiedPlaceCard
                       address={entry.place.address}
                       favorited={bookmarkedPlaceIds.has(entry.placeId)}
-                      imageUrl={entry.place.thumbnailUrl}
+                      imageUrl={null}
                       key={entry.placeId}
                       name={entry.place.name}
                       onToggleFavorite={() => toggleFavorite(entry.placeId)}
@@ -342,6 +444,28 @@ const SectionTitle = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 20px;
   font-weight: 700;
+`;
+
+const TravelSectionTitle = styled.Text.attrs({ maxFontSizeMultiplier: 1 })`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: 18px;
+  font-weight: 700;
+`;
+
+const TravelTitleRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const TravelSavingText = styled.Text.attrs({ maxFontSizeMultiplier: 1 })`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+`;
+
+const TravelSectionContent = styled.View`
+  gap: 12px;
+  padding: 0 ${({ theme }) => theme.spacing.lg}px;
 `;
 
 const SectionHeaderRow = styled.Pressable`

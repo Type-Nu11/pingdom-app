@@ -1,12 +1,10 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { SvgXml } from 'react-native-svg';
+import BackIcon from '../../assets/v2/icons/header/back.svg';
 import { colors } from '../../styles/colors';
 
 const PINK = colors.primaryNormal;
-
-const BACK_SVG = `<svg width="9" height="18" viewBox="0 0 9 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1L1 9L8 17" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 type Props = {
   onBack: () => void;
@@ -27,7 +25,7 @@ export default function LogInKrScreen({ onBack, onSignup, onLogin }: Props) {
 
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.headerSide}>
-          <SvgXml xml={BACK_SVG} width={9} height={18} />
+          <BackIcon width={44} height={44} />
         </Pressable>
         <View style={styles.headerSide} />
       </View>
@@ -83,13 +81,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerSide: {
-    width: 40,
+    width: 44,
     alignItems: 'flex-start',
   },
   body: {
     flex: 1,
     paddingHorizontal: 28,
-    paddingBottom: 58,
+    paddingBottom: 36,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -144,7 +142,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 64,
     backgroundColor: PINK,
-    borderRadius: 16,
+    borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },

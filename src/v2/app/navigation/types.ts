@@ -1,5 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import type { SettingsDetailId } from '../../features/settings';
+
 declare const routeIdBrand: unique symbol;
 
 export type PlaceId = number & {
@@ -16,7 +18,12 @@ export const V2_ROUTES = {
   Home: 'Home',
   Map: 'Map',
   MyPage: 'MyPage',
+  ProfileEdit: 'ProfileEdit',
+  NotificationSettings: 'NotificationSettings',
   PlaceDetail: 'PlaceDetail',
+  AccountManagement: 'AccountManagement',
+  Settings: 'Settings',
+  SettingsDetail: 'SettingsDetail',
   VisitVerificationPlaces: 'VisitVerificationPlaces',
   VisitVerificationReview: 'VisitVerificationReview',
 } as const;
@@ -35,6 +42,13 @@ export type V2StackParamList = {
   Home: undefined;
   Map: undefined;
   MyPage: undefined;
+  ProfileEdit: undefined;
+  AccountManagement: undefined;
+  Settings: undefined;
+  SettingsDetail: {
+    detail: SettingsDetailId;
+  };
+  NotificationSettings: undefined;
   PlaceDetail: {
     placeId: PlaceId;
   };

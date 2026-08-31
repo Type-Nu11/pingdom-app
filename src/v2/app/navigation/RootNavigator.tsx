@@ -6,14 +6,21 @@ import { useFcmTokenSync } from '../../features/notifications/hooks/useFcmTokenS
 import { useForegroundNotifications } from '../../features/notifications/hooks/useForegroundNotifications';
 import { useNotificationOpenSync } from '../../features/notifications/hooks/useNotificationOpenSync';
 import type { NotificationRoute } from '../../features/notifications/model/notification.types';
+import NotificationSettingsScreen from '../../features/notifications/screens/NotificationSettingsScreen';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
 import CouponBoxScreen from '../../features/my-page/screens/CouponBoxScreen';
 import CouponDetailContainer from '../../features/my-page/screens/CouponDetailContainer';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
+import ProfileEditScreen from '../../features/my-page/screens/ProfileEditScreen';
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
 import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
+import {
+  AccountManagementScreen,
+  SettingsDetailPendingScreen,
+  SettingsScreen,
+} from '../../features/settings';
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
@@ -38,8 +45,8 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
     <MyPageScreen
       onBack={navigation.goBack}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
-      onOpenProfileEdit={() => {}}
-      onOpenSettings={() => {}}
+      onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
+      onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
       onOpenVerifiedPlaces={() => {}}
     />
   );
@@ -69,6 +76,44 @@ function CouponDetailRoute({ navigation, route }: V2ScreenProps<'CouponDetail'>)
       }}
     />
   );
+}
+
+function SettingsRouteScreen({ navigation }: V2ScreenProps<'Settings'>) {
+  return (
+    <SettingsScreen
+      onBack={navigation.goBack}
+      onOpenAccountManagement={() => navigation.navigate(V2_ROUTES.AccountManagement)}
+      onOpenDetail={(detail) => navigation.navigate(V2_ROUTES.SettingsDetail, { detail })}
+      onOpenNotificationSettings={() => navigation.navigate(V2_ROUTES.NotificationSettings)}
+      onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
+    />
+  );
+}
+
+function ProfileEditRouteScreen({ navigation }: V2ScreenProps<'ProfileEdit'>) {
+  return <ProfileEditScreen onBack={navigation.goBack} />;
+}
+
+function AccountManagementRouteScreen({ navigation }: V2ScreenProps<'AccountManagement'>) {
+  return (
+    <AccountManagementScreen
+      onBack={navigation.goBack}
+      onOpenDetail={(detail) => navigation.navigate(V2_ROUTES.SettingsDetail, { detail })}
+    />
+  );
+}
+
+function SettingsDetailRouteScreen({ navigation, route }: V2ScreenProps<'SettingsDetail'>) {
+  return (
+    <SettingsDetailPendingScreen
+      detail={route.params.detail}
+      onBack={navigation.goBack}
+    />
+  );
+}
+
+function NotificationSettingsRoute({ navigation }: V2ScreenProps<'NotificationSettings'>) {
+  return <NotificationSettingsScreen onBack={navigation.goBack} />;
 }
 
 function VisitVerificationPlacesRoute({ navigation }: V2ScreenProps<'VisitVerificationPlaces'>) {
@@ -128,6 +173,11 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
         <Stack.Screen name={V2_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
         <Stack.Screen name={V2_ROUTES.CouponDetail} component={CouponDetailRoute} />
+        <Stack.Screen name={V2_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.Settings} component={SettingsRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.SettingsDetail} component={SettingsDetailRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.NotificationSettings} component={NotificationSettingsRoute} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />

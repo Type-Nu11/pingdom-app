@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import {
@@ -133,14 +134,14 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-create-reservation-screen">
       <Header>
-        <BackButton accessibilityLabel={t('reservation.common.back')} accessibilityRole="button" onPress={navigation.goBack}><BackText>‹</BackText></BackButton>
+        <BackButton accessibilityLabel={t('reservation.common.back')} accessibilityRole="button" onPress={navigation.goBack}><BackIcon width={44} height={44} /></BackButton>
         <HeaderTitle>{t('reservation.create.title')}</HeaderTitle><HeaderSpacer />
       </Header>
       <Form keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <PlaceSummary>
-          {route.params.imageUrl || detail.data?.thumbnailUrl ? <Thumbnail source={{ uri: route.params.imageUrl ?? detail.data?.thumbnailUrl ?? '' }} testID="v2-reservation-place-image" /> : <ThumbnailFallback><ThumbnailFallbackText>⌂</ThumbnailFallbackText></ThumbnailFallback>}
+          {route.params.imageUrl ? <Thumbnail source={{ uri: route.params.imageUrl }} testID="v2-reservation-place-image" /> : <ThumbnailFallback><ThumbnailFallbackText>⌂</ThumbnailFallbackText></ThumbnailFallback>}
           <PlaceCopy>
-            <Helper>{t('reservation.create.peopleRange', { category: route.params.category ?? detail.data?.category ?? '' })}</Helper>
+            <Helper>{t('reservation.create.peopleRange', { category: route.params.category ?? detail.data?.touristCategories?.[0] ?? '' })}</Helper>
             <PlaceName numberOfLines={1}>{route.params.placeName ?? detail.data?.name ?? t('reservation.create.loadingPlace')}</PlaceName>
           </PlaceCopy><Chevron>›</Chevron>
         </PlaceSummary>
@@ -244,10 +245,9 @@ function formatTimeRange(availability: Availability, language: string): string {
 
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const Header = styled.View`height: 64px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px; border-bottom-width: 1px; border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};`;
-const BackButton = styled.Pressable`width: 42px; height: 42px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
-const BackText = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: 30px; line-height: 32px;`;
+const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
 const HeaderTitle = styled.Text`flex: 1; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight}; text-align: center;`;
-const HeaderSpacer = styled.View`width: 42px;`;
+const HeaderSpacer = styled.View`width: 44px;`;
 const Form = styled.ScrollView`flex: 1;`;
 const PlaceSummary = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.md}px; margin: ${({ theme }) => theme.spacing.md}px; padding: ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const Thumbnail = styled.Image`width: 48px; height: 48px; border-radius: ${({ theme }) => theme.radius.sm}px;`;

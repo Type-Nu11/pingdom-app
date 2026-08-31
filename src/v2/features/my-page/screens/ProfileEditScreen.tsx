@@ -8,6 +8,7 @@ import { ApiError } from '../../../shared/api';
 import {
   pickProfileImage,
   ProfileImagePermissionError,
+  SaveProfileError,
   useChangeProfileImage,
   useProfile,
   useSaveProfile,
@@ -38,7 +39,7 @@ function getPasswordErrorMessage(
 ): string {
   if (error instanceof ApiError) {
     if (error.code === 'PASSWORD_MISMATCH') return messages.mismatch;
-    if (error.status === 401) return messages.currentPasswordInvalid;
+    if (error.code === 'INVALID_CREDENTIALS') return messages.currentPasswordInvalid;
     return error.fieldErrors?.find(({ reason }) => Boolean(reason))?.reason
       ?? error.message
       ?? messages.fallback;
@@ -48,7 +49,7 @@ function getPasswordErrorMessage(
 
 export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const { t } = useTranslation();
-  const { isLoading: isProfileLoading, profile } = useProfile();
+  const { isError: isProfileError, isLoading: isProfileLoading, profile } = useProfile();
 
   const changeProfileImage = useChangeProfileImage();
   const saveProfile = useSaveProfile();
@@ -60,6 +61,11 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   // once. Seed it when the profile first arrives, and never again, so a value
   // the user has already typed is not overwritten by a later refetch.
   const hasSeededUsername = useRef(profile !== null);
+  const hasEditedUsername = useRef(false);
+  const avatarActionLock = useRef(false);
+  const backActionLock = useRef(false);
+  const isMounted = useRef(true);
+  const saveActionLock = useRef(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -71,29 +77,54 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     if (hasSeededUsername.current || !profile) return;
 
     hasSeededUsername.current = true;
-    setUsername(profile.username);
+    if (!hasEditedUsername.current) setUsername(profile.username);
   }, [profile]);
 
+  useEffect(() => () => {
+    isMounted.current = false;
+  }, []);
+
+  const handleBack = () => {
+    if (backActionLock.current) return;
+    backActionLock.current = true;
+    onBack();
+  };
+
+  const handleUsernameChange = (value: string) => {
+    hasEditedUsername.current = true;
+    setUsername(value);
+  };
+
   const handleEditAvatar = async () => {
-    if (changeProfileImage.isPending) return;
+    if (avatarActionLock.current || changeProfileImage.isPending) return;
+    avatarActionLock.current = true;
 
     try {
       const file = await pickProfileImage();
-      if (!file) return;
+      if (!file || !isMounted.current) return;
       await changeProfileImage.mutateAsync(file);
     } catch (error) {
+      if (!isMounted.current) return;
       if (error instanceof ProfileImagePermissionError) {
         Alert.alert(t('myPage.profileEdit.avatarPermissionDenied'));
         return;
       }
       Alert.alert(t('myPage.profileEdit.avatarChangeFailed'));
+    } finally {
+      avatarActionLock.current = false;
     }
   };
 
   const handleSave = async () => {
     // Saving before the profile resolves would compare the typed username
     // against an unknown current one and could send a redundant change request.
-    if (saveProfile.isPending || isProfileLoading) return;
+    if (
+      saveActionLock.current
+      || saveProfile.isPending
+      || isProfileLoading
+      || isProfileError
+      || !profile
+    ) return;
 
     const trimmedUsername = username.trim();
     const wantsPasswordChange = currentPassword.length > 0
@@ -103,6 +134,11 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
 
     if (!trimmedUsername) {
       Alert.alert(t('myPage.profileEdit.usernameRequired'));
+      return;
+    }
+
+    if (trimmedUsername.length < 4 || trimmedUsername.length > 50) {
+      Alert.alert(t('myPage.profileEdit.usernameLengthInvalid'));
       return;
     }
 
@@ -122,10 +158,11 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     }
 
     if (!wantsUsernameChange && !wantsPasswordChange) {
-      onBack();
+      handleBack();
       return;
     }
 
+    saveActionLock.current = true;
     try {
       await saveProfile.mutateAsync({
         password: wantsPasswordChange
@@ -133,39 +170,64 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
           : undefined,
         username: wantsUsernameChange ? trimmedUsername : undefined,
       });
-      onBack();
+      if (isMounted.current) handleBack();
     } catch (error) {
+      if (!isMounted.current) return;
+
+      const saveError = error instanceof SaveProfileError ? error : null;
+      const originalError = saveError?.originalError ?? error;
+      const failedOperation = saveError?.operation ?? (wantsPasswordChange ? 'password' : 'username');
+
+      if (failedOperation === 'username') {
+        Alert.alert(getUsernameErrorMessage(
+          originalError,
+          t('myPage.profileEdit.usernameChangeFailed'),
+        ));
+        return;
+      }
+
+      const passwordErrorMessage = getPasswordErrorMessage(originalError, {
+        currentPasswordInvalid: t('myPage.profileEdit.currentPasswordInvalid'),
+        fallback: t('myPage.profileEdit.passwordChangeFailed'),
+        mismatch: t('myPage.profileEdit.passwordMismatch'),
+      });
       Alert.alert(
-        wantsPasswordChange
-          ? getPasswordErrorMessage(error, {
-              currentPasswordInvalid: t('myPage.profileEdit.currentPasswordInvalid'),
-              fallback: t('myPage.profileEdit.passwordChangeFailed'),
-              mismatch: t('myPage.profileEdit.passwordMismatch'),
-            })
-          : getUsernameErrorMessage(error, t('myPage.profileEdit.usernameChangeFailed')),
+        saveError?.usernameChanged
+          ? t('myPage.profileEdit.passwordChangePartialFailure', { reason: passwordErrorMessage })
+          : passwordErrorMessage,
       );
+    } finally {
+      saveActionLock.current = false;
     }
   };
 
+  const isSaving = saveProfile.isPending;
+  const isSaveDisabled = isSaving || isProfileLoading || isProfileError || !profile;
+
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-profile-edit-screen">
-      <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
+      <Content contentContainerStyle={CONTENT_CONTAINER_STYLE} testID="v2-profile-edit-scroll">
         <TopBar>
           <IconButton
             accessibilityLabel={t('myPage.back')}
             accessibilityRole="button"
             hitSlop={8}
-            onPress={onBack}
+            onPress={handleBack}
+            testID="v2-profile-edit-back"
           >
             <BackIcon height={44} width={44} />
           </IconButton>
           <TopBarTitle>{t('myPage.profileEdit.title')}</TopBarTitle>
           <IconButton
-            accessibilityLabel={t('myPage.profileEdit.save')}
+            accessibilityLabel={isSaving
+              ? t('myPage.profileEdit.saving')
+              : t('myPage.profileEdit.save')}
             accessibilityRole="button"
-            disabled={saveProfile.isPending || isProfileLoading}
+            accessibilityState={{ busy: isSaving, disabled: isSaveDisabled }}
+            disabled={isSaveDisabled}
             hitSlop={8}
             onPress={() => void handleSave()}
+            testID="v2-profile-edit-save-header"
           >
             <CheckmarkIcon height={44} width={44} />
           </IconButton>
@@ -175,17 +237,29 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
           <AvatarWrapper
             accessibilityLabel={t('myPage.profileEdit.changeAvatar')}
             accessibilityRole="button"
+            accessibilityState={{
+              busy: changeProfileImage.isPending,
+              disabled: changeProfileImage.isPending,
+            }}
             disabled={changeProfileImage.isPending}
             onPress={() => void handleEditAvatar()}
+            testID="v2-profile-edit-avatar-action"
           >
             {profile?.profileImageUrl ? (
-              <AvatarImage source={{ uri: profile.profileImageUrl }} />
+              <AvatarImage
+                source={{ uri: profile.profileImageUrl }}
+                testID="v2-profile-edit-avatar-image"
+              />
             ) : (
               <AvatarPlaceholder height={82} width={82} />
             )}
             {changeProfileImage.isPending ? (
               <AvatarUploadingOverlay>
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator
+                  accessibilityLabel={t('myPage.profileEdit.avatarUploading')}
+                  accessibilityRole="progressbar"
+                  color="#FFFFFF"
+                />
               </AvatarUploadingOverlay>
             ) : null}
             <PencilBadge>
@@ -201,8 +275,11 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
             <FieldLabel>{t('myPage.profileEdit.username')}</FieldLabel>
             <FieldRow>
               <FieldInput
+                accessibilityLabel={t('myPage.profileEdit.username')}
                 autoCapitalize="none"
-                onChangeText={setUsername}
+                autoComplete="username"
+                onChangeText={handleUsernameChange}
+                textContentType="username"
                 value={username}
               />
             </FieldRow>
@@ -212,14 +289,24 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
             <FieldLabel>{t('myPage.profileEdit.currentPassword')}</FieldLabel>
             <FieldRow>
               <FieldInput
+                accessibilityLabel={t('myPage.profileEdit.currentPassword')}
                 autoCapitalize="none"
+                autoComplete="current-password"
                 onChangeText={setCurrentPassword}
                 placeholder={t('myPage.profileEdit.currentPasswordPlaceholder')}
                 secureTextEntry={!showCurrentPassword}
+                textContentType="password"
                 value={currentPassword}
               />
               <EyeButton
+                accessibilityLabel={t(
+                  showCurrentPassword
+                    ? 'myPage.profileEdit.hidePassword'
+                    : 'myPage.profileEdit.showPassword',
+                  { field: t('myPage.profileEdit.currentPassword') },
+                )}
                 accessibilityRole="button"
+                accessibilityState={{ selected: showCurrentPassword }}
                 hitSlop={8}
                 onPress={() => setShowCurrentPassword((value) => !value)}
               >
@@ -236,14 +323,24 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
             <FieldLabel>{t('myPage.profileEdit.newPassword')}</FieldLabel>
             <FieldRow>
               <FieldInput
+                accessibilityLabel={t('myPage.profileEdit.newPassword')}
                 autoCapitalize="none"
+                autoComplete="new-password"
                 onChangeText={setNewPassword}
                 placeholder={t('myPage.profileEdit.newPasswordPlaceholder')}
                 secureTextEntry={!showNewPassword}
+                textContentType="newPassword"
                 value={newPassword}
               />
               <EyeButton
+                accessibilityLabel={t(
+                  showNewPassword
+                    ? 'myPage.profileEdit.hidePassword'
+                    : 'myPage.profileEdit.showPassword',
+                  { field: t('myPage.profileEdit.newPassword') },
+                )}
                 accessibilityRole="button"
+                accessibilityState={{ selected: showNewPassword }}
                 hitSlop={8}
                 onPress={() => setShowNewPassword((value) => !value)}
               >
@@ -260,14 +357,24 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
             <FieldLabel>{t('myPage.profileEdit.confirmPassword')}</FieldLabel>
             <FieldRow>
               <FieldInput
+                accessibilityLabel={t('myPage.profileEdit.confirmPassword')}
                 autoCapitalize="none"
+                autoComplete="new-password"
                 onChangeText={setConfirmPassword}
                 placeholder={t('myPage.profileEdit.confirmPasswordPlaceholder')}
                 secureTextEntry={!showConfirmPassword}
+                textContentType="newPassword"
                 value={confirmPassword}
               />
               <EyeButton
+                accessibilityLabel={t(
+                  showConfirmPassword
+                    ? 'myPage.profileEdit.hidePassword'
+                    : 'myPage.profileEdit.showPassword',
+                  { field: t('myPage.profileEdit.confirmPassword') },
+                )}
                 accessibilityRole="button"
+                accessibilityState={{ selected: showConfirmPassword }}
                 hitSlop={8}
                 onPress={() => setShowConfirmPassword((value) => !value)}
               >
@@ -282,12 +389,17 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
         </InfoSection>
 
         <SaveButton
+          accessibilityLabel={isSaving
+            ? t('myPage.profileEdit.saving')
+            : t('myPage.profileEdit.save')}
           accessibilityRole="button"
-          disabled={saveProfile.isPending || isProfileLoading}
+          accessibilityState={{ busy: isSaving, disabled: isSaveDisabled }}
+          disabled={isSaveDisabled}
           onPress={() => void handleSave()}
+          testID="v2-profile-edit-save-bottom"
         >
           <SaveButtonText>
-            {saveProfile.isPending ? t('myPage.profileEdit.saving') : t('myPage.profileEdit.save')}
+            {isSaving ? t('myPage.profileEdit.saving') : t('myPage.profileEdit.save')}
           </SaveButtonText>
         </SaveButton>
       </Content>
@@ -302,7 +414,10 @@ const Screen = styled(SafeAreaView)`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const Content = styled.ScrollView`
+const Content = styled.ScrollView.attrs({
+  automaticallyAdjustKeyboardInsets: true,
+  keyboardShouldPersistTaps: 'handled',
+})`
   flex: 1;
 `;
 

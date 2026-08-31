@@ -11,13 +11,12 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SvgXml } from 'react-native-svg';
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import { colors } from '../../../../styles/colors';
 import useLogin from '../../hooks/useLogin';
 import useSignup from '../../hooks/useSignup';
 import ProgressDots from './components/ProgressDots';
 import type { OnboardingData } from '../../../../features/onboarding/types';
-
-const ESCAPE_SVG = `<svg width="12" height="21" viewBox="0 0 12 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.25 1.25L1.25 10.25L10.25 19.25" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 const OPEN_EYE_SVG = `<svg width="20" height="13" viewBox="0 0 20 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M0 6.5C1.84364 2.64457 5.62909 0 10 0C14.3709 0 18.1564 2.64457 20 6.5C18.1564 10.3554 14.3709 13 10 13C5.62909 13 1.84364 10.3554 0 6.5ZM10 9.75C10.4178 9.75 10.8316 9.66594 11.2176 9.50261C11.6037 9.33928 11.9544 9.09989 12.2499 8.7981C12.5453 8.49631 12.7797 8.13803 12.9396 7.74372C13.0995 7.34941 13.1818 6.9268 13.1818 6.5C13.1818 6.0732 13.0995 5.65059 12.9396 5.25628C12.7797 4.86197 12.5453 4.50369 12.2499 4.2019C11.9544 3.90011 11.6037 3.66072 11.2176 3.49739C10.8316 3.33406 10.4178 3.25 10 3.25C9.15613 3.25 8.34682 3.59241 7.75012 4.2019C7.15341 4.8114 6.81818 5.63805 6.81818 6.5C6.81818 7.36195 7.15341 8.1886 7.75012 8.7981C8.34682 9.40759 9.15613 9.75 10 9.75Z" fill="#5E5E66"/></svg>`;
 
@@ -140,7 +139,7 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
       >
         <View style={styles.header}>
           <Pressable onPress={handleBack} hitSlop={12} style={styles.headerSide}>
-            <SvgXml xml={ESCAPE_SVG} width={12} height={21} />
+            <BackIcon width={44} height={44} />
           </Pressable>
           <View style={styles.headerCenter}>
             <ProgressDots total={2} current={0} />
@@ -218,7 +217,7 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
     >
       <View style={styles.header}>
         <Pressable onPress={handleBack} hitSlop={12} style={styles.headerSide}>
-          <SvgXml xml={ESCAPE_SVG} width={12} height={21} />
+          <BackIcon width={44} height={44} />
         </Pressable>
         <View style={styles.headerCenter}>
           <ProgressDots total={2} current={1} />
@@ -386,7 +385,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 64,
-    borderRadius: 16,
+    borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },
