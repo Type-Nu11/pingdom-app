@@ -67,7 +67,7 @@ test('the same deep link can be opened normally after the short dedupe window', 
   );
 });
 
-test('required protected route flows return to Map and Profile/Settings are explicit bridges', () => {
+test('required protected route flows return to Map and Profile/Settings are V2-ready', () => {
   assert.deepEqual(PROTECTED_ROUTE_FLOWS.reservation, [
     'Map', 'Map.PlaceDetail', 'CreateReservation', 'ReservationDetail', 'Map',
   ]);
@@ -78,18 +78,10 @@ test('required protected route flows return to Map and Profile/Settings are expl
   for (const route of ['Profile', 'Settings/Logout']) {
     assert.equal(
       PRODUCTION_ROUTE_PARITY.find((entry) => entry.route === route)?.status,
-      'COMPOSITION_BRIDGE',
+      'V2_READY',
     );
   }
 
-  assert.deepEqual(
-    PRODUCTION_ROUTE_PARITY.find((entry) => entry.route === 'Profile')?.removalIssues,
-    ['#227', '#231'],
-  );
-  assert.deepEqual(
-    PRODUCTION_ROUTE_PARITY.find((entry) => entry.route === 'Settings/Logout')?.removalIssues,
-    ['#228', '#229', '#230'],
-  );
 });
 
 test('production entrypoint has one composition root with no mock or implicit V1 root fallback', () => {

@@ -81,17 +81,17 @@ The executable copy of this table is `src/application/migration/routeParity.ts`.
 |---|---|---|---|
 | Onboarding first run | completion model only | `COMPOSITION_BRIDGE` | V1 UI + V2 #258 storage; remove in #139 after #124 parity |
 | Auth landing/login/signup | no screens | `COMPOSITION_BRIDGE` | V1 auth UI; remove in #139 after #124 parity |
-| Map/search/category/markers/bottom sheet | partial | `COMPOSITION_BRIDGE` | active V1 map; Kakao native view is V2/shared; remove after #124 |
-| Place detail | V2 screen | `COMPOSITION_BRIDGE` | active map detail retained because standalone V2 lacks full flow parity |
-| Favorites/recommendations | APIs, no equivalent shell | `COMPOSITION_BRIDGE` | active V1 map sections; remove after #124 |
-| Reservation list | no equivalent screen | `COMPOSITION_BRIDGE` | active V1 reservation sheet; remove after #124 |
+| Map/search/category/markers/bottom sheet | yes | `V2_READY` | V2 map composition owns the production route |
+| Place detail | yes | `V2_READY` | V2 map injects the V2 place-detail presentation contract |
+| Favorites/recommendations | yes | `V2_READY` | V2 map owns the production sections and API hooks |
+| Reservation list | yes | `V2_READY` | V2 reservations owns the production map sheet |
 | Create reservation | yes | `V2_READY` | V2 screen |
 | Reservation detail/payment move | screen exists | `V2_READY` | V2 detail/payment registered by production MainNavigator |
 | Visit verification/recent visit/review | yes | `V2_READY` | V2 #257 screens |
 | CheckIn | not equivalent | `COMPOSITION_BRIDGE` | V1 route retained; removal decision in #139/#124 |
 | CouponWallet | API only | `COMPOSITION_BRIDGE` | V1 route retained; removal decision in #139/#124 |
-| Profile/My Page | data hooks only | `COMPOSITION_BRIDGE` | V1 UI injected; replace via #227 and #231, delete via #139 |
-| Settings/logout | account API only | `COMPOSITION_BRIDGE` | V1 UI injected; replace via #228, #229, and #230, delete via #139 |
+| Profile/My Page | yes | `V2_READY` | V2 My Page owns production and profile deep-link routes |
+| Settings/logout | yes | `V2_READY` | V2 settings owns the production route |
 | Merchant placeholder | absent | `REMOVE` | no parity claim; remove route/deep link under #139 |
 | ApiCheck development flow | absent | `REMOVE` | remove after device/API verification under #139 |
 
@@ -119,14 +119,12 @@ Map → Profile → Settings → logout → AuthLanding
 | FCM token/foreground/open | application RootNavigator using V2 hooks | authenticated token/presentation paths only |
 | Notification/deep-link pending intent | application RootNavigator | hydration/readiness gate; message-ID or 750 ms event dedupe |
 | Android hardware back | application RootNavigator | local override, stack pop, double-back exit |
-| Map/location native boundary | `src/v2/shared/native` + V2 map adapter | active V1 map consumes the V2 Kakao boundary |
+| Map/location native boundary | `src/v2/shared/native` + V2 map adapter | V2 production map owns the Kakao boundary |
 
 ## Composition bridges
 
 - `AuthNavigator`: onboarding and authentication screens.
-- `MainNavigator.Map`: map, place detail, favorites, recommendations, and reservation list.
 - `MainNavigator.CheckIn` and `CouponWallet`.
-- `MainNavigator.Profile` (UI scope: #227 and #231) and `Settings` (#228, #229, #230).
 - legacy translation resources needed by injected screens.
 - auth store and production Axios/Keychain session injected into V2 APIs at the application boundary.
 - local Android-back override used by active Map and Settings screens.
@@ -162,7 +160,7 @@ consumer, or revert both sides together.
 - [ ] `pingdom://` foreground and cold-start deep links.
 - [ ] Android local sheet/settings back, stack back, and double-back exit.
 - [ ] Location check-in based recent-visit lookup and review submission within the public contract.
-- [ ] Profile/My Page after #227 and #231; Settings after #228, #229, and #230.
+- [ ] Profile/My Page and Settings production routes.
 
 ## #139 deletion candidates after bridge removal
 
@@ -170,8 +168,6 @@ consumer, or revert both sides together.
 - `src/app/navigation/RootNavigator.tsx` and V1 notification store/hooks/utilities.
 - `src/app/providers/AppProvider.tsx` and `src/app/providers/queryClient.ts`.
 - V1 auth/onboarding UI after #124 owns equivalent V2 routes.
-- V1 map/place/reservation bridge paths after full V2 map shell parity.
-- V1 Profile/My Page after #227 and #231; Settings after #228, #229, and #230.
 - `RoutePlaceholderScreen`, Merchant placeholder route, and temporary ApiCheck route.
 - V1 Firebase notification implementation after device QA confirms the V2 lifecycle.
 
@@ -190,8 +186,6 @@ dependencies, not unreachable legacy.
 ## Follow-up blockers to a bridge-free V2 navigator
 
 - #124: standalone V2 Auth and full Map/favorites/recommendations/reservation-list parity.
-- #227 and #231: Profile/My Page UI parity.
-- #228, #229, and #230: Settings UI parity.
 - #139: remove explicit bridges and unreachable V1 roots after the above land.
 - Physical-device QA for login, native map/location, FCM/deep links, location check-in recent visits,
   contract-covered review submission, and real reservation remains a required PR/release gate.
