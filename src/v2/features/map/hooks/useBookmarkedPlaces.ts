@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import { placeApi } from '../api/placeApi';
+import { isBookmarkAuthenticationError, placeApi } from '../api/placeApi';
 
 export const BOOKMARKED_PLACES_PAGE_SIZE = 20;
 
@@ -10,10 +9,6 @@ export const bookmarkedPlaceQueryKeys = {
   list: () => [...bookmarkedPlaceQueryKeys.all, 'list'] as const,
   membership: () => [...bookmarkedPlaceQueryKeys.all, 'membership'] as const,
 };
-
-export function isBookmarkAuthenticationError(error: unknown) {
-  return axios.isAxiosError(error) && error.response?.status === 401;
-}
 
 export async function getBookmarkedPlaceMembership() {
   const bookmarkedPlaceIds: Record<string, boolean> = {};

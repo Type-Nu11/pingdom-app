@@ -8,7 +8,7 @@ const button = read('src/shared/components/Button.tsx');
 const badge = read('src/shared/components/StatusBadge.tsx');
 const translations = read('src/i18n/index.ts');
 const targets = [
-  read('src/features/place/components/MapBottomSheet.tsx'),
+  read('src/v2/features/map/components/MapBottomSheet.tsx'),
   read('src/features/place/screens/CheckInScreen.tsx'),
   read('src/features/place/screens/CouponWalletScreen.tsx'),
 ];

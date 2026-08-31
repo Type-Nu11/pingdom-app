@@ -2,14 +2,14 @@ import { useEffect, useMemo } from 'react';
 import {
   getPlaceListRuntimeState,
   usePlaceList,
-} from '../../../v2/features/place-exploration';
-import { toPlaceResults } from '../../../v2/features/map/model/mapDiscovery';
-import { env } from '../../../v2/shared/config';
+} from '../../place-exploration';
+import { toPlaceResults } from '../model/mapDiscovery';
+import { env } from '../../../shared/config';
 import type { GetPlacesRequest } from '../api/placeApi';
 import type { MapMarker } from '../model/place.types';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 
-export { placeQueryKeys } from '../../../v2/features/place-exploration';
+export { placeQueryKeys } from '../../place-exploration';
 
 function toMapMarker(place: {
   category?: string;

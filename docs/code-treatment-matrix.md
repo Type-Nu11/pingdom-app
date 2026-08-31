@@ -51,8 +51,8 @@
 | `src/app/navigation/` | 현재 null navigator 3개 | **REWRITE** | — | 실제 라우트 타입, auth gate, deep link/알림 진입을 갖는 내비게이션으로 구현한다. |
 | `App.tsx` | 수동 화면 분기 앱 셸 | **REWRITE** | **NATIVE**(FCM 초기화) | Provider, 부팅 gate, navigator, notification routing으로 분리한다. 현재 `mainScreen` 조건 분기는 복사하지 않는다. |
 | `src/app/providers/`, `src/app/store/` | Query/Zustand 및 앱 전역 상태 | **PORT** | 일부 **API** | 서버 상태와 UI 상태 경계를 재정의한 후 필요한 slice만 이식한다. 화면 전환 상태는 navigator로 대체한다. |
-| `src/features/place/api/`, `model/`, API 연동 hooks | 장소·추천·북마크·Kakao Local 계약 | **PORT 선별** | **API** | 좌표·기본 장소·검색·장소 북마크 계약을 보존한다. 영업 상태·웨이팅·언어·쿠폰·예약·검증 출처를 포함하는 새 Place Decision 모델에 맞지 않는 DTO는 폐기한다. |
-| `src/features/place/components/KakaoMapCard.tsx` | Kakao Map RN 브리지 | **KEEP** | **NATIVE** | 네이티브 view name과 props/events 계약을 고정하고 양 플랫폼 smoke test를 둔다. |
+| `src/v2/features/map/api/`, `model/`, API 연동 hooks | 장소·추천·북마크·Kakao Local 계약 | **V2 OWNED** | **API** | 좌표·기본 장소·검색·장소 북마크 계약을 보존한다. 영업 상태·웨이팅·언어·쿠폰·예약·검증 출처를 포함하는 Place Decision 모델과 서버 DTO를 분리한다. |
+| `src/v2/shared/native/KakaoMapNativeView.tsx` | Kakao Map RN 브리지 | **V2 OWNED** | **NATIVE** | 네이티브 view name과 props/events 계약을 고정하고 양 플랫폼 smoke test를 둔다. |
 | `src/features/place/screens/`, 나머지 `components/` | 지도 화면, 장소 생성/상세, bottom sheet | **REWRITE** | **API**, 일부 **NATIVE** | 지도 브리지는 재사용한다. 카드/상세는 `Open now`, `Wait`, `Foreigner-friendly`, `Last verified`, `Coupon/Book/Navigate` 중심으로 재작성하고 등록은 상점·방문자·스카우트 3경로로 분리한다. |
 | `src/features/firebase/` | FCM 권한, 토큰 동기화, 알림 라우팅 | **KEEP**(기반) / **PORT 후순위**(흐름) | **API**, **NATIVE** | 네이티브 Firebase 기반은 유지. 8주 MVP의 방문 결정·Trust·전환 계측보다 우선하지 않으며, 재방문/쿠폰·예약 알림 시나리오 확정 후 이식한다. |
 | `src/features/translation/` | ML Kit 번역 서비스·훅 | **KEEP**(브리지) / **PORT**(훅) | **NATIVE** | native module 계약은 유지. 모델 다운로드 동의, 실패/오프라인 상태 UI는 새 구조에 이식한다. |
@@ -92,7 +92,7 @@
 |---|---|---:|---|
 | `ios/KakaoMapView*.{swift,m}`, `ios/Naviapp/AppDelegate.swift`, `ios/Podfile` | Kakao Maps SDK와 RN view bridge | **KEEP** | iOS 실기기 지도 로딩, 키 주입, marker press, camera idle |
 | `android/app/src/main/java/com/rmdka/pingdomapp/KakaoMap*.kt`, `MainApplication.kt`, Gradle/Manifest | Kakao Maps SDK와 package 등록 | **KEEP** | Android 실기기 지도 로딩, lifecycle, marker/camera event |
-| `src/features/place/components/KakaoMapCard.tsx` | `requireNativeComponent('KakaoMapView')` | **KEEP** | 양 플랫폼 props/event 계약 및 앱 시작 시 module 등록 |
+| `src/v2/shared/native/KakaoMapNativeView.tsx` | `requireNativeComponent('KakaoMapView')` | **V2 OWNED** | 양 플랫폼 props/event 계약 및 앱 시작 시 module 등록 |
 | `ios/MLKitTranslation.{swift,m}`, `android/.../MLKitTranslation*.kt` | Language ID / on-device Translate bridge | **KEEP** | 언어 감지, 모델 다운로드, offline/error 결과 |
 | `src/features/translation/services/mlKitTranslation.ts` | `NativeModules.MLKitTranslation` adapter | **KEEP** | native unavailable와 download consent 처리 |
 | `@react-native-firebase/*`, `ios` Firebase 설정, Android google services 설정 | Firebase app/messaging | **KEEP** | APNs/FCM 토큰, foreground/background/cold-start 알림 |
@@ -107,8 +107,8 @@
 | `src/shared/api/apiClient.ts` | base URL, bearer 주입, refresh 및 retry | **PORT** | refresh endpoint/응답 스키마, 동시 401, retry loop, timeout |
 | `src/features/auth/api/authApi.ts` | `/auth/login`, `/auth/signup`, `/auth/email/verify`, 사용자 변경 | **PORT** | DTO와 오류 코드, logout/revoke 여부, change endpoint 중복 |
 | `src/features/auth/api/phoneVerificationApi.ts` | 전화 인증 예정 | **PORT 보류** | 현재 본문이 미구현이므로 서버 endpoint 확정 전 production 이식 금지 |
-| `src/features/place/api/placeApi.ts` | `/places/*`, `/users/me/bookmarks` | **PORT 선별** | place ID 의미, pagination, recommendation/click 추적과 함께 새 Decision/Trust/Offer 필드 수용 여부 |
-| `src/features/place/api/kakaoLocalApi.ts` | Kakao Local REST API | **PORT** | 키 노출 정책, quota, timeout, 좌표계, 오류 로깅에서 응답정보 제거 |
+| `src/v2/features/map/api/placeApi.ts` | `/places/*`, `/users/me/bookmarks` | **V2 OWNED** | place ID 의미, pagination, recommendation/click 추적과 함께 Decision/Trust/Offer 필드 수용 여부 |
+| `src/v2/features/map/api/kakaoLocalApi.ts` | Kakao Local REST API | **V2 OWNED** | 키 노출 정책, quota, timeout, 좌표계, 오류 로깅에서 응답정보 제거 |
 | `src/features/record/api/recordApi.ts` | 삭제된 게시글·좋아요·신고 계약 | **DROP** | #234에서 대체 계약 없이 제거 완료 |
 | `src/features/profile/api/profileApi.ts` | `/users/me`, 계정 수정/삭제 | **PORT** | 재인증 필요 여부, 삭제 복구/확인 정책, authApi와 중복 제거 |
 | `src/features/firebase/api/firebaseApi.ts` | `/firebase/fcm-token` | **PORT** | 로그인/로그아웃 시 token 등록·폐기, 멀티 디바이스 정책 |

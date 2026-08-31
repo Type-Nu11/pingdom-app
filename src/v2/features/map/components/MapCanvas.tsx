@@ -1,7 +1,6 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import KakaoMapAdapter from '../../../v2/features/map/components/KakaoMapAdapter';
+import KakaoMapAdapter from './KakaoMapAdapter';
 import type { MapMarker } from '../model/place.types';
 
 type MapCanvasProps = {
@@ -41,8 +40,8 @@ const MapCanvas = ({
   />
 );
 
-const styles = StyleSheet.create({
-  map: StyleSheet.absoluteFillObject,
-});
+const styles = {
+  map: { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 },
+};
 
 export default MapCanvas;

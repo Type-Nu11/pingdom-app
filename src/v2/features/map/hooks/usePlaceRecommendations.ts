@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { recommendationQueryKeys } from '../../../v2/features/travel-purposes/model/travelPurposeQueryKeys';
+import { recommendationQueryKeys } from '../../travel-purposes/model/travelPurposeQueryKeys';
 import { placeApi, type GetPlaceRecommendationsRequest } from '../api/placeApi';
 
 export const placeRecommendationQueryKeys = {

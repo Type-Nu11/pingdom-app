@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled, { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
-import MapScreen from '../../features/place/screens/MapScreen';
+import MapScreen from '../../v2/features/map/screens/MapScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
@@ -17,11 +17,9 @@ import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
 } from '../../v2/features/place-visit-verification';
-import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import SettingsScreen from '../../v2/features/settings/screens/SettingsScreen';
 import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
-import { createFocusedPlaceMapParams } from './navigationIntent';
 import {
   MAIN_ROUTES,
   parseCheckInId,
@@ -38,6 +36,8 @@ const V2ScreenBoundary = ({ children }: React.PropsWithChildren) => (
 );
 
 export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
+  const isAuthHydrating = useAuthStore((state) => state.isHydrating);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const focusedPlaceId = route.params?.focusedPlaceId;
   const initialSection = route.params?.initialSection;
   const notificationContext = route.params?.notificationContext;
@@ -53,6 +53,7 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
     <MapRouteContainer>
       <V2ScreenBoundary>
         <MapScreen
+          canQueryBookmarks={isLoggedIn && !isAuthHydrating}
           initialSection={initialSection}
           openedBookmarkedPlaceId={focusedPlaceId ?? null}
           onClearOpenedBookmarkedPlace={clearFocusedPlace}
@@ -79,21 +80,7 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
   );
 };
 
-const ProfileRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
-  <ProfileScreen
-    onBack={navigation.goBack}
-    onOpenBookmarkedPlace={(value) => {
-      const mapParams = createFocusedPlaceMapParams(value);
-      if (mapParams) {
-        navigation.popTo(MAIN_ROUTES.Map, mapParams);
-      }
-    }}
-    onOpenApiCheck={() => navigation.navigate(MAIN_ROUTES.ApiCheck)}
-    onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
-  />
-);
-
-export const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
+export const MyPageRouteScreen = ({ navigation }: Pick<MainScreenProps<'MyPage'>, 'navigation'> & Partial<Pick<MainScreenProps<'MyPage'>, 'route'>>) => {
   const { profile } = useProfile();
   const profileEditNavigationLock = useRef(false);
   const openProfileEdit = useCallback(() => {
@@ -140,6 +127,10 @@ export const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => 
     </V2ScreenBoundary>
   );
 };
+
+const ProfileAliasRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
+  <MyPageRouteScreen navigation={navigation as MainScreenProps<'MyPage'>['navigation']} />
+);
 
 export const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileEdit'>) => (
   <V2ScreenBoundary>
@@ -254,7 +245,7 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.MyPage} component={MyPageRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileAliasRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Merchant} component={MerchantRouteScreen} />

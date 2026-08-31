@@ -6,7 +6,6 @@ import {
   Image,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text as NativeText,
   type TextProps,
   useWindowDimensions,
@@ -21,41 +20,41 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BackIcon from '../../../assets/v2/icons/header/back.svg';
-import CheckInAsset from '../../../assets/v2/icons/place/checkin_svg.svg';
-import CallAsset from '../../../assets/v2/icons/ion_call.svg';
-import CameraAsset from '../../../assets/v2/icons/place/Camera.svg';
-import CleanAsset from '../../../assets/v2/icons/place/Clean.svg';
-import DeliciousAsset from '../../../assets/v2/icons/place/Delicious.svg';
-import DownAsset from '../../../assets/v2/icons/place/Down.svg';
-import GroupAsset from '../../../assets/v2/icons/place/Group.svg';
-import KindAsset from '../../../assets/v2/icons/place/Kind.svg';
-import ParkAsset from '../../../assets/v2/icons/place/Park.svg';
-import PinAsset from '../../../assets/v2/icons/place/Pin.svg';
-import TicketAsset from '../../../assets/v2/icons/place/Tiket.svg';
-import ArtAsset from '../../../assets/v2/icons/place/art_svg.svg';
-import BeautyAsset from '../../../assets/v2/icons/place/beati_svg.svg';
-import CafeAsset from '../../../assets/v2/icons/place/cafe_svg.svg';
-import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
-import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
-import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
-import HeritageAsset from '../../../assets/v2/icons/place/heritage.svg';
-import HotPlaceAsset from '../../../assets/v2/icons/place/hotplace.svg';
-import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
-import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
-import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.svg';
-import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
-import StarAsset from '../../../assets/v2/icons/place/star_svg.svg';
-import RecommendationTitleAsset from '../../../assets/v2/icons/place/Subtract.svg';
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
+import CheckInAsset from '../../../../assets/v2/icons/place/checkin_svg.svg';
+import CallAsset from '../../../../assets/v2/icons/ion_call.svg';
+import CameraAsset from '../../../../assets/v2/icons/place/Camera.svg';
+import CleanAsset from '../../../../assets/v2/icons/place/Clean.svg';
+import DeliciousAsset from '../../../../assets/v2/icons/place/Delicious.svg';
+import DownAsset from '../../../../assets/v2/icons/place/Down.svg';
+import GroupAsset from '../../../../assets/v2/icons/place/Group.svg';
+import KindAsset from '../../../../assets/v2/icons/place/Kind.svg';
+import ParkAsset from '../../../../assets/v2/icons/place/Park.svg';
+import PinAsset from '../../../../assets/v2/icons/place/Pin.svg';
+import TicketAsset from '../../../../assets/v2/icons/place/Tiket.svg';
+import ArtAsset from '../../../../assets/v2/icons/place/art_svg.svg';
+import BeautyAsset from '../../../../assets/v2/icons/place/beati_svg.svg';
+import CafeAsset from '../../../../assets/v2/icons/place/cafe_svg.svg';
+import EtcAsset from '../../../../assets/v2/icons/place/etc_svg.svg';
+import FashionAsset from '../../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodAsset from '../../../../assets/v2/icons/place/food_svg.svg';
+import HeritageAsset from '../../../../assets/v2/icons/place/heritage.svg';
+import HotPlaceAsset from '../../../../assets/v2/icons/place/hotplace.svg';
+import MapAsset from '../../../../assets/v2/icons/place/maping_svg.svg';
+import MusicAsset from '../../../../assets/v2/icons/place/music_svg.svg';
+import PlaceRecommendAsset from '../../../../assets/v2/icons/place/placerecommend.svg';
+import PopupAsset from '../../../../assets/v2/icons/place/popup_svg.svg';
+import StarAsset from '../../../../assets/v2/icons/place/star_svg.svg';
+import RecommendationTitleAsset from '../../../../assets/v2/icons/place/Subtract.svg';
 import {
   FadeSlideTransition,
   MOTION_DURATION,
   runTimingMotion,
   useReducedMotion,
-} from '../../../v2/shared/motion';
+} from '../../../shared/motion';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
-import type { ReservationCtaState } from '../../../v2/features/place-detail';
+import type { ReservationCtaState } from '../../place-detail';
 import GlassSurface from './GlassSurface';
 import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
@@ -2156,7 +2155,8 @@ export default function MapBottomSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
+const styles: Record<string, object> = {
   artwork: {
     backgroundColor: '#E4E4E6',
     height: '100%',
@@ -2351,7 +2351,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   cardScrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
   },
   emptyCard: {
     alignItems: 'center',
@@ -2699,7 +2699,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   segmentFrost: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     backgroundColor: 'rgba(228,228,230,0.42)',
   },
   segmentLabel: {
@@ -2764,4 +2764,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E6EA',
   },
   sheetContent: { flex: 1 },
-});
+};

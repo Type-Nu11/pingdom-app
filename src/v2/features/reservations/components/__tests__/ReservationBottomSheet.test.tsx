@@ -3,12 +3,12 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
 
-import { useReservations } from '../../../../v2/features/reservations';
-import { registerReservationResources } from '../../../../v2/features/reservations/i18n/reservationResources';
-import { createTestI18n } from '../../../../v2/shared/testing/testProviders';
+import { useReservations } from '../..';
+import { registerReservationResources } from '../../i18n/reservationResources';
+import { createTestI18n } from '../../../../shared/testing/testProviders';
 import ReservationBottomSheet from '../../components/ReservationBottomSheet';
 
-jest.mock('../../../../v2/features/reservations', () => ({ useReservations: jest.fn() }));
+jest.mock('../..', () => ({ useReservations: jest.fn() }));
 
 const navigation = {
   onOpenFavorites: jest.fn(),

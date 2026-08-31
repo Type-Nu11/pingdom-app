@@ -5,26 +5,25 @@ import {
   Image,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text as NativeText,
   type TextProps,
   View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ArtAsset from '../../../assets/v2/icons/place/art_svg.svg';
-import BeautyAsset from '../../../assets/v2/icons/place/beati_svg.svg';
-import CafeAsset from '../../../assets/v2/icons/place/cafe_svg.svg';
-import CheckInAsset from '../../../assets/v2/icons/place/checkin_svg.svg';
-import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
-import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
-import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
-import HeritageAsset from '../../../assets/v2/icons/place/heritage.svg';
-import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
-import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
-import MyPlaceAsset from '../../../assets/v2/icons/place/my_place.svg';
-import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.svg';
-import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
+import ArtAsset from '../../../../assets/v2/icons/place/art_svg.svg';
+import BeautyAsset from '../../../../assets/v2/icons/place/beati_svg.svg';
+import CafeAsset from '../../../../assets/v2/icons/place/cafe_svg.svg';
+import CheckInAsset from '../../../../assets/v2/icons/place/checkin_svg.svg';
+import EtcAsset from '../../../../assets/v2/icons/place/etc_svg.svg';
+import FashionAsset from '../../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodAsset from '../../../../assets/v2/icons/place/food_svg.svg';
+import HeritageAsset from '../../../../assets/v2/icons/place/heritage.svg';
+import MapAsset from '../../../../assets/v2/icons/place/maping_svg.svg';
+import MusicAsset from '../../../../assets/v2/icons/place/music_svg.svg';
+import MyPlaceAsset from '../../../../assets/v2/icons/place/my_place.svg';
+import PlaceRecommendAsset from '../../../../assets/v2/icons/place/placerecommend.svg';
+import PopupAsset from '../../../../assets/v2/icons/place/popup_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import type { DecisionPlace } from './MapBottomSheet';
 import FrostedSurface from './FrostedSurface';
@@ -468,7 +467,7 @@ export default function FavoritePlacesBottomSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles: Record<string, object> = {
   categoryChip: {
     alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.92)',
     borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
@@ -531,4 +530,4 @@ const styles = StyleSheet.create({
   sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
-});
+};

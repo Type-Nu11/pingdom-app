@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
 import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import type { PlacesPage, Place } from '../model/place.types';
-import { placeApi } from '../api/placeApi';
+import { isExpectedBookmarkStateError, placeApi } from '../api/placeApi';
 import { bookmarkedPlaceQueryKeys } from './useBookmarkedPlaces';
 import { placeQueryKeys } from './usePlaces';
 
@@ -25,15 +24,6 @@ export function updateBookmarkedPlaceMembership(
   if (nextBookmarked) nextData[String(placeId)] = true;
   else delete nextData[String(placeId)];
   return nextData;
-}
-
-function isExpectedBookmarkStateError(error: unknown, nextBookmarked: boolean) {
-  if (!axios.isAxiosError(error)) return false;
-
-  const data = error.response?.data as { code?: unknown } | undefined;
-  const code = String(data?.code ?? '').toUpperCase();
-  return (nextBookmarked && code === 'BOOKMARK_ALREADY_EXISTS')
-    || (!nextBookmarked && code === 'BOOKMARK_NOT_FOUND');
 }
 
 export function updateBookmarkedPlaces(

@@ -1,8 +1,4 @@
-import { api } from '../../../shared/api/apiClient';
-import type {
-  ApiCodeErrorResponse as CommonApiCodeErrorResponse,
-  ApiFieldErrorResponse as CommonApiFieldErrorResponse,
-} from '../../../types/api.types';
+import { apiClient, toApiError } from '../../../shared/api';
 import type { PlaceRecommendations, PlacesPage } from '../model/place.types';
 
 export type PlaceAutocompleteItem = {
@@ -82,43 +78,43 @@ export type RecordRecommendationClickResponse = {
   placeId: number;
 };
 
-export type ApiFieldErrorResponse = CommonApiFieldErrorResponse;
-
-export type ApiTokenErrorResponse = CommonApiCodeErrorResponse<'INVALID_TOKEN'>;
-
 export type BookmarkApiErrorCode =
   | 'BOOKMARK_ALREADY_EXISTS'
   | 'BOOKMARK_NOT_FOUND'
   | 'PLACE_NOT_FOUND';
 
-export type BookmarkApiErrorResponse = CommonApiCodeErrorResponse<BookmarkApiErrorCode>;
+export function isBookmarkAuthenticationError(error: unknown) {
+  return toApiError(error).status === 401;
+}
+
+export function isExpectedBookmarkStateError(error: unknown, nextBookmarked: boolean) {
+  const code = toApiError(error).code?.toUpperCase();
+  return (nextBookmarked && code === 'BOOKMARK_ALREADY_EXISTS')
+    || (!nextBookmarked && code === 'BOOKMARK_NOT_FOUND');
+}
 
 export const placeApi = {
   createBookmark: async (payload: CreateBookmarkRequest): Promise<CreateBookmarkResponse> => {
-    const { data } = await api.post<CreateBookmarkResponse>('/users/me/bookmarks', payload);
-    return data;
+    return apiClient.post<CreateBookmarkResponse, CreateBookmarkRequest>('/users/me/bookmarks', payload);
   },
   getBookmarkedPlaces: async (
     params: GetBookmarkedPlacesRequest = {},
   ): Promise<PlacesPage> => {
-    const { data } = await api.get<PlacesPage>('/users/me/bookmarks', {
+    return apiClient.get<PlacesPage>('/users/me/bookmarks', {
       params: {
         limit: params.limit ?? 20,
         page: params.page ?? 1,
       },
     });
-    return data;
   },
   removeBookmark: async (placeId: number): Promise<RemoveBookmarkResponse> => {
-    const { data } = await api.delete<RemoveBookmarkResponse>(`/users/me/bookmarks/${placeId}`);
-    return data;
+    return apiClient.delete<RemoveBookmarkResponse>(`/users/me/bookmarks/${placeId}`);
   },
   deletePlace: async (id: number): Promise<string> => {
-    const { data } = await api.delete<string>(`/places/${id}`);
-    return data;
+    return apiClient.delete<string>(`/places/${id}`);
   },
   getPlaces: async (params: GetPlacesRequest = {}): Promise<PlacesPage> => {
-    const { data } = await api.get<PlacesPage>('/places', {
+    return apiClient.get<PlacesPage>('/places', {
       params: {
         limit: params.limit ?? 100,
         page: params.page ?? 1,
@@ -131,12 +127,11 @@ export const placeApi = {
       },
     });
 
-    return data;
   },
   getRecommendations: async (
     params: GetPlaceRecommendationsRequest
   ): Promise<PlaceRecommendations> => {
-    const { data } = await api.get<PlaceRecommendations>('/places/recommendations', {
+    return apiClient.get<PlaceRecommendations>('/places/recommendations', {
       params: {
         latitude: params.latitude,
         limit: params.limit ?? 10,
@@ -146,22 +141,20 @@ export const placeApi = {
       },
     });
 
-    return data;
   },
   recordRecommendationClick: async (
     payload: RecordRecommendationClickRequest
   ): Promise<RecordRecommendationClickResponse> => {
-    const { data } = await api.post<RecordRecommendationClickResponse>(
+    return apiClient.post<RecordRecommendationClickResponse, RecordRecommendationClickRequest>(
       '/places/recommendations/click',
       payload
     );
 
-    return data;
   },
   autocompletePlaces: async (
     params: GetPlaceAutocompleteRequest
   ): Promise<PlaceAutocompleteResponse> => {
-    const { data } = await api.get<PlaceAutocompleteResponse>('/places/autocomplete', {
+    return apiClient.get<PlaceAutocompleteResponse>('/places/autocomplete', {
       params: {
         keyword: params.keyword,
         limit: params.limit ?? 10,
@@ -170,6 +163,5 @@ export const placeApi = {
       },
     });
 
-    return data;
   },
 };

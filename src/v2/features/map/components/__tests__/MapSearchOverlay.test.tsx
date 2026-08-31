@@ -1,14 +1,14 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
-import { usePlaceAutocomplete } from '../../../../v2/features/place-exploration';
-import { renderWithProviders } from '../../../../v2/shared/testing/testProviders';
+import { usePlaceAutocomplete } from '../../../place-exploration';
+import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
 import { usePlaceRegistrantUsernames } from '../../hooks/usePlaceRegistrantUsernames';
 import MapSearchOverlay from '../MapSearchOverlay';
 
-jest.mock('../../../../v2/features/place-exploration', () => ({
-  ...jest.requireActual('../../../../v2/features/place-exploration'),
+jest.mock('../../../place-exploration', () => ({
+  ...jest.requireActual('../../../place-exploration'),
   usePlaceAutocomplete: jest.fn(),
 }));
 jest.mock('../../hooks/useKakaoLocalSearch', () => ({ useKakaoLocalSearch: jest.fn() }));

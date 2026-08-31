@@ -11,7 +11,7 @@ import {
 } from '../MainNavigator';
 import { MAIN_ROUTES, type MainScreenProps } from '../types';
 
-jest.mock('../../../features/place/screens/MapScreen', () => {
+jest.mock('../../../v2/features/map/screens/MapScreen', () => {
   const ReactLibrary = require('react');
   const ReactNative = require('react-native');
   return {

@@ -4,30 +4,29 @@ import {
   Keyboard,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ArtAsset from '../../../assets/v2/icons/place/art_svg.svg';
-import BeautyAsset from '../../../assets/v2/icons/place/beati_svg.svg';
-import CafeAsset from '../../../assets/v2/icons/place/cafe_svg.svg';
-import EtcAsset from '../../../assets/v2/icons/place/etc_svg.svg';
-import FashionAsset from '../../../assets/v2/icons/place/fashion_svg.svg';
-import FoodAsset from '../../../assets/v2/icons/place/food_svg.svg';
-import HeritageAsset from '../../../assets/v2/icons/place/heritage.svg';
-import MusicAsset from '../../../assets/v2/icons/place/music_svg.svg';
-import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
+import ArtAsset from '../../../../assets/v2/icons/place/art_svg.svg';
+import BeautyAsset from '../../../../assets/v2/icons/place/beati_svg.svg';
+import CafeAsset from '../../../../assets/v2/icons/place/cafe_svg.svg';
+import EtcAsset from '../../../../assets/v2/icons/place/etc_svg.svg';
+import FashionAsset from '../../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodAsset from '../../../../assets/v2/icons/place/food_svg.svg';
+import HeritageAsset from '../../../../assets/v2/icons/place/heritage.svg';
+import MusicAsset from '../../../../assets/v2/icons/place/music_svg.svg';
+import PopupAsset from '../../../../assets/v2/icons/place/popup_svg.svg';
 import {
   getPlaceListRuntimeState,
   usePlaceAutocomplete,
-} from '../../../v2/features/place-exploration';
+} from '../../place-exploration';
 import {
   toAutocompleteResults,
   type MapPlaceResult,
-} from '../../../v2/features/map/model/mapDiscovery';
-import { env } from '../../../v2/shared/config';
+} from '../model/mapDiscovery';
+import { env } from '../../../shared/config';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
 import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
@@ -84,14 +83,6 @@ const categories: Array<{
   { Icon: CafeAsset, id: 'cafe', label: '카페' },
   { Icon: HeritageAsset, id: 'heritage', label: '문화재' },
   { Icon: EtcAsset, id: 'etc', label: '기타' },
-];
-
-const initialRecentSearches: RecentSearch[] = [
-  { category: 'food', date: '08.12.', query: '대성반점' },
-  { category: 'music', date: '08.12.', query: '팍스뮤직' },
-  { category: 'fashion', date: '08.12.', query: '무신사' },
-  { category: 'popup', date: '08.12.', query: '오아시스 팝업' },
-  { category: 'art', date: '08.12.', query: '올 영세 입' },
 ];
 
 const RecentCategoryIcon = ({ category }: { category: RecentSearch['category'] }) => {
@@ -152,7 +143,7 @@ const MapSearchOverlay = ({
   const [hasSearched, setHasSearched] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('all');
-  const [recentQueries, setRecentQueries] = useState<RecentSearch[]>(initialRecentSearches);
+  const [recentQueries, setRecentQueries] = useState<RecentSearch[]>([]);
   const registeredSearch = usePlaceAutocomplete({
     keyword: registeredQuery,
     latitude: centerLat,
@@ -432,7 +423,8 @@ const MapSearchOverlay = ({
   );
 };
 
-const styles = StyleSheet.create({
+const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
+const styles: Record<string, object> = {
   backButton: {
     alignItems: 'center',
     height: 44,
@@ -495,7 +487,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     backgroundColor: '#fbfbfc',
     zIndex: 200,
   },
@@ -658,7 +650,7 @@ const styles = StyleSheet.create({
   recentRow: {
     alignItems: 'center',
     borderBottomColor: '#E5E5E7',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     gap: 15,
     height: 77,
@@ -722,6 +714,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-});
+};
 
 export default MapSearchOverlay;

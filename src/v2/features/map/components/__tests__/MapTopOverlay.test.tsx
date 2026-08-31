@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { renderWithProviders } from '../../../../v2/shared/testing/testProviders';
+import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import MapTopOverlay from '../MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../../styles/MapTopOverlay.styles';
 

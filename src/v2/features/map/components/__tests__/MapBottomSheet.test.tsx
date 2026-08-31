@@ -2,8 +2,8 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 
-import { renderWithProviders } from '../../../../v2/shared/testing/testProviders';
-import { runTimingMotion } from '../../../../v2/shared/motion';
+import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { runTimingMotion } from '../../../../shared/motion';
 import MapBottomSheet, {
   RecommendationFeaturedCard,
   type DecisionPlace,
@@ -14,8 +14,8 @@ jest.mock('../../hooks/usePlacePreviewImages', () => ({
   usePlacePreviewImages: () => ({ imageUrlsByPlaceId: {} }),
 }));
 
-jest.mock('../../../../v2/shared/motion', () => {
-  const actual = jest.requireActual('../../../../v2/shared/motion');
+jest.mock('../../../../shared/motion', () => {
+  const actual = jest.requireActual('../../../../shared/motion');
   return {
     ...actual,
     runTimingMotion: jest.fn((value: Animated.Value, toValue: number) => {

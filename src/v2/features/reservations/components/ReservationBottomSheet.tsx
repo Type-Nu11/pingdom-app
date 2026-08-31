@@ -5,7 +5,6 @@ import {
   GestureResponderHandlers,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text as NativeText,
   type TextProps,
   View,
@@ -13,19 +12,19 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import MapAsset from '../../../assets/v2/icons/place/maping_svg.svg';
-import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.svg';
-import StarAsset from '../../../assets/v2/icons/place/star_svg.svg';
-import type { BottomSheetSnapPoint } from '../../place/hooks/useBottomSheet';
-import FrostedSurface from '../../place/components/FrostedSurface';
+import MapAsset from '../../../../assets/v2/icons/place/maping_svg.svg';
+import PlaceRecommendAsset from '../../../../assets/v2/icons/place/placerecommend.svg';
+import StarAsset from '../../../../assets/v2/icons/place/star_svg.svg';
+import type { BottomSheetSnapPoint } from '../../map/hooks/useBottomSheet';
+import FrostedSurface from '../../map/components/FrostedSurface';
 import {
   RecommendationFeaturedCard,
   type DecisionPlace,
-} from '../../place/components/MapBottomSheet';
-import { usePlacePreviewImages } from '../../place/hooks/usePlacePreviewImages';
-import * as GlassStyles from '../../place/styles/BottomSheetGlass.styles';
-import type { Reservation } from '../../../v2/features/reservations';
-import { useReservations } from '../../../v2/features/reservations';
+} from '../../map/components/MapBottomSheet';
+import { usePlacePreviewImages } from '../../map/hooks/usePlacePreviewImages';
+import * as GlassStyles from '../../map/styles/BottomSheetGlass.styles';
+import type { Reservation } from '..';
+import { useReservations } from '..';
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
@@ -356,7 +355,7 @@ export default function ReservationBottomSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles: Record<string, object> = {
   card: { backgroundColor: '#FFFFFF', borderColor: '#ECEDEF', borderRadius: 17, borderWidth: 1, gap: 8, marginBottom: 11, padding: 14 },
   cardEyebrow: { color: '#8A8C93', fontSize: 10, fontWeight: '600' },
   cardHeading: { alignItems: 'center', flexDirection: 'row', gap: 10 },
@@ -401,4 +400,4 @@ const styles = StyleSheet.create({
   subtitle: { color: '#777982', fontSize: 13, marginTop: 2, paddingHorizontal: 16 },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
-});
+};

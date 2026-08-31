@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react-native';
 import React from 'react';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 
-import { renderWithProviders } from '../../../../v2/shared/testing/testProviders';
+import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import FavoritePlacesBottomSheet from '../FavoritePlacesBottomSheet';
 import type { DecisionPlace } from '../MapBottomSheet';
 
