@@ -3,10 +3,11 @@ import { readFile } from 'node:fs/promises';
 const contractPath = new URL('../docs/api/place-exploration.openapi.json', import.meta.url);
 const document = JSON.parse(await readFile(contractPath, 'utf8'));
 const expectedOperations = new Map([
-  ['/location-check-ins', ['get', 'listMine_4']],
+  ['/location-check-ins', ['get', 'listMine_5']],
   ['/places', ['get', 'listPlaces']],
   ['/places/autocomplete', ['get', 'autocompletePlaces']],
   ['/places/map', ['get', 'mapViewport']],
+  ['/places/{id}', ['get', 'getPlace']],
   ['/places/{placeId}/card', ['get', 'getTouristPlaceCard']],
   ['/places/{placeId}/visit-decision', ['get', 'getPlaceVisitDecision']],
   ['/places/{placeId}/operating-notices', ['get', 'listOperatingNotices']],
@@ -21,6 +22,7 @@ const expectedOperations = new Map([
     ['get', 'list_4'],
     ['post', 'create_2'],
   ]],
+  ['/places/{placeId}/availabilities', ['get', 'list_5']],
 ]);
 const failures = [];
 

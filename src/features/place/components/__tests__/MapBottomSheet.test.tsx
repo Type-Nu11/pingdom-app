@@ -7,6 +7,7 @@ import { runTimingMotion } from '../../../../v2/shared/motion';
 import MapBottomSheet, {
   RecommendationFeaturedCard,
   type DecisionPlace,
+  type MapPreviewFallbackContent,
 } from '../MapBottomSheet';
 
 jest.mock('../../hooks/usePlacePreviewImages', () => ({
@@ -272,6 +273,15 @@ describe('MapBottomSheet recommendations', () => {
         onToggleBookmark={jest.fn(async () => undefined)}
         panHandlers={{} as GestureResponderHandlers}
         places={places}
+        previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [],
+            imageUrls: [],
+            reservation: { kind: 'available', disabled: false, message: '예약하기' },
+            statusDescription: '',
+            statusEmphasis: '',
+          },
+        }}
         recommendationPlaces={[]}
         recommendationsState="ready"
         selectedPlace={selectedPlace}
@@ -282,7 +292,64 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     await user.press(screen.getByRole('button', { name: '예약' }));
+    await user.press(screen.getByRole('button', { name: '예약' }));
     expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
+    expect(onCreateReservation).toHaveBeenCalledTimes(1);
+  });
+
+  test('빈 availability는 예약 페이지로 이동하고 API 오류는 재시도한다', async () => {
+    const onCreateReservation = jest.fn();
+    const onRetryAvailability = jest.fn();
+    const selectedPlace = places[0];
+    const commonProps = {
+      activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
+      content: { type: 'place-preview', placeId: selectedPlace.id } as const,
+      height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
+      onCouponPress: jest.fn(), onCreateReservation, onDetailPress: jest.fn(),
+      onFilterPress: jest.fn(), onGoNowPress: jest.fn(), onHandlePress: jest.fn(),
+      onPlacePress: jest.fn(), onQueryChange: jest.fn(), onRetryAvailability,
+      onRetryRecommendations: jest.fn(), onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined), panHandlers: {} as GestureResponderHandlers,
+      places, recommendationPlaces: [], recommendationsState: 'ready' as const,
+      selectedPlace, sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(0), snapPoint: 'medium' as const,
+    };
+    const fallback = (reservation: MapPreviewFallbackContent['reservation']) => ({
+      [String(selectedPlace.id)]: {
+        amenities: [], imageUrls: [], reservation, statusDescription: '', statusEmphasis: '',
+      },
+    });
+    const result = await renderWithProviders(
+      <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback({
+        kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+      })} />,
+    );
+
+    expect(screen.queryByText('현재 예약 가능한 일정이 없습니다')).not.toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: '예약' }).props.accessibilityState)
+      .toEqual({ disabled: false });
+    await result.user.press(screen.getByRole('button', { name: '예약' }));
+    await result.user.press(screen.getByRole('button', { name: '예약' }));
+    expect(onCreateReservation).toHaveBeenCalledTimes(1);
+    await result.rerender(
+      <MapBottomSheet
+        {...commonProps}
+        previewFallbackContentByPlaceId={fallback({
+          kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+        })}
+        snapPoint="expanded"
+      />,
+    );
+    expect(screen.queryByRole('adjustable', { name: '추천 패널 크기 조절' }))
+      .not.toBeOnTheScreen();
+    await result.rerender(
+      <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback({
+        kind: 'error', disabled: true, message: '예약 가능 여부를 불러오지 못했습니다',
+      })} />,
+    );
+    await result.user.press(screen.getByRole('button', { name: '다시 시도' }));
+    expect(onRetryAvailability).toHaveBeenCalledTimes(1);
+    expect(onCreateReservation).toHaveBeenCalledTimes(1);
   });
 
   test('확장 추천 목록의 두 행은 각각 독립된 가로 스크롤로 렌더링된다', async () => {

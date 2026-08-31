@@ -25,24 +25,23 @@ describe('auth store session bootstrap', () => {
     });
   });
 
-  test('discards an access-token-only session instead of entering the protected app', async () => {
+  test('restores an access-token session backed by the server HttpOnly refresh cookie', async () => {
     getGenericPassword.mockResolvedValueOnce({
-      password: JSON.stringify({ accessToken: 'expired-access', refreshToken: '' }),
+      password: JSON.stringify({ accessToken: 'access' }),
       service: 'com.pingdom.auth',
       username: 'tokens',
     } as never);
 
     await useAuthStore.getState().bootstrapAuth();
 
-    expect(resetGenericPassword).toHaveBeenCalled();
     expect(useAuthStore.getState()).toMatchObject({
-      accessToken: null,
+      accessToken: 'access',
       isHydrating: false,
-      isLoggedIn: false,
+      isLoggedIn: true,
     });
   });
 
-  test('restores a session only when both tokens are present', async () => {
+  test('keeps legacy stored sessions while ignoring the obsolete refresh token field', async () => {
     getGenericPassword.mockResolvedValueOnce({
       password: JSON.stringify({ accessToken: 'access', refreshToken: 'refresh' }),
       service: 'com.pingdom.auth',
@@ -81,13 +80,14 @@ describe('auth store session bootstrap', () => {
     });
   });
 
-  test('does not persist a login response without a refresh token', async () => {
-    await expect(useAuthStore.getState().login({
-      accessToken: 'access',
-      refreshToken: '',
-    })).rejects.toThrow('refreshToken');
+  test('persists a login response containing the access token only', async () => {
+    await expect(useAuthStore.getState().login({ accessToken: 'access' })).resolves.toBeUndefined();
 
-    expect(setGenericPassword).not.toHaveBeenCalled();
-    expect(useAuthStore.getState().isLoggedIn).toBe(false);
+    expect(setGenericPassword).toHaveBeenCalledWith(
+      'tokens',
+      JSON.stringify({ accessToken: 'access' }),
+      { service: 'com.pingdom.auth' },
+    );
+    expect(useAuthStore.getState().isLoggedIn).toBe(true);
   });
 });

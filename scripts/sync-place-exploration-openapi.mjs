@@ -6,6 +6,7 @@ const TARGET_OPERATIONS = new Map([
   ['/places', ['get']],
   ['/places/autocomplete', ['get']],
   ['/places/map', ['get']],
+  ['/places/{id}', ['get']],
   ['/places/{placeId}/card', ['get']],
   ['/places/{placeId}/visit-decision', ['get']],
   ['/places/{placeId}/operating-notices', ['get']],
@@ -14,6 +15,7 @@ const TARGET_OPERATIONS = new Map([
   ['/places/recommendations/{requestId}/explanation', ['get']],
   ['/places/{placeId}/map-link-conversions', ['post']],
   ['/places/{placeId}/reviews', ['get', 'post']],
+  ['/places/{placeId}/availabilities', ['get']],
 ]);
 
 const source = process.argv[2];

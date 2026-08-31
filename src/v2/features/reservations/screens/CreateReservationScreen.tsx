@@ -139,9 +139,9 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
       </Header>
       <Form keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <PlaceSummary>
-          {route.params.imageUrl || detail.data?.thumbnailUrl ? <Thumbnail source={{ uri: route.params.imageUrl ?? detail.data?.thumbnailUrl ?? '' }} testID="v2-reservation-place-image" /> : <ThumbnailFallback><ThumbnailFallbackText>⌂</ThumbnailFallbackText></ThumbnailFallback>}
+          {route.params.imageUrl ? <Thumbnail source={{ uri: route.params.imageUrl }} testID="v2-reservation-place-image" /> : <ThumbnailFallback><ThumbnailFallbackText>⌂</ThumbnailFallbackText></ThumbnailFallback>}
           <PlaceCopy>
-            <Helper>{t('reservation.create.peopleRange', { category: route.params.category ?? detail.data?.category ?? '' })}</Helper>
+            <Helper>{t('reservation.create.peopleRange', { category: route.params.category ?? detail.data?.touristCategories?.[0] ?? '' })}</Helper>
             <PlaceName numberOfLines={1}>{route.params.placeName ?? detail.data?.name ?? t('reservation.create.loadingPlace')}</PlaceName>
           </PlaceCopy><Chevron>›</Chevron>
         </PlaceSummary>
