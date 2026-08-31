@@ -7,21 +7,23 @@ import {
   type PlaceExplorationOperationResponse,
 } from '../../../shared/api';
 
-export type ListCheckInsParams = PlaceExplorationOperationQuery<'listMine_4'>;
+export type ListCheckInsParams = PlaceExplorationOperationQuery<'listMine_5'>;
 export type CreateCheckInBody = OperationRequestBody<'createLocationCheckIn'>;
 export type CreateStatusVoteBody = OperationRequestBody<'createPlaceStatusVote'>;
 export type LocationCheckIn = OperationResponse<'createLocationCheckIn', 201>;
 export type LocationCheckInListItem = Pick<
   LocationCheckIn,
   'distanceMeters' | 'id' | 'observedAt' | 'placeId'
-> & Partial<LocationCheckIn>;
+> & Omit<Partial<LocationCheckIn>, 'status'> & {
+  status?: LocationCheckIn['status'] | 'DWELL_VERIFIED';
+};
 export type LocationCheckInPage = Omit<
   OperationResponse<'listMyLocationCheckIns', 200>,
   'checkIns'
 > & { checkIns: LocationCheckInListItem[] };
 export type StatusVote = OperationResponse<'createPlaceStatusVote', 201>;
 
-type LocationCheckInWirePage = PlaceExplorationOperationResponse<'listMine_4', 200>;
+type LocationCheckInWirePage = PlaceExplorationOperationResponse<'listMine_5', 200>;
 
 function isUsableCheckIn(
   item: NonNullable<LocationCheckInWirePage['items']>[number],

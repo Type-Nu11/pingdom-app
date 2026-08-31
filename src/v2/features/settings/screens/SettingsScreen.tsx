@@ -27,6 +27,7 @@ export type SettingsScreenProps = {
   onLogout?: () => Promise<void>;
   onOpenAccountManagement?: () => void;
   onOpenDetail?: (detail: SettingsDetailId) => void;
+  onOpenNotificationSettings?: () => void;
   onOpenProfileEdit: () => void;
 };
 
@@ -138,6 +139,7 @@ export default function SettingsScreen({
   onLogout,
   onOpenAccountManagement,
   onOpenDetail,
+  onOpenNotificationSettings,
   onOpenProfileEdit,
 }: SettingsScreenProps) {
   const { t } = useTranslation();
@@ -248,7 +250,7 @@ export default function SettingsScreen({
             <SettingsSection title={t('settings.sections.notifications')}>
               <SettingsRow
                 label={t('settings.rows.notificationSettings')}
-                onPress={() => setPage('notifications')}
+                onPress={onOpenNotificationSettings ?? (() => setPage('notifications'))}
                 value={notificationStatus}
               />
             </SettingsSection>

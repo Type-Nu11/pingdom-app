@@ -83,8 +83,8 @@ describe('V2 reservation screens', () => {
 
   function mockPlace() {
     jest.mocked(usePlaceDetail).mockReturnValue({
-      data: { name: '대성반점', thumbnailUrl: null },
-    } as ReturnType<typeof usePlaceDetail>);
+      data: { name: '대성반점' },
+    } as unknown as ReturnType<typeof usePlaceDetail>);
   }
 
   function createScreen() {

@@ -12,11 +12,7 @@ import {
   Surface,
 } from '../../../shared/components';
 import { usePlaceDetail } from '../hooks/usePlaceDetail';
-import {
-  getOperatingStatusPresentation,
-  getSupportLevelLabelKey,
-  getTrustConfidenceLabelKey,
-} from '../model/placePresentation';
+import { getOperatingStatusPresentation } from '../model/placePresentation';
 
 export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'PlaceDetail'>) {
   const { t } = useTranslation();
@@ -44,10 +40,7 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
   }
 
   const place = placeQuery.data;
-  const status = getOperatingStatusPresentation(place.liveStatus.operatingStatus);
-  const waitTime = place.liveStatus.waitTimeMinutes === null
-    ? t('placeDetail.unknownValue')
-    : t('placeDetail.waitMinutes', { count: place.liveStatus.waitTimeMinutes });
+  const status = getOperatingStatusPresentation(place.operatingStatus);
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
@@ -56,40 +49,21 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
           <StatusBadge label={t(status.labelKey)} tone={status.tone} />
           <Title>{place.name}</Title>
           {place.englishName ? <EnglishName>{place.englishName}</EnglishName> : null}
-          <Description>{place.touristSummary ?? place.address}</Description>
+          <Description>{place.touristSummary ?? place.description ?? place.address}</Description>
           <Section>
             <SectionTitle>{t('placeDetail.liveStatus')}</SectionTitle>
-            <Body>{t('placeDetail.waitTime', { value: waitTime })}</Body>
-            <Body>
-              {t('placeDetail.couponUsage', {
-                value: t(getSupportLevelLabelKey(place.liveStatus.couponUsageStatus)),
-              })}
-            </Body>
+            <Body>{place.currentlyOperating ? '영업 중' : '영업 종료'}</Body>
           </Section>
-          <Section>
-            <SectionTitle>{t('placeDetail.touristSupport')}</SectionTitle>
-            <Body>
-              {t('placeDetail.englishMenu', {
-                value: t(getSupportLevelLabelKey(place.touristSupport.englishMenu)),
-              })}
-            </Body>
-            <Body>
-              {t('placeDetail.languages', {
-                value: place.touristSupport.supportedLanguages.length > 0
-                  ? place.touristSupport.supportedLanguages.join(', ')
-                  : t('placeDetail.unknownValue'),
-              })}
-            </Body>
-          </Section>
-          <Section>
-            <SectionTitle>{t('placeDetail.trust')}</SectionTitle>
-            <Body>
-              {t('placeDetail.trustScore', {
-                confidence: t(getTrustConfidenceLabelKey(place.trustSummary.confidence)),
-                score: place.trustSummary.score,
-              })}
-            </Body>
-          </Section>
+          {place.regularHours.length ? (
+            <Section>
+              <SectionTitle>운영시간</SectionTitle>
+              {place.regularHours.map((hours, index) => (
+                <Body key={`${hours.dayOfWeek ?? 'day'}-${index}`}>
+                  {[hours.dayOfWeek, hours.opensAt, hours.closesAt].filter(Boolean).join(' ')}
+                </Body>
+              ))}
+            </Section>
+          ) : null}
           <Button label={t('placeDetail.back')} onPress={navigation.goBack} />
         </Surface>
       </Content>

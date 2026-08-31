@@ -1,4 +1,4 @@
-import type { LiveStatus, TouristSupport } from './placeDetail.types';
+import type { PlaceDetail } from './placeDetail.types';
 
 export type StatusPresentation = {
   labelKey:
@@ -10,7 +10,7 @@ export type StatusPresentation = {
 };
 
 export function getOperatingStatusPresentation(
-  status: LiveStatus['operatingStatus'] | string,
+  status: PlaceDetail['operatingStatus'] | string,
 ): StatusPresentation {
   switch (status) {
     case 'OPERATING':
@@ -26,7 +26,7 @@ export function getOperatingStatusPresentation(
 }
 
 export function getSupportLevelLabelKey(
-  level: TouristSupport['englishMenu'] | string,
+  level: string,
 ): 'placeSupport.available' | 'placeSupport.unavailable' | 'placeSupport.unknown' {
   switch (level) {
     case 'AVAILABLE':

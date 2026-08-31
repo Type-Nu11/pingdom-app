@@ -12,7 +12,7 @@ export interface paths {
             cookie?: never;
         };
         /** 내 위치 체크인 목록 조회 */
-        get: operations["listMine_4"];
+        get: operations["listMine_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -73,6 +73,26 @@ export interface paths {
          * @description 지도 경계와 zoom에 따라 장소 cluster 또는 marker를 조회합니다.
          */
         get: operations["mapViewport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/places/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 장소 상세 조회
+         * @description 특정 장소의 상세 정보를 조회합니다.
+         */
+        get: operations["getPlace"];
         put?: never;
         post?: never;
         delete?: never;
@@ -239,6 +259,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/places/{placeId}/availabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 장소 예약 가능 시간 조회 */
+        get: operations["list_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -302,7 +339,7 @@ export interface components {
             /** Format: double */
             distanceMeters?: number;
             /** @enum {string} */
-            status?: "PROXIMITY_MATCHED";
+            status?: "PROXIMITY_MATCHED" | "DWELL_VERIFIED";
         };
         MapClusterItem: {
             clusterId: string;
@@ -510,6 +547,7 @@ export interface components {
             regularHours: components["schemas"]["PlaceRegularOperatingHourResponse"][];
             operatingExceptions: components["schemas"]["PlaceOperatingExceptionResponse"][];
             activeOperatingNotices: components["schemas"]["PlaceOperatingNoticeResponse"][];
+            description: string | null;
             touristSummary: string | null;
             touristCategories: ("K_POP" | "BEAUTY" | "FASHION" | "CAFE" | "FOOD" | "POP_UP" | "EXHIBITION" | "NIGHTLIFE" | "OTHER")[];
             /** @enum {string} */
@@ -541,7 +579,7 @@ export interface components {
             /** Format: double */
             longitude: number;
             registrant: string;
-            merchantOwner: components["schemas"]["MerchantOwnerPublicResponse"];
+            merchantOwner: components["schemas"]["MerchantOwnerPublicResponse"] | null;
         };
         PlaceListItem: {
             /** Format: int64 */
@@ -876,7 +914,7 @@ export interface components {
         /** @description 관광객 장소 상세 방문 결정 화면 응답 */
         PlaceVisitDecisionResponse: {
             place: components["schemas"]["PlaceDetailResponse"];
-            merchantInformation: components["schemas"]["PlaceVisitDecisionMerchantInformationResponse"];
+            merchantInformation: components["schemas"]["PlaceVisitDecisionMerchantInformationResponse"] | null;
             ongoingEvents: components["schemas"]["PlaceVisitDecisionEventResponse"][];
             reservableAvailabilities: components["schemas"]["AvailabilityResponse"][];
             availableOffers: components["schemas"]["OfferPageResponse"];
@@ -941,6 +979,15 @@ export interface components {
             /** Format: double */
             longitude: number;
         };
+        /** @description 필드 검증 오류 응답 */
+        ValidationErrorResponse: {
+            message: string;
+            /** @example VALIDATION_FAILED */
+            code: string;
+            errors: {
+                [key: string]: string;
+            };
+        };
     };
     responses: never;
     parameters: never;
@@ -950,7 +997,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    listMine_4: {
+    listMine_5: {
         parameters: {
             query?: {
                 page?: number;
@@ -969,6 +1016,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LocationCheckInPageResponse"];
+                };
+            };
+            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1037,6 +1111,15 @@ export interface operations {
                     "*/*": components["schemas"]["PlaceListResponse"];
                 };
             };
+            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
             /** @description 유효하지 않은 토큰 */
             401: {
                 headers: {
@@ -1049,7 +1132,16 @@ export interface operations {
                      *       "code": "INVALID_TOKEN"
                      *     }
                      */
-                    "*/*": unknown;
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1119,7 +1211,16 @@ export interface operations {
                      *       "code": "INVALID_TOKEN"
                      *     }
                      */
-                    "*/*": unknown;
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1186,6 +1287,80 @@ export interface operations {
                     "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPlace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 장소 ID
+                 * @example 1
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 장소 상세 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceDetailResponse"];
+                };
+            };
+            /** @description 유효하지 않은 토큰 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "유효하지 않은 토큰입니다.",
+                     *       "code": "INVALID_TOKEN"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 장소를 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "장소를 찾을 수 없습니다.",
+                     *       "code": "PLACE_NOT_FOUND"
+                     *     }
+                     */
+                    "*/*": unknown;
+                };
+            };
         };
     };
     getTouristPlaceCard: {
@@ -1215,6 +1390,15 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description 공개 중인 장소를 찾을 수 없음 */
@@ -1261,6 +1445,15 @@ export interface operations {
                     "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description 공개 중인 장소를 찾을 수 없음 */
             404: {
                 headers: {
@@ -1305,6 +1498,15 @@ export interface operations {
                     "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description 장소를 찾을 수 없음 */
             404: {
                 headers: {
@@ -1338,6 +1540,24 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PlaceMediaResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1428,6 +1648,15 @@ export interface operations {
                     "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description 추천 설명 정보를 찾을 수 없음 */
             404: {
                 headers: {
@@ -1483,6 +1712,15 @@ export interface operations {
                     "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     list_4: {
@@ -1506,6 +1744,24 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PagePlaceReviewResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1532,6 +1788,73 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PlaceReviewResponse"];
+                };
+            };
+            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                placeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AvailabilityResponse"][];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

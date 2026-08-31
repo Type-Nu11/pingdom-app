@@ -213,8 +213,8 @@ export function usePlaceExplorationMediaList(
       const media = result.data?.media ?? [];
       const imageUrls = media
         .slice()
-        .sort((left, right) => left.displayOrder - right.displayOrder)
-        .map((item) => item.imageUrl || item.thumbnailUrl)
+        .sort((left, right) => (left.displayOrder - right.displayOrder) || (left.id - right.id))
+        .map((item) => item.imageUrl?.trim())
         .filter((url): url is string => Boolean(url));
 
       if (imageUrls.length > 0) {

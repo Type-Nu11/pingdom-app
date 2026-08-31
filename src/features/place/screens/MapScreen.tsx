@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -39,16 +39,11 @@ import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
 import {
-  usePlaceCard,
-  usePlaceExplorationMedia,
   usePlaceExplorationMediaList,
-  usePlaceOperatingNotices,
-  usePlaceVisitDecision,
   useRecommendationExplanation,
 } from '../../../v2/features/place-exploration';
-import { usePlaceDetail } from '../../../v2/features/place-detail';
+import { usePlaceDetailPresentation } from '../../../v2/features/place-detail';
 import type { PlaceListRuntimeState } from '../../../v2/features/place-exploration';
-import { toPlaceCardViewModel } from '../../../v2/features/map/model/mapDiscovery';
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
   MAP_PREVIEW_ZOOM_LEVEL,
@@ -71,10 +66,7 @@ import {
   shouldPresentMapSelection,
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
-import {
-  VisitVerificationMapCta,
-  usePlaceReviews,
-} from '../../../v2/features/place-visit-verification';
+import { VisitVerificationMapCta } from '../../../v2/features/place-visit-verification';
 import { FadeSlideTransition } from '../../../v2/shared/motion';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
@@ -122,9 +114,9 @@ function PlaceListStatusOverlay({
 
 const toDecisionPlace = (place: Place): DecisionPlace => ({
   ...place,
-  address: place.address || 'Nearby place',
+  address: place.address || '',
   category: (place.category || 'PLACE').toUpperCase(),
-  distance: place.distanceMeters ? `${Math.round(place.distanceMeters)} m` : 'Nearby',
+  distance: place.distanceMeters ? `${Math.round(place.distanceMeters)} m` : '',
   distanceMeters: place.distanceMeters,
   id: place.id,
   latitude: place.latitude,
@@ -167,6 +159,7 @@ export default function MapScreen({
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const reservationNavigationLock = useRef(false);
   const { center, userLat, userLng } = useCurrentLocation();
   const {
     dataSource: placeDataSource,
@@ -237,9 +230,13 @@ export default function MapScreen({
   } = usePlaceBookmark();
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
+  const placeDetailExpansion = mapSection === 'map' && content.type === 'place-preview'
+    ? expandedSheetTop
+    : 0;
   // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
-  // so the expanded state can go edge to edge without drawing outside its parent.
-  const fullSheetHeight = Math.round(height - expandedSheetTop);
+  // so a selected place can expand to a safe-area full screen while medium/collapsed
+  // positions remain anchored to the same visible heights.
+  const fullSheetHeight = Math.round(height - expandedSheetTop + placeDetailExpansion);
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
   const mediumVisibleHeight = Math.min(
@@ -353,27 +350,12 @@ export default function MapScreen({
   }, [allPlaces, content, favoritePlaces]);
   const selectedPlaceId = selectedPlaceBase?.id ?? 0;
   const hasSelectedPlace = selectedPlaceBase !== null;
-  const selectedCard = usePlaceCard(selectedPlaceId, { enabled: hasSelectedPlace });
-  const selectedDecision = usePlaceVisitDecision(selectedPlaceId, { enabled: hasSelectedPlace });
-  const selectedNotices = usePlaceOperatingNotices(selectedPlaceId, { enabled: hasSelectedPlace });
-  const selectedMedia = usePlaceExplorationMedia(selectedPlaceId, { enabled: hasSelectedPlace });
-  const selectedDetail = usePlaceDetail(selectedPlaceId, { enabled: hasSelectedPlace });
-  const selectedReviews = usePlaceReviews(selectedPlaceId, { enabled: hasSelectedPlace });
-  const selectedPlacePresentation = useMemo(() => toPlaceCardViewModel(
-    selectedCard.data,
-    selectedDecision.data,
-    selectedNotices.data,
-    selectedPlaceBase?.distanceMeters ?? null,
-    selectedDetail.data,
-    selectedMedia.data,
-  ), [
-    selectedCard.data,
-    selectedDecision.data,
-    selectedDetail.data,
-    selectedMedia.data,
-    selectedNotices.data,
-    selectedPlaceBase?.distanceMeters,
-  ]);
+  const {
+    presentation: selectedPlacePresentation,
+    refetchAvailability,
+    refetchMedia,
+    refetchReviews,
+  } = usePlaceDetailPresentation(selectedPlaceId, { enabled: hasSelectedPlace });
   const selectedPlace = useMemo<DecisionPlace | null>(() => {
     if (!selectedPlaceBase) return null;
     if (!selectedPlacePresentation) return selectedPlaceBase;
@@ -382,36 +364,51 @@ export default function MapScreen({
       ...selectedPlaceBase,
       address: selectedPlacePresentation.address || selectedPlaceBase.address,
       category: selectedPlacePresentation.category || selectedPlaceBase.category,
-      distanceMeters: selectedPlacePresentation.distanceMeters ?? selectedPlaceBase.distanceMeters,
       name: selectedPlacePresentation.name || selectedPlaceBase.name,
     };
   }, [selectedPlaceBase, selectedPlacePresentation]);
   const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;
-    const reviewCount = selectedReviews.isSuccess
-      ? Math.max(0, selectedReviews.data?.totalElements ?? 0)
-      : null;
-    const statusEmphasis = selectedPlacePresentation.currentlyOperating === true
+    const statusEmphasis = selectedPlacePresentation.isCurrentlyOperating === true
       ? '영업 중'
-      : selectedPlacePresentation.currentlyOperating === false
+      : selectedPlacePresentation.isCurrentlyOperating === false
         ? '영업 종료'
         : '';
 
     return {
       [String(selectedPlace.id)]: {
-        amenities: selectedPlacePresentation.supportTags.includes('english') ? ['english'] : [],
+        amenities: [],
+        businessHours: selectedPlacePresentation.businessHours ?? undefined,
+        coupons: selectedPlacePresentation.coupons,
+        email: selectedPlacePresentation.merchant?.contactEmail ?? undefined,
+        englishName: selectedPlacePresentation.englishName ?? undefined,
+        events: selectedPlacePresentation.events,
+        imageState: selectedPlacePresentation.imageState,
         imageUrls: selectedPlacePresentation.imageUrls,
-        reviewCount: reviewCount ?? undefined,
-        statusDescription: reviewCount === null
-          ? ''
-          : reviewCount > 0
-            ? `${reviewCount}명이 검증했어요!`
-            : '아직 검증을 하지 않았어요!',
+        jibunAddress: selectedPlacePresentation.jibunAddress ?? undefined,
+        notice: selectedPlacePresentation.notice ?? undefined,
+        phone: selectedPlacePresentation.merchant?.contactPhone ?? undefined,
+        reservation: selectedPlacePresentation.reservation,
+        reviewCount: selectedPlacePresentation.reviewTotal ?? undefined,
+        reviewState: selectedPlacePresentation.reviewState,
+        roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
+        reviews: selectedPlacePresentation.reviews.map((review) => ({
+          author: review.author,
+          createdAt: review.createdAt,
+          imageUrls: review.imageUrls,
+          tags: review.tags,
+          text: review.text,
+        })),
+        summary: selectedPlacePresentation.touristSummary
+          ?? selectedPlacePresentation.description
+          ?? undefined,
+        statusDescription: selectedPlacePresentation.verificationLabel ?? '',
         statusEmphasis,
+        website: selectedPlacePresentation.merchant?.websiteUrl ?? undefined,
       },
     };
-  }, [selectedPlace, selectedPlacePresentation, selectedReviews.data?.totalElements, selectedReviews.isSuccess]);
+  }, [selectedPlace, selectedPlacePresentation]);
   useEffect(() => {
     if (content.type !== 'place-preview' || selectedPlace) return;
 
@@ -568,6 +565,7 @@ export default function MapScreen({
   }, [dismissPlaceAt, selectedPlace, snapTo]);
 
   useFocusEffect(useCallback(() => {
+    reservationNavigationLock.current = false;
     return registerAndroidBackOverride(() => {
       if (isSearchOpen) {
         setIsSearchOpen(false);
@@ -627,9 +625,16 @@ export default function MapScreen({
   const mapCenterLng = !isFollowingUser && focusedPlace
     ? focusedPlace.longitude
     : dismissedMarkerCenter?.lng ?? center.lng;
+  const isExpandedPlaceDetail = mapSection === 'map'
+    && content.type === 'place-preview'
+    && snapPoint === 'expanded';
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
+      <StatusBar
+        backgroundColor={isExpandedPlaceDetail ? '#FFFFFF' : 'transparent'}
+        barStyle="dark-content"
+        translucent
+      />
       <View style={styles.mapBackground}>
         <MapCanvas
           centerLat={mapCenterLat}
@@ -764,12 +769,16 @@ export default function MapScreen({
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
             onCouponPress={handleCoupon}
-            onCreateReservation={(place, imageUrl) => onCreateReservation?.({
-              category: place.category,
-              id: place.id,
-              imageUrl,
-              name: place.name,
-            })}
+            onCreateReservation={(place, imageUrl) => {
+              if (!onCreateReservation || reservationNavigationLock.current) return;
+              reservationNavigationLock.current = true;
+              onCreateReservation({
+                category: place.category,
+                id: place.id,
+                imageUrl,
+                name: place.name,
+              });
+            }}
             onDetailPress={() => snapTo('expanded')}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}
@@ -792,6 +801,9 @@ export default function MapScreen({
             }}
             onPlacePress={handlePlacePress}
             onRetryRecommendations={() => void refetchRecommendations()}
+            onRetryAvailability={() => void refetchAvailability()}
+            onRetryMedia={() => void refetchMedia()}
+            onRetryReviews={() => void refetchReviews()}
             onProfilePress={onOpenProfile}
             onQueryChange={handleQueryChange}
             onSearchFocus={handleSearchFocus}

@@ -39,7 +39,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     try {
       const tokens = await hydrateAuthTokens();
-      const hasCompleteSession = Boolean(tokens?.accessToken && tokens.refreshToken);
+      const hasCompleteSession = Boolean(tokens?.accessToken);
 
       if (tokens && !hasCompleteSession) {
         await removeTokens();
@@ -62,8 +62,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: async (tokens: AuthTokens) => {
     const normalizedTokens = normalizeAuthTokens(tokens);
 
-    if (!normalizedTokens.accessToken || !normalizedTokens.refreshToken) {
-      throw new Error('로그인 응답에 accessToken 또는 refreshToken이 없습니다.');
+    if (!normalizedTokens.accessToken) {
+      throw new Error('로그인 응답에 accessToken이 없습니다.');
     }
 
     await persistTokens(normalizedTokens);

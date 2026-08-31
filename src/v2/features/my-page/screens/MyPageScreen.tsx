@@ -360,7 +360,7 @@ export default function MyPageScreen({
                     <VerifiedPlaceCard
                       address={entry.place.address}
                       favorited={bookmarkedPlaceIds.has(entry.placeId)}
-                      imageUrl={entry.place.thumbnailUrl}
+                      imageUrl={null}
                       key={entry.placeId}
                       name={entry.place.name}
                       onToggleFavorite={() => toggleFavorite(entry.placeId)}

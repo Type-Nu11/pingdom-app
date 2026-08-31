@@ -17,6 +17,7 @@ export const V2_ROUTES = {
   Map: 'Map',
   MyPage: 'MyPage',
   ProfileEdit: 'ProfileEdit',
+  NotificationSettings: 'NotificationSettings',
   PlaceDetail: 'PlaceDetail',
   AccountManagement: 'AccountManagement',
   Settings: 'Settings',
@@ -41,6 +42,7 @@ export type V2StackParamList = {
   SettingsDetail: {
     detail: SettingsDetailId;
   };
+  NotificationSettings: undefined;
   PlaceDetail: {
     placeId: PlaceId;
   };
