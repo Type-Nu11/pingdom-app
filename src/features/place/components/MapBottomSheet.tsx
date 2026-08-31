@@ -55,6 +55,7 @@ import {
 } from '../../../v2/shared/motion';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
+import type { ReservationCtaState } from '../../../v2/features/place-detail';
 import GlassSurface from './GlassSurface';
 import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
@@ -72,10 +73,20 @@ export type MapPreviewFallbackContent = {
   amenities: Array<'english' | 'parking'>;
   businessHours?: string;
   coupons?: Array<{ period: string; title: string }>;
+  email?: string;
+  englishName?: string;
+  events?: Array<{ period: string; title: string }>;
+  imageState?: 'empty' | 'error' | 'loading' | 'ready';
   imageUrls: string[];
-  menuItems?: Array<{ description: string; name: string; price: string }>;
   phone?: string;
+  jibunAddress?: string;
+  notice?: string;
+  roadAddress?: string;
+  summary?: string;
+  website?: string;
   reviewCount?: number;
+  reservation?: ReservationCtaState;
+  reviewState?: 'empty' | 'error' | 'loading' | 'ready';
   reviewHighlights?: Array<{ count: number; label: string }>;
   reviewParticipantCount?: number;
   reviews?: Array<{
@@ -83,7 +94,7 @@ export type MapPreviewFallbackContent = {
     avatarUrl?: string;
     createdAt: string;
     hiddenTags?: string[];
-    photoCount?: number;
+    imageUrls?: string[];
     tags: string[];
     text: string;
   }>;
@@ -144,6 +155,9 @@ type MapBottomSheetProps = {
   recommendationPlaces: DecisionPlace[];
   recommendationsState: 'empty' | 'error' | 'loading' | 'ready';
   onRetryRecommendations: () => void;
+  onRetryAvailability?: () => void;
+  onRetryMedia?: () => void;
+  onRetryReviews?: () => void;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
@@ -363,6 +377,13 @@ const formatDistance = (place: DecisionPlace) => {
   }
 
   return place.distance;
+};
+
+const formatPreviewLocation = (place: DecisionPlace) => {
+  const distance = formatDistance(place).trim();
+  const address = place.address.trim();
+
+  return [distance, address].filter(Boolean).join(' · ');
 };
 
 const PlaceArtwork = ({
@@ -1239,12 +1260,14 @@ const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
   return null;
 };
 
-const PreviewActionChip = ({ active = false, kind, label, onPress }: { active?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => (
+const PreviewActionChip = ({ active = false, disabled = false, kind, label, onPress }: { active?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => (
   <Pressable
     accessibilityLabel={label}
     accessibilityRole={onPress ? 'button' : undefined}
+    accessibilityState={{ disabled }}
+    disabled={disabled}
     onPress={onPress}
-    style={[styles.previewActionChip, active && styles.previewActionChipActive]}
+    style={[styles.previewActionChip, active && styles.previewActionChipActive, disabled && { opacity: 0.45 }]}
   >
     <PreviewActionIcon kind={kind} />
     <Text style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</Text>
@@ -1271,6 +1294,8 @@ const PreviewContent = ({
   onBack,
   onDetail,
   onReserve,
+  onRetryAvailability,
+  onRetryMedia,
   onToggleBookmark,
   pending,
   place,
@@ -1281,6 +1306,8 @@ const PreviewContent = ({
   onBack: () => void;
   onDetail: () => void;
   onReserve: () => void;
+  onRetryAvailability?: () => void;
+  onRetryMedia?: () => void;
   onToggleBookmark: () => void;
   pending: boolean;
   place: DecisionPlace;
@@ -1293,6 +1320,10 @@ const PreviewContent = ({
   const imageHeight = Math.min(188, Math.max(158, Math.round(contentWidth * 0.47)));
   const primaryImageWidth = Math.min(252, Math.max(218, Math.round(contentWidth * 0.64)));
   const secondaryImageWidth = Math.min(184, Math.max(150, Math.round(contentWidth * 0.46)));
+  const reservation = fallbackContent?.reservation ?? {
+    kind: 'loading', disabled: true, message: '예약 가능 여부를 확인하고 있습니다',
+  };
+  const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
 
   return (
     <View style={styles.previewContent}>
@@ -1319,7 +1350,7 @@ const PreviewContent = ({
             </Text>
           ) : null}
           <Text numberOfLines={1} style={styles.previewAddress}>
-            {formatDistance(place)} · {place.address}
+            {formatPreviewLocation(place)}
           </Text>
         </Pressable>
         <Pressable
@@ -1356,9 +1387,19 @@ const PreviewContent = ({
         <PreviewActionChip active kind="departure" label="출발" />
         <PreviewActionChip kind="arrival" label="도착" />
         <PreviewActionChip kind="share" label="공유" />
-        <PreviewActionChip kind="reservation" label="예약" onPress={onReserve} />
+        <PreviewActionChip
+          disabled={reservation.disabled && reservation.kind !== 'error'}
+          kind="reservation"
+          label={reservation.kind === 'error' ? '다시 시도' : '예약'}
+          onPress={reservationPress}
+        />
         <PreviewActionChip kind="directions" label="길찾기" />
       </ScrollView>
+      {fallbackContent?.imageState === 'error' ? (
+        <Pressable accessibilityRole="button" onPress={onRetryMedia}>
+          <Text style={styles.detailEmptyText}>사진을 불러오지 못했습니다. 다시 시도</Text>
+        </Pressable>
+      ) : null}
       <ScrollView
         contentContainerStyle={styles.previewImageRow}
         horizontal
@@ -1392,6 +1433,9 @@ const ExpandedPlaceContent = ({
   imageUrl,
   onBack,
   onReserve,
+  onRetryAvailability,
+  onRetryMedia,
+  onRetryReviews,
   onTabChange,
   onToggleBookmark,
   pending,
@@ -1403,18 +1447,28 @@ const ExpandedPlaceContent = ({
   imageUrl?: string;
   onBack: () => void;
   onReserve: () => void;
+  onRetryAvailability?: () => void;
+  onRetryMedia?: () => void;
+  onRetryReviews?: () => void;
   onTabChange: (tab: PlaceDetailTab) => void;
   onToggleBookmark: () => void;
   pending: boolean;
   place: DecisionPlace;
 }) => {
+  const insets = useSafeAreaInsets();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
     : [imageUrl];
+  const reservation = fallbackContent?.reservation ?? {
+    kind: 'loading', disabled: true, message: '예약 가능 여부를 확인하고 있습니다',
+  };
+  const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
+  const reviewImageUrls = (fallbackContent?.reviews ?? [])
+    .flatMap((review) => review.imageUrls ?? []);
 
   return (
     <ScrollView
-      contentContainerStyle={styles.detailContent}
+      contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.detailTopBar}>
@@ -1445,6 +1499,9 @@ const ExpandedPlaceContent = ({
           <Text style={styles.detailTitle}>{place.name}</Text>
           <Text style={styles.detailCategory}>{place.category}</Text>
         </View>
+        {fallbackContent?.englishName ? (
+          <Text style={styles.detailVerified}>{fallbackContent.englishName}</Text>
+        ) : null}
         {fallbackContent ? (
           <Text style={styles.detailVerified}>{fallbackContent.statusDescription}</Text>
         ) : null}
@@ -1458,9 +1515,19 @@ const ExpandedPlaceContent = ({
         <PreviewActionChip active kind="departure" label="출발" />
         <PreviewActionChip kind="arrival" label="도착" />
         <PreviewActionChip kind="share" label="공유" />
-        <PreviewActionChip kind="reservation" label="예약" onPress={onReserve} />
+        <PreviewActionChip
+          disabled={reservation.disabled && reservation.kind !== 'error'}
+          kind="reservation"
+          label={reservation.kind === 'error' ? '다시 시도' : '예약'}
+          onPress={reservationPress}
+        />
         <PreviewActionChip kind="directions" label="길찾기" />
       </ScrollView>
+      {fallbackContent?.imageState === 'error' ? (
+        <Pressable accessibilityRole="button" onPress={onRetryMedia}>
+          <Text style={styles.detailEmptyText}>사진을 불러오지 못했습니다. 다시 시도</Text>
+        </Pressable>
+      ) : null}
 
       <ScrollView
         contentContainerStyle={styles.detailPhotoRow}
@@ -1500,6 +1567,20 @@ const ExpandedPlaceContent = ({
               <PinAsset height={16} width={14} />
               <Text style={styles.detailInfoText}>{place.address}</Text>
             </View>
+            {fallbackContent?.roadAddress && fallbackContent.roadAddress !== place.address ? (
+              <View style={styles.detailInfoRow}>
+                <PinAsset height={16} width={14} />
+                <Text style={styles.detailInfoText}>{fallbackContent.roadAddress}</Text>
+              </View>
+            ) : null}
+            {fallbackContent?.jibunAddress
+              && fallbackContent.jibunAddress !== place.address
+              && fallbackContent.jibunAddress !== fallbackContent.roadAddress ? (
+                <View style={styles.detailInfoRow}>
+                  <PinAsset height={16} width={14} />
+                  <Text style={styles.detailInfoText}>{fallbackContent.jibunAddress}</Text>
+                </View>
+              ) : null}
             {fallbackContent ? (
               <>
                 <View style={styles.detailInfoRow}>
@@ -1515,6 +1596,17 @@ const ExpandedPlaceContent = ({
                     <Text style={styles.detailInfoText}>{fallbackContent.phone}</Text>
                   </View>
                 ) : null}
+                {fallbackContent.email ? (
+                  <View style={styles.detailInfoRow}>
+                    <CallAsset height={16} width={16} />
+                    <Text style={styles.detailInfoText}>{fallbackContent.email}</Text>
+                  </View>
+                ) : null}
+                {fallbackContent.website ? (
+                  <View style={styles.detailInfoRow}>
+                    <Text style={styles.detailInfoText}>{fallbackContent.website}</Text>
+                  </View>
+                ) : null}
               </>
             ) : null}
             {fallbackContent?.amenities.length ? (
@@ -1525,6 +1617,20 @@ const ExpandedPlaceContent = ({
               </View>
             ) : null}
           </View>
+
+          {fallbackContent?.notice ? (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>운영 공지</Text>
+              <Text style={styles.detailInfoText}>{fallbackContent.notice}</Text>
+            </View>
+          ) : null}
+
+          {fallbackContent?.summary ? (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>장소 소개</Text>
+              <Text style={styles.detailInfoText}>{fallbackContent.summary}</Text>
+            </View>
+          ) : null}
 
           {fallbackContent?.coupons?.length ? (
             <View style={styles.detailSection}>
@@ -1542,34 +1648,32 @@ const ExpandedPlaceContent = ({
             </View>
           ) : null}
 
-          {fallbackContent?.menuItems?.length ? (
+          {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>메뉴</Text>
-              {fallbackContent.menuItems.map((menu, index) => (
-                <View key={`${menu.name}-${index}`} style={styles.detailMenuRow}>
-                  <View style={styles.detailMenuBody}>
-                    <Text style={styles.detailMenuName}>{menu.name}</Text>
-                    <Text style={styles.detailMenuDescription}>{menu.description}</Text>
-                    <Text style={styles.detailMenuPrice}>{menu.price}</Text>
-                  </View>
-                  <View style={styles.detailMenuImage}>
-                    <PreviewArtwork imageUrl={imageUrls[index % imageUrls.length]} />
+              <Text style={styles.detailSectionTitle}>진행 중 이벤트</Text>
+              {fallbackContent.events.map((event, index) => (
+                <View key={`${event.title}-${index}`} style={styles.detailCouponRow}>
+                  <View style={styles.detailCouponBody}>
+                    <Text style={styles.detailCouponTitle}>{event.title}</Text>
+                    {event.period ? <Text style={styles.detailCouponPeriod}>{event.period}</Text> : null}
                   </View>
                 </View>
               ))}
             </View>
           ) : null}
+
         </View>
       ) : (
         <View>
-          <View style={styles.detailReviewSection}>
+          {fallbackContent?.reviewHighlights?.length ? (
+            <View style={styles.detailReviewSection}>
             <Text style={styles.detailReviewTitle}>
               이런 점을 좋아해요!
               {fallbackContent?.reviewParticipantCount ? (
                 <Text style={styles.detailReviewCount}> {fallbackContent.reviewParticipantCount}명 참여</Text>
               ) : null}
             </Text>
-            {(fallbackContent?.reviewHighlights ?? []).map((highlight, index, items) => {
+            {fallbackContent.reviewHighlights.map((highlight, index, items) => {
               const maxCount = Math.max(...items.map((item) => item.count), 1);
               const scoreRatio = Math.min(1, Math.max(0, highlight.count / maxCount));
               const fillOpacity = 0.16 + (scoreRatio * 0.62);
@@ -1599,22 +1703,31 @@ const ExpandedPlaceContent = ({
                 </View>
               );
             })}
-          </View>
+            </View>
+          ) : null}
 
-          <View style={styles.detailReviewSection}>
-            <Text style={styles.detailSectionTitle}>사진 리뷰</Text>
-            <ScrollView contentContainerStyle={styles.detailReviewPhotos} horizontal showsHorizontalScrollIndicator={false}>
-              {imageUrls.concat(imageUrls).map((url, index) => (
+          {reviewImageUrls.length ? (
+            <View style={styles.detailReviewSection}>
+              <Text style={styles.detailSectionTitle}>사진 리뷰</Text>
+              <ScrollView contentContainerStyle={styles.detailReviewPhotos} horizontal showsHorizontalScrollIndicator={false}>
+              {reviewImageUrls.map((url, index) => (
                 <View key={`${url ?? 'missing'}-review-${index}`} style={styles.detailReviewPhoto}>
                   <PreviewArtwork imageUrl={url} />
                 </View>
               ))}
-            </ScrollView>
-          </View>
+              </ScrollView>
+            </View>
+          ) : null}
 
           <View style={styles.detailReviewSection}>
             <Text style={styles.detailSectionTitle}>리뷰 {fallbackContent?.reviewCount ?? 0}</Text>
-            {fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
+            {fallbackContent?.reviewState === 'error' ? (
+              <Pressable accessibilityRole="button" onPress={onRetryReviews}>
+                <Text style={styles.detailEmptyText}>리뷰를 불러오지 못했습니다. 다시 시도</Text>
+              </Pressable>
+            ) : fallbackContent?.reviewState === 'loading' ? (
+              <Text accessibilityLiveRegion="polite" style={styles.detailEmptyText}>리뷰를 불러오는 중입니다.</Text>
+            ) : fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
               <View key={`${review.author}-${review.createdAt}-${index}`} style={styles.detailReviewItem}>
                 <View style={styles.detailReviewerRow}>
                   <ReviewerAvatar name={review.author} url={review.avatarUrl} />
@@ -1624,11 +1737,11 @@ const ExpandedPlaceContent = ({
                   </View>
                 </View>
                 <Text style={styles.detailReviewText}>{review.text}</Text>
-                {review.photoCount ? (
+                {review.imageUrls?.length ? (
                   <View style={styles.detailReviewImageGrid}>
-                    {Array.from({ length: review.photoCount }, (_, photoIndex) => (
-                      <View key={photoIndex} style={styles.detailReviewImageCell}>
-                        <PreviewArtwork imageUrl={imageUrls[photoIndex % imageUrls.length]} />
+                    {review.imageUrls.map((url, photoIndex) => (
+                      <View key={`${url}-${photoIndex}`} style={styles.detailReviewImageCell}>
+                        <PreviewArtwork imageUrl={url} />
                       </View>
                     ))}
                   </View>
@@ -1767,7 +1880,10 @@ export default function MapBottomSheet({
   onOpenRecommendations,
   onOpenSavedPlaces,
   onPlacePress,
+  onRetryAvailability,
+  onRetryMedia,
   onRetryRecommendations,
+  onRetryReviews,
   onToggleBookmark,
   panHandlers,
   places,
@@ -1785,8 +1901,17 @@ export default function MapBottomSheet({
   const [feed, setFeed] = useState<'local' | 'national'>('local');
   const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
+  const reservationNavigationLock = useRef(false);
+  const reservationUnlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     setActivePlaceDetailTab('info');
+    reservationNavigationLock.current = false;
+    if (reservationUnlockTimer.current) clearTimeout(reservationUnlockTimer.current);
+    reservationUnlockTimer.current = null;
+
+    return () => {
+      if (reservationUnlockTimer.current) clearTimeout(reservationUnlockTimer.current);
+    };
   }, [selectedPlace?.id]);
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
@@ -1798,6 +1923,20 @@ export default function MapBottomSheet({
   const imageUrlsByPlaceId = {
     ...explorationImageUrlsByPlaceId,
     ...previewImageUrlsByPlaceId,
+  };
+  const isExpandedPlaceDetail = content.type === 'place-preview' && snapPoint === 'expanded';
+  const handleCreateReservation = () => {
+    if (!selectedPlace || !onCreateReservation || reservationNavigationLock.current) return;
+    reservationNavigationLock.current = true;
+    onCreateReservation(
+      selectedPlace,
+      previewFallbackContentByPlaceId?.[String(selectedPlace.id)]?.imageUrls[0]
+        ?? imageUrlsByPlaceId[String(selectedPlace.id)],
+    );
+    reservationUnlockTimer.current = setTimeout(() => {
+      reservationNavigationLock.current = false;
+      reservationUnlockTimer.current = null;
+    }, RECOMMENDATION_NAVIGATION_LOCK_MS);
   };
   const contentFadeStart = mediumTranslateY
     + ((collapsedTranslateY - mediumTranslateY) * 0.42);
@@ -1833,6 +1972,8 @@ export default function MapBottomSheet({
         pointerEvents="none"
         style={[
           {
+            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : 34,
+            borderTopRightRadius: isExpandedPlaceDetail ? 0 : 34,
             bottom: chromeBottomInset,
             left: chromeGap,
             right: chromeGap,
@@ -1845,31 +1986,35 @@ export default function MapBottomSheet({
             {
               borderBottomLeftRadius: chromeBottomRadius,
               borderBottomRightRadius: chromeBottomRadius,
+              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : 34,
+              borderTopRightRadius: isExpandedPlaceDetail ? 0 : 34,
             },
           ]}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={34}
+            cornerRadius={isExpandedPlaceDetail ? 0 : 34}
             glassEffectStyle="regular"
             highlightHeight={40}
             highlightOpacity={0.10}
             rimColor="rgba(255,255,255,0.60)"
-            tintColor="rgba(255,255,255,0.92)"
+            tintColor={isExpandedPlaceDetail ? '#FFFFFF' : 'rgba(255,255,255,0.92)'}
             topRimOnly
           />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
       <GlassStyles.SheetInner $inset={SHEET_RESTING_GAP}>
-      <View style={styles.handleArea} {...panHandlers}>
-        <Pressable
-          accessibilityLabel="추천 패널 크기 조절"
-          accessibilityRole="adjustable"
-          onPress={onHandlePress}
-          style={styles.handleButton}
-        >
-          <View style={styles.handle} />
-        </Pressable>
-      </View>
+      {!isExpandedPlaceDetail ? (
+        <View style={styles.handleArea} {...panHandlers}>
+          <Pressable
+            accessibilityLabel="추천 패널 크기 조절"
+            accessibilityRole="adjustable"
+            onPress={onHandlePress}
+            style={styles.handleButton}
+          >
+            <View style={styles.handle} />
+          </Pressable>
+        </View>
+      ) : null}
 
       <Animated.View
         pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
@@ -1886,11 +2031,10 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
-            onReserve={() => onCreateReservation?.(
-              selectedPlace,
-              previewFallbackContentByPlaceId?.[String(selectedPlace.id)]?.imageUrls[0]
-                ?? imageUrlsByPlaceId[String(selectedPlace.id)],
-            )}
+            onReserve={handleCreateReservation}
+            onRetryAvailability={onRetryAvailability}
+            onRetryMedia={onRetryMedia}
+            onRetryReviews={onRetryReviews}
             onTabChange={setActivePlaceDetailTab}
             onToggleBookmark={() => void onToggleBookmark(
               selectedPlace,
@@ -1906,11 +2050,9 @@ export default function MapBottomSheet({
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
             onDetail={() => onDetailPress(selectedPlace)}
-            onReserve={() => onCreateReservation?.(
-              selectedPlace,
-              previewFallbackContentByPlaceId?.[String(selectedPlace.id)]?.imageUrls[0]
-                ?? imageUrlsByPlaceId[String(selectedPlace.id)],
-            )}
+            onReserve={handleCreateReservation}
+            onRetryAvailability={onRetryAvailability}
+            onRetryMedia={onRetryMedia}
             onToggleBookmark={() => void onToggleBookmark(
               selectedPlace,
               !bookmarkedPlaceIds[String(selectedPlace.id)],
@@ -2495,7 +2637,7 @@ const styles = StyleSheet.create({
     marginTop: 13,
     width: 36,
   },
-  previewCategory: { color: '#575A62', fontSize: 13, fontWeight: '700', marginLeft: 4, paddingTop: 4 },
+  previewCategory: { color: '#575A62', flexShrink: 0, fontSize: 13, fontWeight: '700', marginLeft: 6, paddingTop: 4 },
   previewCloseButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.72)',
@@ -2516,12 +2658,12 @@ const styles = StyleSheet.create({
     width: 180,
   },
   previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
-  previewName: { color: '#1B1D22', fontSize: 21, fontWeight: '900' },
+  previewName: { color: '#1B1D22', flex: 1, flexShrink: 1, fontSize: 21, fontWeight: '900', minWidth: 0 },
   previewParkingIcon: { borderRadius: 5 },
   previewStatus: { color: '#61646C', fontSize: 13, fontWeight: '600', marginTop: 6 },
   previewStatusEmphasis: { color: '#1CB957', fontWeight: '800' },
   previewSummary: { flex: 1, paddingTop: 11 },
-  previewTitleRow: { alignItems: 'flex-start', flexDirection: 'row', paddingRight: 4 },
+  previewTitleRow: { alignItems: 'flex-start', flexDirection: 'row', paddingRight: 4, width: '100%' },
   resultAddress: { color: '#7A7D85', fontSize: 11, marginTop: 3 },
   resultDistance: { color: '#686B73', fontSize: 11, fontWeight: '700' },
   resultName: { color: '#272930', fontSize: 14, fontWeight: '800' },

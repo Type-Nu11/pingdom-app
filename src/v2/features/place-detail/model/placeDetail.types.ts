@@ -1,6 +1,5 @@
-import type { ApiSchema } from '../../../shared/api';
+import type { PlaceExplorationOperationResponse } from '../../../shared/api';
 
-export type PlaceDetail = ApiSchema<'PlaceDetail'>;
-export type LiveStatus = ApiSchema<'LiveStatus'>;
-export type TouristSupport = ApiSchema<'TouristSupport'>;
-export type TrustSummary = ApiSchema<'TrustSummary'>;
+export type PlaceDetail = PlaceExplorationOperationResponse<'getPlace', 200>;
+export type PlaceAvailability = PlaceExplorationOperationResponse<'list_5', 200>[number];
+export type PlaceAvailabilities = PlaceExplorationOperationResponse<'list_5', 200>;
