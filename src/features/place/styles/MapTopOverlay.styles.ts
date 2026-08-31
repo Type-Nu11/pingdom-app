@@ -163,3 +163,25 @@ export const CategoryLabel = styled.Text.attrs({ maxFontSizeMultiplier: 1 })<{ $
   font-weight: ${({ $active }) => ($active ? 700 : 500)};
   line-height: 20px;
 `;
+
+export const LocateButtonRow = styled.View`
+  align-items: flex-end;
+  padding-top: 2px;
+  padding-right: 12px;
+`;
+
+export const LocateButton = styled.Pressable`
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
+  background-color: rgba(255, 255, 255, 0.94);
+  elevation: 3;
+  shadow-color: #10141a;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.12;
+  shadow-radius: 6px;
+`;

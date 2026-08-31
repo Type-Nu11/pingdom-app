@@ -1,12 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Alert,
-  Pressable,
   StatusBar,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -43,9 +40,9 @@ import {
   useRecommendationExplanation,
 } from '../../../v2/features/place-exploration';
 import { usePlaceDetailPresentation } from '../../../v2/features/place-detail';
-import type { PlaceListRuntimeState } from '../../../v2/features/place-exploration';
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
+  MAP_LOCATE_ZOOM_LEVEL,
   MAP_PREVIEW_ZOOM_LEVEL,
   markersForSelectedPlace,
 } from '../../../v2/features/map/model/mapSelection';
@@ -72,45 +69,6 @@ import { FadeSlideTransition } from '../../../v2/shared/motion';
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
 const MAP_SECTION_DIRECTION = { map: 0, favorites: 1, reservations: 2 } as const;
-
-const PLACE_LIST_STATUS_COPY: Record<Exclude<PlaceListRuntimeState, 'ready'>, string> = {
-  disabled: '장소 목록 기능이 비활성화되어 있어요.',
-  empty: '서버에 등록된 장소가 없어요.',
-  error: '서버 장소 목록을 불러오지 못했어요.',
-  loading: '서버 장소 목록을 불러오고 있어요.',
-};
-
-function PlaceListStatusOverlay({
-  isMock,
-  onRetry,
-  status,
-}: {
-  isMock: boolean;
-  onRetry: () => void;
-  status: PlaceListRuntimeState;
-}) {
-  if (status === 'ready' && !isMock) return null;
-
-  return (
-    <View
-      accessibilityLiveRegion="polite"
-      style={styles.placeListStatus}
-      testID={`place-list-status-${isMock && status === 'ready' ? 'mock' : status}`}
-    >
-      {status === 'loading' ? <ActivityIndicator color="#ff1956" size="small" /> : null}
-      <Text style={styles.placeListStatusText}>
-        {isMock && status === 'ready'
-          ? '개발 Mock 장소를 표시하고 있어요.'
-          : PLACE_LIST_STATUS_COPY[status as Exclude<PlaceListRuntimeState, 'ready'>]}
-      </Text>
-      {status === 'error' ? (
-        <Pressable accessibilityRole="button" onPress={onRetry} testID="place-list-retry">
-          <Text style={styles.placeListRetryText}>다시 시도</Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
 
 const toDecisionPlace = (place: Place): DecisionPlace => ({
   ...place,
@@ -160,13 +118,11 @@ export default function MapScreen({
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reservationNavigationLock = useRef(false);
+  const locateFollowFrame = useRef<number | null>(null);
   const { center, userLat, userLng } = useCurrentLocation();
   const {
-    dataSource: placeDataSource,
     markers: apiMarkers,
     places: apiPlaces,
-    refetch: refetchPlaces,
-    status: placeListStatus,
   } = usePlaces();
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
@@ -208,6 +164,11 @@ export default function MapScreen({
   useEffect(() => {
     setMapSection(initialSection);
   }, [initialSection]);
+  useEffect(() => () => {
+    if (locateFollowFrame.current !== null) {
+      cancelAnimationFrame(locateFollowFrame.current);
+    }
+  }, []);
   const canQueryBookmarks = isLoggedIn && !isAuthHydrating;
   const {
     fetchNextPage: fetchNextFavoritePage,
@@ -230,13 +191,11 @@ export default function MapScreen({
   } = usePlaceBookmark();
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
-  const placeDetailExpansion = mapSection === 'map' && content.type === 'place-preview'
-    ? expandedSheetTop
-    : 0;
-  // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
-  // so a selected place can expand to a safe-area full screen while medium/collapsed
-  // positions remain anchored to the same visible heights.
-  const fullSheetHeight = Math.round(height - expandedSheetTop + placeDetailExpansion);
+  const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
+  // Keep one stable sheet geometry while content changes. Only the expanded destination moves:
+  // place detail can fill the screen, while other expanded content remains below the top overlay.
+  const fullSheetHeight = Math.round(height);
+  const expandedTranslateY = isPlacePreview ? 0 : expandedSheetTop;
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
   const mediumVisibleHeight = Math.min(
@@ -247,11 +206,15 @@ export default function MapScreen({
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
   const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
     collapsedTranslateY,
+    expandedTranslateY,
     initialSnapPoint: 'medium',
     mediumTranslateY,
   });
   const verificationCtaOpacity = sheetTranslateY.interpolate({
-    inputRange: [0, Math.max(mediumTranslateY, 1)],
+    inputRange: [
+      expandedTranslateY,
+      Math.max(mediumTranslateY, expandedTranslateY + 1),
+    ],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
@@ -564,6 +527,25 @@ export default function MapScreen({
     snapTo('medium');
   }, [dismissPlaceAt, selectedPlace, snapTo]);
 
+  const handleLocatePress = useCallback(() => {
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter(null);
+    setMapZoomLevel(MAP_LOCATE_ZOOM_LEVEL);
+
+    // Native map props only react when followUser changes. Pulse the value so an
+    // unchanged current coordinate can still be re-centered on every button press.
+    setIsFollowingUser(false);
+    if (locateFollowFrame.current !== null) {
+      cancelAnimationFrame(locateFollowFrame.current);
+    }
+    locateFollowFrame.current = requestAnimationFrame(() => {
+      locateFollowFrame.current = null;
+      setIsFollowingUser(true);
+    });
+
+    snapTo('medium');
+  }, [snapTo]);
+
   useFocusEffect(useCallback(() => {
     reservationNavigationLock.current = false;
     return registerAndroidBackOverride(() => {
@@ -648,16 +630,10 @@ export default function MapScreen({
         />
         <View pointerEvents="none" style={styles.mapTint} />
       </View>
-        {mapSection === 'map' ? (
-          <PlaceListStatusOverlay
-            isMock={placeDataSource === 'mock'}
-            onRetry={() => void refetchPlaces()}
-            status={placeListStatus}
-          />
-        ) : null}
-          <MapTopOverlay
-            activeCategory={activeCategory}
+        <MapTopOverlay
+          activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
+          onLocatePress={handleLocatePress}
           onProfilePress={onOpenProfile}
           onQueryChange={handleQueryChange}
           onSearchFocus={handleSearchFocus}
@@ -827,7 +803,7 @@ export default function MapScreen({
           />
         )}
         </FadeSlideTransition>
-      {!isSearchOpen && onOpenVisitVerification ? (
+      {!isSearchOpen && content.type !== 'place-preview' && onOpenVisitVerification ? (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
           style={{
@@ -880,21 +856,4 @@ const styles = StyleSheet.create({
   mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
   sectionTransition: { ...StyleSheet.absoluteFillObject, zIndex: 50 },
-  placeListRetryText: { color: '#ff1956', fontSize: 13, fontWeight: '700' },
-  placeListStatus: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    borderColor: '#E1E2E7',
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 6,
-    maxWidth: 280,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    position: 'absolute',
-    top: '28%',
-    zIndex: 20,
-  },
-  placeListStatusText: { color: '#454750', fontSize: 13, textAlign: 'center' },
 });

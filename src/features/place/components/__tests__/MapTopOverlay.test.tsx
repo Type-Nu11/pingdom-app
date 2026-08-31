@@ -8,6 +8,7 @@ import { MAP_TOP_OVERLAY_METRICS } from '../../styles/MapTopOverlay.styles';
 const props = {
   activeCategory: 'all' as const,
   onCategoryChange: jest.fn(),
+  onLocatePress: jest.fn(),
   onProfilePress: jest.fn(),
   onQueryChange: jest.fn(),
   onSearchFocus: jest.fn(),
@@ -32,9 +33,15 @@ describe('MapTopOverlay', () => {
   });
 
   test('시트가 내려가면 지도 카테고리를 표시한다', async () => {
-    await renderWithProviders(<MapTopOverlay {...props} showCategories />);
+    const view = await renderWithProviders(<MapTopOverlay {...props} showCategories />);
 
     expect(screen.getByText('전체')).toBeVisible();
     expect(screen.getByText('음식점')).toBeVisible();
+    const locateButton = screen.getByRole('button', { name: '내 위치로 이동' });
+    expect(locateButton).toBeVisible();
+    expect(locateButton).toHaveStyle({ height: 44, width: 44 });
+    await view.user.press(locateButton);
+    await view.user.press(locateButton);
+    expect(props.onLocatePress).toHaveBeenCalledTimes(2);
   });
 });

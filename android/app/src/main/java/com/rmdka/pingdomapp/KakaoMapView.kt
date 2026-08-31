@@ -129,7 +129,6 @@ class KakaoMapView(
                     emitNearestMarkerPress(map, point)
                 }
                 Log.d(TAG, "onMapReady: Kakao map is ready")
-                Toast.makeText(reactContext, "KakaoMap ready", Toast.LENGTH_SHORT).show()
                 applyCameraIfReady()
                 updateUserLocationIfReady()
                 updateMarkersIfReady()
@@ -718,7 +717,7 @@ class KakaoMapView(
 
         if (followUser) {
             val target = LatLng.from(lat, lng)
-            val update = CameraUpdateFactory.newCenterPosition(target, map.zoomLevel)
+            val update = CameraUpdateFactory.newCenterPosition(target, zoomLevel)
             map.moveCamera(update, CameraAnimation.from(300))
         }
     }
