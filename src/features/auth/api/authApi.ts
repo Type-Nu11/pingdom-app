@@ -16,21 +16,18 @@ type RawLoginResponse =
   | {
       data?: LoginResponse;
       accessToken?: string;
-      refreshToken?: string;
     };
 
-function toLoginResponse(response: RawLoginResponse): LoginResponse {
+export function toLoginResponse(response: RawLoginResponse): LoginResponse {
   if ('data' in response && response.data?.accessToken) {
     return {
       accessToken: response.data.accessToken,
-      refreshToken: response.data.refreshToken ?? '',
     };
   }
 
   if ('accessToken' in response && response.accessToken) {
     return {
       accessToken: response.accessToken,
-      refreshToken: response.refreshToken ?? '',
     };
   }
 

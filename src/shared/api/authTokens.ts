@@ -85,7 +85,7 @@ export async function hydrateAccessToken(): Promise<string | null> {
  * 로그인 또는 토큰 갱신 후 새 토큰을 저장합니다
  * 메모리 캐시와 키체인(영구 저장소) 양쪽을 동시에 갱신합니다
  * 
- * @param tokens - 새로 발급받은 accessToken + refreshToken 쌍
+ * @param tokens - 새로 발급받은 accessToken
  */
 export async function persistTokens(tokens: AuthTokens): Promise<void> {
     const normalizedTokens = normalizeAuthTokens(tokens);
