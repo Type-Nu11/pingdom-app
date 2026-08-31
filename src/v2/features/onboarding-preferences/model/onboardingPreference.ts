@@ -56,9 +56,12 @@ export const TRAVEL_PURPOSE_OPTIONS = [
   { iconId: 'food_svg', labelKey: 'onboarding.preferences.travelPurposes.food', order: 4, value: 'FOOD' },
   { iconId: 'popup_svg', labelKey: 'onboarding.preferences.travelPurposes.popUp', order: 5, value: 'POP_UP' },
   { iconId: 'art_svg', labelKey: 'onboarding.preferences.travelPurposes.exhibition', order: 6, value: 'EXHIBITION' },
-  { iconId: 'hotplace', labelKey: 'onboarding.preferences.travelPurposes.nightlife', order: 7, value: 'NIGHTLIFE' },
-  { iconId: 'etc_svg', labelKey: 'onboarding.preferences.travelPurposes.other', order: 8, value: 'OTHER' },
+  { iconId: 'etc_svg', labelKey: 'onboarding.preferences.travelPurposes.other', order: 7, value: 'OTHER' },
 ] as const satisfies readonly PreferenceOption<TravelPurpose>[];
+
+// NIGHTLIFE stays a valid server TravelPurpose but is intentionally not offered
+// as an onboarding option.
+const OMITTED_TRAVEL_PURPOSES = ['NIGHTLIFE'] as const;
 
 export const CURRENT_NEED_OPTIONS = [
   { iconId: 'maping_svg', labelKey: 'onboarding.preferences.currentNeeds.explore', order: 0, value: 'EXPLORE' },
@@ -71,7 +74,11 @@ export const CURRENT_NEED_OPTIONS = [
 
 type AssertNever<Value extends never> = Value;
 type AllTravelPurposesHaveOptions = AssertNever<
-  Exclude<TravelPurpose, (typeof TRAVEL_PURPOSE_OPTIONS)[number]['value']>
+  Exclude<
+    TravelPurpose,
+    | (typeof TRAVEL_PURPOSE_OPTIONS)[number]['value']
+    | (typeof OMITTED_TRAVEL_PURPOSES)[number]
+  >
 >;
 type AllCurrentNeedsHaveOptions = AssertNever<
   Exclude<CurrentNeed, (typeof CURRENT_NEED_OPTIONS)[number]['value']>

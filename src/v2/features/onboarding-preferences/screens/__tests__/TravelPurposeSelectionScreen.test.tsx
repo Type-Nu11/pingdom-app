@@ -28,14 +28,13 @@ describe('TravelPurposeSelectionScreen', () => {
 
     expect(screen.getAllByRole('checkbox').map((option) => option.props.accessibilityLabel))
       .toEqual([
-        'K-pop',
+        '음악',
         '뷰티',
         '패션',
         '카페',
         '음식',
         '팝업',
         '전시',
-        '나이트라이프',
         '기타',
       ]);
     expect(screen.getByTestId('travel-purpose-scroll-view')).toBeVisible();
@@ -47,12 +46,13 @@ describe('TravelPurposeSelectionScreen', () => {
       'FOOD',
       'POP_UP',
       'EXHIBITION',
-      'NIGHTLIFE',
       'OTHER',
     ].map((purpose) => screen.getByTestId(
       `travel-purpose-icon-${purpose}`,
       { includeHiddenElements: true },
-    ))).toHaveLength(9);
+    ))).toHaveLength(8);
+    expect(screen.queryByTestId('travel-purpose-icon-NIGHTLIFE', { includeHiddenElements: true }))
+      .toBeNull();
     expect(screen.queryByText('🎤')).not.toBeOnTheScreen();
     expect(screen.getByTestId(
       'travel-purpose-icon-K_POP',
@@ -74,7 +74,7 @@ describe('TravelPurposeSelectionScreen', () => {
       />,
     );
 
-    const kPop = screen.getByRole('checkbox', { name: 'K-pop' });
+    const kPop = screen.getByRole('checkbox', { name: '음악' });
     const beauty = screen.getByRole('checkbox', { name: '뷰티' });
     expect(kPop.props.accessibilityState).toEqual({ checked: true });
     expect(beauty.props.accessibilityState).toEqual({ checked: false });
@@ -162,7 +162,7 @@ describe('TravelPurposeSelectionScreen', () => {
       { language: 'en' },
     );
 
-    expect(screen.getByText('Choose your travel interests')).toBeVisible();
+    expect(screen.getByText('Select Travel Purpose')).toBeVisible();
     expect(screen.getByRole('progressbar', { name: 'Onboarding progress' }).props.accessibilityValue)
       .toEqual({ max: 4, min: 1, now: 2, text: 'Step 2 of 4' });
   });

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import { useAllPayments } from '../../payments/hooks/usePayments';
 import { ApiErrorState, EmptyState, LoadingState } from '../../../shared/components';
 import { useReservationDetail } from '../hooks/useReservations';
@@ -55,7 +56,7 @@ export default function ReservationDetailScreen({
           hitSlop={12}
           onPress={onBack}
         >
-          <BackText>‹</BackText>
+          <BackIcon width={44} height={44} />
         </BackButton>
         <Title accessibilityRole="header">{t('reservation.detail.title')}</Title>
         <HeaderSpacer />
@@ -134,16 +135,10 @@ const Header = styled.View`
 `;
 
 const BackButton = styled.Pressable`
-  width: ${({ theme }) => theme.spacing.xxl}px;
-  height: ${({ theme }) => theme.spacing.xxl}px;
+  width: 44px;
+  height: 44px;
   align-items: center;
   justify-content: center;
-`;
-
-const BackText = styled.Text`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.display.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.display.lineHeight}px;
 `;
 
 const Title = styled.Text`

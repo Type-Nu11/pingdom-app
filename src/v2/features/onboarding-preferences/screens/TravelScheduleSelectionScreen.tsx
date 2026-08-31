@@ -110,11 +110,7 @@ export default function TravelScheduleSelectionScreen({
             <SelectionMessage accessibilityLiveRegion="polite" $error>
               {t('onboarding.travelScheduleScreen.invalidRange')}
             </SelectionMessage>
-          ) : (
-            <SelectionMessage accessibilityLiveRegion="polite" $error={false}>
-              {t('onboarding.travelScheduleScreen.selectEndDate')}
-            </SelectionMessage>
-          )}
+          ) : null}
 
           {errorMessage ? (
             <SelectionMessage
@@ -213,7 +209,7 @@ export default function TravelScheduleSelectionScreen({
           label={t('onboarding.travelScheduleScreen.continue')}
           loading={isContinuing}
           onPress={onContinue}
-          shape="rounded"
+          shape="pill"
           size="onboarding"
         />
       </Footer>
@@ -223,7 +219,7 @@ export default function TravelScheduleSelectionScreen({
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
-  background-color: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;
 
 const ContentScroll = styled.ScrollView`
@@ -266,24 +262,24 @@ const DateCard = styled.View`
   flex: 1;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.xs}px;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
-  border-radius: ${({ theme }) => theme.radius.lg}px;
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
+  padding: 14px ${({ theme }) => theme.spacing.md}px;
+  border-radius: 16px;
+  background-color: ${({ theme }) => theme.colors.backgroundNeutral};
 `;
 
 const DateLabel = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.caption.fontWeight};
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 12px;
+  font-weight: 500;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
 `;
 
 const DateValue = styled.Text<{ $hasValue: boolean }>`
   flex-shrink: 1;
   color: ${({ $hasValue, theme }) =>
-    $hasValue ? theme.colors.primaryPressed : theme.colors.textMuted};
+    $hasValue ? theme.colors.primary : theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  font-weight: 700;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
 `;
 
@@ -297,8 +293,8 @@ const SelectionMessage = styled.Text<{ $error: boolean }>`
 
 const Calendar = styled.View`
   padding: ${({ theme }) => theme.spacing.sm}px;
-  border-radius: ${({ theme }) => theme.radius.lg}px;
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
+  border-radius: 16px;
+  background-color: ${({ theme }) => theme.colors.backgroundNeutral};
 `;
 
 const MonthHeader = styled.View`
@@ -335,13 +331,9 @@ const WeekdayRow = styled.View`
 
 const Weekday = styled.Text<{ $weekday: number }>`
   width: 14.2857%;
-  color: ${({ $weekday, theme }) =>
-    $weekday === 0
-      ? theme.colors.danger
-      : $weekday === 6
-        ? theme.colors.info
-        : theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
+  font-weight: 500;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
   text-align: center;
 `;
@@ -397,10 +389,10 @@ const DayText = styled.Text<{
   color: ${({ $disabled, $inRange, $selected, $weekday, theme }) => {
     if ($selected) return theme.colors.onPrimary;
     if ($disabled) return theme.colors.textDisabled;
-    if ($inRange) return theme.colors.primaryPressed;
-    if ($weekday === 0) return theme.colors.danger;
-    if ($weekday === 6) return theme.colors.info;
-    return theme.colors.text;
+    if ($inRange) return theme.colors.primary;
+    if ($weekday === 0) return theme.colors.calendarSunday;
+    if ($weekday === 6) return theme.colors.calendarSaturday;
+    return theme.colors.textMuted;
   }};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ $inRange, $selected, theme }) =>
@@ -412,6 +404,6 @@ const DayText = styled.Text<{
 
 const Footer = styled.View`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.xxl + theme.spacing.xs}px;
-  background-color: ${({ theme }) => theme.colors.background};
+    ${({ theme }) => theme.spacing.xl + theme.spacing.xs}px;
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;

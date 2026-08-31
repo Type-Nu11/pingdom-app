@@ -1,8 +1,7 @@
 import React from 'react';
-import { SvgXml } from 'react-native-svg';
 import styled from 'styled-components/native';
 
-const BACK_ICON = '<svg width="12" height="21" viewBox="0 0 12 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.25 1.25L1.25 10.25L10.25 19.25" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 
 type Props = Readonly<{
   backLabel: string;
@@ -29,7 +28,7 @@ export default function OnboardingProgressHeader({
         hitSlop={12}
         onPress={onBack}
       >
-        <SvgXml aria-hidden height={21} width={12} xml={BACK_ICON} />
+        <BackIcon height={44} width={44} />
       </BackButton>
 
       <Progress
@@ -71,11 +70,11 @@ const Header = styled.View`
 `;
 
 const HeaderSide = styled.View`
-  width: 40px;
+  width: 44px;
 `;
 
 const BackButton = styled.Pressable`
-  width: 40px;
+  width: 44px;
   align-items: flex-start;
   justify-content: center;
 `;
@@ -91,5 +90,5 @@ const ProgressSegment = styled.View<{ $active: boolean; $current: boolean }>`
   height: 7px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ $active, theme }) =>
-    $active ? theme.colors.primary : theme.colors.surfacePressed};
+    $active ? theme.colors.primary : theme.colors.border};
 `;

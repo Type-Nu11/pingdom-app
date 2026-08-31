@@ -5,6 +5,7 @@ import SavedPlacesGallery from '../components/SavedPlacesGallery';
 import ProfileHeader from '../components/ProfileHeader';
 import { useBookmarkedPlaces } from '../../place/hooks/useBookmarkedPlaces';
 import { useProfile } from '../hooks/useProfile';
+import BackIcon from '../../../assets/v2/icons/header/back.svg';
 
 type ProfileScreenProps = {
   onBack: () => void;
@@ -45,7 +46,7 @@ const ProfileScreen = ({
           style={styles.backButton}
           onPress={handleBack}
         >
-          <Text style={styles.backText}>‹</Text>
+          <BackIcon width={44} height={44} />
         </Pressable>
 
         <ProfileHeader
@@ -73,12 +74,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 54,
     zIndex: 8,
-  },
-  backText: {
-    color: '#0c0c0d',
-    fontSize: 50,
-    fontWeight: '300',
-    lineHeight: 50,
   },
   safeArea: {
     alignItems: 'center',

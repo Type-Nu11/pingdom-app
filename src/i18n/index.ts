@@ -303,13 +303,13 @@ export const resources = {
         title: '언어 선택',
         subtitle: '최적의 경로를 알려드릴게요!',
         button: '계속',
-        search: '검색어를 입력하세요...',
+        search: '검색하기',
       },
       selectCountry: {
         title: '국가 선택',
         subtitle: '최적의 경로를 알려드릴게요!',
         button: '계속',
-        search: '검색어를 입력하세요...',
+        search: '검색하기',
       },
       selectAge: {
         title: '생년 선택',

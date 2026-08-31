@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import PhotoIcon from '../../../../assets/v2/icons/edit/image.svg';
 import CameraIcon from '../../../../assets/v2/icons/place/Camera.svg';
 import CleanIcon from '../../../../assets/v2/icons/place/Clean.svg';
@@ -117,7 +118,7 @@ export default function VisitVerificationReviewScreen({
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
       <Header>
-        <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackText>‹</BackText></BackButton>
+        <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackIcon width={44} height={44} /></BackButton>
         <Title accessibilityRole="header">{t('visitVerification.title')}</Title><HeaderSpacer />
       </Header>
       {place.isLoading ? <LoadingState description={t('visitVerification.placeLoading')} fill /> : place.isError ? (
@@ -176,7 +177,6 @@ export default function VisitVerificationReviewScreen({
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const Header = styled.View`height: 56px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px; border-bottom-width: 1px; border-bottom-color: ${({ theme }) => theme.colors.border};`;
 const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
-const BackText = styled.Text`color: ${({ theme }) => theme.colors.text}; font-size: 34px; line-height: 36px;`;
 const Title = styled.Text`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const HeaderSpacer = styled.View`width: 44px;`;
 const Content = styled.ScrollView.attrs(({ theme }) => ({

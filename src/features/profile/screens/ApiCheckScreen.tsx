@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import BackIcon from '../../../assets/v2/icons/header/back.svg';
 import { getApiErrorUx } from '../../../v2/shared/api';
 import {
   ACTIVITY_INTENT_VALUES,
@@ -85,7 +86,7 @@ export default function ApiCheckScreen({ footer, onBack }: ApiCheckScreenProps) 
           hitSlop={12}
           onPress={onBack}
         >
-          <Text style={styles.backText}>‹</Text>
+          <BackIcon width={44} height={44} />
         </Pressable>
         <View style={styles.headerCopy}>
           <Text style={styles.title}>API 확인하기</Text>
