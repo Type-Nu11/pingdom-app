@@ -1,6 +1,21 @@
 export { createPlaceDetailApi, placeDetailApi } from './api/placeDetailApi';
-export { createPlaceDetailQueryOptions, placeDetailQueryKeys, usePlaceDetail } from './hooks/usePlaceDetail';
-export type { LiveStatus, PlaceDetail, TouristSupport, TrustSummary } from './model/placeDetail.types';
+export {
+  createPlaceAvailabilitiesQueryOptions,
+  createPlaceDetailQueryOptions,
+  placeDetailQueryKeys,
+  usePlaceAvailabilities,
+  usePlaceDetail,
+} from './hooks/usePlaceDetail';
+export { usePlaceDetailPresentation } from './hooks/usePlaceDetailPresentation';
+export type { PlaceAvailability, PlaceAvailabilities, PlaceDetail } from './model/placeDetail.types';
+export {
+  buildPlaceDetailPresentation,
+  selectReservationCta,
+  type PlaceDetailPresentation,
+  type PlaceDetailPresentationResources,
+  type ReservationCtaState,
+  type ResourceState,
+} from './model/placeDetailPresentation';
 export {
   getOperatingStatusPresentation,
   getSupportLevelLabelKey,
