@@ -1,7 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import {
   offerCouponApi,
+  type CouponPage,
   type ListCouponsParams,
   type ListOffersParams,
   type RedeemCouponBody,
@@ -11,6 +17,7 @@ type OfferCouponApi = typeof offerCouponApi;
 
 export const offerCouponQueryKeys = {
   coupons: (params: ListCouponsParams) => ['v2', 'coupons', params] as const,
+  couponsInfinite: (params: ListCouponsParams) => ['v2', 'coupons', 'infinite', params] as const,
   couponsRoot: ['v2', 'coupons'] as const,
   offer: (offerId: number) => ['v2', 'offers', 'detail', offerId] as const,
   offers: (params: ListOffersParams) => ['v2', 'offers', 'list', params] as const,
@@ -47,6 +54,30 @@ export function createCouponsQueryOptions(
   };
 }
 
+/**
+ * Server-backed pagination for the coupon box. `page` is owned by the query, so
+ * it is stripped from `params` and only the filters (status, issued-at window,
+ * limit) take part in the cache key.
+ */
+export function createInfiniteCouponsQueryOptions(
+  params: ListCouponsParams = {},
+  api: Pick<OfferCouponApi, 'listCoupons'> = offerCouponApi,
+) {
+  const { page: _page, ...filters } = params;
+
+  return {
+    getNextPageParam: (lastPage: CouponPage) => (
+      lastPage.hasNext && lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined
+    ),
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }: { pageParam: number; signal?: AbortSignal }) =>
+      api.listCoupons({ ...filters, page: pageParam }, signal),
+    queryKey: offerCouponQueryKeys.couponsInfinite(filters),
+  };
+}
+
 export function createIssueCouponMutationOptions(
   api: Pick<OfferCouponApi, 'issueCoupon'> = offerCouponApi,
 ) {
@@ -69,6 +100,10 @@ export function useOffer(offerId: number) {
 
 export function useCoupons(params: ListCouponsParams = {}) {
   return useQuery(createCouponsQueryOptions(params));
+}
+
+export function useInfiniteCoupons(params: ListCouponsParams = {}) {
+  return useInfiniteQuery(createInfiniteCouponsQueryOptions(params));
 }
 
 export function useIssueCoupon() {

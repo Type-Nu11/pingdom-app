@@ -2,6 +2,7 @@ export { createOfferCouponApi, offerCouponApi } from './api/offerCouponApi';
 export type {
   Coupon,
   CouponPage,
+  CouponStatus,
   ListCouponsParams,
   ListOffersParams,
   Offer,
@@ -10,12 +11,14 @@ export type {
 } from './api/offerCouponApi';
 export {
   createCouponsQueryOptions,
+  createInfiniteCouponsQueryOptions,
   createIssueCouponMutationOptions,
   createOfferQueryOptions,
   createOffersQueryOptions,
   createRedeemCouponMutationOptions,
   offerCouponQueryKeys,
   useCoupons,
+  useInfiniteCoupons,
   useIssueCoupon,
   useOffer,
   useOffers,
