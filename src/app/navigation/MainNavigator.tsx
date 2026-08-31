@@ -122,7 +122,7 @@ const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
     <V2ScreenBoundary>
       <MyPageScreen
         onBack={navigation.goBack}
-        onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponWallet)}
+        onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
         onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
         onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
         onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
@@ -166,7 +166,7 @@ const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) =
   />
 );
 
-const CouponWalletRouteScreen = ({ navigation }: MainScreenProps<'CouponWallet'>) => (
+const CouponBoxRouteScreen = ({ navigation }: MainScreenProps<'CouponBox'>) => (
   // The on-site present (QR) flow is tracked separately in #100; until it lands
   // the box still surfaces the real couponId through onUseCoupon.
   <CouponBoxScreen
@@ -267,7 +267,7 @@ const MainNavigator = () => (
   >
     <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponDetail} component={CouponDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
