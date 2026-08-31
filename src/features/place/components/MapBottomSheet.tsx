@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -47,6 +47,12 @@ import PlaceRecommendAsset from '../../../assets/v2/icons/place/placerecommend.s
 import PopupAsset from '../../../assets/v2/icons/place/popup_svg.svg';
 import StarAsset from '../../../assets/v2/icons/place/star_svg.svg';
 import RecommendationTitleAsset from '../../../assets/v2/icons/place/Subtract.svg';
+import {
+  FadeSlideTransition,
+  MOTION_DURATION,
+  runTimingMotion,
+  useReducedMotion,
+} from '../../../v2/shared/motion';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import GlassSurface from './GlassSurface';
@@ -158,6 +164,7 @@ const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...pro
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
+const RECOMMENDATION_NAVIGATION_LOCK_MS = 500;
 const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
   { id: 'popup', label: '팝업' },
   { id: 'music', label: '음악' },
@@ -238,50 +245,87 @@ const FeedSegment = ({
 }: {
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
-}) => (
-  <View style={styles.segmentInset}>
-    <View style={styles.segmentShadow}>
-      <GlassSurface
-        glassEffectStyle="regular"
-        intensity={100}
-        style={styles.segmentOuter}
-        tintColor="rgba(228,228,230,0.48)"
-      >
-        <View pointerEvents="none" style={styles.segmentFrost} />
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: feed === 'local' }}
-          onPress={() => onChange('local')}
-          style={[styles.segment, feed === 'local' && styles.segmentActive]}
+}) => {
+  const [segmentWidth, setSegmentWidth] = useState(0);
+  const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
+  const reduceMotion = useReducedMotion();
+  const indicatorWidth = Math.max(0, (segmentWidth - 6) / 2);
+
+  useEffect(() => {
+    const animation = runTimingMotion(indicatorProgress, feed === 'local' ? 0 : 1, {
+      duration: MOTION_DURATION.transition,
+      reduceMotion,
+      useNativeDriver: true,
+    });
+
+    return () => animation?.stop();
+  }, [feed, indicatorProgress, reduceMotion]);
+
+  return (
+    <View style={styles.segmentInset}>
+      <View style={styles.segmentShadow}>
+        <GlassSurface
+          glassEffectStyle="regular"
+          intensity={100}
+          onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
+          style={styles.segmentOuter}
+          testID="feed-segment-control"
+          tintColor="rgba(228,228,230,0.48)"
         >
-          <HotPlaceAsset
-            color={feed === 'local' ? '#FF1956' : '#767680'}
-            height={20}
-            width={16}
-          />
-          <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-            우리 지역 핫플
-          </Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: feed === 'national' }}
-          onPress={() => onChange('national')}
-          style={[styles.segment, feed === 'national' && styles.segmentActive]}
-        >
-          <MapAsset
-            color={feed === 'national' ? '#FF1956' : '#767680'}
-            height={20}
-            width={18}
-          />
-          <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-            전국 트렌드
-          </Text>
-        </Pressable>
-      </GlassSurface>
+          <View pointerEvents="none" style={styles.segmentFrost} />
+          {indicatorWidth > 0 ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.segmentIndicator,
+                {
+                  transform: [{
+                    translateX: indicatorProgress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, indicatorWidth],
+                    }),
+                  }],
+                  width: indicatorWidth,
+                },
+              ]}
+              testID="feed-segment-indicator"
+            />
+          ) : null}
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: feed === 'local' }}
+            onPress={() => onChange('local')}
+            style={styles.segment}
+          >
+            <HotPlaceAsset
+              color={feed === 'local' ? '#FF1956' : '#767680'}
+              height={20}
+              width={16}
+            />
+            <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+              우리 지역 핫플
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: feed === 'national' }}
+            onPress={() => onChange('national')}
+            style={styles.segment}
+          >
+            <MapAsset
+              color={feed === 'national' ? '#FF1956' : '#767680'}
+              height={20}
+              width={18}
+            />
+            <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+              전국 트렌드
+            </Text>
+          </Pressable>
+        </GlassSurface>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const HOME_BOOKMARK_STAR_PATH = 'M1.18994 9.91674C0.824483 9.57878 1.023 8.9678 1.51731 8.90919L8.52148 8.07842C8.72295 8.05453 8.89794 7.92802 8.98291 7.7438L11.9372 1.33905C12.1457 0.887041 12.7883 0.886954 12.9967 1.33896L15.951 7.74367C16.036 7.92789 16.2098 8.05474 16.4113 8.07863L23.4159 8.90919C23.9102 8.9678 24.1081 9.57896 23.7427 9.91692L18.5649 14.7061C18.4159 14.8438 18.3496 15.0488 18.3892 15.2478L19.7633 22.1658C19.8603 22.654 19.3407 23.0323 18.9064 22.7892L12.7518 19.3432C12.5748 19.2441 12.3597 19.2446 12.1827 19.3437L6.0275 22.7883C5.59314 23.0314 5.07259 22.654 5.1696 22.1658L6.54399 15.2482C6.58352 15.0493 6.51738 14.8438 6.36843 14.706L1.18994 9.91674Z';
 
@@ -331,10 +375,16 @@ const PlaceArtwork = ({
   variant?: 'grid' | 'trend';
 }) => {
   const [hasImageError, setHasImageError] = useState(false);
+  const imageOpacity = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setHasImageError(false);
-  }, [imageUrl]);
+    imageOpacity.stopAnimation();
+    imageOpacity.setValue(0);
+
+    return () => imageOpacity.stopAnimation();
+  }, [imageOpacity, imageUrl]);
 
   if (!imageUrl || hasImageError) {
     const fallbackMessage = hasImageError ? '이미지를 불러오지 못했어요' : '이미지 없음';
@@ -351,14 +401,27 @@ const PlaceArtwork = ({
   }
 
   const imageSource = { uri: imageUrl };
+  const handleLoad = () => {
+    runTimingMotion(imageOpacity, 1, {
+      reduceMotion,
+      useNativeDriver: true,
+    });
+  };
 
   return (
-    <>
-      <Image
+    <Animated.View
+      style={[
+        styles.artwork,
+        variant === 'grid' && styles.gridArtwork,
+        { opacity: imageOpacity },
+      ]}
+    >
+      <Animated.Image
         onError={() => setHasImageError(true)}
+        onLoad={handleLoad}
         resizeMode="cover"
         source={imageSource}
-        style={[styles.artwork, variant === 'grid' && styles.gridArtwork]}
+        style={styles.artworkImage}
         testID={blurBottom ? 'recommendation-featured-image' : undefined}
       />
       {blurBottom ? (
@@ -373,7 +436,135 @@ const PlaceArtwork = ({
           />
         </View>
       ) : null}
-    </>
+    </Animated.View>
+  );
+};
+
+const RecommendationCardPressable = ({
+  accessibilityLabel,
+  children,
+  onPress,
+  style,
+  testID,
+}: {
+  accessibilityLabel: string;
+  children: React.ReactNode;
+  onPress: () => void;
+  style: object;
+  testID: string;
+}) => {
+  const reduceMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const navigationLocked = useRef(false);
+  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    scale.stopAnimation();
+    if (unlockTimer.current) clearTimeout(unlockTimer.current);
+  }, [scale]);
+
+  const animateScale = (toValue: number) => {
+    runTimingMotion(scale, toValue, {
+      duration: MOTION_DURATION.press,
+      reduceMotion,
+      useNativeDriver: true,
+    });
+  };
+
+  const handlePress = () => {
+    if (navigationLocked.current) return;
+    navigationLocked.current = true;
+    onPress();
+    unlockTimer.current = setTimeout(() => {
+      navigationLocked.current = false;
+      unlockTimer.current = null;
+    }, RECOMMENDATION_NAVIGATION_LOCK_MS);
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+        onPress={handlePress}
+        onPressIn={() => animateScale(0.985)}
+        onPressOut={() => animateScale(1)}
+        style={style}
+        testID={testID}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+const RecommendationBookmarkButton = ({
+  bookmarked,
+  onToggleBookmark,
+  pending,
+  size = 28,
+  style,
+}: {
+  bookmarked: boolean;
+  onToggleBookmark: () => Promise<void> | void;
+  pending: boolean;
+  size?: number;
+  style: object;
+}) => {
+  const reduceMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const mutationLocked = useRef(false);
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    scale.stopAnimation();
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+  }, [scale]);
+
+  const handlePress = async () => {
+    if (pending || mutationLocked.current) return;
+    mutationLocked.current = true;
+
+    if (!reduceMotion) {
+      runTimingMotion(scale, 0.88, {
+        duration: MOTION_DURATION.press,
+        reduceMotion: false,
+        useNativeDriver: true,
+      });
+      feedbackTimer.current = setTimeout(() => {
+        runTimingMotion(scale, 1, {
+          duration: MOTION_DURATION.press,
+          reduceMotion: false,
+          useNativeDriver: true,
+        });
+        feedbackTimer.current = null;
+      }, MOTION_DURATION.press);
+    }
+
+    try {
+      await onToggleBookmark();
+    } finally {
+      mutationLocked.current = false;
+    }
+  };
+
+  return (
+    <Animated.View style={[style, { transform: [{ scale }] }]}>
+      <Pressable
+        accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+        accessibilityRole="button"
+        accessibilityState={{ busy: pending, disabled: pending, checked: bookmarked }}
+        disabled={pending}
+        hitSlop={10}
+        onPress={(event) => {
+          event.stopPropagation();
+          void handlePress();
+        }}
+        style={({ pressed }) => reduceMotion && pressed ? styles.bookmarkPressed : undefined}
+      >
+        <BookmarkStar selected={bookmarked} size={size} />
+      </Pressable>
+    </Animated.View>
   );
 };
 
@@ -418,36 +609,26 @@ export const RecommendationFeaturedCard = ({
   bookmarked: boolean;
   imageUrl?: string;
   onPress: () => void;
-  onToggleBookmark: () => void;
+  onToggleBookmark: () => Promise<void> | void;
   pending: boolean;
   place: DecisionPlace;
   recommendationLabel?: string;
 }) => (
-    <Pressable
+    <RecommendationCardPressable
       accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
-      accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.placeCard, pressed && styles.pressed]}
+      style={styles.placeCard}
+      testID={`recommendation-card-${place.id}`}
     >
       <View style={styles.placeCardArtwork}>
         <PlaceArtwork blurBottom imageUrl={imageUrl} />
         <CardScrim />
-        <Pressable
-          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
-          accessibilityRole="button"
-          accessibilityState={{ busy: pending, disabled: pending }}
-          disabled={pending}
-          hitSlop={10}
-          onPress={(event) => {
-            event.stopPropagation();
-            onToggleBookmark();
-          }}
+        <RecommendationBookmarkButton
+          bookmarked={bookmarked}
+          onToggleBookmark={onToggleBookmark}
+          pending={pending}
           style={styles.cardBookmarkStar}
-        >
-          {pending ? <Text style={styles.bookmarkPending}>…</Text> : (
-            <BookmarkStar selected={bookmarked} size={28} />
-          )}
-        </Pressable>
+        />
         <View style={styles.placeCardBody}>
           <Text ellipsizeMode="tail" numberOfLines={2} style={styles.placeCardName}>
             {place.name || '장소명 없음'}
@@ -465,7 +646,7 @@ export const RecommendationFeaturedCard = ({
       <Text ellipsizeMode="tail" numberOfLines={1} style={styles.placeCardDistance}>
         여기서 {formatDistance(place)}
       </Text>
-    </Pressable>
+    </RecommendationCardPressable>
 );
 
 const RecommendationGridCard = ({
@@ -479,41 +660,31 @@ const RecommendationGridCard = ({
   bookmarked: boolean;
   imageUrl?: string;
   onPress: () => void;
-  onToggleBookmark: () => void;
+  onToggleBookmark: () => Promise<void> | void;
   pending: boolean;
   place: DecisionPlace;
 }) => (
-    <Pressable
+    <RecommendationCardPressable
       accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
-      accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.gridCard, pressed && styles.pressed]}
+      style={styles.gridCard}
+      testID={`recommendation-grid-card-${place.id}`}
     >
       <PlaceArtwork imageUrl={imageUrl} variant="grid" />
       <CardScrim />
-      <Pressable
-        accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
-        accessibilityRole="button"
-        accessibilityState={{ busy: pending, disabled: pending }}
-        disabled={pending}
-        hitSlop={10}
-        onPress={(event) => {
-          event.stopPropagation();
-          onToggleBookmark();
-        }}
+      <RecommendationBookmarkButton
+        bookmarked={bookmarked}
+        onToggleBookmark={onToggleBookmark}
+        pending={pending}
         style={styles.gridBookmarkStar}
-      >
-        {pending ? <Text style={styles.bookmarkPending}>…</Text> : (
-          <BookmarkStar selected={bookmarked} size={28} />
-        )}
-      </Pressable>
+      />
       <View style={styles.gridCardBody}>
         <Text ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
           {place.name || '장소명 없음'}
         </Text>
         <Text ellipsizeMode="tail" numberOfLines={1} style={styles.gridCardDistance}>{place.address}</Text>
       </View>
-    </Pressable>
+    </RecommendationCardPressable>
 );
 
 const PlaceTrendCard = ({
@@ -542,7 +713,7 @@ const PlaceTrendCard = ({
     <Pressable
       accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
       accessibilityRole="button"
-      accessibilityState={{ busy: pending, disabled: pending }}
+      accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
       disabled={pending}
       hitSlop={10}
       onPress={(event) => {
@@ -551,9 +722,7 @@ const PlaceTrendCard = ({
       }}
       style={styles.homeBookmarkStar}
     >
-      {pending ? <Text style={styles.homeBookmarkPending}>…</Text> : (
-        <BookmarkStar selected={bookmarked} />
-      )}
+      <BookmarkStar selected={bookmarked} />
     </Pressable>
     <View style={styles.homeTrendCardBody}>
       <Text numberOfLines={1} style={styles.homeTrendCardName}>
@@ -592,7 +761,7 @@ const ExpandedPlaceCard = ({
     <Pressable
       accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
       accessibilityRole="button"
-      accessibilityState={{ busy: pending, disabled: pending }}
+      accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
       disabled={pending}
       hitSlop={10}
       onPress={(event) => {
@@ -601,9 +770,7 @@ const ExpandedPlaceCard = ({
       }}
       style={styles.homeBookmarkStar}
     >
-      {pending ? <Text style={styles.homeBookmarkPending}>…</Text> : (
-        <BookmarkStar selected={bookmarked} />
-      )}
+      <BookmarkStar selected={bookmarked} />
     </Pressable>
     <View style={styles.homeGridCardBody}>
       <Text numberOfLines={2} style={styles.homeGridCardName}>{place.name}</Text>
@@ -669,75 +836,82 @@ const ExpandedHomeContent = ({
       style={styles.expandedScroll}
     >
       <FeedSegment feed={feed} onChange={onFeedChange} />
-      <ScrollView
-        contentContainerStyle={styles.expandedFeaturedRow}
-        horizontal
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}
-        style={styles.rowScroll}
+      <FadeSlideTransition
+        direction={feed === 'local' ? 0 : 1}
+        stateKey={feed}
+        style={styles.feedTransition}
+        testID="expanded-feed-content-transition"
       >
-        {places.length > 0 ? places.slice(0, 6).map((place) => (
-          <PlaceTrendCard
-            bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-            imageUrl={imageUrlsByPlaceId[String(place.id)]}
-            key={`featured-${place.id}`}
-            onPress={() => onPlacePress(place)}
-            onToggleBookmark={() => void onToggleBookmark(
-              place,
-              !bookmarkedPlaceIds[String(place.id)],
-            )}
-            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-            place={place}
-          />
-        )) : <EmptyCard state={state} variant="row" />}
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={styles.expandedFeaturedRow}
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          style={styles.rowScroll}
+        >
+          {places.length > 0 ? places.slice(0, 6).map((place) => (
+            <PlaceTrendCard
+              bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+              imageUrl={imageUrlsByPlaceId[String(place.id)]}
+              key={`featured-${place.id}`}
+              onPress={() => onPlacePress(place)}
+              onToggleBookmark={() => void onToggleBookmark(
+                place,
+                !bookmarkedPlaceIds[String(place.id)],
+              )}
+              pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+              place={place}
+            />
+          )) : <EmptyCard state={state} variant="row" />}
+        </ScrollView>
 
-      <Text style={styles.expandedTitle}>
-        카테고리별 <Text style={styles.expandedTitleAccent}>{userName}님</Text> 주변 인기 장소들
-      </Text>
+        <Text style={styles.expandedTitle}>
+          카테고리별 <Text style={styles.expandedTitleAccent}>{userName}님</Text> 주변 인기 장소들
+        </Text>
 
-      <ScrollView
-        contentContainerStyle={styles.categoryRow}
-        horizontal
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}
-      >
-        {CATEGORY_OPTIONS.map((category) => {
-          const active = category.id === activeCategory;
+        <ScrollView
+          contentContainerStyle={styles.categoryRow}
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+        >
+          {CATEGORY_OPTIONS.map((category) => {
+            const active = category.id === activeCategory;
 
-          return (
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              key={category.id}
-              onPress={() => onCategoryChange(category.id)}
-              style={[styles.categoryChip, active && styles.categoryChipActive]}
-            >
-              <CategoryIcon active={active} category={category.id} />
-              <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
-                {category.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+            return (
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                key={category.id}
+                onPress={() => onCategoryChange(category.id)}
+                style={[styles.categoryChip, active && styles.categoryChipActive]}
+              >
+                <CategoryIcon active={active} category={category.id} />
+                <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
+                  {category.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
-      <View style={styles.gridRow}>
-        {gridPlaces.slice(0, 8).map((place) => (
-          <ExpandedPlaceCard
-            bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-            imageUrl={imageUrlsByPlaceId[String(place.id)]}
-            key={`grid-${place.id}`}
-            onPress={() => onPlacePress(place)}
-            onToggleBookmark={() => void onToggleBookmark(
-              place,
-              !bookmarkedPlaceIds[String(place.id)],
-            )}
-            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-            place={place}
-          />
-        ))}
-      </View>
+        <View style={styles.gridRow}>
+          {gridPlaces.slice(0, 8).map((place) => (
+            <ExpandedPlaceCard
+              bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+              imageUrl={imageUrlsByPlaceId[String(place.id)]}
+              key={`grid-${place.id}`}
+              onPress={() => onPlacePress(place)}
+              onToggleBookmark={() => void onToggleBookmark(
+                place,
+                !bookmarkedPlaceIds[String(place.id)],
+              )}
+              pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+              place={place}
+            />
+          ))}
+        </View>
+      </FadeSlideTransition>
     </ScrollView>
   );
 };
@@ -773,7 +947,11 @@ const RecommendationState = ({
   onRetry: () => void;
   state: 'empty' | 'error' | 'loading';
 }) => (
-  <View accessibilityLiveRegion="polite" style={styles.recommendationState}>
+  <View
+    accessibilityLiveRegion="polite"
+    style={styles.recommendationState}
+    testID={`recommendation-state-${state}`}
+  >
     <Text style={styles.emptyCardTitle}>
       {state === 'loading'
         ? '나만을 위한 추천 장소를 불러오고 있어요'
@@ -795,6 +973,29 @@ const RecommendationState = ({
     ) : null}
   </View>
 );
+
+const RecommendationStateTransition = ({
+  children,
+  state,
+}: {
+  children: React.ReactNode;
+  state: 'empty' | 'error' | 'loading' | 'ready';
+}) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    opacity.setValue(0);
+    runTimingMotion(opacity, 1, {
+      reduceMotion,
+      useNativeDriver: true,
+    });
+
+    return () => opacity.stopAnimation();
+  }, [opacity, reduceMotion, state]);
+
+  return <Animated.View style={{ opacity }}>{children}</Animated.View>;
+};
 
 const RecommendationContent = ({
   bookmarkedPlaceIds,
@@ -850,8 +1051,9 @@ const RecommendationContent = ({
           {t('map.recommendations.subtitle', { userName })}
         </Text>
       </View>
-      {state === 'ready' ? (
-        <>
+      <RecommendationStateTransition state={state}>
+        {state === 'ready' ? (
+          <>
           <ScrollView
             contentContainerStyle={styles.recommendationCardRow}
             horizontal
@@ -864,7 +1066,7 @@ const RecommendationContent = ({
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
                 key={`recommendation-featured-${place.id}`}
                 onPress={() => onPlacePress(place)}
-                onToggleBookmark={() => void onToggleBookmark(
+                onToggleBookmark={() => onToggleBookmark(
                   place,
                   !bookmarkedPlaceIds[String(place.id)],
                 )}
@@ -895,7 +1097,7 @@ const RecommendationContent = ({
                         imageUrl={imageUrlsByPlaceId[String(place.id)]}
                         key={`recommendation-grid-${place.id}`}
                         onPress={() => onPlacePress(place)}
-                        onToggleBookmark={() => void onToggleBookmark(
+                        onToggleBookmark={() => onToggleBookmark(
                           place,
                           !bookmarkedPlaceIds[String(place.id)],
                         )}
@@ -908,10 +1110,11 @@ const RecommendationContent = ({
               </View>
             </>
           ) : null}
-        </>
-      ) : (
-        <RecommendationState onRetry={onRetry} state={state} />
-      )}
+          </>
+        ) : (
+          <RecommendationState onRetry={onRetry} state={state} />
+        )}
+      </RecommendationStateTransition>
     </ScrollView>
   );
 };
@@ -1122,7 +1325,7 @@ const PreviewContent = ({
         <Pressable
           accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
           accessibilityRole="button"
-          accessibilityState={{ busy: pending, disabled: pending }}
+          accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
           disabled={pending}
           hitSlop={10}
           onPress={onToggleBookmark}
@@ -1227,6 +1430,7 @@ const ExpandedPlaceContent = ({
         <Pressable
           accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
           accessibilityRole="button"
+          accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
           disabled={pending}
           hitSlop={12}
           onPress={onToggleBookmark}
@@ -1762,27 +1966,34 @@ export default function MapBottomSheet({
       ) : (
         <>
           <FeedSegment feed={feed} onChange={setFeed} />
-          <ScrollView
-            contentContainerStyle={styles.cardRow}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.rowScroll}
+          <FadeSlideTransition
+            direction={feed === 'local' ? 0 : 1}
+            stateKey={feed}
+            style={styles.feedTransition}
+            testID="feed-content-transition"
           >
-            {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place) => (
-              <PlaceTrendCard
-                bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-                imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                key={place.id}
-                onPress={() => onPlacePress(place)}
-                onToggleBookmark={() => void onToggleBookmark(
-                  place,
-                  !bookmarkedPlaceIds[String(place.id)],
-                )}
-                pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-                place={place}
-              />
-            )) : <EmptyCard state={placesState} variant="row" />}
-          </ScrollView>
+            <ScrollView
+              contentContainerStyle={styles.cardRow}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.rowScroll}
+            >
+              {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place) => (
+                <PlaceTrendCard
+                  bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                  imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                  key={place.id}
+                  onPress={() => onPlacePress(place)}
+                  onToggleBookmark={() => void onToggleBookmark(
+                    place,
+                    !bookmarkedPlaceIds[String(place.id)],
+                  )}
+                  pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                  place={place}
+                />
+              )) : <EmptyCard state={placesState} variant="row" />}
+            </ScrollView>
+          </FadeSlideTransition>
         </>
       )}
       </Animated.View>
@@ -1808,6 +2019,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E4E4E6',
     height: '100%',
     overflow: 'hidden',
+    width: '100%',
+  },
+  artworkImage: {
+    height: '100%',
     width: '100%',
   },
   artworkBlurClip: {
@@ -2107,7 +2322,6 @@ const styles = StyleSheet.create({
   gridCardDistance: { color: 'rgba(255,255,255,0.9)', flexShrink: 1, fontSize: 9, marginTop: 1, maxWidth: '100%', paddingRight: 24 },
   gridCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 24 },
   gridBookmarkStar: { bottom: 7, padding: 4, position: 'absolute', right: 7, zIndex: 3 },
-  bookmarkPending: { color: '#FFFFFF', fontSize: 24, lineHeight: 28 },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2129,7 +2343,6 @@ const styles = StyleSheet.create({
   homeGridCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 11, marginTop: 2, paddingRight: 29 },
   homeGridCardName: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
   homeBookmarkStar: { bottom: 9, padding: 4, position: 'absolute', right: 10, zIndex: 3 },
-  homeBookmarkPending: { color: '#FFFFFF', fontSize: 24, lineHeight: 35 },
   homeTrendCard: {
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderRadius: 16,
@@ -2140,9 +2353,9 @@ const styles = StyleSheet.create({
   homeTrendCardBody: { bottom: 0, left: 0, paddingBottom: 13, paddingHorizontal: 14, position: 'absolute', right: 0 },
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
-  handle: { backgroundColor: 'rgba(80,83,91,0.26)', borderRadius: 3, height: 5, width: 55 },
-  handleArea: { alignItems: 'center', height: 23, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 80 },
+  handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 5, width: 56 },
+  handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
+  handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: {
     alignItems: 'center',
@@ -2206,6 +2419,7 @@ const styles = StyleSheet.create({
   placeCardDistance: { color: '#7E8088', flexShrink: 1, fontSize: 11, marginTop: 1, maxWidth: '100%' },
   placeCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 25 },
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
+  bookmarkPressed: { opacity: 0.64 },
   recommendationContent: { paddingBottom: 108 },
   recommendationCardRow: { gap: 12, paddingBottom: 10, paddingHorizontal: 8, paddingTop: 12 },
   recommendationContext: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 4 },
@@ -2340,9 +2554,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-  },
-  segmentActive: {
-    backgroundColor: 'rgba(255,255,255,0.60)',
+    zIndex: 1,
   },
   segmentFrost: {
     ...StyleSheet.absoluteFillObject,
@@ -2359,6 +2571,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 6,
   },
+  segmentIndicator: {
+    backgroundColor: 'rgba(255,255,255,0.60)',
+    borderRadius: 22,
+    bottom: 3,
+    left: 3,
+    position: 'absolute',
+    top: 3,
+  },
+  feedTransition: { width: '100%' },
   segmentOuter: {
     alignItems: 'stretch',
     backgroundColor: 'rgba(228,228,230,0.48)',

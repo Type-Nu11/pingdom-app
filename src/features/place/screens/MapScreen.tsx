@@ -68,15 +68,18 @@ import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 import {
   findMapPreviewPlace,
   mergeMapPreviewPlaces,
+  shouldPresentMapSelection,
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 import {
   VisitVerificationMapCta,
   usePlaceReviews,
 } from '../../../v2/features/place-visit-verification';
+import { FadeSlideTransition } from '../../../v2/shared/motion';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
+const MAP_SECTION_DIRECTION = { map: 0, favorites: 1, reservations: 2 } as const;
 
 const PLACE_LIST_STATUS_COPY: Record<Exclude<PlaceListRuntimeState, 'ready'>, string> = {
   disabled: '장소 목록 기능이 비활성화되어 있어요.',
@@ -383,6 +386,7 @@ export default function MapScreen({
       name: selectedPlacePresentation.name || selectedPlaceBase.name,
     };
   }, [selectedPlaceBase, selectedPlacePresentation]);
+  const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;
     const reviewCount = selectedReviews.isSuccess
@@ -446,7 +450,7 @@ export default function MapScreen({
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
     const recommendationPlaceIds = new Set(recommendationPlaces.map((place) => place.id));
     const focusedRecommendationMarker = createFocusedRecommendationMarker(
-      content.type === 'place-preview' ? selectedPlace : null,
+      content.type === 'place-preview' ? mapSelectedPlace : null,
       recommendationPlaceIds,
       liveMarkerIds,
     );
@@ -471,12 +475,12 @@ export default function MapScreen({
     content.type,
     apiPlaces.length,
     recommendationPlaces,
-    selectedPlace,
+    mapSelectedPlace,
   ]);
   const visibleMapMarkers = useMemo(() => markersForSelectedPlace(
     mapMarkers,
-    content.type === 'place-preview' ? content.placeId : null,
-  ), [content, mapMarkers]);
+    content.type === 'place-preview' ? mapSelectedPlace?.id ?? null : null,
+  ), [content.type, mapMarkers, mapSelectedPlace?.id]);
 
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
@@ -616,7 +620,7 @@ export default function MapScreen({
     }
   };
 
-  const focusedPlace = selectedPlace;
+  const focusedPlace = mapSelectedPlace;
   const mapCenterLat = !isFollowingUser && focusedPlace
     ? focusedPlace.latitude - (0.00072 * designScale)
     : dismissedMarkerCenter?.lat ?? center.lat;
@@ -657,7 +661,15 @@ export default function MapScreen({
             snapTo('expanded');
           }}
           query={query}
+          showCategories={snapPoint !== 'expanded'}
         />
+        <FadeSlideTransition
+          direction={MAP_SECTION_DIRECTION[mapSection]}
+          pointerEvents="box-none"
+          stateKey={mapSection}
+          style={styles.sectionTransition}
+          testID={`map-section-transition-${mapSection}`}
+        >
         {mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
@@ -802,6 +814,7 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
+        </FadeSlideTransition>
       {!isSearchOpen && onOpenVisitVerification ? (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
@@ -854,6 +867,7 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#E7ECEF', flex: 1 },
   mapBackground: StyleSheet.absoluteFillObject,
   mapTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
+  sectionTransition: { ...StyleSheet.absoluteFillObject, zIndex: 50 },
   placeListRetryText: { color: '#ff1956', fontSize: 13, fontWeight: '700' },
   placeListStatus: {
     alignItems: 'center',

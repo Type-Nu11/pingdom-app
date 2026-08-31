@@ -29,6 +29,7 @@ export type {
 } from './screens/OnboardingPreferenceFlow';
 export { default as TravelPurposeSelectionScreen } from './screens/TravelPurposeSelectionScreen';
 export type { TravelPurposeSelectionScreenProps } from './screens/TravelPurposeSelectionScreen';
+export { useSyncOnboardingTravelSchedule } from './hooks/useSyncOnboardingTravelSchedule';
 export {
   ONBOARDING_PREFERENCE_STORAGE_KEY,
   clearStoredOnboardingPreferences,
@@ -36,6 +37,12 @@ export {
   persistOnboardingPreferences,
   restoreOnboardingPreferences,
 } from './services/onboardingPreferenceStorage';
+export {
+  syncOnboardingTravelScheduleToServer,
+} from './services/syncOnboardingTravelSchedule';
+export type {
+  SyncOnboardingTravelScheduleResult,
+} from './services/syncOnboardingTravelSchedule';
 export type {
   OnboardingPreferenceRestoreResult,
   OnboardingPreferenceValues,

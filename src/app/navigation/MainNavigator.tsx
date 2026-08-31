@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled, { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
@@ -7,13 +7,18 @@ import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
 import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
+import MyPageScreen from '../../v2/features/my-page/screens/MyPageScreen';
+import ProfileEditScreen from '../../v2/features/my-page/screens/ProfileEditScreen';
+import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlacesScreen';
+import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/MerchantMyPageContainer';
+import { useProfile } from '../../features/profile/hooks/useProfile';
 import { theme as v2Theme } from '../../v2/shared/theme';
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
 } from '../../v2/features/place-visit-verification';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
-import SettingsScreen from '../../features/settings/screens/SettingsScreen';
+import SettingsScreen from '../../v2/features/settings/screens/SettingsScreen';
 import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import { createFocusedPlaceMapParams } from './navigationIntent';
@@ -51,7 +56,7 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
           initialSection={initialSection}
           openedBookmarkedPlaceId={focusedPlaceId ?? null}
           onClearOpenedBookmarkedPlace={clearFocusedPlace}
-          onOpenProfile={() => navigation.navigate(MAIN_ROUTES.Profile)}
+          onOpenProfile={() => navigation.navigate(MAIN_ROUTES.MyPage)}
           onCreateReservation={(place) => {
             const placeId = parsePlaceId(place.id);
             if (placeId) navigation.navigate(MAIN_ROUTES.CreateReservation, {
@@ -88,14 +93,77 @@ const ProfileRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => (
   />
 );
 
-const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
+export const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
+  const { profile } = useProfile();
+  const profileEditNavigationLock = useRef(false);
+  const openProfileEdit = useCallback(() => {
+    if (profileEditNavigationLock.current) return;
+    profileEditNavigationLock.current = true;
+    navigation.navigate(MAIN_ROUTES.ProfileEdit);
+  }, [navigation]);
+
+  useEffect(
+    () => navigation.addListener('focus', () => {
+      profileEditNavigationLock.current = false;
+    }),
+    [navigation],
+  );
+
+  if (profile?.role === 'MERCHANT_OWNER') {
+    return (
+      <V2ScreenBoundary>
+        <MerchantMyPageContainer
+          onBack={navigation.goBack}
+          onCreateEvent={openProfileEdit}
+          onEditAddress={openProfileEdit}
+          onEditBusinessHours={openProfileEdit}
+          onEditPhoneNumber={openProfileEdit}
+          onOpenAllReviews={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
+          onOpenProfileEdit={openProfileEdit}
+          onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
+          onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
+          userProfileImageUrl={profile.profileImageUrl}
+          username={profile.username}
+        />
+      </V2ScreenBoundary>
+    );
+  }
+
+  return (
+    <V2ScreenBoundary>
+      <MyPageScreen
+        onBack={navigation.goBack}
+        onOpenProfileEdit={openProfileEdit}
+        onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
+        onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
+      />
+    </V2ScreenBoundary>
+  );
+};
+
+export const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileEdit'>) => (
+  <V2ScreenBoundary>
+    <ProfileEditScreen onBack={navigation.goBack} />
+  </V2ScreenBoundary>
+);
+
+const VerifiedPlacesRouteScreen = ({ navigation }: MainScreenProps<'VerifiedPlaces'>) => (
+  <V2ScreenBoundary>
+    <VerifiedPlacesScreen onBack={navigation.goBack} />
+  </V2ScreenBoundary>
+);
+
+export const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
   const logout = useAuthStore((state) => state.logout);
 
   return (
-    <SettingsScreen
-      onBack={navigation.goBack}
-      onLogout={logout}
-    />
+    <V2ScreenBoundary>
+      <SettingsScreen
+        onBack={navigation.goBack}
+        onLogout={logout}
+        onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+      />
+    </V2ScreenBoundary>
   );
 };
 
@@ -183,6 +251,9 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.MyPage} component={MyPageRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />

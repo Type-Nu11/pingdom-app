@@ -75,7 +75,7 @@ export const usePlaceBookmark = () => {
       }
     },
     onMutate: async ({ nextBookmarked, place }) => {
-      await queryClient.cancelQueries({ queryKey: bookmarkedPlaceQueryKeys.all });
+      const cancellation = queryClient.cancelQueries({ queryKey: bookmarkedPlaceQueryKeys.all });
       const previousMembership = queryClient.getQueryData<Record<string, boolean>>(
         bookmarkedPlaceQueryKeys.membership(),
       );
@@ -89,6 +89,8 @@ export const usePlaceBookmark = () => {
         bookmarkedPlaceQueryKeys.membership(),
         (data) => updateBookmarkedPlaceMembership(data, place.id, nextBookmarked),
       );
+
+      await cancellation;
       return { previousBookmarked };
     },
     onError: (_error, { place }, context) => {

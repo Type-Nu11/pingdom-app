@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BackHandler, Platform } from 'react-native';
 import { ThemeProvider } from 'styled-components/native';
@@ -41,6 +41,7 @@ function OnboardingPreferenceFlowContent({
   const [step, setStep] = useState<OnboardingPreferenceStep>(initialStep);
   const [completionSaveError, setCompletionSaveError] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const continuationInFlight = useRef(false);
   const hydrationError = useOnboardingPreferenceStore((state) => state.hydrationError);
   const hydrationStatus = useOnboardingPreferenceStore((state) => state.hydrationStatus);
   const isHydrated = useOnboardingPreferenceStore((state) => state.isHydrated);
@@ -99,24 +100,30 @@ function OnboardingPreferenceFlowContent({
   }, [handleBack]);
 
   const continueAfterSave = async (next: () => Promise<void> | void) => {
-    if (saveStatus === 'saving' || isCompleting) {
+    if (saveStatus === 'saving' || isCompleting || continuationInFlight.current) {
       return;
     }
 
-    await persistPreferences();
+    continuationInFlight.current = true;
 
-    if (useOnboardingPreferenceStore.getState().saveStatus !== 'error') {
-      try {
-        setCompletionSaveError(false);
-        setIsCompleting(true);
-        await next();
-      } catch {
-        // Completion storage is required before leaving onboarding. The caller
-        // intentionally remains on this screen so the user can retry.
-        setCompletionSaveError(true);
-      } finally {
-        setIsCompleting(false);
+    try {
+      await persistPreferences();
+
+      if (useOnboardingPreferenceStore.getState().saveStatus !== 'error') {
+        try {
+          setCompletionSaveError(false);
+          setIsCompleting(true);
+          await next();
+        } catch {
+          // Completion storage is required before leaving onboarding. The caller
+          // intentionally remains on this screen so the user can retry.
+          setCompletionSaveError(true);
+        } finally {
+          setIsCompleting(false);
+        }
       }
+    } finally {
+      continuationInFlight.current = false;
     }
   };
 

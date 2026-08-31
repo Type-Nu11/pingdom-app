@@ -8,6 +8,7 @@ import { useNotificationOpenSync } from '../../features/notifications/hooks/useN
 import type { NotificationRoute } from '../../features/notifications/model/notification.types';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
+import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
 import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
@@ -28,6 +29,17 @@ const navigationRef = createNavigationContainerRef<V2StackParamList>();
 
 function HomeRouteScreen() {
   return env.featureFlags.placeList ? <PlaceListExampleScreen /> : <HomeScreen />;
+}
+
+function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
+  return (
+    <MyPageScreen
+      onBack={navigation.goBack}
+      onOpenProfileEdit={() => {}}
+      onOpenSettings={() => {}}
+      onOpenVerifiedPlaces={() => {}}
+    />
+  );
 }
 
 function VisitVerificationPlacesRoute({ navigation }: V2ScreenProps<'VisitVerificationPlaces'>) {
@@ -84,6 +96,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
         <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />

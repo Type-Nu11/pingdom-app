@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
+import { ApiError } from '../ApiError.ts';
+
 import {
   createCheckInMutationOptions,
   createStatusVoteMutationOptions,
@@ -217,6 +219,9 @@ test('travel schedule Hook options preserve date-only bodies, identifiers, and A
   assert.equal(await queryOptions.queryFn({ signal }), response);
   assert.equal(await createOptions.mutationFn(body), response);
   assert.equal(await updateOptions.mutationFn({ body, scheduleId: 7 }), response);
+  assert.equal(updateOptions.retry(0, new ApiError('offline', { isNetworkError: true })), true);
+  assert.equal(updateOptions.retry(1, new ApiError('offline', { isNetworkError: true })), false);
+  assert.equal(updateOptions.retry(0, new ApiError('validation', { status: 400 })), false);
   assert.equal(await cancelOptions.mutationFn(7), response);
   assert.deepEqual(queryOptions.queryKey, [
     'v2', 'users', 'me', 'travel-schedules', 'list',

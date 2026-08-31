@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { Animated } from 'react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import {
@@ -7,6 +8,17 @@ import {
   useOnboardingPreferenceStore,
 } from '../..';
 import OnboardingPreferenceFlow from '../OnboardingPreferenceFlow';
+
+jest.mock('../../../../shared/motion', () => {
+  const actual = jest.requireActual('../../../../shared/motion');
+  return {
+    ...actual,
+    runTimingMotion: (value: Animated.Value, toValue: number) => {
+      value.setValue(toValue);
+      return null;
+    },
+  };
+});
 
 function resetStoreMemory() {
   useOnboardingPreferenceStore.setState(
@@ -83,13 +95,34 @@ describe('OnboardingPreferenceFlow', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
     expect(await AsyncStorage.getItem(ONBOARDING_PREFERENCE_STORAGE_KEY)).toBeNull();
 
-    unmount();
+    await unmount();
     await renderWithProviders(
       <OnboardingPreferenceFlow onBack={jest.fn()} onComplete={jest.fn()} />,
     );
 
     expect((await screen.findByRole('checkbox', { name: '음식' })).props.accessibilityState)
       .toEqual({ checked: true });
+  });
+
+  test('빠른 Continue 연속 입력에도 저장과 화면 전환을 한 번만 실행한다', async () => {
+    await seedPreferences();
+    let resolvePersist!: () => void;
+    const persistPromise = new Promise<void>((resolve) => {
+      resolvePersist = resolve;
+    });
+    const setItem = jest.spyOn(AsyncStorage, 'setItem').mockReturnValueOnce(persistPromise);
+    setItem.mockClear();
+    await renderWithProviders(
+      <OnboardingPreferenceFlow onBack={jest.fn()} onComplete={jest.fn()} />,
+    );
+
+    const continueButton = await screen.findByRole('button', { name: '계속' });
+    await fireEvent.press(continueButton);
+    await fireEvent.press(continueButton);
+    expect(setItem).toHaveBeenCalledTimes(1);
+
+    await act(async () => resolvePersist());
+    expect(await screen.findByTestId('travel-schedule-screen')).toBeVisible();
   });
 
   test('keeps the current step and selection after a save failure so Continue can retry', async () => {
@@ -176,7 +209,7 @@ describe('OnboardingPreferenceFlow', () => {
     );
 
     expect(await screen.findByText('여행 목적을 선택해 주세요')).toBeVisible();
-    koreanRender.unmount();
+    await koreanRender.unmount();
 
     resetStoreMemory();
     await renderWithProviders(

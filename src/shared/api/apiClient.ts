@@ -1,7 +1,7 @@
 // src/shared/api/apiClient.ts
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { Alert } from 'react-native';
-import { logout } from '../../app/store/authStore';
+import { clearExpiredSession } from '../../app/store/authStore';
 import { getTokens } from './authStorage';
 import {
     getCachedAccessToken,
@@ -299,7 +299,7 @@ async function refreshAccessToken(): Promise<string | null> {
         console.warn('[auth-refresh]', 'failed', {
             message: error instanceof Error ? error.message : String(error),
         });
-        await logout();
+        await clearExpiredSession();
         return null;
     });
 
@@ -458,7 +458,7 @@ api.interceptors.response.use(
 
         if (shouldSkipRetry) {
             if (status === 401 && originalRequest && !isPublicAuthUrl(originalRequest.url)) {
-                await logout();
+                await clearExpiredSession();
             }
 
             return Promise.reject(error);

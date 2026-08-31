@@ -86,6 +86,41 @@ describe('updateBookmarkedPlaceMembership', () => {
 });
 
 describe('usePlaceBookmark', () => {
+  test('query 취소를 기다리는 동안에도 membership을 즉시 낙관적으로 갱신한다', async () => {
+    let resolveCancellation!: () => void;
+    const createBookmark = jest.spyOn(placeApi, 'createBookmark').mockResolvedValue({
+      id: 10,
+      message: 'created',
+      placeId: secondPlace.id,
+    });
+    const { queryClient, wrapper } = createWrapper();
+    jest.spyOn(queryClient, 'cancelQueries').mockReturnValue(new Promise<void>((resolve) => {
+      resolveCancellation = resolve;
+    }));
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.list(), data);
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), { '1': true });
+    const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
+
+    let togglePromise!: Promise<void>;
+    await act(async () => {
+      togglePromise = result.current.togglePlaceBookmark(secondPlace, true);
+    });
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(bookmarkedPlaceQueryKeys.membership())).toEqual({
+        '1': true,
+        '2': true,
+      });
+    });
+    expect(createBookmark).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveCancellation();
+      await togglePromise;
+    });
+    expect(createBookmark).toHaveBeenCalledWith({ placeId: secondPlace.id });
+  });
+
   test('POST 성공을 장소 북마크 캐시에 반영한다', async () => {
     const createBookmark = jest.spyOn(placeApi, 'createBookmark').mockResolvedValue({
       id: 10,

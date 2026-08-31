@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Animated } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
@@ -15,6 +16,11 @@ import MapIcon from '../../../../assets/v2/icons/place/maping_svg.svg';
 import MusicIcon from '../../../../assets/v2/icons/place/music_svg.svg';
 import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
 import Button from '../../../shared/components/Button';
+import {
+  MOTION_DURATION,
+  runTimingMotion,
+  useReducedMotion,
+} from '../../../shared/motion';
 import OnboardingProgressHeader from '../components/OnboardingProgressHeader';
 import {
   TRAVEL_PURPOSE_OPTIONS,
@@ -41,6 +47,135 @@ const ICON_COMPONENTS = {
   popup_svg: PopupIcon,
 } as const satisfies Record<OnboardingPreferenceIconId, React.ComponentType<SvgProps>>;
 
+type TravelPurposeOptionProps = Readonly<{
+  label: string;
+  onPress: () => void;
+  option: (typeof TRAVEL_PURPOSE_OPTIONS)[number];
+  reduceMotion: boolean;
+  selected: boolean;
+}>;
+
+function TravelPurposeOption({
+  label,
+  onPress,
+  option,
+  reduceMotion,
+  selected,
+}: TravelPurposeOptionProps) {
+  const Icon = ICON_COMPONENTS[option.iconId];
+  const colorProgress = useRef(new Animated.Value(selected ? 1 : 0)).current;
+  const iconProgress = useRef(new Animated.Value(selected ? 1 : 0)).current;
+
+  useEffect(() => {
+    const colorAnimation = runTimingMotion(colorProgress, selected ? 1 : 0, {
+      reduceMotion,
+      useNativeDriver: false,
+    });
+    const iconAnimation = runTimingMotion(iconProgress, selected ? 1 : 0, {
+      duration: MOTION_DURATION.press,
+      reduceMotion,
+      useNativeDriver: true,
+    });
+
+    return () => {
+      colorAnimation?.stop();
+      iconAnimation?.stop();
+    };
+  }, [colorProgress, iconProgress, reduceMotion, selected]);
+
+  const iconScale = iconProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.08],
+  });
+
+  return (
+    <OptionSurface style={{
+      backgroundColor: colorProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['rgba(248, 248, 248, 0)', 'rgba(255, 25, 86, 0.08)'],
+      }),
+    }}>
+      <Option
+        accessibilityLabel={label}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: selected }}
+        onPress={onPress}
+        testID={`travel-purpose-option-${option.value}`}
+      >
+        <Animated.View style={{
+          opacity: iconProgress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.78, 1],
+          }),
+          transform: [{ scale: iconScale }],
+        }}>
+          <OptionIcon
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            testID={`travel-purpose-icon-${option.value}`}
+          >
+            <Icon
+              accessible={false}
+              color={selected ? '#FF1956' : '#3B3B40'}
+              height={24}
+              width={24}
+            />
+          </OptionIcon>
+        </Animated.View>
+        <OptionLabel>{label}</OptionLabel>
+        {selected ? (
+          <CheckCircle aria-hidden>
+            <CheckMark>✓</CheckMark>
+          </CheckCircle>
+        ) : null}
+      </Option>
+    </OptionSurface>
+  );
+}
+
+function ContinueButtonTransition({
+  enabled,
+  isContinuing,
+  label,
+  onContinue,
+  reduceMotion,
+}: Readonly<{
+  enabled: boolean;
+  isContinuing: boolean;
+  label: string;
+  onContinue: () => void;
+  reduceMotion: boolean;
+}>) {
+  const progress = useRef(new Animated.Value(enabled ? 1 : 0)).current;
+
+  useEffect(() => {
+    const animation = runTimingMotion(progress, enabled ? 1 : 0, {
+      reduceMotion,
+      useNativeDriver: true,
+    });
+    return () => animation?.stop();
+  }, [enabled, progress, reduceMotion]);
+
+  return (
+    <Animated.View style={{
+      opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1] }),
+      transform: [{
+        scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.99, 1] }),
+      }],
+    }}>
+      <Button
+        disabled={!enabled}
+        fullWidth
+        label={label}
+        loading={isContinuing}
+        onPress={onContinue}
+        shape="pill"
+        size="onboarding"
+      />
+    </Animated.View>
+  );
+}
+
 export type TravelPurposeSelectionScreenProps = Readonly<{
   currentStep?: number;
   errorMessage?: string | null;
@@ -63,6 +198,7 @@ export default function TravelPurposeSelectionScreen({
   totalSteps = DEFAULT_TOTAL_STEPS,
 }: TravelPurposeSelectionScreenProps) {
   const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const selectedPurposeSet = new Set(selectedPurposes);
 
   const togglePurpose = (purpose: TravelPurpose) => {
@@ -101,39 +237,18 @@ export default function TravelPurposeSelectionScreen({
 
           <Options accessibilityRole="list">
             {TRAVEL_PURPOSE_OPTIONS.map((option) => {
-              const Icon = ICON_COMPONENTS[option.iconId];
               const label = t(option.labelKey);
               const selected = selectedPurposeSet.has(option.value);
 
               return (
-                <Option
+                <TravelPurposeOption
                   key={option.value}
-                  $selected={selected}
-                  accessibilityLabel={label}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selected }}
+                  label={label}
                   onPress={() => togglePurpose(option.value)}
-                  testID={`travel-purpose-option-${option.value}`}
-                >
-                  <OptionIcon
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants"
-                    testID={`travel-purpose-icon-${option.value}`}
-                  >
-                    <Icon
-                      accessible={false}
-                      color={selected ? '#FF1956' : '#3B3B40'}
-                      height={24}
-                      width={24}
-                    />
-                  </OptionIcon>
-                  <OptionLabel>{label}</OptionLabel>
-                  {selected ? (
-                    <CheckCircle aria-hidden>
-                      <CheckMark>✓</CheckMark>
-                    </CheckCircle>
-                  ) : null}
-                </Option>
+                  option={option}
+                  reduceMotion={reduceMotion}
+                  selected={selected}
+                />
               );
             })}
           </Options>
@@ -147,14 +262,12 @@ export default function TravelPurposeSelectionScreen({
       </ContentScroll>
 
       <Footer>
-        <Button
-          disabled={selectedPurposes.length === 0}
-          fullWidth
+        <ContinueButtonTransition
+          enabled={selectedPurposes.length > 0 && !isContinuing}
+          isContinuing={isContinuing}
           label={t('onboarding.travelPurposeScreen.continue')}
-          loading={isContinuing}
-          onPress={onContinue}
-          shape="pill"
-          size="onboarding"
+          onContinue={onContinue}
+          reduceMotion={reduceMotion}
         />
       </Footer>
     </Screen>
@@ -204,15 +317,19 @@ const ErrorMessage = styled.Text`
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
 `;
 
-const Option = styled.Pressable<{ $selected: boolean }>`
+const OptionSurface = styled(Animated.View)`
+  min-height: 56px;
+  border-radius: 16px;
+  overflow: hidden;
+`;
+
+const Option = styled.Pressable`
   min-height: 56px;
   flex-direction: row;
   align-items: center;
   gap: 12px;
   padding: 15px ${({ theme }) => theme.spacing.md}px;
   border-radius: 16px;
-  background-color: ${({ $selected, theme }) =>
-    $selected ? theme.colors.primarySelected : 'transparent'};
 `;
 
 const OptionIcon = styled.View`

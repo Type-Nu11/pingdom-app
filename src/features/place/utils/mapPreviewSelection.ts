@@ -2,6 +2,10 @@ type IdentifiedPlace = {
   id: number;
 };
 
+export function shouldPresentMapSelection(sheetSnapPoint: 'collapsed' | 'expanded' | 'medium') {
+  return sheetSnapPoint !== 'collapsed';
+}
+
 export function mergeMapPreviewPlaces<T extends IdentifiedPlace>(
   ...groups: readonly T[][]
 ): T[] {
