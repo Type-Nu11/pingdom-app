@@ -8,6 +8,7 @@ import FashionIcon from '../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodIcon from '../../../assets/v2/icons/place/food_svg.svg';
 import HeritageIcon from '../../../assets/v2/icons/place/heritage.svg';
 import MusicIcon from '../../../assets/v2/icons/place/music_svg.svg';
+import PinIcon from '../../../assets/v2/icons/place/Pin.svg';
 import PopupIcon from '../../../assets/v2/icons/place/popup_svg.svg';
 import ProfileAsset from '../../../assets/v2/icons/place/profile_svg.svg';
 import * as S from '../styles/MapTopOverlay.styles';
@@ -27,6 +28,7 @@ export type MapCategoryId =
 type MapTopOverlayProps = {
   activeCategory: MapCategoryId;
   onCategoryChange: (category: MapCategoryId) => void;
+  onLocatePress?: () => void;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
   onSearchFocus: () => void;
@@ -55,6 +57,7 @@ const categories: Array<{
 export default function MapTopOverlay({
   activeCategory,
   onCategoryChange,
+  onLocatePress,
   onProfilePress,
   onSearchFocus,
   query,
@@ -119,49 +122,64 @@ export default function MapTopOverlay({
       </S.Header>
 
       {showCategories ? (
-        <S.CategoryScroll
-          horizontal
-          showsHorizontalScrollIndicator={false}
-        >
-          <S.CategoryContent>
-            {categories.map(({ Icon, id, label }, index) => {
-              const isActive = activeCategory === id;
+        <>
+          <S.CategoryScroll
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            <S.CategoryContent>
+              {categories.map(({ Icon, id, label }, index) => {
+                const isActive = activeCategory === id;
 
-              return (
-                <S.CategoryChipButton
-                  $active={isActive}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isActive }}
-                  key={`${id}-${index}`}
-                  onPress={() => onCategoryChange(id)}
-                  style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
-                >
-                  <S.CategoryChipClip>
-                    <S.CategoryChipGlass
-                      bottomShade={false}
-                      cornerRadius={19}
-                      glassEffectStyle="regular"
-                      highlightOpacity={isActive ? 0.18 : 0.14}
-                      pointerEvents="none"
-                      rimColor="transparent"
-                      tintColor={isActive ? 'rgba(255,201,211,0.24)' : 'rgba(255,255,255,0.95)'}
-                    />
-                    <S.CategoryChipContent>
-                      {Icon ? (
-                        <Icon
-                          color={isActive ? '#FF245B' : '#5E5E66'}
-                          height={S.MAP_TOP_OVERLAY_METRICS.categoryIconHeight}
-                          width={S.MAP_TOP_OVERLAY_METRICS.categoryIconWidth}
-                        />
-                      ) : null}
-                      <S.CategoryLabel $active={isActive}>{label}</S.CategoryLabel>
-                    </S.CategoryChipContent>
-                  </S.CategoryChipClip>
-                </S.CategoryChipButton>
-              );
-            })}
-          </S.CategoryContent>
-        </S.CategoryScroll>
+                return (
+                  <S.CategoryChipButton
+                    $active={isActive}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isActive }}
+                    key={`${id}-${index}`}
+                    onPress={() => onCategoryChange(id)}
+                    style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
+                  >
+                    <S.CategoryChipClip>
+                      <S.CategoryChipGlass
+                        bottomShade={false}
+                        cornerRadius={19}
+                        glassEffectStyle="regular"
+                        highlightOpacity={isActive ? 0.18 : 0.14}
+                        pointerEvents="none"
+                        rimColor="transparent"
+                        tintColor={isActive ? 'rgba(255,201,211,0.24)' : 'rgba(255,255,255,0.95)'}
+                      />
+                      <S.CategoryChipContent>
+                        {Icon ? (
+                          <Icon
+                            color={isActive ? '#FF245B' : '#5E5E66'}
+                            height={S.MAP_TOP_OVERLAY_METRICS.categoryIconHeight}
+                            width={S.MAP_TOP_OVERLAY_METRICS.categoryIconWidth}
+                          />
+                        ) : null}
+                        <S.CategoryLabel $active={isActive}>{label}</S.CategoryLabel>
+                      </S.CategoryChipContent>
+                    </S.CategoryChipClip>
+                  </S.CategoryChipButton>
+                );
+              })}
+            </S.CategoryContent>
+          </S.CategoryScroll>
+          {onLocatePress ? (
+            <S.LocateButtonRow pointerEvents="box-none">
+              <S.LocateButton
+                accessibilityLabel="내 위치로 이동"
+                accessibilityRole="button"
+                onPress={onLocatePress}
+                style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.96 }] } : undefined}
+                testID="map-locate-button"
+              >
+                <PinIcon height={20} width={18} />
+              </S.LocateButton>
+            </S.LocateButtonRow>
+          ) : null}
+        </>
       ) : null}
     </S.SafeOverlay>
   );

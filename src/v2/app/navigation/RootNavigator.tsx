@@ -10,9 +10,15 @@ import NotificationSettingsScreen from '../../features/notifications/screens/Not
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
+import ProfileEditScreen from '../../features/my-page/screens/ProfileEditScreen';
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
 import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
+import {
+  AccountManagementScreen,
+  SettingsDetailPendingScreen,
+  SettingsScreen,
+} from '../../features/settings';
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
@@ -36,9 +42,43 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
   return (
     <MyPageScreen
       onBack={navigation.goBack}
-      onOpenProfileEdit={() => {}}
-      onOpenSettings={() => navigation.navigate(V2_ROUTES.NotificationSettings)}
+      onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
+      onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
       onOpenVerifiedPlaces={() => {}}
+    />
+  );
+}
+
+function SettingsRouteScreen({ navigation }: V2ScreenProps<'Settings'>) {
+  return (
+    <SettingsScreen
+      onBack={navigation.goBack}
+      onOpenAccountManagement={() => navigation.navigate(V2_ROUTES.AccountManagement)}
+      onOpenDetail={(detail) => navigation.navigate(V2_ROUTES.SettingsDetail, { detail })}
+      onOpenNotificationSettings={() => navigation.navigate(V2_ROUTES.NotificationSettings)}
+      onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
+    />
+  );
+}
+
+function ProfileEditRouteScreen({ navigation }: V2ScreenProps<'ProfileEdit'>) {
+  return <ProfileEditScreen onBack={navigation.goBack} />;
+}
+
+function AccountManagementRouteScreen({ navigation }: V2ScreenProps<'AccountManagement'>) {
+  return (
+    <AccountManagementScreen
+      onBack={navigation.goBack}
+      onOpenDetail={(detail) => navigation.navigate(V2_ROUTES.SettingsDetail, { detail })}
+    />
+  );
+}
+
+function SettingsDetailRouteScreen({ navigation, route }: V2ScreenProps<'SettingsDetail'>) {
+  return (
+    <SettingsDetailPendingScreen
+      detail={route.params.detail}
+      onBack={navigation.goBack}
     />
   );
 }
@@ -102,6 +142,10 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.Settings} component={SettingsRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.SettingsDetail} component={SettingsDetailRouteScreen} />
         <Stack.Screen name={V2_ROUTES.NotificationSettings} component={NotificationSettingsRoute} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />

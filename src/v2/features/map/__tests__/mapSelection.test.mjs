@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
+  MAP_LOCATE_ZOOM_LEVEL,
   MAP_PREVIEW_ZOOM_LEVEL,
   markersForSelectedPlace,
 } from '../model/mapSelection.ts';
@@ -21,4 +22,8 @@ test('a selected place hides every other marker for both migration marker ID for
 test('dismissing a place restores all markers and uses a closer Kakao zoom level', () => {
   assert.equal(markersForSelectedPlace(markers, null), markers);
   assert.ok(MAP_DISMISSED_ZOOM_LEVEL < MAP_PREVIEW_ZOOM_LEVEL);
+});
+
+test('locating the user zooms closer than a place preview', () => {
+  assert.ok(MAP_PREVIEW_ZOOM_LEVEL < MAP_LOCATE_ZOOM_LEVEL);
 });

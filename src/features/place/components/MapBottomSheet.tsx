@@ -1358,18 +1358,18 @@ const PreviewContent = ({
           accessibilityRole="button"
           accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
           disabled={pending}
-          hitSlop={10}
           onPress={onToggleBookmark}
           style={styles.previewBookmarkButton}
+          testID="place-preview-bookmark"
         >
           <BookmarkStar selected={bookmarked} size={22} strokeColor="#FF245B" />
         </Pressable>
         <Pressable
           accessibilityLabel="장소 미리보기 닫기"
           accessibilityRole="button"
-          hitSlop={10}
           onPress={onBack}
           style={styles.previewCloseButton}
+          testID="place-preview-close"
         >
           <Text style={styles.previewCloseText}>×</Text>
         </Pressable>
@@ -2631,21 +2631,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.72)',
     borderRadius: 20,
-    height: 36,
+    height: 44,
     justifyContent: 'center',
     marginRight: 4,
-    marginTop: 13,
-    width: 36,
+    marginTop: 9,
+    width: 44,
   },
   previewCategory: { color: '#575A62', flexShrink: 0, fontSize: 13, fontWeight: '700', marginLeft: 6, paddingTop: 4 },
   previewCloseButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.72)',
     borderRadius: 20,
-    height: 32,
+    height: 44,
     justifyContent: 'center',
-    marginTop: 15,
-    width: 32,
+    marginTop: 9,
+    width: 44,
   },
   previewCloseText: { color: '#5E616A', fontSize: 25, fontWeight: '300', lineHeight: 29 },
   previewContent: { paddingHorizontal: 16 },

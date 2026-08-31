@@ -249,6 +249,8 @@ describe('MapBottomSheet recommendations', () => {
 
   test('장소 미리보기의 예약 캡슐은 선택 장소로 예약 생성을 요청한다', async () => {
     const onCreateReservation = jest.fn();
+    const onBackHome = jest.fn();
+    const onToggleBookmark = jest.fn(async () => undefined);
     const selectedPlace = places[0];
     const { user } = await renderWithProviders(
       <MapBottomSheet
@@ -258,7 +260,7 @@ describe('MapBottomSheet recommendations', () => {
         content={{ type: 'place-preview', placeId: selectedPlace.id }}
         height={700}
         mediumTranslateY={300}
-        onBackHome={jest.fn()}
+        onBackHome={onBackHome}
         onCouponPress={jest.fn()}
         onCreateReservation={onCreateReservation}
         onDetailPress={jest.fn()}
@@ -270,7 +272,7 @@ describe('MapBottomSheet recommendations', () => {
         onRetryRecommendations={jest.fn()}
         onSearchFocus={jest.fn()}
         onSubmitSearch={jest.fn()}
-        onToggleBookmark={jest.fn(async () => undefined)}
+        onToggleBookmark={onToggleBookmark}
         panHandlers={{} as GestureResponderHandlers}
         places={places}
         previewFallbackContentByPlaceId={{
@@ -295,6 +297,15 @@ describe('MapBottomSheet recommendations', () => {
     await user.press(screen.getByRole('button', { name: '예약' }));
     expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
+
+    const bookmark = screen.getByTestId('place-preview-bookmark');
+    const close = screen.getByTestId('place-preview-close');
+    expect(bookmark).toHaveStyle({ height: 44, width: 44 });
+    expect(close).toHaveStyle({ height: 44, width: 44 });
+    await user.press(bookmark);
+    await user.press(close);
+    expect(onToggleBookmark).toHaveBeenCalledWith(selectedPlace, true);
+    expect(onBackHome).toHaveBeenCalledTimes(1);
   });
 
   test('빈 availability는 예약 페이지로 이동하고 API 오류는 재시도한다', async () => {
