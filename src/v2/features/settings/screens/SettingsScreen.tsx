@@ -18,12 +18,15 @@ import {
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
+import { SETTINGS_DETAIL_IDS, type SettingsDetailId } from '../model/settings.types';
 
 type SettingsPage = 'account' | 'location' | 'notifications' | 'root';
 
 export type SettingsScreenProps = {
   onBack: () => void;
-  onLogout: () => Promise<void>;
+  onLogout?: () => Promise<void>;
+  onOpenAccountManagement?: () => void;
+  onOpenDetail?: (detail: SettingsDetailId) => void;
   onOpenProfileEdit: () => void;
 };
 
@@ -133,6 +136,8 @@ function SettingsSection({ children, title }: SectionProps) {
 export default function SettingsScreen({
   onBack,
   onLogout,
+  onOpenAccountManagement,
+  onOpenDetail,
   onOpenProfileEdit,
 }: SettingsScreenProps) {
   const { t } = useTranslation();
@@ -161,6 +166,10 @@ export default function SettingsScreen({
   }, [page]);
 
   const handleLogout = useCallback(async () => {
+    if (!onLogout) {
+      onOpenDetail?.(SETTINGS_DETAIL_IDS.Logout);
+      return;
+    }
     if (logoutLock.current) return;
     logoutLock.current = true;
     setIsLoggingOut(true);
@@ -170,7 +179,7 @@ export default function SettingsScreen({
       logoutLock.current = false;
       setIsLoggingOut(false);
     }
-  }, [onLogout]);
+  }, [onLogout, onOpenDetail]);
 
   const updateNotificationSetting = useCallback((update: {
     newHotplaceEnabled?: boolean;
@@ -203,16 +212,37 @@ export default function SettingsScreen({
               <SettingsRow label={t('settings.rows.profileEdit')} onPress={onOpenProfileEdit} />
               <SettingsRow
                 label={t('settings.rows.accountInfo')}
-                onPress={() => setPage('account')}
+                onPress={onOpenAccountManagement ?? (() => setPage('account'))}
                 value={profile?.username}
               />
-              <SettingsRow label={t('settings.rows.password')} onPress={onOpenProfileEdit} />
+              <SettingsRow
+                label={t('settings.rows.password')}
+                onPress={() => onOpenDetail
+                  ? onOpenDetail(SETTINGS_DETAIL_IDS.PasswordChange)
+                  : onOpenProfileEdit()}
+              />
             </SettingsSection>
 
             <SettingsSection title={t('settings.sections.records')}>
-              <SettingsRow label={t('settings.rows.footprintMap')} value={t('settings.values.onlyMe')} />
-              <SettingsRow label={t('settings.rows.favoritePlaces')} />
-              <SettingsRow label={t('settings.rows.myRecords')} />
+              <SettingsRow
+                label={t('settings.rows.footprintMap')}
+                onPress={onOpenDetail
+                  ? () => onOpenDetail(SETTINGS_DETAIL_IDS.FootprintMap)
+                  : undefined}
+                value={t('settings.values.onlyMe')}
+              />
+              <SettingsRow
+                label={t('settings.rows.favoritePlaces')}
+                onPress={onOpenDetail
+                  ? () => onOpenDetail(SETTINGS_DETAIL_IDS.SavedPlaces)
+                  : undefined}
+              />
+              <SettingsRow
+                label={t('settings.rows.myRecords')}
+                onPress={onOpenDetail
+                  ? () => onOpenDetail(SETTINGS_DETAIL_IDS.MyRecords)
+                  : undefined}
+              />
             </SettingsSection>
 
             <SettingsSection title={t('settings.sections.notifications')}>
@@ -225,13 +255,29 @@ export default function SettingsScreen({
 
             <SettingsSection title={t('settings.sections.privacy')}>
               <SettingsRow label={t('settings.rows.locationSettings')} onPress={() => setPage('location')} />
-              <SettingsRow label={t('settings.rows.dataManagement')} />
+              <SettingsRow
+                label={t('settings.rows.dataManagement')}
+                onPress={onOpenDetail
+                  ? () => onOpenDetail(SETTINGS_DETAIL_IDS.DataManagement)
+                  : undefined}
+              />
             </SettingsSection>
 
             <SettingsSection title={t('settings.sections.appInfo')}>
-              <SettingsRow label={t('settings.rows.notices')} />
-              <SettingsRow label={t('settings.rows.terms')} />
-              <SettingsRow label={t('settings.rows.privacyPolicy')} />
+              <SettingsRow
+                label={t('settings.rows.notices')}
+                onPress={onOpenDetail ? () => onOpenDetail(SETTINGS_DETAIL_IDS.Notices) : undefined}
+              />
+              <SettingsRow
+                label={t('settings.rows.terms')}
+                onPress={onOpenDetail ? () => onOpenDetail(SETTINGS_DETAIL_IDS.Terms) : undefined}
+              />
+              <SettingsRow
+                label={t('settings.rows.privacyPolicy')}
+                onPress={onOpenDetail
+                  ? () => onOpenDetail(SETTINGS_DETAIL_IDS.PrivacyPolicy)
+                  : undefined}
+              />
               <SettingsRow label={t('settings.rows.version')} value="1.0.0" />
             </SettingsSection>
 
@@ -245,7 +291,12 @@ export default function SettingsScreen({
               >
                 {isLoggingOut ? <ActivityIndicator color="#767680" /> : <FooterLabel>{t('settings.logout')}</FooterLabel>}
               </FooterButton>
-              <FooterButton disabled>
+              <FooterButton
+                accessibilityLabel={t('settings.deleteAccount')}
+                accessibilityRole="button"
+                disabled={!onOpenDetail}
+                onPress={() => onOpenDetail?.(SETTINGS_DETAIL_IDS.DeleteAccount)}
+              >
                 <DangerLabel>{t('settings.deleteAccount')}</DangerLabel>
               </FooterButton>
             </FooterActions>
@@ -358,7 +409,12 @@ export default function SettingsScreen({
             <SettingsSection title={t('settings.account.loginSection')}>
               <SettingsRow label={t('settings.account.username')} value={profile?.username} />
               <SettingsRow label={t('settings.account.email')} value={profile?.email} />
-              <SettingsRow label={t('settings.rows.password')} onPress={onOpenProfileEdit} />
+              <SettingsRow
+                label={t('settings.rows.password')}
+                onPress={() => onOpenDetail
+                  ? onOpenDetail(SETTINGS_DETAIL_IDS.PasswordChange)
+                  : onOpenProfileEdit()}
+              />
             </SettingsSection>
             <SettingsSection>
               <FooterActions>
@@ -371,7 +427,12 @@ export default function SettingsScreen({
                 >
                   <FooterLabel>{t('settings.logout')}</FooterLabel>
                 </FooterButton>
-                <FooterButton disabled>
+                <FooterButton
+                  accessibilityLabel={t('settings.deleteAccount')}
+                  accessibilityRole="button"
+                  disabled={!onOpenDetail}
+                  onPress={() => onOpenDetail?.(SETTINGS_DETAIL_IDS.DeleteAccount)}
+                >
                   <DangerLabel>{t('settings.deleteAccount')}</DangerLabel>
                 </FooterButton>
                 <DeleteDescription>{t('settings.account.deleteDescription')}</DeleteDescription>

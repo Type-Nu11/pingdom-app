@@ -2,12 +2,31 @@ import React from 'react';
 import { screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { profileApi } from '../../../my-page/api/profileApi';
+import { notificationApi } from '../../../notifications/api/notificationApi';
 import { SETTINGS_DETAIL_IDS } from '../../model/settings.types';
 import AccountManagementScreen from '../AccountManagementScreen';
 import SettingsDetailPendingScreen from '../SettingsDetailPendingScreen';
 import SettingsScreen from '../SettingsScreen';
 
 describe('SettingsScreen', () => {
+  beforeEach(() => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue({
+      birthYear: 1998,
+      country: 'KR',
+      email: 'pingdom@example.com',
+      id: 1,
+      language: 'ko',
+      profileImageUrl: null,
+      username: 'pingdom_user',
+    });
+    jest.spyOn(notificationApi, 'getNotificationSettings').mockResolvedValue({
+      newHotplaceEnabled: true,
+      newLikeEnabled: true,
+      quietHoursEnabled: false,
+    });
+  });
+
   test('디자인의 다섯 섹션과 계정 작업 진입점을 보여준다', async () => {
     await renderWithProviders(
       <SettingsScreen
@@ -30,7 +49,7 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('관심 장소 관리')).toBeTruthy();
     expect(screen.getByText('내 기록 관리')).toBeTruthy();
     expect(screen.getByText('위치 정보 설정')).toBeTruthy();
-    expect(screen.getByText('데이터 다운로드·삭제')).toBeTruthy();
+    expect(screen.getByText('데이터 다운로드 · 삭제')).toBeTruthy();
     expect(screen.getByText('공지사항')).toBeTruthy();
     expect(screen.getByText('이용약관')).toBeTruthy();
     expect(screen.getByText('개인정보 처리방침')).toBeTruthy();
@@ -55,13 +74,13 @@ describe('SettingsScreen', () => {
 
     await user.press(screen.getByText('프로필 편집'));
     await user.press(screen.getByText('아이디 · 이메일'));
-    await user.press(screen.getByText('알림 설정'));
+    await user.press(screen.getByText('내 기록 관리'));
     await user.press(screen.getByText('로그아웃'));
     await user.press(screen.getByText('회원 탈퇴'));
 
     expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
     expect(onOpenAccountManagement).toHaveBeenCalledTimes(1);
-    expect(onOpenDetail).toHaveBeenNthCalledWith(1, SETTINGS_DETAIL_IDS.NotificationSettings);
+    expect(onOpenDetail).toHaveBeenNthCalledWith(1, SETTINGS_DETAIL_IDS.MyRecords);
     expect(onOpenDetail).toHaveBeenNthCalledWith(2, SETTINGS_DETAIL_IDS.Logout);
     expect(onOpenDetail).toHaveBeenNthCalledWith(3, SETTINGS_DETAIL_IDS.DeleteAccount);
   });
