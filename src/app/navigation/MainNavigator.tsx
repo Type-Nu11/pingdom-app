@@ -4,13 +4,15 @@ import styled, { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../features/place/screens/MapScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
-import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
 import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
+import CouponBoxScreen from '../../v2/features/my-page/screens/CouponBoxScreen';
+import CouponDetailContainer from '../../v2/features/my-page/screens/CouponDetailContainer';
 import MyPageScreen from '../../v2/features/my-page/screens/MyPageScreen';
 import ProfileEditScreen from '../../v2/features/my-page/screens/ProfileEditScreen';
 import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlacesScreen';
 import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/MerchantMyPageContainer';
+import type { Coupon } from '../../v2/features/offers-coupons';
 import { useProfile } from '../../features/profile/hooks/useProfile';
 import { theme as v2Theme } from '../../v2/shared/theme';
 import {
@@ -120,6 +122,7 @@ const MyPageRouteScreen = ({ navigation }: MainScreenProps<'MyPage'>) => {
     <V2ScreenBoundary>
       <MyPageScreen
         onBack={navigation.goBack}
+        onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponWallet)}
         onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
         onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
         onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
@@ -164,9 +167,41 @@ const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) =
 );
 
 const CouponWalletRouteScreen = ({ navigation }: MainScreenProps<'CouponWallet'>) => (
-  <CouponWalletScreen
+  // The on-site present (QR) flow is tracked separately in #100; until it lands
+  // the box still surfaces the real couponId through onUseCoupon.
+  <CouponBoxScreen
     onBack={navigation.goBack}
-    onExplore={() => navigation.popTo(MAIN_ROUTES.Map)}
+    onOpenCoupon={(coupon) => navigation.navigate(MAIN_ROUTES.CouponDetail, {
+      code: coupon.code,
+      couponId: coupon.id,
+      expiresAt: coupon.expiresAt,
+      issuedAt: coupon.issuedAt,
+      offerId: coupon.offerId,
+      redeemedAt: coupon.redeemedAt,
+      status: coupon.status,
+    })}
+    onUseCoupon={(couponId) => console.info('[CouponBox] present coupon', couponId)}
+  />
+);
+
+const CouponDetailRouteScreen = ({ navigation, route }: MainScreenProps<'CouponDetail'>) => (
+  <CouponDetailContainer
+    coupon={{
+      code: route.params.code,
+      expiresAt: route.params.expiresAt,
+      id: route.params.couponId,
+      issuedAt: route.params.issuedAt,
+      offerId: route.params.offerId,
+      redeemedAt: route.params.redeemedAt,
+      status: route.params.status as Coupon['status'],
+    }}
+    onBack={navigation.goBack}
+    onReserve={(placeId) => {
+      const parsed = parsePlaceId(placeId);
+      if (parsed) {
+        navigation.navigate(MAIN_ROUTES.CreateReservation, { placeId: parsed });
+      }
+    }}
   />
 );
 
@@ -233,6 +268,7 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.CouponDetail} component={CouponDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.MyPage} component={MyPageRouteScreen} />

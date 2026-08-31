@@ -19,7 +19,7 @@ export const PRODUCTION_ROUTE_PARITY: readonly RouteParityEntry[] = [
   { activeImplementation: 'src/v2/features/reservations/screens/ReservationDetailScreen.tsx', route: 'ReservationDetail/Payment', status: 'V2_READY' },
   { activeImplementation: 'src/v2/features/place-visit-verification', route: 'VisitVerification/Review', status: 'V2_READY' },
   { activeImplementation: 'src/features/place/screens/CheckInScreen.tsx', removalIssues: ['#139'], route: 'CheckIn', status: 'COMPOSITION_BRIDGE' },
-  { activeImplementation: 'src/features/place/screens/CouponWalletScreen.tsx', removalIssues: ['#139'], route: 'CouponWallet', status: 'COMPOSITION_BRIDGE' },
+  { activeImplementation: 'src/v2/features/my-page/screens/CouponBoxScreen.tsx', route: 'CouponWallet', status: 'V2_READY' },
   { activeImplementation: 'src/features/profile/screens/ProfileScreen.tsx', removalIssues: ['#227', '#231'], route: 'Profile', status: 'COMPOSITION_BRIDGE' },
   { activeImplementation: 'src/features/settings/screens/SettingsScreen.tsx', removalIssues: ['#228', '#229', '#230'], route: 'Settings/Logout', status: 'COMPOSITION_BRIDGE' },
   { activeImplementation: 'src/app/navigation/RoutePlaceholderScreen.tsx', removalIssues: ['#139'], route: 'Merchant', status: 'REMOVE' },

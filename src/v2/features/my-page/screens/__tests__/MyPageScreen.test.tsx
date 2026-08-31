@@ -26,6 +26,7 @@ function renderMyPage() {
   return renderWithProviders(
     <MyPageScreen
       onBack={jest.fn()}
+      onOpenCoupons={jest.fn()}
       onOpenProfileEdit={jest.fn()}
       onOpenSettings={jest.fn()}
       onOpenVerifiedPlaces={jest.fn()}
@@ -80,6 +81,7 @@ describe('MyPageScreen', () => {
     const { user } = await renderWithProviders(
       <MyPageScreen
         onBack={jest.fn()}
+        onOpenCoupons={jest.fn()}
         onOpenProfileEdit={onOpenProfileEdit}
         onOpenSettings={jest.fn()}
         onOpenVerifiedPlaces={jest.fn()}

@@ -10,6 +10,8 @@ export type CheckInId = number & {
 };
 
 export const V2_ROUTES = {
+  CouponBox: 'CouponBox',
+  CouponDetail: 'CouponDetail',
   CreateReservation: 'CreateReservation',
   Home: 'Home',
   Map: 'Map',
@@ -20,6 +22,16 @@ export const V2_ROUTES = {
 } as const;
 
 export type V2StackParamList = {
+  CouponBox: undefined;
+  CouponDetail: {
+    code: string;
+    couponId: number;
+    expiresAt: string;
+    issuedAt: string;
+    offerId: number;
+    redeemedAt: string | null;
+    status: string;
+  };
   CreateReservation: {
     category?: string;
     imageUrl?: string;

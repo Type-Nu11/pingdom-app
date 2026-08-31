@@ -43,6 +43,7 @@ export const AUTH_ROUTES = {
 export const MAIN_ROUTES = {
   ApiCheck: 'ApiCheck',
   CheckIn: 'CheckIn',
+  CouponDetail: 'CouponDetail',
   CouponWallet: 'CouponWallet',
   Map: 'Map',
   Merchant: 'Merchant',
@@ -75,6 +76,15 @@ export type MainStackParamList = {
     placeId: PlaceId;
   };
   CouponWallet: undefined;
+  CouponDetail: {
+    code: string;
+    couponId: number;
+    expiresAt: string;
+    issuedAt: string;
+    offerId: number;
+    redeemedAt: string | null;
+    status: string;
+  };
   CreateReservation: {
     category?: string;
     imageUrl?: string;

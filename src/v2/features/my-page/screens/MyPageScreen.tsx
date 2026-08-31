@@ -40,6 +40,7 @@ const VERIFIED_PLACE_CARD_HEIGHT = 222;
 
 export type MyPageScreenProps = {
   onBack: () => void;
+  onOpenCoupons: () => void;
   onOpenProfileEdit: () => void;
   onOpenSettings: () => void;
   onOpenVerifiedPlaces: () => void;
@@ -47,6 +48,7 @@ export type MyPageScreenProps = {
 
 export default function MyPageScreen({
   onBack,
+  onOpenCoupons,
   onOpenProfileEdit,
   onOpenSettings,
   onOpenVerifiedPlaces,
@@ -199,7 +201,11 @@ export default function MyPageScreen({
                 />
               </StatItem>
               <DividerIcon height={48} width={1} />
-              <StatItem>
+              <StatButton
+                accessibilityLabel={t('myPage.stats.coupons')}
+                accessibilityRole="button"
+                onPress={onOpenCoupons}
+              >
                 <StatLabel>{t('myPage.stats.coupons')}</StatLabel>
                 <MyPageStatValue
                   isError={couponsQuery.isError}
@@ -207,7 +213,7 @@ export default function MyPageScreen({
                   testID="v2-my-page-stat-coupons"
                   value={couponsQuery.data?.totalCount ?? 0}
                 />
-              </StatItem>
+              </StatButton>
             </StatsCard>
           </SectionContent>
         </Section>
@@ -420,6 +426,11 @@ const StatsCard = styled.View`
 `;
 
 const StatItem = styled.View`
+  align-items: center;
+  gap: 6px;
+`;
+
+const StatButton = styled.Pressable`
   align-items: center;
   gap: 6px;
 `;

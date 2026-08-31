@@ -8,6 +8,8 @@ import { useNotificationOpenSync } from '../../features/notifications/hooks/useN
 import type { NotificationRoute } from '../../features/notifications/model/notification.types';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
+import CouponBoxScreen from '../../features/my-page/screens/CouponBoxScreen';
+import CouponDetailContainer from '../../features/my-page/screens/CouponDetailContainer';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
 import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
@@ -35,9 +37,52 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
   return (
     <MyPageScreen
       onBack={navigation.goBack}
+      onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenProfileEdit={() => {}}
       onOpenSettings={() => {}}
       onOpenVerifiedPlaces={() => {}}
+    />
+  );
+}
+
+function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
+  // On-site present (QR) screen is tracked in #100.
+  return (
+    <CouponBoxScreen
+      onBack={navigation.goBack}
+      onOpenCoupon={(coupon) => navigation.navigate(V2_ROUTES.CouponDetail, {
+        code: coupon.code,
+        couponId: coupon.id,
+        expiresAt: coupon.expiresAt,
+        issuedAt: coupon.issuedAt,
+        offerId: coupon.offerId,
+        redeemedAt: coupon.redeemedAt,
+        status: coupon.status,
+      })}
+      onUseCoupon={(couponId) => console.info('[CouponBox] present coupon', couponId)}
+    />
+  );
+}
+
+function CouponDetailRoute({ navigation, route }: V2ScreenProps<'CouponDetail'>) {
+  return (
+    <CouponDetailContainer
+      coupon={{
+        code: route.params.code,
+        expiresAt: route.params.expiresAt,
+        id: route.params.couponId,
+        issuedAt: route.params.issuedAt,
+        offerId: route.params.offerId,
+        redeemedAt: route.params.redeemedAt,
+        status: route.params.status as 'ISSUED' | 'REDEEMED' | 'EXPIRED' | 'CANCELED' | 'UNKNOWN',
+      }}
+      onBack={navigation.goBack}
+      onReserve={(placeId) => {
+        const parsed = parsePlaceId(placeId);
+        if (parsed) {
+          navigation.navigate(V2_ROUTES.CreateReservation, { placeId: parsed });
+        }
+      }}
     />
   );
 }
@@ -97,6 +142,8 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CouponDetail} component={CouponDetailRoute} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />
