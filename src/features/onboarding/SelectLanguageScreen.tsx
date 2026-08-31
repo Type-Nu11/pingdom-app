@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useTranslation } from 'react-i18next';
 import CheckIcon from '../../assets/v2/icons/check.svg';
 import BackIcon from '../../assets/v2/icons/header/back.svg';
-import SearchIcon from '../../assets/v2/icons/mypage/Search.svg';
+import SearchIcon from '../../assets/v2/icons/header/search.svg';
 import ProgressBar from './components/ProgressBar';
 import type { Language } from './types';
 import { colors } from '../../styles/colors';

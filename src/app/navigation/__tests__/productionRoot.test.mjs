@@ -101,6 +101,14 @@ test('production entrypoint has one composition root with no mock or implicit V1
   assert.doesNotMatch(appSource, /App\.v1|V1App|mock/i);
   assert.match(v2AliasSource, /src\/application\/ProductionApp/);
   assert.doesNotMatch(v2AliasSource, /isLoggedIn\s*\?|V1App|V2App/);
+  const productionRootSource = readFileSync(
+    new URL('../../../application/navigation/RootNavigator.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(
+    productionRootSource,
+    /FORCE_ONBOARDING|clearOnboardingCompletionForQa/,
+  );
   assert.equal(PRODUCTION_ROUTE_PARITY.some((entry) => entry.status === 'MISSING'), false);
   assert.deepEqual(ISSUE_262_STATUS, {
     bridgeFreeStandaloneV2: 'incomplete',

@@ -66,10 +66,15 @@ export function setCachedAccessToken(token: string | null): void {
  * 
  * @returns 키체인에 저장된 accessToken, 없으면 null
  */
-export async function hydrateAccessToken(): Promise<string | null> {
+export async function hydrateAuthTokens(): Promise<AuthTokens | null> {
     const tokens = await getTokens();                       // 키체인에서 토큰 읽기
     accessTokenCache = tokens?.accessToken ?? null;         // 캐시에 반영
-    return accessTokenCache;
+    return tokens;
+}
+
+export async function hydrateAccessToken(): Promise<string | null> {
+    const tokens = await hydrateAuthTokens();
+    return tokens?.accessToken ?? null;
 }
 
 // ─────────────────────────────────────────────

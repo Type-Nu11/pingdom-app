@@ -25,7 +25,6 @@ import { useForegroundNotifications } from '../../v2/features/notifications/hook
 import { useNotificationOpenSync } from '../../v2/features/notifications/hooks/useNotificationOpenSync';
 import type { NotificationRoute } from '../../v2/features/notifications/model/notification.types';
 import {
-  clearOnboardingCompletionForQa,
   getUnauthenticatedNavigationKey,
   useOnboardingEntry,
 } from '../../v2/features/onboarding-entry';
@@ -37,9 +36,6 @@ import { claimDeepLinkEvent, type DeepLinkEventReceipt } from './deepLinkDedupe'
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
-
-// TEMP: 온보딩 플로우 확인용 강제 진입. 배포 전 제거. (끄려면 false)
-const FORCE_ONBOARDING: boolean = __DEV__;
 
 export default function RootNavigator() {
   const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
@@ -54,10 +50,7 @@ export default function RootNavigator() {
   const handledNotificationIds = useRef(new Set<string>());
   const lastDeepLinkEvent = useRef<DeepLinkEventReceipt | null>(null);
   const previousIsLoggedIn = useRef(isLoggedIn);
-  // TEMP: 완료 전까지만 온보딩 강제. 완료되면 정상 흐름(로그인/메인)으로 넘어감.
-  const rootState = FORCE_ONBOARDING && onboardingState.kind !== 'completed'
-    ? 'onboarding'
-    : resolveProductionRootState(isHydrating, isLoggedIn, onboardingState);
+  const rootState = resolveProductionRootState(isHydrating, isLoggedIn, onboardingState);
 
   useAndroidBackHandler(navigationRef);
   useFcmTokenSync(isLoggedIn);
@@ -66,14 +59,8 @@ export default function RootNavigator() {
 
   useEffect(() => {
     void bootstrapAuth();
+    void hydrateOnboarding();
     void hydrateMapSettings();
-    void (async () => {
-      // TEMP: 매 실행마다 온보딩 처음부터 볼 수 있게 완료 플래그 초기화. 배포 전 제거.
-      if (FORCE_ONBOARDING) {
-        await clearOnboardingCompletionForQa();
-      }
-      await hydrateOnboarding();
-    })();
   }, [bootstrapAuth, hydrateMapSettings, hydrateOnboarding]);
 
   useEffect(() => {

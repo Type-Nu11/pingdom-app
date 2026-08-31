@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import CheckIcon from '../../assets/v2/icons/check.svg';
 import BackIcon from '../../assets/v2/icons/header/back.svg';
-import SearchIcon from '../../assets/v2/icons/mypage/Search.svg';
+import SearchIcon from '../../assets/v2/icons/header/search.svg';
 import FlagCN from '../../assets/v2/flags/cn.svg';
 import FlagJP from '../../assets/v2/flags/jp.svg';
 import FlagKR from '../../assets/v2/flags/kr.svg';
