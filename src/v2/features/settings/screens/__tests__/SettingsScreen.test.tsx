@@ -1,10 +1,12 @@
 import React from 'react';
+import { Alert } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { profileApi } from '../../../my-page/api/profileApi';
 import type { Profile } from '../../../my-page/model/profile.types';
 import { notificationApi } from '../../../notifications/api/notificationApi';
+import LocationPrivacyScreen, { type LocationPermissionPresentationState } from '../LocationPrivacyScreen';
 import SettingsScreen from '../SettingsScreen';
 
 const PROFILE: Profile = {
@@ -26,6 +28,12 @@ function renderSettings(overrides: Partial<React.ComponentProps<typeof SettingsS
       onOpenProfileEdit={jest.fn()}
       {...overrides}
     />,
+  );
+}
+
+function renderLocationPrivacy(permissionState?: LocationPermissionPresentationState) {
+  return renderWithProviders(
+    <LocationPrivacyScreen onBack={jest.fn()} permissionState={permissionState} />,
   );
 }
 
@@ -93,6 +101,56 @@ describe('SettingsScreen', () => {
 
     await view.user.press(screen.getByLabelText('뒤로가기'));
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('위치·개인정보 화면은 미연결 상태와 전체 정보 구조를 명확히 표시한다', async () => {
+    const view = await renderSettings();
+    await view.user.press(screen.getByText('위치 정보 설정'));
+
+    expect(screen.getByTestId('v2-location-privacy-screen')).toBeVisible();
+    expect(screen.getByText('GPS 현장 인증')).toBeVisible();
+    expect(screen.getByText('공개 범위')).toBeVisible();
+    expect(screen.getAllByText('연결 전')).toHaveLength(2);
+    expect(screen.getByText(/권한 요청과 위치 수집은 아직 연결되지 않았어요/)).toBeVisible();
+    expect(screen.getByLabelText('위치 기반 서비스 허용')).toBeDisabled();
+    expect(screen.getByLabelText('기록할 때만 위치 수집')).toBeDisabled();
+    expect(screen.getByLabelText('GPS 현장 인증')).toBeDisabled();
+  });
+
+  test.each([
+    ['denied', '기기 설정에서 위치 권한이 거부되어 있어요'],
+    ['restricted', '기기 정책에 의해 위치 사용이 제한되어 있어요'],
+  ] as const)('%s 위치 권한 상태를 안전하게 표현한다', async (state, description) => {
+    await renderLocationPrivacy(state);
+
+    expect(screen.getByText(description)).toBeVisible();
+    expect(screen.getByLabelText('위치 기반 서비스 허용')).toBeDisabled();
+  });
+
+  test('다운로드와 공개 범위 진입은 미연결 안내만 하고 삭제 진입은 비파괴 경고를 표시한다', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    const view = await renderLocationPrivacy();
+
+    await view.user.press(screen.getByText('내 발자국 지도'));
+    expect(alertSpy).toHaveBeenLastCalledWith(
+      '내 발자국 지도',
+      expect.stringContaining('지금은 화면만 미리 볼 수 있어요'),
+      [{ text: '확인' }],
+    );
+
+    await view.user.press(screen.getByText('내 위치 기록 다운로드'));
+    expect(alertSpy).toHaveBeenLastCalledWith(
+      '내 위치 기록 다운로드',
+      expect.stringContaining('지금은 화면만 미리 볼 수 있어요'),
+      [{ text: '확인' }],
+    );
+
+    await view.user.press(screen.getByText('위치 기록 전체 삭제'));
+    expect(alertSpy).toHaveBeenLastCalledWith(
+      '위치 기록 전체 삭제',
+      expect.stringContaining('어떤 위치 기록도 삭제되지 않습니다'),
+      [{ style: 'cancel', text: '확인' }],
+    );
   });
 
   test('로그아웃 연속 탭을 한 번만 처리한다', async () => {
