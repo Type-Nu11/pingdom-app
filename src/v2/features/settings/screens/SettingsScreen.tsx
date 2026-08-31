@@ -18,10 +18,14 @@ import {
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
+import LocationPrivacyScreen, {
+  type LocationPermissionPresentationState,
+} from './LocationPrivacyScreen';
 
 type SettingsPage = 'account' | 'location' | 'notifications' | 'root';
 
 export type SettingsScreenProps = {
+  locationPermissionState?: LocationPermissionPresentationState;
   onBack: () => void;
   onLogout: () => Promise<void>;
   onOpenProfileEdit: () => void;
@@ -131,6 +135,7 @@ function SettingsSection({ children, title }: SectionProps) {
 }
 
 export default function SettingsScreen({
+  locationPermissionState,
   onBack,
   onLogout,
   onOpenProfileEdit,
@@ -303,37 +308,10 @@ export default function SettingsScreen({
       ) : null}
 
       {page === 'location' ? (
-        <>
-          <SettingsHeader onBack={goBack} title={t('settings.location.title')} />
-          <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
-            <InfoCard>
-              <InfoText>{t('settings.location.description')}</InfoText>
-            </InfoCard>
-            <SettingsSection title={t('settings.location.locationSection')}>
-              <ToggleRow
-                description={t('settings.location.deviceDescription')}
-                disabled
-                label={t('settings.location.device')}
-                value={false}
-              />
-              <ToggleRow
-                description={t('settings.location.foregroundDescription')}
-                disabled
-                label={t('settings.location.foreground')}
-                value={false}
-              />
-            </SettingsSection>
-            <SettingsSection title={t('settings.location.visibilitySection')}>
-              <SettingsRow label={t('settings.rows.footprintMap')} value={t('settings.values.onlyMe')} />
-              <SettingsRow label={t('settings.location.profileVisibility')} value={t('settings.values.everyone')} />
-            </SettingsSection>
-            <SettingsSection title={t('settings.location.dataSection')}>
-              <SettingsRow label={t('settings.location.download')} />
-              <SettingsRow label={t('settings.rows.privacyPolicy')} />
-              <SettingsRow destructive label={t('settings.location.deleteHistory')} />
-            </SettingsSection>
-          </Content>
-        </>
+        <LocationPrivacyScreen
+          onBack={goBack}
+          permissionState={locationPermissionState}
+        />
       ) : null}
 
       {page === 'account' ? (
@@ -532,19 +510,6 @@ const ErrorText = styled.Text`
   color: ${({ theme }) => theme.colors.danger};
   font-size: 13px;
   line-height: 18px;
-`;
-
-const InfoCard = styled.View`
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
-  border-radius: 12px;
-  margin: 0 16px 8px;
-  padding: 14px 16px;
-`;
-
-const InfoText = styled.Text`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 13px;
-  line-height: 19px;
 `;
 
 const AccountSummary = styled.View`
