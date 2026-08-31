@@ -297,7 +297,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
   });
 
-  test('빈 availability와 오류를 예약 가능 상태로 오인하지 않고 오류만 재시도한다', async () => {
+  test('빈 availability는 예약 페이지로 이동하고 API 오류는 재시도한다', async () => {
     const onCreateReservation = jest.fn();
     const onRetryAvailability = jest.fn();
     const selectedPlace = places[0];
@@ -321,13 +321,27 @@ describe('MapBottomSheet recommendations', () => {
     });
     const result = await renderWithProviders(
       <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback({
-        kind: 'empty', disabled: true, message: '현재 예약 가능한 일정이 없습니다',
+        kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
       })} />,
     );
 
-    expect(screen.getByText('현재 예약 가능한 일정이 없습니다')).toBeVisible();
+    expect(screen.queryByText('현재 예약 가능한 일정이 없습니다')).not.toBeOnTheScreen();
     expect(screen.getByRole('button', { name: '예약' }).props.accessibilityState)
-      .toEqual({ disabled: true });
+      .toEqual({ disabled: false });
+    await result.user.press(screen.getByRole('button', { name: '예약' }));
+    await result.user.press(screen.getByRole('button', { name: '예약' }));
+    expect(onCreateReservation).toHaveBeenCalledTimes(1);
+    await result.rerender(
+      <MapBottomSheet
+        {...commonProps}
+        previewFallbackContentByPlaceId={fallback({
+          kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+        })}
+        snapPoint="expanded"
+      />,
+    );
+    expect(screen.queryByRole('adjustable', { name: '추천 패널 크기 조절' }))
+      .not.toBeOnTheScreen();
     await result.rerender(
       <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback({
         kind: 'error', disabled: true, message: '예약 가능 여부를 불러오지 못했습니다',
@@ -335,7 +349,7 @@ describe('MapBottomSheet recommendations', () => {
     );
     await result.user.press(screen.getByRole('button', { name: '다시 시도' }));
     expect(onRetryAvailability).toHaveBeenCalledTimes(1);
-    expect(onCreateReservation).not.toHaveBeenCalled();
+    expect(onCreateReservation).toHaveBeenCalledTimes(1);
   });
 
   test('확장 추천 목록의 두 행은 각각 독립된 가로 스크롤로 렌더링된다', async () => {

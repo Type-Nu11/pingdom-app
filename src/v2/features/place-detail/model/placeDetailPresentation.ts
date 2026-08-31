@@ -17,8 +17,8 @@ export type ResourceState<T> = {
 export type ReservationCtaState =
   | { kind: 'loading'; disabled: true; message: '예약 가능 여부를 확인하고 있습니다' }
   | { kind: 'available'; disabled: false; message: '예약하기' }
-  | { kind: 'empty'; disabled: true; message: '현재 예약 가능한 일정이 없습니다' }
-  | { kind: 'full'; disabled: true; message: '예약 가능한 인원이 없습니다' }
+  | { kind: 'empty'; disabled: false; message: '현재 예약 가능한 일정이 없습니다' }
+  | { kind: 'full'; disabled: false; message: '예약 가능한 인원이 없습니다' }
   | { kind: 'auth-error'; disabled: true; message: '로그인이 필요합니다' }
   | { kind: 'error'; disabled: true; message: '예약 가능 여부를 불러오지 못했습니다' };
 
@@ -121,9 +121,9 @@ export function selectReservationCta(
     return { kind: 'available', disabled: false, message: '예약하기' };
   }
   if (futureActive.some((item) => (item.remainingCapacity ?? 0) <= 0)) {
-    return { kind: 'full', disabled: true, message: '예약 가능한 인원이 없습니다' };
+    return { kind: 'full', disabled: false, message: '예약 가능한 인원이 없습니다' };
   }
-  return { kind: 'empty', disabled: true, message: '현재 예약 가능한 일정이 없습니다' };
+  return { kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다' };
 }
 
 export function buildPlaceDetailPresentation(

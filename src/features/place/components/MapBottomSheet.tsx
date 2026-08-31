@@ -379,6 +379,13 @@ const formatDistance = (place: DecisionPlace) => {
   return place.distance;
 };
 
+const formatPreviewLocation = (place: DecisionPlace) => {
+  const distance = formatDistance(place).trim();
+  const address = place.address.trim();
+
+  return [distance, address].filter(Boolean).join(' · ');
+};
+
 const PlaceArtwork = ({
   blurBottom = false,
   imageUrl,
@@ -1343,7 +1350,7 @@ const PreviewContent = ({
             </Text>
           ) : null}
           <Text numberOfLines={1} style={styles.previewAddress}>
-            {formatDistance(place)} · {place.address}
+            {formatPreviewLocation(place)}
           </Text>
         </Pressable>
         <Pressable
@@ -1388,11 +1395,6 @@ const PreviewContent = ({
         />
         <PreviewActionChip kind="directions" label="길찾기" />
       </ScrollView>
-      {reservation.kind !== 'available' ? (
-        <Text accessibilityLiveRegion="polite" style={styles.detailEmptyText}>
-          {reservation.message}
-        </Text>
-      ) : null}
       {fallbackContent?.imageState === 'error' ? (
         <Pressable accessibilityRole="button" onPress={onRetryMedia}>
           <Text style={styles.detailEmptyText}>사진을 불러오지 못했습니다. 다시 시도</Text>
@@ -1453,6 +1455,7 @@ const ExpandedPlaceContent = ({
   pending: boolean;
   place: DecisionPlace;
 }) => {
+  const insets = useSafeAreaInsets();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
     : [imageUrl];
@@ -1465,7 +1468,7 @@ const ExpandedPlaceContent = ({
 
   return (
     <ScrollView
-      contentContainerStyle={styles.detailContent}
+      contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.detailTopBar}>
@@ -1520,11 +1523,6 @@ const ExpandedPlaceContent = ({
         />
         <PreviewActionChip kind="directions" label="길찾기" />
       </ScrollView>
-      {reservation.kind !== 'available' ? (
-        <Text accessibilityLiveRegion="polite" style={styles.detailEmptyText}>
-          {reservation.message}
-        </Text>
-      ) : null}
       {fallbackContent?.imageState === 'error' ? (
         <Pressable accessibilityRole="button" onPress={onRetryMedia}>
           <Text style={styles.detailEmptyText}>사진을 불러오지 못했습니다. 다시 시도</Text>
@@ -1926,6 +1924,7 @@ export default function MapBottomSheet({
     ...explorationImageUrlsByPlaceId,
     ...previewImageUrlsByPlaceId,
   };
+  const isExpandedPlaceDetail = content.type === 'place-preview' && snapPoint === 'expanded';
   const handleCreateReservation = () => {
     if (!selectedPlace || !onCreateReservation || reservationNavigationLock.current) return;
     reservationNavigationLock.current = true;
@@ -1973,6 +1972,8 @@ export default function MapBottomSheet({
         pointerEvents="none"
         style={[
           {
+            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : 34,
+            borderTopRightRadius: isExpandedPlaceDetail ? 0 : 34,
             bottom: chromeBottomInset,
             left: chromeGap,
             right: chromeGap,
@@ -1985,31 +1986,35 @@ export default function MapBottomSheet({
             {
               borderBottomLeftRadius: chromeBottomRadius,
               borderBottomRightRadius: chromeBottomRadius,
+              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : 34,
+              borderTopRightRadius: isExpandedPlaceDetail ? 0 : 34,
             },
           ]}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={34}
+            cornerRadius={isExpandedPlaceDetail ? 0 : 34}
             glassEffectStyle="regular"
             highlightHeight={40}
             highlightOpacity={0.10}
             rimColor="rgba(255,255,255,0.60)"
-            tintColor="rgba(255,255,255,0.92)"
+            tintColor={isExpandedPlaceDetail ? '#FFFFFF' : 'rgba(255,255,255,0.92)'}
             topRimOnly
           />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
       <GlassStyles.SheetInner $inset={SHEET_RESTING_GAP}>
-      <View style={styles.handleArea} {...panHandlers}>
-        <Pressable
-          accessibilityLabel="추천 패널 크기 조절"
-          accessibilityRole="adjustable"
-          onPress={onHandlePress}
-          style={styles.handleButton}
-        >
-          <View style={styles.handle} />
-        </Pressable>
-      </View>
+      {!isExpandedPlaceDetail ? (
+        <View style={styles.handleArea} {...panHandlers}>
+          <Pressable
+            accessibilityLabel="추천 패널 크기 조절"
+            accessibilityRole="adjustable"
+            onPress={onHandlePress}
+            style={styles.handleButton}
+          >
+            <View style={styles.handle} />
+          </Pressable>
+        </View>
+      ) : null}
 
       <Animated.View
         pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
@@ -2632,7 +2637,7 @@ const styles = StyleSheet.create({
     marginTop: 13,
     width: 36,
   },
-  previewCategory: { color: '#575A62', fontSize: 13, fontWeight: '700', marginLeft: 4, paddingTop: 4 },
+  previewCategory: { color: '#575A62', flexShrink: 0, fontSize: 13, fontWeight: '700', marginLeft: 6, paddingTop: 4 },
   previewCloseButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.72)',
@@ -2653,12 +2658,12 @@ const styles = StyleSheet.create({
     width: 180,
   },
   previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
-  previewName: { color: '#1B1D22', fontSize: 21, fontWeight: '900' },
+  previewName: { color: '#1B1D22', flex: 1, flexShrink: 1, fontSize: 21, fontWeight: '900', minWidth: 0 },
   previewParkingIcon: { borderRadius: 5 },
   previewStatus: { color: '#61646C', fontSize: 13, fontWeight: '600', marginTop: 6 },
   previewStatusEmphasis: { color: '#1CB957', fontWeight: '800' },
   previewSummary: { flex: 1, paddingTop: 11 },
-  previewTitleRow: { alignItems: 'flex-start', flexDirection: 'row', paddingRight: 4 },
+  previewTitleRow: { alignItems: 'flex-start', flexDirection: 'row', paddingRight: 4, width: '100%' },
   resultAddress: { color: '#7A7D85', fontSize: 11, marginTop: 3 },
   resultDistance: { color: '#686B73', fontSize: 11, fontWeight: '700' },
   resultName: { color: '#272930', fontSize: 14, fontWeight: '800' },

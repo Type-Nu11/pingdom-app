@@ -128,13 +128,13 @@ test('availability Query key contains place id and forwards TanStack AbortSignal
   assert.deepEqual(received, { placeId: 70069, querySignal: signal });
 });
 
-test('70069-shaped empty availability is a normal disabled state', () => {
+test('70069-shaped empty availability can open the reservation page without inventing slots', () => {
   const result = buildPlaceDetailPresentation(70069, baseResources);
   assert.equal(result.name, '대구소프트웨어마이스터고등학교');
   assert.deepEqual(result.imageUrls, []);
   assert.equal(result.imageState, 'empty');
   assert.deepEqual(result.reservation, {
-    kind: 'empty', disabled: true, message: '현재 예약 가능한 일정이 없습니다',
+    kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
   });
   assert.equal(result.reviewState, 'empty');
 });
@@ -165,12 +165,18 @@ test('availability requires ACTIVE, future end, and remaining capacity', () => {
     endsAt: '2026-09-01T00:00:00Z',
     remainingCapacity,
   });
-  assert.equal(selectReservationCta(ready([active(1)]), now).kind, 'available');
-  assert.equal(selectReservationCta(ready([active(0)]), now).kind, 'full');
-  assert.equal(selectReservationCta(ready([
+  assert.deepEqual(selectReservationCta(ready([active(1)]), now), {
+    kind: 'available', disabled: false, message: '예약하기',
+  });
+  assert.deepEqual(selectReservationCta(ready([active(0)]), now), {
+    kind: 'full', disabled: false, message: '예약 가능한 인원이 없습니다',
+  });
+  assert.deepEqual(selectReservationCta(ready([
     { ...active(2), status: 'INACTIVE' },
     { ...active(2), endsAt: '2026-08-30T00:00:00Z' },
-  ]), now).kind, 'empty');
+  ]), now), {
+    kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+  });
   assert.equal(selectReservationCta(pending, now).kind, 'loading');
   assert.equal(selectReservationCta(failed(401), now).kind, 'auth-error');
   assert.equal(selectReservationCta(failed(), now).kind, 'error');

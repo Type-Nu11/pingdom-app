@@ -114,9 +114,9 @@ function PlaceListStatusOverlay({
 
 const toDecisionPlace = (place: Place): DecisionPlace => ({
   ...place,
-  address: place.address || 'Nearby place',
+  address: place.address || '',
   category: (place.category || 'PLACE').toUpperCase(),
-  distance: place.distanceMeters ? `${Math.round(place.distanceMeters)} m` : 'Nearby',
+  distance: place.distanceMeters ? `${Math.round(place.distanceMeters)} m` : '',
   distanceMeters: place.distanceMeters,
   id: place.id,
   latitude: place.latitude,
@@ -230,9 +230,13 @@ export default function MapScreen({
   } = usePlaceBookmark();
 
   const expandedSheetTop = insets.top + 2 + 60 + 8;
+  const placeDetailExpansion = mapSection === 'map' && content.type === 'place-preview'
+    ? expandedSheetTop
+    : 0;
   // Sheet spans to the screen bottom; the resting 8px gap is applied inside the sheet
-  // so the expanded state can go edge to edge without drawing outside its parent.
-  const fullSheetHeight = Math.round(height - expandedSheetTop);
+  // so a selected place can expand to a safe-area full screen while medium/collapsed
+  // positions remain anchored to the same visible heights.
+  const fullSheetHeight = Math.round(height - expandedSheetTop + placeDetailExpansion);
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
   const mediumVisibleHeight = Math.min(
@@ -621,9 +625,16 @@ export default function MapScreen({
   const mapCenterLng = !isFollowingUser && focusedPlace
     ? focusedPlace.longitude
     : dismissedMarkerCenter?.lng ?? center.lng;
+  const isExpandedPlaceDetail = mapSection === 'map'
+    && content.type === 'place-preview'
+    && snapPoint === 'expanded';
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
+      <StatusBar
+        backgroundColor={isExpandedPlaceDetail ? '#FFFFFF' : 'transparent'}
+        barStyle="dark-content"
+        translucent
+      />
       <View style={styles.mapBackground}>
         <MapCanvas
           centerLat={mapCenterLat}
