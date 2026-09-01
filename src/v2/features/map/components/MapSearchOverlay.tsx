@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Keyboard,
@@ -31,6 +32,7 @@ import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
 import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
 import type { RecommendedPlace } from '../model/place.types';
+import { resolveLocale } from '../../../shared/i18n/formatters';
 
 export type MapSearchSelection = {
   address: string;
@@ -71,18 +73,11 @@ type RecentSearch = { category: Exclude<SearchCategory, 'all'>; date: string; qu
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: SearchCategory;
-  label: string;
 }> = [
-  { id: 'all', label: '전체' },
-  { Icon: MusicAsset, id: 'music', label: '음악' },
-  { Icon: FoodAsset, id: 'food', label: '음식점' },
-  { Icon: PopupAsset, id: 'popup', label: '팝업' },
-  { Icon: FashionAsset, id: 'fashion', label: '패션' },
-  { Icon: BeautyAsset, id: 'beauty', label: '뷰티' },
-  { Icon: ArtAsset, id: 'art', label: '전시' },
-  { Icon: CafeAsset, id: 'cafe', label: '카페' },
-  { Icon: HeritageAsset, id: 'heritage', label: '문화재' },
-  { Icon: EtcAsset, id: 'etc', label: '기타' },
+  { id: 'all' }, { Icon: MusicAsset, id: 'music' }, { Icon: FoodAsset, id: 'food' },
+  { Icon: PopupAsset, id: 'popup' }, { Icon: FashionAsset, id: 'fashion' },
+  { Icon: BeautyAsset, id: 'beauty' }, { Icon: ArtAsset, id: 'art' },
+  { Icon: CafeAsset, id: 'cafe' }, { Icon: HeritageAsset, id: 'heritage' }, { Icon: EtcAsset, id: 'etc' },
 ];
 
 const RecentCategoryIcon = ({ category }: { category: RecentSearch['category'] }) => {
@@ -110,22 +105,6 @@ const toRegisteredSelection = (item: MapPlaceResult): MapSearchSelection => ({
   roadAddress: item.address,
 });
 
-function formatDistance(distanceMeters: number) {
-  if (distanceMeters >= 1000) {
-    return `${(distanceMeters / 1000).toFixed(1)}km`;
-  }
-
-  return `${Math.round(distanceMeters)}m`;
-}
-
-function formatRegistrantUsername(username: string | undefined, isLoading = false) {
-  if (!username) {
-    return isLoading ? '등록자 확인 중' : '등록자 없음';
-  }
-
-  return `등록자 ${username}`;
-}
-
 const MapSearchOverlay = ({
   centerLat,
   centerLng,
@@ -137,6 +116,7 @@ const MapSearchOverlay = ({
   onSelectPlace,
   recommendedPlaces = [],
 }: MapSearchOverlayProps) => {
+  const { i18n, t } = useTranslation();
   const inputRef = useRef<TextInput>(null);
   const [query, setQuery] = useState('');
   const [registeredQuery, setRegisteredQuery] = useState('');
@@ -201,7 +181,7 @@ const MapSearchOverlay = ({
     setQuery(normalizedQuery);
     setRecentQueries((prev) => [{
       category: activeCategory === 'all' ? 'art' : activeCategory,
-      date: new Intl.DateTimeFormat('ko-KR', { day: '2-digit', month: '2-digit' })
+      date: new Intl.DateTimeFormat(resolveLocale(i18n.language), { day: '2-digit', month: '2-digit' })
         .format(new Date()).replace(/\s/g, ''),
       query: normalizedQuery,
     }, ...prev.filter((item) => item.query !== normalizedQuery)].slice(0, 6));
@@ -231,11 +211,11 @@ const MapSearchOverlay = ({
   };
 
   const recommendationStatusText = isRecommendationsLoading
-    ? '추천 장소를 불러오고 있어요'
+    ? t('map.searchOverlay.recommendationLoading')
     : isRecommendationsError
-      ? '추천 장소를 불러오지 못했어요'
+      ? t('map.searchOverlay.recommendationError')
       : recommendedPlaces.length === 0
-        ? '주변 추천 장소가 아직 없어요'
+        ? t('map.searchOverlay.recommendationEmpty')
         : null;
 
   return (
@@ -244,7 +224,7 @@ const MapSearchOverlay = ({
         <View style={styles.searchField}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="검색 닫기"
+            accessibilityLabel={t('map.searchOverlay.close')}
             hitSlop={8}
             style={styles.backButton}
             onPress={onClose}
@@ -258,7 +238,7 @@ const MapSearchOverlay = ({
             ref={inputRef}
             returnKeyType="search"
             style={styles.searchInput}
-            placeholder="검색하기"
+            placeholder={t('map.searchOverlay.placeholder')}
             placeholderTextColor="#717481"
             value={query}
             onChangeText={handleQueryChange}
@@ -267,7 +247,7 @@ const MapSearchOverlay = ({
           {trimmedQuery ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="검색어 지우기"
+              accessibilityLabel={t('map.searchOverlay.clear')}
               hitSlop={8}
               onPress={() => {
                 setQuery('');
@@ -291,8 +271,9 @@ const MapSearchOverlay = ({
         showsHorizontalScrollIndicator={false}
         style={styles.categoryScroll}
       >
-        {categories.map(({ Icon, id, label }) => {
+        {categories.map(({ Icon, id }) => {
           const active = id === activeCategory;
+          const label = t(`map.categories.${id}`);
           return (
             <Pressable
               accessibilityRole="tab"
@@ -318,12 +299,12 @@ const MapSearchOverlay = ({
       >
         {!isResultMode ? (
           <>
-            <Text style={styles.recentTitle}>최근 검색</Text>
+            <Text style={styles.recentTitle}>{t('map.searchOverlay.recent')}</Text>
             {recentQueries.map((item) => (
               <View key={`${item.query}-${item.date}`} style={styles.recentRow}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${item.query} 검색`}
+                  accessibilityLabel={t('map.searchOverlay.recentSearch', { query: item.query })}
                   onPress={() => void runSearch(item.query)}
                   style={styles.recentMain}
                 >
@@ -333,7 +314,7 @@ const MapSearchOverlay = ({
                 <Text style={styles.recentDate}>{item.date}</Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${item.query} 최근 검색어 삭제`}
+                  accessibilityLabel={t('map.searchOverlay.recentDelete', { query: item.query })}
                   hitSlop={10}
                   onPress={() => setRecentQueries((prev) => prev.filter((query) => query.query !== item.query))}
                 >
@@ -347,7 +328,7 @@ const MapSearchOverlay = ({
         {isSearching ? (
           <View style={styles.statusRow}>
             <ActivityIndicator color="#ff1956" size="small" />
-            <Text style={styles.statusInlineText}>장소를 찾고 있어요</Text>
+            <Text style={styles.statusInlineText}>{t('map.searchOverlay.loading')}</Text>
           </View>
         ) : null}
 
@@ -359,19 +340,19 @@ const MapSearchOverlay = ({
           }`}>
             <Text style={styles.statusInlineText}>
               {env.apiMode === 'mock' && registeredStatus === 'ready'
-                ? '개발 Mock 핑덤 장소 검색 결과예요.'
+                ? t('map.searchOverlay.registeredMock')
                 : registeredStatus === 'disabled'
-                  ? '핑덤 장소 검색 기능이 비활성화되어 있어요.'
+                  ? t('map.searchOverlay.registeredDisabled')
                   : registeredStatus === 'error'
-                    ? '핑덤 장소 검색 요청에 실패했어요.'
-                    : '서버에 등록된 핑덤 장소 검색 결과가 없어요.'}
+                    ? t('map.searchOverlay.registeredError')
+                    : t('map.searchOverlay.registeredEmpty')}
             </Text>
           </View>
         ) : null}
 
         {registeredResults.length > 0 ? (
           <View style={styles.resultGroup}>
-            <Text style={styles.sectionTitle}>핑덤 장소</Text>
+            <Text style={styles.sectionTitle}>{t('map.searchOverlay.pingdomResults')}</Text>
             {registeredResults.slice(0, 5).map((item) => (
               <Pressable
                 accessibilityRole="button"
@@ -390,7 +371,7 @@ const MapSearchOverlay = ({
 
         {searchResults.length > 0 ? (
           <View style={styles.resultGroup}>
-            <Text style={styles.sectionTitle}>장소 검색 결과</Text>
+            <Text style={styles.sectionTitle}>{t('map.searchOverlay.externalResults')}</Text>
             {searchResults.slice(0, 8).map((item) => (
               <Pressable
                 accessibilityRole="button"
@@ -412,8 +393,8 @@ const MapSearchOverlay = ({
 
         {shouldShowEmptyState ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>검색 결과가 없어요</Text>
-            <Text style={styles.emptyDescription}>다른 검색어를 입력해 보세요.</Text>
+            <Text style={styles.emptyTitle}>{t('map.searchOverlay.emptyTitle')}</Text>
+            <Text style={styles.emptyDescription}>{t('map.searchOverlay.emptyBody')}</Text>
           </View>
         ) : !isSearching && !hasResults && searchStatusMessage && !hasSearched ? (
           <Text style={styles.statusText}>{searchStatusMessage}</Text>

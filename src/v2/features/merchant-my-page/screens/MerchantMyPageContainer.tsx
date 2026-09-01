@@ -47,7 +47,7 @@ export default function MerchantMyPageContainer({
   userProfileImageUrl,
   username,
 }: MerchantMyPageContainerProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const merchantProfileQuery = useMerchantOwnerProfile();
   const placeId = merchantProfileQuery.data?.placeIds[0];
@@ -84,8 +84,13 @@ export default function MerchantMyPageContainer({
   );
 
   const reviews = useMemo(
-    () => toMerchantReviews(reviewsQuery.data?.content ?? []),
-    [reviewsQuery.data],
+    () => toMerchantReviews(
+      reviewsQuery.data?.content ?? [],
+      new Date(),
+      i18n.language,
+      (key, values) => t(key, values),
+    ),
+    [i18n.language, reviewsQuery.data, t],
   );
 
   const events = useMemo(

@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
@@ -31,6 +31,25 @@ export const Header = styled.View`
   padding-right: 10px;
   padding-left: 10px;
 `;
+
+export const RefreshIndicatorContainer = styled(Animated.View)`
+  position: absolute;
+  z-index: 100;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: rgba(255, 255, 255, 0.96);
+  elevation: 12;
+  shadow-color: #10141a;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.14;
+  shadow-radius: 6px;
+`;
+
+export const PullGestureArea = styled.View``;
 
 export const HeaderShadow = styled.View`
   border-radius: 31px;
@@ -103,6 +122,12 @@ export const ProfileButton = styled.Pressable`
   height: ${MAP_TOP_OVERLAY_METRICS.searchHeight}px;
 `;
 
+export const ProfileImage = styled.Image`
+  width: ${MAP_TOP_OVERLAY_METRICS.profileIconSize}px;
+  height: ${MAP_TOP_OVERLAY_METRICS.profileIconSize}px;
+  border-radius: ${MAP_TOP_OVERLAY_METRICS.profileIconSize / 2}px;
+`;
+
 export const CategoryScroll = styled.ScrollView`
   flex-grow: 0;
   margin-top: 0;
@@ -120,16 +145,11 @@ export const CategoryContent = styled.View`
 
 export const CategoryChipButton = styled.Pressable<{ $active: boolean }>`
   border-width: 1px;
-  border-color: ${({ $active }) => ($active ? 'rgba(255,74,117,0.88)' : 'transparent')};
+  border-color: ${({ $active }) => ($active ? 'rgba(255,74,117,0.88)' : 'rgba(228,228,229,0.85)')};
   border-radius: 19px;
   background-color: ${({ $active }) => ($active
     ? 'rgba(255,201,211,0.24)'
     : (IOS ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.01)'))};
-  elevation: 1;
-  shadow-color: #000000;
-  shadow-offset: 0px 1px;
-  shadow-opacity: 0.06;
-  shadow-radius: 4px;
 `;
 
 export const CategoryChipClip = styled.View`

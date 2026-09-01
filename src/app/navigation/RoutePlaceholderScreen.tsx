@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Button from '../../shared/components/Button';
 
@@ -12,15 +13,18 @@ const RoutePlaceholderScreen = ({
   description,
   onBack,
   title,
-}: RoutePlaceholderScreenProps) => (
+}: RoutePlaceholderScreenProps) => {
+  const { t } = useTranslation();
+  return (
   <View style={styles.container}>
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
-      <Button label="뒤로 가기" onPress={onBack} />
+      <Button label={t('common.navigation.back')} onPress={onBack} />
     </View>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   card: {

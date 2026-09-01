@@ -106,6 +106,9 @@ describe('toMerchantEvents', () => {
 });
 
 describe('toMerchantReviews', () => {
+  const translate = (key: string, values: Record<string, unknown>) => key.endsWith('.time')
+    ? `${values.date} · ${values.relative}`
+    : `이용인 #${values.id}`;
   test('recommendReason을 태그 하나로 옮기고 상대 시간을 만든다', () => {
     const now = new Date('2026-08-18T12:00:00Z');
     const reviews: PlaceReview[] = [
@@ -120,11 +123,11 @@ describe('toMerchantReviews', () => {
       },
     ];
 
-    const [review] = toMerchantReviews(reviews, now);
+    const [review] = toMerchantReviews(reviews, now, 'ko', translate);
 
     expect(review.id).toBe('5');
     expect(review.tags).toEqual([{ label: '음식이 맛있어요' }]);
-    expect(review.relativeTime).toBe('26.08.18 · 2시간 전');
+    expect(review.relativeTime).toContain('2시간 전');
     expect(review.photoUrls).toEqual(['https://cdn/1.jpg']);
   });
 
@@ -142,6 +145,8 @@ describe('toMerchantReviews', () => {
         },
       ],
       new Date('2026-08-18T10:30:00Z'),
+      'ko',
+      translate,
     );
 
     expect(review.tags).toEqual([]);

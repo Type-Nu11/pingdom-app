@@ -5,27 +5,10 @@ import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from 'styled-components/native';
 
-import { resources as legacyResources } from '../i18n';
 import AppErrorBoundary from '../v2/app/AppErrorBoundary';
 import { createQueryClient } from '../v2/app/queryClient';
-import { initializeReservationI18n } from '../v2/features/reservations/i18n/reservationResources';
-import { initializeVisitVerificationI18n } from '../v2/features/place-visit-verification/i18n/visitVerificationResources';
-import { i18n } from '../v2/shared/i18n';
+import { i18n, initializeI18n } from '../v2/shared/i18n';
 import { theme } from '../v2/shared/theme';
-
-function registerLegacyTranslationBridge(): void {
-  const languages = ['en', 'ko', 'ja', 'zh', 'vi', 'th'] as const;
-
-  for (const language of languages) {
-    i18n.addResourceBundle(
-      language,
-      'translation',
-      legacyResources[language].translation,
-      true,
-      false,
-    );
-  }
-}
 
 export default function ProductionProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(createQueryClient);
@@ -34,8 +17,7 @@ export default function ProductionProviders({ children }: PropsWithChildren) {
   useEffect(() => {
     let isMounted = true;
 
-    void Promise.all([initializeReservationI18n(), initializeVisitVerificationI18n()])
-      .then(registerLegacyTranslationBridge)
+    void initializeI18n()
       .catch((error) => {
         console.warn('[Production i18n] Initialization failed:', error);
       })

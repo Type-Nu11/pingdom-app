@@ -138,7 +138,7 @@ test('70069-shaped empty availability can open the reservation page without inve
   assert.deepEqual(result.imageUrls, []);
   assert.equal(result.imageState, 'empty');
   assert.deepEqual(result.reservation, {
-    kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+    kind: 'empty', disabled: false,
   });
   assert.equal(result.reviewState, 'empty');
   assert.equal('businessHours' in result, false);
@@ -194,16 +194,16 @@ test('availability requires ACTIVE, future end, and remaining capacity', () => {
     remainingCapacity,
   });
   assert.deepEqual(selectReservationCta(ready([active(1)]), now), {
-    kind: 'available', disabled: false, message: '예약하기',
+    kind: 'available', disabled: false,
   });
   assert.deepEqual(selectReservationCta(ready([active(0)]), now), {
-    kind: 'full', disabled: false, message: '예약 가능한 인원이 없습니다',
+    kind: 'full', disabled: false,
   });
   assert.deepEqual(selectReservationCta(ready([
     { ...active(2), status: 'INACTIVE' },
     { ...active(2), endsAt: '2026-08-30T00:00:00Z' },
   ]), now), {
-    kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+    kind: 'empty', disabled: false,
   });
   assert.equal(selectReservationCta(pending, now).kind, 'loading');
   assert.equal(selectReservationCta(failed(401), now).kind, 'auth-error');
