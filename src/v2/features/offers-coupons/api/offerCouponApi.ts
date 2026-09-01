@@ -1,4 +1,5 @@
 import {
+  ApiError,
   apiClient,
   type ApiClient,
   type OperationQuery,
@@ -36,9 +37,9 @@ export type CouponPage = Omit<OperationResponse<'listMyCoupons', 200>, 'coupons'
 };
 
 /**
- * The live `/coupons` payload embeds the offer and place summary the box and
- * detail screens render, so neither has to fan out per row. The generated
- * contract predates those fields, so they are widened in here.
+ * A coupon summary. Both documented servers (`/v3/api-docs/app`) return only the
+ * identity, status and instants, but some deployments enrich the payload with an
+ * offer/place summary, so those stay optional-by-null instead of required.
  */
 export type Coupon = OperationResponse<'issueCoupon', 201> & {
   benefitDescription: string | null;
@@ -48,10 +49,51 @@ export type Coupon = OperationResponse<'issueCoupon', 201> & {
 };
 export type CouponStatus = Coupon['status'];
 
+// A single-coupon read walks the list; keep the page big and the walk bounded so
+// a large wallet cannot turn one detail view into an unbounded request fan-out.
+const COUPON_LOOKUP_PAGE_SIZE = 100;
+const COUPON_LOOKUP_MAX_PAGES = 20;
+
 export function createOfferCouponApi(client: ApiClient = apiClient) {
+  const listCoupons = async (
+    params: ListCouponsParams = {},
+    signal?: AbortSignal,
+  ): Promise<CouponPage> => {
+    // The live server responds with `totalElements` and always includes the
+    // page envelope; the generated contract (last regenerated against an older
+    // spec) still expects `totalCount`. Normalize so every field callers and
+    // the infinite query rely on is present regardless of which server answers.
+    const raw = await client.get<Record<string, unknown>>('/coupons', { params, signal });
+    const page = (raw.page ?? params.page ?? 1) as CouponPage['page'];
+    const hasNext = (raw.hasNext ?? false) as CouponPage['hasNext'];
+
+    return {
+      ...raw,
+      coupons: (raw.coupons ?? []) as CouponPage['coupons'],
+      hasNext,
+      limit: (raw.limit ?? params.limit ?? 20) as CouponPage['limit'],
+      page,
+      totalCount: (raw.totalElements ?? raw.totalCount ?? 0) as CouponPage['totalCount'],
+      totalPages: (raw.totalPages ?? (hasNext ? page + 1 : page)) as CouponPage['totalPages'],
+    } as CouponPage;
+  };
+
   return {
-    getCoupon: (couponId: number, signal?: AbortSignal): Promise<Coupon> =>
-      client.get<Coupon>(`/coupons/${couponId}`, { signal }),
+    /**
+     * Neither documented server exposes `GET /coupons/{couponId}`, so a single
+     * coupon is resolved out of the paginated list. Not-found is surfaced as a
+     * 404 `ApiError` so callers keep the same error handling either way.
+     */
+    getCoupon: async (couponId: number, signal?: AbortSignal): Promise<Coupon> => {
+      for (let page = 1; page <= COUPON_LOOKUP_MAX_PAGES; page += 1) {
+        const result = await listCoupons({ limit: COUPON_LOOKUP_PAGE_SIZE, page }, signal);
+        const found = result.coupons.find((coupon) => coupon.id === couponId);
+        if (found) return found;
+        if (!result.hasNext) break;
+      }
+
+      throw new ApiError('Coupon not found', { code: 'COUPON_NOT_FOUND', status: 404 });
+    },
 
     getOffer: (offerId: number, signal?: AbortSignal): Promise<Offer> =>
       client.get<Offer>(`/offers/${offerId}`, { signal }),
@@ -59,28 +101,7 @@ export function createOfferCouponApi(client: ApiClient = apiClient) {
     issueCoupon: (offerId: number, signal?: AbortSignal): Promise<Coupon> =>
       client.post<Coupon>(`/offers/${offerId}/coupons`, undefined, { signal }),
 
-    listCoupons: async (
-      params: ListCouponsParams = {},
-      signal?: AbortSignal,
-    ): Promise<CouponPage> => {
-      // The live server responds with `totalElements` and always includes the
-      // page envelope; the generated contract (last regenerated against an older
-      // spec) still expects `totalCount`. Normalize so every field callers and
-      // the infinite query rely on is present regardless of which server answers.
-      const raw = await client.get<Record<string, unknown>>('/coupons', { params, signal });
-      const page = (raw.page ?? params.page ?? 1) as CouponPage['page'];
-      const hasNext = (raw.hasNext ?? false) as CouponPage['hasNext'];
-
-      return {
-        ...raw,
-        coupons: (raw.coupons ?? []) as CouponPage['coupons'],
-        hasNext,
-        limit: (raw.limit ?? params.limit ?? 20) as CouponPage['limit'],
-        page,
-        totalCount: (raw.totalElements ?? raw.totalCount ?? 0) as CouponPage['totalCount'],
-        totalPages: (raw.totalPages ?? (hasNext ? page + 1 : page)) as CouponPage['totalPages'],
-      } as CouponPage;
-    },
+    listCoupons,
 
     listOffers: (params: ListOffersParams = {}, signal?: AbortSignal): Promise<OfferPage> =>
       client.get<OfferPage>('/offers', { params, signal }),
