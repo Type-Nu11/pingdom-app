@@ -11,7 +11,9 @@ import {
   StatusBadge,
   Surface,
 } from '../../../shared/components';
+import PlaceOfferCta from '../components/PlaceOfferCta';
 import { usePlaceDetail } from '../hooks/usePlaceDetail';
+import { usePlaceOfferCta } from '../hooks/usePlaceOfferCta';
 import {
   formatPlaceOperatingSummary,
   selectPlaceOperatingSummary,
@@ -21,6 +23,10 @@ import { getOperatingStatusPresentation } from '../model/placePresentation';
 export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'PlaceDetail'>) {
   const { t } = useTranslation();
   const placeQuery = usePlaceDetail(route.params.placeId);
+  // Fixed for the lifetime of the screen so the offer window is judged against a
+  // single instant rather than re-evaluated on every render.
+  const [now] = React.useState(() => new Date().toISOString());
+  const offerCta = usePlaceOfferCta(route.params.placeId, now);
 
   if (placeQuery.isPending) {
     return (
@@ -67,6 +73,9 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
               {operatingSummary.detailText ? ` · ${operatingSummary.detailText}` : ''}
             </OperatingLine>
           </Section>
+          {offerCta.kind === 'ready' ? (
+            <PlaceOfferCta issuance={offerCta.issuance} offer={offerCta.offer} />
+          ) : null}
           <Button label={t('placeDetail.back')} onPress={navigation.goBack} />
         </Surface>
       </Content>

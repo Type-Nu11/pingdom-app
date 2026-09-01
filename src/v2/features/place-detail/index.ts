@@ -7,6 +7,8 @@ export {
   usePlaceDetail,
 } from './hooks/usePlaceDetail';
 export { usePlaceDetailPresentation } from './hooks/usePlaceDetailPresentation';
+export { usePlaceOfferCta, type PlaceOfferCtaState } from './hooks/usePlaceOfferCta';
+export { default as PlaceOfferCta } from './components/PlaceOfferCta';
 export type { PlaceAvailability, PlaceAvailabilities, PlaceDetail } from './model/placeDetail.types';
 export {
   buildPlaceDetailPresentation,
