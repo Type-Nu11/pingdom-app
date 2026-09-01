@@ -13,29 +13,9 @@ export interface paths {
         };
         /**
          * 내 관광객 Coupon 목록 조회
-         * @description Offer 제목·혜택과 장소 정보는 Coupon 발급 시점 스냅샷을 반환하므로 Offer 종료 또는 이후 정보 변경과 무관하게 유지됩니다. 원본 정보를 복구할 수 없으면 해당 필드는 null입니다. 발급일 기간은 양 끝값을 포함합니다. status=ISSUED는 아직 만료되지 않은 쿠폰, EXPIRED는 발급 상태이면서 expiresAt이 현재 시각 이하인 쿠폰입니다. 기본 정렬은 issuedAt 내림차순, id 내림차순이며 page와 limit은 각각 최소 1, limit 최대 100으로 보정됩니다.
+         * @description 발급일 기간은 양 끝값을 포함합니다. status=ISSUED는 아직 만료되지 않은 쿠폰, EXPIRED는 발급 상태이면서 expiresAt이 현재 시각 이하인 쿠폰입니다. 기본 정렬은 issuedAt 내림차순, id 내림차순이며 page와 limit은 각각 최소 1, limit 최대 100으로 보정됩니다.
          */
         get: operations["listMyCoupons"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/coupons/{couponId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 내 관광객 Coupon 단건 조회
-         * @description 본인이 발급받은 Coupon의 현재 상태를 조회합니다. 만료 시각이 지난 미사용 Coupon은 EXPIRED로 반환하며, REDEEMED Coupon은 redeemedAt을 함께 반환합니다.
-         */
-        get: operations["getMyCoupon"];
         put?: never;
         post?: never;
         delete?: never;
@@ -89,7 +69,7 @@ export interface paths {
         put?: never;
         /**
          * 관광객 Coupon 발급
-         * @description 진행 중인 여행 일정이 있는 일반 사용자에게 Offer당 한 번만 발급합니다. 발급 시 Offer 제목·혜택과 장소 정보를 Coupon에 스냅샷으로 저장합니다.
+         * @description 진행 중인 여행 일정이 있는 일반 사용자에게 Offer당 한 번만 발급합니다.
          */
         post: operations["issueCoupon"];
         delete?: never;
@@ -125,17 +105,6 @@ export interface components {
              * @example 1
              */
             offerId: number;
-            /** @example 관광객 웰컴 음료 */
-            offerTitle: string | null;
-            /** @example 음료 1잔 무료 */
-            benefitDescription: string | null;
-            /**
-             * Format: int64
-             * @example 1
-             */
-            placeId: number | null;
-            /** @example 핑덤 카페 */
-            placeName: string | null;
             /** @example 3fa85f64-5717-4562-b3fc-2c963f66afa6 */
             code: string;
             /** @enum {string} */
@@ -306,59 +275,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getMyCoupon: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /**
-                 * @description Coupon ID
-                 * @example 1
-                 */
-                couponId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Coupon 단건 조회 성공 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CouponResponse"];
-                };
-            };
-            /** @description 인증되지 않은 요청 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Coupon을 찾을 수 없거나 요청자의 Coupon이 아님 */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
         };

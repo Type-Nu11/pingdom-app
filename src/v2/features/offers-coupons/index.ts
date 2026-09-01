@@ -11,7 +11,6 @@ export type {
   RedeemedCoupon,
 } from './api/offerCouponApi';
 export {
-  createCouponQueryOptions,
   createCouponsQueryOptions,
   createInfiniteCouponsQueryOptions,
   createIssueCouponMutationOptions,
@@ -19,7 +18,6 @@ export {
   createOffersQueryOptions,
   createRedeemCouponMutationOptions,
   offerCouponQueryKeys,
-  useCoupon,
   useCoupons,
   useInfiniteCoupons,
   useIssueCoupon,

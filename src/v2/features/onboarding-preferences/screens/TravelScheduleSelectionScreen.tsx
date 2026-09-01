@@ -356,7 +356,7 @@ const DayCell = styled.View<{
 }>`
   width: 14.2857%;
   height: ${({ theme }) => theme.spacing.xl + theme.spacing.md}px;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   border-top-left-radius: ${({ $roundedLeft, theme }) =>
     $roundedLeft ? theme.radius.full : theme.radius.none}px;

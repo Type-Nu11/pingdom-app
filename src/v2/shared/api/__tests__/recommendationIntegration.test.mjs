@@ -18,9 +18,14 @@ import {
 } from '../../../features/current-activity-intent/hooks/useCurrentActivityIntent.ts';
 import { currentActivityIntentQueryKeys } from '../../../features/current-activity-intent/model/currentActivityIntentQueryKeys.ts';
 import { recommendationQueryKeys } from '../../../features/travel-purposes/model/travelPurposeQueryKeys.ts';
+import { resources } from '../../i18n/resources.ts';
+
+const readTranslation = (key) => key.split('.').reduce(
+  (value, part) => value?.[part], resources.ko.translation,
+);
 
 test('recommendation presentation uses only applied personalization and limit reasons', () => {
-  assert.deepEqual(createRecommendationPresentation({}), {
+  assert.deepEqual(createRecommendationPresentation({}, readTranslation), {
     contextText: null,
     limitText: null,
   });
@@ -30,7 +35,7 @@ test('recommendation presentation uses only applied personalization and limit re
     appliedRadiusKm: 10,
     limitReasons: [],
     requestedRadiusKm: 5,
-  }), {
+  }, readTranslation), {
     contextText: null,
     limitText: null,
   });
@@ -40,7 +45,7 @@ test('recommendation presentation uses only applied personalization and limit re
     appliedRadiusKm: 10,
     limitReasons: ['RADIUS_EXPANDED'],
     requestedRadiusKm: 5,
-  }), {
+  }, readTranslation), {
     contextText: 'K-POP · 맛집 · 카페 방문',
     limitText: '추천 결과를 찾기 위해 검색 반경을 넓혔어요.',
   });
@@ -51,7 +56,7 @@ test('recommendation presentation describes only limit reasons returned by the s
     appliedRadiusKm: null,
     limitReasons: ['FALLBACK_CANDIDATE_POOL', 'REQUEST_LIMIT_CLAMPED'],
     requestedRadiusKm: undefined,
-  }), {
+  }, readTranslation), {
     contextText: null,
     limitText: '조건에 맞는 장소가 적어 후보 범위를 넓혀 추천했어요. 서버 기준에 맞춰 추천 개수를 조정했어요.',
   });
@@ -59,7 +64,7 @@ test('recommendation presentation describes only limit reasons returned by the s
     appliedRadiusKm: null,
     limitReasons: ['RADIUS_EXPANDED'],
     requestedRadiusKm: null,
-  }), {
+  }, readTranslation), {
     contextText: null,
     limitText: '추천 결과를 찾기 위해 검색 반경을 넓혔어요.',
   });

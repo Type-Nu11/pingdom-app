@@ -15,15 +15,11 @@ function fakeClient(overrides: Partial<ApiClient>): ApiClient {
 const serverPage = {
   coupons: [
     {
-      benefitDescription: '음료 1잔 무료',
       code: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
       expiresAt: '2026-09-30T23:59:59',
       id: 1,
       issuedAt: '2026-08-10T09:00:00',
       offerId: 7,
-      offerTitle: '관광객 웰컴 음료',
-      placeId: 3,
-      placeName: '핑덤 카페',
       redeemedAt: null,
       status: 'ISSUED',
     },
@@ -82,18 +78,5 @@ describe('offerCouponApi.listCoupons', () => {
     await api.listCoupons();
 
     expect(get).toHaveBeenCalledWith('/coupons', { params: {}, signal: undefined });
-  });
-});
-
-describe('offerCouponApi.getCoupon', () => {
-  test('couponId로 단건 조회 경로를 호출하고 AbortSignal을 전달한다', async () => {
-    const get = jest.fn().mockResolvedValue(serverPage.coupons[0]);
-    const api = createOfferCouponApi(fakeClient({ get }));
-    const signal = new AbortController().signal;
-
-    const coupon = await api.getCoupon(1, signal);
-
-    expect(get).toHaveBeenCalledWith('/coupons/1', { signal });
-    expect(coupon.status).toBe('ISSUED');
   });
 });

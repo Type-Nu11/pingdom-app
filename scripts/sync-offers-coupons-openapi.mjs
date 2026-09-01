@@ -10,7 +10,6 @@ const outputPath = new URL('../docs/api/offers-coupons.openapi.json', import.met
 // renumber fails loudly instead of silently pointing at the wrong operation.
 const TARGET_OPERATIONS = new Map([
   ['/coupons', [['get', 'list_5', 'listMyCoupons']]],
-  ['/coupons/{couponId}', [['get', 'get_7', 'getMyCoupon']]],
   ['/offers', [['get', 'list_4', 'listIssuableOffers']]],
   ['/offers/{offerId}', [['get', 'get_5', 'getIssuableOffer']]],
   ['/offers/{offerId}/coupons', [['post', 'issue', 'issueCoupon']]],

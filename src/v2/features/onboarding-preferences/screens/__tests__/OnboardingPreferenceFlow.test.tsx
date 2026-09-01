@@ -198,7 +198,7 @@ describe('OnboardingPreferenceFlow', () => {
     expect(screen.getByText('2026.07.18')).toBeVisible();
   });
 
-  test('uses Korean when selected and English as the fallback for other V1 languages', async () => {
+  test('uses Korean when selected and ignores unsupported legacy language values', async () => {
     const koreanRender = await renderWithProviders(
       <OnboardingPreferenceFlow
         language="ko"
@@ -221,6 +221,6 @@ describe('OnboardingPreferenceFlow', () => {
       { language: 'ko' },
     );
 
-    expect(await screen.findByText('Select Travel Purpose')).toBeVisible();
+    expect(await screen.findByText('여행 목적을 선택해 주세요')).toBeVisible();
   });
 });

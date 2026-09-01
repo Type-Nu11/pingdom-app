@@ -3,14 +3,13 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { offerCouponApi, type CouponPage } from '../../../offers-coupons/api/offerCouponApi';
+import { placeDetailApi } from '../../../place-detail';
+import { ApiError } from '../../../../shared/api';
 import CouponBoxScreen from '../CouponBoxScreen';
 
 type CouponInput = {
   id: number;
   offerId?: number;
-  offerTitle?: string | null;
-  placeName?: string | null;
-  benefitDescription?: string | null;
   status?: 'ISSUED' | 'REDEEMED' | 'EXPIRED';
   issuedAt?: string;
   expiresAt?: string;
@@ -20,14 +19,10 @@ type CouponInput = {
 function couponPage(coupons: CouponInput[], overrides: Partial<CouponPage> = {}): CouponPage {
   return {
     coupons: coupons.map((coupon) => ({
-      benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
       code: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
       expiresAt: '2027-08-18T23:59:59',
       issuedAt: '2026-08-18T09:00:00',
       offerId: 10,
-      offerTitle: '생일 할인 쿠폰',
-      placeId: 100,
-      placeName: '대성반점',
       redeemedAt: null,
       status: 'ISSUED',
       ...coupon,
@@ -35,13 +30,26 @@ function couponPage(coupons: CouponInput[], overrides: Partial<CouponPage> = {})
     hasNext: false,
     limit: 20,
     page: 1,
-    totalCount: coupons.length,
+    totalElements: coupons.length,
     totalPages: 1,
     ...overrides,
   } as CouponPage;
 }
 
 describe('CouponBoxScreen', () => {
+  beforeEach(() => {
+    jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue({
+      benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
+      id: 10,
+      placeId: 100,
+      title: '생일 할인 쿠폰',
+    });
+    jest.spyOn(placeDetailApi, 'getPlaceDetail').mockResolvedValue({
+      id: 100,
+      name: '대성반점',
+    } as never);
+  });
+
   test('쿠폰이 없으면 빈 보관함을 보여준다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([]));
 
@@ -55,17 +63,27 @@ describe('CouponBoxScreen', () => {
 
     await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('쿠폰을 불러오지 못했어요.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy());
     expect(screen.getByText('다시 시도')).toBeTruthy();
     expect(screen.queryByText('보유한 쿠폰이 없어요')).toBeNull();
   });
 
-  test('매장명·쿠폰명·기간을 쿠폰 응답 하나로 그린다', async () => {
+  test('401은 공통 인증 오류 상태로 구분한다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockRejectedValue(
+      new ApiError('로그인이 필요합니다', { status: 401 }),
+    );
+
+    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('로그인이 필요합니다')).toBeTruthy());
+    expect(screen.getByText('로그인 정보 또는 요청 키가 만료되었습니다. 다시 로그인해 주세요.'))
+      .toBeTruthy();
+  });
+
+  test('현재 Coupon DTO의 offerId를 기존 Offer·Place 조회로 보강한다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(
       couponPage([{ id: 1, offerId: 10, status: 'ISSUED' }]),
     );
-    const getOffer = jest.spyOn(offerCouponApi, 'getOffer');
-
     await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
 
     await waitFor(() => expect(screen.getByText('생일 할인 쿠폰')).toBeTruthy());
@@ -74,8 +92,40 @@ describe('CouponBoxScreen', () => {
     expect(screen.getByTestId('v2-coupon-card-period')).toHaveTextContent('26.08.18~27.08.18');
     // 전체 코드는 목록에 노출하지 않는다.
     expect(screen.queryByText('3fa85f64-5717-4562-b3fc-2c963f66afa6')).toBeNull();
-    // 목록은 offer/place를 행마다 다시 조회하지 않는다.
-    expect(getOffer).not.toHaveBeenCalled();
+    expect(offerCouponApi.getOffer).toHaveBeenCalledWith(10, expect.anything());
+    expect(placeDetailApi.getPlaceDetail).toHaveBeenCalledWith(100, expect.anything());
+  });
+
+  test('사용 완료와 만료 상태를 색상뿐 아니라 텍스트로 표시한다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(
+      couponPage([
+        { id: 1, status: 'REDEEMED' },
+        { id: 2, status: 'EXPIRED' },
+      ]),
+    );
+
+    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+
+    await waitFor(() => expect(screen.getAllByTestId('v2-coupon-card-status')).toHaveLength(2));
+    expect(screen.getAllByTestId('v2-coupon-card-status').map((node) => node.props.children))
+      .toEqual(['사용 완료', '만료']);
+  });
+
+  test('상태 필터를 누르면 해당 서버 enum으로 목록을 다시 조회한다', async () => {
+    const listCoupons = jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([]));
+
+    const { user } = await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    await waitFor(() => expect(screen.getByText('보유한 쿠폰이 없어요')).toBeTruthy());
+
+    await user.press(screen.getByTestId('v2-coupon-filter-REDEEMED'));
+
+    await waitFor(() => expect(listCoupons).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 20, page: 1, status: 'REDEEMED' }),
+      expect.anything(),
+    ));
+    expect(screen.getByText('사용 완료 쿠폰이 없어요')).toBeTruthy();
+    expect(screen.getByTestId('v2-coupon-filter-REDEEMED').props.accessibilityState)
+      .toEqual({ selected: true });
   });
 
   test('카드를 누르면 상세로 넘길 수 있게 쿠폰 전체를 넘긴다', async () => {
@@ -98,58 +148,6 @@ describe('CouponBoxScreen', () => {
       offerId: 10,
       status: 'ISSUED',
     }));
-  });
-
-  test('사용 완료·만료 쿠폰은 기간 줄에 상태를 텍스트로 밝힌다', async () => {
-    jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([
-      { id: 1, status: 'REDEEMED', redeemedAt: '2026-08-20T12:00:00' },
-      { id: 2, status: 'EXPIRED' },
-      { id: 3, status: 'ISSUED' },
-    ]));
-
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
-
-    const periods = await screen.findAllByTestId('v2-coupon-card-period');
-    expect(periods[0]).toHaveTextContent(/26\.08\.18~27\.08\.18 · 사용 완료$/);
-    expect(periods[1]).toHaveTextContent(/26\.08\.18~27\.08\.18 · 기간 만료$/);
-    // 사용 가능한 쿠폰은 기간만 남고 상태 문구가 붙지 않는다.
-    expect(periods[2]).toHaveTextContent('26.08.18~27.08.18');
-  });
-
-  test('상태 필터를 누르면 서버 status 파라미터로 다시 조회한다', async () => {
-    const listCoupons = jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(
-      couponPage([{ id: 1, offerId: 10 }]),
-    );
-
-    const { user } = await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
-    await waitFor(() => expect(screen.getByText('생일 할인 쿠폰')).toBeTruthy());
-
-    // 기본 진입은 status 없이 조회한다.
-    expect(listCoupons).toHaveBeenLastCalledWith(
-      expect.not.objectContaining({ status: expect.anything() }),
-      expect.anything(),
-    );
-
-    await user.press(screen.getByTestId('v2-coupon-box-filter-REDEEMED'));
-
-    await waitFor(() => expect(listCoupons).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 1, status: 'REDEEMED' }),
-      expect.anything(),
-    ));
-  });
-
-  test('필터 결과가 비면 상태별 빈 목록 문구를 보여준다', async () => {
-    jest.spyOn(offerCouponApi, 'listCoupons').mockImplementation(
-      async (params) => couponPage(params?.status === 'EXPIRED' ? [] : [{ id: 1, offerId: 10 }]),
-    );
-
-    const { user } = await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
-    await waitFor(() => expect(screen.getByText('생일 할인 쿠폰')).toBeTruthy());
-
-    await user.press(screen.getByTestId('v2-coupon-box-filter-EXPIRED'));
-
-    await waitFor(() => expect(screen.getByText('이 상태의 쿠폰이 없어요')).toBeTruthy());
-    expect(screen.queryByText('보유한 쿠폰이 없어요')).toBeNull();
   });
 
   test('다음 페이지가 있으면 끝에 도달할 때 이어서 조회한다', async () => {

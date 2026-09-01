@@ -5,7 +5,6 @@ const document = JSON.parse(await readFile(contractPath, 'utf8'));
 
 const expectedOperations = new Map([
   ['/coupons', [['get', 'listMyCoupons']]],
-  ['/coupons/{couponId}', [['get', 'getMyCoupon']]],
   ['/offers', [['get', 'listIssuableOffers']]],
   ['/offers/{offerId}', [['get', 'getIssuableOffer']]],
   ['/offers/{offerId}/coupons', [['post', 'issueCoupon']]],

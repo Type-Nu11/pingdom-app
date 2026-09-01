@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import { useInfiniteCoupons, type Coupon } from '../../offers-coupons';
-import { ErrorState } from '../../../shared/components';
+import { ApiErrorState } from '../../../shared/components';
 import Button from '../../../shared/components/Button';
 import CouponCard from '../components/CouponCard';
 import CouponCardSkeleton from '../components/CouponCardSkeleton';
@@ -13,15 +13,12 @@ import {
   COUPON_STATUS_FILTERS,
   formatOfferPeriod,
   isCouponUsable,
-  toCouponBoxEntries,
   toCouponBoxListState,
   type CouponBoxEntry,
   type CouponStatusFilter,
 } from '../model/couponBoxEntries';
+import { useCouponBoxEntries } from '../hooks/useCouponBoxEntries';
 import BackIcon from '../../../shared/assets/icons/back.svg';
-// Imported as a value (not via `useTheme`) because the filter row's content
-// style is a module-level constant, outside the styled-components context.
-import { theme as appTheme } from '../../../shared/theme';
 
 export type CouponBoxScreenProps = {
   onBack: () => void;
@@ -39,13 +36,10 @@ export default function CouponBoxScreen({
   const theme = useTheme();
   const locale = i18n.language;
   const [statusFilter, setStatusFilter] = useState<CouponStatusFilter>('ALL');
-  // `status` is a server filter (ISSUED | REDEEMED | EXPIRED); `ALL` omits it so
-  // the query key and request stay identical to the unfiltered box.
-  const couponsQuery = useInfiniteCoupons(
-    statusFilter === 'ALL'
-      ? { limit: PAGE_LIMIT }
-      : { limit: PAGE_LIMIT, status: statusFilter },
-  );
+  const couponsQuery = useInfiniteCoupons({
+    limit: PAGE_LIMIT,
+    ...(statusFilter === 'ALL' ? {} : { status: statusFilter }),
+  });
 
   const coupons = useMemo<Coupon[]>(
     () => (couponsQuery.data?.pages ?? []).flatMap((page) => page.coupons),
@@ -56,10 +50,11 @@ export default function CouponBoxScreen({
     [coupons],
   );
 
-  const entries = toCouponBoxEntries(coupons, {
+  const fallback = useMemo(() => ({
     description: t('myPage.couponBox.fallbackDescription'),
     title: t('myPage.couponBox.fallbackTitle'),
-  });
+  }), [t]);
+  const entries = useCouponBoxEntries(coupons, fallback);
 
   const hasLoadedCoupons = coupons.length > 0;
   const listState = toCouponBoxListState(couponsQuery.isError && !hasLoadedCoupons, entries);
@@ -81,33 +76,24 @@ export default function CouponBoxScreen({
     void couponsQuery.refetch();
   };
 
-  const renderCoupon = ({ item }: { item: CouponBoxEntry }) => {
-    const period = formatOfferPeriod(item.issuedAt, item.expiresAt, locale, { compact: true });
-    // A used or expired coupon has to say so in text, not only by the dimmed
-    // badge, so the list is readable without relying on colour alone.
-    const status = item.status;
-    const stateLabel = isCouponUsable(status)
-      ? undefined
-      : t(`myPage.couponBox.statusLabel.${status}`);
-
-    return (
-      <CouponCard
-        description={item.description}
-        muted={stateLabel !== undefined}
-        onPress={onOpenCoupon
-          ? () => {
-            const coupon = couponsById.get(item.couponId);
-            if (coupon) {
-              onOpenCoupon(coupon);
-            }
+  const renderCoupon = ({ item }: { item: CouponBoxEntry }) => (
+    <CouponCard
+      description={item.description}
+      muted={!isCouponUsable(item.status)}
+      onPress={onOpenCoupon
+        ? () => {
+          const coupon = couponsById.get(item.couponId);
+          if (coupon) {
+            onOpenCoupon(coupon);
           }
-          : undefined}
-        periodText={stateLabel ? `${period} · ${stateLabel}` : period}
-        placeName={item.placeName}
-        title={item.title}
-      />
-    );
-  };
+        }
+        : undefined}
+      periodText={formatOfferPeriod(item.issuedAt, item.expiresAt, locale, { compact: true })}
+      placeName={item.placeName}
+      statusText={t(`myPage.couponBox.status.${item.status}`)}
+      title={item.title}
+    />
+  );
 
   const renderFooter = () => {
     if (couponsQuery.isFetchingNextPage) {
@@ -148,44 +134,41 @@ export default function CouponBoxScreen({
         <Spacer />
       </TopBar>
 
-      {/* Horizontal scroll keeps every chip reachable when a translation is long
-          or the display is narrow, instead of clipping the last one. */}
-      <FilterRow
-        contentContainerStyle={FILTER_ROW_CONTENT_STYLE}
+      <FilterScroll
+        contentContainerStyle={FILTER_CONTAINER_STYLE}
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        {COUPON_STATUS_FILTERS.map((value) => {
-          const selected = value === statusFilter;
+        {COUPON_STATUS_FILTERS.map((filter) => {
+          const selected = filter === statusFilter;
           return (
             <FilterChip
-              accessibilityLabel={t(`myPage.couponBox.filters.${value}`)}
+              $selected={selected}
+              accessibilityLabel={t(`myPage.couponBox.filters.${filter}`)}
               accessibilityRole="button"
               accessibilityState={{ selected }}
               hitSlop={8}
-              key={value}
-              onPress={() => setStatusFilter(value)}
-              selected={selected}
-              testID={`v2-coupon-box-filter-${value}`}
+              key={filter}
+              onPress={() => setStatusFilter(filter)}
+              testID={`v2-coupon-filter-${filter}`}
             >
-              <FilterChipText selected={selected}>
-                {t(`myPage.couponBox.filters.${value}`)}
-              </FilterChipText>
+              <FilterLabel $selected={selected}>
+                {t(`myPage.couponBox.filters.${filter}`)}
+              </FilterLabel>
             </FilterChip>
           );
         })}
-      </FilterRow>
+      </FilterScroll>
 
       {couponsQuery.isLoading ? (
         <SkeletonList>
           {SKELETON_KEYS.map((key) => <CouponCardSkeleton key={key} />)}
         </SkeletonList>
       ) : listState.kind === 'error' ? (
-        <ErrorState
-          actionLabel={t('myPage.retry')}
-          description={t('myPage.couponBox.error')}
+        <ApiErrorState
+          error={couponsQuery.error}
           fill
-          onAction={retry}
+          onRetry={retry}
         />
       ) : (
         <FlatList
@@ -195,9 +178,11 @@ export default function CouponBoxScreen({
           testID="v2-coupon-box-list"
           ListEmptyComponent={(
             <EmptyText>
-              {t(statusFilter === 'ALL'
-                ? 'myPage.couponBox.empty'
-                : 'myPage.couponBox.emptyFiltered')}
+              {statusFilter === 'ALL'
+                ? t('myPage.couponBox.empty')
+                : t('myPage.couponBox.emptyFiltered', {
+                  status: t(`myPage.couponBox.filters.${statusFilter}`),
+                })}
             </EmptyText>
           )}
           ListFooterComponent={renderFooter()}
@@ -220,12 +205,7 @@ export default function CouponBoxScreen({
 const EMPTY_LIST: CouponBoxEntry[] = [];
 
 const CONTENT_CONTAINER_STYLE = { flexGrow: 1, gap: 14, padding: 24 } as const;
-
-const FILTER_ROW_CONTENT_STYLE = {
-  gap: appTheme.spacing.sm,
-  paddingHorizontal: appTheme.spacing.lg,
-  paddingVertical: appTheme.spacing.sm,
-} as const;
+const FILTER_CONTAINER_STYLE = { gap: 8, paddingHorizontal: 24, paddingVertical: 12 } as const;
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -255,32 +235,26 @@ const TopBarTitle = styled.Text`
   font-weight: 500;
 `;
 
-const FilterRow = styled.ScrollView`
+const FilterScroll = styled.ScrollView`
   flex-grow: 0;
 `;
 
-// `surface` equals `background`, so an unselected chip is read from its outline;
-// `surfaceMuted` gives it a fill the eye can catch before the border.
-const FilterChip = styled.Pressable<{ selected: boolean }>`
-  min-height: 36px;
-  justify-content: center;
-  padding: 6px 14px;
-  border-radius: 999px;
+const FilterChip = styled.Pressable<{ $selected: boolean }>`
+  padding: 8px 14px;
   border-width: 1px;
-  border-color: ${({ selected, theme }) => (
-    selected ? theme.colors.primary : theme.colors.border
+  border-color: ${({ $selected, theme }) => (
+    $selected ? theme.colors.primary : theme.colors.border
   )};
-  background-color: ${({ selected, theme }) => (
-    selected ? theme.colors.primarySoft : theme.colors.surfaceMuted
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ $selected, theme }) => (
+    $selected ? theme.colors.primarySelected : theme.colors.surface
   )};
 `;
 
-const FilterChipText = styled.Text<{ selected: boolean }>`
-  color: ${({ selected, theme }) => (
-    selected ? theme.colors.primary : theme.colors.textMuted
-  )};
+const FilterLabel = styled.Text<{ $selected: boolean }>`
+  color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.text)};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  font-weight: ${({ selected }) => (selected ? 600 : 400)};
+  font-weight: 600;
 `;
 
 const SkeletonList = styled.View`

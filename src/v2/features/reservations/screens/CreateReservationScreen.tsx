@@ -269,7 +269,7 @@ const MonthTitle = styled.Text`color: ${({ theme }) => theme.colors.textStrong};
 const WeekRow = styled.View`flex-direction: row; margin-top: ${({ theme }) => theme.spacing.sm}px;`;
 const Weekday = styled.Text`width: 14.285%; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
 const CalendarGrid = styled.View`flex-direction: row; flex-wrap: wrap; margin-top: ${({ theme }) => theme.spacing.xs}px;`;
-const DayCell = styled.View`width: 14.285%; height: 50px; align-items: center; justify-content: center;`;
+const DayCell = styled.View`width: 14.285%; height: 50px; align-items: flex-start; justify-content: center;`;
 const DayButton = styled.Pressable<{ $selected: boolean }>`width: 44px; height: 46px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'};`;
 const DayText = styled.Text<{ $available: boolean; $selected: boolean }>`color: ${({ $available, $selected, theme }) => $selected ? theme.colors.onPrimary : $available ? theme.colors.textStrong : theme.colors.disabled}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $available, $selected }) => $available || $selected ? '700' : '400'};`;
 const DayStatus = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.onPrimary : theme.colors.primary}; font-size: 8px;`;

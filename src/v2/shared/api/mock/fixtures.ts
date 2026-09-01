@@ -159,10 +159,6 @@ export const offerPageFixture = {
 export const couponFixture = {
   id: 501,
   offerId: 401,
-  offerTitle: 'Mock tourist-only deal',
-  benefitDescription: '10% off',
-  placeId: 17,
-  placeName: 'Mock Cafe',
   code: '00000000-0000-4000-8000-000000000501',
   status: 'ISSUED',
   issuedAt: '2026-07-23T05:30:00Z',
