@@ -34,6 +34,10 @@ const COPY_KEYS: Record<ApiErrorUxKind, { description: string; title: string }> 
     description: 'common.apiError.generic.description',
     title: 'common.apiError.generic.title',
   },
+  network: {
+    description: 'common.apiError.network.description',
+    title: 'common.apiError.network.title',
+  },
   notFound: {
     description: 'common.apiError.notFound.description',
     title: 'common.apiError.notFound.title',

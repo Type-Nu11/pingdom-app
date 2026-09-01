@@ -1,6 +1,7 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
 
+import { ApiError } from '../../../../shared/api';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { offerCouponApi, type Coupon } from '../../../offers-coupons';
 import { placeDetailApi } from '../../../place-detail';
@@ -186,6 +187,43 @@ describe('CouponDetailContainer', () => {
 
     await waitFor(() => expect(screen.getByText('쿠폰 정보를 불러오지 못했어요.')).toBeTruthy());
     expect(screen.queryByTestId('v2-coupon-qr')).toBeNull();
+  });
+
+  test('최신 상태 조회 네트워크 오류는 오래된 QR 대신 재시도를 제공한다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockRejectedValue(
+      new ApiError('offline detail', { isNetworkError: true }),
+    );
+
+    const { user } = await renderWithProviders(
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByText('연결에 문제가 있습니다')).toBeTruthy());
+    expect(screen.queryByTestId('v2-coupon-qr')).toBeNull();
+    expect(screen.queryByText('offline detail')).toBeNull();
+    await user.press(screen.getByText('다시 시도'));
+    expect(offerCouponApi.listCoupons).toHaveBeenCalledTimes(2);
+  });
+
+  test('최신 상태 조회 401은 로그인 복구 CTA로 연결한다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockRejectedValue(
+      new ApiError('expired token detail', { code: 'TOKEN_EXPIRED', status: 401 }),
+    );
+    const onSignIn = jest.fn();
+    const { user } = await renderWithProviders(
+      <CouponDetailContainer
+        couponId={1}
+        onBack={jest.fn()}
+        onReserve={jest.fn()}
+        onSignIn={onSignIn}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('로그인이 필요합니다')).toBeTruthy());
+    expect(screen.queryByTestId('v2-coupon-qr')).toBeNull();
+    expect(screen.queryByText('expired token detail')).toBeNull();
+    await user.press(screen.getByText('다시 로그인'));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
   test('영어 locale에서 QR 안내와 만료 시각을 표시한다', async () => {

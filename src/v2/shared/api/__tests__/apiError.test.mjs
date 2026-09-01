@@ -99,6 +99,79 @@ test('network and unexpected errors remain retryable', () => {
   assert.equal(shouldRetryQuery(0, new ApiError('server unavailable', { status: 503 })), true);
 });
 
+test('transport failures classify as a distinct retryable network kind', () => {
+  const networkError = toApiError({
+    code: 'ERR_NETWORK',
+    isAxiosError: true,
+    message: 'Network Error',
+  });
+  const ux = getApiErrorUx(networkError);
+
+  assert.equal(ux.kind, 'network');
+  assert.equal(ux.action, 'retry');
+  assert.equal(ux.retryable, true);
+
+  // A 5xx with a response is NOT a network error: still generic + retryable.
+  const serverError = getApiErrorUx(new ApiError('unavailable', { status: 503 }));
+  assert.equal(serverError.kind, 'generic');
+  assert.equal(serverError.retryable, true);
+});
+
+test('retryable is true only for network and generic, false for every classified domain kind', () => {
+  const retryable = [
+    getApiErrorUx(new Error('offline')),
+    getApiErrorUx(toApiError({ code: 'ERR_NETWORK', isAxiosError: true, message: 'Network Error' })),
+  ];
+  for (const ux of retryable) {
+    assert.equal(ux.retryable, true);
+  }
+
+  const notRetryable = [
+    new ApiError('x', { code: 'TOKEN_EXPIRED', status: 401 }),
+    new ApiError('x', { code: 'ROLE_REQUIRED', status: 403 }),
+    new ApiError('x', { code: 'VALIDATION_FAILED', status: 400 }),
+    new ApiError('x', { code: 'COUPON_NOT_FOUND', status: 404 }),
+    new ApiError('x', { code: 'COUPON_ALREADY_ISSUED', status: 409 }),
+    new ApiError('x', { code: 'COUPON_EXPIRED', status: 410 }),
+    new ApiError('x', { status: 409 }),
+    new ApiError('x', { code: 'UNSUPPORTED_APP_VERSION', status: 426 }),
+  ];
+  for (const error of notRetryable) {
+    assert.equal(getApiErrorUx(error).retryable, false);
+  }
+});
+
+test('coupon and offer operation errors map to stable UX kinds', () => {
+  // status, code, expectedKind — code omitted when the server may not send one.
+  const cases = [
+    // getOffer / listIssuableOffers
+    [401, undefined, 'authentication'],
+    [403, undefined, 'authorization'],
+    [404, 'OFFER_NOT_FOUND', 'notFound'],
+    // issueCoupon
+    [404, 'COUPON_NOT_FOUND', 'notFound'],
+    [409, 'COUPON_ALREADY_ISSUED', 'conflict'],
+    [409, 'CAPACITY_EXCEEDED', 'conflict'],
+    [409, undefined, 'conflict'],
+    [410, 'COUPON_EXPIRED', 'expired'],
+    // listMyCoupons
+    [400, undefined, 'validation'],
+    // redeemCoupon
+    [409, 'COUPON_ALREADY_REDEEMED', 'conflict'],
+  ];
+
+  for (const [status, code, kind] of cases) {
+    assert.equal(getApiErrorUx(new ApiError('coupon error', { code, status })).kind, kind);
+  }
+});
+
+test('a bare 409 is not reclassified as sold-out, expired, or duplicate from status alone', () => {
+  const ux = getApiErrorUx(new ApiError('conflict', { status: 409 }));
+
+  assert.equal(ux.kind, 'conflict');
+  assert.equal(ux.error.code, undefined);
+});
+
 test('common conversion identifies transport failures without retrying programmer errors', () => {
   const networkError = toApiError({
     code: 'ERR_NETWORK',

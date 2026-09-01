@@ -203,7 +203,6 @@ export function selectCouponCtaState(input: {
   if (offers.isError) {
     const status = readError(offers.error).status;
     if (status === 401) return { kind: 'auth-required', error: offers.error };
-    if (status === 403) return { kind: 'eligibility-unmet', error: offers.error };
     return { kind: 'offer-error', error: offers.error };
   }
   if (list.length === 0 || activeOfferId == null) return { kind: 'no-offer' };

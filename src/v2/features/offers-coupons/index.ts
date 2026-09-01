@@ -30,6 +30,20 @@ export type {
   RedeemCouponBody,
   RedeemedCoupon,
 } from './api/offerCouponApi';
+export { default as OfferCouponErrorState } from './components/OfferCouponErrorState';
+export { getOfferCouponErrorUx } from './model/getOfferCouponErrorUx';
+export type {
+  OfferCouponErrorCta,
+  OfferCouponOperation,
+  OfferCouponErrorReason,
+  OfferCouponErrorUx,
+  OfferCouponSurface,
+} from './model/getOfferCouponErrorUx';
+export {
+  initializeOfferCouponI18n,
+  offerCouponResources,
+  registerOfferCouponResources,
+} from './i18n/offerCouponResources';
 export {
   CouponNotFoundError,
   createCouponQueryOptions,
