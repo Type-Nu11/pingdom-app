@@ -5,19 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import { useInfiniteCoupons, type Coupon } from '../../offers-coupons';
-import { ErrorState } from '../../../shared/components';
+import { ApiErrorState } from '../../../shared/components';
 import Button from '../../../shared/components/Button';
 import CouponCard from '../components/CouponCard';
 import CouponCardSkeleton from '../components/CouponCardSkeleton';
 import {
-  formatOfferPeriod,
   COUPON_STATUS_FILTERS,
+  formatOfferPeriod,
   isCouponUsable,
-  toCouponBoxEntries,
   toCouponBoxListState,
   type CouponBoxEntry,
   type CouponStatusFilter,
 } from '../model/couponBoxEntries';
+import { useCouponBoxEntries } from '../hooks/useCouponBoxEntries';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 
 export type CouponBoxScreenProps = {
@@ -50,10 +50,11 @@ export default function CouponBoxScreen({
     [coupons],
   );
 
-  const entries = toCouponBoxEntries(coupons, {
+  const fallback = useMemo(() => ({
     description: t('myPage.couponBox.fallbackDescription'),
     title: t('myPage.couponBox.fallbackTitle'),
-  });
+  }), [t]);
+  const entries = useCouponBoxEntries(coupons, fallback);
 
   const hasLoadedCoupons = coupons.length > 0;
   const listState = toCouponBoxListState(couponsQuery.isError && !hasLoadedCoupons, entries);
@@ -143,8 +144,10 @@ export default function CouponBoxScreen({
           return (
             <FilterChip
               $selected={selected}
+              accessibilityLabel={t(`myPage.couponBox.filters.${filter}`)}
               accessibilityRole="button"
               accessibilityState={{ selected }}
+              hitSlop={8}
               key={filter}
               onPress={() => setStatusFilter(filter)}
               testID={`v2-coupon-filter-${filter}`}
@@ -162,11 +165,10 @@ export default function CouponBoxScreen({
           {SKELETON_KEYS.map((key) => <CouponCardSkeleton key={key} />)}
         </SkeletonList>
       ) : listState.kind === 'error' ? (
-        <ErrorState
-          actionLabel={t('myPage.retry')}
-          description={t('myPage.couponBox.error')}
+        <ApiErrorState
+          error={couponsQuery.error}
           fill
-          onAction={retry}
+          onRetry={retry}
         />
       ) : (
         <FlatList
@@ -229,7 +231,7 @@ const Spacer = styled.View`
 
 const TopBarTitle = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+  font-size: 18px;
   font-weight: 500;
 `;
 

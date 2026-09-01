@@ -16,7 +16,6 @@ import {
 type OfferCouponApi = typeof offerCouponApi;
 
 export const offerCouponQueryKeys = {
-  coupon: (couponId: number) => ['v2', 'coupons', 'detail', couponId] as const,
   coupons: (params: ListCouponsParams) => ['v2', 'coupons', params] as const,
   couponsInfinite: (params: ListCouponsParams) => ['v2', 'coupons', 'infinite', params] as const,
   couponsRoot: ['v2', 'coupons'] as const,
@@ -42,16 +41,6 @@ export function createOfferQueryOptions(
   return {
     queryFn: ({ signal }: { signal?: AbortSignal }) => api.getOffer(offerId, signal),
     queryKey: offerCouponQueryKeys.offer(offerId),
-  };
-}
-
-export function createCouponQueryOptions(
-  couponId: number,
-  api: Pick<OfferCouponApi, 'getCoupon'> = offerCouponApi,
-) {
-  return {
-    queryFn: ({ signal }: { signal?: AbortSignal }) => api.getCoupon(couponId, signal),
-    queryKey: offerCouponQueryKeys.coupon(couponId),
   };
 }
 
@@ -123,10 +112,6 @@ export function useOffer(offerId: number, options: { enabled?: boolean } = {}) {
     ...createOfferQueryOptions(offerId),
     ...options,
   });
-}
-
-export function useCoupon(couponId: number) {
-  return useQuery(createCouponQueryOptions(couponId));
 }
 
 export function useCoupons(params: ListCouponsParams = {}) {

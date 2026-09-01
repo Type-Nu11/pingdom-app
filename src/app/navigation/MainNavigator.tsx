@@ -171,14 +171,14 @@ const CouponBoxRouteScreen = ({ navigation }: MainScreenProps<'CouponBox'>) => (
   <CouponBoxScreen
     onBack={navigation.goBack}
     onOpenCoupon={(coupon) => navigation.navigate(MAIN_ROUTES.CouponDetail, {
-      couponId: coupon.id,
+      coupon,
     })}
   />
 );
 
 const CouponDetailRouteScreen = ({ navigation, route }: MainScreenProps<'CouponDetail'>) => (
   <CouponDetailContainer
-    couponId={route.params.couponId}
+    coupon={route.params.coupon}
     onBack={navigation.goBack}
     onReserve={(placeId) => {
       const parsed = parsePlaceId(placeId);

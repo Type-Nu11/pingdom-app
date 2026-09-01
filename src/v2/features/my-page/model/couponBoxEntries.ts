@@ -1,4 +1,5 @@
-import type { Coupon, CouponStatus } from '../../offers-coupons';
+import type { Coupon, CouponStatus, Offer } from '../../offers-coupons';
+import type { PlaceDetail } from '../../place-detail';
 
 /**
  * A coupon box row in render order. The coupon list is the source of truth for
@@ -28,30 +29,47 @@ export const COUPON_STATUS_FILTERS: readonly CouponStatusFilter[] = [
   'EXPIRED',
 ];
 
-/** Only `ISSUED` coupons can be presented for use; every other state is terminal. */
-export function isCouponUsable(status: CouponStatus): boolean {
+/** Terminal states a coupon can end in. Narrowed out of `CouponStatus` by `isCouponUsable`. */
+export type TerminalCouponStatus = Exclude<CouponStatus, 'ISSUED'>;
+
+/**
+ * Only `ISSUED` coupons can be presented for use; every other state is terminal.
+ * Typed as a predicate so callers narrow to `TerminalCouponStatus` in the else
+ * branch and cannot look up a status label that has no translation.
+ */
+export function isCouponUsable(status: CouponStatus): status is 'ISSUED' {
   return status === 'ISSUED';
 }
 
 /**
- * `GET /coupons` embeds the offer title, benefit and place name, so a row needs
- * no per-coupon lookup. `fallback` covers the fields the server marks nullable.
+ * The current `GET /coupons` response contains lifecycle data plus `offerId`.
+ * Existing Offer and Place query results enrich rows when those resources are
+ * still available; otherwise the row remains visible with safe fallback copy.
  */
 export function toCouponBoxEntries(
   coupons: readonly Coupon[],
+  resources: Readonly<{
+    offersById: ReadonlyMap<number, Offer>;
+    placesById: ReadonlyMap<number, PlaceDetail>;
+  }>,
   fallback: Readonly<{ title: string; description: string }>,
 ): CouponBoxEntry[] {
-  return coupons.map((coupon) => ({
-    couponId: coupon.id,
-    description: coupon.benefitDescription || fallback.description,
-    expiresAt: coupon.expiresAt,
-    issuedAt: coupon.issuedAt,
-    offerId: coupon.offerId,
-    placeName: coupon.placeName ?? undefined,
-    redeemedAt: coupon.redeemedAt ?? null,
-    status: coupon.status,
-    title: coupon.offerTitle || fallback.title,
-  }));
+  return coupons.map((coupon) => {
+    const offer = resources.offersById.get(coupon.offerId);
+    const place = offer?.placeId ? resources.placesById.get(offer.placeId) : undefined;
+
+    return {
+      couponId: coupon.id,
+      description: offer?.benefitDescription || fallback.description,
+      expiresAt: coupon.expiresAt,
+      issuedAt: coupon.issuedAt,
+      offerId: coupon.offerId,
+      placeName: place?.name,
+      redeemedAt: coupon.redeemedAt ?? null,
+      status: coupon.status,
+      title: offer?.title || fallback.title,
+    };
+  });
 }
 
 export type CouponBoxListState =
@@ -78,7 +96,6 @@ export function toCouponBoxListState(
 
   return { entries: [...entries], kind: 'ready' };
 }
-
 /**
  * Formats a server `date-time` (ISO-8601 local, no offset) for display in the
  * viewer's locale and device timezone. `withTime` is used for the expiry and
@@ -144,4 +161,3 @@ export function formatOfferPeriod(
   const separator = compact ? '~' : ' ~ ';
   return from && to ? `${from}${separator}${to}` : from || to;
 }
-

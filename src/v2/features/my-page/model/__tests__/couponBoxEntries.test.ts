@@ -1,4 +1,5 @@
-import type { Coupon } from '../../../offers-coupons';
+import type { Coupon, Offer } from '../../../offers-coupons';
+import type { PlaceDetail } from '../../../place-detail';
 import {
   formatCouponInstant,
   formatOfferPeriod,
@@ -9,15 +10,11 @@ import {
 
 function coupon(overrides: Partial<Coupon> = {}): Coupon {
   return {
-    benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
     code: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
     expiresAt: '2027-08-18T23:59:59',
     id: 1,
     issuedAt: '2026-08-18T09:00:00',
     offerId: 10,
-    offerTitle: '생일 10% 할인 쿠폰',
-    placeId: 100,
-    placeName: '대성반점',
     redeemedAt: null,
     status: 'ISSUED',
     ...overrides,
@@ -25,21 +22,34 @@ function coupon(overrides: Partial<Coupon> = {}): Coupon {
 }
 
 const FALLBACK = { description: '할인 쿠폰', title: '쿠폰' } as const;
+const RESOURCES = {
+  offersById: new Map<number, Offer>([[10, {
+    benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
+    id: 10,
+    placeId: 100,
+    title: '생일 10% 할인 쿠폰',
+  }]]),
+  placesById: new Map<number, PlaceDetail>([[100, {
+    id: 100,
+    name: '대성반점',
+  } as PlaceDetail]]),
+};
 
 describe('toCouponBoxEntries', () => {
-  test('쿠폰 응답에 담긴 매장·쿠폰명·혜택을 그대로 쓰고 순서를 지킨다', () => {
+  test('Coupon의 offerId를 Offer·Place 표시 정보와 결합하고 순서를 지킨다', () => {
     const entries = toCouponBoxEntries(
       [
-        coupon({ id: 1, offerTitle: 'A', placeName: '대성반점' }),
-        coupon({ benefitDescription: null, id: 2, offerTitle: null, placeName: null }),
+        coupon({ id: 1 }),
+        coupon({ id: 2, offerId: 20 }),
       ],
+      RESOURCES,
       FALLBACK,
     );
 
     expect(entries.map((entry) => entry.couponId)).toEqual([1, 2]);
-    expect(entries[0].title).toBe('A');
+    expect(entries[0].title).toBe('생일 10% 할인 쿠폰');
     expect(entries[0].placeName).toBe('대성반점');
-    // 서버가 null을 주면 대체 카피를 쓰되, 매장명은 지어내지 않는다.
+    // 조회할 수 없는 종료 Offer는 대체 카피를 쓰되, 매장명은 지어내지 않는다.
     expect(entries[1].title).toBe('쿠폰');
     expect(entries[1].description).toBe('할인 쿠폰');
     expect(entries[1].placeName).toBeUndefined();
@@ -48,6 +58,7 @@ describe('toCouponBoxEntries', () => {
   test('nullable redeemedAt을 null로 정규화한다', () => {
     const [entry] = toCouponBoxEntries(
       [coupon({ redeemedAt: undefined as unknown as null })],
+      RESOURCES,
       FALLBACK,
     );
     expect(entry.redeemedAt).toBeNull();
@@ -72,7 +83,10 @@ describe('toCouponBoxListState', () => {
   });
 
   test('항목이 있으면 ready', () => {
-    const state = toCouponBoxListState(false, toCouponBoxEntries([coupon()], FALLBACK));
+    const state = toCouponBoxListState(
+      false,
+      toCouponBoxEntries([coupon()], RESOURCES, FALLBACK),
+    );
     expect(state.kind).toBe('ready');
   });
 });
