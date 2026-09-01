@@ -6,6 +6,10 @@ import type {
   PlaceVisitDecision,
 } from '../../place-exploration/model/placeExploration.types';
 import type { PlaceAvailabilities, PlaceDetail } from './placeDetail.types';
+import {
+  selectPlaceOperatingSummary,
+  type PlaceOperatingSummary,
+} from './placeOperatingSummary';
 
 export type ResourceState<T> = {
   data?: T;
@@ -24,7 +28,6 @@ export type ReservationCtaState =
 
 export type PlaceDetailPresentation = {
   address: string | null;
-  businessHours: string | null;
   category: string | null;
   coupons: Array<{ period: string; title: string }>;
   description: string | null;
@@ -46,6 +49,7 @@ export type PlaceDetailPresentation = {
   name: string | null;
   notice: string | null;
   operatingStatus: PlaceDetail['operatingStatus'] | null;
+  operatingSummary: PlaceOperatingSummary | null;
   placeId: number;
   reservation: ReservationCtaState;
   reviewState: 'empty' | 'error' | 'loading' | 'ready';
@@ -85,17 +89,6 @@ function formatDateRange(startsAt: unknown, endsAt: unknown): string {
   const end = clean(endsAt);
   if (start && end) return `${start} ~ ${end}`;
   return start ?? end ?? '';
-}
-
-function formatBusinessHours(detail: PlaceDetail | undefined): string | null {
-  const hours = detail?.regularHours ?? [];
-  const rows = hours.flatMap((hour) => {
-    const day = clean(hour.dayOfWeek);
-    const opensAt = clean(hour.opensAt);
-    const closesAt = clean(hour.closesAt);
-    return day && opensAt && closesAt ? [`${day} ${opensAt}–${closesAt}`] : [];
-  });
-  return rows.length ? rows.join(', ') : null;
 }
 
 export function selectReservationCta(
@@ -148,9 +141,10 @@ export function buildPlaceDetailPresentation(
     (url): url is string => Boolean(url),
   ))];
   const reviewItems = (resources.reviews.data?.content ?? []).filter(
-    (review) => review.placeId === placeId,
+    (review) => review.placeId === undefined || review.placeId === placeId,
   );
   const owner = base?.merchantOwner;
+  const operatingSource = base ?? card;
   const merchantInformation = decision?.merchantInformation;
   const merchant = owner || merchantInformation ? {
     businessName: clean(owner?.businessName),
@@ -164,7 +158,6 @@ export function buildPlaceDetailPresentation(
 
   return {
     address: clean(base?.address) ?? clean(card?.address),
-    businessHours: formatBusinessHours(base),
     category: clean(card?.category) ?? base?.touristCategories?.[0] ?? null,
     coupons: (decision?.availableOffers?.offers ?? []).flatMap((offer) => {
       const title = clean(offer.title);
@@ -185,8 +178,17 @@ export function buildPlaceDetailPresentation(
     merchant,
     name: clean(base?.name) ?? clean(card?.name),
     notice: clean((notices?.notices ?? base?.activeOperatingNotices ?? [])
-      .find((item) => item.visibleNow && item.status === 'ACTIVE')?.message),
+      .filter((item) => item.visibleNow && item.status === 'ACTIVE')
+      .sort((left, right) => {
+        const priority = (noticeType: string) => noticeType === 'TEMPORARY_CLOSURE'
+          ? 0 : noticeType === 'HOURS_CHANGE' ? 1 : 2;
+        return priority(left.noticeType) - priority(right.noticeType);
+      })[0]?.message),
     operatingStatus: base?.operatingStatus ?? card?.operatingStatus ?? null,
+    operatingSummary: operatingSource ? selectPlaceOperatingSummary({
+      ...operatingSource,
+      currentlyOperating: notices?.currentlyOperating ?? operatingSource.currentlyOperating,
+    }, now) : null,
     placeId,
     reservation: selectReservationCta(resources.availabilities, now),
     reviewState: resources.reviews.isPending ? 'loading'
@@ -200,7 +202,7 @@ export function buildPlaceDetailPresentation(
       text: clean(review.content) ?? '',
     })),
     reviewTotal: resources.reviews.isError || resources.reviews.isPending
-      ? null : Math.max(0, resources.reviews.data?.totalElements ?? 0),
+      ? null : Math.max(0, resources.reviews.data?.totalElements ?? reviewItems.length),
     roadAddress: clean(base?.roadAddress) ?? clean(card?.roadAddress),
     jibunAddress: clean(base?.jibunAddress),
     touristSummary: clean(base?.touristSummary) ?? clean(card?.touristSummary),
