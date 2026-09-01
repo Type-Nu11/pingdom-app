@@ -26,6 +26,7 @@ import {
   VisitVerificationReviewScreen,
 } from '../../features/place-visit-verification';
 import { env } from '../../shared/config';
+import { clearTokenSession } from '../../shared/auth/tokenSession';
 import {
   claimNotificationMessage,
   createNotificationNavigationIntent,
@@ -38,6 +39,15 @@ const navigationRef = createNavigationContainerRef<V2StackParamList>();
 
 function HomeRouteScreen() {
   return env.featureFlags.placeList ? <PlaceListExampleScreen /> : <HomeScreen />;
+}
+
+function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
+  return (
+    <MapScreen
+      onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
+      onSignIn={() => void clearTokenSession()}
+    />
+  );
 }
 
 function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
@@ -59,6 +69,7 @@ function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
       onOpenCoupon={(coupon) => navigation.navigate(V2_ROUTES.CouponDetail, {
         couponId: coupon.id,
       })}
+      onSignIn={() => void clearTokenSession()}
     />
   );
 }
@@ -74,6 +85,7 @@ function CouponDetailRoute({ navigation, route }: V2ScreenProps<'CouponDetail'>)
           navigation.navigate(V2_ROUTES.CreateReservation, { placeId: parsed });
         }
       }}
+      onSignIn={() => void clearTokenSession()}
     />
   );
 }
@@ -168,7 +180,7 @@ export default function RootNavigator() {
     <NavigationContainer ref={navigationRef} onReady={() => setIsNavigationReady(true)}>
       <Stack.Navigator initialRouteName={V2_ROUTES.Map} screenOptions={{ headerShown: false }}>
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
-        <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
+        <Stack.Screen name={V2_ROUTES.Map} component={MapRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
         <Stack.Screen name={V2_ROUTES.CouponBox} component={CouponBoxRouteScreen} />

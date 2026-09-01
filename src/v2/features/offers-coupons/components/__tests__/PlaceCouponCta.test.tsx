@@ -169,6 +169,32 @@ describe('PlaceCouponCta', () => {
     expect(cta.props.accessibilityState.disabled).toBe(true);
   });
 
+  test('Offer 목록 403은 발급 조건이 아니라 목록 접근 권한 오류로 안내한다', async () => {
+    jest.spyOn(offerCouponApi, 'listOffers').mockRejectedValue(
+      new ApiError('forbidden detail', { code: 'ACCESS_DENIED', status: 403 }),
+    );
+
+    await renderWithProviders(<PlaceCouponCta placeId={17} />);
+
+    await waitFor(() => expect(screen.getByText('권한이 필요합니다')).toBeTruthy());
+    expect(screen.queryByText('발급 조건을 충족하지 않습니다')).toBeNull();
+    expect(screen.queryByText('forbidden detail')).toBeNull();
+  });
+
+  test('코드 없는 발급 409는 원인을 단정하지 않는다', async () => {
+    jest.spyOn(offerCouponApi, 'listOffers').mockResolvedValue(offerPage([OFFER]));
+    jest.spyOn(offerCouponApi, 'issueCoupon').mockRejectedValue(
+      new ApiError('server conflict detail', { status: 409 }),
+    );
+
+    const { user } = await renderWithProviders(<PlaceCouponCta placeId={17} />);
+    await user.press(await screen.findByLabelText('생일 10% 할인 쿠폰 쿠폰 받기'));
+
+    await waitFor(() => expect(screen.getByText(/쿠폰을 발급하지 못했습니다/)).toBeTruthy());
+    expect(screen.queryByText(/이미 발급|재고|기간이 종료/)).toBeNull();
+    expect(screen.queryByText('server conflict detail')).toBeNull();
+  });
+
   test('다른 Offer를 고르면 이전 Offer의 발급 실패 상태가 초기화된다', async () => {
     jest.spyOn(offerCouponApi, 'listOffers').mockResolvedValue(offerPage([OFFER, SECOND_OFFER]));
     jest

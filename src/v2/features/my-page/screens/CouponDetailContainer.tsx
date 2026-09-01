@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { useCoupon, useOffer, type Coupon } from '../../offers-coupons';
+import {
+  CouponNotFoundError,
+  OfferCouponErrorState,
+  useCoupon,
+  useOffer,
+  type Coupon,
+} from '../../offers-coupons';
 import { usePlaceDetail } from '../../place-detail';
 import { ErrorState, LoadingState } from '../../../shared/components';
 import {
@@ -16,6 +22,7 @@ import CouponDetailScreen, { type CouponDetailInfoRow } from './CouponDetailScre
 type CouponDetailContainerCommonProps = {
   onBack: () => void;
   onReserve: (placeId: number) => void;
+  onSignIn?: () => void;
 };
 
 export type CouponDetailContainerProps = CouponDetailContainerCommonProps & (
@@ -32,7 +39,7 @@ export type CouponDetailContainerProps = CouponDetailContainerCommonProps & (
  * data and never supply the security-sensitive code or lifecycle status.
  */
 export default function CouponDetailContainer(props: CouponDetailContainerProps) {
-  const { onBack, onReserve } = props;
+  const { onBack, onReserve, onSignIn } = props;
   const couponId = 'coupon' in props ? props.coupon.id : props.couponId;
   const { i18n, t } = useTranslation();
   const locale = i18n.language;
@@ -52,14 +59,30 @@ export default function CouponDetailContainer(props: CouponDetailContainerProps)
     );
   }
 
-  if (couponQuery.isError || !coupon) {
+  if (couponQuery.isError && !(couponQuery.error instanceof CouponNotFoundError)) {
+    return (
+      <Screen edges={['top', 'right', 'bottom', 'left']}>
+        <OfferCouponErrorState
+          error={couponQuery.error}
+          fill
+          onBack={onBack}
+          onRetry={() => void couponQuery.refetch()}
+          onSignIn={onSignIn}
+          operation="listCoupons"
+          surface="wallet"
+        />
+      </Screen>
+    );
+  }
+
+  if (!coupon) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <ErrorState
-          actionLabel={t('myPage.retry')}
+          actionLabel={t('myPage.back')}
           description={t('myPage.couponDetail.error')}
           fill
-          onAction={() => void couponQuery.refetch()}
+          onAction={onBack}
         />
       </Screen>
     );
