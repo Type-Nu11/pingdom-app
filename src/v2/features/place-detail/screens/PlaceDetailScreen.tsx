@@ -12,6 +12,10 @@ import {
   Surface,
 } from '../../../shared/components';
 import { usePlaceDetail } from '../hooks/usePlaceDetail';
+import {
+  formatPlaceOperatingSummary,
+  selectPlaceOperatingSummary,
+} from '../model/placeOperatingSummary';
 import { getOperatingStatusPresentation } from '../model/placePresentation';
 
 export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'PlaceDetail'>) {
@@ -41,6 +45,10 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
 
   const place = placeQuery.data;
   const status = getOperatingStatusPresentation(place.operatingStatus);
+  const operatingSummary = formatPlaceOperatingSummary(
+    selectPlaceOperatingSummary(place),
+    (key, options) => t(key, options),
+  );
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
@@ -52,18 +60,13 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
           <Description>{place.touristSummary ?? place.description ?? place.address}</Description>
           <Section>
             <SectionTitle>{t('placeDetail.liveStatus')}</SectionTitle>
-            <Body>{place.currentlyOperating ? '영업 중' : '영업 종료'}</Body>
+            <OperatingLine numberOfLines={2}>
+              <OperatingStatus $tone={operatingSummary.tone}>
+                {operatingSummary.statusText}
+              </OperatingStatus>
+              {operatingSummary.detailText ? ` · ${operatingSummary.detailText}` : ''}
+            </OperatingLine>
           </Section>
-          {place.regularHours.length ? (
-            <Section>
-              <SectionTitle>운영시간</SectionTitle>
-              {place.regularHours.map((hours, index) => (
-                <Body key={`${hours.dayOfWeek ?? 'day'}-${index}`}>
-                  {[hours.dayOfWeek, hours.opensAt, hours.closesAt].filter(Boolean).join(' ')}
-                </Body>
-              ))}
-            </Section>
-          ) : null}
           <Button label={t('placeDetail.back')} onPress={navigation.goBack} />
         </Surface>
       </Content>
@@ -117,4 +120,15 @@ const Body = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
+`;
+
+const OperatingLine = styled(Body)``;
+
+const OperatingStatus = styled.Text<{ $tone: 'positive' | 'neutral' | 'warning' }>`
+  color: ${({ $tone, theme }) => $tone === 'positive'
+    ? theme.colors.success
+    : $tone === 'warning'
+      ? theme.colors.warning
+      : theme.colors.textMuted};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
