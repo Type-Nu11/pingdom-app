@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
-import { useInfiniteCoupons, type Coupon } from '../../offers-coupons';
+import { getCouponStatusView, useInfiniteCoupons, type Coupon } from '../../offers-coupons';
 import { ApiErrorState } from '../../../shared/components';
 import Button from '../../../shared/components/Button';
 import CouponCard from '../components/CouponCard';
@@ -90,7 +90,7 @@ export default function CouponBoxScreen({
         : undefined}
       periodText={formatOfferPeriod(item.issuedAt, item.expiresAt, locale, { compact: true })}
       placeName={item.placeName}
-      statusText={t(`myPage.couponBox.status.${item.status}`)}
+      statusText={t(getCouponStatusView(item.status).labelKey)}
       title={item.title}
     />
   );

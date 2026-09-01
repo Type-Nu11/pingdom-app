@@ -1,3 +1,4 @@
+import { canPresentCoupon } from '../../offers-coupons';
 import type { Coupon, CouponStatus, Offer } from '../../offers-coupons';
 import type { PlaceDetail } from '../../place-detail';
 
@@ -36,9 +37,12 @@ export type TerminalCouponStatus = Exclude<CouponStatus, 'ISSUED'>;
  * Only `ISSUED` coupons can be presented for use; every other state is terminal.
  * Typed as a predicate so callers narrow to `TerminalCouponStatus` in the else
  * branch and cannot look up a status label that has no translation.
+ *
+ * The rule itself lives in the shared coupon selector so the coupon box, the
+ * place CTA, and the presentation screen all agree on what "usable" means.
  */
 export function isCouponUsable(status: CouponStatus): status is 'ISSUED' {
-  return status === 'ISSUED';
+  return canPresentCoupon(status);
 }
 
 /**
