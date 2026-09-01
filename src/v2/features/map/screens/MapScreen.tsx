@@ -24,6 +24,7 @@ import ReservationBottomSheet from '../../reservations/components/ReservationBot
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
+import { MAP_TOP_OVERLAY_METRICS } from '../styles/MapTopOverlay.styles';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import {
   useBookmarkedPlaceMembership,
@@ -194,7 +195,11 @@ export default function MapScreen({
     togglePlaceBookmark,
   } = usePlaceBookmark();
 
-  const expandedSheetTop = insets.top + 2 + 60 + 8;
+  const expandedSheetTop = insets.top
+    + 2
+    + MAP_TOP_OVERLAY_METRICS.headerHeight
+    + MAP_TOP_OVERLAY_METRICS.categoryHeight
+    + 19;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
   // Keep one stable sheet geometry while content changes. Only the expanded destination moves:
   // place detail can fill the screen, while other expanded content remains below the top overlay.
@@ -203,8 +208,9 @@ export default function MapScreen({
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
   const mediumVisibleHeight = Math.min(
-    Math.round(418 * designScale) + SHEET_RESTING_GAP,
-    Math.round(height * 0.52),
+    // Keep the featured cards clear of the viewport-fixed bottom navigation.
+    Math.round(442 * designScale) + SHEET_RESTING_GAP,
+    Math.round(height * 0.56),
   );
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
@@ -662,7 +668,7 @@ export default function MapScreen({
           }}
           profileImageUrl={profile?.profileImageUrl}
           query={query}
-          showCategories={snapPoint !== 'expanded'}
+          showCategories={!isExpandedPlaceDetail}
         />
         <FadeSlideTransition
           direction={MAP_SECTION_DIRECTION[mapSection]}

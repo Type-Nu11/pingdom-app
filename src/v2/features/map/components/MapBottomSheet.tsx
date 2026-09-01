@@ -830,6 +830,8 @@ const ExpandedHomeContent = ({
   bookmarkedPlaceIds,
   bookmarkPendingPlaceIds,
   feed,
+  expandedInteractionsEnabled,
+  expandedOnlyOpacity,
   imageUrlsByPlaceId,
   isBookmarkStateLoading,
   onCategoryChange,
@@ -844,6 +846,8 @@ const ExpandedHomeContent = ({
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds: Record<string, boolean>;
   feed: 'local' | 'national';
+  expandedInteractionsEnabled: boolean;
+  expandedOnlyOpacity: Animated.AnimatedInterpolation<number>;
   imageUrlsByPlaceId: Record<string, string>;
   isBookmarkStateLoading: boolean;
   onCategoryChange: (category: SheetCategory) => void;
@@ -870,7 +874,7 @@ const ExpandedHomeContent = ({
         direction={feed === 'local' ? 0 : 1}
         stateKey={feed}
         style={styles.feedTransition}
-        testID="expanded-feed-content-transition"
+        testID="feed-content-transition"
       >
         <ScrollView
           contentContainerStyle={styles.expandedFeaturedRow}
@@ -895,6 +899,11 @@ const ExpandedHomeContent = ({
           )) : <EmptyCard state={state} variant="row" />}
         </ScrollView>
 
+        <Animated.View
+          pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
+          style={{ opacity: expandedOnlyOpacity }}
+          testID="expanded-home-only-content"
+        >
         <Text style={styles.expandedTitle}>{t('map.sheet.categoryPopular', { userName })}</Text>
 
         <ScrollView
@@ -939,6 +948,7 @@ const ExpandedHomeContent = ({
             />
           ))}
         </View>
+        </Animated.View>
       </FadeSlideTransition>
     </ScrollView>
   );
@@ -1018,9 +1028,10 @@ const RecommendationStateTransition = ({
 const RecommendationContent = ({
   bookmarkedPlaceIds,
   bookmarkPendingPlaceIds,
+  expandedInteractionsEnabled,
+  expandedOnlyOpacity,
   imageUrlsByPlaceId,
   isBookmarkStateLoading,
-  isExpanded,
   onPlacePress,
   onRetry,
   onToggleBookmark,
@@ -1030,9 +1041,10 @@ const RecommendationContent = ({
 }: {
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds: Record<string, boolean>;
+  expandedInteractionsEnabled: boolean;
+  expandedOnlyOpacity: Animated.AnimatedInterpolation<number>;
   imageUrlsByPlaceId: Record<string, string>;
   isBookmarkStateLoading: boolean;
-  isExpanded: boolean;
   onPlacePress: (place: DecisionPlace) => void;
   onRetry: () => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
@@ -1056,9 +1068,10 @@ const RecommendationContent = ({
 
   return (
     <ScrollView
-      contentContainerStyle={isExpanded ? styles.expandedContent : styles.recommendationContent}
+      contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
       showsVerticalScrollIndicator={false}
+      testID="recommendation-content-scroll"
     >
       <View style={styles.recommendationHeader}>
         <View style={styles.recommendationTitleRow}>
@@ -1094,8 +1107,12 @@ const RecommendationContent = ({
               />
             ))}
           </ScrollView>
-          {isExpanded && gridPlaces.length > 0 ? (
-            <>
+          {gridPlaces.length > 0 ? (
+            <Animated.View
+              pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
+              style={{ opacity: expandedOnlyOpacity }}
+              testID="expanded-recommendation-only-content"
+            >
               <Text style={styles.recommendationGridTitle}>
                 {t('map.recommendations.verificationTitle')}
               </Text>
@@ -1126,7 +1143,7 @@ const RecommendationContent = ({
                   </ScrollView>
                 ))}
               </View>
-            </>
+            </Animated.View>
           ) : null}
           </>
         ) : (
@@ -1963,6 +1980,11 @@ export default function MapBottomSheet({
     inputRange: [mediumTranslateY, collapsedTranslateY],
     outputRange: [0, 22],
   });
+  const expandedOnlyOpacity = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [Math.max(0, mediumTranslateY - 96), mediumTranslateY],
+    outputRange: [1, 0],
+  });
   // Expanded sheet goes full-bleed: resting gap and bottom corners collapse to 0.
   const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
   const chromeGap = sheetChromeBottom.interpolate({
@@ -2092,8 +2114,9 @@ export default function MapBottomSheet({
         <RecommendationContent
           bookmarkedPlaceIds={bookmarkedPlaceIds}
           bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+          expandedInteractionsEnabled={snapPoint === 'expanded'}
+          expandedOnlyOpacity={expandedOnlyOpacity}
           imageUrlsByPlaceId={imageUrlsByPlaceId}
-          isExpanded={snapPoint === 'expanded'}
           isBookmarkStateLoading={isBookmarkStateLoading}
           onPlacePress={onPlacePress}
           onRetry={onRetryRecommendations}
@@ -2102,11 +2125,13 @@ export default function MapBottomSheet({
           state={recommendationsState}
           userName={userName?.trim() || 'user'}
         />
-      ) : snapPoint === 'expanded' ? (
+      ) : (
         <ExpandedHomeContent
           activeCategory={activeCategory}
           bookmarkedPlaceIds={bookmarkedPlaceIds}
           bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+          expandedInteractionsEnabled={snapPoint === 'expanded'}
+          expandedOnlyOpacity={expandedOnlyOpacity}
           feed={feed}
           imageUrlsByPlaceId={imageUrlsByPlaceId}
           isBookmarkStateLoading={isBookmarkStateLoading}
@@ -2118,38 +2143,6 @@ export default function MapBottomSheet({
           state={placesState}
           userName={userName?.trim() || 'user'}
         />
-      ) : (
-        <>
-          <FeedSegment feed={feed} onChange={setFeed} />
-          <FadeSlideTransition
-            direction={feed === 'local' ? 0 : 1}
-            stateKey={feed}
-            style={styles.feedTransition}
-            testID="feed-content-transition"
-          >
-            <ScrollView
-              contentContainerStyle={styles.cardRow}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.rowScroll}
-            >
-              {shownPlaces.length > 0 ? shownPlaces.slice(0, 6).map((place) => (
-                <PlaceTrendCard
-                  bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-                  imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                  key={place.id}
-                  onPress={() => onPlacePress(place)}
-                  onToggleBookmark={() => void onToggleBookmark(
-                    place,
-                    !bookmarkedPlaceIds[String(place.id)],
-                  )}
-                  pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-                  place={place}
-                />
-              )) : <EmptyCard state={placesState} variant="row" />}
-            </ScrollView>
-          </FadeSlideTransition>
-        </>
       )}
       </Animated.View>
       </GlassStyles.SheetInner>
