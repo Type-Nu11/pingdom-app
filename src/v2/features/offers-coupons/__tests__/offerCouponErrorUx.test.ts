@@ -1,6 +1,7 @@
 import { ApiError } from '../../../shared/api';
 import {
   getOfferCouponErrorUx,
+  type OfferCouponOperation,
   type OfferCouponSurface,
 } from '../model/getOfferCouponErrorUx';
 import { offerCouponResources } from '../i18n/offerCouponResources';
@@ -29,6 +30,7 @@ describe('getOfferCouponErrorUx', () => {
     error: { code?: string; status?: number };
     reason: string;
     retryable: boolean;
+    operation?: OfferCouponOperation;
     surface: OfferCouponSurface;
     title: string;
   }> = [
@@ -43,8 +45,18 @@ describe('getOfferCouponErrorUx', () => {
     {
       title: 'placeCta 403 is an eligibility gate, not a raw permission error',
       surface: 'placeCta',
+      operation: 'issueCoupon',
       error: { status: 403 },
       reason: 'ineligible',
+      cta: 'none',
+      retryable: false,
+    },
+    {
+      title: 'Offer list 403 ACCESS_DENIED is permission failure, not an eligibility guess',
+      surface: 'placeCta',
+      operation: 'listOffers',
+      error: { status: 403, code: 'ACCESS_DENIED' },
+      reason: 'forbidden',
       cta: 'none',
       retryable: false,
     },
@@ -78,6 +90,24 @@ describe('getOfferCouponErrorUx', () => {
       error: { status: 409 },
       reason: 'unconfirmedConflict',
       cta: 'viewWallet',
+      retryable: false,
+    },
+    {
+      title: 'placeCta 409 with an unknown server code stays an unconfirmed conflict',
+      surface: 'placeCta',
+      operation: 'issueCoupon',
+      error: { status: 409, code: 'OFFER_ISSUE_CONFLICT' },
+      reason: 'unconfirmedConflict',
+      cta: 'viewWallet',
+      retryable: false,
+    },
+    {
+      title: '401 with a future server code still uses authentication recovery',
+      surface: 'wallet',
+      operation: 'listCoupons',
+      error: { status: 401, code: 'SESSION_REVOKED' },
+      reason: 'authentication',
+      cta: 'signIn',
       retryable: false,
     },
     {
@@ -162,8 +192,8 @@ describe('getOfferCouponErrorUx', () => {
     },
   ];
 
-  it.each(cases)('$title', ({ surface, error, reason, cta, retryable }) => {
-    const ux = getOfferCouponErrorUx(apiError(error), surface);
+  it.each(cases)('$title', ({ surface, operation, error, reason, cta, retryable }) => {
+    const ux = getOfferCouponErrorUx(apiError(error), surface, operation);
 
     expect(ux.reason).toBe(reason);
     expect(ux.cta).toBe(cta);

@@ -26,6 +26,7 @@ import {
   VisitVerificationReviewScreen,
 } from '../../features/place-visit-verification';
 import { env } from '../../shared/config';
+import { clearTokenSession } from '../../shared/auth/tokenSession';
 import {
   claimNotificationMessage,
   createNotificationNavigationIntent,
@@ -59,6 +60,7 @@ function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
       onOpenCoupon={(coupon) => navigation.navigate(V2_ROUTES.CouponDetail, {
         coupon,
       })}
+      onSignIn={() => void clearTokenSession()}
     />
   );
 }

@@ -26,6 +26,7 @@ import BackIcon from '../../../shared/assets/icons/back.svg';
 export type CouponBoxScreenProps = {
   onBack: () => void;
   onOpenCoupon?: (coupon: Coupon) => void;
+  onSignIn?: () => void;
 };
 
 const PAGE_LIMIT = 20;
@@ -34,6 +35,7 @@ const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3'] a
 export default function CouponBoxScreen({
   onBack,
   onOpenCoupon,
+  onSignIn,
 }: CouponBoxScreenProps) {
   const { i18n, t } = useTranslation();
   const theme = useTheme();
@@ -172,6 +174,8 @@ export default function CouponBoxScreen({
           error={couponsQuery.error}
           fill
           onRetry={retry}
+          onSignIn={onSignIn}
+          operation="listCoupons"
           surface="wallet"
         />
       ) : (

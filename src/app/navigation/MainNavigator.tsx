@@ -15,6 +15,7 @@ import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlac
 import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/MerchantMyPageContainer';
 import { useProfile } from '../../features/profile/hooks/useProfile';
 import { theme as v2Theme } from '../../v2/shared/theme';
+import { clearTokenSession } from '../../v2/shared/auth/tokenSession';
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
@@ -173,6 +174,7 @@ const CouponBoxRouteScreen = ({ navigation }: MainScreenProps<'CouponBox'>) => (
     onOpenCoupon={(coupon) => navigation.navigate(MAIN_ROUTES.CouponDetail, {
       coupon,
     })}
+    onSignIn={() => void clearTokenSession()}
   />
 );
 

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ErrorState } from '../../../shared/components';
 import {
   getOfferCouponErrorUx,
+  type OfferCouponOperation,
   type OfferCouponSurface,
 } from '../model/getOfferCouponErrorUx';
 
@@ -14,6 +15,7 @@ type OfferCouponErrorStateProps = {
   onRetry?: () => void;
   onSignIn?: () => void;
   onViewWallet?: () => void;
+  operation?: OfferCouponOperation;
   surface: OfferCouponSurface;
 };
 
@@ -30,10 +32,11 @@ export default function OfferCouponErrorState({
   onRetry,
   onSignIn,
   onViewWallet,
+  operation,
   surface,
 }: OfferCouponErrorStateProps) {
   const { t } = useTranslation();
-  const ux = getOfferCouponErrorUx(error, surface);
+  const ux = getOfferCouponErrorUx(error, surface, operation);
 
   const handler = ((): (() => void) | undefined => {
     switch (ux.cta) {

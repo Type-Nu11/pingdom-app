@@ -10,6 +10,12 @@ import { getApiErrorUx, type ApiErrorUxKind } from '../../../shared/api/getApiEr
  * - `redeem`     현장 제시 · Merchant 사용 처리 (redeemCoupon)
  */
 export type OfferCouponSurface = 'placeCta' | 'redeem' | 'wallet';
+export type OfferCouponOperation =
+  | 'getOffer'
+  | 'issueCoupon'
+  | 'listCoupons'
+  | 'listOffers'
+  | 'redeemCoupon';
 
 export type OfferCouponErrorCta = 'back' | 'none' | 'retry' | 'signIn' | 'viewWallet';
 
@@ -92,6 +98,7 @@ function resolveReason(
   kind: ApiErrorUxKind,
   code: string | undefined,
   surface: OfferCouponSurface,
+  operation: OfferCouponOperation,
 ): OfferCouponErrorReason {
   switch (kind) {
     case 'network':
@@ -102,7 +109,9 @@ function resolveReason(
       // issueCoupon 403 is "관광객 발급 조건 불충족" — an eligibility gate the
       // user may be able to resolve (e.g. an active travel schedule). On the
       // merchant redeem / wallet surfaces a 403 is a plain permission failure.
-      return surface === 'placeCta' ? 'ineligible' : 'forbidden';
+      return operation === 'issueCoupon' && code !== 'ACCESS_DENIED'
+        ? 'ineligible'
+        : 'forbidden';
     case 'validation':
       return surface === 'redeem' ? 'redeemInvalidInput' : 'validation';
     case 'expired':
@@ -162,18 +171,35 @@ function resolveCta(
 export function getOfferCouponErrorUx(
   value: unknown,
   surface: OfferCouponSurface,
+  operation: OfferCouponOperation = surface === 'placeCta'
+    ? 'issueCoupon'
+    : surface === 'redeem'
+      ? 'redeemCoupon'
+      : 'listCoupons',
 ): OfferCouponErrorUx {
   const base = getApiErrorUx(value);
-  const reason = resolveReason(base.kind, base.error.code, surface);
-  const cta = resolveCta(reason, base.retryable, surface);
+  const kind = (() => {
+    if (base.kind !== 'generic') return base.kind;
+    switch (base.error.status) {
+      case 400: return 'validation';
+      case 401: return 'authentication';
+      case 403: return 'authorization';
+      case 404: return 'notFound';
+      case 409: return 'conflict';
+      default: return base.kind;
+    }
+  })();
+  const reason = resolveReason(kind, base.error.code, surface, operation);
+  const retryable = kind === 'generic' || kind === 'network';
+  const cta = resolveCta(reason, retryable, surface);
 
   return {
     cta,
     ctaLabelKey: cta === 'none' ? null : CTA_LABEL_KEYS[cta],
     descriptionKey: `offerCoupon.error.${reason}.description`,
-    kind: base.kind,
+    kind,
     reason,
-    retryable: base.retryable,
+    retryable,
     titleKey: `offerCoupon.error.${reason}.title`,
   };
 }

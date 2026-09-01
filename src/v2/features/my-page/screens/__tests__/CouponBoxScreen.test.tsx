@@ -80,11 +80,15 @@ describe('CouponBoxScreen', () => {
       new ApiError('unauthorized', { status: 401, code: 'TOKEN_EXPIRED' }),
     );
 
-    await renderCouponBox(<CouponBoxScreen onBack={jest.fn()} />);
+    const onSignIn = jest.fn();
+    const { user } = await renderCouponBox(
+      <CouponBoxScreen onBack={jest.fn()} onSignIn={onSignIn} />,
+    );
 
     await waitFor(() => expect(screen.getByText('로그인이 필요합니다')).toBeTruthy());
-    // 로그인 복구 흐름이 아직 없으므로 CTA 없이 안내만 남는다.
     expect(screen.queryByText('다시 시도')).toBeNull();
+    await user.press(screen.getByText('다시 로그인'));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
   test('현재 Coupon DTO의 offerId를 기존 Offer·Place 조회로 보강한다', async () => {
