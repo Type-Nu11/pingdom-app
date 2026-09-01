@@ -1,3 +1,4 @@
+import type { AssertNever } from '../../../shared/model';
 import type {
   ReservationPaymentOperationQuery,
   ReservationPaymentOperationResponse,
@@ -18,7 +19,6 @@ export const PAYMENT_STATUSES = [
   'REFUNDED',
 ] as const satisfies readonly PaymentStatus[];
 
-type AssertNever<Value extends never> = Value;
 type AllOpenApiPaymentStatusesAreListed = AssertNever<
   Exclude<PaymentStatus, (typeof PAYMENT_STATUSES)[number]>
 >;
