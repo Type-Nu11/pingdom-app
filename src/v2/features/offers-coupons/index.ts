@@ -11,6 +11,8 @@ export type {
   RedeemedCoupon,
 } from './api/offerCouponApi';
 export {
+  CouponNotFoundError,
+  createCouponQueryOptions,
   createCouponsQueryOptions,
   createInfiniteCouponsQueryOptions,
   createIssueCouponMutationOptions,
@@ -18,6 +20,8 @@ export {
   createOffersQueryOptions,
   createRedeemCouponMutationOptions,
   offerCouponQueryKeys,
+  findCouponById,
+  useCoupon,
   useCoupons,
   useInfiniteCoupons,
   useIssueCoupon,
