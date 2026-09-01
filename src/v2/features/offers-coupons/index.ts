@@ -1,3 +1,23 @@
+export { default as PlaceCouponCta } from './components/PlaceCouponCta';
+export type { PlaceCouponCtaProps } from './components/PlaceCouponCta';
+export {
+  classifyConflictCause,
+  formatOfferDate,
+  formatOfferEligibility,
+  formatOfferInventory,
+  formatOfferPeriod,
+  formatOfferValidity,
+  isUnlimitedInventory,
+  selectCouponCtaState,
+  selectPlaceOffers,
+  toOfferView,
+  type CouponConflictCause,
+  type CouponCtaState,
+  type EligibilityPolicy,
+  type ExpiryPolicy,
+  type InventoryPolicy,
+  type OfferView,
+} from './model/offerPresentation';
 export { createOfferCouponApi, offerCouponApi } from './api/offerCouponApi';
 export type {
   Coupon,
@@ -11,7 +31,6 @@ export type {
   RedeemedCoupon,
 } from './api/offerCouponApi';
 export { default as OfferCouponErrorState } from './components/OfferCouponErrorState';
-export { default as PlaceCouponOffers } from './components/PlaceCouponOffers';
 export { getOfferCouponErrorUx } from './model/getOfferCouponErrorUx';
 export type {
   OfferCouponErrorCta,
@@ -38,5 +57,6 @@ export {
   useIssueCoupon,
   useOffer,
   useOffers,
+  usePlaceOffers,
   useRedeemCoupon,
 } from './hooks/useOffersCoupons';

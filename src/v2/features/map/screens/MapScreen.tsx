@@ -64,6 +64,7 @@ import {
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
+import { PlaceCouponCta } from '../../offers-coupons';
 import { FadeSlideTransition } from '../../../shared/motion';
 import { LocationStatusOverlay } from '../components/MapStatusOverlays';
 
@@ -609,9 +610,7 @@ export default function MapScreen({
       [{ text: t('map.search.confirm') }],
     );
   };
-  const handleCoupon = (_place: DecisionPlace) => {
-    snapTo('expanded');
-  };
+  const handleCoupon = () => snapTo('expanded');
   const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
     try {
       await togglePlaceBookmark(place, nextBookmarked);
@@ -766,12 +765,18 @@ export default function MapScreen({
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
+            couponContent={selectedPlace ? (
+              <PlaceCouponCta
+                onRequestSignIn={onSignIn}
+                onViewMyCoupons={onOpenCoupons}
+                placeId={selectedPlace.id}
+              />
+            ) : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
             onCouponPress={handleCoupon}
-            onCouponSignIn={onSignIn}
             onCreateReservation={(place, imageUrl) => {
               if (!onCreateReservation || reservationNavigationLock.current) return;
               reservationNavigationLock.current = true;
@@ -794,7 +799,6 @@ export default function MapScreen({
               setMapSection('favorites');
               snapTo('medium');
             }}
-            onOpenCouponWallet={onOpenCoupons}
             onOpenRecommendations={() => {
               setContent({ type: 'recommendations' });
               snapTo('expanded');

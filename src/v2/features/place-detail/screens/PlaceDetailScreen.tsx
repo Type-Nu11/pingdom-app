@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import type { V2ScreenProps } from '../../../app/navigation/types';
+import { V2_ROUTES } from '../../../app/navigation/types';
 import {
   ApiErrorState,
   Button,
@@ -11,6 +12,7 @@ import {
   StatusBadge,
   Surface,
 } from '../../../shared/components';
+import { PlaceCouponCta } from '../../offers-coupons';
 import { usePlaceDetail } from '../hooks/usePlaceDetail';
 import {
   formatPlaceOperatingSummary,
@@ -67,6 +69,10 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
               {operatingSummary.detailText ? ` · ${operatingSummary.detailText}` : ''}
             </OperatingLine>
           </Section>
+          <PlaceCouponCta
+            onViewMyCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
+            placeId={route.params.placeId}
+          />
           <Button label={t('placeDetail.back')} onPress={navigation.goBack} />
         </Surface>
       </Content>

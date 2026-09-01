@@ -55,7 +55,6 @@ import {
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import type { PlaceOperatingSummaryText, ReservationCtaState } from '../../place-detail';
-import { PlaceCouponOffers } from '../../offers-coupons';
 import GlassSurface from './GlassSurface';
 import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
@@ -130,14 +129,13 @@ type MapBottomSheetProps = {
   isBookmarkStateLoading?: boolean;
   collapsedTranslateY: number;
   content: BottomSheetContent;
+  couponContent?: React.ReactNode;
   height: number;
   mediumTranslateY: number;
   onBackHome: () => void;
   onCouponPress: (place: DecisionPlace) => void;
-  onCouponSignIn?: () => void;
   onCreateReservation?: (place: DecisionPlace, imageUrl?: string) => void;
   onOpenRecommendations?: () => void;
-  onOpenCouponWallet?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
@@ -1260,7 +1258,7 @@ type PreviewActionKind = 'arrival' | 'coupon' | 'departure' | 'directions' | 're
 
 const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
   if (kind === 'coupon') {
-    return <TicketAsset height={14} width={14} />;
+    return <TicketAsset height={13} width={13} />;
   }
   if (kind === 'share') {
     return (
@@ -1458,11 +1456,10 @@ type PlaceDetailTab = 'info' | 'reviews';
 const ExpandedPlaceContent = ({
   activeTab,
   bookmarked,
+  couponContent,
   fallbackContent,
   imageUrl,
   onBack,
-  onCouponSignIn,
-  onOpenCouponWallet,
   onReserve,
   onRetryAvailability,
   onRetryMedia,
@@ -1474,11 +1471,10 @@ const ExpandedPlaceContent = ({
 }: {
   activeTab: PlaceDetailTab;
   bookmarked: boolean;
+  couponContent?: React.ReactNode;
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
-  onCouponSignIn?: () => void;
-  onOpenCouponWallet?: () => void;
   onReserve: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
@@ -1677,14 +1673,21 @@ const ExpandedPlaceContent = ({
             </View>
           ) : null}
 
-          <View style={styles.detailSection}>
-            <Text style={styles.detailSectionTitle}>{t('map.detail.coupon')}</Text>
-            <PlaceCouponOffers
-              onSignIn={onCouponSignIn}
-              onViewWallet={onOpenCouponWallet}
-              placeId={place.id}
-            />
-          </View>
+          {couponContent ?? (fallbackContent?.coupons?.length ? (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>{t('map.detail.coupon')}</Text>
+              {fallbackContent.coupons.map((coupon, index) => (
+                <View key={`${coupon.title}-${index}`} style={styles.detailCouponRow}>
+                  <View style={styles.detailCouponIcon}><TicketAsset height={24} width={24} /></View>
+                  <View style={styles.detailCouponBody}>
+                    <Text style={styles.detailCouponTitle}>{coupon.title}</Text>
+                    <Text style={styles.detailCouponPeriod}>{coupon.period}</Text>
+                  </View>
+                  <DownAsset height={17} width={14} />
+                </View>
+              ))}
+            </View>
+          ) : null)}
 
           {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
@@ -1910,17 +1913,16 @@ export default function MapBottomSheet({
   bookmarkedPlaceIds,
   collapsedTranslateY,
   content,
+  couponContent,
   height,
   isBookmarkStateLoading = false,
   mediumTranslateY,
   onBackHome,
   onCouponPress,
-  onCouponSignIn,
   onCreateReservation,
   onDetailPress,
   onHandlePress,
   onOpenLikedPlaces,
-  onOpenCouponWallet,
   onOpenRecommendations,
   onOpenSavedPlaces,
   onPlacePress,
@@ -2078,11 +2080,10 @@ export default function MapBottomSheet({
           <ExpandedPlaceContent
             activeTab={activePlaceDetailTab}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
+            couponContent={couponContent}
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
-            onCouponSignIn={onCouponSignIn}
-            onOpenCouponWallet={onOpenCouponWallet}
             onReserve={handleCreateReservation}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
