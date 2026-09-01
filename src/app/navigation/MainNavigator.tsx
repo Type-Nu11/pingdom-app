@@ -4,9 +4,10 @@ import styled, { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../v2/features/map/screens/MapScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
-import CouponWalletScreen from '../../features/place/screens/CouponWalletScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
 import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
+import CouponBoxScreen from '../../v2/features/my-page/screens/CouponBoxScreen';
+import CouponDetailContainer from '../../v2/features/my-page/screens/CouponDetailContainer';
 import MyPageScreen from '../../v2/features/my-page/screens/MyPageScreen';
 import ProfileEditScreen from '../../v2/features/my-page/screens/ProfileEditScreen';
 import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlacesScreen';
@@ -120,6 +121,7 @@ export const MyPageRouteScreen = ({ navigation }: Pick<MainScreenProps<'MyPage'>
     <V2ScreenBoundary>
       <MyPageScreen
         onBack={navigation.goBack}
+        onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
         onOpenProfileEdit={openProfileEdit}
         onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
         onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
@@ -170,10 +172,25 @@ const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) =
   />
 );
 
-const CouponWalletRouteScreen = ({ navigation }: MainScreenProps<'CouponWallet'>) => (
-  <CouponWalletScreen
+const CouponBoxRouteScreen = ({ navigation }: MainScreenProps<'CouponBox'>) => (
+  <CouponBoxScreen
     onBack={navigation.goBack}
-    onExplore={() => navigation.popTo(MAIN_ROUTES.Map)}
+    onOpenCoupon={(coupon) => navigation.navigate(MAIN_ROUTES.CouponDetail, {
+      couponId: coupon.id,
+    })}
+  />
+);
+
+const CouponDetailRouteScreen = ({ navigation, route }: MainScreenProps<'CouponDetail'>) => (
+  <CouponDetailContainer
+    couponId={route.params.couponId}
+    onBack={navigation.goBack}
+    onReserve={(placeId) => {
+      const parsed = parsePlaceId(placeId);
+      if (parsed) {
+        navigation.navigate(MAIN_ROUTES.CreateReservation, { placeId: parsed });
+      }
+    }}
   />
 );
 
@@ -239,7 +256,8 @@ const MainNavigator = () => (
   >
     <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.CouponWallet} component={CouponWalletRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.CouponDetail} component={CouponDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.MyPage} component={MyPageRouteScreen} />

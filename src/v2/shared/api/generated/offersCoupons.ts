@@ -44,6 +44,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 발급 가능한 관광객 전용 Offer 목록 조회 */
+        get: operations["listIssuableOffers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/offers/{offerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 발급 가능한 관광객 전용 Offer 상세 조회 */
+        get: operations["getIssuableOffer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/offers/{offerId}/coupons": {
         parameters: {
             query?: never;
@@ -125,6 +159,65 @@ export interface components {
              * @example INVALID_TOKEN
              */
             code?: string | null;
+        };
+        OfferPageResponse: {
+            offers?: components["schemas"]["OfferResponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            limit?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            hasNext?: boolean;
+        };
+        OfferResponse: {
+            /**
+             * Format: int64
+             * @example 1
+             */
+            id?: number;
+            /**
+             * Format: int64
+             * @example 10
+             */
+            placeId?: number;
+            /** @example 관광객 웰컴 음료 */
+            title?: string;
+            description?: string;
+            /** @example 음료 1잔 무료 */
+            benefitDescription?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "PUBLISHED" | "CLOSED";
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
+            /**
+             * Format: int32
+             * @description LIMITED 재고의 총 발급 수량. UNLIMITED이면 null
+             */
+            totalQuantity?: number | null;
+            /** Format: int32 */
+            issuedQuantity?: number;
+            /**
+             * Format: int32
+             * @description 남은 발급 수량. UNLIMITED이면 null
+             */
+            remainingQuantity?: number | null;
+            /** Format: int32 */
+            couponValidityDays?: number;
+            /** @enum {string} */
+            eligibilityPolicy?: "ACTIVE_TRAVEL_SCHEDULE" | "PUBLIC";
+            /** @enum {string} */
+            inventoryPolicy?: "LIMITED" | "UNLIMITED";
+            /** @enum {string} */
+            expiryPolicy?: "ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END" | "ISSUE_PLUS_DAYS" | "OFFER_END";
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
         };
         /** @description 필드 검증 오류 응답 */
         ValidationErrorResponse: {
@@ -260,6 +353,97 @@ export interface operations {
                 };
             };
             /** @description Coupon을 찾을 수 없거나 요청자의 Coupon이 아님 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listIssuableOffers: {
+        parameters: {
+            query?: {
+                placeId?: number;
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Offer 목록 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OfferPageResponse"];
+                };
+            };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getIssuableOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offerId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Offer 상세 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OfferResponse"];
+                };
+            };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 발급 가능한 Offer를 찾을 수 없음 */
             404: {
                 headers: {
                     [name: string]: unknown;

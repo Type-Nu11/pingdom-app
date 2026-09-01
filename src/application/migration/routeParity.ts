@@ -19,7 +19,7 @@ export const PRODUCTION_ROUTE_PARITY: readonly RouteParityEntry[] = [
   { activeImplementation: 'src/v2/features/reservations/screens/ReservationDetailScreen.tsx', route: 'ReservationDetail/Payment', status: 'V2_READY' },
   { activeImplementation: 'src/v2/features/place-visit-verification', route: 'VisitVerification/Review', status: 'V2_READY' },
   { activeImplementation: 'src/features/place/screens/CheckInScreen.tsx', removalIssues: ['#139'], route: 'CheckIn', status: 'COMPOSITION_BRIDGE' },
-  { activeImplementation: 'src/features/place/screens/CouponWalletScreen.tsx', removalIssues: ['#139'], route: 'CouponWallet', status: 'COMPOSITION_BRIDGE' },
+  { activeImplementation: 'src/v2/features/my-page/screens/CouponBoxScreen.tsx', route: 'CouponBox', status: 'V2_READY' },
   { activeImplementation: 'src/v2/features/my-page/screens/MyPageScreen.tsx', removalIssues: [], route: 'Profile', status: 'V2_READY' },
   { activeImplementation: 'src/v2/features/settings/screens/SettingsScreen.tsx', removalIssues: [], route: 'Settings/Logout', status: 'V2_READY' },
   { activeImplementation: 'src/app/navigation/RoutePlaceholderScreen.tsx', removalIssues: ['#139'], route: 'Merchant', status: 'REMOVE' },
