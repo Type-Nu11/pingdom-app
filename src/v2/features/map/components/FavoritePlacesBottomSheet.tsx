@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   GestureResponderHandlers,
@@ -29,6 +30,7 @@ import type { DecisionPlace } from './MapBottomSheet';
 import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { normalizePlaceCategory } from '../utils/placeCategory';
+import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
 
 type FavoriteCategory = 'all' | 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 'food' | 'heritage' | 'music' | 'popup';
 
@@ -65,49 +67,26 @@ const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...pro
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: FavoriteCategory;
-  label: string;
 }> = [
-  { id: 'all', label: '전체' },
-  { Icon: MusicAsset, id: 'music', label: '음악' },
-  { Icon: FoodAsset, id: 'food', label: '음식점' },
-  { Icon: PopupAsset, id: 'popup', label: '팝업' },
-  { Icon: FashionAsset, id: 'fashion', label: '패션' },
-  { Icon: BeautyAsset, id: 'beauty', label: '뷰티' },
-  { Icon: ArtAsset, id: 'art', label: '전시' },
-  { Icon: CafeAsset, id: 'cafe', label: '카페' },
-  { Icon: HeritageAsset, id: 'heritage', label: '문화재' },
-  { Icon: EtcAsset, id: 'etc', label: '기타' },
+  { id: 'all' }, { Icon: MusicAsset, id: 'music' }, { Icon: FoodAsset, id: 'food' },
+  { Icon: PopupAsset, id: 'popup' }, { Icon: FashionAsset, id: 'fashion' },
+  { Icon: BeautyAsset, id: 'beauty' }, { Icon: ArtAsset, id: 'art' },
+  { Icon: CafeAsset, id: 'cafe' }, { Icon: HeritageAsset, id: 'heritage' }, { Icon: EtcAsset, id: 'etc' },
 ];
-
-const categoryLabels: Record<Exclude<FavoriteCategory, 'all'>, string> = {
-  art: '전시',
-  beauty: '뷰티',
-  cafe: '카페',
-  etc: '기타',
-  fashion: '패션',
-  food: '음식점',
-  heritage: '문화재',
-  music: '음악',
-  popup: '팝업',
-};
 
 const getFavoriteCategory = (place: DecisionPlace): Exclude<FavoriteCategory, 'all'> => {
   const category = normalizePlaceCategory(place.category);
   return category === 'game' ? 'popup' : category;
 };
 
-const getCategoryLabel = (place: DecisionPlace) => categoryLabels[getFavoriteCategory(place)];
-
 const matchesCategory = (place: DecisionPlace, category: FavoriteCategory) => {
   if (category === 'all') return true;
   return getFavoriteCategory(place) === category;
 };
 
-const formatDistance = (place: DecisionPlace) => {
+const formatDistance = (place: DecisionPlace, language: string) => {
   if (place.distanceMeters === undefined) return place.distance;
-  return place.distanceMeters >= 1000
-    ? `${(place.distanceMeters / 1000).toFixed(1)}km`
-    : `${Math.round(place.distanceMeters)}m`;
+  return formatLocalizedDistance(place.distanceMeters, language);
 };
 
 const HeaderStar = () => <MyPlaceAsset height={42} width={42} />;
@@ -160,11 +139,12 @@ const FavoritePlaceRow = ({
   pending: boolean;
   place: DecisionPlace;
 }) => {
+  const { i18n, t } = useTranslation();
   const sources = imageUrls.slice(0, 2);
 
   return (
     <Pressable
-      accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+      accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.placeRow, pressed && styles.pressed]}
@@ -173,14 +153,14 @@ const FavoritePlaceRow = ({
         <View style={styles.placeText}>
           <View style={styles.nameRow}>
             <Text numberOfLines={1} style={styles.placeName}>{place.name}</Text>
-            <Text style={styles.placeCategory}>{getCategoryLabel(place)}</Text>
+            <Text style={styles.placeCategory}>{t(`map.categories.${getFavoriteCategory(place)}`)}</Text>
           </View>
           <Text numberOfLines={1} style={styles.placeMeta}>
-            {formatDistance(place)} · {place.address}
+            {formatDistance(place, i18n.language)} · {place.address}
           </Text>
         </View>
         <Pressable
-          accessibilityLabel={`${place.name} 즐겨찾기 해제`}
+          accessibilityLabel={t('map.favorites.remove', { name: place.name })}
           accessibilityRole="button"
           accessibilityState={{ busy: pending, disabled: pending }}
           disabled={pending}
@@ -214,7 +194,9 @@ const BottomNavigation = ({
   onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
   sheetTranslateY: Animated.Value;
-}) => (
+}) => {
+  const { t } = useTranslation();
+  return (
   <Animated.View
     style={[
       styles.navigationRow,
@@ -233,24 +215,24 @@ const BottomNavigation = ({
         style={styles.navigationBar}
         tintColor="#FFFFFF"
       >
-        <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
+        <Pressable accessibilityLabel={t('map.navigation.map')} accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
           <View style={styles.navIcon}><MapAsset color="#3B3B40" height={22} width={19} /></View>
-          <Text style={styles.navLabel}>지도</Text>
+          <Text style={styles.navLabel}>{t('map.navigation.map')}</Text>
         </Pressable>
         <View style={styles.navItem}>
           <View style={[styles.navItemSurface, styles.navItemActive]}>
             <View style={styles.navIcon}><ActiveNavStar /></View>
-            <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
+            <Text style={[styles.navLabel, styles.navLabelActive]}>{t('map.navigation.favorites')}</Text>
           </View>
         </View>
-        <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
+        <Pressable accessibilityLabel={t('map.navigation.reservations')} accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
           <View style={styles.navIcon}><CheckInAsset height={22} width={21} /></View>
-          <Text style={styles.navLabel}>예약</Text>
+          <Text style={styles.navLabel}>{t('map.navigation.reservations')}</Text>
         </Pressable>
       </FrostedSurface>
     </View>
     <Pressable
-      accessibilityLabel="장소추천"
+      accessibilityLabel={t('map.navigation.recommendations')}
       accessibilityRole="button"
       onPress={onOpenRecommendations}
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
@@ -268,7 +250,8 @@ const BottomNavigation = ({
       </FrostedSurface>
     </Pressable>
   </Animated.View>
-);
+  );
+};
 
 export default function FavoritePlacesBottomSheet({
   collapsedTranslateY,
@@ -296,6 +279,7 @@ export default function FavoritePlacesBottomSheet({
   sheetTranslateY,
   snapPoint,
 }: FavoritePlacesBottomSheetProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState<FavoriteCategory>('all');
   const filteredPlaces = useMemo(
@@ -349,7 +333,7 @@ export default function FavoritePlacesBottomSheet({
       <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
-            accessibilityLabel="즐겨찾기 패널 크기 조절"
+            accessibilityLabel={t('map.favorites.adjust')}
             accessibilityRole="adjustable"
             onPress={onHandlePress}
             style={styles.handleButton}
@@ -363,7 +347,7 @@ export default function FavoritePlacesBottomSheet({
         >
           <View style={styles.titleRow}>
             <HeaderStar />
-            <Text style={styles.title}>내 장소</Text>
+            <Text style={styles.title}>{t('map.favorites.title')}</Text>
           </View>
           <ScrollView
             contentContainerStyle={styles.categoryContent}
@@ -371,8 +355,9 @@ export default function FavoritePlacesBottomSheet({
             showsHorizontalScrollIndicator={false}
             style={styles.categoryScroll}
           >
-            {categories.map(({ Icon, id, label }) => {
+            {categories.map(({ Icon, id }) => {
               const active = activeCategory === id;
+              const label = t(`map.categories.${id}`);
               return (
                 <Pressable
                   accessibilityRole="tab"
@@ -411,34 +396,34 @@ export default function FavoritePlacesBottomSheet({
                 />
               )) : isLoading ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>저장한 장소를 불러오는 중이에요</Text>
+                  <Text style={styles.emptyTitle}>{t('map.favorites.loading')}</Text>
                 </View>
               ) : isUnauthorized ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>로그인이 만료됐어요</Text>
-                  <Text style={styles.emptyBody}>다시 로그인한 뒤 저장한 장소를 확인해 주세요.</Text>
+                  <Text style={styles.emptyTitle}>{t('map.favorites.sessionTitle')}</Text>
+                  <Text style={styles.emptyBody}>{t('map.favorites.sessionBody')}</Text>
                 </View>
               ) : isError ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>장소를 불러오지 못했어요</Text>
+                  <Text style={styles.emptyTitle}>{t('map.favorites.error')}</Text>
                   <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
-                    <Text style={styles.retryLabel}>다시 시도</Text>
+                    <Text style={styles.retryLabel}>{t('map.favorites.retry')}</Text>
                   </Pressable>
                 </View>
               ) : (
                 <View style={styles.emptyState}>
                   <HeaderStar />
-                  <Text style={styles.emptyTitle}>저장한 장소가 없어요</Text>
-                  <Text style={styles.emptyBody}>마음에 드는 장소의 별을 눌러 모아보세요.</Text>
+                  <Text style={styles.emptyTitle}>{t('map.favorites.emptyTitle')}</Text>
+                  <Text style={styles.emptyBody}>{t('map.favorites.emptyBody')}</Text>
                 </View>
               )}
               {filteredPlaces.length > 0 && hasNextPage ? (
                 <View style={styles.loadMoreState}>
                   {isFetchNextPageError ? (
-                    <Text style={styles.loadMoreError}>다음 장소를 불러오지 못했어요</Text>
+                    <Text style={styles.loadMoreError}>{t('map.favorites.loadMoreError')}</Text>
                   ) : null}
                   <Pressable
-                    accessibilityLabel="저장한 장소 더 불러오기"
+                    accessibilityLabel={t('map.favorites.loadMoreLabel')}
                     accessibilityRole="button"
                     accessibilityState={{ busy: isFetchingNextPage, disabled: isFetchingNextPage }}
                     disabled={isFetchingNextPage}
@@ -446,7 +431,7 @@ export default function FavoritePlacesBottomSheet({
                     style={styles.loadMoreButton}
                   >
                     <Text style={styles.retryLabel}>
-                      {isFetchingNextPage ? '불러오는 중…' : isFetchNextPageError ? '다시 시도' : '더 보기'}
+                      {isFetchingNextPage ? t('map.favorites.loading') : isFetchNextPageError ? t('map.favorites.retry') : t('map.favorites.loadMore')}
                     </Text>
                   </Pressable>
                 </View>

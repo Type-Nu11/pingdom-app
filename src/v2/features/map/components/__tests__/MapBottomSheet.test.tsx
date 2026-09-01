@@ -340,7 +340,7 @@ describe('MapBottomSheet recommendations', () => {
           [String(selectedPlace.id)]: {
             amenities: [],
             imageUrls: [],
-            reservation: { kind: 'available', disabled: false, message: '예약하기' },
+            reservation: { kind: 'available', disabled: false },
             statusDescription: '',
             statusEmphasis: '',
           },
@@ -393,7 +393,7 @@ describe('MapBottomSheet recommendations', () => {
     });
     const result = await renderWithProviders(
       <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback({
-        kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+        kind: 'empty', disabled: false,
       })} />,
     );
 
@@ -407,7 +407,7 @@ describe('MapBottomSheet recommendations', () => {
       <MapBottomSheet
         {...commonProps}
         previewFallbackContentByPlaceId={fallback({
-          kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+          kind: 'empty', disabled: false,
         })}
         snapPoint="expanded"
       />,
@@ -416,7 +416,7 @@ describe('MapBottomSheet recommendations', () => {
       .not.toBeOnTheScreen();
     await result.rerender(
       <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback({
-        kind: 'error', disabled: true, message: '예약 가능 여부를 불러오지 못했습니다',
+        kind: 'error', disabled: true,
       })} />,
     );
     await result.user.press(screen.getByRole('button', { name: '다시 시도' }));

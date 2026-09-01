@@ -58,6 +58,8 @@ import type { PlaceOperatingSummaryText, ReservationCtaState } from '../../place
 import GlassSurface from './GlassSurface';
 import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
+import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
+import { normalizePlaceCategory } from '../utils/placeCategory';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -178,16 +180,9 @@ const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...pro
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
 const RECOMMENDATION_NAVIGATION_LOCK_MS = 500;
-const CATEGORY_OPTIONS: Array<{ id: SheetCategory; label: string }> = [
-  { id: 'popup', label: '팝업' },
-  { id: 'music', label: '음악' },
-  { id: 'food', label: '음식점' },
-  { id: 'fashion', label: '패션' },
-  { id: 'beauty', label: '뷰티' },
-  { id: 'art', label: '전시' },
-  { id: 'cafe', label: '카페' },
-  { id: 'heritage', label: '문화재' },
-  { id: 'etc', label: '기타' },
+const CATEGORY_OPTIONS: Array<{ id: SheetCategory }> = [
+  { id: 'popup' }, { id: 'music' }, { id: 'food' }, { id: 'fashion' }, { id: 'beauty' },
+  { id: 'art' }, { id: 'cafe' }, { id: 'heritage' }, { id: 'etc' },
 ];
 
 export const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
@@ -259,6 +254,7 @@ const FeedSegment = ({
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
 }) => {
+  const { t } = useTranslation();
   const [segmentWidth, setSegmentWidth] = useState(0);
   const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
   const reduceMotion = useReducedMotion();
@@ -316,7 +312,7 @@ const FeedSegment = ({
               width={16}
             />
             <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-              우리 지역 핫플
+              {t('map.sheet.localHotPlaces')}
             </Text>
           </Pressable>
           <Pressable
@@ -331,7 +327,7 @@ const FeedSegment = ({
               width={18}
             />
             <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-              전국 트렌드
+              {t('map.sheet.nationwideTrends')}
             </Text>
           </Pressable>
         </GlassSurface>
@@ -368,18 +364,16 @@ const BookmarkStar = ({
   </Svg>
 );
 
-const formatDistance = (place: DecisionPlace) => {
+const formatDistance = (place: DecisionPlace, language: string) => {
   if (place.distanceMeters !== undefined) {
-    return place.distanceMeters >= 1000
-      ? `${(place.distanceMeters / 1000).toFixed(1)}km`
-      : `${Math.round(place.distanceMeters)}m`;
+    return formatLocalizedDistance(place.distanceMeters, language);
   }
 
   return place.distance;
 };
 
-const formatPreviewLocation = (place: DecisionPlace) => {
-  const distance = formatDistance(place).trim();
+const formatPreviewLocation = (place: DecisionPlace, language: string) => {
+  const distance = formatDistance(place, language).trim();
   const address = place.address.trim();
 
   return [distance, address].filter(Boolean).join(' · ');
@@ -394,6 +388,7 @@ const PlaceArtwork = ({
   imageUrl?: string;
   variant?: 'grid' | 'trend';
 }) => {
+  const { t } = useTranslation();
   const [hasImageError, setHasImageError] = useState(false);
   const imageOpacity = useRef(new Animated.Value(0)).current;
   const reduceMotion = useReducedMotion();
@@ -407,7 +402,7 @@ const PlaceArtwork = ({
   }, [imageOpacity, imageUrl]);
 
   if (!imageUrl || hasImageError) {
-    const fallbackMessage = hasImageError ? '이미지를 불러오지 못했어요' : '이미지 없음';
+    const fallbackMessage = t(hasImageError ? 'map.sheet.imageError' : 'map.sheet.imageMissing');
 
     return (
       <View
@@ -531,6 +526,7 @@ const RecommendationBookmarkButton = ({
   size?: number;
   style: object;
 }) => {
+  const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(1)).current;
   const mutationLocked = useRef(false);
@@ -571,7 +567,7 @@ const RecommendationBookmarkButton = ({
   return (
     <Animated.View style={[style, { transform: [{ scale }] }]}>
       <Pressable
-        accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+        accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
         accessibilityRole="button"
         accessibilityState={{ busy: pending, disabled: pending, checked: bookmarked }}
         disabled={pending}
@@ -589,6 +585,7 @@ const RecommendationBookmarkButton = ({
 };
 
 const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+  const { t } = useTranslation();
   const [hasImageError, setHasImageError] = useState(false);
 
   useEffect(() => {
@@ -596,7 +593,7 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
   }, [imageUrl]);
 
   if (!imageUrl || hasImageError) {
-    const fallbackMessage = hasImageError ? '이미지를 불러오지 못했어요' : '이미지 없음';
+    const fallbackMessage = t(hasImageError ? 'map.sheet.imageError' : 'map.sheet.imageMissing');
 
     return (
       <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
@@ -608,7 +605,7 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
 
   return (
     <Image
-      accessibilityLabel="장소 이미지"
+      accessibilityLabel={t('map.sheet.image')}
       onError={() => setHasImageError(true)}
       resizeMode="cover"
       source={{ uri: imageUrl }}
@@ -633,9 +630,11 @@ export const RecommendationFeaturedCard = ({
   pending: boolean;
   place: DecisionPlace;
   recommendationLabel?: string;
-}) => (
+}) => {
+  const { i18n, t } = useTranslation();
+  return (
     <RecommendationCardPressable
-      accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+      accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
       onPress={onPress}
       style={styles.placeCard}
       testID={`recommendation-card-${place.id}`}
@@ -651,7 +650,7 @@ export const RecommendationFeaturedCard = ({
         />
         <View style={styles.placeCardBody}>
           <Text ellipsizeMode="tail" numberOfLines={2} style={styles.placeCardName}>
-            {place.name || '장소명 없음'}
+            {place.name || t('map.sheet.placeMissing')}
           </Text>
         </View>
       </View>
@@ -664,10 +663,11 @@ export const RecommendationFeaturedCard = ({
         </View>
       ) : null}
       <Text ellipsizeMode="tail" numberOfLines={1} style={styles.placeCardDistance}>
-        여기서 {formatDistance(place)}
+        {t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}
       </Text>
     </RecommendationCardPressable>
-);
+  );
+};
 
 const RecommendationGridCard = ({
   bookmarked,
@@ -683,9 +683,11 @@ const RecommendationGridCard = ({
   onToggleBookmark: () => Promise<void> | void;
   pending: boolean;
   place: DecisionPlace;
-}) => (
+}) => {
+  const { i18n, t } = useTranslation();
+  return (
     <RecommendationCardPressable
-      accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+      accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
       onPress={onPress}
       style={styles.gridCard}
       testID={`recommendation-grid-card-${place.id}`}
@@ -700,12 +702,13 @@ const RecommendationGridCard = ({
       />
       <View style={styles.gridCardBody}>
         <Text ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
-          {place.name || '장소명 없음'}
+          {place.name || t('map.sheet.placeMissing')}
         </Text>
         <Text ellipsizeMode="tail" numberOfLines={1} style={styles.gridCardDistance}>{place.address}</Text>
       </View>
     </RecommendationCardPressable>
-);
+  );
+};
 
 const PlaceTrendCard = ({
   bookmarked,
@@ -721,9 +724,11 @@ const PlaceTrendCard = ({
   onToggleBookmark: () => void;
   pending: boolean;
   place: DecisionPlace;
-}) => (
+}) => {
+  const { i18n, t } = useTranslation();
+  return (
   <Pressable
-    accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+    accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
     accessibilityRole="button"
     onPress={onPress}
     style={({ pressed }) => [styles.homeTrendCard, pressed && styles.pressed]}
@@ -731,7 +736,7 @@ const PlaceTrendCard = ({
     <PlaceArtwork imageUrl={imageUrl} />
     <CardScrim />
     <Pressable
-      accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+      accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
       accessibilityRole="button"
       accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
       disabled={pending}
@@ -746,14 +751,15 @@ const PlaceTrendCard = ({
     </Pressable>
     <View style={styles.homeTrendCardBody}>
       <Text numberOfLines={1} style={styles.homeTrendCardName}>
-        {place.name || '장소명 없음'}
+        {place.name || t('map.sheet.placeMissing')}
       </Text>
       <Text numberOfLines={1} style={styles.homeTrendCardDistance}>
-        여기서 {formatDistance(place)}
+        {t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}
       </Text>
     </View>
   </Pressable>
-);
+  );
+};
 
 const ExpandedPlaceCard = ({
   bookmarked,
@@ -769,9 +775,11 @@ const ExpandedPlaceCard = ({
   onToggleBookmark: () => void;
   pending: boolean;
   place: DecisionPlace;
-}) => (
+}) => {
+  const { i18n, t } = useTranslation();
+  return (
   <Pressable
-    accessibilityLabel={`${place.name}, ${formatDistance(place)}`}
+    accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
     accessibilityRole="button"
     onPress={onPress}
     style={({ pressed }) => [styles.homeGridCard, pressed && styles.pressed]}
@@ -779,7 +787,7 @@ const ExpandedPlaceCard = ({
     <PlaceArtwork imageUrl={imageUrl} variant="grid" />
     <CardScrim />
     <Pressable
-      accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+      accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
       accessibilityRole="button"
       accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
       disabled={pending}
@@ -794,10 +802,11 @@ const ExpandedPlaceCard = ({
     </Pressable>
     <View style={styles.homeGridCardBody}>
       <Text numberOfLines={2} style={styles.homeGridCardName}>{place.name}</Text>
-      <Text numberOfLines={1} style={styles.homeGridCardDistance}>여기서 {formatDistance(place)}</Text>
+      <Text numberOfLines={1} style={styles.homeGridCardDistance}>{t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}</Text>
     </View>
   </Pressable>
-);
+  );
+};
 
 const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => {
   const value = place.category.trim().toLowerCase();
@@ -845,6 +854,7 @@ const ExpandedHomeContent = ({
   state?: 'empty' | 'error' | 'loading' | 'ready';
   userName: string;
 }) => {
+  const { t } = useTranslation();
   const categoryPlaces = places.filter((place) => placeMatchesCategory(place, activeCategory));
   const gridPlaces = categoryPlaces.length > 0 ? categoryPlaces : places;
 
@@ -885,9 +895,7 @@ const ExpandedHomeContent = ({
           )) : <EmptyCard state={state} variant="row" />}
         </ScrollView>
 
-        <Text style={styles.expandedTitle}>
-          카테고리별 <Text style={styles.expandedTitleAccent}>{userName}님</Text> 주변 인기 장소들
-        </Text>
+        <Text style={styles.expandedTitle}>{t('map.sheet.categoryPopular', { userName })}</Text>
 
         <ScrollView
           contentContainerStyle={styles.categoryRow}
@@ -908,7 +916,7 @@ const ExpandedHomeContent = ({
               >
                 <CategoryIcon active={active} category={category.id} />
                 <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
-                  {category.label}
+                  {t(`map.categories.${category.id}`)}
                 </Text>
               </Pressable>
             );
@@ -936,12 +944,6 @@ const ExpandedHomeContent = ({
   );
 };
 
-const EMPTY_CARD_COPY: Record<'empty' | 'error' | 'loading', { body: string; title: string }> = {
-  empty: { body: '지도를 움직여 다른 지역도 둘러보세요.', title: '표시할 핫플이 아직 없어요' },
-  error: { body: '잠시 후 다시 시도해 주세요.', title: '목록을 불러오지 못했어요' },
-  loading: { body: '지도를 움직여 다른 지역도 둘러보세요.', title: '주변 핫플을 찾는 중이에요' },
-};
-
 const EmptyCard = ({
   state = 'loading',
   variant = 'list',
@@ -949,13 +951,14 @@ const EmptyCard = ({
   state?: 'empty' | 'error' | 'loading' | 'ready';
   variant?: 'list' | 'row';
 }) => {
-  const copy = EMPTY_CARD_COPY[state === 'ready' ? 'empty' : state];
+  const { t } = useTranslation();
+  const copyState = state === 'ready' ? 'empty' : state;
 
   return (
     <View style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}>
       <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
-      <Text style={styles.emptyCardTitle}>{copy.title}</Text>
-      <Text style={styles.emptyCardBody}>{copy.body}</Text>
+      <Text style={styles.emptyCardTitle}>{t(`map.sheet.state.${copyState}Title`)}</Text>
+      <Text style={styles.emptyCardBody}>{t(`map.sheet.state.${copyState}Body`)}</Text>
     </View>
   );
 };
@@ -966,33 +969,28 @@ const RecommendationState = ({
 }: {
   onRetry: () => void;
   state: 'empty' | 'error' | 'loading';
-}) => (
+}) => {
+  const { t } = useTranslation();
+  return (
   <View
     accessibilityLiveRegion="polite"
     style={styles.recommendationState}
     testID={`recommendation-state-${state}`}
   >
     <Text style={styles.emptyCardTitle}>
-      {state === 'loading'
-        ? '나만을 위한 추천 장소를 불러오고 있어요'
-        : state === 'error'
-          ? '추천 장소를 불러오지 못했어요'
-          : '현재 조건에 맞는 추천 장소가 없어요'}
+      {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Title`)}
     </Text>
     <Text style={styles.emptyCardBody}>
-      {state === 'empty'
-        ? '위치나 추천 반경을 바꾼 뒤 다시 확인해 주세요.'
-        : state === 'error'
-          ? '잠시 후 다시 시도해 주세요.'
-          : '현재 위치와 여행 맥락을 확인하고 있어요.'}
+      {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Body`)}
     </Text>
     {state === 'error' ? (
       <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
-        <Text style={styles.retryButtonText}>다시 시도</Text>
+        <Text style={styles.retryButtonText}>{t('common.error.retry')}</Text>
       </Pressable>
     ) : null}
   </View>
-);
+  );
+};
 
 const RecommendationStateTransition = ({
   children,
@@ -1065,7 +1063,7 @@ const RecommendationContent = ({
       <View style={styles.recommendationHeader}>
         <View style={styles.recommendationTitleRow}>
           <RecommendationTitleAsset height={22} width={22} />
-          <Text style={styles.recommendationTitle}>나만을 위한 추천 장소</Text>
+          <Text style={styles.recommendationTitle}>{t('map.sheet.recommendationTitle')}</Text>
         </View>
         <Text ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationSubtitle}>
           {t('map.recommendations.subtitle', { userName })}
@@ -1145,25 +1143,31 @@ const ResultRow = ({
 }: {
   onPress: () => void;
   place: DecisionPlace;
-}) => (
+}) => {
+  const { i18n } = useTranslation();
+  return (
   <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
     <View style={styles.resultThumbnail}><MapPinIcon active size={25} /></View>
     <View style={styles.resultTextBody}>
       <Text numberOfLines={1} style={styles.resultName}>{place.name}</Text>
       <Text numberOfLines={1} style={styles.resultAddress}>{place.address}</Text>
     </View>
-    <Text style={styles.resultDistance}>{formatDistance(place)}</Text>
+    <Text style={styles.resultDistance}>{formatDistance(place, i18n.language)}</Text>
   </Pressable>
-);
+  );
+};
 
-const PreviewAmenity = ({ type }: { type: 'english' | 'parking' }) => (
+const PreviewAmenity = ({ type }: { type: 'english' | 'parking' }) => {
+  const { t } = useTranslation();
+  return (
   <View style={styles.previewAmenityChip}>
     {type === 'english'
       ? <GroupAsset height={20} width={20} />
       : <ParkAsset height={20} width={20} />}
-    <Text style={styles.previewAmenityText}>{type === 'english' ? '영어응대 가능' : '주차가능'}</Text>
+    <Text style={styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</Text>
   </View>
-);
+  );
+};
 
 const ReviewHighlightIcon = ({ label }: { label: string }) => {
   if (label.includes('사진')) return <CameraAsset height={16} width={19} />;
@@ -1202,6 +1206,7 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
 };
 
 const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: string[] }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const visibleTags = isExpanded ? [...tags, ...hiddenTags] : tags;
 
@@ -1216,14 +1221,14 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
       {hiddenTags.length > 0 ? (
         <Pressable
           accessibilityLabel={isExpanded
-            ? '추가 태그 접기'
-            : `숨겨진 태그 ${hiddenTags.length}개 펼치기`}
+            ? t('map.detail.collapseTags')
+            : t('map.detail.expandTags', { count: hiddenTags.length })}
           accessibilityRole="button"
           onPress={() => setIsExpanded((current) => !current)}
           style={({ pressed }) => [styles.detailReviewTag, pressed && styles.pressed]}
         >
           <Text style={styles.detailReviewTagText}>
-            {isExpanded ? '접기' : `+${hiddenTags.length}`}
+            {isExpanded ? t('map.detail.collapseTags') : `+${hiddenTags.length}`}
           </Text>
         </Pressable>
       ) : null}
@@ -1274,16 +1279,8 @@ const PreviewActionChip = ({ active = false, disabled = false, kind, label, onPr
 );
 
 const formatPreviewCategory = (category: string) => {
-  const normalized = category.trim().toUpperCase();
-  if (normalized.includes('FOOD') || normalized.includes('RESTAURANT') || normalized === '음식점') return '음식점';
-  if (normalized.includes('CAFE') || normalized === '카페') return '카페';
-  if (normalized.includes('MUSIC') || normalized.includes('NIGHTLIFE') || normalized === '음악') return '음악';
-  if (normalized.includes('POP')) return '팝업';
-  if (normalized.includes('FASHION')) return '패션';
-  if (normalized.includes('BEAUTY')) return '뷰티';
-  if (normalized.includes('ART') || normalized.includes('EXHIBITION')) return '전시';
-  if (normalized.includes('HERITAGE') || normalized.includes('CULTURAL')) return '문화재';
-  return category;
+  const normalized = normalizePlaceCategory(category);
+  return normalized === 'game' ? 'popup' : normalized;
 };
 
 const PreviewContent = ({
@@ -1311,6 +1308,7 @@ const PreviewContent = ({
   pending: boolean;
   place: DecisionPlace;
 }) => {
+  const { i18n, t } = useTranslation();
   const { width: windowWidth } = useWindowDimensions();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
@@ -1320,7 +1318,7 @@ const PreviewContent = ({
   const primaryImageWidth = Math.min(252, Math.max(218, Math.round(contentWidth * 0.64)));
   const secondaryImageWidth = Math.min(184, Math.max(150, Math.round(contentWidth * 0.46)));
   const reservation = fallbackContent?.reservation ?? {
-    kind: 'loading', disabled: true, message: '예약 가능 여부를 확인하고 있습니다',
+    kind: 'loading', disabled: true,
   };
   const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
 
@@ -1328,14 +1326,14 @@ const PreviewContent = ({
     <View style={styles.previewContent}>
       <View style={styles.previewHeader}>
         <Pressable
-          accessibilityLabel={`${place.name} 상세 보기`}
+          accessibilityLabel={t('map.detail.preview', { name: place.name })}
           accessibilityRole="button"
           onPress={onDetail}
           style={styles.previewSummary}
         >
           <View style={styles.previewTitleRow}>
             <Text numberOfLines={1} style={styles.previewName}>{place.name}</Text>
-            <Text numberOfLines={1} style={styles.previewCategory}>{formatPreviewCategory(place.category)}</Text>
+            <Text numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</Text>
           </View>
           {fallbackContent && (fallbackContent.statusDescription || fallbackContent.statusEmphasis) ? (
             <Text numberOfLines={1} style={styles.previewStatus}>
@@ -1349,11 +1347,11 @@ const PreviewContent = ({
             </Text>
           ) : null}
           <Text numberOfLines={1} style={styles.previewAddress}>
-            {formatPreviewLocation(place)}
+            {formatPreviewLocation(place, i18n.language)}
           </Text>
         </Pressable>
         <Pressable
-          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
           accessibilityRole="button"
           accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
           disabled={pending}
@@ -1364,7 +1362,7 @@ const PreviewContent = ({
           <BookmarkStar selected={bookmarked} size={22} strokeColor="#FF245B" />
         </Pressable>
         <Pressable
-          accessibilityLabel="장소 미리보기 닫기"
+          accessibilityLabel={t('map.card.dismiss')}
           accessibilityRole="button"
           onPress={onBack}
           style={styles.previewCloseButton}
@@ -1383,20 +1381,20 @@ const PreviewContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        <PreviewActionChip active kind="departure" label="출발" />
-        <PreviewActionChip kind="arrival" label="도착" />
-        <PreviewActionChip kind="share" label="공유" />
+        <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
+        <PreviewActionChip kind="arrival" label={t('map.card.actions.arrive')} />
+        <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
         <PreviewActionChip
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
-          label={reservation.kind === 'error' ? '다시 시도' : '예약'}
+          label={t(reservation.kind === 'error' ? 'map.detail.reservation.retry' : 'map.card.actions.reserve')}
           onPress={reservationPress}
         />
-        <PreviewActionChip kind="directions" label="길찾기" />
+        <PreviewActionChip kind="directions" label={t('map.card.actions.directions')} />
       </ScrollView>
       {fallbackContent?.imageState === 'error' ? (
         <Pressable accessibilityRole="button" onPress={onRetryMedia}>
-          <Text style={styles.detailEmptyText}>사진을 불러오지 못했습니다. 다시 시도</Text>
+          <Text style={styles.detailEmptyText}>{t('map.detail.imageError')}</Text>
         </Pressable>
       ) : null}
       <ScrollView
@@ -1406,7 +1404,7 @@ const PreviewContent = ({
       >
         {imageUrls.map((url, index) => (
           <Pressable
-            accessibilityLabel={`${place.name} 사진 ${index + 1} 상세 보기`}
+            accessibilityLabel={t('map.detail.imageDetail', { count: index + 1, name: place.name })}
             accessibilityRole="button"
             key={`${url ?? 'missing'}-${index}`}
             onPress={onDetail}
@@ -1454,12 +1452,13 @@ const ExpandedPlaceContent = ({
   pending: boolean;
   place: DecisionPlace;
 }) => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
     : [imageUrl];
   const reservation = fallbackContent?.reservation ?? {
-    kind: 'loading', disabled: true, message: '예약 가능 여부를 확인하고 있습니다',
+    kind: 'loading', disabled: true,
   };
   const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
@@ -1472,7 +1471,7 @@ const ExpandedPlaceContent = ({
     >
       <View style={styles.detailTopBar}>
         <Pressable
-          accessibilityLabel="지도로 돌아가기"
+          accessibilityLabel={t('map.detail.back')}
           accessibilityRole="button"
           hitSlop={12}
           onPress={onBack}
@@ -1481,7 +1480,7 @@ const ExpandedPlaceContent = ({
           <BackIcon width={44} height={44} />
         </Pressable>
         <Pressable
-          accessibilityLabel={bookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+          accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
           accessibilityRole="button"
           accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
           disabled={pending}
@@ -1496,7 +1495,7 @@ const ExpandedPlaceContent = ({
       <View style={styles.detailHeading}>
         <View style={styles.detailTitleRow}>
           <Text style={styles.detailTitle}>{place.name}</Text>
-          <Text style={styles.detailCategory}>{place.category}</Text>
+          <Text style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</Text>
         </View>
         {fallbackContent?.englishName ? (
           <Text style={styles.detailVerified}>{fallbackContent.englishName}</Text>
@@ -1511,20 +1510,20 @@ const ExpandedPlaceContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        <PreviewActionChip active kind="departure" label="출발" />
-        <PreviewActionChip kind="arrival" label="도착" />
-        <PreviewActionChip kind="share" label="공유" />
+        <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
+        <PreviewActionChip kind="arrival" label={t('map.card.actions.arrive')} />
+        <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
         <PreviewActionChip
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
-          label={reservation.kind === 'error' ? '다시 시도' : '예약'}
+          label={t(reservation.kind === 'error' ? 'map.detail.reservation.retry' : 'map.card.actions.reserve')}
           onPress={reservationPress}
         />
-        <PreviewActionChip kind="directions" label="길찾기" />
+        <PreviewActionChip kind="directions" label={t('map.card.actions.directions')} />
       </ScrollView>
       {fallbackContent?.imageState === 'error' ? (
         <Pressable accessibilityRole="button" onPress={onRetryMedia}>
-          <Text style={styles.detailEmptyText}>사진을 불러오지 못했습니다. 다시 시도</Text>
+          <Text style={styles.detailEmptyText}>{t('map.detail.imageError')}</Text>
         </Pressable>
       ) : null}
 
@@ -1553,7 +1552,7 @@ const ExpandedPlaceContent = ({
             style={[styles.detailTab, activeTab === tab && styles.detailTabActive]}
           >
             <Text style={[styles.detailTabText, activeTab === tab && styles.detailTabTextActive]}>
-              {tab === 'info' ? '정보' : '리뷰'}
+              {t(tab === 'info' ? 'map.detail.info' : 'map.detail.reviews')}
             </Text>
           </Pressable>
         ))}
@@ -1630,21 +1629,21 @@ const ExpandedPlaceContent = ({
 
           {fallbackContent?.notice ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>운영 공지</Text>
+              <Text style={styles.detailSectionTitle}>{t('map.detail.notice')}</Text>
               <Text style={styles.detailInfoText}>{fallbackContent.notice}</Text>
             </View>
           ) : null}
 
           {fallbackContent?.summary ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>장소 소개</Text>
+              <Text style={styles.detailSectionTitle}>{t('map.detail.description')}</Text>
               <Text style={styles.detailInfoText}>{fallbackContent.summary}</Text>
             </View>
           ) : null}
 
           {fallbackContent?.coupons?.length ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>쿠폰</Text>
+              <Text style={styles.detailSectionTitle}>{t('map.detail.coupon')}</Text>
               {fallbackContent.coupons.map((coupon, index) => (
                 <View key={`${coupon.title}-${index}`} style={styles.detailCouponRow}>
                   <View style={styles.detailCouponIcon}><TicketAsset height={24} width={24} /></View>
@@ -1660,7 +1659,7 @@ const ExpandedPlaceContent = ({
 
           {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>진행 중 이벤트</Text>
+              <Text style={styles.detailSectionTitle}>{t('map.detail.events')}</Text>
               {fallbackContent.events.map((event, index) => (
                 <View key={`${event.title}-${index}`} style={styles.detailCouponRow}>
                   <View style={styles.detailCouponBody}>
@@ -1678,9 +1677,9 @@ const ExpandedPlaceContent = ({
           {fallbackContent?.reviewHighlights?.length ? (
             <View style={styles.detailReviewSection}>
             <Text style={styles.detailReviewTitle}>
-              이런 점을 좋아해요!
+              {t('map.detail.reviewHighlights')}
               {fallbackContent?.reviewParticipantCount ? (
-                <Text style={styles.detailReviewCount}> {fallbackContent.reviewParticipantCount}명 참여</Text>
+                <Text style={styles.detailReviewCount}> {t('map.detail.participantCount', { count: fallbackContent.reviewParticipantCount })}</Text>
               ) : null}
             </Text>
             {fallbackContent.reviewHighlights.map((highlight, index, items) => {
@@ -1718,7 +1717,7 @@ const ExpandedPlaceContent = ({
 
           {reviewImageUrls.length ? (
             <View style={styles.detailReviewSection}>
-              <Text style={styles.detailSectionTitle}>사진 리뷰</Text>
+              <Text style={styles.detailSectionTitle}>{t('map.detail.photoReviews')}</Text>
               <ScrollView contentContainerStyle={styles.detailReviewPhotos} horizontal showsHorizontalScrollIndicator={false}>
               {reviewImageUrls.map((url, index) => (
                 <View key={`${url ?? 'missing'}-review-${index}`} style={styles.detailReviewPhoto}>
@@ -1730,13 +1729,13 @@ const ExpandedPlaceContent = ({
           ) : null}
 
           <View style={styles.detailReviewSection}>
-            <Text style={styles.detailSectionTitle}>리뷰 {fallbackContent?.reviewCount ?? 0}</Text>
+            <Text style={styles.detailSectionTitle}>{t('map.detail.reviewCount', { count: fallbackContent?.reviewCount ?? 0 })}</Text>
             {fallbackContent?.reviewState === 'error' ? (
               <Pressable accessibilityRole="button" onPress={onRetryReviews}>
-                <Text style={styles.detailEmptyText}>리뷰를 불러오지 못했습니다. 다시 시도</Text>
+                <Text style={styles.detailEmptyText}>{t('map.detail.reviewError')}</Text>
               </Pressable>
             ) : fallbackContent?.reviewState === 'loading' ? (
-              <Text accessibilityLiveRegion="polite" style={styles.detailEmptyText}>리뷰를 불러오는 중입니다.</Text>
+              <Text accessibilityLiveRegion="polite" style={styles.detailEmptyText}>{t('map.detail.reviewLoading')}</Text>
             ) : fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
               <View key={`${review.author}-${review.createdAt}-${index}`} style={styles.detailReviewItem}>
                 <View style={styles.detailReviewerRow}>
@@ -1759,7 +1758,7 @@ const ExpandedPlaceContent = ({
                 <ReviewTags hiddenTags={review.hiddenTags} tags={review.tags} />
               </View>
             )) : (
-                <Text style={styles.detailEmptyText}>등록된 리뷰 정보가 없어요.</Text>
+                <Text style={styles.detailEmptyText}>{t('map.detail.reviewEmpty')}</Text>
               )}
           </View>
         </View>
@@ -1808,7 +1807,9 @@ const BottomNavigation = ({
   onOpenSavedPlaces?: () => void;
   recommendationsActive: boolean;
   sheetTranslateY: Animated.Value;
-}) => (
+}) => {
+  const { t } = useTranslation();
+  return (
   <Animated.View
     style={[
       styles.navigationRow,
@@ -1830,23 +1831,23 @@ const BottomNavigation = ({
         <NavItem
           active={!recommendationsActive}
           icon={<MapAsset color={recommendationsActive ? '#56575E' : '#FF1956'} height={22} width={19} />}
-          label="지도"
+          label={t('map.navigation.map')}
           onPress={recommendationsActive ? onOpenMap : undefined}
         />
         <NavItem
           icon={<StarAsset color="#3B3B40" height={21} width={22} />}
-          label="즐겨찾기"
+          label={t('map.navigation.favorites')}
           onPress={onOpenLikedPlaces}
         />
         <NavItem
           icon={<CheckInAsset height={22} width={21} />}
-          label="예약"
+          label={t('map.navigation.reservations')}
           onPress={onOpenSavedPlaces}
         />
       </FrostedSurface>
     </View>
     <Pressable
-      accessibilityLabel="장소추천"
+      accessibilityLabel={t('map.navigation.recommendations')}
       accessibilityRole="button"
       accessibilityState={{ selected: recommendationsActive }}
       onPress={onOpenRecommendations}
@@ -1872,7 +1873,8 @@ const BottomNavigation = ({
       </FrostedSurface>
     </Pressable>
   </Animated.View>
-);
+  );
+};
 
 export default function MapBottomSheet({
   bookmarkPendingPlaceIds = {},
@@ -1907,6 +1909,7 @@ export default function MapBottomSheet({
   snapPoint,
   userName,
 }: MapBottomSheetProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [feed, setFeed] = useState<'local' | 'national'>('local');
   const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
@@ -2016,7 +2019,7 @@ export default function MapBottomSheet({
       {!isExpandedPlaceDetail ? (
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
-            accessibilityLabel="추천 패널 크기 조절"
+            accessibilityLabel={t('map.sheet.adjust')}
             accessibilityRole="adjustable"
             onPress={onHandlePress}
             style={styles.handleButton}
@@ -2078,7 +2081,7 @@ export default function MapBottomSheet({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.resultsTitleRow}>
-            <Text style={styles.resultsTitle}>{query ? `“${query}” 검색 결과` : '내 주변 장소'}</Text>
+            <Text style={styles.resultsTitle}>{query ? t('map.sheet.resultsFor', { query }) : t('map.sheet.aroundMe')}</Text>
             <Text style={styles.resultsCount}>{places.length}</Text>
           </View>
           {places.length > 0 ? places.map((place) => (

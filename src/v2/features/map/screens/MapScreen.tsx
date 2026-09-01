@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorUx } from '../../../shared/api';
 import { useTranslation } from 'react-i18next';
+import { syncProfileLanguage } from '../../../shared/i18n';
 import { useMapSettingsStore } from '../store/mapSettingsStore';
 import MapBottomSheet, {
   type BottomSheetContent,
@@ -220,17 +221,8 @@ export default function MapScreen({
     extrapolate: 'clamp',
   });
   useEffect(() => {
-    const language = profile?.language?.trim().toLowerCase();
-    const nextLanguage = language === 'korean' || language === '한국어'
-      ? 'ko'
-      : language === 'english' || language === '영어'
-        ? 'en'
-        : language?.split('-')[0];
-
-    if (nextLanguage && i18n.language !== nextLanguage) {
-      void i18n.changeLanguage(nextLanguage);
-    }
-  }, [i18n, profile?.language]);
+    void syncProfileLanguage(profile?.language);
+  }, [profile?.language]);
 
   const recommendationPlaces = useMemo(() => {
     const explanationByPlaceId = new Map(
@@ -276,10 +268,11 @@ export default function MapScreen({
     appliedActivityIntent,
     appliedTravelPurposes,
     limitReasons,
-  }), [
+  }, (key) => t(key)), [
     appliedActivityIntent,
     appliedTravelPurposes,
     limitReasons,
+    t,
   ]);
   const recommendationsState = getRecommendationState({
     isError: isRecommendationsError,
@@ -359,7 +352,7 @@ export default function MapScreen({
         reviewState: selectedPlacePresentation.reviewState,
         roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
         reviews: selectedPlacePresentation.reviews.map((review) => ({
-          author: review.author,
+          author: t(review.authorKey),
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
           tags: review.tags,
@@ -368,7 +361,9 @@ export default function MapScreen({
         summary: selectedPlacePresentation.touristSummary
           ?? selectedPlacePresentation.description
           ?? undefined,
-        statusDescription: selectedPlacePresentation.verificationLabel ?? '',
+        statusDescription: selectedPlacePresentation.verificationLabelKey
+          ? t(selectedPlacePresentation.verificationLabelKey)
+          : '',
         statusEmphasis: operatingSummary?.statusText ?? '',
         website: selectedPlacePresentation.merchant?.websiteUrl ?? undefined,
       },
@@ -580,14 +575,14 @@ export default function MapScreen({
   const handleGoNow = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.goNow'),
-      t('map.decision.goNowMessage', { placeName: place.name, defaultValue: `Directions to ${place.name} are ready.` }),
+      t('map.decision.goNowMessage', { placeName: place.name }),
       [{ text: t('map.search.confirm') }],
     );
   };
   const handleCoupon = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.getCoupon'),
-      t('map.decision.couponMessage', { placeName: place.name, defaultValue: `${place.name} coupon will be available here.` }),
+      t('map.decision.couponMessage', { placeName: place.name }),
       [{ text: t('map.search.confirm') }],
     );
   };
@@ -596,8 +591,8 @@ export default function MapScreen({
       await togglePlaceBookmark(place, nextBookmarked);
     } catch (error) {
       Alert.alert(
-        nextBookmarked ? '장소를 저장하지 못했어요' : '저장을 해제하지 못했어요',
-        getApiErrorUx(error).error.message || '잠시 후 다시 시도해 주세요.',
+        t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
+        getApiErrorUx(error).error.message || t('common.error.description'),
       );
     }
   };
