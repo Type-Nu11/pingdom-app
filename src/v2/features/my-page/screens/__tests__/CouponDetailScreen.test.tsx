@@ -42,6 +42,23 @@ function mockCoupon(overrides: Partial<Coupon> = {}) {
 }
 
 describe('CouponDetailContainer', () => {
+  test('쿠폰 응답 전에는 존재하지 않는 offerId로 조회하지 않는다', async () => {
+    let resolveCoupon: ((value: Coupon) => void) | undefined;
+    jest.spyOn(offerCouponApi, 'getCoupon').mockImplementation(() => new Promise((resolve) => {
+      resolveCoupon = resolve;
+    }));
+    const getOffer = jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer());
+
+    await renderWithProviders(
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    expect(getOffer).not.toHaveBeenCalled();
+    resolveCoupon?.(coupon());
+    await waitFor(() => expect(getOffer).toHaveBeenCalledWith(10, expect.anything()));
+    expect(getOffer).not.toHaveBeenCalledWith(0, expect.anything());
+  });
+
   test('쿠폰 조회 실패는 오류와 재시도로 표시한다', async () => {
     jest.spyOn(offerCouponApi, 'getCoupon').mockRejectedValue(new Error('실패'));
 

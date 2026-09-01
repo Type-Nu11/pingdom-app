@@ -105,8 +105,11 @@ export function useOffers(params: ListOffersParams = {}) {
   return useQuery(createOffersQueryOptions(params));
 }
 
-export function useOffer(offerId: number) {
-  return useQuery(createOfferQueryOptions(offerId));
+export function useOffer(offerId: number, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    ...createOfferQueryOptions(offerId),
+    ...options,
+  });
 }
 
 export function useCoupon(couponId: number) {

@@ -35,7 +35,7 @@ export default function CouponDetailContainer({
 
   const couponQuery = useCoupon(couponId);
   const coupon = couponQuery.data;
-  const offerQuery = useOffer(coupon?.offerId ?? 0);
+  const offerQuery = useOffer(coupon?.offerId ?? 0, { enabled: coupon != null });
   const offer = offerQuery.data;
 
   if (couponQuery.isLoading) {

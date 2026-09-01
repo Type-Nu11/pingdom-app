@@ -8,10 +8,12 @@ export type CouponCardProps = {
   placeName?: string;
   title: string;
   description: string;
-  /** Validity period, already localized. Carries the terminal state for a used or expired coupon. */
+  /** Validity period, already localized. */
   periodText: string;
   /** A coupon that can no longer be used is dimmed so the list reads at a glance. */
   muted: boolean;
+  /** Localized server status. It remains visible so status is never conveyed by color alone. */
+  statusText: string;
   onPress?: () => void;
 };
 
@@ -26,6 +28,7 @@ export default function CouponCard({
   description,
   periodText,
   muted,
+  statusText,
   onPress,
 }: CouponCardProps) {
   return (
@@ -45,7 +48,12 @@ export default function CouponCard({
           <Title numberOfLines={2}>{title}</Title>
         </TitleRow>
         <Description numberOfLines={2}>{description}</Description>
-        <Period numberOfLines={1} testID="v2-coupon-card-period">{periodText}</Period>
+        <MetaRow>
+          <Period numberOfLines={1} testID="v2-coupon-card-period">{periodText}</Period>
+          <StatusBadge $muted={muted}>
+            <StatusText $muted={muted} testID="v2-coupon-card-status">{statusText}</StatusText>
+          </StatusBadge>
+        </MetaRow>
       </Body>
     </Card>
   );
@@ -99,8 +107,31 @@ const Description = styled.Text`
   font-weight: 500;
 `;
 
+const MetaRow = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.xs}px;
+`;
+
 const Period = styled.Text`
+  flex-shrink: 1;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   font-weight: 500;
+`;
+
+const StatusBadge = styled.View<{ $muted: boolean }>`
+  padding: 4px 8px;
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ $muted, theme }) => (
+    $muted ? theme.colors.surfacePressed : theme.colors.successSoft
+  )};
+`;
+
+const StatusText = styled.Text<{ $muted: boolean }>`
+  color: ${({ $muted, theme }) => ($muted ? theme.colors.textMuted : theme.colors.success)};
+  font-size: 12px;
+  font-weight: 600;
 `;

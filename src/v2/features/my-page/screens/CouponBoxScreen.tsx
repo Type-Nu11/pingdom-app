@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,10 +11,12 @@ import CouponCard from '../components/CouponCard';
 import CouponCardSkeleton from '../components/CouponCardSkeleton';
 import {
   formatOfferPeriod,
+  COUPON_STATUS_FILTERS,
   isCouponUsable,
   toCouponBoxEntries,
   toCouponBoxListState,
   type CouponBoxEntry,
+  type CouponStatusFilter,
 } from '../model/couponBoxEntries';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 
@@ -33,7 +35,11 @@ export default function CouponBoxScreen({
   const { i18n, t } = useTranslation();
   const theme = useTheme();
   const locale = i18n.language;
-  const couponsQuery = useInfiniteCoupons({ limit: PAGE_LIMIT });
+  const [statusFilter, setStatusFilter] = useState<CouponStatusFilter>('ALL');
+  const couponsQuery = useInfiniteCoupons({
+    limit: PAGE_LIMIT,
+    ...(statusFilter === 'ALL' ? {} : { status: statusFilter }),
+  });
 
   const coupons = useMemo<Coupon[]>(
     () => (couponsQuery.data?.pages ?? []).flatMap((page) => page.coupons),
@@ -83,6 +89,7 @@ export default function CouponBoxScreen({
         : undefined}
       periodText={formatOfferPeriod(item.issuedAt, item.expiresAt, locale, { compact: true })}
       placeName={item.placeName}
+      statusText={t(`myPage.couponBox.status.${item.status}`)}
       title={item.title}
     />
   );
@@ -126,6 +133,30 @@ export default function CouponBoxScreen({
         <Spacer />
       </TopBar>
 
+      <FilterScroll
+        contentContainerStyle={FILTER_CONTAINER_STYLE}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        {COUPON_STATUS_FILTERS.map((filter) => {
+          const selected = filter === statusFilter;
+          return (
+            <FilterChip
+              $selected={selected}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              key={filter}
+              onPress={() => setStatusFilter(filter)}
+              testID={`v2-coupon-filter-${filter}`}
+            >
+              <FilterLabel $selected={selected}>
+                {t(`myPage.couponBox.filters.${filter}`)}
+              </FilterLabel>
+            </FilterChip>
+          );
+        })}
+      </FilterScroll>
+
       {couponsQuery.isLoading ? (
         <SkeletonList>
           {SKELETON_KEYS.map((key) => <CouponCardSkeleton key={key} />)}
@@ -143,7 +174,15 @@ export default function CouponBoxScreen({
           data={listState.kind === 'ready' ? listState.entries : EMPTY_LIST}
           keyExtractor={(entry) => String(entry.couponId)}
           testID="v2-coupon-box-list"
-          ListEmptyComponent={<EmptyText>{t('myPage.couponBox.empty')}</EmptyText>}
+          ListEmptyComponent={(
+            <EmptyText>
+              {statusFilter === 'ALL'
+                ? t('myPage.couponBox.empty')
+                : t('myPage.couponBox.emptyFiltered', {
+                  status: t(`myPage.couponBox.filters.${statusFilter}`),
+                })}
+            </EmptyText>
+          )}
           ListFooterComponent={renderFooter()}
           onEndReached={loadNextPage}
           onEndReachedThreshold={0.5}
@@ -164,6 +203,7 @@ export default function CouponBoxScreen({
 const EMPTY_LIST: CouponBoxEntry[] = [];
 
 const CONTENT_CONTAINER_STYLE = { flexGrow: 1, gap: 14, padding: 24 } as const;
+const FILTER_CONTAINER_STYLE = { gap: 8, paddingHorizontal: 24, paddingVertical: 12 } as const;
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -191,6 +231,28 @@ const TopBarTitle = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
+`;
+
+const FilterScroll = styled.ScrollView`
+  flex-grow: 0;
+`;
+
+const FilterChip = styled.Pressable<{ $selected: boolean }>`
+  padding: 8px 14px;
+  border-width: 1px;
+  border-color: ${({ $selected, theme }) => (
+    $selected ? theme.colors.primary : theme.colors.border
+  )};
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ $selected, theme }) => (
+    $selected ? theme.colors.primarySelected : theme.colors.surface
+  )};
+`;
+
+const FilterLabel = styled.Text<{ $selected: boolean }>`
+  color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.text)};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  font-weight: 600;
 `;
 
 const SkeletonList = styled.View`
