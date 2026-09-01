@@ -90,7 +90,7 @@ const IconBadge = styled.View<{ $muted: boolean }>`
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.sm}px;
   background-color: ${({ $muted, theme }) => (
-    $muted ? theme.colors.surfacePressed : theme.colors.primaryRange
+    $muted ? theme.colors.surfacePressed : theme.colors.primaryAssistive
   )};
 `;
 
@@ -117,7 +117,7 @@ const MetaRow = styled.View`
 
 const Period = styled.Text`
   flex-shrink: 1;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.labelAlternative};
   font-size: 12px;
   font-weight: 500;
 `;

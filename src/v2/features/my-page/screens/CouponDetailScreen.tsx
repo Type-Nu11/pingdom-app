@@ -198,7 +198,7 @@ const IconBadge = styled.View`
   align-items: center;
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.sm}px;
-  background-color: ${({ theme }) => theme.colors.primaryRange};
+  background-color: ${({ theme }) => theme.colors.primaryAssistive};
 `;
 
 const TitleColumn = styled.View`
@@ -232,7 +232,7 @@ const PeriodChip = styled.View`
 `;
 
 const PeriodText = styled.Text`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.labelAlternative};
   font-size: 12px;
   font-weight: 500;
 `;
@@ -323,13 +323,13 @@ const NoticeItem = styled.View`
 `;
 
 const NoticeBullet = styled.Text`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.labelAlternative};
   font-size: 12px;
 `;
 
 const NoticeText = styled.Text`
   flex: 1;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.labelAlternative};
   font-size: 12px;
   font-weight: 400;
   line-height: 16px;
