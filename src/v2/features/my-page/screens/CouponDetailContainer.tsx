@@ -19,11 +19,12 @@ export type CouponDetailContainerProps = {
 };
 
 /**
- * `GET /coupons/{couponId}` already carries the offer title, benefit and place
- * name, so the screen renders from one request and reflects a redemption that
- * happened while the user was on this screen. The offer is fetched only for the
- * secondary info rows; it 404s once the merchant closes the offer, which leaves
- * those rows out without breaking the coupon itself.
+ * The server exposes no single-coupon endpoint, so `useCoupon` resolves the
+ * coupon out of the paginated `/coupons` list. That payload carries only the
+ * coupon's identity, status and instants on the documented servers, so the
+ * offer supplies the title and benefit; a deployment that does enrich the
+ * coupon still wins. The offer 404s once the merchant closes it, which drops
+ * the rows that depend on it without breaking the coupon itself.
  */
 export default function CouponDetailContainer({
   couponId,
@@ -110,7 +111,9 @@ export default function CouponDetailContainer({
 
   return (
     <CouponDetailScreen
-      benefit={coupon.benefitDescription || t('myPage.couponBox.fallbackDescription')}
+      benefit={coupon.benefitDescription
+        || offer?.benefitDescription
+        || t('myPage.couponBox.fallbackDescription')}
       code={coupon.code}
       infoRows={infoRows}
       onBack={onBack}
@@ -118,7 +121,7 @@ export default function CouponDetailContainer({
       periodText={formatOfferPeriod(coupon.issuedAt, coupon.expiresAt, locale)}
       placeName={coupon.placeName ?? undefined}
       stateNotice={stateNotice}
-      title={coupon.offerTitle || t('myPage.couponBox.fallbackTitle')}
+      title={coupon.offerTitle || offer?.title || t('myPage.couponBox.fallbackTitle')}
       usable={usable}
     />
   );
