@@ -39,8 +39,7 @@ export default function CouponCard({
       <Body>
         <TitleRow>
           <IconBadge $muted={muted}>
-            {/* coupon.svg is a 22×16 ticket — keep that ratio so it is not stretched. */}
-            <CouponIcon height={16} width={22} />
+            <CouponIcon height={24} width={24} />
           </IconBadge>
           <Title numberOfLines={2}>{title}</Title>
         </TitleRow>
@@ -82,7 +81,7 @@ const IconBadge = styled.View<{ $muted: boolean }>`
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.sm}px;
   background-color: ${({ $muted, theme }) => (
-    $muted ? theme.colors.surfacePressed : theme.colors.primaryRange
+    $muted ? theme.colors.surfacePressed : theme.colors.primaryAssistive
   )};
 `;
 
@@ -100,7 +99,7 @@ const Description = styled.Text`
 `;
 
 const Period = styled.Text`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;
   font-weight: 500;
 `;
