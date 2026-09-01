@@ -533,10 +533,12 @@ export const resources = {
       },
       settings: {
         language: {
+          description: 'Choose the language used throughout PingDom.',
           english: 'English',
           korean: 'Korean',
           section: 'Language',
           selected: 'Selected',
+          title: 'Language',
         },
         account: {
           deleteDescription: 'Deleting your account permanently removes your records and First Recorder history.',
@@ -646,6 +648,7 @@ export const resources = {
           account: 'Account',
           appInfo: 'App information',
           notifications: 'Notifications',
+          preferences: 'Preferences',
           privacy: 'Privacy · location',
           records: 'Records · places',
         },
@@ -1238,10 +1241,12 @@ export const resources = {
       },
       settings: {
         language: {
+          description: '핑덤에서 사용할 언어를 선택해 주세요.',
           english: '영어',
           korean: '한국어',
           section: '언어',
           selected: '선택됨',
+          title: '언어 설정',
         },
         account: {
           deleteDescription: '탈퇴하면 내가 남긴 기록과 First Recorder 이력이 모두 사라져요.',
@@ -1351,6 +1356,7 @@ export const resources = {
           account: '계정',
           appInfo: '앱 정보',
           notifications: '알림',
+          preferences: '환경설정',
           privacy: '개인정보 · 위치',
           records: '기록 · 장소',
         },

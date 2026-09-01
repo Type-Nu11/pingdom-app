@@ -22,9 +22,9 @@ import { SETTINGS_DETAIL_IDS, type SettingsDetailId } from '../model/settings.ty
 import LocationPrivacyScreen, {
   type LocationPermissionPresentationState,
 } from './LocationPrivacyScreen';
-import { setLanguage, type SupportedLanguage } from '../../../shared/i18n';
+import LanguageSettingsScreen from './LanguageSettingsScreen';
 
-type SettingsPage = 'account' | 'location' | 'notifications' | 'root';
+type SettingsPage = 'account' | 'language' | 'location' | 'notifications' | 'root';
 
 export type SettingsScreenProps = {
   locationPermissionState?: LocationPermissionPresentationState;
@@ -261,22 +261,14 @@ export default function SettingsScreen({
               />
             </SettingsSection>
 
-            <SettingsSection title={t('settings.language.section')}>
-              {(['ko', 'en'] as const).map((language: SupportedLanguage) => {
-                const selected = i18n.resolvedLanguage === language;
-                const label = t(language === 'ko'
+            <SettingsSection title={t('settings.sections.preferences')}>
+              <SettingsRow
+                label={t('settings.language.section')}
+                onPress={() => setPage('language')}
+                value={t(i18n.resolvedLanguage === 'ko'
                   ? 'settings.language.korean'
-                  : 'settings.language.english');
-                return (
-                  <SettingsRow
-                    accessibilityLabel={`${label}, ${selected ? t('settings.language.selected') : ''}`.trim()}
-                    key={language}
-                    label={label}
-                    onPress={() => void setLanguage(language)}
-                    value={selected ? '✓' : undefined}
-                  />
-                );
-              })}
+                  : 'settings.language.english')}
+              />
             </SettingsSection>
 
             <SettingsSection title={t('settings.sections.privacy')}>
@@ -384,6 +376,10 @@ export default function SettingsScreen({
           onBack={goBack}
           permissionState={locationPermissionState}
         />
+      ) : null}
+
+      {page === 'language' ? (
+        <LanguageSettingsScreen onBack={goBack} />
       ) : null}
 
       {page === 'account' ? (
