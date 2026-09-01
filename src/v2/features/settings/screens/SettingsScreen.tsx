@@ -22,6 +22,7 @@ import { SETTINGS_DETAIL_IDS, type SettingsDetailId } from '../model/settings.ty
 import LocationPrivacyScreen, {
   type LocationPermissionPresentationState,
 } from './LocationPrivacyScreen';
+import { setLanguage, type SupportedLanguage } from '../../../shared/i18n';
 
 type SettingsPage = 'account' | 'location' | 'notifications' | 'root';
 
@@ -147,7 +148,7 @@ export default function SettingsScreen({
   onOpenNotificationSettings,
   onOpenProfileEdit,
 }: SettingsScreenProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { profile } = useProfile();
   const [page, setPage] = useState<SettingsPage>('root');
   const logoutLock = useRef(false);
@@ -258,6 +259,24 @@ export default function SettingsScreen({
                 onPress={onOpenNotificationSettings ?? (() => setPage('notifications'))}
                 value={notificationStatus}
               />
+            </SettingsSection>
+
+            <SettingsSection title={t('settings.language.section')}>
+              {(['ko', 'en'] as const).map((language: SupportedLanguage) => {
+                const selected = i18n.resolvedLanguage === language;
+                const label = t(language === 'ko'
+                  ? 'settings.language.korean'
+                  : 'settings.language.english');
+                return (
+                  <SettingsRow
+                    accessibilityLabel={`${label}, ${selected ? t('settings.language.selected') : ''}`.trim()}
+                    key={language}
+                    label={label}
+                    onPress={() => void setLanguage(language)}
+                    value={selected ? '✓' : undefined}
+                  />
+                );
+              })}
             </SettingsSection>
 
             <SettingsSection title={t('settings.sections.privacy')}>

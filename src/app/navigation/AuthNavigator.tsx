@@ -10,6 +10,7 @@ import type {
   SignupOnboardingContext,
 } from '../../v2/features/onboarding-entry';
 import { getAuthInitialRoute } from '../../v2/features/onboarding-entry';
+import { normalizeSupportedLanguage } from '../../v2/shared/i18n';
 import { AUTH_ROUTES, type AuthStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -62,7 +63,10 @@ const AuthNavigator = ({ completion, onComplete }: AuthNavigatorProps) => {
         {({ navigation }) => (
           <SignUpDetailsScreen
             onBack={navigation.goBack}
-            onboardingData={completion?.signupContext}
+            onboardingData={completion ? {
+              ...completion.signupContext,
+              language: normalizeSupportedLanguage(completion.signupContext.language) ?? 'en',
+            } : undefined}
           />
         )}
       </Stack.Screen>

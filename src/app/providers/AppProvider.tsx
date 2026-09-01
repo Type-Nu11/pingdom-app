@@ -11,24 +11,7 @@ import {
   configureApiTransport,
 } from '../../v2/shared/api';
 import { configureTokenSession } from '../../v2/shared/auth/tokenSession';
-import { i18n } from '../../v2/shared/i18n';
-import { initializeReservationI18n } from '../../v2/features/reservations/i18n/reservationResources';
-import { initializeVisitVerificationI18n } from '../../v2/features/place-visit-verification/i18n/visitVerificationResources';
-import { resources as legacyResources } from '../../i18n';
-
-function registerLegacyTranslationBridge() {
-  const languages = ['en', 'ko', 'ja', 'zh', 'vi', 'th'] as const;
-
-  for (const language of languages) {
-    i18n.addResourceBundle(
-      language,
-      'translation',
-      legacyResources[language].translation,
-      true,
-      false,
-    );
-  }
-}
+import { i18n, initializeI18n } from '../../v2/shared/i18n';
 
 const AppProvider = ({ children }: PropsWithChildren) => {
   const [queryClient] = useState(() => createQueryClient());
@@ -37,8 +20,7 @@ const AppProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     let isMounted = true;
 
-    void Promise.all([initializeReservationI18n(), initializeVisitVerificationI18n()])
-      .then(registerLegacyTranslationBridge)
+    void initializeI18n()
       .catch((error) => {
         console.warn('[App i18n] Initialization failed:', error);
       })
