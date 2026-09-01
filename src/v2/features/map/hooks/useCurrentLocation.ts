@@ -24,29 +24,31 @@ export function useCurrentLocation() {
   const refresh = useCallback(async () => {
     const requestId = ++requestIdRef.current;
     stopWatching();
-    setState(INITIAL_STATE);
+    setState((current) => (
+      current.status === 'granted' ? current : INITIAL_STATE
+    ));
 
     const outcome = await getCurrentLocation();
     if (!mountedRef.current || requestId !== requestIdRef.current) return;
 
     setState(outcome);
-    if (outcome.status !== 'granted') return;
+    if (outcome.status !== 'granted') return outcome;
 
-    try {
-      const subscription = await watchCurrentLocation((coordinate) => {
-        if (mountedRef.current && requestId === requestIdRef.current) {
-          setState({ status: 'granted', coordinate, canAskAgain: true });
-        }
-      });
-
+    void watchCurrentLocation((coordinate) => {
+      if (mountedRef.current && requestId === requestIdRef.current) {
+        setState({ status: 'granted', coordinate, canAskAgain: true });
+      }
+    }).then((subscription) => {
       if (!mountedRef.current || requestId !== requestIdRef.current) {
         subscription.remove();
       } else {
         subscriptionRef.current = subscription;
       }
-    } catch {
+    }).catch(() => {
       // Keep the successfully resolved coordinate when continuous updates fail.
-    }
+    });
+
+    return outcome;
   }, [stopWatching]);
 
   useEffect(() => {

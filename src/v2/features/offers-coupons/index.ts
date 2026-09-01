@@ -8,6 +8,7 @@ export type {
   Offer,
   OfferPage,
   RedeemCouponBody,
+  RedeemedCoupon,
 } from './api/offerCouponApi';
 export { default as OfferCouponErrorState } from './components/OfferCouponErrorState';
 export { getOfferCouponErrorUx } from './model/getOfferCouponErrorUx';
@@ -23,7 +24,6 @@ export {
   registerOfferCouponResources,
 } from './i18n/offerCouponResources';
 export {
-  createCouponQueryOptions,
   createCouponsQueryOptions,
   createInfiniteCouponsQueryOptions,
   createIssueCouponMutationOptions,
@@ -31,7 +31,6 @@ export {
   createOffersQueryOptions,
   createRedeemCouponMutationOptions,
   offerCouponQueryKeys,
-  useCoupon,
   useCoupons,
   useInfiniteCoupons,
   useIssueCoupon,

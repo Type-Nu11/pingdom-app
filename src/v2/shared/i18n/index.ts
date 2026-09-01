@@ -7,40 +7,42 @@ import {
   supportedLanguages,
   type SupportedLanguage,
 } from './resources';
+import {
+  applyLanguagePreference,
+  DEFAULT_LANGUAGE,
+  detectDeviceLanguage,
+  normalizeSupportedLanguage,
+  restorePreferredLanguage,
+} from './language';
 
 export const LANGUAGE_STORAGE_KEY = 'language';
-export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
+export { DEFAULT_LANGUAGE, detectDeviceLanguage, isSupportedLanguage, normalizeSupportedLanguage, resolvePreferredLanguage } from './language';
 
 export const i18n = createInstance();
 
 let initializationPromise: Promise<void> | null = null;
+let hasExplicitLanguagePreference = false;
 
-export function isSupportedLanguage(value: unknown): value is SupportedLanguage {
-  return typeof value === 'string'
-    && supportedLanguages.includes(value as SupportedLanguage);
-}
-
-async function readStoredLanguage(): Promise<SupportedLanguage> {
-  try {
-    const storedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-    return isSupportedLanguage(storedLanguage) ? storedLanguage : DEFAULT_LANGUAGE;
-  } catch (error) {
-    console.warn('[V2 i18n] Failed to restore language:', error);
-    return DEFAULT_LANGUAGE;
-  }
-}
-
-export function initializeI18n(): Promise<void> {
+export function initializeI18n(profileLanguage?: unknown): Promise<void> {
   if (!initializationPromise) {
     initializationPromise = (async () => {
-      const language = await readStoredLanguage();
+      const restored = await restorePreferredLanguage({
+        deviceLanguage: detectDeviceLanguage(),
+        profileLanguage,
+        storage: AsyncStorage,
+        storageKey: LANGUAGE_STORAGE_KEY,
+      });
+      hasExplicitLanguagePreference = restored.hasStoredPreference;
 
       await i18n.use(initReactI18next).init({
-        fallbackLng: 'en',
+        fallbackLng: DEFAULT_LANGUAGE,
         interpolation: {
           escapeValue: false,
         },
-        lng: language,
+        lng: restored.language,
+        parseMissingKeyHandler: () => resources[DEFAULT_LANGUAGE].translation.common.missingTranslation,
+        returnEmptyString: false,
+        returnNull: false,
         resources,
         supportedLngs: [...supportedLanguages],
       });
@@ -58,13 +60,29 @@ export async function setLanguage(language: SupportedLanguage): Promise<void> {
     await initializeI18n();
   }
 
-  await i18n.changeLanguage(language);
-
-  try {
-    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-  } catch (error) {
-    console.warn('[V2 i18n] Failed to persist language:', error);
+  hasExplicitLanguagePreference = true;
+  const persisted = await applyLanguagePreference({
+    changeLanguage: (nextLanguage) => i18n.changeLanguage(nextLanguage),
+    language,
+    persist: (nextLanguage) => AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage),
+  });
+  if (!persisted) {
+    console.warn('[V2 i18n] Failed to persist language.');
   }
+}
+
+export async function syncProfileLanguage(profileLanguage: unknown): Promise<void> {
+  if (hasExplicitLanguagePreference) return;
+
+  const language = normalizeSupportedLanguage(profileLanguage);
+  if (!language) return;
+  if (!i18n.isInitialized) await initializeI18n(language);
+  if (i18n.resolvedLanguage !== language) await i18n.changeLanguage(language);
+}
+
+export function resetI18nForTests(): void {
+  initializationPromise = null;
+  hasExplicitLanguagePreference = false;
 }
 
 export type { SupportedLanguage } from './resources';

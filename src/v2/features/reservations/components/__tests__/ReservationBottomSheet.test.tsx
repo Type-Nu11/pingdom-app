@@ -139,7 +139,7 @@ describe('ReservationBottomSheet', () => {
     await userEvent.setup().press(screen.getByRole('button', { name: '즐겨찾기 해제' }));
     expect(onToggleBookmark).toHaveBeenCalledWith(nearbyPlace, false);
 
-    await userEvent.setup().press(screen.getByRole('button', { name: '서버 카페, 123m' }));
+    await userEvent.setup().press(screen.getByRole('button', { name: '서버 카페, 0.1km' }));
     expect(onPlacePress).toHaveBeenCalledWith(nearbyPlace);
   });
 

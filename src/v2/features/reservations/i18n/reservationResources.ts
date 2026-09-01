@@ -1,7 +1,5 @@
 import type { i18n as I18nInstance } from 'i18next';
 
-import { i18n, initializeI18n } from '../../../shared/i18n';
-
 export const reservationResources = {
   en: {
     reservation: {
@@ -197,9 +195,4 @@ export function registerReservationResources(instance: I18nInstance) {
       true,
     );
   });
-}
-
-export async function initializeReservationI18n() {
-  await initializeI18n();
-  registerReservationResources(i18n);
 }

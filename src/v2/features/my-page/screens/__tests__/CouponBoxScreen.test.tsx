@@ -5,6 +5,7 @@ import { createTestI18n, renderWithProviders } from '../../../../shared/testing/
 import { registerOfferCouponResources } from '../../../offers-coupons';
 import { ApiError } from '../../../../shared/api';
 import { offerCouponApi, type CouponPage } from '../../../offers-coupons/api/offerCouponApi';
+import { placeDetailApi } from '../../../place-detail';
 import CouponBoxScreen from '../CouponBoxScreen';
 
 async function renderCouponBox(ui: React.ReactElement) {
@@ -16,9 +17,6 @@ async function renderCouponBox(ui: React.ReactElement) {
 type CouponInput = {
   id: number;
   offerId?: number;
-  offerTitle?: string | null;
-  placeName?: string | null;
-  benefitDescription?: string | null;
   status?: 'ISSUED' | 'REDEEMED' | 'EXPIRED';
   issuedAt?: string;
   expiresAt?: string;
@@ -28,14 +26,10 @@ type CouponInput = {
 function couponPage(coupons: CouponInput[], overrides: Partial<CouponPage> = {}): CouponPage {
   return {
     coupons: coupons.map((coupon) => ({
-      benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
       code: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
       expiresAt: '2027-08-18T23:59:59',
       issuedAt: '2026-08-18T09:00:00',
       offerId: 10,
-      offerTitle: '생일 할인 쿠폰',
-      placeId: 100,
-      placeName: '대성반점',
       redeemedAt: null,
       status: 'ISSUED',
       ...coupon,
@@ -43,13 +37,26 @@ function couponPage(coupons: CouponInput[], overrides: Partial<CouponPage> = {})
     hasNext: false,
     limit: 20,
     page: 1,
-    totalCount: coupons.length,
+    totalElements: coupons.length,
     totalPages: 1,
     ...overrides,
   } as CouponPage;
 }
 
 describe('CouponBoxScreen', () => {
+  beforeEach(() => {
+    jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue({
+      benefitDescription: '4만원 이상 결제 시, 최대 10% 할인',
+      id: 10,
+      placeId: 100,
+      title: '생일 할인 쿠폰',
+    });
+    jest.spyOn(placeDetailApi, 'getPlaceDetail').mockResolvedValue({
+      id: 100,
+      name: '대성반점',
+    } as never);
+  });
+
   test('쿠폰이 없으면 빈 보관함을 보여준다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([]));
 
@@ -80,7 +87,7 @@ describe('CouponBoxScreen', () => {
     expect(screen.queryByText('다시 시도')).toBeNull();
   });
 
-  test('매장명·쿠폰명·기간을 쿠폰 응답 하나로 그린다', async () => {
+  test('현재 Coupon DTO의 offerId를 기존 Offer·Place 조회로 보강한다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(
       couponPage([{ id: 1, offerId: 10, status: 'ISSUED' }]),
     );
@@ -94,8 +101,8 @@ describe('CouponBoxScreen', () => {
     expect(screen.getByTestId('v2-coupon-card-period')).toHaveTextContent('26.08.18~27.08.18');
     // 전체 코드는 목록에 노출하지 않는다.
     expect(screen.queryByText('3fa85f64-5717-4562-b3fc-2c963f66afa6')).toBeNull();
-    // 목록은 offer/place를 행마다 다시 조회하지 않는다.
-    expect(getOffer).not.toHaveBeenCalled();
+    expect(offerCouponApi.getOffer).toHaveBeenCalledWith(10, expect.anything());
+    expect(placeDetailApi.getPlaceDetail).toHaveBeenCalledWith(100, expect.anything());
   });
 
   test('사용 완료와 만료 상태를 색상뿐 아니라 텍스트로 표시한다', async () => {

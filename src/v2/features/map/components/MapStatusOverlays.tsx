@@ -107,6 +107,8 @@ export function MapDataStatusOverlay({
 
 const Card = styled.View`
   position: absolute;
+  z-index: 70;
+  elevation: 12;
   right: ${({ theme }) => theme.spacing.md}px;
   left: ${({ theme }) => theme.spacing.md}px;
   align-items: center;

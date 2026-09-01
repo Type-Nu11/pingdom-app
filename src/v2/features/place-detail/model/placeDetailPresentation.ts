@@ -19,12 +19,12 @@ export type ResourceState<T> = {
 };
 
 export type ReservationCtaState =
-  | { kind: 'loading'; disabled: true; message: '예약 가능 여부를 확인하고 있습니다' }
-  | { kind: 'available'; disabled: false; message: '예약하기' }
-  | { kind: 'empty'; disabled: false; message: '현재 예약 가능한 일정이 없습니다' }
-  | { kind: 'full'; disabled: false; message: '예약 가능한 인원이 없습니다' }
-  | { kind: 'auth-error'; disabled: true; message: '로그인이 필요합니다' }
-  | { kind: 'error'; disabled: true; message: '예약 가능 여부를 불러오지 못했습니다' };
+  | { kind: 'loading'; disabled: true }
+  | { kind: 'available'; disabled: false }
+  | { kind: 'empty'; disabled: false }
+  | { kind: 'full'; disabled: false }
+  | { kind: 'auth-error'; disabled: true }
+  | { kind: 'error'; disabled: true };
 
 export type PlaceDetailPresentation = {
   address: string | null;
@@ -54,7 +54,7 @@ export type PlaceDetailPresentation = {
   reservation: ReservationCtaState;
   reviewState: 'empty' | 'error' | 'loading' | 'ready';
   reviews: Array<{
-    author: string;
+    authorKey: 'placeDetail.review.anonymousUser';
     createdAt: string;
     imageUrls: string[];
     tags: string[];
@@ -64,7 +64,7 @@ export type PlaceDetailPresentation = {
   roadAddress: string | null;
   jibunAddress: string | null;
   touristSummary: string | null;
-  verificationLabel: string | null;
+  verificationLabelKey: 'placeDetail.verification.admin' | 'placeDetail.verification.owner' | 'placeDetail.verification.source' | null;
 };
 
 export type PlaceDetailPresentationResources = {
@@ -96,12 +96,12 @@ export function selectReservationCta(
   now: Date = new Date(),
 ): ReservationCtaState {
   if (resource.isPending) {
-    return { kind: 'loading', disabled: true, message: '예약 가능 여부를 확인하고 있습니다' };
+    return { kind: 'loading', disabled: true };
   }
   if (resource.isError) {
     return isAuthError(resource.error)
-      ? { kind: 'auth-error', disabled: true, message: '로그인이 필요합니다' }
-      : { kind: 'error', disabled: true, message: '예약 가능 여부를 불러오지 못했습니다' };
+      ? { kind: 'auth-error', disabled: true }
+      : { kind: 'error', disabled: true };
   }
 
   const items = Array.isArray(resource.data) ? resource.data : [];
@@ -111,12 +111,12 @@ export function selectReservationCta(
     && Date.parse(item.endsAt) > now.getTime());
   if (futureActive.some((item) => typeof item.remainingCapacity === 'number'
     && item.remainingCapacity > 0)) {
-    return { kind: 'available', disabled: false, message: '예약하기' };
+    return { kind: 'available', disabled: false };
   }
   if (futureActive.some((item) => (item.remainingCapacity ?? 0) <= 0)) {
-    return { kind: 'full', disabled: false, message: '예약 가능한 인원이 없습니다' };
+    return { kind: 'full', disabled: false };
   }
-  return { kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다' };
+  return { kind: 'empty', disabled: false };
 }
 
 export function buildPlaceDetailPresentation(
@@ -195,7 +195,7 @@ export function buildPlaceDetailPresentation(
       : resources.reviews.isError ? 'error'
         : reviewItems.length ? 'ready' : 'empty',
     reviews: reviewItems.map((review) => ({
-      author: '사용자',
+      authorKey: 'placeDetail.review.anonymousUser',
       createdAt: clean(review.createdAt) ?? '',
       imageUrls: (review.imageUrls ?? []).map(clean).filter((url): url is string => Boolean(url)),
       tags: [clean(review.recommendReason)].filter((tag): tag is string => Boolean(tag)),
@@ -206,11 +206,11 @@ export function buildPlaceDetailPresentation(
     roadAddress: clean(base?.roadAddress) ?? clean(card?.roadAddress),
     jibunAddress: clean(base?.jibunAddress),
     touristSummary: clean(base?.touristSummary) ?? clean(card?.touristSummary),
-    verificationLabel: (() => {
+    verificationLabelKey: (() => {
       const status = base?.informationVerificationStatus ?? card?.informationVerificationStatus;
-      if (status === 'ADMIN_VERIFIED') return '관리자 확인 정보';
-      if (status === 'SOURCE_CONFIRMED') return '출처 확인 정보';
-      if (status === 'OWNER_SUBMITTED') return '사업자 제공 정보';
+      if (status === 'ADMIN_VERIFIED') return 'placeDetail.verification.admin';
+      if (status === 'SOURCE_CONFIRMED') return 'placeDetail.verification.source';
+      if (status === 'OWNER_SUBMITTED') return 'placeDetail.verification.owner';
       return null;
     })(),
   };

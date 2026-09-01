@@ -202,6 +202,12 @@ test('domain conflict and batch-limit codes branch without relying on HTTP statu
     getApiErrorUx(new ApiError('batch', { code: 'EVENT_BATCH_TOO_LARGE' })).kind,
     'validation',
   );
+  assert.equal(
+    getApiErrorUx(
+      new ApiError('bad coupon filter', { code: 'COUPON_LIST_FILTER_INVALID', status: 400 }),
+    ).kind,
+    'validation',
+  );
 });
 
 test('unknown domain codes are preserved and are not reclassified from status alone', () => {

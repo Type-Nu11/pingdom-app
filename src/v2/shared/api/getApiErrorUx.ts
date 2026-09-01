@@ -75,6 +75,7 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
   if (
     code === 'VALIDATION_FAILED' ||
     code === 'INVALID_TRAVEL_SCHEDULE_PERIOD' ||
+    code === 'COUPON_LIST_FILTER_INVALID' ||
     (!code && status === 400)
   ) {
     return build(error, 'validation', 'none');
