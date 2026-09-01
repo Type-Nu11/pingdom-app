@@ -100,6 +100,58 @@ describe('CouponBoxScreen', () => {
     }));
   });
 
+  test('사용 완료·만료 쿠폰은 기간 줄에 상태를 텍스트로 밝힌다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([
+      { id: 1, status: 'REDEEMED', redeemedAt: '2026-08-20T12:00:00' },
+      { id: 2, status: 'EXPIRED' },
+      { id: 3, status: 'ISSUED' },
+    ]));
+
+    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+
+    const periods = await screen.findAllByTestId('v2-coupon-card-period');
+    expect(periods[0]).toHaveTextContent(/26\.08\.18~27\.08\.18 · 사용 완료$/);
+    expect(periods[1]).toHaveTextContent(/26\.08\.18~27\.08\.18 · 기간 만료$/);
+    // 사용 가능한 쿠폰은 기간만 남고 상태 문구가 붙지 않는다.
+    expect(periods[2]).toHaveTextContent('26.08.18~27.08.18');
+  });
+
+  test('상태 필터를 누르면 서버 status 파라미터로 다시 조회한다', async () => {
+    const listCoupons = jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(
+      couponPage([{ id: 1, offerId: 10 }]),
+    );
+
+    const { user } = await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    await waitFor(() => expect(screen.getByText('생일 할인 쿠폰')).toBeTruthy());
+
+    // 기본 진입은 status 없이 조회한다.
+    expect(listCoupons).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ status: expect.anything() }),
+      expect.anything(),
+    );
+
+    await user.press(screen.getByTestId('v2-coupon-box-filter-REDEEMED'));
+
+    await waitFor(() => expect(listCoupons).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, status: 'REDEEMED' }),
+      expect.anything(),
+    ));
+  });
+
+  test('필터 결과가 비면 상태별 빈 목록 문구를 보여준다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockImplementation(
+      async (params) => couponPage(params?.status === 'EXPIRED' ? [] : [{ id: 1, offerId: 10 }]),
+    );
+
+    const { user } = await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    await waitFor(() => expect(screen.getByText('생일 할인 쿠폰')).toBeTruthy());
+
+    await user.press(screen.getByTestId('v2-coupon-box-filter-EXPIRED'));
+
+    await waitFor(() => expect(screen.getByText('이 상태의 쿠폰이 없어요')).toBeTruthy());
+    expect(screen.queryByText('보유한 쿠폰이 없어요')).toBeNull();
+  });
+
   test('다음 페이지가 있으면 끝에 도달할 때 이어서 조회한다', async () => {
     const listCoupons = jest.spyOn(offerCouponApi, 'listCoupons').mockImplementation(
       async (params) => couponPage(

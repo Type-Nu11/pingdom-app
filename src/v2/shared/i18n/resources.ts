@@ -246,12 +246,23 @@ export const resources = {
         back: 'Back',
         couponBox: {
           empty: 'You have no coupons yet',
+          emptyFiltered: 'No coupons in this status',
           error: 'Could not load your coupons.',
           fallbackDescription: 'Discount coupon',
           fallbackTitle: 'Coupon',
+          filters: {
+            ALL: 'All',
+            EXPIRED: 'Expired',
+            ISSUED: 'Available',
+            REDEEMED: 'Used',
+          },
           loading: 'Loading coupons',
           nextPageError: 'Could not load more coupons.',
           nextPageRetry: 'Load more',
+          statusLabel: {
+            EXPIRED: 'Expired',
+            REDEEMED: 'Already used',
+          },
           title: 'Coupon box',
         },
         couponDetail: {
@@ -808,12 +819,23 @@ export const resources = {
         back: '뒤로가기',
         couponBox: {
           empty: '보유한 쿠폰이 없어요',
+          emptyFiltered: '이 상태의 쿠폰이 없어요',
           error: '쿠폰을 불러오지 못했어요.',
           fallbackDescription: '할인 쿠폰',
           fallbackTitle: '쿠폰',
+          filters: {
+            ALL: '전체',
+            EXPIRED: '만료',
+            ISSUED: '사용 가능',
+            REDEEMED: '사용 완료',
+          },
           loading: '쿠폰을 불러오는 중',
           nextPageError: '쿠폰을 더 불러오지 못했어요.',
           nextPageRetry: '더 불러오기',
+          statusLabel: {
+            EXPIRED: '기간 만료',
+            REDEEMED: '사용 완료',
+          },
           title: '쿠폰함',
         },
         couponDetail: {

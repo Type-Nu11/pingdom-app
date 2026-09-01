@@ -28,8 +28,15 @@ export const COUPON_STATUS_FILTERS: readonly CouponStatusFilter[] = [
   'EXPIRED',
 ];
 
-/** Only `ISSUED` coupons can be presented for use; every other state is terminal. */
-export function isCouponUsable(status: CouponStatus): boolean {
+/** Terminal states a coupon can end in. Narrowed out of `CouponStatus` by `isCouponUsable`. */
+export type TerminalCouponStatus = Exclude<CouponStatus, 'ISSUED'>;
+
+/**
+ * Only `ISSUED` coupons can be presented for use; every other state is terminal.
+ * Typed as a predicate so callers narrow to `TerminalCouponStatus` in the else
+ * branch and cannot look up a status label that has no translation.
+ */
+export function isCouponUsable(status: CouponStatus): status is 'ISSUED' {
   return status === 'ISSUED';
 }
 
