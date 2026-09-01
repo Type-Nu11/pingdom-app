@@ -5,7 +5,7 @@ import Svg, { Line } from 'react-native-svg';
 import styled, { useTheme } from 'styled-components/native';
 
 import Button from '../../../shared/components/Button';
-import CouponBarcode from '../components/CouponBarcode';
+import CouponQrCode from '../components/CouponQrCode';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import CouponIcon from '../../../shared/assets/icons/coupon.svg';
 
@@ -111,15 +111,15 @@ export default function CouponDetailScreen({
             </Svg>
           </Perforation>
 
-          <BarcodeArea>
+          <QrArea>
             {usable ? (
               <>
-                <CouponBarcode
+                <CouponQrCode
                   code={code}
                   codeAccessibilityLabel={t('myPage.couponDetail.codeA11yLabel', { tail: codeTail })}
-                  unavailableLabel={t('myPage.couponDetail.barcodeUnavailable')}
+                  unavailableLabel={t('myPage.couponDetail.qrUnavailable')}
                 />
-                <BarcodeHint>{t('myPage.couponDetail.barcodeHint')}</BarcodeHint>
+                <QrHint>{t('myPage.couponDetail.qrHint')}</QrHint>
               </>
             ) : (
               // A used or expired coupon keeps its ticket details so the user can
@@ -128,7 +128,7 @@ export default function CouponDetailScreen({
                 {stateNotice ?? t('myPage.couponDetail.unavailable')}
               </StateNotice>
             )}
-          </BarcodeArea>
+          </QrArea>
 
           {perforationTop === null ? null : (
             <>
@@ -290,13 +290,13 @@ const Perforation = styled.View`
   padding: 0 ${PERFORATION_INSET}px;
 `;
 
-const BarcodeArea = styled.View`
+const QrArea = styled.View`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm + 2}px;
   padding: 6px ${({ theme }) => theme.spacing.lg - 4}px ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const BarcodeHint = styled.Text`
+const QrHint = styled.Text`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   font-weight: 500;

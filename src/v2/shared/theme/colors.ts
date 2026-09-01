@@ -11,7 +11,6 @@ export const colors = {
   focus: '#FF4A75',
   info: '#168CFF',
   inputBackground: '#F8F8F8',
-  labelAlternative: '#5E5E66',
   onDisabled: '#767680',
   onPrimary: '#FFFFFF',
   primary: '#FF1956',
