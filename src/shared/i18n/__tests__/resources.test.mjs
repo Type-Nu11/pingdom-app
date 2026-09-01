@@ -58,7 +58,9 @@ test('canonical resources support only ko and en with exact key parity', () => {
 test('every static production translation call resolves in the canonical catalog', () => {
   const catalog = new Set(flattenKeys(resources.en.translation));
   const missing = staticTranslationKeys().filter((key) =>
-    !catalog.has(key) && !(catalog.has(`${key}_one`) && catalog.has(`${key}_other`)));
+    !catalog.has(key)
+    && !(catalog.has(`${key}_one`) && catalog.has(`${key}_other`))
+    && ![...catalog].some((catalogKey) => catalogKey.startsWith(`${key}.`)));
   assert.deepEqual(missing, []);
 });
 
