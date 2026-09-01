@@ -9,6 +9,8 @@ import type { NotificationRoute } from '../../features/notifications/model/notif
 import NotificationSettingsScreen from '../../features/notifications/screens/NotificationSettingsScreen';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
+import CouponBoxScreen from '../../features/my-page/screens/CouponBoxScreen';
+import CouponDetailContainer from '../../features/my-page/screens/CouponDetailContainer';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
 import ProfileEditScreen from '../../features/my-page/screens/ProfileEditScreen';
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
@@ -42,9 +44,36 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
   return (
     <MyPageScreen
       onBack={navigation.goBack}
+      onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
       onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
       onOpenVerifiedPlaces={() => {}}
+    />
+  );
+}
+
+function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
+  return (
+    <CouponBoxScreen
+      onBack={navigation.goBack}
+      onOpenCoupon={(coupon) => navigation.navigate(V2_ROUTES.CouponDetail, {
+        couponId: coupon.id,
+      })}
+    />
+  );
+}
+
+function CouponDetailRoute({ navigation, route }: V2ScreenProps<'CouponDetail'>) {
+  return (
+    <CouponDetailContainer
+      couponId={route.params.couponId}
+      onBack={navigation.goBack}
+      onReserve={(placeId) => {
+        const parsed = parsePlaceId(placeId);
+        if (parsed) {
+          navigation.navigate(V2_ROUTES.CreateReservation, { placeId: parsed });
+        }
+      }}
     />
   );
 }
@@ -142,6 +171,8 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CouponDetail} component={CouponDetailRoute} />
         <Stack.Screen name={V2_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Settings} component={SettingsRouteScreen} />
         <Stack.Screen name={V2_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />
