@@ -9,6 +9,7 @@ export type {
   OfferPage,
   RedeemCouponBody,
 } from './api/offerCouponApi';
+export type { UseIssueCouponResult } from './hooks/useOffersCoupons';
 export {
   createCouponQueryOptions,
   createCouponsQueryOptions,
