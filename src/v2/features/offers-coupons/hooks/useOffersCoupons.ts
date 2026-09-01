@@ -105,6 +105,19 @@ export function useOffers(params: ListOffersParams = {}) {
   return useQuery(createOffersQueryOptions(params));
 }
 
+/**
+ * Issuable Offers for one place. The query is deferred until a real place id is
+ * known so entering place detail issues exactly one `/offers?placeId=` request
+ * (no speculative per-card fan-out).
+ */
+export function usePlaceOffers(placeId: number, { enabled = true }: { enabled?: boolean } = {}) {
+  const active = enabled && Number.isFinite(placeId) && placeId > 0;
+  return useQuery({
+    ...createOffersQueryOptions({ placeId }),
+    enabled: active,
+  });
+}
+
 export function useOffer(offerId: number, options: { enabled?: boolean } = {}) {
   return useQuery({
     ...createOfferQueryOptions(offerId),
