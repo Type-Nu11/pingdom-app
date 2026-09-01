@@ -299,7 +299,7 @@ export default function MyPageScreen({
                   isError={couponsQuery.isError}
                   isLoading={couponsQuery.isLoading}
                   testID="v2-my-page-stat-coupons"
-                  value={couponsQuery.data?.totalCount ?? 0}
+                  value={couponsQuery.data?.totalElements ?? 0}
                 />
               </StatButton>
             </StatsCard>

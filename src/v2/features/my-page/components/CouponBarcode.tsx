@@ -9,8 +9,10 @@ type CouponBarcodeProps = {
   /**
    * The coupon code exactly as the server issued it. The readable line below the
    * bars is the functional part — staff read it into
-   * `POST /merchant-owner/offers/coupons/redeem`, which requires the dashed UUID
-   * form — so it must not be reformatted.
+   * `POST /merchant-owner/offers/coupons/redeem`, whose `code` pattern requires
+   * the dashed UUID form, so the dashes and segment lengths must survive. That
+   * pattern accepts either case (`[0-9a-fA-F]`), so the line is upper-cased for
+   * legibility while the bars encode the value verbatim.
    */
   code: string;
   /** Shown when the bars cannot be drawn. The readable code stays either way. */

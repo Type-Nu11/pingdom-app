@@ -3,6 +3,7 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
+import type { Coupon } from '../../v2/features/offers-coupons';
 
 declare const routeIdBrand: unique symbol;
 
@@ -77,7 +78,7 @@ export type MainStackParamList = {
   };
   CouponBox: undefined;
   CouponDetail: {
-    couponId: number;
+    coupon: Coupon;
   };
   CreateReservation: {
     category?: string;
