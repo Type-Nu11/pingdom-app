@@ -14,6 +14,9 @@ export const colors = {
   onDisabled: '#767680',
   onPrimary: '#FFFFFF',
   primary: '#FF1956',
+  // Figma `primary/assistive`. The opaque tint behind a coupon's ticket badge —
+  // `primaryRange` is the same hue at 48% and reads noticeably lighter.
+  primaryAssistive: '#FFC9D3',
   primaryPressed: '#E9164E',
   primaryRange: 'rgba(255, 201, 211, 0.48)',
   primarySelected: 'rgba(255, 25, 86, 0.08)',
@@ -24,6 +27,10 @@ export const colors = {
   surfaceMuted: '#F6F6F7',
   surfacePressed: '#EDEDEF',
   text: '#3B3B40',
+  // Figma `label/alternative`. Sits between `text` and `textMuted`, for the
+  // supporting lines a muted grey would push too far back (coupon validity dates,
+  // notice copy).
+  textAlternative: '#5E5E66',
   textDisabled: '#9C9CA3',
   textMuted: '#767680',
   textStrong: '#0C0C0D',

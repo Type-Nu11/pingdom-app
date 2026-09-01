@@ -1,4 +1,4 @@
-export type Language = 'en' | 'ko' | 'ja' | 'zh' | 'vi' | 'th';
+export type Language = 'en' | 'ko';
 export type Country = 'US' | 'CN' | 'JP' | 'TH' | 'VN' | 'KR';
 export type Gender = 'male' | 'female' | 'other';
 

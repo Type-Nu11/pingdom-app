@@ -1,4 +1,5 @@
 import {
+  type MutateOptions,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -19,7 +20,6 @@ import {
 type OfferCouponApi = typeof offerCouponApi;
 
 export const offerCouponQueryKeys = {
-  coupon: (couponId: number) => ['v2', 'coupons', 'detail', couponId] as const,
   coupons: (params: ListCouponsParams) => ['v2', 'coupons', params] as const,
   couponsInfinite: (params: ListCouponsParams) => ['v2', 'coupons', 'infinite', params] as const,
   couponsRoot: ['v2', 'coupons'] as const,
@@ -48,16 +48,6 @@ export function createOfferQueryOptions(
   return {
     queryFn: ({ signal }: { signal?: AbortSignal }) => api.getOffer(offerId, signal),
     queryKey: offerCouponQueryKeys.offer(offerId),
-  };
-}
-
-export function createCouponQueryOptions(
-  couponId: number,
-  api: Pick<OfferCouponApi, 'getCoupon'> = offerCouponApi,
-) {
-  return {
-    queryFn: ({ signal }: { signal?: AbortSignal }) => api.getCoupon(couponId, signal),
-    queryKey: offerCouponQueryKeys.coupon(couponId),
   };
 }
 
@@ -117,15 +107,24 @@ export function useOffers(params: ListOffersParams = {}) {
   return useQuery(createOffersQueryOptions(params));
 }
 
+/**
+ * Issuable Offers for one place. The query is deferred until a real place id is
+ * known so entering place detail issues exactly one `/offers?placeId=` request
+ * (no speculative per-card fan-out).
+ */
+export function usePlaceOffers(placeId: number, { enabled = true }: { enabled?: boolean } = {}) {
+  const active = enabled && Number.isFinite(placeId) && placeId > 0;
+  return useQuery({
+    ...createOffersQueryOptions({ placeId }),
+    enabled: active,
+  });
+}
+
 export function useOffer(offerId: number, options: { enabled?: boolean } = {}) {
   return useQuery({
     ...createOfferQueryOptions(offerId),
     ...options,
   });
-}
-
-export function useCoupon(couponId: number) {
-  return useQuery(createCouponQueryOptions(couponId));
 }
 
 export function useCoupons(params: ListCouponsParams = {}) {
@@ -144,6 +143,11 @@ export type UseIssueCouponResult = {
   isPending: boolean;
   isSuccess: boolean;
   issueCoupon: (offerId: number) => boolean;
+  mutate: (offerId: number, options?: MutateOptions<Coupon, ApiError, number>) => void;
+  mutateAsync: (
+    offerId: number,
+    options?: MutateOptions<Coupon, ApiError, number>,
+  ) => Promise<Coupon>;
   pendingOfferIds: readonly number[];
   reset: () => void;
 };
@@ -155,6 +159,7 @@ export function useIssueCoupon(
   // 발급 진행 중인 offerId 집합. 렌더 사이에 값을 읽어야 하는 state 와 달리
   // mutate 직전에 동기적으로 갱신할 수 있어야 같은 tick 의 연속 탭을 막을 수 있다.
   const pendingOfferIdsRef = useRef<Set<number>>(new Set());
+  const inFlightPromisesRef = useRef<Map<number, Promise<Coupon>>>(new Map());
   const [pendingOfferIds, setPendingOfferIds] = useState<readonly number[]>([]);
 
   const syncPendingOfferIds = useCallback(() => {
@@ -168,12 +173,13 @@ export function useIssueCoupon(
     // 에러는 훅 사용자에게 ApiError 그대로 전달한다(메시지 매핑은 화면의 책임).
     onSettled: (_coupon, _error, offerId) => {
       pendingOfferIdsRef.current.delete(offerId);
+      inFlightPromisesRef.current.delete(offerId);
       syncPendingOfferIds();
     },
     onSuccess: async () => {
       // 201 CouponResponse 를 setQueryData 로 직접 넣지 않는다. 내 Coupon 목록은
       // page/limit/status 로 서버가 잘라 주는 CouponPage 라서, 클라이언트가 한 건을
-      // 끼워 넣으면 totalCount/hasNext/정렬이 서버와 어긋난다. 대신 관련 root 만 무효화한다.
+      // 끼워 넣으면 totalElements/hasNext/정렬이 서버와 어긋난다. 대신 관련 root 만 무효화한다.
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: offerCouponQueryKeys.couponsRoot }),
         // offersRoot 는 prefix 라서 발급 가능한 Offer 목록과
@@ -183,22 +189,47 @@ export function useIssueCoupon(
     },
   });
 
-  const { mutate } = mutation;
+  const { mutateAsync: rawMutateAsync } = mutation;
 
-  // 진행 중인 Offer 면 요청을 만들지 않고 false 를 돌려준다. 서로 다른 Offer 는 동시 발급 허용.
-  const issueCoupon = useCallback(
-    (offerId: number) => {
-      if (pendingOfferIdsRef.current.has(offerId)) {
-        return false;
+  const startMutation = useCallback(
+    (offerId: number, options?: MutateOptions<Coupon, ApiError, number>) => {
+      const inFlight = inFlightPromisesRef.current.get(offerId);
+      if (inFlight) {
+        return { accepted: false, promise: inFlight };
       }
 
       pendingOfferIdsRef.current.add(offerId);
       syncPendingOfferIds();
-      mutate(offerId);
 
-      return true;
+      const promise = rawMutateAsync(offerId, options);
+      inFlightPromisesRef.current.set(offerId, promise);
+
+      return { accepted: true, promise };
     },
-    [mutate, syncPendingOfferIds],
+    [rawMutateAsync, syncPendingOfferIds],
+  );
+
+  const mutate = useCallback(
+    (offerId: number, options?: MutateOptions<Coupon, ApiError, number>) => {
+      void startMutation(offerId, options).promise.catch(() => undefined);
+    },
+    [startMutation],
+  );
+
+  const mutateAsync = useCallback(
+    (offerId: number, options?: MutateOptions<Coupon, ApiError, number>) =>
+      startMutation(offerId, options).promise,
+    [startMutation],
+  );
+
+  // 진행 중인 Offer 면 요청을 만들지 않고 false 를 돌려준다. 서로 다른 Offer 는 동시 발급 허용.
+  const issueCoupon = useCallback(
+    (offerId: number) => {
+      const request = startMutation(offerId);
+      void request.promise.catch(() => undefined);
+      return request.accepted;
+    },
+    [startMutation],
   );
 
   const isIssuing = useCallback(
@@ -215,6 +246,8 @@ export function useIssueCoupon(
     isPending: pendingOfferIds.length > 0,
     isSuccess: mutation.isSuccess,
     issueCoupon,
+    mutate,
+    mutateAsync,
     pendingOfferIds,
     reset: mutation.reset,
   };

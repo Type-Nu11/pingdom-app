@@ -1,10 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import styled from 'styled-components/native';
 
-import { useCoupon, useOffer } from '../../offers-coupons';
-import { ErrorState, LoadingState } from '../../../shared/components';
+import { useOffer, type Coupon } from '../../offers-coupons';
+import { usePlaceDetail } from '../../place-detail';
 import {
   formatCouponInstant,
   formatOfferPeriod,
@@ -13,51 +11,28 @@ import {
 import CouponDetailScreen, { type CouponDetailInfoRow } from './CouponDetailScreen';
 
 export type CouponDetailContainerProps = {
-  couponId: number;
+  coupon: Coupon;
   onBack: () => void;
   onReserve: (placeId: number) => void;
 };
 
 /**
- * `GET /coupons/{couponId}` already carries the offer title, benefit and place
- * name, so the screen renders from one request and reflects a redemption that
- * happened while the user was on this screen. The offer is fetched only for the
- * secondary info rows; it 404s once the merchant closes the offer, which leaves
- * those rows out without breaking the coupon itself.
+ * The current server has no single-Coupon endpoint. Navigation therefore hands
+ * off the Coupon returned by `GET /coupons`; Offer and Place queries provide
+ * optional presentation data without blocking lifecycle details or the barcode.
  */
 export default function CouponDetailContainer({
-  couponId,
+  coupon,
   onBack,
   onReserve,
 }: CouponDetailContainerProps) {
   const { i18n, t } = useTranslation();
   const locale = i18n.language;
 
-  const couponQuery = useCoupon(couponId);
-  const coupon = couponQuery.data;
-  const offerQuery = useOffer(coupon?.offerId ?? 0, { enabled: coupon != null });
+  const offerQuery = useOffer(coupon.offerId);
   const offer = offerQuery.data;
-
-  if (couponQuery.isLoading) {
-    return (
-      <Screen edges={['top', 'right', 'bottom', 'left']}>
-        <LoadingState description={t('myPage.couponDetail.loading')} fill />
-      </Screen>
-    );
-  }
-
-  if (couponQuery.isError || !coupon) {
-    return (
-      <Screen edges={['top', 'right', 'bottom', 'left']}>
-        <ErrorState
-          actionLabel={t('myPage.retry')}
-          description={t('myPage.couponDetail.error')}
-          fill
-          onAction={() => void couponQuery.refetch()}
-        />
-      </Screen>
-    );
-  }
+  const placeQuery = usePlaceDetail(offer?.placeId ?? 0, { enabled: Boolean(offer?.placeId) });
+  const placeName = placeQuery.data?.name;
 
   const usable = isCouponUsable(coupon.status);
   // A terminal coupon says why it cannot be presented, dated where the server
@@ -83,8 +58,8 @@ export default function CouponDetailContainer({
   // server has nothing for is dropped rather than filled with invented copy.
   const infoRows: CouponDetailInfoRow[] = [];
 
-  if (coupon.placeName) {
-    infoRows.push({ label: t('myPage.couponDetail.rows.stores'), value: coupon.placeName });
+  if (placeName) {
+    infoRows.push({ label: t('myPage.couponDetail.rows.stores'), value: placeName });
   }
   if (offer?.description) {
     infoRows.push({ label: t('myPage.couponDetail.rows.usage'), value: offer.description });
@@ -106,25 +81,20 @@ export default function CouponDetailContainer({
     });
   }
 
-  const placeId = coupon.placeId ?? offer?.placeId;
+  const placeId = offer?.placeId;
 
   return (
     <CouponDetailScreen
-      benefit={coupon.benefitDescription || t('myPage.couponBox.fallbackDescription')}
+      benefit={offer?.benefitDescription || t('myPage.couponBox.fallbackDescription')}
       code={coupon.code}
       infoRows={infoRows}
       onBack={onBack}
       onReserve={placeId ? () => onReserve(placeId) : undefined}
       periodText={formatOfferPeriod(coupon.issuedAt, coupon.expiresAt, locale)}
-      placeName={coupon.placeName ?? undefined}
+      placeName={placeName}
       stateNotice={stateNotice}
-      title={coupon.offerTitle || t('myPage.couponBox.fallbackTitle')}
+      title={offer?.title || t('myPage.couponBox.fallbackTitle')}
       usable={usable}
     />
   );
 }
-
-const Screen = styled(SafeAreaView)`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.background};
-`;

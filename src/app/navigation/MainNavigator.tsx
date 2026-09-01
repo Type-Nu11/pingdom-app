@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled, { ThemeProvider } from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
@@ -19,7 +20,6 @@ import {
   VisitVerificationReviewScreen,
 } from '../../v2/features/place-visit-verification';
 import SettingsScreen from '../../v2/features/settings/screens/SettingsScreen';
-import { TemporaryAccountSessionApiCheckFlow } from '../../features/profile/dev/account-session-api-check';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import {
   MAIN_ROUTES,
@@ -160,11 +160,6 @@ export const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>)
   );
 };
 
-const ApiCheckRouteScreen = ({ navigation }: MainScreenProps<'ApiCheck'>) => (
-  // TEMPORARY device-QA flow for the #161, #165, #166, and #168 endpoints.
-  <TemporaryAccountSessionApiCheckFlow onExit={navigation.goBack} />
-);
-
 const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) => (
   <CheckInScreen
     placeId={route.params.placeId}
@@ -176,14 +171,14 @@ const CouponBoxRouteScreen = ({ navigation }: MainScreenProps<'CouponBox'>) => (
   <CouponBoxScreen
     onBack={navigation.goBack}
     onOpenCoupon={(coupon) => navigation.navigate(MAIN_ROUTES.CouponDetail, {
-      couponId: coupon.id,
+      coupon,
     })}
   />
 );
 
 const CouponDetailRouteScreen = ({ navigation, route }: MainScreenProps<'CouponDetail'>) => (
   <CouponDetailContainer
-    couponId={route.params.couponId}
+    coupon={route.params.coupon}
     onBack={navigation.goBack}
     onReserve={(placeId) => {
       const parsed = parsePlaceId(placeId);
@@ -215,13 +210,16 @@ const CreateReservationRouteScreen = ({
   </V2ScreenBoundary>
 );
 
-const MerchantRouteScreen = ({ navigation, route }: MainScreenProps<'Merchant'>) => (
-  <RoutePlaceholderScreen
-    description={`merchantId: ${route.params.merchantId}`}
-    title="상점"
-    onBack={navigation.goBack}
-  />
-);
+const MerchantRouteScreen = ({ navigation, route }: MainScreenProps<'Merchant'>) => {
+  const { t } = useTranslation();
+  return (
+    <RoutePlaceholderScreen
+      description={t('merchant.pendingDescription', { merchantId: route.params.merchantId })}
+      title={t('merchant.title')}
+      onBack={navigation.goBack}
+    />
+  );
+};
 
 const VisitVerificationPlacesRouteScreen = ({ navigation }: MainScreenProps<'VisitVerificationPlaces'>) => (
   <V2ScreenBoundary>
@@ -264,7 +262,6 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileAliasRouteScreen} />
-    <Stack.Screen name={MAIN_ROUTES.ApiCheck} component={ApiCheckRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Merchant} component={MerchantRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRouteScreen} />

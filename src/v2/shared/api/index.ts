@@ -48,6 +48,18 @@ export type {
   PlaceExplorationSchemaName,
 } from './placeExplorationContract';
 export type {
+  OffersCouponsComponents,
+  OffersCouponsOperationName,
+  OffersCouponsOperationPath,
+  OffersCouponsOperationQuery,
+  OffersCouponsOperationRequestBody,
+  OffersCouponsOperationResponse,
+  OffersCouponsOperations,
+  OffersCouponsPaths,
+  OffersCouponsSchema,
+  OffersCouponsSchemaName,
+} from './offersCouponsContract';
+export type {
   ReservationPaymentComponents,
   ReservationPaymentOperationName,
   ReservationPaymentOperationQuery,

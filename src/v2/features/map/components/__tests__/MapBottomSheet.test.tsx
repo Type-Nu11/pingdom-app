@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, type GestureResponderHandlers } from 'react-native';
+import { Animated, Text, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { runTimingMotion } from '../../../../shared/motion';
@@ -40,6 +40,41 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
+  test('쿠폰 가능 장소의 카드 CTA가 상세를 열고 상세 쿠폰 콘텐츠를 렌더링한다', async () => {
+    const selectedPlace = places[0];
+    const onCouponPress = jest.fn();
+    const commonProps = {
+      activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
+      content: { type: 'place-preview', placeId: selectedPlace.id } as const,
+      couponContent: <Text>실서버 쿠폰 발급 영역</Text>,
+      height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
+      onCouponPress, onCreateReservation: jest.fn(), onDetailPress: jest.fn(),
+      onFilterPress: jest.fn(), onGoNowPress: jest.fn(), onHandlePress: jest.fn(),
+      onPlacePress: jest.fn(), onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined), panHandlers: {} as GestureResponderHandlers,
+      places, recommendationPlaces: [], recommendationsState: 'ready' as const,
+      previewFallbackContentByPlaceId: {
+        [String(selectedPlace.id)]: {
+          amenities: [], coupons: [{ period: '2026.09.01~2026.09.30', title: '관광객 쿠폰' }],
+          imageUrls: [], statusDescription: '', statusEmphasis: '',
+        },
+      },
+      selectedPlace, sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(300),
+    };
+    const result = await renderWithProviders(
+      <MapBottomSheet {...commonProps} snapPoint="medium" />,
+    );
+
+    await result.user.press(screen.getByRole('button', { name: '쿠폰 받기' }));
+    expect(onCouponPress).toHaveBeenCalledWith(selectedPlace);
+    expect(screen.queryByText('실서버 쿠폰 발급 영역')).not.toBeOnTheScreen();
+
+    await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
+    expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
+  });
+
   test('장소 상세 영업 상태를 한 줄 요약으로 한국어·영어·fallback 렌더링한다', async () => {
     const selectedPlace = places[0];
     const commonProps = {
@@ -340,7 +375,7 @@ describe('MapBottomSheet recommendations', () => {
           [String(selectedPlace.id)]: {
             amenities: [],
             imageUrls: [],
-            reservation: { kind: 'available', disabled: false, message: '예약하기' },
+            reservation: { kind: 'available', disabled: false },
             statusDescription: '',
             statusEmphasis: '',
           },
@@ -393,7 +428,7 @@ describe('MapBottomSheet recommendations', () => {
     });
     const result = await renderWithProviders(
       <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback({
-        kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+        kind: 'empty', disabled: false,
       })} />,
     );
 
@@ -407,7 +442,7 @@ describe('MapBottomSheet recommendations', () => {
       <MapBottomSheet
         {...commonProps}
         previewFallbackContentByPlaceId={fallback({
-          kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
+          kind: 'empty', disabled: false,
         })}
         snapPoint="expanded"
       />,
@@ -416,7 +451,7 @@ describe('MapBottomSheet recommendations', () => {
       .not.toBeOnTheScreen();
     await result.rerender(
       <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback({
-        kind: 'error', disabled: true, message: '예약 가능 여부를 불러오지 못했습니다',
+        kind: 'error', disabled: true,
       })} />,
     );
     await result.user.press(screen.getByRole('button', { name: '다시 시도' }));
@@ -464,6 +499,30 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryByText('테스트 추천 이유')).not.toBeOnTheScreen();
     expect(screen.queryByText('현재 위치와 가까운 장소입니다')).not.toBeOnTheScreen();
     expect(screen.getByText('오늘 검증하고 쿠폰 받자!')).toBeVisible();
+  });
+
+  test('추천 그리드는 드래그 전에 같은 스크롤 트리에 미리 렌더링한다', async () => {
+    const commonProps = {
+      activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
+      content: { type: 'recommendations' } as const,
+      height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
+      onCouponPress: jest.fn(), onDetailPress: jest.fn(), onFilterPress: jest.fn(),
+      onGoNowPress: jest.fn(), onHandlePress: jest.fn(), onPlacePress: jest.fn(),
+      onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined),
+      panHandlers: {} as GestureResponderHandlers, places: [], recommendationPlaces: places,
+      recommendationsState: 'ready' as const, selectedPlace: null,
+      sheetChromeBottom: new Animated.Value(0), sheetTranslateY: new Animated.Value(0),
+    };
+    await renderWithProviders(
+      <MapBottomSheet {...commonProps} snapPoint="medium" />,
+    );
+
+    expect(screen.getByTestId('recommendation-grid-row-1')).toBeOnTheScreen();
+    expect(screen.getByTestId('recommendation-grid-row-2')).toBeOnTheScreen();
+    expect(screen.getByTestId('recommendation-content-scroll').props.contentContainerStyle)
+      .toEqual(expect.objectContaining({ paddingBottom: 116 }));
   });
 
   test('추천 목록 헤더에 별도 위치 안내 문구를 표시하지 않는다', async () => {
@@ -549,7 +608,7 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
-    expect(screen.getByText('추천 장소 1')).toBeVisible();
+    expect(screen.getAllByText('추천 장소 1').length).toBeGreaterThan(0);
     const localFeed = screen.getByRole('tab', { name: '우리 지역 핫플' });
     const nationalFeed = screen.getByRole('tab', { name: '전국 트렌드' });
     expect(localFeed.props.accessibilityState).toEqual({ selected: true });
@@ -561,6 +620,7 @@ describe('MapBottomSheet recommendations', () => {
       expect(screen.getByTestId('feed-segment-indicator')).toBeOnTheScreen();
     });
     expect(screen.getByTestId('feed-content-transition')).toBeOnTheScreen();
+    expect(screen.getByRole('tab', { name: '팝업' })).toBeOnTheScreen();
 
     (runTimingMotion as jest.Mock).mockClear();
     await user.press(nationalFeed);

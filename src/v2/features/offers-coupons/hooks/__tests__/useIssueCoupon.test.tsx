@@ -11,15 +11,11 @@ import { offerCouponQueryKeys, useIssueCoupon } from '../useOffersCoupons';
 
 function coupon(overrides: Partial<Coupon> = {}): Coupon {
   return {
-    benefitDescription: null,
     code: '11111111-1111-4111-8111-111111111111',
     expiresAt: '2026-09-30T23:59:59Z',
     id: 9_001,
     issuedAt: '2026-09-01T09:00:00Z',
     offerId: 401,
-    offerTitle: null,
-    placeId: null,
-    placeName: null,
     redeemedAt: null,
     status: 'ISSUED',
     ...overrides,
@@ -32,7 +28,7 @@ function couponPage(coupons: Coupon[]): CouponPage {
     hasNext: false,
     limit: 20,
     page: 1,
-    totalCount: coupons.length,
+    totalElements: coupons.length,
     totalPages: 1,
   };
 }
@@ -43,7 +39,7 @@ function offerPage(): OfferPage {
     limit: 20,
     offers: [],
     page: 1,
-    totalCount: 0,
+    totalElements: 0,
     totalPages: 1,
   };
 }
@@ -170,6 +166,30 @@ describe('useIssueCoupon', () => {
 
     await waitFor(() => expect(result.current.isIssuing(401)).toBe(false));
     expect(result.current.isPending).toBe(false);
+  });
+
+  test('기존 CTA의 mutate 진입점도 같은 offerId 요청을 한 번으로 합친다', async () => {
+    const pending = deferred<Coupon>();
+    const issueCoupon = jest.fn().mockReturnValue(pending.promise);
+    const { wrapper } = await createTestWrapper();
+
+    const { result } = await renderHook(() => useIssueCoupon({ issueCoupon }), { wrapper });
+
+    await act(async () => {
+      result.current.mutate(401);
+      result.current.mutate(401);
+      result.current.mutate(401);
+    });
+
+    expect(issueCoupon).toHaveBeenCalledTimes(1);
+    expect(result.current.isIssuing(401)).toBe(true);
+
+    await act(async () => {
+      pending.resolve(coupon());
+      await pending.promise;
+    });
+
+    await waitFor(() => expect(result.current.isPending).toBe(false));
   });
 
   test('발급이 끝나면 같은 offerId 를 다시 발급할 수 있다', async () => {

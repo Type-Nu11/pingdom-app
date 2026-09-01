@@ -1,4 +1,7 @@
 import React from 'react';
+import { ActivityIndicator, Animated, PanResponder } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SearchAsset from '../../../../assets/v2/icons/search.svg';
 import ArtIcon from '../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyIcon from '../../../../assets/v2/icons/place/beati_svg.svg';
@@ -10,7 +13,12 @@ import HeritageIcon from '../../../../assets/v2/icons/place/heritage.svg';
 import MusicIcon from '../../../../assets/v2/icons/place/music_svg.svg';
 import PinIcon from '../../../../assets/v2/icons/place/Pin.svg';
 import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
-import ProfileAsset from '../../../../assets/v2/icons/place/profile_svg.svg';
+import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
+import {
+  getMapPullIndicatorDistance,
+  isDownwardMapPull,
+  shouldRefreshMapFromPullGesture,
+} from '../utils/mapRefreshGesture';
 import * as S from '../styles/MapTopOverlay.styles';
 
 export type MapCategoryId =
@@ -31,8 +39,10 @@ type MapTopOverlayProps = {
   onLocatePress?: () => void;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
+  onRefreshMap?: () => Promise<void> | void;
   onSearchFocus: () => void;
   onSubmitSearch: () => void;
+  profileImageUrl?: string | null;
   query: string;
   showCategories?: boolean;
 };
@@ -40,18 +50,11 @@ type MapTopOverlayProps = {
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: MapCategoryId;
-  label: string;
 }> = [
-  { id: 'all', label: '전체' },
-  { Icon: FoodIcon, id: 'food', label: '음식점' },
-  { Icon: MusicIcon, id: 'music', label: '음악' },
-  { Icon: PopupIcon, id: 'popup', label: '팝업' },
-  { Icon: FashionIcon, id: 'fashion', label: '패션' },
-  { Icon: BeautyIcon, id: 'beauty', label: '뷰티' },
-  { Icon: ArtIcon, id: 'art', label: '전시' },
-  { Icon: CafeIcon, id: 'cafe', label: '카페' },
-  { Icon: HeritageIcon, id: 'heritage', label: '문화재' },
-  { Icon: EtcIcon, id: 'etc', label: '기타' },
+  { id: 'all' }, { Icon: FoodIcon, id: 'food' }, { Icon: MusicIcon, id: 'music' },
+  { Icon: PopupIcon, id: 'popup' }, { Icon: FashionIcon, id: 'fashion' },
+  { Icon: BeautyIcon, id: 'beauty' }, { Icon: ArtIcon, id: 'art' },
+  { Icon: CafeIcon, id: 'cafe' }, { Icon: HeritageIcon, id: 'heritage' }, { Icon: EtcIcon, id: 'etc' },
 ];
 
 export default function MapTopOverlay({
@@ -59,12 +62,96 @@ export default function MapTopOverlay({
   onCategoryChange,
   onLocatePress,
   onProfilePress,
+  onRefreshMap,
   onSearchFocus,
+  profileImageUrl,
   query,
   showCategories = true,
 }: MapTopOverlayProps) {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const pullDistance = React.useRef(new Animated.Value(0)).current;
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const resetPullIndicator = React.useCallback(() => {
+    Animated.spring(pullDistance, {
+      damping: 18,
+      mass: 0.7,
+      stiffness: 180,
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
+  }, [pullDistance]);
+  const finishPull = React.useCallback(async (gesture: {
+    dx: number;
+    dy: number;
+  }) => {
+    if (!onRefreshMap || !shouldRefreshMapFromPullGesture(gesture)) {
+      resetPullIndicator();
+      return;
+    }
+
+    setIsRefreshing(true);
+    Animated.spring(pullDistance, {
+      damping: 18,
+      stiffness: 180,
+      toValue: 44,
+      useNativeDriver: true,
+    }).start();
+
+    try {
+      await onRefreshMap();
+    } finally {
+      setIsRefreshing(false);
+      resetPullIndicator();
+    }
+  }, [onRefreshMap, pullDistance, resetPullIndicator]);
+  const refreshPanResponder = React.useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) => (
+      Boolean(onRefreshMap) && !isRefreshing && isDownwardMapPull(gesture)
+    ),
+    onPanResponderMove: (_, gesture) => {
+      pullDistance.setValue(getMapPullIndicatorDistance(gesture.dy));
+    },
+    onPanResponderRelease: (_, gesture) => {
+      void finishPull(gesture);
+    },
+    onPanResponderTerminate: resetPullIndicator,
+  }), [finishPull, isRefreshing, onRefreshMap, pullDistance, resetPullIndicator]);
+  const indicatorOpacity = pullDistance.interpolate({
+    inputRange: [0, 18],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+  const indicatorTranslateY = pullDistance.interpolate({
+    inputRange: [0, 44],
+    outputRange: [-38, 8],
+    extrapolate: 'clamp',
+  });
+
   return (
     <S.SafeOverlay edges={['top']} pointerEvents="box-none">
+      <S.RefreshIndicatorContainer
+        pointerEvents="none"
+        style={{
+          opacity: indicatorOpacity,
+          top: insets.top
+            + S.MAP_TOP_OVERLAY_METRICS.headerHeight
+            + (showCategories ? S.MAP_TOP_OVERLAY_METRICS.categoryHeight + 24 : 16),
+          transform: [{ translateY: indicatorTranslateY }],
+        }}
+        testID="map-pull-to-refresh-indicator"
+      >
+        <ActivityIndicator
+          accessibilityLabel={t('map.refreshing')}
+          animating
+          color="#FF245B"
+          size="small"
+        />
+      </S.RefreshIndicatorContainer>
+      <S.PullGestureArea
+        {...refreshPanResponder.panHandlers}
+        testID="map-pull-to-refresh"
+      >
       <S.Header>
         <S.HeaderShadow>
           <S.HeaderSurface>
@@ -89,7 +176,7 @@ export default function MapTopOverlay({
                 tintColor="rgba(242,242,245,0.86)"
               />
               <S.SearchContent
-                accessibilityLabel="장소 검색"
+                accessibilityLabel={t('map.search.accessibilityLabel')}
                 accessibilityRole="button"
                 onPress={onSearchFocus}
               >
@@ -101,21 +188,28 @@ export default function MapTopOverlay({
                   $isPlaceholder={!query}
                   numberOfLines={1}
                 >
-                  {query || '검색하기'}
+                  {query || t('map.searchOverlay.placeholder')}
                 </S.SearchInput>
               </S.SearchContent>
             </S.SearchShadow>
             <S.ProfileButton
-              accessibilityLabel="프로필 열기"
+              accessibilityLabel={t('map.search.profileAccessibilityLabel')}
               accessibilityRole="button"
               hitSlop={4}
               onPress={onProfilePress}
               style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
             >
-              <ProfileAsset
-                height={S.MAP_TOP_OVERLAY_METRICS.profileIconSize}
-                width={S.MAP_TOP_OVERLAY_METRICS.profileIconSize}
-              />
+              {profileImageUrl ? (
+                <S.ProfileImage
+                  source={{ uri: profileImageUrl }}
+                  testID="v2-map-profile-image"
+                />
+              ) : (
+                <AvatarPlaceholder
+                  height={S.MAP_TOP_OVERLAY_METRICS.profileIconSize}
+                  width={S.MAP_TOP_OVERLAY_METRICS.profileIconSize}
+                />
+              )}
             </S.ProfileButton>
           </S.HeaderSurface>
         </S.HeaderShadow>
@@ -128,8 +222,9 @@ export default function MapTopOverlay({
             showsHorizontalScrollIndicator={false}
           >
             <S.CategoryContent>
-              {categories.map(({ Icon, id, label }, index) => {
+              {categories.map(({ Icon, id }, index) => {
                 const isActive = activeCategory === id;
+                const label = t(`map.categories.${id}`);
 
                 return (
                   <S.CategoryChipButton
@@ -169,7 +264,7 @@ export default function MapTopOverlay({
           {onLocatePress ? (
             <S.LocateButtonRow pointerEvents="box-none">
               <S.LocateButton
-                accessibilityLabel="내 위치로 이동"
+                accessibilityLabel={t('map.locate')}
                 accessibilityRole="button"
                 onPress={onLocatePress}
                 style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.96 }] } : undefined}
@@ -181,6 +276,7 @@ export default function MapTopOverlay({
           ) : null}
         </>
       ) : null}
+      </S.PullGestureArea>
     </S.SafeOverlay>
   );
 }

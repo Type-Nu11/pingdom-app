@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorUx } from '../../../shared/api';
 import { useTranslation } from 'react-i18next';
+import { syncProfileLanguage } from '../../../shared/i18n';
 import { useMapSettingsStore } from '../store/mapSettingsStore';
 import MapBottomSheet, {
   type BottomSheetContent,
@@ -23,6 +24,7 @@ import ReservationBottomSheet from '../../reservations/components/ReservationBot
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
+import { MAP_TOP_OVERLAY_METRICS } from '../styles/MapTopOverlay.styles';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import {
   useBookmarkedPlaceMembership,
@@ -62,6 +64,7 @@ import {
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
+import { PlaceCouponCta } from '../../offers-coupons';
 import { FadeSlideTransition } from '../../../shared/motion';
 import { LocationStatusOverlay } from '../components/MapStatusOverlays';
 
@@ -119,6 +122,7 @@ export default function MapScreen({
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reservationNavigationLock = useRef(false);
+  const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation();
   const center = location.coordinate;
@@ -127,6 +131,7 @@ export default function MapScreen({
   const {
     markers: apiMarkers,
     places: apiPlaces,
+    refetch: refetchPlaces,
   } = usePlaces();
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
@@ -191,7 +196,11 @@ export default function MapScreen({
     togglePlaceBookmark,
   } = usePlaceBookmark();
 
-  const expandedSheetTop = insets.top + 2 + 60 + 8;
+  const expandedSheetTop = insets.top
+    + 2
+    + MAP_TOP_OVERLAY_METRICS.headerHeight
+    + MAP_TOP_OVERLAY_METRICS.categoryHeight
+    + 19;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
   // Keep one stable sheet geometry while content changes. Only the expanded destination moves:
   // place detail can fill the screen, while other expanded content remains below the top overlay.
@@ -200,8 +209,9 @@ export default function MapScreen({
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
   const mediumVisibleHeight = Math.min(
-    Math.round(418 * designScale) + SHEET_RESTING_GAP,
-    Math.round(height * 0.52),
+    // Keep the featured cards clear of the viewport-fixed bottom navigation.
+    Math.round(442 * designScale) + SHEET_RESTING_GAP,
+    Math.round(height * 0.56),
   );
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
@@ -220,17 +230,8 @@ export default function MapScreen({
     extrapolate: 'clamp',
   });
   useEffect(() => {
-    const language = profile?.language?.trim().toLowerCase();
-    const nextLanguage = language === 'korean' || language === '한국어'
-      ? 'ko'
-      : language === 'english' || language === '영어'
-        ? 'en'
-        : language?.split('-')[0];
-
-    if (nextLanguage && i18n.language !== nextLanguage) {
-      void i18n.changeLanguage(nextLanguage);
-    }
-  }, [i18n, profile?.language]);
+    void syncProfileLanguage(profile?.language);
+  }, [profile?.language]);
 
   const recommendationPlaces = useMemo(() => {
     const explanationByPlaceId = new Map(
@@ -276,10 +277,11 @@ export default function MapScreen({
     appliedActivityIntent,
     appliedTravelPurposes,
     limitReasons,
-  }), [
+  }, (key) => t(key)), [
     appliedActivityIntent,
     appliedTravelPurposes,
     limitReasons,
+    t,
   ]);
   const recommendationsState = getRecommendationState({
     isError: isRecommendationsError,
@@ -359,7 +361,7 @@ export default function MapScreen({
         reviewState: selectedPlacePresentation.reviewState,
         roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
         reviews: selectedPlacePresentation.reviews.map((review) => ({
-          author: review.author,
+          author: t(review.authorKey),
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
           tags: review.tags,
@@ -368,7 +370,9 @@ export default function MapScreen({
         summary: selectedPlacePresentation.touristSummary
           ?? selectedPlacePresentation.description
           ?? undefined,
-        statusDescription: selectedPlacePresentation.verificationLabel ?? '',
+        statusDescription: selectedPlacePresentation.verificationLabelKey
+          ? t(selectedPlacePresentation.verificationLabelKey)
+          : '',
         statusEmphasis: operatingSummary?.statusText ?? '',
         website: selectedPlacePresentation.merchant?.websiteUrl ?? undefined,
       },
@@ -509,6 +513,24 @@ export default function MapScreen({
   const handleSearchFocus = () => {
     setIsSearchOpen(true);
   };
+  const handleMapRefresh = useCallback(async () => {
+    if (mapRefreshLock.current) return;
+
+    mapRefreshLock.current = true;
+    setMapSection('map');
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter(null);
+    setIsFollowingUser(true);
+
+    try {
+      await Promise.allSettled([
+        refetchPlaces(),
+        refetchRecommendations(),
+      ]);
+    } finally {
+      mapRefreshLock.current = false;
+    }
+  }, [refetchPlaces, refetchRecommendations]);
   const handleFilterPress = (filter: VisitFilter) => {
     setActiveFilters((current) => (
       current.includes(filter)
@@ -580,24 +602,18 @@ export default function MapScreen({
   const handleGoNow = (place: DecisionPlace) => {
     Alert.alert(
       t('map.decision.goNow'),
-      t('map.decision.goNowMessage', { placeName: place.name, defaultValue: `Directions to ${place.name} are ready.` }),
+      t('map.decision.goNowMessage', { placeName: place.name }),
       [{ text: t('map.search.confirm') }],
     );
   };
-  const handleCoupon = (place: DecisionPlace) => {
-    Alert.alert(
-      t('map.decision.getCoupon'),
-      t('map.decision.couponMessage', { placeName: place.name, defaultValue: `${place.name} coupon will be available here.` }),
-      [{ text: t('map.search.confirm') }],
-    );
-  };
+  const handleCoupon = () => snapTo('expanded');
   const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
     try {
       await togglePlaceBookmark(place, nextBookmarked);
     } catch (error) {
       Alert.alert(
-        nextBookmarked ? '장소를 저장하지 못했어요' : '저장을 해제하지 못했어요',
-        getApiErrorUx(error).error.message || '잠시 후 다시 시도해 주세요.',
+        t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
+        getApiErrorUx(error).error.message || t('common.error.description'),
       );
     }
   };
@@ -639,13 +655,15 @@ export default function MapScreen({
           onLocatePress={handleLocatePress}
           onProfilePress={onOpenProfile}
           onQueryChange={handleQueryChange}
+          onRefreshMap={handleMapRefresh}
           onSearchFocus={handleSearchFocus}
           onSubmitSearch={() => {
             setContent({ type: 'results', query });
             snapTo('expanded');
           }}
+          profileImageUrl={profile?.profileImageUrl}
           query={query}
-          showCategories={snapPoint !== 'expanded'}
+          showCategories={!isExpandedPlaceDetail}
         />
         <FadeSlideTransition
           direction={MAP_SECTION_DIRECTION[mapSection]}
@@ -743,6 +761,7 @@ export default function MapScreen({
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
+            couponContent={selectedPlace ? <PlaceCouponCta placeId={selectedPlace.id} /> : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
             mediumTranslateY={mediumTranslateY}

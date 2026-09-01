@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		211A11F12F9000010066590E /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 211A11F42F9000010066590E /* InfoPlist.strings */; };
 		141E64EF2F8CAED80066590E /* KakaoMapViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */; };
 		141E64F12F8CAEE20066590E /* KakaoMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141E64F02F8CAEE20066590E /* KakaoMapView.swift */; };
 		141E64F32F8CAEEC0066590E /* KakaoMapViewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */; };
@@ -26,6 +27,8 @@
 		13B07F961A680F5B00A75B9A /* Naviapp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Naviapp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Naviapp/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Naviapp/Info.plist; sourceTree = "<group>"; };
+		211A11F22F9000010066590E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Naviapp/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		211A11F32F9000010066590E /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = Naviapp/ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KakaoMapViewManager.m; sourceTree = "<group>"; };
 		141E64F02F8CAEE20066590E /* KakaoMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KakaoMapView.swift; sourceTree = "<group>"; };
 		141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KakaoMapViewManager.swift; sourceTree = "<group>"; };
@@ -77,6 +80,7 @@
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
+				211A11F42F9000010066590E /* InfoPlist.strings */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */,
 			);
@@ -205,6 +209,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				ko,
 				Base,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
@@ -222,6 +227,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				211A11F12F9000010066590E /* InfoPlist.strings in Resources */,
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
@@ -230,6 +236,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		211A11F42F9000010066590E /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				211A11F22F9000010066590E /* en */,
+				211A11F32F9000010066590E /* ko */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */ = {
