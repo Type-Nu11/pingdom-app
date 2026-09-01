@@ -52,6 +52,11 @@ export function createCouponQueryOptions(
   return {
     queryFn: ({ signal }: { signal?: AbortSignal }) => api.getCoupon(couponId, signal),
     queryKey: offerCouponQueryKeys.coupon(couponId),
+    // The present screen must never show a stale status: a coupon redeemed or
+    // expired on the server has to stop looking valid. Re-fetch every time the
+    // screen mounts and every time the app returns to the foreground.
+    refetchOnMount: 'always' as const,
+    refetchOnWindowFocus: true,
   };
 }
 

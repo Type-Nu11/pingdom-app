@@ -2,7 +2,11 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { createTestWrapper } from '../../../../shared/testing/testProviders';
 import { offerCouponApi, type CouponPage } from '../../api/offerCouponApi';
-import { createInfiniteCouponsQueryOptions, useInfiniteCoupons } from '../useOffersCoupons';
+import {
+  createCouponQueryOptions,
+  createInfiniteCouponsQueryOptions,
+  useInfiniteCoupons,
+} from '../useOffersCoupons';
 
 function couponPage(overrides: Partial<CouponPage> = {}): CouponPage {
   return {
@@ -15,6 +19,15 @@ function couponPage(overrides: Partial<CouponPage> = {}): CouponPage {
     ...overrides,
   } as CouponPage;
 }
+
+describe('createCouponQueryOptions', () => {
+  test('상세(현장 제시) 조회는 마운트와 포그라운드 복귀마다 재검증한다', () => {
+    const options = createCouponQueryOptions(7);
+    expect(options.queryKey).toEqual(['v2', 'coupons', 'detail', 7]);
+    expect(options.refetchOnMount).toBe('always');
+    expect(options.refetchOnWindowFocus).toBe(true);
+  });
+});
 
 describe('createInfiniteCouponsQueryOptions', () => {
   test('page는 캐시 키에서 제외하고 필터만 남긴다', () => {
