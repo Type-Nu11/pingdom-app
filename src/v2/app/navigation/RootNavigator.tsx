@@ -67,7 +67,7 @@ function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
     <CouponBoxScreen
       onBack={navigation.goBack}
       onOpenCoupon={(coupon) => navigation.navigate(V2_ROUTES.CouponDetail, {
-        coupon,
+        couponId: coupon.id,
       })}
       onSignIn={() => void clearTokenSession()}
     />
@@ -77,7 +77,7 @@ function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
 function CouponDetailRoute({ navigation, route }: V2ScreenProps<'CouponDetail'>) {
   return (
     <CouponDetailContainer
-      coupon={route.params.coupon}
+      couponId={route.params.couponId}
       onBack={navigation.goBack}
       onReserve={(placeId) => {
         const parsed = parsePlaceId(placeId);

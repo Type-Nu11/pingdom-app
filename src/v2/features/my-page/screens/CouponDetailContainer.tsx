@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { OfferCouponErrorState, useOffer, type Coupon } from '../../offers-coupons';
+import {
+  CouponNotFoundError,
+  OfferCouponErrorState,
+  useCoupon,
+  useOffer,
+  type Coupon,
+} from '../../offers-coupons';
 import { usePlaceDetail } from '../../place-detail';
 import { ErrorState, LoadingState } from '../../../shared/components';
 import {
@@ -11,38 +17,41 @@ import {
   formatOfferPeriod,
   isCouponUsable,
 } from '../model/couponBoxEntries';
-import { useCurrentCoupon } from '../hooks/useCurrentCoupon';
 import CouponDetailScreen, { type CouponDetailInfoRow } from './CouponDetailScreen';
 
-export type CouponDetailContainerProps = {
-  coupon: Coupon;
+type CouponDetailContainerCommonProps = {
   onBack: () => void;
   onReserve: (placeId: number) => void;
   onSignIn?: () => void;
 };
 
+export type CouponDetailContainerProps = CouponDetailContainerCommonProps & (
+  | { couponId: number }
+  // Temporary application-composition compatibility for the legacy navigator.
+  // Only the id is consumed; lifecycle and code are always re-read from V2 API.
+  | { coupon: Coupon }
+);
+
 /**
- * The current server has no single-Coupon endpoint. Navigation therefore hands
- * off the Coupon returned by `GET /coupons`; Offer and Place queries provide
- * optional presentation data without blocking lifecycle details or the barcode.
+ * The current server has no single-Coupon endpoint. `useCoupon` resolves the
+ * navigation id from the paginated authenticated list and revalidates it on
+ * mount and foreground return. Offer and Place remain optional presentation
+ * data and never supply the security-sensitive code or lifecycle status.
  */
-export default function CouponDetailContainer({
-  coupon,
-  onBack,
-  onReserve,
-  onSignIn,
-}: CouponDetailContainerProps) {
+export default function CouponDetailContainer(props: CouponDetailContainerProps) {
+  const { onBack, onReserve, onSignIn } = props;
+  const couponId = 'coupon' in props ? props.coupon.id : props.couponId;
   const { i18n, t } = useTranslation();
   const locale = i18n.language;
 
-  const currentCouponQuery = useCurrentCoupon(coupon.id);
-  const currentCoupon = currentCouponQuery.coupon;
-  const offerQuery = useOffer(currentCoupon?.offerId ?? coupon.offerId);
+  const couponQuery = useCoupon(couponId);
+  const coupon = couponQuery.data;
+  const offerQuery = useOffer(coupon?.offerId ?? 0, { enabled: coupon != null });
   const offer = offerQuery.data;
   const placeQuery = usePlaceDetail(offer?.placeId ?? 0, { enabled: Boolean(offer?.placeId) });
   const placeName = placeQuery.data?.name;
 
-  if (currentCouponQuery.isLoading) {
+  if (couponQuery.isLoading) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <LoadingState description={t('myPage.couponDetail.loading')} fill />
@@ -50,14 +59,14 @@ export default function CouponDetailContainer({
     );
   }
 
-  if (currentCouponQuery.error) {
+  if (couponQuery.isError && !(couponQuery.error instanceof CouponNotFoundError)) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <OfferCouponErrorState
-          error={currentCouponQuery.error}
+          error={couponQuery.error}
           fill
           onBack={onBack}
-          onRetry={currentCouponQuery.retry}
+          onRetry={() => void couponQuery.refetch()}
           onSignIn={onSignIn}
           operation="listCoupons"
           surface="wallet"
@@ -66,7 +75,7 @@ export default function CouponDetailContainer({
     );
   }
 
-  if (currentCouponQuery.isNotFound || !currentCoupon) {
+  if (!coupon) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <ErrorState
@@ -79,21 +88,21 @@ export default function CouponDetailContainer({
     );
   }
 
-  const usable = isCouponUsable(currentCoupon.status);
+  const usable = isCouponUsable(coupon.status);
   // A terminal coupon says why it cannot be presented, dated where the server
   // gives a date. `redeemedAt` is nullable even for a REDEEMED coupon.
   const stateNotice = (() => {
     if (usable) return undefined;
-    if (currentCoupon.status === 'REDEEMED') {
-      return currentCoupon.redeemedAt
+    if (coupon.status === 'REDEEMED') {
+      return coupon.redeemedAt
         ? t('myPage.couponDetail.redeemedNotice', {
-          date: formatCouponInstant(currentCoupon.redeemedAt, locale, { withTime: true }),
+          date: formatCouponInstant(coupon.redeemedAt, locale, { withTime: true }),
         })
         : t('myPage.couponDetail.redeemedNoticeUnknown');
     }
-    if (currentCoupon.status === 'EXPIRED') {
+    if (coupon.status === 'EXPIRED') {
       return t('myPage.couponDetail.expiredNotice', {
-        date: formatCouponInstant(currentCoupon.expiresAt, locale, { withTime: true }),
+        date: formatCouponInstant(coupon.expiresAt, locale, { withTime: true }),
       });
     }
     return t('myPage.couponDetail.unavailable');
@@ -131,11 +140,11 @@ export default function CouponDetailContainer({
   return (
     <CouponDetailScreen
       benefit={offer?.benefitDescription || t('myPage.couponBox.fallbackDescription')}
-      code={currentCoupon.code}
+      code={coupon.code}
       infoRows={infoRows}
       onBack={onBack}
       onReserve={placeId ? () => onReserve(placeId) : undefined}
-      periodText={formatOfferPeriod(currentCoupon.issuedAt, currentCoupon.expiresAt, locale)}
+      periodText={formatOfferPeriod(coupon.issuedAt, coupon.expiresAt, locale)}
       placeName={placeName}
       stateNotice={stateNotice}
       title={offer?.title || t('myPage.couponBox.fallbackTitle')}

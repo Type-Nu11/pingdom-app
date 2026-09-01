@@ -5,7 +5,7 @@ import Svg, { Line } from 'react-native-svg';
 import styled, { useTheme } from 'styled-components/native';
 
 import Button from '../../../shared/components/Button';
-import CouponBarcode from '../components/CouponBarcode';
+import CouponQrCode from '../components/CouponQrCode';
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import CouponIcon from '../../../shared/assets/icons/coupon.svg';
 
@@ -40,6 +40,10 @@ export default function CouponDetailScreen({
   stateNotice,
 }: CouponDetailScreenProps) {
   const { t } = useTranslation();
+  // The screen reader announces only the last four characters, so the full
+  // coupon code is never spelled out aloud. The visible line still shows it in
+  // full for staff to read or the user to copy.
+  const codeTail = code.replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase();
   const theme = useTheme();
   // i18next hands back the key itself when a resource is missing, so an
   // unchecked cast here would turn a missing translation into a render crash.
@@ -107,15 +111,15 @@ export default function CouponDetailScreen({
             </Svg>
           </Perforation>
 
-          <BarcodeArea>
+          <QrArea>
             {usable ? (
               <>
-                <CouponBarcode
-                  accessibilityLabel={t('myPage.couponDetail.codeAccessibilityLabel')}
+                <CouponQrCode
                   code={code}
-                  unavailableLabel={t('myPage.couponDetail.barcodeUnavailable')}
+                  codeAccessibilityLabel={t('myPage.couponDetail.codeA11yLabel', { tail: codeTail })}
+                  unavailableLabel={t('myPage.couponDetail.qrUnavailable')}
                 />
-                <BarcodeHint>{t('myPage.couponDetail.barcodeHint')}</BarcodeHint>
+                <QrHint>{t('myPage.couponDetail.qrHint')}</QrHint>
               </>
             ) : (
               // A used or expired coupon keeps its ticket details so the user can
@@ -124,7 +128,7 @@ export default function CouponDetailScreen({
                 {stateNotice ?? t('myPage.couponDetail.unavailable')}
               </StateNotice>
             )}
-          </BarcodeArea>
+          </QrArea>
 
           {perforationTop === null ? null : (
             <>
@@ -286,13 +290,13 @@ const Perforation = styled.View`
   padding: 0 ${PERFORATION_INSET}px;
 `;
 
-const BarcodeArea = styled.View`
+const QrArea = styled.View`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm + 2}px;
   padding: 6px ${({ theme }) => theme.spacing.lg - 4}px ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const BarcodeHint = styled.Text`
+const QrHint = styled.Text`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   font-weight: 500;
