@@ -1,8 +1,17 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { offerCouponApi, type Coupon } from '../../../offers-coupons';
+import { ApiError } from '../../../../shared/api';
+import {
+  createTestI18n,
+  renderWithProviders,
+} from '../../../../shared/testing/testProviders';
+import {
+  offerCouponApi,
+  registerOfferCouponResources,
+  type Coupon,
+  type CouponPage,
+} from '../../../offers-coupons';
 import { placeDetailApi } from '../../../place-detail';
 import CouponDetailContainer from '../CouponDetailContainer';
 
@@ -33,7 +42,20 @@ function offer() {
   } as const;
 }
 
-function mockResources() {
+function couponPage(coupons: Coupon[], overrides: Partial<CouponPage> = {}): CouponPage {
+  return {
+    coupons,
+    hasNext: false,
+    limit: 100,
+    page: 1,
+    totalElements: coupons.length,
+    totalPages: 1,
+    ...overrides,
+  } as CouponPage;
+}
+
+function mockResources(currentCoupon: Coupon = coupon()) {
+  jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([currentCoupon]));
   jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer());
   jest.spyOn(placeDetailApi, 'getPlaceDetail').mockResolvedValue({
     id: 100,
@@ -41,11 +63,17 @@ function mockResources() {
   } as never);
 }
 
+async function renderCouponDetail(ui: React.ReactElement) {
+  const i18n = await createTestI18n('ko');
+  registerOfferCouponResources(i18n);
+  return renderWithProviders(ui, { i18n });
+}
+
 describe('CouponDetailContainer', () => {
   test('목록에서 받은 쿠폰과 Offer·Place 조회로 상세를 그린다', async () => {
     mockResources();
 
-    await renderWithProviders(
+    await renderCouponDetail(
       <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
@@ -64,7 +92,7 @@ describe('CouponDetailContainer', () => {
   test('쿠폰 정보 행을 상점주가 등록한 Offer 값으로 채운다', async () => {
     mockResources();
 
-    await renderWithProviders(
+    await renderCouponDetail(
       <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
@@ -77,9 +105,10 @@ describe('CouponDetailContainer', () => {
   });
 
   test('종료된 Offer를 조회할 수 없어도 lifecycle과 바코드는 유지한다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([coupon()]));
     jest.spyOn(offerCouponApi, 'getOffer').mockRejectedValue(new Error('404'));
 
-    await renderWithProviders(
+    await renderCouponDetail(
       <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
@@ -93,7 +122,7 @@ describe('CouponDetailContainer', () => {
   test('ISSUED 쿠폰은 예약 CTA로 Offer의 placeId를 넘긴다', async () => {
     mockResources();
     const onReserve = jest.fn();
-    const { user } = await renderWithProviders(
+    const { user } = await renderCouponDetail(
       <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={onReserve} />,
     );
 
@@ -103,10 +132,11 @@ describe('CouponDetailContainer', () => {
   });
 
   test('REDEEMED 쿠폰은 바코드를 감추고 사용 시각을 알려준다', async () => {
-    mockResources();
-    await renderWithProviders(
+    const redeemedCoupon = coupon({ redeemedAt: '2026-08-20T15:00:00', status: 'REDEEMED' });
+    mockResources(redeemedCoupon);
+    await renderCouponDetail(
       <CouponDetailContainer
-        coupon={coupon({ redeemedAt: '2026-08-20T15:00:00', status: 'REDEEMED' })}
+        coupon={redeemedCoupon}
         onBack={jest.fn()}
         onReserve={jest.fn()}
       />,
@@ -119,10 +149,11 @@ describe('CouponDetailContainer', () => {
   });
 
   test('EXPIRED 쿠폰도 바코드를 감추고 쿠폰 정보는 유지한다', async () => {
-    mockResources();
-    await renderWithProviders(
+    const expiredCoupon = coupon({ status: 'EXPIRED' });
+    mockResources(expiredCoupon);
+    await renderCouponDetail(
       <CouponDetailContainer
-        coupon={coupon({ status: 'EXPIRED' })}
+        coupon={expiredCoupon}
         onBack={jest.fn()}
         onReserve={jest.fn()}
       />,
@@ -135,27 +166,81 @@ describe('CouponDetailContainer', () => {
   });
 
   test('redeemedAt이 없어도 사용 완료 안내를 보여준다', async () => {
-    mockResources();
-    await renderWithProviders(
+    const redeemedCoupon = coupon({ redeemedAt: null, status: 'REDEEMED' });
+    mockResources(redeemedCoupon);
+    await renderCouponDetail(
       <CouponDetailContainer
-        coupon={coupon({ redeemedAt: null, status: 'REDEEMED' })}
+        coupon={redeemedCoupon}
         onBack={jest.fn()}
         onReserve={jest.fn()}
       />,
     );
 
-    await waitFor(() => expect(screen.getByText('이미 사용한 쿠폰이에요')).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId('v2-coupon-detail-unavailable')).toBeTruthy());
   });
 
   test('장소 조회가 실패하면 매장명을 지어내지 않는다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([coupon()]));
     jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer());
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockRejectedValue(new Error('404'));
 
-    await renderWithProviders(
+    await renderCouponDetail(
       <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
     );
 
     await waitFor(() => expect(screen.getByText('생일 10% 할인 쿠폰')).toBeTruthy());
     expect(screen.queryByText('사용 가능 매장')).toBeNull();
+  });
+
+  test('화면 진입 후 서버에서 사용 완료된 쿠폰이면 오래된 바코드를 노출하지 않는다', async () => {
+    const refreshedCoupon = coupon({
+      redeemedAt: '2026-08-20T15:00:00',
+      status: 'REDEEMED',
+    });
+    mockResources(refreshedCoupon);
+
+    await renderCouponDetail(
+      <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('v2-coupon-detail-unavailable')).toBeTruthy());
+    expect(screen.queryByTestId('v2-coupon-barcode')).toBeNull();
+  });
+
+  test('쿠폰 최신 상태 확인에 실패하면 오래된 바코드 대신 재시도를 제공한다', async () => {
+    jest.spyOn(offerCouponApi, 'listCoupons').mockRejectedValue(
+      new ApiError('offline', { isNetworkError: true }),
+    );
+    jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer());
+
+    const { user } = await renderCouponDetail(
+      <CouponDetailContainer coupon={coupon()} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByText('연결에 문제가 있습니다')).toBeTruthy());
+    expect(screen.queryByTestId('v2-coupon-barcode')).toBeNull();
+    await user.press(screen.getByText('다시 시도'));
+    expect(offerCouponApi.listCoupons).toHaveBeenCalledTimes(2);
+  });
+
+  test('다음 페이지까지 조회해 현재 쿠폰을 재검증한다', async () => {
+    const currentCoupon = coupon();
+    mockResources(currentCoupon);
+    jest.spyOn(offerCouponApi, 'listCoupons').mockImplementation(async (params) => {
+      if (params?.page === 1) {
+        return couponPage([], { hasNext: true, page: 1, totalPages: 2 });
+      }
+      return couponPage([currentCoupon], { page: 2, totalPages: 2 });
+    });
+
+    await renderCouponDetail(
+      <CouponDetailContainer coupon={currentCoupon} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('v2-coupon-barcode')).toBeTruthy());
+    expect(offerCouponApi.listCoupons).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 100, page: 2 }),
+      expect.anything(),
+    );
   });
 });

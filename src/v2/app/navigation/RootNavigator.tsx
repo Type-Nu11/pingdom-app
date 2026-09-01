@@ -85,6 +85,7 @@ function CouponDetailRoute({ navigation, route }: V2ScreenProps<'CouponDetail'>)
           navigation.navigate(V2_ROUTES.CreateReservation, { placeId: parsed });
         }
       }}
+      onSignIn={() => void clearTokenSession()}
     />
   );
 }

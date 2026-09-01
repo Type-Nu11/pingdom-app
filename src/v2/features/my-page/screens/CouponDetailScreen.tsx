@@ -111,6 +111,7 @@ export default function CouponDetailScreen({
             {usable ? (
               <>
                 <CouponBarcode
+                  accessibilityLabel={t('myPage.couponDetail.codeAccessibilityLabel')}
                   code={code}
                   unavailableLabel={t('myPage.couponDetail.barcodeUnavailable')}
                 />

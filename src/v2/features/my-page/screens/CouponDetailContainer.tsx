@@ -1,19 +1,24 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import styled from 'styled-components/native';
 
-import { useOffer, type Coupon } from '../../offers-coupons';
+import { OfferCouponErrorState, useOffer, type Coupon } from '../../offers-coupons';
 import { usePlaceDetail } from '../../place-detail';
+import { ErrorState, LoadingState } from '../../../shared/components';
 import {
   formatCouponInstant,
   formatOfferPeriod,
   isCouponUsable,
 } from '../model/couponBoxEntries';
+import { useCurrentCoupon } from '../hooks/useCurrentCoupon';
 import CouponDetailScreen, { type CouponDetailInfoRow } from './CouponDetailScreen';
 
 export type CouponDetailContainerProps = {
   coupon: Coupon;
   onBack: () => void;
   onReserve: (placeId: number) => void;
+  onSignIn?: () => void;
 };
 
 /**
@@ -25,30 +30,70 @@ export default function CouponDetailContainer({
   coupon,
   onBack,
   onReserve,
+  onSignIn,
 }: CouponDetailContainerProps) {
   const { i18n, t } = useTranslation();
   const locale = i18n.language;
 
-  const offerQuery = useOffer(coupon.offerId);
+  const currentCouponQuery = useCurrentCoupon(coupon.id);
+  const currentCoupon = currentCouponQuery.coupon;
+  const offerQuery = useOffer(currentCoupon?.offerId ?? coupon.offerId);
   const offer = offerQuery.data;
   const placeQuery = usePlaceDetail(offer?.placeId ?? 0, { enabled: Boolean(offer?.placeId) });
   const placeName = placeQuery.data?.name;
 
-  const usable = isCouponUsable(coupon.status);
+  if (currentCouponQuery.isLoading) {
+    return (
+      <Screen edges={['top', 'right', 'bottom', 'left']}>
+        <LoadingState description={t('myPage.couponDetail.loading')} fill />
+      </Screen>
+    );
+  }
+
+  if (currentCouponQuery.error) {
+    return (
+      <Screen edges={['top', 'right', 'bottom', 'left']}>
+        <OfferCouponErrorState
+          error={currentCouponQuery.error}
+          fill
+          onBack={onBack}
+          onRetry={currentCouponQuery.retry}
+          onSignIn={onSignIn}
+          operation="listCoupons"
+          surface="wallet"
+        />
+      </Screen>
+    );
+  }
+
+  if (currentCouponQuery.isNotFound || !currentCoupon) {
+    return (
+      <Screen edges={['top', 'right', 'bottom', 'left']}>
+        <ErrorState
+          actionLabel={t('myPage.back')}
+          description={t('myPage.couponDetail.error')}
+          fill
+          onAction={onBack}
+        />
+      </Screen>
+    );
+  }
+
+  const usable = isCouponUsable(currentCoupon.status);
   // A terminal coupon says why it cannot be presented, dated where the server
   // gives a date. `redeemedAt` is nullable even for a REDEEMED coupon.
   const stateNotice = (() => {
     if (usable) return undefined;
-    if (coupon.status === 'REDEEMED') {
-      return coupon.redeemedAt
+    if (currentCoupon.status === 'REDEEMED') {
+      return currentCoupon.redeemedAt
         ? t('myPage.couponDetail.redeemedNotice', {
-          date: formatCouponInstant(coupon.redeemedAt, locale, { withTime: true }),
+          date: formatCouponInstant(currentCoupon.redeemedAt, locale, { withTime: true }),
         })
         : t('myPage.couponDetail.redeemedNoticeUnknown');
     }
-    if (coupon.status === 'EXPIRED') {
+    if (currentCoupon.status === 'EXPIRED') {
       return t('myPage.couponDetail.expiredNotice', {
-        date: formatCouponInstant(coupon.expiresAt, locale, { withTime: true }),
+        date: formatCouponInstant(currentCoupon.expiresAt, locale, { withTime: true }),
       });
     }
     return t('myPage.couponDetail.unavailable');
@@ -86,11 +131,11 @@ export default function CouponDetailContainer({
   return (
     <CouponDetailScreen
       benefit={offer?.benefitDescription || t('myPage.couponBox.fallbackDescription')}
-      code={coupon.code}
+      code={currentCoupon.code}
       infoRows={infoRows}
       onBack={onBack}
       onReserve={placeId ? () => onReserve(placeId) : undefined}
-      periodText={formatOfferPeriod(coupon.issuedAt, coupon.expiresAt, locale)}
+      periodText={formatOfferPeriod(currentCoupon.issuedAt, currentCoupon.expiresAt, locale)}
       placeName={placeName}
       stateNotice={stateNotice}
       title={offer?.title || t('myPage.couponBox.fallbackTitle')}
@@ -98,3 +143,8 @@ export default function CouponDetailContainer({
     />
   );
 }
+
+const Screen = styled(SafeAreaView)`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+`;

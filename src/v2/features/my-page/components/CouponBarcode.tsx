@@ -6,6 +6,8 @@ const BAR_HEIGHT = 68;
 const BAR_WIDTH = 2;
 
 type CouponBarcodeProps = {
+  /** Spoken guidance that intentionally omits the full Coupon code. */
+  accessibilityLabel: string;
   /**
    * The coupon code exactly as the server issued it. The readable line below the
    * bars is the functional part — staff read it into
@@ -23,7 +25,7 @@ type CouponBarcodeProps = {
  * The bars are decorative: nothing scans them, so they are hidden from screen
  * readers and the readable code below carries the meaning.
  */
-export default function CouponBarcode({ code, unavailableLabel }: CouponBarcodeProps) {
+export default function CouponBarcode({ accessibilityLabel, code, unavailableLabel }: CouponBarcodeProps) {
   // jsbarcode lays the bars out at their intrinsic width, so the plate measures
   // itself and caps the barcode instead of letting a long code overflow.
   const [availableWidth, setAvailableWidth] = useState(0);
@@ -44,6 +46,9 @@ export default function CouponBarcode({ code, unavailableLabel }: CouponBarcodeP
 
   return (
     <Plate
+      accessible
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="text"
       onLayout={(event) => setAvailableWidth(event.nativeEvent.layout.width)}
       testID="v2-coupon-barcode"
     >

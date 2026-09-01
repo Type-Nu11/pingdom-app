@@ -446,6 +446,7 @@ export const resources = {
           title: 'Coupon box',
         },
         couponDetail: {
+          codeAccessibilityLabel: 'Coupon code. Show the visible code to store staff.',
           barcodeHint: 'Show this barcode to a store staff member before paying',
           barcodeUnavailable: 'Could not draw the barcode. Please read the code above to the staff.',
           error: 'Could not load this coupon.',
@@ -1161,6 +1162,7 @@ export const resources = {
           title: '쿠폰함',
         },
         couponDetail: {
+          codeAccessibilityLabel: '쿠폰 코드입니다. 화면에 표시된 코드를 매장 직원에게 보여주세요.',
           barcodeHint: '결제 전 매장 직원에게 바코드를 보여주세요',
           barcodeUnavailable: '바코드를 그리지 못했어요. 위 코드를 직원에게 알려주세요.',
           error: '쿠폰 정보를 불러오지 못했어요.',

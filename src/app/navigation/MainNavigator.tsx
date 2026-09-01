@@ -190,6 +190,7 @@ const CouponDetailRouteScreen = ({ navigation, route }: MainScreenProps<'CouponD
         navigation.navigate(MAIN_ROUTES.CreateReservation, { placeId: parsed });
       }
     }}
+    onSignIn={() => void clearTokenSession()}
   />
 );
 
