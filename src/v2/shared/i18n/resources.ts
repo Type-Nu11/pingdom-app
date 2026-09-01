@@ -440,12 +440,13 @@ export const resources = {
           title: 'Coupon box',
         },
         couponDetail: {
-          barcodeHint: 'Show this barcode to a store staff member before paying',
-          barcodeUnavailable: 'Could not draw the barcode. Please read the code above to the staff.',
+          codeA11yLabel: 'Coupon code ending in {{tail}}',
           error: 'Could not load this coupon.',
           infoHeading: 'Coupon info',
           loading: 'Loading coupon',
           noticeHeading: 'Notice',
+          qrHint: 'Show this QR code to a store staff member before paying',
+          qrUnavailable: 'Could not draw the QR code. Please read the code above to the staff.',
           notices: [
             'Each account can use this coupon only once.',
             'The coupon disappears automatically once it expires.',
@@ -1205,12 +1206,13 @@ export const resources = {
           title: '쿠폰함',
         },
         couponDetail: {
-          barcodeHint: '결제 전 매장 직원에게 바코드를 보여주세요',
-          barcodeUnavailable: '바코드를 그리지 못했어요. 위 코드를 직원에게 알려주세요.',
+          codeA11yLabel: '쿠폰 코드, 끝 네 자리 {{tail}}',
           error: '쿠폰 정보를 불러오지 못했어요.',
           infoHeading: '쿠폰 정보',
           loading: '쿠폰 정보를 불러오는 중',
           noticeHeading: '유의사항',
+          qrHint: '결제 전 매장 직원에게 QR 코드를 보여주세요',
+          qrUnavailable: 'QR 코드를 표시하지 못했어요. 위 코드를 직원에게 알려주세요.',
           notices: [
             '쿠폰은 계정당 1회만 사용할 수 있어요.',
             '유효기간이 지나면 쿠폰이 자동으로 사라져요.',

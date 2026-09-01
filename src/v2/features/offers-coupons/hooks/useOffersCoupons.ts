@@ -7,6 +7,7 @@ import {
 
 import {
   offerCouponApi,
+  type Coupon,
   type CouponPage,
   type ListCouponsParams,
   type ListOffersParams,
@@ -16,6 +17,7 @@ import {
 type OfferCouponApi = typeof offerCouponApi;
 
 export const offerCouponQueryKeys = {
+  coupon: (couponId: number) => ['v2', 'coupons', 'detail', couponId] as const,
   coupons: (params: ListCouponsParams) => ['v2', 'coupons', params] as const,
   couponsInfinite: (params: ListCouponsParams) => ['v2', 'coupons', 'infinite', params] as const,
   couponsRoot: ['v2', 'coupons'] as const,
@@ -41,6 +43,52 @@ export function createOfferQueryOptions(
   return {
     queryFn: ({ signal }: { signal?: AbortSignal }) => api.getOffer(offerId, signal),
     queryKey: offerCouponQueryKeys.offer(offerId),
+  };
+}
+
+export class CouponNotFoundError extends Error {
+  constructor(couponId: number) {
+    super(`Coupon ${couponId} was not found in the authenticated user's coupon list.`);
+    this.name = 'CouponNotFoundError';
+  }
+}
+
+/**
+ * The live server has no single-coupon endpoint. Resolve the navigation id from
+ * the paginated authenticated list instead of inventing `/coupons/{id}`.
+ */
+export async function findCouponById(
+  couponId: number,
+  api: Pick<OfferCouponApi, 'listCoupons'> = offerCouponApi,
+  signal?: AbortSignal,
+): Promise<Coupon> {
+  let page = 1;
+
+  while (true) {
+    const response = await api.listCoupons({ limit: 100, page }, signal);
+    const coupon = response.coupons.find((entry) => entry.id === couponId);
+
+    if (coupon) return coupon;
+    if (!response.hasNext || page >= response.totalPages) {
+      throw new CouponNotFoundError(couponId);
+    }
+
+    page += 1;
+  }
+}
+
+export function createCouponQueryOptions(
+  couponId: number,
+  api: Pick<OfferCouponApi, 'listCoupons'> = offerCouponApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) => findCouponById(couponId, api, signal),
+    queryKey: offerCouponQueryKeys.coupon(couponId),
+    // The present screen must never show a stale status: a coupon redeemed or
+    // expired on the server has to stop looking valid. Re-fetch every time the
+    // screen mounts and every time the app returns to the foreground.
+    refetchOnMount: 'always' as const,
+    refetchOnWindowFocus: 'always' as const,
   };
 }
 
@@ -112,6 +160,10 @@ export function useOffer(offerId: number, options: { enabled?: boolean } = {}) {
     ...createOfferQueryOptions(offerId),
     ...options,
   });
+}
+
+export function useCoupon(couponId: number) {
+  return useQuery(createCouponQueryOptions(couponId));
 }
 
 export function useCoupons(params: ListCouponsParams = {}) {
