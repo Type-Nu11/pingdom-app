@@ -1,4 +1,5 @@
 import type { ApiSchema } from '../contract';
+import type { OffersCouponsSchema } from '../offersCouponsContract';
 
 const liveStatus = {
   operatingStatus: 'OPERATING',
@@ -139,28 +140,35 @@ export const offerFixture = {
   issuedQuantity: 12,
   remainingQuantity: 88,
   couponValidityDays: 7,
+  eligibilityPolicy: 'ACTIVE_TRAVEL_SCHEDULE',
+  inventoryPolicy: 'LIMITED',
+  expiryPolicy: 'ISSUE_PLUS_DAYS',
   createdAt: '2026-07-01T00:00:00Z',
   updatedAt: '2026-07-23T05:30:00Z',
-} satisfies ApiSchema<'Offer'>;
+} satisfies OffersCouponsSchema<'OfferResponse'>;
 
 export const offerPageFixture = {
   offers: [offerFixture],
   page: 1,
   limit: 20,
-  totalCount: 1,
+  totalElements: 1,
   totalPages: 1,
   hasNext: false,
-} satisfies ApiSchema<'OfferPage'>;
+} satisfies OffersCouponsSchema<'OfferPageResponse'>;
 
 export const couponFixture = {
   id: 501,
   offerId: 401,
+  offerTitle: 'Mock tourist-only deal',
+  benefitDescription: '10% off',
+  placeId: 17,
+  placeName: 'Mock Cafe',
   code: '00000000-0000-4000-8000-000000000501',
   status: 'ISSUED',
   issuedAt: '2026-07-23T05:30:00Z',
   expiresAt: '2026-07-30T05:30:00Z',
   redeemedAt: null,
-} satisfies ApiSchema<'Coupon'>;
+} satisfies OffersCouponsSchema<'CouponResponse'>;
 
 export const expiredCouponFixture = {
   ...couponFixture,
@@ -168,16 +176,16 @@ export const expiredCouponFixture = {
   code: '00000000-0000-4000-8000-000000000502',
   status: 'EXPIRED',
   expiresAt: '2026-07-22T05:30:00Z',
-} satisfies ApiSchema<'Coupon'>;
+} satisfies OffersCouponsSchema<'CouponResponse'>;
 
 export const couponPageFixture = {
   coupons: [couponFixture, expiredCouponFixture],
   page: 1,
   limit: 20,
-  totalCount: 2,
+  totalElements: 2,
   totalPages: 1,
   hasNext: false,
-} satisfies ApiSchema<'CouponPage'>;
+} satisfies OffersCouponsSchema<'CouponPageResponse'>;
 
 export const placeClaimFixture = {
   id: 301,
@@ -282,15 +290,15 @@ export const merchantPerformanceFixture = {
 export const emptyPageFixtures = {
   checkIns: { ...checkInPageFixture, checkIns: [], totalCount: 0, totalPages: 0 },
   claims: { ...placeClaimPageFixture, claims: [], totalCount: 0, totalPages: 0 },
-  coupons: { ...couponPageFixture, coupons: [], totalCount: 0, totalPages: 0 },
-  offers: { ...offerPageFixture, offers: [], totalCount: 0, totalPages: 0 },
+  coupons: { ...couponPageFixture, coupons: [], totalElements: 0, totalPages: 0 },
+  offers: { ...offerPageFixture, offers: [], totalElements: 0, totalPages: 0 },
   places: emptyPlacePageFixture,
   reservations: { ...reservationPageFixture, reservations: [], totalCount: 0, totalPages: 0 },
 } satisfies {
   checkIns: ApiSchema<'LocationCheckInPage'>;
   claims: ApiSchema<'PlaceClaimPage'>;
-  coupons: ApiSchema<'CouponPage'>;
-  offers: ApiSchema<'OfferPage'>;
+  coupons: OffersCouponsSchema<'CouponPageResponse'>;
+  offers: OffersCouponsSchema<'OfferPageResponse'>;
   places: ApiSchema<'PlacePage'>;
   reservations: ApiSchema<'ReservationPage'>;
 };

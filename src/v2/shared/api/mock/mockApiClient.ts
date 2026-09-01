@@ -96,6 +96,7 @@ function getSuccess(path: string): unknown {
   if (path === '/offers') return offerPageFixture;
   if (/^\/offers\/\d+$/.test(path)) return offerFixture;
   if (path === '/coupons') return couponPageFixture;
+  if (/^\/coupons\/\d+$/.test(path)) return couponFixture;
   if (/^\/places\/\d+\/availabilities$/.test(path)) return [availabilityFixture];
   if (path === '/reservations' || path === '/merchant-owner/reservations') {
     return reservationPageFixture;
@@ -109,6 +110,7 @@ function getEmpty(path: string): unknown {
   if (path === '/merchant-owner/place-claims') return emptyPageFixtures.claims;
   if (path === '/offers') return emptyPageFixtures.offers;
   if (path === '/coupons') return emptyPageFixtures.coupons;
+  if (/^\/coupons\/\d+$/.test(path)) return couponFixture;
   if (/^\/places\/\d+\/availabilities$/.test(path)) return [];
   if (path === '/reservations' || path === '/merchant-owner/reservations') {
     return emptyPageFixtures.reservations;
