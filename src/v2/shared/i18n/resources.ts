@@ -1,7 +1,99 @@
+import { reservationResources } from '../../features/reservations/i18n/reservationResources';
+import { visitVerificationResources } from '../../features/place-visit-verification/i18n/visitVerificationResources';
+
 export const resources = {
   en: {
     translation: {
+      ...reservationResources.en,
+      visitVerification: visitVerificationResources.en,
+      selectLanguage: {
+        title: 'Select Language', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
+        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean' }, progress: 'Step {{current}} of {{total}}',
+      },
+      selectCountry: {
+        title: 'Select Country', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
+      },
+      selectAge: { title: 'Select Birth Year', subtitle: "We'll tell you the best route!", button: 'Continue' },
+      selectGender: {
+        title: 'Select gender', subtitle: "We'll tell you the best route!", button: 'Continue',
+        male: 'Male', female: 'Female', other: 'Prefer not to say',
+      },
+      countries: {
+        us: 'United States', cn: 'China', jp: 'Japan', th: 'Thailand', vn: 'Vietnam', kr: 'South Korea',
+      },
+      loginForeign: {
+        title: 'Only Pingdom', subtitle: "Let's find hidden\nplaces in Korea!", button: 'Get Started',
+      },
+      experience: {
+        common: { back: 'Back to map', close: 'Close', loading: 'Loading. Please wait.' },
+        placeDetail: {
+          title: 'Place details', open: 'Open now', distance: '{{distance}} away',
+          checked: 'Visitor information updated {{date}}', couponPrice: 'Coupon value {{price}}',
+          checkIn: 'Check in at this place', coupon: 'View available coupons',
+        },
+        checkIn: {
+          title: 'Check in', description: 'Confirm that you are visiting this place to unlock local benefits.',
+          status: 'Ready to confirm your location', action: 'Confirm my location and complete check-in',
+          collapseVisits: 'Show less', expandVisits: 'Show all', loadMoreVisits: 'Load more visits',
+          locationDenied: 'Location permission is required to check in.',
+          locationFailed: 'Your current location could not be retrieved.',
+          locationLoading: 'Checking your current location…', openSettings: 'Open settings',
+          recentVisits: 'Recent visits', retryCheckIn: 'Try check-in again',
+          retryLocation: 'Try location again', retryVisits: 'Try loading visits again',
+          selectedPlace: 'Selected place ID {{placeId}}', submitting: 'Checking in. Please wait.',
+          success: 'Check-in complete', visitDistance: '{{distance}} m away',
+          visitPlace: 'Place ID {{placeId}}', visitsEmpty: 'No recent visits yet.',
+          visitsLoading: 'Loading recent visits…',
+          errors: {
+            authentication: 'Your session has expired. Please sign in again.',
+            duplicate: 'You have already checked in at this place under the current server policy.',
+            generic: 'Check-in could not be completed. Please try again.',
+            network: 'You appear to be offline. Check your connection and try again.',
+            'out-of-range': 'You are too far from this place to check in.',
+          },
+        },
+        coupon: {
+          title: 'Coupon wallet', description: 'Coupons that are ready to use appear here.',
+          status: 'No available coupons', action: 'Explore places offering visitor coupons',
+        },
+      },
+      auth: {
+        koreanEntry: {
+          title: 'My own places, Pingdom', subtitle: 'Share your places\nwith visitors from abroad!',
+          existingAccount: 'Already have an account? ', login: 'Log in', start: 'Get Started',
+        },
+        login: {
+          title: 'Start Pingdom', username: 'Username', usernamePlaceholder: 'Enter your username',
+          password: 'Password', passwordPlaceholder: 'Enter your password', submit: 'Get Started',
+          submitting: 'Logging in...', findUsername: 'Find ID', findPassword: 'Find password',
+          signup: 'Sign up', unknownError: 'An unknown error occurred while logging in.',
+        },
+        passwordReset: {
+          confirmDescription: 'Enter the reset code sent to {{email}} and choose a new password.',
+          confirmTitle: 'Set a new password', invalidToken: 'That reset code is not valid. Check the code or request a new one.',
+          newPassword: 'New password', newPasswordPlaceholder: 'At least 8 characters',
+          passwordTooShort: 'Password must be at least 8 characters', processing: 'Processing...',
+          requestDescription: 'Enter the email you signed up with. We will send you a reset code.',
+          requestTitle: 'Reset your password', resend: 'Send the code again', sendToken: 'Send reset code',
+          submit: 'Reset password', token: 'Reset code', tokenPlaceholder: 'Enter the code from your email',
+          tokenRequired: 'Please enter the reset code', unknownError: 'An unknown error occurred while resetting your password.',
+        },
+        signup: {
+          title: 'Start Pingdom', passwordTitle: 'Confirm Password', username: 'Username',
+          usernamePlaceholder: 'Enter your username', email: 'Email', emailPlaceholder: 'Enter your email',
+          password: 'Password', passwordPlaceholder: 'Enter your password', passwordConfirm: 'Confirm password',
+          passwordConfirmPlaceholder: 'Enter your password again', next: 'Next', start: 'Get Started',
+          processing: 'Processing...', unknownError: 'An unknown error occurred while signing up.',
+        },
+        validation: {
+          usernameRequired: 'Please enter your username', emailRequired: 'Please enter your email',
+          emailInvalid: 'Please enter a valid email address', passwordRequired: 'Please enter your password',
+          passwordConfirmRequired: 'Please enter your password again', passwordMismatch: 'Passwords do not match',
+        },
+      },
       common: {
+        missingTranslation: 'Translation unavailable',
+        navigation: { back: 'Go back', close: 'Close', exitHint: 'Press back again to exit the app.', retry: 'Try again' },
         apiError: {
           actions: {
             back: 'Go back',
@@ -61,6 +153,7 @@ export const resources = {
         title: 'Place list example',
         trustScore: 'Trust score: {{score}}/100',
       },
+      merchant: { pendingDescription: 'Merchant {{merchantId}} is not available yet.', title: 'Merchant' },
       onboarding: {
         preferenceFlow: {
           loading: 'Restoring your saved travel preferences...',
@@ -121,6 +214,17 @@ export const resources = {
         },
       },
       map: {
+        decision: {
+          backToRecommendations: 'Back to recommendations', emptyBody: 'Try another keyword or remove a visit condition.',
+          emptyTitle: 'No matching places yet', filters: { bookable: 'Bookable', coupon: 'Coupon', openNow: 'Open now', shortWait: 'Short wait' },
+          getCoupon: 'Get coupon', couponMessage: '{{placeName}} coupon will be available here.', goNow: 'Go now',
+          goNowMessage: 'Directions to {{placeName}} are ready.', livePicks: 'LIVE PICKS', map: 'Map', nearMe: 'Near me',
+          nearYou: 'Near you', noResults: 'No matching places yet', placesLiveNearby_one: '{{count}} place live nearby',
+          placesLiveNearby_other: '{{count}} places live nearby', placesNearYou: 'Places near you', profileAccessibilityLabel: 'Open profile',
+          recommended: 'Recommended', resultsFor: 'Results for “{{query}}”', searchAccessibilityLabel: 'Search places',
+          searchPlaceholder: 'Search places', seeAll: 'See all', status: { openNow: 'Open now', verified: 'Visitor verified · {{time}}', wait: 'Wait {{wait}}' },
+          transit: 'Transit', whereToGo: 'Where to go now',
+        },
         card: {
           actions: {
             arrive: 'Arrive',
@@ -169,7 +273,63 @@ export const resources = {
           food: 'Food',
           music: 'Music',
         },
+        categories: {
+          all: 'All', art: 'Exhibitions', beauty: 'Beauty', cafe: 'Cafe', etc: 'Other',
+          fashion: 'Fashion', food: 'Restaurants', heritage: 'Cultural heritage', music: 'Music', popup: 'Pop-ups',
+        },
+        navigation: { favorites: 'Favorites', map: 'Map', recommendations: 'Recommendations', reservations: 'Reservations' },
+        favorites: {
+          adjust: 'Resize favorites panel', emptyBody: 'Tap the star on a place you like to save it.',
+          emptyTitle: 'No saved places', error: 'Could not load places', loadMore: 'Show more',
+          loadMoreError: 'Could not load more places', loadMoreLabel: 'Load more saved places',
+          loading: 'Loading saved places…', remove: 'Remove {{name}} from favorites', retry: 'Try again',
+          sessionBody: 'Sign in again to see your saved places.', sessionTitle: 'Your session has expired', title: 'My places',
+        },
+        searchOverlay: {
+          categories: 'Place categories', clear: 'Clear search', close: 'Close search',
+          emptyBody: 'Try a different search term.', emptyTitle: 'No search results',
+          externalResults: 'Place search results', loading: 'Searching for places…', pingdomResults: 'PingDom places',
+          placeholder: 'Search', recent: 'Recent searches', recentDelete: 'Remove {{query}} from recent searches',
+          recentSearch: 'Search for {{query}}', registrant: 'Registered by {{name}}', registrantLoading: 'Loading registrant',
+          registrantMissing: 'No registrant', recommendationEmpty: 'No nearby recommendations yet',
+          recommendationError: 'Could not load recommendations', recommendationLoading: 'Loading recommendations…',
+          registeredDisabled: 'PingDom place search is disabled.', registeredEmpty: 'No registered PingDom places matched.',
+          registeredError: 'The PingDom place search failed.', registeredMock: 'Development mock PingDom place results.',
+        },
+        sheet: {
+          adjust: 'Resize recommendations panel', aroundMe: 'Places near me', bookmark: 'Save place',
+          bookmarkRemove: 'Remove saved place', bookmarkSaveError: 'Could not save this place',
+          bookmarkRemoveError: 'Could not remove this saved place', categoryPopular: 'Popular {{userName}} picks by category',
+          distanceAway: '{{distance}} away', image: 'Place image', imageError: 'Could not load image', imageMissing: 'No image',
+          localHotPlaces: 'Local hot places', nationwideTrends: 'Nationwide trends', placeMissing: 'Unnamed place',
+          recommendationTitle: 'Recommended for you', resultsFor: 'Results for “{{query}}”',
+          state: {
+            emptyBody: 'Move the map to explore another area.', emptyTitle: 'No hot places to show yet',
+            errorBody: 'Please try again in a moment.', errorTitle: 'Could not load the list',
+            loadingBody: 'Move the map to explore another area.', loadingTitle: 'Finding nearby hot places…',
+            recommendationEmptyBody: 'Change your location or recommendation radius and try again.',
+            recommendationEmptyTitle: 'No recommendations match your current filters',
+            recommendationErrorBody: 'Please try again in a moment.', recommendationErrorTitle: 'Could not load recommendations',
+            recommendationLoadingBody: 'Checking your location and travel context.', recommendationLoadingTitle: 'Loading recommendations for you…',
+          },
+        },
+        detail: {
+          amenityEnglish: 'English support', amenityParking: 'Parking available', back: 'Back to map',
+          collapseTags: 'Collapse additional tags', coupon: 'Coupons', description: 'About this place',
+          events: 'Current events', expandTags: 'Show {{count}} hidden tags', imageDetail: 'View {{name}} photo {{count}}',
+          imageError: 'Could not load photos. Try again', info: 'Info', notice: 'Operating notice',
+          participantCount_one: '{{count}} participant', participantCount_other: '{{count}} participants',
+          photoReviews: 'Photo reviews', preview: 'View {{name}} details', reviewHighlights: 'What visitors liked',
+          reviewCount_one: '{{count}} review', reviewCount_other: '{{count}} reviews', reviewEmpty: 'No reviews yet.',
+          reviewError: 'Could not load reviews. Try again', reviewLoading: 'Loading reviews…', reviews: 'Reviews',
+          reservation: {
+            authError: 'Sign-in required', available: 'Reserve', empty: 'No schedules are currently available',
+            error: 'Could not load reservation availability', full: 'No reservation capacity is available',
+            loading: 'Checking reservation availability', retry: 'Try again',
+          },
+        },
         locate: 'My location',
+        refreshing: 'Refreshing map',
         location: {
           deniedDescription: 'The map is using a default area. Allow location access to show your position.',
           deniedTitle: 'Location access is off',
@@ -184,11 +344,22 @@ export const resources = {
           hiddenLabel: 'Hidden gems near {{userName}}',
           subtitle: 'Pingdom recommends places {{userName}} might like!',
           verificationTitle: 'Verify today and get a coupon!',
+          context: {
+            activity: { attendEvent: 'Events', cafe: 'Cafe visit', eat: 'Food', explore: 'Explore', nightlife: 'Nightlife', shop: 'Shopping' },
+            purpose: { beauty: 'Beauty', cafe: 'Cafe', exhibition: 'Exhibitions', fashion: 'Fashion', food: 'Food', kPop: 'K-POP', nightlife: 'Nightlife', other: 'Other', popUp: 'Pop-ups' },
+          },
+          limits: {
+            candidatePool: 'The candidate pool was expanded because few places matched.', interactedExcluded: 'Places you already viewed were excluded.',
+            operatingPriority: 'Places currently operating were prioritized.', radiusExpanded: 'The search radius was expanded to find recommendations.',
+            requestClamped: 'The recommendation count was adjusted to the server limit.',
+          },
         },
         search: {
           accessibilityLabel: 'Search places on the map',
+          confirm: 'OK', empty: 'No search results', failed: 'Address search failed',
           placeholder: 'Search places',
           profileAccessibilityLabel: 'Open my page',
+          statusPlaceholder: 'Enter an address...',
         },
         title: 'Nearby map',
         visibleCenter: '{{lat}}, {{lng}}',
@@ -250,15 +421,15 @@ export const resources = {
           error: 'Could not load your coupons.',
           fallbackDescription: 'Discount coupon',
           fallbackTitle: 'Coupon',
-          loading: 'Loading coupons',
-          nextPageError: 'Could not load more coupons.',
-          nextPageRetry: 'Load more',
           filters: {
             ALL: 'All',
             EXPIRED: 'Expired',
             ISSUED: 'Available',
             REDEEMED: 'Used',
           },
+          loading: 'Loading coupons',
+          nextPageError: 'Could not load more coupons.',
+          nextPageRetry: 'Load more',
           status: {
             CANCELED: 'Canceled',
             EXPIRED: 'Expired',
@@ -363,6 +534,14 @@ export const resources = {
         },
       },
       settings: {
+        language: {
+          description: 'Choose the language used throughout PingDom.',
+          english: 'English',
+          korean: 'Korean',
+          section: 'Language',
+          selected: 'Selected',
+          title: 'Language',
+        },
         account: {
           deleteDescription: 'Deleting your account permanently removes your records and First Recorder history.',
           email: 'Email',
@@ -471,6 +650,7 @@ export const resources = {
           account: 'Account',
           appInfo: 'App information',
           notifications: 'Notifications',
+          preferences: 'Preferences',
           privacy: 'Privacy · location',
           records: 'Records · places',
         },
@@ -491,6 +671,7 @@ export const resources = {
         loading: 'Loading your store',
         loadError: 'Could not load your store.',
         retry: 'Try again',
+        review: { author: 'Visitor #{{id}}', time: '{{date}} · {{relative}}' },
         noStore: 'No store is linked to this account yet.',
         store: {
           title: 'My store',
@@ -547,6 +728,8 @@ export const resources = {
           temporarilyClosed: 'Temporarily closed',
           unknown: 'Hours unavailable',
         },
+        review: { anonymousUser: 'User' },
+        verification: { admin: 'Administrator verified', owner: 'Provided by the business', source: 'Source verified' },
         touristSupport: 'Tourist support',
         trust: 'Trust',
         trustScore: '{{score}}/100 · {{confidence}} confidence',
@@ -578,7 +761,58 @@ export const resources = {
   },
   ko: {
     translation: {
+      ...reservationResources.ko,
+      visitVerification: visitVerificationResources.ko,
+      selectLanguage: {
+        title: '언어 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기',
+        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어' }, progress: '총 {{total}}단계 중 {{current}}단계',
+      },
+      selectCountry: { title: '국가 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기' },
+      selectAge: { title: '생년 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속' },
+      selectGender: {
+        title: '성별 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속',
+        male: '남성', female: '여성', other: '비공개',
+      },
+      countries: { us: '미국', cn: '중국', jp: '일본', th: '태국', vn: '베트남', kr: '대한민국' },
+      loginForeign: { title: '오직 핑덤', subtitle: '한국의 숨은 장소를\n찾아보세요!', button: '시작하기' },
+      experience: {
+        common: { back: '지도로 돌아가기', close: '닫기', loading: '불러오는 중입니다. 잠시 기다려 주세요.' },
+        placeDetail: {
+          title: '장소 상세', open: '영업 중', distance: '{{distance}} 거리',
+          checked: '방문자 정보 업데이트 {{date}}', couponPrice: '쿠폰 혜택 {{price}}',
+          checkIn: '이 장소에 체크인하기', coupon: '사용 가능한 쿠폰 보기',
+        },
+        checkIn: {
+          title: '체크인', description: '장소 방문을 확인하고 현지 방문객 혜택을 받아보세요.',
+          status: '현재 위치 확인 준비 완료', action: '내 위치를 확인하고 체크인 완료하기',
+          collapseVisits: '접기', expandVisits: '전체 보기', loadMoreVisits: '방문 기록 더 보기',
+          locationDenied: '체크인하려면 위치 권한이 필요합니다.', locationFailed: '현재 위치를 가져오지 못했습니다.',
+          locationLoading: '현재 위치를 확인하고 있습니다…', openSettings: '설정 열기', recentVisits: '최근 방문',
+          retryCheckIn: '체크인 다시 시도', retryLocation: '위치 다시 확인', retryVisits: '방문 기록 다시 불러오기',
+          selectedPlace: '선택한 장소 ID {{placeId}}', submitting: '체크인 중입니다. 잠시 기다려 주세요.', success: '체크인이 완료되었습니다.',
+          visitDistance: '장소와 {{distance}}m 거리', visitPlace: '장소 ID {{placeId}}', visitsEmpty: '아직 최근 방문 기록이 없습니다.',
+          visitsLoading: '최근 방문 기록을 불러오고 있습니다…',
+          errors: {
+            authentication: '로그인이 만료되었습니다. 다시 로그인해 주세요.', duplicate: '현재 서버 정책상 이미 체크인한 장소입니다.',
+            generic: '체크인을 완료하지 못했습니다. 다시 시도해 주세요.', network: '네트워크에 연결되지 않았습니다. 연결을 확인한 뒤 다시 시도해 주세요.',
+            'out-of-range': '장소와 거리가 멀어 체크인할 수 없습니다.',
+          },
+        },
+        coupon: { title: '쿠폰 지갑', description: '바로 사용할 수 있는 쿠폰이 이곳에 표시됩니다.', status: '사용 가능한 쿠폰 없음', action: '방문객 쿠폰을 제공하는 장소 둘러보기' },
+      },
+      auth: {
+        koreanEntry: { title: '나만의 장소, 핑덤', subtitle: '당신만의 장소를\n외국인들에게 공유해주세요!', existingAccount: '이미 계정이 있으신가요? ', login: '로그인', start: '시작하기' },
+        login: { title: '핑덤 시작하기', username: '아이디', usernamePlaceholder: '아이디를 입력하세요', password: '비밀번호', passwordPlaceholder: '비밀번호를 입력하세요', submit: '시작하기', submitting: '로그인 중...', findUsername: '아이디 찾기', findPassword: '비밀번호 찾기', signup: '회원가입', unknownError: '로그인 중 알 수 없는 오류가 발생했습니다.' },
+        passwordReset: {
+          confirmDescription: '{{email}}로 보낸 재설정 코드를 입력하고 새 비밀번호를 설정해주세요.', confirmTitle: '새 비밀번호 설정', invalidToken: '재설정 코드가 올바르지 않습니다. 코드를 확인하거나 다시 요청해주세요.',
+          newPassword: '새 비밀번호', newPasswordPlaceholder: '8자 이상 입력하세요', passwordTooShort: '비밀번호는 8자 이상이어야 합니다', processing: '처리 중...', requestDescription: '가입한 이메일을 입력하시면 재설정 코드를 보내드려요.', requestTitle: '비밀번호 재설정', resend: '코드 다시 보내기', sendToken: '재설정 코드 받기', submit: '비밀번호 재설정하기', token: '재설정 코드', tokenPlaceholder: '메일로 받은 코드를 입력하세요', tokenRequired: '재설정 코드를 입력해주세요', unknownError: '비밀번호 재설정 중 알 수 없는 오류가 발생했습니다.',
+        },
+        signup: { title: '핑덤 시작하기', passwordTitle: '비밀번호 확인', username: '아이디', usernamePlaceholder: '아이디를 입력하세요', email: '이메일', emailPlaceholder: '이메일을 입력하세요', password: '비밀번호', passwordPlaceholder: '비밀번호를 입력하세요', passwordConfirm: '비밀번호 확인', passwordConfirmPlaceholder: '비밀번호를 한번 더 입력하세요', next: '다음', start: '시작하기', processing: '처리 중...', unknownError: '회원가입 중 알 수 없는 오류가 발생했습니다.' },
+        validation: { usernameRequired: '아이디를 입력해주세요', emailRequired: '이메일을 입력해주세요', emailInvalid: '올바른 이메일 형식이 아닙니다', passwordRequired: '비밀번호를 입력해주세요', passwordConfirmRequired: '비밀번호를 한번 더 입력해주세요', passwordMismatch: '비밀번호가 일치하지 않습니다' },
+      },
       common: {
+        missingTranslation: '번역을 제공할 수 없습니다',
+        navigation: { back: '뒤로 가기', close: '닫기', exitHint: '뒤로가기를 한 번 더 누르면 앱이 종료됩니다.', retry: '다시 시도' },
         apiError: {
           actions: {
             back: '목록으로',
@@ -638,6 +872,7 @@ export const resources = {
         title: '장소 목록 예제',
         trustScore: '신뢰 점수: {{score}}/100',
       },
+      merchant: { pendingDescription: '상점 {{merchantId}}는 아직 준비 중입니다.', title: '상점' },
       onboarding: {
         preferenceFlow: {
           loading: '저장된 여행 선호를 불러오는 중입니다...',
@@ -698,6 +933,17 @@ export const resources = {
         },
       },
       map: {
+        decision: {
+          backToRecommendations: '추천으로 돌아가기', emptyBody: '다른 검색어를 입력하거나 방문 조건을 해제해 보세요.',
+          emptyTitle: '일치하는 장소가 아직 없어요', filters: { bookable: '예약 가능', coupon: '쿠폰', openNow: '영업 중', shortWait: '대기 짧음' },
+          getCoupon: '쿠폰 받기', couponMessage: '{{placeName}} 쿠폰을 이곳에서 받을 수 있어요.', goNow: '바로 가기',
+          goNowMessage: '{{placeName}}까지 길안내를 준비했어요.', livePicks: '지금 인기 장소', map: '지도', nearMe: '내 위치',
+          nearYou: '내 주변', noResults: '일치하는 장소가 아직 없어요', placesLiveNearby_one: '내 주변 {{count}}곳 운영 중',
+          placesLiveNearby_other: '내 주변 {{count}}곳 운영 중',
+          placesNearYou: '내 주변 장소', profileAccessibilityLabel: '프로필 열기', recommended: '추천순', resultsFor: '“{{query}}” 검색 결과',
+          searchAccessibilityLabel: '장소 검색', searchPlaceholder: '장소를 검색하세요', seeAll: '전체 보기',
+          status: { openNow: '영업 중', verified: '방문자 확인 · {{time}}', wait: '대기 {{wait}}' }, transit: '대중교통', whereToGo: '지금 어디로 갈까요?',
+        },
         card: {
           actions: {
             arrive: '도착',
@@ -746,7 +992,55 @@ export const resources = {
           food: '음식',
           music: '음악',
         },
+        categories: {
+          all: '전체', art: '전시', beauty: '뷰티', cafe: '카페', etc: '기타', fashion: '패션',
+          food: '음식점', heritage: '문화재', music: '음악', popup: '팝업',
+        },
+        navigation: { favorites: '즐겨찾기', map: '지도', recommendations: '장소추천', reservations: '예약' },
+        favorites: {
+          adjust: '즐겨찾기 패널 크기 조절', emptyBody: '마음에 드는 장소의 별을 눌러 모아보세요.',
+          emptyTitle: '저장한 장소가 없어요', error: '장소를 불러오지 못했어요', loadMore: '더 보기',
+          loadMoreError: '다음 장소를 불러오지 못했어요', loadMoreLabel: '저장한 장소 더 불러오기',
+          loading: '저장한 장소를 불러오는 중이에요', remove: '{{name}} 즐겨찾기 해제', retry: '다시 시도',
+          sessionBody: '다시 로그인한 뒤 저장한 장소를 확인해 주세요.', sessionTitle: '로그인이 만료됐어요', title: '내 장소',
+        },
+        searchOverlay: {
+          categories: '장소 카테고리', clear: '검색어 지우기', close: '검색 닫기', emptyBody: '다른 검색어를 입력해 보세요.',
+          emptyTitle: '검색 결과가 없어요', externalResults: '장소 검색 결과', loading: '장소를 찾고 있어요', pingdomResults: '핑덤 장소',
+          placeholder: '검색하기', recent: '최근 검색', recentDelete: '{{query}} 최근 검색어 삭제', recentSearch: '{{query}} 검색',
+          registrant: '등록자 {{name}}', registrantLoading: '등록자 확인 중', registrantMissing: '등록자 없음',
+          recommendationEmpty: '주변 추천 장소가 아직 없어요', recommendationError: '추천 장소를 불러오지 못했어요',
+          recommendationLoading: '추천 장소를 불러오고 있어요', registeredDisabled: '핑덤 장소 검색 기능이 비활성화되어 있어요.',
+          registeredEmpty: '서버에 등록된 핑덤 장소 검색 결과가 없어요.', registeredError: '핑덤 장소 검색 요청에 실패했어요.',
+          registeredMock: '개발 Mock 핑덤 장소 검색 결과예요.',
+        },
+        sheet: {
+          adjust: '추천 패널 크기 조절', aroundMe: '내 주변 장소', bookmark: '즐겨찾기', bookmarkRemove: '즐겨찾기 해제',
+          bookmarkSaveError: '장소를 저장하지 못했어요', bookmarkRemoveError: '저장을 해제하지 못했어요',
+          categoryPopular: '카테고리별 {{userName}}님 주변 인기 장소들', distanceAway: '여기서 {{distance}}', image: '장소 이미지',
+          imageError: '이미지를 불러오지 못했어요', imageMissing: '이미지 없음', localHotPlaces: '우리 지역 핫플',
+          nationwideTrends: '전국 트렌드', placeMissing: '장소명 없음', recommendationTitle: '나만을 위한 추천 장소',
+          resultsFor: '“{{query}}” 검색 결과',
+          state: {
+            emptyBody: '지도를 움직여 다른 지역도 둘러보세요.', emptyTitle: '표시할 핫플이 아직 없어요',
+            errorBody: '잠시 후 다시 시도해 주세요.', errorTitle: '목록을 불러오지 못했어요',
+            loadingBody: '지도를 움직여 다른 지역도 둘러보세요.', loadingTitle: '주변 핫플을 찾는 중이에요',
+            recommendationEmptyBody: '위치나 추천 반경을 바꾼 뒤 다시 확인해 주세요.', recommendationEmptyTitle: '현재 조건에 맞는 추천 장소가 없어요',
+            recommendationErrorBody: '잠시 후 다시 시도해 주세요.', recommendationErrorTitle: '추천 장소를 불러오지 못했어요',
+            recommendationLoadingBody: '현재 위치와 여행 맥락을 확인하고 있어요.', recommendationLoadingTitle: '나만을 위한 추천 장소를 불러오고 있어요',
+          },
+        },
+        detail: {
+          amenityEnglish: '영어응대 가능', amenityParking: '주차가능', back: '지도로 돌아가기', collapseTags: '추가 태그 접기',
+          coupon: '쿠폰', description: '장소 소개', events: '진행 중 이벤트', expandTags: '숨겨진 태그 {{count}}개 펼치기',
+          imageDetail: '{{name}} 사진 {{count}} 상세 보기', imageError: '사진을 불러오지 못했습니다. 다시 시도', info: '정보',
+          notice: '운영 공지', participantCount_one: '{{count}}명 참여', participantCount_other: '{{count}}명 참여', photoReviews: '사진 리뷰', preview: '{{name}} 상세 보기',
+          reviewHighlights: '이런 점을 좋아해요!', reviewCount_one: '리뷰 {{count}}개', reviewCount_other: '리뷰 {{count}}개', reviewEmpty: '등록된 리뷰 정보가 없어요.',
+          reviewError: '리뷰를 불러오지 못했습니다. 다시 시도', reviewLoading: '리뷰를 불러오는 중입니다.', reviews: '리뷰',
+          reservation: { authError: '로그인이 필요합니다', available: '예약하기', empty: '현재 예약 가능한 일정이 없습니다', error: '예약 가능 여부를 불러오지 못했습니다', full: '예약 가능한 인원이 없습니다', loading: '예약 가능 여부를 확인하고 있습니다', retry: '다시 시도' },
+        },
         locate: '내 위치',
+        refreshing: '지도 새로고침 중',
         location: {
           deniedDescription: '기본 지역을 표시하고 있습니다. 현재 위치를 보려면 위치 권한을 허용해 주세요.',
           deniedTitle: '위치 권한이 꺼져 있습니다',
@@ -761,11 +1055,22 @@ export const resources = {
           hiddenLabel: '{{userName}}님 주변 숨은 장소들',
           subtitle: '핑덤이 {{userName}}님이 좋아할만한 장소를 추천해드려요!',
           verificationTitle: '오늘 검증하고 쿠폰 받자!',
+          context: {
+            activity: { attendEvent: '이벤트 참여', cafe: '카페 방문', eat: '식사', explore: '주변 탐색', nightlife: '나이트라이프', shop: '쇼핑' },
+            purpose: { beauty: '뷰티', cafe: '카페', exhibition: '전시', fashion: '패션', food: '맛집', kPop: 'K-POP', nightlife: '나이트라이프', other: '기타', popUp: '팝업' },
+          },
+          limits: {
+            candidatePool: '조건에 맞는 장소가 적어 후보 범위를 넓혀 추천했어요.', interactedExcluded: '이미 확인한 장소를 제외해 추천했어요.',
+            operatingPriority: '현재 운영 중인 장소를 우선해 추천했어요.', radiusExpanded: '추천 결과를 찾기 위해 검색 반경을 넓혔어요.',
+            requestClamped: '서버 기준에 맞춰 추천 개수를 조정했어요.',
+          },
         },
         search: {
           accessibilityLabel: '지도 장소 검색',
+          confirm: '확인', empty: '검색 결과가 없습니다', failed: '주소 검색에 실패했습니다',
           placeholder: '장소를 검색하세요',
           profileAccessibilityLabel: '마이페이지 열기',
+          statusPlaceholder: '주소를 입력하세요...',
         },
         title: '주변 지도',
         visibleCenter: '{{lat}}, {{lng}}',
@@ -827,15 +1132,15 @@ export const resources = {
           error: '쿠폰을 불러오지 못했어요.',
           fallbackDescription: '할인 쿠폰',
           fallbackTitle: '쿠폰',
-          loading: '쿠폰을 불러오는 중',
-          nextPageError: '쿠폰을 더 불러오지 못했어요.',
-          nextPageRetry: '더 불러오기',
           filters: {
             ALL: '전체',
             EXPIRED: '만료',
             ISSUED: '사용 가능',
             REDEEMED: '사용 완료',
           },
+          loading: '쿠폰을 불러오는 중',
+          nextPageError: '쿠폰을 더 불러오지 못했어요.',
+          nextPageRetry: '더 불러오기',
           status: {
             CANCELED: '취소됨',
             EXPIRED: '만료',
@@ -874,7 +1179,8 @@ export const resources = {
             usage: '사용처',
             validity: '사용 가능 기간',
           },
-          validityDays: '발급 후 {{count}}일',
+          validityDays_one: '발급 후 {{count}}일',
+          validityDays_other: '발급 후 {{count}}일',
           title: '쿠폰상세',
           unavailable: '이미 사용했거나 만료된 쿠폰이에요',
         },
@@ -939,6 +1245,14 @@ export const resources = {
         },
       },
       settings: {
+        language: {
+          description: '핑덤에서 사용할 언어를 선택해 주세요.',
+          english: '영어',
+          korean: '한국어',
+          section: '언어',
+          selected: '선택됨',
+          title: '언어 설정',
+        },
         account: {
           deleteDescription: '탈퇴하면 내가 남긴 기록과 First Recorder 이력이 모두 사라져요.',
           email: '이메일',
@@ -1047,6 +1361,7 @@ export const resources = {
           account: '계정',
           appInfo: '앱 정보',
           notifications: '알림',
+          preferences: '환경설정',
           privacy: '개인정보 · 위치',
           records: '기록 · 장소',
         },
@@ -1067,6 +1382,7 @@ export const resources = {
         loading: '가게 정보를 불러오는 중',
         loadError: '가게 정보를 불러오지 못했어요.',
         retry: '다시 시도',
+        review: { author: '이용인 #{{id}}', time: '{{date}} · {{relative}}' },
         noStore: '아직 연결된 가게가 없어요.',
         store: {
           title: '나의 가게',
@@ -1123,11 +1439,14 @@ export const resources = {
           temporarilyClosed: '임시 휴무',
           unknown: '영업시간 정보 없음',
         },
+        review: { anonymousUser: '사용자' },
+        verification: { admin: '관리자 확인 정보', owner: '사업자 제공 정보', source: '출처 확인 정보' },
         touristSupport: '관광객 지원',
         trust: '신뢰 정보',
         trustScore: '{{score}}/100 · 신뢰도 {{confidence}}',
         unknownValue: '알 수 없음',
-        waitMinutes: '{{count}}분',
+        waitMinutes_one: '{{count}}분',
+        waitMinutes_other: '{{count}}분',
         waitTime: '예상 대기: {{value}}',
       },
       placeStatus: {
@@ -1153,6 +1472,6 @@ export const resources = {
   },
 } as const;
 
-export const supportedLanguages = ['en', 'ko', 'ja', 'zh', 'vi', 'th'] as const;
+export const supportedLanguages = ['en', 'ko'] as const;
 
 export type SupportedLanguage = (typeof supportedLanguages)[number];

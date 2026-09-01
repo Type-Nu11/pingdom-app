@@ -6,6 +6,7 @@ import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { profileApi } from '../../../my-page/api/profileApi';
 import type { Profile } from '../../../my-page/model/profile.types';
 import { notificationApi } from '../../../notifications/api/notificationApi';
+import LanguageSettingsScreen from '../LanguageSettingsScreen';
 import LocationPrivacyScreen, { type LocationPermissionPresentationState } from '../LocationPrivacyScreen';
 import SettingsScreen from '../SettingsScreen';
 
@@ -72,6 +73,39 @@ describe('SettingsScreen', () => {
 
     await view.user.press(screen.getByText('프로필 편집'));
     expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
+  });
+
+  test('설정 루트는 현재 언어만 표시하고 선택은 전용 페이지에서 제공한다', async () => {
+    const view = await renderSettings();
+
+    expect(screen.getByText('환경설정')).toBeVisible();
+    expect(screen.getByText('언어')).toBeVisible();
+    expect(screen.getByText('한국어')).toBeVisible();
+    expect(screen.queryByText('영어')).not.toBeOnTheScreen();
+
+    await view.user.press(screen.getByText('언어'));
+
+    expect(screen.getByTestId('v2-language-settings-screen')).toBeVisible();
+    expect(screen.getByText('언어 설정')).toBeVisible();
+    expect(screen.getByRole('radio', { name: '한국어, 선택됨' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '영어' })).not.toBeSelected();
+  });
+
+  test('언어 전용 페이지에서 선택과 뒤로가기를 각각 처리한다', async () => {
+    const onBack = jest.fn();
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen
+        onBack={onBack}
+        onSelectLanguage={onSelectLanguage}
+      />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: '영어' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('en');
+
+    await view.user.press(screen.getByLabelText('뒤로가기'));
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   test('알림 하위 화면은 서버 설정을 읽고 해당 field만 변경한다', async () => {

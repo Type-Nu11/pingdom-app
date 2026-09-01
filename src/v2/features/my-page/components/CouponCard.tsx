@@ -42,8 +42,7 @@ export default function CouponCard({
       <Body>
         <TitleRow>
           <IconBadge $muted={muted}>
-            {/* coupon.svg is a 22×16 ticket — keep that ratio so it is not stretched. */}
-            <CouponIcon height={16} width={22} />
+            <CouponIcon height={24} width={24} />
           </IconBadge>
           <Title numberOfLines={2}>{title}</Title>
         </TitleRow>

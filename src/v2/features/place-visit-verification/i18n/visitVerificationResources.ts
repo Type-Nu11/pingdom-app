@@ -1,7 +1,5 @@
 import type { i18n as I18nInstance } from 'i18next';
 
-import { i18n, initializeI18n } from '../../../shared/i18n';
-
 export const visitVerificationResources = {
   en: {
     addPhotos: 'Add photos',
@@ -109,9 +107,4 @@ export function registerVisitVerificationResources(instance: I18nInstance) {
       true,
     );
   });
-}
-
-export async function initializeVisitVerificationI18n() {
-  await initializeI18n();
-  registerVisitVerificationResources(i18n);
 }

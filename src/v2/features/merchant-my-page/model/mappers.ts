@@ -14,6 +14,7 @@ import type {
   MerchantStore,
   MerchantStorePhoto,
 } from './types';
+import { formatDate, formatRelativeMinutes } from '../../../shared/i18n/formatters';
 
 const DAY_ORDER = [
   'MONDAY',
@@ -79,31 +80,34 @@ export function toMerchantStore(input: {
   };
 }
 
-function toRelativeTime(createdAt: string, now: Date = new Date()): string {
+function toRelativeTime(
+  createdAt: string,
+  now: Date,
+  language: string,
+  translate: (key: string, values: Record<string, unknown>) => string,
+): string {
   const created = new Date(createdAt);
   const diffMs = now.getTime() - created.getTime();
   const minutes = Math.floor(diffMs / 60_000);
-  const dateLabel = createdAt.slice(2, 10).replace(/-/g, '.');
-
-  if (minutes < 1) return `${dateLabel} · 방금 전`;
-  if (minutes < 60) return `${dateLabel} · ${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${dateLabel} · ${hours}시간 전`;
-  const days = Math.floor(hours / 24);
-  return `${dateLabel} · ${days}일 전`;
+  return translate('merchantMyPage.review.time', {
+    date: formatDate(createdAt, language),
+    relative: formatRelativeMinutes(minutes, language),
+  });
 }
 
 export function toMerchantReviews(
   reviews: readonly PlaceReview[],
   now: Date = new Date(),
+  language: string,
+  translate: (key: string, values: Record<string, unknown>) => string,
 ): MerchantReview[] {
   return reviews.map((review) => ({
-    authorName: `이용인 #${review.userId}`,
+    authorName: translate('merchantMyPage.review.author', { id: review.userId }),
     authorProfileImageUrl: null,
     content: review.content,
     id: String(review.reviewId),
     photoUrls: review.imageUrls,
-    relativeTime: toRelativeTime(review.createdAt, now),
+    relativeTime: toRelativeTime(review.createdAt, now, language, translate),
     tags: review.recommendReason ? [{ label: review.recommendReason }] : [],
   }));
 }

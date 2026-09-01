@@ -11,13 +11,9 @@ import { colors } from '../../styles/colors';
 const PINK = colors.primaryNormal;
 const BG = colors.bgAssistive;
 
-const LANGUAGES: { code: Language; label: string }[] = [
-  { code: 'en', label: 'English' },
-  { code: 'ko', label: '한국어' },
-  { code: 'ja', label: '日本語' },
-  { code: 'zh', label: '中文' },
-  { code: 'vi', label: 'Tiếng Việt' },
-  { code: 'th', label: 'แบบไทย' },
+const LANGUAGES: { code: Language; labelKey: string }[] = [
+  { code: 'en', labelKey: 'selectLanguage.options.en' },
+  { code: 'ko', labelKey: 'selectLanguage.options.ko' },
 ];
 
 type Props = {
@@ -36,14 +32,14 @@ export default function SelectLanguageScreen({ onBack, onNext }: Props) {
     search: t('selectLanguage.search'),
   };
 
-  const filtered = LANGUAGES.filter((l) =>
-    l.label.toLowerCase().includes(query.toLowerCase())
+  const filtered = LANGUAGES.filter((language) =>
+    t(language.labelKey).toLowerCase().includes(query.toLowerCase())
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} hitSlop={12} style={styles.headerSide}>
+        <Pressable accessibilityLabel={t('common.navigation.back')} accessibilityRole="button" onPress={onBack} hitSlop={12} style={styles.headerSide}>
           <BackIcon width={44} height={44} />
         </Pressable>
         <ProgressBar current={1} />
@@ -81,7 +77,7 @@ export default function SelectLanguageScreen({ onBack, onNext }: Props) {
                 style={({ pressed }) => [styles.item, isSelected && styles.itemSelected]}
                 onPress={() => setSelected(lang.code)}
               >
-                <Text style={styles.itemText}>{lang.label}</Text>
+                <Text style={styles.itemText}>{t(lang.labelKey)}</Text>
                 {isSelected && (
                   <View style={styles.checkCircle}>
                     <CheckIcon width={14} height={10} />

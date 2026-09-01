@@ -29,7 +29,7 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
       style={style}
       testID="visit-verification-map-cta"
     >
-      <VerificationIcon height={18} width={18} />
+      <VerificationIcon height={24} width={24} />
       <Label>{label}</Label>
     </Container>
   );
@@ -52,6 +52,6 @@ const Container = styled.Pressable`
 `;
 const Label = styled.Text`
   color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: 13px;
+  font-size: 16px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;

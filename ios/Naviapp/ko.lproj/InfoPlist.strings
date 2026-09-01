@@ -1,0 +1,3 @@
+"NSPhotoLibraryUsageDescription" = "장소 리뷰에 사진을 추가하려면 사진 보관함 접근 권한이 필요합니다.";
+"NSLocationWhenInUseUsageDescription" = "주변 장소를 표시하고 방문을 검증하려면 위치 권한이 필요합니다.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "주변 장소를 표시하고 방문을 검증하려면 위치 권한이 필요합니다.";

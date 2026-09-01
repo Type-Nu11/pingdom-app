@@ -3,9 +3,11 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { createTestWrapper } from '../../../../shared/testing/testProviders';
 import { offerCouponApi, type CouponPage } from '../../api/offerCouponApi';
 import {
-  createCouponQueryOptions,
   createInfiniteCouponsQueryOptions,
+  offerCouponQueryKeys,
   useInfiniteCoupons,
+  useIssueCoupon,
+  useRedeemCoupon,
 } from '../useOffersCoupons';
 
 function couponPage(overrides: Partial<CouponPage> = {}): CouponPage {
@@ -14,20 +16,11 @@ function couponPage(overrides: Partial<CouponPage> = {}): CouponPage {
     hasNext: false,
     limit: 20,
     page: 1,
-    totalCount: 0,
+    totalElements: 0,
     totalPages: 1,
     ...overrides,
   } as CouponPage;
 }
-
-describe('createCouponQueryOptions', () => {
-  test('상세(현장 제시) 조회는 마운트와 포그라운드 복귀마다 재검증한다', () => {
-    const options = createCouponQueryOptions(7);
-    expect(options.queryKey).toEqual(['v2', 'coupons', 'detail', 7]);
-    expect(options.refetchOnMount).toBe('always');
-    expect(options.refetchOnWindowFocus).toBe(true);
-  });
-});
 
 describe('createInfiniteCouponsQueryOptions', () => {
   test('page는 캐시 키에서 제외하고 필터만 남긴다', () => {
@@ -74,5 +67,49 @@ describe('useInfiniteCoupons', () => {
       expect.anything(),
     );
     expect(result.current.hasNextPage).toBe(false);
+  });
+});
+
+describe('coupon mutation cache invalidation', () => {
+  test('발급 성공 후 쿠폰 목록과 Offer 캐시를 무효화한다', async () => {
+    jest.spyOn(offerCouponApi, 'issueCoupon').mockResolvedValue({
+      code: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+      expiresAt: '2026-09-30T23:59:59',
+      id: 1,
+      issuedAt: '2026-09-01T09:00:00',
+      offerId: 7,
+      redeemedAt: null,
+      status: 'ISSUED',
+    });
+    const { queryClient, wrapper } = await createTestWrapper();
+    const couponKey = offerCouponQueryKeys.coupons({ status: 'ISSUED' });
+    const offerKey = offerCouponQueryKeys.offers({});
+    queryClient.setQueryData(couponKey, couponPage());
+    queryClient.setQueryData(offerKey, { offers: [] });
+    const { result } = await renderHook(() => useIssueCoupon(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(7);
+    });
+
+    expect(queryClient.getQueryState(couponKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(offerKey)?.isInvalidated).toBe(true);
+  });
+
+  test('사용 성공 후 모든 쿠폰 목록 캐시를 무효화한다', async () => {
+    jest.spyOn(offerCouponApi, 'redeemCoupon').mockResolvedValue({ id: 1 } as never);
+    const { queryClient, wrapper } = await createTestWrapper();
+    const listKey = offerCouponQueryKeys.coupons({});
+    const infiniteKey = offerCouponQueryKeys.couponsInfinite({ status: 'REDEEMED' });
+    queryClient.setQueryData(listKey, couponPage());
+    queryClient.setQueryData(infiniteKey, { pageParams: [1], pages: [couponPage()] });
+    const { result } = await renderHook(() => useRedeemCoupon(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ code: '3fa85f64-5717-4562-b3fc-2c963f66afa6' });
+    });
+
+    expect(queryClient.getQueryState(listKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(infiniteKey)?.isInvalidated).toBe(true);
   });
 });

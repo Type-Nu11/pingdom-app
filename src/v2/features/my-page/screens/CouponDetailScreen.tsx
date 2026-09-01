@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import styled from 'styled-components/native';
+import Svg, { Line } from 'react-native-svg';
+import styled, { useTheme } from 'styled-components/native';
 
 import Button from '../../../shared/components/Button';
 import CouponBarcode from '../components/CouponBarcode';
@@ -43,12 +44,19 @@ export default function CouponDetailScreen({
   // coupon code is never spelled out aloud. The visible line still shows it in
   // full for staff to read or the user to copy.
   const codeTail = code.replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase();
+  const theme = useTheme();
   // i18next hands back the key itself when a resource is missing, so an
   // unchecked cast here would turn a missing translation into a render crash.
   const rawNotices = t('myPage.couponDetail.notices', { returnObjects: true });
   const notices: string[] = Array.isArray(rawNotices)
     ? rawNotices.filter((notice): notice is string => typeof notice === 'string')
     : [];
+
+  // The notches have to sit on the perforation, and the block above it grows with
+  // the place name, a two-line title and a two-line benefit, so its height is
+  // measured instead of assumed. Until the first layout pass they stay hidden
+  // rather than parking at a guessed offset.
+  const [perforationTop, setPerforationTop] = useState<number | null>(null);
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-coupon-detail-screen">
@@ -67,11 +75,12 @@ export default function CouponDetailScreen({
 
       <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
         <Ticket>
-          <TicketInfo>
+          <TicketInfo
+            onLayout={(event) => setPerforationTop(event.nativeEvent.layout.height)}
+          >
             <TitleRow>
               <IconBadge>
-                {/* coupon.svg is a 22×16 ticket — keep that ratio so it is not stretched. */}
-                <CouponIcon height={16} width={22} />
+                <CouponIcon height={24} width={24} />
               </IconBadge>
               <TitleColumn>
                 {placeName ? <PlaceName numberOfLines={1}>{placeName}</PlaceName> : null}
@@ -84,7 +93,23 @@ export default function CouponDetailScreen({
             </PeriodChip>
           </TicketInfo>
 
-          <Perforation />
+          {/* Drawn with react-native-svg rather than a dashed border: Android
+              ignores `borderStyle: dashed` unless every side shares a width, and
+              the exported asset is a fixed 354pt wide with `preserveAspectRatio:
+              none`, so stretching it would stretch the dashes too. */}
+          <Perforation>
+            <Svg height={PERFORATION_HEIGHT} width="100%">
+              <Line
+                stroke={theme.colors.border}
+                strokeDasharray="6 6"
+                strokeWidth={1.5}
+                x1={0}
+                x2="100%"
+                y1={PERFORATION_HEIGHT / 2}
+                y2={PERFORATION_HEIGHT / 2}
+              />
+            </Svg>
+          </Perforation>
 
           <BarcodeArea>
             {usable ? (
@@ -105,8 +130,12 @@ export default function CouponDetailScreen({
             )}
           </BarcodeArea>
 
-          <Notch $side="left" />
-          <Notch $side="right" />
+          {perforationTop === null ? null : (
+            <>
+              <Notch $side="left" $top={perforationTop} />
+              <Notch $side="right" $top={perforationTop} />
+            </>
+          )}
         </Ticket>
 
         {usable && onReserve ? (
@@ -114,7 +143,8 @@ export default function CouponDetailScreen({
             fullWidth
             label={t('myPage.couponDetail.reserve')}
             onPress={onReserve}
-            size="large"
+            shape="pill"
+            size="onboarding"
             testID="v2-coupon-detail-reserve"
           />
         ) : null}
@@ -148,6 +178,11 @@ export default function CouponDetailScreen({
 
 const CONTENT_CONTAINER_STYLE = { gap: 20, paddingBottom: 24, paddingHorizontal: 24, paddingTop: 16 } as const;
 
+/** Perforation row height and side inset, matching the ticket's 20pt padding. */
+const PERFORATION_HEIGHT = 24;
+const PERFORATION_INSET = 20;
+const NOTCH_SIZE = 22;
+
 const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
@@ -172,7 +207,7 @@ const Spacer = styled.View`
 
 const TopBarTitle = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+  font-size: 18px;
   font-weight: 500;
 `;
 
@@ -180,8 +215,13 @@ const Content = styled.ScrollView`
   flex: 1;
 `;
 
+// Clipped like the Figma ticket: the notches straddle the edge, so clipping is
+// what turns each one into a bite out of the ticket rather than a full circle
+// floating over the page. iOS and Android would otherwise disagree on whether
+// the outer half draws at all.
 const Ticket = styled.View`
   width: 100%;
+  overflow: hidden;
   border-radius: ${({ theme }) => theme.radius.md + 4}px;
   background-color: ${({ theme }) => theme.colors.inputBackground};
 `;
@@ -237,16 +277,17 @@ const PeriodChip = styled.View`
 `;
 
 const PeriodText = styled.Text`
-  color: ${({ theme }) => theme.colors.labelAlternative};
+  color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;
   font-weight: 500;
 `;
 
+// The cut runs the width of the ticket inset by the card padding, so the inset
+// is spacing rather than line coordinates and the dash length stays 6/6 at any
+// ticket width.
 const Perforation = styled.View`
-  margin: 0 ${({ theme }) => theme.spacing.lg - 4}px;
-  border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-  border-style: dashed;
+  height: ${PERFORATION_HEIGHT}px;
+  padding: 0 ${PERFORATION_INSET}px;
 `;
 
 const BarcodeArea = styled.View`
@@ -262,14 +303,19 @@ const BarcodeHint = styled.Text`
   text-align: center;
 `;
 
-const Notch = styled.View<{ $side: 'left' | 'right' }>`
+// Centred on the perforation row, so the ticket reads as one cut whatever the
+// title and benefit lines do to the block above it. `$top` is the measured
+// height of that block, i.e. where the perforation row starts.
+const Notch = styled.View<{ $side: 'left' | 'right'; $top: number }>`
   position: absolute;
-  top: 160px;
-  width: 22px;
-  height: 22px;
-  border-radius: 11px;
+  top: ${({ $top }) => $top + (PERFORATION_HEIGHT - NOTCH_SIZE) / 2}px;
+  width: ${NOTCH_SIZE}px;
+  height: ${NOTCH_SIZE}px;
+  border-radius: ${NOTCH_SIZE / 2}px;
   background-color: ${({ theme }) => theme.colors.background};
-  ${({ $side }) => ($side === 'left' ? 'left: -11px;' : 'right: -11px;')}
+  ${({ $side }) => ($side === 'left'
+    ? `left: -${NOTCH_SIZE / 2}px;`
+    : `right: -${NOTCH_SIZE / 2}px;`)}
 `;
 
 const StateNotice = styled.Text`
@@ -328,13 +374,13 @@ const NoticeItem = styled.View`
 `;
 
 const NoticeBullet = styled.Text`
-  color: ${({ theme }) => theme.colors.labelAlternative};
+  color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;
 `;
 
 const NoticeText = styled.Text`
   flex: 1;
-  color: ${({ theme }) => theme.colors.labelAlternative};
+  color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;
   font-weight: 400;
   line-height: 16px;
