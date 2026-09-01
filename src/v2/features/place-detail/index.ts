@@ -17,6 +17,12 @@ export {
   type ResourceState,
 } from './model/placeDetailPresentation';
 export {
+  formatPlaceOperatingSummary,
+  selectPlaceOperatingSummary,
+  type PlaceOperatingSummary,
+  type PlaceOperatingSummaryText,
+} from './model/placeOperatingSummary';
+export {
   getOperatingStatusPresentation,
   getSupportLevelLabelKey,
   getTrustConfidenceLabelKey,

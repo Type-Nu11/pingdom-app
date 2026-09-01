@@ -163,11 +163,12 @@ describe('MyPageScreen', () => {
 
   test('기존 여행 일정이 없으면 선택한 날짜로 새 일정을 생성한다', async () => {
     mockEverythingEmpty();
-    const now = new Date();
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const monthPrefix = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
-    const startDate = `${monthPrefix}-09`;
-    const endDate = `${monthPrefix}-15`;
+    const nextMonth = new Date();
+    nextMonth.setDate(1);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const targetMonth = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
+    const startDate = `${targetMonth}-09`;
+    const endDate = `${targetMonth}-15`;
     const createTravelSchedule = jest
       .spyOn(travelScheduleApi, 'createTravelSchedule')
       .mockResolvedValue({} as never);

@@ -20,6 +20,7 @@ export function createTestQueryClient() {
   return new QueryClient({
     defaultOptions: {
       mutations: {
+        gcTime: Infinity,
         retry: false,
       },
       queries: {
