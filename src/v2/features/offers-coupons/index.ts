@@ -9,6 +9,7 @@ export type {
   OfferPage,
   RedeemCouponBody,
 } from './api/offerCouponApi';
+export { default as OfferCouponErrorState } from './components/OfferCouponErrorState';
 export { getOfferCouponErrorUx } from './model/getOfferCouponErrorUx';
 export type {
   OfferCouponErrorCta,

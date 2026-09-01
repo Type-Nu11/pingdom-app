@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { useCoupon, useOffer } from '../../offers-coupons';
+import { OfferCouponErrorState, useCoupon, useOffer } from '../../offers-coupons';
 import { ErrorState, LoadingState } from '../../../shared/components';
 import {
   formatCouponInstant,
@@ -46,14 +46,28 @@ export default function CouponDetailContainer({
     );
   }
 
-  if (couponQuery.isError || !coupon) {
+  if (couponQuery.isError) {
+    return (
+      <Screen edges={['top', 'right', 'bottom', 'left']}>
+        <OfferCouponErrorState
+          error={couponQuery.error}
+          fill
+          onBack={onBack}
+          onRetry={() => void couponQuery.refetch()}
+          surface="wallet"
+        />
+      </Screen>
+    );
+  }
+
+  if (!coupon) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <ErrorState
-          actionLabel={t('myPage.retry')}
+          actionLabel={t('myPage.back')}
           description={t('myPage.couponDetail.error')}
           fill
-          onAction={() => void couponQuery.refetch()}
+          onAction={onBack}
         />
       </Screen>
     );

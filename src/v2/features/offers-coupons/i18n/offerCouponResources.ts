@@ -55,6 +55,14 @@ export const offerCouponResources = {
           description: 'This offer or coupon is no longer available. Return to the latest list.',
           title: 'Not found',
         },
+        redeemInvalidInput: {
+          description: 'Check the coupon and try scanning it again.',
+          title: 'Could not process',
+        },
+        redeemUsedOrExpired: {
+          description: 'This coupon has already been used or has expired.',
+          title: 'Cannot be used',
+        },
         soldOut: {
           description: 'All coupons for this offer have been claimed.',
           title: 'Sold out',
@@ -120,6 +128,14 @@ export const offerCouponResources = {
         notFound: {
           description: '이 Offer 또는 쿠폰을 더 이상 이용할 수 없습니다. 최신 목록으로 돌아가 주세요.',
           title: '항목을 찾을 수 없습니다',
+        },
+        redeemInvalidInput: {
+          description: '쿠폰을 확인한 후 다시 스캔해 주세요.',
+          title: '처리하지 못했습니다',
+        },
+        redeemUsedOrExpired: {
+          description: '이미 사용되었거나 만료된 쿠폰입니다.',
+          title: '사용할 수 없습니다',
         },
         soldOut: {
           description: '이 Offer의 쿠폰이 모두 소진되었습니다.',
