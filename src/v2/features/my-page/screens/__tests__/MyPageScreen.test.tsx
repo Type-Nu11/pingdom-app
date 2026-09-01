@@ -40,7 +40,7 @@ function mockEverythingEmpty() {
     hasNext: false, limit: 1, page: 1, reviews: [], totalElements: 7, totalPages: 1,
   });
   jest.spyOn(reservationApi, 'listReservations').mockResolvedValue({ totalCount: 3 } as never);
-  jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue({ totalCount: 5 } as never);
+  jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue({ totalElements: 5 } as never);
   jest.spyOn(travelScheduleApi, 'getTravelSchedules').mockResolvedValue({ schedules: [] } as never);
   jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue({
     checkIns: [], hasNext: false, limit: 4, page: 1, totalCount: 0, totalPages: 1,
