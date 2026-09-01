@@ -161,6 +161,12 @@ describe('MyPageScreen', () => {
 
   test('기존 여행 일정이 없으면 선택한 날짜로 새 일정을 생성한다', async () => {
     mockEverythingEmpty();
+    const nextMonth = new Date();
+    nextMonth.setDate(1);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const targetMonth = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
+    const startDate = `${targetMonth}-09`;
+    const endDate = `${targetMonth}-15`;
     const createTravelSchedule = jest
       .spyOn(travelScheduleApi, 'createTravelSchedule')
       .mockResolvedValue({} as never);
@@ -169,14 +175,14 @@ describe('MyPageScreen', () => {
     const { user } = await renderMyPage();
 
     await user.press(await screen.findByLabelText('다음 달'));
-    const startDay = screen.getByTestId('v2-my-page-calendar-day-2026-09-09');
+    const startDay = screen.getByTestId(`v2-my-page-calendar-day-${startDate}`);
     expect(startDay.props.accessibilityState).toEqual(expect.objectContaining({ disabled: false }));
     await user.press(startDay);
-    await user.press(screen.getByTestId('v2-my-page-calendar-day-2026-09-15'));
+    await user.press(screen.getByTestId(`v2-my-page-calendar-day-${endDate}`));
 
     await waitFor(() => expect(createTravelSchedule).toHaveBeenCalledWith({
-      endDate: '2026-09-15',
-      startDate: '2026-09-09',
+      endDate,
+      startDate,
     }));
     expect(updateTravelSchedule).not.toHaveBeenCalled();
   });
