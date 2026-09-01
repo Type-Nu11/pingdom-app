@@ -413,6 +413,53 @@ export const resources = {
         },
         title: 'Notification settings',
       },
+      offer: {
+        cta: {
+          ended: 'Offer ended',
+          issue: 'Get coupon',
+          notStarted: 'Not started yet',
+          soldOut: 'All claimed',
+          unavailable: 'Cannot be claimed',
+        },
+        eligibility: {
+          ACTIVE_TRAVEL_SCHEDULE: 'Accounts with an active trip',
+          PUBLIC: 'Anyone',
+          UNKNOWN: 'Conditions need review',
+        },
+        expiry: {
+          ISSUE_PLUS_DAYS: 'Valid for a set number of days after issue',
+          ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: 'Valid for a set number of days after issue, up to the offer end date',
+          OFFER_END: 'Valid until the offer ends',
+          UNKNOWN: 'Validity needs review',
+        },
+        inventory: {
+          LIMITED: 'Limited quantity',
+          UNKNOWN: 'Quantity needs review',
+          UNLIMITED: 'No quantity limit',
+        },
+        remaining: {
+          limited_one: '{{count}} left',
+          limited_other: '{{count}} left',
+          unknown: 'Remaining quantity not provided',
+          unlimited: 'No quantity limit',
+        },
+        statuses: {
+          CLOSED: 'Closed',
+          DRAFT: 'Draft',
+          PUBLISHED: 'Available',
+          UNKNOWN: 'Status needs review',
+        },
+      },
+      payment: {
+        statuses: {
+          FAILED: 'Payment failed',
+          PAID: 'Paid',
+          PROCESSING: 'Payment in progress',
+          REFUNDED: 'Refunded',
+          REFUND_PROCESSING: 'Refund in progress',
+          UNKNOWN: 'Status needs review',
+        },
+      },
       myPage: {
         back: 'Back',
         couponBox: {
@@ -714,6 +761,11 @@ export const resources = {
         languages: 'Languages: {{value}}',
         liveStatus: 'Live status',
         loading: 'Loading place details...',
+        offer: {
+          eligibility: 'Who can claim: {{value}}',
+          expiry: 'Valid: {{value}}',
+          title: 'Coupon offer',
+        },
         operating: {
           beforeOpen: 'Not open yet',
           closed: 'Closed',
@@ -1123,6 +1175,53 @@ export const resources = {
         },
         title: '알림 설정',
       },
+      offer: {
+        cta: {
+          ended: '종료된 혜택',
+          issue: '쿠폰 받기',
+          notStarted: '아직 시작 전',
+          soldOut: '수량 모두 소진',
+          unavailable: '받을 수 없는 혜택',
+        },
+        eligibility: {
+          ACTIVE_TRAVEL_SCHEDULE: '여행 일정이 있는 계정',
+          PUBLIC: '누구나',
+          UNKNOWN: '조건 확인 필요',
+        },
+        expiry: {
+          ISSUE_PLUS_DAYS: '발급일로부터 정해진 기간',
+          ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: '발급일로부터 정해진 기간, 혜택 종료일까지',
+          OFFER_END: '혜택 종료일까지',
+          UNKNOWN: '유효 기간 확인 필요',
+        },
+        inventory: {
+          LIMITED: '수량 한정',
+          UNKNOWN: '수량 확인 필요',
+          UNLIMITED: '수량 제한 없음',
+        },
+        remaining: {
+          limited_one: '{{count}}개 남음',
+          limited_other: '{{count}}개 남음',
+          unknown: '남은 수량 미제공',
+          unlimited: '수량 제한 없음',
+        },
+        statuses: {
+          CLOSED: '종료됨',
+          DRAFT: '작성 중',
+          PUBLISHED: '받을 수 있음',
+          UNKNOWN: '상태 확인 필요',
+        },
+      },
+      payment: {
+        statuses: {
+          FAILED: '결제 실패',
+          PAID: '결제 완료',
+          PROCESSING: '결제 진행 중',
+          REFUNDED: '환불 완료',
+          REFUND_PROCESSING: '환불 진행 중',
+          UNKNOWN: '상태 확인 필요',
+        },
+      },
       myPage: {
         back: '뒤로가기',
         couponBox: {
@@ -1424,6 +1523,11 @@ export const resources = {
         languages: '지원 언어: {{value}}',
         liveStatus: '실시간 상태',
         loading: '장소 상세를 불러오는 중입니다...',
+        offer: {
+          eligibility: '발급 대상: {{value}}',
+          expiry: '유효 기간: {{value}}',
+          title: '쿠폰 혜택',
+        },
         operating: {
           beforeOpen: '영업 전',
           closed: '영업 종료',
