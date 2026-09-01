@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, type GestureResponderHandlers } from 'react-native';
+import { Animated, Text, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { runTimingMotion } from '../../../../shared/motion';
@@ -40,6 +40,41 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
+  test('쿠폰 가능 장소의 카드 CTA가 상세를 열고 상세 쿠폰 콘텐츠를 렌더링한다', async () => {
+    const selectedPlace = places[0];
+    const onCouponPress = jest.fn();
+    const commonProps = {
+      activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
+      content: { type: 'place-preview', placeId: selectedPlace.id } as const,
+      couponContent: <Text>실서버 쿠폰 발급 영역</Text>,
+      height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
+      onCouponPress, onCreateReservation: jest.fn(), onDetailPress: jest.fn(),
+      onFilterPress: jest.fn(), onGoNowPress: jest.fn(), onHandlePress: jest.fn(),
+      onPlacePress: jest.fn(), onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined), panHandlers: {} as GestureResponderHandlers,
+      places, recommendationPlaces: [], recommendationsState: 'ready' as const,
+      previewFallbackContentByPlaceId: {
+        [String(selectedPlace.id)]: {
+          amenities: [], coupons: [{ period: '2026.09.01~2026.09.30', title: '관광객 쿠폰' }],
+          imageUrls: [], statusDescription: '', statusEmphasis: '',
+        },
+      },
+      selectedPlace, sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(300),
+    };
+    const result = await renderWithProviders(
+      <MapBottomSheet {...commonProps} snapPoint="medium" />,
+    );
+
+    await result.user.press(screen.getByRole('button', { name: '쿠폰 받기' }));
+    expect(onCouponPress).toHaveBeenCalledWith(selectedPlace);
+    expect(screen.queryByText('실서버 쿠폰 발급 영역')).not.toBeOnTheScreen();
+
+    await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
+    expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
+  });
+
   test('장소 상세 영업 상태를 한 줄 요약으로 한국어·영어·fallback 렌더링한다', async () => {
     const selectedPlace = places[0];
     const commonProps = {
@@ -422,6 +457,54 @@ describe('MapBottomSheet recommendations', () => {
     await result.user.press(screen.getByRole('button', { name: '다시 시도' }));
     expect(onRetryAvailability).toHaveBeenCalledTimes(1);
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
+  });
+
+  test('서버가 쿠폰을 제공한 장소의 미리보기에서 발급 화면 진입 CTA를 노출한다', async () => {
+    const selectedPlace = places[0];
+    const onCouponPress = jest.fn();
+    const { user } = await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onCouponPress={onCouponPress}
+        onCreateReservation={jest.fn()}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={places}
+        previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [],
+            coupons: [{ period: '2026.09.01 ~ 2026.09.30', title: '방문 쿠폰' }],
+            imageUrls: [],
+            statusDescription: '',
+            statusEmphasis: '',
+          },
+        }}
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={selectedPlace}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(0)}
+        snapPoint="medium"
+      />,
+    );
+
+    await user.press(screen.getByRole('button', { name: '쿠폰 받기' }));
+    expect(onCouponPress).toHaveBeenCalledWith(selectedPlace);
   });
 
   test('확장 추천 목록의 두 행은 각각 독립된 가로 스크롤로 렌더링된다', async () => {

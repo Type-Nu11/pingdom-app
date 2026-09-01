@@ -6,6 +6,7 @@ export type ApiErrorUxKind =
   | 'conflict'
   | 'expired'
   | 'generic'
+  | 'network'
   | 'notFound'
   | 'outOfRange'
   | 'updateRequired'
@@ -15,6 +16,12 @@ export type ApiErrorUx = {
   action: 'back' | 'none' | 'retry' | 'signIn' | 'update';
   error: ApiError;
   kind: ApiErrorUxKind;
+  /**
+   * Whether retrying the same request can plausibly succeed without the user
+   * changing anything. Only transport failures and unclassified/5xx errors are
+   * retryable; every classified 4xx domain outcome is not.
+   */
+  retryable: boolean;
 };
 
 const AUTHENTICATION_CODES = new Set([
@@ -33,20 +40,36 @@ const AUTHORIZATION_CODES = new Set([
   'RESOURCE_OWNERSHIP_REQUIRED',
 ]);
 
+const RETRYABLE_KINDS = new Set<ApiErrorUxKind>(['generic', 'network']);
+
+function build(
+  error: ApiError,
+  kind: ApiErrorUxKind,
+  action: ApiErrorUx['action'],
+): ApiErrorUx {
+  return { action, error, kind, retryable: RETRYABLE_KINDS.has(kind) };
+}
+
 export function getApiErrorUx(value: unknown): ApiErrorUx {
   const error = toApiError(value);
   const { code, status } = error;
 
+  // Transport failure: no HTTP response reached the client. Distinct from a 5xx
+  // or an empty list, and always safe to retry.
+  if (error.isNetworkError) {
+    return build(error, 'network', 'retry');
+  }
+
   if (code === 'UNSUPPORTED_APP_VERSION' || (!code && status === 426)) {
-    return { action: 'update', error, kind: 'updateRequired' };
+    return build(error, 'updateRequired', 'update');
   }
 
   if (AUTHENTICATION_CODES.has(code ?? '') || (!code && status === 401)) {
-    return { action: 'signIn', error, kind: 'authentication' };
+    return build(error, 'authentication', 'signIn');
   }
 
   if (AUTHORIZATION_CODES.has(code ?? '') || (!code && status === 403)) {
-    return { action: 'none', error, kind: 'authorization' };
+    return build(error, 'authorization', 'none');
   }
 
   if (
@@ -55,19 +78,19 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     code === 'COUPON_LIST_FILTER_INVALID' ||
     (!code && status === 400)
   ) {
-    return { action: 'none', error, kind: 'validation' };
+    return build(error, 'validation', 'none');
   }
 
   if (code === 'EVENT_BATCH_TOO_LARGE') {
-    return { action: 'none', error, kind: 'validation' };
+    return build(error, 'validation', 'none');
   }
 
   if (code === 'CHECK_IN_OUT_OF_RANGE') {
-    return { action: 'none', error, kind: 'outOfRange' };
+    return build(error, 'outOfRange', 'none');
   }
 
   if (code === 'TRAVEL_SCHEDULE_RULE_VIOLATION' || (!code && status === 422)) {
-    return { action: 'none', error, kind: 'validation' };
+    return build(error, 'validation', 'none');
   }
 
   if (
@@ -75,11 +98,11 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     code === 'RESOURCE_EXPIRED' ||
     (!code && status === 410)
   ) {
-    return { action: 'none', error, kind: 'expired' };
+    return build(error, 'expired', 'none');
   }
 
   if (code?.endsWith('_NOT_FOUND') || (!code && status === 404)) {
-    return { action: 'back', error, kind: 'notFound' };
+    return build(error, 'notFound', 'back');
   }
 
   if (
@@ -93,8 +116,8 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     code?.endsWith('_ALREADY_EXISTS') ||
     (!code && status === 409)
   ) {
-    return { action: 'none', error, kind: 'conflict' };
+    return build(error, 'conflict', 'none');
   }
 
-  return { action: 'retry', error, kind: 'generic' };
+  return build(error, 'generic', 'retry');
 }

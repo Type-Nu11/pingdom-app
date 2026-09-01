@@ -1,8 +1,17 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import styled from 'styled-components/native';
 
-import { useOffer, type Coupon } from '../../offers-coupons';
+import {
+  CouponNotFoundError,
+  OfferCouponErrorState,
+  useCoupon,
+  useOffer,
+  type Coupon,
+} from '../../offers-coupons';
 import { usePlaceDetail } from '../../place-detail';
+import { ErrorState, LoadingState } from '../../../shared/components';
 import {
   formatCouponInstant,
   formatOfferPeriod,
@@ -10,29 +19,74 @@ import {
 } from '../model/couponBoxEntries';
 import CouponDetailScreen, { type CouponDetailInfoRow } from './CouponDetailScreen';
 
-export type CouponDetailContainerProps = {
-  coupon: Coupon;
+type CouponDetailContainerCommonProps = {
   onBack: () => void;
   onReserve: (placeId: number) => void;
+  onSignIn?: () => void;
 };
 
+export type CouponDetailContainerProps = CouponDetailContainerCommonProps & (
+  | { couponId: number }
+  // Temporary application-composition compatibility for the legacy navigator.
+  // Only the id is consumed; lifecycle and code are always re-read from V2 API.
+  | { coupon: Coupon }
+);
+
 /**
- * The current server has no single-Coupon endpoint. Navigation therefore hands
- * off the Coupon returned by `GET /coupons`; Offer and Place queries provide
- * optional presentation data without blocking lifecycle details or the barcode.
+ * The current server has no single-Coupon endpoint. `useCoupon` resolves the
+ * navigation id from the paginated authenticated list and revalidates it on
+ * mount and foreground return. Offer and Place remain optional presentation
+ * data and never supply the security-sensitive code or lifecycle status.
  */
-export default function CouponDetailContainer({
-  coupon,
-  onBack,
-  onReserve,
-}: CouponDetailContainerProps) {
+export default function CouponDetailContainer(props: CouponDetailContainerProps) {
+  const { onBack, onReserve, onSignIn } = props;
+  const couponId = 'coupon' in props ? props.coupon.id : props.couponId;
   const { i18n, t } = useTranslation();
   const locale = i18n.language;
 
-  const offerQuery = useOffer(coupon.offerId);
+  const couponQuery = useCoupon(couponId);
+  const coupon = couponQuery.data;
+  const offerQuery = useOffer(coupon?.offerId ?? 0, { enabled: coupon != null });
   const offer = offerQuery.data;
   const placeQuery = usePlaceDetail(offer?.placeId ?? 0, { enabled: Boolean(offer?.placeId) });
   const placeName = placeQuery.data?.name;
+
+  if (couponQuery.isLoading) {
+    return (
+      <Screen edges={['top', 'right', 'bottom', 'left']}>
+        <LoadingState description={t('myPage.couponDetail.loading')} fill />
+      </Screen>
+    );
+  }
+
+  if (couponQuery.isError && !(couponQuery.error instanceof CouponNotFoundError)) {
+    return (
+      <Screen edges={['top', 'right', 'bottom', 'left']}>
+        <OfferCouponErrorState
+          error={couponQuery.error}
+          fill
+          onBack={onBack}
+          onRetry={() => void couponQuery.refetch()}
+          onSignIn={onSignIn}
+          operation="listCoupons"
+          surface="wallet"
+        />
+      </Screen>
+    );
+  }
+
+  if (!coupon) {
+    return (
+      <Screen edges={['top', 'right', 'bottom', 'left']}>
+        <ErrorState
+          actionLabel={t('myPage.back')}
+          description={t('myPage.couponDetail.error')}
+          fill
+          onAction={onBack}
+        />
+      </Screen>
+    );
+  }
 
   const usable = isCouponUsable(coupon.status);
   // A terminal coupon says why it cannot be presented, dated where the server
@@ -98,3 +152,8 @@ export default function CouponDetailContainer({
     />
   );
 }
+
+const Screen = styled(SafeAreaView)`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+`;

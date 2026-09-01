@@ -9,9 +9,8 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/test/jest.setup.ts'],
   testMatch: ['<rootDir>/**/__tests__/**/*.test.{ts,tsx}'],
   transformIgnorePatterns: [
-    // jsbarcode publishes untranspiled ESM under src/, and @aramir/react-native-barcode
-    // imports it directly, so both have to go through Babel here.
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@react-navigation/.*|react-native-svg|react-native-safe-area-context|@tanstack/.*|@aramir/react-native-barcode|jsbarcode)',
+    // react-native-qrcode-svg publishes JSX under src/, so Babel must transform it.
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@react-navigation/.*|react-native-svg|react-native-qrcode-svg|react-native-safe-area-context|@tanstack/.*)',
   ],
   watchman: false,
 };
