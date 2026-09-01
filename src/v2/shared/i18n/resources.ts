@@ -29,6 +29,10 @@ export const resources = {
             description: 'Please check your connection and try again.',
             title: 'Could not load data',
           },
+          network: {
+            description: 'We could not reach the server. Check your connection and try again.',
+            title: 'Connection problem',
+          },
           notFound: {
             description: 'The requested resource no longer exists. Return to the latest list.',
             title: 'Not found',
@@ -604,6 +608,10 @@ export const resources = {
           generic: {
             description: '네트워크 상태를 확인한 후 다시 시도해 주세요.',
             title: '데이터를 불러오지 못했습니다',
+          },
+          network: {
+            description: '서버에 연결하지 못했습니다. 네트워크 상태를 확인한 후 다시 시도해 주세요.',
+            title: '연결에 문제가 있습니다',
           },
           notFound: {
             description: '요청한 항목이 더 이상 존재하지 않습니다. 최신 목록으로 돌아가 주세요.',

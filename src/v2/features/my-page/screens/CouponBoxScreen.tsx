@@ -4,8 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
-import { useInfiniteCoupons, type Coupon } from '../../offers-coupons';
-import { ErrorState } from '../../../shared/components';
+import {
+  OfferCouponErrorState,
+  useInfiniteCoupons,
+  type Coupon,
+} from '../../offers-coupons';
 import Button from '../../../shared/components/Button';
 import CouponCard from '../components/CouponCard';
 import CouponCardSkeleton from '../components/CouponCardSkeleton';
@@ -162,11 +165,11 @@ export default function CouponBoxScreen({
           {SKELETON_KEYS.map((key) => <CouponCardSkeleton key={key} />)}
         </SkeletonList>
       ) : listState.kind === 'error' ? (
-        <ErrorState
-          actionLabel={t('myPage.retry')}
-          description={t('myPage.couponBox.error')}
+        <OfferCouponErrorState
+          error={couponsQuery.error}
           fill
-          onAction={retry}
+          onRetry={retry}
+          surface="wallet"
         />
       ) : (
         <FlatList

@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from 'styled-components/native';
 
 import { i18n } from '../shared/i18n';
+import { initializeOfferCouponI18n } from '../features/offers-coupons/i18n/offerCouponResources';
 import { initializeReservationI18n } from '../features/reservations/i18n/reservationResources';
 import { initializeVisitVerificationI18n } from '../features/place-visit-verification/i18n/visitVerificationResources';
 import { theme } from '../shared/theme';
@@ -19,7 +20,11 @@ export default function AppProviders({ children }: PropsWithChildren) {
   useEffect(() => {
     let isMounted = true;
 
-    void Promise.all([initializeReservationI18n(), initializeVisitVerificationI18n()])
+    void Promise.all([
+      initializeReservationI18n(),
+      initializeVisitVerificationI18n(),
+      initializeOfferCouponI18n(),
+    ])
       .catch((error) => {
         console.warn('[V2 i18n] Initialization failed:', error);
       })
