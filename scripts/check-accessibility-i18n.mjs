@@ -10,7 +10,9 @@ const translations = read('src/i18n/index.ts');
 const targets = [
   read('src/v2/features/map/components/MapBottomSheet.tsx'),
   read('src/features/place/screens/CheckInScreen.tsx'),
-  read('src/features/place/screens/CouponWalletScreen.tsx'),
+  // The V2 coupon box replaced src/features/place/screens/CouponWalletScreen.tsx.
+  read('src/v2/features/my-page/screens/CouponBoxScreen.tsx'),
+  read('src/v2/features/my-page/screens/CouponDetailScreen.tsx'),
 ];
 
 assert.match(button, /accessibilityRole="button"/);
