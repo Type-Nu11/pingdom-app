@@ -39,8 +39,11 @@ export function parseDeepLink(url: string): MainNavigationIntent | null {
     return { screen: MAIN_ROUTES.Map };
   }
 
+  // The coupon box has a single entry point: the coupon stat on My Page. A
+  // coupon link lands there instead of opening the box directly, so the link
+  // keeps working without adding a second way in.
   if (segments.length === 1 && normalizedResource === 'coupons') {
-    return { screen: MAIN_ROUTES.CouponWallet };
+    return { screen: MAIN_ROUTES.MyPage };
   }
 
   if (segments.length === 1 && normalizedResource === 'profile') {

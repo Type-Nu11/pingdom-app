@@ -159,7 +159,14 @@ test('custom deep links map to typed navigation intents', () => {
     params: { placeId: 123 },
     screen: MAIN_ROUTES.CheckIn,
   });
-  assert.deepEqual(parseDeepLink('pingdom://coupons'), { screen: MAIN_ROUTES.CouponWallet });
+  // 쿠폰함 진입점은 마이페이지의 쿠폰 통계 하나뿐이다. 쿠폰 링크는 쿠폰함을
+  // 직접 열지 않고 마이페이지로 보내 두 번째 진입 경로가 생기지 않게 한다.
+  assert.deepEqual(parseDeepLink('pingdom://coupons'), { screen: MAIN_ROUTES.MyPage });
+  assert.equal(
+    Object.values(MAIN_ROUTES).includes('CouponBox'),
+    true,
+  );
+  assert.notDeepEqual(parseDeepLink('pingdom://coupons'), { screen: MAIN_ROUTES.CouponBox });
   assert.deepEqual(parseDeepLink('pingdom://profile'), { screen: MAIN_ROUTES.Profile });
   assert.deepEqual(parseDeepLink('pingdom://settings'), { screen: MAIN_ROUTES.Settings });
   assert.deepEqual(parseDeepLink('pingdom://merchants/456'), {

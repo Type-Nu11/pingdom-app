@@ -15,7 +15,7 @@ type ProfileParams = Exclude<MainStackParamList['Profile'], undefined>;
 export type MainNavigationIntent =
   | { params?: MapParams; screen: typeof MAIN_ROUTES.Map }
   | { params: MainStackParamList['CheckIn']; screen: typeof MAIN_ROUTES.CheckIn }
-  | { screen: typeof MAIN_ROUTES.CouponWallet }
+  | { screen: typeof MAIN_ROUTES.MyPage }
   | { params?: ProfileParams; screen: typeof MAIN_ROUTES.Profile }
   | { screen: typeof MAIN_ROUTES.Settings }
   | { params: MainStackParamList['Merchant']; screen: typeof MAIN_ROUTES.Merchant };
@@ -124,8 +124,8 @@ export function toMainNavigatorParams(
       return { params: intent.params, screen: MAIN_ROUTES.CheckIn };
     case MAIN_ROUTES.Merchant:
       return { params: intent.params, screen: MAIN_ROUTES.Merchant };
-    case MAIN_ROUTES.CouponWallet:
-      return { params: undefined, screen: MAIN_ROUTES.CouponWallet };
+    case MAIN_ROUTES.MyPage:
+      return { params: undefined, screen: MAIN_ROUTES.MyPage };
     case MAIN_ROUTES.Settings:
       return { params: undefined, screen: MAIN_ROUTES.Settings };
   }
