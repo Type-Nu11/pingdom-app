@@ -129,6 +129,7 @@ type MapBottomSheetProps = {
   isBookmarkStateLoading?: boolean;
   collapsedTranslateY: number;
   content: BottomSheetContent;
+  couponContent?: React.ReactNode;
   height: number;
   mediumTranslateY: number;
   onBackHome: () => void;
@@ -1253,9 +1254,12 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
   );
 };
 
-type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
+type PreviewActionKind = 'arrival' | 'coupon' | 'departure' | 'directions' | 'reservation' | 'share';
 
 const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
+  if (kind === 'coupon') {
+    return <TicketAsset height={13} width={13} />;
+  }
   if (kind === 'share') {
     return (
       <Svg height={13} viewBox="0 0 16 16" width={13}>
@@ -1305,6 +1309,7 @@ const PreviewContent = ({
   fallbackContent,
   imageUrl,
   onBack,
+  onCoupon,
   onDetail,
   onReserve,
   onRetryAvailability,
@@ -1317,6 +1322,7 @@ const PreviewContent = ({
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
+  onCoupon: () => void;
   onDetail: () => void;
   onReserve: () => void;
   onRetryAvailability?: () => void;
@@ -1401,6 +1407,13 @@ const PreviewContent = ({
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip kind="arrival" label={t('map.card.actions.arrive')} />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
+        {fallbackContent?.coupons?.length ? (
+          <PreviewActionChip
+            kind="coupon"
+            label={t('map.decision.getCoupon')}
+            onPress={onCoupon}
+          />
+        ) : null}
         <PreviewActionChip
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
@@ -1443,6 +1456,7 @@ type PlaceDetailTab = 'info' | 'reviews';
 const ExpandedPlaceContent = ({
   activeTab,
   bookmarked,
+  couponContent,
   fallbackContent,
   imageUrl,
   onBack,
@@ -1457,6 +1471,7 @@ const ExpandedPlaceContent = ({
 }: {
   activeTab: PlaceDetailTab;
   bookmarked: boolean;
+  couponContent?: React.ReactNode;
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
@@ -1658,7 +1673,7 @@ const ExpandedPlaceContent = ({
             </View>
           ) : null}
 
-          {fallbackContent?.coupons?.length ? (
+          {couponContent ?? (fallbackContent?.coupons?.length ? (
             <View style={styles.detailSection}>
               <Text style={styles.detailSectionTitle}>{t('map.detail.coupon')}</Text>
               {fallbackContent.coupons.map((coupon, index) => (
@@ -1672,7 +1687,7 @@ const ExpandedPlaceContent = ({
                 </View>
               ))}
             </View>
-          ) : null}
+          ) : null)}
 
           {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
@@ -1898,10 +1913,12 @@ export default function MapBottomSheet({
   bookmarkedPlaceIds,
   collapsedTranslateY,
   content,
+  couponContent,
   height,
   isBookmarkStateLoading = false,
   mediumTranslateY,
   onBackHome,
+  onCouponPress,
   onCreateReservation,
   onDetailPress,
   onHandlePress,
@@ -2063,6 +2080,7 @@ export default function MapBottomSheet({
           <ExpandedPlaceContent
             activeTab={activePlaceDetailTab}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
+            couponContent={couponContent}
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
@@ -2084,6 +2102,7 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
+            onCoupon={() => onCouponPress(selectedPlace)}
             onDetail={() => onDetailPress(selectedPlace)}
             onReserve={handleCreateReservation}
             onRetryAvailability={onRetryAvailability}

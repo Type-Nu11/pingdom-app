@@ -64,6 +64,7 @@ import {
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
+import { PlaceCouponCta } from '../../offers-coupons';
 import { FadeSlideTransition } from '../../../shared/motion';
 import { LocationStatusOverlay } from '../components/MapStatusOverlays';
 
@@ -605,13 +606,7 @@ export default function MapScreen({
       [{ text: t('map.search.confirm') }],
     );
   };
-  const handleCoupon = (place: DecisionPlace) => {
-    Alert.alert(
-      t('map.decision.getCoupon'),
-      t('map.decision.couponMessage', { placeName: place.name }),
-      [{ text: t('map.search.confirm') }],
-    );
-  };
+  const handleCoupon = () => snapTo('expanded');
   const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
     try {
       await togglePlaceBookmark(place, nextBookmarked);
@@ -766,6 +761,7 @@ export default function MapScreen({
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
+            couponContent={selectedPlace ? <PlaceCouponCta placeId={selectedPlace.id} /> : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
             mediumTranslateY={mediumTranslateY}
