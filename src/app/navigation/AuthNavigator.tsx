@@ -11,9 +11,27 @@ import type {
 } from '../../v2/features/onboarding-entry';
 import { getAuthInitialRoute } from '../../v2/features/onboarding-entry';
 import { normalizeSupportedLanguage } from '../../v2/shared/i18n';
-import { AUTH_ROUTES, type AuthStackParamList } from './types';
+import {
+  AUTH_ROUTES,
+  type AuthScreenProps,
+  type AuthStackParamList,
+} from './types';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
+
+function goBackOrOpenOnboarding(
+  navigation: AuthScreenProps<'AuthLanding'>['navigation'],
+) {
+  if (navigation.canGoBack()) {
+    navigation.goBack();
+    return;
+  }
+
+  // Onboarding completion replaces the auth stack, so AuthLanding can be the
+  // first route with no history to pop. Let users review or change their
+  // language/preferences instead of dispatching an unhandled GO_BACK action.
+  navigation.navigate(AUTH_ROUTES.Onboarding);
+}
 
 type AuthNavigatorProps = Readonly<{
   completion?: OnboardingCompletion;
@@ -31,7 +49,22 @@ const AuthNavigator = ({ completion, onComplete }: AuthNavigatorProps) => {
       screenOptions={{ headerShown: false }}
     >
       <Stack.Screen name={AUTH_ROUTES.Onboarding}>
-        {() => <OnboardingFlow onComplete={onComplete} />}
+        {({ navigation }) => (
+          <OnboardingFlow
+            onComplete={async (signupContext) => {
+              const isRevisitingCompletedOnboarding = completion !== undefined;
+
+              await onComplete(signupContext);
+
+              // The unauthenticated navigation key remains "completed" when
+              // an existing onboarding choice is updated, so the stack does
+              // not remount as it does after first-time completion.
+              if (isRevisitingCompletedOnboarding) {
+                navigation.replace(AUTH_ROUTES.AuthLanding);
+              }
+            }}
+          />
+        )}
       </Stack.Screen>
       <Stack.Screen name={AUTH_ROUTES.AuthLanding}>
         {({ navigation }) => {
@@ -39,36 +72,40 @@ const AuthNavigator = ({ completion, onComplete }: AuthNavigatorProps) => {
 
           return completion.signupContext.entryVariant === 'kr' ? (
             <LogInKrScreen
-              onBack={navigation.goBack}
+              onBack={() => goBackOrOpenOnboarding(navigation)}
               onLogin={() => navigation.navigate(AUTH_ROUTES.Login)}
               onSignup={() => navigation.navigate(AUTH_ROUTES.Signup)}
             />
           ) : (
             <LogInForeignScreen
-              onBack={navigation.goBack}
+              onBack={() => goBackOrOpenOnboarding(navigation)}
               onStart={() => navigation.navigate(AUTH_ROUTES.Signup)}
             />
           );
         }}
       </Stack.Screen>
       <Stack.Screen name={AUTH_ROUTES.Login}>
-        {({ navigation }) => (
-          <LoginFormScreen
-            onBack={navigation.goBack}
-            onSignup={() => navigation.navigate(AUTH_ROUTES.Signup)}
-          />
-        )}
+        {({ navigation }) => {
+          return (
+            <LoginFormScreen
+              onBack={() => goBackOrOpenOnboarding(navigation)}
+              onSignup={() => navigation.navigate(AUTH_ROUTES.Signup)}
+            />
+          );
+        }}
       </Stack.Screen>
       <Stack.Screen name={AUTH_ROUTES.Signup}>
-        {({ navigation }) => (
-          <SignUpDetailsScreen
-            onBack={navigation.goBack}
-            onboardingData={completion ? {
-              ...completion.signupContext,
-              language: normalizeSupportedLanguage(completion.signupContext.language) ?? 'en',
-            } : undefined}
-          />
-        )}
+        {({ navigation }) => {
+          return (
+            <SignUpDetailsScreen
+              onBack={() => goBackOrOpenOnboarding(navigation)}
+              onboardingData={completion ? {
+                ...completion.signupContext,
+                language: normalizeSupportedLanguage(completion.signupContext.language) ?? 'en',
+              } : undefined}
+            />
+          );
+        }}
       </Stack.Screen>
     </Stack.Navigator>
   );
