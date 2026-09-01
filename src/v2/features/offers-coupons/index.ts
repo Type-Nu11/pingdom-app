@@ -1,4 +1,4 @@
-export { createOfferCouponApi, offerCouponApi } from './api/offerCouponApi';
+export { ApiError, createOfferCouponApi, offerCouponApi } from './api/offerCouponApi';
 export type {
   Coupon,
   CouponPage,
