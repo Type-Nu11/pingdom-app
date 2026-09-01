@@ -88,6 +88,20 @@ describe('CouponDetailContainer', () => {
       .toHaveTextContent('3FA85F64-5717-4562-B3FC-2C963F66AFA6');
   });
 
+  test('쿠폰 응답에 offer 요약이 없으면 offer 조회 값으로 제목·혜택을 채운다', async () => {
+    // 문서화된 서버의 /coupons는 쿠폰 식별자·상태·시각만 준다.
+    jest.spyOn(offerCouponApi, 'getCoupon')
+      .mockResolvedValue(coupon({ benefitDescription: null, offerTitle: null }));
+    jest.spyOn(offerCouponApi, 'getOffer').mockResolvedValue(offer());
+
+    await renderWithProviders(
+      <CouponDetailContainer couponId={1} onBack={jest.fn()} onReserve={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(screen.getByText('생일 10% 할인 쿠폰')).toBeTruthy());
+    expect(screen.getByText('4만원 이상 결제 시, 최대 10% 할인')).toBeTruthy();
+  });
+
   test('쿠폰 정보 행을 상점주가 등록한 offer 값으로 채운다', async () => {
     mockCoupon();
 

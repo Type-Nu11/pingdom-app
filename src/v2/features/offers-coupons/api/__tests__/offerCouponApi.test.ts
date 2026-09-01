@@ -69,3 +69,76 @@ describe('offerCouponApi.listCoupons', () => {
     });
   });
 });
+
+describe('offerCouponApi.getCoupon', () => {
+  const coupon = (id: number) => ({
+    benefitDescription: null,
+    code: `code-${id}`,
+    expiresAt: '2027-08-18T00:00:00Z',
+    id,
+    issuedAt: '2026-08-18T00:00:00Z',
+    offerId: 401,
+    offerTitle: null,
+    placeId: null,
+    placeName: null,
+    redeemedAt: null,
+    status: 'ISSUED',
+  });
+
+  test('단건 엔드포인트가 없으므로 목록에서 찾아 반환한다', async () => {
+    const get = jest.fn().mockResolvedValue({
+      coupons: [coupon(500), coupon(501)], hasNext: false, limit: 100, page: 1,
+      totalElements: 2, totalPages: 1,
+    });
+    const api = createOfferCouponApi(fakeClient(get));
+
+    const found = await api.getCoupon(501);
+
+    expect(found.id).toBe(501);
+    expect(get).toHaveBeenCalledWith('/coupons', expect.objectContaining({
+      params: { limit: 100, page: 1 },
+    }));
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  test('첫 페이지에 없으면 hasNext를 따라 다음 페이지를 본다', async () => {
+    const get = jest.fn()
+      .mockResolvedValueOnce({
+        coupons: [coupon(500)], hasNext: true, limit: 100, page: 1, totalElements: 2, totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        coupons: [coupon(777)], hasNext: false, limit: 100, page: 2, totalElements: 2, totalPages: 2,
+      });
+    const api = createOfferCouponApi(fakeClient(get));
+
+    const found = await api.getCoupon(777);
+
+    expect(found.id).toBe(777);
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(get).toHaveBeenLastCalledWith('/coupons', expect.objectContaining({
+      params: { limit: 100, page: 2 },
+    }));
+  });
+
+  test('목록에 없으면 404 ApiError로 알린다', async () => {
+    const get = jest.fn().mockResolvedValue({
+      coupons: [coupon(500)], hasNext: false, limit: 100, page: 1, totalElements: 1, totalPages: 1,
+    });
+    const api = createOfferCouponApi(fakeClient(get));
+
+    await expect(api.getCoupon(999)).rejects.toMatchObject({
+      code: 'COUPON_NOT_FOUND',
+      status: 404,
+    });
+  });
+
+  test('hasNext가 계속 true여도 페이지 순회를 무한히 하지 않는다', async () => {
+    const get = jest.fn().mockResolvedValue({
+      coupons: [coupon(500)], hasNext: true, limit: 100, page: 1, totalElements: 9999, totalPages: 99,
+    });
+    const api = createOfferCouponApi(fakeClient(get));
+
+    await expect(api.getCoupon(999)).rejects.toMatchObject({ status: 404 });
+    expect(get).toHaveBeenCalledTimes(20);
+  });
+});
