@@ -7,6 +7,7 @@ import {
 
 import {
   offerCouponApi,
+  type Coupon,
   type CouponPage,
   type ListCouponsParams,
   type ListOffersParams,
@@ -45,13 +46,49 @@ export function createOfferQueryOptions(
   };
 }
 
+export class CouponNotFoundError extends Error {
+  constructor(couponId: number) {
+    super(`Coupon ${couponId} was not found in the authenticated user's coupon list.`);
+    this.name = 'CouponNotFoundError';
+  }
+}
+
+/**
+ * The live server has no single-coupon endpoint. Resolve the navigation id from
+ * the paginated authenticated list instead of inventing `/coupons/{id}`.
+ */
+export async function findCouponById(
+  couponId: number,
+  api: Pick<OfferCouponApi, 'listCoupons'> = offerCouponApi,
+  signal?: AbortSignal,
+): Promise<Coupon> {
+  let page = 1;
+
+  while (true) {
+    const response = await api.listCoupons({ limit: 100, page }, signal);
+    const coupon = response.coupons.find((entry) => entry.id === couponId);
+
+    if (coupon) return coupon;
+    if (!response.hasNext || page >= response.totalPages) {
+      throw new CouponNotFoundError(couponId);
+    }
+
+    page += 1;
+  }
+}
+
 export function createCouponQueryOptions(
   couponId: number,
-  api: Pick<OfferCouponApi, 'getCoupon'> = offerCouponApi,
+  api: Pick<OfferCouponApi, 'listCoupons'> = offerCouponApi,
 ) {
   return {
-    queryFn: ({ signal }: { signal?: AbortSignal }) => api.getCoupon(couponId, signal),
+    queryFn: ({ signal }: { signal?: AbortSignal }) => findCouponById(couponId, api, signal),
     queryKey: offerCouponQueryKeys.coupon(couponId),
+    // The present screen must never show a stale status: a coupon redeemed or
+    // expired on the server has to stop looking valid. Re-fetch every time the
+    // screen mounts and every time the app returns to the foreground.
+    refetchOnMount: 'always' as const,
+    refetchOnWindowFocus: 'always' as const,
   };
 }
 
@@ -103,6 +140,19 @@ export function createRedeemCouponMutationOptions(
 
 export function useOffers(params: ListOffersParams = {}) {
   return useQuery(createOffersQueryOptions(params));
+}
+
+/**
+ * Issuable Offers for one place. The query is deferred until a real place id is
+ * known so entering place detail issues exactly one `/offers?placeId=` request
+ * (no speculative per-card fan-out).
+ */
+export function usePlaceOffers(placeId: number, { enabled = true }: { enabled?: boolean } = {}) {
+  const active = enabled && Number.isFinite(placeId) && placeId > 0;
+  return useQuery({
+    ...createOffersQueryOptions({ placeId }),
+    enabled: active,
+  });
 }
 
 export function useOffer(offerId: number, options: { enabled?: boolean } = {}) {

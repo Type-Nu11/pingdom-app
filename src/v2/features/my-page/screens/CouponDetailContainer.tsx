@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { useCoupon, useOffer } from '../../offers-coupons';
+import { useCoupon, useOffer, type Coupon } from '../../offers-coupons';
+import { usePlaceDetail } from '../../place-detail';
 import { ErrorState, LoadingState } from '../../../shared/components';
 import {
   formatCouponInstant,
@@ -12,25 +13,27 @@ import {
 } from '../model/couponBoxEntries';
 import CouponDetailScreen, { type CouponDetailInfoRow } from './CouponDetailScreen';
 
-export type CouponDetailContainerProps = {
-  couponId: number;
+type CouponDetailContainerCommonProps = {
   onBack: () => void;
   onReserve: (placeId: number) => void;
 };
 
+export type CouponDetailContainerProps = CouponDetailContainerCommonProps & (
+  | { couponId: number }
+  // Temporary application-composition compatibility for the legacy navigator.
+  // Only the id is consumed; lifecycle and code are always re-read from V2 API.
+  | { coupon: Coupon }
+);
+
 /**
- * The server exposes no single-coupon endpoint, so `useCoupon` resolves the
- * coupon out of the paginated `/coupons` list. That payload carries only the
- * coupon's identity, status and instants on the documented servers, so the
- * offer supplies the title and benefit; a deployment that does enrich the
- * coupon still wins. The offer 404s once the merchant closes it, which drops
- * the rows that depend on it without breaking the coupon itself.
+ * The current server has no single-Coupon endpoint. `useCoupon` resolves the
+ * navigation id from the paginated authenticated list and revalidates it on
+ * mount and foreground return. Offer and Place remain optional presentation
+ * data and never supply the security-sensitive code or lifecycle status.
  */
-export default function CouponDetailContainer({
-  couponId,
-  onBack,
-  onReserve,
-}: CouponDetailContainerProps) {
+export default function CouponDetailContainer(props: CouponDetailContainerProps) {
+  const { onBack, onReserve } = props;
+  const couponId = 'coupon' in props ? props.coupon.id : props.couponId;
   const { i18n, t } = useTranslation();
   const locale = i18n.language;
 
@@ -38,6 +41,8 @@ export default function CouponDetailContainer({
   const coupon = couponQuery.data;
   const offerQuery = useOffer(coupon?.offerId ?? 0, { enabled: coupon != null });
   const offer = offerQuery.data;
+  const placeQuery = usePlaceDetail(offer?.placeId ?? 0, { enabled: Boolean(offer?.placeId) });
+  const placeName = placeQuery.data?.name;
 
   if (couponQuery.isLoading) {
     return (
@@ -84,8 +89,8 @@ export default function CouponDetailContainer({
   // server has nothing for is dropped rather than filled with invented copy.
   const infoRows: CouponDetailInfoRow[] = [];
 
-  if (coupon.placeName) {
-    infoRows.push({ label: t('myPage.couponDetail.rows.stores'), value: coupon.placeName });
+  if (placeName) {
+    infoRows.push({ label: t('myPage.couponDetail.rows.stores'), value: placeName });
   }
   if (offer?.description) {
     infoRows.push({ label: t('myPage.couponDetail.rows.usage'), value: offer.description });
@@ -107,21 +112,19 @@ export default function CouponDetailContainer({
     });
   }
 
-  const placeId = coupon.placeId ?? offer?.placeId;
+  const placeId = offer?.placeId;
 
   return (
     <CouponDetailScreen
-      benefit={coupon.benefitDescription
-        || offer?.benefitDescription
-        || t('myPage.couponBox.fallbackDescription')}
+      benefit={offer?.benefitDescription || t('myPage.couponBox.fallbackDescription')}
       code={coupon.code}
       infoRows={infoRows}
       onBack={onBack}
       onReserve={placeId ? () => onReserve(placeId) : undefined}
       periodText={formatOfferPeriod(coupon.issuedAt, coupon.expiresAt, locale)}
-      placeName={coupon.placeName ?? undefined}
+      placeName={placeName}
       stateNotice={stateNotice}
-      title={coupon.offerTitle || offer?.title || t('myPage.couponBox.fallbackTitle')}
+      title={offer?.title || t('myPage.couponBox.fallbackTitle')}
       usable={usable}
     />
   );
