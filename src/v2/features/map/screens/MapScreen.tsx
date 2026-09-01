@@ -101,8 +101,10 @@ type MapScreenProps = {
     imageUrl?: string;
     name: string;
   }) => void;
+  onOpenCoupons?: () => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
+  onSignIn?: () => void;
   onOpenVisitVerification?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
@@ -112,8 +114,10 @@ export default function MapScreen({
   initialSection = 'map',
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
+  onOpenCoupons,
   onOpenProfile,
   onOpenReservation,
+  onSignIn,
   onOpenVisitVerification,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
@@ -605,12 +609,8 @@ export default function MapScreen({
       [{ text: t('map.search.confirm') }],
     );
   };
-  const handleCoupon = (place: DecisionPlace) => {
-    Alert.alert(
-      t('map.decision.getCoupon'),
-      t('map.decision.couponMessage', { placeName: place.name }),
-      [{ text: t('map.search.confirm') }],
-    );
+  const handleCoupon = (_place: DecisionPlace) => {
+    snapTo('expanded');
   };
   const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
     try {
@@ -771,6 +771,7 @@ export default function MapScreen({
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
             onCouponPress={handleCoupon}
+            onCouponSignIn={onSignIn}
             onCreateReservation={(place, imageUrl) => {
               if (!onCreateReservation || reservationNavigationLock.current) return;
               reservationNavigationLock.current = true;
@@ -793,6 +794,7 @@ export default function MapScreen({
               setMapSection('favorites');
               snapTo('medium');
             }}
+            onOpenCouponWallet={onOpenCoupons}
             onOpenRecommendations={() => {
               setContent({ type: 'recommendations' });
               snapTo('expanded');

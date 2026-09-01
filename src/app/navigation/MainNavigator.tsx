@@ -60,6 +60,7 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
           openedBookmarkedPlaceId={focusedPlaceId ?? null}
           onClearOpenedBookmarkedPlace={clearFocusedPlace}
           onOpenProfile={() => navigation.navigate(MAIN_ROUTES.MyPage)}
+          onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
           onCreateReservation={(place) => {
             const placeId = parsePlaceId(place.id);
             if (placeId) navigation.navigate(MAIN_ROUTES.CreateReservation, {
@@ -76,6 +77,7 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
             }
           }}
           onOpenVisitVerification={() => navigation.navigate(MAIN_ROUTES.VisitVerificationPlaces)}
+          onSignIn={() => void clearTokenSession()}
         />
       </V2ScreenBoundary>
     </MapRouteContainer>

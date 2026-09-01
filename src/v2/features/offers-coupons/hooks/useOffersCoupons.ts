@@ -90,8 +90,14 @@ export function createRedeemCouponMutationOptions(
   return { mutationFn: (body: RedeemCouponBody) => api.redeemCoupon(body) };
 }
 
-export function useOffers(params: ListOffersParams = {}) {
-  return useQuery(createOffersQueryOptions(params));
+export function useOffers(
+  params: ListOffersParams = {},
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    ...createOffersQueryOptions(params),
+    ...options,
+  });
 }
 
 export function useOffer(offerId: number, options: { enabled?: boolean } = {}) {

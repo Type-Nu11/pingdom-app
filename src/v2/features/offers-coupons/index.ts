@@ -11,9 +11,11 @@ export type {
   RedeemedCoupon,
 } from './api/offerCouponApi';
 export { default as OfferCouponErrorState } from './components/OfferCouponErrorState';
+export { default as PlaceCouponOffers } from './components/PlaceCouponOffers';
 export { getOfferCouponErrorUx } from './model/getOfferCouponErrorUx';
 export type {
   OfferCouponErrorCta,
+  OfferCouponOperation,
   OfferCouponErrorReason,
   OfferCouponErrorUx,
   OfferCouponSurface,

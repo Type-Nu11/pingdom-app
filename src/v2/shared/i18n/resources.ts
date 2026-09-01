@@ -1,9 +1,11 @@
+import { offerCouponResources } from '../../features/offers-coupons/i18n/offerCouponResources';
 import { reservationResources } from '../../features/reservations/i18n/reservationResources';
 import { visitVerificationResources } from '../../features/place-visit-verification/i18n/visitVerificationResources';
 
 export const resources = {
   en: {
     translation: {
+      ...offerCouponResources.en,
       ...reservationResources.en,
       visitVerification: visitVerificationResources.en,
       selectLanguage: {
@@ -764,6 +766,7 @@ export const resources = {
   },
   ko: {
     translation: {
+      ...offerCouponResources.ko,
       ...reservationResources.ko,
       visitVerification: visitVerificationResources.ko,
       selectLanguage: {

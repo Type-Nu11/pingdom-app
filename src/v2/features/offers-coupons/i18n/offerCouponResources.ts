@@ -1,7 +1,5 @@
 import type { i18n as I18nInstance } from 'i18next';
 
-import { i18n, initializeI18n } from '../../../shared/i18n';
-
 /**
  * User-facing copy for Coupon/Offer error UX. Keys mirror
  * {@link OfferCouponErrorReason} so `getOfferCouponErrorUx` can build the key
@@ -81,6 +79,25 @@ export const offerCouponResources = {
           title: 'Could not load coupons',
         },
       },
+      place: {
+        eligibility: {
+          ACTIVE_TRAVEL_SCHEDULE: 'Requires an active travel schedule',
+          PUBLIC: 'Available to all eligible visitors',
+        },
+        emptyDescription: 'There are no coupons available for this place right now.',
+        emptyTitle: 'No available offers',
+        inventoryRemaining: '{{count}} remaining',
+        inventoryUnlimited: 'No quantity limit',
+        issue: 'Get coupon',
+        loading: 'Loading available coupons…',
+        period: 'Issue period: {{value}}',
+        periodUnknown: 'Schedule unavailable',
+        successDescription: 'The issued coupon is ready in your coupon wallet.',
+        successTitle: 'Coupon issued',
+        untitled: 'Coupon offer',
+        validityDays: 'Valid for {{count}} day after issue',
+        validityDays_other: 'Valid for {{count}} days after issue',
+      },
     },
   },
   ko: {
@@ -155,6 +172,25 @@ export const offerCouponResources = {
           title: '쿠폰을 불러오지 못했습니다',
         },
       },
+      place: {
+        eligibility: {
+          ACTIVE_TRAVEL_SCHEDULE: '진행 중인 여행 일정이 필요합니다',
+          PUBLIC: '발급 가능한 방문객 모두 이용할 수 있습니다',
+        },
+        emptyDescription: '현재 이 장소에서 발급받을 수 있는 쿠폰이 없습니다.',
+        emptyTitle: '발급 가능한 Offer가 없습니다',
+        inventoryRemaining: '{{count}}개 남음',
+        inventoryUnlimited: '수량 제한 없음',
+        issue: '쿠폰 받기',
+        loading: '발급 가능한 쿠폰을 불러오는 중…',
+        period: '발급 기간: {{value}}',
+        periodUnknown: '기간 정보 없음',
+        successDescription: '발급된 쿠폰을 보관함에서 바로 확인할 수 있습니다.',
+        successTitle: '쿠폰을 발급했습니다',
+        untitled: '쿠폰 Offer',
+        validityDays: '발급 후 {{count}}일 동안 사용 가능',
+        validityDays_other: '발급 후 {{count}}일 동안 사용 가능',
+      },
     },
   },
 } as const;
@@ -172,6 +208,7 @@ export function registerOfferCouponResources(instance: I18nInstance) {
 }
 
 export async function initializeOfferCouponI18n() {
+  const { i18n, initializeI18n } = await import('../../../shared/i18n');
   await initializeI18n();
   registerOfferCouponResources(i18n);
 }

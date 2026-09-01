@@ -41,6 +41,15 @@ function HomeRouteScreen() {
   return env.featureFlags.placeList ? <PlaceListExampleScreen /> : <HomeScreen />;
 }
 
+function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
+  return (
+    <MapScreen
+      onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
+      onSignIn={() => void clearTokenSession()}
+    />
+  );
+}
+
 function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
   return (
     <MyPageScreen
@@ -170,7 +179,7 @@ export default function RootNavigator() {
     <NavigationContainer ref={navigationRef} onReady={() => setIsNavigationReady(true)}>
       <Stack.Navigator initialRouteName={V2_ROUTES.Map} screenOptions={{ headerShown: false }}>
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
-        <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
+        <Stack.Screen name={V2_ROUTES.Map} component={MapRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
         <Stack.Screen name={V2_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
