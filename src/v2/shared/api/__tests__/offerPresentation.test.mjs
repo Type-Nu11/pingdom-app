@@ -89,6 +89,17 @@ test('toOfferView drops unknown enum values and non-finite numbers', () => {
   assert.equal(view.couponValidityDays, null);
 });
 
+test('selectPlaceOffers drops malformed rows instead of issuing with a fabricated id', () => {
+  const offers = selectPlaceOffers({
+    offers: [
+      { ...baseOffer, id: undefined },
+      { ...baseOffer, id: 402 },
+    ],
+  });
+
+  assert.deepEqual(offers.map((offer) => offer.id), [402]);
+});
+
 test('CTA state machine distinguishes every state', () => {
   assert.equal(
     selectCouponCtaState({
@@ -171,7 +182,7 @@ test('CTA state machine distinguishes every state', () => {
       issue: { ...idleIssue, isError: true, error: new ApiError('x', { status: 404 }) },
       selectedOfferId: null,
     }).kind,
-    'no-offer',
+    'issue-not-found',
   );
 
   const conflict = selectCouponCtaState({
@@ -189,12 +200,12 @@ test('CTA state machine distinguishes every state', () => {
   });
   assert.equal(conflictBare.cause, 'unknown');
 
-  const expired = selectCouponCtaState({
+  const genericIssueError = selectCouponCtaState({
     offers: readyOffers([toOfferView(baseOffer)]),
-    issue: { ...idleIssue, isError: true, error: new ApiError('x', { status: 410 }) },
+    issue: { ...idleIssue, isError: true, error: new ApiError('x', { status: 500 }) },
     selectedOfferId: null,
   });
-  assert.deepEqual([expired.kind, expired.cause], ['conflict', 'window-closed']);
+  assert.equal(genericIssueError.kind, 'issue-error');
 });
 
 test('CTA honors a valid selected offer and falls back to the first otherwise', () => {
@@ -209,8 +220,10 @@ test('CTA honors a valid selected offer and falls back to the first otherwise', 
 test('classifyConflictCause only reads codes the server actually sent', () => {
   assert.equal(classifyConflictCause(new ApiError('x', { status: 409 })), 'unknown');
   assert.equal(classifyConflictCause(new ApiError('x', { status: 409, code: 'CAPACITY_EXCEEDED' })), 'stock-out');
-  assert.equal(classifyConflictCause(new ApiError('x', { status: 409, code: 'ISSUANCE_WINDOW_CLOSED' })), 'window-closed');
-  assert.equal(classifyConflictCause(new ApiError('x', { status: 409, code: 'PLACE_ALREADY_EXISTS' })), 'duplicate');
+  assert.equal(classifyConflictCause(new ApiError('x', { status: 409, code: 'COUPON_EXPIRED' })), 'window-closed');
+  assert.equal(classifyConflictCause(new ApiError('x', { status: 409, code: 'COUPON_ALREADY_ISSUED' })), 'duplicate');
+  assert.equal(classifyConflictCause(new ApiError('x', { status: 409, code: 'PLACE_ALREADY_EXISTS' })), 'unknown');
+  assert.equal(classifyConflictCause(new ApiError('x', { status: 409, code: 'ISSUANCE_WINDOW_CLOSED' })), 'unknown');
   assert.equal(classifyConflictCause(new ApiError('x', { status: 409, code: 'WEIRD_CODE' })), 'unknown');
 });
 

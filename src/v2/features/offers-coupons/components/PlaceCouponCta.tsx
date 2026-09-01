@@ -87,6 +87,11 @@ export default function PlaceCouponCta({
     if (issue.isError || issue.isSuccess) issue.reset();
   };
 
+  const retryIssue = () => {
+    if (issue.isPending || !pendingOffer) return;
+    issue.mutate(pendingOffer.id);
+  };
+
   const selectOffer = (offer: OfferView) => {
     if (offer.id === activeOffer?.id) return;
     setSelectedOfferId(offer.id);
@@ -153,6 +158,14 @@ export default function PlaceCouponCta({
     );
   }
 
+  if (state.kind === 'issue-error') {
+    return (
+      <Wrapper accessibilityRole="summary">
+        <ApiErrorState error={state.error} onRetry={retryIssue} onSignIn={onRequestSignIn} />
+      </Wrapper>
+    );
+  }
+
   if (state.kind === 'issue-success') {
     const expiry = formatOfferDate(state.coupon.expiresAt, locale);
     return (
@@ -196,16 +209,20 @@ export default function PlaceCouponCta({
     );
   }
 
-  // issuable | issuing | eligibility-unmet | conflict — all render the benefit detail + CTA.
+  // issuable | issuing | issue-not-found | eligibility-unmet | conflict — all
+  // render the benefit detail + CTA.
   if (!activeOffer) return null;
 
   const isIssuing = state.kind === 'issuing';
   const statusMessage = state.kind === 'eligibility-unmet'
     ? t('placeOffers.error.eligibility')
+    : state.kind === 'issue-not-found'
+      ? t('placeOffers.error.notFound')
     : state.kind === 'conflict'
       ? t(CONFLICT_COPY_KEY[state.cause])
       : null;
   const ctaDisabled = isIssuing
+    || state.kind === 'issue-not-found'
     || state.kind === 'eligibility-unmet'
     || (state.kind === 'conflict' && state.cause !== 'unknown');
   const ctaLabel = isIssuing ? t('placeOffers.cta.issuing') : t('placeOffers.cta.issue');

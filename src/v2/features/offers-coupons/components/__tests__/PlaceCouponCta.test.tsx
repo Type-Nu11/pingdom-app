@@ -133,6 +133,42 @@ describe('PlaceCouponCta', () => {
     expect(onViewMyCoupons).toHaveBeenCalled();
   });
 
+  test('발급 POST 일반 오류의 재시도는 Offer 조회가 아니라 발급 요청을 다시 호출한다', async () => {
+    const listSpy = jest.spyOn(offerCouponApi, 'listOffers').mockResolvedValue(offerPage([OFFER]));
+    let resolveRetry!: (value: unknown) => void;
+    const issueSpy = jest
+      .spyOn(offerCouponApi, 'issueCoupon')
+      .mockRejectedValueOnce(new ApiError('server error', { status: 500 }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveRetry = resolve; }) as never);
+
+    const { user } = await renderWithProviders(<PlaceCouponCta placeId={17} />);
+
+    await user.press(await screen.findByLabelText('생일 10% 할인 쿠폰 쿠폰 받기'));
+    await user.press(await screen.findByText('다시 시도'));
+
+    expect(issueSpy).toHaveBeenCalledTimes(2);
+    expect(issueSpy).toHaveBeenNthCalledWith(2, 401);
+    expect(listSpy).toHaveBeenCalledTimes(1);
+    resolveRetry(COUPON);
+    await waitFor(() => expect(screen.getByText('쿠폰이 발급되었습니다')).toBeTruthy());
+  });
+
+  test('발급 POST 404는 정상 빈 목록과 다른 상태를 보여준다', async () => {
+    jest.spyOn(offerCouponApi, 'listOffers').mockResolvedValue(offerPage([OFFER]));
+    jest
+      .spyOn(offerCouponApi, 'issueCoupon')
+      .mockRejectedValue(new ApiError('not found', { status: 404, code: 'OFFER_NOT_FOUND' }));
+
+    const { user } = await renderWithProviders(<PlaceCouponCta placeId={17} />);
+
+    const cta = await screen.findByLabelText('생일 10% 할인 쿠폰 쿠폰 받기');
+    await user.press(cta);
+
+    await waitFor(() => expect(screen.getByText('이 혜택은 더 이상 발급할 수 없습니다.')).toBeTruthy());
+    expect(screen.queryByText('받을 수 있는 쿠폰이 없습니다')).toBeNull();
+    expect(cta.props.accessibilityState.disabled).toBe(true);
+  });
+
   test('다른 Offer를 고르면 이전 Offer의 발급 실패 상태가 초기화된다', async () => {
     jest.spyOn(offerCouponApi, 'listOffers').mockResolvedValue(offerPage([OFFER, SECOND_OFFER]));
     jest

@@ -776,6 +776,7 @@ export const resources = {
         },
         error: {
           eligibility: 'This coupon is for eligible travelers only.',
+          notFound: 'This offer is no longer available.',
           conflictDuplicate: 'You already issued this coupon.',
           conflictWindowClosed: 'The issuance window for this coupon has closed.',
           conflictStockOut: 'This coupon is out of stock.',
@@ -1540,6 +1541,7 @@ export const resources = {
         },
         error: {
           eligibility: '이 쿠폰은 발급 대상 여행자만 받을 수 있습니다.',
+          notFound: '이 혜택은 더 이상 발급할 수 없습니다.',
           conflictDuplicate: '이미 발급받은 쿠폰입니다.',
           conflictWindowClosed: '이 쿠폰의 발급 기간이 종료되었습니다.',
           conflictStockOut: '이 쿠폰이 모두 소진되었습니다.',

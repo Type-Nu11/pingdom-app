@@ -57,11 +57,23 @@ const asEnum = <T extends string>(value: unknown, allowed: readonly T[]): T | nu
 const asFiniteOrNull = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null;
 
-export function toOfferView(offer: Offer): OfferView {
+export function toOfferView(offer: Offer): OfferView | null {
   const raw = offer as RawOffer;
+  const id = asFiniteOrNull(raw.id);
+  const placeId = asFiniteOrNull(raw.placeId);
+  if (
+    id == null
+    || placeId == null
+    || typeof raw.title !== 'string'
+    || typeof raw.benefitDescription !== 'string'
+    || typeof raw.startsAt !== 'string'
+    || typeof raw.endsAt !== 'string'
+  ) {
+    return null;
+  }
   return {
-    id: raw.id,
-    placeId: raw.placeId,
+    id,
+    placeId,
     title: raw.title,
     description: typeof raw.description === 'string' && raw.description.trim() ? raw.description : null,
     benefitDescription: raw.benefitDescription,
@@ -79,7 +91,9 @@ export function toOfferView(offer: Offer): OfferView {
 
 /** Server order is authoritative; do not re-sort. */
 export function selectPlaceOffers(page: OfferPage | undefined): OfferView[] {
-  return (page?.offers ?? []).map(toOfferView);
+  return (page?.offers ?? [])
+    .map(toOfferView)
+    .filter((offer): offer is OfferView => offer !== null);
 }
 
 export function isUnlimitedInventory(offer: OfferView): boolean {
@@ -100,6 +114,8 @@ export type CouponCtaState =
   | { kind: 'issuable'; offerId: number }
   | { kind: 'issuing'; offerId: number | null }
   | { kind: 'issue-success'; coupon: Coupon }
+  | { kind: 'issue-error'; error: unknown }
+  | { kind: 'issue-not-found'; error: unknown }
   | { kind: 'eligibility-unmet'; error: unknown }
   | { kind: 'conflict'; cause: CouponConflictCause; error: unknown };
 
@@ -118,8 +134,9 @@ type MutationLike = {
   isSuccess: boolean;
 };
 
-const includesAny = (haystack: string, needles: readonly string[]): boolean =>
-  needles.some((needle) => haystack.includes(needle));
+const DUPLICATE_COUPON_CODES = new Set(['COUPON_ALREADY_ISSUED']);
+const STOCK_OUT_COUPON_CODES = new Set(['CAPACITY_EXCEEDED']);
+const WINDOW_CLOSED_COUPON_CODES = new Set(['COUPON_EXPIRED', 'RESOURCE_EXPIRED']);
 
 /**
  * Reads the status/code the server actually sent. Mirrors how other V2 models
@@ -139,15 +156,9 @@ export function classifyConflictCause(error: unknown): CouponConflictCause {
   const { code } = readError(error);
   if (!code) return 'unknown';
   const normalized = code.toUpperCase();
-  if (includesAny(normalized, ['ALREADY_ISSUED', 'ALREADY_EXISTS', 'DUPLICATE'])) {
-    return 'duplicate';
-  }
-  if (includesAny(normalized, ['CAPACITY', 'SOLD_OUT', 'STOCK', 'EXHAUSTED', 'QUANTITY'])) {
-    return 'stock-out';
-  }
-  if (includesAny(normalized, ['WINDOW', 'CLOSED', 'EXPIRED', 'NOT_ISSUABLE', 'ENDED'])) {
-    return 'window-closed';
-  }
+  if (DUPLICATE_COUPON_CODES.has(normalized)) return 'duplicate';
+  if (STOCK_OUT_COUPON_CODES.has(normalized)) return 'stock-out';
+  if (WINDOW_CLOSED_COUPON_CODES.has(normalized)) return 'window-closed';
   return 'unknown';
 }
 
@@ -155,10 +166,9 @@ function classifyIssueError(error: unknown): CouponCtaState {
   const { status } = readError(error);
   if (status === 401) return { kind: 'auth-required', error };
   if (status === 403) return { kind: 'eligibility-unmet', error };
-  if (status === 404) return { kind: 'no-offer' };
+  if (status === 404) return { kind: 'issue-not-found', error };
   if (status === 409) return { kind: 'conflict', cause: classifyConflictCause(error), error };
-  if (status === 410) return { kind: 'conflict', cause: 'window-closed', error };
-  return { kind: 'offer-error', error };
+  return { kind: 'issue-error', error };
 }
 
 /**
