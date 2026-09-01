@@ -120,6 +120,7 @@ export default function MapScreen({
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reservationNavigationLock = useRef(false);
+  const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation();
   const center = location.coordinate;
@@ -128,6 +129,7 @@ export default function MapScreen({
   const {
     markers: apiMarkers,
     places: apiPlaces,
+    refetch: refetchPlaces,
   } = usePlaces();
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
@@ -504,6 +506,24 @@ export default function MapScreen({
   const handleSearchFocus = () => {
     setIsSearchOpen(true);
   };
+  const handleMapRefresh = useCallback(async () => {
+    if (mapRefreshLock.current) return;
+
+    mapRefreshLock.current = true;
+    setMapSection('map');
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter(null);
+    setIsFollowingUser(true);
+
+    try {
+      await Promise.allSettled([
+        refetchPlaces(),
+        refetchRecommendations(),
+      ]);
+    } finally {
+      mapRefreshLock.current = false;
+    }
+  }, [refetchPlaces, refetchRecommendations]);
   const handleFilterPress = (filter: VisitFilter) => {
     setActiveFilters((current) => (
       current.includes(filter)
@@ -634,11 +654,13 @@ export default function MapScreen({
           onLocatePress={handleLocatePress}
           onProfilePress={onOpenProfile}
           onQueryChange={handleQueryChange}
+          onRefreshMap={handleMapRefresh}
           onSearchFocus={handleSearchFocus}
           onSubmitSearch={() => {
             setContent({ type: 'results', query });
             snapTo('expanded');
           }}
+          profileImageUrl={profile?.profileImageUrl}
           query={query}
           showCategories={snapPoint !== 'expanded'}
         />

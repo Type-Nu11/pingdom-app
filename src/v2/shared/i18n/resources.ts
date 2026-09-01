@@ -329,6 +329,7 @@ export const resources = {
           },
         },
         locate: 'My location',
+        refreshing: 'Refreshing map',
         location: {
           deniedDescription: 'The map is using a default area. Allow location access to show your position.',
           deniedTitle: 'Location access is off',
@@ -1038,6 +1039,7 @@ export const resources = {
           reservation: { authError: '로그인이 필요합니다', available: '예약하기', empty: '현재 예약 가능한 일정이 없습니다', error: '예약 가능 여부를 불러오지 못했습니다', full: '예약 가능한 인원이 없습니다', loading: '예약 가능 여부를 확인하고 있습니다', retry: '다시 시도' },
         },
         locate: '내 위치',
+        refreshing: '지도 새로고침 중',
         location: {
           deniedDescription: '기본 지역을 표시하고 있습니다. 현재 위치를 보려면 위치 권한을 허용해 주세요.',
           deniedTitle: '위치 권한이 꺼져 있습니다',
