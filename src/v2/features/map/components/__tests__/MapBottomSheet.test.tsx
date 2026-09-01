@@ -40,6 +40,67 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
+  test('장소 상세 영업 상태를 한 줄 요약으로 한국어·영어·fallback 렌더링한다', async () => {
+    const selectedPlace = places[0];
+    const commonProps = {
+      activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
+      content: { type: 'place-preview', placeId: selectedPlace.id } as const,
+      height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
+      onCouponPress: jest.fn(), onCreateReservation: jest.fn(), onDetailPress: jest.fn(),
+      onFilterPress: jest.fn(), onGoNowPress: jest.fn(), onHandlePress: jest.fn(),
+      onPlacePress: jest.fn(), onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined), panHandlers: {} as GestureResponderHandlers,
+      places, recommendationPlaces: [], recommendationsState: 'ready' as const,
+      selectedPlace, sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(0), snapPoint: 'expanded' as const,
+    };
+    const fallback = (statusText: string, detailText: string | null, fullText: string) => ({
+      [String(selectedPlace.id)]: {
+        amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: statusText,
+        operatingSummary: {
+          detailText, fullText, kind: detailText ? 'open' as const : 'unknown' as const,
+          statusText, tone: detailText ? 'positive' as const : 'neutral' as const,
+          transitionDay: detailText ? 'today' as const : null,
+          transitionTime: detailText ? '20:00' : null,
+        },
+      },
+    });
+
+    const result = await renderWithProviders(
+      <MapBottomSheet
+        {...commonProps}
+        previewFallbackContentByPlaceId={fallback(
+          '영업 중', '20:00에 영업 종료', '영업 중 · 20:00에 영업 종료',
+        )}
+      />,
+      { language: 'ko' },
+    );
+    expect(screen.getByText('영업 중 · 20:00에 영업 종료')).toBeVisible();
+    expect(screen.queryByText(/MONDAY|TUESDAY/)).not.toBeOnTheScreen();
+    expect(screen.queryByText(/20:00:00/)).not.toBeOnTheScreen();
+
+    await result.rerender(
+      <MapBottomSheet
+        {...commonProps}
+        previewFallbackContentByPlaceId={fallback(
+          'Open', 'Closes at 20:00', 'Open · Closes at 20:00',
+        )}
+      />,
+    );
+    expect(screen.getByText('Open · Closes at 20:00')).toBeVisible();
+
+    await result.rerender(
+      <MapBottomSheet
+        {...commonProps}
+        previewFallbackContentByPlaceId={fallback(
+          '영업시간 정보 없음', null, '영업시간 정보 없음',
+        )}
+      />,
+    );
+    expect(screen.getByText('영업시간 정보 없음')).toBeVisible();
+  });
+
   test('긴 장소명을 제한하고 추천 이유 없이 카드와 즐겨찾기 동작을 분리한다', async () => {
     const longName = '이름이 매우 긴 추천 장소 '.repeat(8);
     const longReason = '사용자의 여행 취향과 현재 위치를 반영한 추천 이유 '.repeat(8);

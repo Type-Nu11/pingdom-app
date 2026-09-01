@@ -37,7 +37,7 @@ import {
   usePlaceExplorationMediaList,
   useRecommendationExplanation,
 } from '../../place-exploration';
-import { usePlaceDetailPresentation } from '../../place-detail';
+import { formatPlaceOperatingSummary, usePlaceDetailPresentation } from '../../place-detail';
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
   MAP_LOCATE_ZOOM_LEVEL,
@@ -334,16 +334,16 @@ export default function MapScreen({
   const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;
-    const statusEmphasis = selectedPlacePresentation.isCurrentlyOperating === true
-      ? '영업 중'
-      : selectedPlacePresentation.isCurrentlyOperating === false
-        ? '영업 종료'
-        : '';
+    const operatingSummary = selectedPlacePresentation.operatingSummary
+      ? formatPlaceOperatingSummary(
+        selectedPlacePresentation.operatingSummary,
+        (key, options) => t(key, options),
+      )
+      : undefined;
 
     return {
       [String(selectedPlace.id)]: {
         amenities: [],
-        businessHours: selectedPlacePresentation.businessHours ?? undefined,
         coupons: selectedPlacePresentation.coupons,
         email: selectedPlacePresentation.merchant?.contactEmail ?? undefined,
         englishName: selectedPlacePresentation.englishName ?? undefined,
@@ -352,6 +352,7 @@ export default function MapScreen({
         imageUrls: selectedPlacePresentation.imageUrls,
         jibunAddress: selectedPlacePresentation.jibunAddress ?? undefined,
         notice: selectedPlacePresentation.notice ?? undefined,
+        operatingSummary,
         phone: selectedPlacePresentation.merchant?.contactPhone ?? undefined,
         reservation: selectedPlacePresentation.reservation,
         reviewCount: selectedPlacePresentation.reviewTotal ?? undefined,
@@ -368,11 +369,11 @@ export default function MapScreen({
           ?? selectedPlacePresentation.description
           ?? undefined,
         statusDescription: selectedPlacePresentation.verificationLabel ?? '',
-        statusEmphasis,
+        statusEmphasis: operatingSummary?.statusText ?? '',
         website: selectedPlacePresentation.merchant?.websiteUrl ?? undefined,
       },
     };
-  }, [selectedPlace, selectedPlacePresentation]);
+  }, [selectedPlace, selectedPlacePresentation, t]);
   useEffect(() => {
     if (content.type !== 'place-preview' || selectedPlace) return;
 

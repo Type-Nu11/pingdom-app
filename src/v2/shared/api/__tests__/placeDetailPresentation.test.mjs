@@ -129,7 +129,11 @@ test('availability Query key contains place id and forwards TanStack AbortSignal
 });
 
 test('70069-shaped empty availability can open the reservation page without inventing slots', () => {
-  const result = buildPlaceDetailPresentation(70069, baseResources);
+  const result = buildPlaceDetailPresentation(
+    70069,
+    baseResources,
+    new Date('2026-08-31T02:34:00.000Z'),
+  );
   assert.equal(result.name, '대구소프트웨어마이스터고등학교');
   assert.deepEqual(result.imageUrls, []);
   assert.equal(result.imageState, 'empty');
@@ -137,6 +141,30 @@ test('70069-shaped empty availability can open the reservation page without inve
     kind: 'empty', disabled: false, message: '현재 예약 가능한 일정이 없습니다',
   });
   assert.equal(result.reviewState, 'empty');
+  assert.equal('businessHours' in result, false);
+  assert.deepEqual(result.operatingSummary, {
+    kind: 'open', transitionDay: 'today', transitionTime: '18:00',
+  });
+});
+
+test('presentation uses the latest server operating boolean and keeps notice text separate', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    notices: ready({
+      placeId: 70069,
+      currentlyOperating: false,
+      checkedAt: '2026-08-31T02:34:00Z',
+      notices: [
+        { noticeType: 'GENERAL', status: 'ACTIVE', visibleNow: true, message: '일반 공지' },
+        { noticeType: 'HOURS_CHANGE', status: 'ACTIVE', visibleNow: true, message: '변경 영업시간' },
+        { noticeType: 'TEMPORARY_CLOSURE', status: 'EXPIRED', visibleNow: true, message: '만료 공지' },
+      ],
+    }),
+  }, new Date('2026-08-31T02:34:00.000Z'));
+
+  assert.equal(result.operatingSummary.kind, 'closed');
+  assert.equal(result.notice, '변경 영업시간');
+  assert.notEqual(result.notice, result.operatingSummary.kind);
 });
 
 test('images are exploration-first, stable, clean, and de-duplicated before card fallback', () => {
@@ -194,4 +222,41 @@ test('partial failures remain section-specific and stale place resources are ign
   assert.equal(result.imageState, 'error');
   assert.equal(result.reviewState, 'error');
   assert.deepEqual(result.coupons, []);
+});
+
+test('card-only partial success preserves a status-only operating summary', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    card: ready({
+      ...baseResources.card.data,
+      activeOperatingNotices: undefined,
+      operatingExceptions: undefined,
+      regularHours: undefined,
+    }),
+    detail: failed(),
+    notices: failed(),
+    visitDecision: failed(),
+  }, new Date('2026-08-31T02:34:00.000Z'));
+
+  assert.deepEqual(result.operatingSummary, {
+    kind: 'open', transitionDay: null, transitionTime: null,
+  });
+});
+
+test('place-scoped reviews retain omitted placeId and derive a missing total from visible items', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    reviews: ready({
+      content: [
+        { id: 1, content: '경로로 식별된 리뷰', imageUrls: [] },
+        { id: 2, placeId: 70069, content: '일치 리뷰', imageUrls: [] },
+        { id: 3, placeId: 1, content: '다른 장소 리뷰', imageUrls: [] },
+      ],
+    }),
+  });
+
+  assert.deepEqual(result.reviews.map((review) => review.text), [
+    '경로로 식별된 리뷰', '일치 리뷰',
+  ]);
+  assert.equal(result.reviewTotal, 2);
 });

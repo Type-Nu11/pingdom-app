@@ -54,7 +54,7 @@ import {
 } from '../../../shared/motion';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
-import type { ReservationCtaState } from '../../place-detail';
+import type { PlaceOperatingSummaryText, ReservationCtaState } from '../../place-detail';
 import GlassSurface from './GlassSurface';
 import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
@@ -70,7 +70,6 @@ export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
 
 export type MapPreviewFallbackContent = {
   amenities: Array<'english' | 'parking'>;
-  businessHours?: string;
   coupons?: Array<{ period: string; title: string }>;
   email?: string;
   englishName?: string;
@@ -80,6 +79,7 @@ export type MapPreviewFallbackContent = {
   phone?: string;
   jibunAddress?: string;
   notice?: string;
+  operatingSummary?: PlaceOperatingSummaryText;
   roadAddress?: string;
   summary?: string;
   website?: string;
@@ -1584,9 +1584,20 @@ const ExpandedPlaceContent = ({
               <>
                 <View style={styles.detailInfoRow}>
                   <InfoClockIcon />
-                  <Text style={styles.detailInfoText}>
-                    <Text style={styles.detailOpenText}>{fallbackContent.statusEmphasis}</Text>
-                    {fallbackContent.businessHours ? ` · ${fallbackContent.businessHours}` : ''}
+                  <Text numberOfLines={2} style={styles.detailInfoText}>
+                    <Text style={[
+                      styles.detailOperatingStatus,
+                      fallbackContent.operatingSummary?.tone === 'positive'
+                        ? styles.detailOperatingPositive
+                        : fallbackContent.operatingSummary?.tone === 'warning'
+                          ? styles.detailOperatingWarning
+                          : styles.detailOperatingNeutral,
+                    ]}>
+                      {fallbackContent.operatingSummary?.statusText
+                        ?? fallbackContent.statusEmphasis}
+                    </Text>
+                    {fallbackContent.operatingSummary?.detailText
+                      ? ` · ${fallbackContent.operatingSummary.detailText}` : ''}
                   </Text>
                 </View>
                 {fallbackContent.phone ? (
@@ -2250,7 +2261,10 @@ const styles: Record<string, object> = {
     minHeight: 105,
     paddingVertical: 12,
   },
-  detailOpenText: { color: '#23B95B', fontWeight: '800' },
+  detailOperatingNeutral: { color: '#5F636C' },
+  detailOperatingPositive: { color: '#168A43' },
+  detailOperatingStatus: { fontWeight: '800' },
+  detailOperatingWarning: { color: '#A15C00' },
   detailPhoto: { borderRadius: 11, height: 129, overflow: 'hidden', width: 118 },
   detailPhotoPrimary: { width: 250 },
   detailPhotoRow: { columnGap: 10, paddingBottom: 12, paddingHorizontal: 16 },
