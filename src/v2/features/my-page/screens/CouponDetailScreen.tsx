@@ -39,6 +39,10 @@ export default function CouponDetailScreen({
   stateNotice,
 }: CouponDetailScreenProps) {
   const { t } = useTranslation();
+  // The screen reader announces only the last four characters, so the full
+  // coupon code is never spelled out aloud. The visible line still shows it in
+  // full for staff to read or the user to copy.
+  const codeTail = code.replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase();
   // i18next hands back the key itself when a resource is missing, so an
   // unchecked cast here would turn a missing translation into a render crash.
   const rawNotices = t('myPage.couponDetail.notices', { returnObjects: true });
@@ -87,6 +91,7 @@ export default function CouponDetailScreen({
               <>
                 <CouponBarcode
                   code={code}
+                  codeAccessibilityLabel={t('myPage.couponDetail.codeA11yLabel', { tail: codeTail })}
                   unavailableLabel={t('myPage.couponDetail.barcodeUnavailable')}
                 />
                 <BarcodeHint>{t('myPage.couponDetail.barcodeHint')}</BarcodeHint>

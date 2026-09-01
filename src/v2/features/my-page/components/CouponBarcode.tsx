@@ -15,13 +15,23 @@ type CouponBarcodeProps = {
   code: string;
   /** Shown when the bars cannot be drawn. The readable code stays either way. */
   unavailableLabel: string;
+  /**
+   * Masked label for the readable code (e.g. "Coupon code ending in AFA6"). The
+   * screen reader announces this instead of spelling the full code aloud; the
+   * visible line still shows it in full for staff to read or the user to copy.
+   */
+  codeAccessibilityLabel: string;
 };
 
 /**
  * The bars are decorative: nothing scans them, so they are hidden from screen
  * readers and the readable code below carries the meaning.
  */
-export default function CouponBarcode({ code, unavailableLabel }: CouponBarcodeProps) {
+export default function CouponBarcode({
+  code,
+  unavailableLabel,
+  codeAccessibilityLabel,
+}: CouponBarcodeProps) {
   // jsbarcode lays the bars out at their intrinsic width, so the plate measures
   // itself and caps the barcode instead of letting a long code overflow.
   const [availableWidth, setAvailableWidth] = useState(0);
@@ -66,7 +76,13 @@ export default function CouponBarcode({ code, unavailableLabel }: CouponBarcodeP
       ) : (
         <BarPlaceholder />
       )}
-      <CodeText selectable testID="v2-coupon-barcode-code">{code.toUpperCase()}</CodeText>
+      <CodeText
+        accessibilityLabel={codeAccessibilityLabel}
+        selectable
+        testID="v2-coupon-barcode-code"
+      >
+        {code.toUpperCase()}
+      </CodeText>
       {failed ? <FallbackText>{unavailableLabel}</FallbackText> : null}
     </Plate>
   );

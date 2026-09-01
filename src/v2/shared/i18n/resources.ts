@@ -271,6 +271,7 @@ export const resources = {
         couponDetail: {
           barcodeHint: 'Show this barcode to a store staff member before paying',
           barcodeUnavailable: 'Could not draw the barcode. Please read the code above to the staff.',
+          codeA11yLabel: 'Coupon code ending in {{tail}}',
           error: 'Could not load this coupon.',
           infoHeading: 'Coupon info',
           loading: 'Loading coupon',
@@ -847,6 +848,7 @@ export const resources = {
         couponDetail: {
           barcodeHint: '결제 전 매장 직원에게 바코드를 보여주세요',
           barcodeUnavailable: '바코드를 그리지 못했어요. 위 코드를 직원에게 알려주세요.',
+          codeA11yLabel: '쿠폰 코드, 끝 네 자리 {{tail}}',
           error: '쿠폰 정보를 불러오지 못했어요.',
           infoHeading: '쿠폰 정보',
           loading: '쿠폰 정보를 불러오는 중',

@@ -84,8 +84,11 @@ describe('CouponDetailContainer', () => {
     expect(screen.getByText('결제 전 매장 직원에게 바코드를 보여주세요')).toBeTruthy();
     expect(screen.getByTestId('v2-coupon-barcode')).toBeTruthy();
     // 매장 사용 처리 API가 대시 포함 UUID를 요구하므로, 화면 코드도 원본 그대로 읽혀야 한다.
-    expect(screen.getByTestId('v2-coupon-barcode-code'))
-      .toHaveTextContent('3FA85F64-5717-4562-B3FC-2C963F66AFA6');
+    const codeText = screen.getByTestId('v2-coupon-barcode-code');
+    expect(codeText).toHaveTextContent('3FA85F64-5717-4562-B3FC-2C963F66AFA6');
+    // 스크린리더 라벨은 전체 코드를 읽지 않고 끝 네 자리만 알려준다.
+    expect(codeText.props.accessibilityLabel).toBe('쿠폰 코드, 끝 네 자리 AFA6');
+    expect(codeText.props.accessibilityLabel).not.toContain('3FA85F64');
   });
 
   test('쿠폰 정보 행을 상점주가 등록한 offer 값으로 채운다', async () => {
