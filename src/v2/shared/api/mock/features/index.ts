@@ -7,6 +7,7 @@ import { scoutProfileMockHandlers } from './scout-profile/handlers';
 import { travelPurposeMockHandlers } from './travel-purposes/handlers';
 import { travelScheduleMockHandlers } from './travel-schedules/handlers';
 import { visitorVerificationReportMockHandlers } from './visitor-verification-reports/handlers';
+import { visitVerificationMockHandlers } from './visit-verification/handlers';
 
 /** Register each feature's handlers here; feature fixtures stay beside their handlers. */
 export const featureMockHandlers = [
@@ -19,4 +20,5 @@ export const featureMockHandlers = [
   ...placeExplorationMockHandlers,
   ...travelScheduleMockHandlers,
   ...visitorVerificationReportMockHandlers,
+  ...visitVerificationMockHandlers,
 ];
