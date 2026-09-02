@@ -142,6 +142,7 @@ type MapBottomSheetProps = {
   onHandlePress: () => void;
   onOpenLikedPlaces?: () => void;
   onOpenSavedPlaces?: () => void;
+  onStartVisitVerification?: (place: DecisionPlace) => void;
   onPlacePress: (place: DecisionPlace) => void;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
@@ -1312,6 +1313,7 @@ const PreviewContent = ({
   onCoupon,
   onDetail,
   onReserve,
+  onVerify,
   onRetryAvailability,
   onRetryMedia,
   onToggleBookmark,
@@ -1325,6 +1327,7 @@ const PreviewContent = ({
   onCoupon: () => void;
   onDetail: () => void;
   onReserve: () => void;
+  onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onToggleBookmark: () => void;
@@ -1405,7 +1408,11 @@ const PreviewContent = ({
         showsHorizontalScrollIndicator={false}
       >
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
-        <PreviewActionChip kind="arrival" label={t('map.card.actions.arrive')} />
+        <PreviewActionChip
+          kind="arrival"
+          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          onPress={onVerify}
+        />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
         {fallbackContent?.coupons?.length ? (
           <PreviewActionChip
@@ -1461,6 +1468,7 @@ const ExpandedPlaceContent = ({
   imageUrl,
   onBack,
   onReserve,
+  onVerify,
   onRetryAvailability,
   onRetryMedia,
   onRetryReviews,
@@ -1476,6 +1484,7 @@ const ExpandedPlaceContent = ({
   imageUrl?: string;
   onBack: () => void;
   onReserve: () => void;
+  onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onRetryReviews?: () => void;
@@ -1543,7 +1552,11 @@ const ExpandedPlaceContent = ({
         showsHorizontalScrollIndicator={false}
       >
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
-        <PreviewActionChip kind="arrival" label={t('map.card.actions.arrive')} />
+        <PreviewActionChip
+          kind="arrival"
+          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          onPress={onVerify}
+        />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
         <PreviewActionChip
           disabled={reservation.disabled && reservation.kind !== 'error'}
@@ -1925,6 +1938,7 @@ export default function MapBottomSheet({
   onOpenLikedPlaces,
   onOpenRecommendations,
   onOpenSavedPlaces,
+  onStartVisitVerification,
   onPlacePress,
   onRetryAvailability,
   onRetryMedia,
@@ -2085,6 +2099,9 @@ export default function MapBottomSheet({
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
             onReserve={handleCreateReservation}
+            onVerify={onStartVisitVerification
+              ? () => onStartVisitVerification(selectedPlace)
+              : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
             onRetryReviews={onRetryReviews}
@@ -2105,6 +2122,9 @@ export default function MapBottomSheet({
             onCoupon={() => onCouponPress(selectedPlace)}
             onDetail={() => onDetailPress(selectedPlace)}
             onReserve={handleCreateReservation}
+            onVerify={onStartVisitVerification
+              ? () => onStartVisitVerification(selectedPlace)
+              : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
             onToggleBookmark={() => void onToggleBookmark(

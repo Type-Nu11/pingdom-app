@@ -345,6 +345,7 @@ describe('MapBottomSheet recommendations', () => {
 
   test('장소 미리보기의 예약 캡슐은 선택 장소로 예약 생성을 요청한다', async () => {
     const onCreateReservation = jest.fn();
+    const onStartVisitVerification = jest.fn();
     const onBackHome = jest.fn();
     const onToggleBookmark = jest.fn(async () => undefined);
     const selectedPlace = places[0];
@@ -367,6 +368,7 @@ describe('MapBottomSheet recommendations', () => {
         onQueryChange={jest.fn()}
         onRetryRecommendations={jest.fn()}
         onSearchFocus={jest.fn()}
+        onStartVisitVerification={onStartVisitVerification}
         onSubmitSearch={jest.fn()}
         onToggleBookmark={onToggleBookmark}
         panHandlers={{} as GestureResponderHandlers}
@@ -393,6 +395,9 @@ describe('MapBottomSheet recommendations', () => {
     await user.press(screen.getByRole('button', { name: '예약' }));
     expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
+
+    await user.press(screen.getByRole('button', { name: '방문 인증 시작' }));
+    expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
 
     const bookmark = screen.getByTestId('place-preview-bookmark');
     const close = screen.getByTestId('place-preview-close');

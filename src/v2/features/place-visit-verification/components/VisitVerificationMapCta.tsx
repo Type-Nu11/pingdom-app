@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import styled from 'styled-components/native';
 
@@ -10,20 +10,27 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
+const NAVIGATION_LOCK_MS = 500;
+
 export default function VisitVerificationMapCta({ label, onPress, style }: Props) {
   const navigationLocked = useRef(false);
-  const [locked, setLocked] = useState(false);
+  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (unlockTimer.current) clearTimeout(unlockTimer.current);
+  }, []);
 
   return (
     <Container
       accessibilityLabel={label}
       accessibilityRole="button"
-      accessibilityState={{ disabled: locked }}
-      disabled={locked}
       onPress={() => {
         if (navigationLocked.current) return;
         navigationLocked.current = true;
-        setLocked(true);
+        unlockTimer.current = setTimeout(() => {
+          navigationLocked.current = false;
+          unlockTimer.current = null;
+        }, NAVIGATION_LOCK_MS);
         onPress();
       }}
       style={style}

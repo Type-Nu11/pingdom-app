@@ -56,6 +56,7 @@ export const MAIN_ROUTES = {
   Settings: 'Settings',
   VisitVerificationPlaces: 'VisitVerificationPlaces',
   VisitVerificationReview: 'VisitVerificationReview',
+  VisitVerificationSession: 'VisitVerificationSession',
 } as const;
 
 export type AuthStackParamList = {
@@ -98,6 +99,9 @@ export type MainStackParamList = {
   VisitVerificationPlaces: undefined;
   VisitVerificationReview: {
     checkInId?: CheckInId;
+    placeId: PlaceId;
+  };
+  VisitVerificationSession: {
     placeId: PlaceId;
   };
 };

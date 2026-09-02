@@ -105,6 +105,7 @@ type MapScreenProps = {
   onOpenCoupons?: () => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
+  onStartVisitVerification?: (placeId: number) => void;
   onSignIn?: () => void;
   onOpenVisitVerification?: () => void;
   openedBookmarkedPlaceId?: number | null;
@@ -118,6 +119,7 @@ export default function MapScreen({
   onOpenCoupons,
   onOpenProfile,
   onOpenReservation,
+  onStartVisitVerification,
   onSignIn,
   onOpenVisitVerification,
   openedBookmarkedPlaceId,
@@ -807,6 +809,9 @@ export default function MapScreen({
               setMapSection('reservations');
               snapTo('medium');
             }}
+            onStartVisitVerification={onStartVisitVerification
+              ? (place) => onStartVisitVerification(place.id)
+              : undefined}
             onPlacePress={handlePlacePress}
             onRetryRecommendations={() => void refetchRecommendations()}
             onRetryAvailability={() => void refetchAvailability()}

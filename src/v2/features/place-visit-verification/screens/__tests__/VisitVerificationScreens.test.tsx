@@ -63,13 +63,17 @@ afterEach(async () => {
   await cleanup();
 });
 
-test('floating CTA blocks duplicate navigation from consecutive taps', async () => {
+test('floating CTA blocks consecutive taps and unlocks again', async () => {
   const onPress = jest.fn();
   const view = await renderFeature(<VisitVerificationMapCta label="검증하기" onPress={onPress} />);
 
   await view.user.press(view.getByTestId('visit-verification-map-cta'));
   await view.user.press(view.getByTestId('visit-verification-map-cta'));
   expect(onPress).toHaveBeenCalledTimes(1);
+
+  await new Promise((resolve) => setTimeout(resolve, 550));
+  await view.user.press(view.getByTestId('visit-verification-map-cta'));
+  expect(onPress).toHaveBeenCalledTimes(2);
 });
 
 test('recent visits render the normal empty state', async () => {

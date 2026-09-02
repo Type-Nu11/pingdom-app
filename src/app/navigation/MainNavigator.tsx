@@ -19,6 +19,7 @@ import { clearTokenSession } from '../../v2/shared/auth/tokenSession';
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
+  VisitVerificationSessionScreen,
 } from '../../v2/features/place-visit-verification';
 import SettingsScreen from '../../v2/features/settings/screens/SettingsScreen';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
@@ -77,6 +78,12 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
             }
           }}
           onOpenVisitVerification={() => navigation.navigate(MAIN_ROUTES.VisitVerificationPlaces)}
+          onStartVisitVerification={(value) => {
+            const placeId = parsePlaceId(value);
+            if (placeId) {
+              navigation.navigate(MAIN_ROUTES.VisitVerificationSession, { placeId });
+            }
+          }}
           onSignIn={() => void clearTokenSession()}
         />
       </V2ScreenBoundary>
@@ -252,6 +259,22 @@ const VisitVerificationReviewRouteScreen = ({ navigation, route }: MainScreenPro
   </V2ScreenBoundary>
 );
 
+const VisitVerificationSessionRouteScreen = ({ navigation, route }: MainScreenProps<'VisitVerificationSession'>) => (
+  <V2ScreenBoundary>
+    <VisitVerificationSessionScreen
+      onBack={navigation.goBack}
+      onWriteReview={({ checkInId: value, placeId: placeValue }) => {
+        const checkInId = parseCheckInId(value);
+        const placeId = parsePlaceId(placeValue);
+        if (checkInId && placeId) {
+          navigation.navigate(MAIN_ROUTES.VisitVerificationReview, { checkInId, placeId });
+        }
+      }}
+      placeId={route.params.placeId}
+    />
+  </V2ScreenBoundary>
+);
+
 const MainNavigator = () => (
   <Stack.Navigator
     initialRouteName={MAIN_ROUTES.Map}
@@ -271,6 +294,7 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.Merchant} component={MerchantRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.VisitVerificationSession} component={VisitVerificationSessionRouteScreen} />
   </Stack.Navigator>
 );
 
