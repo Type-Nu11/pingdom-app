@@ -193,7 +193,7 @@ const Container = styled.View`
 const Header = styled.View`
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   height: 40px;
   gap: 8px;
   padding: 0 ${({ theme }) => theme.spacing.md}px;
