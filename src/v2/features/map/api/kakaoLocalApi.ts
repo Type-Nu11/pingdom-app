@@ -80,10 +80,6 @@ const parseCoordinate = (value?: string) => {
 
 const hasKakaoRestApiKey = () => Boolean(KAKAO_REST_API_KEY);
 
-const logKakaoSearch = (label: string, payload: Record<string, unknown>) => {
-  console.log(`[KakaoLocal] ${label}`, payload);
-};
-
 const uniqueByCoordinateAndName = (items: KakaoLocalSearchItem[]) => {
   const seen = new Set<string>();
 
@@ -123,8 +119,7 @@ export const getAddressFromCoordinate = async (lat: number, lng: number) => {
     const address = data.documents?.[0];
 
     return address?.road_address?.address_name ?? address?.address?.address_name ?? '';
-  } catch (error) {
-    console.error('좌표 → 주소 변환 실패', error);
+  } catch {
     return '';
   }
 };
@@ -145,25 +140,11 @@ const searchKakaoKeywordPlaces = async (
     params.set('sort', 'distance');
   }
 
-  logKakaoSearch('keyword request', {
-    centerLat: options?.centerLat,
-    centerLng: options?.centerLng,
-    query,
-    radius: params.get('radius'),
-    sort: params.get('sort'),
-  });
-
   const response = await fetchWithTimeout(`${KAKAO_LOCAL_BASE_URL}/search/keyword.json?${params}`, {
     headers: kakaoHeaders,
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    logKakaoSearch('keyword response error', {
-      body: errorText,
-      query,
-      status: response.status,
-    });
     return [];
   }
 
@@ -196,19 +177,6 @@ const searchKakaoKeywordPlaces = async (
     }];
   }) ?? [];
 
-  logKakaoSearch('keyword response success', {
-    count: items.length,
-    hasCenter: options?.centerLat !== undefined && options.centerLng !== undefined,
-    query,
-    sample: items.slice(0, 3).map((item) => ({
-      kakaoPlaceId: item.kakaoPlaceId,
-      lat: item.lat,
-      lng: item.lng,
-      name: item.name,
-    })),
-    status: response.status,
-  });
-
   return items;
 };
 
@@ -227,19 +195,11 @@ const searchKakaoAddresses = async (query: string) => {
     size: '10',
   });
 
-  logKakaoSearch('address request', { query });
-
   const response = await fetchWithTimeout(`${KAKAO_LOCAL_BASE_URL}/search/address.json?${params}`, {
     headers: kakaoHeaders,
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    logKakaoSearch('address response error', {
-      body: errorText,
-      query,
-      status: response.status,
-    });
     return [];
   }
 
@@ -271,17 +231,6 @@ const searchKakaoAddresses = async (query: string) => {
     }];
   }) ?? [];
 
-  logKakaoSearch('address response success', {
-    count: items.length,
-    query,
-    sample: items.slice(0, 3).map((item) => ({
-      lat: item.lat,
-      lng: item.lng,
-      name: item.name,
-    })),
-    status: response.status,
-  });
-
   return items;
 };
 
@@ -292,10 +241,6 @@ export const searchKakaoLocalPlaces = async (
   const trimmedQuery = query.trim();
 
   if (!trimmedQuery || !hasKakaoRestApiKey()) {
-    logKakaoSearch('search skipped', {
-      hasApiKey: hasKakaoRestApiKey(),
-      query: trimmedQuery,
-    });
     return [];
   }
 
@@ -316,22 +261,8 @@ export const searchKakaoLocalPlaces = async (
       ...addressResults,
     ]);
 
-    logKakaoSearch('search merged results', {
-      addressCount: addressResults.length,
-      fallbackKeywordCount: fallbackKeywordResults.length,
-      finalCount: mergedResults.length,
-      nearbyKeywordCount: nearbyKeywordResults.length,
-      query: trimmedQuery,
-    });
-
     return mergedResults;
-  } catch (error) {
-    console.error('[KakaoLocal] search failed', {
-      centerLat: options?.centerLat,
-      centerLng: options?.centerLng,
-      error,
-      query: trimmedQuery,
-    });
+  } catch {
     return [];
   }
 };

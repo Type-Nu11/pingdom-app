@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { recommendationQueryKeys } from '../../travel-purposes/model/travelPurposeQueryKeys';
 import { placeApi, type GetPlaceRecommendationsRequest } from '../api/placeApi';
@@ -27,27 +27,6 @@ export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) 
     queryKey: placeRecommendationQueryKeys.list(queryParams),
     queryFn: () => placeApi.getRecommendations(queryParams),
   });
-
-  useEffect(() => {
-    if (!__DEV__) {
-      return;
-    }
-
-    console.log('[usePlaceRecommendations]', {
-      enabled: Number.isFinite(queryParams.latitude) && Number.isFinite(queryParams.longitude),
-      isError: recommendationsQuery.isError,
-      isLoading: recommendationsQuery.isLoading,
-      params: queryParams,
-      placesCount: recommendationsQuery.data?.places?.length ?? 0,
-      recommendedCount: recommendationsQuery.data?.recommendedCount,
-    });
-  }, [
-    queryParams,
-    recommendationsQuery.data?.places?.length,
-    recommendationsQuery.data?.recommendedCount,
-    recommendationsQuery.isError,
-    recommendationsQuery.isLoading,
-  ]);
 
   return {
     appliedActivityIntent: recommendationsQuery.data?.appliedActivityIntent ?? null,

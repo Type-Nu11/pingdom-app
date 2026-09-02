@@ -35,12 +35,12 @@ export function useForegroundNotifications(enabled = true): void {
         }
 
         unsubscribe = firebaseMessaging.onMessage(firebaseMessaging.messaging, (message) => {
-          void presentForegroundNotification(message).catch((error) => {
-            console.warn('[V2 FCM] Foreground notification failed:', error);
+          void presentForegroundNotification(message).catch(() => {
+            console.warn('[V2 FCM] Foreground notification failed.');
           });
         });
-      } catch (error) {
-        console.warn('[V2 FCM] Foreground setup failed:', error);
+      } catch {
+        console.warn('[V2 FCM] Foreground setup failed.');
       }
     };
 

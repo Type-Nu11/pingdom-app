@@ -31,8 +31,8 @@ export function useRegisterFcmToken() {
     onMutate: async ({ token }) => {
       try {
         await saveRegisteredFcmToken(token);
-      } catch (error) {
-        console.warn('[V2 FCM] Registered token persistence failed:', error);
+      } catch {
+        console.warn('[V2 FCM] Registered token persistence failed.');
       }
     },
   });
@@ -42,8 +42,8 @@ export function useDeleteFcmToken() {
   return useMutation({
     ...createDeleteFcmTokenMutationOptions(),
     onSuccess: (_response, { token }) => {
-      void clearRegisteredFcmToken(token).catch((error) => {
-        console.warn('[V2 FCM] Registered token cleanup failed:', error);
+      void clearRegisteredFcmToken(token).catch(() => {
+        console.warn('[V2 FCM] Registered token cleanup failed.');
       });
     },
   });

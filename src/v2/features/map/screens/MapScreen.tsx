@@ -499,8 +499,8 @@ export default function MapScreen({
         placeId: place.id,
         recommendationVersion,
         requestId: recommendationRequestId,
-      }).catch((error) => {
-        if (__DEV__) console.warn('[recommendation-click]', error);
+      }).catch(() => {
+        if (__DEV__) console.warn('[recommendation-click] failed.');
       });
     }
     setMapSection('map');

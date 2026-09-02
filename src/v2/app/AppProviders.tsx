@@ -20,8 +20,8 @@ export default function AppProviders({ children }: PropsWithChildren) {
 
     void initializeI18n()
       .then(() => registerOfferCouponResources(i18n))
-      .catch((error) => {
-        console.warn('[V2 i18n] Initialization failed:', error);
+      .catch(() => {
+        console.warn('[V2 i18n] Initialization failed.');
       })
       .finally(() => {
         if (isMounted) {

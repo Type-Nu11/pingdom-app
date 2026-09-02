@@ -23,7 +23,6 @@ export const PRODUCTION_ROUTE_PARITY: readonly RouteParityEntry[] = [
   { activeImplementation: 'src/v2/features/my-page/screens/MyPageScreen.tsx', removalIssues: [], route: 'Profile', status: 'V2_READY' },
   { activeImplementation: 'src/v2/features/settings/screens/SettingsScreen.tsx', removalIssues: [], route: 'Settings/Logout', status: 'V2_READY' },
   { activeImplementation: 'src/app/navigation/RoutePlaceholderScreen.tsx', removalIssues: ['#139'], route: 'Merchant', status: 'REMOVE' },
-  { activeImplementation: 'src/features/profile/dev/account-session-api-check', removalIssues: ['#139'], route: 'ApiCheck', status: 'REMOVE' },
 ] as const;
 
 export const PROTECTED_ROUTE_FLOWS = Object.freeze({

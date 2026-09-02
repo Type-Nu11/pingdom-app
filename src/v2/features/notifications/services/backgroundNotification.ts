@@ -14,8 +14,8 @@ export function registerBackgroundNotificationHandler(): void {
       await saveLastBackgroundNotification(
         parseNotificationRoute(message, 'background-message'),
       );
-    } catch (error) {
-      console.warn('[V2 FCM] Background notification handling failed:', error);
+    } catch {
+      console.warn('[V2 FCM] Background notification handling failed.');
     }
   });
 }

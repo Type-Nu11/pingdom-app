@@ -56,8 +56,8 @@ export function useNotificationOpenSync(onOpen: NotificationOpenHandler): void {
           firebase: firebaseInitial ? parseNotificationRoute(firebaseInitial, 'quit-open') : null,
         });
         if (initialRoute) onOpen(initialRoute);
-      } catch (error) {
-        console.warn('[V2 FCM] Initial notification handling failed:', error);
+      } catch {
+        console.warn('[V2 FCM] Initial notification handling failed.');
       }
     };
 

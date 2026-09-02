@@ -26,8 +26,8 @@ async function requestNotificationPermission(): Promise<boolean> {
     const status = await firebaseMessaging.requestPermission(firebaseMessaging.messaging);
     return status === firebaseMessaging.AuthorizationStatus.AUTHORIZED
       || status === firebaseMessaging.AuthorizationStatus.PROVISIONAL;
-  } catch (error) {
-    console.warn('[V2 FCM] Notification permission failed:', error);
+  } catch {
+    console.warn('[V2 FCM] Notification permission failed.');
     return false;
   }
 }

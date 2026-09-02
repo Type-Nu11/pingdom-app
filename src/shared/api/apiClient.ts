@@ -121,50 +121,6 @@ function getRequestPath(url?: string): string {
     return url.split('?')[0] ?? url;
 }
 
-function shouldLogAuthRequest(url?: string): boolean {
-    const path = getRequestPath(url);
-
-    return [
-        '/auth/token/refresh',
-    ].includes(path);
-}
-
-function shouldLogApiRequest(url?: string): boolean {
-    const path = getRequestPath(url);
-
-    return shouldLogAuthRequest(url) || path.startsWith('/users/me/bookmarks/') || [
-        '/places',
-        '/places/recommendations',
-        '/places/autocomplete',
-        '/users/me/bookmarks',
-        '/users/me/travel-purposes',
-    ].includes(path);
-}
-
-function summarizeResponseData(data: unknown) {
-    if (!data || typeof data !== 'object') {
-        return undefined;
-    }
-
-    const responseData = data as {
-        hasNext?: unknown;
-        limit?: unknown;
-        page?: unknown;
-        places?: unknown;
-        totalCount?: unknown;
-        totalPages?: unknown;
-    };
-
-    return {
-        hasNext: responseData.hasNext,
-        limit: responseData.limit,
-        page: responseData.page,
-        placesCount: Array.isArray(responseData.places) ? responseData.places.length : undefined,
-        totalCount: responseData.totalCount,
-        totalPages: responseData.totalPages,
-    };
-}
-
 function isPublicAuthUrl(url?: string): boolean {
     const path = getRequestPath(url);
 
@@ -199,41 +155,6 @@ function toRefreshResponse(response: RawRefreshResponse): RefreshResponse {
     throw new Error('토큰 갱신 응답에 accessToken이 없습니다.');
 }
 
-function decodeJwtPayload(token: string | null): Record<string, unknown> | null {
-    if (!token) return null;
-
-    const payload = token.split('.')[1];
-
-    if (!payload || typeof globalThis.atob !== 'function') {
-        return null;
-    }
-
-    try {
-        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-        const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-        const json = globalThis.atob(paddedBase64);
-
-        return JSON.parse(json) as Record<string, unknown>;
-    } catch {
-        return null;
-    }
-}
-
-function getTokenDebug(token: string | null) {
-    const payload = decodeJwtPayload(token);
-    const exp = typeof payload?.exp === 'number' ? payload.exp : undefined;
-    const iat = typeof payload?.iat === 'number' ? payload.iat : undefined;
-
-    return {
-        exp,
-        expiresInSeconds: exp ? exp - Math.floor(Date.now() / 1000) : undefined,
-        hasPayload: Boolean(payload),
-        iat,
-        sub: payload?.sub,
-        tokenLength: token?.length ?? 0,
-    };
-}
-
 // ─────────────────────────────────────────────
 // 토큰 유틸
 // ─────────────────────────────────────────────
@@ -251,8 +172,6 @@ async function resolveAccessToken(): Promise<string | null> {
 // 실제 갱신 API 호출만 담당
 // 잠금(중복 방지) 관리는 refreshAccessToken이 담당
 async function fetchNewTokens(): Promise<string> {
-    console.info('[auth-refresh]', 'start');
-
     const { data } = await refreshClient.post<RawRefreshResponse>(
         '/auth/token/refresh',
         undefined,
@@ -260,10 +179,6 @@ async function fetchNewTokens(): Promise<string> {
     );
 
     const nextTokens = toRefreshResponse(data);
-
-    console.info('[auth-refresh]', 'success', {
-        accessToken: getTokenDebug(nextTokens.accessToken),
-    });
 
     await persistTokens(nextTokens);
     return nextTokens.accessToken;
@@ -323,16 +238,6 @@ api.interceptors.request.use(
             config.headers.set('Authorization', `Bearer ${token}`);
         }
 
-        if (shouldLogApiRequest(config.url)) {
-            console.info('[api]', 'request', {
-                hasAccessToken: Boolean(token),
-                method: config.method,
-                params: config.params,
-                path: getRequestPath(config.url),
-                token: getTokenDebug(token),
-            });
-        }
-
         return config;
     },
     (error) => Promise.reject(error)
@@ -349,19 +254,7 @@ api.interceptors.request.use(
 //   - 이미 재시도한 요청 (_retry === true)
 //   - 갱신 요청 자체가 401을 받은 경우 (무한루프 방지)
 api.interceptors.response.use(
-    (response) => {
-        if (shouldLogApiRequest(response.config.url)) {
-            console.info('[api]', 'response success', {
-                method: response.config.method,
-                params: response.config.params,
-                path: getRequestPath(response.config.url),
-                status: response.status,
-                summary: summarizeResponseData(response.data),
-            });
-        }
-
-        return response;
-    },
+    (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as RetryableRequestConfig | undefined;
         const status = error.response?.status;
@@ -403,32 +296,6 @@ api.interceptors.response.use(
             }
 
             return Promise.reject(error);
-        }
-
-        if (originalRequest && (status === 401 || shouldLogApiRequest(originalRequest.url))) {
-            const responseData = error.response?.data as {
-                code?: unknown;
-                message?: unknown;
-            } | undefined;
-
-            const logNetworkDiagnostic = status === undefined
-                && getRequestPath(originalRequest.url) === '/users/me/travel-purposes';
-            const log = logNetworkDiagnostic ? console.info : console.warn;
-
-            log('[api]', 'response error', {
-                code: responseData?.code,
-                message: responseData?.message ?? error.message,
-                method: originalRequest.method,
-                params: originalRequest.params,
-                path: getRequestPath(originalRequest.url),
-                retry: Boolean(originalRequest._retry),
-                status,
-                token: getTokenDebug(
-                    typeof originalRequest.headers?.get === 'function'
-                        ? String(originalRequest.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-                        : null
-                ),
-            });
         }
 
         const shouldSkipRetry =
