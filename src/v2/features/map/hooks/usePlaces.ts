@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   getPlaceListRuntimeState,
   usePlaceList,
@@ -59,17 +59,6 @@ export const usePlaces = (
     longitude: place.coordinate.lng,
     name: place.name,
   })), [placesQuery.data]);
-
-  useEffect(() => {
-    if (!placesQuery.isError) {
-      return;
-    }
-
-    console.warn('[places]', 'failed to load place list', {
-      enabled,
-      message: placesQuery.error instanceof Error ? placesQuery.error.message : 'Unknown error',
-    });
-  }, [enabled, placesQuery.error, placesQuery.isError]);
 
   const markers = useMemo(() => places.map(toMapMarker), [places]);
   const status = getPlaceListRuntimeState({
