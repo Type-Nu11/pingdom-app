@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../v2/features/map/screens/MapScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
+import ReservationBoxScreen from '../../v2/features/reservations/screens/ReservationBoxScreen';
 import CreateReservationScreen from '../../v2/features/reservations/screens/CreateReservationScreen';
 import CouponBoxScreen from '../../v2/features/my-page/screens/CouponBoxScreen';
 import CouponDetailContainer from '../../v2/features/my-page/screens/CouponDetailContainer';
@@ -133,6 +134,7 @@ export const MyPageRouteScreen = ({ navigation }: Pick<MainScreenProps<'MyPage'>
         onBack={navigation.goBack}
         onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
         onOpenProfileEdit={openProfileEdit}
+        onOpenReservations={() => navigation.navigate(MAIN_ROUTES.ReservationBox)}
         onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
         onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
       />
@@ -213,6 +215,19 @@ const ReservationDetailRouteScreen = ({
   </V2ScreenBoundary>
 );
 
+const ReservationBoxRouteScreen = ({ navigation }: MainScreenProps<'ReservationBox'>) => (
+  <V2ScreenBoundary>
+    <ReservationBoxScreen
+      onBack={navigation.goBack}
+      onOpenReservation={(value) => {
+        const reservationId = parseReservationId(value);
+        if (reservationId) navigation.navigate(MAIN_ROUTES.ReservationDetail, { reservationId });
+      }}
+      onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
+    />
+  </V2ScreenBoundary>
+);
+
 const CreateReservationRouteScreen = ({
   navigation,
   route,
@@ -285,6 +300,7 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CouponDetail} component={CouponDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.ReservationBox} component={ReservationBoxRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ReservationDetail} component={ReservationDetailRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.MyPage} component={MyPageRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />

@@ -52,6 +52,7 @@ export type MyPageScreenProps = {
   onBack: () => void;
   onOpenCoupons: () => void;
   onOpenProfileEdit: () => void;
+  onOpenReservations: () => void;
   onOpenSettings: () => void;
   onOpenVerifiedPlaces: () => void;
 };
@@ -60,6 +61,7 @@ export default function MyPageScreen({
   onBack,
   onOpenCoupons,
   onOpenProfileEdit,
+  onOpenReservations,
   onOpenSettings,
   onOpenVerifiedPlaces,
 }: MyPageScreenProps) {
@@ -219,7 +221,7 @@ export default function MyPageScreen({
           </IconButton>
         </TopBar>
 
-        <Section $borderWidth={8}>
+        <Section $borderWidth={8} $compactTop>
           <SectionContent>
             {isProfileLoading ? (
               <Slot $minHeight={PROFILE_ROW_HEIGHT}>
@@ -269,7 +271,11 @@ export default function MyPageScreen({
             )}
 
             <StatsCard>
-              <StatItem>
+              <StatButton
+                accessibilityLabel={t('myPage.stats.reservations')}
+                accessibilityRole="button"
+                onPress={onOpenReservations}
+              >
                 <StatLabel>{t('myPage.stats.reservations')}</StatLabel>
                 <MyPageStatValue
                   isError={reservationsQuery.isError}
@@ -277,7 +283,7 @@ export default function MyPageScreen({
                   testID="v2-my-page-stat-reservations"
                   value={reservationsQuery.data?.totalCount ?? 0}
                 />
-              </StatItem>
+              </StatButton>
               <DividerIcon height={48} width={1} />
               <StatItem>
                 <StatLabel>{t('myPage.stats.reviews')}</StatLabel>
@@ -428,9 +434,9 @@ const TopBarTitle = styled.Text`
   font-weight: 500;
 `;
 
-const Section = styled.View<{ $borderWidth: number }>`
+const Section = styled.View<{ $borderWidth: number; $compactTop?: boolean }>`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.md}px 0;
+  padding: ${({ $compactTop, theme }) => ($compactTop ? theme.spacing.xs : theme.spacing.md)}px 0 ${({ theme }) => theme.spacing.md}px;
   border-bottom-width: ${({ $borderWidth }) => $borderWidth}px;
   border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;

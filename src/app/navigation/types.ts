@@ -52,6 +52,7 @@ export const MAIN_ROUTES = {
   ProfileEdit: 'ProfileEdit',
   VerifiedPlaces: 'VerifiedPlaces',
   CreateReservation: 'CreateReservation',
+  ReservationBox: 'ReservationBox',
   ReservationDetail: 'ReservationDetail',
   Settings: 'Settings',
   VisitVerificationPlaces: 'VisitVerificationPlaces',
@@ -92,6 +93,7 @@ export type MainStackParamList = {
   ReservationDetail: {
     reservationId: ReservationId;
   };
+  ReservationBox: undefined;
   Settings: undefined;
   Merchant: {
     merchantId: MerchantId;

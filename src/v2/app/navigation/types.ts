@@ -15,6 +15,8 @@ export const V2_ROUTES = {
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   CreateReservation: 'CreateReservation',
+  ReservationBox: 'ReservationBox',
+  ReservationDetail: 'ReservationDetail',
   Home: 'Home',
   Map: 'Map',
   MyPage: 'MyPage',
@@ -39,6 +41,10 @@ export type V2StackParamList = {
     imageUrl?: string;
     placeId: PlaceId;
     placeName?: string;
+  };
+  ReservationBox: undefined;
+  ReservationDetail: {
+    reservationId: number;
   };
   Home: undefined;
   Map: undefined;

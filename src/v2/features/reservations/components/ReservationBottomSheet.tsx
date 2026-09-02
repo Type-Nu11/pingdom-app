@@ -23,10 +23,8 @@ import {
 } from '../../map/components/MapBottomSheet';
 import { usePlacePreviewImages } from '../../map/hooks/usePlacePreviewImages';
 import * as GlassStyles from '../../map/styles/BottomSheetGlass.styles';
-import type { StatusTone } from '../../../shared/model';
-import { getReservationStatusView } from '../model/reservationPresentation';
-import type { Reservation } from '..';
 import { useReservations } from '..';
+import ReservationRecordCard from './ReservationRecordCard';
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = 48;
@@ -61,67 +59,6 @@ const ActiveReservationIcon = () => (
   </Svg>
 );
 
-
-// Label and tone come from the shared reservation selector; only the sheet's own
-// palette lives here, so the status vocabulary is not restated per screen.
-const STATUS_TONE_COLORS: Record<StatusTone, string> = {
-  error: '#B42318',
-  neutral: '#73757D',
-  success: '#157F3D',
-  warning: '#FF1956',
-};
-
-function formatDate(value: string, language: string) {
-  return new Intl.DateTimeFormat(language.startsWith('en') ? 'en-US' : 'ko-KR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
-
-function ReservationCard({ onPress, reservation }: {
-  onPress: () => void;
-  reservation: Reservation;
-}) {
-  const { i18n, t } = useTranslation();
-  const status = getReservationStatusView(reservation.status);
-  const statusLabel = t(status.labelKey);
-
-  return (
-    <Pressable
-      accessibilityHint={t('reservation.list.card.hint')}
-      accessibilityLabel={t('reservation.list.card.label', { id: reservation.id, status: statusLabel })}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-      testID={`reservation-card-${reservation.id}`}
-    >
-      <View style={styles.cardHeading}>
-        <View style={styles.cardIcon}><Text style={styles.cardIconText}>R</Text></View>
-        <View style={styles.cardTitleCopy}>
-          <Text style={styles.cardEyebrow}>{t('reservation.list.card.eyebrow')}</Text>
-          <Text style={styles.cardTitle}>{t('reservation.list.card.number', { id: reservation.id })}</Text>
-        </View>
-        <Text style={[styles.status, { color: STATUS_TONE_COLORS[status.tone] }]}>
-          {`${status.symbol} ${statusLabel}`}
-        </Text>
-      </View>
-      <View style={styles.divider} />
-      <View style={styles.metaRow}>
-        <Text style={styles.metaLabel}>{t('reservation.list.card.productType')}</Text>
-        <Text style={styles.metaValue}>{reservation.productType}</Text>
-      </View>
-      <View style={styles.metaRow}>
-        <Text style={styles.metaLabel}>{t('reservation.list.card.quantity')}</Text>
-        <Text style={styles.metaValue}>{reservation.quantity}</Text>
-      </View>
-      <View style={styles.metaRow}>
-        <Text style={styles.metaLabel}>{t('reservation.list.card.createdAt')}</Text>
-        <Text style={styles.metaValue}>{formatDate(reservation.createdAt, i18n.resolvedLanguage ?? i18n.language)}</Text>
-      </View>
-      <Text style={styles.detailLink}>{t('reservation.list.card.detail')}</Text>
-    </Pressable>
-  );
-}
 
 function NearbyReservationRail({
   bookmarkedPlaceIds,
@@ -338,8 +275,10 @@ export default function ReservationBottomSheet({
                       <Text style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</Text>
                       <Text style={styles.stateBody}>{t('reservation.list.emptyDescription')}</Text>
                     </View>
-                  ) : items.map((reservation) => (
-                    <ReservationCard key={reservation.id} onPress={() => onOpenReservation(reservation.id)} reservation={reservation} />
+                  ) : items.map((reservation, index) => (
+                    <View key={reservation.id} style={index < items.length - 1 ? styles.reservationCardItem : undefined}>
+                      <ReservationRecordCard onPress={() => onOpenReservation(reservation.id)} reservation={reservation} />
+                    </View>
                   ))}
                 </>
               ) : null}
@@ -359,37 +298,26 @@ export default function ReservationBottomSheet({
 }
 
 const styles: Record<string, object> = {
-  card: { backgroundColor: '#FFFFFF', borderColor: '#ECEDEF', borderRadius: 17, borderWidth: 1, gap: 8, marginBottom: 11, padding: 14 },
-  cardEyebrow: { color: '#8A8C93', fontSize: 10, fontWeight: '600' },
-  cardHeading: { alignItems: 'center', flexDirection: 'row', gap: 10 },
-  cardIcon: { alignItems: 'center', backgroundColor: '#FFF0F4', borderRadius: 10, height: 36, justifyContent: 'center', width: 36 },
-  cardIconText: { color: '#FF1956', fontSize: 15, fontWeight: '900' },
-  cardTitle: { color: '#1E1F23', fontSize: 14, fontWeight: '800' },
-  cardTitleCopy: { flex: 1, gap: 2 },
   content: { flex: 1 },
-  detailLink: { alignSelf: 'flex-end', color: '#EC245B', fontSize: 11, fontWeight: '800' },
-  divider: { backgroundColor: '#ECEDEF', height: 1 },
   handle: { backgroundColor: 'rgba(80,83,91,0.34)', borderRadius: 3, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
   listContent: { paddingBottom: 120, paddingHorizontal: 16, paddingTop: 2 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 250, marginBottom: 0 },
-  metaLabel: { color: '#8A8C93', fontSize: 11 },
-  metaRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  metaValue: { color: '#3B3B40', fontSize: 11, fontWeight: '700' },
   nearbyEmpty: { alignItems: 'center', minHeight: 72, justifyContent: 'center' },
   nearbyEmptyText: { color: '#777982', fontSize: 12, fontWeight: '600' },
   nearbyRail: { gap: 12, paddingBottom: 4, paddingTop: 2 },
   navItem: { alignItems: 'center', flex: 1, gap: 3, justifyContent: 'center' },
   navItemActive: { backgroundColor: '#F7F7F8' },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', width: 80 },
+  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', overflow: 'hidden', width: 68 },
   navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600' },
   navLabelActive: { color: '#FF245B', fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 5 },
   navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
   navigationShadow: { backgroundColor: '#FFFFFF', borderRadius: 32, flex: 1 },
   pressed: { opacity: 0.72 },
+  reservationCardItem: { marginBottom: 11 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   savedTitle: { color: '#1D1E22', fontSize: 17, fontWeight: '900', marginBottom: 8, marginTop: 0 },
@@ -399,7 +327,6 @@ const styles: Record<string, object> = {
   stateBody: { color: '#777982', fontSize: 11, marginTop: 4 },
   stateMark: { color: '#FF1956', fontSize: 20, fontWeight: '900' },
   stateTitle: { color: '#27292F', fontSize: 14, fontWeight: '800', marginTop: 6 },
-  status: { fontSize: 11, fontWeight: '800' },
   subtitle: { color: '#777982', fontSize: 13, marginTop: 2, paddingHorizontal: 16 },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
