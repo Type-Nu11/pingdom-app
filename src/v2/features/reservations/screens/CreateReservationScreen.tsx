@@ -213,7 +213,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   if (createReservation.isSuccess) {
     const created = createReservation.data;
     const createdWindow = formatReservationWindow(created, i18n.language);
-    const createdBookerName = maskBookerName(created.bookerName);
+    const createdBookerName = maskBookerName(created?.bookerName);
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-reservation-success-screen">
         <SuccessHeader>

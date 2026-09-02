@@ -110,9 +110,10 @@ export function maskBookerPhone(value: string | null | undefined): string | null
  * contract) so the screen can fall back rather than render `Invalid Date`.
  */
 export function formatReservationWindow(
-  reservation: Pick<Reservation, 'reservationStartsAt' | 'reservationEndsAt'>,
+  reservation: Pick<Reservation, 'reservationStartsAt' | 'reservationEndsAt'> | null | undefined,
   language: string,
 ): string | null {
+  if (!reservation) return null;
   const { reservationStartsAt, reservationEndsAt } = reservation;
   if (!reservationStartsAt) return null;
 

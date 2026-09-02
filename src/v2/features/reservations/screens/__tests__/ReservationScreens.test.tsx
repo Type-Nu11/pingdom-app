@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { screen } from '@testing-library/react-native';
 
+import { ApiError } from '../../../../shared/api';
 import {
   createTestI18n,
   renderWithProviders,
@@ -13,7 +14,6 @@ import { useAvailabilities, useCreateReservation } from '../../hooks/useReservat
 import { useReservationDetail } from '../../hooks/useReservations';
 import { useAllPayments } from '../../../payments/hooks/usePayments';
 import { createReservationIdempotencyKey, localDateKey } from '../../model/reservationAvailability';
-import { ApiError } from '../../../../shared/api';
 
 const FIXED_NOW = new Date(2026, 7, 26, 9, 0, 0);
 
@@ -36,6 +36,8 @@ describe('V2 reservation screens', () => {
     jest.mocked(useReservationDetail).mockReturnValue({
       data: {
         availabilityId: 801,
+        bookerName: '김민수',
+        bookerPhone: '010-1234-5678',
         canceledAt: null,
         confirmedAt: null,
         createdAt: '2026-08-25T04:00:00Z',
@@ -43,6 +45,9 @@ describe('V2 reservation screens', () => {
         productId: 501,
         productType: 'TICKET',
         quantity: 2,
+        requestNote: '창가 자리 부탁드려요',
+        reservationEndsAt: '2026-08-27T07:00:00Z',
+        reservationStartsAt: '2026-08-27T06:00:00Z',
         status: 'PENDING',
         touristUserId: 101,
         updatedAt: '2026-08-25T04:00:00Z',
@@ -103,11 +108,15 @@ describe('V2 reservation screens', () => {
 
   async function fillBooker(
     user: Awaited<ReturnType<typeof renderReservationScreen>>['user'],
-    { note = '' }: { note?: string } = {},
+    {
+      name = '홍길동',
+      note = '',
+      phone = '010-1234-5678',
+    }: { name?: string; note?: string; phone?: string } = {},
   ) {
-    await user.type(screen.getByTestId('v2-reservation-booker-name'), '홍길동');
-    await user.type(screen.getByTestId('v2-reservation-booker-phone'), '010-1234-5678');
-    if (note) await user.type(screen.getByTestId('v2-reservation-request-note'), note);
+    if (name) await user.type(screen.getByTestId('v2-booker-name'), name);
+    if (phone) await user.type(screen.getByTestId('v2-booker-phone'), phone);
+    if (note) await user.type(screen.getByTestId('v2-booker-note'), note);
   }
 
   test('현재 날짜의 달력에서 시작하고 실서버 필수 예약자 입력을 표시한다', async () => {
@@ -124,9 +133,11 @@ describe('V2 reservation screens', () => {
 
     expect(screen.getByTestId('v2-reservation-month')).toHaveTextContent('2026년 8월');
     expect(screen.getByText('이 장소에 등록된 예약 가능 일정이 없습니다.')).toBeVisible();
-    expect(screen.getByPlaceholderText('이름을 입력하세요')).toBeVisible();
-    expect(screen.getByPlaceholderText('전화번호를 입력하세요')).toBeVisible();
-    expect(screen.getByPlaceholderText('장소에 전달할 내용을 입력하세요')).toBeVisible();
+    // The booker fields are contract-backed (ReservationCreateRequest), so they
+    // render; the screen still invents no fallback time.
+    expect(screen.getByTestId('v2-booker-name')).toBeVisible();
+    expect(screen.getByTestId('v2-booker-phone')).toBeVisible();
+    expect(screen.getByTestId('v2-booker-note')).toBeVisible();
     expect(screen.queryByText('09:00')).not.toBeOnTheScreen();
     expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
   });
@@ -148,9 +159,17 @@ describe('V2 reservation screens', () => {
     expect(await screen.findByText('2026년 9월')).toBeVisible();
     expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
     await user.press(screen.getByTestId('v2-availability-77'));
-    expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
-    await fillBooker(user, { note: '창가 자리 부탁드립니다.' });
+    // A real slot enables the button, but the create still needs booker details.
     expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(false);
+    await user.press(screen.getByTestId('v2-reservation-submit'));
+    expect(mutate).not.toHaveBeenCalled();
+    expect(screen.getByTestId('v2-booker-name-error')).toBeVisible();
+
+    await fillBooker(user, {
+      name: '홍길동',
+      note: '창가 자리 부탁드립니다.',
+      phone: '010-1234-5678',
+    });
     await user.press(screen.getByTestId('v2-reservation-submit'));
 
     expect(mutate).toHaveBeenCalledTimes(1);
@@ -537,12 +556,13 @@ describe('V2 reservation screens', () => {
 
     const { user } = await renderReservationScreen(createScreen());
     await user.press(await screen.findByTestId('v2-availability-77'));
-    await user.type(screen.getByTestId('v2-reservation-booker-name'), 'Test User');
-    await user.type(screen.getByTestId('v2-reservation-booker-phone'), '010.1234.5678');
+    await user.type(screen.getByTestId('v2-booker-name'), 'Test User');
+    await user.type(screen.getByTestId('v2-booker-phone'), '010.1234.5678');
 
-    expect(screen.getByText('숫자와 +, (, ), 하이픈, 공백만 입력할 수 있습니다.')).toBeVisible();
-    expect(screen.getByTestId('v2-reservation-submit')).toBeDisabled();
     await user.press(screen.getByTestId('v2-reservation-submit'));
+    expect(screen.getByTestId('v2-booker-phone-error')).toHaveTextContent(
+      '숫자와 + ( ) - 공백만 입력할 수 있어요.',
+    );
     expect(mutate).not.toHaveBeenCalled();
   });
 
@@ -711,5 +731,146 @@ describe('V2 reservation screens', () => {
 
     expect(screen.getByText('Reservation details')).toBeVisible();
     expect(screen.getByText('Reservation ID')).toBeVisible();
+  });
+
+  test('잘못된 전화번호 형식은 서버 제약에 맞춰 차단하고 오류를 표시한다', async () => {
+    mockPlace();
+    const mutate = mockCreateReservation();
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [availability(77, new Date(2026, 7, 27, 10, 0, 0))],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+
+    const { user } = await renderReservationScreen(createScreen());
+    await user.press(await screen.findByTestId('v2-availability-77'));
+    await fillBooker(user, { name: '홍길동', phone: '010-abcd-5678' });
+    await user.press(screen.getByTestId('v2-reservation-submit'));
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect(screen.getByTestId('v2-booker-phone-error')).toHaveTextContent(
+      '숫자와 + ( ) - 공백만 입력할 수 있어요.',
+    );
+  });
+
+  test('요청 사항이 비어 있으면 생성 요청에서 제외한다', async () => {
+    mockPlace();
+    const mutate = mockCreateReservation();
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [availability(77, new Date(2026, 7, 27, 10, 0, 0))],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+
+    const { user } = await renderReservationScreen(createScreen());
+    await user.press(await screen.findByTestId('v2-availability-77'));
+    await fillBooker(user);
+    await user.press(screen.getByTestId('v2-reservation-submit'));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate.mock.calls[0][0]).not.toHaveProperty('requestNote');
+  });
+
+  test('생성 성공 화면에 선택한 일시와 마스킹된 예약자 이름을 표시한다', async () => {
+    mockPlace();
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [availability(77, new Date(2026, 7, 27, 10, 0, 0))],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+    jest.mocked(useCreateReservation).mockReturnValue({
+      data: {
+        availabilityId: 77,
+        bookerName: '홍길동',
+        bookerPhone: '010-1234-5678',
+        canceledAt: null,
+        confirmedAt: null,
+        createdAt: '2026-08-25T04:00:00Z',
+        id: 902,
+        productId: null,
+        productType: 'GENERAL',
+        quantity: 2,
+        requestNote: null,
+        reservationEndsAt: '2026-08-27T02:00:00Z',
+        reservationStartsAt: '2026-08-27T01:00:00Z',
+        status: 'PENDING',
+        touristUserId: 101,
+        updatedAt: '2026-08-25T04:00:00Z',
+      },
+      isError: false,
+      isPending: false,
+      isSuccess: true,
+      mutate: jest.fn(),
+    } as unknown as ReturnType<typeof useCreateReservation>);
+
+    await renderReservationScreen(createScreen());
+
+    expect(screen.getByText('예약 요청이 접수되었습니다')).toBeVisible();
+    expect(screen.getByTestId('v2-reservation-success-window')).not.toHaveTextContent(
+      '예약 일시는 확정 후 안내됩니다.',
+    );
+    expect(screen.getByText('홍••')).toBeVisible();
+  });
+
+  test('생성 오류 종류별로 다른 안내 문구를 표시한다', async () => {
+    mockPlace();
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [availability(77, new Date(2026, 7, 27, 10, 0, 0))],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+
+    const cases: Array<[ApiError, string]> = [
+      [
+        new ApiError('conflict', { code: 'CAPACITY_EXCEEDED', status: 409 }),
+        '해당 시간이 방금 마감되었어요. 다른 시간을 선택해 주세요.',
+      ],
+      [
+        new ApiError('offline', { isNetworkError: true }),
+        '네트워크 문제예요. 연결을 확인하고 다시 시도해 주세요.',
+      ],
+      [
+        new ApiError('bad input', { code: 'VALIDATION_FAILED', status: 400 }),
+        '표시된 항목을 확인하고 다시 시도해 주세요.',
+      ],
+      [
+        new ApiError('boom', { status: 500 }),
+        '예약을 접수하지 못했습니다. 다시 시도해 주세요.',
+      ],
+    ];
+
+    for (const [error, copy] of cases) {
+      jest.mocked(useCreateReservation).mockReturnValue({
+        error,
+        isError: true,
+        isPending: false,
+        isSuccess: false,
+        mutate: jest.fn(),
+      } as unknown as ReturnType<typeof useCreateReservation>);
+
+      const view = await renderReservationScreen(createScreen());
+      expect(screen.getByText(copy)).toBeVisible();
+      view.unmount();
+    }
+  });
+
+  test('예약 상세에 선택 일시와 마스킹된 예약자 정보를 표시한다', async () => {
+    await renderReservationScreen(
+      <ReservationDetailScreen onBack={jest.fn()} reservationId={901} />,
+    );
+
+    expect(screen.getByTestId('v2-reservation-detail-window')).not.toHaveTextContent('확정 후 안내');
+    expect(screen.getByTestId('v2-reservation-detail-booker-name')).toHaveTextContent('김••');
+    expect(screen.getByTestId('v2-reservation-detail-booker-phone')).toHaveTextContent(/^•+5678$/);
+    expect(screen.getByTestId('v2-reservation-detail-booker-phone')).not.toHaveTextContent(
+      '010-1234-5678',
+    );
+    expect(screen.getByTestId('v2-reservation-detail-request-note')).toHaveTextContent(
+      '창가 자리 부탁드려요',
+    );
   });
 });

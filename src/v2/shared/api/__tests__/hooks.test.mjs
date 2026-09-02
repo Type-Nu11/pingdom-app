@@ -16,6 +16,8 @@ import { createPlaceListQueryOptions } from '../../../features/place-list/hooks/
 import {
   createReservationMutationOptions,
   createReservationTransitionMutationOptions,
+  invalidateReservationCreateDependencies,
+  reservationQueryKeys,
 } from '../../../features/reservations/hooks/useReservations.ts';
 import {
   createReplaceTravelPurposesMutationOptions,
@@ -232,6 +234,45 @@ test('travel schedule Hook options preserve date-only bodies, identifiers, and A
     ['update', 7, body],
     ['cancel', 7],
   ]);
+});
+
+test('reservation create invalidates only the reservation list and the origin place availability', async () => {
+  const queryClient = new QueryClient();
+  const otherPlaceAvailabilities = reservationQueryKeys.availabilitiesByPlace(99);
+  const placeDetailKey = ['v2', 'places', 'detail', 17];
+  const recommendationsKey = recommendationQueryKeys.list({ page: 1 });
+
+  queryClient.setQueryData(reservationQueryKeys.list({ page: 1 }), { reservations: [] });
+  queryClient.setQueryData(reservationQueryKeys.availabilities(17, {}), []);
+  queryClient.setQueryData(otherPlaceAvailabilities, []);
+  queryClient.setQueryData(placeDetailKey, { id: 17 });
+  queryClient.setQueryData(recommendationsKey, { places: [] });
+
+  await invalidateReservationCreateDependencies(queryClient, 17);
+
+  assert.equal(
+    queryClient.getQueryState(reservationQueryKeys.list({ page: 1 })).isInvalidated,
+    true,
+  );
+  assert.equal(
+    queryClient.getQueryState(reservationQueryKeys.availabilities(17, {})).isInvalidated,
+    true,
+  );
+  assert.equal(queryClient.getQueryState(otherPlaceAvailabilities).isInvalidated, false);
+  assert.equal(queryClient.getQueryState(placeDetailKey).isInvalidated, false);
+  assert.equal(queryClient.getQueryState(recommendationsKey).isInvalidated, false);
+});
+
+test('reservation create without an origin place leaves every availability cache intact', async () => {
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(reservationQueryKeys.availabilities(17, {}), []);
+
+  await invalidateReservationCreateDependencies(queryClient);
+
+  assert.equal(
+    queryClient.getQueryState(reservationQueryKeys.availabilities(17, {})).isInvalidated,
+    false,
+  );
 });
 
 test('travel schedule mutations invalidate only schedule-dependent caches', async () => {
