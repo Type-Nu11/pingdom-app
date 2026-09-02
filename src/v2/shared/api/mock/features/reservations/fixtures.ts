@@ -9,54 +9,65 @@ import type { ApiSchema } from '../../../contract';
  * - a `TICKET` slot and a `CLASS` slot, which have no product name in the
  *   current contract and must render as disabled "cannot reserve yet" rows
  *
- * Dates sit a few days ahead of the mock "now" so the GENERAL slots pass the
- * capacity and future-time checks.
+ * Dates are derived from the runtime clock so the mock GENERAL flow does not
+ * silently expire as a checked-in calendar date passes.
  */
-export const availabilityListFixture = [
-  {
-    id: 8801,
-    placeId: 17,
-    productId: 601,
-    productType: 'GENERAL',
-    startsAt: '2026-09-05T10:00:00Z',
-    endsAt: '2026-09-05T11:00:00Z',
-    totalCapacity: 10,
-    remainingCapacity: 6,
-    status: 'ACTIVE',
-  },
-  {
-    id: 8802,
-    placeId: 17,
-    productId: 601,
-    productType: 'GENERAL',
-    startsAt: '2026-09-05T14:00:00Z',
-    endsAt: '2026-09-05T15:00:00Z',
-    totalCapacity: 8,
-    remainingCapacity: 2,
-    status: 'ACTIVE',
-  },
-  {
-    id: 8803,
-    placeId: 17,
-    productId: 705,
-    productType: 'TICKET',
-    startsAt: '2026-09-05T13:00:00Z',
-    endsAt: '2026-09-05T14:00:00Z',
-    totalCapacity: 20,
-    remainingCapacity: 12,
-    status: 'ACTIVE',
-  },
-  {
-    id: 8804,
-    placeId: 17,
-    productId: 812,
-    productType: 'CLASS',
-    startsAt: '2026-09-06T15:00:00Z',
-    endsAt: '2026-09-06T17:00:00Z',
-    totalCapacity: 6,
-    remainingCapacity: 3,
-    status: 'ACTIVE',
-  },
-] satisfies ApiSchema<'Availability'>[];
+function futureUtcTime(now: Date, daysAhead: number, hour: number) {
+  const value = new Date(now);
+  value.setUTCDate(value.getUTCDate() + daysAhead);
+  value.setUTCHours(hour, 0, 0, 0);
+  return value.toISOString();
+}
+
+export function createAvailabilityListFixture(
+  now: Date = new Date(),
+): ApiSchema<'Availability'>[] {
+  return [
+    {
+      id: 8801,
+      placeId: 17,
+      productId: 601,
+      productType: 'GENERAL',
+      startsAt: futureUtcTime(now, 7, 10),
+      endsAt: futureUtcTime(now, 7, 11),
+      totalCapacity: 10,
+      remainingCapacity: 6,
+      status: 'ACTIVE',
+    },
+    {
+      id: 8802,
+      placeId: 17,
+      productId: 601,
+      productType: 'GENERAL',
+      startsAt: futureUtcTime(now, 7, 14),
+      endsAt: futureUtcTime(now, 7, 15),
+      totalCapacity: 8,
+      remainingCapacity: 2,
+      status: 'ACTIVE',
+    },
+    {
+      id: 8803,
+      placeId: 17,
+      productId: 705,
+      productType: 'TICKET',
+      startsAt: futureUtcTime(now, 7, 13),
+      endsAt: futureUtcTime(now, 7, 14),
+      totalCapacity: 20,
+      remainingCapacity: 12,
+      status: 'ACTIVE',
+    },
+    {
+      id: 8804,
+      placeId: 17,
+      productId: 812,
+      productType: 'CLASS',
+      startsAt: futureUtcTime(now, 8, 15),
+      endsAt: futureUtcTime(now, 8, 17),
+      totalCapacity: 6,
+      remainingCapacity: 3,
+      status: 'ACTIVE',
+    },
+  ];
+}
 
 export const emptyAvailabilityListFixture = [] satisfies ApiSchema<'Availability'>[];

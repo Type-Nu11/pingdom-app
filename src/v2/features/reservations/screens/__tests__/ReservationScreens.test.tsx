@@ -247,6 +247,23 @@ describe('V2 reservation screens', () => {
     expect(screen.queryByText('예약 불가 · 지난 시간')).not.toBeOnTheScreen();
   });
 
+  test('오늘보다 이전인 일정 날짜는 캘린더에서 예약 불가 상태로 비활성화한다', async () => {
+    mockPlace();
+    mockCreateReservation();
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [availability(77, new Date(2026, 7, 25, 10, 0, 0))],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+
+    await renderReservationScreen(createScreen());
+
+    expect(screen.getByRole('button', { name: '2026-08-25, 예약 불가' })).toBeDisabled();
+    expect(screen.queryByTestId('v2-availability-77')).toBeNull();
+    expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
+  });
+
   test('여러 날에 걸친 availability 기간 전체를 표시하고 종료 전까지 예약 가능하다', async () => {
     mockPlace();
     mockCreateReservation();

@@ -210,7 +210,10 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
               const selected = key === selectedDate;
               const isPast = startOfLocalDay(date).getTime() < startOfLocalDay(now).getTime();
               const available = !isPast && availableDates.has(key);
-              const scheduled = scheduledDates.has(key);
+              // Keep today's completed slots inspectable for their unavailable reason,
+              // but dates before today must not remain interactive just because the
+              // server still returns historical availability records.
+              const scheduled = !isPast && scheduledDates.has(key);
               const dateLabel = available
                 ? t('reservation.create.availableDateLabel', { date: key })
                 : scheduled

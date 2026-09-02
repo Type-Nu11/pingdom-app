@@ -1,5 +1,5 @@
 import type { MockHandler } from '../../handlers';
-import { availabilityListFixture, emptyAvailabilityListFixture } from './fixtures';
+import { createAvailabilityListFixture, emptyAvailabilityListFixture } from './fixtures';
 
 /**
  * Reservation availabilities for `GET /places/{placeId}/availabilities`. This is
@@ -11,6 +11,6 @@ export const reservationMockHandlers = [
     method: 'GET',
     path: /^\/places\/\d+\/availabilities$/,
     resolve: ({ scenario }) =>
-      scenario === 'empty' ? emptyAvailabilityListFixture : availabilityListFixture,
+      scenario === 'empty' ? emptyAvailabilityListFixture : createAvailabilityListFixture(),
   },
 ] satisfies readonly MockHandler[];
