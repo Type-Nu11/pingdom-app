@@ -279,13 +279,17 @@ function formatTimeRange(availability: Availability, language: string): string {
   const startsAt = new Date(availability.startsAt);
   const endsAt = new Date(availability.endsAt);
   if (localDateKey(startsAt) === localDateKey(endsAt)) {
-    const timeFormatter = new Intl.DateTimeFormat(language, { hour: '2-digit', hour12: false, minute: '2-digit' });
+    const timeFormatter = new Intl.DateTimeFormat(language, {
+      hour: '2-digit',
+      hourCycle: 'h23',
+      minute: '2-digit',
+    });
     return `${timeFormatter.format(startsAt)}–${timeFormatter.format(endsAt)}`;
   }
   const dateTimeFormatter = new Intl.DateTimeFormat(language, {
     day: 'numeric',
     hour: '2-digit',
-    hour12: false,
+    hourCycle: 'h23',
     minute: '2-digit',
     month: 'short',
   });
