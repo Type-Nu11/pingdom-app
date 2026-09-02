@@ -265,10 +265,6 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
-          console.info('[V2 API] Axios PUT failed; retrying idempotent request with fetch.', {
-            path,
-          });
-
           try {
             return await putWithFetchFallback<TResponse, TBody>(path, body, options);
           } catch (fallbackError) {
