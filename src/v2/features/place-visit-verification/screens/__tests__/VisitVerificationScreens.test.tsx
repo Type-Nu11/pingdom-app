@@ -7,11 +7,13 @@ import { createTestI18n, renderWithProviders } from '../../../../shared/testing/
 import VisitVerificationMapCta from '../../components/VisitVerificationMapCta';
 import VisitVerificationPlacesScreen from '../VisitVerificationPlacesScreen';
 import VisitVerificationReviewScreen from '../VisitVerificationReviewScreen';
+import VisitVerificationSessionScreen from '../VisitVerificationSessionScreen';
 
 const mockUseCandidates = jest.fn();
 const mockUsePlaceCard = jest.fn();
 const mockUseSubmit = jest.fn();
 const mockUseLocationPermission = jest.fn();
+const mockUseSessionController = jest.fn();
 
 jest.mock('../../hooks/useVisitVerificationCandidates', () => ({
   useVisitVerificationCandidates: () => mockUseCandidates(),
@@ -25,6 +27,9 @@ jest.mock('../../hooks/useSubmitVisitVerification', () => ({
 jest.mock('../../hooks/useLocationPermissionStatus', () => ({
   useLocationPermissionStatus: () => mockUseLocationPermission(),
 }));
+jest.mock('../../hooks/useVisitVerificationSessionController', () => ({
+  useVisitVerificationSessionController: () => mockUseSessionController(),
+}));
 
 const place = {
   id: 17,
@@ -33,8 +38,8 @@ const place = {
   imageUrl: null,
 };
 
-async function renderFeature(ui: React.ReactElement) {
-  const i18n = await createTestI18n('ko');
+async function renderFeature(ui: React.ReactElement, language: 'en' | 'ko' = 'ko') {
+  const i18n = await createTestI18n(language);
   registerVisitVerificationResources(i18n);
   return renderWithProviders(ui, { i18n });
 }
@@ -44,6 +49,15 @@ beforeEach(() => {
   mockUsePlaceCard.mockReturnValue({ data: place, isError: false, isLoading: false });
   mockUseSubmit.mockReturnValue({ error: null, isError: false, isPending: false, mutateAsync: jest.fn() });
   mockUseLocationPermission.mockReturnValue('granted');
+  mockUseSessionController.mockReturnValue({
+    displayRemainingSeconds: null,
+    error: null,
+    isBusy: false,
+    phase: 'idle',
+    retry: jest.fn(),
+    session: null,
+    start: jest.fn(),
+  });
 });
 afterEach(async () => {
   await cleanup();
@@ -161,4 +175,69 @@ test('confirmed one-reason text submission is locked against duplicate requests'
 
   await act(async () => { resolveMutation({ reviewId: 91 }); });
   expect(onComplete).toHaveBeenCalledTimes(1);
+});
+
+test('session start UI is accessible in Korean and blocks duplicate work through controller state', async () => {
+  const start = jest.fn();
+  mockUseSessionController.mockReturnValue({
+    displayRemainingSeconds: null,
+    error: null,
+    isBusy: false,
+    phase: 'idle',
+    retry: jest.fn(),
+    session: null,
+    start,
+  });
+  const view = await renderFeature(<VisitVerificationSessionScreen onBack={jest.fn()} onWriteReview={jest.fn()} placeId={17} />);
+  await view.user.press(view.getByText('방문 인증 시작'));
+  expect(start).toHaveBeenCalledTimes(1);
+  expect(view.getByRole('button', { name: '뒤로' })).toBeVisible();
+});
+
+test('session UI renders server progress metrics and terminal states in English', async () => {
+  mockUseSessionController.mockReturnValue({
+    displayRemainingSeconds: 41,
+    error: null,
+    isBusy: false,
+    phase: 'observing',
+    retry: jest.fn(),
+    session: {
+      id: 9201,
+      status: 'PROXIMITY_LOST',
+      requiredRadiusMeters: 24,
+      requiredDwellSeconds: 75,
+      remainingSeconds: 45,
+      latestDistanceMeters: 31,
+      completedCheckInId: null,
+      reviewEligible: false,
+    },
+    start: jest.fn(),
+  });
+  const view = await renderFeature(<VisitVerificationSessionScreen onBack={jest.fn()} onWriteReview={jest.fn()} placeId={17} />, 'en');
+  expect(view.getByText('You left the allowed radius')).toBeVisible();
+  expect(view.getByText('41 seconds remaining')).toBeVisible();
+  expect(view.getByText('Allowed radius: 24m')).toBeVisible();
+  expect(view.getByText('Required stay: 75 seconds')).toBeVisible();
+});
+
+test('completed verification passes exact place and check-in IDs to review flow', async () => {
+  const onWriteReview = jest.fn();
+  mockUseSessionController.mockReturnValue({
+    displayRemainingSeconds: 0,
+    error: null,
+    isBusy: false,
+    phase: 'observing',
+    retry: jest.fn(),
+    session: {
+      id: 9201,
+      status: 'COMPLETED',
+      remainingSeconds: 0,
+      completedCheckInId: 7002,
+      reviewEligible: true,
+    },
+    start: jest.fn(),
+  });
+  const view = await renderFeature(<VisitVerificationSessionScreen onBack={jest.fn()} onWriteReview={onWriteReview} placeId={17} />);
+  await view.user.press(view.getByText('후기 작성'));
+  expect(onWriteReview).toHaveBeenCalledWith({ checkInId: 7002, placeId: 17 });
 });
