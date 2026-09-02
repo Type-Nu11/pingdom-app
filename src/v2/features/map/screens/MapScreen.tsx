@@ -59,6 +59,7 @@ import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 import {
   findMapPreviewPlace,
+  includeSelectedNearbyReservablePlace,
   mergeMapPreviewPlaces,
   shouldPresentMapSelection,
 } from '../utils/mapPreviewSelection';
@@ -105,6 +106,7 @@ type MapScreenProps = {
   onOpenCoupons?: () => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
+  onStartVisitVerification?: (placeId: number) => void;
   onSignIn?: () => void;
   onOpenVisitVerification?: () => void;
   openedBookmarkedPlaceId?: number | null;
@@ -118,6 +120,7 @@ export default function MapScreen({
   onOpenCoupons,
   onOpenProfile,
   onOpenReservation,
+  onStartVisitVerification,
   onSignIn,
   onOpenVisitVerification,
   openedBookmarkedPlaceId,
@@ -253,10 +256,6 @@ export default function MapScreen({
       };
     });
   }, [recommendationExplanation.data?.items, recommendedPlaces]);
-  const nearbyReservationPlaces = useMemo(
-    () => recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
-    [recommendedPlaces],
-  );
   const allPlaces = useMemo(() => {
     const serverPlaces = mergeMapPreviewPlaces(
       recommendationPlaces,
@@ -337,6 +336,17 @@ export default function MapScreen({
       name: selectedPlacePresentation.name || selectedPlaceBase.name,
     };
   }, [selectedPlaceBase, selectedPlacePresentation]);
+  const nearbyReservationPlaces = useMemo(
+    () => includeSelectedNearbyReservablePlace(
+      recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
+      selectedPlace,
+      {
+        radiusKm: recommendationRadiusKm,
+        reservable: selectedPlacePresentation?.reservation.kind === 'available',
+      },
+    ),
+    [recommendedPlaces, recommendationRadiusKm, selectedPlace, selectedPlacePresentation?.reservation.kind],
+  );
   const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;
@@ -351,7 +361,6 @@ export default function MapScreen({
       [String(selectedPlace.id)]: {
         amenities: [],
         coupons: selectedPlacePresentation.coupons,
-        email: selectedPlacePresentation.merchant?.contactEmail ?? undefined,
         englishName: selectedPlacePresentation.englishName ?? undefined,
         events: selectedPlacePresentation.events,
         imageState: selectedPlacePresentation.imageState,
@@ -378,7 +387,6 @@ export default function MapScreen({
           ? t(selectedPlacePresentation.verificationLabelKey)
           : '',
         statusEmphasis: operatingSummary?.statusText ?? '',
-        website: selectedPlacePresentation.merchant?.websiteUrl ?? undefined,
       },
     };
   }, [selectedPlace, selectedPlacePresentation, t]);
@@ -807,6 +815,9 @@ export default function MapScreen({
               setMapSection('reservations');
               snapTo('medium');
             }}
+            onStartVisitVerification={onStartVisitVerification
+              ? (place) => onStartVisitVerification(place.id)
+              : undefined}
             onPlacePress={handlePlacePress}
             onRetryRecommendations={() => void refetchRecommendations()}
             onRetryAvailability={() => void refetchAvailability()}

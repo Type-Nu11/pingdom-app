@@ -49,3 +49,16 @@ npm run check:place-exploration-api-types
 The snapshot is `docs/api/place-exploration.openapi.json`, and its generated types are
 `shared/api/generated/placeExploration.ts`. Feature aliases must use
 `placeExplorationContract.ts`; update the snapshot from the server before regenerating.
+
+The stay-based visit verification endpoints use their own live-server scoped snapshot because
+their lifecycle and release cadence are independent from place exploration:
+
+```sh
+npm run sync:visit-verification-openapi -- https://www.typenull.xyz/v3/api-docs
+npm run generate:visit-verification-api-types
+npm run check:visit-verification-api-types
+```
+
+The snapshot is `docs/api/visit-verification.openapi.json`; feature aliases use
+`visitVerificationContract.ts`. A session-detail query must not be implemented until the GET 200
+response schema exists in that snapshot.

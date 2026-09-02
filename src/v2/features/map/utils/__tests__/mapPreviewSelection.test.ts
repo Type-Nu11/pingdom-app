@@ -1,5 +1,6 @@
 import {
   findMapPreviewPlace,
+  includeSelectedNearbyReservablePlace,
   mergeMapPreviewPlaces,
   shouldPresentMapSelection,
 } from '../mapPreviewSelection';
@@ -36,5 +37,36 @@ describe('map preview selection', () => {
 
     expect(findMapPreviewPlace('18', selectablePlaces)).toBe(apiPlace);
     expect(findMapPreviewPlace('138001', selectablePlaces)).toBe(temporaryPlace);
+  });
+});
+
+describe('nearby reservable place selection', () => {
+  const recommendation = { distanceMeters: 200, id: 17, source: 'recommendation' };
+  const selected = { distanceMeters: 350, id: 29, source: 'selected' };
+
+  test('추천에서 제외된 선택 장소도 실제 예약 가능하고 반경 안이면 포함한다', () => {
+    expect(includeSelectedNearbyReservablePlace(
+      [recommendation],
+      selected,
+      { radiusKm: 1, reservable: true },
+    )).toEqual([selected, recommendation]);
+  });
+
+  test('중복 장소, 예약 불가 장소, 반경 밖 장소는 추가하지 않는다', () => {
+    expect(includeSelectedNearbyReservablePlace(
+      [recommendation],
+      recommendation,
+      { radiusKm: 1, reservable: true },
+    )).toEqual([recommendation]);
+    expect(includeSelectedNearbyReservablePlace(
+      [recommendation],
+      selected,
+      { radiusKm: 1, reservable: false },
+    )).toEqual([recommendation]);
+    expect(includeSelectedNearbyReservablePlace(
+      [recommendation],
+      { ...selected, distanceMeters: 1_001 },
+      { radiusKm: 1, reservable: true },
+    )).toEqual([recommendation]);
   });
 });

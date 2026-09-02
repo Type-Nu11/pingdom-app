@@ -6,6 +6,7 @@ import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { runTimingMotion } from '../../../../shared/motion';
 import MapBottomSheet, {
   RecommendationFeaturedCard,
+  selectPlaceDetailAddress,
   type DecisionPlace,
   type MapPreviewFallbackContent,
 } from '../MapBottomSheet';
@@ -40,6 +41,68 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
+  test('장소 상세 주소는 서버 도로명 주소 하나만 우선 표시한다', () => {
+    expect(selectPlaceDetailAddress('목록 주소', {
+      jibunAddress: '서버 지번 주소',
+      roadAddress: '서버 도로명 주소',
+    })).toBe('서버 도로명 주소');
+    expect(selectPlaceDetailAddress('목록 주소', {
+      jibunAddress: '서버 지번 주소',
+    })).toBe('목록 주소');
+  });
+
+  test('장소 사진을 누르면 전체 화면에서 사진을 넘기고 닫을 수 있다', async () => {
+    const selectedPlace = places[0];
+    const { user } = await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onCouponPress={jest.fn()}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={places}
+        previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [],
+            imageUrls: ['https://example.com/place-1.jpg', 'https://example.com/place-2.jpg'],
+            statusDescription: '',
+            statusEmphasis: '',
+          },
+        }}
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={selectedPlace}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(300)}
+        snapPoint="medium"
+      />,
+    );
+
+    await user.press(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' }));
+    expect(screen.getByTestId('place-photo-viewer')).toBeVisible();
+    expect(screen.getByLabelText('추천 장소 1 사진 2장 중 2번째')).toBeVisible();
+
+    await user.press(screen.getByRole('button', { name: '다음 사진' }));
+    expect(screen.getByLabelText('추천 장소 1 사진 2장 중 1번째')).toBeVisible();
+
+    await user.press(screen.getByRole('button', { name: '사진 닫기' }));
+    expect(screen.queryByTestId('place-photo-viewer')).not.toBeOnTheScreen();
+  });
+
   test('쿠폰 가능 장소의 카드 CTA가 상세를 열고 상세 쿠폰 콘텐츠를 렌더링한다', async () => {
     const selectedPlace = places[0];
     const onCouponPress = jest.fn();
@@ -166,7 +229,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('recommendation-featured-image').props.source)
       .toEqual({ uri: 'https://example.com/place.jpg' });
     expect(screen.getByTestId('recommendation-featured-blur-image').props).toMatchObject({
-      blurRadius: 10,
+      blurRadius: 2,
       source: { uri: 'https://example.com/place.jpg' },
     });
     expect(screen.getByTestId('recommendation-featured-image').props.onError)
@@ -345,6 +408,7 @@ describe('MapBottomSheet recommendations', () => {
 
   test('장소 미리보기의 예약 캡슐은 선택 장소로 예약 생성을 요청한다', async () => {
     const onCreateReservation = jest.fn();
+    const onStartVisitVerification = jest.fn();
     const onBackHome = jest.fn();
     const onToggleBookmark = jest.fn(async () => undefined);
     const selectedPlace = places[0];
@@ -367,6 +431,7 @@ describe('MapBottomSheet recommendations', () => {
         onQueryChange={jest.fn()}
         onRetryRecommendations={jest.fn()}
         onSearchFocus={jest.fn()}
+        onStartVisitVerification={onStartVisitVerification}
         onSubmitSearch={jest.fn()}
         onToggleBookmark={onToggleBookmark}
         panHandlers={{} as GestureResponderHandlers}
@@ -393,6 +458,9 @@ describe('MapBottomSheet recommendations', () => {
     await user.press(screen.getByRole('button', { name: '예약' }));
     expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
+
+    await user.press(screen.getByRole('button', { name: '방문 인증 시작' }));
+    expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
 
     const bookmark = screen.getByTestId('place-preview-bookmark');
     const close = screen.getByTestId('place-preview-close');
@@ -657,6 +725,11 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     expect(screen.getAllByText('추천 장소 1').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('map-navigation-active-item')).toHaveStyle({
+      borderRadius: 28,
+      overflow: 'hidden',
+      width: 68,
+    });
     const localFeed = screen.getByRole('tab', { name: '우리 지역 핫플' });
     const nationalFeed = screen.getByRole('tab', { name: '전국 트렌드' });
     expect(localFeed.props.accessibilityState).toEqual({ selected: true });

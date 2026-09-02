@@ -36,6 +36,16 @@ export type {
   paths,
 } from './contract';
 export type {
+  VisitVerificationComponents,
+  VisitVerificationOperationName,
+  VisitVerificationOperationRequestBody,
+  VisitVerificationOperationResponse,
+  VisitVerificationOperations,
+  VisitVerificationPaths,
+  VisitVerificationSchema,
+  VisitVerificationSchemaName,
+} from './visitVerificationContract';
+export type {
   PlaceExplorationComponents,
   PlaceExplorationOperationName,
   PlaceExplorationOperationPath,

@@ -16,6 +16,8 @@ import ProfileEditScreen from '../../features/my-page/screens/ProfileEditScreen'
 import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
 import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
+import ReservationBoxScreen from '../../features/reservations/screens/ReservationBoxScreen';
+import ReservationDetailScreen from '../../features/reservations/screens/ReservationDetailScreen';
 import {
   AccountManagementScreen,
   SettingsDetailPendingScreen,
@@ -24,6 +26,7 @@ import {
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
+  VisitVerificationSessionScreen,
 } from '../../features/place-visit-verification';
 import { env } from '../../shared/config';
 import { clearTokenSession } from '../../shared/auth/tokenSession';
@@ -56,6 +59,7 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
       onBack={navigation.goBack}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
+      onOpenReservations={() => navigation.navigate(V2_ROUTES.ReservationBox)}
       onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
       onOpenVerifiedPlaces={() => {}}
     />
@@ -70,6 +74,28 @@ function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
         couponId: coupon.id,
       })}
       onSignIn={() => void clearTokenSession()}
+    />
+  );
+}
+
+function ReservationBoxRoute({ navigation }: V2ScreenProps<'ReservationBox'>) {
+  return (
+    <ReservationBoxScreen
+      onBack={navigation.goBack}
+      onOpenReservation={(reservationId) => navigation.navigate(
+        V2_ROUTES.ReservationDetail,
+        { reservationId },
+      )}
+      onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
+    />
+  );
+}
+
+function ReservationDetailRoute({ navigation, route }: V2ScreenProps<'ReservationDetail'>) {
+  return (
+    <ReservationDetailScreen
+      onBack={navigation.goBack}
+      reservationId={route.params.reservationId}
     />
   );
 }
@@ -140,6 +166,22 @@ function VisitVerificationReviewRoute({ navigation, route }: V2ScreenProps<'Visi
   return <VisitVerificationReviewScreen checkInId={route.params.checkInId} onBack={navigation.goBack} onComplete={() => navigation.popTo(V2_ROUTES.Map)} placeId={route.params.placeId} />;
 }
 
+function VisitVerificationSessionRoute({ navigation, route }: V2ScreenProps<'VisitVerificationSession'>) {
+  return (
+    <VisitVerificationSessionScreen
+      onBack={navigation.goBack}
+      onWriteReview={({ checkInId: value, placeId: placeValue }) => {
+        const checkInId = parseCheckInId(value);
+        const placeId = parsePlaceId(placeValue);
+        if (checkInId && placeId) {
+          navigation.navigate(V2_ROUTES.VisitVerificationReview, { checkInId, placeId });
+        }
+      }}
+      placeId={route.params.placeId}
+    />
+  );
+}
+
 export default function RootNavigator() {
   const [isNavigationReady, setIsNavigationReady] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<NotificationRoute | null>(null);
@@ -185,6 +227,8 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
         <Stack.Screen name={V2_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
         <Stack.Screen name={V2_ROUTES.CouponDetail} component={CouponDetailRoute} />
+        <Stack.Screen name={V2_ROUTES.ReservationBox} component={ReservationBoxRoute} />
+        <Stack.Screen name={V2_ROUTES.ReservationDetail} component={ReservationDetailRoute} />
         <Stack.Screen name={V2_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Settings} component={SettingsRouteScreen} />
         <Stack.Screen name={V2_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />
@@ -193,6 +237,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />
+        <Stack.Screen name={V2_ROUTES.VisitVerificationSession} component={VisitVerificationSessionRoute} />
       </Stack.Navigator>
     </NavigationContainer>
   );

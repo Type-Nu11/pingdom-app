@@ -60,6 +60,7 @@ import FrostedSurface from './FrostedSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
 import { normalizePlaceCategory } from '../utils/placeCategory';
+import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -73,7 +74,6 @@ export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
 export type MapPreviewFallbackContent = {
   amenities: Array<'english' | 'parking'>;
   coupons?: Array<{ period: string; title: string }>;
-  email?: string;
   englishName?: string;
   events?: Array<{ period: string; title: string }>;
   imageState?: 'empty' | 'error' | 'loading' | 'ready';
@@ -84,7 +84,6 @@ export type MapPreviewFallbackContent = {
   operatingSummary?: PlaceOperatingSummaryText;
   roadAddress?: string;
   summary?: string;
-  website?: string;
   reviewCount?: number;
   reservation?: ReservationCtaState;
   reviewState?: 'empty' | 'error' | 'loading' | 'ready';
@@ -122,6 +121,19 @@ export type DecisionPlace = {
   waitMinutes?: [number, number];
 };
 
+export function selectPlaceDetailAddress(
+  placeAddress: string,
+  fallbackContent?: Pick<MapPreviewFallbackContent, 'jibunAddress' | 'roadAddress'>,
+): string {
+  const candidates = [
+    fallbackContent?.roadAddress,
+    placeAddress,
+    fallbackContent?.jibunAddress,
+  ];
+
+  return candidates.find((candidate) => candidate?.trim())?.trim() ?? '';
+}
+
 type MapBottomSheetProps = {
   activeFilters: VisitFilter[];
   bookmarkedPlaceIds: Record<string, boolean>;
@@ -142,6 +154,7 @@ type MapBottomSheetProps = {
   onHandlePress: () => void;
   onOpenLikedPlaces?: () => void;
   onOpenSavedPlaces?: () => void;
+  onStartVisitVerification?: (place: DecisionPlace) => void;
   onPlacePress: (place: DecisionPlace) => void;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
@@ -205,8 +218,9 @@ const CardScrim = () => (
       <Defs>
         <LinearGradient id="card-scrim" x1="0" x2="0" y1="0" y2="1">
           <Stop offset="0" stopColor="#000000" stopOpacity="0" />
-          <Stop offset="0.48" stopColor="#000000" stopOpacity="0.04" />
-          <Stop offset="1" stopColor="#000000" stopOpacity="0.88" />
+          <Stop offset="0.52" stopColor="#000000" stopOpacity="0.02" />
+          <Stop offset="0.76" stopColor="#000000" stopOpacity="0.32" />
+          <Stop offset="1" stopColor="#000000" stopOpacity="0.82" />
         </LinearGradient>
       </Defs>
       <Rect fill="url(#card-scrim)" height="100" width="100" />
@@ -443,7 +457,7 @@ const PlaceArtwork = ({
       {blurBottom ? (
         <View pointerEvents="none" style={styles.artworkBlurClip}>
           <Image
-            blurRadius={10}
+            blurRadius={2}
             onError={() => setHasImageError(true)}
             resizeMode="cover"
             source={imageSource}
@@ -693,7 +707,7 @@ const RecommendationGridCard = ({
       style={styles.gridCard}
       testID={`recommendation-grid-card-${place.id}`}
     >
-      <PlaceArtwork imageUrl={imageUrl} variant="grid" />
+      <PlaceArtwork blurBottom imageUrl={imageUrl} variant="grid" />
       <CardScrim />
       <RecommendationBookmarkButton
         bookmarked={bookmarked}
@@ -734,7 +748,7 @@ const PlaceTrendCard = ({
     onPress={onPress}
     style={({ pressed }) => [styles.homeTrendCard, pressed && styles.pressed]}
   >
-    <PlaceArtwork imageUrl={imageUrl} />
+    <PlaceArtwork blurBottom imageUrl={imageUrl} />
     <CardScrim />
     <Pressable
       accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -785,7 +799,7 @@ const ExpandedPlaceCard = ({
     onPress={onPress}
     style={({ pressed }) => [styles.homeGridCard, pressed && styles.pressed]}
   >
-    <PlaceArtwork imageUrl={imageUrl} variant="grid" />
+    <PlaceArtwork blurBottom imageUrl={imageUrl} variant="grid" />
     <CardScrim />
     <Pressable
       accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -1311,7 +1325,9 @@ const PreviewContent = ({
   onBack,
   onCoupon,
   onDetail,
+  onOpenImages,
   onReserve,
+  onVerify,
   onRetryAvailability,
   onRetryMedia,
   onToggleBookmark,
@@ -1324,7 +1340,9 @@ const PreviewContent = ({
   onBack: () => void;
   onCoupon: () => void;
   onDetail: () => void;
+  onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
+  onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onToggleBookmark: () => void;
@@ -1336,6 +1354,7 @@ const PreviewContent = ({
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
     : [imageUrl];
+  const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
   const contentWidth = Math.min(windowWidth, 480) - 32;
   const imageHeight = Math.min(188, Math.max(158, Math.round(contentWidth * 0.47)));
   const primaryImageWidth = Math.min(252, Math.max(218, Math.round(contentWidth * 0.64)));
@@ -1405,7 +1424,11 @@ const PreviewContent = ({
         showsHorizontalScrollIndicator={false}
       >
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
-        <PreviewActionChip kind="arrival" label={t('map.card.actions.arrive')} />
+        <PreviewActionChip
+          kind="arrival"
+          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          onPress={onVerify}
+        />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
         {fallbackContent?.coupons?.length ? (
           <PreviewActionChip
@@ -1437,7 +1460,13 @@ const PreviewContent = ({
             accessibilityLabel={t('map.detail.imageDetail', { count: index + 1, name: place.name })}
             accessibilityRole="button"
             key={`${url ?? 'missing'}-${index}`}
-            onPress={onDetail}
+            onPress={() => {
+              if (url && onOpenImages) {
+                onOpenImages(validImageUrls, validImageUrls.indexOf(url));
+                return;
+              }
+              onDetail();
+            }}
             style={[
               styles.previewImagePanel,
               { height: imageHeight, width: index === 0 ? primaryImageWidth : secondaryImageWidth },
@@ -1460,7 +1489,9 @@ const ExpandedPlaceContent = ({
   fallbackContent,
   imageUrl,
   onBack,
+  onOpenImages,
   onReserve,
+  onVerify,
   onRetryAvailability,
   onRetryMedia,
   onRetryReviews,
@@ -1475,7 +1506,9 @@ const ExpandedPlaceContent = ({
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
+  onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
+  onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onRetryReviews?: () => void;
@@ -1489,12 +1522,14 @@ const ExpandedPlaceContent = ({
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
     : [imageUrl];
+  const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
   const reservation = fallbackContent?.reservation ?? {
     kind: 'loading', disabled: true,
   };
   const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
+  const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
 
   return (
     <ScrollView
@@ -1543,7 +1578,11 @@ const ExpandedPlaceContent = ({
         showsHorizontalScrollIndicator={false}
       >
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
-        <PreviewActionChip kind="arrival" label={t('map.card.actions.arrive')} />
+        <PreviewActionChip
+          kind="arrival"
+          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          onPress={onVerify}
+        />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
         <PreviewActionChip
           disabled={reservation.disabled && reservation.kind !== 'error'}
@@ -1565,12 +1604,19 @@ const ExpandedPlaceContent = ({
         showsHorizontalScrollIndicator={false}
       >
         {imageUrls.map((url, index) => (
-          <View
+          <Pressable
+            accessibilityLabel={url
+              ? t('map.detail.imageDetail', { count: index + 1, name: place.name })
+              : undefined}
+            accessibilityRole={url ? 'button' : undefined}
             key={`${url ?? 'missing'}-${index}`}
+            onPress={url && onOpenImages
+              ? () => onOpenImages(validImageUrls, validImageUrls.indexOf(url))
+              : undefined}
             style={[styles.detailPhoto, index === 0 && styles.detailPhotoPrimary]}
           >
             <PreviewArtwork imageUrl={url} />
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
 
@@ -1595,22 +1641,8 @@ const ExpandedPlaceContent = ({
           <View style={styles.detailInfoBlock}>
             <View style={styles.detailInfoRow}>
               <PinAsset height={16} width={14} />
-              <Text style={styles.detailInfoText}>{place.address}</Text>
+              <Text style={styles.detailInfoText}>{detailAddress}</Text>
             </View>
-            {fallbackContent?.roadAddress && fallbackContent.roadAddress !== place.address ? (
-              <View style={styles.detailInfoRow}>
-                <PinAsset height={16} width={14} />
-                <Text style={styles.detailInfoText}>{fallbackContent.roadAddress}</Text>
-              </View>
-            ) : null}
-            {fallbackContent?.jibunAddress
-              && fallbackContent.jibunAddress !== place.address
-              && fallbackContent.jibunAddress !== fallbackContent.roadAddress ? (
-                <View style={styles.detailInfoRow}>
-                  <PinAsset height={16} width={14} />
-                  <Text style={styles.detailInfoText}>{fallbackContent.jibunAddress}</Text>
-                </View>
-              ) : null}
             {fallbackContent ? (
               <>
                 <View style={styles.detailInfoRow}>
@@ -1635,17 +1667,6 @@ const ExpandedPlaceContent = ({
                   <View style={styles.detailInfoRow}>
                     <CallAsset height={16} width={16} />
                     <Text style={styles.detailInfoText}>{fallbackContent.phone}</Text>
-                  </View>
-                ) : null}
-                {fallbackContent.email ? (
-                  <View style={styles.detailInfoRow}>
-                    <CallAsset height={16} width={16} />
-                    <Text style={styles.detailInfoText}>{fallbackContent.email}</Text>
-                  </View>
-                ) : null}
-                {fallbackContent.website ? (
-                  <View style={styles.detailInfoRow}>
-                    <Text style={styles.detailInfoText}>{fallbackContent.website}</Text>
                   </View>
                 ) : null}
               </>
@@ -1752,9 +1773,20 @@ const ExpandedPlaceContent = ({
               <Text style={styles.detailSectionTitle}>{t('map.detail.photoReviews')}</Text>
               <ScrollView contentContainerStyle={styles.detailReviewPhotos} horizontal showsHorizontalScrollIndicator={false}>
               {reviewImageUrls.map((url, index) => (
-                <View key={`${url ?? 'missing'}-review-${index}`} style={styles.detailReviewPhoto}>
+                <Pressable
+                  accessibilityLabel={t('map.detail.imageDetail', {
+                    count: index + 1,
+                    name: place.name,
+                  })}
+                  accessibilityRole="button"
+                  key={`${url ?? 'missing'}-review-${index}`}
+                  onPress={onOpenImages
+                    ? () => onOpenImages(reviewImageUrls, index)
+                    : undefined}
+                  style={styles.detailReviewPhoto}
+                >
                   <PreviewArtwork imageUrl={url} />
-                </View>
+                </Pressable>
               ))}
               </ScrollView>
             </View>
@@ -1781,9 +1813,20 @@ const ExpandedPlaceContent = ({
                 {review.imageUrls?.length ? (
                   <View style={styles.detailReviewImageGrid}>
                     {review.imageUrls.map((url, photoIndex) => (
-                      <View key={`${url}-${photoIndex}`} style={styles.detailReviewImageCell}>
+                      <Pressable
+                        accessibilityLabel={t('map.detail.imageDetail', {
+                          count: photoIndex + 1,
+                          name: place.name,
+                        })}
+                        accessibilityRole="button"
+                        key={`${url}-${photoIndex}`}
+                        onPress={onOpenImages
+                          ? () => onOpenImages(review.imageUrls ?? [], photoIndex)
+                          : undefined}
+                        style={styles.detailReviewImageCell}
+                      >
                         <PreviewArtwork imageUrl={url} />
-                      </View>
+                      </Pressable>
                     ))}
                   </View>
                 ) : null}
@@ -1816,7 +1859,10 @@ const NavItem = ({
     onPress={onPress}
     style={styles.navItem}
   >
-    <View style={[styles.navItemSurface, active && styles.navItemActive]}>
+    <View
+      style={[styles.navItemSurface, active && styles.navItemActive]}
+      testID={active ? 'map-navigation-active-item' : undefined}
+    >
       <View style={styles.navIcon}>{icon}</View>
       <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
     </View>
@@ -1925,6 +1971,7 @@ export default function MapBottomSheet({
   onOpenLikedPlaces,
   onOpenRecommendations,
   onOpenSavedPlaces,
+  onStartVisitVerification,
   onPlacePress,
   onRetryAvailability,
   onRetryMedia,
@@ -1948,10 +1995,16 @@ export default function MapBottomSheet({
   const [feed, setFeed] = useState<'local' | 'national'>('local');
   const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
+  const [photoViewer, setPhotoViewer] = useState<{
+    imageUrls: string[];
+    initialIndex: number;
+    placeName: string;
+  } | null>(null);
   const reservationNavigationLock = useRef(false);
   const reservationUnlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     setActivePlaceDetailTab('info');
+    setPhotoViewer(null);
     reservationNavigationLock.current = false;
     if (reservationUnlockTimer.current) clearTimeout(reservationUnlockTimer.current);
     reservationUnlockTimer.current = null;
@@ -2084,7 +2137,15 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
+            onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
+              imageUrls: nextImageUrls,
+              initialIndex,
+              placeName: selectedPlace.name,
+            })}
             onReserve={handleCreateReservation}
+            onVerify={onStartVisitVerification
+              ? () => onStartVisitVerification(selectedPlace)
+              : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
             onRetryReviews={onRetryReviews}
@@ -2104,7 +2165,15 @@ export default function MapBottomSheet({
             onBack={onBackHome}
             onCoupon={() => onCouponPress(selectedPlace)}
             onDetail={() => onDetailPress(selectedPlace)}
+            onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
+              imageUrls: nextImageUrls,
+              initialIndex,
+              placeName: selectedPlace.name,
+            })}
             onReserve={handleCreateReservation}
+            onVerify={onStartVisitVerification
+              ? () => onStartVisitVerification(selectedPlace)
+              : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
             onToggleBookmark={() => void onToggleBookmark(
@@ -2177,6 +2246,13 @@ export default function MapBottomSheet({
           sheetTranslateY={sheetTranslateY}
         />
       ) : null}
+      <PlacePhotoViewer
+        imageUrls={photoViewer?.imageUrls ?? []}
+        initialIndex={photoViewer?.initialIndex ?? 0}
+        onClose={() => setPhotoViewer(null)}
+        placeName={photoViewer?.placeName ?? ''}
+        visible={photoViewer !== null}
+      />
     </GlassStyles.BottomSheetContainer>
   );
 }
@@ -2195,7 +2271,7 @@ const styles: Record<string, object> = {
   },
   artworkBlurClip: {
     bottom: 0,
-    height: '50%',
+    height: '40%',
     left: 0,
     overflow: 'hidden',
     position: 'absolute',
@@ -2203,7 +2279,7 @@ const styles: Record<string, object> = {
   },
   artworkBlurImage: {
     bottom: 0,
-    height: '200%',
+    height: '250%',
     left: 0,
     position: 'absolute',
     width: '100%',
@@ -2534,7 +2610,7 @@ const styles: Record<string, object> = {
     flex: 1,
     justifyContent: 'center',
   },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', width: 80 },
+  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', overflow: 'hidden', width: 68 },
   navItemActive: {
     backgroundColor: '#F7F7F8',
   },

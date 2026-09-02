@@ -13,3 +13,11 @@ export { useLocationPermissionStatus } from './hooks/useLocationPermissionStatus
 export * from './model/visitVerification';
 export { default as VisitVerificationPlacesScreen } from './screens/VisitVerificationPlacesScreen';
 export { default as VisitVerificationReviewScreen } from './screens/VisitVerificationReviewScreen';
+export { default as VisitVerificationSessionScreen } from './screens/VisitVerificationSessionScreen';
+export {
+  createObservationMutationOptions,
+  createStartSessionMutationOptions,
+  useStartVisitVerificationSession,
+  useSubmitVisitVerificationObservation,
+} from './hooks/useVisitVerificationSessionMutations';
+export { visitVerificationSessionQueryKeys } from './model/visitVerificationSession';
