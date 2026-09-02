@@ -2,6 +2,7 @@ import { accountMockHandlers } from './account/handlers';
 import { currentActivityIntentMockHandlers } from './current-activity-intent/handlers';
 import { placeExplorationMockHandlers } from './place-exploration/handlers';
 import { notificationMockHandlers } from './notifications/handlers';
+import { reservationMockHandlers } from './reservations/handlers';
 import { reservationPaymentMockHandlers } from './reservation-payments/handlers';
 import { scoutProfileMockHandlers } from './scout-profile/handlers';
 import { travelPurposeMockHandlers } from './travel-purposes/handlers';
@@ -14,6 +15,7 @@ export const featureMockHandlers = [
   ...accountMockHandlers,
   ...currentActivityIntentMockHandlers,
   ...notificationMockHandlers,
+  ...reservationMockHandlers,
   ...reservationPaymentMockHandlers,
   ...scoutProfileMockHandlers,
   ...travelPurposeMockHandlers,
