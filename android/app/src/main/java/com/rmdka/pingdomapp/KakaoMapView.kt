@@ -57,10 +57,12 @@ class KakaoMapView(
     companion object {
         private const val TAG = "KakaoMapView"
         private const val MARKER_LAYER_ID = "pingdom_markers"
+        private const val USER_LOCATION_LAYER_ID = "pingdom_user_location"
         private const val MARKER_STYLE_ID_PREFIX = "pingdom_hot_marker_style"
         private const val USER_LOCATION_STYLE_ID = "pingdom_user_location_style"
         private const val USER_LOCATION_LABEL_ID = "pingdom_user_location_label"
         private const val MARKER_LAYER_Z_ORDER = 10
+        private const val USER_LOCATION_LAYER_Z_ORDER = 20
         private const val USER_LOCATION_COLOR = 0xFFFF1956.toInt()
         private const val PLACE_MARKER_ANCHOR_X = 0.5f
         private const val PLACE_MARKER_TIP_RATIO_Y = 0.62f
@@ -81,8 +83,10 @@ class KakaoMapView(
     private var zoomLevel: Int = 7
     private var kakaoMap: KakaoMap? = null
     private var markerLayer: LabelLayer? = null
+    private var userLocationLayer: LabelLayer? = null
     private var markers: List<MapMarker> = emptyList()
     private var lastAppliedCamera: Triple<Double, Double, Int>? = null
+    private var lastAppliedUserLocation: Pair<Double, Double>? = null
 
     init {
         Log.d(TAG, "init: creating Kakao MapView")
@@ -118,8 +122,9 @@ class KakaoMapView(
                     true
                 }
                 kakaoMap.setOnMapClickListener { map, _, point, poi ->
-                    if (poi?.layerId == MARKER_LAYER_ID && poi.poiId.isNotBlank()) {
-                        emitMarkerPress(poi.poiId)
+                    if (poi?.layerId == MARKER_LAYER_ID) {
+                        // Clickable labels are delivered by setOnLabelClickListener above.
+                        // Kakao also invokes this map callback for the same physical tap.
                         return@setOnMapClickListener
                     }
 
@@ -170,7 +175,10 @@ class KakaoMapView(
     }
 
     fun setMarkers(value: ReadableArray?) {
-        markers = parseMarkers(value)
+        val nextMarkers = parseMarkers(value)
+        if (nextMarkers == markers) return
+
+        markers = nextMarkers
         updateMarkersIfReady()
     }
 
@@ -280,7 +288,6 @@ class KakaoMapView(
 
         layer.removeAll()
         addPlaceMarkerLabels(layer, manager)
-        addUserLocationLabelIfReady(layer, manager)
     }
 
     private fun getMarkerLayer(manager: LabelManager): LabelLayer? {
@@ -297,6 +304,23 @@ class KakaoMapView(
 
         layer?.setClickable(true)
         markerLayer = layer
+        return layer
+    }
+
+    private fun getUserLocationLayer(manager: LabelManager): LabelLayer? {
+        val layer = userLocationLayer
+            ?: manager.getLayer(USER_LOCATION_LAYER_ID)
+            ?: manager.addLayer(
+                LabelLayerOptions.from(USER_LOCATION_LAYER_ID)
+                    .setCompetitionType(CompetitionType.None)
+                    .setCompetitionUnit(CompetitionUnit.IconFirst)
+                    .setOrderingType(OrderingType.Rank)
+                    .setZOrder(USER_LOCATION_LAYER_Z_ORDER)
+                    .setClickable(false)
+            )
+
+        layer?.setClickable(false)
+        userLocationLayer = layer
         return layer
     }
 
@@ -712,8 +736,15 @@ class KakaoMapView(
         val map = kakaoMap ?: return
         val lat = userLat ?: return
         val lng = userLng ?: return
+        val manager = map.labelManager ?: return
+        val nextLocation = Pair(lat, lng)
 
-        updateMarkersIfReady()
+        if (lastAppliedUserLocation != nextLocation) {
+            val layer = getUserLocationLayer(manager) ?: return
+            layer.removeAll()
+            addUserLocationLabelIfReady(layer, manager)
+            lastAppliedUserLocation = nextLocation
+        }
 
         if (followUser) {
             val target = LatLng.from(lat, lng)
