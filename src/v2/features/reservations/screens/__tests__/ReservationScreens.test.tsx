@@ -226,6 +226,107 @@ describe('V2 reservation screens', () => {
     expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
   });
 
+  test('상품명이 없는 TICKET/CLASS는 선택·제출할 수 없고 GENERAL 시간만 살아 있다', async () => {
+    mockPlace();
+    const mutate = mockCreateReservation();
+    const startsAt = new Date(2026, 7, 27, 10, 0, 0);
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [
+        availability(77, startsAt),
+        availability(78, startsAt, { productType: 'TICKET' }),
+        availability(79, startsAt, { productType: 'CLASS' }),
+      ],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+
+    const { user } = await renderReservationScreen(createScreen());
+
+    // GENERAL slot stays selectable and submittable.
+    await user.press(await screen.findByTestId('v2-availability-77'));
+    expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(false);
+
+    // TICKET/CLASS render as disabled rows with the shortage notice, never the
+    // raw product type or an invented product name.
+    expect(screen.getByTestId('v2-availability-78').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByTestId('v2-availability-79').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getAllByText('상품 정보를 불러올 수 없어 현재 예약할 수 없습니다.')).toHaveLength(2);
+    expect(screen.queryByText(/TICKET/)).not.toBeOnTheScreen();
+    expect(screen.queryByText(/CLASS/)).not.toBeOnTheScreen();
+
+    // Pressing a blocked row does not move the selection off the GENERAL slot.
+    await user.press(screen.getByTestId('v2-availability-78'));
+    expect(screen.getByTestId('v2-availability-77').props.accessibilityState.selected).toBe(true);
+
+    await user.press(screen.getByTestId('v2-reservation-submit'));
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate.mock.calls[0][0]).toEqual({
+      availabilityId: 77,
+      idempotencyKey: expect.stringMatching(/^reservation-/),
+      quantity: 2,
+    });
+  });
+
+  test('GENERAL 없이 TICKET/CLASS만 있으면 빈 상태·오류가 아닌 상품 정보 부족 안내를 보여준다', async () => {
+    mockPlace();
+    mockCreateReservation();
+    const startsAt = new Date(2026, 7, 27, 10, 0, 0);
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [
+        availability(78, startsAt, { productType: 'TICKET' }),
+        availability(79, startsAt, { productType: 'CLASS' }),
+      ],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+
+    await renderReservationScreen(createScreen());
+
+    expect(await screen.findByText('상품 정보를 불러올 수 없어 현재 예약할 수 없습니다.')).toBeVisible();
+    expect(screen.queryByText('이 장소에 등록된 예약 가능 일정이 없습니다.')).not.toBeOnTheScreen();
+    expect(screen.queryByText('예약 가능 일정을 불러오지 못했습니다.')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
+  });
+
+  test('알 수 없는 productType은 GENERAL로 fallback하지 않고 비활성 안내만 남긴다', async () => {
+    mockPlace();
+    mockCreateReservation();
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [availability(80, new Date(2026, 7, 27, 10, 0, 0), { productType: 'TABLE' })],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+
+    await renderReservationScreen(createScreen());
+
+    expect(await screen.findByText('지원하지 않는 예약 유형이라 현재 예약할 수 없습니다.')).toBeVisible();
+    expect(screen.queryByTestId('v2-availability-80')).toBeNull();
+    expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
+  });
+
+  test('영어에서도 상품 정보 부족 상태를 영어 안내로 표시한다', async () => {
+    mockPlace();
+    mockCreateReservation();
+    const startsAt = new Date(2026, 7, 27, 10, 0, 0);
+    jest.mocked(useAvailabilities).mockReturnValue({
+      data: [availability(77, startsAt), availability(78, startsAt, { productType: 'TICKET' })],
+      isError: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useAvailabilities>);
+
+    await renderReservationScreen(createScreen(), 'en');
+
+    expect(
+      await screen.findByText(
+        "This item can't be reserved right now because its product details are unavailable.",
+      ),
+    ).toBeVisible();
+  });
+
   test('실패 후 동일 제출 재시도에는 같은 idempotency key를 쓴다', async () => {
     mockPlace();
     const mutate = jest.fn((_body, options) => {
