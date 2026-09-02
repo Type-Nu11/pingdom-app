@@ -31,7 +31,7 @@ const MapCanvas = ({
   <KakaoMapAdapter
     center={{ lat: centerLat, lng: centerLng }}
     followUser={followUser}
-    markers={markers.map((marker) => ({ ...marker, name: marker.id }))}
+    markers={markers}
     onCameraIdle={() => onCameraIdle?.()}
     onMarkerSelect={onMarkerPress}
     style={[styles.map, style]}

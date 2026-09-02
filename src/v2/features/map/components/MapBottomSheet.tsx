@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -874,8 +874,16 @@ const ExpandedHomeContent = ({
   userName: string;
 }) => {
   const { t } = useTranslation();
+  const [hasRenderedExpandedContent, setHasRenderedExpandedContent] = useState(
+    expandedInteractionsEnabled,
+  );
   const categoryPlaces = places.filter((place) => placeMatchesCategory(place, activeCategory));
   const gridPlaces = categoryPlaces.length > 0 ? categoryPlaces : places;
+  const shouldRenderExpandedContent = expandedInteractionsEnabled || hasRenderedExpandedContent;
+
+  useEffect(() => {
+    if (expandedInteractionsEnabled) setHasRenderedExpandedContent(true);
+  }, [expandedInteractionsEnabled]);
 
   return (
     <ScrollView
@@ -914,56 +922,58 @@ const ExpandedHomeContent = ({
           )) : <EmptyCard state={state} variant="row" />}
         </ScrollView>
 
-        <Animated.View
-          pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
-          style={{ opacity: expandedOnlyOpacity }}
-          testID="expanded-home-only-content"
-        >
-        <Text style={styles.expandedTitle}>{t('map.sheet.categoryPopular', { userName })}</Text>
+        {shouldRenderExpandedContent ? (
+          <Animated.View
+            pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
+            style={{ opacity: expandedOnlyOpacity }}
+            testID="expanded-home-only-content"
+          >
+            <Text style={styles.expandedTitle}>{t('map.sheet.categoryPopular', { userName })}</Text>
 
-        <ScrollView
-          contentContainerStyle={styles.categoryRow}
-          horizontal
-          nestedScrollEnabled
-          showsHorizontalScrollIndicator={false}
-        >
-          {CATEGORY_OPTIONS.map((category) => {
-            const active = category.id === activeCategory;
+            <ScrollView
+              contentContainerStyle={styles.categoryRow}
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+            >
+              {CATEGORY_OPTIONS.map((category) => {
+                const active = category.id === activeCategory;
 
-            return (
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                key={category.id}
-                onPress={() => onCategoryChange(category.id)}
-                style={[styles.categoryChip, active && styles.categoryChipActive]}
-              >
-                <CategoryIcon active={active} category={category.id} />
-                <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
-                  {t(`map.categories.${category.id}`)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+                return (
+                  <Pressable
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: active }}
+                    key={category.id}
+                    onPress={() => onCategoryChange(category.id)}
+                    style={[styles.categoryChip, active && styles.categoryChipActive]}
+                  >
+                    <CategoryIcon active={active} category={category.id} />
+                    <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
+                      {t(`map.categories.${category.id}`)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
 
-        <View style={styles.gridRow}>
-          {gridPlaces.slice(0, 8).map((place) => (
-            <ExpandedPlaceCard
-              bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-              imageUrl={imageUrlsByPlaceId[String(place.id)]}
-              key={`grid-${place.id}`}
-              onPress={() => onPlacePress(place)}
-              onToggleBookmark={() => void onToggleBookmark(
-                place,
-                !bookmarkedPlaceIds[String(place.id)],
-              )}
-              pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
-              place={place}
-            />
-          ))}
-        </View>
-        </Animated.View>
+            <View style={styles.gridRow}>
+              {gridPlaces.slice(0, 8).map((place) => (
+                <ExpandedPlaceCard
+                  bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                  imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                  key={`grid-${place.id}`}
+                  onPress={() => onPlacePress(place)}
+                  onToggleBookmark={() => void onToggleBookmark(
+                    place,
+                    !bookmarkedPlaceIds[String(place.id)],
+                  )}
+                  pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                  place={place}
+                />
+              ))}
+            </View>
+          </Animated.View>
+        ) : null}
       </FadeSlideTransition>
     </ScrollView>
   );
@@ -1306,7 +1316,12 @@ const PreviewActionChip = ({ active = false, disabled = false, kind, label, onPr
     accessibilityState={{ disabled }}
     disabled={disabled}
     onPress={onPress}
-    style={[styles.previewActionChip, active && styles.previewActionChipActive, disabled && { opacity: 0.45 }]}
+    style={({ pressed }) => [
+      styles.previewActionChip,
+      active && styles.previewActionChipActive,
+      pressed && styles.pressed,
+      disabled && { opacity: 0.45 },
+    ]}
   >
     <PreviewActionIcon kind={kind} />
     <Text style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</Text>
@@ -1398,7 +1413,7 @@ const PreviewContent = ({
           accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
           disabled={pending}
           onPress={onToggleBookmark}
-          style={styles.previewBookmarkButton}
+          style={({ pressed }) => [styles.previewBookmarkButton, pressed && styles.pressed]}
           testID="place-preview-bookmark"
         >
           <BookmarkStar selected={bookmarked} size={22} strokeColor="#FF245B" />
@@ -1407,7 +1422,7 @@ const PreviewContent = ({
           accessibilityLabel={t('map.card.dismiss')}
           accessibilityRole="button"
           onPress={onBack}
-          style={styles.previewCloseButton}
+          style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
           testID="place-preview-close"
         >
           <Text style={styles.previewCloseText}>×</Text>
@@ -1847,17 +1862,21 @@ const NavItem = ({
   icon,
   label,
   onPress,
+  testID,
 }: {
   active?: boolean;
   icon: React.ReactNode;
   label: string;
   onPress?: () => void;
+  testID?: string;
 }) => (
   <Pressable
+    accessibilityLabel={label}
     accessibilityRole="button"
     accessibilityState={{ selected: active }}
     onPress={onPress}
-    style={styles.navItem}
+    style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+    testID={testID}
   >
     <View
       style={[styles.navItemSurface, active && styles.navItemActive]}
@@ -1911,16 +1930,19 @@ const BottomNavigation = ({
           icon={<MapAsset color={recommendationsActive ? '#56575E' : '#FF1956'} height={22} width={19} />}
           label={t('map.navigation.map')}
           onPress={recommendationsActive ? onOpenMap : undefined}
+          testID="map-navigation-map"
         />
         <NavItem
           icon={<StarAsset color="#3B3B40" height={21} width={22} />}
           label={t('map.navigation.favorites')}
           onPress={onOpenLikedPlaces}
+          testID="map-navigation-favorites"
         />
         <NavItem
           icon={<CheckInAsset height={22} width={21} />}
           label={t('map.navigation.reservations')}
           onPress={onOpenSavedPlaces}
+          testID="map-navigation-reservations"
         />
       </FrostedSurface>
     </View>
@@ -2016,14 +2038,24 @@ export default function MapBottomSheet({
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
   const placesState = places.length > 0 ? 'ready' : 'empty';
-  const shownPlaces = feed === 'local' ? places : [...places].reverse();
-  const previewPlaces = [...places, ...recommendationPlaces]
-    .filter((place, index, items) => items.findIndex((item) => item.id === place.id) === index);
+  const shownPlaces = useMemo(
+    () => (feed === 'local' ? places : [...places].reverse()),
+    [feed, places],
+  );
+  const previewPlaces = useMemo(() => {
+    const seenPlaceIds = new Set<number>();
+
+    return [...places, ...recommendationPlaces].filter((place) => {
+      if (seenPlaceIds.has(place.id)) return false;
+      seenPlaceIds.add(place.id);
+      return true;
+    });
+  }, [places, recommendationPlaces]);
   const { imageUrlsByPlaceId: previewImageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
-  const imageUrlsByPlaceId = {
+  const imageUrlsByPlaceId = useMemo(() => ({
     ...explorationImageUrlsByPlaceId,
     ...previewImageUrlsByPlaceId,
-  };
+  }), [explorationImageUrlsByPlaceId, previewImageUrlsByPlaceId]);
   const isExpandedPlaceDetail = content.type === 'place-preview' && snapPoint === 'expanded';
   const handleCreateReservation = () => {
     if (!selectedPlace || !onCreateReservation || reservationNavigationLock.current) return;

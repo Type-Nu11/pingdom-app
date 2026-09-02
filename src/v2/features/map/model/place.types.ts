@@ -91,7 +91,6 @@ export type PlaceCategory =
   | 'popup';
 
 export type MapMarker = {
-  bookmarked?: boolean;
   category: PlaceCategory;
   id: string;
   lat: number;

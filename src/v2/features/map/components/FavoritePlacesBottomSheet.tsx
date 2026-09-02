@@ -215,7 +215,12 @@ const BottomNavigation = ({
         style={styles.navigationBar}
         tintColor="#FFFFFF"
       >
-        <Pressable accessibilityLabel={t('map.navigation.map')} accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
+        <Pressable
+          accessibilityLabel={t('map.navigation.map')}
+          accessibilityRole="button"
+          onPress={onOpenMap}
+          style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+        >
           <View style={styles.navIcon}><MapAsset color="#3B3B40" height={22} width={19} /></View>
           <Text style={styles.navLabel}>{t('map.navigation.map')}</Text>
         </Pressable>
@@ -225,7 +230,12 @@ const BottomNavigation = ({
             <Text style={[styles.navLabel, styles.navLabelActive]}>{t('map.navigation.favorites')}</Text>
           </View>
         </View>
-        <Pressable accessibilityLabel={t('map.navigation.reservations')} accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
+        <Pressable
+          accessibilityLabel={t('map.navigation.reservations')}
+          accessibilityRole="button"
+          onPress={onOpenReservations}
+          style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+        >
           <View style={styles.navIcon}><CheckInAsset height={22} width={21} /></View>
           <Text style={styles.navLabel}>{t('map.navigation.reservations')}</Text>
         </Pressable>

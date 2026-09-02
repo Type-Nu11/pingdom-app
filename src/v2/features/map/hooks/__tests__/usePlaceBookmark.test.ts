@@ -146,6 +146,43 @@ describe('usePlaceBookmark', () => {
     });
   });
 
+  test('북마크 쓰기 완료를 캐시 재검증과 분리하고 장소 미디어 쿼리는 무효화하지 않는다', async () => {
+    let finishInvalidation!: () => void;
+    let invalidationFinished = false;
+    const createBookmark = jest.spyOn(placeApi, 'createBookmark').mockResolvedValue({
+      id: 10,
+      message: 'created',
+      placeId: secondPlace.id,
+    });
+    const { queryClient, wrapper } = createWrapper();
+    const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries').mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishInvalidation = () => {
+          invalidationFinished = true;
+          resolve();
+        };
+      }),
+    );
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.list(), data);
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), { '1': true });
+    const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
+
+    await act(async () => result.current.togglePlaceBookmark(secondPlace, true));
+
+    expect(createBookmark).toHaveBeenCalledWith({ placeId: secondPlace.id });
+    expect(invalidationFinished).toBe(false);
+    expect(result.current.pendingPlaceIds).toEqual({});
+    expect(invalidateQueries).toHaveBeenCalledTimes(1);
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: bookmarkedPlaceQueryKeys.all,
+    });
+
+    await act(async () => {
+      finishInvalidation();
+      await Promise.resolve();
+    });
+  });
+
   test('BOOKMARK_ALREADY_EXISTS 응답도 membership을 저장 상태로 수렴시킨다', async () => {
     jest.spyOn(placeApi, 'createBookmark').mockRejectedValue({
       isAxiosError: true,

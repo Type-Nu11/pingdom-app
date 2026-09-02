@@ -55,7 +55,6 @@ import {
   createRecommendationPresentation,
   getRecommendationState,
 } from '../model/recommendationPresentation';
-import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 import {
   findMapPreviewPlace,
@@ -64,6 +63,7 @@ import {
   shouldPresentMapSelection,
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
+import { selectMapExplorationPlaceIds } from '../utils/mapExplorationPlaceIds';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
 import { PlaceCouponCta } from '../../offers-coupons';
 import { FadeSlideTransition } from '../../../shared/motion';
@@ -264,10 +264,17 @@ export default function MapScreen({
 
     return serverPlaces;
   }, [apiPlaces, recommendationPlaces]);
-  const mapExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList([
-    ...(content.type === 'place-preview' ? [content.placeId] : []),
-    ...allPlaces.map((place) => place.id),
-  ], { enabled: mapSection === 'map' });
+  const mapExplorationPlaceIds = useMemo(() => selectMapExplorationPlaceIds({
+    expanded: snapPoint === 'expanded',
+    places: allPlaces,
+    recommendationPlaces,
+    recommendationsActive: content.type === 'recommendations',
+    selectedPlaceId: content.type === 'place-preview' ? content.placeId : undefined,
+  }), [allPlaces, content, recommendationPlaces, snapPoint]);
+  const mapExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList(
+    mapExplorationPlaceIds,
+    { enabled: mapSection === 'map' },
+  );
   const mapExplorationPreviewImageUrlsByPlaceId = useMemo(
     () => Object.entries(mapExplorationImageUrlsByPlaceId)
       .reduce<Record<string, string>>((result, [placeId, imageUrls]) => {
@@ -434,13 +441,13 @@ export default function MapScreen({
     );
     const visibleMarkerIds = new Set(liveMarkerIds);
     if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
-    const markers = applyBookmarkStateToMarkers([
+    const markers = [
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
       ...(focusedRecommendationMarker ? [focusedRecommendationMarker] : []),
-    ], bookmarkedPlaceIds);
+    ];
 
     if (activeCategory === 'all') return markers;
     const markerCategory: MapMarker['category'] = activeCategory;
@@ -449,9 +456,7 @@ export default function MapScreen({
   }, [
     activeCategory,
     apiMarkers,
-    bookmarkedPlaceIds,
     content.type,
-    apiPlaces.length,
     recommendationPlaces,
     mapSelectedPlace,
   ]);
@@ -459,7 +464,6 @@ export default function MapScreen({
     mapMarkers,
     content.type === 'place-preview' ? mapSelectedPlace?.id ?? null : null,
   ), [content.type, mapMarkers, mapSelectedPlace?.id]);
-
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
 

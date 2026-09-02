@@ -412,7 +412,7 @@ describe('MapBottomSheet recommendations', () => {
     const onBackHome = jest.fn();
     const onToggleBookmark = jest.fn(async () => undefined);
     const selectedPlace = places[0];
-    const { user } = await renderWithProviders(
+    const result = await renderWithProviders(
       <MapBottomSheet
         activeFilters={[]}
         bookmarkedPlaceIds={{}}
@@ -454,20 +454,20 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
-    await user.press(screen.getByRole('button', { name: '예약' }));
-    await user.press(screen.getByRole('button', { name: '예약' }));
+    await result.user.press(screen.getByRole('button', { name: '예약' }));
+    await result.user.press(screen.getByRole('button', { name: '예약' }));
     expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
 
-    await user.press(screen.getByRole('button', { name: '방문 인증 시작' }));
+    await result.user.press(screen.getByRole('button', { name: '방문 인증 시작' }));
     expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
 
     const bookmark = screen.getByTestId('place-preview-bookmark');
     const close = screen.getByTestId('place-preview-close');
     expect(bookmark).toHaveStyle({ height: 44, width: 44 });
     expect(close).toHaveStyle({ height: 44, width: 44 });
-    await user.press(bookmark);
-    await user.press(close);
+    await result.user.press(bookmark);
+    await result.user.press(close);
     expect(onToggleBookmark).toHaveBeenCalledWith(selectedPlace, true);
     expect(onBackHome).toHaveBeenCalledTimes(1);
   });
@@ -741,7 +741,7 @@ describe('MapBottomSheet recommendations', () => {
       expect(screen.getByTestId('feed-segment-indicator')).toBeOnTheScreen();
     });
     expect(screen.getByTestId('feed-content-transition')).toBeOnTheScreen();
-    expect(screen.getByRole('tab', { name: '팝업' })).toBeOnTheScreen();
+    expect(screen.queryByRole('tab', { name: '팝업' })).not.toBeOnTheScreen();
 
     (runTimingMotion as jest.Mock).mockClear();
     await user.press(nationalFeed);
@@ -754,6 +754,52 @@ describe('MapBottomSheet recommendations', () => {
       1,
       expect.objectContaining({ useNativeDriver: true }),
     );
+  });
+
+  test('medium 홈은 확장 전용 트리를 지연하고 첫 탭 feedback과 overlay 입력 상태를 보장한다', async () => {
+    const onOpenLikedPlaces = jest.fn();
+    const commonProps = {
+      activeFilters: [],
+      bookmarkedPlaceIds: {},
+      collapsedTranslateY: 600,
+      content: { type: 'home' } as const,
+      height: 700,
+      mediumTranslateY: 300,
+      onBackHome: jest.fn(),
+      onCouponPress: jest.fn(),
+      onDetailPress: jest.fn(),
+      onFilterPress: jest.fn(),
+      onGoNowPress: jest.fn(),
+      onHandlePress: jest.fn(),
+      onOpenLikedPlaces,
+      onPlacePress: jest.fn(),
+      onQueryChange: jest.fn(),
+      onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(),
+      onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined),
+      panHandlers: {} as GestureResponderHandlers,
+      places,
+      recommendationPlaces: [],
+      recommendationsState: 'ready' as const,
+      selectedPlace: null,
+      sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(300),
+    };
+    const view = await renderWithProviders(
+      <MapBottomSheet {...commonProps} snapPoint="medium" />,
+    );
+
+    expect(screen.queryByTestId('expanded-home-only-content')).not.toBeOnTheScreen();
+    const favorites = screen.getByTestId('map-navigation-favorites');
+    await view.user.press(favorites);
+    expect(onOpenLikedPlaces).toHaveBeenCalledTimes(1);
+
+    await view.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
+    expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('auto');
+
+    await view.rerender(<MapBottomSheet {...commonProps} snapPoint="medium" />);
+    expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');
   });
 
   test('확장 홈에서 서버 장소의 전체 카테고리 필터를 제공한다', async () => {

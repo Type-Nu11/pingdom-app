@@ -4,7 +4,6 @@ import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-q
 import type { PlacesPage, Place } from '../model/place.types';
 import { isExpectedBookmarkStateError, placeApi } from '../api/placeApi';
 import { bookmarkedPlaceQueryKeys } from './useBookmarkedPlaces';
-import { placeQueryKeys } from './usePlaces';
 
 export type TogglePlaceBookmarkPayload = {
   nextBookmarked: boolean;
@@ -99,13 +98,12 @@ export const usePlaceBookmark = () => {
         ),
       );
     },
-    onSettled: async () => {
+    onSettled: () => {
       if (queryClient.isMutating({ mutationKey: PLACE_BOOKMARK_MUTATION_KEY }) > 1) return;
 
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: bookmarkedPlaceQueryKeys.all }),
-        queryClient.invalidateQueries({ queryKey: placeQueryKeys.all }),
-      ]);
+      // Bookmark state is owned by the bookmark queries. Waiting for refetch here keeps
+      // the mutation (and its button lock) pending after the write has already completed.
+      void queryClient.invalidateQueries({ queryKey: bookmarkedPlaceQueryKeys.all });
     },
   });
   const pendingMutations = useMutationState<TogglePlaceBookmarkPayload>({
