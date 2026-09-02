@@ -24,6 +24,7 @@ import {
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
+  VisitVerificationSessionScreen,
 } from '../../features/place-visit-verification';
 import { env } from '../../shared/config';
 import { clearTokenSession } from '../../shared/auth/tokenSession';
@@ -140,6 +141,22 @@ function VisitVerificationReviewRoute({ navigation, route }: V2ScreenProps<'Visi
   return <VisitVerificationReviewScreen checkInId={route.params.checkInId} onBack={navigation.goBack} onComplete={() => navigation.popTo(V2_ROUTES.Map)} placeId={route.params.placeId} />;
 }
 
+function VisitVerificationSessionRoute({ navigation, route }: V2ScreenProps<'VisitVerificationSession'>) {
+  return (
+    <VisitVerificationSessionScreen
+      onBack={navigation.goBack}
+      onWriteReview={({ checkInId: value, placeId: placeValue }) => {
+        const checkInId = parseCheckInId(value);
+        const placeId = parsePlaceId(placeValue);
+        if (checkInId && placeId) {
+          navigation.navigate(V2_ROUTES.VisitVerificationReview, { checkInId, placeId });
+        }
+      }}
+      placeId={route.params.placeId}
+    />
+  );
+}
+
 export default function RootNavigator() {
   const [isNavigationReady, setIsNavigationReady] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<NotificationRoute | null>(null);
@@ -193,6 +210,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />
+        <Stack.Screen name={V2_ROUTES.VisitVerificationSession} component={VisitVerificationSessionRoute} />
       </Stack.Navigator>
     </NavigationContainer>
   );

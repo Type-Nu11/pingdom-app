@@ -73,6 +73,14 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
             onViewMyCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
             placeId={route.params.placeId}
           />
+          <VerificationAction>
+            <Button
+              label={t('visitVerification.session.start')}
+              onPress={() => navigation.navigate(V2_ROUTES.VisitVerificationSession, {
+                placeId: route.params.placeId,
+              })}
+            />
+          </VerificationAction>
           <Button label={t('placeDetail.back')} onPress={navigation.goBack} />
         </Surface>
       </Content>
@@ -137,4 +145,8 @@ const OperatingStatus = styled.Text<{ $tone: 'positive' | 'neutral' | 'warning' 
       ? theme.colors.warning
       : theme.colors.textMuted};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+`;
+
+const VerificationAction = styled.View`
+  margin-bottom: ${({ theme }) => theme.spacing.md}px;
 `;

@@ -26,6 +26,7 @@ export const V2_ROUTES = {
   SettingsDetail: 'SettingsDetail',
   VisitVerificationPlaces: 'VisitVerificationPlaces',
   VisitVerificationReview: 'VisitVerificationReview',
+  VisitVerificationSession: 'VisitVerificationSession',
 } as const;
 
 export type V2StackParamList = {
@@ -55,6 +56,9 @@ export type V2StackParamList = {
   VisitVerificationPlaces: undefined;
   VisitVerificationReview: {
     checkInId?: CheckInId;
+    placeId: PlaceId;
+  };
+  VisitVerificationSession: {
     placeId: PlaceId;
   };
 };
