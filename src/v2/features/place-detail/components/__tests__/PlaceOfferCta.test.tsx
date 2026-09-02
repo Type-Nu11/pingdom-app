@@ -65,8 +65,8 @@ describe('place detail coupon CTA', () => {
     expect(screen.getByText('쿠폰 받기')).toBeTruthy();
     expect(screen.getByText('음료 1잔 무료')).toBeTruthy();
     expect(screen.getByTestId('v2-place-offer-remaining')).toHaveTextContent('수량 제한 없음');
-    expect(screen.getByText('발급 대상: 누구나')).toBeTruthy();
-    expect(screen.getByText('유효 기간: 혜택 종료일까지')).toBeTruthy();
+    expect(screen.getByText('누구나')).toBeTruthy();
+    expect(screen.getByText(/발급 후 7일 이내 사용/)).toBeTruthy();
   });
 
   test('상태 배지는 색과 함께 읽히는 텍스트 레이블을 제공한다', async () => {

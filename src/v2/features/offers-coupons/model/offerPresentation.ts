@@ -218,6 +218,8 @@ function resolveBlockReason(
   }
 
   return null;
+}
+
 export type EligibilityPolicy = OfferEligibilityPolicy;
 export type InventoryPolicy = OfferInventoryPolicy;
 export type ExpiryPolicy = OfferExpiryPolicy;
@@ -241,6 +243,7 @@ export type OfferView = {
   totalQuantity: number | null;
   issuedQuantity: number | null;
   remainingQuantity: number | null;
+  status: OfferStatus | null;
 };
 
 const asEnum = <T extends string>(value: unknown, allowed: readonly T[]): T | null =>
@@ -278,6 +281,7 @@ export function toOfferView(offer: Offer): OfferView | null {
     totalQuantity: asFiniteOrNull(raw.totalQuantity),
     issuedQuantity: asFiniteOrNull(raw.issuedQuantity),
     remainingQuantity: asFiniteOrNull(raw.remainingQuantity),
+    status: asEnum(raw.status, OFFER_STATUSES),
   };
 }
 
