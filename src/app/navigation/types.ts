@@ -52,10 +52,12 @@ export const MAIN_ROUTES = {
   ProfileEdit: 'ProfileEdit',
   VerifiedPlaces: 'VerifiedPlaces',
   CreateReservation: 'CreateReservation',
+  ReservationBox: 'ReservationBox',
   ReservationDetail: 'ReservationDetail',
   Settings: 'Settings',
   VisitVerificationPlaces: 'VisitVerificationPlaces',
   VisitVerificationReview: 'VisitVerificationReview',
+  VisitVerificationSession: 'VisitVerificationSession',
 } as const;
 
 export type AuthStackParamList = {
@@ -91,6 +93,7 @@ export type MainStackParamList = {
   ReservationDetail: {
     reservationId: ReservationId;
   };
+  ReservationBox: undefined;
   Settings: undefined;
   Merchant: {
     merchantId: MerchantId;
@@ -98,6 +101,9 @@ export type MainStackParamList = {
   VisitVerificationPlaces: undefined;
   VisitVerificationReview: {
     checkInId?: CheckInId;
+    placeId: PlaceId;
+  };
+  VisitVerificationSession: {
     placeId: PlaceId;
   };
 };

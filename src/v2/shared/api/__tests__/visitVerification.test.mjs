@@ -14,6 +14,113 @@ import {
 } from '../../../features/place-visit-verification/model/visitVerification.ts';
 import { createInfiniteCheckInListQueryOptions } from '../../../features/check-ins/hooks/useCheckIns.ts';
 import { createCheckInApi } from '../../../features/check-ins/api/checkInApi.ts';
+import {
+  applyVisitVerificationSessionResult,
+  createObservationMutationOptions,
+  createStartSessionMutationOptions,
+} from '../../../features/place-visit-verification/hooks/useVisitVerificationSessionMutations.ts';
+import {
+  isTerminalVisitVerificationSession,
+  observationDelayMs,
+  sessionErrorPhase,
+  visitVerificationSessionQueryKeys,
+} from '../../../features/place-visit-verification/model/visitVerificationSession.ts';
+import { ApiError } from '../index.ts';
+
+test('documented session error statuses select only supported UI states', () => {
+  const cases = [
+    [400, 'location-failed'],
+    [401, 'error'],
+    [403, 'rejected'],
+    [404, 'error'],
+    [409, 'error'],
+    [422, 'proximity-lost'],
+  ];
+  for (const [status, phase] of cases) {
+    const error = new ApiError('server message', { status });
+    assert.equal(sessionErrorPhase(error), phase);
+    assert.equal(error.status, status);
+  }
+});
+
+test('session start and observation preserve method paths, bodies, and AbortSignals', async () => {
+  const calls = [];
+  const response = { id: 9201, placeId: 17, status: 'STARTED' };
+  const client = {
+    delete: async () => response,
+    get: async () => response,
+    patch: async () => response,
+    post: async (path, body, options) => { calls.push({ body, options, path }); return response; },
+    put: async () => response,
+  };
+  const api = createVisitVerificationApi(client);
+  const signal = new AbortController().signal;
+  const startBody = {
+    accuracyMeters: 4.2,
+    latitude: 35.1,
+    longitude: 128.1,
+    observedAt: '2026-09-02T01:00:00Z',
+    placeId: 17,
+  };
+  const observationBody = {
+    accuracyMeters: 4.5,
+    latitude: 35.2,
+    longitude: 128.2,
+    observedAt: '2026-09-02T01:00:15Z',
+  };
+
+  assert.equal(await api.startSession(startBody, signal), response);
+  assert.equal(await api.submitObservation(9201, observationBody, signal), response);
+  assert.deepEqual(calls, [
+    { body: startBody, options: { signal }, path: '/visit-verification-sessions' },
+    { body: observationBody, options: { signal }, path: '/visit-verification-sessions/9201/observations' },
+  ]);
+});
+
+test('session mutations never retry and preserve request variables', async () => {
+  const calls = [];
+  const response = { id: 9201, status: 'IN_PROGRESS' };
+  const api = {
+    startSession: async (body, signal) => { calls.push({ body, signal, type: 'start' }); return response; },
+    submitObservation: async (sessionId, body, signal) => { calls.push({ body, sessionId, signal, type: 'observation' }); return response; },
+  };
+  const signal = new AbortController().signal;
+  const body = { accuracyMeters: 3, latitude: 35, longitude: 128, observedAt: '2026-09-02T01:00:00Z' };
+  const start = createStartSessionMutationOptions(api);
+  const observation = createObservationMutationOptions(api);
+
+  assert.equal(start.retry, false);
+  assert.equal(observation.retry, false);
+  await start.mutationFn({ body: { ...body, placeId: 17 }, signal });
+  await observation.mutationFn({ body, sessionId: 9201, signal });
+  assert.equal(calls.length, 2);
+});
+
+test('server recommendation controls scheduling and only server terminal states stop observation', () => {
+  const now = Date.parse('2026-09-02T01:00:00Z');
+  assert.equal(observationDelayMs('2026-09-02T01:00:15Z', now), 15_000);
+  assert.equal(observationDelayMs('2026-09-02T00:59:59Z', now), 0);
+  assert.equal(observationDelayMs(null, now), null);
+  assert.equal(isTerminalVisitVerificationSession({ status: 'IN_PROGRESS', remainingSeconds: 0 }), false);
+  for (const status of ['PROXIMITY_LOST', 'COMPLETED', 'EXPIRED', 'REJECTED']) {
+    assert.equal(isTerminalVisitVerificationSession({ status }), true);
+  }
+});
+
+test('completed session updates only session detail and recent check-in caches', async () => {
+  const calls = [];
+  const queryClient = {
+    invalidateQueries: async (value) => { calls.push(['invalidate', value.queryKey]); },
+    setQueryData: (key, value) => { calls.push(['set', key, value]); },
+  };
+  const session = { id: 9201, placeId: 17, status: 'COMPLETED', completedCheckInId: 7002, reviewEligible: true };
+  await applyVisitVerificationSessionResult(queryClient, session);
+
+  assert.deepEqual(calls, [
+    ['set', visitVerificationSessionQueryKeys.detail(9201), session],
+    ['invalidate', ['v2', 'check-ins']],
+  ]);
+});
 
 test('visit review API forwards the confirmed body, place ID, and signal unchanged', async () => {
   const calls = [];

@@ -16,12 +16,22 @@ jest.mock('../../../v2/features/map/screens/MapScreen', () => {
   const ReactNative = require('react-native');
   return {
     __esModule: true,
-    default: ({ onOpenVisitVerification }: { onOpenVisitVerification: () => void }) => ReactLibrary.createElement(
+    default: ({
+      onOpenVisitVerification,
+      onStartVisitVerification,
+    }: {
+      onOpenVisitVerification: () => void;
+      onStartVisitVerification: (placeId: number) => void;
+    }) => ReactLibrary.createElement(
       ReactNative.View,
       { testID: 'current-map-screen' },
       ReactLibrary.createElement(
         ReactNative.Pressable,
         { onPress: onOpenVisitVerification, testID: 'current-map-verification-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: () => onStartVisitVerification(17), testID: 'selected-place-verification-entry' },
       ),
     ),
   };
@@ -130,6 +140,20 @@ describe('현재 지도 경계', () => {
 
     await view.user.press(screen.getByTestId('current-map-verification-entry'));
     expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.VisitVerificationPlaces);
+  });
+
+  test('선택한 장소의 실제 ID로 체류 인증 세션에 진입한다', async () => {
+    const i18n = await createTestI18n();
+    const view = await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { i18n },
+    );
+
+    await view.user.press(screen.getByTestId('selected-place-verification-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      MAIN_ROUTES.VisitVerificationSession,
+      { placeId: 17 },
+    );
   });
 
   test('production 마이페이지에서 프로필 편집으로 진입하고 뒤로 복귀한다', async () => {

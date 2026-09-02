@@ -324,6 +324,10 @@ export const resources = {
           collapseTags: 'Collapse additional tags', coupon: 'Coupons', description: 'About this place',
           events: 'Current events', expandTags: 'Show {{count}} hidden tags', imageDetail: 'View {{name}} photo {{count}}',
           imageError: 'Could not load photos. Try again', info: 'Info', notice: 'Operating notice',
+          imageViewer: {
+            close: 'Close photo', counter: '{{current}} / {{total}}', next: 'Next photo',
+            photo: '{{name}} photo {{current}} of {{total}}', previous: 'Previous photo',
+          },
           participantCount_one: '{{count}} participant', participantCount_other: '{{count}} participants',
           photoReviews: 'Photo reviews', preview: 'View {{name}} details', reviewHighlights: 'What visitors liked',
           reviewCount_one: '{{count}} review', reviewCount_other: '{{count}} reviews', reviewEmpty: 'No reviews yet.',
@@ -1152,6 +1156,10 @@ export const resources = {
           amenityEnglish: '영어응대 가능', amenityParking: '주차가능', back: '지도로 돌아가기', collapseTags: '추가 태그 접기',
           coupon: '쿠폰', description: '장소 소개', events: '진행 중 이벤트', expandTags: '숨겨진 태그 {{count}}개 펼치기',
           imageDetail: '{{name}} 사진 {{count}} 상세 보기', imageError: '사진을 불러오지 못했습니다. 다시 시도', info: '정보',
+          imageViewer: {
+            close: '사진 닫기', counter: '{{current}} / {{total}}', next: '다음 사진',
+            photo: '{{name}} 사진 {{total}}장 중 {{current}}번째', previous: '이전 사진',
+          },
           notice: '운영 공지', participantCount_one: '{{count}}명 참여', participantCount_other: '{{count}}명 참여', photoReviews: '사진 리뷰', preview: '{{name}} 상세 보기',
           reviewHighlights: '이런 점을 좋아해요!', reviewCount_one: '리뷰 {{count}}개', reviewCount_other: '리뷰 {{count}}개', reviewEmpty: '등록된 리뷰 정보가 없어요.',
           reviewError: '리뷰를 불러오지 못했습니다. 다시 시도', reviewLoading: '리뷰를 불러오는 중입니다.', reviews: '리뷰',

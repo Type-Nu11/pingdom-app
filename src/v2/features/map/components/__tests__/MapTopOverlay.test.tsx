@@ -45,6 +45,10 @@ describe('MapTopOverlay', () => {
     const locateButton = screen.getByRole('button', { name: '내 위치' });
     expect(locateButton).toBeVisible();
     expect(locateButton).toHaveStyle({ height: 44, width: 44 });
+    expect(screen.getByTestId('map-locate-icon').props).toEqual(expect.objectContaining({
+      height: 20,
+      width: 20,
+    }));
     await view.user.press(locateButton);
     await view.user.press(locateButton);
     expect(props.onLocatePress).toHaveBeenCalledTimes(2);

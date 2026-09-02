@@ -15,6 +15,8 @@ export const V2_ROUTES = {
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   CreateReservation: 'CreateReservation',
+  ReservationBox: 'ReservationBox',
+  ReservationDetail: 'ReservationDetail',
   Home: 'Home',
   Map: 'Map',
   MyPage: 'MyPage',
@@ -26,6 +28,7 @@ export const V2_ROUTES = {
   SettingsDetail: 'SettingsDetail',
   VisitVerificationPlaces: 'VisitVerificationPlaces',
   VisitVerificationReview: 'VisitVerificationReview',
+  VisitVerificationSession: 'VisitVerificationSession',
 } as const;
 
 export type V2StackParamList = {
@@ -38,6 +41,10 @@ export type V2StackParamList = {
     imageUrl?: string;
     placeId: PlaceId;
     placeName?: string;
+  };
+  ReservationBox: undefined;
+  ReservationDetail: {
+    reservationId: number;
   };
   Home: undefined;
   Map: undefined;
@@ -55,6 +62,9 @@ export type V2StackParamList = {
   VisitVerificationPlaces: undefined;
   VisitVerificationReview: {
     checkInId?: CheckInId;
+    placeId: PlaceId;
+  };
+  VisitVerificationSession: {
     placeId: PlaceId;
   };
 };

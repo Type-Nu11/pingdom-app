@@ -2,10 +2,12 @@ import React, { type ReactElement, type PropsWithChildren } from 'react';
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
+import { ThemeProvider } from 'styled-components/native';
 
 import { useReservations } from '../..';
 import { registerReservationResources } from '../../i18n/reservationResources';
 import { createTestI18n } from '../../../../shared/testing/testProviders';
+import { theme } from '../../../../shared/theme';
 import ReservationBottomSheet from '../../components/ReservationBottomSheet';
 
 jest.mock('../..', () => ({ useReservations: jest.fn() }));
@@ -58,7 +60,9 @@ async function renderReservations(ui: ReactElement, language: 'ko' | 'en' = 'ko'
   registerReservationResources(i18n);
   return render(ui, {
     wrapper: ({ children }: PropsWithChildren) => (
-      <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider theme={theme}>{children}</ThemeProvider>
+      </I18nextProvider>
     ),
   });
 }

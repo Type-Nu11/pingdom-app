@@ -11,7 +11,7 @@ import FashionIcon from '../../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodIcon from '../../../../assets/v2/icons/place/food_svg.svg';
 import HeritageIcon from '../../../../assets/v2/icons/place/heritage.svg';
 import MusicIcon from '../../../../assets/v2/icons/place/music_svg.svg';
-import PinIcon from '../../../../assets/v2/icons/place/Pin.svg';
+import FinderIcon from '../../../../assets/v2/icons/finder.svg';
 import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
 import {
@@ -270,7 +270,7 @@ export default function MapTopOverlay({
                 style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.96 }] } : undefined}
                 testID="map-locate-button"
               >
-                <PinIcon height={20} width={18} />
+                <FinderIcon height={20} testID="map-locate-icon" width={20} />
               </S.LocateButton>
             </S.LocateButtonRow>
           ) : null}

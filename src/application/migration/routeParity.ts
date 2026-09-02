@@ -27,7 +27,7 @@ export const PRODUCTION_ROUTE_PARITY: readonly RouteParityEntry[] = [
 
 export const PROTECTED_ROUTE_FLOWS = Object.freeze({
   reservation: ['Map', 'Map.PlaceDetail', 'CreateReservation', 'ReservationDetail', 'Map'],
-  visitVerification: ['Map', 'VisitVerificationPlaces', 'VisitVerificationReview', 'Map'],
+  visitVerification: ['Map', 'Map.PlaceDetail', 'VisitVerificationSession', 'VisitVerificationReview', 'Map'],
 });
 
 export const PRODUCTION_ROOT_POLICY = Object.freeze({

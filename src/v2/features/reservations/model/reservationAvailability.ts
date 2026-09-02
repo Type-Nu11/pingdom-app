@@ -14,6 +14,33 @@ export function availabilityDateKey(availability: Availability): string {
   return localDateKey(new Date(availability.startsAt));
 }
 
+export function availabilityDateKeys(availability: Availability): string[] {
+  const startsAt = new Date(availability.startsAt);
+  const endsAt = new Date(availability.endsAt);
+  if (Number.isNaN(startsAt.getTime())
+    || Number.isNaN(endsAt.getTime())
+    || endsAt.getTime() < startsAt.getTime()) {
+    return [];
+  }
+
+  const cursor = startOfLocalDay(startsAt);
+  const lastDate = startOfLocalDay(endsAt);
+  const dates: string[] = [];
+  while (cursor.getTime() <= lastDate.getTime()) {
+    dates.push(localDateKey(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+
+export function availabilityIncludesDate(
+  availability: Availability,
+  dateKey: string,
+): boolean {
+  const dates = availabilityDateKeys(availability);
+  return dates.length > 0 && dates[0] <= dateKey && dateKey <= dates[dates.length - 1];
+}
+
 export function startOfLocalDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -31,11 +58,19 @@ export function isAvailabilityBookable(
   quantity: number,
   now: Date,
 ): boolean {
-  const startsAt = new Date(availability.startsAt);
+  const endsAt = new Date(availability.endsAt);
   return availability.status === 'ACTIVE'
     && availability.remainingCapacity >= quantity
-    && !Number.isNaN(startsAt.getTime())
-    && startsAt.getTime() >= now.getTime();
+    && !Number.isNaN(endsAt.getTime())
+    && endsAt.getTime() > now.getTime();
+}
+
+export function isAvailabilityUpcoming(
+  availability: Availability,
+  now: Date,
+): boolean {
+  const endsAt = new Date(availability.endsAt);
+  return !Number.isNaN(endsAt.getTime()) && endsAt.getTime() > now.getTime();
 }
 
 export function nearestBookableAvailability(
@@ -45,6 +80,16 @@ export function nearestBookableAvailability(
 ): Availability | undefined {
   return availabilities
     .filter((availability) => isAvailabilityBookable(availability, quantity, now))
+    .sort((left, right) =>
+      new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())[0];
+}
+
+export function nearestUpcomingAvailability(
+  availabilities: AvailabilityList,
+  now: Date,
+): Availability | undefined {
+  return availabilities
+    .filter((availability) => isAvailabilityUpcoming(availability, now))
     .sort((left, right) =>
       new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())[0];
 }

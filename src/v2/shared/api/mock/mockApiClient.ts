@@ -53,11 +53,14 @@ function wait(signal?: AbortSignal): Promise<void> {
   });
 }
 
-function scenarioError(): ApiError | undefined {
+function scenarioError(path: string): ApiError | undefined {
+  const visitVerificationPath = path.startsWith('/visit-verification-sessions');
   switch (activeScenario) {
     case 'forbidden':
+      if (visitVerificationPath) return undefined;
       return new ApiError('Mock permission denied', { code: 'ROLE_REQUIRED', status: 403 });
     case 'expired':
+      if (visitVerificationPath) return undefined;
       return new ApiError('Mock resource expired', { code: 'RESOURCE_EXPIRED', status: 410 });
     case 'network-error':
       return new ApiError('Mock network unavailable', {
@@ -145,7 +148,7 @@ async function resolve<T>(
   body?: unknown,
 ): Promise<T> {
   await wait(signal);
-  const error = scenarioError();
+  const error = scenarioError(path);
   if (error) throw error;
 
   const featureResult = resolveMockHandler(featureMockHandlers, {

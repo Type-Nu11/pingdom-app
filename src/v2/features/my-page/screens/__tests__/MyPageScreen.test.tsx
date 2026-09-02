@@ -29,6 +29,7 @@ function renderMyPage() {
       onBack={jest.fn()}
       onOpenCoupons={jest.fn()}
       onOpenProfileEdit={jest.fn()}
+      onOpenReservations={jest.fn()}
       onOpenSettings={jest.fn()}
       onOpenVerifiedPlaces={jest.fn()}
     />,
@@ -63,6 +64,24 @@ describe('MyPageScreen', () => {
     expect(screen.getByTestId('v2-my-page-stat-coupons')).toHaveTextContent('5');
   });
 
+  test('예약 통계를 누르면 예약함으로 이동한다', async () => {
+    mockEverythingEmpty();
+    const onOpenReservations = jest.fn();
+    const { user } = await renderWithProviders(
+      <MyPageScreen
+        onBack={jest.fn()}
+        onOpenCoupons={jest.fn()}
+        onOpenProfileEdit={jest.fn()}
+        onOpenReservations={onOpenReservations}
+        onOpenSettings={jest.fn()}
+        onOpenVerifiedPlaces={jest.fn()}
+      />,
+    );
+
+    await user.press(await screen.findByRole('button', { name: '예약' }));
+    expect(onOpenReservations).toHaveBeenCalledTimes(1);
+  });
+
   test('통계 조회가 실패하면 0이 아니라 "-"를 보여준다', async () => {
     mockEverythingEmpty();
     jest.spyOn(reservationApi, 'listReservations').mockRejectedValue(new Error('실패'));
@@ -84,6 +103,7 @@ describe('MyPageScreen', () => {
         onBack={jest.fn()}
         onOpenCoupons={jest.fn()}
         onOpenProfileEdit={onOpenProfileEdit}
+        onOpenReservations={jest.fn()}
         onOpenSettings={jest.fn()}
         onOpenVerifiedPlaces={jest.fn()}
       />,

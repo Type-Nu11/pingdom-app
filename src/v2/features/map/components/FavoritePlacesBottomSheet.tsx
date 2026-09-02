@@ -483,7 +483,7 @@ const styles: Record<string, object> = {
   nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5 },
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: { alignItems: 'center', flex: 1, gap: 3, justifyContent: 'center' },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', width: 80 },
+  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', overflow: 'hidden', width: 68 },
   navItemActive: { backgroundColor: '#F7F7F8' },
   navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
   navLabelActive: { color: '#FF245B', fontWeight: '700' },

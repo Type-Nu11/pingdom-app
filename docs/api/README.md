@@ -2,6 +2,10 @@
 
 `mvp.openapi.json`이 프론트엔드 타입과 서버 DTO의 단일 원천이다. 이 문서는 명세를 읽을 때 필요한 규칙, 상태 전이, 버전 정책과 검토 절차만 보충한다. 필드나 경로가 문서와 명세에서 충돌하면 OpenAPI가 우선한다.
 
+배포 서버의 체류 기반 방문 인증 계약은 `visit-verification.openapi.json`에 재귀 참조
+schema와 함께 별도로 고정한다. `x-source`에는 원본 URL, 확인 시각, 원본 SHA-256을 보존하며,
+`sync:visit-verification-openapi`와 `generate:visit-verification-api-types`로 재생성한다.
+
 ## 계약 범위와 이름 대응
 
 | 기능 | OpenAPI schema | 프론트 타입 | 서버 DTO |
