@@ -6,7 +6,7 @@ import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import PendingReservationIcon from '../../../../assets/v2/icons/smRlavy.svg';
-import { toApiError } from '../../../shared/api';
+import { getApiErrorUx, toApiError } from '../../../shared/api';
 import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import {
@@ -24,6 +24,15 @@ import {
   type Availability,
 } from '../model/reservationAvailability';
 import {
+  BOOKER_NAME_MAX_LENGTH,
+  BOOKER_PHONE_MAX_LENGTH,
+  REQUEST_NOTE_MAX_LENGTH,
+  formatReservationWindow,
+  maskBookerName,
+  toBookerRequestFields,
+  validateBookerInput,
+} from '../model/reservationBooker';
+import {
   isSelectableAvailability,
   selectAvailabilityPresentation,
   summarizeAvailabilityPresentations,
@@ -33,6 +42,15 @@ import {
 const PEOPLE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 type TimePeriod = 'morning' | 'afternoon';
+
+// Maps the classified create error to submit-copy. Anything unlisted (auth,
+// not-found, generic, …) falls back to the generic retry message.
+const SUBMIT_ERROR_KEYS: Partial<Record<ReturnType<typeof getApiErrorUx>['kind'], string>> = {
+  conflict: 'reservation.create.submitConflict',
+  network: 'reservation.create.submitNetworkError',
+  outOfRange: 'reservation.create.submitConflict',
+  validation: 'reservation.create.submitValidationError',
+};
 
 type CreateReservationScreenProps = {
   navigation: { goBack: () => void };
@@ -58,14 +76,19 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const [requestNote, setRequestNote] = useState('');
   const [idempotencyKey] = useState(createReservationIdempotencyKey);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showBookerErrors, setShowBookerErrors] = useState(false);
   const detail = usePlaceDetail(route.params.placeId);
   const availabilities = useAvailabilities(route.params.placeId);
-  const createReservation = useCreateReservation();
+  const createReservation = useCreateReservation(route.params.placeId);
   const availabilityData = availabilities.data ?? [];
 
   // Only GENERAL place reservations can be selected and submitted today, so the
   // calendar dots and the nearest-date jump are driven by that subset. TICKET
   // and CLASS slots still render in the time list as disabled rows.
+  const bookerInput = { bookerName, bookerPhone, requestNote };
+  const bookerValidation = validateBookerInput(bookerInput);
+  const bookerErrorKeyFor = (field: keyof typeof bookerValidation.errors) =>
+    showBookerErrors ? bookerValidation.errors[field] : null;
   const bookableAvailabilities = useMemo(
     () => availabilityData.filter(
       (item) => isSelectableAvailability(item) && isAvailabilityBookable(item, quantity, now),
@@ -135,25 +158,16 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   }, [now, quantity, selectedAvailability, selectedAvailabilityId, selectedDate]);
 
   const hasValidIdempotencyKey = idempotencyKey.length > 0 && idempotencyKey.length <= 100;
-  const normalizedBookerName = bookerName.trim();
-  const normalizedBookerPhone = bookerPhone.trim();
-  const normalizedRequestNote = requestNote.trim();
-  const hasValidBookerName = normalizedBookerName.length > 0
-    && normalizedBookerName.length <= 100;
-  const hasValidBookerPhone = normalizedBookerPhone.length > 0
-    && normalizedBookerPhone.length <= 30
-    && /^[0-9+()\- ]+$/.test(normalizedBookerPhone);
-  const canSubmit = Boolean(
+  const slotReady = Boolean(
     selectedAvailability
       && isSelectableAvailability(selectedAvailability)
       && isAvailabilityBookable(selectedAvailability, quantity, now)
       && quantity >= 1
       && hasValidIdempotencyKey
-      && hasValidBookerName
-      && hasValidBookerPhone
       && !createReservation.isPending
       && !isSubmitting,
   );
+  const canSubmit = slotReady && bookerValidation.isValid;
 
   const moveMonth = (offset: number) => {
     setMonth((current) => addLocalMonths(current, offset));
@@ -162,20 +176,22 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   };
 
   const submit = () => {
-    if (!canSubmit
+    if (!slotReady
       || !selectedAvailability
       || !isSelectableAvailability(selectedAvailability)
       || submissionGuard.current) return;
+    if (!bookerValidation.isValid) {
+      setShowBookerErrors(true);
+      return;
+    }
     submissionGuard.current = true;
     setIsSubmitting(true);
     createReservation.mutate(
       {
         availabilityId: selectedAvailability.id,
-        bookerName: normalizedBookerName,
-        bookerPhone: normalizedBookerPhone,
         idempotencyKey,
         quantity,
-        ...(normalizedRequestNote ? { requestNote: normalizedRequestNote } : {}),
+        ...toBookerRequestFields(bookerInput),
       },
       {
         onError: (error) => {
@@ -190,7 +206,14 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     );
   };
 
+  const submitErrorKey = createReservation.isError
+    ? reservationSubmitErrorKey(createReservation.error)
+    : null;
+
   if (createReservation.isSuccess) {
+    const created = createReservation.data;
+    const createdWindow = formatReservationWindow(created, i18n.language);
+    const createdBookerName = maskBookerName(created.bookerName);
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-reservation-success-screen">
         <SuccessHeader>
@@ -208,6 +231,20 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
           </SuccessIconSurface>
           <SuccessTitle>{t('reservation.create.successTitle')}</SuccessTitle>
           <SuccessDescription>{t('reservation.create.successDescription')}</SuccessDescription>
+          <SuccessSummary accessibilityRole="summary">
+            <SuccessRow>
+              <SuccessRowLabel>{t('reservation.create.selectedWindow')}</SuccessRowLabel>
+              <SuccessRowValue testID="v2-reservation-success-window">
+                {createdWindow ?? t('reservation.create.windowPending')}
+              </SuccessRowValue>
+            </SuccessRow>
+            {createdBookerName ? (
+              <SuccessRow>
+                <SuccessRowLabel>{t('reservation.detail.bookerName')}</SuccessRowLabel>
+                <SuccessRowValue>{createdBookerName}</SuccessRowValue>
+              </SuccessRow>
+            ) : null}
+          </SuccessSummary>
         </SuccessContent>
         <SuccessFooter>
           <SuccessAction accessibilityRole="button" onPress={navigation.goBack}>
@@ -287,55 +324,80 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
         </Section>
 
         <SubmitSection>
-          <SectionTitle>{t('reservation.create.bookerInfo')}</SectionTitle>
+          <SectionTitle>{t('reservation.create.booker.title')}</SectionTitle>
           <Field>
-            <FieldLabel>{t('reservation.create.bookerName')}</FieldLabel>
+            <FieldLabel>{t('reservation.create.booker.name')}</FieldLabel>
             <FieldInput
+              accessibilityHint={bookerErrorKeyFor('bookerName') ? t(bookerErrorKeyFor('bookerName') as string) : undefined}
+              accessibilityLabel={t('reservation.create.booker.name')}
               autoCapitalize="words"
-              maxLength={100}
+              maxLength={BOOKER_NAME_MAX_LENGTH}
+              onBlur={() => setShowBookerErrors(true)}
               onChangeText={setBookerName}
-              placeholder={t('reservation.create.bookerNamePlaceholder')}
+              placeholder={t('reservation.create.booker.namePlaceholder')}
               placeholderTextColor={theme.colors.textMuted}
-              testID="v2-reservation-booker-name"
+              testID="v2-booker-name"
               value={bookerName}
             />
+            {bookerErrorKeyFor('bookerName') ? (
+              <FieldError accessibilityLiveRegion="polite" accessibilityRole="alert" testID="v2-booker-name-error">
+                {t(bookerErrorKeyFor('bookerName') as string)}
+              </FieldError>
+            ) : null}
           </Field>
           <Field>
-            <FieldLabel>{t('reservation.create.bookerPhone')}</FieldLabel>
+            <FieldLabel>{t('reservation.create.booker.phone')}</FieldLabel>
             <FieldInput
+              accessibilityHint={bookerErrorKeyFor('bookerPhone') ? t(bookerErrorKeyFor('bookerPhone') as string) : undefined}
+              accessibilityLabel={t('reservation.create.booker.phone')}
               autoComplete="tel"
               keyboardType="phone-pad"
-              maxLength={30}
+              maxLength={BOOKER_PHONE_MAX_LENGTH}
+              onBlur={() => setShowBookerErrors(true)}
               onChangeText={setBookerPhone}
-              placeholder={t('reservation.create.bookerPhonePlaceholder')}
+              placeholder={t('reservation.create.booker.phonePlaceholder')}
               placeholderTextColor={theme.colors.textMuted}
-              testID="v2-reservation-booker-phone"
+              testID="v2-booker-phone"
               value={bookerPhone}
             />
-            {bookerPhone.length > 0 && !hasValidBookerPhone
-              ? <FieldError>{t('reservation.create.bookerPhoneInvalid')}</FieldError>
-              : null}
+            {bookerErrorKeyFor('bookerPhone') ? (
+              <FieldError accessibilityLiveRegion="polite" accessibilityRole="alert" testID="v2-booker-phone-error">
+                {t(bookerErrorKeyFor('bookerPhone') as string)}
+              </FieldError>
+            ) : null}
           </Field>
           <Field>
-            <FieldLabel>{t('reservation.create.requestNote')}</FieldLabel>
+            <FieldLabel>
+              {t('reservation.create.booker.note')}
+              <FieldHint>{`  ${t('reservation.create.booker.noteOptional')}`}</FieldHint>
+            </FieldLabel>
             <NoteInput
-              maxLength={500}
+              accessibilityHint={bookerErrorKeyFor('requestNote') ? t(bookerErrorKeyFor('requestNote') as string) : undefined}
+              accessibilityLabel={t('reservation.create.booker.note')}
+              maxLength={REQUEST_NOTE_MAX_LENGTH}
               multiline
+              onBlur={() => setShowBookerErrors(true)}
               onChangeText={setRequestNote}
-              placeholder={t('reservation.create.requestNotePlaceholder')}
+              placeholder={t('reservation.create.booker.notePlaceholder')}
               placeholderTextColor={theme.colors.textMuted}
-              testID="v2-reservation-request-note"
+              testID="v2-booker-note"
               textAlignVertical="top"
               value={requestNote}
             />
+            <FieldHint>{`${requestNote.length}/${REQUEST_NOTE_MAX_LENGTH}`}</FieldHint>
+            {bookerErrorKeyFor('requestNote') ? (
+              <FieldError accessibilityLiveRegion="polite" accessibilityRole="alert" testID="v2-booker-note-error">
+                {t(bookerErrorKeyFor('requestNote') as string)}
+              </FieldError>
+            ) : null}
           </Field>
         </SubmitSection>
 
         <Section>
-          {createReservation.isError
-            ? <ErrorText>{t(reservationSubmitErrorKey(createReservation.error))}</ErrorText>
-            : null}
-          <SubmitButton $enabled={canSubmit} accessibilityRole="button" accessibilityState={{ disabled: !canSubmit, busy: createReservation.isPending || isSubmitting }} disabled={!canSubmit} onPress={submit} testID="v2-reservation-submit">
+          {submitErrorKey ? (
+            <ErrorText accessibilityLiveRegion="polite" accessibilityRole="alert">{t(submitErrorKey)}</ErrorText>
+          ) : null}
+          <SubmitButton $enabled={canSubmit} accessibilityRole="button" accessibilityState={{ disabled: !slotReady, busy: createReservation.isPending || isSubmitting }} disabled={!slotReady} onPress={submit} testID="v2-reservation-submit">
             {createReservation.isPending || isSubmitting ? <ActivityIndicator color={theme.colors.onPrimary} /> : <SubmitLabel $enabled={canSubmit}>{t('reservation.create.submit')}</SubmitLabel>}
           </SubmitButton>
         </Section>
@@ -360,7 +422,8 @@ function reservationSubmitErrorKey(error: unknown): string {
   if (apiError.code === 'TOURIST_ACCOUNT_REQUIRED' || apiError.status === 403) {
     return 'reservation.create.submitAccountError';
   }
-  return 'reservation.create.submitError';
+  return SUBMIT_ERROR_KEYS[getApiErrorUx(error).kind]
+    ?? 'reservation.create.submitError';
 }
 
 type AvailabilityStateProps = {
@@ -560,6 +623,7 @@ const Field = styled.View`gap: 2px;`;
 const FieldLabel = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: 12px;`;
 const FieldInput = styled.TextInput`height: 46px; padding: 0; border-bottom-width: 1px; border-bottom-color: ${({ theme }) => theme.colors.border}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 const NoteInput = styled.TextInput`min-height: 96px; margin-top: 6px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
+const FieldHint = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const FieldError = styled.Text`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const SlotButton = styled.Pressable<{ $bookable: boolean; $selected: boolean }>`min-width: 56px; min-height: 34px; align-items: center; justify-content: center; margin-right: ${({ theme }) => theme.spacing.sm}px; padding: 6px 12px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surfaceMuted}; opacity: ${({ $bookable }) => $bookable ? 1 : 0.48};`;
 const SlotLabel = styled.Text<{ $bookable: boolean; $selected: boolean }>`color: ${({ $bookable, $selected, theme }) => $selected ? theme.colors.primary : $bookable ? theme.colors.textMuted : theme.colors.textDisabled}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $selected, theme }) => $selected ? theme.typography.label.fontWeight : theme.typography.caption.fontWeight};`;
@@ -577,3 +641,7 @@ const SuccessDescription = styled.Text`color: ${({ theme }) => theme.colors.text
 const SuccessFooter = styled.View`padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.lg}px;`;
 const SuccessAction = styled.Pressable`height: 64px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary};`;
 const SuccessActionLabel = styled.Text`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.onboardingAction.fontSize}px; font-weight: ${({ theme }) => theme.typography.onboardingAction.fontWeight}; line-height: ${({ theme }) => theme.typography.onboardingAction.lineHeight}px;`;
+const SuccessSummary = styled.View`align-self: stretch; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
+const SuccessRow = styled.View`gap: ${({ theme }) => theme.spacing.xs}px;`;
+const SuccessRowLabel = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const SuccessRowValue = styled.Text`color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
