@@ -74,7 +74,6 @@ export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
 export type MapPreviewFallbackContent = {
   amenities: Array<'english' | 'parking'>;
   coupons?: Array<{ period: string; title: string }>;
-  email?: string;
   englishName?: string;
   events?: Array<{ period: string; title: string }>;
   imageState?: 'empty' | 'error' | 'loading' | 'ready';
@@ -85,7 +84,6 @@ export type MapPreviewFallbackContent = {
   operatingSummary?: PlaceOperatingSummaryText;
   roadAddress?: string;
   summary?: string;
-  website?: string;
   reviewCount?: number;
   reservation?: ReservationCtaState;
   reviewState?: 'empty' | 'error' | 'loading' | 'ready';
@@ -122,6 +120,19 @@ export type DecisionPlace = {
   wait: string;
   waitMinutes?: [number, number];
 };
+
+export function selectPlaceDetailAddress(
+  placeAddress: string,
+  fallbackContent?: Pick<MapPreviewFallbackContent, 'jibunAddress' | 'roadAddress'>,
+): string {
+  const candidates = [
+    fallbackContent?.roadAddress,
+    placeAddress,
+    fallbackContent?.jibunAddress,
+  ];
+
+  return candidates.find((candidate) => candidate?.trim())?.trim() ?? '';
+}
 
 type MapBottomSheetProps = {
   activeFilters: VisitFilter[];
@@ -207,8 +218,9 @@ const CardScrim = () => (
       <Defs>
         <LinearGradient id="card-scrim" x1="0" x2="0" y1="0" y2="1">
           <Stop offset="0" stopColor="#000000" stopOpacity="0" />
-          <Stop offset="0.48" stopColor="#000000" stopOpacity="0.04" />
-          <Stop offset="1" stopColor="#000000" stopOpacity="0.88" />
+          <Stop offset="0.52" stopColor="#000000" stopOpacity="0.02" />
+          <Stop offset="0.76" stopColor="#000000" stopOpacity="0.32" />
+          <Stop offset="1" stopColor="#000000" stopOpacity="0.82" />
         </LinearGradient>
       </Defs>
       <Rect fill="url(#card-scrim)" height="100" width="100" />
@@ -445,7 +457,7 @@ const PlaceArtwork = ({
       {blurBottom ? (
         <View pointerEvents="none" style={styles.artworkBlurClip}>
           <Image
-            blurRadius={10}
+            blurRadius={2}
             onError={() => setHasImageError(true)}
             resizeMode="cover"
             source={imageSource}
@@ -695,7 +707,7 @@ const RecommendationGridCard = ({
       style={styles.gridCard}
       testID={`recommendation-grid-card-${place.id}`}
     >
-      <PlaceArtwork imageUrl={imageUrl} variant="grid" />
+      <PlaceArtwork blurBottom imageUrl={imageUrl} variant="grid" />
       <CardScrim />
       <RecommendationBookmarkButton
         bookmarked={bookmarked}
@@ -736,7 +748,7 @@ const PlaceTrendCard = ({
     onPress={onPress}
     style={({ pressed }) => [styles.homeTrendCard, pressed && styles.pressed]}
   >
-    <PlaceArtwork imageUrl={imageUrl} />
+    <PlaceArtwork blurBottom imageUrl={imageUrl} />
     <CardScrim />
     <Pressable
       accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -787,7 +799,7 @@ const ExpandedPlaceCard = ({
     onPress={onPress}
     style={({ pressed }) => [styles.homeGridCard, pressed && styles.pressed]}
   >
-    <PlaceArtwork imageUrl={imageUrl} variant="grid" />
+    <PlaceArtwork blurBottom imageUrl={imageUrl} variant="grid" />
     <CardScrim />
     <Pressable
       accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -1517,6 +1529,7 @@ const ExpandedPlaceContent = ({
   const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
+  const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
 
   return (
     <ScrollView
@@ -1628,22 +1641,8 @@ const ExpandedPlaceContent = ({
           <View style={styles.detailInfoBlock}>
             <View style={styles.detailInfoRow}>
               <PinAsset height={16} width={14} />
-              <Text style={styles.detailInfoText}>{place.address}</Text>
+              <Text style={styles.detailInfoText}>{detailAddress}</Text>
             </View>
-            {fallbackContent?.roadAddress && fallbackContent.roadAddress !== place.address ? (
-              <View style={styles.detailInfoRow}>
-                <PinAsset height={16} width={14} />
-                <Text style={styles.detailInfoText}>{fallbackContent.roadAddress}</Text>
-              </View>
-            ) : null}
-            {fallbackContent?.jibunAddress
-              && fallbackContent.jibunAddress !== place.address
-              && fallbackContent.jibunAddress !== fallbackContent.roadAddress ? (
-                <View style={styles.detailInfoRow}>
-                  <PinAsset height={16} width={14} />
-                  <Text style={styles.detailInfoText}>{fallbackContent.jibunAddress}</Text>
-                </View>
-              ) : null}
             {fallbackContent ? (
               <>
                 <View style={styles.detailInfoRow}>
@@ -1668,17 +1667,6 @@ const ExpandedPlaceContent = ({
                   <View style={styles.detailInfoRow}>
                     <CallAsset height={16} width={16} />
                     <Text style={styles.detailInfoText}>{fallbackContent.phone}</Text>
-                  </View>
-                ) : null}
-                {fallbackContent.email ? (
-                  <View style={styles.detailInfoRow}>
-                    <CallAsset height={16} width={16} />
-                    <Text style={styles.detailInfoText}>{fallbackContent.email}</Text>
-                  </View>
-                ) : null}
-                {fallbackContent.website ? (
-                  <View style={styles.detailInfoRow}>
-                    <Text style={styles.detailInfoText}>{fallbackContent.website}</Text>
                   </View>
                 ) : null}
               </>
@@ -1871,7 +1859,10 @@ const NavItem = ({
     onPress={onPress}
     style={styles.navItem}
   >
-    <View style={[styles.navItemSurface, active && styles.navItemActive]}>
+    <View
+      style={[styles.navItemSurface, active && styles.navItemActive]}
+      testID={active ? 'map-navigation-active-item' : undefined}
+    >
       <View style={styles.navIcon}>{icon}</View>
       <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
     </View>
@@ -2280,7 +2271,7 @@ const styles: Record<string, object> = {
   },
   artworkBlurClip: {
     bottom: 0,
-    height: '50%',
+    height: '40%',
     left: 0,
     overflow: 'hidden',
     position: 'absolute',
@@ -2288,7 +2279,7 @@ const styles: Record<string, object> = {
   },
   artworkBlurImage: {
     bottom: 0,
-    height: '200%',
+    height: '250%',
     left: 0,
     position: 'absolute',
     width: '100%',
@@ -2619,7 +2610,7 @@ const styles: Record<string, object> = {
     flex: 1,
     justifyContent: 'center',
   },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', width: 80 },
+  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', overflow: 'hidden', width: 68 },
   navItemActive: {
     backgroundColor: '#F7F7F8',
   },

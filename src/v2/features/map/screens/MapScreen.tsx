@@ -361,7 +361,6 @@ export default function MapScreen({
       [String(selectedPlace.id)]: {
         amenities: [],
         coupons: selectedPlacePresentation.coupons,
-        email: selectedPlacePresentation.merchant?.contactEmail ?? undefined,
         englishName: selectedPlacePresentation.englishName ?? undefined,
         events: selectedPlacePresentation.events,
         imageState: selectedPlacePresentation.imageState,
@@ -388,7 +387,6 @@ export default function MapScreen({
           ? t(selectedPlacePresentation.verificationLabelKey)
           : '',
         statusEmphasis: operatingSummary?.statusText ?? '',
-        website: selectedPlacePresentation.merchant?.websiteUrl ?? undefined,
       },
     };
   }, [selectedPlace, selectedPlacePresentation, t]);

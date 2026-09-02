@@ -6,6 +6,7 @@ import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { runTimingMotion } from '../../../../shared/motion';
 import MapBottomSheet, {
   RecommendationFeaturedCard,
+  selectPlaceDetailAddress,
   type DecisionPlace,
   type MapPreviewFallbackContent,
 } from '../MapBottomSheet';
@@ -40,6 +41,16 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
+  test('장소 상세 주소는 서버 도로명 주소 하나만 우선 표시한다', () => {
+    expect(selectPlaceDetailAddress('목록 주소', {
+      jibunAddress: '서버 지번 주소',
+      roadAddress: '서버 도로명 주소',
+    })).toBe('서버 도로명 주소');
+    expect(selectPlaceDetailAddress('목록 주소', {
+      jibunAddress: '서버 지번 주소',
+    })).toBe('목록 주소');
+  });
+
   test('장소 사진을 누르면 전체 화면에서 사진을 넘기고 닫을 수 있다', async () => {
     const selectedPlace = places[0];
     const { user } = await renderWithProviders(
@@ -218,7 +229,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('recommendation-featured-image').props.source)
       .toEqual({ uri: 'https://example.com/place.jpg' });
     expect(screen.getByTestId('recommendation-featured-blur-image').props).toMatchObject({
-      blurRadius: 10,
+      blurRadius: 2,
       source: { uri: 'https://example.com/place.jpg' },
     });
     expect(screen.getByTestId('recommendation-featured-image').props.onError)
@@ -714,6 +725,11 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     expect(screen.getAllByText('추천 장소 1').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('map-navigation-active-item')).toHaveStyle({
+      borderRadius: 28,
+      overflow: 'hidden',
+      width: 68,
+    });
     const localFeed = screen.getByRole('tab', { name: '우리 지역 핫플' });
     const nationalFeed = screen.getByRole('tab', { name: '전국 트렌드' });
     expect(localFeed.props.accessibilityState).toEqual({ selected: true });
