@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import {
+  getCouponStatusView,
   OfferCouponErrorState,
   useInfiniteCoupons,
   type Coupon,
@@ -95,7 +96,7 @@ export default function CouponBoxScreen({
         : undefined}
       periodText={formatOfferPeriod(item.issuedAt, item.expiresAt, locale, { compact: true })}
       placeName={item.placeName}
-      statusText={t(`myPage.couponBox.status.${item.status}`)}
+      statusText={t(getCouponStatusView(item.status).labelKey)}
       title={item.title}
     />
   );

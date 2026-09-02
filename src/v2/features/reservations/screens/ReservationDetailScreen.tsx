@@ -5,7 +5,9 @@ import styled from 'styled-components/native';
 
 import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import { useAllPayments } from '../../payments/hooks/usePayments';
+import { getPaymentAmount, getPaymentStatusView } from '../../payments/model/paymentPresentation';
 import { ApiErrorState, EmptyState, LoadingState } from '../../../shared/components';
+import { getReservationStatusView } from '../model/reservationPresentation';
 import { useReservationDetail } from '../hooks/useReservations';
 
 type ReservationDetailScreenProps = {
@@ -43,6 +45,7 @@ export default function ReservationDetailScreen({
   }
 
   const reservation = reservationQuery.data;
+  const reservationStatus = getReservationStatusView(reservation.status);
   const linkedPayments = paymentsQuery.data?.filter(
     (payment) => payment.reservationId === reservation.id,
   ) ?? [];
@@ -68,7 +71,9 @@ export default function ReservationDetailScreen({
           <Divider />
           <Field>
             <Eyebrow>{t('reservation.detail.status')}</Eyebrow>
-            <Value>{reservation.status}</Value>
+            <Value testID="v2-reservation-detail-status">
+              {`${reservationStatus.symbol} ${t(reservationStatus.labelKey)}`}
+            </Value>
           </Field>
           <Field>
             <Eyebrow>{t('reservation.detail.productType')}</Eyebrow>
@@ -92,32 +97,45 @@ export default function ReservationDetailScreen({
               description={t('reservation.detail.paymentsEmptyDescription')}
               title={t('reservation.detail.paymentsEmptyTitle')}
             />
-          ) : linkedPayments.map((payment) => (
-            <PaymentCard key={payment.id}>
-              <PaymentHeader>
-                <Value>{t('reservation.detail.paymentIdentifier', { id: payment.id })}</Value>
-                <PaymentStatus>{payment.status}</PaymentStatus>
-              </PaymentHeader>
-              <Notice>
-                {t('reservation.detail.paymentAmount', {
-                  value: formatServerAmount(payment.amountMinor, payment.currency),
-                })}
-              </Notice>
-              <Notice>{t('reservation.detail.paymentProvider', { value: payment.provider })}</Notice>
-              {payment.failureCode ? (
-                <Notice>{t('reservation.detail.paymentFailure', { value: payment.failureCode })}</Notice>
-              ) : null}
-            </PaymentCard>
-          ))}
+          ) : linkedPayments.map((payment) => {
+            const paymentStatus = getPaymentStatusView(payment.status);
+
+            return (
+              <PaymentCard key={payment.id}>
+                <PaymentHeader>
+                  <Value>{t('reservation.detail.paymentIdentifier', { id: payment.id })}</Value>
+                  <PaymentStatus testID={`v2-payment-status-${payment.id}`}>
+                    {`${paymentStatus.symbol} ${t(paymentStatus.labelKey)}`}
+                  </PaymentStatus>
+                </PaymentHeader>
+                <Notice>
+                  {t('reservation.detail.paymentAmount', {
+                    value: formatServerAmount(payment.amountMinor, payment.currency),
+                  })}
+                </Notice>
+                <Notice>{t('reservation.detail.paymentProvider', { value: payment.provider })}</Notice>
+                {payment.failureCode ? (
+                  <Notice>
+                    {t('reservation.detail.paymentFailure', { value: payment.failureCode })}
+                  </Notice>
+                ) : null}
+              </PaymentCard>
+            );
+          })}
         </Card>
       </Content>
     </Screen>
   );
 }
 
+/**
+ * An unsettled payment has no amount yet. `getPaymentAmount` returns `null`
+ * rather than `0`, so the row reads as "not reported" instead of "free".
+ */
 function formatServerAmount(amountMinor: number | null, currency: string | null): string {
-  if (amountMinor === null || currency === null) return '—';
-  return `${amountMinor} ${currency}`;
+  const amount = getPaymentAmount(amountMinor, currency);
+  if (amount === null) return '—';
+  return `${amount.amountMinor} ${amount.currency}`;
 }
 
 const Screen = styled(SafeAreaView)`

@@ -88,7 +88,8 @@ describe('ReservationBottomSheet', () => {
     await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} onOpenReservation={onOpenReservation} />);
     await userEvent.setup().press(screen.getByTestId('reservation-card-901'));
     expect(onOpenReservation).toHaveBeenCalledWith(901);
-    expect(screen.getByText('확정 대기')).toBeVisible();
+    // The card pairs the tone colour with a text cue, so status never reads by colour alone.
+    expect(screen.getByText('! 확정 대기')).toBeVisible();
   });
 
   test('UNKNOWN 상태를 안전한 안내로 표시한다', async () => {
@@ -96,7 +97,7 @@ describe('ReservationBottomSheet', () => {
       data: { hasNext: false, limit: 20, page: 1, reservations: [{ ...reservation, status: 'UNKNOWN' }], totalCount: 1, totalPages: 1 },
     }));
     await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
-    expect(screen.getByText('상태 확인 필요')).toBeVisible();
+    expect(screen.getByText('● 상태 확인 필요')).toBeVisible();
   });
 
   test('예약 탭 선택 상태와 다른 탭 이동을 제공한다', async () => {

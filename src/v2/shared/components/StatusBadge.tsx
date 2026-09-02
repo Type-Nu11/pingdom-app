@@ -1,7 +1,10 @@
 import React from 'react';
 import styled, { useTheme } from 'styled-components/native';
 
-export type StatusBadgeTone = 'neutral' | 'success' | 'warning' | 'error';
+import type { StatusTone } from '../model';
+
+/** The badge speaks the same tone vocabulary as the shared status selectors. */
+export type StatusBadgeTone = StatusTone;
 
 export type StatusBadgeProps = {
   label: string;

@@ -361,7 +361,10 @@ describe('V2 reservation screens', () => {
       <ReservationDetailScreen onBack={jest.fn()} reservationId={901} />,
     );
 
-    expect(screen.getByText('REFUND_PROCESSING')).toBeVisible();
+    // Server states reach the screen through the shared status selector, so the
+    // raw enum is never shown.
+    expect(screen.getByTestId('v2-payment-status-1002')).toHaveTextContent('! 환불 진행 중');
+    expect(screen.queryByText('REFUND_PROCESSING')).not.toBeOnTheScreen();
     expect(screen.getByText('최소 화폐 단위 금액·통화: 25000 KRW')).toBeVisible();
     expect(screen.queryByText('결제 번호 1001')).not.toBeOnTheScreen();
     expect(screen.queryByText('결제 내역이 없어요')).not.toBeOnTheScreen();

@@ -6,6 +6,7 @@ import {
   Button,
   EmptyState,
   LoadingState,
+  StatusBadge,
   Surface,
 } from '../../../shared/components';
 import { useIssueCoupon, usePlaceOffers } from '../hooks/useOffersCoupons';
@@ -13,12 +14,13 @@ import OfferCouponErrorState from './OfferCouponErrorState';
 import {
   formatOfferDate,
   formatOfferEligibility,
-  formatOfferInventory,
   formatOfferPeriod,
   formatOfferValidity,
+  getOfferIssuanceView,
   selectCouponCtaState,
   selectPlaceOffers,
   type CouponConflictCause,
+  type OfferRemainingView,
   type OfferView,
 } from '../model/offerPresentation';
 
@@ -50,6 +52,7 @@ export default function PlaceCouponCta({
   const issue = useIssueCoupon();
   const offers = useMemo(() => selectPlaceOffers(offersQuery.data), [offersQuery.data]);
   const [selectedOfferId, setSelectedOfferId] = useState<number | null>(null);
+  const [now] = useState(() => new Date().toISOString());
   // The Offer the in-flight/last issuance belongs to. A successful issuance
   // invalidates the Offer list, so the row can leave `offers` before the result
   // is rendered; keeping a copy stops the panel from blanking out mid-flight.
@@ -223,24 +226,39 @@ export default function PlaceCouponCta({
   // render the benefit detail + CTA.
   if (!activeOffer) return null;
 
+  const issuance = getOfferIssuanceView({
+    eligibilityPolicy: activeOffer.eligibilityPolicy ?? undefined,
+    endsAt: activeOffer.endsAt,
+    expiryPolicy: activeOffer.expiryPolicy ?? undefined,
+    inventoryPolicy: activeOffer.inventoryPolicy ?? undefined,
+    remainingQuantity: activeOffer.remainingQuantity,
+    startsAt: activeOffer.startsAt,
+    status: activeOffer.status ?? undefined,
+    totalQuantity: activeOffer.totalQuantity,
+  }, now);
   const isIssuing = state.kind === 'issuing';
   const statusMessage = state.kind === 'eligibility-unmet'
     ? t('placeOffers.error.eligibility')
     : state.kind === 'issue-not-found'
       ? t('placeOffers.error.notFound')
-    : state.kind === 'conflict'
-      ? t(CONFLICT_COPY_KEY[state.cause])
-      : null;
-  const ctaDisabled = isIssuing
+      : state.kind === 'conflict'
+        ? t(CONFLICT_COPY_KEY[state.cause])
+        : null;
+  const ctaDisabled = !issuance.canIssue
+    || isIssuing
     || state.kind === 'issue-not-found'
     || state.kind === 'eligibility-unmet'
     || (state.kind === 'conflict' && state.cause !== 'unknown');
-  const ctaLabel = isIssuing ? t('placeOffers.cta.issuing') : t('placeOffers.cta.issue');
+  const ctaLabel = isIssuing ? t('placeOffers.cta.issuing') : t(issuance.ctaLabelKey);
 
   return (
-    <Wrapper accessibilityRole="summary">
+    <Wrapper accessibilityRole="summary" testID="v2-place-offer-cta">
       <Surface padding="lg" tone="outlined">
         <SectionTitle>{t('placeOffers.title')}</SectionTitle>
+        <StatusBadge
+          label={t(issuance.statusView.labelKey)}
+          tone={issuance.statusView.tone}
+        />
 
         {offers.length > 1 ? (
           <OfferChoiceGroup accessibilityRole="radiogroup">
@@ -263,7 +281,12 @@ export default function PlaceCouponCta({
           </OfferChoiceGroup>
         ) : null}
 
-        <OfferBenefitDetail locale={locale} offer={activeOffer} t={t} />
+        <OfferBenefitDetail
+          locale={locale}
+          offer={activeOffer}
+          remaining={issuance.remaining}
+          t={t}
+        />
 
         {statusMessage ? (
           <StatusLine $tone="warning" accessibilityLiveRegion="polite">
@@ -303,10 +326,12 @@ type Translate = (key: string, options?: Record<string, unknown>) => string;
 function OfferBenefitDetail({
   locale,
   offer,
+  remaining,
   t,
 }: {
   locale: string;
   offer: OfferView;
+  remaining: OfferRemainingView;
   t: Translate;
 }) {
   return (
@@ -331,7 +356,11 @@ function OfferBenefitDetail({
       </DetailRow>
       <DetailRow>
         <DetailLabel>{t('placeOffers.detail.inventoryLabel')}</DetailLabel>
-        <DetailValue>{formatOfferInventory(offer, t)}</DetailValue>
+        <DetailValue testID="v2-place-offer-remaining">
+          {remaining.remainingQuantity === null
+            ? t(remaining.labelKey)
+            : t(remaining.labelKey, { count: remaining.remainingQuantity })}
+        </DetailValue>
       </DetailRow>
       <DetailRow>
         <DetailLabel>{t('placeOffers.detail.eligibilityLabel')}</DetailLabel>

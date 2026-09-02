@@ -16,3 +16,4 @@ export type {
   PaymentStatusContractAssertion,
 } from './model/payment.types';
 export { PAYMENT_STATUSES } from './model/payment.types';
+export { getPaymentAmount, getPaymentStatusView } from './model/paymentPresentation';

@@ -23,6 +23,8 @@ import {
 } from '../../map/components/MapBottomSheet';
 import { usePlacePreviewImages } from '../../map/hooks/usePlacePreviewImages';
 import * as GlassStyles from '../../map/styles/BottomSheetGlass.styles';
+import type { StatusTone } from '../../../shared/model';
+import { getReservationStatusView } from '../model/reservationPresentation';
 import type { Reservation } from '..';
 import { useReservations } from '..';
 
@@ -60,14 +62,13 @@ const ActiveReservationIcon = () => (
 );
 
 
-const STATUS_PRESENTATION: Record<Reservation['status'], { labelKey: string; color: string }> = {
-  CANCELED: { labelKey: 'reservation.list.statuses.canceled', color: '#73757D' },
-  COMPLETED: { labelKey: 'reservation.list.statuses.completed', color: '#157F3D' },
-  CONFIRMED: { labelKey: 'reservation.list.statuses.confirmed', color: '#157F3D' },
-  EXPIRED: { labelKey: 'reservation.list.statuses.expired', color: '#73757D' },
-  NO_SHOW: { labelKey: 'reservation.list.statuses.noShow', color: '#B54708' },
-  PENDING: { labelKey: 'reservation.list.statuses.pending', color: '#FF1956' },
-  UNKNOWN: { labelKey: 'reservation.list.statuses.unknown', color: '#B42318' },
+// Label and tone come from the shared reservation selector; only the sheet's own
+// palette lives here, so the status vocabulary is not restated per screen.
+const STATUS_TONE_COLORS: Record<StatusTone, string> = {
+  error: '#B42318',
+  neutral: '#73757D',
+  success: '#157F3D',
+  warning: '#FF1956',
 };
 
 function formatDate(value: string, language: string) {
@@ -82,7 +83,7 @@ function ReservationCard({ onPress, reservation }: {
   reservation: Reservation;
 }) {
   const { i18n, t } = useTranslation();
-  const status = STATUS_PRESENTATION[reservation.status] ?? STATUS_PRESENTATION.UNKNOWN;
+  const status = getReservationStatusView(reservation.status);
   const statusLabel = t(status.labelKey);
 
   return (
@@ -100,7 +101,9 @@ function ReservationCard({ onPress, reservation }: {
           <Text style={styles.cardEyebrow}>{t('reservation.list.card.eyebrow')}</Text>
           <Text style={styles.cardTitle}>{t('reservation.list.card.number', { id: reservation.id })}</Text>
         </View>
-        <Text style={[styles.status, { color: status.color }]}>{statusLabel}</Text>
+        <Text style={[styles.status, { color: STATUS_TONE_COLORS[status.tone] }]}>
+          {`${status.symbol} ${statusLabel}`}
+        </Text>
       </View>
       <View style={styles.divider} />
       <View style={styles.metaRow}>

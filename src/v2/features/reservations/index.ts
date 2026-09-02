@@ -24,3 +24,13 @@ export {
   useReservationDetail,
   useReservationTransition,
 } from './hooks/useReservations';
+export {
+  canRequestReservationCancel,
+  getReservationStatusView,
+  RESERVATION_STATUSES,
+} from './model/reservationPresentation';
+export type {
+  ReservationDetailStatus,
+  ReservationStatus,
+  ReservationStatusContractAssertions,
+} from './model/reservationPresentation';
