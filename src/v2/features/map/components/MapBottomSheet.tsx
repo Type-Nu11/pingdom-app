@@ -61,6 +61,7 @@ import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
+import { PlaceMenuSection } from '../../place-menus';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -1709,6 +1710,8 @@ const ExpandedPlaceContent = ({
               ))}
             </View>
           ) : null)}
+
+          <PlaceMenuSection placeId={place.id} />
 
           {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
