@@ -9,12 +9,14 @@ import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import {
   addLocalMonths,
-  availabilityDateKey,
+  availabilityDateKeys,
+  availabilityIncludesDate,
   buildLocalCalendar,
   createReservationIdempotencyKey,
   isAvailabilityBookable,
   localDateKey,
   nearestBookableAvailability,
+  nearestUpcomingAvailability,
   startOfLocalDay,
   startOfLocalMonth,
   type Availability,
@@ -51,15 +53,22 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     [availabilityData, now, quantity],
   );
   const availableDates = useMemo(
-    () => new Set(bookableAvailabilities.map(availabilityDateKey)),
+    () => new Set(bookableAvailabilities.flatMap(availabilityDateKeys)),
     [bookableAvailabilities],
+  );
+  const scheduledDates = useMemo(
+    () => new Set(
+      availabilityData
+        .flatMap(availabilityDateKeys),
+    ),
+    [availabilityData],
   );
   const selectedAvailability = availabilityData.find(
     (item) => item.id === selectedAvailabilityId,
   );
   const selectedDateSlots = selectedDate
     ? availabilityData
-      .filter((item) => availabilityDateKey(item) === selectedDate)
+      .filter((item) => availabilityIncludesDate(item, selectedDate))
       .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
     : [];
 
@@ -67,12 +76,16 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     if (initializedFromAvailability.current || availabilities.isPending || availabilities.isError) {
       return;
     }
-    const nearest = nearestBookableAvailability(availabilityData, quantity, now);
+    const nearest = nearestBookableAvailability(availabilityData, quantity, now)
+      ?? nearestUpcomingAvailability(availabilityData, now);
     if (!nearest) return;
     const nearestDate = new Date(nearest.startsAt);
+    const initialDate = nearestDate.getTime() <= now.getTime()
+      ? now
+      : nearestDate;
     initializedFromAvailability.current = true;
-    setMonth(startOfLocalMonth(nearestDate));
-    setSelectedDate(availabilityDateKey(nearest));
+    setMonth(startOfLocalMonth(initialDate));
+    setSelectedDate(localDateKey(initialDate));
     setSelectedAvailabilityId(null);
   }, [availabilityData, availabilities.isError, availabilities.isPending, now, quantity]);
 
@@ -80,7 +93,8 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     if (selectedAvailabilityId !== null
       && (!selectedAvailability
         || !isAvailabilityBookable(selectedAvailability, quantity, now)
-        || availabilityDateKey(selectedAvailability) !== selectedDate)) {
+        || !selectedDate
+        || !availabilityIncludesDate(selectedAvailability, selectedDate))) {
       setSelectedAvailabilityId(null);
     }
   }, [now, quantity, selectedAvailability, selectedAvailabilityId, selectedDate]);
@@ -161,7 +175,13 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
               const selected = key === selectedDate;
               const isPast = startOfLocalDay(date).getTime() < startOfLocalDay(now).getTime();
               const available = !isPast && availableDates.has(key);
-              return <DayCell key={key}><DayButton $selected={selected} accessibilityLabel={available ? t('reservation.create.availableDateLabel', { date: key }) : t('reservation.create.unavailableDateLabel', { date: key })} accessibilityRole="button" accessibilityState={{ disabled: !available, selected }} disabled={!available} onPress={() => { setSelectedDate(key); setSelectedAvailabilityId(null); }}><DayText $available={available} $selected={selected}>{date.getDate()}</DayText>{available ? <DayStatus $selected={selected}>{t('reservation.create.available')}</DayStatus> : null}</DayButton></DayCell>;
+              const scheduled = scheduledDates.has(key);
+              const dateLabel = available
+                ? t('reservation.create.availableDateLabel', { date: key })
+                : scheduled
+                  ? t('reservation.create.scheduledDateLabel', { date: key })
+                  : t('reservation.create.unavailableDateLabel', { date: key });
+              return <DayCell key={key}><DayButton $selected={selected} accessibilityLabel={dateLabel} accessibilityRole="button" accessibilityState={{ disabled: !scheduled, selected }} disabled={!scheduled} onPress={() => { setSelectedDate(key); setSelectedAvailabilityId(null); }}><DayText $available={scheduled} $selected={selected}>{date.getDate()}</DayText>{scheduled ? <DayStatus $available={available} $selected={selected}>{t(available ? 'reservation.create.available' : 'reservation.create.scheduled')}</DayStatus> : null}</DayButton></DayCell>;
             })() : <DayCell key={`blank-${index}`} />)}</CalendarGrid>
           </Calendar>
         </Section>
@@ -218,29 +238,43 @@ function renderAvailabilityState(props: AvailabilityStateProps) {
   if (props.isPending) return <StateBox><ActivityIndicator color={props.themeColor} /><Helper>{t('reservation.create.availabilityLoading')}</Helper></StateBox>;
   if (props.isError) return <StateBox><ErrorText>{t('reservation.create.availabilityError')}</ErrorText><RetryButton accessibilityRole="button" onPress={props.onRetry}><RetryText>{t('reservation.create.retry')}</RetryText></RetryButton></StateBox>;
   if (props.availabilityData.length === 0) return <StateBox><Helper>{t('reservation.create.availabilityEmpty')}</Helper></StateBox>;
-  if (props.bookableCount === 0) return <StateBox><Helper>{t('reservation.create.noCapacityForQuantity', { count: props.quantity })}</Helper></StateBox>;
   if (!props.selectedDate) return <StateBox><Helper>{t('reservation.create.selectAvailableDate')}</Helper></StateBox>;
   if (props.selectedDateSlots.length === 0) return <StateBox><Helper>{t('reservation.create.noTimes')}</Helper></StateBox>;
 
-  return <SlotList>{props.selectedDateSlots.map((slot) => {
+  return <AvailabilityContent>
+    {props.bookableCount === 0 ? <StateBox><Helper>{t('reservation.create.noCapacityForQuantity', { count: props.quantity })}</Helper></StateBox> : null}
+    <SlotList>{props.selectedDateSlots.map((slot) => {
     const bookable = isAvailabilityBookable(slot, props.quantity, props.now);
     const selected = props.selectedAvailabilityId === slot.id;
     const reason = availabilityReason(slot, props.quantity, props.now, t);
     const label = `${formatTimeRange(slot, props.language)} · ${slot.productType}`;
     return <SlotButton key={slot.id} $selected={selected} accessibilityLabel={`${label}. ${reason}`} accessibilityRole="button" accessibilityState={{ disabled: !bookable, selected }} disabled={!bookable} onPress={() => props.setSelectedAvailabilityId(slot.id)} testID={`v2-availability-${slot.id}`}><SlotLabel $selected={selected}>{label}</SlotLabel><SlotStatus $enabled={bookable} $selected={selected}>{reason}</SlotStatus></SlotButton>;
-  })}</SlotList>;
+    })}</SlotList>
+  </AvailabilityContent>;
 }
 
 function availabilityReason(availability: Availability, quantity: number, now: Date, t: AvailabilityStateProps['t']): string {
   if (availability.status !== 'ACTIVE') return t('reservation.create.slotInactive');
-  if (new Date(availability.startsAt).getTime() < now.getTime()) return t('reservation.create.slotPast');
+  if (new Date(availability.endsAt).getTime() <= now.getTime()) return t('reservation.create.slotPast');
   if (availability.remainingCapacity < quantity) return t('reservation.create.slotInsufficient', { count: availability.remainingCapacity });
   return t('reservation.create.slotAvailable', { count: availability.remainingCapacity });
 }
 
 function formatTimeRange(availability: Availability, language: string): string {
-  const formatter = new Intl.DateTimeFormat(language, { hour: '2-digit', hour12: false, minute: '2-digit' });
-  return `${formatter.format(new Date(availability.startsAt))}–${formatter.format(new Date(availability.endsAt))}`;
+  const startsAt = new Date(availability.startsAt);
+  const endsAt = new Date(availability.endsAt);
+  if (localDateKey(startsAt) === localDateKey(endsAt)) {
+    const timeFormatter = new Intl.DateTimeFormat(language, { hour: '2-digit', hour12: false, minute: '2-digit' });
+    return `${timeFormatter.format(startsAt)}–${timeFormatter.format(endsAt)}`;
+  }
+  const dateTimeFormatter = new Intl.DateTimeFormat(language, {
+    day: 'numeric',
+    hour: '2-digit',
+    hour12: false,
+    minute: '2-digit',
+    month: 'short',
+  });
+  return `${dateTimeFormatter.format(startsAt)}–${dateTimeFormatter.format(endsAt)}`;
 }
 
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
@@ -272,11 +306,12 @@ const CalendarGrid = styled.View`flex-direction: row; flex-wrap: wrap; margin-to
 const DayCell = styled.View`width: 14.285%; height: 50px; align-items: flex-start; justify-content: center;`;
 const DayButton = styled.Pressable<{ $selected: boolean }>`width: 44px; height: 46px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'};`;
 const DayText = styled.Text<{ $available: boolean; $selected: boolean }>`color: ${({ $available, $selected, theme }) => $selected ? theme.colors.onPrimary : $available ? theme.colors.textStrong : theme.colors.disabled}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $available, $selected }) => $available || $selected ? '700' : '400'};`;
-const DayStatus = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.onPrimary : theme.colors.primary}; font-size: 8px;`;
+const DayStatus = styled.Text<{ $available: boolean; $selected: boolean }>`color: ${({ $available, $selected, theme }) => $selected ? theme.colors.onPrimary : $available ? theme.colors.primary : theme.colors.textMuted}; font-size: 8px;`;
 const StateBox = styled.View`min-height: 72px; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const RetryButton = styled.Pressable`padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
 const RetryText = styled.Text`color: ${({ theme }) => theme.colors.primary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
 const SlotList = styled.View`gap: ${({ theme }) => theme.spacing.sm}px;`;
+const AvailabilityContent = styled.View`gap: ${({ theme }) => theme.spacing.sm}px;`;
 const SlotButton = styled.Pressable<{ $selected: boolean }>`padding: ${({ theme }) => theme.spacing.md}px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.border}; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surfaceMuted};`;
 const SlotLabel = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
 const SlotStatus = styled.Text<{ $enabled: boolean; $selected: boolean }>`margin-top: ${({ theme }) => theme.spacing.xs}px; color: ${({ $enabled, $selected, theme }) => $selected ? theme.colors.primary : $enabled ? theme.colors.success : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
