@@ -102,7 +102,11 @@ export function useCreateReservation() {
   const queryClient = useQueryClient();
   return useMutation({
     ...createReservationMutationOptions(),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: reservationQueryKeys.all }),
+    onSuccess: () => {
+      // The reservation write is complete; refresh lists in the background so the
+      // success screen is not coupled to a second network round trip.
+      void queryClient.invalidateQueries({ queryKey: reservationQueryKeys.all });
+    },
   });
 }
 
@@ -110,6 +114,8 @@ export function useReservationTransition(transition: ReservationTransition) {
   const queryClient = useQueryClient();
   return useMutation({
     ...createReservationTransitionMutationOptions(transition),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: reservationQueryKeys.all }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: reservationQueryKeys.all });
+    },
   });
 }

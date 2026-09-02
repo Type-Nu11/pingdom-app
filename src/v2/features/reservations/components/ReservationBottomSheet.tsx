@@ -139,11 +139,21 @@ function BottomNavigation({
           style={styles.navigationBar}
           tintColor="#FFFFFF"
         >
-          <Pressable accessibilityLabel={t('reservation.common.map')} accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
+          <Pressable
+            accessibilityLabel={t('reservation.common.map')}
+            accessibilityRole="button"
+            onPress={onOpenMap}
+            style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+          >
             <MapAsset color="#3B3B40" height={22} width={19} />
             <Text style={styles.navLabel}>{t('reservation.common.map')}</Text>
           </Pressable>
-          <Pressable accessibilityLabel={t('reservation.common.favorites')} accessibilityRole="button" onPress={onOpenFavorites} style={styles.navItem}>
+          <Pressable
+            accessibilityLabel={t('reservation.common.favorites')}
+            accessibilityRole="button"
+            onPress={onOpenFavorites}
+            style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+          >
             <StarAsset color="#3B3B40" height={21} width={22} />
             <Text style={styles.navLabel}>{t('reservation.common.favorites')}</Text>
           </Pressable>
@@ -155,7 +165,12 @@ function BottomNavigation({
           </View>
         </FrostedSurface>
       </View>
-      <Pressable accessibilityLabel={t('reservation.common.recommendations')} accessibilityRole="button" onPress={onOpenRecommendations} style={styles.sendButton}>
+      <Pressable
+        accessibilityLabel={t('reservation.common.recommendations')}
+        accessibilityRole="button"
+        onPress={onOpenRecommendations}
+        style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
+      >
         <FrostedSurface
           cornerRadius={32}
           glassEffectStyle="regular"
