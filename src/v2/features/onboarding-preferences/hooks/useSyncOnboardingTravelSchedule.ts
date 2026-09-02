@@ -28,9 +28,9 @@ export function useSyncOnboardingTravelSchedule(isLoggedIn: boolean): void {
         if (isMounted && result.status === 'created') {
           await invalidateTravelScheduleDependencies(queryClient);
         }
-      } catch (error) {
+      } catch {
         hasSyncedRef.current = false;
-        console.warn('[onboarding] travel schedule sync failed:', error);
+        console.warn('[onboarding] travel schedule sync failed.');
       }
     })();
 
