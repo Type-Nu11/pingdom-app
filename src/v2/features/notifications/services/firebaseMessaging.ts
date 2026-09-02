@@ -61,8 +61,8 @@ export function getFirebaseMessagingRuntime(): FirebaseMessagingRuntime | null {
       ...messagingModule,
       messaging: messagingModule.getMessaging(getApp()),
     };
-  } catch (error) {
-    console.warn('[V2 FCM] Native messaging is unavailable:', error);
+  } catch {
+    console.warn('[V2 FCM] Native messaging is unavailable.');
     cachedRuntime = null;
   }
 

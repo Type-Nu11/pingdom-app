@@ -37,8 +37,8 @@ export function useFcmTokenSync(enabled = true): void {
         if (isMounted && token) {
           await registerToken.mutateAsync({ token });
         }
-      } catch (error) {
-        console.warn('[V2 FCM] Token registration failed:', error);
+      } catch {
+        console.warn('[V2 FCM] Token registration failed.');
       }
     };
 
@@ -47,8 +47,8 @@ export function useFcmTokenSync(enabled = true): void {
     const unsubscribe = firebaseMessaging.onTokenRefresh(
       firebaseMessaging.messaging,
       (token) => {
-        void registerToken.mutateAsync({ token }).catch((error) => {
-          console.warn('[V2 FCM] Token refresh failed:', error);
+        void registerToken.mutateAsync({ token }).catch(() => {
+          console.warn('[V2 FCM] Token refresh failed.');
         });
       },
     );
