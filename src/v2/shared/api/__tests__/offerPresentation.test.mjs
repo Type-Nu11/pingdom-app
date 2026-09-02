@@ -134,7 +134,7 @@ test('CTA state machine distinguishes every state', () => {
       issue: idleIssue,
       selectedOfferId: null,
     }).kind,
-    'eligibility-unmet',
+    'offer-error',
   );
 
   assert.equal(

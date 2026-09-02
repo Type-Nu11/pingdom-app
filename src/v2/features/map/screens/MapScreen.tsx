@@ -102,8 +102,10 @@ type MapScreenProps = {
     imageUrl?: string;
     name: string;
   }) => void;
+  onOpenCoupons?: () => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
+  onSignIn?: () => void;
   onOpenVisitVerification?: () => void;
   openedBookmarkedPlaceId?: number | null;
 };
@@ -113,8 +115,10 @@ export default function MapScreen({
   initialSection = 'map',
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
+  onOpenCoupons,
   onOpenProfile,
   onOpenReservation,
+  onSignIn,
   onOpenVisitVerification,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
@@ -761,7 +765,13 @@ export default function MapScreen({
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
             content={content}
-            couponContent={selectedPlace ? <PlaceCouponCta placeId={selectedPlace.id} /> : undefined}
+            couponContent={selectedPlace ? (
+              <PlaceCouponCta
+                onRequestSignIn={onSignIn}
+                onViewMyCoupons={onOpenCoupons}
+                placeId={selectedPlace.id}
+              />
+            ) : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
             mediumTranslateY={mediumTranslateY}

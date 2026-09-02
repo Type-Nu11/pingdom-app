@@ -116,7 +116,7 @@ const MetaRow = styled.View`
 
 const Period = styled.Text`
   flex-shrink: 1;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;
   font-weight: 500;
 `;

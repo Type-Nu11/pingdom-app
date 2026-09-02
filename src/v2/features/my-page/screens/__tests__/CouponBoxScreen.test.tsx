@@ -1,11 +1,18 @@
 import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { createTestI18n, renderWithProviders } from '../../../../shared/testing/testProviders';
+import { registerOfferCouponResources } from '../../../offers-coupons';
+import { ApiError } from '../../../../shared/api';
 import { offerCouponApi, type CouponPage } from '../../../offers-coupons/api/offerCouponApi';
 import { placeDetailApi } from '../../../place-detail';
-import { ApiError } from '../../../../shared/api';
 import CouponBoxScreen from '../CouponBoxScreen';
+
+async function renderCouponBox(ui: React.ReactElement) {
+  const i18n = await createTestI18n('ko');
+  registerOfferCouponResources(i18n);
+  return renderWithProviders(ui, { i18n });
+}
 
 type CouponInput = {
   id: number;
@@ -53,7 +60,7 @@ describe('CouponBoxScreen', () => {
   test('쿠폰이 없으면 빈 보관함을 보여준다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([]));
 
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    await renderCouponBox(<CouponBoxScreen onBack={jest.fn()} />);
 
     await waitFor(() => expect(screen.getByText('보유한 쿠폰이 없어요')).toBeTruthy());
   });
@@ -61,30 +68,36 @@ describe('CouponBoxScreen', () => {
   test('조회 오류는 빈 보관함이 아니라 오류와 재시도로 표시한다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockRejectedValue(new Error('실패'));
 
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    await renderCouponBox(<CouponBoxScreen onBack={jest.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('요청을 처리하지 못했습니다')).toBeTruthy());
     expect(screen.getByText('다시 시도')).toBeTruthy();
     expect(screen.queryByText('보유한 쿠폰이 없어요')).toBeNull();
   });
 
-  test('401은 공통 인증 오류 상태로 구분한다', async () => {
+  test('401은 재시도가 아니라 다시 로그인 안내로 표시한다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockRejectedValue(
-      new ApiError('로그인이 필요합니다', { status: 401 }),
+      new ApiError('unauthorized', { status: 401, code: 'TOKEN_EXPIRED' }),
     );
 
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    const onSignIn = jest.fn();
+    const { user } = await renderCouponBox(
+      <CouponBoxScreen onBack={jest.fn()} onSignIn={onSignIn} />,
+    );
 
     await waitFor(() => expect(screen.getByText('로그인이 필요합니다')).toBeTruthy());
-    expect(screen.getByText('로그인 정보 또는 요청 키가 만료되었습니다. 다시 로그인해 주세요.'))
-      .toBeTruthy();
+    expect(screen.queryByText('다시 시도')).toBeNull();
+    await user.press(screen.getByText('다시 로그인'));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
   test('현재 Coupon DTO의 offerId를 기존 Offer·Place 조회로 보강한다', async () => {
     jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(
       couponPage([{ id: 1, offerId: 10, status: 'ISSUED' }]),
     );
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    const getOffer = jest.spyOn(offerCouponApi, 'getOffer');
+
+    await renderCouponBox(<CouponBoxScreen onBack={jest.fn()} />);
 
     await waitFor(() => expect(screen.getByText('생일 할인 쿠폰')).toBeTruthy());
     // 디자인상 카드 최상단은 발급 매장명이다.
@@ -104,7 +117,7 @@ describe('CouponBoxScreen', () => {
       ]),
     );
 
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    await renderCouponBox(<CouponBoxScreen onBack={jest.fn()} />);
 
     await waitFor(() => expect(screen.getAllByTestId('v2-coupon-card-status')).toHaveLength(2));
     expect(screen.getAllByTestId('v2-coupon-card-status').map((node) => node.props.children))
@@ -114,7 +127,7 @@ describe('CouponBoxScreen', () => {
   test('상태 필터를 누르면 해당 서버 enum으로 목록을 다시 조회한다', async () => {
     const listCoupons = jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue(couponPage([]));
 
-    const { user } = await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    const { user } = await renderCouponBox(<CouponBoxScreen onBack={jest.fn()} />);
     await waitFor(() => expect(screen.getByText('보유한 쿠폰이 없어요')).toBeTruthy());
 
     await user.press(screen.getByTestId('v2-coupon-filter-REDEEMED'));
@@ -134,7 +147,7 @@ describe('CouponBoxScreen', () => {
     );
     const onOpenCoupon = jest.fn();
 
-    const { user } = await renderWithProviders(
+    const { user } = await renderCouponBox(
       <CouponBoxScreen onBack={jest.fn()} onOpenCoupon={onOpenCoupon} />,
     );
     await waitFor(() => expect(screen.getByText('생일 할인 쿠폰')).toBeTruthy());
@@ -158,7 +171,7 @@ describe('CouponBoxScreen', () => {
       ),
     );
 
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    await renderCouponBox(<CouponBoxScreen onBack={jest.fn()} />);
     await waitFor(() => expect(screen.getByTestId('v2-coupon-box-list')).toBeTruthy());
 
     fireEvent(screen.getByTestId('v2-coupon-box-list'), 'onEndReached');
@@ -177,7 +190,7 @@ describe('CouponBoxScreen', () => {
       },
     );
 
-    await renderWithProviders(<CouponBoxScreen onBack={jest.fn()} />);
+    await renderCouponBox(<CouponBoxScreen onBack={jest.fn()} />);
     await waitFor(() => expect(screen.getByTestId('v2-coupon-box-list')).toBeTruthy());
 
     fireEvent(screen.getByTestId('v2-coupon-box-list'), 'onEndReached');

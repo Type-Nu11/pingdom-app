@@ -40,7 +40,6 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@aramir/react-native-barcode": "^1.1.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/slider": "5.1.2",
     "@react-native-firebase/app": "^24.1.1",
@@ -65,6 +64,7 @@
     "react-native": "0.83.6",
     "react-native-element-dropdown": "^2.12.4",
     "react-native-keychain": "^10.0.0",
+    "react-native-qrcode-svg": "^6.3.21",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
     "react-native-svg": "15.15.3",

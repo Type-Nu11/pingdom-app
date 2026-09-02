@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
 import {
-  ApiErrorState,
   Button,
   EmptyState,
   LoadingState,
   Surface,
 } from '../../../shared/components';
 import { useIssueCoupon, usePlaceOffers } from '../hooks/useOffersCoupons';
+import OfferCouponErrorState from './OfferCouponErrorState';
 import {
   formatOfferDate,
   formatOfferEligibility,
@@ -117,10 +117,13 @@ export default function PlaceCouponCta({
   if (state.kind === 'offer-error') {
     return (
       <Wrapper accessibilityRole="summary">
-        <ApiErrorState
+        <OfferCouponErrorState
           error={state.error}
           onRetry={() => void offersQuery.refetch()}
           onSignIn={onRequestSignIn}
+          onViewWallet={onViewMyCoupons}
+          operation="listOffers"
+          surface="placeCta"
         />
       </Wrapper>
     );
@@ -161,7 +164,14 @@ export default function PlaceCouponCta({
   if (state.kind === 'issue-error') {
     return (
       <Wrapper accessibilityRole="summary">
-        <ApiErrorState error={state.error} onRetry={retryIssue} onSignIn={onRequestSignIn} />
+        <OfferCouponErrorState
+          error={state.error}
+          onRetry={retryIssue}
+          onSignIn={onRequestSignIn}
+          onViewWallet={onViewMyCoupons}
+          operation="issueCoupon"
+          surface="placeCta"
+        />
       </Wrapper>
     );
   }

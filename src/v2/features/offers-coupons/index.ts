@@ -31,7 +31,23 @@ export type {
   RedeemedCoupon,
 } from './api/offerCouponApi';
 export type { UseIssueCouponResult } from './hooks/useOffersCoupons';
+export { default as OfferCouponErrorState } from './components/OfferCouponErrorState';
+export { getOfferCouponErrorUx } from './model/getOfferCouponErrorUx';
+export type {
+  OfferCouponErrorCta,
+  OfferCouponOperation,
+  OfferCouponErrorReason,
+  OfferCouponErrorUx,
+  OfferCouponSurface,
+} from './model/getOfferCouponErrorUx';
 export {
+  initializeOfferCouponI18n,
+  offerCouponResources,
+  registerOfferCouponResources,
+} from './i18n/offerCouponResources';
+export {
+  CouponNotFoundError,
+  createCouponQueryOptions,
   createCouponsQueryOptions,
   createInfiniteCouponsQueryOptions,
   createIssueCouponMutationOptions,
@@ -39,6 +55,8 @@ export {
   createOffersQueryOptions,
   createRedeemCouponMutationOptions,
   offerCouponQueryKeys,
+  findCouponById,
+  useCoupon,
   useCoupons,
   useInfiniteCoupons,
   useIssueCoupon,

@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from 'styled-components/native';
 
 import { i18n, initializeI18n } from '../shared/i18n';
+import { registerOfferCouponResources } from '../features/offers-coupons/i18n/offerCouponResources';
 import { theme } from '../shared/theme';
 import AppErrorBoundary from './AppErrorBoundary';
 import { createQueryClient } from './queryClient';
@@ -18,6 +19,7 @@ export default function AppProviders({ children }: PropsWithChildren) {
     let isMounted = true;
 
     void initializeI18n()
+      .then(() => registerOfferCouponResources(i18n))
       .catch((error) => {
         console.warn('[V2 i18n] Initialization failed:', error);
       })
