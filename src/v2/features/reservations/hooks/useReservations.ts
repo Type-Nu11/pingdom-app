@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import {
   reservationApi,
@@ -12,9 +12,13 @@ type ReservationApi = typeof reservationApi;
 
 export const reservationQueryKeys = {
   all: ['v2', 'reservations'] as const,
+  availabilitiesRoot: ['v2', 'availabilities'] as const,
+  availabilitiesByPlace: (placeId: number) =>
+    [...reservationQueryKeys.availabilitiesRoot, placeId] as const,
   availabilities: (placeId: number, params: ListAvailabilitiesParams) =>
-    ['v2', 'availabilities', placeId, params] as const,
-  list: (params: ListReservationsParams) => [...reservationQueryKeys.all, 'mine', params] as const,
+    [...reservationQueryKeys.availabilitiesByPlace(placeId), params] as const,
+  lists: () => [...reservationQueryKeys.all, 'mine'] as const,
+  list: (params: ListReservationsParams) => [...reservationQueryKeys.lists(), params] as const,
   owned: (params: ListOwnedReservationsParams) =>
     [...reservationQueryKeys.all, 'owned', params] as const,
   detail: (reservationId: number) =>
@@ -98,11 +102,28 @@ export function useOwnedReservations(params: ListOwnedReservationsParams = {}) {
   return useQuery(createOwnedReservationsQueryOptions(params));
 }
 
-export function useCreateReservation() {
+/**
+ * A successful create only invalidates what the new reservation can change: the
+ * user's reservation list and, when the origin place is known, that place's
+ * availability. Place, recommendation, and review caches are left untouched.
+ */
+export async function invalidateReservationCreateDependencies(
+  queryClient: QueryClient,
+  placeId?: number,
+) {
+  await queryClient.invalidateQueries({ queryKey: reservationQueryKeys.lists() });
+  if (typeof placeId === 'number') {
+    await queryClient.invalidateQueries({
+      queryKey: reservationQueryKeys.availabilitiesByPlace(placeId),
+    });
+  }
+}
+
+export function useCreateReservation(placeId?: number) {
   const queryClient = useQueryClient();
   return useMutation({
     ...createReservationMutationOptions(),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: reservationQueryKeys.all }),
+    onSuccess: async () => invalidateReservationCreateDependencies(queryClient, placeId),
   });
 }
 

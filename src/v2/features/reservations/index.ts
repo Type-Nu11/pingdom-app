@@ -16,6 +16,7 @@ export {
   createReservationDetailQueryOptions,
   createReservationsQueryOptions,
   createReservationTransitionMutationOptions,
+  invalidateReservationCreateDependencies,
   reservationQueryKeys,
   useAvailabilities,
   useCreateReservation,

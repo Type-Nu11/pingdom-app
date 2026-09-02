@@ -281,7 +281,7 @@ export default function MyPageScreen({
                   isError={reservationsQuery.isError}
                   isLoading={reservationsQuery.isLoading}
                   testID="v2-my-page-stat-reservations"
-                  value={reservationsQuery.data?.totalCount ?? 0}
+                  value={reservationsQuery.data?.totalElements ?? 0}
                 />
               </StatButton>
               <DividerIcon height={48} width={1} />
