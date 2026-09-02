@@ -59,6 +59,7 @@ import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 import {
   findMapPreviewPlace,
+  includeSelectedNearbyReservablePlace,
   mergeMapPreviewPlaces,
   shouldPresentMapSelection,
 } from '../utils/mapPreviewSelection';
@@ -255,10 +256,6 @@ export default function MapScreen({
       };
     });
   }, [recommendationExplanation.data?.items, recommendedPlaces]);
-  const nearbyReservationPlaces = useMemo(
-    () => recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
-    [recommendedPlaces],
-  );
   const allPlaces = useMemo(() => {
     const serverPlaces = mergeMapPreviewPlaces(
       recommendationPlaces,
@@ -339,6 +336,17 @@ export default function MapScreen({
       name: selectedPlacePresentation.name || selectedPlaceBase.name,
     };
   }, [selectedPlaceBase, selectedPlacePresentation]);
+  const nearbyReservationPlaces = useMemo(
+    () => includeSelectedNearbyReservablePlace(
+      recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
+      selectedPlace,
+      {
+        radiusKm: recommendationRadiusKm,
+        reservable: selectedPlacePresentation?.reservation.kind === 'available',
+      },
+    ),
+    [recommendedPlaces, recommendationRadiusKm, selectedPlace, selectedPlacePresentation?.reservation.kind],
+  );
   const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;

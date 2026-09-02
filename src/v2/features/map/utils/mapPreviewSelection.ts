@@ -7,7 +7,7 @@ export function shouldPresentMapSelection(sheetSnapPoint: 'collapsed' | 'expande
 }
 
 export function mergeMapPreviewPlaces<T extends IdentifiedPlace>(
-  ...groups: readonly T[][]
+  ...groups: readonly (readonly T[])[]
 ): T[] {
   const placesById = new Map<number, T>();
 
@@ -16,6 +16,22 @@ export function mergeMapPreviewPlaces<T extends IdentifiedPlace>(
   });
 
   return [...placesById.values()];
+}
+
+export function includeSelectedNearbyReservablePlace<
+  T extends IdentifiedPlace & { distanceMeters?: number },
+>(
+  places: readonly T[],
+  selectedPlace: T | null,
+  options: { radiusKm: number; reservable: boolean },
+): T[] {
+  const distanceMeters = selectedPlace?.distanceMeters;
+  const withinRadius = typeof distanceMeters === 'number'
+    && Number.isFinite(distanceMeters)
+    && distanceMeters <= options.radiusKm * 1_000;
+
+  if (!selectedPlace || !options.reservable || !withinRadius) return [...places];
+  return mergeMapPreviewPlaces([selectedPlace], places);
 }
 
 export function findMapPreviewPlace<T extends IdentifiedPlace>(
