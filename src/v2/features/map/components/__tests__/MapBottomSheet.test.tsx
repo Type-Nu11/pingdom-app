@@ -40,6 +40,58 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
 }));
 
 describe('MapBottomSheet recommendations', () => {
+  test('장소 사진을 누르면 전체 화면에서 사진을 넘기고 닫을 수 있다', async () => {
+    const selectedPlace = places[0];
+    const { user } = await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onCouponPress={jest.fn()}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={places}
+        previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [],
+            imageUrls: ['https://example.com/place-1.jpg', 'https://example.com/place-2.jpg'],
+            statusDescription: '',
+            statusEmphasis: '',
+          },
+        }}
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={selectedPlace}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(300)}
+        snapPoint="medium"
+      />,
+    );
+
+    await user.press(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' }));
+    expect(screen.getByTestId('place-photo-viewer')).toBeVisible();
+    expect(screen.getByLabelText('추천 장소 1 사진 2장 중 2번째')).toBeVisible();
+
+    await user.press(screen.getByRole('button', { name: '다음 사진' }));
+    expect(screen.getByLabelText('추천 장소 1 사진 2장 중 1번째')).toBeVisible();
+
+    await user.press(screen.getByRole('button', { name: '사진 닫기' }));
+    expect(screen.queryByTestId('place-photo-viewer')).not.toBeOnTheScreen();
+  });
+
   test('쿠폰 가능 장소의 카드 CTA가 상세를 열고 상세 쿠폰 콘텐츠를 렌더링한다', async () => {
     const selectedPlace = places[0];
     const onCouponPress = jest.fn();
