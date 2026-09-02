@@ -239,7 +239,7 @@ const WeekRow = styled.View`
 
 const DayCell = styled.View`
   flex: 1;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
 `;
 
@@ -250,7 +250,7 @@ const CalendarDayCell = styled.Pressable<{
   $segmentStart: boolean;
 }>`
   flex: 1;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   height: 100%;
   opacity: ${({ $past }) => ($past ? 0.45 : 1)};

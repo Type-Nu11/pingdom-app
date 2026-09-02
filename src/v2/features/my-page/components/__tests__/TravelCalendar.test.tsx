@@ -1,11 +1,29 @@
+import React from 'react';
+import { screen } from '@testing-library/react-native';
+
+import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { buildCalendarDays } from '../../../onboarding-preferences/model/travelScheduleCalendar';
 import {
   isServerTravelDate,
   type ServerTravelDate,
 } from '../../../onboarding-preferences/model/onboardingPreference';
-import { getCalendarHeight, getRangeCellState } from '../TravelCalendar';
+import TravelCalendar, { getCalendarHeight, getRangeCellState } from '../TravelCalendar';
 
 describe('TravelCalendar layout', () => {
+  test('요일과 날짜를 각 열의 중앙에 정렬한다', async () => {
+    await renderWithProviders(
+      <TravelCalendar
+        highlightedRange={null}
+        initialMonth={{ month: 9, year: 2026 }}
+        selectedStartDate={serverDate('2026-09-05')}
+      />,
+    );
+
+    expect(screen.getByTestId('v2-my-page-calendar-day-2026-09-05')).toHaveStyle({
+      alignItems: 'center',
+    });
+  });
+
   test('기기 폭에서도 Figma 달력의 354:320 비율을 유지한다', () => {
     expect(getCalendarHeight(354)).toBe(320);
     expect(getCalendarHeight(339)).toBeCloseTo(306.44, 2);
