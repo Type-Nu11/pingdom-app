@@ -19,6 +19,12 @@ import {
   startOfLocalMonth,
   type Availability,
 } from '../model/reservationAvailability';
+import {
+  isSelectableAvailability,
+  selectAvailabilityPresentation,
+  summarizeAvailabilityPresentations,
+  type AvailabilityPresentationSummary,
+} from '../model/reservationProduct';
 
 const PEOPLE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -46,13 +52,26 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const createReservation = useCreateReservation();
   const availabilityData = availabilities.data ?? [];
 
+  // Only GENERAL place reservations can be selected and submitted today, so the
+  // calendar dots and the nearest-date jump are driven by that subset. TICKET
+  // and CLASS slots still render in the time list as disabled rows.
   const bookableAvailabilities = useMemo(
-    () => availabilityData.filter((item) => isAvailabilityBookable(item, quantity, now)),
+    () => availabilityData.filter(
+      (item) => isSelectableAvailability(item) && isAvailabilityBookable(item, quantity, now),
+    ),
     [availabilityData, now, quantity],
   );
   const availableDates = useMemo(
     () => new Set(bookableAvailabilities.map(availabilityDateKey)),
     [bookableAvailabilities],
+  );
+  const availabilitySummary = useMemo(
+    () => summarizeAvailabilityPresentations(availabilityData),
+    [availabilityData],
+  );
+  const selectableAvailabilityData = useMemo(
+    () => availabilityData.filter(isSelectableAvailability),
+    [availabilityData],
   );
   const selectedAvailability = availabilityData.find(
     (item) => item.id === selectedAvailabilityId,
@@ -67,18 +86,19 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     if (initializedFromAvailability.current || availabilities.isPending || availabilities.isError) {
       return;
     }
-    const nearest = nearestBookableAvailability(availabilityData, quantity, now);
+    const nearest = nearestBookableAvailability(selectableAvailabilityData, quantity, now);
     if (!nearest) return;
     const nearestDate = new Date(nearest.startsAt);
     initializedFromAvailability.current = true;
     setMonth(startOfLocalMonth(nearestDate));
     setSelectedDate(availabilityDateKey(nearest));
     setSelectedAvailabilityId(null);
-  }, [availabilityData, availabilities.isError, availabilities.isPending, now, quantity]);
+  }, [selectableAvailabilityData, availabilities.isError, availabilities.isPending, now, quantity]);
 
   useEffect(() => {
     if (selectedAvailabilityId !== null
       && (!selectedAvailability
+        || !isSelectableAvailability(selectedAvailability)
         || !isAvailabilityBookable(selectedAvailability, quantity, now)
         || availabilityDateKey(selectedAvailability) !== selectedDate)) {
       setSelectedAvailabilityId(null);
@@ -88,6 +108,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const hasValidIdempotencyKey = idempotencyKey.length > 0 && idempotencyKey.length <= 100;
   const canSubmit = Boolean(
     selectedAvailability
+      && isSelectableAvailability(selectedAvailability)
       && isAvailabilityBookable(selectedAvailability, quantity, now)
       && quantity >= 1
       && hasValidIdempotencyKey
@@ -102,7 +123,10 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   };
 
   const submit = () => {
-    if (!canSubmit || !selectedAvailability || submissionGuard.current) return;
+    if (!canSubmit
+      || !selectedAvailability
+      || !isSelectableAvailability(selectedAvailability)
+      || submissionGuard.current) return;
     submissionGuard.current = true;
     setIsSubmitting(true);
     createReservation.mutate(
@@ -173,11 +197,13 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
             isError: availabilities.isError,
             isPending: availabilities.isPending,
             onRetry: () => { void availabilities.refetch(); },
+            placeName: route.params.placeName ?? detail.data?.name ?? t('reservation.create.loadingPlace'),
             quantity,
             selectedAvailabilityId,
             selectedDate,
             selectedDateSlots,
             setSelectedAvailabilityId,
+            summary: availabilitySummary,
             t,
             language: i18n.language,
             now,
@@ -204,11 +230,13 @@ type AvailabilityStateProps = {
   language: string;
   now: Date;
   onRetry: () => void;
+  placeName: string;
   quantity: number;
   selectedAvailabilityId: number | null;
   selectedDate: string | null;
   selectedDateSlots: Availability[];
   setSelectedAvailabilityId: (id: number) => void;
+  summary: AvailabilityPresentationSummary;
   t: (key: string, options?: Record<string, unknown>) => string;
   themeColor: string;
 };
@@ -218,15 +246,48 @@ function renderAvailabilityState(props: AvailabilityStateProps) {
   if (props.isPending) return <StateBox><ActivityIndicator color={props.themeColor} /><Helper>{t('reservation.create.availabilityLoading')}</Helper></StateBox>;
   if (props.isError) return <StateBox><ErrorText>{t('reservation.create.availabilityError')}</ErrorText><RetryButton accessibilityRole="button" onPress={props.onRetry}><RetryText>{t('reservation.create.retry')}</RetryText></RetryButton></StateBox>;
   if (props.availabilityData.length === 0) return <StateBox><Helper>{t('reservation.create.availabilityEmpty')}</Helper></StateBox>;
+  // Availabilities exist, but none is a GENERAL place reservation. Say so
+  // explicitly instead of reusing the empty or capacity copy, and never present
+  // a TICKET/CLASS or unknown-type slot as a place booking.
+  if (props.summary.place === 0) {
+    const key = props.summary.blockedProduct > 0
+      ? 'reservation.create.productInfoUnavailable'
+      : 'reservation.create.unknownReservationType';
+    return <StateBox><Helper>{t(key)}</Helper></StateBox>;
+  }
   if (props.bookableCount === 0) return <StateBox><Helper>{t('reservation.create.noCapacityForQuantity', { count: props.quantity })}</Helper></StateBox>;
   if (!props.selectedDate) return <StateBox><Helper>{t('reservation.create.selectAvailableDate')}</Helper></StateBox>;
   if (props.selectedDateSlots.length === 0) return <StateBox><Helper>{t('reservation.create.noTimes')}</Helper></StateBox>;
 
   return <SlotList>{props.selectedDateSlots.map((slot) => {
+    const presentation = selectAvailabilityPresentation(slot);
+    const timeRange = formatTimeRange(slot, props.language);
+
+    if (presentation.kind !== 'place') {
+      // TICKET/CLASS without a product name, or an unrecognised type: a disabled
+      // row that names only the time and the reason, so it is never mistaken for
+      // a bookable place slot and never leaks the raw product type or id.
+      const notice = t(presentation.reasonKey);
+      return (
+        <SlotButton
+          key={slot.id}
+          $selected={false}
+          accessibilityLabel={`${timeRange}. ${notice}`}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: true, selected: false }}
+          disabled
+          testID={`v2-availability-${slot.id}`}
+        >
+          <SlotLabel $selected={false}>{timeRange}</SlotLabel>
+          <SlotStatus $enabled={false} $selected={false}>{notice}</SlotStatus>
+        </SlotButton>
+      );
+    }
+
     const bookable = isAvailabilityBookable(slot, props.quantity, props.now);
     const selected = props.selectedAvailabilityId === slot.id;
     const reason = availabilityReason(slot, props.quantity, props.now, t);
-    const label = `${formatTimeRange(slot, props.language)} · ${slot.productType}`;
+    const label = `${timeRange} · ${props.placeName}`;
     return <SlotButton key={slot.id} $selected={selected} accessibilityLabel={`${label}. ${reason}`} accessibilityRole="button" accessibilityState={{ disabled: !bookable, selected }} disabled={!bookable} onPress={() => props.setSelectedAvailabilityId(slot.id)} testID={`v2-availability-${slot.id}`}><SlotLabel $selected={selected}>{label}</SlotLabel><SlotStatus $enabled={bookable} $selected={selected}>{reason}</SlotStatus></SlotButton>;
   })}</SlotList>;
 }
