@@ -18,7 +18,7 @@ export {
   type InventoryPolicy,
   type OfferView,
 } from './model/offerPresentation';
-export { createOfferCouponApi, offerCouponApi } from './api/offerCouponApi';
+export { ApiError, createOfferCouponApi, offerCouponApi } from './api/offerCouponApi';
 export type {
   Coupon,
   CouponPage,
@@ -30,6 +30,7 @@ export type {
   RedeemCouponBody,
   RedeemedCoupon,
 } from './api/offerCouponApi';
+export type { UseIssueCouponResult } from './hooks/useOffersCoupons';
 export { default as OfferCouponErrorState } from './components/OfferCouponErrorState';
 export { getOfferCouponErrorUx } from './model/getOfferCouponErrorUx';
 export type {
