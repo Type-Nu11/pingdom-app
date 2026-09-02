@@ -26,6 +26,7 @@ export const reservationResources = {
         peopleCount: '{{count}}',
         peopleRange: 'Booking for 1–12 guests · {{category}}',
         previousMonth: 'Previous month',
+        productInfoUnavailable: "This item can't be reserved right now because its product details are unavailable.",
         retry: 'Try again',
         selectAvailableDate: 'Select an available date.',
         slotAvailable: '{{count}} spots remaining · Available',
@@ -39,6 +40,7 @@ export const reservationResources = {
         time: 'Select time',
         title: 'Reserve',
         unavailableDateLabel: '{{date}}, unavailable',
+        unknownReservationType: "This reservation type isn't supported yet, so it can't be reserved.",
         weekdays: { fri: 'F', mon: 'M', sat: 'S', sun: 'S', thu: 'T', tue: 'T', wed: 'W' },
       },
       detail: {
@@ -117,6 +119,7 @@ export const reservationResources = {
         peopleCount: '{{count}}명',
         peopleRange: '예약인원: 1~12명 · {{category}}',
         previousMonth: '이전 달',
+        productInfoUnavailable: '상품 정보를 불러올 수 없어 현재 예약할 수 없습니다.',
         retry: '다시 시도',
         selectAvailableDate: '예약 가능한 날짜를 선택해 주세요.',
         slotAvailable: '잔여 {{count}}명 · 예약 가능',
@@ -130,6 +133,7 @@ export const reservationResources = {
         time: '시간 선택',
         title: '예약하기',
         unavailableDateLabel: '{{date}}, 예약 불가',
+        unknownReservationType: '지원하지 않는 예약 유형이라 현재 예약할 수 없습니다.',
         weekdays: { fri: '금', mon: '월', sat: '토', sun: '일', thu: '목', tue: '화', wed: '수' },
       },
       detail: {
