@@ -1,12 +1,15 @@
 import {
+  type MutateOptions,
   useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { useCallback, useRef, useState } from 'react';
 
 import {
   offerCouponApi,
+  type ApiError,
   type Coupon,
   type CouponPage,
   type ListCouponsParams,
@@ -21,6 +24,9 @@ export const offerCouponQueryKeys = {
   coupons: (params: ListCouponsParams) => ['v2', 'coupons', params] as const,
   couponsInfinite: (params: ListCouponsParams) => ['v2', 'coupons', 'infinite', params] as const,
   couponsRoot: ['v2', 'coupons'] as const,
+  // Mutation 전용 key. 발급이 진행 중인 Offer 를 구분할 수 있도록 offerId 를 붙인다.
+  issueCoupon: (offerId: number) => ['v2', 'coupons', 'issue', offerId] as const,
+  issueCouponRoot: ['v2', 'coupons', 'issue'] as const,
   offer: (offerId: number) => ['v2', 'offers', 'detail', offerId] as const,
   offers: (params: ListOffersParams) => ['v2', 'offers', 'list', params] as const,
   offersRoot: ['v2', 'offers'] as const,
@@ -129,7 +135,13 @@ export function createInfiniteCouponsQueryOptions(
 export function createIssueCouponMutationOptions(
   api: Pick<OfferCouponApi, 'issueCoupon'> = offerCouponApi,
 ) {
-  return { mutationFn: (offerId: number) => api.issueCoupon(offerId) };
+  return {
+    // 호출부가 넘긴 offerId 를 그대로 API 에 전달한다.
+    // AbortSignal 은 붙이지 않는다. 발급은 비멱등이라 서버가 이미 Coupon 을 만든 뒤
+    // 요청을 끊으면 클라이언트만 결과를 잃는다(취소 API 도 없다).
+    mutationFn: (offerId: number) => api.issueCoupon(offerId),
+    retry: false as const,
+  };
 }
 
 export function createRedeemCouponMutationOptions(
@@ -180,15 +192,122 @@ export function useInfiniteCoupons(params: ListCouponsParams = {}) {
   return useInfiniteQuery(createInfiniteCouponsQueryOptions(params));
 }
 
-export function useIssueCoupon() {
+export type UseIssueCouponResult = {
+  data: Coupon | undefined;
+  error: ApiError | null;
+  isError: boolean;
+  isIssuing: (offerId: number) => boolean;
+  isPending: boolean;
+  isSuccess: boolean;
+  issueCoupon: (offerId: number) => boolean;
+  mutate: (offerId: number, options?: MutateOptions<Coupon, ApiError, number>) => void;
+  mutateAsync: (
+    offerId: number,
+    options?: MutateOptions<Coupon, ApiError, number>,
+  ) => Promise<Coupon>;
+  pendingOfferIds: readonly number[];
+  reset: () => void;
+};
+
+export function useIssueCoupon(
+  api: Pick<OfferCouponApi, 'issueCoupon'> = offerCouponApi,
+): UseIssueCouponResult {
   const queryClient = useQueryClient();
-  return useMutation({
-    ...createIssueCouponMutationOptions(),
-    onSuccess: async () => Promise.all([
-      queryClient.invalidateQueries({ queryKey: offerCouponQueryKeys.couponsRoot }),
-      queryClient.invalidateQueries({ queryKey: offerCouponQueryKeys.offersRoot }),
-    ]),
+  // 발급 진행 중인 offerId 집합. 렌더 사이에 값을 읽어야 하는 state 와 달리
+  // mutate 직전에 동기적으로 갱신할 수 있어야 같은 tick 의 연속 탭을 막을 수 있다.
+  const pendingOfferIdsRef = useRef<Set<number>>(new Set());
+  const inFlightPromisesRef = useRef<Map<number, Promise<Coupon>>>(new Map());
+  const [pendingOfferIds, setPendingOfferIds] = useState<readonly number[]>([]);
+
+  const syncPendingOfferIds = useCallback(() => {
+    setPendingOfferIds([...pendingOfferIdsRef.current]);
+  }, []);
+
+  const mutation = useMutation<Coupon, ApiError, number>({
+    ...createIssueCouponMutationOptions(api),
+    mutationKey: offerCouponQueryKeys.issueCouponRoot,
+    // 실패 시 onError 를 두지 않는다. 낙관적 write 가 없으므로 되돌릴 cache 도 없고,
+    // 에러는 훅 사용자에게 ApiError 그대로 전달한다(메시지 매핑은 화면의 책임).
+    onSettled: (_coupon, _error, offerId) => {
+      pendingOfferIdsRef.current.delete(offerId);
+      inFlightPromisesRef.current.delete(offerId);
+      syncPendingOfferIds();
+    },
+    onSuccess: async () => {
+      // 201 CouponResponse 를 setQueryData 로 직접 넣지 않는다. 내 Coupon 목록은
+      // page/limit/status 로 서버가 잘라 주는 CouponPage 라서, 클라이언트가 한 건을
+      // 끼워 넣으면 totalElements/hasNext/정렬이 서버와 어긋난다. 대신 관련 root 만 무효화한다.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: offerCouponQueryKeys.couponsRoot }),
+        // offersRoot 는 prefix 라서 발급 가능한 Offer 목록과
+        // offer(offerId) 상세(재고·발급 가능 여부 변동)를 함께 무효화한다.
+        queryClient.invalidateQueries({ queryKey: offerCouponQueryKeys.offersRoot }),
+      ]);
+    },
   });
+
+  const { mutateAsync: rawMutateAsync } = mutation;
+
+  const startMutation = useCallback(
+    (offerId: number, options?: MutateOptions<Coupon, ApiError, number>) => {
+      const inFlight = inFlightPromisesRef.current.get(offerId);
+      if (inFlight) {
+        return { accepted: false, promise: inFlight };
+      }
+
+      pendingOfferIdsRef.current.add(offerId);
+      syncPendingOfferIds();
+
+      const promise = rawMutateAsync(offerId, options);
+      inFlightPromisesRef.current.set(offerId, promise);
+
+      return { accepted: true, promise };
+    },
+    [rawMutateAsync, syncPendingOfferIds],
+  );
+
+  const mutate = useCallback(
+    (offerId: number, options?: MutateOptions<Coupon, ApiError, number>) => {
+      void startMutation(offerId, options).promise.catch(() => undefined);
+    },
+    [startMutation],
+  );
+
+  const mutateAsync = useCallback(
+    (offerId: number, options?: MutateOptions<Coupon, ApiError, number>) =>
+      startMutation(offerId, options).promise,
+    [startMutation],
+  );
+
+  // 진행 중인 Offer 면 요청을 만들지 않고 false 를 돌려준다. 서로 다른 Offer 는 동시 발급 허용.
+  const issueCoupon = useCallback(
+    (offerId: number) => {
+      const request = startMutation(offerId);
+      void request.promise.catch(() => undefined);
+      return request.accepted;
+    },
+    [startMutation],
+  );
+
+  const isIssuing = useCallback(
+    (offerId: number) => pendingOfferIds.includes(offerId),
+    [pendingOfferIds],
+  );
+
+  return {
+    data: mutation.data,
+    error: mutation.error,
+    isError: mutation.isError,
+    isIssuing,
+    // mutation.isPending 은 마지막 mutation 만 반영하므로 동시 발급을 놓친다.
+    isPending: pendingOfferIds.length > 0,
+    isSuccess: mutation.isSuccess,
+    issueCoupon,
+    mutate,
+    mutateAsync,
+    pendingOfferIds,
+    reset: mutation.reset,
+  };
 }
 
 export function useRedeemCoupon() {
