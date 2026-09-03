@@ -2098,15 +2098,8 @@ export default function MapBottomSheet({
       </GlassStyles.SheetChromeShadow>
       <GlassStyles.SheetInner $inset={SHEET_RESTING_GAP}>
       {!isExpandedPlaceDetail ? (
-        <View style={styles.handleArea} {...panHandlers}>
-          <Pressable
-            accessibilityLabel={t('map.sheet.adjust')}
-            accessibilityRole="adjustable"
-            onPress={onHandlePress}
-            style={styles.handleButton}
-          >
-            <View style={styles.handle} />
-          </Pressable>
+        <View pointerEvents="none" style={styles.handleArea}>
+          <View style={styles.handle} />
         </View>
       ) : null}
 
@@ -2222,6 +2215,17 @@ export default function MapBottomSheet({
       )}
       </Animated.View>
       </GlassStyles.SheetInner>
+
+      {!isExpandedPlaceDetail ? (
+        <Pressable
+          {...panHandlers}
+          accessibilityLabel={t('map.sheet.adjust')}
+          accessibilityRole="adjustable"
+          onPress={onHandlePress}
+          style={styles.handleGestureTarget}
+          testID="map-sheet-handle-target"
+        />
+      ) : null}
 
       {content.type !== 'place-preview' ? (
         <BottomNavigation
@@ -2589,8 +2593,16 @@ const styles: Record<string, object> = {
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
   handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 5, width: 56 },
-  handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
+  handleArea: { alignItems: 'center', height: 20, justifyContent: 'center' },
+  handleGestureTarget: {
+    height: 44,
+    left: '50%',
+    position: 'absolute',
+    top: 0,
+    transform: [{ translateX: -80 }],
+    width: 160,
+    zIndex: 4,
+  },
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: {
     alignItems: 'center',

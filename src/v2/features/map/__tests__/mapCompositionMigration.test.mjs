@@ -44,6 +44,15 @@ test('map section changes do not fade the whole sheet or preserve expanded place
   assert.match(bottomSheet, /tintColor="#FFFFFF"/);
 });
 
+test('the drag target is larger than the visible handle without adding layout spacing', () => {
+  const bottomSheet = read('../components/MapBottomSheet.tsx');
+
+  assert.match(bottomSheet, /handleArea: \{[^}]*height: 20/);
+  assert.match(bottomSheet, /handle: \{[^}]*height: 5[^}]*width: 56/);
+  assert.match(bottomSheet, /handleGestureTarget: \{[\s\S]*?height: 44,[\s\S]*?position: 'absolute',[\s\S]*?width: 160/);
+  assert.match(bottomSheet, /testID="map-sheet-handle-target"/);
+});
+
 test('the production map detail uses the compact Offer list before menus', () => {
   const screen = read('../screens/MapScreen.tsx');
 

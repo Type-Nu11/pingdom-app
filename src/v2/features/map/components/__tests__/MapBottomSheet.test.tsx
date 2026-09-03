@@ -724,6 +724,11 @@ describe('MapBottomSheet recommendations', () => {
       overflow: 'hidden',
       width: 68,
     });
+    expect(screen.getByTestId('map-sheet-handle-target')).toHaveStyle({
+      height: 44,
+      position: 'absolute',
+      width: 160,
+    });
     const localFeed = screen.getByRole('tab', { name: '우리 지역 핫플' });
     const nationalFeed = screen.getByRole('tab', { name: '전국 트렌드' });
     expect(localFeed.props.accessibilityState).toEqual({ selected: true });
