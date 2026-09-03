@@ -4,6 +4,8 @@ export { default as EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 export { default as ErrorState } from './ErrorState';
 export type { ErrorStateProps } from './ErrorState';
+export { FavoriteIcon } from './FavoriteIcon';
+export { HeaderBackButton } from './HeaderBackButton';
 export { default as Input } from './Input';
 export type { InputProps } from './Input';
 export { default as LoadingState } from './LoadingState';
