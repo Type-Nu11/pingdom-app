@@ -11,7 +11,7 @@ import {
   buildPlaceDetailPresentation,
   type ResourceState,
 } from '../model/placeDetailPresentation';
-import { usePlaceAvailabilities, usePlaceDetail, usePlaceMenus } from './usePlaceDetail';
+import { usePlaceAvailabilities, usePlaceDetail } from './usePlaceDetail';
 
 const asResource = <T,>(query: {
   data?: T;
@@ -35,7 +35,6 @@ export function usePlaceDetailPresentation(
   const visitDecision = usePlaceVisitDecision(placeId, { enabled: active });
   const notices = usePlaceOperatingNotices(placeId, { enabled: active });
   const media = usePlaceExplorationMedia(placeId, { enabled: active });
-  const menus = usePlaceMenus(placeId, { enabled: active });
   const availabilities = usePlaceAvailabilities(placeId, { enabled: active });
   const reviews = useQuery({
     ...createPlaceReviewsQueryOptions(placeId, { page: 1, limit: 20 }),
@@ -47,7 +46,6 @@ export function usePlaceDetailPresentation(
     card: asResource(card),
     detail: asResource(detail),
     media: asResource(media),
-    menus: asResource(menus),
     notices: asResource(notices),
     reviews: asResource(reviews),
     visitDecision: asResource(visitDecision),
@@ -57,7 +55,6 @@ export function usePlaceDetailPresentation(
     presentation,
     refetchAvailability: availabilities.refetch,
     refetchMedia: media.refetch,
-    refetchMenus: menus.refetch,
     refetchReviews: reviews.refetch,
   };
 }

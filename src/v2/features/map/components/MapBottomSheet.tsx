@@ -79,15 +79,6 @@ export type MapPreviewFallbackContent = {
   events?: Array<{ period: string; title: string }>;
   imageState?: 'empty' | 'error' | 'loading' | 'ready';
   imageUrls: string[];
-  menuState?: 'empty' | 'error' | 'loading' | 'ready';
-  menus?: Array<{
-    description?: string;
-    id?: number;
-    imageUrl?: string;
-    name: string;
-    price: string;
-    status: 'AVAILABLE' | 'SOLD_OUT' | 'UNKNOWN';
-  }>;
   phone?: string;
   jibunAddress?: string;
   notice?: string;
@@ -181,7 +172,6 @@ type MapBottomSheetProps = {
   onRetryRecommendations: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
-  onRetryMenus?: () => void;
   onRetryReviews?: () => void;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
@@ -609,15 +599,7 @@ const RecommendationBookmarkButton = ({
   );
 };
 
-const PreviewArtwork = ({
-  accessibilityLabel,
-  fallbackAccessibilityLabel,
-  imageUrl,
-}: {
-  accessibilityLabel?: string;
-  fallbackAccessibilityLabel?: string;
-  imageUrl?: string;
-}) => {
+const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
   const { t } = useTranslation();
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -629,10 +611,7 @@ const PreviewArtwork = ({
     const fallbackMessage = t(hasImageError ? 'map.sheet.imageError' : 'map.sheet.imageMissing');
 
     return (
-      <View
-        accessibilityLabel={fallbackAccessibilityLabel ?? fallbackMessage}
-        style={styles.previewArtworkFallback}
-      >
+      <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
         <MapPinIcon active size={28} />
         <Text style={styles.previewArtworkFallbackText}>{fallbackMessage}</Text>
       </View>
@@ -641,7 +620,7 @@ const PreviewArtwork = ({
 
   return (
     <Image
-      accessibilityLabel={accessibilityLabel ?? t('map.sheet.image')}
+      accessibilityLabel={t('map.sheet.image')}
       onError={() => setHasImageError(true)}
       resizeMode="cover"
       source={{ uri: imageUrl }}
@@ -1503,7 +1482,6 @@ const ExpandedPlaceContent = ({
   onVerify,
   onRetryAvailability,
   onRetryMedia,
-  onRetryMenus,
   onRetryReviews,
   onTabChange,
   onToggleBookmark,
@@ -1521,7 +1499,6 @@ const ExpandedPlaceContent = ({
   onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
-  onRetryMenus?: () => void;
   onRetryReviews?: () => void;
   onTabChange: (tab: PlaceDetailTab) => void;
   onToggleBookmark: () => void;
@@ -1987,7 +1964,6 @@ export default function MapBottomSheet({
   onPlacePress,
   onRetryAvailability,
   onRetryMedia,
-  onRetryMenus,
   onRetryRecommendations,
   onRetryReviews,
   onToggleBookmark,
@@ -2161,7 +2137,6 @@ export default function MapBottomSheet({
               : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
-            onRetryMenus={onRetryMenus}
             onRetryReviews={onRetryReviews}
             onTabChange={setActivePlaceDetailTab}
             onToggleBookmark={() => void onToggleBookmark(
@@ -2357,8 +2332,6 @@ const styles: Record<string, object> = {
   detailMenuImage: { borderRadius: 10, height: 64, overflow: 'hidden', width: 72 },
   detailMenuName: { color: '#303238', fontSize: 13, fontWeight: '800' },
   detailMenuPrice: { color: '#303238', fontSize: 12, fontWeight: '800', marginTop: 7 },
-  detailMenuStatus: { color: '#A15C00', fontSize: 11, fontWeight: '700', marginTop: 4 },
-  detailMenuStatusAvailable: { color: '#168A43' },
   detailMenuRow: {
     alignItems: 'center',
     borderBottomColor: '#ECEDEF',

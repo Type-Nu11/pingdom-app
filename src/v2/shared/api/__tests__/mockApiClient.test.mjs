@@ -27,7 +27,6 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     explanation,
     travelSchedules,
     notificationSettings,
-    placeMenus,
   ] = await Promise.all([
     mockApiClient.get('/places'),
     mockApiClient.get('/places/17'),
@@ -42,7 +41,6 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
     mockApiClient.get('/places/recommendations/request-a/explanation'),
     mockApiClient.get('/users/me/travel-schedules'),
     mockApiClient.get('/notifications/settings'),
-    mockApiClient.get('/places/17/menus'),
   ]);
 
   assert.equal(getMockScenario(), 'success');
@@ -68,7 +66,6 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   );
   assert.equal(travelSchedules.schedules[0].startDate, '2026-08-12');
   assert.equal(notificationSettings.timezone, 'Asia/Seoul');
-  assert.equal(placeMenus[0].placeId, 17);
   assert.deepEqual(
     await mockApiClient.put('/users/me/travel-purposes', { travelPurposes: ['FOOD'] }),
     travelPurposes,
@@ -110,7 +107,6 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   const emptyNotices = await mockApiClient.get('/places/17/operating-notices');
   const emptyMedia = await mockApiClient.get('/places/17/media/verification');
   const emptyTravelSchedules = await mockApiClient.get('/users/me/travel-schedules');
-  const emptyPlaceMenus = await mockApiClient.get('/places/17/menus');
 
   assert.deepEqual(emptyPlaces.places, []);
   assert.equal(emptyPlaces.totalPages, 0);
@@ -121,7 +117,6 @@ test('mock scenarios serve contract fixtures and reproduce empty and error state
   assert.deepEqual(emptyNotices.notices, []);
   assert.deepEqual(emptyMedia.media, []);
   assert.deepEqual(emptyTravelSchedules.schedules, []);
-  assert.deepEqual(emptyPlaceMenus, []);
 
   const cases = [
     ['forbidden', 403, 'ROLE_REQUIRED'],

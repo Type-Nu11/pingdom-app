@@ -22,8 +22,7 @@ const expectedOperations = new Map([
     ['get', 'list_4'],
     ['post', 'create_2'],
   ]],
-  ['/places/{placeId}/menus', ['get', 'list_5']],
-  ['/places/{placeId}/availabilities', ['get', 'list_6']],
+  ['/places/{placeId}/availabilities', ['get', 'list_5']],
 ]);
 const failures = [];
 

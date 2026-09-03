@@ -342,13 +342,6 @@ export const resources = {
           collapseTags: 'Collapse additional tags', coupon: 'Coupons', description: 'About this place',
           events: 'Current events', expandTags: 'Show {{count}} hidden tags', imageDetail: 'View {{name}} photo {{count}}',
           imageError: 'Could not load photos. Try again', info: 'Info', notice: 'Operating notice',
-          menu: {
-            error: 'Could not load menus. Try again', image: '{{name}} menu image',
-            imageUnavailable: '{{name}} menu image unavailable', loading: 'Loading menus…',
-            nameUnavailable: 'Unnamed menu', priceLabel: 'Price: {{price}}',
-            priceUnavailable: 'Price unavailable', title: 'Menu',
-            status: { AVAILABLE: 'Available', SOLD_OUT: 'Sold out', UNKNOWN: 'Unavailable' },
-          },
           imageViewer: {
             close: 'Close photo', counter: '{{current}} / {{total}}', next: 'Next photo',
             photo: '{{name}} photo {{current}} of {{total}}', previous: 'Previous photo',
@@ -1199,13 +1192,6 @@ export const resources = {
           amenityEnglish: '영어응대 가능', amenityParking: '주차가능', back: '지도로 돌아가기', collapseTags: '추가 태그 접기',
           coupon: '쿠폰', description: '장소 소개', events: '진행 중 이벤트', expandTags: '숨겨진 태그 {{count}}개 펼치기',
           imageDetail: '{{name}} 사진 {{count}} 상세 보기', imageError: '사진을 불러오지 못했습니다. 다시 시도', info: '정보',
-          menu: {
-            error: '메뉴를 불러오지 못했습니다. 다시 시도', image: '{{name}} 메뉴 이미지',
-            imageUnavailable: '{{name}} 메뉴 이미지 없음', loading: '메뉴를 불러오는 중입니다.',
-            nameUnavailable: '이름 없는 메뉴', priceLabel: '가격: {{price}}',
-            priceUnavailable: '가격 정보 없음', title: '메뉴',
-            status: { AVAILABLE: '판매 중', SOLD_OUT: '품절', UNKNOWN: '이용 불가' },
-          },
           imageViewer: {
             close: '사진 닫기', counter: '{{current}} / {{total}}', next: '다음 사진',
             photo: '{{name}} 사진 {{total}}장 중 {{current}}번째', previous: '이전 사진',

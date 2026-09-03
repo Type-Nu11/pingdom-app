@@ -5,7 +5,6 @@ import { placeDetailApi } from '../api/placeDetailApi';
 
 type PlaceDetailApi = Pick<typeof placeDetailApi, 'getPlaceDetail'>;
 type PlaceAvailabilityApi = Pick<typeof placeDetailApi, 'getPlaceAvailabilities'>;
-type PlaceMenuApi = Pick<typeof placeDetailApi, 'getPlaceMenus'>;
 
 export const placeDetailQueryKeys = {
   all: placeQueryKeys.entities(),
@@ -49,22 +48,4 @@ export function usePlaceAvailabilities(
   { enabled = true }: { enabled?: boolean } = {},
 ) {
   return useQuery({ ...createPlaceAvailabilitiesQueryOptions(placeId), enabled });
-}
-
-export function createPlaceMenusQueryOptions(
-  placeId: number,
-  api: PlaceMenuApi = placeDetailApi,
-) {
-  return {
-    queryFn: ({ signal }: { signal?: AbortSignal }) => api.getPlaceMenus(placeId, signal),
-    queryKey: placeQueryKeys.menus(placeId),
-    staleTime: PLACE_DETAIL_STALE_TIME_MS,
-  };
-}
-
-export function usePlaceMenus(
-  placeId: number,
-  { enabled = true }: { enabled?: boolean } = {},
-) {
-  return useQuery({ ...createPlaceMenusQueryOptions(placeId), enabled });
 }

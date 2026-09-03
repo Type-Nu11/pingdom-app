@@ -15,7 +15,6 @@ const TARGET_OPERATIONS = new Map([
   ['/places/recommendations/{requestId}/explanation', ['get']],
   ['/places/{placeId}/map-link-conversions', ['post']],
   ['/places/{placeId}/reviews', ['get', 'post']],
-  ['/places/{placeId}/menus', ['get']],
   ['/places/{placeId}/availabilities', ['get']],
 ]);
 
