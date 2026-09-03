@@ -329,7 +329,7 @@ describe('V2 reservation screens', () => {
     expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
   });
 
-  test('여러 날에 걸친 availability 기간 전체를 표시하고 종료 전까지 예약 가능하다', async () => {
+  test('여러 날에 걸친 availability를 시작 날짜의 하나의 서버 선택지로 표시한다', async () => {
     mockPlace();
     mockCreateReservation();
     const startsAt = new Date(2026, 8, 2, 17, 28, 0);
@@ -352,11 +352,13 @@ describe('V2 reservation screens', () => {
       />,
     );
 
-    for (const date of ['02', '03', '04', '05']) {
-      expect(screen.getByRole('button', { name: `2026-09-${date}, 예약 가능` })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '2026-09-02, 예약 가능' })).toBeEnabled();
+    for (const date of ['03', '04', '05']) {
+      expect(screen.getByRole('button', { name: `2026-09-${date}, 예약 불가` })).toBeDisabled();
     }
     expect(screen.getByText('17:28')).toBeVisible();
-    expect(screen.queryByText(/9월 2일 17:28.9월 5일 00:00/)).not.toBeOnTheScreen();
+    expect(screen.getByTestId('v2-availability-77').props.accessibilityLabel)
+      .toMatch(/9월 2일 17:28.9월 5일 00:00/);
     expect(screen.getByTestId('v2-availability-77')).toBeEnabled();
     expect(screen.queryByText('예약 불가 · 지난 시간')).not.toBeOnTheScreen();
   });

@@ -11,8 +11,7 @@ import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import {
   addLocalMonths,
-  availabilityDateKeys,
-  availabilityIncludesDate,
+  availabilityDateKey,
   buildLocalCalendar,
   createReservationIdempotencyKey,
   isAvailabilityBookable,
@@ -96,7 +95,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     [availabilityData, now, quantity],
   );
   const availableDates = useMemo(
-    () => new Set(bookableAvailabilities.flatMap(availabilityDateKeys)),
+    () => new Set(bookableAvailabilities.map(availabilityDateKey)),
     [bookableAvailabilities],
   );
   const availabilitySummary = useMemo(
@@ -108,7 +107,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     [availabilityData],
   );
   const scheduledDates = useMemo(
-    () => new Set(availabilityData.flatMap(availabilityDateKeys)),
+    () => new Set(availabilityData.map(availabilityDateKey)),
     [availabilityData],
   );
   const selectedAvailability = availabilityData.find(
@@ -116,7 +115,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   );
   const selectedDateSlots = selectedDate
     ? availabilityData
-      .filter((item) => availabilityIncludesDate(item, selectedDate))
+      .filter((item) => availabilityDateKey(item) === selectedDate)
       .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
     : [];
   const periodDate = useRef<string | null>(null);
@@ -137,12 +136,9 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
       ?? nearestUpcomingAvailability(selectableAvailabilityData, now);
     if (!nearest) return;
     const nearestDate = new Date(nearest.startsAt);
-    const initialDate = nearestDate.getTime() <= now.getTime()
-      ? now
-      : nearestDate;
     initializedFromAvailability.current = true;
-    setMonth(startOfLocalMonth(initialDate));
-    setSelectedDate(localDateKey(initialDate));
+    setMonth(startOfLocalMonth(nearestDate));
+    setSelectedDate(localDateKey(nearestDate));
     setSelectedAvailabilityId(null);
   }, [selectableAvailabilityData, availabilities.isError, availabilities.isPending, now, quantity]);
 
@@ -152,7 +148,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
         || !isSelectableAvailability(selectedAvailability)
         || !isAvailabilityBookable(selectedAvailability, quantity, now)
         || !selectedDate
-        || !availabilityIncludesDate(selectedAvailability, selectedDate))) {
+        || availabilityDateKey(selectedAvailability) !== selectedDate)) {
       setSelectedAvailabilityId(null);
     }
   }, [now, quantity, selectedAvailability, selectedAvailabilityId, selectedDate]);
@@ -541,12 +537,11 @@ function slotTimePeriod(availability: Availability): TimePeriod {
 }
 
 function formatSlotLabel(availability: Availability, language: string): string {
-  const startsAt = new Date(availability.startsAt);
   return new Intl.DateTimeFormat(language, {
     hour: '2-digit',
     hourCycle: 'h23',
     minute: '2-digit',
-  }).format(startsAt);
+  }).format(new Date(availability.startsAt));
 }
 
 function availabilityReason(availability: Availability, quantity: number, now: Date, t: AvailabilityStateProps['t']): string {
