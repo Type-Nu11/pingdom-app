@@ -1,6 +1,7 @@
 export { createVisitVerificationApi, visitVerificationApi } from './api/visitVerificationApi';
 export type {
   CreatePlaceReviewBody,
+  ForegroundVisitVerificationStartBody,
   PlaceReview,
   PlaceReviewListParams,
   PlaceReviewPage,
@@ -16,8 +17,15 @@ export { default as VisitVerificationReviewScreen } from './screens/VisitVerific
 export { default as VisitVerificationSessionScreen } from './screens/VisitVerificationSessionScreen';
 export {
   createObservationMutationOptions,
+  createRecoverSessionMutationOptions,
+  createStartForegroundSessionMutationOptions,
   createStartSessionMutationOptions,
+  useRecoverVisitVerificationSession,
+  useStartForegroundVisitVerificationSession,
   useStartVisitVerificationSession,
   useSubmitVisitVerificationObservation,
 } from './hooks/useVisitVerificationSessionMutations';
-export { visitVerificationSessionQueryKeys } from './model/visitVerificationSession';
+export {
+  clearActiveForegroundVisitVerificationSession,
+  visitVerificationSessionQueryKeys,
+} from './model/visitVerificationSession';

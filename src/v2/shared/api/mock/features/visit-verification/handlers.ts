@@ -23,6 +23,15 @@ export const visitVerificationMockHandlers = [
   },
   {
     method: 'POST',
+    path: '/visit-verification-sessions/foreground',
+    resolve: ({ scenario }) => {
+      observationCount = 0;
+      if (scenario === 'empty') return visitVerificationExistingFixture;
+      return visitVerificationStartedFixture;
+    },
+  },
+  {
+    method: 'POST',
     path: /^\/visit-verification-sessions\/\d+\/observations$/,
     resolve: ({ scenario }) => {
       if (scenario === 'empty') return visitVerificationProximityLostFixture;
@@ -33,5 +42,10 @@ export const visitVerificationMockHandlers = [
         ? visitVerificationProgressFixture
         : visitVerificationCompletedFixture;
     },
+  },
+  {
+    method: 'GET',
+    path: /^\/visit-verification-sessions\/\d+$/,
+    resolve: () => visitVerificationExistingFixture,
   },
 ] satisfies readonly MockHandler[];

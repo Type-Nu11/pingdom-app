@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../assets/v2/icons/header/back.svg';
+import NoNearbyPlaceIcon from '../../../../assets/v2/icons/smRlavy.svg';
 import { ApiErrorState, Button, LoadingState } from '../../../shared/components';
 import VisitPlaceCard from '../components/VisitPlaceCard';
 import { useVisitVerificationCandidates } from '../hooks/useVisitVerificationCandidates';
@@ -27,8 +28,12 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
     <Screen edges={['top', 'right', 'bottom', 'left']}>
       <Header>
         <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackIcon width={44} height={44} /></BackButton>
-        <Title accessibilityRole="header">{t('visitVerification.title')}</Title>
-        <HeaderSpacer />
+        {candidates.length > 0 || checkInsQuery.isLoading || checkInsQuery.isError ? (
+          <>
+            <Title accessibilityRole="header">{t('visitVerification.title')}</Title>
+            <HeaderSpacer />
+          </>
+        ) : null}
       </Header>
 
       {checkInsQuery.isLoading ? (
@@ -44,7 +49,9 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
         </Empty>
       ) : candidates.length === 0 ? (
         <Empty testID="visit-verification-empty">
-          <EmptyIcon><EmptyMark>!</EmptyMark></EmptyIcon>
+          <EmptyIcon>
+            <NoNearbyPlaceIcon height={50} testID="visit-verification-empty-icon" width={44} />
+          </EmptyIcon>
           <EmptyTitle>{t('visitVerification.emptyTitle')}</EmptyTitle>
           <EmptyDescription>{t('visitVerification.emptyDescription')}</EmptyDescription>
           <EmptyAction><Button fullWidth label={t('visitVerification.return')} onPress={onBack} shape="pill" /></EmptyAction>
@@ -84,19 +91,31 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
 }
 
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
-const Header = styled.View`height: 56px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
-const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
+const Header = styled.View`height: 64px; flex-direction: row; align-items: center; padding: 0 24px;`;
+const BackButton = styled.Pressable`
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  background-color: rgba(255, 255, 255, 0.92);
+  elevation: 2;
+  shadow-color: #11151b;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.06;
+  shadow-radius: 8px;
+`;
 const Title = styled.Text`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const HeaderSpacer = styled.View`width: 44px;`;
 const Body = styled.View`flex: 1;`;
 const SectionTitle = styled.Text`padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px 0; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const List = styled(FlatList<VisitVerificationCandidate>).attrs(({ theme }) => ({ contentContainerStyle: { paddingBottom: theme.spacing.xxl, paddingHorizontal: theme.spacing.md } }))``;
-const Empty = styled.View`flex: 1; align-items: center; justify-content: center; padding: ${({ theme }) => theme.spacing.lg}px;`;
-const EmptyIcon = styled.View`width: 76px; height: 76px; align-items: center; justify-content: center; margin-bottom: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
+const Empty = styled.View`flex: 1; align-items: center; justify-content: center; padding: 24px; padding-bottom: 96px;`;
+const EmptyIcon = styled.View`width: 96px; height: 96px; align-items: center; justify-content: center; margin-bottom: 28px; border-radius: 48px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
 const EmptyMark = styled.Text`width: 38px; height: 48px; padding-top: 8px; text-align: center; color: ${({ theme }) => theme.colors.onPrimary}; font-size: 24px; font-weight: 900; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary}; overflow: hidden;`;
-const EmptyTitle = styled.Text`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
-const EmptyDescription = styled.Text`max-width: 300px; margin-top: ${({ theme }) => theme.spacing.sm}px; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; line-height: 19px;`;
-const EmptyAction = styled.View`position: absolute; right: ${({ theme }) => theme.spacing.md}px; bottom: ${({ theme }) => theme.spacing.md}px; left: ${({ theme }) => theme.spacing.md}px;`;
+const EmptyTitle = styled.Text`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 22px; font-weight: 800;`;
+const EmptyDescription = styled.Text`max-width: 340px; margin-top: 16px; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: 16px; line-height: 24px;`;
+const EmptyAction = styled.View`position: absolute; right: 24px; bottom: 24px; left: 24px;`;
 const Footer = styled.View`min-height: 72px; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.sm}px;`;
 const FooterText = styled.Text`color: ${({ theme }) => theme.colors.textMuted};`;
 const Retry = styled.Pressable`min-height: 40px; justify-content: center; padding: 0 ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;

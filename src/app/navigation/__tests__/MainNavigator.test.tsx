@@ -131,7 +131,7 @@ describe('현재 지도 경계', () => {
     expect(screen.getByTestId('current-map-screen')).toBeVisible();
   });
 
-  test('방문 검증 CTA callback을 명확한 후보 route로 연결한다', async () => {
+  test('방문 검증 CTA callback을 foreground 세션 route로 연결한다', async () => {
     const i18n = await createTestI18n();
     const view = await renderWithProviders(
       <MapRouteScreen navigation={navigation} route={route} />,
@@ -139,7 +139,10 @@ describe('현재 지도 경계', () => {
     );
 
     await view.user.press(screen.getByTestId('current-map-verification-entry'));
-    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.VisitVerificationPlaces);
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      MAIN_ROUTES.VisitVerificationSession,
+      { mode: 'foreground' },
+    );
   });
 
   test('선택한 장소의 실제 ID로 체류 인증 세션에 진입한다', async () => {
@@ -152,7 +155,7 @@ describe('현재 지도 경계', () => {
     await view.user.press(screen.getByTestId('selected-place-verification-entry'));
     expect(navigation.navigate).toHaveBeenCalledWith(
       MAIN_ROUTES.VisitVerificationSession,
-      { placeId: 17 },
+      { mode: 'place', placeId: 17 },
     );
   });
 

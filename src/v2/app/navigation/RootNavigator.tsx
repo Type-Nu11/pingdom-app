@@ -48,6 +48,17 @@ function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
   return (
     <MapScreen
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
+      onOpenVisitVerification={() => navigation.navigate(
+        V2_ROUTES.VisitVerificationSession,
+        { mode: 'foreground' },
+      )}
+      onStartVisitVerification={(value) => {
+        const placeId = parsePlaceId(value);
+        if (placeId) navigation.navigate(V2_ROUTES.VisitVerificationSession, {
+          mode: 'place',
+          placeId,
+        });
+      }}
       onSignIn={() => void clearTokenSession()}
     />
   );
@@ -167,17 +178,26 @@ function VisitVerificationReviewRoute({ navigation, route }: V2ScreenProps<'Visi
 }
 
 function VisitVerificationSessionRoute({ navigation, route }: V2ScreenProps<'VisitVerificationSession'>) {
-  return (
+  const commonProps = {
+    onBack: navigation.goBack,
+    onWriteReview: ({ checkInId: value, placeId: placeValue }: {
+      checkInId: number;
+      placeId: number;
+    }) => {
+      const checkInId = parseCheckInId(value);
+      const placeId = parsePlaceId(placeValue);
+      if (checkInId && placeId) {
+        navigation.navigate(V2_ROUTES.VisitVerificationReview, { checkInId, placeId });
+      }
+    },
+  };
+  return route.params.mode === 'foreground' ? (
+    <VisitVerificationSessionScreen mode="foreground" {...commonProps} />
+  ) : (
     <VisitVerificationSessionScreen
-      onBack={navigation.goBack}
-      onWriteReview={({ checkInId: value, placeId: placeValue }) => {
-        const checkInId = parseCheckInId(value);
-        const placeId = parsePlaceId(placeValue);
-        if (checkInId && placeId) {
-          navigation.navigate(V2_ROUTES.VisitVerificationReview, { checkInId, placeId });
-        }
-      }}
+      mode="place"
       placeId={route.params.placeId}
+      {...commonProps}
     />
   );
 }

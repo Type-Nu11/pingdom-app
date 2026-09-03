@@ -3,11 +3,13 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 const TARGET_OPERATIONS = new Map([
   ['/visit-verification-sessions', ['post']],
+  ['/visit-verification-sessions/foreground', ['post']],
   ['/visit-verification-sessions/{sessionId}/observations', ['post']],
   ['/visit-verification-sessions/{sessionId}', ['get']],
 ]);
 const REQUIRED_SCHEMAS = [
   'ErrorResponse',
+  'ForegroundVisitVerificationStartRequest',
   'ValidationErrorResponse',
   'VisitVerificationObservationRequest',
   'VisitVerificationSessionResponse',

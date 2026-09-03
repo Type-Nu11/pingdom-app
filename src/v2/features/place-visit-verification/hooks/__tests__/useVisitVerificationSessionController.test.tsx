@@ -1,9 +1,15 @@
-import { act, renderHook } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { useVisitVerificationSessionController } from '../useVisitVerificationSessionController';
+import {
+  clearActiveForegroundVisitVerificationSession,
+  rememberActiveForegroundVisitVerificationSession,
+} from '../../model/visitVerificationSession';
 
 const mockStartMutateAsync = jest.fn();
+const mockForegroundStartMutateAsync = jest.fn();
+const mockRecoverMutateAsync = jest.fn();
 const mockObservationMutateAsync = jest.fn();
 const originalAppState = AppState.currentState;
 
@@ -12,6 +18,16 @@ jest.mock('../useVisitVerificationSessionMutations', () => ({
     error: null,
     isPending: false,
     mutateAsync: mockStartMutateAsync,
+  }),
+  useStartForegroundVisitVerificationSession: () => ({
+    error: null,
+    isPending: false,
+    mutateAsync: mockForegroundStartMutateAsync,
+  }),
+  useRecoverVisitVerificationSession: () => ({
+    error: null,
+    isPending: false,
+    mutateAsync: mockRecoverMutateAsync,
   }),
   useSubmitVisitVerificationObservation: () => ({
     error: null,
@@ -38,8 +54,11 @@ const inProgress = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  clearActiveForegroundVisitVerificationSession();
   (AppState as unknown as { currentState: AppStateStatus }).currentState = 'active';
   mockStartMutateAsync.mockResolvedValue(inProgress);
+  mockForegroundStartMutateAsync.mockResolvedValue(inProgress);
+  mockRecoverMutateAsync.mockResolvedValue(inProgress);
   mockObservationMutateAsync.mockResolvedValue({
     ...inProgress,
     status: 'COMPLETED',
@@ -48,6 +67,127 @@ beforeEach(() => {
     completedCheckInId: 7002,
     reviewEligible: true,
   });
+});
+
+test('foreground start omits placeId, coalesces rapid calls, and preserves server policy', async () => {
+  const alternatePolicy = {
+    ...inProgress,
+    placeId: 88,
+    requiredRadiusMeters: 240,
+    requiredDwellSeconds: 12,
+    verifiedDwellSeconds: 4,
+    remainingSeconds: 8,
+    nextObservationRecommendedAt: null,
+  };
+  mockForegroundStartMutateAsync.mockResolvedValue(alternatePolicy);
+  const getLocation = jest.fn().mockResolvedValue({ status: 'granted', coordinate });
+  const view = await renderHook(() => useVisitVerificationSessionController(
+    { mode: 'foreground' },
+    { getLocation },
+  ));
+
+  await act(async () => {
+    const first = view.result.current.start();
+    const second = view.result.current.start();
+    await Promise.all([first, second]);
+  });
+
+  expect(getLocation).toHaveBeenCalledTimes(1);
+  expect(mockForegroundStartMutateAsync).toHaveBeenCalledTimes(1);
+  expect(mockStartMutateAsync).not.toHaveBeenCalled();
+  expect(mockForegroundStartMutateAsync.mock.calls[0][0].body).toEqual(coordinate);
+  expect(mockForegroundStartMutateAsync.mock.calls[0][0].body).not.toHaveProperty('placeId');
+  expect(view.result.current.session).toEqual(alternatePolicy);
+  expect(view.result.current.displayRemainingSeconds).toBe(8);
+  view.unmount();
+});
+
+test('foreground screen reentry recovers the remembered session without starting another one', async () => {
+  rememberActiveForegroundVisitVerificationSession(inProgress);
+  const recovered = { ...inProgress, verifiedDwellSeconds: 35, remainingSeconds: 40 };
+  mockRecoverMutateAsync.mockResolvedValue(recovered);
+  const view = await renderHook(() => useVisitVerificationSessionController(
+    { mode: 'foreground' },
+  ));
+
+  await act(async () => { await Promise.resolve(); });
+
+  expect(mockRecoverMutateAsync).toHaveBeenCalledWith({
+    sessionId: 9201,
+    signal: expect.any(AbortSignal),
+  });
+  expect(mockForegroundStartMutateAsync).not.toHaveBeenCalled();
+  expect(view.result.current.session).toEqual(recovered);
+  view.unmount();
+});
+
+test('foreground resume refreshes server status before scheduling more observations', async () => {
+  let appStateListener: ((state: AppStateStatus) => void) | undefined;
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
+    appStateListener = listener;
+    return { remove: jest.fn() };
+  });
+  const completed = {
+    ...inProgress,
+    status: 'COMPLETED' as const,
+    completedCheckInId: 7002,
+    remainingSeconds: 0,
+    nextObservationRecommendedAt: null,
+  };
+  mockRecoverMutateAsync.mockResolvedValue(completed);
+  const view = await renderHook(() => useVisitVerificationSessionController(
+    { mode: 'foreground' },
+    { getLocation: jest.fn().mockResolvedValue({ status: 'granted', coordinate }) },
+  ));
+  await act(async () => { await view.result.current.start(); });
+
+  await act(async () => { appStateListener?.('background'); });
+  expect(view.result.current.phase).toBe('paused');
+  await act(async () => {
+    appStateListener?.('active');
+    await Promise.resolve();
+  });
+
+  await waitFor(() => expect(view.result.current.session).toEqual(completed));
+  expect(mockRecoverMutateAsync).toHaveBeenCalledTimes(1);
+  view.unmount();
+});
+
+test('unmount aborts an in-flight foreground start request', async () => {
+  mockForegroundStartMutateAsync.mockImplementation(() => new Promise(() => undefined));
+  const view = await renderHook(() => useVisitVerificationSessionController(
+    { mode: 'foreground' },
+    { getLocation: jest.fn().mockResolvedValue({ status: 'granted', coordinate }) },
+  ));
+
+  await act(async () => {
+    void view.result.current.start();
+    await Promise.resolve();
+  });
+  const signal = mockForegroundStartMutateAsync.mock.calls[0][0].signal as AbortSignal;
+  await act(async () => { view.unmount(); });
+  expect(signal.aborted).toBe(true);
+});
+
+test('logout boundary aborts foreground work and clears the active controller session', async () => {
+  mockForegroundStartMutateAsync.mockImplementation(() => new Promise(() => undefined));
+  const view = await renderHook(() => useVisitVerificationSessionController(
+    { mode: 'foreground' },
+    { getLocation: jest.fn().mockResolvedValue({ status: 'granted', coordinate }) },
+  ));
+
+  await act(async () => {
+    void view.result.current.start();
+    await Promise.resolve();
+  });
+  const signal = mockForegroundStartMutateAsync.mock.calls[0][0].signal as AbortSignal;
+
+  await act(async () => clearActiveForegroundVisitVerificationSession());
+
+  expect(signal.aborted).toBe(true);
+  expect(view.result.current.session).toBeNull();
+  expect(view.result.current.phase).toBe('unauthenticated');
+  view.unmount();
 });
 
 afterEach(() => {
@@ -86,9 +226,10 @@ test('rapid start calls coalesce and schedule only at the server recommendation'
 
 test('overlapping scheduled observations are blocked and background aborts the request', async () => {
   let appStateListener: ((state: AppStateStatus) => void) | undefined;
+  const removeAppStateListener = jest.fn();
   jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
     appStateListener = listener;
-    return { remove: jest.fn() };
+    return { remove: removeAppStateListener };
   });
   let resolveObservation!: (value: typeof inProgress) => void;
   mockObservationMutateAsync.mockImplementation(() => new Promise((resolve) => {
@@ -123,5 +264,5 @@ test('overlapping scheduled observations are blocked and background aborts the r
   await act(async () => { resolveObservation(inProgress); });
   expect(view.result.current.phase).toBe('paused');
   view.unmount();
-  expect(clearTimer).toHaveBeenCalled();
+  expect(removeAppStateListener).toHaveBeenCalled();
 });

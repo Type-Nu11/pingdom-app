@@ -17,23 +17,94 @@ import { createCheckInApi } from '../../../features/check-ins/api/checkInApi.ts'
 import {
   applyVisitVerificationSessionResult,
   createObservationMutationOptions,
+  createRecoverSessionMutationOptions,
+  createStartForegroundSessionMutationOptions,
   createStartSessionMutationOptions,
 } from '../../../features/place-visit-verification/hooks/useVisitVerificationSessionMutations.ts';
 import {
   isTerminalVisitVerificationSession,
+  clearActiveForegroundVisitVerificationSession,
+  getActiveForegroundVisitVerificationSession,
   observationDelayMs,
+  rememberActiveForegroundVisitVerificationSession,
   sessionErrorPhase,
   visitVerificationSessionQueryKeys,
 } from '../../../features/place-visit-verification/model/visitVerificationSession.ts';
-import { ApiError } from '../index.ts';
+import { ApiError, mockApiClient, setMockScenario } from '../index.ts';
+import {
+  visitVerificationAlternatePolicyFixture,
+  visitVerificationStartedFixture,
+} from '../mock/features/visit-verification/fixtures.ts';
+
+test('development fixtures default to 500m/30s while arbitrary server policies remain representable', () => {
+  assert.deepEqual(
+    [
+      visitVerificationStartedFixture.requiredRadiusMeters,
+      visitVerificationStartedFixture.requiredDwellSeconds,
+    ],
+    [500, 30],
+  );
+  assert.deepEqual(
+    [
+      visitVerificationAlternatePolicyFixture.requiredRadiusMeters,
+      visitVerificationAlternatePolicyFixture.requiredDwellSeconds,
+    ],
+    [240, 12],
+  );
+});
+
+test('development foreground mock follows STARTED to IN_PROGRESS to COMPLETED', async () => {
+  setMockScenario('success');
+  const api = createVisitVerificationApi(mockApiClient);
+  const body = {
+    accuracyMeters: 4,
+    latitude: 35,
+    longitude: 128,
+    observedAt: '2026-09-02T01:00:00Z',
+  };
+  const started = await api.startForegroundSession(body);
+  const progress = await api.submitObservation(started.id, body);
+  const completed = await api.submitObservation(started.id, body);
+  assert.deepEqual(
+    [started.status, progress.status, completed.status],
+    ['STARTED', 'IN_PROGRESS', 'COMPLETED'],
+  );
+  assert.equal(completed.completedCheckInId, 7002);
+  assert.equal(completed.reviewEligible, true);
+});
+
+test('development observation mock keeps proximity loss, expiry, rejection, and network failure distinct', async () => {
+  const api = createVisitVerificationApi(mockApiClient);
+  const body = {
+    accuracyMeters: 4,
+    latitude: 35,
+    longitude: 128,
+    observedAt: '2026-09-02T01:00:00Z',
+  };
+  for (const [scenario, expectedStatus] of [
+    ['empty', 'PROXIMITY_LOST'],
+    ['expired', 'EXPIRED'],
+    ['forbidden', 'REJECTED'],
+  ]) {
+    setMockScenario(scenario);
+    const result = await api.submitObservation(9201, body);
+    assert.equal(result.status, expectedStatus);
+  }
+  setMockScenario('network-error');
+  await assert.rejects(
+    api.startForegroundSession(body),
+    (error) => error instanceof ApiError && error.isNetworkError,
+  );
+  setMockScenario('success');
+});
 
 test('documented session error statuses select only supported UI states', () => {
   const cases = [
-    [400, 'location-failed'],
-    [401, 'error'],
-    [403, 'rejected'],
-    [404, 'error'],
-    [409, 'error'],
+    [400, 'invalid-observation'],
+    [401, 'unauthenticated'],
+    [403, 'inactive-tourist'],
+    [404, 'no-place'],
+    [409, 'ambiguous-place'],
     [422, 'proximity-lost'],
   ];
   for (const [status, phase] of cases) {
@@ -41,14 +112,18 @@ test('documented session error statuses select only supported UI states', () => 
     assert.equal(sessionErrorPhase(error), phase);
     assert.equal(error.status, status);
   }
+  assert.equal(
+    sessionErrorPhase(new ApiError('offline', { isNetworkError: true })),
+    'network-error',
+  );
 });
 
-test('session start and observation preserve method paths, bodies, and AbortSignals', async () => {
+test('session starts, recovery, and observation preserve paths, bodies, and AbortSignals', async () => {
   const calls = [];
   const response = { id: 9201, placeId: 17, status: 'STARTED' };
   const client = {
     delete: async () => response,
-    get: async () => response,
+    get: async (path, options) => { calls.push({ options, path }); return response; },
     patch: async () => response,
     post: async (path, body, options) => { calls.push({ body, options, path }); return response; },
     put: async () => response,
@@ -68,11 +143,16 @@ test('session start and observation preserve method paths, bodies, and AbortSign
     longitude: 128.2,
     observedAt: '2026-09-02T01:00:15Z',
   };
+  const foregroundBody = { ...observationBody };
 
   assert.equal(await api.startSession(startBody, signal), response);
+  assert.equal(await api.startForegroundSession(foregroundBody, signal), response);
+  assert.equal(await api.getSession(9201, signal), response);
   assert.equal(await api.submitObservation(9201, observationBody, signal), response);
   assert.deepEqual(calls, [
     { body: startBody, options: { signal }, path: '/visit-verification-sessions' },
+    { body: foregroundBody, options: { signal }, path: '/visit-verification-sessions/foreground' },
+    { options: { signal }, path: '/visit-verification-sessions/9201' },
     { body: observationBody, options: { signal }, path: '/visit-verification-sessions/9201/observations' },
   ]);
 });
@@ -81,19 +161,44 @@ test('session mutations never retry and preserve request variables', async () =>
   const calls = [];
   const response = { id: 9201, status: 'IN_PROGRESS' };
   const api = {
+    getSession: async (sessionId, signal) => { calls.push({ sessionId, signal, type: 'recover' }); return response; },
+    startForegroundSession: async (value, signal) => { calls.push({ body: value, signal, type: 'foreground' }); return response; },
     startSession: async (body, signal) => { calls.push({ body, signal, type: 'start' }); return response; },
     submitObservation: async (sessionId, body, signal) => { calls.push({ body, sessionId, signal, type: 'observation' }); return response; },
   };
   const signal = new AbortController().signal;
   const body = { accuracyMeters: 3, latitude: 35, longitude: 128, observedAt: '2026-09-02T01:00:00Z' };
   const start = createStartSessionMutationOptions(api);
+  const foreground = createStartForegroundSessionMutationOptions(api);
+  const recover = createRecoverSessionMutationOptions(api);
   const observation = createObservationMutationOptions(api);
 
   assert.equal(start.retry, false);
+  assert.equal(foreground.retry, false);
+  assert.equal(recover.retry, false);
   assert.equal(observation.retry, false);
   await start.mutationFn({ body: { ...body, placeId: 17 }, signal });
+  await foreground.mutationFn({ body, signal });
+  await recover.mutationFn({ sessionId: 9201, signal });
   await observation.mutationFn({ body, sessionId: 9201, signal });
-  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map(({ type }) => type), [
+    'start',
+    'foreground',
+    'recover',
+    'observation',
+  ]);
+});
+
+test('foreground recovery memory stores only the server session and clears on logout boundary', () => {
+  const session = { id: 9201, placeId: 17, status: 'IN_PROGRESS' };
+  rememberActiveForegroundVisitVerificationSession(session);
+  assert.equal(getActiveForegroundVisitVerificationSession(), session);
+  assert.equal('latitude' in getActiveForegroundVisitVerificationSession(), false);
+  clearActiveForegroundVisitVerificationSession();
+  assert.equal(getActiveForegroundVisitVerificationSession(), null);
+
+  rememberActiveForegroundVisitVerificationSession({ ...session, status: 'COMPLETED' });
+  assert.equal(getActiveForegroundVisitVerificationSession(), null);
 });
 
 test('server recommendation controls scheduling and only server terminal states stop observation', () => {

@@ -7,7 +7,9 @@ const document = JSON.parse(await readFile(
 const failures = [];
 const expected = [
   ['post', '/visit-verification-sessions', 'start', 201],
+  ['post', '/visit-verification-sessions/foreground', 'startForeground', 201],
   ['post', '/visit-verification-sessions/{sessionId}/observations', 'submitObservation', 200],
+  ['get', '/visit-verification-sessions/{sessionId}', 'get', 200],
 ];
 
 if (!/^https?:\/\//.test(document['x-source']?.location ?? '')) failures.push('source URL missing');
@@ -24,6 +26,7 @@ for (const [method, path, operationId, success] of expected) {
 
 for (const schema of [
   'ErrorResponse',
+  'ForegroundVisitVerificationStartRequest',
   'ValidationErrorResponse',
   'VisitVerificationObservationRequest',
   'VisitVerificationSessionResponse',
@@ -46,6 +49,5 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exitCode = 1;
 } else {
-  const getHas200 = Boolean(document.paths?.['/visit-verification-sessions/{sessionId}']?.get?.responses?.['200']);
-  console.log(`Visit verification contract valid. GET 200 response contract: ${getHas200 ? 'present' : 'missing (foreground recovery blocked)'}.`);
+  console.log('Visit verification contract valid, including foreground start and session recovery.');
 }

@@ -20,7 +20,7 @@ export async function getCurrentCoordinate(): Promise<CurrentLocationOutcome> {
     }
     if (permission.status !== 'granted') return { status: 'denied', coordinate: null };
 
-    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
     const accuracyMeters = location.coords.accuracy;
     if (accuracyMeters === null || !Number.isFinite(accuracyMeters) || accuracyMeters < 0) {
       return { status: 'failed', coordinate: null };

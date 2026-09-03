@@ -85,6 +85,12 @@ test('recent visits render the normal empty state', async () => {
   });
   const view = await renderFeature(<VisitVerificationPlacesScreen onBack={onBack} onSelectPlace={onSelectPlace} />);
   expect(view.getByTestId('visit-verification-empty')).toBeVisible();
+  expect(view.getByTestId('visit-verification-empty-icon')).toBeVisible();
+  expect(view.getByText('근처에 검증할 장소가 없어요!')).toBeVisible();
+  expect(view.getByText('현재 위치에서 검증할 수 있는 장소를 찾지 못했어요\n현재 위치를 다시 확인해주세요')).toBeVisible();
+  expect(view.queryByRole('header', { name: '검증하기' })).toBeNull();
+  await view.user.press(view.getByRole('button', { name: '돌아가기' }));
+  expect(onBack).toHaveBeenCalledTimes(1);
 });
 
 test('location permission denial is not presented as a normal empty list', async () => {
@@ -211,6 +217,7 @@ test('session UI renders server progress metrics and terminal states in English'
       requiredRadiusMeters: 24,
       requiredDwellSeconds: 75,
       remainingSeconds: 45,
+      verifiedDwellSeconds: 34,
       latestDistanceMeters: 31,
       completedCheckInId: null,
       reviewEligible: false,
@@ -219,9 +226,72 @@ test('session UI renders server progress metrics and terminal states in English'
   });
   const view = await renderFeature(<VisitVerificationSessionScreen onBack={jest.fn()} onWriteReview={jest.fn()} placeId={17} />, 'en');
   expect(view.getByText('You left the allowed radius')).toBeVisible();
-  expect(view.getByText('41 seconds remaining')).toBeVisible();
+  expect(view.getByText('45 seconds remaining')).toBeVisible();
   expect(view.getByText('Allowed radius: 24m')).toBeVisible();
   expect(view.getByText('Required stay: 75 seconds')).toBeVisible();
+  expect(view.getByText('Verified stay: 34 seconds')).toBeVisible();
+});
+
+test('session UI displays the default 500m and 30-second server policy unchanged', async () => {
+  mockUseSessionController.mockReturnValue({
+    displayRemainingSeconds: 29,
+    error: null,
+    isBusy: false,
+    phase: 'observing',
+    retry: jest.fn(),
+    session: {
+      id: 9201,
+      placeId: 17,
+      status: 'STARTED',
+      requiredRadiusMeters: 500,
+      requiredDwellSeconds: 30,
+      verifiedDwellSeconds: 0,
+      remainingSeconds: 30,
+    },
+    start: jest.fn(),
+  });
+  const view = await renderFeature(<VisitVerificationSessionScreen mode="foreground" onBack={jest.fn()} onWriteReview={jest.fn()} />);
+  expect(view.getByText('허용 반경: 500m')).toBeVisible();
+  expect(view.getByText('요구 체류 시간: 30초')).toBeVisible();
+  expect(view.getByText('인증된 체류 시간: 0초')).toBeVisible();
+  expect(view.getByText('남은 시간: 30초')).toBeVisible();
+});
+
+test.each([
+  ['ambiguous-place', '현재 위치에서 여러 장소가 확인돼요. 한 장소에 더 가까이 이동한 뒤 다시 시도해 주세요.'],
+  ['proximity-lost', '반경 이탈'],
+  ['network-error', '네트워크 오류로 인증이 중단됐어요. 방문 완료로 처리되지 않았어요.'],
+])('foreground error phase %s has distinct copy', async (phase, message) => {
+  mockUseSessionController.mockReturnValue({
+    displayRemainingSeconds: null,
+    error: null,
+    isBusy: false,
+    phase,
+    retry: jest.fn(),
+    session: null,
+    start: jest.fn(),
+  });
+  const view = await renderFeature(<VisitVerificationSessionScreen mode="foreground" onBack={jest.fn()} onWriteReview={jest.fn()} />);
+  expect(view.getByText(message)).toBeVisible();
+});
+
+test('foreground 404 uses the dedicated nearby-place empty design', async () => {
+  const onBack = jest.fn();
+  mockUseSessionController.mockReturnValue({
+    displayRemainingSeconds: null,
+    error: null,
+    isBusy: false,
+    phase: 'no-place',
+    retry: jest.fn(),
+    session: null,
+    start: jest.fn(),
+  });
+  const view = await renderFeature(<VisitVerificationSessionScreen mode="foreground" onBack={onBack} onWriteReview={jest.fn()} />);
+  expect(view.getByTestId('visit-verification-foreground-no-place')).toBeVisible();
+  expect(view.getByTestId('visit-verification-foreground-no-place-icon')).toBeVisible();
+  expect(view.getByText('근처에 검증할 장소가 없어요!')).toBeVisible();
+  await view.user.press(view.getByRole('button', { name: '돌아가기' }));
+  expect(onBack).toHaveBeenCalledTimes(1);
 });
 
 test('completed verification passes exact place and check-in IDs to review flow', async () => {
@@ -234,6 +304,7 @@ test('completed verification passes exact place and check-in IDs to review flow'
     retry: jest.fn(),
     session: {
       id: 9201,
+      placeId: 88,
       status: 'COMPLETED',
       remainingSeconds: 0,
       completedCheckInId: 7002,
@@ -243,5 +314,5 @@ test('completed verification passes exact place and check-in IDs to review flow'
   });
   const view = await renderFeature(<VisitVerificationSessionScreen onBack={jest.fn()} onWriteReview={onWriteReview} placeId={17} />);
   await view.user.press(view.getByText('후기 작성'));
-  expect(onWriteReview).toHaveBeenCalledWith({ checkInId: 7002, placeId: 17 });
+  expect(onWriteReview).toHaveBeenCalledWith({ checkInId: 7002, placeId: 88 });
 });

@@ -5,8 +5,11 @@ import type {
 } from '../visitVerificationContract';
 
 export type StartBody = VisitVerificationOperationRequestBody<'start'>;
+export type ForegroundStartBody = VisitVerificationOperationRequestBody<'startForeground'>;
 export type ObservationBody = VisitVerificationOperationRequestBody<'submitObservation'>;
 export type StartResponse = VisitVerificationOperationResponse<'start', 201>;
+export type ForegroundStartResponse = VisitVerificationOperationResponse<'startForeground', 201>;
+export type RecoveryResponse = VisitVerificationOperationResponse<'get', 200>;
 export type ObservationResponse = VisitVerificationOperationResponse<'submitObservation', 200>;
 export type ServerError = VisitVerificationSchema<'ErrorResponse'>;
 export type ServerValidationError = VisitVerificationSchema<'ValidationErrorResponse'>;

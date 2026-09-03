@@ -9,6 +9,8 @@ import {
 } from '../../../shared/api';
 
 export type VisitVerificationStartBody = VisitVerificationOperationRequestBody<'start'>;
+export type ForegroundVisitVerificationStartBody =
+  VisitVerificationOperationRequestBody<'startForeground'>;
 export type VisitVerificationObservationBody = VisitVerificationOperationRequestBody<'submitObservation'>;
 export type VisitVerificationSession = VisitVerificationOperationResponse<'start', 201>;
 
@@ -30,6 +32,20 @@ export function createVisitVerificationApi(client: ApiClient = apiClient) {
       VisitVerificationSession,
       VisitVerificationStartBody
     >('/visit-verification-sessions', body, { signal }),
+    startForegroundSession: (
+      body: ForegroundVisitVerificationStartBody,
+      signal?: AbortSignal,
+    ): Promise<VisitVerificationSession> => client.post<
+      VisitVerificationSession,
+      ForegroundVisitVerificationStartBody
+    >('/visit-verification-sessions/foreground', body, { signal }),
+    getSession: (
+      sessionId: number,
+      signal?: AbortSignal,
+    ): Promise<VisitVerificationSession> => client.get<VisitVerificationSession>(
+      `/visit-verification-sessions/${sessionId}`,
+      { signal },
+    ),
     submitObservation: (
       sessionId: number,
       body: VisitVerificationObservationBody,

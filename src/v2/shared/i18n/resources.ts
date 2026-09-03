@@ -351,6 +351,7 @@ export const resources = {
           photoReviews: 'Photo reviews', preview: 'View {{name}} details', reviewHighlights: 'What visitors liked',
           reviewCount_one: '{{count}} review', reviewCount_other: '{{count}} reviews', reviewEmpty: 'No reviews yet.',
           reviewError: 'Could not load reviews. Try again', reviewLoading: 'Loading reviews…', reviews: 'Reviews',
+          verifiedCount_one: '{{count}} person verified this!', verifiedCount_other: '{{count}} people verified this!',
           reservation: {
             authError: 'Sign-in required', available: 'Reserve', empty: 'No schedules are currently available',
             error: 'Could not load reservation availability', full: 'No reservation capacity is available',
@@ -1201,6 +1202,7 @@ export const resources = {
           notice: '운영 공지', participantCount_one: '{{count}}명 참여', participantCount_other: '{{count}}명 참여', photoReviews: '사진 리뷰', preview: '{{name}} 상세 보기',
           reviewHighlights: '이런 점을 좋아해요!', reviewCount_one: '리뷰 {{count}}개', reviewCount_other: '리뷰 {{count}}개', reviewEmpty: '등록된 리뷰 정보가 없어요.',
           reviewError: '리뷰를 불러오지 못했습니다. 다시 시도', reviewLoading: '리뷰를 불러오는 중입니다.', reviews: '리뷰',
+          verifiedCount_one: '{{count}}명이 검증했어요!', verifiedCount_other: '{{count}}명이 검증했어요!',
           reservation: { authError: '로그인이 필요합니다', available: '예약하기', empty: '현재 예약 가능한 일정이 없습니다', error: '예약 가능 여부를 불러오지 못했습니다', full: '예약 가능한 인원이 없습니다', loading: '예약 가능 여부를 확인하고 있습니다', retry: '다시 시도' },
         },
         locate: '내 위치',
