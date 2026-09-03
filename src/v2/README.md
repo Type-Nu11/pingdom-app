@@ -50,6 +50,19 @@ The snapshot is `docs/api/place-exploration.openapi.json`, and its generated typ
 `shared/api/generated/placeExploration.ts`. Feature aliases must use
 `placeExplorationContract.ts`; update the snapshot from the server before regenerating.
 
+Tourist place menus are an independent domain and use a dedicated scoped snapshot. This also
+avoids the deployed document's duplicate `list_5` operation ID for menus and availabilities:
+
+```sh
+npm run sync:place-menus-openapi -- https://www.typenull.xyz/v3/api-docs
+npm run generate:place-menus-api-types
+npm run check:place-menus-api-types
+```
+
+The snapshot is `docs/api/place-menus.openapi.json`; feature aliases use
+`placeMenusContract.ts`. The generated DTO remains optional where the upstream schema omits its
+`required` array.
+
 The stay-based visit verification endpoints use their own live-server scoped snapshot because
 their lifecycle and release cadence are independent from place exploration:
 

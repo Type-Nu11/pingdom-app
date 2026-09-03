@@ -5,9 +5,9 @@ import type {
   ReservationPaymentSchema,
 } from '../../../shared/api';
 
-export type ListPaymentsParams = ReservationPaymentOperationQuery<'list_7'>;
+export type ListPaymentsParams = ReservationPaymentOperationQuery<'listMyPayments'>;
 export type Payment = ReservationPaymentSchema<'PaymentResponse'>;
-export type PaymentPage = ReservationPaymentOperationResponse<'list_7', 200>;
+export type PaymentPage = ReservationPaymentOperationResponse<'listMyPayments', 200>;
 
 export type PaymentStatus = Payment['status'];
 

@@ -96,6 +96,26 @@ describe('ReservationBottomSheet', () => {
     expect(screen.getByText('! 확정 대기')).toBeVisible();
   });
 
+  test('예약 카드는 서버가 준 선택 일시를 표시하고, 없으면 확정 후 안내로 대체한다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: {
+        hasNext: false, limit: 20, page: 1, totalCount: 2, totalPages: 1,
+        reservations: [
+          {
+            ...reservation, id: 901,
+            reservationEndsAt: '2026-07-25T02:00:00Z',
+            reservationStartsAt: '2026-07-25T01:00:00Z',
+          },
+          { ...reservation, id: 902, reservationEndsAt: null, reservationStartsAt: null },
+        ],
+      },
+    }));
+    await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
+
+    expect(screen.getByTestId('reservation-card-window-901')).not.toHaveTextContent('확정 후 안내');
+    expect(screen.getByTestId('reservation-card-window-902')).toHaveTextContent('확정 후 안내');
+  });
+
   test('UNKNOWN 상태를 안전한 안내로 표시한다', async () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: { hasNext: false, limit: 20, page: 1, reservations: [{ ...reservation, status: 'UNKNOWN' }], totalCount: 1, totalPages: 1 },

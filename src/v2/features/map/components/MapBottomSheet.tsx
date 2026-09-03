@@ -61,6 +61,7 @@ import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
+import { PlaceMenuSection } from '../../place-menus';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -145,7 +146,6 @@ type MapBottomSheetProps = {
   height: number;
   mediumTranslateY: number;
   onBackHome: () => void;
-  onCouponPress: (place: DecisionPlace) => void;
   onCreateReservation?: (place: DecisionPlace, imageUrl?: string) => void;
   onOpenRecommendations?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
@@ -1278,12 +1278,9 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
   );
 };
 
-type PreviewActionKind = 'arrival' | 'coupon' | 'departure' | 'directions' | 'reservation' | 'share';
+type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
 const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
-  if (kind === 'coupon') {
-    return <TicketAsset height={13} width={13} />;
-  }
   if (kind === 'share') {
     return (
       <Svg height={13} viewBox="0 0 16 16" width={13}>
@@ -1338,7 +1335,6 @@ const PreviewContent = ({
   fallbackContent,
   imageUrl,
   onBack,
-  onCoupon,
   onDetail,
   onOpenImages,
   onReserve,
@@ -1353,7 +1349,6 @@ const PreviewContent = ({
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
-  onCoupon: () => void;
   onDetail: () => void;
   onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
@@ -1441,17 +1436,10 @@ const PreviewContent = ({
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip
           kind="arrival"
-          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          label={t('map.card.actions.arrive')}
           onPress={onVerify}
         />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
-        {fallbackContent?.coupons?.length ? (
-          <PreviewActionChip
-            kind="coupon"
-            label={t('map.decision.getCoupon')}
-            onPress={onCoupon}
-          />
-        ) : null}
         <PreviewActionChip
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
@@ -1595,7 +1583,7 @@ const ExpandedPlaceContent = ({
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip
           kind="arrival"
-          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          label={t('map.card.actions.arrive')}
           onPress={onVerify}
         />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
@@ -1724,6 +1712,8 @@ const ExpandedPlaceContent = ({
               ))}
             </View>
           ) : null)}
+
+          <PlaceMenuSection placeId={place.id} />
 
           {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
@@ -1986,7 +1976,6 @@ export default function MapBottomSheet({
   isBookmarkStateLoading = false,
   mediumTranslateY,
   onBackHome,
-  onCouponPress,
   onCreateReservation,
   onDetailPress,
   onHandlePress,
@@ -2134,22 +2123,15 @@ export default function MapBottomSheet({
             highlightHeight={40}
             highlightOpacity={0.10}
             rimColor="rgba(255,255,255,0.60)"
-            tintColor={isExpandedPlaceDetail ? '#FFFFFF' : 'rgba(255,255,255,0.92)'}
+            tintColor="#FFFFFF"
             topRimOnly
           />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
       <GlassStyles.SheetInner $inset={SHEET_RESTING_GAP}>
       {!isExpandedPlaceDetail ? (
-        <View style={styles.handleArea} {...panHandlers}>
-          <Pressable
-            accessibilityLabel={t('map.sheet.adjust')}
-            accessibilityRole="adjustable"
-            onPress={onHandlePress}
-            style={styles.handleButton}
-          >
-            <View style={styles.handle} />
-          </Pressable>
+        <View pointerEvents="none" style={styles.handleArea}>
+          <View style={styles.handle} />
         </View>
       ) : null}
 
@@ -2195,7 +2177,6 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
-            onCoupon={() => onCouponPress(selectedPlace)}
             onDetail={() => onDetailPress(selectedPlace)}
             onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
               imageUrls: nextImageUrls,
@@ -2266,6 +2247,17 @@ export default function MapBottomSheet({
       )}
       </Animated.View>
       </GlassStyles.SheetInner>
+
+      {!isExpandedPlaceDetail ? (
+        <Pressable
+          {...panHandlers}
+          accessibilityLabel={t('map.sheet.adjust')}
+          accessibilityRole="adjustable"
+          onPress={onHandlePress}
+          style={styles.handleGestureTarget}
+          testID="map-sheet-handle-target"
+        />
+      ) : null}
 
       {content.type !== 'place-preview' ? (
         <BottomNavigation
@@ -2633,8 +2625,16 @@ const styles: Record<string, object> = {
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
   handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 5, width: 56 },
-  handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
+  handleArea: { alignItems: 'center', height: 20, justifyContent: 'center' },
+  handleGestureTarget: {
+    height: 44,
+    left: '50%',
+    position: 'absolute',
+    top: 0,
+    transform: [{ translateX: -80 }],
+    width: 160,
+    zIndex: 4,
+  },
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: {
     alignItems: 'center',

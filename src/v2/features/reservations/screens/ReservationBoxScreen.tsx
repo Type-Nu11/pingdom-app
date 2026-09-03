@@ -21,7 +21,7 @@ export default function ReservationBoxScreen({ onBack, onOpenReservation, onOpen
   const theme = useTheme();
   const reservations = useReservations({ limit: 100, page: 1 });
   const items = reservations.data?.reservations ?? [];
-  const totalCount = reservations.data?.totalCount ?? items.length;
+  const totalCount = reservations.data?.totalElements ?? items.length;
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-reservation-box-screen">

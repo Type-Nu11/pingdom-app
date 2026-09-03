@@ -2,27 +2,32 @@ import {
   apiClient,
   type ApiClient,
   type OperationQuery,
-  type OperationRequestBody,
-  type OperationResponse,
+  type ReservationPaymentOperationQuery,
+  type ReservationPaymentOperationRequestBody,
   type ReservationPaymentOperationResponse,
 } from '../../../shared/api';
 
-export type ListAvailabilitiesParams = OperationQuery<'listPlaceAvailabilities'>;
-export type ListReservationsParams = OperationQuery<'listMyReservations'>;
+// The tourist reservation surface (list, create, cancel, availabilities, detail)
+// is typed by the live `app` group snapshot in `reservation-payment.openapi.json`.
+// The merchant-owner endpoints below stay on the app-wide `mvp` contract because
+// the `app` group does not expose them.
+export type ListReservationsParams = ReservationPaymentOperationQuery<'listMyReservations'>;
 export type ListOwnedReservationsParams = OperationQuery<'listOwnedPlaceReservations'>;
-export type CreateReservationBody = OperationRequestBody<'createReservation'>;
-export type AvailabilityList = OperationResponse<'listPlaceAvailabilities', 200>;
-export type ReservationPage = OperationResponse<'listMyReservations', 200>;
-export type Reservation = OperationResponse<'createReservation', 201>;
-export type ReservationDetail = ReservationPaymentOperationResponse<'get_5', 200>;
+// The live `/places/{placeId}/availabilities` operation takes no query params.
+export type ListAvailabilitiesParams = Record<string, never>;
+export type CreateReservationBody = ReservationPaymentOperationRequestBody<'createReservation'>;
+export type AvailabilityList = ReservationPaymentOperationResponse<'listPlaceAvailabilities', 200>;
+export type ReservationPage = ReservationPaymentOperationResponse<'listMyReservations', 200>;
+export type Reservation = ReservationPaymentOperationResponse<'createReservation', 201>;
+export type ReservationDetail = ReservationPaymentOperationResponse<'getMyReservation', 200>;
 
-// The live server responds with `totalElements`; the generated contract (last
-// regenerated against an older spec) still expects `totalCount`. Normalize so
-// callers can rely on either.
+// The live server responds with `totalElements`; the merchant-owner list on the
+// older `mvp` contract still says `totalCount`. Normalize so callers can rely on
+// `totalElements` regardless of which endpoint produced the page.
 function normalizeReservationPage(raw: Record<string, unknown>): ReservationPage {
   return {
     ...raw,
-    totalCount: (raw.totalElements ?? raw.totalCount ?? 0) as ReservationPage['totalCount'],
+    totalElements: (raw.totalElements ?? raw.totalCount ?? 0) as number,
   } as ReservationPage;
 }
 

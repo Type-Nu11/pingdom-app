@@ -72,6 +72,7 @@ export default function MapTopOverlay({
   const insets = useSafeAreaInsets();
   const pullDistance = React.useRef(new Animated.Value(0)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [isLocatePressed, setIsLocatePressed] = React.useState(false);
   const resetPullIndicator = React.useCallback(() => {
     Animated.spring(pullDistance, {
       damping: 18,
@@ -267,10 +268,17 @@ export default function MapTopOverlay({
                 accessibilityLabel={t('map.locate')}
                 accessibilityRole="button"
                 onPress={onLocatePress}
+                onPressIn={() => setIsLocatePressed(true)}
+                onPressOut={() => setIsLocatePressed(false)}
                 style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.96 }] } : undefined}
                 testID="map-locate-button"
               >
-                <FinderIcon height={20} testID="map-locate-icon" width={20} />
+                <FinderIcon
+                  color={isLocatePressed ? '#FF1956' : '#3B3B40'}
+                  height={20}
+                  testID="map-locate-icon"
+                  width={20}
+                />
               </S.LocateButton>
             </S.LocateButtonRow>
           ) : null}

@@ -58,6 +58,15 @@ export type {
   PlaceExplorationSchemaName,
 } from './placeExplorationContract';
 export type {
+  PlaceMenusComponents,
+  PlaceMenusOperationName,
+  PlaceMenusOperationResponse,
+  PlaceMenusOperations,
+  PlaceMenusPaths,
+  PlaceMenusSchema,
+  PlaceMenusSchemaName,
+} from './placeMenusContract';
+export type {
   OffersCouponsComponents,
   OffersCouponsOperationName,
   OffersCouponsOperationPath,
@@ -72,7 +81,9 @@ export type {
 export type {
   ReservationPaymentComponents,
   ReservationPaymentOperationName,
+  ReservationPaymentOperationPath,
   ReservationPaymentOperationQuery,
+  ReservationPaymentOperationRequestBody,
   ReservationPaymentOperationResponse,
   ReservationPaymentOperations,
   ReservationPaymentPaths,

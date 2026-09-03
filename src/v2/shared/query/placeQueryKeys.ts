@@ -27,6 +27,8 @@ export const placeQueryKeys = {
     [...placeQueryKeys.reviews(placeId), params] as const,
   availabilities: (placeId: number) =>
     [...placeQueryKeys.entity(placeId), 'availabilities'] as const,
+  menus: (placeId: number) =>
+    [...placeQueryKeys.entity(placeId), 'menus'] as const,
   recommendations: () => [...placeQueryKeys.all, 'recommendations'] as const,
   recommendationExplanations: () =>
     [...placeQueryKeys.recommendations(), 'explanation'] as const,

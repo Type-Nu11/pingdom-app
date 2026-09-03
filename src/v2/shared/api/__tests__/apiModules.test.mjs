@@ -134,7 +134,7 @@ test('API modules keep operation paths, params, bodies, and documented response 
       index === 2
         ? result.checkIns.length === 0 && result.page === 1
         : index === 15 || index === 18
-        ? result.contract === response.contract && result.totalCount === 0
+        ? result.contract === response.contract && result.totalElements === 0
         : index === 28 || index === 29 || index === 32
         ? result === undefined
         : result === response),

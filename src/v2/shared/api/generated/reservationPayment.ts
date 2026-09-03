@@ -4,6 +4,24 @@
  */
 
 export interface paths {
+    "/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 내 예약 목록 조회 */
+        get: operations["listMyReservations"];
+        put?: never;
+        /** 예약 생성 */
+        post: operations["createReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reservations/{reservationId}": {
         parameters: {
             query?: never;
@@ -11,7 +29,46 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_5"];
+        /**
+         * 내 예약 상세 조회
+         * @description 활성 일반 사용자는 본인 예약만 조회할 수 있습니다.
+         *     아직 확정되지 않은 예약의 confirmedAt과 취소되지 않은 예약의 canceledAt은 null입니다.
+         */
+        get: operations["getMyReservation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reservations/{reservationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 내 예약 취소 */
+        post: operations["cancelMyReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/places/{placeId}/availabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 장소 예약 가능 시간 조회 */
+        get: operations["listPlaceAvailabilities"];
         put?: never;
         post?: never;
         delete?: never;
@@ -27,7 +84,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_7"];
+        /**
+         * 내 결제 목록 조회
+         * @description 결제 내역이 없으면 payments가 빈 배열인 200 응답을 반환합니다.
+         */
+        get: operations["listMyPayments"];
         put?: never;
         post?: never;
         delete?: never;
@@ -43,7 +104,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_7"];
+        /**
+         * 내 결제 상세 조회
+         * @description 본인 결제만 조회할 수 있으며, 실패·환불 상태별 nullable 필드는 응답에 포함됩니다.
+         */
+        get: operations["getMyPayment"];
         put?: never;
         post?: never;
         delete?: never;
@@ -56,53 +121,67 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @description 관광객 예약 응답 */
-        ReservationResponse: {
-            /** Format: int64 */
+        /** @description 예약 가능 시간 응답 */
+        AvailabilityResponse: {
+            /**
+             * Format: int64
+             * @example 77
+             */
             id: number;
-            /** Format: int64 */
-            touristUserId: number;
-            /** Format: int64 */
-            availabilityId: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @example 70069
+             */
+            placeId: number;
+            /**
+             * Format: int64
+             * @description GENERAL은 null이며 TICKET/CLASS는 상품 ID입니다.
+             * @example 12
+             */
             productId: number | null;
-            /** @enum {string} */
+            /**
+             * @description 예약 대상 유형
+             * @example TICKET
+             * @enum {string}
+             */
             productType: "GENERAL" | "TICKET" | "CLASS";
-            /** Format: int32 */
-            quantity: number;
-            /** @enum {string} */
-            status: "PENDING" | "CONFIRMED" | "CANCELED";
+            /**
+             * @description GENERAL은 null이며 TICKET/CLASS는 상품명입니다.
+             * @example 이월드 오후 입장권
+             */
+            productName: string | null;
             /** Format: date-time */
-            createdAt: string;
+            startsAt: string;
             /** Format: date-time */
-            confirmedAt: string | null;
-            /** Format: date-time */
-            canceledAt: string | null;
-            /** Format: date-time */
-            updatedAt: string;
+            endsAt: string;
+            /**
+             * Format: int32
+             * @example 100
+             */
+            totalCapacity: number;
+            /**
+             * Format: int32
+             * @example 42
+             */
+            remainingCapacity: number;
+            /**
+             * @example ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
         };
-        /** @description 관광객 결제 응답 */
-        PaymentResponse: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            reservationId: number;
-            provider: string;
-            providerPaymentId: string | null;
-            /** Format: int64 */
-            amountMinor: number | null;
-            currency: string | null;
-            /** @enum {string} */
-            status: "PROCESSING" | "PAID" | "REFUND_PROCESSING" | "FAILED" | "REFUNDED";
-            failureCode: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            paidAt: string | null;
-            /** Format: date-time */
-            failedAt: string | null;
-            /** Format: date-time */
-            refundedAt: string | null;
+        /** @description 에러 응답 */
+        ErrorResponse: {
+            /**
+             * @description 에러 메시지
+             * @example 유효하지 않은 토큰입니다.
+             */
+            message: string;
+            /**
+             * @description 도메인 에러 코드. 일부 공통 검증 오류에서는 제공되지 않을 수 있습니다.
+             * @example INVALID_TOKEN
+             */
+            code?: string | null;
         };
         /** @description 관광객 결제 목록 페이지 응답 */
         PaymentPageResponse: {
@@ -117,12 +196,120 @@ export interface components {
             totalPages: number;
             hasNext: boolean;
         };
-        ErrorResponse: {
-            message: string;
-            code?: string | null;
+        /** @description 관광객 결제 응답 */
+        PaymentResponse: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            reservationId: number;
+            provider: string;
+            /** @description 결제가 PAID 상태가 되기 전에는 null입니다. */
+            providerPaymentId: string | null;
+            /**
+             * Format: int64
+             * @description 결제가 성공하기 전에는 null입니다.
+             */
+            amountMinor: number | null;
+            /** @description 결제가 성공하기 전에는 null입니다. */
+            currency: string | null;
+            /** @enum {string} */
+            status: "PROCESSING" | "PAID" | "REFUND_PROCESSING" | "FAILED" | "REFUNDED";
+            /** @description 결제가 FAILED 상태일 때만 제공됩니다. */
+            failureCode: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description 결제가 PAID, REFUND_PROCESSING 또는 REFUNDED 상태가 되기 전에는 null입니다.
+             */
+            paidAt: string | null;
+            /**
+             * Format: date-time
+             * @description 결제가 FAILED 상태일 때만 제공됩니다.
+             */
+            failedAt: string | null;
+            /**
+             * Format: date-time
+             * @description 결제가 REFUNDED 상태가 되기 전에는 null입니다.
+             */
+            refundedAt: string | null;
         };
+        ReservationCreateRequest: {
+            /** Format: int64 */
+            availabilityId: number;
+            idempotencyKey: string;
+            /** Format: int32 */
+            quantity?: number;
+            bookerName: string;
+            bookerPhone: string;
+            requestNote?: string;
+        };
+        ReservationPageResponse: {
+            reservations?: components["schemas"]["ReservationResponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            limit?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            hasNext?: boolean;
+        };
+        /** @description 관광객 예약 응답 */
+        ReservationResponse: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            touristUserId: number;
+            /** Format: int64 */
+            availabilityId: number;
+            /**
+             * Format: int64
+             * @description 상품 스냅샷이 없는 예약에서는 null입니다.
+             */
+            productId: number | null;
+            /** @enum {string} */
+            productType: "GENERAL" | "TICKET" | "CLASS";
+            /** Format: int32 */
+            quantity: number;
+            /** Format: date-time */
+            reservationStartsAt: string | null;
+            /** Format: date-time */
+            reservationEndsAt: string | null;
+            bookerName: string | null;
+            bookerPhone: string | null;
+            requestNote: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "CONFIRMED" | "REJECTED" | "CANCELED";
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description 예약이 CONFIRMED 상태가 되기 전에는 null입니다.
+             */
+            confirmedAt: string | null;
+            /** Format: int64 */
+            reviewedBy?: number;
+            /** Format: date-time */
+            reviewedAt?: string;
+            reviewReason?: string;
+            /** Format: date-time */
+            rejectedAt?: string;
+            /**
+             * Format: date-time
+             * @description 예약이 CANCELED 상태가 되기 전에는 null입니다.
+             */
+            canceledAt: string | null;
+            /** Format: int64 */
+            canceledBy?: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description 필드 검증 오류 응답 */
         ValidationErrorResponse: {
             message: string;
+            /** @example VALIDATION_FAILED */
             code: string;
             errors: {
                 [key: string]: string;
@@ -137,7 +324,108 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    get_5: {
+    listMyReservations: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReservationPageResponse"];
+                };
+            };
+            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createReservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReservationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description 예약 생성 성공 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReservationResponse"];
+                };
+            };
+            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMyReservation: {
         parameters: {
             query?: never;
             header?: never;
@@ -175,7 +463,7 @@ export interface operations {
                     "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description 예약을 찾을 수 없음 */
+            /** @description 예약을 찾을 수 없음 (RESERVATION_NOT_FOUND) */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -186,7 +474,87 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    cancelMyReservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reservationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReservationResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPlaceAvailabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                placeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AvailabilityResponse"][];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMyPayments: {
         parameters: {
             query?: {
                 page?: number;
@@ -207,7 +575,7 @@ export interface operations {
                     "*/*": components["schemas"]["PaymentPageResponse"];
                 };
             };
-            /** @description 페이지 요청 값 검증 실패 */
+            /** @description 페이지 요청 값 검증 실패 (VALIDATION_FAILED) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -225,7 +593,7 @@ export interface operations {
                     "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description 활성 일반 사용자 계정이 아님 */
+            /** @description 활성 일반 사용자 계정이 아님 (PAYMENT_FORBIDDEN) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -236,7 +604,7 @@ export interface operations {
             };
         };
     };
-    get_7: {
+    getMyPayment: {
         parameters: {
             query?: never;
             header?: never;
@@ -274,7 +642,7 @@ export interface operations {
                     "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description 결제 거래를 찾을 수 없음 */
+            /** @description 결제 거래를 찾을 수 없음 (PAYMENT_NOT_FOUND) */
             404: {
                 headers: {
                     [name: string]: unknown;

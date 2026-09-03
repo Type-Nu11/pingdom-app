@@ -18,6 +18,26 @@ export type ReservationPaymentOperationQuery<
   ? NonNullable<Query>
   : never;
 
+export type ReservationPaymentOperationPath<
+  Name extends ReservationPaymentOperationName,
+> = operations[Name]['parameters'] extends { path: infer Path }
+  ? Path
+  : never;
+
+export type ReservationPaymentOperationRequestBody<
+  Name extends ReservationPaymentOperationName,
+> = operations[Name] extends {
+  requestBody: { content: { 'application/json': infer Body } };
+}
+  ? Body
+  : never;
+
+/**
+ * The upstream `app` group serializes reservation and payment success bodies
+ * under a wildcard media type rather than `application/json`, so this reads the
+ * single media type by key instead of pinning `application/json` the way the
+ * `mvp` contract helper does.
+ */
 export type ReservationPaymentOperationResponse<
   Name extends ReservationPaymentOperationName,
   Status extends keyof operations[Name]['responses'],

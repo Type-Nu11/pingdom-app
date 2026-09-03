@@ -29,14 +29,18 @@ describe('reservation mutation cache refresh', () => {
     let invalidationFinished = false;
     jest.spyOn(reservationApi, 'createReservation').mockResolvedValue({
       availabilityId: 7,
+      bookerName: '홍길동',
+      bookerPhone: '010-1234-5678',
       canceledAt: null,
-      completedAt: null,
       confirmedAt: null,
       createdAt: '2026-09-02T00:00:00Z',
       id: 21,
       productId: 11,
       productType: 'GENERAL',
       quantity: 2,
+      requestNote: null,
+      reservationEndsAt: '2026-09-02T01:00:00Z',
+      reservationStartsAt: '2026-09-02T00:30:00Z',
       status: 'PENDING',
       touristUserId: 3,
       updatedAt: '2026-09-02T00:00:00Z',
@@ -54,13 +58,15 @@ describe('reservation mutation cache refresh', () => {
 
     await act(async () => result.current.mutateAsync({
       availabilityId: 7,
+      bookerName: '홍길동',
+      bookerPhone: '010-1234-5678',
       idempotencyKey: 'issue-295-create',
       quantity: 2,
     }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(invalidationFinished).toBe(false);
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: reservationQueryKeys.all });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: reservationQueryKeys.lists() });
 
     await act(async () => {
       finishInvalidation();
@@ -72,14 +78,18 @@ describe('reservation mutation cache refresh', () => {
     let finishInvalidation!: () => void;
     jest.spyOn(reservationApi, 'cancelReservation').mockResolvedValue({
       availabilityId: 7,
+      bookerName: '홍길동',
+      bookerPhone: '010-1234-5678',
       canceledAt: '2026-09-02T00:01:00Z',
-      completedAt: null,
       confirmedAt: null,
       createdAt: '2026-09-02T00:00:00Z',
       id: 21,
       productId: 11,
       productType: 'GENERAL',
       quantity: 2,
+      requestNote: null,
+      reservationEndsAt: '2026-09-02T01:00:00Z',
+      reservationStartsAt: '2026-09-02T00:30:00Z',
       status: 'CANCELED',
       touristUserId: 3,
       updatedAt: '2026-09-02T00:01:00Z',

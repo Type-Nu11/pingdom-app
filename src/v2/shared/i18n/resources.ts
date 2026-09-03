@@ -150,6 +150,25 @@ export const resources = {
           title: 'Something went wrong',
         },
       },
+      placeMenu: {
+        accessibility: {
+          image: '{{name}} menu image',
+          imageUnavailable: 'No image for {{name}}',
+          price: 'Price: {{price}}',
+          status: '{{name}} status: {{status}}',
+        },
+        error: {
+          notFound: 'The place details and menu data are temporarily out of sync. Refresh this menu or return to the map.',
+          title: 'Could not load the menu.',
+        },
+        empty: 'No menu has been added yet.',
+        imageUnavailable: 'No image',
+        loading: 'Loading menu…',
+        priceUnavailable: 'Price unavailable',
+        retry: 'Try again',
+        soldOut: 'Sold out',
+        title: 'Menu',
+      },
       examplePlaces: {
         count: '{{count}} places',
         englishMenu: 'English menu: {{status}}',
@@ -984,6 +1003,25 @@ export const resources = {
           retry: '다시 시도',
           title: '문제가 발생했습니다',
         },
+      },
+      placeMenu: {
+        accessibility: {
+          image: '{{name}} 메뉴 이미지',
+          imageUnavailable: '{{name}} 메뉴 이미지 없음',
+          price: '가격: {{price}}',
+          status: '{{name}} 상태: {{status}}',
+        },
+        error: {
+          notFound: '장소 상세와 메뉴 데이터가 일시적으로 일치하지 않습니다. 메뉴를 새로고침하거나 지도로 돌아가 주세요.',
+          title: '메뉴를 불러오지 못했습니다.',
+        },
+        empty: '등록된 메뉴가 없습니다.',
+        imageUnavailable: '이미지 없음',
+        loading: '메뉴를 불러오는 중입니다…',
+        priceUnavailable: '가격 정보 없음',
+        retry: '다시 시도',
+        soldOut: '품절',
+        title: '메뉴',
       },
       examplePlaces: {
         count: '장소 {{count}}개',

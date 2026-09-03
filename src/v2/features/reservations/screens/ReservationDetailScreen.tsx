@@ -7,6 +7,11 @@ import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import { useAllPayments } from '../../payments/hooks/usePayments';
 import { getPaymentAmount, getPaymentStatusView } from '../../payments/model/paymentPresentation';
 import { ApiErrorState, EmptyState, LoadingState } from '../../../shared/components';
+import {
+  formatReservationWindow,
+  maskBookerName,
+  maskBookerPhone,
+} from '../model/reservationBooker';
 import { getReservationStatusView } from '../model/reservationPresentation';
 import { useReservationDetail } from '../hooks/useReservations';
 
@@ -19,7 +24,7 @@ export default function ReservationDetailScreen({
   onBack,
   reservationId,
 }: ReservationDetailScreenProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const reservationQuery = useReservationDetail(reservationId);
   const paymentsQuery = useAllPayments();
 
@@ -46,6 +51,10 @@ export default function ReservationDetailScreen({
 
   const reservation = reservationQuery.data;
   const reservationStatus = getReservationStatusView(reservation.status);
+  const language = i18n.resolvedLanguage ?? i18n.language;
+  const reservationWindow = formatReservationWindow(reservation, language);
+  const maskedBookerName = maskBookerName(reservation.bookerName);
+  const maskedBookerPhone = maskBookerPhone(reservation.bookerPhone);
   const linkedPayments = paymentsQuery.data?.filter(
     (payment) => payment.reservationId === reservation.id,
   ) ?? [];
@@ -82,6 +91,32 @@ export default function ReservationDetailScreen({
           <Field>
             <Eyebrow>{t('reservation.detail.quantity')}</Eyebrow>
             <Value>{reservation.quantity}</Value>
+          </Field>
+          <Field>
+            <Eyebrow>{t('reservation.detail.reservationWindow')}</Eyebrow>
+            <Value testID="v2-reservation-detail-window">
+              {reservationWindow ?? t('reservation.detail.windowPending')}
+            </Value>
+          </Field>
+          <Field>
+            <Eyebrow>{t('reservation.detail.bookerName')}</Eyebrow>
+            <Value testID="v2-reservation-detail-booker-name">
+              {maskedBookerName ?? t('reservation.detail.bookerHidden')}
+            </Value>
+          </Field>
+          <Field>
+            <Eyebrow>{t('reservation.detail.bookerPhone')}</Eyebrow>
+            <Value testID="v2-reservation-detail-booker-phone">
+              {maskedBookerPhone ?? t('reservation.detail.bookerHidden')}
+            </Value>
+          </Field>
+          <Field>
+            <Eyebrow>{t('reservation.detail.requestNote')}</Eyebrow>
+            <Value testID="v2-reservation-detail-request-note">
+              {reservation.requestNote?.trim()
+                ? reservation.requestNote
+                : t('reservation.detail.noRequestNote')}
+            </Value>
           </Field>
           <Divider />
           <NoticeTitle>{t('reservation.detail.payments')}</NoticeTitle>

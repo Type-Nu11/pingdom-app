@@ -66,12 +66,10 @@ import { createFocusedRecommendationMarker } from '../utils/recommendationMarker
 import { selectMapExplorationPlaceIds } from '../utils/mapExplorationPlaceIds';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
 import { PlaceCouponCta } from '../../offers-coupons';
-import { FadeSlideTransition } from '../../../shared/motion';
 import { LocationStatusOverlay } from '../components/MapStatusOverlays';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
-const MAP_SECTION_DIRECTION = { map: 0, favorites: 1, reservations: 2 } as const;
 
 const toDecisionPlace = (place: Place): DecisionPlace => ({
   ...place,
@@ -222,7 +220,7 @@ export default function MapScreen({
   );
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
-  const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
+  const { jumpTo, panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
     collapsedTranslateY,
     expandedTranslateY,
     initialSnapPoint: 'medium',
@@ -529,6 +527,11 @@ export default function MapScreen({
   const handleSearchFocus = () => {
     setIsSearchOpen(true);
   };
+  const openMapSection = useCallback((nextSection: 'favorites' | 'map' | 'reservations') => {
+    setContent({ type: 'home' });
+    setMapSection(nextSection);
+    jumpTo('medium');
+  }, [jumpTo]);
   const handleMapRefresh = useCallback(async () => {
     if (mapRefreshLock.current) return;
 
@@ -622,7 +625,6 @@ export default function MapScreen({
       [{ text: t('map.search.confirm') }],
     );
   };
-  const handleCoupon = () => snapTo('expanded');
   const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
     try {
       await togglePlaceBookmark(place, nextBookmarked);
@@ -681,10 +683,8 @@ export default function MapScreen({
           query={query}
           showCategories={!isExpandedPlaceDetail}
         />
-        <FadeSlideTransition
-          direction={MAP_SECTION_DIRECTION[mapSection]}
+        <View
           pointerEvents="box-none"
-          stateKey={mapSection}
           style={styles.sectionTransition}
           testID={`map-section-transition-${mapSection}`}
         >
@@ -706,9 +706,7 @@ export default function MapScreen({
               else snapTo('medium');
             }}
             onOpenMap={() => {
-              setMapSection('map');
-              setContent({ type: 'home' });
-              snapTo('medium');
+              openMapSection('map');
             }}
             onOpenRecommendations={() => {
               setMapSection('map');
@@ -716,8 +714,7 @@ export default function MapScreen({
               snapTo('expanded');
             }}
             onOpenReservations={() => {
-              setMapSection('reservations');
-              snapTo('medium');
+              openMapSection('reservations');
             }}
             onLoadMore={() => void fetchNextFavoritePage()}
             onRetry={() => void refetchFavorites()}
@@ -748,13 +745,10 @@ export default function MapScreen({
               else snapTo('medium');
             }}
             onOpenFavorites={() => {
-              setMapSection('favorites');
-              snapTo('medium');
+              openMapSection('favorites');
             }}
             onOpenMap={() => {
-              setMapSection('map');
-              setContent({ type: 'home' });
-              snapTo('medium');
+              openMapSection('map');
             }}
             onOpenRecommendations={() => {
               setMapSection('map');
@@ -782,13 +776,13 @@ export default function MapScreen({
                 onRequestSignIn={onSignIn}
                 onViewMyCoupons={onOpenCoupons}
                 placeId={selectedPlace.id}
+                variant="compact"
               />
             ) : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
-            onCouponPress={handleCoupon}
             onCreateReservation={(place, imageUrl) => {
               if (!onCreateReservation || reservationNavigationLock.current) return;
               reservationNavigationLock.current = true;
@@ -808,16 +802,14 @@ export default function MapScreen({
               else snapTo('medium');
             }}
             onOpenLikedPlaces={() => {
-              setMapSection('favorites');
-              snapTo('medium');
+              openMapSection('favorites');
             }}
             onOpenRecommendations={() => {
               setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
             onOpenSavedPlaces={() => {
-              setMapSection('reservations');
-              snapTo('medium');
+              openMapSection('reservations');
             }}
             onStartVisitVerification={onStartVisitVerification
               ? (place) => onStartVisitVerification(place.id)
@@ -849,7 +841,7 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
-        </FadeSlideTransition>
+        </View>
       {!isSearchOpen && content.type !== 'place-preview' && onOpenVisitVerification ? (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
