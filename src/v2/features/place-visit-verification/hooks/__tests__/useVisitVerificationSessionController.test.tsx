@@ -102,6 +102,69 @@ test('foreground start omits placeId, coalesces rapid calls, and preserves serve
   view.unmount();
 });
 
+test('foreground start accepts a server-recovered completed session and keeps its selected place', async () => {
+  const recoveredCompletion = {
+    ...inProgress,
+    placeId: 88,
+    status: 'COMPLETED' as const,
+    requiredRadiusMeters: 500,
+    requiredDwellSeconds: 30,
+    verifiedDwellSeconds: 30,
+    remainingSeconds: 0,
+    nextObservationRecommendedAt: null,
+    completedCheckInId: 7011,
+    reviewEligible: true,
+  };
+  mockForegroundStartMutateAsync.mockResolvedValue(recoveredCompletion);
+  const getLocation = jest.fn().mockResolvedValue({ status: 'granted', coordinate });
+  const setTimer = jest.fn();
+  const view = await renderHook(() => useVisitVerificationSessionController(
+    { mode: 'foreground' },
+    { getLocation, setTimer },
+  ));
+
+  await act(async () => { await view.result.current.start(); });
+
+  expect(mockForegroundStartMutateAsync).toHaveBeenCalledWith({
+    body: coordinate,
+    signal: expect.any(AbortSignal),
+  });
+  expect(view.result.current.session).toEqual(recoveredCompletion);
+  expect(view.result.current.session?.placeId).toBe(88);
+  expect(view.result.current.session?.completedCheckInId).toBe(7011);
+  expect(view.result.current.session?.reviewEligible).toBe(true);
+  expect(setTimer).not.toHaveBeenCalled();
+  expect(mockObservationMutateAsync).not.toHaveBeenCalled();
+  view.unmount();
+});
+
+test('foreground start resumes a server-recovered active session at its recommended observation time', async () => {
+  const recoveredActive = {
+    ...inProgress,
+    placeId: 88,
+    verifiedDwellSeconds: 20,
+    remainingSeconds: 55,
+  };
+  mockForegroundStartMutateAsync.mockResolvedValue(recoveredActive);
+  const setTimer = jest.fn(() => 1 as unknown as ReturnType<typeof setTimeout>);
+  const view = await renderHook(() => useVisitVerificationSessionController(
+    { mode: 'foreground' },
+    {
+      getLocation: jest.fn().mockResolvedValue({ status: 'granted', coordinate }),
+      now: () => Date.parse('2026-09-02T01:00:00Z'),
+      setTimer,
+    },
+  ));
+
+  await act(async () => { await view.result.current.start(); });
+
+  expect(view.result.current.session).toEqual(recoveredActive);
+  expect(view.result.current.session?.placeId).toBe(88);
+  expect(setTimer).toHaveBeenCalledWith(expect.any(Function), 15_000);
+  expect(mockRecoverMutateAsync).not.toHaveBeenCalled();
+  view.unmount();
+});
+
 test('foreground screen reentry recovers the remembered session without starting another one', async () => {
   rememberActiveForegroundVisitVerificationSession(inProgress);
   const recovered = { ...inProgress, verifiedDwellSeconds: 35, remainingSeconds: 40 };

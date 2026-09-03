@@ -35,6 +35,38 @@ for (const schema of [
   if (!document.components?.schemas?.[schema]) failures.push(`${schema} missing`);
 }
 
+const foregroundOperation = document.paths?.['/visit-verification-sessions/foreground']?.post;
+const foregroundRequestRef = foregroundOperation?.requestBody?.content?.['application/json']?.schema?.$ref;
+if (foregroundRequestRef !== '#/components/schemas/ForegroundVisitVerificationStartRequest') {
+  failures.push('foreground start request schema changed');
+}
+
+const foregroundRequest = document.components?.schemas?.ForegroundVisitVerificationStartRequest;
+const foregroundFields = Object.keys(foregroundRequest?.properties ?? {}).sort();
+const expectedForegroundFields = ['accuracyMeters', 'latitude', 'longitude', 'observedAt'];
+if (JSON.stringify(foregroundFields) !== JSON.stringify(expectedForegroundFields)) {
+  failures.push(`foreground start fields changed: ${foregroundFields.join(', ')}`);
+}
+if (foregroundFields.includes('placeId')) failures.push('foreground start must not accept placeId');
+if (JSON.stringify([...(foregroundRequest?.required ?? [])].sort()) !== JSON.stringify(expectedForegroundFields)) {
+  failures.push('foreground start required fields changed');
+}
+
+const foregroundResponseRef = foregroundOperation?.responses?.[201]?.content?.['*/*']?.schema?.$ref;
+if (foregroundResponseRef !== '#/components/schemas/VisitVerificationSessionResponse') {
+  failures.push('foreground start 201 response schema changed');
+}
+const foregroundErrorStatuses = [400, 401, 403, 404, 409, 422];
+for (const status of foregroundErrorStatuses) {
+  if (!foregroundOperation?.responses?.[status]) failures.push(`foreground start ${status} response missing`);
+}
+if (!foregroundOperation?.description?.includes('진행 중인 동일 장소 세션은 우선 복구')) {
+  failures.push('foreground active-session recovery contract missing');
+}
+if (!foregroundOperation?.description?.includes('GPS 정확도 두 배')) {
+  failures.push('foreground nearest-place disambiguation contract missing');
+}
+
 function visit(value, location = '#') {
   if (!value || typeof value !== 'object') return;
   if (typeof value.$ref === 'string') {

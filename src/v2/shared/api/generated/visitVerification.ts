@@ -35,7 +35,7 @@ export interface paths {
         put?: never;
         /**
          * 좌표 기반 foreground 방문 인증 시작
-         * @description 장소 ID를 받지 않고 서버가 현재 좌표 주변의 공개·운영 중 장소를 판정해 인증 세션을 시작합니다.
+         * @description 장소 ID를 받지 않고 서버가 현재 좌표 주변의 공개·운영 중 장소를 판정해 인증 세션을 시작합니다. 진행 중인 동일 장소 세션은 우선 복구하며, 새 후보는 거리순으로 비교해 1·2순위 거리 차이가 GPS 정확도 두 배보다 클 때만 가장 가까운 장소를 선택합니다.
          */
         post: operations["startForeground"];
         delete?: never;
