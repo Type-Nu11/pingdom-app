@@ -154,7 +154,6 @@ type MapBottomSheetProps = {
   height: number;
   mediumTranslateY: number;
   onBackHome: () => void;
-  onCouponPress: (place: DecisionPlace) => void;
   onCreateReservation?: (place: DecisionPlace, imageUrl?: string) => void;
   onOpenRecommendations?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
@@ -1289,12 +1288,9 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
   );
 };
 
-type PreviewActionKind = 'arrival' | 'coupon' | 'departure' | 'directions' | 'reservation' | 'share';
+type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
 const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
-  if (kind === 'coupon') {
-    return <TicketAsset height={13} width={13} />;
-  }
   if (kind === 'share') {
     return (
       <Svg height={13} viewBox="0 0 16 16" width={13}>
@@ -1344,7 +1340,6 @@ const PreviewContent = ({
   fallbackContent,
   imageUrl,
   onBack,
-  onCoupon,
   onDetail,
   onOpenImages,
   onReserve,
@@ -1359,7 +1354,6 @@ const PreviewContent = ({
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
-  onCoupon: () => void;
   onDetail: () => void;
   onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
@@ -1447,17 +1441,10 @@ const PreviewContent = ({
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip
           kind="arrival"
-          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          label={t('map.card.actions.arrive')}
           onPress={onVerify}
         />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
-        {fallbackContent?.coupons?.length ? (
-          <PreviewActionChip
-            kind="coupon"
-            label={t('map.decision.getCoupon')}
-            onPress={onCoupon}
-          />
-        ) : null}
         <PreviewActionChip
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
@@ -1603,7 +1590,7 @@ const ExpandedPlaceContent = ({
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip
           kind="arrival"
-          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          label={t('map.card.actions.arrive')}
           onPress={onVerify}
         />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
@@ -2036,7 +2023,6 @@ export default function MapBottomSheet({
   isBookmarkStateLoading = false,
   mediumTranslateY,
   onBackHome,
-  onCouponPress,
   onCreateReservation,
   onDetailPress,
   onHandlePress,
@@ -2237,7 +2223,6 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
-            onCoupon={() => onCouponPress(selectedPlace)}
             onDetail={() => onDetailPress(selectedPlace)}
             onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
               imageUrls: nextImageUrls,

@@ -635,7 +635,6 @@ export default function MapScreen({
       [{ text: t('map.search.confirm') }],
     );
   };
-  const handleCoupon = () => snapTo('expanded');
   const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
     try {
       await togglePlaceBookmark(place, nextBookmarked);
@@ -801,7 +800,6 @@ export default function MapScreen({
             height={fullSheetHeight}
             mediumTranslateY={mediumTranslateY}
             onBackHome={handleBackHome}
-            onCouponPress={handleCoupon}
             onCreateReservation={(place, imageUrl) => {
               if (!onCreateReservation || reservationNavigationLock.current) return;
               reservationNavigationLock.current = true;
