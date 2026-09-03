@@ -57,6 +57,18 @@ export const useBottomSheet = ({
     ]).start();
   };
 
+  const jumpTo = (nextSnapPoint: BottomSheetSnapPoint) => {
+    const nextValue = snapValuesRef.current[nextSnapPoint];
+
+    sheetChromeBottom.stopAnimation();
+    sheetTranslateY.stopAnimation();
+    sheetOffsetY.current = nextValue;
+    snapPointRef.current = nextSnapPoint;
+    setSnapPoint(nextSnapPoint);
+    sheetTranslateY.setValue(nextValue);
+    sheetChromeBottom.setValue(nextValue);
+  };
+
   useEffect(() => {
     const nextValue = snapValues[snapPointRef.current];
 
@@ -123,6 +135,7 @@ export const useBottomSheet = ({
 
   return {
     isExpanded: snapPoint === 'expanded',
+    jumpTo,
     panHandlers: panResponder.panHandlers,
     sheetChromeBottom,
     sheetTranslateY,

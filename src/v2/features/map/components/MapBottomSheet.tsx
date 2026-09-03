@@ -2091,7 +2091,7 @@ export default function MapBottomSheet({
             highlightHeight={40}
             highlightOpacity={0.10}
             rimColor="rgba(255,255,255,0.60)"
-            tintColor={isExpandedPlaceDetail ? '#FFFFFF' : 'rgba(255,255,255,0.92)'}
+            tintColor="#FFFFFF"
             topRimOnly
           />
         </GlassStyles.SheetChrome>
