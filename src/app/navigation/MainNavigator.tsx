@@ -286,16 +286,7 @@ const VisitVerificationSessionRouteScreen = ({
 }: MainScreenProps<'VisitVerificationSession'>) => {
   const commonProps = {
     onBack: navigation.goBack,
-    onWriteReview: ({ checkInId: value, placeId: placeValue }: {
-      checkInId: number;
-      placeId: number;
-    }) => {
-      const checkInId = parseCheckInId(value);
-      const placeId = parsePlaceId(placeValue);
-      if (checkInId && placeId) {
-        navigation.navigate(MAIN_ROUTES.VisitVerificationReview, { checkInId, placeId });
-      }
-    },
+    onComplete: () => navigation.replace(MAIN_ROUTES.VisitVerificationPlaces),
   };
 
   return (

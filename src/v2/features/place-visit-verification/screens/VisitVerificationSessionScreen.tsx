@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,7 +32,7 @@ const phaseTranslationKeys: Partial<Record<VisitVerificationSessionPhase, string
 
 type CommonProps = {
   onBack: () => void;
-  onWriteReview: (selection: { checkInId: number; placeId: number }) => void;
+  onComplete: () => void;
 };
 
 type Props = CommonProps & (
@@ -43,7 +43,7 @@ type Props = CommonProps & (
 export default function VisitVerificationSessionScreen({
   mode = 'place',
   onBack,
-  onWriteReview,
+  onComplete,
   placeId,
 }: Props) {
   const { t } = useTranslation();
@@ -56,6 +56,7 @@ export default function VisitVerificationSessionScreen({
     session.completedCheckInId != null &&
     session.placeId != null;
   const completionMissing = session?.status === 'COMPLETED' && !completed;
+  const completionHandled = useRef(false);
   const statusKey = session?.status ? `visitVerification.session.status.${session.status}` : null;
   const stateTranslationKey = completionMissing
     ? 'visitVerification.session.completionMissing'
@@ -76,6 +77,12 @@ export default function VisitVerificationSessionScreen({
   useEffect(() => {
     if (mode === 'foreground' && controller.phase === 'idle') void controller.start();
   }, [controller.phase, controller.start, mode]);
+
+  useEffect(() => {
+    if (!completed || completionHandled.current) return;
+    completionHandled.current = true;
+    onComplete();
+  }, [completed, onComplete]);
 
   if (mode === 'foreground' && controller.phase === 'no-place') {
     return (
@@ -127,15 +134,6 @@ export default function VisitVerificationSessionScreen({
         ) : retryablePhase ? (
           <Button disabled={controller.isBusy} label={t('visitVerification.retry')} onPress={() => void controller.retry()} />
         ) : null}
-        {completed && session?.reviewEligible ? (
-          <Button
-            label={t('visitVerification.session.writeReview')}
-            onPress={() => onWriteReview({
-              checkInId: session.completedCheckInId!,
-              placeId: session.placeId!,
-            })}
-          />
-        ) : completed ? <State>{t('visitVerification.session.reviewUnavailable')}</State> : null}
       </Content>
     </Screen>
   );

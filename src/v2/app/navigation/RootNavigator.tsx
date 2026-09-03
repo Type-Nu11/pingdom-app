@@ -180,16 +180,7 @@ function VisitVerificationReviewRoute({ navigation, route }: V2ScreenProps<'Visi
 function VisitVerificationSessionRoute({ navigation, route }: V2ScreenProps<'VisitVerificationSession'>) {
   const commonProps = {
     onBack: navigation.goBack,
-    onWriteReview: ({ checkInId: value, placeId: placeValue }: {
-      checkInId: number;
-      placeId: number;
-    }) => {
-      const checkInId = parseCheckInId(value);
-      const placeId = parsePlaceId(placeValue);
-      if (checkInId && placeId) {
-        navigation.navigate(V2_ROUTES.VisitVerificationReview, { checkInId, placeId });
-      }
-    },
+    onComplete: () => navigation.replace(V2_ROUTES.VisitVerificationPlaces),
   };
   return route.params.mode === 'foreground' ? (
     <VisitVerificationSessionScreen mode="foreground" {...commonProps} />

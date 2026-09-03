@@ -91,7 +91,7 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
 }
 
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
-const Header = styled.View`height: 64px; flex-direction: row; align-items: center; padding: 0 24px;`;
+const Header = styled.View`height: 44px; flex-direction: row; align-items: center; padding: 0 16px;`;
 const BackButton = styled.Pressable`
   width: 44px;
   height: 44px;
@@ -105,11 +105,11 @@ const BackButton = styled.Pressable`
   shadow-opacity: 0.06;
   shadow-radius: 8px;
 `;
-const Title = styled.Text`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
+const Title = styled.Text`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 18px; line-height: 23px; font-weight: 500;`;
 const HeaderSpacer = styled.View`width: 44px;`;
 const Body = styled.View`flex: 1;`;
-const SectionTitle = styled.Text`padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px 0; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
-const List = styled(FlatList<VisitVerificationCandidate>).attrs(({ theme }) => ({ contentContainerStyle: { paddingBottom: theme.spacing.xxl, paddingHorizontal: theme.spacing.md } }))``;
+const SectionTitle = styled.Text`margin: 16px 24px; color: ${({ theme }) => theme.colors.textStrong}; font-size: 18px; line-height: 23px; font-weight: 700;`;
+const List = styled(FlatList<VisitVerificationCandidate>).attrs(({ theme }) => ({ contentContainerStyle: { paddingBottom: theme.spacing.xxl, paddingHorizontal: 24 } }))``;
 const Empty = styled.View`flex: 1; align-items: center; justify-content: center; padding: 24px; padding-bottom: 96px;`;
 const EmptyIcon = styled.View`width: 96px; height: 96px; align-items: center; justify-content: center; margin-bottom: 28px; border-radius: 48px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
 const EmptyMark = styled.Text`width: 38px; height: 48px; padding-top: 8px; text-align: center; color: ${({ theme }) => theme.colors.onPrimary}; font-size: 24px; font-weight: 900; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary}; overflow: hidden;`;
