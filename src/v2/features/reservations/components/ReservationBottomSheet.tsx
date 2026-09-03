@@ -11,15 +11,11 @@ import {
   type TextProps,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
 
 import MapAsset from '../../../../assets/v2/icons/place/maping_svg.svg';
-import PlaceRecommendAsset from '../../../../assets/v2/icons/place/placerecommend.svg';
-import StarAsset from '../../../../assets/v2/icons/place/star_svg.svg';
 import MyPlaceAsset from '../../../../assets/v2/icons/place/my_place.svg';
 import type { BottomSheetSnapPoint } from '../../map/hooks/useBottomSheet';
-import FrostedSurface from '../../map/components/FrostedSurface';
+import MapSheetBottomNavigation from '../../map/components/MapSheetBottomNavigation';
 import {
   RecommendationFeaturedCard,
   type DecisionPlace,
@@ -104,12 +100,12 @@ function ReservationPlaceCard({
       <View style={styles.savedPlaceHeading}>
         <View style={styles.savedPlaceText}>
           <View style={styles.savedNameRow}>
-            <Text numberOfLines={1} style={styles.savedPlaceName}>{place.name}</Text>
-            <Text style={styles.savedPlaceCategory}>
+            <Text accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceName}>{place.name}</Text>
+            <Text ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceCategory}>
               {t(`map.categories.${category}`, { defaultValue: place.category })}
             </Text>
           </View>
-          <Text numberOfLines={1} style={styles.savedPlaceMeta}>
+          <Text accessibilityLabel={`${formatDistance(place, i18n.language)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceMeta}>
             {formatDistance(place, i18n.language)} · {place.address}
           </Text>
         </View>
@@ -124,14 +120,6 @@ function ReservationPlaceCard({
     </Pressable>
   );
 }
-
-const ActiveReservationIcon = () => (
-  <Svg height={23} viewBox="0 0 24 24" width={23}>
-    <Path d="M3 10.2 12 2l9 8.2v8.3A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5Z" fill="#FF1956" />
-    <Path d="m8.2 12.4 2.4 2.4 5.2-5.2" fill="none" stroke="#FFFFFF" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
-  </Svg>
-);
-
 
 function NearbyReservationRail({
   bookmarkedPlaceIds,
@@ -196,87 +184,6 @@ function NearbyReservationRail({
   );
 }
 
-function BottomNavigation({
-  bottomInset,
-  onOpenFavorites,
-  onOpenMap,
-  onOpenRecommendations,
-  sheetTranslateY,
-}: {
-  bottomInset: number;
-  onOpenFavorites: () => void;
-  onOpenMap: () => void;
-  onOpenRecommendations: () => void;
-  sheetTranslateY: Animated.Value;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Animated.View
-      style={[
-        styles.navigationRow,
-        {
-          bottom: Math.max(24, bottomInset + 10),
-          transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
-        },
-      ]}
-    >
-      <View style={styles.navigationShadow}>
-        <FrostedSurface
-          cornerRadius={32}
-          glassEffectStyle="regular"
-          highlightOpacity={0}
-          rimColor="rgba(0,0,0,0.06)"
-          style={styles.navigationBar}
-          tintColor="#FFFFFF"
-        >
-          <Pressable
-            accessibilityLabel={t('reservation.common.map')}
-            accessibilityRole="button"
-            onPress={onOpenMap}
-            style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
-          >
-            <MapAsset color="#3B3B40" height={22} width={19} />
-            <Text style={styles.navLabel}>{t('reservation.common.map')}</Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel={t('reservation.common.favorites')}
-            accessibilityRole="button"
-            onPress={onOpenFavorites}
-            style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
-          >
-            <StarAsset color="#3B3B40" height={21} width={22} />
-            <Text style={styles.navLabel}>{t('reservation.common.favorites')}</Text>
-          </Pressable>
-          <View accessible accessibilityLabel={t('reservation.common.reservations')} accessibilityRole="tab" accessibilityState={{ selected: true }} style={styles.navItem}>
-            <View style={[styles.navItemSurface, styles.navItemActive]}>
-              <ActiveReservationIcon />
-              <Text style={[styles.navLabel, styles.navLabelActive]}>{t('reservation.common.reservations')}</Text>
-            </View>
-          </View>
-        </FrostedSurface>
-      </View>
-      <Pressable
-        accessibilityLabel={t('reservation.common.recommendations')}
-        accessibilityRole="button"
-        onPress={onOpenRecommendations}
-        style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
-      >
-        <FrostedSurface
-          cornerRadius={32}
-          glassEffectStyle="regular"
-          highlightOpacity={0}
-          pointerEvents="none"
-          rimColor="rgba(0,0,0,0.06)"
-          style={styles.sendButtonGlass}
-          tintColor="#FFFFFF"
-        >
-          <PlaceRecommendAsset height={23} width={23} />
-        </FrostedSurface>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
 export default function ReservationBottomSheet({
   bookmarkedPlaceIds,
   bookmarkPendingPlaceIds,
@@ -300,7 +207,6 @@ export default function ReservationBottomSheet({
   snapPoint,
 }: ReservationBottomSheetProps) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const reservations = useReservations({ limit: 20, page: 1 });
   const items = reservations.data?.reservations ?? [];
   const reservationPlaces = items.flatMap((reservation) => {
@@ -407,8 +313,8 @@ export default function ReservationBottomSheet({
           </View>
         </Animated.View>
       </GlassStyles.SheetInner>
-      <BottomNavigation
-        bottomInset={insets.bottom}
+      <MapSheetBottomNavigation
+        activeTab="reservations"
         onOpenFavorites={onOpenFavorites}
         onOpenMap={onOpenMap}
         onOpenRecommendations={onOpenRecommendations}
@@ -429,14 +335,6 @@ const styles: Record<string, object> = {
   nearbyEmpty: { alignItems: 'center', minHeight: 72, justifyContent: 'center' },
   nearbyEmptyText: { color: '#777982', fontSize: 12, fontWeight: '600' },
   nearbyRail: { gap: 16, paddingBottom: 4, paddingTop: 2 },
-  navItem: { alignItems: 'center', flex: 1, gap: 3, justifyContent: 'center' },
-  navItemActive: { backgroundColor: '#F7F7F8' },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', overflow: 'hidden', width: 68 },
-  navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600' },
-  navLabelActive: { color: '#FF245B', fontWeight: '700' },
-  navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 5 },
-  navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
-  navigationShadow: { backgroundColor: '#FFFFFF', borderRadius: 32, flex: 1 },
   pressed: { opacity: 0.72 },
   reservationCardItem: { marginBottom: 4 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
@@ -446,16 +344,14 @@ const styles: Record<string, object> = {
   savedImageRow: { borderRadius: 12, flexDirection: 'row', height: 114, overflow: 'hidden' },
   savedMoreButton: { alignItems: 'center', height: 28, justifyContent: 'center', width: 18 },
   savedMoreText: { color: '#3B3B40', fontSize: 21, lineHeight: 22 },
-  savedNameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4 },
+  savedNameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4, minWidth: 0 },
   savedPlaceCard: { borderBottomColor: '#E4E4E5', borderBottomWidth: 1, gap: 8, paddingBottom: 6, paddingTop: 6 },
-  savedPlaceCategory: { color: '#5E5E66', fontSize: 12, fontWeight: '500' },
+  savedPlaceCategory: { color: '#5E5E66', flexShrink: 1, fontSize: 12, fontWeight: '500', includeFontPadding: false, lineHeight: 16, minWidth: 0 },
   savedPlaceHeading: { alignItems: 'flex-start', flexDirection: 'row' },
-  savedPlaceMeta: { color: '#5E5E66', fontSize: 13, marginTop: 2 },
-  savedPlaceName: { color: '#3B3B40', flexShrink: 1, fontSize: 16, fontWeight: '800' },
-  savedPlaceText: { flex: 1 },
+  savedPlaceMeta: { color: '#5E5E66', flexShrink: 1, fontSize: 13, includeFontPadding: false, lineHeight: 18, marginTop: 2, minWidth: 0 },
+  savedPlaceName: { color: '#3B3B40', flexShrink: 1, fontSize: 16, fontWeight: '800', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
+  savedPlaceText: { flex: 1, minWidth: 0 },
   savedTitle: { color: '#000000', fontSize: 20, fontWeight: '800', marginBottom: 2, marginTop: 0 },
-  sendButton: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 32, height: 64, justifyContent: 'center', width: 64 },
-  sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   state: { alignItems: 'center', paddingTop: 34 },
   stateBody: { color: '#777982', fontSize: 11, marginTop: 4 },
   stateMark: { color: '#FF1956', fontSize: 20, fontWeight: '900' },

@@ -99,7 +99,11 @@ describe('ReservationBottomSheet', () => {
     await userEvent.setup().press(screen.getByTestId('reservation-place-card-901'));
     expect(onOpenReservation).toHaveBeenCalledWith(901);
     expect(screen.getAllByText('서버 카페')).toHaveLength(2);
-    expect(screen.getByText('여기서 0.1km · 대구광역시 달성군')).toBeVisible();
+    const address = screen.getByText('여기서 0.1km · 대구광역시 달성군');
+    expect(address).toBeVisible();
+    expect(address).toHaveProp('ellipsizeMode', 'tail');
+    expect(address).toHaveProp('numberOfLines', 1);
+    expect(address).toHaveStyle({ flexShrink: 1, minWidth: 0 });
   });
 
   test('예약함은 예약 회차가 속한 장소를 Figma 장소 카드로 표시한다', async () => {
@@ -132,7 +136,7 @@ describe('ReservationBottomSheet', () => {
     }));
     await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} onOpenMap={onOpenMap} />);
     expect(screen.getByRole('tab', { name: '예약', selected: true })).toBeVisible();
-    await userEvent.setup().press(screen.getByRole('button', { name: '지도' }));
+    await userEvent.setup().press(screen.getByRole('tab', { name: '지도' }));
     expect(onOpenMap).toHaveBeenCalledTimes(1);
   });
 
