@@ -79,6 +79,15 @@ export type MapPreviewFallbackContent = {
   events?: Array<{ period: string; title: string }>;
   imageState?: 'empty' | 'error' | 'loading' | 'ready';
   imageUrls: string[];
+  menuState?: 'empty' | 'error' | 'loading' | 'ready';
+  menus?: Array<{
+    description?: string;
+    id?: number;
+    imageUrl?: string;
+    name: string;
+    price: string;
+    status: 'AVAILABLE' | 'SOLD_OUT' | 'UNKNOWN';
+  }>;
   phone?: string;
   jibunAddress?: string;
   notice?: string;
@@ -146,7 +155,6 @@ type MapBottomSheetProps = {
   height: number;
   mediumTranslateY: number;
   onBackHome: () => void;
-  onCouponPress: (place: DecisionPlace) => void;
   onCreateReservation?: (place: DecisionPlace, imageUrl?: string) => void;
   onOpenRecommendations?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
@@ -173,6 +181,7 @@ type MapBottomSheetProps = {
   onRetryRecommendations: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
+  onRetryMenus?: () => void;
   onRetryReviews?: () => void;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
@@ -600,7 +609,15 @@ const RecommendationBookmarkButton = ({
   );
 };
 
-const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+const PreviewArtwork = ({
+  accessibilityLabel,
+  fallbackAccessibilityLabel,
+  imageUrl,
+}: {
+  accessibilityLabel?: string;
+  fallbackAccessibilityLabel?: string;
+  imageUrl?: string;
+}) => {
   const { t } = useTranslation();
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -612,7 +629,10 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
     const fallbackMessage = t(hasImageError ? 'map.sheet.imageError' : 'map.sheet.imageMissing');
 
     return (
-      <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
+      <View
+        accessibilityLabel={fallbackAccessibilityLabel ?? fallbackMessage}
+        style={styles.previewArtworkFallback}
+      >
         <MapPinIcon active size={28} />
         <Text style={styles.previewArtworkFallbackText}>{fallbackMessage}</Text>
       </View>
@@ -621,7 +641,7 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
 
   return (
     <Image
-      accessibilityLabel={t('map.sheet.image')}
+      accessibilityLabel={accessibilityLabel ?? t('map.sheet.image')}
       onError={() => setHasImageError(true)}
       resizeMode="cover"
       source={{ uri: imageUrl }}
@@ -1269,12 +1289,9 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
   );
 };
 
-type PreviewActionKind = 'arrival' | 'coupon' | 'departure' | 'directions' | 'reservation' | 'share';
+type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
 const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
-  if (kind === 'coupon') {
-    return <TicketAsset height={13} width={13} />;
-  }
   if (kind === 'share') {
     return (
       <Svg height={13} viewBox="0 0 16 16" width={13}>
@@ -1324,7 +1341,6 @@ const PreviewContent = ({
   fallbackContent,
   imageUrl,
   onBack,
-  onCoupon,
   onDetail,
   onOpenImages,
   onReserve,
@@ -1339,7 +1355,6 @@ const PreviewContent = ({
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
-  onCoupon: () => void;
   onDetail: () => void;
   onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
@@ -1427,17 +1442,10 @@ const PreviewContent = ({
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip
           kind="arrival"
-          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          label={t('map.card.actions.arrive')}
           onPress={onVerify}
         />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
-        {fallbackContent?.coupons?.length ? (
-          <PreviewActionChip
-            kind="coupon"
-            label={t('map.decision.getCoupon')}
-            onPress={onCoupon}
-          />
-        ) : null}
         <PreviewActionChip
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
@@ -1495,6 +1503,7 @@ const ExpandedPlaceContent = ({
   onVerify,
   onRetryAvailability,
   onRetryMedia,
+  onRetryMenus,
   onRetryReviews,
   onTabChange,
   onToggleBookmark,
@@ -1512,6 +1521,7 @@ const ExpandedPlaceContent = ({
   onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
+  onRetryMenus?: () => void;
   onRetryReviews?: () => void;
   onTabChange: (tab: PlaceDetailTab) => void;
   onToggleBookmark: () => void;
@@ -1581,7 +1591,7 @@ const ExpandedPlaceContent = ({
         <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip
           kind="arrival"
-          label={t(onVerify ? 'visitVerification.session.start' : 'map.card.actions.arrive')}
+          label={t('map.card.actions.arrive')}
           onPress={onVerify}
         />
         <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
@@ -1967,7 +1977,6 @@ export default function MapBottomSheet({
   isBookmarkStateLoading = false,
   mediumTranslateY,
   onBackHome,
-  onCouponPress,
   onCreateReservation,
   onDetailPress,
   onHandlePress,
@@ -1978,6 +1987,7 @@ export default function MapBottomSheet({
   onPlacePress,
   onRetryAvailability,
   onRetryMedia,
+  onRetryMenus,
   onRetryRecommendations,
   onRetryReviews,
   onToggleBookmark,
@@ -2151,6 +2161,7 @@ export default function MapBottomSheet({
               : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
+            onRetryMenus={onRetryMenus}
             onRetryReviews={onRetryReviews}
             onTabChange={setActivePlaceDetailTab}
             onToggleBookmark={() => void onToggleBookmark(
@@ -2166,7 +2177,6 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
-            onCoupon={() => onCouponPress(selectedPlace)}
             onDetail={() => onDetailPress(selectedPlace)}
             onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
               imageUrls: nextImageUrls,
@@ -2347,6 +2357,8 @@ const styles: Record<string, object> = {
   detailMenuImage: { borderRadius: 10, height: 64, overflow: 'hidden', width: 72 },
   detailMenuName: { color: '#303238', fontSize: 13, fontWeight: '800' },
   detailMenuPrice: { color: '#303238', fontSize: 12, fontWeight: '800', marginTop: 7 },
+  detailMenuStatus: { color: '#A15C00', fontSize: 11, fontWeight: '700', marginTop: 4 },
+  detailMenuStatusAvailable: { color: '#168A43' },
   detailMenuRow: {
     alignItems: 'center',
     borderBottomColor: '#ECEDEF',

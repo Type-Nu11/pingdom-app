@@ -8,31 +8,30 @@ import {
 
 const LABEL_KEYS: Record<ReservationStatus, string> = {
   CANCELED: 'reservation.list.statuses.canceled',
-  COMPLETED: 'reservation.list.statuses.completed',
   CONFIRMED: 'reservation.list.statuses.confirmed',
-  EXPIRED: 'reservation.list.statuses.expired',
-  NO_SHOW: 'reservation.list.statuses.noShow',
   PENDING: 'reservation.list.statuses.pending',
-  UNKNOWN: 'reservation.list.statuses.unknown',
+  REJECTED: 'reservation.list.statuses.rejected',
 };
 
 describe('RESERVATION_STATUSES', () => {
   it('covers the generated list contract exactly', () => {
     expect([...RESERVATION_STATUSES].sort()).toEqual([
       'CANCELED',
-      'COMPLETED',
       'CONFIRMED',
-      'EXPIRED',
-      'NO_SHOW',
       'PENDING',
-      'UNKNOWN',
+      'REJECTED',
     ]);
   });
 
   it('covers every status the scoped detail contract can return', () => {
-    // `GET /reservations/{id}` is typed by the reservation-payment snapshot,
-    // which the live server narrows to three states.
-    const detailStatuses: readonly ReservationDetailStatus[] = ['PENDING', 'CONFIRMED', 'CANCELED'];
+    // The list, create, and detail endpoints share the `reservation-payment`
+    // snapshot, so the detail union is a subset of the list union.
+    const detailStatuses: readonly ReservationDetailStatus[] = [
+      'PENDING',
+      'CONFIRMED',
+      'REJECTED',
+      'CANCELED',
+    ];
 
     for (const status of detailStatuses) {
       expect(RESERVATION_STATUSES).toContain(status);
@@ -49,10 +48,10 @@ describe('getReservationStatusView', () => {
     expect(view.symbol).not.toBe('');
   });
 
-  it('tones confirmation apart from a pending request and a no-show', () => {
+  it('tones confirmation apart from a pending request and a rejection', () => {
     expect(getReservationStatusView('CONFIRMED').tone).toBe('success');
     expect(getReservationStatusView('PENDING').tone).toBe('warning');
-    expect(getReservationStatusView('NO_SHOW').tone).toBe('error');
+    expect(getReservationStatusView('REJECTED').tone).toBe('error');
   });
 
   it('falls back for an unknown or missing server status', () => {
@@ -72,7 +71,7 @@ describe('canRequestReservationCancel', () => {
   });
 
   it('does not offer cancel for terminal or unknown states', () => {
-    for (const status of ['CANCELED', 'COMPLETED', 'EXPIRED', 'NO_SHOW', 'UNKNOWN', 'NEW'] as const) {
+    for (const status of ['CANCELED', 'REJECTED', 'UNKNOWN', 'NEW'] as const) {
       expect(canRequestReservationCancel(status)).toBe(false);
     }
     expect(canRequestReservationCancel(undefined)).toBe(false);

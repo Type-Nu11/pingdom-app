@@ -28,6 +28,7 @@
     "generate:offers-coupons-api-types": "openapi-typescript docs/api/offers-coupons.openapi.json -o src/v2/shared/api/generated/offersCoupons.ts",
     "check:offers-coupons-api-types": "node scripts/check-generated-offers-coupons-api-types.mjs",
     "generate:notification-api": "node scripts/generate-notification-api-contract.mjs",
+    "sync:reservation-payment-openapi": "node scripts/sync-reservation-payment-openapi.mjs",
     "generate:reservation-payment-api-types": "openapi-typescript docs/api/reservation-payment.openapi.json -o src/v2/shared/api/generated/reservationPayment.ts",
     "check:api-types": "node scripts/check-generated-api-types.mjs && node scripts/check-generated-place-exploration-api-types.mjs && node scripts/check-generated-place-menus-api-types.mjs && node scripts/check-generated-visit-verification-api-types.mjs && node scripts/check-generated-offers-coupons-api-types.mjs",
     "check:notification-api-types": "node scripts/check-notification-api-types.mjs",

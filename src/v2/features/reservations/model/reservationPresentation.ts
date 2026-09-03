@@ -7,15 +7,12 @@ import {
 import type { Reservation, ReservationDetail } from '../api/reservationApi';
 
 /**
- * Reservations are typed by two generated contracts: the app-wide `mvp` one
- * behind the list and create endpoints, and the scoped `reservationPayment`
- * snapshot behind `GET /reservations/{id}`, which the live server currently
- * narrows to three states.
- *
- * `ReservationStatus` is the `mvp` union because it is the wider of the two, so
- * a value from either endpoint fits. The assertion below fails to compile if the
- * scoped contract ever gains a state the wide one does not have — the point
- * where a single presentation map would silently stop covering everything.
+ * The tourist list, create, and detail endpoints are all typed by the same
+ * `reservation-payment` snapshot synced from the live `app` group, so both
+ * unions below resolve to `PENDING | CONFIRMED | REJECTED | CANCELED`. The
+ * assertion still guards the invariant: if the detail contract ever gains a
+ * state the list contract does not have, a single presentation map would
+ * silently stop covering everything.
  */
 export type ReservationStatus = Reservation['status'];
 export type ReservationDetailStatus = ReservationDetail['status'];
@@ -27,11 +24,8 @@ type DetailStatusesAreCoveredByListStatuses = AssertNever<
 export const RESERVATION_STATUSES = [
   'PENDING',
   'CONFIRMED',
-  'COMPLETED',
-  'NO_SHOW',
+  'REJECTED',
   'CANCELED',
-  'EXPIRED',
-  'UNKNOWN',
 ] as const satisfies readonly ReservationStatus[];
 
 type AllReservationStatusesAreListed = AssertNever<
@@ -45,19 +39,16 @@ export type ReservationStatusContractAssertions = [
 
 /**
  * Label keys come from the reservation i18n bundle, which carries ko and en copy
- * for every state. `UNKNOWN` is both a contract value and the fallback, so a
- * state this build has never seen reads as "needs review" rather than blank.
+ * for every state plus the `unknown` fallback, so a state this build has never
+ * seen reads as "needs review" rather than blank.
  */
 const RESERVATION_STATUS_PRESENTATIONS: Readonly<
   Record<ReservationStatus, StatusPresentation>
 > = {
   CANCELED: { labelKey: 'reservation.list.statuses.canceled', tone: 'neutral' },
-  COMPLETED: { labelKey: 'reservation.list.statuses.completed', tone: 'success' },
   CONFIRMED: { labelKey: 'reservation.list.statuses.confirmed', tone: 'success' },
-  EXPIRED: { labelKey: 'reservation.list.statuses.expired', tone: 'neutral' },
-  NO_SHOW: { labelKey: 'reservation.list.statuses.noShow', tone: 'error' },
   PENDING: { labelKey: 'reservation.list.statuses.pending', tone: 'warning' },
-  UNKNOWN: { labelKey: 'reservation.list.statuses.unknown', tone: 'neutral' },
+  REJECTED: { labelKey: 'reservation.list.statuses.rejected', tone: 'error' },
 };
 
 export const getReservationStatusView: (

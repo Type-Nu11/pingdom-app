@@ -81,7 +81,9 @@ export type {
 export type {
   ReservationPaymentComponents,
   ReservationPaymentOperationName,
+  ReservationPaymentOperationPath,
   ReservationPaymentOperationQuery,
+  ReservationPaymentOperationRequestBody,
   ReservationPaymentOperationResponse,
   ReservationPaymentOperations,
   ReservationPaymentPaths,

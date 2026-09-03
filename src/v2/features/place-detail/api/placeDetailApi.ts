@@ -1,5 +1,5 @@
 import { apiClient, type ApiClient } from '../../../shared/api';
-import type { PlaceAvailabilities, PlaceDetail } from '../model/placeDetail.types';
+import type { PlaceAvailabilities, PlaceDetail, PlaceMenus } from '../model/placeDetail.types';
 
 export function createPlaceDetailApi(client: ApiClient = apiClient) {
   return {
@@ -10,6 +10,8 @@ export function createPlaceDetailApi(client: ApiClient = apiClient) {
       signal?: AbortSignal,
     ): Promise<PlaceAvailabilities> =>
       client.get<PlaceAvailabilities>(`/places/${placeId}/availabilities`, { signal }),
+    getPlaceMenus: (placeId: number, signal?: AbortSignal): Promise<PlaceMenus> =>
+      client.get<PlaceMenus>(`/places/${placeId}/menus`, { signal }),
   };
 }
 

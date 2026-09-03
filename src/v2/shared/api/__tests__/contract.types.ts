@@ -29,7 +29,14 @@ type ReservationMatchesCreateOperation = Assert<
 type ReservationCreateRequestMatchesLiveContract = Assert<
   Equal<
     OperationRequestBody<'createReservation'>,
-    { availabilityId: number; idempotencyKey: string; quantity?: number }
+    {
+      availabilityId: number;
+      bookerName: string;
+      bookerPhone: string;
+      idempotencyKey: string;
+      quantity: number;
+      requestNote?: string;
+    }
   >
 >;
 type ConversionResultMatchesOperation = Assert<
