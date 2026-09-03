@@ -33,7 +33,7 @@ import {
   toVerifiedPlaceEntries,
   toVerifiedPlaceListState,
 } from '../model/verifiedPlaceEntries';
-import BackIcon from '../../../shared/assets/icons/back.svg';
+import { HeaderBackButton } from '../../../shared/components';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
 import DividerIcon from '../../../shared/assets/icons/divider.svg';
 import SettingsIcon from '../../../shared/assets/icons/settings.svg';
@@ -202,14 +202,7 @@ export default function MyPageScreen({
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-my-page-screen">
       <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
         <TopBar>
-          <IconButton
-            accessibilityLabel={t('myPage.back')}
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={onBack}
-          >
-            <BackIcon height={84} style={TOP_BAR_ICON_STYLE} width={80} />
-          </IconButton>
+          <HeaderBackButton accessibilityLabel={t('myPage.back')} onPress={onBack} />
           <TopBarTitle>{t('myPage.title')}</TopBarTitle>
           <IconButton
             accessibilityLabel={t('myPage.settings')}

@@ -8,7 +8,7 @@ import styled from 'styled-components/native';
 import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
 import { useInfiniteCheckIns } from '../../check-ins/hooks/useCheckIns';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
-import { ErrorState } from '../../../shared/components';
+import { ErrorState, HeaderBackButton } from '../../../shared/components';
 import VerifiedPlaceCard from '../components/VerifiedPlaceCard';
 import VerifiedPlaceCardSkeleton from '../components/VerifiedPlaceCardSkeleton';
 import {
@@ -16,7 +16,6 @@ import {
   toVerifiedPlaceListState,
   type VerifiedPlaceEntry,
 } from '../model/verifiedPlaceEntries';
-import BackIcon from '../../../shared/assets/icons/back.svg';
 
 export type VerifiedPlacesScreenProps = {
   onBack: () => void;
@@ -57,14 +56,7 @@ export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenPro
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-verified-places-screen">
       <TopBar>
-        <IconButton
-          accessibilityLabel={t('myPage.back')}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={onBack}
-        >
-          <BackIcon height={44} width={44} />
-        </IconButton>
+        <HeaderBackButton accessibilityLabel={t('myPage.back')} onPress={onBack} />
         <TopBarTitle>{t('myPage.verifiedPlaces.title')}</TopBarTitle>
         <Spacer />
       </TopBar>
@@ -138,11 +130,6 @@ const TopBar = styled.View`
   align-items: center;
   justify-content: space-between;
   padding: 0 ${({ theme }) => theme.spacing.lg}px;
-`;
-
-const IconButton = styled.Pressable`
-  align-items: center;
-  justify-content: center;
 `;
 
 const Spacer = styled.View`

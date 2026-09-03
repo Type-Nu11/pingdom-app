@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import StarIcon from '../../../shared/assets/icons/star.svg';
+import { FavoriteIcon } from '../../../shared/components';
 
 const CARD_WIDTH = 177;
 const CARD_HEIGHT = 222;
@@ -61,12 +61,7 @@ export default function VerifiedPlaceCard({
           hitSlop={8}
           onPress={onToggleFavorite}
         >
-          <StarIcon
-            color={favorited ? '#FF1956' : '#FFFFFF'}
-            fill={favorited ? '#FF1956' : 'none'}
-            height={20}
-            width={21}
-          />
+          <FavoriteIcon selected={favorited} size={20} />
         </FavoriteButton>
       </Overlay>
     </Card>

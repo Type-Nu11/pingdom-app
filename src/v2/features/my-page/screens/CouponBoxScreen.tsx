@@ -11,6 +11,7 @@ import {
   type Coupon,
 } from '../../offers-coupons';
 import Button from '../../../shared/components/Button';
+import { HeaderBackButton } from '../../../shared/components';
 import CouponCard from '../components/CouponCard';
 import CouponCardSkeleton from '../components/CouponCardSkeleton';
 import {
@@ -22,7 +23,6 @@ import {
   type CouponStatusFilter,
 } from '../model/couponBoxEntries';
 import { useCouponBoxEntries } from '../hooks/useCouponBoxEntries';
-import BackIcon from '../../../shared/assets/icons/back.svg';
 
 export type CouponBoxScreenProps = {
   onBack: () => void;
@@ -128,14 +128,7 @@ export default function CouponBoxScreen({
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-coupon-box-screen">
       <TopBar>
-        <IconButton
-          accessibilityLabel={t('myPage.back')}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={onBack}
-        >
-          <BackIcon height={44} width={44} />
-        </IconButton>
+        <HeaderBackButton accessibilityLabel={t('myPage.back')} onPress={onBack} />
         <TopBarTitle>{t('myPage.couponBox.title')}</TopBarTitle>
         <Spacer />
       </TopBar>
@@ -226,11 +219,6 @@ const TopBar = styled.View`
   align-items: center;
   justify-content: space-between;
   padding: 0 ${({ theme }) => theme.spacing.lg}px;
-`;
-
-const IconButton = styled.Pressable`
-  align-items: center;
-  justify-content: center;
 `;
 
 const Spacer = styled.View`
