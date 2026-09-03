@@ -137,7 +137,7 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
 const Section = styled.View`
   border-bottom-color: ${({ theme }) => theme.colors.border};
   border-bottom-width: 1px;
-  padding: ${({ theme }) => theme.spacing.md}px;
+  padding: 20px 24px;
 `;
 
 const SectionTitle = styled.Text`
@@ -191,8 +191,8 @@ const Row = styled.View`
   border-bottom-width: 1px;
   flex-direction: row;
   gap: ${({ theme }) => theme.spacing.md}px;
-  min-height: 104px;
-  padding-vertical: ${({ theme }) => theme.spacing.sm}px;
+  min-height: 128px;
+  padding-vertical: 14px;
 `;
 
 const MenuBody = styled.View`
@@ -202,22 +202,22 @@ const MenuBody = styled.View`
 
 const MenuName = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-size: 14px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
 `;
 
 const MenuDescription = styled.Text`
   color: ${({ theme }) => theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
+  font-size: 13px;
+  line-height: 18px;
   margin-top: ${({ theme }) => theme.spacing.xs}px;
 `;
 
 const MenuPrice = styled.Text`
   color: ${({ theme }) => theme.colors.textStrong};
   flex-shrink: 1;
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  font-size: 14px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   margin-top: ${({ theme }) => theme.spacing.sm}px;
 `;
@@ -230,19 +230,19 @@ const SoldOut = styled.Text`
 `;
 
 const MenuArtwork = styled.Image`
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  height: 72px;
-  width: 88px;
+  border-radius: 12px;
+  height: 96px;
+  width: 100px;
 `;
 
 const ImageFallback = styled.View`
   align-items: center;
   background-color: ${({ theme }) => theme.colors.backgroundNeutral};
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  height: 72px;
+  border-radius: 12px;
+  height: 96px;
   justify-content: center;
   padding-horizontal: ${({ theme }) => theme.spacing.xs}px;
-  width: 88px;
+  width: 100px;
 `;
 
 const ImageFallbackText = styled.Text`

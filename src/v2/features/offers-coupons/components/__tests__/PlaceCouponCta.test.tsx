@@ -48,6 +48,33 @@ const COUPON = {
 };
 
 describe('PlaceCouponCta', () => {
+  test('지도 상세 compact 변형은 Offer를 디자인 목록으로 렌더하고 선택한 Offer를 발급한다', async () => {
+    jest.spyOn(offerCouponApi, 'listOffers').mockResolvedValue(offerPage([OFFER, SECOND_OFFER]));
+    const issueSpy = jest.spyOn(offerCouponApi, 'issueCoupon').mockResolvedValue(COUPON as never);
+
+    const { user } = await renderWithProviders(
+      <PlaceCouponCta placeId={17} variant="compact" />,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('v2-place-offer-compact')).toBeTruthy());
+    expect(screen.getByTestId('v2-place-offer-row-401')).toBeTruthy();
+    expect(screen.getByTestId('v2-place-offer-row-402')).toBeTruthy();
+    expect(screen.queryByText(OFFER.benefitDescription)).toBeNull();
+
+    await user.press(screen.getByTestId('v2-place-offer-row-402'));
+
+    expect(issueSpy).toHaveBeenCalledWith(402);
+  });
+
+  test('지도 상세 compact 변형은 빈 Offer 목록에서 섹션을 숨긴다', async () => {
+    jest.spyOn(offerCouponApi, 'listOffers').mockResolvedValue(offerPage([]));
+
+    await renderWithProviders(<PlaceCouponCta placeId={17} variant="compact" />);
+
+    await waitFor(() => expect(screen.queryByTestId('v2-place-offer-compact-loading')).toBeNull());
+    expect(screen.queryByTestId('v2-place-offer-compact')).toBeNull();
+  });
+
   test('발급 가능한 Offer의 혜택과 CTA를 보여준다 (ko)', async () => {
     jest.spyOn(offerCouponApi, 'listOffers').mockResolvedValue(offerPage([OFFER]));
 

@@ -777,6 +777,7 @@ export default function MapScreen({
                 onRequestSignIn={onSignIn}
                 onViewMyCoupons={onOpenCoupons}
                 placeId={selectedPlace.id}
+                variant="compact"
               />
             ) : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
