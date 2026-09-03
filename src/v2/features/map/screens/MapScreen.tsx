@@ -39,11 +39,7 @@ import {
   usePlaceExplorationMediaList,
   useRecommendationExplanation,
 } from '../../place-exploration';
-import {
-  formatPlaceMenuPrice,
-  formatPlaceOperatingSummary,
-  usePlaceDetailPresentation,
-} from '../../place-detail';
+import { formatPlaceOperatingSummary, usePlaceDetailPresentation } from '../../place-detail';
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
   MAP_LOCATE_ZOOM_LEVEL,
@@ -70,12 +66,10 @@ import {
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
 import { PlaceCouponCta } from '../../offers-coupons';
-import { FadeSlideTransition } from '../../../shared/motion';
 import { LocationStatusOverlay } from '../components/MapStatusOverlays';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
-const MAP_SECTION_DIRECTION = { map: 0, favorites: 1, reservations: 2 } as const;
 
 const toDecisionPlace = (place: Place): DecisionPlace => ({
   ...place,
@@ -226,7 +220,7 @@ export default function MapScreen({
   );
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
-  const { panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
+  const { jumpTo, panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
     collapsedTranslateY,
     expandedTranslateY,
     initialSnapPoint: 'medium',
@@ -327,7 +321,6 @@ export default function MapScreen({
     presentation: selectedPlacePresentation,
     refetchAvailability,
     refetchMedia,
-    refetchMenus,
     refetchReviews,
   } = usePlaceDetailPresentation(selectedPlaceId, { enabled: hasSelectedPlace });
   const selectedPlace = useMemo<DecisionPlace | null>(() => {
@@ -372,18 +365,6 @@ export default function MapScreen({
         imageUrls: selectedPlacePresentation.imageUrls,
         jibunAddress: selectedPlacePresentation.jibunAddress ?? undefined,
         notice: selectedPlacePresentation.notice ?? undefined,
-        menuState: selectedPlacePresentation.menuState,
-        menus: selectedPlacePresentation.menus.map((menu) => ({
-          description: menu.description ?? undefined,
-          id: menu.id ?? undefined,
-          imageUrl: menu.imageUrl ?? undefined,
-          name: menu.name ?? t('map.detail.menu.nameUnavailable'),
-          price: formatPlaceMenuPrice(
-            menu,
-            i18n.resolvedLanguage ?? i18n.language,
-          ) ?? t('map.detail.menu.priceUnavailable'),
-          status: menu.status,
-        })),
         operatingSummary,
         phone: selectedPlacePresentation.merchant?.contactPhone ?? undefined,
         reservation: selectedPlacePresentation.reservation,
@@ -406,7 +387,7 @@ export default function MapScreen({
         statusEmphasis: operatingSummary?.statusText ?? '',
       },
     };
-  }, [i18n.language, i18n.resolvedLanguage, selectedPlace, selectedPlacePresentation, t]);
+  }, [selectedPlace, selectedPlacePresentation, t]);
   useEffect(() => {
     if (content.type !== 'place-preview' || selectedPlace) return;
 
@@ -542,6 +523,11 @@ export default function MapScreen({
   const handleSearchFocus = () => {
     setIsSearchOpen(true);
   };
+  const openMapSection = useCallback((nextSection: 'favorites' | 'map' | 'reservations') => {
+    setContent({ type: 'home' });
+    setMapSection(nextSection);
+    jumpTo('medium');
+  }, [jumpTo]);
   const handleMapRefresh = useCallback(async () => {
     if (mapRefreshLock.current) return;
 
@@ -693,10 +679,8 @@ export default function MapScreen({
           query={query}
           showCategories={!isExpandedPlaceDetail}
         />
-        <FadeSlideTransition
-          direction={MAP_SECTION_DIRECTION[mapSection]}
+        <View
           pointerEvents="box-none"
-          stateKey={mapSection}
           style={styles.sectionTransition}
           testID={`map-section-transition-${mapSection}`}
         >
@@ -718,9 +702,7 @@ export default function MapScreen({
               else snapTo('medium');
             }}
             onOpenMap={() => {
-              setMapSection('map');
-              setContent({ type: 'home' });
-              snapTo('medium');
+              openMapSection('map');
             }}
             onOpenRecommendations={() => {
               setMapSection('map');
@@ -728,8 +710,7 @@ export default function MapScreen({
               snapTo('expanded');
             }}
             onOpenReservations={() => {
-              setMapSection('reservations');
-              snapTo('medium');
+              openMapSection('reservations');
             }}
             onLoadMore={() => void fetchNextFavoritePage()}
             onRetry={() => void refetchFavorites()}
@@ -760,13 +741,10 @@ export default function MapScreen({
               else snapTo('medium');
             }}
             onOpenFavorites={() => {
-              setMapSection('favorites');
-              snapTo('medium');
+              openMapSection('favorites');
             }}
             onOpenMap={() => {
-              setMapSection('map');
-              setContent({ type: 'home' });
-              snapTo('medium');
+              openMapSection('map');
             }}
             onOpenRecommendations={() => {
               setMapSection('map');
@@ -794,6 +772,7 @@ export default function MapScreen({
                 onRequestSignIn={onSignIn}
                 onViewMyCoupons={onOpenCoupons}
                 placeId={selectedPlace.id}
+                variant="compact"
               />
             ) : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
@@ -819,16 +798,14 @@ export default function MapScreen({
               else snapTo('medium');
             }}
             onOpenLikedPlaces={() => {
-              setMapSection('favorites');
-              snapTo('medium');
+              openMapSection('favorites');
             }}
             onOpenRecommendations={() => {
               setContent({ type: 'recommendations' });
               snapTo('expanded');
             }}
             onOpenSavedPlaces={() => {
-              setMapSection('reservations');
-              snapTo('medium');
+              openMapSection('reservations');
             }}
             onStartVisitVerification={onStartVisitVerification
               ? (place) => onStartVisitVerification(place.id)
@@ -837,7 +814,6 @@ export default function MapScreen({
             onRetryRecommendations={() => void refetchRecommendations()}
             onRetryAvailability={() => void refetchAvailability()}
             onRetryMedia={() => void refetchMedia()}
-            onRetryMenus={() => void refetchMenus()}
             onRetryReviews={() => void refetchReviews()}
             onProfilePress={onOpenProfile}
             onQueryChange={handleQueryChange}
@@ -861,7 +837,7 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
-        </FadeSlideTransition>
+        </View>
       {!isSearchOpen && content.type !== 'place-preview' && onOpenVisitVerification ? (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}

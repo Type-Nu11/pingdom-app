@@ -150,6 +150,25 @@ export const resources = {
           title: 'Something went wrong',
         },
       },
+      placeMenu: {
+        accessibility: {
+          image: '{{name}} menu image',
+          imageUnavailable: 'No image for {{name}}',
+          price: 'Price: {{price}}',
+          status: '{{name}} status: {{status}}',
+        },
+        error: {
+          notFound: 'The place details and menu data are temporarily out of sync. Refresh this menu or return to the map.',
+          title: 'Could not load the menu.',
+        },
+        empty: 'No menu has been added yet.',
+        imageUnavailable: 'No image',
+        loading: 'Loading menu…',
+        priceUnavailable: 'Price unavailable',
+        retry: 'Try again',
+        soldOut: 'Sold out',
+        title: 'Menu',
+      },
       examplePlaces: {
         count: '{{count}} places',
         englishMenu: 'English menu: {{status}}',
@@ -324,13 +343,6 @@ export const resources = {
           collapseTags: 'Collapse additional tags', coupon: 'Coupons', description: 'About this place',
           events: 'Current events', expandTags: 'Show {{count}} hidden tags', imageDetail: 'View {{name}} photo {{count}}',
           imageError: 'Could not load photos. Try again', info: 'Info', notice: 'Operating notice',
-          menu: {
-            error: 'Could not load menus. Try again', image: '{{name}} menu image',
-            imageUnavailable: '{{name}} menu image unavailable', loading: 'Loading menus…',
-            nameUnavailable: 'Unnamed menu', priceLabel: 'Price: {{price}}',
-            priceUnavailable: 'Price unavailable', title: 'Menu',
-            status: { AVAILABLE: 'Available', SOLD_OUT: 'Sold out', UNKNOWN: 'Unavailable' },
-          },
           imageViewer: {
             close: 'Close photo', counter: '{{current}} / {{total}}', next: 'Next photo',
             photo: '{{name}} photo {{current}} of {{total}}', previous: 'Previous photo',
@@ -992,6 +1004,25 @@ export const resources = {
           title: '문제가 발생했습니다',
         },
       },
+      placeMenu: {
+        accessibility: {
+          image: '{{name}} 메뉴 이미지',
+          imageUnavailable: '{{name}} 메뉴 이미지 없음',
+          price: '가격: {{price}}',
+          status: '{{name}} 상태: {{status}}',
+        },
+        error: {
+          notFound: '장소 상세와 메뉴 데이터가 일시적으로 일치하지 않습니다. 메뉴를 새로고침하거나 지도로 돌아가 주세요.',
+          title: '메뉴를 불러오지 못했습니다.',
+        },
+        empty: '등록된 메뉴가 없습니다.',
+        imageUnavailable: '이미지 없음',
+        loading: '메뉴를 불러오는 중입니다…',
+        priceUnavailable: '가격 정보 없음',
+        retry: '다시 시도',
+        soldOut: '품절',
+        title: '메뉴',
+      },
       examplePlaces: {
         count: '장소 {{count}}개',
         englishMenu: '영문 메뉴: {{status}}',
@@ -1163,13 +1194,6 @@ export const resources = {
           amenityEnglish: '영어응대 가능', amenityParking: '주차가능', back: '지도로 돌아가기', collapseTags: '추가 태그 접기',
           coupon: '쿠폰', description: '장소 소개', events: '진행 중 이벤트', expandTags: '숨겨진 태그 {{count}}개 펼치기',
           imageDetail: '{{name}} 사진 {{count}} 상세 보기', imageError: '사진을 불러오지 못했습니다. 다시 시도', info: '정보',
-          menu: {
-            error: '메뉴를 불러오지 못했습니다. 다시 시도', image: '{{name}} 메뉴 이미지',
-            imageUnavailable: '{{name}} 메뉴 이미지 없음', loading: '메뉴를 불러오는 중입니다.',
-            nameUnavailable: '이름 없는 메뉴', priceLabel: '가격: {{price}}',
-            priceUnavailable: '가격 정보 없음', title: '메뉴',
-            status: { AVAILABLE: '판매 중', SOLD_OUT: '품절', UNKNOWN: '이용 불가' },
-          },
           imageViewer: {
             close: '사진 닫기', counter: '{{current}} / {{total}}', next: '다음 사진',
             photo: '{{name}} 사진 {{total}}장 중 {{current}}번째', previous: '이전 사진',

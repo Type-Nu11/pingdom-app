@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
@@ -46,9 +46,18 @@ describe('MapTopOverlay', () => {
     expect(locateButton).toBeVisible();
     expect(locateButton).toHaveStyle({ height: 44, width: 44 });
     expect(screen.getByTestId('map-locate-icon').props).toEqual(expect.objectContaining({
+      color: '#3B3B40',
       height: 20,
       width: 20,
     }));
+    await act(async () => {
+      fireEvent(screen.getByTestId('map-locate-button'), 'onPressIn');
+    });
+    expect(screen.getByTestId('map-locate-icon').props.color).toBe('#FF1956');
+    await act(async () => {
+      fireEvent(screen.getByTestId('map-locate-button'), 'onPressOut');
+    });
+    expect(screen.getByTestId('map-locate-icon').props.color).toBe('#3B3B40');
     await view.user.press(locateButton);
     await view.user.press(locateButton);
     expect(props.onLocatePress).toHaveBeenCalledTimes(2);

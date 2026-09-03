@@ -57,20 +57,6 @@ export const placeCardFixture = {
   longitude: 128.1,
 } satisfies PlaceExplorationSchema<'TouristPlaceCardResponse'>;
 
-export const placeMenusFixture = [{
-  id: 1701,
-  placeId: 17,
-  name: 'Mock signature menu',
-  description: 'Synthetic menu served only by the explicit development mock transport.',
-  priceAmount: 9000,
-  currency: 'KRW',
-  imageUrl: null,
-  status: 'AVAILABLE',
-  displayOrder: 1,
-  createdAt: '2026-09-03T00:00:00Z',
-  updatedAt: '2026-09-03T00:00:00Z',
-}] satisfies PlaceExplorationSchema<'PlaceMenuResponse'>[];
-
 export const operatingNoticesFixture = {
   placeId: 17,
   currentlyOperating: true,
@@ -129,7 +115,6 @@ export const availabilityFixture = {
   id: 801,
   placeId: 17,
   productId: 901,
-  productName: null,
   productType: 'GENERAL',
   startsAt: '2026-09-01T03:00:00Z',
   endsAt: '2027-09-01T04:00:00Z',

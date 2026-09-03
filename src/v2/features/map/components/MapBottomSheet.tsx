@@ -61,6 +61,7 @@ import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
+import { PlaceMenuSection } from '../../place-menus';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -78,15 +79,6 @@ export type MapPreviewFallbackContent = {
   events?: Array<{ period: string; title: string }>;
   imageState?: 'empty' | 'error' | 'loading' | 'ready';
   imageUrls: string[];
-  menuState?: 'empty' | 'error' | 'loading' | 'ready';
-  menus?: Array<{
-    description?: string;
-    id?: number;
-    imageUrl?: string;
-    name: string;
-    price: string;
-    status: 'AVAILABLE' | 'SOLD_OUT' | 'UNKNOWN';
-  }>;
   phone?: string;
   jibunAddress?: string;
   notice?: string;
@@ -180,7 +172,6 @@ type MapBottomSheetProps = {
   onRetryRecommendations: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
-  onRetryMenus?: () => void;
   onRetryReviews?: () => void;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
@@ -608,15 +599,7 @@ const RecommendationBookmarkButton = ({
   );
 };
 
-const PreviewArtwork = ({
-  accessibilityLabel,
-  fallbackAccessibilityLabel,
-  imageUrl,
-}: {
-  accessibilityLabel?: string;
-  fallbackAccessibilityLabel?: string;
-  imageUrl?: string;
-}) => {
+const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
   const { t } = useTranslation();
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -628,10 +611,7 @@ const PreviewArtwork = ({
     const fallbackMessage = t(hasImageError ? 'map.sheet.imageError' : 'map.sheet.imageMissing');
 
     return (
-      <View
-        accessibilityLabel={fallbackAccessibilityLabel ?? fallbackMessage}
-        style={styles.previewArtworkFallback}
-      >
+      <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
         <MapPinIcon active size={28} />
         <Text style={styles.previewArtworkFallbackText}>{fallbackMessage}</Text>
       </View>
@@ -640,7 +620,7 @@ const PreviewArtwork = ({
 
   return (
     <Image
-      accessibilityLabel={accessibilityLabel ?? t('map.sheet.image')}
+      accessibilityLabel={t('map.sheet.image')}
       onError={() => setHasImageError(true)}
       resizeMode="cover"
       source={{ uri: imageUrl }}
@@ -1502,7 +1482,6 @@ const ExpandedPlaceContent = ({
   onVerify,
   onRetryAvailability,
   onRetryMedia,
-  onRetryMenus,
   onRetryReviews,
   onTabChange,
   onToggleBookmark,
@@ -1520,7 +1499,6 @@ const ExpandedPlaceContent = ({
   onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
-  onRetryMenus?: () => void;
   onRetryReviews?: () => void;
   onTabChange: (tab: PlaceDetailTab) => void;
   onToggleBookmark: () => void;
@@ -1720,54 +1698,7 @@ const ExpandedPlaceContent = ({
             </View>
           ) : null)}
 
-          {fallbackContent?.menuState === 'loading' ? (
-            <View accessibilityLiveRegion="polite" style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>{t('map.detail.menu.title')}</Text>
-              <Text style={styles.detailEmptyText}>{t('map.detail.menu.loading')}</Text>
-            </View>
-          ) : fallbackContent?.menuState === 'error' ? (
-            <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>{t('map.detail.menu.title')}</Text>
-              <Pressable accessibilityRole="button" onPress={onRetryMenus}>
-                <Text style={styles.detailEmptyText}>{t('map.detail.menu.error')}</Text>
-              </Pressable>
-            </View>
-          ) : fallbackContent?.menus?.length ? (
-            <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>{t('map.detail.menu.title')}</Text>
-              {fallbackContent.menus.map((menu, index) => (
-                <View key={menu.id ?? `${menu.name}-${index}`} style={styles.detailMenuRow}>
-                  <View style={styles.detailMenuBody}>
-                    <Text style={styles.detailMenuName}>{menu.name}</Text>
-                    {menu.description ? (
-                      <Text style={styles.detailMenuDescription}>{menu.description}</Text>
-                    ) : null}
-                    <Text
-                      accessibilityLabel={t('map.detail.menu.priceLabel', { price: menu.price })}
-                      style={styles.detailMenuPrice}
-                    >
-                      {menu.price}
-                    </Text>
-                    <Text style={[
-                      styles.detailMenuStatus,
-                      menu.status === 'AVAILABLE' && styles.detailMenuStatusAvailable,
-                    ]}>
-                      {t(`map.detail.menu.status.${menu.status}`)}
-                    </Text>
-                  </View>
-                  <View style={styles.detailMenuImage}>
-                    <PreviewArtwork
-                      accessibilityLabel={t('map.detail.menu.image', { name: menu.name })}
-                      fallbackAccessibilityLabel={t('map.detail.menu.imageUnavailable', {
-                        name: menu.name,
-                      })}
-                      imageUrl={menu.imageUrl}
-                    />
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
+          <PlaceMenuSection placeId={place.id} />
 
           {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
@@ -2033,7 +1964,6 @@ export default function MapBottomSheet({
   onPlacePress,
   onRetryAvailability,
   onRetryMedia,
-  onRetryMenus,
   onRetryRecommendations,
   onRetryReviews,
   onToggleBookmark,
@@ -2161,22 +2091,15 @@ export default function MapBottomSheet({
             highlightHeight={40}
             highlightOpacity={0.10}
             rimColor="rgba(255,255,255,0.60)"
-            tintColor={isExpandedPlaceDetail ? '#FFFFFF' : 'rgba(255,255,255,0.92)'}
+            tintColor="#FFFFFF"
             topRimOnly
           />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
       <GlassStyles.SheetInner $inset={SHEET_RESTING_GAP}>
       {!isExpandedPlaceDetail ? (
-        <View style={styles.handleArea} {...panHandlers}>
-          <Pressable
-            accessibilityLabel={t('map.sheet.adjust')}
-            accessibilityRole="adjustable"
-            onPress={onHandlePress}
-            style={styles.handleButton}
-          >
-            <View style={styles.handle} />
-          </Pressable>
+        <View pointerEvents="none" style={styles.handleArea}>
+          <View style={styles.handle} />
         </View>
       ) : null}
 
@@ -2207,7 +2130,6 @@ export default function MapBottomSheet({
               : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
-            onRetryMenus={onRetryMenus}
             onRetryReviews={onRetryReviews}
             onTabChange={setActivePlaceDetailTab}
             onToggleBookmark={() => void onToggleBookmark(
@@ -2293,6 +2215,17 @@ export default function MapBottomSheet({
       )}
       </Animated.View>
       </GlassStyles.SheetInner>
+
+      {!isExpandedPlaceDetail ? (
+        <Pressable
+          {...panHandlers}
+          accessibilityLabel={t('map.sheet.adjust')}
+          accessibilityRole="adjustable"
+          onPress={onHandlePress}
+          style={styles.handleGestureTarget}
+          testID="map-sheet-handle-target"
+        />
+      ) : null}
 
       {content.type !== 'place-preview' ? (
         <BottomNavigation
@@ -2403,8 +2336,6 @@ const styles: Record<string, object> = {
   detailMenuImage: { borderRadius: 10, height: 64, overflow: 'hidden', width: 72 },
   detailMenuName: { color: '#303238', fontSize: 13, fontWeight: '800' },
   detailMenuPrice: { color: '#303238', fontSize: 12, fontWeight: '800', marginTop: 7 },
-  detailMenuStatus: { color: '#A15C00', fontSize: 11, fontWeight: '700', marginTop: 4 },
-  detailMenuStatusAvailable: { color: '#168A43' },
   detailMenuRow: {
     alignItems: 'center',
     borderBottomColor: '#ECEDEF',
@@ -2662,8 +2593,16 @@ const styles: Record<string, object> = {
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
   handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 5, width: 56 },
-  handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
+  handleArea: { alignItems: 'center', height: 20, justifyContent: 'center' },
+  handleGestureTarget: {
+    height: 44,
+    left: '50%',
+    position: 'absolute',
+    top: 0,
+    transform: [{ translateX: -80 }],
+    width: 160,
+    zIndex: 4,
+  },
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: {
     alignItems: 'center',
