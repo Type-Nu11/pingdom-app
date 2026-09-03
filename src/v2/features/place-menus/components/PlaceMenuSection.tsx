@@ -124,7 +124,14 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
     );
   }
 
-  if (!menus.length) return null;
+  if (!menus.length) {
+    return (
+      <Section accessibilityRole="summary" testID="place-menu-empty">
+        <SectionTitle>{t('placeMenu.title')}</SectionTitle>
+        <EmptyText accessibilityLiveRegion="polite">{t('placeMenu.empty')}</EmptyText>
+      </Section>
+    );
+  }
 
   return (
     <Section accessibilityRole="summary" testID="place-menu-section">
@@ -158,6 +165,13 @@ const StateText = styled.Text`
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
   margin-top: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+const EmptyText = styled.Text`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
+  padding-vertical: ${({ theme }) => theme.spacing.lg}px;
 `;
 
 const ErrorDescription = styled.Text`

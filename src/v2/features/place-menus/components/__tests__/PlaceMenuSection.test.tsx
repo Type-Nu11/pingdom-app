@@ -58,14 +58,16 @@ describe('PlaceMenuSection', () => {
     expect(screen.getByLabelText('먼저 온 메뉴 메뉴 이미지 없음')).toBeTruthy();
   });
 
-  test('hides the whole section for an empty successful response', async () => {
+  test('shows a normal empty state for an empty successful response', async () => {
     jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([]);
 
     await renderWithProviders(<PlaceMenuSection placeId={17} />);
 
     await waitFor(() => expect(screen.queryByTestId('place-menu-loading')).toBeNull());
     expect(screen.queryByTestId('place-menu-section')).toBeNull();
-    expect(screen.queryByText('메뉴')).toBeNull();
+    expect(screen.getByTestId('place-menu-empty')).toBeTruthy();
+    expect(screen.getByText('메뉴')).toBeTruthy();
+    expect(screen.getByText('등록된 메뉴가 없습니다.')).toBeTruthy();
   });
 
   test('contains API errors locally and retries only the current menu query', async () => {
@@ -130,5 +132,13 @@ describe('PlaceMenuSection', () => {
     expect(screen.getByText('Menu')).toBeTruthy();
     expect(screen.getByText('Sold out')).toBeTruthy();
     expect(screen.getByLabelText('Original user menu status: Sold out')).toBeTruthy();
+  });
+
+  test('uses English copy for the empty state', async () => {
+    jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([]);
+
+    await renderWithProviders(<PlaceMenuSection placeId={17} />, { language: 'en' });
+
+    expect(await screen.findByText('No menu has been added yet.')).toBeTruthy();
   });
 });
