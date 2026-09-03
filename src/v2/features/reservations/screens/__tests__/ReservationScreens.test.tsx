@@ -264,6 +264,8 @@ describe('V2 reservation screens', () => {
 
     const { user } = await renderReservationScreen(createScreen());
     expect(screen.getByRole('tab', { name: '오전' }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('v2-reservation-date-capacity-2026-08-27')).toHaveTextContent('16');
+    expect(screen.getByRole('button', { name: '2026-08-27, 잔여 16명' })).toBeEnabled();
     expect(screen.getByText('10:00')).toBeVisible();
     expect(screen.queryByText('14:00')).not.toBeOnTheScreen();
 
@@ -287,7 +289,8 @@ describe('V2 reservation screens', () => {
     await renderReservationScreen(createScreen());
 
     expect(await screen.findByText('2026년 9월')).toBeVisible();
-    expect(screen.getByRole('button', { name: '2026-09-02, 일정 있음' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '2026-09-02, 잔여 1명' })).toBeEnabled();
+    expect(screen.getByTestId('v2-reservation-date-capacity-2026-09-02')).toHaveTextContent('1');
     expect(screen.getByText('현재 2명이 예약 가능한 시간은 없습니다. 아래에서 등록된 일정과 예약 불가 사유를 확인해 주세요.')).toBeVisible();
     expect(screen.getByText('10:00')).toBeVisible();
     expect(screen.getByTestId('v2-availability-77')).toBeDisabled();
@@ -353,9 +356,9 @@ describe('V2 reservation screens', () => {
     );
 
     expect(screen.getByRole('button', { name: '2026-09-02, 예약 불가' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '2026-09-03, 예약 가능' })
+    expect(screen.getByRole('button', { name: '2026-09-03, 잔여 8명' })
       .props.accessibilityState).toEqual(expect.objectContaining({ selected: true }));
-    expect(screen.getByRole('button', { name: '2026-09-04, 예약 가능' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '2026-09-04, 잔여 8명' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '2026-09-05, 예약 불가' })).toBeDisabled();
     expect(screen.getByText('17:28')).toBeVisible();
     expect(screen.getByTestId('v2-availability-77').props.accessibilityLabel)

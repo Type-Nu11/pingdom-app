@@ -111,6 +111,24 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     () => new Set(availabilityData.flatMap(availabilityDateKeys)),
     [availabilityData],
   );
+  const remainingCapacityByDate = useMemo(() => {
+    const totals = new Map<string, number>();
+
+    availabilityData.forEach((item) => {
+      if (!isSelectableAvailability(item)
+        || item.status !== 'ACTIVE'
+        || new Date(item.endsAt).getTime() <= now.getTime()) return;
+
+      const remainingCapacity = Number.isFinite(item.remainingCapacity)
+        ? Math.max(0, item.remainingCapacity)
+        : 0;
+      availabilityDateKeys(item).forEach((dateKey) => {
+        totals.set(dateKey, (totals.get(dateKey) ?? 0) + remainingCapacity);
+      });
+    });
+
+    return totals;
+  }, [availabilityData, now]);
   const selectedAvailability = availabilityData.find(
     (item) => item.id === selectedAvailabilityId,
   );
@@ -296,13 +314,19 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
               // but dates before today must not remain interactive just because the
               // server still returns historical availability records.
               const scheduled = !isPast && scheduledDates.has(key);
-              const dateLabel = available
-                ? t('reservation.create.availableDateLabel', { date: key })
+              const remainingCapacity = isPast ? undefined : remainingCapacityByDate.get(key);
+              const dateLabel = remainingCapacity !== undefined
+                ? t('reservation.create.availableDateCapacityLabel', {
+                  count: remainingCapacity,
+                  date: key,
+                })
+                : available
+                  ? t('reservation.create.availableDateLabel', { date: key })
                 : scheduled
                   ? t('reservation.create.scheduledDateLabel', { date: key })
                   : t('reservation.create.unavailableDateLabel', { date: key });
               const selectedAndAvailable = selected && available;
-              return <DayCell key={key}><DayButton $selected={selectedAndAvailable} accessibilityLabel={dateLabel} accessibilityRole="button" accessibilityState={{ disabled: !scheduled, selected }} disabled={!scheduled} onPress={() => { beginNewReservationIntent(); setSelectedDate(key); setSelectedAvailabilityId(null); }}><DayText $available={available} $selected={selectedAndAvailable} $weekday={date.getDay()}>{date.getDate()}</DayText></DayButton></DayCell>;
+              return <DayCell key={key}><DayButton $selected={selectedAndAvailable} accessibilityLabel={dateLabel} accessibilityRole="button" accessibilityState={{ disabled: !scheduled, selected }} disabled={!scheduled} onPress={() => { beginNewReservationIntent(); setSelectedDate(key); setSelectedAvailabilityId(null); }}><DayText $available={available} $selected={selectedAndAvailable} $weekday={date.getDay()}>{date.getDate()}</DayText>{remainingCapacity !== undefined ? <DayCapacity $selected={selectedAndAvailable} testID={`v2-reservation-date-capacity-${key}`}>{remainingCapacity}</DayCapacity> : null}</DayButton></DayCell>;
             })() : <DayCell key={`blank-${index}`} />)}</CalendarGrid>
           </Calendar>
         </Section>
@@ -618,6 +642,7 @@ const CalendarGrid = styled.View`flex-direction: row; flex-wrap: wrap; margin-to
 const DayCell = styled.View`width: 14.285%; height: 44px; align-items: center; justify-content: center;`;
 const DayButton = styled.Pressable<{ $selected: boolean }>`width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'};`;
 const DayText = styled.Text<{ $available: boolean; $selected: boolean; $weekday: number }>`color: ${({ $available, $selected, $weekday, theme }) => $selected ? theme.colors.onPrimary : !$available ? theme.colors.disabled : $weekday === 0 ? theme.colors.calendarSunday : $weekday === 6 ? theme.colors.calendarSaturday : theme.colors.text}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $available, $selected }) => $available || $selected ? '700' : '400'};`;
+const DayCapacity = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.onPrimary : theme.colors.textMuted}; font-size: 9px; line-height: 10px;`;
 const StateBox = styled.View`min-height: 72px; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const RetryButton = styled.Pressable`padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
 const RetryText = styled.Text`color: ${({ theme }) => theme.colors.primary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;

@@ -26,6 +26,7 @@ export const reservationResources = {
         afternoon: 'PM',
         available: 'Available',
         availableDateLabel: '{{date}}, available',
+        availableDateCapacityLabel: '{{date}}, {{count}} spots remaining',
         backToMap: 'Go back',
         booker: {
           errors: {
@@ -172,6 +173,7 @@ export const reservationResources = {
         afternoon: '오후',
         available: '가능',
         availableDateLabel: '{{date}}, 예약 가능',
+        availableDateCapacityLabel: '{{date}}, 잔여 {{count}}명',
         backToMap: '돌아가기',
         booker: {
           errors: {
