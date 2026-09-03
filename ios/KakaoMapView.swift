@@ -2,7 +2,7 @@ import UIKit
 import KakaoMapsSDK
 import React
 
-private struct MapMarker {
+private struct MapMarker: Equatable {
     let id: String
     let category: String
     let lat: Double
@@ -29,6 +29,7 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
     private var requestedAddMap = false
     private var canAddMapView = false
     private var lastApplied: (lat: Double, lng: Double, zoom: Int)?
+    private var lastAppliedUserLocation: (lat: Double, lng: Double)?
     private var parsedMarkersCache: [MapMarker] = []
     private var registeredMarkerStyleIDs = Set<String>()
     private var didRegisterUserLocationStyle = false
@@ -55,7 +56,9 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
 
     @objc var markers: NSArray? {
         didSet {
-            parsedMarkersCache = parseMarkers(markers)
+            let nextMarkers = parseMarkers(markers)
+            guard nextMarkers != parsedMarkersCache else { return }
+            parsedMarkersCache = nextMarkers
             applyMarkersIfNeeded()
         }
     }
@@ -266,11 +269,18 @@ final class KakaoMapView: UIView, MapControllerDelegate, KakaoMapEventDelegate {
 
         let manager = mapView.getLabelManager()
         registerUserLocationStyleIfNeeded(manager: manager)
-        let layer = userLocationLayer(manager: manager)
-        guard let layer else { return }
+        let locationChanged = lastAppliedUserLocation.map {
+            abs($0.lat - lat) >= 0.0000001 || abs($0.lng - lng) >= 0.0000001
+        } ?? true
 
-        layer.clearAllItems()
-        addUserLocationMarker(to: layer, lat: lat, lng: lng)
+        if locationChanged {
+            let layer = userLocationLayer(manager: manager)
+            guard let layer else { return }
+
+            layer.clearAllItems()
+            addUserLocationMarker(to: layer, lat: lat, lng: lng)
+            lastAppliedUserLocation = (lat, lng)
+        }
 
         moveCameraToUserLocationIfNeeded(mapView: mapView, lat: lat, lng: lng)
     }

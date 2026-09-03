@@ -5,13 +5,14 @@ import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { api } from '../../shared/api/apiClient';
 import { createQueryClient } from './queryClient';
-import { getAuthState, logout } from '../store/authStore';
+import { getAuthState, logout, subscribeAuth } from '../store/authStore';
 import {
   configureApiAccessTokenProvider,
   configureApiTransport,
 } from '../../v2/shared/api';
 import { configureTokenSession } from '../../v2/shared/auth/tokenSession';
 import { i18n, initializeI18n } from '../../v2/shared/i18n';
+import { clearActiveForegroundVisitVerificationSession } from '../../v2/features/place-visit-verification/model/visitVerificationSession';
 
 const AppProvider = ({ children }: PropsWithChildren) => {
   const [queryClient] = useState(() => createQueryClient());
@@ -36,6 +37,14 @@ const AppProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => configureApiTransport(api), []);
   useEffect(() => configureApiAccessTokenProvider(() => getAuthState().accessToken), []);
   useEffect(() => configureTokenSession({ clear: logout }), []);
+  useEffect(() => {
+    let wasLoggedIn = getAuthState().isLoggedIn;
+    return subscribeAuth(() => {
+      const isLoggedIn = getAuthState().isLoggedIn;
+      if (wasLoggedIn && !isLoggedIn) clearActiveForegroundVisitVerificationSession();
+      wasLoggedIn = isLoggedIn;
+    });
+  }, []);
 
   useEffect(() => {
     const handleAppStateChange = (status: AppStateStatus) => {

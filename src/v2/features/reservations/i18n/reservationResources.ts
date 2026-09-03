@@ -26,6 +26,7 @@ export const reservationResources = {
         afternoon: 'PM',
         available: 'Available',
         availableDateLabel: '{{date}}, available',
+        availableDateCapacityLabel: '{{date}}, {{count}} spots remaining',
         backToMap: 'Go back',
         booker: {
           errors: {
@@ -131,6 +132,7 @@ export const reservationResources = {
         loading: 'Loading reservations',
         nearbySubtitle: 'Discover places currently accepting reservations!',
         nearbyEmpty: 'No nearby bookable places are available right now.',
+        nearbyLoading: 'Finding nearby bookable places…',
         nearbyTitle: 'Reservations near your current location',
         panelAdjust: 'Resize reservation panel',
         previewLabel: '{{name}} reservation preview',
@@ -171,6 +173,7 @@ export const reservationResources = {
         afternoon: '오후',
         available: '가능',
         availableDateLabel: '{{date}}, 예약 가능',
+        availableDateCapacityLabel: '{{date}}, 잔여 {{count}}명',
         backToMap: '돌아가기',
         booker: {
           errors: {
@@ -276,6 +279,7 @@ export const reservationResources = {
         loading: '예약을 불러오는 중이에요',
         nearbySubtitle: '현재 예약 가능 장소를 찾아드려요!',
         nearbyEmpty: '현재 위치 주변에 예약 가능한 장소가 없어요.',
+        nearbyLoading: '주변 예약 가능 장소를 찾는 중이에요…',
         nearbyTitle: '현재 위치 주변 예약',
         panelAdjust: '예약 패널 크기 조절',
         previewLabel: '{{name}} 예약 미리보기',

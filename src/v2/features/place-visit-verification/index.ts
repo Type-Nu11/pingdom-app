@@ -1,12 +1,17 @@
 export { createVisitVerificationApi, visitVerificationApi } from './api/visitVerificationApi';
 export type {
   CreatePlaceReviewBody,
+  ForegroundVisitVerificationStartBody,
   PlaceReview,
   PlaceReviewListParams,
   PlaceReviewPage,
 } from './api/visitVerificationApi';
 export { default as VisitVerificationMapCta } from './components/VisitVerificationMapCta';
-export { createVisitVerificationMutationOptions, useSubmitVisitVerification } from './hooks/useSubmitVisitVerification';
+export {
+  createVisitVerificationMutationOptions,
+  primeSubmittedReviewQueries,
+  useSubmitVisitVerification,
+} from './hooks/useSubmitVisitVerification';
 export { createPlaceReviewsQueryOptions, usePlaceReviews } from './hooks/usePlaceReviews';
 export { useVisitVerificationCandidates } from './hooks/useVisitVerificationCandidates';
 export { useLocationPermissionStatus } from './hooks/useLocationPermissionStatus';
@@ -16,8 +21,15 @@ export { default as VisitVerificationReviewScreen } from './screens/VisitVerific
 export { default as VisitVerificationSessionScreen } from './screens/VisitVerificationSessionScreen';
 export {
   createObservationMutationOptions,
+  createRecoverSessionMutationOptions,
+  createStartForegroundSessionMutationOptions,
   createStartSessionMutationOptions,
+  useRecoverVisitVerificationSession,
+  useStartForegroundVisitVerificationSession,
   useStartVisitVerificationSession,
   useSubmitVisitVerificationObservation,
 } from './hooks/useVisitVerificationSessionMutations';
-export { visitVerificationSessionQueryKeys } from './model/visitVerificationSession';
+export {
+  clearActiveForegroundVisitVerificationSession,
+  visitVerificationSessionQueryKeys,
+} from './model/visitVerificationSession';

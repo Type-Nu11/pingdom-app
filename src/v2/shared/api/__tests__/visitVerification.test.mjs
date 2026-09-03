@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { QueryClient } from '@tanstack/react-query';
 
 import { createVisitVerificationApi } from '../../../features/place-visit-verification/api/visitVerificationApi.ts';
-import { createVisitVerificationMutationOptions } from '../../../features/place-visit-verification/hooks/useSubmitVisitVerification.ts';
+import {
+  createVisitVerificationMutationOptions,
+  invalidateReviewQueries,
+  primeSubmittedReviewQueries,
+} from '../../../features/place-visit-verification/hooks/useSubmitVisitVerification.ts';
 import { createPlaceReviewsQueryOptions } from '../../../features/place-visit-verification/hooks/usePlaceReviews.ts';
 import {
   appendPhotos,
   RECOMMEND_REASONS,
+  selectReviewImageUrls,
+  serializeRecommendReasons,
   toggleReason,
   selectCandidateImageUrls,
   uniquePlaceIdsInServerOrder,
@@ -17,23 +24,94 @@ import { createCheckInApi } from '../../../features/check-ins/api/checkInApi.ts'
 import {
   applyVisitVerificationSessionResult,
   createObservationMutationOptions,
+  createRecoverSessionMutationOptions,
+  createStartForegroundSessionMutationOptions,
   createStartSessionMutationOptions,
 } from '../../../features/place-visit-verification/hooks/useVisitVerificationSessionMutations.ts';
 import {
   isTerminalVisitVerificationSession,
+  clearActiveForegroundVisitVerificationSession,
+  getActiveForegroundVisitVerificationSession,
   observationDelayMs,
+  rememberActiveForegroundVisitVerificationSession,
   sessionErrorPhase,
   visitVerificationSessionQueryKeys,
 } from '../../../features/place-visit-verification/model/visitVerificationSession.ts';
-import { ApiError } from '../index.ts';
+import { ApiError, mockApiClient, setMockScenario } from '../index.ts';
+import {
+  visitVerificationAlternatePolicyFixture,
+  visitVerificationStartedFixture,
+} from '../mock/features/visit-verification/fixtures.ts';
+
+test('development fixtures default to 500m/30s while arbitrary server policies remain representable', () => {
+  assert.deepEqual(
+    [
+      visitVerificationStartedFixture.requiredRadiusMeters,
+      visitVerificationStartedFixture.requiredDwellSeconds,
+    ],
+    [500, 30],
+  );
+  assert.deepEqual(
+    [
+      visitVerificationAlternatePolicyFixture.requiredRadiusMeters,
+      visitVerificationAlternatePolicyFixture.requiredDwellSeconds,
+    ],
+    [240, 12],
+  );
+});
+
+test('development foreground mock follows STARTED to IN_PROGRESS to COMPLETED', async () => {
+  setMockScenario('success');
+  const api = createVisitVerificationApi(mockApiClient);
+  const body = {
+    accuracyMeters: 4,
+    latitude: 35,
+    longitude: 128,
+    observedAt: '2026-09-02T01:00:00Z',
+  };
+  const started = await api.startForegroundSession(body);
+  const progress = await api.submitObservation(started.id, body);
+  const completed = await api.submitObservation(started.id, body);
+  assert.deepEqual(
+    [started.status, progress.status, completed.status],
+    ['STARTED', 'IN_PROGRESS', 'COMPLETED'],
+  );
+  assert.equal(completed.completedCheckInId, 7002);
+  assert.equal(completed.reviewEligible, true);
+});
+
+test('development observation mock keeps proximity loss, expiry, rejection, and network failure distinct', async () => {
+  const api = createVisitVerificationApi(mockApiClient);
+  const body = {
+    accuracyMeters: 4,
+    latitude: 35,
+    longitude: 128,
+    observedAt: '2026-09-02T01:00:00Z',
+  };
+  for (const [scenario, expectedStatus] of [
+    ['empty', 'PROXIMITY_LOST'],
+    ['expired', 'EXPIRED'],
+    ['forbidden', 'REJECTED'],
+  ]) {
+    setMockScenario(scenario);
+    const result = await api.submitObservation(9201, body);
+    assert.equal(result.status, expectedStatus);
+  }
+  setMockScenario('network-error');
+  await assert.rejects(
+    api.startForegroundSession(body),
+    (error) => error instanceof ApiError && error.isNetworkError,
+  );
+  setMockScenario('success');
+});
 
 test('documented session error statuses select only supported UI states', () => {
   const cases = [
-    [400, 'location-failed'],
-    [401, 'error'],
-    [403, 'rejected'],
-    [404, 'error'],
-    [409, 'error'],
+    [400, 'invalid-observation'],
+    [401, 'unauthenticated'],
+    [403, 'inactive-tourist'],
+    [404, 'no-place'],
+    [409, 'ambiguous-place'],
     [422, 'proximity-lost'],
   ];
   for (const [status, phase] of cases) {
@@ -41,14 +119,18 @@ test('documented session error statuses select only supported UI states', () => 
     assert.equal(sessionErrorPhase(error), phase);
     assert.equal(error.status, status);
   }
+  assert.equal(
+    sessionErrorPhase(new ApiError('offline', { isNetworkError: true })),
+    'network-error',
+  );
 });
 
-test('session start and observation preserve method paths, bodies, and AbortSignals', async () => {
+test('session starts, recovery, and observation preserve paths, bodies, and AbortSignals', async () => {
   const calls = [];
   const response = { id: 9201, placeId: 17, status: 'STARTED' };
   const client = {
     delete: async () => response,
-    get: async () => response,
+    get: async (path, options) => { calls.push({ options, path }); return response; },
     patch: async () => response,
     post: async (path, body, options) => { calls.push({ body, options, path }); return response; },
     put: async () => response,
@@ -68,11 +150,16 @@ test('session start and observation preserve method paths, bodies, and AbortSign
     longitude: 128.2,
     observedAt: '2026-09-02T01:00:15Z',
   };
+  const foregroundBody = { ...observationBody };
 
   assert.equal(await api.startSession(startBody, signal), response);
+  assert.equal(await api.startForegroundSession(foregroundBody, signal), response);
+  assert.equal(await api.getSession(9201, signal), response);
   assert.equal(await api.submitObservation(9201, observationBody, signal), response);
   assert.deepEqual(calls, [
     { body: startBody, options: { signal }, path: '/visit-verification-sessions' },
+    { body: foregroundBody, options: { signal }, path: '/visit-verification-sessions/foreground' },
+    { options: { signal }, path: '/visit-verification-sessions/9201' },
     { body: observationBody, options: { signal }, path: '/visit-verification-sessions/9201/observations' },
   ]);
 });
@@ -81,19 +168,44 @@ test('session mutations never retry and preserve request variables', async () =>
   const calls = [];
   const response = { id: 9201, status: 'IN_PROGRESS' };
   const api = {
+    getSession: async (sessionId, signal) => { calls.push({ sessionId, signal, type: 'recover' }); return response; },
+    startForegroundSession: async (value, signal) => { calls.push({ body: value, signal, type: 'foreground' }); return response; },
     startSession: async (body, signal) => { calls.push({ body, signal, type: 'start' }); return response; },
     submitObservation: async (sessionId, body, signal) => { calls.push({ body, sessionId, signal, type: 'observation' }); return response; },
   };
   const signal = new AbortController().signal;
   const body = { accuracyMeters: 3, latitude: 35, longitude: 128, observedAt: '2026-09-02T01:00:00Z' };
   const start = createStartSessionMutationOptions(api);
+  const foreground = createStartForegroundSessionMutationOptions(api);
+  const recover = createRecoverSessionMutationOptions(api);
   const observation = createObservationMutationOptions(api);
 
   assert.equal(start.retry, false);
+  assert.equal(foreground.retry, false);
+  assert.equal(recover.retry, false);
   assert.equal(observation.retry, false);
   await start.mutationFn({ body: { ...body, placeId: 17 }, signal });
+  await foreground.mutationFn({ body, signal });
+  await recover.mutationFn({ sessionId: 9201, signal });
   await observation.mutationFn({ body, sessionId: 9201, signal });
-  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map(({ type }) => type), [
+    'start',
+    'foreground',
+    'recover',
+    'observation',
+  ]);
+});
+
+test('foreground recovery memory stores only the server session and clears on logout boundary', () => {
+  const session = { id: 9201, placeId: 17, status: 'IN_PROGRESS' };
+  rememberActiveForegroundVisitVerificationSession(session);
+  assert.equal(getActiveForegroundVisitVerificationSession(), session);
+  assert.equal('latitude' in getActiveForegroundVisitVerificationSession(), false);
+  clearActiveForegroundVisitVerificationSession();
+  assert.equal(getActiveForegroundVisitVerificationSession(), null);
+
+  rememberActiveForegroundVisitVerificationSession({ ...session, status: 'COMPLETED' });
+  assert.equal(getActiveForegroundVisitVerificationSession(), null);
 });
 
 test('server recommendation controls scheduling and only server terminal states stop observation', () => {
@@ -184,16 +296,62 @@ test('visit review mutation disables retry and does not reshape the contract bod
   assert.deepEqual(calls, [{ placeId: 17, value: body }]);
 });
 
-test('review draft limits photos and reasons without inventing submission serialization', () => {
+test('successful review submission refreshes place reviews and the current user review list', async () => {
+  const invalidated = [];
+  const queryClient = {
+    invalidateQueries: async ({ queryKey }) => { invalidated.push(queryKey); },
+  };
+
+  await invalidateReviewQueries(queryClient, 17);
+
+  assert.deepEqual(invalidated, [
+    ['v2', 'places', 'entity', 17, 'reviews'],
+    ['v2', 'users', 'me', 'reviews'],
+  ]);
+});
+
+test('successful review submission immediately primes place detail and my review count caches', () => {
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(
+    ['v2', 'users', 'me', 'reviews', { limit: 1, page: 1 }],
+    { hasNext: false, limit: 1, page: 1, reviews: [], totalElements: 7, totalPages: 1 },
+  );
+  const review = {
+    content: '방금 작성한 리뷰',
+    createdAt: '2026-09-03T11:00:00Z',
+    imageUrls: ['https://cdn.test/review.jpg'],
+    placeId: 17,
+    recommendReason: '친절해요, 깨끗해요',
+    reviewId: 91,
+  };
+
+  primeSubmittedReviewQueries(queryClient, review);
+
+  assert.deepEqual(
+    queryClient.getQueryData(['v2', 'places', 'entity', 17, 'reviews', { limit: 20, page: 1 }]).content,
+    [review],
+  );
+  const mine = queryClient.getQueryData(
+    ['v2', 'users', 'me', 'reviews', { limit: 1, page: 1 }],
+  );
+  assert.equal(mine.totalElements, 8);
+  assert.equal(mine.reviews[0].reviewId, 91);
+});
+
+test('review draft limits photos, serializes multiple reasons, and never blocks text submission for local photos', () => {
   const photos = Array.from({ length: 4 }, (_, index) => ({ height: 10, width: 10, uri: `file://${index}` }));
   assert.equal(appendPhotos([], photos).length, 3);
 
   let reasons = [];
   for (const reason of RECOMMEND_REASONS) reasons = toggleReason(reasons, reason);
   assert.equal(reasons.length, 5);
-  assert.equal(validateReviewDraft({ content: 'Review', photoCount: 0, reasons: reasons.slice(0, 2) }), 'multiple-reasons-contract-missing');
-  assert.equal(validateReviewDraft({ content: 'Review', photoCount: 1, reasons: reasons.slice(0, 1) }), 'photo-upload-contract-missing');
-  assert.equal(validateReviewDraft({ content: 'Review', photoCount: 0, reasons: reasons.slice(0, 1) }), null);
+  assert.equal(serializeRecommendReasons(reasons.slice(0, 2), (reason) => reason), 'kind, easyToFind');
+  assert.deepEqual(selectReviewImageUrls([
+    { height: 10, uri: 'file:///local.jpg', width: 10 },
+    { height: 10, uri: 'https://cdn.example.com/1.jpg', width: 10 },
+  ]), ['https://cdn.example.com/1.jpg']);
+  assert.equal(validateReviewDraft({ content: 'Review', reasons: reasons.slice(0, 2) }), null);
+  assert.equal(validateReviewDraft({ content: 'Review', reasons: reasons.slice(0, 1) }), null);
 });
 
 test('check-in pagination follows server page metadata and forwards AbortSignal', async () => {

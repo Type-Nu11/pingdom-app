@@ -7,7 +7,6 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorUx } from '../../../shared/api';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +20,10 @@ import MapBottomSheet, {
 } from '../components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../components/FavoritePlacesBottomSheet';
 import ReservationBottomSheet from '../../reservations/components/ReservationBottomSheet';
+import {
+  NEARBY_RESERVATION_CANDIDATE_LIMIT,
+  useNearbyReservablePlaceIds,
+} from '../../reservations';
 import MapCanvas from '../components/MapCanvas';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
@@ -55,7 +58,6 @@ import {
   createRecommendationPresentation,
   getRecommendationState,
 } from '../model/recommendationPresentation';
-import { applyBookmarkStateToMarkers } from '../utils/mapMarkerBookmarks';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 import {
   findMapPreviewPlace,
@@ -64,6 +66,7 @@ import {
   shouldPresentMapSelection,
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
+import { selectMapExplorationPlaceIds } from '../utils/mapExplorationPlaceIds';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
 import { PlaceCouponCta } from '../../offers-coupons';
 import { LocationStatusOverlay } from '../components/MapStatusOverlays';
@@ -125,7 +128,6 @@ export default function MapScreen({
 }: MapScreenProps) {
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const reservationNavigationLock = useRef(false);
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
@@ -137,6 +139,7 @@ export default function MapScreen({
     markers: apiMarkers,
     places: apiPlaces,
     refetch: refetchPlaces,
+    status: placeListStatus,
   } = usePlaces();
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
@@ -167,11 +170,39 @@ export default function MapScreen({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'map' | 'favorites' | 'reservations'>(initialSection);
+  const [reservationEntryPlace, setReservationEntryPlace] = useState<DecisionPlace | null>(null);
   const [dismissedMarkerCenter, setDismissedMarkerCenter] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
   const [mapZoomLevel, setMapZoomLevel] = useState(MAP_PREVIEW_ZOOM_LEVEL);
+  const reservationDiscoveryEnabled = mapSection === 'reservations'
+    && Number.isFinite(userLat)
+    && Number.isFinite(userLng);
+  const {
+    isLoading: isNearbyReservationCandidatesLoading,
+    places: nearbyReservationCandidates,
+  } = usePlaces({
+    latitude: userLat,
+    limit: NEARBY_RESERVATION_CANDIDATE_LIMIT,
+    longitude: userLng,
+    radiusKm: recommendationRadiusKm,
+    sort: 'NEAREST',
+  }, reservationDiscoveryEnabled);
+  const nearbyReservationCandidateIds = useMemo(
+    () => [
+      ...(reservationEntryPlace ? [reservationEntryPlace.id] : []),
+      ...nearbyReservationCandidates.map((place) => place.id),
+    ],
+    [nearbyReservationCandidates, reservationEntryPlace],
+  );
+  const {
+    isLoading: isNearbyReservationsLoading,
+    placeIdByAvailabilityId,
+    reservablePlaceIds: discoveredReservablePlaceIds,
+  } = useNearbyReservablePlaceIds(nearbyReservationCandidateIds, {
+    enabled: reservationDiscoveryEnabled,
+  });
 
   useEffect(() => {
     setMapSection(initialSection);
@@ -201,11 +232,10 @@ export default function MapScreen({
     togglePlaceBookmark,
   } = usePlaceBookmark();
 
-  const expandedSheetTop = insets.top
-    + 2
-    + MAP_TOP_OVERLAY_METRICS.headerHeight
-    + MAP_TOP_OVERLAY_METRICS.categoryHeight
-    + 19;
+  // Bottom-sheet coordinates already begin below the translucent status-bar layer on Android.
+  // Align the expanded sheet with the bottom of the search header instead of leaving the
+  // category-overlay gap above it.
+  const expandedSheetTop = MAP_TOP_OVERLAY_METRICS.headerHeight + 2;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
   // Keep one stable sheet geometry while content changes. Only the expanded destination moves:
   // place detail can fill the screen, while other expanded content remains below the top overlay.
@@ -262,10 +292,17 @@ export default function MapScreen({
 
     return serverPlaces;
   }, [apiPlaces, recommendationPlaces]);
-  const mapExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList([
-    ...(content.type === 'place-preview' ? [content.placeId] : []),
-    ...allPlaces.map((place) => place.id),
-  ], { enabled: mapSection === 'map' });
+  const mapExplorationPlaceIds = useMemo(() => selectMapExplorationPlaceIds({
+    expanded: snapPoint === 'expanded',
+    places: allPlaces,
+    recommendationPlaces,
+    recommendationsActive: content.type === 'recommendations',
+    selectedPlaceId: content.type === 'place-preview' ? content.placeId : undefined,
+  }), [allPlaces, content, recommendationPlaces, snapPoint]);
+  const mapExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList(
+    mapExplorationPlaceIds,
+    { enabled: mapSection === 'map' },
+  );
   const mapExplorationPreviewImageUrlsByPlaceId = useMemo(
     () => Object.entries(mapExplorationImageUrlsByPlaceId)
       .reduce<Record<string, string>>((result, [placeId, imageUrls]) => {
@@ -334,17 +371,57 @@ export default function MapScreen({
       name: selectedPlacePresentation.name || selectedPlaceBase.name,
     };
   }, [selectedPlaceBase, selectedPlacePresentation]);
+  useEffect(() => {
+    if (!selectedPlace) return;
+    setReservationEntryPlace((current) => {
+      if (selectedPlacePresentation?.reservation.kind !== 'available') {
+        return current === null ? current : null;
+      }
+      return current?.id === selectedPlace.id ? current : selectedPlace;
+    });
+  }, [selectedPlace, selectedPlacePresentation?.reservation.kind]);
   const nearbyReservationPlaces = useMemo(
     () => includeSelectedNearbyReservablePlace(
-      recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
-      selectedPlace,
+      mergeMapPreviewPlaces(
+        nearbyReservationCandidates
+          .filter((place) => discoveredReservablePlaceIds.has(place.id))
+          .map(toDecisionPlace),
+        recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
+      ),
+      reservationEntryPlace ?? selectedPlace,
       {
         radiusKm: recommendationRadiusKm,
-        reservable: selectedPlacePresentation?.reservation.kind === 'available',
+        reservable: Boolean(reservationEntryPlace)
+          || selectedPlacePresentation?.reservation.kind === 'available',
       },
     ),
-    [recommendedPlaces, recommendationRadiusKm, selectedPlace, selectedPlacePresentation?.reservation.kind],
+    [
+      recommendedPlaces,
+      nearbyReservationCandidates,
+      discoveredReservablePlaceIds,
+      recommendationRadiusKm,
+      reservationEntryPlace,
+      selectedPlace,
+      selectedPlacePresentation?.reservation.kind,
+    ],
   );
+  const reservationPlaceByAvailabilityId = useMemo(() => {
+    const placeById = new Map(
+      [
+        ...nearbyReservationCandidates.map((place) => toDecisionPlace(place)),
+        ...(reservationEntryPlace ? [reservationEntryPlace] : []),
+      ].map((place) => [place.id, place]),
+    );
+
+    return Object.entries(placeIdByAvailabilityId).reduce<Record<string, DecisionPlace>>(
+      (result, [availabilityId, placeId]) => {
+        const place = placeById.get(placeId);
+        if (place) result[availabilityId] = place;
+        return result;
+      },
+      {},
+    );
+  }, [nearbyReservationCandidates, placeIdByAvailabilityId, reservationEntryPlace]);
   const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;
@@ -385,6 +462,7 @@ export default function MapScreen({
           ? t(selectedPlacePresentation.verificationLabelKey)
           : '',
         statusEmphasis: operatingSummary?.statusText ?? '',
+        verifiedEvidenceCount: selectedPlacePresentation.verifiedEvidenceCount ?? undefined,
       },
     };
   }, [selectedPlace, selectedPlacePresentation, t]);
@@ -432,13 +510,13 @@ export default function MapScreen({
     );
     const visibleMarkerIds = new Set(liveMarkerIds);
     if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
-    const markers = applyBookmarkStateToMarkers([
+    const markers = [
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
       ...(focusedRecommendationMarker ? [focusedRecommendationMarker] : []),
-    ], bookmarkedPlaceIds);
+    ];
 
     if (activeCategory === 'all') return markers;
     const markerCategory: MapMarker['category'] = activeCategory;
@@ -447,9 +525,7 @@ export default function MapScreen({
   }, [
     activeCategory,
     apiMarkers,
-    bookmarkedPlaceIds,
     content.type,
-    apiPlaces.length,
     recommendationPlaces,
     mapSelectedPlace,
   ]);
@@ -457,7 +533,6 @@ export default function MapScreen({
     mapMarkers,
     content.type === 'place-preview' ? mapSelectedPlace?.id ?? null : null,
   ), [content.type, mapMarkers, mapSelectedPlace?.id]);
-
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
 
@@ -677,7 +752,7 @@ export default function MapScreen({
           }}
           profileImageUrl={profile?.profileImageUrl}
           query={query}
-          showCategories={!isExpandedPlaceDetail}
+          showCategories={snapPoint !== 'expanded'}
         />
         <View
           pointerEvents="box-none"
@@ -733,8 +808,12 @@ export default function MapScreen({
             collapsedTranslateY={collapsedTranslateY}
             height={fullSheetHeight}
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
+            isNearbyLoading={reservationDiscoveryEnabled && (
+              isNearbyReservationCandidatesLoading || isNearbyReservationsLoading
+            )}
             mediumTranslateY={mediumTranslateY}
             nearbyPlaces={nearbyReservationPlaces}
+            reservationPlaceByAvailabilityId={reservationPlaceByAvailabilityId}
             onHandlePress={() => {
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
@@ -825,6 +904,7 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             places={sheetPlaces}
+            placesState={placeListStatus === 'disabled' ? 'error' : placeListStatus}
             previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
             recommendationContext={recommendationPresentation.contextText}
             recommendationLimitMessage={recommendationPresentation.limitText}

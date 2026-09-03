@@ -113,18 +113,27 @@ export function resolvePlaceListEnabled({
   return readBoolean(
     'EXPO_PUBLIC_ENABLE_PLACE_LIST',
     value,
-    appEnvironment === 'development' && apiMode === 'real',
+    apiMode === 'real',
   );
 }
 
 const appEnvironment = readAppEnvironment(process.env.EXPO_PUBLIC_APP_ENV);
 const apiMode = readApiMode(process.env.EXPO_PUBLIC_API_MODE);
 
-if (apiMode === 'mock' && appEnvironment !== 'development') {
+export function assertApiModeAllowed({
+  apiMode: candidateApiMode,
+  appEnvironment: candidateEnvironment,
+}: {
+  apiMode: ApiMode;
+  appEnvironment: AppEnvironment;
+}): void {
+  if (candidateApiMode !== 'mock' || candidateEnvironment === 'development') return;
   throw new EnvironmentConfigurationError(
     'EXPO_PUBLIC_API_MODE=mock is allowed only when EXPO_PUBLIC_APP_ENV=development.',
   );
 }
+
+assertApiModeAllowed({ apiMode, appEnvironment });
 
 export const env = Object.freeze({
   apiBaseUrl: readHttpUrl('EXPO_PUBLIC_API_BASE_URL', process.env.EXPO_PUBLIC_API_BASE_URL),

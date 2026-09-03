@@ -5,8 +5,8 @@ import Svg, { Line } from 'react-native-svg';
 import styled, { useTheme } from 'styled-components/native';
 
 import Button from '../../../shared/components/Button';
+import { HeaderBackButton } from '../../../shared/components';
 import CouponQrCode from '../components/CouponQrCode';
-import BackIcon from '../../../shared/assets/icons/back.svg';
 import CouponIcon from '../../../shared/assets/icons/coupon.svg';
 
 export type CouponDetailInfoRow = Readonly<{ label: string; value: string }>;
@@ -61,14 +61,7 @@ export default function CouponDetailScreen({
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-coupon-detail-screen">
       <TopBar>
-        <IconButton
-          accessibilityLabel={t('myPage.back')}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={onBack}
-        >
-          <BackIcon height={44} width={44} />
-        </IconButton>
+        <HeaderBackButton accessibilityLabel={t('myPage.back')} onPress={onBack} />
         <TopBarTitle>{t('myPage.couponDetail.title')}</TopBarTitle>
         <Spacer />
       </TopBar>
@@ -193,11 +186,6 @@ const TopBar = styled.View`
   align-items: center;
   justify-content: space-between;
   padding: 0 ${({ theme }) => theme.spacing.lg}px;
-`;
-
-const IconButton = styled.Pressable`
-  align-items: center;
-  justify-content: center;
 `;
 
 const Spacer = styled.View`

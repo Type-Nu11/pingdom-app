@@ -5,9 +5,9 @@
     "version": "v0"
   },
   "x-source": {
-    "checkedAt": "2026-09-02T01:57:43.447Z",
+    "checkedAt": "2026-09-03T10:53:19.594Z",
     "location": "https://www.typenull.xyz/v3/api-docs",
-    "sha256": "abb25dbf179a2d9d6d21026fe53d34c617cc6f2c955a0f942235f8e6663bbc33"
+    "sha256": "b588baf1e02ec9c957ab66c02448ddf6985d08918100f9d359fbc12d5dea81d0"
   },
   "paths": {
     "/visit-verification-sessions": {
@@ -81,6 +81,103 @@
           },
           "409": {
             "description": "동일 장소의 진행 중인 인증 세션이 동시에 생성됨",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "장소 인증 허용 반경 밖",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/visit-verification-sessions/foreground": {
+      "post": {
+        "tags": [
+          "App"
+        ],
+        "summary": "좌표 기반 foreground 방문 인증 시작",
+        "description": "장소 ID를 받지 않고 서버가 현재 좌표 주변의 공개·운영 중 장소를 판정해 인증 세션을 시작합니다. 진행 중인 동일 장소 세션은 우선 복구하며, 새 후보는 거리순으로 비교해 1·2순위 거리 차이가 GPS 정확도 두 배보다 클 때만 가장 가까운 장소를 선택합니다.",
+        "operationId": "startForeground",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForegroundVisitVerificationStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "인증 세션 시작 또는 진행 중·완료 세션 재반환",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitVerificationSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "관측 시각 또는 GPS 정확도 검증 실패",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않은 요청",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "활성 관광객 계정이 아님",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "현재 좌표에서 인증할 장소를 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "현재 좌표에서 장소를 하나로 결정할 수 없음",
             "content": {
               "*/*": {
                 "schema": {
@@ -224,6 +321,16 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "현재 인증 세션 상태",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitVerificationSessionResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "인증되지 않은 요청",
             "content": {
@@ -291,6 +398,43 @@
           }
         },
         "description": "에러 응답"
+      },
+      "ForegroundVisitVerificationStartRequest": {
+        "required": [
+          "accuracyMeters",
+          "latitude",
+          "longitude",
+          "observedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "maximum": 90,
+            "exclusiveMaximum": false,
+            "minimum": -90,
+            "exclusiveMinimum": false,
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "maximum": 180,
+            "exclusiveMaximum": false,
+            "minimum": -180,
+            "exclusiveMinimum": false,
+            "type": "number",
+            "format": "double"
+          },
+          "accuracyMeters": {
+            "minimum": 0,
+            "exclusiveMinimum": false,
+            "type": "number",
+            "format": "double"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "ValidationErrorResponse": {
         "required": [
@@ -394,11 +538,15 @@
           },
           "requiredRadiusMeters": {
             "type": "number",
-            "format": "double"
+            "description": "세션 생성 시 확정된 장소 반경 기준(미터)",
+            "format": "double",
+            "example": 500
           },
           "requiredDwellSeconds": {
             "type": "integer",
-            "format": "int64"
+            "description": "세션 생성 시 확정된 연속 체류 기준(초)",
+            "format": "int64",
+            "example": 30
           },
           "latestDistanceMeters": {
             "type": "number",

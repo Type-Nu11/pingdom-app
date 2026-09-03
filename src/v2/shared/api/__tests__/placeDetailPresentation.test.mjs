@@ -141,10 +141,20 @@ test('70069-shaped empty availability can open the reservation page without inve
     kind: 'empty', disabled: false,
   });
   assert.equal(result.reviewState, 'empty');
+  assert.equal(result.verifiedEvidenceCount, 0);
   assert.equal('businessHours' in result, false);
   assert.deepEqual(result.operatingSummary, {
     kind: 'open', transitionDay: 'today', transitionTime: '18:00',
   });
+});
+
+test('presentation preserves the server verified evidence count for the detail heading', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    detail: ready({ ...detail, verifiedEvidenceCount: 23 }),
+  });
+
+  assert.equal(result.verifiedEvidenceCount, 23);
 });
 
 test('presentation uses the latest server operating boolean and keeps notice text separate', () => {

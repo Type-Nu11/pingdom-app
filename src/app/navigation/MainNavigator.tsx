@@ -78,11 +78,17 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
               navigation.navigate(MAIN_ROUTES.ReservationDetail, { reservationId });
             }
           }}
-          onOpenVisitVerification={() => navigation.navigate(MAIN_ROUTES.VisitVerificationPlaces)}
+          onOpenVisitVerification={() => navigation.navigate(
+            MAIN_ROUTES.VisitVerificationSession,
+            { mode: 'foreground' },
+          )}
           onStartVisitVerification={(value) => {
             const placeId = parsePlaceId(value);
             if (placeId) {
-              navigation.navigate(MAIN_ROUTES.VisitVerificationSession, { placeId });
+              navigation.navigate(MAIN_ROUTES.VisitVerificationSession, {
+                mode: 'place',
+                placeId,
+              });
             }
           }}
           onSignIn={() => void clearTokenSession()}
@@ -134,6 +140,10 @@ export const MyPageRouteScreen = ({ navigation }: Pick<MainScreenProps<'MyPage'>
         onBack={navigation.goBack}
         onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
         onOpenProfileEdit={openProfileEdit}
+        onOpenPlace={(value) => {
+          const placeId = parsePlaceId(value);
+          if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
+        }}
         onOpenReservations={() => navigation.navigate(MAIN_ROUTES.ReservationBox)}
         onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
         onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
@@ -154,7 +164,13 @@ export const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileE
 
 const VerifiedPlacesRouteScreen = ({ navigation }: MainScreenProps<'VerifiedPlaces'>) => (
   <V2ScreenBoundary>
-    <VerifiedPlacesScreen onBack={navigation.goBack} />
+    <VerifiedPlacesScreen
+      onBack={navigation.goBack}
+      onOpenPlace={(value) => {
+        const placeId = parsePlaceId(value);
+        if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
+      }}
+    />
   </V2ScreenBoundary>
 );
 
@@ -274,21 +290,29 @@ const VisitVerificationReviewRouteScreen = ({ navigation, route }: MainScreenPro
   </V2ScreenBoundary>
 );
 
-const VisitVerificationSessionRouteScreen = ({ navigation, route }: MainScreenProps<'VisitVerificationSession'>) => (
-  <V2ScreenBoundary>
-    <VisitVerificationSessionScreen
-      onBack={navigation.goBack}
-      onWriteReview={({ checkInId: value, placeId: placeValue }) => {
-        const checkInId = parseCheckInId(value);
-        const placeId = parsePlaceId(placeValue);
-        if (checkInId && placeId) {
-          navigation.navigate(MAIN_ROUTES.VisitVerificationReview, { checkInId, placeId });
-        }
-      }}
-      placeId={route.params.placeId}
-    />
-  </V2ScreenBoundary>
-);
+const VisitVerificationSessionRouteScreen = ({
+  navigation,
+  route,
+}: MainScreenProps<'VisitVerificationSession'>) => {
+  const commonProps = {
+    onBack: navigation.goBack,
+    onComplete: () => navigation.replace(MAIN_ROUTES.VisitVerificationPlaces),
+  };
+
+  return (
+    <V2ScreenBoundary>
+      {route.params.mode === 'foreground' ? (
+        <VisitVerificationSessionScreen mode="foreground" {...commonProps} />
+      ) : (
+        <VisitVerificationSessionScreen
+          mode="place"
+          placeId={route.params.placeId}
+          {...commonProps}
+        />
+      )}
+    </V2ScreenBoundary>
+  );
+};
 
 const MainNavigator = () => (
   <Stack.Navigator

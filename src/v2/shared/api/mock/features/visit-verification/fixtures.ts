@@ -10,12 +10,12 @@ const baseSession: VisitVerificationSessionFixture = {
   startedAt: '2026-09-02T01:00:00Z',
   expiresAt: '2026-09-02T01:05:00Z',
   completedAt: null,
-  requiredRadiusMeters: 24,
-  requiredDwellSeconds: 75,
+  requiredRadiusMeters: 500,
+  requiredDwellSeconds: 30,
   latestDistanceMeters: 8.4,
   verifiedDwellSeconds: 0,
   nextObservationRecommendedAt: '2026-09-02T01:00:15Z',
-  remainingSeconds: 75,
+  remainingSeconds: 30,
   completedCheckInId: null,
   reviewEligible: false,
 };
@@ -24,20 +24,20 @@ export const visitVerificationStartedFixture = baseSession;
 export const visitVerificationExistingFixture: VisitVerificationSessionFixture = {
   ...baseSession,
   status: 'IN_PROGRESS',
-  verifiedDwellSeconds: 30,
-  remainingSeconds: 45,
+  verifiedDwellSeconds: 10,
+  remainingSeconds: 20,
 };
 export const visitVerificationProgressFixture: VisitVerificationSessionFixture = {
   ...baseSession,
   status: 'IN_PROGRESS',
-  verifiedDwellSeconds: 60,
-  remainingSeconds: 15,
+  verifiedDwellSeconds: 20,
+  remainingSeconds: 10,
   nextObservationRecommendedAt: '2026-09-02T01:01:15Z',
 };
 export const visitVerificationCompletedFixture: VisitVerificationSessionFixture = {
   ...baseSession,
   status: 'COMPLETED',
-  verifiedDwellSeconds: 75,
+  verifiedDwellSeconds: 30,
   remainingSeconds: 0,
   nextObservationRecommendedAt: null,
   completedAt: '2026-09-02T01:01:15Z',
@@ -59,4 +59,11 @@ export const visitVerificationRejectedFixture: VisitVerificationSessionFixture =
   ...baseSession,
   status: 'REJECTED',
   nextObservationRecommendedAt: null,
+};
+
+export const visitVerificationAlternatePolicyFixture: VisitVerificationSessionFixture = {
+  ...baseSession,
+  requiredRadiusMeters: 240,
+  requiredDwellSeconds: 12,
+  remainingSeconds: 12,
 };

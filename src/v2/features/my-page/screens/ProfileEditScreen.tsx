@@ -13,7 +13,7 @@ import {
   useProfile,
   useSaveProfile,
 } from '../hooks/useProfile';
-import BackIcon from '../../../shared/assets/icons/back.svg';
+import { HeaderBackButton } from '../../../shared/components';
 import CheckmarkIcon from '../../../shared/assets/icons/checkmark.svg';
 import PencilIcon from '../../../shared/assets/icons/pencil.svg';
 import EyeOpenIcon from '../../../shared/assets/icons/eye-open.svg';
@@ -208,15 +208,11 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-profile-edit-screen">
       <Content contentContainerStyle={CONTENT_CONTAINER_STYLE} testID="v2-profile-edit-scroll">
         <TopBar>
-          <IconButton
+          <HeaderBackButton
             accessibilityLabel={t('myPage.back')}
-            accessibilityRole="button"
-            hitSlop={8}
             onPress={handleBack}
             testID="v2-profile-edit-back"
-          >
-            <BackIcon height={44} width={44} />
-          </IconButton>
+          />
           <TopBarTitle>{t('myPage.profileEdit.title')}</TopBarTitle>
           <IconButton
             accessibilityLabel={isSaving

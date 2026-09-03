@@ -26,6 +26,11 @@ export {
   useReservationTransition,
 } from './hooks/useReservations';
 export {
+  hasReservableAvailability,
+  NEARBY_RESERVATION_CANDIDATE_LIMIT,
+  useNearbyReservablePlaceIds,
+} from './hooks/useNearbyReservablePlaceIds';
+export {
   canRequestReservationCancel,
   getReservationStatusView,
   RESERVATION_STATUSES,

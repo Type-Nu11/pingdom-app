@@ -7,7 +7,9 @@ const document = JSON.parse(await readFile(
 const failures = [];
 const expected = [
   ['post', '/visit-verification-sessions', 'start', 201],
+  ['post', '/visit-verification-sessions/foreground', 'startForeground', 201],
   ['post', '/visit-verification-sessions/{sessionId}/observations', 'submitObservation', 200],
+  ['get', '/visit-verification-sessions/{sessionId}', 'get', 200],
 ];
 
 if (!/^https?:\/\//.test(document['x-source']?.location ?? '')) failures.push('source URL missing');
@@ -24,12 +26,45 @@ for (const [method, path, operationId, success] of expected) {
 
 for (const schema of [
   'ErrorResponse',
+  'ForegroundVisitVerificationStartRequest',
   'ValidationErrorResponse',
   'VisitVerificationObservationRequest',
   'VisitVerificationSessionResponse',
   'VisitVerificationStartRequest',
 ]) {
   if (!document.components?.schemas?.[schema]) failures.push(`${schema} missing`);
+}
+
+const foregroundOperation = document.paths?.['/visit-verification-sessions/foreground']?.post;
+const foregroundRequestRef = foregroundOperation?.requestBody?.content?.['application/json']?.schema?.$ref;
+if (foregroundRequestRef !== '#/components/schemas/ForegroundVisitVerificationStartRequest') {
+  failures.push('foreground start request schema changed');
+}
+
+const foregroundRequest = document.components?.schemas?.ForegroundVisitVerificationStartRequest;
+const foregroundFields = Object.keys(foregroundRequest?.properties ?? {}).sort();
+const expectedForegroundFields = ['accuracyMeters', 'latitude', 'longitude', 'observedAt'];
+if (JSON.stringify(foregroundFields) !== JSON.stringify(expectedForegroundFields)) {
+  failures.push(`foreground start fields changed: ${foregroundFields.join(', ')}`);
+}
+if (foregroundFields.includes('placeId')) failures.push('foreground start must not accept placeId');
+if (JSON.stringify([...(foregroundRequest?.required ?? [])].sort()) !== JSON.stringify(expectedForegroundFields)) {
+  failures.push('foreground start required fields changed');
+}
+
+const foregroundResponseRef = foregroundOperation?.responses?.[201]?.content?.['*/*']?.schema?.$ref;
+if (foregroundResponseRef !== '#/components/schemas/VisitVerificationSessionResponse') {
+  failures.push('foreground start 201 response schema changed');
+}
+const foregroundErrorStatuses = [400, 401, 403, 404, 409, 422];
+for (const status of foregroundErrorStatuses) {
+  if (!foregroundOperation?.responses?.[status]) failures.push(`foreground start ${status} response missing`);
+}
+if (!foregroundOperation?.description?.includes('진행 중인 동일 장소 세션은 우선 복구')) {
+  failures.push('foreground active-session recovery contract missing');
+}
+if (!foregroundOperation?.description?.includes('GPS 정확도 두 배')) {
+  failures.push('foreground nearest-place disambiguation contract missing');
 }
 
 function visit(value, location = '#') {
@@ -46,6 +81,5 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exitCode = 1;
 } else {
-  const getHas200 = Boolean(document.paths?.['/visit-verification-sessions/{sessionId}']?.get?.responses?.['200']);
-  console.log(`Visit verification contract valid. GET 200 response contract: ${getHas200 ? 'present' : 'missing (foreground recovery blocked)'}.`);
+  console.log('Visit verification contract valid, including foreground start and session recovery.');
 }

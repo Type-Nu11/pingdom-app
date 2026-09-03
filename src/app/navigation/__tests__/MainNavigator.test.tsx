@@ -48,9 +48,11 @@ jest.mock('../../../v2/features/my-page/screens/MyPageScreen', () => {
     __esModule: true,
     default: ({
       onOpenProfileEdit,
+      onOpenPlace,
       onOpenSettings,
     }: {
       onOpenProfileEdit: () => void;
+      onOpenPlace: (placeId: number) => void;
       onOpenSettings: () => void;
     }) => ReactLibrary.createElement(
       ReactNative.View,
@@ -62,6 +64,10 @@ jest.mock('../../../v2/features/my-page/screens/MyPageScreen', () => {
       ReactLibrary.createElement(
         ReactNative.Pressable,
         { onPress: onOpenSettings, testID: 'current-my-page-settings-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: () => onOpenPlace(17), testID: 'current-my-page-place-entry' },
       ),
     ),
   };
@@ -131,7 +137,7 @@ describe('현재 지도 경계', () => {
     expect(screen.getByTestId('current-map-screen')).toBeVisible();
   });
 
-  test('방문 검증 CTA callback을 명확한 후보 route로 연결한다', async () => {
+  test('방문 검증 CTA callback을 foreground 세션 route로 연결한다', async () => {
     const i18n = await createTestI18n();
     const view = await renderWithProviders(
       <MapRouteScreen navigation={navigation} route={route} />,
@@ -139,7 +145,10 @@ describe('현재 지도 경계', () => {
     );
 
     await view.user.press(screen.getByTestId('current-map-verification-entry'));
-    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.VisitVerificationPlaces);
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      MAIN_ROUTES.VisitVerificationSession,
+      { mode: 'foreground' },
+    );
   });
 
   test('선택한 장소의 실제 ID로 체류 인증 세션에 진입한다', async () => {
@@ -152,7 +161,7 @@ describe('현재 지도 경계', () => {
     await view.user.press(screen.getByTestId('selected-place-verification-entry'));
     expect(navigation.navigate).toHaveBeenCalledWith(
       MAIN_ROUTES.VisitVerificationSession,
-      { placeId: 17 },
+      { mode: 'place', placeId: 17 },
     );
   });
 
@@ -206,5 +215,22 @@ describe('현재 지도 경계', () => {
     );
     await view.user.press(screen.getByTestId('current-settings-profile-edit-entry'));
     expect(navigation.navigate).toHaveBeenLastCalledWith(MAIN_ROUTES.ProfileEdit);
+  });
+
+  test('마이페이지 검증 장소를 누르면 지도에서 해당 장소를 연다', async () => {
+    const myPageRoute = {
+      key: 'MyPage-test',
+      name: MAIN_ROUTES.MyPage,
+      params: undefined,
+    } as MainScreenProps<'MyPage'>['route'];
+    const view = await renderWithProviders(
+      <MyPageRouteScreen navigation={navigation as never} route={myPageRoute} />,
+    );
+
+    await view.user.press(screen.getByTestId('current-my-page-place-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      MAIN_ROUTES.Map,
+      { focusedPlaceId: 17 },
+    );
   });
 });

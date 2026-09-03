@@ -264,6 +264,8 @@ describe('V2 reservation screens', () => {
 
     const { user } = await renderReservationScreen(createScreen());
     expect(screen.getByRole('tab', { name: '오전' }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('v2-reservation-date-capacity-2026-08-27')).toHaveTextContent('16');
+    expect(screen.getByRole('button', { name: '2026-08-27, 잔여 16명' })).toBeEnabled();
     expect(screen.getByText('10:00')).toBeVisible();
     expect(screen.queryByText('14:00')).not.toBeOnTheScreen();
 
@@ -287,7 +289,8 @@ describe('V2 reservation screens', () => {
     await renderReservationScreen(createScreen());
 
     expect(await screen.findByText('2026년 9월')).toBeVisible();
-    expect(screen.getByRole('button', { name: '2026-09-02, 일정 있음' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '2026-09-02, 잔여 1명' })).toBeEnabled();
+    expect(screen.getByTestId('v2-reservation-date-capacity-2026-09-02')).toHaveTextContent('1');
     expect(screen.getByText('현재 2명이 예약 가능한 시간은 없습니다. 아래에서 등록된 일정과 예약 불가 사유를 확인해 주세요.')).toBeVisible();
     expect(screen.getByText('10:00')).toBeVisible();
     expect(screen.getByTestId('v2-availability-77')).toBeDisabled();
@@ -329,7 +332,7 @@ describe('V2 reservation screens', () => {
     expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
   });
 
-  test('여러 날에 걸친 availability를 시작 날짜의 하나의 서버 선택지로 표시한다', async () => {
+  test('여러 날에 걸친 availability를 겹치는 날짜에 펼치고 오늘을 먼저 선택한다', async () => {
     mockPlace();
     mockCreateReservation();
     const startsAt = new Date(2026, 8, 2, 17, 28, 0);
@@ -344,7 +347,7 @@ describe('V2 reservation screens', () => {
     await renderReservationScreen(
       <CreateReservationScreen
         navigation={{ goBack: jest.fn() } as never}
-        now={new Date(2026, 8, 2, 17, 45, 0)}
+        now={new Date(2026, 8, 3, 8, 0, 0)}
         route={{ key: 'create', name: 'CreateReservation', params: {
           placeId: 17,
           placeName: '대성반점',
@@ -352,10 +355,11 @@ describe('V2 reservation screens', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '2026-09-02, 예약 가능' })).toBeEnabled();
-    for (const date of ['03', '04', '05']) {
-      expect(screen.getByRole('button', { name: `2026-09-${date}, 예약 불가` })).toBeDisabled();
-    }
+    expect(screen.getByRole('button', { name: '2026-09-02, 예약 불가' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '2026-09-03, 잔여 8명' })
+      .props.accessibilityState).toEqual(expect.objectContaining({ selected: true }));
+    expect(screen.getByRole('button', { name: '2026-09-04, 잔여 8명' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '2026-09-05, 예약 불가' })).toBeDisabled();
     expect(screen.getByText('17:28')).toBeVisible();
     expect(screen.getByTestId('v2-availability-77').props.accessibilityLabel)
       .toMatch(/9월 2일 17:28.9월 5일 00:00/);
@@ -513,7 +517,7 @@ describe('V2 reservation screens', () => {
     expect(mutate.mock.calls[1][0].idempotencyKey).toBe(firstKey);
   });
 
-  test('서버 재고 충돌은 구체적으로 안내하고 availability를 갱신한다', async () => {
+  test('서버 재고 충돌은 availability를 갱신하고 다음 시도에 새 idempotency key를 쓴다', async () => {
     mockPlace();
     const refetch = jest.fn();
     const capacityError = new ApiError('예약 가능한 인원이 부족합니다.', {
@@ -544,6 +548,12 @@ describe('V2 reservation screens', () => {
     await user.press(screen.getByTestId('v2-reservation-submit'));
 
     expect(refetch).toHaveBeenCalledTimes(1);
+    const rejectedKey = mutate.mock.calls[0][0].idempotencyKey;
+
+    await user.press(screen.getByTestId('v2-reservation-submit'));
+
+    expect(mutate).toHaveBeenCalledTimes(2);
+    expect(mutate.mock.calls[1][0].idempotencyKey).not.toBe(rejectedKey);
   });
 
   test('서버가 허용하지 않는 연락처 문자는 제출 전에 차단한다', async () => {

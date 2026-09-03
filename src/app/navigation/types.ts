@@ -103,9 +103,9 @@ export type MainStackParamList = {
     checkInId?: CheckInId;
     placeId: PlaceId;
   };
-  VisitVerificationSession: {
-    placeId: PlaceId;
-  };
+  VisitVerificationSession:
+    | { mode: 'foreground' }
+    | { mode: 'place'; placeId: PlaceId };
 };
 
 export type RootStackParamList = {

@@ -77,6 +77,7 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
             <Button
               label={t('visitVerification.session.start')}
               onPress={() => navigation.navigate(V2_ROUTES.VisitVerificationSession, {
+                mode: 'place',
                 placeId: route.params.placeId,
               })}
             />

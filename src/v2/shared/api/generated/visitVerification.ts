@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/visit-verification-sessions/foreground": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 좌표 기반 foreground 방문 인증 시작
+         * @description 장소 ID를 받지 않고 서버가 현재 좌표 주변의 공개·운영 중 장소를 판정해 인증 세션을 시작합니다. 진행 중인 동일 장소 세션은 우선 복구하며, 새 후보는 거리순으로 비교해 1·2순위 거리 차이가 GPS 정확도 두 배보다 클 때만 가장 가까운 장소를 선택합니다.
+         */
+        post: operations["startForeground"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/visit-verification-sessions/{sessionId}/observations": {
         parameters: {
             query?: never;
@@ -78,6 +98,16 @@ export interface components {
              */
             code?: string | null;
         };
+        ForegroundVisitVerificationStartRequest: {
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            /** Format: double */
+            accuracyMeters: number;
+            /** Format: date-time */
+            observedAt: string;
+        };
         /** @description 필드 검증 오류 응답 */
         ValidationErrorResponse: {
             message: string;
@@ -112,9 +142,17 @@ export interface components {
             expiresAt?: string;
             /** Format: date-time */
             completedAt?: string | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description 세션 생성 시 확정된 장소 반경 기준(미터)
+             * @example 500
+             */
             requiredRadiusMeters?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 세션 생성 시 확정된 연속 체류 기준(초)
+             * @example 30
+             */
             requiredDwellSeconds?: number;
             /** Format: double */
             latestDistanceMeters?: number;
@@ -227,6 +265,84 @@ export interface operations {
             };
         };
     };
+    startForeground: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForegroundVisitVerificationStartRequest"];
+            };
+        };
+        responses: {
+            /** @description 인증 세션 시작 또는 진행 중·완료 세션 재반환 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VisitVerificationSessionResponse"];
+                };
+            };
+            /** @description 관측 시각 또는 GPS 정확도 검증 실패 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 인증되지 않은 요청 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 활성 관광객 계정이 아님 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 현재 좌표에서 인증할 장소를 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 현재 좌표에서 장소를 하나로 결정할 수 없음 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 장소 인증 허용 반경 밖 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     submitObservation: {
         parameters: {
             query?: never;
@@ -309,6 +425,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description 현재 인증 세션 상태 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VisitVerificationSessionResponse"];
+                };
+            };
             /** @description 인증되지 않은 요청 */
             401: {
                 headers: {

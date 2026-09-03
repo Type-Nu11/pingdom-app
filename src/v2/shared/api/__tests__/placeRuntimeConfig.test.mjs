@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { resolvePlaceListEnabled } from '../../config/env.ts';
+import { assertApiModeAllowed, resolvePlaceListEnabled } from '../../config/env.ts';
 import { getPlaceListRuntimeState } from '../../../features/place-exploration/model/placeListRuntime.ts';
 
-test('app-linked real development enables place requests by default and explicit flags win', () => {
+test('real API environments enable place requests by default and explicit flags win', () => {
   assert.equal(resolvePlaceListEnabled({
     apiMode: 'real', appEnvironment: 'development',
   }), true);
@@ -13,13 +13,28 @@ test('app-linked real development enables place requests by default and explicit
   }), false);
   assert.equal(resolvePlaceListEnabled({
     apiMode: 'real', appEnvironment: 'staging',
-  }), false);
+  }), true);
+  assert.equal(resolvePlaceListEnabled({
+    apiMode: 'real', appEnvironment: 'production',
+  }), true);
   assert.equal(resolvePlaceListEnabled({
     apiMode: 'mock', appEnvironment: 'development', value: 'true',
   }), true);
   assert.equal(resolvePlaceListEnabled({
     apiMode: 'real', appEnvironment: 'development', value: 'false',
   }), false);
+});
+
+test('mock transport is rejected in staging and production', () => {
+  assert.doesNotThrow(() => assertApiModeAllowed({
+    apiMode: 'mock', appEnvironment: 'development',
+  }));
+  for (const appEnvironment of ['staging', 'production']) {
+    assert.throws(
+      () => assertApiModeAllowed({ apiMode: 'mock', appEnvironment }),
+      /mock is allowed only.*development/,
+    );
+  }
 });
 
 test('disabled, loading, error, empty, and server-backed ready states stay distinct', () => {

@@ -126,7 +126,7 @@ export default function PlaceCouponCta({
     if (variant === 'compact') {
       return (
         <CompactSection accessibilityRole="summary" testID="v2-place-offer-compact-loading">
-          <CompactSectionTitle>{t('placeOffers.title')}</CompactSectionTitle>
+          <CompactSectionTitle>{t('map.detail.coupon')}</CompactSectionTitle>
           <CompactLoadingRow>
             <ActivityIndicator accessibilityLabel={t('placeOffers.loading')} />
           </CompactLoadingRow>
@@ -278,7 +278,7 @@ export default function PlaceCouponCta({
   if (variant === 'compact') {
     return (
       <CompactSection accessibilityRole="summary" testID="v2-place-offer-compact">
-        <CompactSectionTitle>{t('placeOffers.title')}</CompactSectionTitle>
+        <CompactSectionTitle>{t('map.detail.coupon')}</CompactSectionTitle>
         {offers.map((offer) => {
           const offerIssuance = getOfferIssuanceView({
             eligibilityPolicy: offer.eligibilityPolicy ?? undefined,
@@ -550,8 +550,8 @@ const OfferChoiceText = styled.Text<{ $selected: boolean }>`
 `;
 
 const CompactSection = styled.View`
-  border-bottom-color: ${({ theme }) => theme.colors.border};
-  border-bottom-width: 1px;
+  border-top-color: ${({ theme }) => theme.colors.backgroundNeutral};
+  border-top-width: 8px;
   padding: 20px 24px;
 `;
 

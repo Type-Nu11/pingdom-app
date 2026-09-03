@@ -75,6 +75,15 @@ describe('FavoritePlacesBottomSheet categories', () => {
 
     ['전체', '음악', '음식점', '팝업', '패션', '뷰티', '전시', '카페', '문화재', '기타']
       .forEach((name) => expect(screen.getByRole('tab', { name })).toBeVisible());
+
+    expect(screen.getByRole('tab', { name: '전체', selected: true })).toHaveStyle({
+      backgroundColor: '#FAEDF0',
+      borderColor: '#FE5E84',
+    });
+    expect(screen.getByRole('tab', { name: '음악', selected: false })).toHaveStyle({
+      backgroundColor: '#FFFFFF',
+      borderColor: '#F2F2F3',
+    });
   });
 
   test('카페와 음식점을 분리하고 문화재 서버 별칭을 필터링한다', async () => {

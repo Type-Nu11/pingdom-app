@@ -7,14 +7,24 @@ import {
 } from '../../../shared/location/currentLocation';
 import type { VisitVerificationSession } from '../api/visitVerificationApi';
 import {
+  getActiveForegroundVisitVerificationSession,
   isTerminalVisitVerificationSession,
   observationDelayMs,
+  rememberActiveForegroundVisitVerificationSession,
   sessionErrorPhase,
+  subscribeActiveForegroundVisitVerificationSessionClear,
+  type VisitVerificationErrorPhase,
 } from '../model/visitVerificationSession';
 import {
+  useRecoverVisitVerificationSession,
+  useStartForegroundVisitVerificationSession,
   useStartVisitVerificationSession,
   useSubmitVisitVerificationObservation,
 } from './useVisitVerificationSessionMutations';
+
+export type VisitVerificationSessionTarget =
+  | { mode: 'foreground' }
+  | { mode: 'place'; placeId: number };
 
 export type VisitVerificationSessionPhase =
   | 'idle'
@@ -22,11 +32,10 @@ export type VisitVerificationSessionPhase =
   | 'permission-denied'
   | 'location-failed'
   | 'starting'
+  | 'recovering'
   | 'observing'
-  | 'proximity-lost'
-  | 'rejected'
   | 'paused'
-  | 'error';
+  | VisitVerificationErrorPhase;
 
 export type SessionControllerDependencies = {
   getLocation?: () => Promise<CurrentLocationOutcome>;
@@ -35,24 +44,47 @@ export type SessionControllerDependencies = {
   clearTimer?: (timer: ReturnType<typeof setTimeout>) => void;
 };
 
+function normalizeTarget(
+  target: VisitVerificationSessionTarget | number,
+): VisitVerificationSessionTarget {
+  return typeof target === 'number' ? { mode: 'place', placeId: target } : target;
+}
+
 export function useVisitVerificationSessionController(
-  placeId: number,
+  target: VisitVerificationSessionTarget | number,
   dependencies: SessionControllerDependencies = {},
 ) {
+  const normalizedTarget = normalizeTarget(target);
+  const isForeground = normalizedTarget.mode === 'foreground';
+  const placeId = normalizedTarget.mode === 'place' ? normalizedTarget.placeId : null;
   const getLocation = dependencies.getLocation ?? getCurrentCoordinate;
   const now = dependencies.now ?? Date.now;
   const setTimer = dependencies.setTimer ?? setTimeout;
   const clearTimer = dependencies.clearTimer ?? clearTimeout;
-  const startMutation = useStartVisitVerificationSession();
+  const placeStartMutation = useStartVisitVerificationSession();
+  const foregroundStartMutation = useStartForegroundVisitVerificationSession();
+  const recoverMutation = useRecoverVisitVerificationSession();
   const observationMutation = useSubmitVisitVerificationObservation();
-  const [phase, setPhase] = useState<VisitVerificationSessionPhase>('idle');
-  const [session, setSession] = useState<VisitVerificationSession | null>(null);
-  const [displayRemainingSeconds, setDisplayRemainingSeconds] = useState<number | null>(null);
+  const initialSession = isForeground
+    ? getActiveForegroundVisitVerificationSession()
+    : null;
+  const [phase, setPhase] = useState<VisitVerificationSessionPhase>(
+    initialSession
+      ? isTerminalVisitVerificationSession(initialSession) ? 'observing' : 'recovering'
+      : 'idle',
+  );
+  const [session, setSession] = useState<VisitVerificationSession | null>(initialSession);
   const requestLocked = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const activeRef = useRef(true);
   const appStateActiveRef = useRef(AppState.currentState === 'active');
+  const initialRecoveryAttempted = useRef(false);
+
+  const rememberSession = useCallback((next: VisitVerificationSession) => {
+    setSession(next);
+    if (isForeground) rememberActiveForegroundVisitVerificationSession(next);
+  }, [isForeground]);
 
   const clearScheduledObservation = useCallback(() => {
     if (timerRef.current) clearTimer(timerRef.current);
@@ -71,10 +103,11 @@ export function useVisitVerificationSessionController(
   const submitObservation = useCallback(async () => {
     if (!session?.id || requestLocked.current || isTerminalVisitVerificationSession(session)) return;
     requestLocked.current = true;
+    clearScheduledObservation();
     setPhase('locating');
     try {
       const location = await getLocation();
-      if (!activeRef.current) return;
+      if (!activeRef.current || !appStateActiveRef.current) return;
       if (location.status === 'denied') {
         setPhase('permission-denied');
         return;
@@ -92,7 +125,7 @@ export function useVisitVerificationSessionController(
         signal: controller.signal,
       });
       if (activeRef.current && appStateActiveRef.current) {
-        setSession(next);
+        rememberSession(next);
         setPhase('observing');
       }
     } catch (error) {
@@ -101,16 +134,49 @@ export function useVisitVerificationSessionController(
       requestLocked.current = false;
       abortRef.current = null;
     }
-  }, [getLocation, observationMutation, session]);
+  }, [clearScheduledObservation, getLocation, observationMutation, rememberSession, session]);
   observationRef.current = submitObservation;
 
-  const start = useCallback(async () => {
-    if (requestLocked.current || startMutation.isPending) return;
+  const recover = useCallback(async () => {
+    if (!session?.id || requestLocked.current || isTerminalVisitVerificationSession(session)) return;
     requestLocked.current = true;
+    clearScheduledObservation();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setPhase('recovering');
+    try {
+      const next = await recoverMutation.mutateAsync({
+        sessionId: session.id,
+        signal: controller.signal,
+      });
+      if (activeRef.current && appStateActiveRef.current) {
+        rememberSession(next);
+        setPhase('observing');
+      }
+    } catch (error) {
+      if (activeRef.current && appStateActiveRef.current) setPhase(sessionErrorPhase(error));
+    } finally {
+      requestLocked.current = false;
+      abortRef.current = null;
+    }
+  }, [clearScheduledObservation, recoverMutation, rememberSession, session]);
+
+  const start = useCallback(async () => {
+    if (
+      requestLocked.current ||
+      placeStartMutation.isPending ||
+      foregroundStartMutation.isPending
+    ) return;
+    if (session?.id && !isTerminalVisitVerificationSession(session)) {
+      await recover();
+      return;
+    }
+    requestLocked.current = true;
+    clearScheduledObservation();
     setPhase('locating');
     try {
       const location = await getLocation();
-      if (!activeRef.current) return;
+      if (!activeRef.current || !appStateActiveRef.current) return;
       if (location.status === 'denied') {
         setPhase('permission-denied');
         return;
@@ -122,12 +188,17 @@ export function useVisitVerificationSessionController(
       const controller = new AbortController();
       abortRef.current = controller;
       setPhase('starting');
-      const next = await startMutation.mutateAsync({
-        body: { placeId, ...location.coordinate },
-        signal: controller.signal,
-      });
+      const next = isForeground
+        ? await foregroundStartMutation.mutateAsync({
+            body: location.coordinate,
+            signal: controller.signal,
+          })
+        : await placeStartMutation.mutateAsync({
+            body: { placeId: placeId!, ...location.coordinate },
+            signal: controller.signal,
+          });
       if (activeRef.current && appStateActiveRef.current) {
-        setSession(next);
+        rememberSession(next);
         setPhase('observing');
       }
     } catch (error) {
@@ -136,25 +207,37 @@ export function useVisitVerificationSessionController(
       requestLocked.current = false;
       abortRef.current = null;
     }
-  }, [getLocation, placeId, startMutation]);
+  }, [
+    clearScheduledObservation,
+    foregroundStartMutation,
+    getLocation,
+    isForeground,
+    placeId,
+    placeStartMutation,
+    recover,
+    rememberSession,
+    session,
+  ]);
 
   useEffect(() => {
     clearScheduledObservation();
     if (!session || isTerminalVisitVerificationSession(session)) return;
     const delay = observationDelayMs(session.nextObservationRecommendedAt, now());
     if (delay === null || AppState.currentState !== 'active') return;
-    timerRef.current = setTimer(() => void observationRef.current(), delay);
+    timerRef.current = setTimer(() => {
+      timerRef.current = null;
+      void observationRef.current();
+    }, delay);
     return clearScheduledObservation;
   }, [clearScheduledObservation, now, session, setTimer]);
 
   useEffect(() => {
-    setDisplayRemainingSeconds(session?.remainingSeconds ?? null);
-    if (session?.remainingSeconds === undefined || isTerminalVisitVerificationSession(session)) return;
-    const interval = setInterval(() => {
-      setDisplayRemainingSeconds((value) => value === null ? null : Math.max(0, value - 1));
-    }, 1_000);
-    return () => clearInterval(interval);
-  }, [session]);
+    if (initialRecoveryAttempted.current) return;
+    initialRecoveryAttempted.current = true;
+    if (initialSession && !isTerminalVisitVerificationSession(initialSession)) {
+      void recover();
+    }
+  }, [initialSession, recover]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -162,11 +245,22 @@ export function useVisitVerificationSessionController(
       if (state !== 'active') {
         stopRequests();
         if (session && !isTerminalVisitVerificationSession(session)) setPhase('paused');
+        return;
       }
-      // GET 200 has no contract; foreground recovery deliberately stays paused.
+      if (session && !isTerminalVisitVerificationSession(session)) void recover();
     });
     return () => subscription.remove();
-  }, [session, stopRequests]);
+  }, [recover, session, stopRequests]);
+
+  useEffect(() => {
+    if (!isForeground) return undefined;
+    return subscribeActiveForegroundVisitVerificationSessionClear(() => {
+      stopRequests();
+      if (!activeRef.current) return;
+      setSession(null);
+      setPhase('unauthenticated');
+    });
+  }, [isForeground, stopRequests]);
 
   useEffect(() => () => {
     activeRef.current = false;
@@ -174,10 +268,19 @@ export function useVisitVerificationSessionController(
   }, [stopRequests]);
 
   return {
-    displayRemainingSeconds,
-    error: startMutation.error ?? observationMutation.error,
-    isBusy: phase === 'locating' || phase === 'starting' || observationMutation.isPending,
+    displayRemainingSeconds: session?.remainingSeconds ?? null,
+    error:
+      foregroundStartMutation.error ??
+      placeStartMutation.error ??
+      recoverMutation.error ??
+      observationMutation.error,
+    isBusy:
+      phase === 'locating' ||
+      phase === 'starting' ||
+      phase === 'recovering' ||
+      observationMutation.isPending,
     phase,
+    recover,
     retry: session ? submitObservation : start,
     session,
     start,

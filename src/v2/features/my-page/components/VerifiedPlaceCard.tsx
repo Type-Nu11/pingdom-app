@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, type GestureResponderEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import StarIcon from '../../../shared/assets/icons/star.svg';
+import { FavoriteIcon } from '../../../shared/components';
 
 const CARD_WIDTH = 177;
 const CARD_HEIGHT = 222;
@@ -15,6 +15,7 @@ type VerifiedPlaceCardProps = {
   favorited: boolean;
   imageUrl: string | null;
   name: string;
+  onPress: () => void;
   onToggleFavorite: () => void;
 };
 
@@ -23,15 +24,32 @@ export default function VerifiedPlaceCard({
   favorited,
   imageUrl,
   name,
+  onPress,
   onToggleFavorite,
 }: VerifiedPlaceCardProps) {
   const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
 
+  useEffect(() => setImageFailed(false), [imageUrl]);
+
+  const handleToggleFavorite = (event: GestureResponderEvent) => {
+    event.stopPropagation();
+    onToggleFavorite();
+  };
+
   return (
-    <Card testID="v2-verified-place-card">
+    <Card
+      accessibilityLabel={`${name}, ${address}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      testID="v2-verified-place-card"
+    >
       {imageUrl && !imageFailed ? (
-        <Photo onError={() => setImageFailed(true)} source={{ uri: imageUrl }} />
+        <Photo
+          onError={() => setImageFailed(true)}
+          source={{ uri: imageUrl }}
+          testID="v2-verified-place-card-image"
+        />
       ) : (
         <PhotoFallback />
       )}
@@ -59,21 +77,16 @@ export default function VerifiedPlaceCard({
           accessibilityRole="button"
           accessibilityState={{ selected: favorited }}
           hitSlop={8}
-          onPress={onToggleFavorite}
+          onPress={handleToggleFavorite}
         >
-          <StarIcon
-            color={favorited ? '#FF1956' : '#FFFFFF'}
-            fill={favorited ? '#FF1956' : 'none'}
-            height={20}
-            width={21}
-          />
+          <FavoriteIcon selected={favorited} size={20} />
         </FavoriteButton>
       </Overlay>
     </Card>
   );
 }
 
-const Card = styled.View`
+const Card = styled.Pressable`
   width: ${CARD_WIDTH}px;
   height: ${CARD_HEIGHT}px;
   border-radius: ${({ theme }) => theme.radius.lg}px;

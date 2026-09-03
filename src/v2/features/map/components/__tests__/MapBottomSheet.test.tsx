@@ -118,7 +118,7 @@ describe('MapBottomSheet recommendations', () => {
       previewFallbackContentByPlaceId: {
         [String(selectedPlace.id)]: {
           amenities: [], coupons: [{ period: '2026.09.01~2026.09.30', title: '관광객 쿠폰' }],
-          imageUrls: [], statusDescription: '', statusEmphasis: '',
+          imageUrls: [], statusDescription: '', statusEmphasis: '', verifiedEvidenceCount: 23,
         },
       },
       selectedPlace, sheetChromeBottom: new Animated.Value(0),
@@ -133,6 +133,11 @@ describe('MapBottomSheet recommendations', () => {
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
+    expect(screen.getByText('23명이 검증했어요!')).toBeVisible();
+    expect(screen.getByTestId('map-detail-active-tab-indicator')).toHaveStyle({
+      height: 2,
+      width: 40,
+    });
   });
 
   test('장소 상세 영업 상태를 한 줄 요약으로 한국어·영어·fallback 렌더링한다', async () => {
@@ -375,8 +380,8 @@ describe('MapBottomSheet recommendations', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
     expect(bookmark.props.accessibilityState).toEqual({
       busy: false,
-      checked: false,
       disabled: false,
+      selected: false,
     });
 
     await act(async () => resolveBookmark());
@@ -396,8 +401,8 @@ describe('MapBottomSheet recommendations', () => {
     const bookmark = screen.getByRole('button', { name: '즐겨찾기 해제' });
     expect(bookmark.props.accessibilityState).toEqual({
       busy: true,
-      checked: true,
       disabled: true,
+      selected: true,
     });
     expect(screen.queryByText('…')).not.toBeOnTheScreen();
   });
@@ -408,7 +413,7 @@ describe('MapBottomSheet recommendations', () => {
     const onBackHome = jest.fn();
     const onToggleBookmark = jest.fn(async () => undefined);
     const selectedPlace = places[0];
-    const { user } = await renderWithProviders(
+    const result = await renderWithProviders(
       <MapBottomSheet
         activeFilters={[]}
         bookmarkedPlaceIds={{}}
@@ -449,20 +454,21 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
-    await user.press(screen.getByRole('button', { name: '예약' }));
-    await user.press(screen.getByRole('button', { name: '예약' }));
+    await result.user.press(screen.getByRole('button', { name: '예약' }));
+    await result.user.press(screen.getByRole('button', { name: '예약' }));
     expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
 
-    await user.press(screen.getByRole('button', { name: '도착' }));
+    await result.user.press(screen.getByRole('button', { name: '도착' }));
     expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
 
     const bookmark = screen.getByTestId('place-preview-bookmark');
     const close = screen.getByTestId('place-preview-close');
+    expect(screen.getByTestId('map-sheet-handle-target').props.hitSlop).toBeUndefined();
     expect(bookmark).toHaveStyle({ height: 44, width: 44 });
     expect(close).toHaveStyle({ height: 44, width: 44 });
-    await user.press(bookmark);
-    await user.press(close);
+    await result.user.press(bookmark);
+    await result.user.press(close);
     expect(onToggleBookmark).toHaveBeenCalledWith(selectedPlace, true);
     expect(onBackHome).toHaveBeenCalledTimes(1);
   });
@@ -497,7 +503,7 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.queryByText('현재 예약 가능한 일정이 없습니다')).not.toBeOnTheScreen();
     expect(screen.getByRole('button', { name: '예약' }).props.accessibilityState)
-      .toEqual({ disabled: false });
+      .toMatchObject({ disabled: false });
     await result.user.press(screen.getByRole('button', { name: '예약' }));
     await result.user.press(screen.getByRole('button', { name: '예약' }));
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
@@ -568,7 +574,13 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
     expect(screen.queryByText('방문 인증 시작')).not.toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: '도착' }));
+    const departure = screen.getByRole('button', { name: '출발' });
+    const arrival = screen.getByRole('button', { name: '도착' });
+    expect(departure.props.accessibilityState.selected).toBe(true);
+    expect(departure).toHaveStyle({ backgroundColor: '#FFF0F4' });
+    await user.press(arrival);
+    expect(arrival.props.accessibilityState.selected).toBe(true);
+    expect(departure.props.accessibilityState.selected).toBe(false);
     expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
   });
 
@@ -719,16 +731,16 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     expect(screen.getAllByText('추천 장소 1').length).toBeGreaterThan(0);
-    expect(screen.getByTestId('map-navigation-active-item')).toHaveStyle({
+    expect(screen.getByTestId('map-navigation-map-surface')).toHaveStyle({
       borderRadius: 28,
-      overflow: 'hidden',
-      width: 68,
+      width: 78,
     });
-    expect(screen.getByTestId('map-sheet-handle-target')).toHaveStyle({
-      height: 44,
-      position: 'absolute',
-      width: 160,
+    const handleTarget = screen.getByTestId('map-sheet-handle-target');
+    expect(handleTarget).toHaveStyle({
+      alignItems: 'center',
+      height: 20,
     });
+    expect(handleTarget.props.hitSlop).toBeUndefined();
     const localFeed = screen.getByRole('tab', { name: '우리 지역 핫플' });
     const nationalFeed = screen.getByRole('tab', { name: '전국 트렌드' });
     expect(localFeed.props.accessibilityState).toEqual({ selected: true });
@@ -740,7 +752,7 @@ describe('MapBottomSheet recommendations', () => {
       expect(screen.getByTestId('feed-segment-indicator')).toBeOnTheScreen();
     });
     expect(screen.getByTestId('feed-content-transition')).toBeOnTheScreen();
-    expect(screen.getByRole('tab', { name: '팝업' })).toBeOnTheScreen();
+    expect(screen.queryByRole('tab', { name: '팝업' })).not.toBeOnTheScreen();
 
     (runTimingMotion as jest.Mock).mockClear();
     await user.press(nationalFeed);
@@ -753,6 +765,88 @@ describe('MapBottomSheet recommendations', () => {
       1,
       expect.objectContaining({ useNativeDriver: true }),
     );
+  });
+
+  test('medium 홈은 확장 전용 트리를 지연하고 첫 탭 feedback과 overlay 입력 상태를 보장한다', async () => {
+    const onOpenLikedPlaces = jest.fn();
+    const commonProps = {
+      activeFilters: [],
+      bookmarkedPlaceIds: {},
+      collapsedTranslateY: 600,
+      content: { type: 'home' } as const,
+      height: 700,
+      mediumTranslateY: 300,
+      onBackHome: jest.fn(),
+      onCouponPress: jest.fn(),
+      onDetailPress: jest.fn(),
+      onFilterPress: jest.fn(),
+      onGoNowPress: jest.fn(),
+      onHandlePress: jest.fn(),
+      onOpenLikedPlaces,
+      onPlacePress: jest.fn(),
+      onQueryChange: jest.fn(),
+      onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(),
+      onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined),
+      panHandlers: {} as GestureResponderHandlers,
+      places,
+      recommendationPlaces: [],
+      recommendationsState: 'ready' as const,
+      selectedPlace: null,
+      sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(300),
+    };
+    const view = await renderWithProviders(
+      <MapBottomSheet {...commonProps} snapPoint="medium" />,
+    );
+
+    expect(screen.queryByTestId('expanded-home-only-content')).not.toBeOnTheScreen();
+    const favorites = screen.getByTestId('map-navigation-favorites');
+    await view.user.press(favorites);
+    expect(onOpenLikedPlaces).toHaveBeenCalledTimes(1);
+
+    await view.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
+    expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('auto');
+
+    await view.rerender(<MapBottomSheet {...commonProps} snapPoint="medium" />);
+    expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');
+  });
+
+  test('장소 요청 실패를 빈 핫플 결과로 표시하지 않는다', async () => {
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'home' }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={[]}
+        placesState="error"
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={null}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(300)}
+        snapPoint="medium"
+      />,
+    );
+
+    expect(screen.getByText('목록을 불러오지 못했어요')).toBeVisible();
+    expect(screen.queryByText('표시할 핫플이 아직 없어요')).not.toBeOnTheScreen();
   });
 
   test('확장 홈에서 서버 장소의 전체 카테고리 필터를 제공한다', async () => {
@@ -788,5 +882,13 @@ describe('MapBottomSheet recommendations', () => {
 
     ['팝업', '음악', '음식점', '패션', '뷰티', '전시', '카페', '문화재', '기타']
       .forEach((name) => expect(screen.getByRole('tab', { name })).toBeVisible());
+    expect(screen.getByRole('tab', { name: '팝업', selected: true })).toHaveStyle({
+      backgroundColor: '#FAEDF0',
+      borderColor: '#FE5E84',
+    });
+    expect(screen.getByRole('tab', { name: '음악', selected: false })).toHaveStyle({
+      backgroundColor: '#FFFFFF',
+      borderColor: '#F2F2F3',
+    });
   });
 });

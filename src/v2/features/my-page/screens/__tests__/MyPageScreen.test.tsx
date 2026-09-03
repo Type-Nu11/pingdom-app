@@ -9,6 +9,7 @@ import { bookmarkApi } from '../../api/bookmarkApi';
 import { checkInApi } from '../../../check-ins/api/checkInApi';
 import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
 import { placeDetailApi } from '../../../place-detail/api/placeDetailApi';
+import { placeExplorationApi } from '../../../place-exploration/api/placeExplorationApi';
 import { reservationApi } from '../../../reservations/api/reservationApi';
 import { travelScheduleApi } from '../../../travel-schedules/api/travelScheduleApi';
 import MyPageScreen from '../MyPageScreen';
@@ -29,6 +30,7 @@ function renderMyPage() {
       onBack={jest.fn()}
       onOpenCoupons={jest.fn()}
       onOpenProfileEdit={jest.fn()}
+      onOpenPlace={jest.fn()}
       onOpenReservations={jest.fn()}
       onOpenSettings={jest.fn()}
       onOpenVerifiedPlaces={jest.fn()}
@@ -50,6 +52,12 @@ function mockEverythingEmpty() {
   jest.spyOn(bookmarkApi, 'listBookmarks').mockResolvedValue({
     hasNext: false, limit: 100, page: 1, places: [], totalCount: 0, totalPages: 1,
   });
+  jest.spyOn(placeExplorationApi, 'getPlaceExplorationMedia').mockImplementation(
+    async (placeId) => ({
+      media: [{ displayOrder: 0, id: placeId, imageUrl: `https://cdn.test/${placeId}.jpg` }],
+      placeId,
+    } as never),
+  );
 }
 
 describe('MyPageScreen', () => {
@@ -62,6 +70,10 @@ describe('MyPageScreen', () => {
     await waitFor(() => expect(screen.getByTestId('v2-my-page-stat-reservations')).toHaveTextContent('3'));
     expect(screen.getByTestId('v2-my-page-stat-reviews')).toHaveTextContent('7');
     expect(screen.getByTestId('v2-my-page-stat-coupons')).toHaveTextContent('5');
+    expect(profileApi.listMyReviews).toHaveBeenCalledWith(
+      { limit: 1, page: 1 },
+      expect.anything(),
+    );
   });
 
   test('예약 통계를 누르면 예약함으로 이동한다', async () => {
@@ -72,6 +84,7 @@ describe('MyPageScreen', () => {
         onBack={jest.fn()}
         onOpenCoupons={jest.fn()}
         onOpenProfileEdit={jest.fn()}
+        onOpenPlace={jest.fn()}
         onOpenReservations={onOpenReservations}
         onOpenSettings={jest.fn()}
         onOpenVerifiedPlaces={jest.fn()}
@@ -103,6 +116,7 @@ describe('MyPageScreen', () => {
         onBack={jest.fn()}
         onOpenCoupons={jest.fn()}
         onOpenProfileEdit={onOpenProfileEdit}
+        onOpenPlace={jest.fn()}
         onOpenReservations={jest.fn()}
         onOpenSettings={jest.fn()}
         onOpenVerifiedPlaces={jest.fn()}
@@ -153,6 +167,37 @@ describe('MyPageScreen', () => {
 
     await waitFor(() => expect(screen.getByText('촉석루')).toBeTruthy());
     expect(screen.queryByText('인증한 장소를 불러오지 못했어요.')).toBeNull();
+  });
+
+  test('검증 장소의 서버 미디어를 보여주고 누르면 해당 장소를 연다', async () => {
+    mockEverythingEmpty();
+    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue({
+      checkIns: [{ id: 1, placeId: 11 }],
+      hasNext: false, limit: 4, page: 1, totalCount: 1, totalPages: 1,
+    } as never);
+    jest.spyOn(placeDetailApi, 'getPlaceDetail').mockResolvedValue({
+      address: '진주시', id: 11, name: '촉석루',
+    } as never);
+    const onOpenPlace = jest.fn();
+    const { user } = await renderWithProviders(
+      <MyPageScreen
+        onBack={jest.fn()}
+        onOpenCoupons={jest.fn()}
+        onOpenPlace={onOpenPlace}
+        onOpenProfileEdit={jest.fn()}
+        onOpenReservations={jest.fn()}
+        onOpenSettings={jest.fn()}
+        onOpenVerifiedPlaces={jest.fn()}
+      />,
+    );
+
+    const card = await screen.findByTestId('v2-verified-place-card');
+    expect(screen.getByLabelText('촉석루, 진주시')).toBeTruthy();
+    expect(screen.getByTestId('v2-verified-place-card-image').props.source).toEqual({
+      uri: 'https://cdn.test/11.jpg',
+    });
+    await user.press(card);
+    expect(onOpenPlace).toHaveBeenCalledWith(11);
   });
 
   test('달력에서 시작일과 종료일을 누르면 해당 여행 일정을 변경한다', async () => {

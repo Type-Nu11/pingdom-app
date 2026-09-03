@@ -10,27 +10,23 @@ import {
   type TextProps,
   View,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ArtAsset from '../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyAsset from '../../../../assets/v2/icons/place/beati_svg.svg';
 import CafeAsset from '../../../../assets/v2/icons/place/cafe_svg.svg';
-import CheckInAsset from '../../../../assets/v2/icons/place/checkin_svg.svg';
 import EtcAsset from '../../../../assets/v2/icons/place/etc_svg.svg';
 import FashionAsset from '../../../../assets/v2/icons/place/fashion_svg.svg';
 import FoodAsset from '../../../../assets/v2/icons/place/food_svg.svg';
 import HeritageAsset from '../../../../assets/v2/icons/place/heritage.svg';
-import MapAsset from '../../../../assets/v2/icons/place/maping_svg.svg';
 import MusicAsset from '../../../../assets/v2/icons/place/music_svg.svg';
 import MyPlaceAsset from '../../../../assets/v2/icons/place/my_place.svg';
-import PlaceRecommendAsset from '../../../../assets/v2/icons/place/placerecommend.svg';
 import PopupAsset from '../../../../assets/v2/icons/place/popup_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import type { DecisionPlace } from './MapBottomSheet';
-import FrostedSurface from './FrostedSurface';
+import MapSheetBottomNavigation from './MapSheetBottomNavigation';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
+import { colors } from '../../../shared/theme/colors';
 
 type FavoriteCategory = 'all' | 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 'food' | 'heritage' | 'music' | 'popup';
 
@@ -91,18 +87,6 @@ const formatDistance = (place: DecisionPlace, language: string) => {
 
 const HeaderStar = () => <MyPlaceAsset height={42} width={42} />;
 
-const ActiveNavStar = () => (
-  <Svg height={21} viewBox="0 0 25 24" width={22}>
-    <Path
-      d="M1.19 9.917c-.366-.338-.167-.949.327-1.008l7.004-.83a.58.58 0 0 0 .462-.335l2.954-6.405c.209-.452.852-.452 1.06 0l2.954 6.405a.58.58 0 0 0 .46.335l7.005.83c.494.06.692.67.327 1.008l-5.178 4.789a.58.58 0 0 0-.176.542l1.374 6.918c.097.488-.423.866-.857.623l-6.154-3.446a.58.58 0 0 0-.57 0l-6.155 3.445c-.434.243-.955-.134-.858-.622l1.375-6.918a.58.58 0 0 0-.176-.542L1.19 9.917Z"
-      fill="#FF245B"
-      stroke="#FF245B"
-      strokeLinejoin="round"
-      strokeWidth={0.7}
-    />
-  </Svg>
-);
-
 const FavoriteImage = ({ uri }: { uri?: string }) => {
   const [hasError, setHasError] = useState(false);
 
@@ -152,10 +136,10 @@ const FavoritePlaceRow = ({
       <View style={styles.placeHeading}>
         <View style={styles.placeText}>
           <View style={styles.nameRow}>
-            <Text numberOfLines={1} style={styles.placeName}>{place.name}</Text>
-            <Text style={styles.placeCategory}>{t(`map.categories.${getFavoriteCategory(place)}`)}</Text>
+            <Text accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.placeName}>{place.name}</Text>
+            <Text ellipsizeMode="tail" numberOfLines={1} style={styles.placeCategory}>{t(`map.categories.${getFavoriteCategory(place)}`)}</Text>
           </View>
-          <Text numberOfLines={1} style={styles.placeMeta}>
+          <Text accessibilityLabel={`${formatDistance(place, i18n.language)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.placeMeta}>
             {formatDistance(place, i18n.language)} · {place.address}
           </Text>
         </View>
@@ -179,77 +163,6 @@ const FavoritePlaceRow = ({
         <FavoriteImage uri={sources[1] ?? sources[0]} />
       </View>
     </Pressable>
-  );
-};
-
-const BottomNavigation = ({
-  bottomInset,
-  onOpenMap,
-  onOpenRecommendations,
-  onOpenReservations,
-  sheetTranslateY,
-}: {
-  bottomInset: number;
-  onOpenMap: () => void;
-  onOpenRecommendations?: () => void;
-  onOpenReservations?: () => void;
-  sheetTranslateY: Animated.Value;
-}) => {
-  const { t } = useTranslation();
-  return (
-  <Animated.View
-    style={[
-      styles.navigationRow,
-      {
-        bottom: Math.max(24, bottomInset + 10),
-        transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
-      },
-    ]}
-  >
-    <View style={styles.navigationShadow}>
-      <FrostedSurface
-        cornerRadius={32}
-        glassEffectStyle="regular"
-        highlightOpacity={0}
-        rimColor="rgba(0,0,0,0.06)"
-        style={styles.navigationBar}
-        tintColor="#FFFFFF"
-      >
-        <Pressable accessibilityLabel={t('map.navigation.map')} accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
-          <View style={styles.navIcon}><MapAsset color="#3B3B40" height={22} width={19} /></View>
-          <Text style={styles.navLabel}>{t('map.navigation.map')}</Text>
-        </Pressable>
-        <View style={styles.navItem}>
-          <View style={[styles.navItemSurface, styles.navItemActive]}>
-            <View style={styles.navIcon}><ActiveNavStar /></View>
-            <Text style={[styles.navLabel, styles.navLabelActive]}>{t('map.navigation.favorites')}</Text>
-          </View>
-        </View>
-        <Pressable accessibilityLabel={t('map.navigation.reservations')} accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
-          <View style={styles.navIcon}><CheckInAsset height={22} width={21} /></View>
-          <Text style={styles.navLabel}>{t('map.navigation.reservations')}</Text>
-        </Pressable>
-      </FrostedSurface>
-    </View>
-    <Pressable
-      accessibilityLabel={t('map.navigation.recommendations')}
-      accessibilityRole="button"
-      onPress={onOpenRecommendations}
-      style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
-    >
-      <FrostedSurface
-        cornerRadius={32}
-        glassEffectStyle="regular"
-        highlightOpacity={0}
-        pointerEvents="none"
-        rimColor="rgba(0,0,0,0.06)"
-        style={styles.sendButtonGlass}
-        tintColor="#FFFFFF"
-      >
-        <PlaceRecommendAsset height={23} width={23} />
-      </FrostedSurface>
-    </Pressable>
-  </Animated.View>
   );
 };
 
@@ -280,7 +193,6 @@ export default function FavoritePlacesBottomSheet({
   snapPoint,
 }: FavoritePlacesBottomSheetProps) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState<FavoriteCategory>('all');
   const filteredPlaces = useMemo(
     () => places.filter((place) => matchesCategory(place, activeCategory)),
@@ -366,7 +278,7 @@ export default function FavoritePlacesBottomSheet({
                   onPress={() => setActiveCategory(id)}
                   style={[styles.categoryChip, active && styles.categoryChipActive]}
                 >
-                  {Icon ? <Icon color={active ? '#FF245B' : '#616169'} height={18} width={21} /> : null}
+                  {Icon ? <Icon color={active ? colors.primary : colors.textAlternative} height={18} width={21} /> : null}
                   <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</Text>
                 </Pressable>
               );
@@ -441,8 +353,8 @@ export default function FavoritePlacesBottomSheet({
         </Animated.View>
       </GlassStyles.SheetInner>
 
-      <BottomNavigation
-        bottomInset={insets.bottom}
+      <MapSheetBottomNavigation
+        activeTab="favorites"
         onOpenMap={onOpenMap}
         onOpenRecommendations={onOpenRecommendations}
         onOpenReservations={onOpenReservations}
@@ -454,13 +366,13 @@ export default function FavoritePlacesBottomSheet({
 
 const styles: Record<string, object> = {
   categoryChip: {
-    alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.backgroundNeutral,
     borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
   },
-  categoryChipActive: { backgroundColor: 'rgba(255,255,255,0.84)', borderColor: '#FF245B' },
+  categoryChipActive: { backgroundColor: colors.selectedSurface, borderColor: colors.selectedBorder },
   categoryContent: { gap: 8, paddingBottom: 12, paddingHorizontal: 16, paddingTop: 10 },
-  categoryLabel: { color: '#616169', fontSize: 14, fontWeight: '700' },
-  categoryLabelActive: { color: '#FF245B' },
+  categoryLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '700' },
+  categoryLabelActive: { color: colors.primary },
   categoryScroll: { flexGrow: 0, height: 58, overflow: 'hidden' },
   content: { flex: 1 },
   emptyBody: { color: '#777982', fontSize: 13, marginTop: 5 },
@@ -480,39 +392,17 @@ const styles: Record<string, object> = {
   loadMoreState: { alignItems: 'center', gap: 8 },
   moreButton: { alignItems: 'center', height: 30, justifyContent: 'center', width: 24 },
   moreButtonText: { color: '#3B3B40', fontSize: 22, lineHeight: 24 },
-  nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5 },
-  navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
-  navItem: { alignItems: 'center', flex: 1, gap: 3, justifyContent: 'center' },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 3, height: 54, justifyContent: 'center', overflow: 'hidden', width: 68 },
-  navItemActive: { backgroundColor: '#F7F7F8' },
-  navLabel: { color: '#3B3B40', fontSize: 11, fontWeight: '600', letterSpacing: -0.2 },
-  navLabelActive: { color: '#FF245B', fontWeight: '700' },
-  navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', gap: 0, height: 64, overflow: 'hidden', padding: 5 },
-  navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
-  navigationShadow: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    flex: 1,
-  },
-  placeCategory: { color: '#64666E', fontSize: 12 },
+  nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5, minWidth: 0 },
+  placeCategory: { color: colors.textAlternative, flexShrink: 1, fontSize: 12, includeFontPadding: false, lineHeight: 16, minWidth: 0 },
   placeHeading: { alignItems: 'center', flexDirection: 'row', marginBottom: 9 },
   placeImage: { borderRightColor: 'rgba(255,255,255,0.9)', borderRightWidth: 1, flex: 1, height: '100%' },
-  placeMeta: { color: '#696B73', fontSize: 13, marginTop: 3 },
-  placeName: { color: '#282A30', flexShrink: 1, fontSize: 16, fontWeight: '800' },
+  placeMeta: { color: colors.textAlternative, flexShrink: 1, fontSize: 13, includeFontPadding: false, lineHeight: 18, marginTop: 3, minWidth: 0 },
+  placeName: { color: colors.text, flexShrink: 1, fontSize: 16, fontWeight: '800', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
   placeRow: { marginBottom: 14 },
-  placeText: { flex: 1 },
+  placeText: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.72 },
   retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  sendButton: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    height: 64,
-    justifyContent: 'center',
-    width: 64,
-  },
-  sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
   title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
 };

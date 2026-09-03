@@ -2,13 +2,15 @@ import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import styled from 'styled-components/native';
 
-import KakaoMapNativeView from '../../../shared/native/KakaoMapNativeView';
-import type { Coordinate, MapMarker } from '../model/map.types';
+import KakaoMapNativeView, {
+  type KakaoMapNativeMarker,
+} from '../../../shared/native/KakaoMapNativeView';
+import type { Coordinate } from '../model/map.types';
 
 export type KakaoMapAdapterProps = {
   center: Coordinate;
   followUser?: boolean;
-  markers: MapMarker[];
+  markers: KakaoMapNativeMarker[];
   onCameraIdle?: (coordinate: Coordinate) => void;
   onMarkerSelect?: (markerId: string) => void;
   style?: StyleProp<ViewStyle>;
@@ -35,7 +37,7 @@ export default function KakaoMapAdapter({
       centerLat={center.lat}
       centerLng={center.lng}
       followUser={followUser}
-      markers={markers.map(({ name: _name, ...marker }) => marker)}
+      markers={markers}
       onCameraIdle={(event) => onCameraIdle?.(event.nativeEvent)}
       onMarkerPress={(event) => onMarkerSelect?.(event.nativeEvent.markerId)}
       style={style}

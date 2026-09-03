@@ -64,9 +64,9 @@ export type V2StackParamList = {
     checkInId?: CheckInId;
     placeId: PlaceId;
   };
-  VisitVerificationSession: {
-    placeId: PlaceId;
-  };
+  VisitVerificationSession:
+    | { mode: 'foreground' }
+    | { mode: 'place'; placeId: PlaceId };
 };
 
 export type V2ScreenProps<RouteName extends keyof V2StackParamList> =
