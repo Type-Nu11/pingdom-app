@@ -259,6 +259,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/places/{placeId}/menus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 관광객용 장소 메뉴 목록 조회
+         * @description AVAILABLE와 SOLD_OUT 메뉴만 displayOrder 오름차순으로 반환합니다. 메뉴가 없으면 빈 목록을 반환합니다.
+         */
+        get: operations["list_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/places/{placeId}/availabilities": {
         parameters: {
             query?: never;
@@ -267,7 +287,7 @@ export interface paths {
             cookie?: never;
         };
         /** 장소 예약 가능 시간 조회 */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -280,25 +300,54 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description 예약 가능 시간 응답 */
         AvailabilityResponse: {
-            /** Format: int64 */
-            id?: number;
-            /** Format: int64 */
-            placeId?: number;
-            /** Format: int64 */
-            productId?: number;
-            /** @enum {string} */
-            productType?: "GENERAL" | "TICKET" | "CLASS";
+            /**
+             * Format: int64
+             * @example 77
+             */
+            id: number;
+            /**
+             * Format: int64
+             * @example 70069
+             */
+            placeId: number;
+            /**
+             * Format: int64
+             * @description GENERAL은 null이며 TICKET/CLASS는 상품 ID입니다.
+             * @example 12
+             */
+            productId: number | null;
+            /**
+             * @description 예약 대상 유형
+             * @example TICKET
+             * @enum {string}
+             */
+            productType: "GENERAL" | "TICKET" | "CLASS";
+            /**
+             * @description GENERAL은 null이며 TICKET/CLASS는 상품명입니다.
+             * @example 이월드 오후 입장권
+             */
+            productName: string | null;
             /** Format: date-time */
-            startsAt?: string;
+            startsAt: string;
             /** Format: date-time */
-            endsAt?: string;
-            /** Format: int32 */
-            totalCapacity?: number;
-            /** Format: int32 */
-            remainingCapacity?: number;
-            /** @enum {string} */
-            status?: "ACTIVE" | "INACTIVE";
+            endsAt: string;
+            /**
+             * Format: int32
+             * @example 100
+             */
+            totalCapacity: number;
+            /**
+             * Format: int32
+             * @example 42
+             */
+            remainingCapacity: number;
+            /**
+             * @example ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
         };
         /** @description 에러 응답 */
         ErrorResponse: {
@@ -669,6 +718,32 @@ export interface components {
             /** Format: int64 */
             placeId: number;
             media: components["schemas"]["PlaceMediaItem"][];
+        };
+        PlaceMenuResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            placeId?: number;
+            name?: string;
+            /** @description 메뉴 설명이 없으면 null */
+            description?: string | null;
+            /** Format: int64 */
+            priceAmount?: number;
+            /**
+             * @description 가격 통화. 금액은 해당 통화의 기본 단위로 저장
+             * @enum {string}
+             */
+            currency?: "KRW" | "USD" | "JPY" | "CNY" | "EUR";
+            /** @description 대표 이미지가 없으면 null */
+            imageUrl?: string | null;
+            /** @enum {string} */
+            status?: "AVAILABLE" | "SOLD_OUT" | "HIDDEN" | "INACTIVE";
+            /** Format: int32 */
+            displayOrder?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
         };
         /** @description 특정 날짜의 휴무 또는 대체 영업 시간 */
         PlaceOperatingExceptionResponse: {
@@ -1820,6 +1895,55 @@ export interface operations {
         };
     };
     list_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                placeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 공개 메뉴 목록 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceMenuResponse"][];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 장소를 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_6: {
         parameters: {
             query?: never;
             header?: never;

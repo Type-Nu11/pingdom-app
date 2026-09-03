@@ -2,14 +2,22 @@ export { createPlaceDetailApi, placeDetailApi } from './api/placeDetailApi';
 export {
   createPlaceAvailabilitiesQueryOptions,
   createPlaceDetailQueryOptions,
+  createPlaceMenusQueryOptions,
   placeDetailQueryKeys,
   usePlaceAvailabilities,
   usePlaceDetail,
+  usePlaceMenus,
 } from './hooks/usePlaceDetail';
 export { usePlaceDetailPresentation } from './hooks/usePlaceDetailPresentation';
 export { usePlaceOfferCta, type PlaceOfferCtaState } from './hooks/usePlaceOfferCta';
 export { default as PlaceOfferCta } from './components/PlaceOfferCta';
-export type { PlaceAvailability, PlaceAvailabilities, PlaceDetail } from './model/placeDetail.types';
+export type {
+  PlaceAvailability,
+  PlaceAvailabilities,
+  PlaceDetail,
+  PlaceMenu,
+  PlaceMenus,
+} from './model/placeDetail.types';
 export {
   buildPlaceDetailPresentation,
   selectReservationCta,
@@ -18,6 +26,12 @@ export {
   type ReservationCtaState,
   type ResourceState,
 } from './model/placeDetailPresentation';
+export {
+  formatPlaceMenuPrice,
+  presentPlaceMenus,
+  type PlaceMenuPresentation,
+  type PlaceMenuStatus,
+} from './model/placeMenuPresentation';
 export {
   formatPlaceOperatingSummary,
   selectPlaceOperatingSummary,

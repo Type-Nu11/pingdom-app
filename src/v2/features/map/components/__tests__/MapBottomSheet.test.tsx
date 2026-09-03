@@ -62,7 +62,6 @@ describe('MapBottomSheet recommendations', () => {
         height={700}
         mediumTranslateY={300}
         onBackHome={jest.fn()}
-        onCouponPress={jest.fn()}
         onDetailPress={jest.fn()}
         onFilterPress={jest.fn()}
         onGoNowPress={jest.fn()}
@@ -103,15 +102,14 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryByTestId('place-photo-viewer')).not.toBeOnTheScreen();
   });
 
-  test('쿠폰 가능 장소의 카드 CTA가 상세를 열고 상세 쿠폰 콘텐츠를 렌더링한다', async () => {
+  test('쿠폰 콘텐츠는 미리보기 액션 없이 상세에서만 렌더링한다', async () => {
     const selectedPlace = places[0];
-    const onCouponPress = jest.fn();
     const commonProps = {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
       content: { type: 'place-preview', placeId: selectedPlace.id } as const,
       couponContent: <Text>실서버 쿠폰 발급 영역</Text>,
       height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
-      onCouponPress, onCreateReservation: jest.fn(), onDetailPress: jest.fn(),
+      onCreateReservation: jest.fn(), onDetailPress: jest.fn(),
       onFilterPress: jest.fn(), onGoNowPress: jest.fn(), onHandlePress: jest.fn(),
       onPlacePress: jest.fn(), onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
       onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
@@ -130,8 +128,7 @@ describe('MapBottomSheet recommendations', () => {
       <MapBottomSheet {...commonProps} snapPoint="medium" />,
     );
 
-    await result.user.press(screen.getByRole('button', { name: '쿠폰 받기' }));
-    expect(onCouponPress).toHaveBeenCalledWith(selectedPlace);
+    expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
     expect(screen.queryByText('실서버 쿠폰 발급 영역')).not.toBeOnTheScreen();
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
@@ -144,7 +141,7 @@ describe('MapBottomSheet recommendations', () => {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
       content: { type: 'place-preview', placeId: selectedPlace.id } as const,
       height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
-      onCouponPress: jest.fn(), onCreateReservation: jest.fn(), onDetailPress: jest.fn(),
+      onCreateReservation: jest.fn(), onDetailPress: jest.fn(),
       onFilterPress: jest.fn(), onGoNowPress: jest.fn(), onHandlePress: jest.fn(),
       onPlacePress: jest.fn(), onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
       onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
@@ -197,6 +194,78 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
     expect(screen.getByText('영업시간 정보 없음')).toBeVisible();
+  });
+
+  test('장소 메뉴를 서버 순서로 표시하고 이미지 실패와 영역별 재시도를 처리한다', async () => {
+    const selectedPlace = places[0];
+    const onRetryMenus = jest.fn();
+    const commonProps = {
+      activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
+      content: { type: 'place-preview', placeId: selectedPlace.id } as const,
+      height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
+      onDetailPress: jest.fn(), onFilterPress: jest.fn(),
+      onGoNowPress: jest.fn(), onHandlePress: jest.fn(), onPlacePress: jest.fn(),
+      onQueryChange: jest.fn(), onRetryMenus, onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined), panHandlers: {} as GestureResponderHandlers,
+      places, recommendationPlaces: [], recommendationsState: 'ready' as const,
+      selectedPlace, sheetChromeBottom: new Animated.Value(0),
+      sheetTranslateY: new Animated.Value(0), snapPoint: 'expanded' as const,
+    };
+    const fallback = {
+      [String(selectedPlace.id)]: {
+        amenities: [], imageUrls: [], menuState: 'ready' as const,
+        menus: [
+          { id: 2, imageUrl: 'https://example.com/menu.jpg', name: '서버 첫 메뉴', price: '₩12,500', status: 'SOLD_OUT' as const },
+          { id: 1, description: '긴 설명도 메뉴와 함께 유지', name: '서버 둘째 메뉴', price: '$8.00', status: 'AVAILABLE' as const },
+        ],
+        statusDescription: '', statusEmphasis: '',
+      },
+    };
+
+    const result = await renderWithProviders(
+      <MapBottomSheet {...commonProps} previewFallbackContentByPlaceId={fallback} />,
+      { language: 'ko' },
+    );
+    expect(screen.getAllByText(/서버 (첫|둘째) 메뉴/).map((node) => node.props.children))
+      .toEqual(['서버 첫 메뉴', '서버 둘째 메뉴']);
+    expect(screen.getByText('품절')).toBeVisible();
+    expect(screen.getByText('판매 중')).toBeVisible();
+    expect(screen.getByLabelText('가격: ₩12,500')).toBeVisible();
+
+    fireEvent(screen.getByLabelText('서버 첫 메뉴 메뉴 이미지'), 'error');
+    await waitFor(() => {
+      expect(screen.getByLabelText('서버 첫 메뉴 메뉴 이미지 없음')).toBeVisible();
+    });
+    expect(screen.getByText('서버 첫 메뉴')).toBeVisible();
+    expect(screen.getByText('₩12,500')).toBeVisible();
+
+    await result.rerender(
+      <MapBottomSheet
+        {...commonProps}
+        previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [], imageUrls: [], menuState: 'error', menus: [],
+            statusDescription: '', statusEmphasis: '',
+          },
+        }}
+      />,
+    );
+    await result.user.press(screen.getByRole('button', { name: '메뉴를 불러오지 못했습니다. 다시 시도' }));
+    expect(onRetryMenus).toHaveBeenCalledTimes(1);
+
+    await result.rerender(
+      <MapBottomSheet
+        {...commonProps}
+        previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [], imageUrls: [], menuState: 'empty', menus: [],
+            statusDescription: '', statusEmphasis: '',
+          },
+        }}
+      />,
+    );
+    expect(screen.queryByText('메뉴')).not.toBeOnTheScreen();
   });
 
   test('긴 장소명을 제한하고 추천 이유 없이 카드와 즐겨찾기 동작을 분리한다', async () => {
@@ -304,7 +373,6 @@ describe('MapBottomSheet recommendations', () => {
       height: 700,
       mediumTranslateY: 300,
       onBackHome: jest.fn(),
-      onCouponPress: jest.fn(),
       onDetailPress: jest.fn(),
       onFilterPress: jest.fn(),
       onGoNowPress: jest.fn(),
@@ -421,7 +489,6 @@ describe('MapBottomSheet recommendations', () => {
         height={700}
         mediumTranslateY={300}
         onBackHome={onBackHome}
-        onCouponPress={jest.fn()}
         onCreateReservation={onCreateReservation}
         onDetailPress={jest.fn()}
         onFilterPress={jest.fn()}
@@ -459,7 +526,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
 
-    await user.press(screen.getByRole('button', { name: '방문 인증 시작' }));
+    await user.press(screen.getByRole('button', { name: '도착' }));
     expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
 
     const bookmark = screen.getByTestId('place-preview-bookmark');
@@ -480,7 +547,7 @@ describe('MapBottomSheet recommendations', () => {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
       content: { type: 'place-preview', placeId: selectedPlace.id } as const,
       height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
-      onCouponPress: jest.fn(), onCreateReservation, onDetailPress: jest.fn(),
+      onCreateReservation, onDetailPress: jest.fn(),
       onFilterPress: jest.fn(), onGoNowPress: jest.fn(), onHandlePress: jest.fn(),
       onPlacePress: jest.fn(), onQueryChange: jest.fn(), onRetryAvailability,
       onRetryRecommendations: jest.fn(), onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
@@ -527,9 +594,9 @@ describe('MapBottomSheet recommendations', () => {
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
   });
 
-  test('서버가 쿠폰을 제공한 장소의 미리보기에서 발급 화면 진입 CTA를 노출한다', async () => {
+  test('미리보기 액션은 도착 문구를 유지하고 별도 쿠폰 CTA를 노출하지 않는다', async () => {
     const selectedPlace = places[0];
-    const onCouponPress = jest.fn();
+    const onStartVisitVerification = jest.fn();
     const { user } = await renderWithProviders(
       <MapBottomSheet
         activeFilters={[]}
@@ -539,7 +606,6 @@ describe('MapBottomSheet recommendations', () => {
         height={700}
         mediumTranslateY={300}
         onBackHome={jest.fn()}
-        onCouponPress={onCouponPress}
         onCreateReservation={jest.fn()}
         onDetailPress={jest.fn()}
         onFilterPress={jest.fn()}
@@ -549,6 +615,7 @@ describe('MapBottomSheet recommendations', () => {
         onQueryChange={jest.fn()}
         onRetryRecommendations={jest.fn()}
         onSearchFocus={jest.fn()}
+        onStartVisitVerification={onStartVisitVerification}
         onSubmitSearch={jest.fn()}
         onToggleBookmark={jest.fn(async () => undefined)}
         panHandlers={{} as GestureResponderHandlers}
@@ -571,8 +638,10 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
-    await user.press(screen.getByRole('button', { name: '쿠폰 받기' }));
-    expect(onCouponPress).toHaveBeenCalledWith(selectedPlace);
+    expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
+    expect(screen.queryByText('방문 인증 시작')).not.toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: '도착' }));
+    expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
   });
 
   test('확장 추천 목록의 두 행은 각각 독립된 가로 스크롤로 렌더링된다', async () => {
@@ -585,7 +654,6 @@ describe('MapBottomSheet recommendations', () => {
         height={700}
         mediumTranslateY={300}
         onBackHome={jest.fn()}
-        onCouponPress={jest.fn()}
         onDetailPress={jest.fn()}
         onFilterPress={jest.fn()}
         onGoNowPress={jest.fn()}
@@ -622,7 +690,7 @@ describe('MapBottomSheet recommendations', () => {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
       content: { type: 'recommendations' } as const,
       height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
-      onCouponPress: jest.fn(), onDetailPress: jest.fn(), onFilterPress: jest.fn(),
+      onDetailPress: jest.fn(), onFilterPress: jest.fn(),
       onGoNowPress: jest.fn(), onHandlePress: jest.fn(), onPlacePress: jest.fn(),
       onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
       onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
@@ -650,7 +718,6 @@ describe('MapBottomSheet recommendations', () => {
       height: 700,
       mediumTranslateY: 300,
       onBackHome: jest.fn(),
-      onCouponPress: jest.fn(),
       onDetailPress: jest.fn(),
       onFilterPress: jest.fn(),
       onGoNowPress: jest.fn(),
@@ -702,7 +769,6 @@ describe('MapBottomSheet recommendations', () => {
         height={700}
         mediumTranslateY={300}
         onBackHome={jest.fn()}
-        onCouponPress={jest.fn()}
         onDetailPress={jest.fn()}
         onFilterPress={jest.fn()}
         onGoNowPress={jest.fn()}
@@ -766,7 +832,6 @@ describe('MapBottomSheet recommendations', () => {
         height={700}
         mediumTranslateY={300}
         onBackHome={jest.fn()}
-        onCouponPress={jest.fn()}
         onDetailPress={jest.fn()}
         onFilterPress={jest.fn()}
         onGoNowPress={jest.fn()}

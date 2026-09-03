@@ -3,11 +3,18 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import { createPlaceDetailApi } from '../../../features/place-detail/api/placeDetailApi.ts';
-import { createPlaceAvailabilitiesQueryOptions } from '../../../features/place-detail/hooks/usePlaceDetail.ts';
+import {
+  createPlaceAvailabilitiesQueryOptions,
+  createPlaceMenusQueryOptions,
+} from '../../../features/place-detail/hooks/usePlaceDetail.ts';
 import {
   buildPlaceDetailPresentation,
   selectReservationCta,
 } from '../../../features/place-detail/model/placeDetailPresentation.ts';
+import {
+  formatPlaceMenuPrice,
+  presentPlaceMenus,
+} from '../../../features/place-detail/model/placeMenuPresentation.ts';
 
 const ready = (data) => ({ data, error: null, isError: false, isPending: false });
 const empty = ready(undefined);
@@ -56,6 +63,7 @@ const baseResources = {
   card: ready({ ...detail, category: 'OTHER', imageUrl: null }),
   detail: ready(detail),
   media: ready({ placeId: 70069, media: [] }),
+  menus: ready([]),
   notices: ready({ placeId: 70069, currentlyOperating: true, checkedAt: '', notices: [] }),
   reviews: ready({ content: [], totalElements: 0 }),
   visitDecision: ready({
@@ -82,6 +90,14 @@ test('scoped live contract preserves place detail fields, nullable card image, p
   assert.equal(detailSchema.properties.thumbnailUrl, undefined);
   assert.equal(detailSchema.properties.touristSupport, undefined);
   assert.equal(schemas.TouristPlaceCardResponse.properties.imageUrl.nullable, true);
+  assert.equal(schemas.PlaceMenuResponse.properties.description.nullable, true);
+  assert.equal(schemas.PlaceMenuResponse.properties.imageUrl.nullable, true);
+  assert.deepEqual(schemas.PlaceMenuResponse.properties.currency.enum, [
+    'KRW', 'USD', 'JPY', 'CNY', 'EUR',
+  ]);
+  assert.deepEqual(schemas.PlaceMenuResponse.properties.status.enum, [
+    'AVAILABLE', 'SOLD_OUT', 'HIDDEN', 'INACTIVE',
+  ]);
   assert.ok(schemas.PagePlaceReviewResponse.properties.content.items.$ref.endsWith('/PlaceReviewResponse'));
 
   const expectedStatuses = new Map([
@@ -91,6 +107,7 @@ test('scoped live contract preserves place detail fields, nullable card image, p
     ['/places/{placeId}/visit-decision', ['200', '401', '403', '404']],
     ['/places/{placeId}/operating-notices', ['200', '401', '403', '404']],
     ['/places/{placeId}/reviews', ['200', '401', '403']],
+    ['/places/{placeId}/menus', ['200', '401', '403', '404']],
     ['/places/{placeId}/availabilities', ['200', '401', '403']],
   ]);
   for (const [path, statuses] of expectedStatuses) {
@@ -107,11 +124,84 @@ test('place detail API uses live paths and forwards AbortSignal', async () => {
   const api = createPlaceDetailApi(client);
   await api.getPlaceDetail(70069, signal);
   await api.getPlaceAvailabilities(70069, signal);
+  await api.getPlaceMenus(70069, signal);
   assert.deepEqual(calls.map((call) => call.path), [
     '/places/70069',
     '/places/70069/availabilities',
+    '/places/70069/menus',
   ]);
   assert.ok(calls.every((call) => call.options.signal === signal));
+});
+
+test('menu Query key contains place id and forwards TanStack AbortSignal', async () => {
+  const signal = new AbortController().signal;
+  let received;
+  const options = createPlaceMenusQueryOptions(70069, {
+    getPlaceMenus: async (placeId, querySignal) => {
+      received = { placeId, querySignal };
+      return [];
+    },
+  });
+  assert.deepEqual(options.queryKey, ['v2', 'places', 'entity', 70069, 'menus']);
+  assert.equal(options.staleTime, 5 * 60 * 1000);
+  assert.deepEqual(await options.queryFn({ signal }), []);
+  assert.deepEqual(received, { placeId: 70069, querySignal: signal });
+});
+
+test('menu presentation preserves server order, excludes administrative states, and formats currency', () => {
+  const menus = presentPlaceMenus([
+    { id: 2, placeId: 70069, name: 'Second from server', priceAmount: 12500, currency: 'KRW', status: 'SOLD_OUT', displayOrder: 20 },
+    { id: 1, placeId: 70069, name: 'First by displayOrder', priceAmount: 8, currency: 'USD', status: 'AVAILABLE', displayOrder: 10 },
+    { id: 3, placeId: 70069, name: 'Hidden', priceAmount: 1, currency: 'KRW', status: 'HIDDEN', displayOrder: 30 },
+    { id: 4, placeId: 1, name: 'Wrong place', priceAmount: 1, currency: 'KRW', status: 'AVAILABLE', displayOrder: 40 },
+  ], 70069);
+
+  assert.deepEqual(menus.map((menu) => menu.id), [2, 1]);
+  assert.equal(menus[0].status, 'SOLD_OUT');
+  assert.match(formatPlaceMenuPrice(menus[0], 'ko-KR'), /12,500/);
+  assert.match(formatPlaceMenuPrice(menus[1], 'en-US'), /8/);
+  assert.equal(formatPlaceMenuPrice({ currency: null, priceAmount: 9000 }, 'ko-KR'), null);
+});
+
+test('nullable and malformed menu fields use safe presentation fallbacks', () => {
+  const [menu] = presentPlaceMenus([{
+    id: Number.NaN,
+    placeId: 70069,
+    name: '   ',
+    description: null,
+    priceAmount: Number.POSITIVE_INFINITY,
+    currency: '',
+    imageUrl: null,
+    status: 'FUTURE_SERVER_STATUS',
+  }], 70069);
+
+  assert.deepEqual(menu, {
+    currency: null,
+    description: null,
+    displayOrder: null,
+    id: null,
+    imageUrl: null,
+    name: null,
+    priceAmount: null,
+    status: 'UNKNOWN',
+  });
+  assert.equal(formatPlaceMenuPrice(menu, 'ko-KR'), null);
+});
+
+test('menu loading, empty, ready, and error states remain independent from place detail', () => {
+  assert.equal(buildPlaceDetailPresentation(70069, {
+    ...baseResources, menus: pending,
+  }).menuState, 'loading');
+  assert.equal(buildPlaceDetailPresentation(70069, {
+    ...baseResources, menus: failed(),
+  }).menuState, 'error');
+  assert.equal(buildPlaceDetailPresentation(70069, baseResources).menuState, 'empty');
+  const readyResult = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    menus: ready([{ id: 1, placeId: 70069, name: 'Menu', priceAmount: 1, currency: 'KRW', status: 'AVAILABLE', displayOrder: 1 }]),
+  });
+  assert.equal(readyResult.menuState, 'ready');
+  assert.equal(readyResult.name, detail.name);
 });
 
 test('availability Query key contains place id and forwards TanStack AbortSignal', async () => {
