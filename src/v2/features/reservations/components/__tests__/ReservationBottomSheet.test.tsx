@@ -11,6 +11,11 @@ import { theme } from '../../../../shared/theme';
 import ReservationBottomSheet from '../../components/ReservationBottomSheet';
 
 jest.mock('../..', () => ({ useReservations: jest.fn() }));
+jest.mock('../../../place-exploration', () => ({
+  usePlaceExplorationMediaList: jest.fn(() => ({
+    '101': ['https://example.test/first.jpg', 'https://example.test/second.jpg'],
+  })),
+}));
 
 const navigation = {
   onOpenFavorites: jest.fn(),
@@ -33,6 +38,7 @@ const bottomSheet = {
   isBookmarkStateLoading: false,
   mediumTranslateY: 300,
   nearbyPlaces: [nearbyPlace],
+  reservationPlaceByAvailabilityId: { '801': nearbyPlace },
   onHandlePress: jest.fn(),
   panHandlers: {} as GestureResponderHandlers,
   sheetChromeBottom: new Animated.Value(0),
@@ -90,38 +96,33 @@ describe('ReservationBottomSheet', () => {
       data: { hasNext: false, limit: 20, page: 1, reservations: [reservation], totalCount: 1, totalPages: 1 },
     }));
     await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} onOpenReservation={onOpenReservation} />);
-    await userEvent.setup().press(screen.getByTestId('reservation-card-901'));
+    await userEvent.setup().press(screen.getByTestId('reservation-place-card-901'));
     expect(onOpenReservation).toHaveBeenCalledWith(901);
-    // The card pairs the tone colour with a text cue, so status never reads by colour alone.
-    expect(screen.getByText('! 확정 대기')).toBeVisible();
+    expect(screen.getAllByText('서버 카페')).toHaveLength(2);
+    expect(screen.getByText('여기서 0.1km · 대구광역시 달성군')).toBeVisible();
   });
 
-  test('예약 카드는 서버가 준 선택 일시를 표시하고, 없으면 확정 후 안내로 대체한다', async () => {
+  test('예약함은 예약 회차가 속한 장소를 Figma 장소 카드로 표시한다', async () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
       data: {
         hasNext: false, limit: 20, page: 1, totalCount: 2, totalPages: 1,
-        reservations: [
-          {
-            ...reservation, id: 901,
-            reservationEndsAt: '2026-07-25T02:00:00Z',
-            reservationStartsAt: '2026-07-25T01:00:00Z',
-          },
-          { ...reservation, id: 902, reservationEndsAt: null, reservationStartsAt: null },
-        ],
+        reservations: [{ ...reservation, id: 901 }],
       },
     }));
     await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
 
-    expect(screen.getByTestId('reservation-card-window-901')).not.toHaveTextContent('확정 후 안내');
-    expect(screen.getByTestId('reservation-card-window-902')).toHaveTextContent('확정 후 안내');
+    expect(screen.getByTestId('reservation-place-card-901')).toBeVisible();
+    expect(screen.queryByText('예약 번호 901')).toBeNull();
+    expect(screen.queryByText('! 확정 대기')).toBeNull();
   });
 
-  test('UNKNOWN 상태를 안전한 안내로 표시한다', async () => {
+  test('장소를 확인할 수 없는 availabilityId를 임의 장소에 연결하지 않는다', async () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({
-      data: { hasNext: false, limit: 20, page: 1, reservations: [{ ...reservation, status: 'UNKNOWN' }], totalCount: 1, totalPages: 1 },
+      data: { hasNext: false, limit: 20, page: 1, reservations: [{ ...reservation, availabilityId: 999 }], totalCount: 1, totalPages: 1 },
     }));
     await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
-    expect(screen.getByText('● 상태 확인 필요')).toBeVisible();
+    expect(screen.queryByTestId('reservation-place-card-901')).toBeNull();
+    expect(screen.getByTestId('reservations-empty')).toBeVisible();
   });
 
   test('예약 탭 선택 상태와 다른 탭 이동을 제공한다', async () => {
@@ -161,6 +162,7 @@ describe('ReservationBottomSheet', () => {
       />,
     );
 
+    expect(screen.getAllByTestId('recommendation-featured-image').length).toBeGreaterThan(0);
     await userEvent.setup().press(screen.getByRole('button', { name: '즐겨찾기 해제' }));
     expect(onToggleBookmark).toHaveBeenCalledWith(nearbyPlace, false);
 
@@ -178,6 +180,23 @@ describe('ReservationBottomSheet', () => {
 
     expect(screen.getByTestId('nearby-reservations-empty')).toBeVisible();
     expect(screen.queryByText('오아시스 팝업 스토어')).toBeNull();
+  });
+
+  test('주변 예약 가능 여부를 확인하는 동안 빈 상태를 먼저 노출하지 않는다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+    await renderReservations(
+      <ReservationBottomSheet
+        {...bottomSheet}
+        {...navigation}
+        isNearbyLoading
+        nearbyPlaces={[]}
+      />,
+    );
+
+    expect(screen.getByTestId('nearby-reservations-loading')).toBeVisible();
+    expect(screen.queryByTestId('nearby-reservations-empty')).toBeNull();
   });
 
   test('영어에서는 예약 탭과 목록 제목을 영어로 표시한다', async () => {
