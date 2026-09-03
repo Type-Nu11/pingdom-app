@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
+import { usePlaceExplorationMediaList } from '../../place-exploration';
 import { useInfiniteCheckIns } from '../../check-ins/hooks/useCheckIns';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
 import { ErrorState, HeaderBackButton } from '../../../shared/components';
@@ -19,9 +20,10 @@ import {
 
 export type VerifiedPlacesScreenProps = {
   onBack: () => void;
+  onOpenPlace: (placeId: number) => void;
 };
 
-export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenProps) {
+export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPlacesScreenProps) {
   const { t } = useTranslation();
   // Each check-in costs one place detail request, so a page here is a fan-out of
   // the same size. A page of 10 keeps that burst to roughly one screen's worth
@@ -40,6 +42,7 @@ export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenPro
   const placeDetailQueries = useQueries({
     queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
   });
+  const imageUrlsByPlaceId = usePlaceExplorationMediaList(placeIds);
 
   const listState = toVerifiedPlaceListState(
     toVerifiedPlaceEntries(placeIds, placeDetailQueries),
@@ -88,8 +91,9 @@ export default function VerifiedPlacesScreen({ onBack }: VerifiedPlacesScreenPro
             <VerifiedPlaceCard
               address={entry.place.address}
               favorited={bookmarkedPlaceIds.has(entry.placeId)}
-              imageUrl={null}
+              imageUrl={imageUrlsByPlaceId[String(entry.placeId)]?.[0] ?? null}
               name={entry.place.name}
+              onPress={() => onOpenPlace(entry.placeId)}
               onToggleFavorite={() => toggleBookmark.mutate({
                 nextBookmarked: !bookmarkedPlaceIds.has(entry.placeId),
                 placeId: entry.placeId,

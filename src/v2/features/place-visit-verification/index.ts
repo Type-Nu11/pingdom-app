@@ -7,7 +7,11 @@ export type {
   PlaceReviewPage,
 } from './api/visitVerificationApi';
 export { default as VisitVerificationMapCta } from './components/VisitVerificationMapCta';
-export { createVisitVerificationMutationOptions, useSubmitVisitVerification } from './hooks/useSubmitVisitVerification';
+export {
+  createVisitVerificationMutationOptions,
+  primeSubmittedReviewQueries,
+  useSubmitVisitVerification,
+} from './hooks/useSubmitVisitVerification';
 export { createPlaceReviewsQueryOptions, usePlaceReviews } from './hooks/usePlaceReviews';
 export { useVisitVerificationCandidates } from './hooks/useVisitVerificationCandidates';
 export { useLocationPermissionStatus } from './hooks/useLocationPermissionStatus';

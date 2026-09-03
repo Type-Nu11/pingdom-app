@@ -70,6 +70,10 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
       onBack={navigation.goBack}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
+      onOpenPlace={(value) => {
+        const placeId = parsePlaceId(value);
+        if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
+      }}
       onOpenReservations={() => navigation.navigate(V2_ROUTES.ReservationBox)}
       onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
       onOpenVerifiedPlaces={() => {}}

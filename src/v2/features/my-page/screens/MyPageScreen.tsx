@@ -14,6 +14,7 @@ import {
 } from '../../onboarding-preferences/model/travelScheduleCalendar';
 import type { TravelDateInput } from '../../onboarding-preferences/model/onboardingPreference';
 import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
+import { usePlaceExplorationMediaList } from '../../place-exploration';
 import { useCheckIns } from '../../check-ins/hooks/useCheckIns';
 import { useCoupons } from '../../offers-coupons/hooks/useOffersCoupons';
 import { useReservations } from '../../reservations/hooks/useReservations';
@@ -52,6 +53,7 @@ export type MyPageScreenProps = {
   onBack: () => void;
   onOpenCoupons: () => void;
   onOpenProfileEdit: () => void;
+  onOpenPlace: (placeId: number) => void;
   onOpenReservations: () => void;
   onOpenSettings: () => void;
   onOpenVerifiedPlaces: () => void;
@@ -61,6 +63,7 @@ export default function MyPageScreen({
   onBack,
   onOpenCoupons,
   onOpenProfileEdit,
+  onOpenPlace,
   onOpenReservations,
   onOpenSettings,
   onOpenVerifiedPlaces,
@@ -74,7 +77,7 @@ export default function MyPageScreen({
   } = useProfile();
   const reservationsQuery = useReservations();
   const couponsQuery = useCoupons();
-  const reviewsQuery = useMyReviews({ limit: 1 });
+  const reviewsQuery = useMyReviews({ limit: 1, page: 1 });
   const travelSchedulesQuery = useTravelSchedules();
   const createTravelScheduleMutation = useCreateTravelSchedule();
   const updateTravelScheduleMutation = useUpdateTravelSchedule();
@@ -180,6 +183,7 @@ export default function MyPageScreen({
   const placeDetailQueries = useQueries({
     queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
   });
+  const imageUrlsByPlaceId = usePlaceExplorationMediaList(placeIds);
 
   const verifiedPlaceListState = toVerifiedPlaceListState(
     toVerifiedPlaceEntries(placeIds, placeDetailQueries),
@@ -365,9 +369,10 @@ export default function MyPageScreen({
                     <VerifiedPlaceCard
                       address={entry.place.address}
                       favorited={bookmarkedPlaceIds.has(entry.placeId)}
-                      imageUrl={null}
+                      imageUrl={imageUrlsByPlaceId[String(entry.placeId)]?.[0] ?? null}
                       key={entry.placeId}
                       name={entry.place.name}
+                      onPress={() => onOpenPlace(entry.placeId)}
                       onToggleFavorite={() => toggleFavorite(entry.placeId)}
                     />
                   ) : (

@@ -140,6 +140,10 @@ export const MyPageRouteScreen = ({ navigation }: Pick<MainScreenProps<'MyPage'>
         onBack={navigation.goBack}
         onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
         onOpenProfileEdit={openProfileEdit}
+        onOpenPlace={(value) => {
+          const placeId = parsePlaceId(value);
+          if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
+        }}
         onOpenReservations={() => navigation.navigate(MAIN_ROUTES.ReservationBox)}
         onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
         onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
@@ -160,7 +164,13 @@ export const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileE
 
 const VerifiedPlacesRouteScreen = ({ navigation }: MainScreenProps<'VerifiedPlaces'>) => (
   <V2ScreenBoundary>
-    <VerifiedPlacesScreen onBack={navigation.goBack} />
+    <VerifiedPlacesScreen
+      onBack={navigation.goBack}
+      onOpenPlace={(value) => {
+        const placeId = parsePlaceId(value);
+        if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
+      }}
+    />
   </V2ScreenBoundary>
 );
 

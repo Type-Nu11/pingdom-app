@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { QueryClient } from '@tanstack/react-query';
 
 import { createVisitVerificationApi } from '../../../features/place-visit-verification/api/visitVerificationApi.ts';
 import {
   createVisitVerificationMutationOptions,
   invalidateReviewQueries,
+  primeSubmittedReviewQueries,
 } from '../../../features/place-visit-verification/hooks/useSubmitVisitVerification.ts';
 import { createPlaceReviewsQueryOptions } from '../../../features/place-visit-verification/hooks/usePlaceReviews.ts';
 import {
@@ -306,6 +308,34 @@ test('successful review submission refreshes place reviews and the current user 
     ['v2', 'places', 'entity', 17, 'reviews'],
     ['v2', 'users', 'me', 'reviews'],
   ]);
+});
+
+test('successful review submission immediately primes place detail and my review count caches', () => {
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(
+    ['v2', 'users', 'me', 'reviews', { limit: 1, page: 1 }],
+    { hasNext: false, limit: 1, page: 1, reviews: [], totalElements: 7, totalPages: 1 },
+  );
+  const review = {
+    content: '방금 작성한 리뷰',
+    createdAt: '2026-09-03T11:00:00Z',
+    imageUrls: ['https://cdn.test/review.jpg'],
+    placeId: 17,
+    recommendReason: '친절해요, 깨끗해요',
+    reviewId: 91,
+  };
+
+  primeSubmittedReviewQueries(queryClient, review);
+
+  assert.deepEqual(
+    queryClient.getQueryData(['v2', 'places', 'entity', 17, 'reviews', { limit: 20, page: 1 }]).content,
+    [review],
+  );
+  const mine = queryClient.getQueryData(
+    ['v2', 'users', 'me', 'reviews', { limit: 1, page: 1 }],
+  );
+  assert.equal(mine.totalElements, 8);
+  assert.equal(mine.reviews[0].reviewId, 91);
 });
 
 test('review draft limits photos, serializes multiple reasons, and never blocks text submission for local photos', () => {
