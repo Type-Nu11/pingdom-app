@@ -69,7 +69,10 @@ test('menu query keys scope data and failures per place and queryFn forwards can
   const calls = [];
   const api = { listPlaceMenus: async (id, signal) => { calls.push([id, signal]); return [menu({ id })]; } };
   const signal = new AbortController().signal;
-  await createPlaceMenusQueryOptions(17, api).queryFn({ signal });
+  const options = createPlaceMenusQueryOptions(17, api);
+  assert.equal(options.refetchOnMount, 'always');
+  assert.equal(options.refetchOnWindowFocus, 'always');
+  await options.queryFn({ signal });
   assert.deepEqual(calls, [[17, signal]]);
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

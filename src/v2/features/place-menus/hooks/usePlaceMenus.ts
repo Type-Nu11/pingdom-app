@@ -20,6 +20,11 @@ export function createPlaceMenusQueryOptions(
   return {
     queryFn: ({ signal }: { signal?: AbortSignal }) => api.listPlaceMenus(placeId, signal),
     queryKey: placeMenuQueryKeys.list(placeId),
+    // An empty menu response can become stale while the detail stays mounted
+    // (for example, when a merchant publishes a menu). Refresh on detail
+    // re-entry and app foreground without coupling it to the place query.
+    refetchOnMount: 'always' as const,
+    refetchOnWindowFocus: 'always' as const,
   };
 }
 
