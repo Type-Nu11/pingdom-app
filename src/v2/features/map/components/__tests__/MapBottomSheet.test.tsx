@@ -813,6 +813,42 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');
   });
 
+  test('장소 요청 실패를 빈 핫플 결과로 표시하지 않는다', async () => {
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'home' }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={[]}
+        placesState="error"
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={null}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(300)}
+        snapPoint="medium"
+      />,
+    );
+
+    expect(screen.getByText('목록을 불러오지 못했어요')).toBeVisible();
+    expect(screen.queryByText('표시할 핫플이 아직 없어요')).not.toBeOnTheScreen();
+  });
+
   test('확장 홈에서 서버 장소의 전체 카테고리 필터를 제공한다', async () => {
     await renderWithProviders(
       <MapBottomSheet

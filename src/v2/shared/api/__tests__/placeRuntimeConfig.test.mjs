@@ -4,7 +4,7 @@ import test from 'node:test';
 import { assertApiModeAllowed, resolvePlaceListEnabled } from '../../config/env.ts';
 import { getPlaceListRuntimeState } from '../../../features/place-exploration/model/placeListRuntime.ts';
 
-test('app-linked real development enables place requests by default and explicit flags win', () => {
+test('real API environments enable place requests by default and explicit flags win', () => {
   assert.equal(resolvePlaceListEnabled({
     apiMode: 'real', appEnvironment: 'development',
   }), true);
@@ -13,7 +13,10 @@ test('app-linked real development enables place requests by default and explicit
   }), false);
   assert.equal(resolvePlaceListEnabled({
     apiMode: 'real', appEnvironment: 'staging',
-  }), false);
+  }), true);
+  assert.equal(resolvePlaceListEnabled({
+    apiMode: 'real', appEnvironment: 'production',
+  }), true);
   assert.equal(resolvePlaceListEnabled({
     apiMode: 'mock', appEnvironment: 'development', value: 'true',
   }), true);

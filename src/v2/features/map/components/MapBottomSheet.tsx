@@ -163,6 +163,7 @@ type MapBottomSheetProps = {
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
+  placesState?: 'empty' | 'error' | 'loading' | 'ready';
   previewFallbackContentByPlaceId?: Record<string, MapPreviewFallbackContent>;
   explorationImageUrlsByPlaceId?: Record<string, string>;
   recommendationContext?: string | null;
@@ -1932,6 +1933,7 @@ export default function MapBottomSheet({
   onToggleBookmark,
   panHandlers,
   places,
+  placesState,
   previewFallbackContentByPlaceId,
   explorationImageUrlsByPlaceId = {},
   recommendationPlaces,
@@ -1969,7 +1971,7 @@ export default function MapBottomSheet({
   }, [selectedPlace?.id]);
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
-  const placesState = places.length > 0 ? 'ready' : 'empty';
+  const resolvedPlacesState = placesState ?? (places.length > 0 ? 'ready' : 'empty');
   const shownPlaces = useMemo(
     () => (feed === 'local' ? places : [...places].reverse()),
     [feed, places],
@@ -2203,7 +2205,7 @@ export default function MapBottomSheet({
           onPlacePress={onPlacePress}
           onToggleBookmark={onToggleBookmark}
           places={shownPlaces}
-          state={placesState}
+          state={resolvedPlacesState}
           userName={userName?.trim() || 'user'}
         />
       )}

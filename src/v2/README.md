@@ -19,9 +19,8 @@ Production entrypoint ownership and active composition bridges are documented in
 ## Feature data flow
 
 Feature data flows from `Screen` to `Hook` to `API`. The reference implementation lives in
-`features/place-list`. Place list/search defaults on only for app-linked development
-(`EXPO_PUBLIC_APP_ENV=development` and `EXPO_PUBLIC_API_MODE=real`) and can be overridden with
-`EXPO_PUBLIC_ENABLE_PLACE_LIST=true|false`.
+`features/place-list`. Place list/search defaults on whenever `EXPO_PUBLIC_API_MODE=real` and can
+be overridden with `EXPO_PUBLIC_ENABLE_PLACE_LIST=true|false`.
 
 ## OpenAPI types
 

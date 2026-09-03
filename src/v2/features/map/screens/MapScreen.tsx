@@ -139,6 +139,7 @@ export default function MapScreen({
     markers: apiMarkers,
     places: apiPlaces,
     refetch: refetchPlaces,
+    status: placeListStatus,
   } = usePlaces();
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
@@ -903,6 +904,7 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
             places={sheetPlaces}
+            placesState={placeListStatus === 'disabled' ? 'error' : placeListStatus}
             previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
             recommendationContext={recommendationPresentation.contextText}
             recommendationLimitMessage={recommendationPresentation.limitText}
