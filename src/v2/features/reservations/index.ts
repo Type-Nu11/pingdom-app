@@ -34,3 +34,17 @@ export type {
   ReservationStatus,
   ReservationStatusContractAssertions,
 } from './model/reservationPresentation';
+export {
+  AVAILABILITY_BLOCKED_REASON_KEYS,
+  isSelectableAvailability,
+  isSelectableAvailabilityPresentation,
+  RESERVATION_PRODUCT_TYPES,
+  selectAvailabilityPresentation,
+  summarizeAvailabilityPresentations,
+} from './model/reservationProduct';
+export type {
+  AvailabilityPresentation,
+  AvailabilityPresentationSummary,
+  ReservationProductContractAssertions,
+  ReservationProductType,
+} from './model/reservationProduct';

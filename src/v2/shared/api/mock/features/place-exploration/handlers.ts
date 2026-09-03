@@ -1,6 +1,5 @@
 import type { MockHandler } from '../../handlers';
 import {
-  availabilityFixture,
   emptyPlaceExplorationFixtures,
   explorationMediaFixture,
   livePlaceDetailFixture,
@@ -20,11 +19,6 @@ export const placeExplorationMockHandlers = [
     method: 'GET',
     path: /^\/places\/\d+$/,
     resolve: () => livePlaceDetailFixture,
-  },
-  {
-    method: 'GET',
-    path: /^\/places\/\d+\/availabilities$/,
-    resolve: ({ scenario }) => scenario === 'empty' ? [] : [availabilityFixture],
   },
   {
     method: 'GET',

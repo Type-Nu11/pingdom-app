@@ -6,6 +6,7 @@ import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import PendingReservationIcon from '../../../../assets/v2/icons/smRlavy.svg';
+import { toApiError } from '../../../shared/api';
 import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import {
@@ -22,9 +23,16 @@ import {
   startOfLocalMonth,
   type Availability,
 } from '../model/reservationAvailability';
+import {
+  isSelectableAvailability,
+  selectAvailabilityPresentation,
+  summarizeAvailabilityPresentations,
+  type AvailabilityPresentationSummary,
+} from '../model/reservationProduct';
 
 const PEOPLE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+type TimePeriod = 'morning' | 'afternoon';
 
 type CreateReservationScreenProps = {
   navigation: { goBack: () => void };
@@ -42,6 +50,12 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const [quantity, setQuantity] = useState(2);
   const [selectedDate, setSelectedDate] = useState<string | null>(() => localDateKey(now));
   const [selectedAvailabilityId, setSelectedAvailabilityId] = useState<number | null>(null);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>(
+    now.getHours() < 12 ? 'morning' : 'afternoon',
+  );
+  const [bookerName, setBookerName] = useState('');
+  const [bookerPhone, setBookerPhone] = useState('');
+  const [requestNote, setRequestNote] = useState('');
   const [idempotencyKey] = useState(createReservationIdempotencyKey);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const detail = usePlaceDetail(route.params.placeId);
@@ -49,19 +63,29 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const createReservation = useCreateReservation();
   const availabilityData = availabilities.data ?? [];
 
+  // Only GENERAL place reservations can be selected and submitted today, so the
+  // calendar dots and the nearest-date jump are driven by that subset. TICKET
+  // and CLASS slots still render in the time list as disabled rows.
   const bookableAvailabilities = useMemo(
-    () => availabilityData.filter((item) => isAvailabilityBookable(item, quantity, now)),
+    () => availabilityData.filter(
+      (item) => isSelectableAvailability(item) && isAvailabilityBookable(item, quantity, now),
+    ),
     [availabilityData, now, quantity],
   );
   const availableDates = useMemo(
     () => new Set(bookableAvailabilities.flatMap(availabilityDateKeys)),
     [bookableAvailabilities],
   );
+  const availabilitySummary = useMemo(
+    () => summarizeAvailabilityPresentations(availabilityData),
+    [availabilityData],
+  );
+  const selectableAvailabilityData = useMemo(
+    () => availabilityData.filter(isSelectableAvailability),
+    [availabilityData],
+  );
   const scheduledDates = useMemo(
-    () => new Set(
-      availabilityData
-        .flatMap(availabilityDateKeys),
-    ),
+    () => new Set(availabilityData.flatMap(availabilityDateKeys)),
     [availabilityData],
   );
   const selectedAvailability = availabilityData.find(
@@ -72,13 +96,22 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
       .filter((item) => availabilityIncludesDate(item, selectedDate))
       .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
     : [];
+  const periodDate = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedDate || selectedDateSlots.length === 0 || periodDate.current === selectedDate) {
+      return;
+    }
+    periodDate.current = selectedDate;
+    setTimePeriod(slotTimePeriod(selectedDateSlots[0]));
+  }, [selectedDate, selectedDateSlots]);
 
   useEffect(() => {
     if (initializedFromAvailability.current || availabilities.isPending || availabilities.isError) {
       return;
     }
-    const nearest = nearestBookableAvailability(availabilityData, quantity, now)
-      ?? nearestUpcomingAvailability(availabilityData, now);
+    const nearest = nearestBookableAvailability(selectableAvailabilityData, quantity, now)
+      ?? nearestUpcomingAvailability(selectableAvailabilityData, now);
     if (!nearest) return;
     const nearestDate = new Date(nearest.startsAt);
     const initialDate = nearestDate.getTime() <= now.getTime()
@@ -88,11 +121,12 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     setMonth(startOfLocalMonth(initialDate));
     setSelectedDate(localDateKey(initialDate));
     setSelectedAvailabilityId(null);
-  }, [availabilityData, availabilities.isError, availabilities.isPending, now, quantity]);
+  }, [selectableAvailabilityData, availabilities.isError, availabilities.isPending, now, quantity]);
 
   useEffect(() => {
     if (selectedAvailabilityId !== null
       && (!selectedAvailability
+        || !isSelectableAvailability(selectedAvailability)
         || !isAvailabilityBookable(selectedAvailability, quantity, now)
         || !selectedDate
         || !availabilityIncludesDate(selectedAvailability, selectedDate))) {
@@ -101,11 +135,22 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   }, [now, quantity, selectedAvailability, selectedAvailabilityId, selectedDate]);
 
   const hasValidIdempotencyKey = idempotencyKey.length > 0 && idempotencyKey.length <= 100;
+  const normalizedBookerName = bookerName.trim();
+  const normalizedBookerPhone = bookerPhone.trim();
+  const normalizedRequestNote = requestNote.trim();
+  const hasValidBookerName = normalizedBookerName.length > 0
+    && normalizedBookerName.length <= 100;
+  const hasValidBookerPhone = normalizedBookerPhone.length > 0
+    && normalizedBookerPhone.length <= 30
+    && /^[0-9+()\- ]+$/.test(normalizedBookerPhone);
   const canSubmit = Boolean(
     selectedAvailability
+      && isSelectableAvailability(selectedAvailability)
       && isAvailabilityBookable(selectedAvailability, quantity, now)
       && quantity >= 1
       && hasValidIdempotencyKey
+      && hasValidBookerName
+      && hasValidBookerPhone
       && !createReservation.isPending
       && !isSubmitting,
   );
@@ -117,15 +162,29 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   };
 
   const submit = () => {
-    if (!canSubmit || !selectedAvailability || submissionGuard.current) return;
+    if (!canSubmit
+      || !selectedAvailability
+      || !isSelectableAvailability(selectedAvailability)
+      || submissionGuard.current) return;
     submissionGuard.current = true;
     setIsSubmitting(true);
     createReservation.mutate(
-      { availabilityId: selectedAvailability.id, idempotencyKey, quantity },
       {
-        onError: () => {
+        availabilityId: selectedAvailability.id,
+        bookerName: normalizedBookerName,
+        bookerPhone: normalizedBookerPhone,
+        idempotencyKey,
+        quantity,
+        ...(normalizedRequestNote ? { requestNote: normalizedRequestNote } : {}),
+      },
+      {
+        onError: (error) => {
           submissionGuard.current = false;
           setIsSubmitting(false);
+          const code = toApiError(error).code;
+          if (code === 'AVAILABILITY_CAPACITY_EXCEEDED' || code === 'AVAILABILITY_NOT_FOUND') {
+            void availabilities.refetch();
+          }
         },
       },
     );
@@ -169,16 +228,16 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
         <PlaceSummary>
           {route.params.imageUrl ? <Thumbnail source={{ uri: route.params.imageUrl }} testID="v2-reservation-place-image" /> : <ThumbnailFallback><ThumbnailFallbackText>⌂</ThumbnailFallbackText></ThumbnailFallback>}
           <PlaceCopy>
-            <Helper>{t('reservation.create.peopleRange', { category: route.params.category ?? detail.data?.touristCategories?.[0] ?? '' })}</Helper>
+            <PlaceMeta>{t('reservation.create.peopleRange', { category: route.params.category ?? detail.data?.touristCategories?.[0] ?? '' })}</PlaceMeta>
             <PlaceName numberOfLines={1}>{route.params.placeName ?? detail.data?.name ?? t('reservation.create.loadingPlace')}</PlaceName>
           </PlaceCopy><Chevron>›</Chevron>
         </PlaceSummary>
 
-        <Section><SectionTitle>{t('reservation.create.people')}</SectionTitle>
+        <PeopleSection><SectionTitle>{t('reservation.create.people')}</SectionTitle>
           <Horizontal horizontal showsHorizontalScrollIndicator={false}>
             {PEOPLE.map((count) => <Choice key={count} $selected={quantity === count} accessibilityRole="button" accessibilityState={{ selected: quantity === count }} onPress={() => setQuantity(count)}><ChoiceText $selected={quantity === count}>{t('reservation.create.peopleCount', { count })}</ChoiceText></Choice>)}
           </Horizontal>
-        </Section>
+        </PeopleSection>
 
         <Section><SectionTitle>{t('reservation.create.date')}</SectionTitle>
           <Calendar>
@@ -189,7 +248,10 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
               const selected = key === selectedDate;
               const isPast = startOfLocalDay(date).getTime() < startOfLocalDay(now).getTime();
               const available = !isPast && availableDates.has(key);
-              const scheduled = scheduledDates.has(key);
+              // Keep today's completed slots inspectable for their unavailable reason,
+              // but dates before today must not remain interactive just because the
+              // server still returns historical availability records.
+              const scheduled = !isPast && scheduledDates.has(key);
               const dateLabel = available
                 ? t('reservation.create.availableDateLabel', { date: key })
                 : scheduled
@@ -208,20 +270,71 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
             isError: availabilities.isError,
             isPending: availabilities.isPending,
             onRetry: () => { void availabilities.refetch(); },
+            placeName: route.params.placeName ?? detail.data?.name ?? t('reservation.create.loadingPlace'),
             quantity,
             selectedAvailabilityId,
             selectedDate,
             selectedDateSlots,
             setSelectedAvailabilityId,
+            setTimePeriod,
+            summary: availabilitySummary,
             t,
+            timePeriod,
             language: i18n.language,
             now,
             themeColor: theme.colors.primary,
           })}
         </Section>
 
+        <SubmitSection>
+          <SectionTitle>{t('reservation.create.bookerInfo')}</SectionTitle>
+          <Field>
+            <FieldLabel>{t('reservation.create.bookerName')}</FieldLabel>
+            <FieldInput
+              autoCapitalize="words"
+              maxLength={100}
+              onChangeText={setBookerName}
+              placeholder={t('reservation.create.bookerNamePlaceholder')}
+              placeholderTextColor={theme.colors.textMuted}
+              testID="v2-reservation-booker-name"
+              value={bookerName}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>{t('reservation.create.bookerPhone')}</FieldLabel>
+            <FieldInput
+              autoComplete="tel"
+              keyboardType="phone-pad"
+              maxLength={30}
+              onChangeText={setBookerPhone}
+              placeholder={t('reservation.create.bookerPhonePlaceholder')}
+              placeholderTextColor={theme.colors.textMuted}
+              testID="v2-reservation-booker-phone"
+              value={bookerPhone}
+            />
+            {bookerPhone.length > 0 && !hasValidBookerPhone
+              ? <FieldError>{t('reservation.create.bookerPhoneInvalid')}</FieldError>
+              : null}
+          </Field>
+          <Field>
+            <FieldLabel>{t('reservation.create.requestNote')}</FieldLabel>
+            <NoteInput
+              maxLength={500}
+              multiline
+              onChangeText={setRequestNote}
+              placeholder={t('reservation.create.requestNotePlaceholder')}
+              placeholderTextColor={theme.colors.textMuted}
+              testID="v2-reservation-request-note"
+              textAlignVertical="top"
+              value={requestNote}
+            />
+          </Field>
+        </SubmitSection>
+
         <Section>
-          {createReservation.isError ? <ErrorText>{t('reservation.create.submitError')}</ErrorText> : null}
+          {createReservation.isError
+            ? <ErrorText>{t(reservationSubmitErrorKey(createReservation.error))}</ErrorText>
+            : null}
           <SubmitButton $enabled={canSubmit} accessibilityRole="button" accessibilityState={{ disabled: !canSubmit, busy: createReservation.isPending || isSubmitting }} disabled={!canSubmit} onPress={submit} testID="v2-reservation-submit">
             {createReservation.isPending || isSubmitting ? <ActivityIndicator color={theme.colors.onPrimary} /> : <SubmitLabel $enabled={canSubmit}>{t('reservation.create.submit')}</SubmitLabel>}
           </SubmitButton>
@@ -229,6 +342,25 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
       </Form>
     </Screen>
   );
+}
+
+function reservationSubmitErrorKey(error: unknown): string {
+  const apiError = toApiError(error);
+  if (apiError.code === 'AVAILABILITY_CAPACITY_EXCEEDED') {
+    return 'reservation.create.submitCapacityError';
+  }
+  if (apiError.code === 'AVAILABILITY_NOT_FOUND' || apiError.code === 'RESOURCE_EXPIRED') {
+    return 'reservation.create.submitAvailabilityError';
+  }
+  if (apiError.code === 'INVALID_RESERVATION_INPUT'
+    || apiError.code === 'VALIDATION_FAILED'
+    || apiError.status === 400) {
+    return 'reservation.create.submitValidationError';
+  }
+  if (apiError.code === 'TOURIST_ACCOUNT_REQUIRED' || apiError.status === 403) {
+    return 'reservation.create.submitAccountError';
+  }
+  return 'reservation.create.submitError';
 }
 
 type AvailabilityStateProps = {
@@ -239,13 +371,17 @@ type AvailabilityStateProps = {
   language: string;
   now: Date;
   onRetry: () => void;
+  placeName: string;
   quantity: number;
   selectedAvailabilityId: number | null;
   selectedDate: string | null;
   selectedDateSlots: Availability[];
   setSelectedAvailabilityId: (id: number) => void;
+  setTimePeriod: (period: TimePeriod) => void;
+  summary: AvailabilityPresentationSummary;
   t: (key: string, options?: Record<string, unknown>) => string;
   themeColor: string;
+  timePeriod: TimePeriod;
 };
 
 function renderAvailabilityState(props: AvailabilityStateProps) {
@@ -253,19 +389,101 @@ function renderAvailabilityState(props: AvailabilityStateProps) {
   if (props.isPending) return <StateBox><ActivityIndicator color={props.themeColor} /><Helper>{t('reservation.create.availabilityLoading')}</Helper></StateBox>;
   if (props.isError) return <StateBox><ErrorText>{t('reservation.create.availabilityError')}</ErrorText><RetryButton accessibilityRole="button" onPress={props.onRetry}><RetryText>{t('reservation.create.retry')}</RetryText></RetryButton></StateBox>;
   if (props.availabilityData.length === 0) return <StateBox><Helper>{t('reservation.create.availabilityEmpty')}</Helper></StateBox>;
+  // Availabilities exist, but none is a GENERAL place reservation. Say so
+  // explicitly instead of reusing the empty or capacity copy, and never present
+  // a TICKET/CLASS or unknown-type slot as a place booking.
+  if (props.summary.place === 0) {
+    const key = props.summary.blockedProduct > 0
+      ? 'reservation.create.productInfoUnavailable'
+      : 'reservation.create.unknownReservationType';
+    return <StateBox><Helper>{t(key)}</Helper></StateBox>;
+  }
   if (!props.selectedDate) return <StateBox><Helper>{t('reservation.create.selectAvailableDate')}</Helper></StateBox>;
   if (props.selectedDateSlots.length === 0) return <StateBox><Helper>{t('reservation.create.noTimes')}</Helper></StateBox>;
 
+  // A GENERAL slot exists somewhere, but this date also carries TICKET/CLASS or
+  // unknown-type slots. Surface the reason as visible copy, not only per row.
+  const blockedKinds = new Set(
+    props.selectedDateSlots
+      .map((slot) => selectAvailabilityPresentation(slot).kind)
+      .filter((kind) => kind !== 'place'),
+  );
+  const blockedNoticeKey = blockedKinds.has('blockedProduct')
+    ? 'reservation.create.productInfoUnavailable'
+    : blockedKinds.has('unknownType')
+      ? 'reservation.create.unknownReservationType'
+      : null;
+  const periodSlots = props.selectedDateSlots.filter(
+    (slot) => slotTimePeriod(slot) === props.timePeriod,
+  );
+
   return <AvailabilityContent>
+    <TimePeriodTabs>
+      {(['morning', 'afternoon'] as const).map((period) => (
+        <TimePeriodButton
+          key={period}
+          $selected={props.timePeriod === period}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: props.timePeriod === period }}
+          onPress={() => props.setTimePeriod(period)}
+        >
+          <TimePeriodLabel $selected={props.timePeriod === period}>
+            {t(`reservation.create.${period}`)}
+          </TimePeriodLabel>
+        </TimePeriodButton>
+      ))}
+      <TimePeriodRule />
+    </TimePeriodTabs>
     {props.bookableCount === 0 ? <StateBox><Helper>{t('reservation.create.noCapacityForQuantity', { count: props.quantity })}</Helper></StateBox> : null}
-    <TimeOptionScroll horizontal showsHorizontalScrollIndicator={false}>{props.selectedDateSlots.map((slot) => {
-    const bookable = isAvailabilityBookable(slot, props.quantity, props.now);
-    const selected = props.selectedAvailabilityId === slot.id;
-    const reason = availabilityReason(slot, props.quantity, props.now, t);
-    const label = `${formatTimeRange(slot, props.language)} · ${slot.productType}`;
-    return <SlotButton key={slot.id} $bookable={bookable} $selected={selected} accessibilityLabel={`${label}. ${reason}`} accessibilityRole="button" accessibilityState={{ disabled: !bookable, selected }} disabled={!bookable} onPress={() => props.setSelectedAvailabilityId(slot.id)} testID={`v2-availability-${slot.id}`}><SlotLabel $bookable={bookable} $selected={selected}>{label}</SlotLabel></SlotButton>;
+    {blockedNoticeKey ? <StateBox><Helper>{t(blockedNoticeKey)}</Helper></StateBox> : null}
+    {periodSlots.length === 0 ? <PeriodEmpty>{t('reservation.create.noTimesInPeriod')}</PeriodEmpty> : null}
+    <TimeOptionScroll horizontal showsHorizontalScrollIndicator={false}>{periodSlots.map((slot) => {
+      const presentation = selectAvailabilityPresentation(slot);
+      const timeRange = formatTimeRange(slot, props.language);
+      const timeLabel = formatSlotLabel(slot, props.language);
+
+      if (presentation.kind !== 'place') {
+        // TICKET/CLASS without a product name, or an unrecognised type: a
+        // disabled pill that names only the time and its reason, so it is never
+        // mistaken for a bookable place slot and never leaks the raw product
+        // type or id.
+        const notice = t(presentation.reasonKey);
+        return (
+          <SlotButton
+            key={slot.id}
+            $bookable={false}
+            $selected={false}
+            accessibilityLabel={`${timeRange}. ${notice}`}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: true, selected: false }}
+            disabled
+            testID={`v2-availability-${slot.id}`}
+          >
+            <SlotLabel $bookable={false} $selected={false}>{timeLabel}</SlotLabel>
+          </SlotButton>
+        );
+      }
+
+      const bookable = isAvailabilityBookable(slot, props.quantity, props.now);
+      const selected = props.selectedAvailabilityId === slot.id;
+      const reason = availabilityReason(slot, props.quantity, props.now, t);
+      const accessibilityLabel = `${timeRange} · ${props.placeName}. ${reason}`;
+      return <SlotButton key={slot.id} $bookable={bookable} $selected={selected} accessibilityLabel={accessibilityLabel} accessibilityRole="button" accessibilityState={{ disabled: !bookable, selected }} disabled={!bookable} onPress={() => props.setSelectedAvailabilityId(slot.id)} testID={`v2-availability-${slot.id}`}><SlotLabel $bookable={bookable} $selected={selected}>{timeLabel}</SlotLabel>{!bookable ? <SlotReason $bookable={bookable} $selected={selected}>{reason}</SlotReason> : null}</SlotButton>;
     })}</TimeOptionScroll>
   </AvailabilityContent>;
+}
+
+function slotTimePeriod(availability: Availability): TimePeriod {
+  return new Date(availability.startsAt).getHours() < 12 ? 'morning' : 'afternoon';
+}
+
+function formatSlotLabel(availability: Availability, language: string): string {
+  const startsAt = new Date(availability.startsAt);
+  return new Intl.DateTimeFormat(language, {
+    hour: '2-digit',
+    hourCycle: 'h23',
+    minute: '2-digit',
+  }).format(startsAt);
 }
 
 function availabilityReason(availability: Availability, quantity: number, now: Date, t: AvailabilityStateProps['t']): string {
@@ -306,15 +524,18 @@ const PlaceSummary = styled.View`flex-direction: row; align-items: center; gap: 
 const Thumbnail = styled.Image`width: 48px; height: 48px; border-radius: ${({ theme }) => theme.radius.sm}px;`;
 const ThumbnailFallback = styled.View`width: 48px; height: 48px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.sm}px; background-color: ${({ theme }) => theme.colors.border};`;
 const ThumbnailFallbackText = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.title.fontSize}px;`;
-const PlaceCopy = styled.View`flex: 1;`;
+const PlaceCopy = styled.View`flex: 1; gap: 2px;`;
+const PlaceMeta = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: 12px;`;
 const PlaceName = styled.Text`color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const Chevron = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: 28px;`;
 const Section = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-top-width: 8px; border-top-color: ${({ theme }) => theme.colors.surfaceMuted};`;
+const PeopleSection = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: 0 ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px;`;
+const SubmitSection = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: 0 ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;`;
 const SectionTitle = styled.Text`color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.label.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const Horizontal = styled.ScrollView`flex-grow: 0;`;
 const Choice = styled.Pressable<{ $selected: boolean }>`min-width: 48px; height: 34px; align-items: center; justify-content: center; margin-right: ${({ theme }) => theme.spacing.sm}px; padding: 0 12px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.surfaceMuted}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surfaceMuted};`;
 const ChoiceText = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const Calendar = styled.View`padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
+const Calendar = styled.View`padding: 12px ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const MonthRow = styled.View`flex-direction: row; align-items: center; justify-content: center;`;
 const MonthButton = styled.Pressable`width: 36px; height: 36px; align-items: center; justify-content: center;`;
 const MonthButtonText = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.title.fontSize}px;`;
@@ -322,16 +543,27 @@ const MonthTitle = styled.Text`color: ${({ theme }) => theme.colors.textStrong};
 const WeekRow = styled.View`flex-direction: row; margin-top: ${({ theme }) => theme.spacing.sm}px;`;
 const Weekday = styled.Text<{ $weekday: number }>`width: 14.285%; color: ${({ $weekday, theme }) => $weekday === 0 ? theme.colors.calendarSunday : $weekday === 6 ? theme.colors.calendarSaturday : theme.colors.text}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
 const CalendarGrid = styled.View`flex-direction: row; flex-wrap: wrap; margin-top: ${({ theme }) => theme.spacing.xs}px;`;
-const DayCell = styled.View`width: 14.285%; height: 46px; align-items: center; justify-content: center;`;
-const DayButton = styled.Pressable<{ $selected: boolean }>`width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'};`;
+const DayCell = styled.View`width: 14.285%; height: 40px; align-items: center; justify-content: center;`;
+const DayButton = styled.Pressable<{ $selected: boolean }>`width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'};`;
 const DayText = styled.Text<{ $available: boolean; $selected: boolean; $weekday: number }>`color: ${({ $available, $selected, $weekday, theme }) => $selected ? theme.colors.onPrimary : !$available ? theme.colors.disabled : $weekday === 0 ? theme.colors.calendarSunday : $weekday === 6 ? theme.colors.calendarSaturday : theme.colors.text}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $available, $selected }) => $available || $selected ? '700' : '400'};`;
 const StateBox = styled.View`min-height: 72px; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const RetryButton = styled.Pressable`padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
 const RetryText = styled.Text`color: ${({ theme }) => theme.colors.primary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
 const TimeOptionScroll = styled.ScrollView`flex-grow: 0;`;
 const AvailabilityContent = styled.View`gap: ${({ theme }) => theme.spacing.sm}px;`;
-const SlotButton = styled.Pressable<{ $bookable: boolean; $selected: boolean }>`min-height: 40px; align-items: center; justify-content: center; margin-right: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surfaceMuted}; opacity: ${({ $bookable }) => $bookable ? 1 : 0.48};`;
+const TimePeriodTabs = styled.View`height: 38px; flex-direction: row; align-items: flex-start; position: relative;`;
+const TimePeriodButton = styled.Pressable<{ $selected: boolean }>`height: 38px; justify-content: flex-start; margin-right: ${({ theme }) => theme.spacing.lg}px; border-bottom-width: 2px; border-bottom-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'}; z-index: 1;`;
+const TimePeriodLabel = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const TimePeriodRule = styled.View`position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background-color: ${({ theme }) => theme.colors.border};`;
+const PeriodEmpty = styled.Text`padding: ${({ theme }) => theme.spacing.sm}px 0; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const Field = styled.View`gap: 2px;`;
+const FieldLabel = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: 12px;`;
+const FieldInput = styled.TextInput`height: 46px; padding: 0; border-bottom-width: 1px; border-bottom-color: ${({ theme }) => theme.colors.border}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
+const NoteInput = styled.TextInput`min-height: 96px; margin-top: 6px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
+const FieldError = styled.Text`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const SlotButton = styled.Pressable<{ $bookable: boolean; $selected: boolean }>`min-width: 56px; min-height: 34px; align-items: center; justify-content: center; margin-right: ${({ theme }) => theme.spacing.sm}px; padding: 6px 12px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surfaceMuted}; opacity: ${({ $bookable }) => $bookable ? 1 : 0.48};`;
 const SlotLabel = styled.Text<{ $bookable: boolean; $selected: boolean }>`color: ${({ $bookable, $selected, theme }) => $selected ? theme.colors.primary : $bookable ? theme.colors.textMuted : theme.colors.textDisabled}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $selected, theme }) => $selected ? theme.typography.label.fontWeight : theme.typography.caption.fontWeight};`;
+const SlotReason = styled.Text<{ $bookable: boolean; $selected: boolean }>`margin-top: 2px; color: ${({ $bookable, $selected, theme }) => $selected ? theme.colors.primary : $bookable ? theme.colors.textAlternative : theme.colors.textDisabled}; font-size: 10px;`;
 const Helper = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
 const ErrorText = styled.Text`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
 const SubmitButton = styled.Pressable<{ $enabled: boolean }>`height: 56px; align-items: center; justify-content: center; margin-top: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $enabled, theme }) => $enabled ? theme.colors.primary : theme.colors.disabled};`;

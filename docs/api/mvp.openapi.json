@@ -2087,11 +2087,19 @@
       "CreateReservationRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["availabilityId", "idempotencyKey"],
+        "required": ["availabilityId", "idempotencyKey", "quantity", "bookerName", "bookerPhone"],
         "properties": {
           "availabilityId": { "$ref": "#/components/schemas/PositiveId" },
-          "idempotencyKey": { "type": "string", "minLength": 0, "maxLength": 100 },
-          "quantity": { "type": "integer", "format": "int32", "minimum": 1 }
+          "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "quantity": { "type": "integer", "format": "int32", "minimum": 1 },
+          "bookerName": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "bookerPhone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30,
+            "pattern": "^[0-9+()\\- ]+$"
+          },
+          "requestNote": { "type": "string", "maxLength": 500 }
         }
       },
       "Reservation": {
