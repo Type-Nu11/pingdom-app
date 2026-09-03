@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import BackIcon from '../../../shared/assets/icons/back.svg';
+import { HeaderBackButton } from '../../../shared/components';
 import {
   normalizeSupportedLanguage,
   setLanguage,
@@ -27,14 +27,7 @@ export default function LanguageSettingsScreen({
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-language-settings-screen">
       <Header>
-        <HeaderBack
-          accessibilityLabel={t('settings.back')}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={onBack}
-        >
-          <BackIcon height={84} style={BACK_ICON_STYLE} width={80} />
-        </HeaderBack>
+        <HeaderBackButton accessibilityLabel={t('settings.back')} onPress={onBack} />
         <HeaderTitle numberOfLines={1}>{t('settings.language.title')}</HeaderTitle>
         <HeaderSpacer />
       </Header>
@@ -72,8 +65,6 @@ export default function LanguageSettingsScreen({
   );
 }
 
-const BACK_ICON_STYLE = { left: -18, position: 'absolute' as const, top: -20 };
-
 const Screen = styled(SafeAreaView)`
   background-color: ${({ theme }) => theme.colors.background};
   flex: 1;
@@ -85,13 +76,6 @@ const Header = styled.View`
   height: 56px;
   justify-content: space-between;
   padding: 0 16px;
-`;
-
-const HeaderBack = styled.Pressable`
-  height: 44px;
-  overflow: visible;
-  position: relative;
-  width: 44px;
 `;
 
 const HeaderTitle = styled.Text`

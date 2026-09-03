@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import BackIcon from '../../../shared/assets/icons/back.svg';
+import { HeaderBackButton } from '../../../shared/components';
 import { ErrorState, LoadingState } from '../../../shared/components';
 import NotificationSettingToggle from '../components/NotificationSettingToggle';
 
@@ -154,14 +154,7 @@ export default function NotificationSettingsScreen({
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-notification-settings-screen">
       <TopBar>
-        <IconButton
-          accessibilityLabel={t('notificationSettings.back')}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={onBack}
-        >
-          <BackIcon height={84} style={TOP_BAR_ICON_STYLE} width={80} />
-        </IconButton>
+        <HeaderBackButton accessibilityLabel={t('notificationSettings.back')} onPress={onBack} />
         <TopBarTitle>{t('notificationSettings.title')}</TopBarTitle>
         <TopBarSpacer />
       </TopBar>
@@ -211,7 +204,6 @@ export default function NotificationSettingsScreen({
 }
 
 const CONTENT_CONTAINER_STYLE = { flexGrow: 1 } as const;
-const TOP_BAR_ICON_STYLE = { position: 'absolute' } as const;
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -224,20 +216,6 @@ const TopBar = styled.View`
   align-items: center;
   justify-content: space-between;
   padding: 0 ${({ theme }) => theme.spacing.md}px;
-`;
-
-const IconButton = styled.Pressable`
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.background};
-  shadow-color: #000;
-  shadow-offset: 0 4px;
-  shadow-opacity: 0.06;
-  shadow-radius: 10px;
-  elevation: 2;
 `;
 
 const TopBarTitle = styled.Text`

@@ -2,7 +2,7 @@ import React, { type PropsWithChildren } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import BackIcon from '../../../shared/assets/icons/back.svg';
+import { HeaderBackButton } from '../../../shared/components';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-20.svg';
 
 export function SettingsScreenLayout({
@@ -27,14 +27,7 @@ export function SettingsTopBar({
 }) {
   return (
     <TopBar>
-      <IconButton
-        accessibilityLabel={backLabel}
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={onBack}
-      >
-        <BackIcon height={44} width={44} />
-      </IconButton>
+      <HeaderBackButton accessibilityLabel={backLabel} onPress={onBack} />
       <TopBarTitle accessibilityRole="header">{title}</TopBarTitle>
       <Spacer />
     </TopBar>
@@ -100,13 +93,6 @@ const TopBar = styled.View`
   justify-content: space-between;
   min-height: 60px;
   padding: 0 ${({ theme }) => theme.spacing.md}px;
-`;
-
-const IconButton = styled.Pressable`
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
 `;
 
 const Spacer = styled.View`

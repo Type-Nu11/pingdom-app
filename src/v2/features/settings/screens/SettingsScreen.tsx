@@ -16,7 +16,7 @@ import {
   useUpdateNotificationSettings,
 } from '../../notifications/hooks/useNotificationSettings';
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
-import BackIcon from '../../../shared/assets/icons/back.svg';
+import { HeaderBackButton } from '../../../shared/components';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
 import { SETTINGS_DETAIL_IDS, type SettingsDetailId } from '../model/settings.types';
 import LocationPrivacyScreen, {
@@ -112,14 +112,7 @@ function SettingsHeader({ onBack, title }: HeaderProps) {
 
   return (
     <Header>
-      <HeaderBack
-        accessibilityLabel={t('settings.back')}
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={onBack}
-      >
-        <BackIcon height={84} style={BACK_ICON_STYLE} width={80} />
-      </HeaderBack>
+      <HeaderBackButton accessibilityLabel={t('settings.back')} onPress={onBack} />
       <HeaderTitle numberOfLines={1}>{title}</HeaderTitle>
       <HeaderSpacer />
     </Header>
@@ -440,7 +433,6 @@ export default function SettingsScreen({
   );
 }
 
-const BACK_ICON_STYLE = { left: -18, position: 'absolute' as const, top: -20 };
 const CONTENT_CONTAINER_STYLE = { paddingBottom: 40 };
 
 const Screen = styled(SafeAreaView)`
@@ -462,13 +454,6 @@ const Header = styled.View`
   height: 56px;
   justify-content: space-between;
   padding: 0 16px;
-`;
-
-const HeaderBack = styled.Pressable`
-  height: 44px;
-  overflow: visible;
-  position: relative;
-  width: 44px;
 `;
 
 const HeaderTitle = styled.Text`
