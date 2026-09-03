@@ -380,8 +380,8 @@ describe('MapBottomSheet recommendations', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
     expect(bookmark.props.accessibilityState).toEqual({
       busy: false,
-      checked: false,
       disabled: false,
+      selected: false,
     });
 
     await act(async () => resolveBookmark());
@@ -401,8 +401,8 @@ describe('MapBottomSheet recommendations', () => {
     const bookmark = screen.getByRole('button', { name: '즐겨찾기 해제' });
     expect(bookmark.props.accessibilityState).toEqual({
       busy: true,
-      checked: true,
       disabled: true,
+      selected: true,
     });
     expect(screen.queryByText('…')).not.toBeOnTheScreen();
   });
@@ -731,10 +731,9 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     expect(screen.getAllByText('추천 장소 1').length).toBeGreaterThan(0);
-    expect(screen.getByTestId('map-navigation-active-item')).toHaveStyle({
+    expect(screen.getByTestId('map-navigation-map-surface')).toHaveStyle({
       borderRadius: 28,
-      overflow: 'hidden',
-      width: 68,
+      width: 78,
     });
     const handleTarget = screen.getByTestId('map-sheet-handle-target');
     expect(handleTarget).toHaveStyle({
@@ -847,5 +846,13 @@ describe('MapBottomSheet recommendations', () => {
 
     ['팝업', '음악', '음식점', '패션', '뷰티', '전시', '카페', '문화재', '기타']
       .forEach((name) => expect(screen.getByRole('tab', { name })).toBeVisible());
+    expect(screen.getByRole('tab', { name: '팝업', selected: true })).toHaveStyle({
+      backgroundColor: '#FAEDF0',
+      borderColor: '#FE5E84',
+    });
+    expect(screen.getByRole('tab', { name: '음악', selected: false })).toHaveStyle({
+      backgroundColor: '#FFFFFF',
+      borderColor: '#F2F2F3',
+    });
   });
 });

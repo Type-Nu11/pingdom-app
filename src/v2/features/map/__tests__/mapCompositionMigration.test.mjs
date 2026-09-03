@@ -28,8 +28,10 @@ test('the V2 production map preserves route callbacks and duplicate reservation 
 
 test('map buttons expose immediate pressed-state feedback without delaying onPress', () => {
   const sheet = read('../components/MapBottomSheet.tsx');
+  const navigation = read('../components/MapSheetBottomNavigation.tsx');
 
-  assert.match(sheet, /style=\{\(\{ pressed \}\) => \[styles\.navItem, pressed && styles\.pressed\]\}/);
+  assert.match(navigation, /onPressIn=\{\(\) => setPressedTab\(id\)\}/);
+  assert.match(navigation, /getMapSheetTabSurfaceColor\(active, pressedTab === id\)/);
   assert.match(sheet, /style=\{\(\{ pressed \}\) => \[styles\.previewBookmarkButton, pressed && styles\.pressed\]\}/);
   assert.match(sheet, /onPress=\{onPress\}/);
 });
@@ -110,7 +112,7 @@ test('place preview keeps header actions tappable and aligns category beside the
 
   assert.match(bottomSheet, /<View style=\{styles\.previewHeader\}>/);
   assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
-  assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{22\} strokeColor="#5E616A"/);
+  assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{22\}/);
   assert.match(bottomSheet, /t\('map\.detail\.verifiedCount'/);
 });
 
