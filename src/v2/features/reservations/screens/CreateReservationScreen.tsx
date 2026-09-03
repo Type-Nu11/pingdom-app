@@ -479,10 +479,6 @@ function slotTimePeriod(availability: Availability): TimePeriod {
 
 function formatSlotLabel(availability: Availability, language: string): string {
   const startsAt = new Date(availability.startsAt);
-  const endsAt = new Date(availability.endsAt);
-  if (localDateKey(startsAt) !== localDateKey(endsAt)) {
-    return formatTimeRange(availability, language);
-  }
   return new Intl.DateTimeFormat(language, {
     hour: '2-digit',
     hourCycle: 'h23',

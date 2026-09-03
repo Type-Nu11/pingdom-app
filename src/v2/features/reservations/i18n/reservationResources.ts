@@ -184,7 +184,7 @@ export const reservationResources = {
         submitValidationError: '예약자 정보를 확인한 뒤 다시 시도해 주세요.',
         successDescription: '예약함에서 확정 상태를 확인할 수 있습니다.',
         successTitle: '예약 요청이 접수되었습니다',
-        time: '일정 선택',
+        time: '시간 선택',
         title: '예약하기',
         unavailableDateLabel: '{{date}}, 예약 불가',
         unknownReservationType: '지원하지 않는 예약 유형이라 현재 예약할 수 없습니다.',

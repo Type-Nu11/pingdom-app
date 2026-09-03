@@ -336,7 +336,8 @@ describe('V2 reservation screens', () => {
     for (const date of ['02', '03', '04', '05']) {
       expect(screen.getByRole('button', { name: `2026-09-${date}, 예약 가능` })).toBeEnabled();
     }
-    expect(screen.getByText(/9월 2일 17:28.9월 5일 00:00/)).toBeVisible();
+    expect(screen.getByText('17:28')).toBeVisible();
+    expect(screen.queryByText(/9월 2일 17:28.9월 5일 00:00/)).not.toBeOnTheScreen();
     expect(screen.getByTestId('v2-availability-77')).toBeEnabled();
     expect(screen.queryByText('예약 불가 · 지난 시간')).not.toBeOnTheScreen();
   });
