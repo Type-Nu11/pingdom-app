@@ -27,8 +27,21 @@ export type ReviewValidation =
   | 'content-too-long'
   | 'photo-upload-contract-missing'
   | 'reason-required'
-  | 'multiple-reasons-contract-missing'
   | null;
+
+export function serializeRecommendReasons(
+  reasons: readonly RecommendReason[],
+  getLabel: (reason: RecommendReason) => string,
+): string {
+  return reasons.map(getLabel).join(', ');
+}
+
+export function selectReviewImageUrls(photos: readonly SelectedPhoto[]): string[] {
+  return photos
+    .map((photo) => photo.uri.trim())
+    .filter((uri) => /^https:\/\/[^\s]+$/i.test(uri))
+    .slice(0, MAX_PHOTOS);
+}
 
 export function uniquePlaceIdsInServerOrder(
   checkIns: readonly { placeId: number }[],
@@ -76,17 +89,18 @@ export function appendPhotos(
 
 export function validateReviewDraft({
   content,
+  imageUrlCount,
   photoCount,
   reasons,
 }: {
   content: string;
+  imageUrlCount: number;
   photoCount: number;
   reasons: readonly RecommendReason[];
 }): ReviewValidation {
   if (!content.trim()) return 'content-required';
   if (content.length > MAX_REVIEW_LENGTH) return 'content-too-long';
   if (reasons.length === 0) return 'reason-required';
-  if (reasons.length > 1) return 'multiple-reasons-contract-missing';
-  if (photoCount > 0) return 'photo-upload-contract-missing';
+  if (photoCount !== imageUrlCount) return 'photo-upload-contract-missing';
   return null;
 }

@@ -142,7 +142,7 @@ test('ready recent visits pass actual place and check-in IDs', async () => {
   expect(onSelectPlace).toHaveBeenCalledWith({ checkInId: 7001, placeId: 17 });
 });
 
-test('review UI caps photos and reasons and blocks uncontracted photo submission', async () => {
+test('review UI caps local photos and reasons while blocking unuploaded photo URIs', async () => {
   const mutateAsync = jest.fn();
   mockUseSubmit.mockReturnValue({ error: null, isError: false, isPending: false, mutateAsync });
   const photos = Array.from({ length: 4 }, (_, index) => ({ height: 10, width: 10, uri: `file://${index}` }));
@@ -163,7 +163,36 @@ test('review UI caps photos and reasons and blocks uncontracted photo submission
   await view.user.type(view.getByTestId('visit-review-input'), '좋았어요.');
   await view.user.press(view.getByTestId('visit-submit'));
   expect(mutateAsync).not.toHaveBeenCalled();
-  expect(view.getByText(/복수 추천 이유 저장 형식/)).toBeVisible();
+  expect(view.getByText(/사진이 아직 업로드되지 않았어요/)).toBeVisible();
+});
+
+test('review submits up to three uploaded image URLs and multiple recommendation reasons', async () => {
+  const mutateAsync = jest.fn().mockResolvedValue({ reviewId: 91 });
+  const onComplete = jest.fn();
+  mockUseSubmit.mockReturnValue({ error: null, isError: false, isPending: false, mutateAsync });
+  const photos = Array.from({ length: 3 }, (_, index) => ({
+    height: 10,
+    uri: `https://cdn.example.com/reviews/${index}.jpg`,
+    width: 10,
+  }));
+  const mediaPicker = { pickPhotos: jest.fn().mockResolvedValue({ photos, status: 'selected' }) };
+  const view = await renderFeature(<VisitVerificationReviewScreen mediaPicker={mediaPicker} onBack={jest.fn()} onComplete={onComplete} placeId={17} />);
+
+  await view.user.press(view.getByTestId('visit-photo-picker'));
+  await view.user.press(view.getByTestId('visit-reason-kind'));
+  await view.user.press(view.getByTestId('visit-reason-clean'));
+  await view.user.type(view.getByTestId('visit-review-input'), '정말 좋았어요.');
+  await view.user.press(view.getByTestId('visit-submit'));
+
+  expect(mutateAsync).toHaveBeenCalledWith({
+    body: {
+      content: '정말 좋았어요.',
+      imageUrls: photos.map((photo) => photo.uri),
+      recommendReason: '친절해요, 매장이 깨끗해요',
+    },
+    placeId: 17,
+  });
+  expect(onComplete).toHaveBeenCalledTimes(1);
 });
 
 test('confirmed one-reason text submission is locked against duplicate requests', async () => {

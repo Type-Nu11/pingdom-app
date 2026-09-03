@@ -7,6 +7,8 @@ import { createPlaceReviewsQueryOptions } from '../../../features/place-visit-ve
 import {
   appendPhotos,
   RECOMMEND_REASONS,
+  selectReviewImageUrls,
+  serializeRecommendReasons,
   toggleReason,
   selectCandidateImageUrls,
   uniquePlaceIdsInServerOrder,
@@ -289,16 +291,21 @@ test('visit review mutation disables retry and does not reshape the contract bod
   assert.deepEqual(calls, [{ placeId: 17, value: body }]);
 });
 
-test('review draft limits photos and reasons without inventing submission serialization', () => {
+test('review draft limits photos, serializes multiple reasons, and accepts uploaded URLs', () => {
   const photos = Array.from({ length: 4 }, (_, index) => ({ height: 10, width: 10, uri: `file://${index}` }));
   assert.equal(appendPhotos([], photos).length, 3);
 
   let reasons = [];
   for (const reason of RECOMMEND_REASONS) reasons = toggleReason(reasons, reason);
   assert.equal(reasons.length, 5);
-  assert.equal(validateReviewDraft({ content: 'Review', photoCount: 0, reasons: reasons.slice(0, 2) }), 'multiple-reasons-contract-missing');
-  assert.equal(validateReviewDraft({ content: 'Review', photoCount: 1, reasons: reasons.slice(0, 1) }), 'photo-upload-contract-missing');
-  assert.equal(validateReviewDraft({ content: 'Review', photoCount: 0, reasons: reasons.slice(0, 1) }), null);
+  assert.equal(serializeRecommendReasons(reasons.slice(0, 2), (reason) => reason), 'kind, easyToFind');
+  assert.deepEqual(selectReviewImageUrls([
+    { height: 10, uri: 'file:///local.jpg', width: 10 },
+    { height: 10, uri: 'https://cdn.example.com/1.jpg', width: 10 },
+  ]), ['https://cdn.example.com/1.jpg']);
+  assert.equal(validateReviewDraft({ content: 'Review', imageUrlCount: 0, photoCount: 1, reasons: reasons.slice(0, 1) }), 'photo-upload-contract-missing');
+  assert.equal(validateReviewDraft({ content: 'Review', imageUrlCount: 2, photoCount: 2, reasons: reasons.slice(0, 2) }), null);
+  assert.equal(validateReviewDraft({ content: 'Review', imageUrlCount: 0, photoCount: 0, reasons: reasons.slice(0, 1) }), null);
 });
 
 test('check-in pagination follows server page metadata and forwards AbortSignal', async () => {

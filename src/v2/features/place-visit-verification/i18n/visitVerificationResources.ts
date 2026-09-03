@@ -5,8 +5,7 @@ export const visitVerificationResources = {
     addPhotos: 'Add photos',
     back: 'Back',
     contract: {
-      multipleReasons: 'Multiple recommendation reasons cannot be submitted until the server defines their storage format.',
-      photoUpload: 'Photos cannot be submitted until a tourist review upload endpoint is available.',
+      photoUpload: 'This photo has not been uploaded yet. Try again after the review photo upload is available.',
     },
     distanceKm: '{{value}}km',
     distanceMeters: '{{value}}m',
@@ -88,8 +87,7 @@ export const visitVerificationResources = {
     addPhotos: '사진 선택',
     back: '뒤로',
     contract: {
-      multipleReasons: '복수 추천 이유 저장 형식이 서버에 정의되기 전에는 제출할 수 없어요.',
-      photoUpload: '관광객 리뷰 사진 업로드 API가 제공되기 전에는 사진을 제출할 수 없어요.',
+      photoUpload: '선택한 사진이 아직 업로드되지 않았어요. 리뷰 사진 업로드가 제공된 뒤 다시 시도해 주세요.',
     },
     distanceKm: '{{value}}km',
     distanceMeters: '{{value}}m',

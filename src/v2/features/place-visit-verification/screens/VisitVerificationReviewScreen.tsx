@@ -22,6 +22,8 @@ import {
   MAX_REASONS,
   MAX_REVIEW_LENGTH,
   RECOMMEND_REASONS,
+  selectReviewImageUrls,
+  serializeRecommendReasons,
   toggleReason,
   validateReviewDraft,
   type RecommendReason,
@@ -46,7 +48,6 @@ const VALIDATION_KEYS: Exclude<ReviewValidation, null> extends infer Key
   : never = {
   'content-required': 'visitVerification.validation.contentRequired',
   'content-too-long': 'visitVerification.validation.contentTooLong',
-  'multiple-reasons-contract-missing': 'visitVerification.contract.multipleReasons',
   'photo-upload-contract-missing': 'visitVerification.contract.photoUpload',
   'reason-required': 'visitVerification.validation.reasonRequired',
 };
@@ -98,13 +99,26 @@ export default function VisitVerificationReviewScreen({
 
   const submit = async () => {
     if (submitLocked.current || mutation.isPending) return;
-    const nextValidation = validateReviewDraft({ content, photoCount: photos.length, reasons });
+    const imageUrls = selectReviewImageUrls(photos);
+    const nextValidation = validateReviewDraft({
+      content,
+      imageUrlCount: imageUrls.length,
+      photoCount: photos.length,
+      reasons,
+    });
     setValidation(nextValidation);
     if (nextValidation) return;
     submitLocked.current = true;
     try {
       await mutation.mutateAsync({
-        body: { content: content.trim(), recommendReason: t(`visitVerification.reasons.${reasons[0]}`) },
+        body: {
+          content: content.trim(),
+          ...(imageUrls.length ? { imageUrls } : {}),
+          recommendReason: serializeRecommendReasons(
+            reasons,
+            (reason) => t(`visitVerification.reasons.${reason}`),
+          ),
+        },
         placeId,
       });
       onComplete();
