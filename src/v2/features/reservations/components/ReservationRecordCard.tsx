@@ -4,6 +4,7 @@ import styled from 'styled-components/native';
 
 import type { StatusTone } from '../../../shared/model';
 import type { Reservation } from '../api/reservationApi';
+import { formatReservationWindow } from '../model/reservationBooker';
 import { getReservationStatusView } from '../model/reservationPresentation';
 
 type Props = {
@@ -15,10 +16,12 @@ export default function ReservationRecordCard({ onPress, reservation }: Props) {
   const { i18n, t } = useTranslation();
   const status = getReservationStatusView(reservation.status);
   const statusLabel = t(status.labelKey);
+  const language = i18n.resolvedLanguage ?? i18n.language;
   const requestedAt = new Intl.DateTimeFormat(
-    i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'ko-KR',
+    language.startsWith('en') ? 'en-US' : 'ko-KR',
     { dateStyle: 'medium', timeStyle: 'short' },
   ).format(new Date(reservation.createdAt));
+  const reservationWindow = formatReservationWindow(reservation, language);
 
   return (
     <Card
@@ -40,6 +43,11 @@ export default function ReservationRecordCard({ onPress, reservation }: Props) {
         <ProductType>{reservation.productType}</ProductType>
       </ProductRow>
       <Quantity>{t('reservation.list.card.quantityValue', { count: reservation.quantity })}</Quantity>
+      <ReservationWindow testID={`reservation-card-window-${reservation.id}`}>
+        {reservationWindow
+          ? t('reservation.list.card.reservationWindowValue', { value: reservationWindow })
+          : t('reservation.list.card.windowPending')}
+      </ReservationWindow>
       <RequestedAt>{t('reservation.list.card.requestedAtValue', { value: requestedAt })}</RequestedAt>
     </Card>
   );
@@ -105,6 +113,11 @@ const ProductType = styled.Text`
 `;
 
 const Quantity = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+`;
+
+const ReservationWindow = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;

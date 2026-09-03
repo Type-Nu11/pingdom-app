@@ -7,6 +7,8 @@ import type { ReservationDetail } from '../../../features/reservations/api/reser
 
 const reservation: ReservationDetail = {
   availabilityId: 801,
+  bookerName: '김민수',
+  bookerPhone: '010-1234-5678',
   canceledAt: null,
   confirmedAt: null,
   createdAt: '2026-08-25T04:00:00Z',
@@ -14,6 +16,9 @@ const reservation: ReservationDetail = {
   productId: null,
   productType: 'GENERAL',
   quantity: 2,
+  requestNote: null,
+  reservationEndsAt: '2026-08-27T07:00:00Z',
+  reservationStartsAt: '2026-08-27T06:00:00Z',
   status: 'PENDING',
   touristUserId: 101,
   updatedAt: '2026-08-25T04:00:00Z',

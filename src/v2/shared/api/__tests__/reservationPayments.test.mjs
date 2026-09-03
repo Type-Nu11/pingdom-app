@@ -168,7 +168,25 @@ test('checked-in OpenAPI snapshot keeps current response fields, enums, and erro
   const schemas = document.components.schemas;
 
   assert.deepEqual(schemas.ReservationResponse.properties.status.enum, [
-    'PENDING', 'CONFIRMED', 'CANCELED',
+    'PENDING', 'CONFIRMED', 'REJECTED', 'CANCELED',
+  ]);
+  assert.deepEqual(schemas.ReservationCreateRequest.required, [
+    'availabilityId', 'bookerName', 'bookerPhone', 'idempotencyKey',
+  ]);
+  assert.equal(schemas.ReservationCreateRequest.properties.bookerPhone.pattern, '^[0-9+()\\- ]+$');
+  assert.equal(schemas.ReservationCreateRequest.properties.bookerName.maxLength, 100);
+  assert.equal(schemas.ReservationCreateRequest.properties.requestNote.maxLength, 500);
+  for (const field of ['reservationStartsAt', 'reservationEndsAt', 'bookerName', 'bookerPhone', 'requestNote']) {
+    assert.equal(schemas.ReservationResponse.properties[field].nullable, true, field);
+  }
+  assert.deepEqual(Object.keys(document.paths['/reservations'].post.responses), [
+    '201', '400', '401', '403',
+  ]);
+  assert.deepEqual(Object.keys(document.paths['/reservations'].get.responses), [
+    '200', '400', '401', '403',
+  ]);
+  assert.deepEqual(Object.keys(document.paths['/places/{placeId}/availabilities'].get.responses), [
+    '200', '401', '403',
   ]);
   assert.deepEqual(schemas.PaymentResponse.properties.status.enum, PAYMENT_STATUSES);
   assert.equal(schemas.PaymentResponse.properties.amountMinor.format, 'int64');
