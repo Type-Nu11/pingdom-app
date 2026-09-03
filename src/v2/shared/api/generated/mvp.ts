@@ -879,7 +879,10 @@ export interface components {
             availabilityId: components["schemas"]["PositiveId"];
             idempotencyKey: string;
             /** Format: int32 */
-            quantity?: number;
+            quantity: number;
+            bookerName: string;
+            bookerPhone: string;
+            requestNote?: string;
         };
         Reservation: {
             id: components["schemas"]["PositiveId"];

@@ -108,15 +108,31 @@ if (document.components?.parameters?.Page?.schema?.minimum !== 1) {
 const createReservationRequest = document.components?.schemas?.CreateReservationRequest;
 if (JSON.stringify(createReservationRequest?.required?.sort()) !== JSON.stringify([
   'availabilityId',
+  'bookerName',
+  'bookerPhone',
   'idempotencyKey',
+  'quantity',
 ])) {
   failures.push('CreateReservationRequest required fields must match the live server contract');
+}
+if (createReservationRequest?.properties?.idempotencyKey?.minLength !== 1) {
+  failures.push('CreateReservationRequest idempotencyKey must have minLength 1');
 }
 if (createReservationRequest?.properties?.idempotencyKey?.maxLength !== 100) {
   failures.push('CreateReservationRequest idempotencyKey must have maxLength 100');
 }
 if (createReservationRequest?.properties?.quantity?.minimum !== 1) {
   failures.push('CreateReservationRequest quantity must have minimum 1');
+}
+if (createReservationRequest?.properties?.bookerName?.maxLength !== 100) {
+  failures.push('CreateReservationRequest bookerName must have maxLength 100');
+}
+if (createReservationRequest?.properties?.bookerPhone?.maxLength !== 30
+    || createReservationRequest?.properties?.bookerPhone?.pattern !== '^[0-9+()\\- ]+$') {
+  failures.push('CreateReservationRequest bookerPhone constraints must match the live server contract');
+}
+if (createReservationRequest?.properties?.requestNote?.maxLength !== 500) {
+  failures.push('CreateReservationRequest requestNote must have maxLength 500');
 }
 
 const availability = document.components?.schemas?.Availability;
