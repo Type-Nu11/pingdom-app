@@ -130,6 +130,12 @@ export function formatReservationWindow(
   const end = new Date(reservationEndsAt);
   if (Number.isNaN(end.getTime())) return startLabel;
 
-  const endLabel = new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(end);
+  const sameLocalDate = start.getFullYear() === end.getFullYear()
+    && start.getMonth() === end.getMonth()
+    && start.getDate() === end.getDate();
+  const endLabel = new Intl.DateTimeFormat(
+    locale,
+    sameLocalDate ? { timeStyle: 'short' } : { dateStyle: 'medium', timeStyle: 'short' },
+  ).format(end);
   return `${startLabel} – ${endLabel}`;
 }
