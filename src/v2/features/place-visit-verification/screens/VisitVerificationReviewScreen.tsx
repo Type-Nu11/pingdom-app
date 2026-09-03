@@ -48,7 +48,6 @@ const VALIDATION_KEYS: Exclude<ReviewValidation, null> extends infer Key
   : never = {
   'content-required': 'visitVerification.validation.contentRequired',
   'content-too-long': 'visitVerification.validation.contentTooLong',
-  'photo-upload-contract-missing': 'visitVerification.contract.photoUpload',
   'reason-required': 'visitVerification.validation.reasonRequired',
 };
 
@@ -102,8 +101,6 @@ export default function VisitVerificationReviewScreen({
     const imageUrls = selectReviewImageUrls(photos);
     const nextValidation = validateReviewDraft({
       content,
-      imageUrlCount: imageUrls.length,
-      photoCount: photos.length,
       reasons,
     });
     setValidation(nextValidation);

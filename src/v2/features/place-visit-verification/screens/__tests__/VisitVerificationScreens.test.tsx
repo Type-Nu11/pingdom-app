@@ -142,7 +142,7 @@ test('ready recent visits pass actual place and check-in IDs', async () => {
   expect(onSelectPlace).toHaveBeenCalledWith({ checkInId: 7001, placeId: 17 });
 });
 
-test('review UI caps local photos and reasons while blocking unuploaded photo URIs', async () => {
+test('review UI caps local photos and reasons without blocking submission for local photo URIs', async () => {
   const mutateAsync = jest.fn();
   mockUseSubmit.mockReturnValue({ error: null, isError: false, isPending: false, mutateAsync });
   const photos = Array.from({ length: 4 }, (_, index) => ({ height: 10, width: 10, uri: `file://${index}` }));
@@ -162,8 +162,13 @@ test('review UI caps local photos and reasons while blocking unuploaded photo UR
   expect(view.getByTestId('visit-reason-photoSpot')).toBeDisabled();
   await view.user.type(view.getByTestId('visit-review-input'), '좋았어요.');
   await view.user.press(view.getByTestId('visit-submit'));
-  expect(mutateAsync).not.toHaveBeenCalled();
-  expect(view.getByText(/사진이 아직 업로드되지 않았어요/)).toBeVisible();
+  expect(mutateAsync).toHaveBeenCalledWith({
+    body: {
+      content: '좋았어요.',
+      recommendReason: '친절해요, 찾기 쉬워요, 맛있어요, 다국어 설명이 잘 되어 있어요, 주차하기 편해요',
+    },
+    placeId: 17,
+  });
 });
 
 test('review submits up to three uploaded image URLs and multiple recommendation reasons', async () => {

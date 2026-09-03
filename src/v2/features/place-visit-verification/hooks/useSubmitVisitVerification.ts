@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { myReviewsQueryKeys } from '../../my-page/model/profileQueryKeys';
 import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
 import {
   visitVerificationApi,
@@ -23,13 +24,21 @@ export function createVisitVerificationMutationOptions(
   };
 }
 
+export async function invalidateReviewQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  placeId: number,
+) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: placeQueryKeys.reviews(placeId) }),
+    queryClient.invalidateQueries({ queryKey: myReviewsQueryKeys.all }),
+  ]);
+}
+
 export function useSubmitVisitVerification() {
   const queryClient = useQueryClient();
 
   return useMutation({
     ...createVisitVerificationMutationOptions(),
-    onSuccess: (_review, variables) => queryClient.invalidateQueries({
-      queryKey: placeQueryKeys.reviews(variables.placeId),
-    }),
+    onSuccess: (_review, variables) => invalidateReviewQueries(queryClient, variables.placeId),
   });
 }

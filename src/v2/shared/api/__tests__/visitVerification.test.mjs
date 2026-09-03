@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { createVisitVerificationApi } from '../../../features/place-visit-verification/api/visitVerificationApi.ts';
-import { createVisitVerificationMutationOptions } from '../../../features/place-visit-verification/hooks/useSubmitVisitVerification.ts';
+import {
+  createVisitVerificationMutationOptions,
+  invalidateReviewQueries,
+} from '../../../features/place-visit-verification/hooks/useSubmitVisitVerification.ts';
 import { createPlaceReviewsQueryOptions } from '../../../features/place-visit-verification/hooks/usePlaceReviews.ts';
 import {
   appendPhotos,
@@ -291,7 +294,21 @@ test('visit review mutation disables retry and does not reshape the contract bod
   assert.deepEqual(calls, [{ placeId: 17, value: body }]);
 });
 
-test('review draft limits photos, serializes multiple reasons, and accepts uploaded URLs', () => {
+test('successful review submission refreshes place reviews and the current user review list', async () => {
+  const invalidated = [];
+  const queryClient = {
+    invalidateQueries: async ({ queryKey }) => { invalidated.push(queryKey); },
+  };
+
+  await invalidateReviewQueries(queryClient, 17);
+
+  assert.deepEqual(invalidated, [
+    ['v2', 'places', 'entity', 17, 'reviews'],
+    ['v2', 'users', 'me', 'reviews'],
+  ]);
+});
+
+test('review draft limits photos, serializes multiple reasons, and never blocks text submission for local photos', () => {
   const photos = Array.from({ length: 4 }, (_, index) => ({ height: 10, width: 10, uri: `file://${index}` }));
   assert.equal(appendPhotos([], photos).length, 3);
 
@@ -303,9 +320,8 @@ test('review draft limits photos, serializes multiple reasons, and accepts uploa
     { height: 10, uri: 'file:///local.jpg', width: 10 },
     { height: 10, uri: 'https://cdn.example.com/1.jpg', width: 10 },
   ]), ['https://cdn.example.com/1.jpg']);
-  assert.equal(validateReviewDraft({ content: 'Review', imageUrlCount: 0, photoCount: 1, reasons: reasons.slice(0, 1) }), 'photo-upload-contract-missing');
-  assert.equal(validateReviewDraft({ content: 'Review', imageUrlCount: 2, photoCount: 2, reasons: reasons.slice(0, 2) }), null);
-  assert.equal(validateReviewDraft({ content: 'Review', imageUrlCount: 0, photoCount: 0, reasons: reasons.slice(0, 1) }), null);
+  assert.equal(validateReviewDraft({ content: 'Review', reasons: reasons.slice(0, 2) }), null);
+  assert.equal(validateReviewDraft({ content: 'Review', reasons: reasons.slice(0, 1) }), null);
 });
 
 test('check-in pagination follows server page metadata and forwards AbortSignal', async () => {

@@ -4,9 +4,6 @@ export const visitVerificationResources = {
   en: {
     addPhotos: 'Add photos',
     back: 'Back',
-    contract: {
-      photoUpload: 'This photo has not been uploaded yet. Try again after the review photo upload is available.',
-    },
     distanceKm: '{{value}}km',
     distanceMeters: '{{value}}m',
     emptyDescription: 'We could not find a place you can verify from your current location. Check your location and try again.',
@@ -59,7 +56,6 @@ export const visitVerificationResources = {
       recovering: 'Restoring the verification session from the server...',
       remaining_one: '{{count}} second remaining',
       remaining_other: '{{count}} seconds remaining',
-      reviewUnavailable: 'Review unavailable',
       start: 'Start visit verification',
       starting: 'Starting verification session...',
       serverError: 'Could not verify the visit because of a server error. Try again.',
@@ -74,7 +70,6 @@ export const visitVerificationResources = {
       title: 'Visit verification',
       unauthenticated: 'Sign in again to verify this visit.',
       verifiedDwell: 'Verified stay: {{value}} seconds',
-      writeReview: 'Write a review',
     },
     unknownCategory: 'Place',
     validation: {
@@ -86,9 +81,6 @@ export const visitVerificationResources = {
   ko: {
     addPhotos: '사진 선택',
     back: '뒤로',
-    contract: {
-      photoUpload: '선택한 사진이 아직 업로드되지 않았어요. 리뷰 사진 업로드가 제공된 뒤 다시 시도해 주세요.',
-    },
     distanceKm: '{{value}}km',
     distanceMeters: '{{value}}m',
     emptyDescription: '현재 위치에서 검증할 수 있는 장소를 찾지 못했어요\n현재 위치를 다시 확인해주세요',
@@ -141,7 +133,6 @@ export const visitVerificationResources = {
       recovering: '서버에서 진행 중인 인증 상태를 복구하는 중이에요...',
       remaining_one: '남은 시간: {{count}}초',
       remaining_other: '남은 시간: {{count}}초',
-      reviewUnavailable: '후기 작성 불가',
       start: '방문 인증 시작',
       starting: '인증 세션을 시작하는 중이에요...',
       serverError: '서버 오류로 방문을 인증하지 못했어요. 다시 시도해 주세요.',
@@ -156,7 +147,6 @@ export const visitVerificationResources = {
       title: '방문 인증',
       unauthenticated: '방문을 인증하려면 다시 로그인해 주세요.',
       verifiedDwell: '인증된 체류 시간: {{value}}초',
-      writeReview: '후기 작성',
     },
     unknownCategory: '장소',
     validation: {

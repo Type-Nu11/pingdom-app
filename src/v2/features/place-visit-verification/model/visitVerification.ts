@@ -25,7 +25,6 @@ export type SelectedPhoto = {
 export type ReviewValidation =
   | 'content-required'
   | 'content-too-long'
-  | 'photo-upload-contract-missing'
   | 'reason-required'
   | null;
 
@@ -89,18 +88,13 @@ export function appendPhotos(
 
 export function validateReviewDraft({
   content,
-  imageUrlCount,
-  photoCount,
   reasons,
 }: {
   content: string;
-  imageUrlCount: number;
-  photoCount: number;
   reasons: readonly RecommendReason[];
 }): ReviewValidation {
   if (!content.trim()) return 'content-required';
   if (content.length > MAX_REVIEW_LENGTH) return 'content-too-long';
   if (reasons.length === 0) return 'reason-required';
-  if (photoCount !== imageUrlCount) return 'photo-upload-contract-missing';
   return null;
 }
