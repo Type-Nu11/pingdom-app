@@ -7,6 +7,7 @@ import {
   operatingNoticesFixture,
   placeAutocompleteFixture,
   placeCardFixture,
+  placeMenusFixture,
   placeReviewPageFixture,
   placeReviewFixture,
   recommendationExplanationFixture,
@@ -50,6 +51,11 @@ export const placeExplorationMockHandlers = [
     path: /^\/places\/\d+\/visit-decision$/,
     resolve: ({ scenario }) =>
       scenario === 'empty' ? emptyPlaceExplorationFixtures.visitDecision : visitDecisionFixture,
+  },
+  {
+    method: 'GET',
+    path: /^\/places\/\d+\/menus$/,
+    resolve: ({ scenario }) => scenario === 'empty' ? [] : placeMenusFixture,
   },
   {
     method: 'GET',

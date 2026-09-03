@@ -39,7 +39,11 @@ import {
   usePlaceExplorationMediaList,
   useRecommendationExplanation,
 } from '../../place-exploration';
-import { formatPlaceOperatingSummary, usePlaceDetailPresentation } from '../../place-detail';
+import {
+  formatPlaceMenuPrice,
+  formatPlaceOperatingSummary,
+  usePlaceDetailPresentation,
+} from '../../place-detail';
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
   MAP_LOCATE_ZOOM_LEVEL,
@@ -323,6 +327,7 @@ export default function MapScreen({
     presentation: selectedPlacePresentation,
     refetchAvailability,
     refetchMedia,
+    refetchMenus,
     refetchReviews,
   } = usePlaceDetailPresentation(selectedPlaceId, { enabled: hasSelectedPlace });
   const selectedPlace = useMemo<DecisionPlace | null>(() => {
@@ -367,6 +372,18 @@ export default function MapScreen({
         imageUrls: selectedPlacePresentation.imageUrls,
         jibunAddress: selectedPlacePresentation.jibunAddress ?? undefined,
         notice: selectedPlacePresentation.notice ?? undefined,
+        menuState: selectedPlacePresentation.menuState,
+        menus: selectedPlacePresentation.menus.map((menu) => ({
+          description: menu.description ?? undefined,
+          id: menu.id ?? undefined,
+          imageUrl: menu.imageUrl ?? undefined,
+          name: menu.name ?? t('map.detail.menu.nameUnavailable'),
+          price: formatPlaceMenuPrice(
+            menu,
+            i18n.resolvedLanguage ?? i18n.language,
+          ) ?? t('map.detail.menu.priceUnavailable'),
+          status: menu.status,
+        })),
         operatingSummary,
         phone: selectedPlacePresentation.merchant?.contactPhone ?? undefined,
         reservation: selectedPlacePresentation.reservation,
@@ -389,7 +406,7 @@ export default function MapScreen({
         statusEmphasis: operatingSummary?.statusText ?? '',
       },
     };
-  }, [selectedPlace, selectedPlacePresentation, t]);
+  }, [i18n.language, i18n.resolvedLanguage, selectedPlace, selectedPlacePresentation, t]);
   useEffect(() => {
     if (content.type !== 'place-preview' || selectedPlace) return;
 
@@ -822,6 +839,7 @@ export default function MapScreen({
             onRetryRecommendations={() => void refetchRecommendations()}
             onRetryAvailability={() => void refetchAvailability()}
             onRetryMedia={() => void refetchMedia()}
+            onRetryMenus={() => void refetchMenus()}
             onRetryReviews={() => void refetchReviews()}
             onProfilePress={onOpenProfile}
             onQueryChange={handleQueryChange}

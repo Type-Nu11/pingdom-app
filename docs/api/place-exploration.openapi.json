@@ -6,7 +6,7 @@
   },
   "x-source": {
     "location": "https://www.typenull.xyz/v3/api-docs",
-    "sha256": "1d626b79347f60880b0257b0e457c80a63126e8126aa30d92d6583c2bd6883fd"
+    "sha256": "778478ceb6288c47c69849a5a2595255ae37d6d1fc481e5d971ec0fb0a1b7461"
   },
   "paths": {
     "/location-check-ins": {
@@ -1242,13 +1242,84 @@
         ]
       }
     },
+    "/places/{placeId}/menus": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "관광객용 장소 메뉴 목록 조회",
+        "description": "AVAILABLE와 SOLD_OUT 메뉴만 displayOrder 오름차순으로 반환합니다. 메뉴가 없으면 빈 목록을 반환합니다.",
+        "operationId": "list_5",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "공개 메뉴 목록 조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlaceMenuResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "장소를 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/places/{placeId}/availabilities": {
       "get": {
         "tags": [
           "App"
         ],
         "summary": "장소 예약 가능 시간 조회",
-        "operationId": "list_5",
+        "operationId": "list_6",
         "parameters": [
           {
             "name": "placeId",
@@ -1306,27 +1377,52 @@
   "components": {
     "schemas": {
       "AvailabilityResponse": {
+        "required": [
+          "endsAt",
+          "id",
+          "placeId",
+          "productId",
+          "productName",
+          "productType",
+          "remainingCapacity",
+          "startsAt",
+          "status",
+          "totalCapacity"
+        ],
         "type": "object",
         "properties": {
           "id": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "example": 77
           },
           "placeId": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "example": 70069
           },
           "productId": {
             "type": "integer",
-            "format": "int64"
+            "description": "GENERAL은 null이며 TICKET/CLASS는 상품 ID입니다.",
+            "format": "int64",
+            "nullable": true,
+            "example": 12
           },
           "productType": {
             "type": "string",
+            "description": "예약 대상 유형",
+            "example": "TICKET",
             "enum": [
               "GENERAL",
               "TICKET",
               "CLASS"
             ]
+          },
+          "productName": {
+            "type": "string",
+            "description": "GENERAL은 null이며 TICKET/CLASS는 상품명입니다.",
+            "nullable": true,
+            "example": "이월드 오후 입장권"
           },
           "startsAt": {
             "type": "string",
@@ -1338,20 +1434,24 @@
           },
           "totalCapacity": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "example": 100
           },
           "remainingCapacity": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "example": 42
           },
           "status": {
             "type": "string",
+            "example": "ACTIVE",
             "enum": [
               "ACTIVE",
               "INACTIVE"
             ]
           }
-        }
+        },
+        "description": "예약 가능 시간 응답"
       },
       "ErrorResponse": {
         "required": [
@@ -2387,6 +2487,68 @@
           }
         },
         "description": "장소 미디어 목록 응답"
+      },
+      "PlaceMenuResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "placeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "description": "메뉴 설명이 없으면 null",
+            "nullable": true
+          },
+          "priceAmount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string",
+            "description": "가격 통화. 금액은 해당 통화의 기본 단위로 저장",
+            "enum": [
+              "KRW",
+              "USD",
+              "JPY",
+              "CNY",
+              "EUR"
+            ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "대표 이미지가 없으면 null",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "SOLD_OUT",
+              "HIDDEN",
+              "INACTIVE"
+            ]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "PlaceOperatingExceptionResponse": {
         "type": "object",

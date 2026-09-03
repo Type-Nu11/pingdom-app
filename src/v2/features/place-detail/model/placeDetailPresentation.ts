@@ -5,7 +5,8 @@ import type {
   PlaceOperatingNotices,
   PlaceVisitDecision,
 } from '../../place-exploration/model/placeExploration.types';
-import type { PlaceAvailabilities, PlaceDetail } from './placeDetail.types';
+import type { PlaceAvailabilities, PlaceDetail, PlaceMenus } from './placeDetail.types';
+import { presentPlaceMenus, type PlaceMenuPresentation } from './placeMenuPresentation';
 import {
   selectPlaceOperatingSummary,
   type PlaceOperatingSummary,
@@ -46,6 +47,8 @@ export type PlaceDetailPresentation = {
     reservationUrl: string | null;
     websiteUrl: string | null;
   } | null;
+  menuState: 'empty' | 'error' | 'loading' | 'ready';
+  menus: PlaceMenuPresentation[];
   name: string | null;
   notice: string | null;
   operatingStatus: PlaceDetail['operatingStatus'] | null;
@@ -72,6 +75,7 @@ export type PlaceDetailPresentationResources = {
   card: ResourceState<PlaceCard>;
   detail: ResourceState<PlaceDetail>;
   media: ResourceState<PlaceExplorationMedia>;
+  menus: ResourceState<PlaceMenus>;
   notices: ResourceState<PlaceOperatingNotices>;
   reviews: ResourceState<PlaceReviewPage>;
   visitDecision: ResourceState<PlaceVisitDecision>;
@@ -143,6 +147,7 @@ export function buildPlaceDetailPresentation(
   const reviewItems = (resources.reviews.data?.content ?? []).filter(
     (review) => review.placeId === undefined || review.placeId === placeId,
   );
+  const menus = presentPlaceMenus(resources.menus.data ?? [], placeId);
   const owner = base?.merchantOwner;
   const operatingSource = base ?? card;
   const merchantInformation = decision?.merchantInformation;
@@ -176,6 +181,10 @@ export function buildPlaceDetailPresentation(
     informationVerificationStatus: base?.informationVerificationStatus ?? card?.informationVerificationStatus ?? null,
     isCurrentlyOperating: notices?.currentlyOperating ?? base?.currentlyOperating ?? card?.currentlyOperating ?? null,
     merchant,
+    menuState: resources.menus.isPending ? 'loading'
+      : resources.menus.isError ? 'error'
+        : menus.length ? 'ready' : 'empty',
+    menus,
     name: clean(base?.name) ?? clean(card?.name),
     notice: clean((notices?.notices ?? base?.activeOperatingNotices ?? [])
       .filter((item) => item.visibleNow && item.status === 'ACTIVE')
