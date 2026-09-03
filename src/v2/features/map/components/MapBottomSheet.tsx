@@ -101,6 +101,7 @@ export type MapPreviewFallbackContent = {
   }>;
   statusDescription: string;
   statusEmphasis: string;
+  verifiedEvidenceCount?: number;
 };
 
 export type DecisionPlace = {
@@ -631,6 +632,7 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
 
 export const RecommendationFeaturedCard = ({
   bookmarked,
+  designSize = 'default',
   imageUrl,
   onPress,
   onToggleBookmark,
@@ -639,6 +641,7 @@ export const RecommendationFeaturedCard = ({
   recommendationLabel,
 }: {
   bookmarked: boolean;
+  designSize?: 'default' | 'reservation';
   imageUrl?: string;
   onPress: () => void;
   onToggleBookmark: () => Promise<void> | void;
@@ -651,10 +654,10 @@ export const RecommendationFeaturedCard = ({
     <RecommendationCardPressable
       accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
       onPress={onPress}
-      style={styles.placeCard}
+      style={[styles.placeCard, designSize === 'reservation' && styles.reservationPlaceCard]}
       testID={`recommendation-card-${place.id}`}
     >
-      <View style={styles.placeCardArtwork}>
+      <View style={[styles.placeCardArtwork, designSize === 'reservation' && styles.reservationPlaceCardArtwork]}>
         <PlaceArtwork blurBottom imageUrl={imageUrl} />
         <CardScrim />
         <RecommendationBookmarkButton
@@ -664,7 +667,7 @@ export const RecommendationFeaturedCard = ({
           style={styles.cardBookmarkStar}
         />
         <View style={styles.placeCardBody}>
-          <Text ellipsizeMode="tail" numberOfLines={2} style={styles.placeCardName}>
+          <Text ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, designSize === 'reservation' && styles.reservationPlaceCardName]}>
             {place.name || t('map.sheet.placeMissing')}
           </Text>
         </View>
@@ -677,7 +680,7 @@ export const RecommendationFeaturedCard = ({
           </Text>
         </View>
       ) : null}
-      <Text ellipsizeMode="tail" numberOfLines={1} style={styles.placeCardDistance}>
+      <Text ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, designSize === 'reservation' && styles.reservationPlaceCardDistance]}>
         {t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}
       </Text>
     </RecommendationCardPressable>
@@ -874,6 +877,7 @@ const ExpandedHomeContent = ({
   userName: string;
 }) => {
   const { t } = useTranslation();
+  const scrollRef = useRef<ScrollView>(null);
   const [hasRenderedExpandedContent, setHasRenderedExpandedContent] = useState(
     expandedInteractionsEnabled,
   );
@@ -884,13 +888,21 @@ const ExpandedHomeContent = ({
   useEffect(() => {
     if (expandedInteractionsEnabled) setHasRenderedExpandedContent(true);
   }, [expandedInteractionsEnabled]);
+  useEffect(() => {
+    if (!expandedInteractionsEnabled) {
+      scrollRef.current?.scrollTo({ animated: false, y: 0 });
+    }
+  }, [expandedInteractionsEnabled]);
 
   return (
     <ScrollView
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
+      ref={scrollRef}
+      scrollEnabled={expandedInteractionsEnabled}
       showsVerticalScrollIndicator={false}
       style={styles.expandedScroll}
+      testID="expanded-home-scroll"
     >
       <FeedSegment feed={feed} onChange={onFeedChange} />
       <FadeSlideTransition
@@ -1078,6 +1090,7 @@ const RecommendationContent = ({
   userName: string;
 }) => {
   const { t } = useTranslation();
+  const scrollRef = useRef<ScrollView>(null);
   const featuredPlaces = places.slice(0, 3);
   const gridPlaces = places.slice(3);
   const gridRows = [
@@ -1091,10 +1104,18 @@ const RecommendationContent = ({
     { userName },
   );
 
+  useEffect(() => {
+    if (!expandedInteractionsEnabled) {
+      scrollRef.current?.scrollTo({ animated: false, y: 0 });
+    }
+  }, [expandedInteractionsEnabled]);
+
   return (
     <ScrollView
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
+      ref={scrollRef}
+      scrollEnabled={expandedInteractionsEnabled}
       showsVerticalScrollIndicator={false}
       testID="recommendation-content-scroll"
     >
@@ -1310,7 +1331,7 @@ const PreviewActionChip = ({ active = false, disabled = false, kind, label, onPr
   <Pressable
     accessibilityLabel={label}
     accessibilityRole={onPress ? 'button' : undefined}
-    accessibilityState={{ disabled }}
+    accessibilityState={{ disabled, selected: active }}
     disabled={disabled}
     onPress={onPress}
     style={({ pressed }) => [
@@ -1331,6 +1352,7 @@ const formatPreviewCategory = (category: string) => {
 };
 
 const PreviewContent = ({
+  activeAction,
   bookmarked,
   fallbackContent,
   imageUrl,
@@ -1341,10 +1363,12 @@ const PreviewContent = ({
   onVerify,
   onRetryAvailability,
   onRetryMedia,
+  onSelectAction,
   onToggleBookmark,
   pending,
   place,
 }: {
+  activeAction: PreviewActionKind;
   bookmarked: boolean;
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
@@ -1355,6 +1379,7 @@ const PreviewContent = ({
   onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
+  onSelectAction: (action: PreviewActionKind) => void;
   onToggleBookmark: () => void;
   pending: boolean;
   place: DecisionPlace;
@@ -1373,6 +1398,13 @@ const PreviewContent = ({
     kind: 'loading', disabled: true,
   };
   const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
+  const selectAction = (action: PreviewActionKind, callback?: () => void) => {
+    onSelectAction(action);
+    callback?.();
+  };
+  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
+    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+    : fallbackContent?.statusDescription;
 
   return (
     <View style={styles.previewContent}>
@@ -1387,16 +1419,20 @@ const PreviewContent = ({
             <Text numberOfLines={1} style={styles.previewName}>{place.name}</Text>
             <Text numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</Text>
           </View>
-          {fallbackContent && (fallbackContent.statusDescription || fallbackContent.statusEmphasis) ? (
-            <Text numberOfLines={1} style={styles.previewStatus}>
-              {fallbackContent.statusDescription}
+          {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
+            <View style={styles.previewStatusRow}>
+              {verificationSummary ? (
+                <Text numberOfLines={1} style={styles.previewStatus}>
+                  {verificationSummary}
+                </Text>
+              ) : null}
               {fallbackContent.statusEmphasis ? (
                 <Text style={styles.previewStatusEmphasis}>
-                  {fallbackContent.statusDescription ? ' - ' : ''}
+                  {verificationSummary ? ' · ' : ''}
                   {fallbackContent.statusEmphasis}
                 </Text>
               ) : null}
-            </Text>
+            </View>
           ) : null}
           <Text numberOfLines={1} style={styles.previewAddress}>
             {formatPreviewLocation(place, i18n.language)}
@@ -1411,7 +1447,7 @@ const PreviewContent = ({
           style={({ pressed }) => [styles.previewBookmarkButton, pressed && styles.pressed]}
           testID="place-preview-bookmark"
         >
-          <BookmarkStar selected={bookmarked} size={22} strokeColor="#FF245B" />
+          <BookmarkStar selected={bookmarked} size={22} strokeColor="#5E616A" />
         </Pressable>
         <Pressable
           accessibilityLabel={t('map.card.dismiss')}
@@ -1433,20 +1469,37 @@ const PreviewContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip
+          active={activeAction === 'departure'}
+          kind="departure"
+          label={t('map.card.actions.start')}
+          onPress={() => selectAction('departure')}
+        />
+        <PreviewActionChip
+          active={activeAction === 'arrival'}
           kind="arrival"
           label={t('map.card.actions.arrive')}
-          onPress={onVerify}
+          onPress={() => selectAction('arrival', onVerify)}
         />
-        <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
         <PreviewActionChip
+          active={activeAction === 'share'}
+          kind="share"
+          label={t('map.card.actions.share')}
+          onPress={() => selectAction('share')}
+        />
+        <PreviewActionChip
+          active={activeAction === 'reservation'}
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
           label={t(reservation.kind === 'error' ? 'map.detail.reservation.retry' : 'map.card.actions.reserve')}
-          onPress={reservationPress}
+          onPress={() => selectAction('reservation', reservationPress)}
         />
-        <PreviewActionChip kind="directions" label={t('map.card.actions.directions')} />
+        <PreviewActionChip
+          active={activeAction === 'directions'}
+          kind="directions"
+          label={t('map.card.actions.directions')}
+          onPress={() => selectAction('directions')}
+        />
       </ScrollView>
       {fallbackContent?.imageState === 'error' ? (
         <Pressable accessibilityRole="button" onPress={onRetryMedia}>
@@ -1486,6 +1539,7 @@ const PreviewContent = ({
 type PlaceDetailTab = 'info' | 'reviews';
 
 const ExpandedPlaceContent = ({
+  activeAction,
   activeTab,
   bookmarked,
   couponContent,
@@ -1498,11 +1552,13 @@ const ExpandedPlaceContent = ({
   onRetryAvailability,
   onRetryMedia,
   onRetryReviews,
+  onSelectAction,
   onTabChange,
   onToggleBookmark,
   pending,
   place,
 }: {
+  activeAction: PreviewActionKind;
   activeTab: PlaceDetailTab;
   bookmarked: boolean;
   couponContent?: React.ReactNode;
@@ -1515,6 +1571,7 @@ const ExpandedPlaceContent = ({
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onRetryReviews?: () => void;
+  onSelectAction: (action: PreviewActionKind) => void;
   onTabChange: (tab: PlaceDetailTab) => void;
   onToggleBookmark: () => void;
   pending: boolean;
@@ -1530,9 +1587,16 @@ const ExpandedPlaceContent = ({
     kind: 'loading', disabled: true,
   };
   const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
+  const selectAction = (action: PreviewActionKind, callback?: () => void) => {
+    onSelectAction(action);
+    callback?.();
+  };
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
   const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
+  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
+    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+    : fallbackContent?.statusDescription || fallbackContent?.englishName;
 
   return (
     <ScrollView
@@ -1558,7 +1622,7 @@ const ExpandedPlaceContent = ({
           onPress={onToggleBookmark}
           style={styles.detailRoundButton}
         >
-          <BookmarkStar selected={bookmarked} size={22} strokeColor="#FF245B" />
+          <BookmarkStar selected={bookmarked} size={22} strokeColor="#5E616A" />
         </Pressable>
       </View>
 
@@ -1567,11 +1631,8 @@ const ExpandedPlaceContent = ({
           <Text style={styles.detailTitle}>{place.name}</Text>
           <Text style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</Text>
         </View>
-        {fallbackContent?.englishName ? (
-          <Text style={styles.detailVerified}>{fallbackContent.englishName}</Text>
-        ) : null}
-        {fallbackContent ? (
-          <Text style={styles.detailVerified}>{fallbackContent.statusDescription}</Text>
+        {verificationSummary ? (
+          <Text style={styles.detailVerified}>{verificationSummary}</Text>
         ) : null}
       </View>
 
@@ -1580,20 +1641,37 @@ const ExpandedPlaceContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        <PreviewActionChip active kind="departure" label={t('map.card.actions.start')} />
         <PreviewActionChip
+          active={activeAction === 'departure'}
+          kind="departure"
+          label={t('map.card.actions.start')}
+          onPress={() => selectAction('departure')}
+        />
+        <PreviewActionChip
+          active={activeAction === 'arrival'}
           kind="arrival"
           label={t('map.card.actions.arrive')}
-          onPress={onVerify}
+          onPress={() => selectAction('arrival', onVerify)}
         />
-        <PreviewActionChip kind="share" label={t('map.card.actions.share')} />
         <PreviewActionChip
+          active={activeAction === 'share'}
+          kind="share"
+          label={t('map.card.actions.share')}
+          onPress={() => selectAction('share')}
+        />
+        <PreviewActionChip
+          active={activeAction === 'reservation'}
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
           label={t(reservation.kind === 'error' ? 'map.detail.reservation.retry' : 'map.card.actions.reserve')}
-          onPress={reservationPress}
+          onPress={() => selectAction('reservation', reservationPress)}
         />
-        <PreviewActionChip kind="directions" label={t('map.card.actions.directions')} />
+        <PreviewActionChip
+          active={activeAction === 'directions'}
+          kind="directions"
+          label={t('map.card.actions.directions')}
+          onPress={() => selectAction('directions')}
+        />
       </ScrollView>
       {fallbackContent?.imageState === 'error' ? (
         <Pressable accessibilityRole="button" onPress={onRetryMedia}>
@@ -1630,11 +1708,14 @@ const ExpandedPlaceContent = ({
             accessibilityState={{ selected: activeTab === tab }}
             key={tab}
             onPress={() => onTabChange(tab)}
-            style={[styles.detailTab, activeTab === tab && styles.detailTabActive]}
+            style={styles.detailTab}
           >
             <Text style={[styles.detailTabText, activeTab === tab && styles.detailTabTextActive]}>
               {t(tab === 'info' ? 'map.detail.info' : 'map.detail.reviews')}
             </Text>
+            {activeTab === tab ? (
+              <View style={styles.detailTabIndicator} testID="map-detail-active-tab-indicator" />
+            ) : null}
           </Pressable>
         ))}
       </View>
@@ -2006,6 +2087,7 @@ export default function MapBottomSheet({
   const [feed, setFeed] = useState<'local' | 'national'>('local');
   const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
+  const [activePreviewAction, setActivePreviewAction] = useState<PreviewActionKind>('departure');
   const [photoViewer, setPhotoViewer] = useState<{
     imageUrls: string[];
     initialIndex: number;
@@ -2015,6 +2097,7 @@ export default function MapBottomSheet({
   const reservationUnlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     setActivePlaceDetailTab('info');
+    setActivePreviewAction('departure');
     setPhotoViewer(null);
     reservationNavigationLock.current = false;
     if (reservationUnlockTimer.current) clearTimeout(reservationUnlockTimer.current);
@@ -2098,6 +2181,8 @@ export default function MapBottomSheet({
         pointerEvents="none"
         style={[
           {
+            borderBottomLeftRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
+            borderBottomRightRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
             borderTopLeftRadius: isExpandedPlaceDetail ? 0 : 34,
             borderTopRightRadius: isExpandedPlaceDetail ? 0 : 34,
             bottom: chromeBottomInset,
@@ -2130,21 +2215,35 @@ export default function MapBottomSheet({
       </GlassStyles.SheetChromeShadow>
       <GlassStyles.SheetInner $inset={SHEET_RESTING_GAP}>
       {!isExpandedPlaceDetail ? (
-        <View pointerEvents="none" style={styles.handleArea}>
-          <View style={styles.handle} />
+        <View
+          {...panHandlers}
+          style={styles.handleArea}
+          testID="map-sheet-handle-target"
+        >
+          <Pressable
+            accessibilityLabel={t('map.sheet.adjust')}
+            accessibilityRole="adjustable"
+            onPress={onHandlePress}
+            style={styles.handleButton}
+          >
+            <View pointerEvents="none" style={styles.handle} />
+          </Pressable>
         </View>
       ) : null}
 
       <Animated.View
+        {...(snapPoint === 'expanded' ? {} : panHandlers)}
         pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
         style={[
           styles.sheetContent,
           { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] },
         ]}
+        testID="map-sheet-content"
       >
       {content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
           <ExpandedPlaceContent
+            activeAction={activePreviewAction}
             activeTab={activePlaceDetailTab}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
             couponContent={couponContent}
@@ -2163,6 +2262,7 @@ export default function MapBottomSheet({
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
             onRetryReviews={onRetryReviews}
+            onSelectAction={setActivePreviewAction}
             onTabChange={setActivePlaceDetailTab}
             onToggleBookmark={() => void onToggleBookmark(
               selectedPlace,
@@ -2173,6 +2273,7 @@ export default function MapBottomSheet({
           />
         ) : (
           <PreviewContent
+            activeAction={activePreviewAction}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
@@ -2189,6 +2290,7 @@ export default function MapBottomSheet({
               : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
+            onSelectAction={setActivePreviewAction}
             onToggleBookmark={() => void onToggleBookmark(
               selectedPlace,
               !bookmarkedPlaceIds[String(selectedPlace.id)],
@@ -2247,17 +2349,6 @@ export default function MapBottomSheet({
       )}
       </Animated.View>
       </GlassStyles.SheetInner>
-
-      {!isExpandedPlaceDetail ? (
-        <Pressable
-          {...panHandlers}
-          accessibilityLabel={t('map.sheet.adjust')}
-          accessibilityRole="adjustable"
-          onPress={onHandlePress}
-          style={styles.handleGestureTarget}
-          testID="map-sheet-handle-target"
-        />
-      ) : null}
 
       {content.type !== 'place-preview' ? (
         <BottomNavigation
@@ -2360,7 +2451,7 @@ const styles: Record<string, object> = {
     marginTop: 9,
     overflow: 'hidden',
   },
-  detailInfoBlock: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, padding: 16 },
+  detailInfoBlock: { padding: 16 },
   detailInfoRow: { alignItems: 'center', flexDirection: 'row', gap: 11, minHeight: 31 },
   detailInfoText: { color: '#5F636C', flex: 1, fontSize: 14, lineHeight: 21 },
   detailMenuBody: { flex: 1 },
@@ -2380,8 +2471,8 @@ const styles: Record<string, object> = {
   detailOperatingPositive: { color: '#168A43' },
   detailOperatingStatus: { fontWeight: '800' },
   detailOperatingWarning: { color: '#A15C00' },
-  detailPhoto: { borderRadius: 11, height: 129, overflow: 'hidden', width: 118 },
-  detailPhotoPrimary: { width: 250 },
+  detailPhoto: { borderRadius: 16, height: 180, overflow: 'hidden', width: 180 },
+  detailPhotoPrimary: { width: 242 },
   detailPhotoRow: { columnGap: 10, paddingBottom: 12, paddingHorizontal: 16 },
   detailReviewBody: { flex: 1 },
   detailReviewCount: { color: '#797C84', fontSize: 11, fontWeight: '500' },
@@ -2446,17 +2537,22 @@ const styles: Record<string, object> = {
     shadowRadius: 8,
     width: 42,
   },
-  detailSection: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, padding: 16 },
+  detailSection: { padding: 16 },
   detailSectionTitle: { color: '#303238', fontSize: 14, fontWeight: '900' },
   detailTab: {
     alignItems: 'center',
-    borderBottomColor: 'transparent',
-    borderBottomWidth: 2,
     flex: 1,
     height: 44,
     justifyContent: 'center',
+    position: 'relative',
   },
-  detailTabActive: { borderBottomColor: '#FF245B' },
+  detailTabIndicator: {
+    backgroundColor: '#FF245B',
+    bottom: -1,
+    height: 2,
+    position: 'absolute',
+    width: 40,
+  },
   detailTabText: { color: '#6D7078', fontSize: 13, fontWeight: '700' },
   detailTabTextActive: { color: '#FF245B' },
   detailTabs: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, flexDirection: 'row' },
@@ -2625,16 +2721,8 @@ const styles: Record<string, object> = {
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
   handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 5, width: 56 },
-  handleArea: { alignItems: 'center', height: 20, justifyContent: 'center' },
-  handleGestureTarget: {
-    height: 44,
-    left: '50%',
-    position: 'absolute',
-    top: 0,
-    transform: [{ translateX: -80 }],
-    width: 160,
-    zIndex: 4,
-  },
+  handleArea: { alignItems: 'center', height: 20, justifyContent: 'center', zIndex: 4 },
+  handleButton: { alignItems: 'center', height: 20, justifyContent: 'center', width: 160 },
   navIcon: { alignItems: 'center', height: 24, justifyContent: 'center' },
   navItem: {
     alignItems: 'center',
@@ -2707,6 +2795,10 @@ const styles: Record<string, object> = {
   recommendationGridTitle: { color: '#202127', fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 8 },
   recommendationHeader: { paddingHorizontal: 8, paddingTop: 5 },
   recommendationReason: { color: '#35363C', flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
+  reservationPlaceCard: { height: 214, minHeight: 214, width: 164 },
+  reservationPlaceCardArtwork: { borderRadius: 16, height: 164 },
+  reservationPlaceCardDistance: { fontSize: 14, marginTop: 1 },
+  reservationPlaceCardName: { fontSize: 16, lineHeight: 21, paddingRight: 30 },
   recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5, maxWidth: '100%' },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
   recommendationSubtitle: { color: '#73757D', fontSize: 12, marginTop: 5 },
@@ -2728,7 +2820,7 @@ const styles: Record<string, object> = {
     minWidth: 58,
     paddingHorizontal: 12,
   },
-  previewActionChipActive: { borderColor: '#FF245B' },
+  previewActionChipActive: { backgroundColor: '#FFF0F4', borderColor: '#FF5B82' },
   previewActionRow: { columnGap: 7, paddingBottom: 12, paddingHorizontal: 1 },
   previewActionText: { color: '#595C64', fontSize: 12, fontWeight: '700' },
   previewActionTextActive: { color: '#FF245B' },
@@ -2774,7 +2866,7 @@ const styles: Record<string, object> = {
     marginTop: 9,
     width: 44,
   },
-  previewCategory: { color: '#575A62', flexShrink: 0, fontSize: 13, fontWeight: '700', marginLeft: 6, paddingTop: 4 },
+  previewCategory: { color: '#575A62', flexShrink: 0, fontSize: 13, fontWeight: '700', marginLeft: 6 },
   previewCloseButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.72)',
@@ -2795,12 +2887,13 @@ const styles: Record<string, object> = {
     width: 180,
   },
   previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
-  previewName: { color: '#1B1D22', flex: 1, flexShrink: 1, fontSize: 21, fontWeight: '900', minWidth: 0 },
+  previewName: { color: '#1B1D22', flexShrink: 1, fontSize: 21, fontWeight: '900', minWidth: 0 },
   previewParkingIcon: { borderRadius: 5 },
-  previewStatus: { color: '#61646C', fontSize: 13, fontWeight: '600', marginTop: 6 },
+  previewStatus: { color: '#61646C', flexShrink: 1, fontSize: 13, fontWeight: '600' },
   previewStatusEmphasis: { color: '#1CB957', fontWeight: '800' },
+  previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 6 },
   previewSummary: { flex: 1, paddingTop: 11 },
-  previewTitleRow: { alignItems: 'flex-start', flexDirection: 'row', paddingRight: 4, width: '100%' },
+  previewTitleRow: { alignItems: 'center', flexDirection: 'row', paddingRight: 4 },
   resultAddress: { color: '#7A7D85', fontSize: 11, marginTop: 3 },
   resultDistance: { color: '#686B73', fontSize: 11, fontWeight: '700' },
   resultName: { color: '#272930', fontSize: 14, fontWeight: '800' },

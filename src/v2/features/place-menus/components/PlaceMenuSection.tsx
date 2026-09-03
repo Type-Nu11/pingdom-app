@@ -142,8 +142,8 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
 }
 
 const Section = styled.View`
-  border-bottom-color: ${({ theme }) => theme.colors.border};
-  border-bottom-width: 1px;
+  border-top-color: ${({ theme }) => theme.colors.backgroundNeutral};
+  border-top-width: 8px;
   padding: 20px 24px;
 `;
 

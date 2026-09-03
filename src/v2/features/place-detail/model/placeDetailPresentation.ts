@@ -64,6 +64,7 @@ export type PlaceDetailPresentation = {
   roadAddress: string | null;
   jibunAddress: string | null;
   touristSummary: string | null;
+  verifiedEvidenceCount: number | null;
   verificationLabelKey: 'placeDetail.verification.admin' | 'placeDetail.verification.owner' | 'placeDetail.verification.source' | null;
 };
 
@@ -206,6 +207,9 @@ export function buildPlaceDetailPresentation(
     roadAddress: clean(base?.roadAddress) ?? clean(card?.roadAddress),
     jibunAddress: clean(base?.jibunAddress),
     touristSummary: clean(base?.touristSummary) ?? clean(card?.touristSummary),
+    verifiedEvidenceCount: typeof (base?.verifiedEvidenceCount ?? card?.verifiedEvidenceCount) === 'number'
+      ? Math.max(0, base?.verifiedEvidenceCount ?? card?.verifiedEvidenceCount ?? 0)
+      : null,
     verificationLabelKey: (() => {
       const status = base?.informationVerificationStatus ?? card?.informationVerificationStatus;
       if (status === 'ADMIN_VERIFIED') return 'placeDetail.verification.admin';

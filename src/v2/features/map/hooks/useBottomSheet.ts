@@ -11,6 +11,9 @@ type UseBottomSheetParams = {
 };
 
 const SNAP_ORDER: BottomSheetSnapPoint[] = ['expanded', 'medium', 'collapsed'];
+export const shouldClaimVerticalDrag = (gesture: { dx: number; dy: number }) => (
+  Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx)
+);
 
 export const useBottomSheet = ({
   collapsedTranslateY,
@@ -78,9 +81,8 @@ export const useBottomSheet = ({
   }, [sheetChromeBottom, sheetTranslateY, snapValues]);
 
   const panResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => (
-      Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx)
-    ),
+    onMoveShouldSetPanResponder: (_, gesture) => shouldClaimVerticalDrag(gesture),
+    onMoveShouldSetPanResponderCapture: (_, gesture) => shouldClaimVerticalDrag(gesture),
     onPanResponderGrant: () => {
       sheetChromeBottom.stopAnimation();
       sheetTranslateY.stopAnimation((value) => {
