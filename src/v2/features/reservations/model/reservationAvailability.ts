@@ -14,6 +14,52 @@ export function availabilityDateKey(availability: Availability): string {
   return localDateKey(new Date(availability.startsAt));
 }
 
+function localDayFromKey(dateKey: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return localDateKey(date) === dateKey ? date : null;
+}
+
+/**
+ * Availability is a server-owned time interval. Calendar dates use local-day
+ * overlap instead of only the interval's starting date. The end is exclusive,
+ * so an interval ending exactly at midnight does not enable the following day.
+ */
+export function availabilityDateKeys(availability: Availability): string[] {
+  const startsAt = new Date(availability.startsAt);
+  const endsAt = new Date(availability.endsAt);
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
+    return [];
+  }
+
+  const keys: string[] = [];
+  let day = startOfLocalDay(startsAt);
+  for (let count = 0; count < 3_660 && day.getTime() < endsAt.getTime(); count += 1) {
+    const nextDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+    if (nextDay.getTime() > startsAt.getTime()) keys.push(localDateKey(day));
+    day = nextDay;
+  }
+  return keys;
+}
+
+export function availabilityIncludesDate(
+  availability: Availability,
+  dateKey: string,
+): boolean {
+  const day = localDayFromKey(dateKey);
+  if (!day) return false;
+  const startsAt = new Date(availability.startsAt);
+  const endsAt = new Date(availability.endsAt);
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) return false;
+  const nextDay = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+  return day.getTime() < endsAt.getTime() && nextDay.getTime() > startsAt.getTime();
+}
+
+export function localDateFromKey(dateKey: string): Date | null {
+  return localDayFromKey(dateKey);
+}
+
 export function startOfLocalDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }

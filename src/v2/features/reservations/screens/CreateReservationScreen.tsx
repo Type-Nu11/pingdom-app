@@ -11,13 +11,13 @@ import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import {
   addLocalMonths,
-  availabilityDateKey,
+  availabilityDateKeys,
+  availabilityIncludesDate,
   buildLocalCalendar,
   createReservationIdempotencyKey,
   isAvailabilityBookable,
+  localDateFromKey,
   localDateKey,
-  nearestBookableAvailability,
-  nearestUpcomingAvailability,
   startOfLocalDay,
   startOfLocalMonth,
   type Availability,
@@ -73,13 +73,18 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const [bookerName, setBookerName] = useState('');
   const [bookerPhone, setBookerPhone] = useState('');
   const [requestNote, setRequestNote] = useState('');
-  const [idempotencyKey] = useState(createReservationIdempotencyKey);
+  const [idempotencyKey, setIdempotencyKey] = useState(createReservationIdempotencyKey);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBookerErrors, setShowBookerErrors] = useState(false);
   const detail = usePlaceDetail(route.params.placeId);
   const availabilities = useAvailabilities(route.params.placeId);
   const createReservation = useCreateReservation(route.params.placeId);
   const availabilityData = availabilities.data ?? [];
+
+  const beginNewReservationIntent = () => {
+    createReservation.reset?.();
+    setIdempotencyKey(createReservationIdempotencyKey());
+  };
 
   // Only GENERAL place reservations can be selected and submitted today, so the
   // calendar dots and the nearest-date jump are driven by that subset. TICKET
@@ -95,19 +100,15 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     [availabilityData, now, quantity],
   );
   const availableDates = useMemo(
-    () => new Set(bookableAvailabilities.map(availabilityDateKey)),
+    () => new Set(bookableAvailabilities.flatMap(availabilityDateKeys)),
     [bookableAvailabilities],
   );
   const availabilitySummary = useMemo(
     () => summarizeAvailabilityPresentations(availabilityData),
     [availabilityData],
   );
-  const selectableAvailabilityData = useMemo(
-    () => availabilityData.filter(isSelectableAvailability),
-    [availabilityData],
-  );
   const scheduledDates = useMemo(
-    () => new Set(availabilityData.map(availabilityDateKey)),
+    () => new Set(availabilityData.flatMap(availabilityDateKeys)),
     [availabilityData],
   );
   const selectedAvailability = availabilityData.find(
@@ -115,7 +116,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   );
   const selectedDateSlots = selectedDate
     ? availabilityData
-      .filter((item) => availabilityDateKey(item) === selectedDate)
+      .filter((item) => availabilityIncludesDate(item, selectedDate))
       .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
     : [];
   const periodDate = useRef<string | null>(null);
@@ -132,15 +133,21 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     if (initializedFromAvailability.current || availabilities.isPending || availabilities.isError) {
       return;
     }
-    const nearest = nearestBookableAvailability(selectableAvailabilityData, quantity, now)
-      ?? nearestUpcomingAvailability(selectableAvailabilityData, now);
-    if (!nearest) return;
-    const nearestDate = new Date(nearest.startsAt);
+    const todayKey = localDateKey(now);
+    const nearestDateKey = [...availableDates]
+      .filter((dateKey) => dateKey >= todayKey)
+      .sort()[0]
+      ?? [...scheduledDates]
+        .filter((dateKey) => dateKey >= todayKey)
+        .sort()[0];
+    if (!nearestDateKey) return;
+    const nearestDate = localDateFromKey(nearestDateKey);
+    if (!nearestDate) return;
     initializedFromAvailability.current = true;
     setMonth(startOfLocalMonth(nearestDate));
-    setSelectedDate(localDateKey(nearestDate));
+    setSelectedDate(nearestDateKey);
     setSelectedAvailabilityId(null);
-  }, [selectableAvailabilityData, availabilities.isError, availabilities.isPending, now, quantity]);
+  }, [availabilities.isError, availabilities.isPending, availableDates, now, scheduledDates]);
 
   useEffect(() => {
     if (selectedAvailabilityId !== null
@@ -148,7 +155,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
         || !isSelectableAvailability(selectedAvailability)
         || !isAvailabilityBookable(selectedAvailability, quantity, now)
         || !selectedDate
-        || availabilityDateKey(selectedAvailability) !== selectedDate)) {
+        || !availabilityIncludesDate(selectedAvailability, selectedDate))) {
       setSelectedAvailabilityId(null);
     }
   }, [now, quantity, selectedAvailability, selectedAvailabilityId, selectedDate]);
@@ -166,6 +173,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const canSubmit = slotReady && bookerValidation.isValid;
 
   const moveMonth = (offset: number) => {
+    beginNewReservationIntent();
     setMonth((current) => addLocalMonths(current, offset));
     setSelectedDate(null);
     setSelectedAvailabilityId(null);
@@ -195,6 +203,9 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
           setIsSubmitting(false);
           const code = toApiError(error).code;
           if (code === 'AVAILABILITY_CAPACITY_EXCEEDED' || code === 'AVAILABILITY_NOT_FOUND') {
+            // The server definitively rejected this write. A retry after the refreshed
+            // availability is a new reservation attempt, not a replay of the rejected one.
+            setIdempotencyKey(createReservationIdempotencyKey());
             void availabilities.refetch();
           }
         },
@@ -268,7 +279,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
 
         <PeopleSection><SectionTitle>{t('reservation.create.people')}</SectionTitle>
           <Horizontal horizontal showsHorizontalScrollIndicator={false}>
-            {PEOPLE.map((count) => <Choice key={count} $selected={quantity === count} accessibilityRole="button" accessibilityState={{ selected: quantity === count }} onPress={() => setQuantity(count)}><ChoiceText $selected={quantity === count}>{t('reservation.create.peopleCount', { count })}</ChoiceText></Choice>)}
+            {PEOPLE.map((count) => <Choice key={count} $selected={quantity === count} accessibilityRole="button" accessibilityState={{ selected: quantity === count }} onPress={() => { beginNewReservationIntent(); setQuantity(count); }}><ChoiceText $selected={quantity === count}>{t('reservation.create.peopleCount', { count })}</ChoiceText></Choice>)}
           </Horizontal>
         </PeopleSection>
 
@@ -291,7 +302,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
                   ? t('reservation.create.scheduledDateLabel', { date: key })
                   : t('reservation.create.unavailableDateLabel', { date: key });
               const selectedAndAvailable = selected && available;
-              return <DayCell key={key}><DayButton $selected={selectedAndAvailable} accessibilityLabel={dateLabel} accessibilityRole="button" accessibilityState={{ disabled: !scheduled, selected }} disabled={!scheduled} onPress={() => { setSelectedDate(key); setSelectedAvailabilityId(null); }}><DayText $available={available} $selected={selectedAndAvailable} $weekday={date.getDay()}>{date.getDate()}</DayText></DayButton></DayCell>;
+              return <DayCell key={key}><DayButton $selected={selectedAndAvailable} accessibilityLabel={dateLabel} accessibilityRole="button" accessibilityState={{ disabled: !scheduled, selected }} disabled={!scheduled} onPress={() => { beginNewReservationIntent(); setSelectedDate(key); setSelectedAvailabilityId(null); }}><DayText $available={available} $selected={selectedAndAvailable} $weekday={date.getDay()}>{date.getDate()}</DayText></DayButton></DayCell>;
             })() : <DayCell key={`blank-${index}`} />)}</CalendarGrid>
           </Calendar>
         </Section>
@@ -308,7 +319,10 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
             selectedAvailabilityId,
             selectedDate,
             selectedDateSlots,
-            setSelectedAvailabilityId,
+            setSelectedAvailabilityId: (id) => {
+              beginNewReservationIntent();
+              setSelectedAvailabilityId(id);
+            },
             setTimePeriod,
             summary: availabilitySummary,
             t,
@@ -329,7 +343,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
               autoCapitalize="words"
               maxLength={BOOKER_NAME_MAX_LENGTH}
               onBlur={() => setShowBookerErrors(true)}
-              onChangeText={setBookerName}
+              onChangeText={(value) => { beginNewReservationIntent(); setBookerName(value); }}
               placeholder={t('reservation.create.booker.namePlaceholder')}
               placeholderTextColor={theme.colors.textMuted}
               testID="v2-booker-name"
@@ -350,7 +364,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
               keyboardType="phone-pad"
               maxLength={BOOKER_PHONE_MAX_LENGTH}
               onBlur={() => setShowBookerErrors(true)}
-              onChangeText={setBookerPhone}
+              onChangeText={(value) => { beginNewReservationIntent(); setBookerPhone(value); }}
               placeholder={t('reservation.create.booker.phonePlaceholder')}
               placeholderTextColor={theme.colors.textMuted}
               testID="v2-booker-phone"
@@ -373,7 +387,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
               maxLength={REQUEST_NOTE_MAX_LENGTH}
               multiline
               onBlur={() => setShowBookerErrors(true)}
-              onChangeText={setRequestNote}
+              onChangeText={(value) => { beginNewReservationIntent(); setRequestNote(value); }}
               placeholder={t('reservation.create.booker.notePlaceholder')}
               placeholderTextColor={theme.colors.textMuted}
               testID="v2-booker-note"
@@ -593,7 +607,7 @@ const SectionTitle = styled.Text`color: ${({ theme }) => theme.colors.textStrong
 const Horizontal = styled.ScrollView`flex-grow: 0;`;
 const Choice = styled.Pressable<{ $selected: boolean }>`min-width: 48px; height: 34px; align-items: center; justify-content: center; margin-right: ${({ theme }) => theme.spacing.sm}px; padding: 0 12px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.surfaceMuted}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surfaceMuted};`;
 const ChoiceText = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const Calendar = styled.View`padding: 12px ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
+const Calendar = styled.View`padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.lg}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const MonthRow = styled.View`flex-direction: row; align-items: center; justify-content: center;`;
 const MonthButton = styled.Pressable`width: 36px; height: 36px; align-items: center; justify-content: center;`;
 const MonthButtonText = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.title.fontSize}px;`;
@@ -601,8 +615,8 @@ const MonthTitle = styled.Text`color: ${({ theme }) => theme.colors.textStrong};
 const WeekRow = styled.View`flex-direction: row; margin-top: ${({ theme }) => theme.spacing.sm}px;`;
 const Weekday = styled.Text<{ $weekday: number }>`width: 14.285%; color: ${({ $weekday, theme }) => $weekday === 0 ? theme.colors.calendarSunday : $weekday === 6 ? theme.colors.calendarSaturday : theme.colors.text}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
 const CalendarGrid = styled.View`flex-direction: row; flex-wrap: wrap; margin-top: ${({ theme }) => theme.spacing.xs}px;`;
-const DayCell = styled.View`width: 14.285%; height: 40px; align-items: center; justify-content: center;`;
-const DayButton = styled.Pressable<{ $selected: boolean }>`width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'};`;
+const DayCell = styled.View`width: 14.285%; height: 44px; align-items: center; justify-content: center;`;
+const DayButton = styled.Pressable<{ $selected: boolean }>`width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'};`;
 const DayText = styled.Text<{ $available: boolean; $selected: boolean; $weekday: number }>`color: ${({ $available, $selected, $weekday, theme }) => $selected ? theme.colors.onPrimary : !$available ? theme.colors.disabled : $weekday === 0 ? theme.colors.calendarSunday : $weekday === 6 ? theme.colors.calendarSaturday : theme.colors.text}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $available, $selected }) => $available || $selected ? '700' : '400'};`;
 const StateBox = styled.View`min-height: 72px; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const RetryButton = styled.Pressable`padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
