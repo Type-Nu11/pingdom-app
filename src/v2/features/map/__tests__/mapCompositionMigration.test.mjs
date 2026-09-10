@@ -73,7 +73,7 @@ test('map section changes do not fade the whole sheet or preserve expanded place
   assert.match(screen, /const openMapSection = useCallback/);
   assert.match(screen, /setContent\(\{ type: 'home' \}\)/);
   assert.match(screen, /jumpTo\('medium'\)/);
-  assert.match(bottomSheet, /tintColor="#FFFFFF"/);
+  assert.match(bottomSheet, /tintColor=\{isExpandedPlaceDetail \? colors\.surface : liquidGlass\.sheet\.tint\}/);
 });
 
 test('expanded sheet stops below the search header and temporarily hides map categories', () => {
@@ -90,7 +90,7 @@ test('resting map content disables vertical scrolling while preserving nested ho
   const bottomSheet = read('../components/MapBottomSheet.tsx');
 
   assert.match(bottomSheet, /testID="expanded-home-scroll"/);
-  assert.match(bottomSheet, /scrollEnabled=\{expandedInteractionsEnabled\}/);
+  assert.match(bottomSheet, /scrollEnabled=\{expandedInteractionsEnabled \|\| restingScrollEnabled\}/);
   assert.match(bottomSheet, /scrollRef\.current\?\.scrollTo\(\{ animated: false, y: 0 \}\)/);
   assert.match(bottomSheet, /<ScrollView[\s\S]*?horizontal[\s\S]*?nestedScrollEnabled/);
 });
@@ -101,7 +101,7 @@ test('the small visible handle keeps resting sheet content available as a drag s
   assert.match(bottomSheet, /handleArea: \{[^}]*height: 20/);
   assert.match(bottomSheet, /handle: \{[^}]*height: 5[^}]*width: 56/);
   assert.match(bottomSheet, /\{\.\.\.panHandlers\}[\s\S]*?testID="map-sheet-handle-target"/);
-  assert.match(bottomSheet, /\{\.\.\.\(snapPoint === 'expanded' \? \{\} : panHandlers\)\}/);
+  assert.match(bottomSheet, /\{\.\.\.\(snapPoint === 'expanded' \|\| restingScrollEnabled \? \{\} : panHandlers\)\}/);
   assert.doesNotMatch(bottomSheet, /hitSlop=\{content\.type === 'place-preview'/);
   assert.doesNotMatch(bottomSheet, /handleGestureTarget/);
   assert.match(bottomSheet, /testID="map-sheet-handle-target"/);
@@ -124,7 +124,7 @@ test('place actions retain selection across sheet expansion and expanded detail 
   assert.match(bottomSheet, /activeAction=\{activePreviewAction\}/);
   assert.match(bottomSheet, /borderBottomLeftRadius: isExpandedPlaceDetail \? 0/);
   assert.match(bottomSheet, /borderBottomRightRadius: isExpandedPlaceDetail \? 0/);
-  assert.match(bottomSheet, /cornerRadius=\{isExpandedPlaceDetail \? 0 : 34\}/);
+  assert.match(bottomSheet, /cornerRadius=\{isExpandedPlaceDetail \? 0 : liquidGlass\.sheet\.topRadius\}/);
 });
 
 test('the production map detail uses the compact Offer list before menus', () => {

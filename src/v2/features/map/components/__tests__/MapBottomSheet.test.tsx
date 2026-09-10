@@ -5,6 +5,7 @@ import { Animated, Text, type GestureResponderHandlers } from 'react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { runTimingMotion } from '../../../../shared/motion';
 import MapBottomSheet, {
+  getMapHomeSheetVisibleHeight,
   RecommendationFeaturedCard,
   selectPlaceDetailAddress,
   type DecisionPlace,
@@ -738,7 +739,7 @@ describe('MapBottomSheet recommendations', () => {
     const handleTarget = screen.getByTestId('map-sheet-handle-target');
     expect(handleTarget).toHaveStyle({
       alignItems: 'center',
-      height: 20,
+      height: 19,
     });
     expect(handleTarget.props.hitSlop).toBeUndefined();
     const localFeed = screen.getByRole('tab', { name: '우리 지역 핫플' });
@@ -746,10 +747,21 @@ describe('MapBottomSheet recommendations', () => {
     expect(localFeed.props.accessibilityState).toEqual({ selected: true });
     expect(nationalFeed.props.accessibilityState).toEqual({ selected: false });
     fireEvent(screen.getByTestId('feed-segment-control'), 'layout', {
-      nativeEvent: { layout: { height: 48, width: 360, x: 0, y: 0 } },
+      nativeEvent: { layout: { height: 48, width: 370, x: 16, y: 507 } },
     });
     await waitFor(() => {
       expect(screen.getByTestId('feed-segment-indicator')).toBeOnTheScreen();
+    });
+    expect(screen.getByTestId('feed-segment-indicator')).toHaveStyle({
+      borderRadius: 20,
+      bottom: 4,
+      left: 4,
+      top: 4,
+      width: 181,
+    });
+    expect(screen.getByRole('button', { name: '추천 장소 1, 1km' })).toHaveStyle({
+      height: 182,
+      width: 242,
     });
     expect(screen.getByTestId('feed-content-transition')).toBeOnTheScreen();
     expect(screen.queryByRole('tab', { name: '팝업' })).not.toBeOnTheScreen();
@@ -769,6 +781,7 @@ describe('MapBottomSheet recommendations', () => {
 
   test('medium 홈은 확장 전용 트리를 지연하고 첫 탭 feedback과 overlay 입력 상태를 보장한다', async () => {
     const onOpenLikedPlaces = jest.fn();
+    const onMoveShouldSetResponder = jest.fn(() => true);
     const commonProps = {
       activeFilters: [],
       bookmarkedPlaceIds: {},
@@ -789,7 +802,7 @@ describe('MapBottomSheet recommendations', () => {
       onSearchFocus: jest.fn(),
       onSubmitSearch: jest.fn(),
       onToggleBookmark: jest.fn(async () => undefined),
-      panHandlers: {} as GestureResponderHandlers,
+      panHandlers: { onMoveShouldSetResponder } as GestureResponderHandlers,
       places,
       recommendationPlaces: [],
       recommendationsState: 'ready' as const,
@@ -811,6 +824,32 @@ describe('MapBottomSheet recommendations', () => {
 
     await view.rerender(<MapBottomSheet {...commonProps} snapPoint="medium" />);
     expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');
+    expect(screen.getByTestId('expanded-home-scroll').props.scrollEnabled).toBe(false);
+
+    // Compact phones retain the full Figma content height. Landscape/multiwindow
+    // layouts leave room below the header and scroll cards above the pinned tabs.
+    expect(getMapHomeSheetVisibleHeight(874, 62)).toBe(386);
+    expect(getMapHomeSheetVisibleHeight(568, 62)).toBe(386);
+    const compactVisibleHeight = getMapHomeSheetVisibleHeight(320, 62);
+    expect(compactVisibleHeight).toBe(234);
+    await view.rerender(
+      <MapBottomSheet
+        {...commonProps}
+        height={320}
+        mediumTranslateY={320 - compactVisibleHeight}
+        sheetChromeBottom={new Animated.Value(320 - compactVisibleHeight)}
+        sheetTranslateY={new Animated.Value(320 - compactVisibleHeight)}
+        snapPoint="medium"
+      />,
+    );
+    expect(screen.getByTestId('expanded-home-scroll').props.scrollEnabled).toBe(true);
+    expect(screen.getByTestId('map-sheet-content')).toHaveStyle({ height: 127 });
+    expect(screen.getByTestId('map-sheet-content').props.onMoveShouldSetResponder).toBeUndefined();
+    expect(screen.getByTestId('map-sheet-handle-target').props.onMoveShouldSetResponder)
+      .toBe(onMoveShouldSetResponder);
+    expect(screen.queryByTestId('expanded-home-only-content')).not.toBeOnTheScreen();
+    await view.user.press(screen.getByRole('button', { name: '추천 장소 1, 1km' }));
+    expect(commonProps.onPlacePress).toHaveBeenCalledWith(places[0]);
   });
 
   test('장소 요청 실패를 빈 핫플 결과로 표시하지 않는다', async () => {

@@ -9,16 +9,17 @@ import MapAsset from '../../../../assets/v2/icons/place/maping_svg.svg';
 import PlaceRecommendAsset from '../../../../assets/v2/icons/place/placerecommend.svg';
 import { FavoriteIcon } from '../../../shared/components';
 import { colors } from '../../../shared/theme/colors';
+import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import FrostedSurface from './FrostedSurface';
 
 export type MapSheetNavigationTab = 'favorites' | 'map' | 'recommendations' | 'reservations';
 
 export const getMapSheetTabSurfaceColor = (active: boolean, pressed: boolean) => {
-  if (pressed) return colors.surfacePressed;
-  return active ? colors.selectedTabSurface : 'transparent';
+  if (pressed) return liquidGlass.navigation.pressedTint;
+  return active ? liquidGlass.navigation.selectedTint : 'transparent';
 };
 
-export const getMapSheetNavigationBottom = (bottomInset: number) => Math.max(24, bottomInset + 10);
+export const getMapSheetNavigationBottom = (bottomInset: number) => Math.max(16, bottomInset + 10);
 
 type Props = {
   activeTab: MapSheetNavigationTab;
@@ -28,6 +29,21 @@ type Props = {
   onOpenReservations?: () => void;
   sheetTranslateY: Animated.Value;
 };
+
+const InactiveMapIcon = () => (
+  // Reuse maping_svg.svg's outer contour, without its filled body or center hole.
+  // The padded viewBox leaves room for the outline instead of clipping its edges.
+  <Svg height={24} viewBox="-1 -1 20 23" width={21}>
+    <Path
+      d="M9 0C11.3869 0 13.6764 0.934087 15.3643 2.59668C17.0521 4.25932 18 6.51489 18 8.86621C17.9999 11.2174 17.052 13.4722 15.3643 15.1348L9 20.4004L2.63672 15.1348C1.80101 14.3116 1.13787 13.3343 0.685547 12.2588C0.233268 11.1833 5.22794e-05 10.0304 0 8.86621C0 7.70194 0.233217 6.54829 0.685547 5.47266C1.13787 4.3972 1.80105 3.41978 2.63672 2.59668C4.32447 0.934296 6.61328 6.38185e-05 9 0Z"
+      fill="none"
+      stroke={colors.text}
+      strokeLinejoin="round"
+      strokeWidth={1.8}
+      testID="map-navigation-map-outline"
+    />
+  </Svg>
+);
 
 const ActiveReservationIcon = () => (
   <Svg height={24} viewBox="0 0 24 24" width={24}>
@@ -65,17 +81,20 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
     >
       <View style={styles.navigationShadow}>
         <FrostedSurface
+          bottomShade={false}
           cornerRadius={32}
           glassEffectStyle="regular"
-          highlightOpacity={0}
-          rimColor="rgba(0,0,0,0.06)"
+          highlightOpacity={liquidGlass.navigation.highlightOpacity}
+          rimColor={liquidGlass.navigation.rim}
           style={styles.navigationBar}
-          tintColor={colors.surface}
+          tintColor={liquidGlass.navigation.tint}
         >
           {tabs.map(({ id, label, onPress }) => {
             const active = activeTab === id;
             const icon = id === 'map'
-              ? <MapAsset color={active ? colors.primary : colors.text} height={24} width={21} />
+              ? active
+                ? <MapAsset color={colors.primary} height={24} width={21} />
+                : <InactiveMapIcon />
               : id === 'favorites'
                 ? <FavoriteIcon selected={active} size={24} />
                 : active
@@ -120,14 +139,19 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
         testID="map-navigation-recommendations"
       >
           <FrostedSurface
+            bottomShade={false}
             cornerRadius={32}
             glassEffectStyle="regular"
-            highlightOpacity={0}
+            highlightOpacity={liquidGlass.navigation.highlightOpacity}
             pointerEvents="none"
-            rimColor="rgba(0,0,0,0.06)"
-            style={[styles.sendButtonGlass, pressedTab === 'recommendations' && styles.sendButtonPressed]}
+            rimColor={liquidGlass.navigation.rim}
+            style={styles.sendButtonGlass}
             testID="map-navigation-recommendations-surface"
-            tintColor={activeTab === 'recommendations' ? colors.border : colors.surface}
+            tintColor={pressedTab === 'recommendations'
+              ? liquidGlass.navigation.pressedTint
+              : activeTab === 'recommendations'
+                ? liquidGlass.navigation.selectedTint
+                : liquidGlass.navigation.tint}
           >
             <PlaceRecommendAsset
               color={activeTab === 'recommendations' ? colors.primary : colors.text}
@@ -146,12 +170,24 @@ const styles: Record<string, object> = {
   navIcon: { alignItems: 'center', height: 28, justifyContent: 'center', width: 28 },
   navItem: { alignItems: 'center', flex: 1, justifyContent: 'center' },
   navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 2, height: 56, justifyContent: 'center', width: 78 },
-  navLabel: { color: colors.text, fontSize: 10, fontWeight: '600', letterSpacing: -0.2, lineHeight: 13 },
+  navLabel: { color: colors.text, fontSize: 10, fontWeight: '500', lineHeight: 13 },
   navLabelActive: { color: colors.primary, fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 4 },
   navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
-  navigationShadow: { backgroundColor: colors.surface, borderRadius: 32, flex: 1 },
-  sendButton: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', width: 64 },
+  navigationShadow: {
+    backgroundColor: liquidGlass.shadowFill,
+    borderRadius: 32,
+    boxShadow: liquidGlass.navigation.shadow,
+    flex: 1,
+  },
+  sendButton: {
+    alignItems: 'center',
+    backgroundColor: liquidGlass.shadowFill,
+    borderRadius: 32,
+    boxShadow: liquidGlass.navigation.shadow,
+    height: 64,
+    justifyContent: 'center',
+    width: 64,
+  },
   sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
-  sendButtonPressed: { backgroundColor: colors.surfacePressed },
 };
