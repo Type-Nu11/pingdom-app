@@ -76,6 +76,18 @@ test('floating CTA blocks consecutive taps and unlocks again', async () => {
   expect(onPress).toHaveBeenCalledTimes(2);
 });
 
+test('floating CTA uses the Figma 120 by 48 pill without an Android drop shadow', async () => {
+  const view = await renderFeature(<VisitVerificationMapCta label="검증하기" onPress={jest.fn()} />);
+  expect(view.getByTestId('visit-verification-map-cta')).toHaveStyle({
+    minWidth: 120,
+    height: 48,
+    borderTopLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    boxShadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)',
+  });
+  expect(view.getByTestId('visit-verification-map-cta')).not.toHaveStyle({ elevation: 3 });
+});
+
 test('recent visits render the normal empty state', async () => {
   const onBack = jest.fn();
   const onSelectPlace = jest.fn();
