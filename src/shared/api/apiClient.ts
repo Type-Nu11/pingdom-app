@@ -236,23 +236,23 @@ api.interceptors.request.use(
 //   - 요청 설정이 없는 경우 (네트워크 단절 등)
 //   - 401이 아닌 다른 에러 (403, 500 등)
 //   - 이미 재시도한 요청 (_retry === true)
-//   - 갱신 요청 자체가 401을 받은 경우 (무한루프 방지)
+//   - 로그인 등 공개 인증 요청이 401을 받은 경우 (잘못된 자격 증명은 토큰 만료가 아님)
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as RetryableRequestConfig | undefined;
         const status = error.response?.status;
-        const isRefreshRequest = originalRequest?.url?.includes('/auth/token/refresh');
+        const isPublicAuthRequest = isPublicAuthUrl(originalRequest?.url);
         const shouldSkipRetry =
             !originalRequest ||
             status !== 401 ||
             originalRequest._retry ||
-            isRefreshRequest;
+            isPublicAuthRequest;
 
         if (shouldSkipRetry) {
             if (status === 401
                 && originalRequest
-                && !isPublicAuthUrl(originalRequest.url)) {
+                && !isPublicAuthRequest) {
                 await clearExpiredSession();
             }
 

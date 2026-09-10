@@ -2,6 +2,7 @@ import React from 'react';
 import { ActivityIndicator, Animated, PanResponder } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
 import SearchAsset from '../../../../assets/v2/icons/search.svg';
 import ArtIcon from '../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyIcon from '../../../../assets/v2/icons/place/beati_svg.svg';
@@ -14,6 +15,7 @@ import MusicIcon from '../../../../assets/v2/icons/place/music_svg.svg';
 import FinderIcon from '../../../../assets/v2/icons/finder.svg';
 import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
+import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import {
   getMapPullIndicatorDistance,
   isDownwardMapPull,
@@ -50,12 +52,21 @@ type MapTopOverlayProps = {
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: MapCategoryId;
+  iconSize?: { height: number; width: number; drawingHeight?: number; drawingWidth?: number };
 }> = [
-  { id: 'all' }, { Icon: FoodIcon, id: 'food' }, { Icon: MusicIcon, id: 'music' },
-  { Icon: PopupIcon, id: 'popup' }, { Icon: FashionIcon, id: 'fashion' },
-  { Icon: BeautyIcon, id: 'beauty' }, { Icon: ArtIcon, id: 'art' },
-  { Icon: CafeIcon, id: 'cafe' }, { Icon: HeritageIcon, id: 'heritage' }, { Icon: EtcIcon, id: 'etc' },
+  { id: 'all' },
+  { Icon: FoodIcon, id: 'food', iconSize: { width: 15, height: 18 } },
+  { Icon: MusicIcon, id: 'music', iconSize: { width: 18.75, height: 15.625, drawingWidth: 20.75, drawingHeight: 17.625 } },
+  { Icon: PopupIcon, id: 'popup', iconSize: { width: 18, height: 17, drawingWidth: 20, drawingHeight: 19 } },
+  { Icon: FashionIcon, id: 'fashion', iconSize: { width: 24, height: 18 } },
+  { Icon: BeautyIcon, id: 'beauty', iconSize: { width: 7, height: 18 } },
+  { Icon: ArtIcon, id: 'art', iconSize: { width: 18, height: 18 } },
+  { Icon: CafeIcon, id: 'cafe', iconSize: { width: 18.75, height: 17.709, drawingWidth: 20.75, drawingHeight: 19.709 } },
+  { Icon: HeritageIcon, id: 'heritage', iconSize: { width: 21, height: 18 } },
+  { Icon: EtcIcon, id: 'etc', iconSize: { width: 14, height: 2, drawingWidth: 16, drawingHeight: 4 } },
 ];
+
+const categoryFonts = { Pretendard: require('../../../../assets/v2/fonts/PretendardVariable.ttf') };
 
 export default function MapTopOverlay({
   activeCategory,
@@ -69,6 +80,7 @@ export default function MapTopOverlay({
   showCategories = true,
 }: MapTopOverlayProps) {
   const { t } = useTranslation();
+  const [categoryFontLoaded] = useFonts(categoryFonts);
   const insets = useSafeAreaInsets();
   const pullDistance = React.useRef(new Animated.Value(0)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -154,27 +166,32 @@ export default function MapTopOverlay({
         testID="map-pull-to-refresh"
       >
       <S.Header>
-        <S.HeaderShadow>
+        <S.HeaderShadow style={{ boxShadow: liquidGlass.header.shadow }} testID="map-header-shadow">
           <S.HeaderSurface>
             <S.HeaderGlass
               bottomShade={false}
-              cornerRadius={31}
+              cornerRadius={liquidGlass.header.radius}
               glassEffectStyle="regular"
-              highlightOpacity={0.16}
+              highlightOpacity={liquidGlass.header.highlightOpacity}
               intensity={32}
               pointerEvents="none"
-              rimColor="transparent"
-              tintColor="rgba(255,255,255,0.76)"
+              rimColor={liquidGlass.header.rim}
+              tintColor={liquidGlass.header.tint}
             />
             <S.SearchShadow>
               <S.SearchGlass
                 bottomShade={false}
-                cornerRadius={24}
+                cornerRadius={liquidGlass.search.radius}
                 glassEffectStyle="regular"
-                highlightOpacity={0.20}
+                highlightOpacity={liquidGlass.search.highlightOpacity}
                 pointerEvents="none"
-                rimColor="transparent"
-                tintColor="rgba(242,242,245,0.86)"
+                rimColor={liquidGlass.search.rim}
+                tintColor={liquidGlass.search.tint}
+              />
+              <S.SearchInsetShadow
+                pointerEvents="none"
+                style={{ boxShadow: liquidGlass.search.shadow }}
+                testID="map-search-inset-shadow"
               />
               <S.SearchContent
                 accessibilityLabel={t('map.search.accessibilityLabel')}
@@ -223,7 +240,7 @@ export default function MapTopOverlay({
             showsHorizontalScrollIndicator={false}
           >
             <S.CategoryContent>
-              {categories.map(({ Icon, id }, index) => {
+              {categories.map(({ Icon, id, iconSize }) => {
                 const isActive = activeCategory === id;
                 const label = t(`map.categories.${id}`);
 
@@ -232,29 +249,43 @@ export default function MapTopOverlay({
                     $active={isActive}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isActive }}
-                    key={`${id}-${index}`}
+                    hitSlop={{ top: 5, bottom: 5 }}
+                    key={id}
                     onPress={() => onCategoryChange(id)}
-                    style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : undefined}
+                    style={({ pressed }) => ({
+                      boxShadow: liquidGlass.category.shadow,
+                      ...(pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : {}),
+                    })}
                   >
                     <S.CategoryChipClip>
                       <S.CategoryChipGlass
-                        bottomShade={false}
-                        cornerRadius={19}
-                        glassEffectStyle="regular"
-                        highlightOpacity={isActive ? 0.18 : 0.14}
+                        androidTintColor={isActive ? liquidGlass.category.androidActiveTint : liquidGlass.category.androidTint}
+                        blurTint="default"
+                        glassEffectStyle="clear"
+                        intensity={32}
                         pointerEvents="none"
-                        rimColor="transparent"
-                        tintColor={isActive ? 'rgba(255,201,211,0.24)' : 'rgba(255,255,255,0.95)'}
+                        tintColor={isActive ? liquidGlass.category.activeTint : liquidGlass.category.tint}
                       />
                       <S.CategoryChipContent>
-                        {Icon ? (
-                          <Icon
-                            color={isActive ? '#FF245B' : '#5E5E66'}
-                            height={S.MAP_TOP_OVERLAY_METRICS.categoryIconHeight}
-                            width={S.MAP_TOP_OVERLAY_METRICS.categoryIconWidth}
-                          />
+                        {Icon && iconSize ? (
+                          <S.CategoryIconFrame
+                            style={{ height: iconSize.height, width: iconSize.width }}
+                            testID={`map-category-icon-${id}`}
+                          >
+                            <Icon
+                              color={isActive ? '#FF1956' : '#5E5E66'}
+                              height={iconSize.drawingHeight ?? iconSize.height}
+                              width={iconSize.drawingWidth ?? iconSize.width}
+                            />
+                          </S.CategoryIconFrame>
                         ) : null}
-                        <S.CategoryLabel $active={isActive}>{label}</S.CategoryLabel>
+                        <S.CategoryLabel
+                          $active={isActive}
+                          style={{
+                            fontFamily: categoryFontLoaded ? 'Pretendard' : undefined,
+                            includeFontPadding: false,
+                          }}
+                        >{label}</S.CategoryLabel>
                       </S.CategoryChipContent>
                     </S.CategoryChipClip>
                   </S.CategoryChipButton>
@@ -270,9 +301,21 @@ export default function MapTopOverlay({
                 onPress={onLocatePress}
                 onPressIn={() => setIsLocatePressed(true)}
                 onPressOut={() => setIsLocatePressed(false)}
-                style={({ pressed }) => pressed ? { opacity: 0.72, transform: [{ scale: 0.96 }] } : undefined}
+                style={({ pressed }) => ({
+                  boxShadow: liquidGlass.navigation.shadow,
+                  ...(pressed ? { opacity: 0.72, transform: [{ scale: 0.96 }] } : {}),
+                })}
                 testID="map-locate-button"
               >
+                <S.LocateGlass
+                  bottomShade={false}
+                  cornerRadius={22}
+                  glassEffectStyle="regular"
+                  highlightOpacity={liquidGlass.navigation.highlightOpacity}
+                  pointerEvents="none"
+                  rimColor={liquidGlass.navigation.rim}
+                  tintColor={liquidGlass.navigation.tint}
+                />
                 <FinderIcon
                   color={isLocatePressed ? '#FF1956' : '#3B3B40'}
                   height={20}

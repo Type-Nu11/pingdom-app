@@ -25,9 +25,10 @@ import { normalizePlaceCategory } from '../../map/utils/placeCategory';
 import { usePlaceExplorationMediaList } from '../../place-exploration';
 import * as GlassStyles from '../../map/styles/BottomSheetGlass.styles';
 import { useReservations } from '..';
+import { liquidGlass } from '../../../shared/theme/liquidGlass';
 
 const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = 48;
+const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 
@@ -240,19 +241,19 @@ export default function ReservationBottomSheet({
     <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
       <GlassStyles.SheetChromeShadow
         pointerEvents="none"
-        style={{ bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
+        style={{ boxShadow: liquidGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
       >
         <GlassStyles.SheetChrome
-          $borderColor="transparent"
+          $borderColor={liquidGlass.sheet.rim}
           style={{ borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius }}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={34}
+            cornerRadius={liquidGlass.sheet.topRadius}
             glassEffectStyle="regular"
             highlightHeight={40}
-            highlightOpacity={0.10}
-            rimColor="rgba(255,255,255,0.60)"
-            tintColor="rgba(255,255,255,0.92)"
+            highlightOpacity={liquidGlass.sheet.highlightOpacity}
+            rimColor={liquidGlass.sheet.rim}
+            tintColor={liquidGlass.sheet.tint}
             topRimOnly
           />
         </GlassStyles.SheetChrome>

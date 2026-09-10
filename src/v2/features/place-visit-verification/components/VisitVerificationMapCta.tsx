@@ -33,7 +33,7 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
         }, NAVIGATION_LOCK_MS);
         onPress();
       }}
-      style={style}
+      style={[{ boxShadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)' }, style]}
       testID="visit-verification-map-cta"
     >
       <VerificationIcon height={24} width={24} />
@@ -43,19 +43,15 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
 }
 
 const Container = styled.Pressable`
-  min-height: 44px;
-  min-width: 108px;
+  height: 48px;
+  min-width: 120px;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 12px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.primary};
-  shadow-color: #101828;
-  shadow-opacity: 0.14;
-  shadow-radius: 6px;
-  elevation: 3;
+  gap: 4px;
+  padding: 0 18px;
+  border-radius: 24px;
+  background-color: rgba(255, 25, 86, 0.8064);
 `;
 const Label = styled.Text`
   color: ${({ theme }) => theme.colors.onPrimary};

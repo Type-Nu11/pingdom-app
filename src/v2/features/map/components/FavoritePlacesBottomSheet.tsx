@@ -27,6 +27,7 @@ import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
 import { colors } from '../../../shared/theme/colors';
+import { liquidGlass } from '../../../shared/theme/liquidGlass';
 
 type FavoriteCategory = 'all' | 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 'food' | 'heritage' | 'music' | 'popup';
 
@@ -58,7 +59,7 @@ type FavoritePlacesBottomSheetProps = {
 };
 
 const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = 48;
+const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
@@ -222,21 +223,21 @@ export default function FavoritePlacesBottomSheet({
     <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
       <GlassStyles.SheetChromeShadow
         pointerEvents="none"
-        style={{ bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
+        style={{ boxShadow: liquidGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
       >
         <GlassStyles.SheetChrome
-          $borderColor="transparent"
+          $borderColor={liquidGlass.sheet.rim}
           style={[
             { borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius },
           ]}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={34}
+            cornerRadius={liquidGlass.sheet.topRadius}
             glassEffectStyle="regular"
             highlightHeight={40}
-            highlightOpacity={0.10}
-            rimColor="rgba(255,255,255,0.60)"
-            tintColor="rgba(255,255,255,0.92)"
+            highlightOpacity={liquidGlass.sheet.highlightOpacity}
+            rimColor={liquidGlass.sheet.rim}
+            tintColor={liquidGlass.sheet.tint}
             topRimOnly
           />
         </GlassStyles.SheetChrome>

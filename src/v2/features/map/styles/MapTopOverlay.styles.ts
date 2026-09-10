@@ -2,20 +2,18 @@ import { Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
+import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import FrostedSurface from '../components/FrostedSurface';
-
-const IOS = Platform.OS === 'ios';
+import GlassSurface from '../components/GlassSurface';
 
 export const MAP_TOP_OVERLAY_METRICS = {
-  categoryHeight: 38,
-  categoryIconHeight: 18,
-  categoryIconWidth: 19,
+  categoryHeight: 34,
   categoryLabelSize: 14,
-  headerHeight: 62,
-  profileIconSize: 38,
-  searchHeight: 48,
-  searchIconSize: 22,
-  searchLabelSize: 17,
+  headerHeight: 60,
+  profileIconSize: 44,
+  searchHeight: 44,
+  searchIconSize: 20,
+  searchLabelSize: 18,
 } as const;
 
 export const SafeOverlay = styled(SafeAreaView)`
@@ -28,8 +26,8 @@ export const SafeOverlay = styled(SafeAreaView)`
 `;
 
 export const Header = styled.View`
-  padding-right: 10px;
-  padding-left: 10px;
+  padding-right: 8px;
+  padding-left: 8px;
 `;
 
 export const RefreshIndicatorContainer = styled(Animated.View)`
@@ -52,8 +50,8 @@ export const RefreshIndicatorContainer = styled(Animated.View)`
 export const PullGestureArea = styled.View``;
 
 export const HeaderShadow = styled.View`
-  border-radius: 31px;
-  background-color: ${IOS ? 'rgba(248,248,248,0.16)' : 'rgba(248,248,248,0.01)'};
+  border-radius: ${liquidGlass.header.radius}px;
+  background-color: ${liquidGlass.shadowFill};
 `;
 
 export const HeaderSurface = styled.View`
@@ -61,8 +59,8 @@ export const HeaderSurface = styled.View`
   align-items: center;
   height: ${MAP_TOP_OVERLAY_METRICS.headerHeight}px;
   gap: 8px;
-  padding: 7px;
-  border-radius: 31px;
+  padding: 8px;
+  border-radius: ${liquidGlass.header.radius}px;
   overflow: hidden;
 `;
 
@@ -72,13 +70,13 @@ export const HeaderGlass = styled(FrostedSurface)`
   right: 0;
   bottom: 0;
   left: 0;
-  border-radius: 31px;
+  border-radius: ${liquidGlass.header.radius}px;
 `;
 
 export const SearchShadow = styled.View`
   flex: 1;
   height: ${MAP_TOP_OVERLAY_METRICS.searchHeight}px;
-  border-radius: 24px;
+  border-radius: ${liquidGlass.search.radius}px;
   background-color: transparent;
   overflow: hidden;
 `;
@@ -90,8 +88,17 @@ export const SearchGlass = styled(FrostedSurface)`
   bottom: 0;
   left: 0;
   align-items: center;
-  border-radius: 24px;
+  border-radius: ${liquidGlass.search.radius}px;
   overflow: hidden;
+`;
+
+export const SearchInsetShadow = styled.View`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: ${liquidGlass.search.radius}px;
 `;
 
 export const SearchContent = styled.Pressable`
@@ -102,16 +109,16 @@ export const SearchContent = styled.Pressable`
   left: 0;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
-  padding-right: 14px;
-  padding-left: 14px;
+  gap: 12px;
+  padding-right: 12px;
+  padding-left: 12px;
 `;
 
 export const SearchInput = styled.Text.attrs({ maxFontSizeMultiplier: 1 })<{ $isPlaceholder: boolean }>`
   flex: 1;
-  color: ${({ $isPlaceholder }) => ($isPlaceholder ? '#5E6069' : '#1D1E23')};
+  color: ${({ $isPlaceholder }) => ($isPlaceholder ? '#5E5E66' : '#1D1E23')};
   font-size: ${MAP_TOP_OVERLAY_METRICS.searchLabelSize}px;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 23px;
 `;
 
@@ -131,57 +138,62 @@ export const ProfileImage = styled.Image`
 export const CategoryScroll = styled.ScrollView`
   flex-grow: 0;
   margin-top: 0;
-  overflow: hidden;
+  overflow: visible;
 `;
 
 export const CategoryContent = styled.View`
   flex-direction: row;
   gap: 8px;
-  padding-top: 5px;
-  padding-right: 10px;
+  padding-top: 8px;
+  padding-right: 8px;
   padding-bottom: 6px;
-  padding-left: 10px;
+  padding-left: 8px;
 `;
 
 export const CategoryChipButton = styled.Pressable<{ $active: boolean }>`
   border-width: 1px;
-  border-color: ${({ $active }) => ($active ? 'rgba(255,74,117,0.88)' : 'rgba(228,228,229,0.85)')};
-  border-radius: 19px;
-  background-color: ${({ $active }) => ($active
-    ? 'rgba(255,201,211,0.24)'
-    : (IOS ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.01)'))};
+  border-color: ${({ $active }) => ($active ? liquidGlass.category.activeBorder : liquidGlass.category.border)};
+  border-radius: 16px;
+  background-color: transparent;
 `;
 
 export const CategoryChipClip = styled.View`
-  border-radius: 19px;
+  border-radius: 15px;
   overflow: hidden;
 `;
 
-export const CategoryChipGlass = styled(FrostedSurface)`
+export const CategoryChipGlass = styled(GlassSurface)`
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
-  border-radius: 19px;
+  border-radius: 15px;
 `;
 
 export const CategoryChipContent = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  height: ${MAP_TOP_OVERLAY_METRICS.categoryHeight}px;
+  height: ${MAP_TOP_OVERLAY_METRICS.categoryHeight - 2}px;
   gap: 6px;
-  padding-right: 14px;
-  padding-left: 14px;
-  border-radius: 19px;
+  padding-right: 11px;
+  padding-left: 11px;
+  border-radius: 15px;
 `;
 
-export const CategoryLabel = styled.Text.attrs({ maxFontSizeMultiplier: 1 })<{ $active: boolean }>`
-  color: ${({ $active }) => ($active ? '#FF245B' : '#5E5E66')};
+export const CategoryIconFrame = styled.View`
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+`;
+
+export const CategoryLabel = styled.Text.attrs({ maxFontSizeMultiplier: 1, numberOfLines: 1 })<{ $active: boolean }>`
+  color: ${({ $active }) => ($active ? '#FF1956' : '#5E5E66')};
   font-size: ${MAP_TOP_OVERLAY_METRICS.categoryLabelSize}px;
-  font-weight: ${({ $active }) => ($active ? 700 : 500)};
-  line-height: 20px;
+  font-weight: 500;
+  line-height: 18.2px;
+  letter-spacing: 0px;
 `;
 
 export const LocateButtonRow = styled.View`
@@ -198,10 +210,15 @@ export const LocateButton = styled.Pressable`
   border-width: 1px;
   border-color: rgba(255, 255, 255, 0.9);
   border-radius: 22px;
-  background-color: rgba(255, 255, 255, 0.94);
-  elevation: 3;
-  shadow-color: #10141a;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.12;
-  shadow-radius: 6px;
+  background-color: ${liquidGlass.shadowFill};
+`;
+
+export const LocateGlass = styled(FrostedSurface)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 22px;
+  overflow: hidden;
 `;

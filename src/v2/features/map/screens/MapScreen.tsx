@@ -6,13 +6,14 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorUx } from '../../../shared/api';
 import { useTranslation } from 'react-i18next';
 import { syncProfileLanguage } from '../../../shared/i18n';
 import { useMapSettingsStore } from '../store/mapSettingsStore';
 import MapBottomSheet, {
+  getMapHomeSheetVisibleHeight,
   type BottomSheetContent,
   type DecisionPlace,
   type MapPreviewFallbackContent,
@@ -25,6 +26,7 @@ import {
   useNearbyReservablePlaceIds,
 } from '../../reservations';
 import MapCanvas from '../components/MapCanvas';
+import MapGlassBackdrop from '../components/MapGlassBackdrop';
 import MapSearchOverlay from '../components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../components/MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../styles/MapTopOverlay.styles';
@@ -126,6 +128,7 @@ export default function MapScreen({
   onOpenVisitVerification,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
+  const isFocused = useIsFocused();
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
   const reservationNavigationLock = useRef(false);
@@ -237,16 +240,22 @@ export default function MapScreen({
   // category-overlay gap above it.
   const expandedSheetTop = MAP_TOP_OVERLAY_METRICS.headerHeight + 2;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
-  // Keep one stable sheet geometry while content changes. Only the expanded destination moves:
-  // place detail can fill the screen, while other expanded content remains below the top overlay.
+  // Home and recommendations share the Figma resting height. The taller list/detail
+  // surfaces retain their own space, while full-screen place details can expand to the top.
   const fullSheetHeight = Math.round(height);
   const expandedTranslateY = isPlacePreview ? 0 : expandedSheetTop;
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
-  const collapsedVisibleHeight = Math.round(101 * designScale) + SHEET_RESTING_GAP;
-  const mediumVisibleHeight = Math.min(
-    // Keep the featured cards clear of the viewport-fixed bottom navigation.
-    Math.round(442 * designScale) + SHEET_RESTING_GAP,
-    Math.round(height * 0.56),
+  const isHomeFeed = mapSection === 'map'
+    && (content.type === 'home' || content.type === 'recommendations');
+  const mediumVisibleHeight = isHomeFeed
+    ? getMapHomeSheetVisibleHeight(fullSheetHeight, expandedSheetTop)
+    : Math.min(
+      Math.round(442 * designScale) + SHEET_RESTING_GAP,
+      Math.round(height * 0.56),
+    );
+  const collapsedVisibleHeight = Math.min(
+    Math.round(101 * designScale) + SHEET_RESTING_GAP,
+    Math.max(0, mediumVisibleHeight - 1),
   );
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
@@ -719,6 +728,7 @@ export default function MapScreen({
     && snapPoint === 'expanded';
   return (
     <View style={styles.container}>
+      <MapGlassBackdrop active={isFocused}>
       <StatusBar
         backgroundColor={isExpandedPlaceDetail ? '#FFFFFF' : 'transparent'}
         barStyle="dark-content"
@@ -962,6 +972,7 @@ export default function MapScreen({
           recommendedPlaces={recommendedPlaces}
         />
       ) : null}
+      </MapGlassBackdrop>
     </View>
   );
 }

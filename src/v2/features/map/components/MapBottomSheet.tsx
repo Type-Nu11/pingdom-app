@@ -57,10 +57,11 @@ import GlassSurface from './GlassSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
 import { colors } from '../../../shared/theme/colors';
+import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
 import { PlaceMenuSection } from '../../place-menus';
-import MapSheetBottomNavigation from './MapSheetBottomNavigation';
+import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapSheetBottomNavigation';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -193,7 +194,16 @@ const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...pro
 
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = 48;
+const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
+const HOME_SHEET_VISIBLE_HEIGHT = 386;
+const HOME_SHEET_HANDLE_HEIGHT = 19;
+
+// Figma's resting chrome is 378 dp high, followed by an 8 dp screen-edge gap.
+// Keep those content dimensions on narrow phones; only constrain short viewports.
+export const getMapHomeSheetVisibleHeight = (viewportHeight: number, expandedSheetTop: number) => (
+  Math.min(HOME_SHEET_VISIBLE_HEIGHT, Math.max(0, viewportHeight - expandedSheetTop - 24))
+);
+
 const RECOMMENDATION_NAVIGATION_LOCK_MS = 500;
 const CATEGORY_OPTIONS: Array<{ id: SheetCategory }> = [
   { id: 'popup' }, { id: 'music' }, { id: 'food' }, { id: 'fashion' }, { id: 'beauty' },
@@ -274,7 +284,7 @@ const FeedSegment = ({
   const [segmentWidth, setSegmentWidth] = useState(0);
   const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
   const reduceMotion = useReducedMotion();
-  const indicatorWidth = Math.max(0, (segmentWidth - 6) / 2);
+  const indicatorWidth = Math.max(0, (segmentWidth - 8) / 2);
 
   useEffect(() => {
     const animation = runTimingMotion(indicatorProgress, feed === 'local' ? 0 : 1, {
@@ -291,13 +301,12 @@ const FeedSegment = ({
       <View style={styles.segmentShadow}>
         <GlassSurface
           glassEffectStyle="regular"
-          intensity={100}
+          intensity={56}
           onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
           style={styles.segmentOuter}
           testID="feed-segment-control"
-          tintColor="rgba(228,228,230,0.48)"
+          tintColor="rgba(228,228,229,0.48)"
         >
-          <View pointerEvents="none" style={styles.segmentFrost} />
           {indicatorWidth > 0 ? (
             <Animated.View
               pointerEvents="none"
@@ -837,6 +846,7 @@ const ExpandedHomeContent = ({
   onPlacePress,
   onToggleBookmark,
   places,
+  restingScrollEnabled = false,
   state,
   userName,
 }: {
@@ -853,6 +863,7 @@ const ExpandedHomeContent = ({
   onPlacePress: (place: DecisionPlace) => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   places: DecisionPlace[];
+  restingScrollEnabled?: boolean;
   state?: 'empty' | 'error' | 'loading' | 'ready';
   userName: string;
 }) => {
@@ -879,7 +890,7 @@ const ExpandedHomeContent = ({
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
       ref={scrollRef}
-      scrollEnabled={expandedInteractionsEnabled}
+      scrollEnabled={expandedInteractionsEnabled || restingScrollEnabled}
       showsVerticalScrollIndicator={false}
       style={styles.expandedScroll}
       testID="expanded-home-scroll"
@@ -914,7 +925,7 @@ const ExpandedHomeContent = ({
           )) : <EmptyCard state={state} variant="row" />}
         </ScrollView>
 
-        {shouldRenderExpandedContent ? (
+        {shouldRenderExpandedContent && !restingScrollEnabled ? (
           <Animated.View
             pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
             style={{ opacity: expandedOnlyOpacity }}
@@ -1053,6 +1064,7 @@ const RecommendationContent = ({
   onRetry,
   onToggleBookmark,
   places,
+  restingScrollEnabled = false,
   state,
   userName,
 }: {
@@ -1066,6 +1078,7 @@ const RecommendationContent = ({
   onRetry: () => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   places: DecisionPlace[];
+  restingScrollEnabled?: boolean;
   state: 'empty' | 'error' | 'loading' | 'ready';
   userName: string;
 }) => {
@@ -1095,7 +1108,7 @@ const RecommendationContent = ({
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
       ref={scrollRef}
-      scrollEnabled={expandedInteractionsEnabled}
+      scrollEnabled={expandedInteractionsEnabled || restingScrollEnabled}
       showsVerticalScrollIndicator={false}
       testID="recommendation-content-scroll"
     >
@@ -1133,7 +1146,7 @@ const RecommendationContent = ({
               />
             ))}
           </ScrollView>
-          {gridPlaces.length > 0 ? (
+          {gridPlaces.length > 0 && !restingScrollEnabled ? (
             <Animated.View
               pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
               style={{ opacity: expandedOnlyOpacity }}
@@ -1991,6 +2004,15 @@ export default function MapBottomSheet({
     ...previewImageUrlsByPlaceId,
   }), [explorationImageUrlsByPlaceId, previewImageUrlsByPlaceId]);
   const isExpandedPlaceDetail = content.type === 'place-preview' && snapPoint === 'expanded';
+  const isHomeFeed = content.type === 'home' || content.type === 'recommendations';
+  const restingScrollEnabled = isHomeFeed
+    && snapPoint === 'medium'
+    && height - mediumTranslateY < HOME_SHEET_VISIBLE_HEIGHT;
+  const compactContentHeight = Math.max(
+    0,
+    height - mediumTranslateY - HOME_SHEET_HANDLE_HEIGHT
+      - getMapSheetNavigationBottom(insets.bottom) - 64 - 8,
+  );
   const handleCreateReservation = () => {
     if (!selectedPlace || !onCreateReservation || reservationNavigationLock.current) return;
     reservationNavigationLock.current = true;
@@ -2043,10 +2065,11 @@ export default function MapBottomSheet({
         pointerEvents="none"
         style={[
           {
+            boxShadow: liquidGlass.sheet.shadow,
             borderBottomLeftRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
             borderBottomRightRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
-            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : 34,
-            borderTopRightRadius: isExpandedPlaceDetail ? 0 : 34,
+            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius,
+            borderTopRightRadius: isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius,
             bottom: chromeBottomInset,
             left: chromeGap,
             right: chromeGap,
@@ -2054,23 +2077,23 @@ export default function MapBottomSheet({
         ]}
       >
         <GlassStyles.SheetChrome
-          $borderColor="transparent"
+          $borderColor={isExpandedPlaceDetail ? 'transparent' : liquidGlass.sheet.rim}
           style={[
             {
               borderBottomLeftRadius: chromeBottomRadius,
               borderBottomRightRadius: chromeBottomRadius,
-              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : 34,
-              borderTopRightRadius: isExpandedPlaceDetail ? 0 : 34,
+              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius,
+              borderTopRightRadius: isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius,
             },
           ]}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={isExpandedPlaceDetail ? 0 : 34}
+            cornerRadius={isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius}
             glassEffectStyle="regular"
             highlightHeight={40}
-            highlightOpacity={0.10}
-            rimColor="rgba(255,255,255,0.60)"
-            tintColor="#FFFFFF"
+            highlightOpacity={liquidGlass.sheet.highlightOpacity}
+            rimColor={liquidGlass.sheet.rim}
+            tintColor={isExpandedPlaceDetail ? colors.surface : liquidGlass.sheet.tint}
             topRimOnly
           />
         </GlassStyles.SheetChrome>
@@ -2079,14 +2102,14 @@ export default function MapBottomSheet({
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
-          style={styles.handleArea}
+          style={[styles.handleArea, isHomeFeed && styles.homeHandleArea]}
           testID="map-sheet-handle-target"
         >
           <Pressable
             accessibilityLabel={t('map.sheet.adjust')}
             accessibilityRole="adjustable"
             onPress={onHandlePress}
-            style={styles.handleButton}
+            style={[styles.handleButton, isHomeFeed && styles.homeHandleButton]}
           >
             <View pointerEvents="none" style={styles.handle} />
           </Pressable>
@@ -2094,10 +2117,11 @@ export default function MapBottomSheet({
       ) : null}
 
       <Animated.View
-        {...(snapPoint === 'expanded' ? {} : panHandlers)}
+        {...(snapPoint === 'expanded' || restingScrollEnabled ? {} : panHandlers)}
         pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
         style={[
           styles.sheetContent,
+          restingScrollEnabled && { flex: 0, height: compactContentHeight },
           { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] },
         ]}
         testID="map-sheet-content"
@@ -2187,6 +2211,7 @@ export default function MapBottomSheet({
           onRetry={onRetryRecommendations}
           onToggleBookmark={onToggleBookmark}
           places={recommendationPlaces}
+          restingScrollEnabled={restingScrollEnabled}
           state={recommendationsState}
           userName={userName?.trim() || 'user'}
         />
@@ -2205,6 +2230,7 @@ export default function MapBottomSheet({
           onPlacePress={onPlacePress}
           onToggleBookmark={onToggleBookmark}
           places={shownPlaces}
+          restingScrollEnabled={restingScrollEnabled}
           state={resolvedPlacesState}
           userName={userName?.trim() || 'user'}
         />
@@ -2448,7 +2474,7 @@ const styles: Record<string, object> = {
   emptyCardRow: {
     backgroundColor: '#F6F6F7',
     borderRadius: 16,
-    height: 199,
+    height: 182,
     width: 242,
   },
   emptyCardIcon: {
@@ -2465,8 +2491,8 @@ const styles: Record<string, object> = {
   expandedFeaturedRow: {
     gap: 16,
     paddingBottom: 18,
-    paddingHorizontal: 8,
-    paddingTop: 18,
+    paddingHorizontal: 16,
+    paddingTop: 29,
   },
   expandedScroll: { flex: 1 },
   expandedTitle: {
@@ -2570,7 +2596,7 @@ const styles: Record<string, object> = {
   homeTrendCard: {
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderRadius: 16,
-    height: 199,
+    height: 182,
     overflow: 'hidden',
     width: 242,
   },
@@ -2580,6 +2606,8 @@ const styles: Record<string, object> = {
   handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 20, justifyContent: 'center', zIndex: 4 },
   handleButton: { alignItems: 'center', height: 20, justifyContent: 'center', width: 160 },
+  homeHandleArea: { height: HOME_SHEET_HANDLE_HEIGHT },
+  homeHandleButton: { height: HOME_SHEET_HANDLE_HEIGHT, justifyContent: 'flex-start', paddingTop: 6 },
   placeCard: {
     backgroundColor: 'transparent',
     height: 206,
@@ -2743,16 +2771,12 @@ const styles: Record<string, object> = {
   segment: {
     alignItems: 'center',
     alignSelf: 'stretch',
-    borderRadius: 22,
+    borderRadius: 20,
     flex: 1,
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
     zIndex: 1,
-  },
-  segmentFrost: {
-    ...absoluteFill,
-    backgroundColor: 'rgba(228,228,230,0.42)',
   },
   segmentLabel: {
     color: '#767680',
@@ -2762,38 +2786,31 @@ const styles: Record<string, object> = {
   },
   segmentLabelActive: { color: '#FF1956', fontWeight: '700' },
   segmentInset: {
-    paddingHorizontal: 12,
-    paddingTop: 6,
+    paddingHorizontal: 8,
   },
   segmentIndicator: {
     backgroundColor: 'rgba(255,255,255,0.60)',
-    borderRadius: 22,
-    bottom: 3,
-    left: 3,
+    borderRadius: 20,
+    bottom: 4,
+    left: 4,
     position: 'absolute',
-    top: 3,
+    top: 4,
   },
   feedTransition: { width: '100%' },
   segmentOuter: {
     alignItems: 'stretch',
-    backgroundColor: 'rgba(228,228,230,0.48)',
-    borderColor: 'rgba(255,255,255,0.52)',
+    backgroundColor: 'transparent',
     borderRadius: 24,
-    borderWidth: 1,
     flexDirection: 'row',
     height: 48,
     overflow: 'hidden',
-    padding: 3,
+    padding: 4,
     width: '100%',
   },
   segmentShadow: {
     alignSelf: 'center',
     borderRadius: 24,
-    maxWidth: 370,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+    boxShadow: '0px 4px 20px -4px rgba(0, 0, 0, 0.12)',
     width: '100%',
   },
   sheetContent: { flex: 1 },
