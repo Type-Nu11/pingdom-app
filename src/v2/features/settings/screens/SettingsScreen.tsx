@@ -33,7 +33,7 @@ export type SettingsScreenProps = {
   onOpenAccountManagement?: () => void;
   onOpenDetail?: (detail: SettingsDetailId) => void;
   onOpenNotificationSettings?: () => void;
-  onOpenProfileEdit: () => void;
+  onOpenProfileEdit?: () => void;
 };
 
 type RowProps = {
@@ -202,6 +202,7 @@ export default function SettingsScreen({
   const notificationStatus = notificationsQuery.isLoading || notificationsQuery.isError
     ? undefined
     : t(anyNotificationEnabled ? 'settings.values.on' : 'settings.values.off');
+  const canOpenTouristProfile = Boolean(profile) && profile?.role !== 'MERCHANT_OWNER';
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-settings-screen">
@@ -210,17 +211,20 @@ export default function SettingsScreen({
           <SettingsHeader onBack={goBack} title={t('settings.title')} />
           <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
             <SettingsSection title={t('settings.sections.account')}>
-              <SettingsRow label={t('settings.rows.profileEdit')} onPress={onOpenProfileEdit} />
+              {canOpenTouristProfile ? (
+                <SettingsRow label={t('settings.rows.profileEdit')} onPress={onOpenProfileEdit} />
+              ) : null}
               <SettingsRow
                 label={t('settings.rows.accountInfo')}
                 onPress={onOpenAccountManagement ?? (() => setPage('account'))}
                 value={profile?.username}
               />
               <SettingsRow
+                disabled={!onOpenDetail && !canOpenTouristProfile}
                 label={t('settings.rows.password')}
                 onPress={() => onOpenDetail
                   ? onOpenDetail(SETTINGS_DETAIL_IDS.PasswordChange)
-                  : onOpenProfileEdit()}
+                  : onOpenProfileEdit?.()}
               />
             </SettingsSection>
 
@@ -398,10 +402,11 @@ export default function SettingsScreen({
               <SettingsRow label={t('settings.account.username')} value={profile?.username} />
               <SettingsRow label={t('settings.account.email')} value={profile?.email} />
               <SettingsRow
+                disabled={!onOpenDetail && !canOpenTouristProfile}
                 label={t('settings.rows.password')}
                 onPress={() => onOpenDetail
                   ? onOpenDetail(SETTINGS_DETAIL_IDS.PasswordChange)
-                  : onOpenProfileEdit()}
+                  : onOpenProfileEdit?.()}
               />
             </SettingsSection>
             <SettingsSection>
