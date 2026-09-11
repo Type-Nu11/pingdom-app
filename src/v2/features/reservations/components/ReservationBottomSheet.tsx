@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -101,17 +102,17 @@ function ReservationPlaceCard({
       <View style={styles.savedPlaceHeading}>
         <View style={styles.savedPlaceText}>
           <View style={styles.savedNameRow}>
-            <Text accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceName}>{place.name}</Text>
-            <Text ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceCategory}>
+            <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceName}>{place.name}</AppText>
+            <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceCategory}>
               {t(`map.categories.${category}`, { defaultValue: place.category })}
-            </Text>
+            </AppText>
           </View>
-          <Text accessibilityLabel={`${formatDistance(place, i18n.language)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceMeta}>
+          <AppText accessibilityLabel={`${formatDistance(place, i18n.language)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceMeta}>
             {formatDistance(place, i18n.language)} · {place.address}
-          </Text>
+          </AppText>
         </View>
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.savedMoreButton}>
-          <Text style={styles.savedMoreText}>⋮</Text>
+          <AppText style={styles.savedMoreText}>⋮</AppText>
         </View>
       </View>
       <View style={styles.savedImageRow}>
@@ -150,7 +151,7 @@ function NearbyReservationRail({
     return (
       <View style={styles.nearbyEmpty} testID="nearby-reservations-loading">
         <ActivityIndicator color="#FF1956" />
-        <Text style={styles.nearbyEmptyText}>{t('reservation.list.nearbyLoading')}</Text>
+        <AppText style={styles.nearbyEmptyText}>{t('reservation.list.nearbyLoading')}</AppText>
       </View>
     );
   }
@@ -158,7 +159,7 @@ function NearbyReservationRail({
   if (places.length === 0) {
     return (
       <View style={styles.nearbyEmpty} testID="nearby-reservations-empty">
-        <Text style={styles.nearbyEmptyText}>{t('reservation.list.nearbyEmpty')}</Text>
+        <AppText style={styles.nearbyEmptyText}>{t('reservation.list.nearbyEmpty')}</AppText>
       </View>
     );
   }
@@ -268,9 +269,9 @@ export default function ReservationBottomSheet({
         <Animated.View pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={[styles.content, { opacity }]}>
           <View style={styles.titleRow}>
             <MapAsset color="#FF1956" height={20} width={18} />
-            <Text accessibilityRole="header" style={styles.title}>{t('reservation.list.nearbyTitle')}</Text>
+            <AppText accessibilityRole="header" style={styles.title}>{t('reservation.list.nearbyTitle')}</AppText>
           </View>
-          <Text style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</Text>
+          <AppText style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</AppText>
           <View style={[styles.listViewport, snapPoint === 'medium' && styles.listViewportMedium]}>
             <ScrollView contentContainerStyle={styles.listContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               <NearbyReservationRail
@@ -284,19 +285,19 @@ export default function ReservationBottomSheet({
               />
               {snapPoint === 'expanded' ? (
                 <>
-                  <Text style={styles.savedTitle}>{t('reservation.list.savedTitle')}</Text>
+                  <AppText style={styles.savedTitle}>{t('reservation.list.savedTitle')}</AppText>
                   {reservations.isLoading ? (
-                    <View style={styles.state} testID="reservations-loading"><Text style={styles.stateTitle}>{t('reservation.list.loading')}</Text></View>
+                    <View style={styles.state} testID="reservations-loading"><AppText style={styles.stateTitle}>{t('reservation.list.loading')}</AppText></View>
                   ) : reservations.isError ? (
                     <View style={styles.state} testID="reservations-error">
-                      <Text style={styles.stateTitle}>{t('reservation.list.error')}</Text>
-                      <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><Text style={styles.retryLabel}>{t('reservation.list.retry')}</Text></Pressable>
+                      <AppText style={styles.stateTitle}>{t('reservation.list.error')}</AppText>
+                      <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><AppText style={styles.retryLabel}>{t('reservation.list.retry')}</AppText></Pressable>
                     </View>
                   ) : reservationPlaces.length === 0 ? (
                     <View style={styles.state} testID="reservations-empty">
-                      <Text style={styles.stateMark}>R</Text>
-                      <Text style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</Text>
-                      <Text style={styles.stateBody}>{t('reservation.list.emptyDescription')}</Text>
+                      <AppText style={styles.stateMark}>R</AppText>
+                      <AppText style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</AppText>
+                      <AppText style={styles.stateBody}>{t('reservation.list.emptyDescription')}</AppText>
                     </View>
                   ) : reservationPlaces.map(({ place, reservation }, index) => (
                     <View key={reservation.id} style={index < reservationPlaces.length - 1 ? styles.reservationCardItem : undefined}>
