@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -193,7 +194,7 @@ const Spacer = styled.View`
   height: 44px;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 500;
@@ -239,19 +240,19 @@ const TitleColumn = styled.View`
   gap: 2px;
 `;
 
-const PlaceName = styled.Text`
+const PlaceName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
   font-weight: 500;
 `;
 
-const CouponName = styled.Text`
+const CouponName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 20px;
   font-weight: 700;
 `;
 
-const Benefit = styled.Text`
+const Benefit = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
   font-weight: 500;
@@ -264,7 +265,7 @@ const PeriodChip = styled.View`
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
-const PeriodText = styled.Text`
+const PeriodText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;
   font-weight: 500;
@@ -284,7 +285,7 @@ const QrArea = styled.View`
   padding: 6px ${({ theme }) => theme.spacing.lg - 4}px ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const QrHint = styled.Text`
+const QrHint = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   font-weight: 500;
@@ -306,7 +307,7 @@ const Notch = styled.View<{ $side: 'left' | 'right'; $top: number }>`
     : `right: -${NOTCH_SIZE / 2}px;`)}
 `;
 
-const StateNotice = styled.Text`
+const StateNotice = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
   font-weight: 600;
@@ -319,7 +320,7 @@ const Section = styled.View`
   padding-bottom: ${({ theme }) => theme.spacing.md}px;
 `;
 
-const SectionHeading = styled.Text`
+const SectionHeading = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 700;
@@ -335,14 +336,14 @@ const InfoRow = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
-const InfoLabel = styled.Text`
+const InfoLabel = styled(AppText)`
   width: 92px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
   font-weight: 500;
 `;
 
-const InfoValue = styled.Text`
+const InfoValue = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.text};
   font-size: 14px;
@@ -361,12 +362,12 @@ const NoticeItem = styled.View`
   gap: 6px;
 `;
 
-const NoticeBullet = styled.Text`
+const NoticeBullet = styled(AppText)`
   color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;
 `;
 
-const NoticeText = styled.Text`
+const NoticeText = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;

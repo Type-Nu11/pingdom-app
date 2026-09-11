@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'react-native-qrcode-svg';
 import styled from 'styled-components/native';
@@ -82,7 +83,7 @@ const QrPlaceholder = styled.View`
   height: ${QR_SIZE}px;
 `;
 
-const CodeText = styled.Text`
+const CodeText = styled(AppText)`
   max-width: 100%;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 14px;
@@ -91,7 +92,7 @@ const CodeText = styled.Text`
   text-align: center;
 `;
 
-const FallbackText = styled.Text`
+const FallbackText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   text-align: center;

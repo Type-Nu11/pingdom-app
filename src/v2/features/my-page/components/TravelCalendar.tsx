@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
@@ -204,7 +205,7 @@ const NavButton = styled.Pressable`
   justify-content: center;
 `;
 
-const MonthLabel = styled.Text.attrs({ maxFontSizeMultiplier: 1 })`
+const MonthLabel = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 700;
@@ -217,7 +218,7 @@ const WeekdayRow = styled.View`
   padding: 0 ${({ theme }) => theme.spacing.md}px;
 `;
 
-const WeekdayText = styled.Text.attrs({ maxFontSizeMultiplier: 1 })<{ $weekday: number }>`
+const WeekdayText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })<{ $weekday: number }>`
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
   text-align: center;
@@ -261,7 +262,7 @@ const CalendarDayCell = styled.Pressable<{
   background-color: ${({ $inRange }) => ($inRange ? 'rgba(255, 201, 211, 0.48)' : 'transparent')};
 `;
 
-const DayText = styled.Text.attrs({ maxFontSizeMultiplier: 1 })<{ $inRange: boolean; $weekday: number }>`
+const DayText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })<{ $inRange: boolean; $weekday: number }>`
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ $inRange }) => ($inRange ? '500' : '400')};
   color: ${({ $inRange, $weekday, theme }) => ($inRange ? theme.colors.primary : weekdayColor($weekday, theme))};
@@ -276,7 +277,7 @@ const DayBadge = styled.View`
   background-color: ${({ theme }) => theme.colors.primary};
 `;
 
-const DayBadgeText = styled.Text.attrs({ maxFontSizeMultiplier: 1 })`
+const DayBadgeText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`
   color: ${({ theme }) => theme.colors.onPrimary};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 600;

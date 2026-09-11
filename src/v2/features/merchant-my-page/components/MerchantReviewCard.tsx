@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { Image } from 'react-native';
 import styled from 'styled-components/native';
@@ -115,18 +116,18 @@ const AuthorText = styled.View`
   gap: 1px;
 `;
 
-const AuthorName = styled.Text`
+const AuthorName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;
 `;
 
-const AuthorMeta = styled.Text`
+const AuthorMeta = styled(AppText)`
   color: #5e5e66;
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
 `;
 
-const Content = styled.Text`
+const Content = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
@@ -158,7 +159,7 @@ const TagChip = styled.View`
   background-color: #f2f2f3;
 `;
 
-const TagLabel = styled.Text`
+const TagLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: 500;

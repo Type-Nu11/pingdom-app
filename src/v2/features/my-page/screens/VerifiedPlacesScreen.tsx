@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useMemo } from 'react';
 import { FlatList } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
@@ -141,13 +142,13 @@ const Spacer = styled.View`
   height: 44px;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;
 `;
 
-const EmptyPlacesText = styled.Text`
+const EmptyPlacesText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   text-align: center;
