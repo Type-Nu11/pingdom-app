@@ -900,6 +900,7 @@ export default function MapScreen({
               ? (place) => onStartVisitVerification(place.id)
               : undefined}
             onPlacePress={handlePlacePress}
+            onRetryPlaces={() => void refetchPlaces()}
             onRetryRecommendations={() => void refetchRecommendations()}
             onRetryAvailability={() => void refetchAvailability()}
             onRetryMedia={() => void refetchMedia()}

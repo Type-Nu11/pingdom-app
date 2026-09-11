@@ -325,10 +325,12 @@ export const resources = {
           adjust: 'Resize recommendations panel', aroundMe: 'Places near me', bookmark: 'Save place',
           bookmarkRemove: 'Remove saved place', bookmarkSaveError: 'Could not save this place',
           bookmarkRemoveError: 'Could not remove this saved place', categoryPopular: 'Popular {{userName}} picks by category',
+          categoryPopularNational: 'Popular nationwide places by category',
           distanceAway: '{{distance}} away', image: 'Place image', imageError: 'Could not load image', imageMissing: 'No image',
           localHotPlaces: 'Local hot places', nationwideTrends: 'Nationwide trends', placeMissing: 'Unnamed place',
           recommendationTitle: 'Recommended for you', resultsFor: 'Results for “{{query}}”',
           state: {
+            categoryEmptyTitle: 'No places found in this category.',
             emptyBody: 'Move the map to explore another area.', emptyTitle: 'No hot places to show yet',
             errorBody: 'Please try again in a moment.', errorTitle: 'Could not load the list',
             loadingBody: 'Move the map to explore another area.', loadingTitle: 'Finding nearby hot places…',
@@ -1178,11 +1180,12 @@ export const resources = {
         sheet: {
           adjust: '추천 패널 크기 조절', aroundMe: '내 주변 장소', bookmark: '즐겨찾기', bookmarkRemove: '즐겨찾기 해제',
           bookmarkSaveError: '장소를 저장하지 못했어요', bookmarkRemoveError: '저장을 해제하지 못했어요',
-          categoryPopular: '카테고리별 {{userName}}님 주변 인기 장소들', distanceAway: '여기서 {{distance}}', image: '장소 이미지',
+          categoryPopular: '카테고리별 {{userName}}님 주변 인기 장소들', categoryPopularNational: '전국 카테고리 인기 장소', distanceAway: '여기서 {{distance}}', image: '장소 이미지',
           imageError: '이미지를 불러오지 못했어요', imageMissing: '이미지 없음', localHotPlaces: '우리 지역 핫플',
           nationwideTrends: '전국 트렌드', placeMissing: '장소명 없음', recommendationTitle: '나만을 위한 추천 장소',
           resultsFor: '“{{query}}” 검색 결과',
           state: {
+            categoryEmptyTitle: '이 카테고리에 해당하는 장소가 없어요',
             emptyBody: '지도를 움직여 다른 지역도 둘러보세요.', emptyTitle: '표시할 핫플이 아직 없어요',
             errorBody: '잠시 후 다시 시도해 주세요.', errorTitle: '목록을 불러오지 못했어요',
             loadingBody: '지도를 움직여 다른 지역도 둘러보세요.', loadingTitle: '주변 핫플을 찾는 중이에요',
