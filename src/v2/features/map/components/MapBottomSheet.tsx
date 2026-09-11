@@ -59,6 +59,7 @@ import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/
 import { colors } from '../../../shared/theme/colors';
 import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import { normalizePlaceCategory } from '../utils/placeCategory';
+import { hasValidCoordinates } from '../services/placeActions';
 import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
 import { PlaceMenuSection } from '../../place-menus';
 import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapSheetBottomNavigation';
@@ -150,6 +151,7 @@ type MapBottomSheetProps = {
   onCreateReservation?: (place: DecisionPlace, imageUrl?: string) => void;
   onOpenRecommendations?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
+  onDirectionsPress?: (place: DecisionPlace) => void;
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
   onHandlePress: () => void;
@@ -160,9 +162,11 @@ type MapBottomSheetProps = {
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
   onSearchFocus: () => void;
+  onSharePlace?: (place: DecisionPlace) => void;
   onSubmitSearch: () => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   panHandlers: GestureResponderHandlers;
+  placeActionBusy?: 'directions' | 'share' | null;
   places: DecisionPlace[];
   placesState?: 'empty' | 'error' | 'loading' | 'ready';
   previewFallbackContentByPlaceId?: Record<string, MapPreviewFallbackContent>;
@@ -1320,11 +1324,12 @@ const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
   return null;
 };
 
-const PreviewActionChip = ({ active = false, disabled = false, kind, label, onPress }: { active?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => (
+const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, kind, label, onPress }: { accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => (
   <Pressable
+    accessibilityHint={accessibilityHint}
     accessibilityLabel={label}
-    accessibilityRole={onPress ? 'button' : undefined}
-    accessibilityState={{ disabled, selected: active }}
+    accessibilityRole={onPress && !disabled ? 'button' : undefined}
+    accessibilityState={{ busy, disabled, selected: active }}
     disabled={disabled}
     onPress={onPress}
     style={({ pressed }) => [
@@ -1351,30 +1356,36 @@ const PreviewContent = ({
   imageUrl,
   onBack,
   onDetail,
+  onDirections,
   onOpenImages,
   onReserve,
+  onShare,
   onVerify,
   onRetryAvailability,
   onRetryMedia,
   onSelectAction,
   onToggleBookmark,
   pending,
+  placeActionBusy,
   place,
 }: {
-  activeAction: PreviewActionKind;
+  activeAction: PreviewActionKind | null;
   bookmarked: boolean;
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
   onDetail: () => void;
+  onDirections?: () => void;
   onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
+  onShare?: () => void;
   onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onSelectAction: (action: PreviewActionKind) => void;
   onToggleBookmark: () => void;
   pending: boolean;
+  placeActionBusy?: 'directions' | 'share' | null;
   place: DecisionPlace;
 }) => {
   const { i18n, t } = useTranslation();
@@ -1463,10 +1474,10 @@ const PreviewContent = ({
         showsHorizontalScrollIndicator={false}
       >
         <PreviewActionChip
-          active={activeAction === 'departure'}
+          accessibilityHint={t('map.placeActions.departureUnsupported')}
+          disabled
           kind="departure"
           label={t('map.card.actions.start')}
-          onPress={() => selectAction('departure')}
         />
         <PreviewActionChip
           active={activeAction === 'arrival'}
@@ -1475,10 +1486,11 @@ const PreviewContent = ({
           onPress={() => selectAction('arrival', onVerify)}
         />
         <PreviewActionChip
-          active={activeAction === 'share'}
+          busy={placeActionBusy === 'share'}
+          disabled={!onShare || placeActionBusy != null}
           kind="share"
           label={t('map.card.actions.share')}
-          onPress={() => selectAction('share')}
+          onPress={onShare}
         />
         <PreviewActionChip
           active={activeAction === 'reservation'}
@@ -1488,10 +1500,11 @@ const PreviewContent = ({
           onPress={() => selectAction('reservation', reservationPress)}
         />
         <PreviewActionChip
-          active={activeAction === 'directions'}
+          busy={placeActionBusy === 'directions'}
+          disabled={!onDirections || placeActionBusy != null}
           kind="directions"
           label={t('map.card.actions.directions')}
-          onPress={() => selectAction('directions')}
+          onPress={onDirections}
         />
       </ScrollView>
       {fallbackContent?.imageState === 'error' ? (
@@ -1539,8 +1552,10 @@ const ExpandedPlaceContent = ({
   fallbackContent,
   imageUrl,
   onBack,
+  onDirections,
   onOpenImages,
   onReserve,
+  onShare,
   onVerify,
   onRetryAvailability,
   onRetryMedia,
@@ -1549,17 +1564,20 @@ const ExpandedPlaceContent = ({
   onTabChange,
   onToggleBookmark,
   pending,
+  placeActionBusy,
   place,
 }: {
-  activeAction: PreviewActionKind;
+  activeAction: PreviewActionKind | null;
   activeTab: PlaceDetailTab;
   bookmarked: boolean;
   couponContent?: React.ReactNode;
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
+  onDirections?: () => void;
   onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
+  onShare?: () => void;
   onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
@@ -1568,6 +1586,7 @@ const ExpandedPlaceContent = ({
   onTabChange: (tab: PlaceDetailTab) => void;
   onToggleBookmark: () => void;
   pending: boolean;
+  placeActionBusy?: 'directions' | 'share' | null;
   place: DecisionPlace;
 }) => {
   const { t } = useTranslation();
@@ -1635,10 +1654,10 @@ const ExpandedPlaceContent = ({
         showsHorizontalScrollIndicator={false}
       >
         <PreviewActionChip
-          active={activeAction === 'departure'}
+          accessibilityHint={t('map.placeActions.departureUnsupported')}
+          disabled
           kind="departure"
           label={t('map.card.actions.start')}
-          onPress={() => selectAction('departure')}
         />
         <PreviewActionChip
           active={activeAction === 'arrival'}
@@ -1647,10 +1666,11 @@ const ExpandedPlaceContent = ({
           onPress={() => selectAction('arrival', onVerify)}
         />
         <PreviewActionChip
-          active={activeAction === 'share'}
+          busy={placeActionBusy === 'share'}
+          disabled={!onShare || placeActionBusy != null}
           kind="share"
           label={t('map.card.actions.share')}
-          onPress={() => selectAction('share')}
+          onPress={onShare}
         />
         <PreviewActionChip
           active={activeAction === 'reservation'}
@@ -1660,10 +1680,11 @@ const ExpandedPlaceContent = ({
           onPress={() => selectAction('reservation', reservationPress)}
         />
         <PreviewActionChip
-          active={activeAction === 'directions'}
+          busy={placeActionBusy === 'directions'}
+          disabled={!onDirections || placeActionBusy != null}
           kind="directions"
           label={t('map.card.actions.directions')}
-          onPress={() => selectAction('directions')}
+          onPress={onDirections}
         />
       </ScrollView>
       {fallbackContent?.imageState === 'error' ? (
@@ -1933,6 +1954,7 @@ export default function MapBottomSheet({
   onBackHome,
   onCreateReservation,
   onDetailPress,
+  onDirectionsPress,
   onHandlePress,
   onOpenLikedPlaces,
   onOpenRecommendations,
@@ -1943,8 +1965,10 @@ export default function MapBottomSheet({
   onRetryMedia,
   onRetryRecommendations,
   onRetryReviews,
+  onSharePlace,
   onToggleBookmark,
   panHandlers,
+  placeActionBusy = null,
   places,
   placesState,
   previewFallbackContentByPlaceId,
@@ -1962,7 +1986,7 @@ export default function MapBottomSheet({
   const [feed, setFeed] = useState<'local' | 'national'>('local');
   const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
   const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
-  const [activePreviewAction, setActivePreviewAction] = useState<PreviewActionKind>('departure');
+  const [activePreviewAction, setActivePreviewAction] = useState<PreviewActionKind | null>(null);
   const [photoViewer, setPhotoViewer] = useState<{
     imageUrls: string[];
     initialIndex: number;
@@ -1972,7 +1996,7 @@ export default function MapBottomSheet({
   const reservationUnlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     setActivePlaceDetailTab('info');
-    setActivePreviewAction('departure');
+    setActivePreviewAction(null);
     setPhotoViewer(null);
     reservationNavigationLock.current = false;
     if (reservationUnlockTimer.current) clearTimeout(reservationUnlockTimer.current);
@@ -2136,12 +2160,19 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
+            onDirections={onDirectionsPress && hasValidCoordinates({
+              latitude: selectedPlace.latitude,
+              longitude: selectedPlace.longitude,
+            })
+              ? () => onDirectionsPress(selectedPlace)
+              : undefined}
             onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
               imageUrls: nextImageUrls,
               initialIndex,
               placeName: selectedPlace.name,
             })}
             onReserve={handleCreateReservation}
+            onShare={onSharePlace ? () => onSharePlace(selectedPlace) : undefined}
             onVerify={onStartVisitVerification
               ? () => onStartVisitVerification(selectedPlace)
               : undefined}
@@ -2155,6 +2186,7 @@ export default function MapBottomSheet({
               !bookmarkedPlaceIds[String(selectedPlace.id)],
             )}
             pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(selectedPlace.id)])}
+            placeActionBusy={placeActionBusy}
             place={selectedPlace}
           />
         ) : (
@@ -2165,12 +2197,19 @@ export default function MapBottomSheet({
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
             onDetail={() => onDetailPress(selectedPlace)}
+            onDirections={onDirectionsPress && hasValidCoordinates({
+              latitude: selectedPlace.latitude,
+              longitude: selectedPlace.longitude,
+            })
+              ? () => onDirectionsPress(selectedPlace)
+              : undefined}
             onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
               imageUrls: nextImageUrls,
               initialIndex,
               placeName: selectedPlace.name,
             })}
             onReserve={handleCreateReservation}
+            onShare={onSharePlace ? () => onSharePlace(selectedPlace) : undefined}
             onVerify={onStartVisitVerification
               ? () => onStartVisitVerification(selectedPlace)
               : undefined}
@@ -2182,6 +2221,7 @@ export default function MapBottomSheet({
               !bookmarkedPlaceIds[String(selectedPlace.id)],
             )}
             pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(selectedPlace.id)])}
+            placeActionBusy={placeActionBusy}
             place={selectedPlace}
           />
         )

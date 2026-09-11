@@ -37,6 +37,10 @@ import {
 } from '../hooks/useBookmarkedPlaces';
 import { usePlaceBookmark } from '../hooks/usePlaceBookmark';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
+import {
+  usePlaceActions,
+  type PlaceActionFeedback,
+} from '../hooks/usePlaceActions';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
@@ -75,6 +79,14 @@ import { LocationStatusOverlay } from '../components/MapStatusOverlays';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
+
+const PLACE_ACTION_FEEDBACK_KEYS: Record<PlaceActionFeedback, string> = {
+  'directions-failed': 'map.placeActions.directionsFailed',
+  'directions-unavailable': 'map.placeActions.directionsUnavailable',
+  'place-location-missing': 'map.placeActions.locationMissing',
+  'share-failed': 'map.placeActions.shareFailed',
+  'share-unavailable': 'map.placeActions.shareUnavailable',
+};
 
 const toDecisionPlace = (place: Place): DecisionPlace => ({
   ...place,
@@ -380,6 +392,30 @@ export default function MapScreen({
       name: selectedPlacePresentation.name || selectedPlaceBase.name,
     };
   }, [selectedPlaceBase, selectedPlacePresentation]);
+  const selectedPlaceActionTarget = useMemo(() => selectedPlace ? ({
+    address: selectedPlace.address,
+    latitude: selectedPlace.latitude,
+    longitude: selectedPlace.longitude,
+    name: selectedPlace.name,
+    placeId: selectedPlace.id,
+    userLocation: center ? { latitude: center.lat, longitude: center.lng } : null,
+  }) : null, [center, selectedPlace]);
+  const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
+    Alert.alert(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
+  }, [t]);
+  const {
+    busyAction: placeActionBusy,
+    directions: openSelectedPlaceDirections,
+    share: shareSelectedPlace,
+  } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
+  const handleDirectionsPress = useCallback((place: DecisionPlace) => {
+    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    void openSelectedPlaceDirections(selectedPlaceActionTarget);
+  }, [openSelectedPlaceDirections, selectedPlaceActionTarget]);
+  const handleSharePlace = useCallback((place: DecisionPlace) => {
+    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    void shareSelectedPlace(selectedPlaceActionTarget);
+  }, [selectedPlaceActionTarget, shareSelectedPlace]);
   useEffect(() => {
     if (!selectedPlace) return;
     setReservationEntryPlace((current) => {
@@ -879,6 +915,7 @@ export default function MapScreen({
               });
             }}
             onDetailPress={() => snapTo('expanded')}
+            onDirectionsPress={handleDirectionsPress}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}
             onHandlePress={() => {
@@ -907,12 +944,14 @@ export default function MapScreen({
             onProfilePress={onOpenProfile}
             onQueryChange={handleQueryChange}
             onSearchFocus={handleSearchFocus}
+            onSharePlace={handleSharePlace}
             onSubmitSearch={() => {
               setContent({ type: 'results', query });
               snapTo('expanded');
             }}
             onToggleBookmark={handleToggleBookmark}
             panHandlers={panHandlers}
+            placeActionBusy={placeActionBusy}
             places={sheetPlaces}
             placesState={placeListStatus === 'disabled' ? 'error' : placeListStatus}
             previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
