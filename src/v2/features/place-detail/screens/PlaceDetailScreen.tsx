@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -100,20 +101,20 @@ const Content = styled.ScrollView.attrs({
   padding: ${({ theme }) => theme.spacing.md}px;
 `;
 
-const Title = styled.Text`
+const Title = styled(AppText)`
   margin-top: ${({ theme }) => theme.spacing.md}px;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.title.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.title.fontWeight};
 `;
 
-const EnglishName = styled.Text`
+const EnglishName = styled(AppText)`
   margin-top: ${({ theme }) => theme.spacing.xs}px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
 
-const Description = styled.Text`
+const Description = styled(AppText)`
   margin-top: ${({ theme }) => theme.spacing.sm}px;
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
@@ -125,13 +126,13 @@ const Section = styled.View`
   margin: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.none}px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
-const Body = styled.Text`
+const Body = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
@@ -139,7 +140,7 @@ const Body = styled.Text`
 
 const OperatingLine = styled(Body)``;
 
-const OperatingStatus = styled.Text<{ $tone: 'positive' | 'neutral' | 'warning' }>`
+const OperatingStatus = styled(AppText)<{ $tone: 'positive' | 'neutral' | 'warning' }>`
   color: ${({ $tone, theme }) => $tone === 'positive'
     ? theme.colors.success
     : $tone === 'warning'
