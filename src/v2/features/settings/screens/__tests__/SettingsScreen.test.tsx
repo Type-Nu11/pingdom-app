@@ -59,7 +59,7 @@ describe('SettingsScreen', () => {
     await renderSettings();
 
     expect(screen.getByTestId('v2-settings-screen')).toBeVisible();
-    expect(screen.getByText('설정')).toBeVisible();
+    expect(screen.getByText('설정')).toHaveStyle({ fontFamily: 'Pretendard' });
     expect(screen.getByText('계정')).toBeVisible();
     expect(screen.getByText('기록 · 장소')).toBeVisible();
     expect(screen.getByText('개인정보 · 위치')).toBeVisible();

@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -456,7 +457,7 @@ const Header = styled.View`
   padding: 0 16px;
 `;
 
-const HeaderTitle = styled.Text`
+const HeaderTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   flex: 1;
   font-size: 16px;
@@ -479,7 +480,7 @@ const SectionInner = styled.View`
   padding: 0 16px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 16px;
   font-weight: 700;
@@ -495,7 +496,7 @@ const Row = styled.Pressable`
   padding: 10px 0;
 `;
 
-const RowLabel = styled.Text<{ $destructive?: boolean; $disabled?: boolean }>`
+const RowLabel = styled(AppText)<{ $destructive?: boolean; $disabled?: boolean }>`
   color: ${({ $destructive, $disabled, theme }) => (
     $destructive ? theme.colors.danger : $disabled ? theme.colors.textDisabled : theme.colors.textStrong
   )};
@@ -513,7 +514,7 @@ const RowTrailing = styled.View`
   max-width: 55%;
 `;
 
-const RowValue = styled.Text`
+const RowValue = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   flex-shrink: 1;
   font-size: 14px;
@@ -533,7 +534,7 @@ const ToggleCopy = styled.View`
   margin-right: 16px;
 `;
 
-const ToggleDescription = styled.Text`
+const ToggleDescription = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   line-height: 17px;
@@ -553,12 +554,12 @@ const FooterButton = styled.Pressable`
   width: 100%;
 `;
 
-const FooterLabel = styled.Text`
+const FooterLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
 `;
 
-const DangerLabel = styled.Text`
+const DangerLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
   font-size: 14px;
 `;
@@ -569,7 +570,7 @@ const ErrorBanner = styled.View`
   padding: 12px;
 `;
 
-const ErrorText = styled.Text`
+const ErrorText = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
   font-size: 13px;
   line-height: 18px;
@@ -594,20 +595,20 @@ const AccountCopy = styled.View`
   margin-left: 12px;
 `;
 
-const AccountName = styled.Text`
+const AccountName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 16px;
   font-weight: 700;
   line-height: 23px;
 `;
 
-const AccountCountry = styled.Text`
+const AccountCountry = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   line-height: 18px;
 `;
 
-const DeleteDescription = styled.Text`
+const DeleteDescription = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   line-height: 18px;

@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { type PropsWithChildren } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
@@ -100,7 +101,7 @@ const Spacer = styled.View`
   height: 44px;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -117,7 +118,7 @@ const Section = styled.View`
   border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 700;
@@ -149,20 +150,20 @@ const RowCopy = styled.View`
   flex: 1;
 `;
 
-const RowLabel = styled.Text<{ $danger: boolean }>`
+const RowLabel = styled(AppText)<{ $danger: boolean }>`
   color: ${({ $danger, theme }) => ($danger ? theme.colors.danger : theme.colors.textStrong)};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.body.fontWeight};
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
 `;
 
-const RowSubtitle = styled.Text`
+const RowSubtitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
 `;
 
-const RowValue = styled.Text`
+const RowValue = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
