@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { ActivityIndicator, Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -121,12 +122,12 @@ const Card = styled.View`
 `;
 const TopCard = styled(Card)`top: ${({ theme }) => theme.spacing.xxl * 5}px;`;
 const MapCard = styled(Card)`top: 45%;`;
-const Title = styled.Text`
+const Title = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   text-align: center;
 `;
-const BodyText = styled.Text`
+const BodyText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
