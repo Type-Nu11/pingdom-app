@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -235,7 +236,7 @@ const Heading = styled.View`
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const Title = styled.Text`
+const Title = styled(AppText)`
   flex-shrink: 1;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.display.fontSize}px;
@@ -243,7 +244,7 @@ const Title = styled.Text`
   line-height: ${({ theme }) => theme.typography.display.lineHeight}px;
 `;
 
-const Description = styled.Text`
+const Description = styled(AppText)`
   flex-shrink: 1;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
@@ -267,14 +268,14 @@ const DateCard = styled.View`
   background-color: ${({ theme }) => theme.colors.backgroundNeutral};
 `;
 
-const DateLabel = styled.Text`
+const DateLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   font-weight: 500;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
 `;
 
-const DateValue = styled.Text<{ $hasValue: boolean }>`
+const DateValue = styled(AppText)<{ $hasValue: boolean }>`
   flex-shrink: 1;
   color: ${({ $hasValue, theme }) =>
     $hasValue ? theme.colors.primary : theme.colors.textMuted};
@@ -283,7 +284,7 @@ const DateValue = styled.Text<{ $hasValue: boolean }>`
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
 `;
 
-const SelectionMessage = styled.Text<{ $error: boolean }>`
+const SelectionMessage = styled(AppText)<{ $error: boolean }>`
   color: ${({ $error, theme }) =>
     $error ? theme.colors.danger : theme.colors.text};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
@@ -311,13 +312,13 @@ const MonthButton = styled.Pressable`
   justify-content: center;
 `;
 
-const MonthArrow = styled.Text`
+const MonthArrow = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.title.fontSize}px;
   line-height: ${({ theme }) => theme.typography.title.lineHeight}px;
 `;
 
-const MonthTitle = styled.Text`
+const MonthTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.title.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.title.fontWeight};
@@ -329,7 +330,7 @@ const WeekdayRow = styled.View`
   margin-top: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const Weekday = styled.Text<{ $weekday: number }>`
+const Weekday = styled(AppText)<{ $weekday: number }>`
   width: 14.2857%;
   color: ${({ theme }) => theme.colors.text};
   font-size: 14px;
@@ -380,7 +381,7 @@ const DayButton = styled.Pressable<{ $selected: boolean }>`
     $selected ? theme.colors.primary : 'transparent'};
 `;
 
-const DayText = styled.Text<{
+const DayText = styled(AppText)<{
   $disabled: boolean;
   $inRange: boolean;
   $selected: boolean;
