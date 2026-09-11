@@ -42,7 +42,7 @@
 | `android/` | Gradle 프로젝트, Manifest, 앱 부팅 | **KEEP** | **NATIVE** | 새로 생성하지 않는다. 기존 package/application 등록과 SDK 설정을 보존하고 Android 빌드로 검증한다. `.gradle/`, `app/build/`, `.cxx/`는 생성물이다. |
 | `app.json`, `app.config.js`, `metro.config.js`, `package.json`, `tsconfig.json`, `index.ts` | Expo 55 및 RN 빌드 기반 | **KEEP** | **NATIVE** | 버전 호환성 확인 후 유지. `EXPO_PUBLIC_API_BASE_URL`, Kakao 키 주입 방식은 환경별 검증한다. |
 | `ios/Config/`, `android/app/google-services.json` | 네이티브 비밀값/Firebase 설정 | **KEEP** | **NATIVE** | 예제·gitignore 정책 유지. 실제 비밀 파일은 저장소에 추가하지 않는다. |
-| `src/assets/`, `ios/Naviapp/Images.xcassets/`, `src/shared/fonts/` | 로고, 아이콘, 지도 마커, 폰트 | **KEEP** | 일부 **NATIVE** | 원본을 보존하되 미사용 자산 제거는 새 화면 자산 매핑 완료 후 별도 수행한다. |
+| `src/assets/`, `ios/Naviapp/Images.xcassets/` | 로고, 아이콘, 지도 마커, 폰트 | **KEEP** | 일부 **NATIVE** | 원본을 보존하되 미사용 자산 제거는 새 화면 자산 매핑 완료 후 별도 수행한다. |
 | `src/styles/` | 색상·간격·radius·theme | **PORT** | — | 브랜드 토큰을 추출해 새 디자인 시스템의 단일 진실 공급원으로 이식한다. 화면별 하드코딩 값은 가져오지 않는다. |
 | `src/shared/api/` | Axios, 토큰 갱신, Keychain | **PORT** | **API**, **NATIVE** | API 계약 테스트, 동시 refresh, 401, 로그아웃, 손상 토큰 복구를 검증한 뒤 새 data/auth 계층으로 이식한다. |
 | `src/features/auth/api/`, `hooks/`, `model/`, `lib/` | 로그인·가입·인증 로직 | **PORT** | **API** | UI와 분리하여 요청/응답 타입, validation, mutation 로직만 검토 후 이식한다. 미구현 전화 인증은 별도 처리한다. |
