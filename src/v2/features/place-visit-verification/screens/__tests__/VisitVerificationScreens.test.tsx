@@ -98,7 +98,9 @@ test('recent visits render the normal empty state', async () => {
   const view = await renderFeature(<VisitVerificationPlacesScreen onBack={onBack} onSelectPlace={onSelectPlace} />);
   expect(view.getByTestId('visit-verification-empty')).toBeVisible();
   expect(view.getByTestId('visit-verification-empty-icon')).toBeVisible();
-  expect(view.getByText('근처에 검증할 장소가 없어요!')).toBeVisible();
+  expect(view.getByText('근처에 검증할 장소가 없어요!')).toHaveStyle({
+    fontFamily: 'Pretendard',
+  });
   expect(view.getByText('현재 위치에서 검증할 수 있는 장소를 찾지 못했어요\n현재 위치를 다시 확인해주세요')).toBeVisible();
   expect(view.queryByRole('header', { name: '검증하기' })).toBeNull();
   await view.user.press(view.getByRole('button', { name: '돌아가기' }));
@@ -163,6 +165,7 @@ test('review UI caps local photos and reasons without blocking submission for lo
 
   expect(view.getByTestId('visit-photo-picker-icon')).toBeVisible();
   expect(view.getByTestId('visit-review-input').props.placeholderTextColor).toBe('#767680');
+  expect(view.getByTestId('visit-review-input')).toHaveStyle({ fontFamily: 'Pretendard' });
   for (const reason of ['kind', 'easyToFind', 'delicious', 'multilingual', 'parking', 'photoSpot', 'clean']) {
     expect(view.getByTestId(`visit-reason-icon-${reason}`, { includeHiddenElements: true })).toBeTruthy();
   }
