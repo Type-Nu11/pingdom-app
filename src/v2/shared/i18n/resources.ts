@@ -278,6 +278,14 @@ export const resources = {
             wifi: 'Free Wi-Fi',
           },
         },
+        placeActions: {
+          departureUnsupported: 'Starting from a place is not supported yet.',
+          directionsFailed: 'Could not start directions.',
+          directionsUnavailable: 'Could not open an external map.',
+          locationMissing: 'This place has no location information.',
+          shareFailed: 'Could not share this place.',
+          shareUnavailable: 'Sharing is not available on this device.',
+        },
         data: {
           disabledDescription: 'Enable the place-list runtime setting to request server data.',
           disabledTitle: 'Place discovery is off',
@@ -1132,6 +1140,14 @@ export const resources = {
             reservation: '예약 가능',
             wifi: '무료 Wi-Fi',
           },
+        },
+        placeActions: {
+          departureUnsupported: '출발 기능은 아직 지원하지 않습니다.',
+          directionsFailed: '길찾기를 실행하지 못했습니다.',
+          directionsUnavailable: '외부 지도 앱을 열 수 없습니다.',
+          locationMissing: '장소 위치 정보가 없습니다.',
+          shareFailed: '공유를 실행하지 못했습니다.',
+          shareUnavailable: '이 기기에서는 공유 기능을 사용할 수 없습니다.',
         },
         data: {
           disabledDescription: '장소 목록 실행 설정을 켜면 서버 데이터를 요청합니다.',
