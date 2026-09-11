@@ -173,6 +173,8 @@ test('custom deep links map to typed navigation intents', () => {
     params: { merchantId: 456 },
     screen: MAIN_ROUTES.Merchant,
   });
+  assert.deepEqual(parseDeepLink('pingdom://profile/edit'), { screen: MAIN_ROUTES.Map });
+  assert.deepEqual(parseDeepLink('pingdom://merchants/456/reviews'), { screen: MAIN_ROUTES.Map });
 });
 
 test('invalid app links fall back to Map and unrelated schemes are ignored', () => {
