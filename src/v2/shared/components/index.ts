@@ -14,5 +14,6 @@ export { default as StatusBadge } from './StatusBadge';
 export type { StatusBadgeProps, StatusBadgeTone } from './StatusBadge';
 export { default as Surface } from './Surface';
 export type { SurfacePadding, SurfaceProps, SurfaceTone } from './Surface';
+export { default as UnsupportedFeatureScreen } from './UnsupportedFeatureScreen';
 export { default as ApiErrorState } from './ApiErrorState';
 export { Text, TextInput } from './Typography';

@@ -15,15 +15,8 @@ function renderScreen(overrides: Partial<React.ComponentProps<typeof MerchantMyP
     <MerchantMyPageScreen
       events={merchantEventsFixture}
       onBack={jest.fn()}
-      onCreateEvent={jest.fn()}
       onDeleteEvent={jest.fn()}
-      onEditAddress={jest.fn()}
-      onEditBusinessHours={jest.fn()}
-      onEditPhoneNumber={jest.fn()}
-      onOpenAllReviews={jest.fn()}
-      onOpenProfileEdit={jest.fn()}
       onOpenSettings={jest.fn()}
-      onOpenVerifiedPlaces={jest.fn()}
       profile={merchantProfileFixture}
       reviews={merchantReviewsFixture}
       store={merchantStoreFixture}
@@ -43,8 +36,10 @@ describe('MerchantMyPageScreen', () => {
     expect(screen.getByText('09:00 ~ 20:00')).toBeTruthy();
     expect(screen.getByText('영어응대 가능')).toBeTruthy();
     expect(screen.getByText('주차가능')).toBeTruthy();
+    expect(screen.getByText('리뷰')).toBeTruthy();
+    expect(screen.queryByText('검증한 장소')).toBeNull();
     expect(screen.getAllByTestId('v2-merchant-review-card')).toHaveLength(2);
-    expect(screen.getByText('리뷰 모두 보기')).toBeTruthy();
+    expect(screen.queryByText('리뷰 모두 보기')).toBeNull();
   });
 
   test('이벤트 상태별 라벨을 보여준다', async () => {
@@ -56,22 +51,20 @@ describe('MerchantMyPageScreen', () => {
     expect(screen.getByText('예정됨')).toBeTruthy();
   });
 
-  test('가게 정보 필드 수정을 누르면 콜백을 부른다', async () => {
-    const onEditAddress = jest.fn();
-    const { user } = await renderScreen({ onEditAddress });
+  test('미지원 사업자 액션을 렌더링하지 않는다', async () => {
+    await renderScreen();
 
-    await user.press(screen.getByLabelText('위치 수정'));
-
-    expect(onEditAddress).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: '위치 수정' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '영업 시간 수정' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '전화번호 수정' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '검증한 장소' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '리뷰 모두 보기' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '새 이벤트' })).toBeNull();
   });
 
-  test('새 이벤트 버튼과 삭제 버튼이 콜백을 부른다', async () => {
-    const onCreateEvent = jest.fn();
+  test('서버 계약이 있는 이벤트 종료 액션은 유지한다', async () => {
     const onDeleteEvent = jest.fn();
-    const { user } = await renderScreen({ onCreateEvent, onDeleteEvent });
-
-    await user.press(screen.getByLabelText('새 이벤트'));
-    expect(onCreateEvent).toHaveBeenCalled();
+    const { user } = await renderScreen({ onDeleteEvent });
 
     await user.press(screen.getAllByLabelText('이벤트 삭제')[0]);
     expect(onDeleteEvent).toHaveBeenCalledWith('event-ongoing');

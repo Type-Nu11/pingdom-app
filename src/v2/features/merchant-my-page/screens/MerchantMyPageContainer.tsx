@@ -21,14 +21,7 @@ import MerchantMyPageScreen from './MerchantMyPageScreen';
 
 export type MerchantMyPageContainerProps = {
   onBack: () => void;
-  onCreateEvent: () => void;
-  onEditAddress: () => void;
-  onEditBusinessHours: () => void;
-  onEditPhoneNumber: () => void;
-  onOpenAllReviews: (placeId: number) => void;
-  onOpenProfileEdit: () => void;
   onOpenSettings: () => void;
-  onOpenVerifiedPlaces: (placeId: number) => void;
   /** Supplied by the navigator, which owns the user profile query. */
   userProfileImageUrl: string | null;
   username: string;
@@ -36,14 +29,7 @@ export type MerchantMyPageContainerProps = {
 
 export default function MerchantMyPageContainer({
   onBack,
-  onCreateEvent,
-  onEditAddress,
-  onEditBusinessHours,
-  onEditPhoneNumber,
-  onOpenAllReviews,
-  onOpenProfileEdit,
   onOpenSettings,
-  onOpenVerifiedPlaces,
   userProfileImageUrl,
   username,
 }: MerchantMyPageContainerProps) {
@@ -159,15 +145,8 @@ export default function MerchantMyPageContainer({
     <MerchantMyPageScreen
       events={events}
       onBack={onBack}
-      onCreateEvent={onCreateEvent}
       onDeleteEvent={handleDeleteEvent}
-      onEditAddress={onEditAddress}
-      onEditBusinessHours={onEditBusinessHours}
-      onEditPhoneNumber={onEditPhoneNumber}
-      onOpenAllReviews={() => onOpenAllReviews(placeId)}
-      onOpenProfileEdit={onOpenProfileEdit}
       onOpenSettings={onOpenSettings}
-      onOpenVerifiedPlaces={() => onOpenVerifiedPlaces(placeId)}
       profile={profileSummary}
       reviews={reviews}
       store={store}
