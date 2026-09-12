@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -5,13 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import BackIcon from '../../../shared/assets/icons/back.svg';
-import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
-import ChevronSmallIcon from '../../../shared/assets/icons/chevron-right-20.svg';
 import SettingsIcon from '../../../shared/assets/icons/settings.svg';
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
 import EventCard from '../components/EventCard';
 import MerchantReviewCard from '../components/MerchantReviewCard';
-import PlusIcon from '../components/PlusIcon';
 import StoreFeatureBadge from '../components/StoreFeatureBadge';
 import StoreInfoField from '../components/StoreInfoField';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -25,15 +23,8 @@ import type {
 export type MerchantMyPageScreenProps = {
   events: readonly MerchantEvent[];
   onBack: () => void;
-  onCreateEvent: () => void;
   onDeleteEvent: (eventId: string) => void;
-  onEditAddress: () => void;
-  onEditBusinessHours: () => void;
-  onEditPhoneNumber: () => void;
-  onOpenAllReviews: () => void;
-  onOpenProfileEdit: () => void;
   onOpenSettings: () => void;
-  onOpenVerifiedPlaces: () => void;
   profile: MerchantProfileSummary;
   reviews: readonly MerchantReview[];
   store: MerchantStore;
@@ -45,15 +36,8 @@ const STORE_PHOTO_HEIGHT = 182;
 export default function MerchantMyPageScreen({
   events,
   onBack,
-  onCreateEvent,
   onDeleteEvent,
-  onEditAddress,
-  onEditBusinessHours,
-  onEditPhoneNumber,
-  onOpenAllReviews,
-  onOpenProfileEdit,
   onOpenSettings,
-  onOpenVerifiedPlaces,
   profile,
   reviews,
   store,
@@ -84,7 +68,7 @@ export default function MerchantMyPageScreen({
         </TopBar>
 
         <ProfileSection>
-          <ProfileRow accessibilityRole="button" onPress={onOpenProfileEdit}>
+          <ProfileRow>
             <ProfileInfo>
               {profile.profileImageUrl ? (
                 <Avatar source={{ uri: profile.profileImageUrl }} />
@@ -99,7 +83,6 @@ export default function MerchantMyPageScreen({
                 <ProfileRoleLabel>{t('merchantMyPage.roleLabel')}</ProfileRoleLabel>
               </ProfileText>
             </ProfileInfo>
-            <ChevronIcon height={24} width={24} />
           </ProfileRow>
         </ProfileSection>
 
@@ -128,17 +111,14 @@ export default function MerchantMyPageScreen({
             <Fields>
               <StoreInfoField
                 label={t('merchantMyPage.store.address')}
-                onEdit={onEditAddress}
                 value={store.address}
               />
               <StoreInfoField
                 label={t('merchantMyPage.store.businessHours')}
-                onEdit={onEditBusinessHours}
                 value={store.businessHours}
               />
               <StoreInfoField
                 label={t('merchantMyPage.store.phoneNumber')}
-                onEdit={onEditPhoneNumber}
                 value={store.phoneNumber}
               />
             </Fields>
@@ -155,9 +135,8 @@ export default function MerchantMyPageScreen({
 
         <Section>
           <SectionInner>
-            <SectionHeaderRow accessibilityRole="button" onPress={onOpenVerifiedPlaces}>
+            <SectionHeaderRow>
               <SectionTitle>{t('merchantMyPage.reviews.title')}</SectionTitle>
-              <ChevronIcon height={24} width={24} />
             </SectionHeaderRow>
 
             {reviews.length > 0 ? (
@@ -169,13 +148,6 @@ export default function MerchantMyPageScreen({
                     showDivider={index < reviews.length - 1}
                   />
                 ))}
-                <AllReviewsButton
-                  accessibilityRole="button"
-                  onPress={onOpenAllReviews}
-                >
-                  <AllReviewsText>{t('merchantMyPage.reviews.viewAll')}</AllReviewsText>
-                  <ChevronSmallIcon height={16} width={16} />
-                </AllReviewsButton>
               </>
             ) : (
               <EmptyText>{t('merchantMyPage.reviews.empty')}</EmptyText>
@@ -190,14 +162,6 @@ export default function MerchantMyPageScreen({
                 <SectionTitle>{t('merchantMyPage.events.title')}</SectionTitle>
                 <EventHeaderCaption>{t('merchantMyPage.events.subtitle')}</EventHeaderCaption>
               </EventHeaderText>
-              <NewEventButton
-                accessibilityLabel={t('merchantMyPage.events.create')}
-                accessibilityRole="button"
-                onPress={onCreateEvent}
-              >
-                <PlusIcon size={24} />
-                <NewEventLabel>{t('merchantMyPage.events.create')}</NewEventLabel>
-              </NewEventButton>
             </EventHeaderRow>
 
             {events.length > 0 ? (
@@ -237,7 +201,7 @@ const IconButton = styled.Pressable`
   justify-content: center;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 500;
@@ -267,19 +231,19 @@ const SectionInner = styled.View`
   padding: 0 ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 700;
 `;
 
-const SectionHeaderRow = styled.Pressable`
+const SectionHeaderRow = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
 `;
 
-const ProfileRow = styled.Pressable`
+const ProfileRow = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -305,13 +269,13 @@ const Avatar = styled(Image)`
   border-radius: 28px;
 `;
 
-const Username = styled.Text`
+const Username = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 500;
 `;
 
-const ProfileRoleLabel = styled.Text`
+const ProfileRoleLabel = styled(AppText)`
   color: #5e5e66;
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
@@ -327,20 +291,20 @@ const StoreNameRow = styled.View`
   gap: 4px;
 `;
 
-const StoreName = styled.Text`
+const StoreName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.48px;
 `;
 
-const StoreCategory = styled.Text`
+const StoreCategory = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: 18px;
   font-weight: 500;
 `;
 
-const StoreVerifiedText = styled.Text`
+const StoreVerifiedText = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;
@@ -366,21 +330,6 @@ const FeatureRow = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
-const AllReviewsButton = styled.Pressable`
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 14px 0;
-  border-radius: ${({ theme }) => theme.radius.lg}px;
-  background-color: ${({ theme }) => theme.colors.border};
-`;
-
-const AllReviewsText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-`;
-
 const EventHeaderRow = styled.View`
   flex-direction: row;
   align-items: flex-end;
@@ -392,29 +341,12 @@ const EventHeaderText = styled.View`
   gap: 4px;
 `;
 
-const EventHeaderCaption = styled.Text`
+const EventHeaderCaption = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;
 
-const NewEventButton = styled.Pressable`
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  height: 40px;
-  padding: 8px 12px;
-  border-radius: ${({ theme }) => theme.radius.lg}px;
-  background-color: ${({ theme }) => theme.colors.primary};
-`;
-
-const NewEventLabel = styled.Text`
-  color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: 500;
-`;
-
-const EmptyText = styled.Text`
+const EmptyText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;

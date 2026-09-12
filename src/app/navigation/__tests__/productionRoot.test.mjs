@@ -84,6 +84,17 @@ test('required protected route flows return to Map and Profile/Settings are V2-r
 
 });
 
+test('merchant my page is V2-owned while the unsupported merchant deep-link route stays removable', () => {
+  assert.equal(
+    PRODUCTION_ROUTE_PARITY.find((entry) => entry.route === 'MyPage(MERCHANT_OWNER)')?.status,
+    'V2_READY',
+  );
+  assert.equal(
+    PRODUCTION_ROUTE_PARITY.find((entry) => entry.route === 'Merchant')?.status,
+    'REMOVE',
+  );
+});
+
 test('production entrypoint has one composition root with no mock or implicit V1 root fallback', () => {
   const appSource = readFileSync(new URL('../../../../App.tsx', import.meta.url), 'utf8');
   const v2AliasSource = readFileSync(new URL('../../../../App.v2.tsx', import.meta.url), 'utf8');

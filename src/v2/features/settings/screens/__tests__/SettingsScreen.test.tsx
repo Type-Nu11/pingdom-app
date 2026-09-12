@@ -59,7 +59,7 @@ describe('SettingsScreen', () => {
     await renderSettings();
 
     expect(screen.getByTestId('v2-settings-screen')).toBeVisible();
-    expect(screen.getByText('설정')).toBeVisible();
+    expect(screen.getByText('설정')).toHaveStyle({ fontFamily: 'Pretendard' });
     expect(screen.getByText('계정')).toBeVisible();
     expect(screen.getByText('기록 · 장소')).toBeVisible();
     expect(screen.getByText('개인정보 · 위치')).toBeVisible();
@@ -71,8 +71,20 @@ describe('SettingsScreen', () => {
     const onOpenProfileEdit = jest.fn();
     const view = await renderSettings({ onOpenProfileEdit });
 
-    await view.user.press(screen.getByText('프로필 편집'));
+    await view.user.press(await screen.findByText('프로필 편집'));
     expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
+  });
+
+  test('MERCHANT에게 관광객 프로필 편집 액션을 노출하지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue({
+      ...PROFILE,
+      role: 'MERCHANT_OWNER',
+    });
+    await renderSettings();
+
+    await waitFor(() => expect(screen.getByText('woo._sm')).toBeVisible());
+    expect(screen.queryByRole('button', { name: '프로필 편집' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '비밀번호 변경' })).toBeNull();
   });
 
   test('설정 루트는 현재 언어만 표시하고 선택은 전용 페이지에서 제공한다', async () => {

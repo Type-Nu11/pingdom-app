@@ -2,6 +2,7 @@ import { Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
+import { Text } from '../../../shared/components/Typography';
 import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import FrostedSurface from '../components/FrostedSurface';
 import GlassSurface from '../components/GlassSurface';
@@ -114,7 +115,7 @@ export const SearchContent = styled.Pressable`
   padding-left: 12px;
 `;
 
-export const SearchInput = styled.Text.attrs({ maxFontSizeMultiplier: 1 })<{ $isPlaceholder: boolean }>`
+export const SearchInput = styled(Text).attrs({ maxFontSizeMultiplier: 1 })<{ $isPlaceholder: boolean }>`
   flex: 1;
   color: ${({ $isPlaceholder }) => ($isPlaceholder ? '#5E5E66' : '#1D1E23')};
   font-size: ${MAP_TOP_OVERLAY_METRICS.searchLabelSize}px;
@@ -188,7 +189,7 @@ export const CategoryIconFrame = styled.View`
   overflow: visible;
 `;
 
-export const CategoryLabel = styled.Text.attrs({ maxFontSizeMultiplier: 1, numberOfLines: 1 })<{ $active: boolean }>`
+export const CategoryLabel = styled(Text).attrs({ maxFontSizeMultiplier: 1, numberOfLines: 1 })<{ $active: boolean }>`
   color: ${({ $active }) => ($active ? '#FF1956' : '#5E5E66')};
   font-size: ${MAP_TOP_OVERLAY_METRICS.categoryLabelSize}px;
   font-weight: 500;

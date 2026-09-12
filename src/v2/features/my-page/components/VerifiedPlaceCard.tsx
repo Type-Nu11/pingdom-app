@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useState } from 'react';
 import { Image, type GestureResponderEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -131,14 +132,14 @@ const TextBlock = styled.View`
   gap: 2px;
 `;
 
-const Name = styled.Text`
+const Name = styled(AppText)`
   color: ${({ theme }) => theme.colors.background};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 700;
   line-height: 20px;
 `;
 
-const Address = styled.Text`
+const Address = styled(AppText)`
   color: ${({ theme }) => theme.colors.border};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;

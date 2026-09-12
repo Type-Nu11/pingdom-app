@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -194,7 +195,7 @@ const BackButton = styled.Pressable`
   justify-content: center;
 `;
 
-const Title = styled.Text`
+const Title = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
@@ -218,12 +219,12 @@ const Card = styled.View`
   background-color: ${({ theme }) => theme.colors.surface};
 `;
 
-const Eyebrow = styled.Text`
+const Eyebrow = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
 
-const ReservationId = styled.Text`
+const ReservationId = styled(AppText)`
   color: ${({ theme }) => theme.colors.primary};
   font-size: ${({ theme }) => theme.typography.title.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.title.fontWeight};
@@ -239,7 +240,7 @@ const Field = styled.View`
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const Value = styled.Text`
+const Value = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -259,19 +260,19 @@ const PaymentHeader = styled.View`
   justify-content: space-between;
 `;
 
-const PaymentStatus = styled.Text`
+const PaymentStatus = styled(AppText)`
   color: ${({ theme }) => theme.colors.primary};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
-const NoticeTitle = styled.Text`
+const NoticeTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
-const Notice = styled.Text`
+const Notice = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;

@@ -96,6 +96,10 @@ export const resources = {
       common: {
         missingTranslation: 'Translation unavailable',
         navigation: { back: 'Go back', close: 'Close', exitHint: 'Press back again to exit the app.', retry: 'Try again' },
+        unsupportedFeature: {
+          description: 'This feature is not currently supported in the app.',
+          title: 'Not available in the app',
+        },
         apiError: {
           actions: {
             back: 'Go back',
@@ -765,7 +769,7 @@ export const resources = {
           },
         },
         reviews: {
-          title: 'Verified places',
+          title: 'Reviews',
           viewAll: 'See all reviews',
           empty: 'No reviews yet',
         },
@@ -953,6 +957,10 @@ export const resources = {
       common: {
         missingTranslation: '번역을 제공할 수 없습니다',
         navigation: { back: '뒤로 가기', close: '닫기', exitHint: '뒤로가기를 한 번 더 누르면 앱이 종료됩니다.', retry: '다시 시도' },
+        unsupportedFeature: {
+          description: '이 기능은 현재 앱에서 지원하지 않습니다.',
+          title: '앱에서 제공하지 않는 기능',
+        },
         apiError: {
           actions: {
             back: '목록으로',
@@ -1613,7 +1621,7 @@ export const resources = {
           },
         },
         reviews: {
-          title: '검증한 장소',
+          title: '리뷰',
           viewAll: '리뷰 모두 보기',
           empty: '아직 리뷰가 없어요',
         },

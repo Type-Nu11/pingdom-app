@@ -1,3 +1,4 @@
+import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -188,7 +189,7 @@ export default function VisitVerificationReviewScreen({
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const Header = styled.View`height: 56px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px; border-bottom-width: 1px; border-bottom-color: ${({ theme }) => theme.colors.border};`;
 const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
-const Title = styled.Text`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
+const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const HeaderSpacer = styled.View`width: 44px;`;
 const Content = styled.ScrollView.attrs(({ theme }) => ({
   contentContainerStyle: {
@@ -200,22 +201,22 @@ const PlaceSummary = styled.View`height: 84px; flex-direction: row; align-items:
 const PlaceImage = styled(Image)`width: 56px; height: 56px; border-radius: ${({ theme }) => theme.radius.sm}px;`;
 const PlaceImageFallback = styled.View`width: 56px; height: 56px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.sm}px; background-color: ${({ theme }) => theme.colors.disabled};`;
 const PlaceCopy = styled.View`flex: 1; min-width: 0;`;
-const Category = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const PlaceName = styled.Text`margin-top: ${({ theme }) => theme.spacing.xs}px; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
+const Category = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const PlaceName = styled(AppText)`margin-top: ${({ theme }) => theme.spacing.xs}px; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const Section = styled.View`padding: ${({ theme }) => theme.spacing.md}px; border-top-width: 8px; border-top-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const SectionRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between;`;
-const SectionTitle = styled.Text`margin-bottom: ${({ theme }) => theme.spacing.sm}px; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
-const Count = styled.Text`align-self: flex-end; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const SectionTitle = styled(AppText)`margin-bottom: ${({ theme }) => theme.spacing.sm}px; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
+const Count = styled(AppText)`align-self: flex-end; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const PhotoRow = styled.ScrollView`flex-grow: 0;`;
 const PhotoWrap = styled.View`width: 80px; height: 80px; margin-right: ${({ theme }) => theme.spacing.sm}px;`;
 const Preview = styled(Image)`width: 80px; height: 80px; border-radius: ${({ theme }) => theme.radius.sm}px;`;
 const Delete = styled.Pressable`position: absolute; top: -4px; right: -4px; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.textStrong};`;
-const DeleteText = styled.Text`color: ${({ theme }) => theme.colors.onPrimary}; font-size: 20px; line-height: 21px;`;
+const DeleteText = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: 20px; line-height: 21px;`;
 const PhotoPicker = styled.Pressable`width: 80px; height: 80px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.sm}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
-const PickerCount = styled.Text`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const PickerCount = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const Chips = styled.View`flex-direction: row; flex-wrap: wrap; gap: ${({ theme }) => theme.spacing.sm}px;`;
 const Chip = styled.Pressable<{ $selected: boolean }>`min-height: 40px; flex-direction: row; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.xs}px; padding: 0 ${({ theme }) => theme.spacing.md}px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.border}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surface};`;
-const ChipText = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
-const ReviewInput = styled.TextInput`min-height: 112px; padding: ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.text};`;
-const InlineMessage = styled.Text`margin: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px 0; color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; line-height: 18px;`;
+const ChipText = styled(AppText)<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
+const ReviewInput = styled(AppTextInput)`min-height: 112px; padding: ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.text};`;
+const InlineMessage = styled(AppText)`margin: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px 0; color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; line-height: 18px;`;
 const SubmitBar = styled.View`position: absolute; right: 0; bottom: 0; left: 0; padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px; background-color: ${({ theme }) => theme.colors.surface};`;

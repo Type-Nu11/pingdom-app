@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -33,7 +34,7 @@ export type SettingsScreenProps = {
   onOpenAccountManagement?: () => void;
   onOpenDetail?: (detail: SettingsDetailId) => void;
   onOpenNotificationSettings?: () => void;
-  onOpenProfileEdit: () => void;
+  onOpenProfileEdit?: () => void;
 };
 
 type RowProps = {
@@ -202,6 +203,7 @@ export default function SettingsScreen({
   const notificationStatus = notificationsQuery.isLoading || notificationsQuery.isError
     ? undefined
     : t(anyNotificationEnabled ? 'settings.values.on' : 'settings.values.off');
+  const canOpenTouristProfile = Boolean(profile) && profile?.role !== 'MERCHANT_OWNER';
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-settings-screen">
@@ -210,17 +212,20 @@ export default function SettingsScreen({
           <SettingsHeader onBack={goBack} title={t('settings.title')} />
           <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
             <SettingsSection title={t('settings.sections.account')}>
-              <SettingsRow label={t('settings.rows.profileEdit')} onPress={onOpenProfileEdit} />
+              {canOpenTouristProfile ? (
+                <SettingsRow label={t('settings.rows.profileEdit')} onPress={onOpenProfileEdit} />
+              ) : null}
               <SettingsRow
                 label={t('settings.rows.accountInfo')}
                 onPress={onOpenAccountManagement ?? (() => setPage('account'))}
                 value={profile?.username}
               />
               <SettingsRow
+                disabled={!onOpenDetail && !canOpenTouristProfile}
                 label={t('settings.rows.password')}
                 onPress={() => onOpenDetail
                   ? onOpenDetail(SETTINGS_DETAIL_IDS.PasswordChange)
-                  : onOpenProfileEdit()}
+                  : onOpenProfileEdit?.()}
               />
             </SettingsSection>
 
@@ -398,10 +403,11 @@ export default function SettingsScreen({
               <SettingsRow label={t('settings.account.username')} value={profile?.username} />
               <SettingsRow label={t('settings.account.email')} value={profile?.email} />
               <SettingsRow
+                disabled={!onOpenDetail && !canOpenTouristProfile}
                 label={t('settings.rows.password')}
                 onPress={() => onOpenDetail
                   ? onOpenDetail(SETTINGS_DETAIL_IDS.PasswordChange)
-                  : onOpenProfileEdit()}
+                  : onOpenProfileEdit?.()}
               />
             </SettingsSection>
             <SettingsSection>
@@ -456,7 +462,7 @@ const Header = styled.View`
   padding: 0 16px;
 `;
 
-const HeaderTitle = styled.Text`
+const HeaderTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   flex: 1;
   font-size: 16px;
@@ -479,7 +485,7 @@ const SectionInner = styled.View`
   padding: 0 16px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 16px;
   font-weight: 700;
@@ -495,7 +501,7 @@ const Row = styled.Pressable`
   padding: 10px 0;
 `;
 
-const RowLabel = styled.Text<{ $destructive?: boolean; $disabled?: boolean }>`
+const RowLabel = styled(AppText)<{ $destructive?: boolean; $disabled?: boolean }>`
   color: ${({ $destructive, $disabled, theme }) => (
     $destructive ? theme.colors.danger : $disabled ? theme.colors.textDisabled : theme.colors.textStrong
   )};
@@ -513,7 +519,7 @@ const RowTrailing = styled.View`
   max-width: 55%;
 `;
 
-const RowValue = styled.Text`
+const RowValue = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   flex-shrink: 1;
   font-size: 14px;
@@ -533,7 +539,7 @@ const ToggleCopy = styled.View`
   margin-right: 16px;
 `;
 
-const ToggleDescription = styled.Text`
+const ToggleDescription = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   line-height: 17px;
@@ -553,12 +559,12 @@ const FooterButton = styled.Pressable`
   width: 100%;
 `;
 
-const FooterLabel = styled.Text`
+const FooterLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
 `;
 
-const DangerLabel = styled.Text`
+const DangerLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
   font-size: 14px;
 `;
@@ -569,7 +575,7 @@ const ErrorBanner = styled.View`
   padding: 12px;
 `;
 
-const ErrorText = styled.Text`
+const ErrorText = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
   font-size: 13px;
   line-height: 18px;
@@ -594,20 +600,20 @@ const AccountCopy = styled.View`
   margin-left: 12px;
 `;
 
-const AccountName = styled.Text`
+const AccountName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 16px;
   font-weight: 700;
   line-height: 23px;
 `;
 
-const AccountCountry = styled.Text`
+const AccountCountry = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   line-height: 18px;
 `;
 
-const DeleteDescription = styled.Text`
+const DeleteDescription = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   line-height: 18px;

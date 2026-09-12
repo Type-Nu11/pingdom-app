@@ -7,13 +7,20 @@ import { ThemeProvider } from 'styled-components/native';
 
 import { i18n, initializeI18n } from '../shared/i18n';
 import { registerOfferCouponResources } from '../features/offers-coupons/i18n/offerCouponResources';
-import { theme } from '../shared/theme';
+import {
+  AppFontFamilyProvider,
+  PRETENDARD_FONT_FAMILY,
+  SYSTEM_FONT_FAMILY,
+  useAppFonts,
+} from '../shared/fonts';
+import { createTheme, theme } from '../shared/theme/theme';
 import AppErrorBoundary from './AppErrorBoundary';
 import { createQueryClient } from './queryClient';
 
 export default function AppProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(createQueryClient);
   const [isI18nReady, setIsI18nReady] = useState(false);
+  const fontStatus = useAppFonts();
 
   useEffect(() => {
     let isMounted = true;
@@ -46,19 +53,26 @@ export default function AppProviders({ children }: PropsWithChildren) {
     return () => subscription.remove();
   }, []);
 
-  if (!isI18nReady) {
+  if (!isI18nReady || fontStatus === 'loading') {
     return null;
   }
 
+  const activeTheme = fontStatus === 'loaded' ? theme : createTheme(SYSTEM_FONT_FAMILY);
+  const activeFontFamily = fontStatus === 'loaded'
+    ? PRETENDARD_FONT_FAMILY
+    : SYSTEM_FONT_FAMILY;
+
   return (
-    <SafeAreaProvider>
-      <ThemeProvider theme={theme}>
-        <I18nextProvider i18n={i18n}>
-          <AppErrorBoundary>
-            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-          </AppErrorBoundary>
-        </I18nextProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <AppFontFamilyProvider fontFamily={activeFontFamily}>
+      <SafeAreaProvider>
+        <ThemeProvider theme={activeTheme}>
+          <I18nextProvider i18n={i18n}>
+            <AppErrorBoundary>
+              <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+            </AppErrorBoundary>
+          </I18nextProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </AppFontFamilyProvider>
   );
 }

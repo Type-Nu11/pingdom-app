@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -112,7 +113,7 @@ const TopBar = styled.View`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
 `;
 
-const Counter = styled.Text`
+const Counter = styled(AppText)`
   color: ${({ theme }) => theme.colors.onPrimary};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -127,7 +128,7 @@ const CloseButton = styled.Pressable`
   background-color: ${({ theme }) => theme.colors.textAlternative};
 `;
 
-const CloseText = styled.Text`
+const CloseText = styled(AppText)`
   color: ${({ theme }) => theme.colors.onPrimary};
   font-size: 32px;
   line-height: 36px;
@@ -161,7 +162,7 @@ const NavigationButton = styled.Pressable`
   background-color: ${({ theme }) => theme.colors.textAlternative};
 `;
 
-const NavigationText = styled.Text`
+const NavigationText = styled(AppText)`
   color: ${({ theme }) => theme.colors.onPrimary};
   font-size: 42px;
   line-height: 46px;
