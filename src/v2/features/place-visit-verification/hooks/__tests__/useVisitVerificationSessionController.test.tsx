@@ -198,9 +198,15 @@ test('foreground resume refreshes server status before scheduling more observati
     nextObservationRecommendedAt: null,
   };
   mockRecoverMutateAsync.mockResolvedValue(completed);
+  const now = () => Date.parse('2026-09-02T01:00:00Z');
+  const setTimer = jest.fn(() => 1 as unknown as ReturnType<typeof setTimeout>);
   const view = await renderHook(() => useVisitVerificationSessionController(
     { mode: 'foreground' },
-    { getLocation: jest.fn().mockResolvedValue({ status: 'granted', coordinate }) },
+    {
+      getLocation: jest.fn().mockResolvedValue({ status: 'granted', coordinate }),
+      now,
+      setTimer,
+    },
   ));
   await act(async () => { await view.result.current.start(); });
 
@@ -213,6 +219,8 @@ test('foreground resume refreshes server status before scheduling more observati
 
   await waitFor(() => expect(view.result.current.session).toEqual(completed));
   expect(mockRecoverMutateAsync).toHaveBeenCalledTimes(1);
+  expect(mockObservationMutateAsync).not.toHaveBeenCalled();
+  expect(setTimer).toHaveBeenCalledTimes(1);
   view.unmount();
 });
 
