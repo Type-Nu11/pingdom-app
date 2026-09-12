@@ -12,6 +12,7 @@ import { getApiErrorUx } from '../../../shared/api';
 import { useTranslation } from 'react-i18next';
 import { syncProfileLanguage } from '../../../shared/i18n';
 import { useMapSettingsStore } from '../store/mapSettingsStore';
+import { useRecentSearchStore } from '../store/recentSearchStore';
 import MapBottomSheet, {
   getMapHomeSheetVisibleHeight,
   type BottomSheetContent,
@@ -40,6 +41,7 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { usePlaces } from '../hooks/usePlaces';
 import { usePlaceRecommendations } from '../hooks/usePlaceRecommendations';
 import { useRecordPlaceRecommendationClick } from '../hooks/useRecordPlaceRecommendationClick';
+import { useConfirmedRecentSearchOwner } from '../hooks/useConfirmedRecentSearchOwner';
 import {
   usePlaceExplorationMediaList,
   useRecommendationExplanation,
@@ -166,7 +168,8 @@ export default function MapScreen({
     recommendationRequestId ?? '',
     { enabled: Boolean(recommendationRequestId) },
   );
-  const { profile } = useProfile();
+  const { profile, refetch: refetchProfile } = useProfile();
+  const recentSearchOwner = useConfirmedRecentSearchOwner(refetchProfile);
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
@@ -214,6 +217,7 @@ export default function MapScreen({
     if (locateFollowFrame.current !== null) {
       cancelAnimationFrame(locateFollowFrame.current);
     }
+    useRecentSearchStore.getState().deactivateOwner();
   }, []);
   const {
     fetchNextPage: fetchNextFavoritePage,
@@ -969,6 +973,7 @@ export default function MapScreen({
             setContent({ type: 'results', query: place.name });
             snapTo('expanded');
           }}
+          recentSearchOwner={recentSearchOwner}
           recommendedPlaces={recommendedPlaces}
         />
       ) : null}

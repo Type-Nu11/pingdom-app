@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -32,7 +32,15 @@ import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
 import { usePlaceRegistrantUsernames } from '../hooks/usePlaceRegistrantUsernames';
 import type { RecommendedPlace } from '../model/place.types';
-import { resolveLocale } from '../../../shared/i18n/formatters';
+import {
+  formatRecentSearchDate,
+  type RecentSearch,
+} from '../model/recentSearch';
+import {
+  getRecentSearchOwnerKey,
+  type RecentSearchOwner,
+} from '../services/recentSearchStorage';
+import { useRecentSearchStore } from '../store/recentSearchStore';
 
 export type MapSearchSelection = {
   address: string;
@@ -54,6 +62,7 @@ type MapSearchOverlayProps = {
   onRefreshRecommendations?: () => Promise<unknown> | void;
   onSelectRecommendedPlace?: (place: RecommendedPlace) => void;
   onSelectPlace: (place: MapSearchSelection) => void;
+  recentSearchOwner?: RecentSearchOwner;
   recommendedPlaces?: RecommendedPlace[];
 };
 
@@ -68,7 +77,6 @@ type SearchCategory =
   | 'heritage'
   | 'music'
   | 'popup';
-type RecentSearch = { category: Exclude<SearchCategory, 'all'>; date: string; query: string };
 
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
@@ -114,16 +122,40 @@ const MapSearchOverlay = ({
   onRefreshRecommendations,
   onSelectRecommendedPlace,
   onSelectPlace,
+  recentSearchOwner,
   recommendedPlaces = [],
 }: MapSearchOverlayProps) => {
   const { i18n, t } = useTranslation();
   const inputRef = useRef<TextInput>(null);
+  const searchRequestInFlight = useRef(false);
   const [query, setQuery] = useState('');
   const [registeredQuery, setRegisteredQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('all');
-  const [recentQueries, setRecentQueries] = useState<RecentSearch[]>([]);
+  const activeRecentSearchOwnerKey = useRecentSearchStore((state) => state.activeOwnerKey);
+  const recentSearchHydrationStatus = useRecentSearchStore((state) => state.hydrationStatus);
+  const storedRecentQueries = useRecentSearchStore((state) => state.items);
+  const activateRecentSearchOwner = useRecentSearchStore((state) => state.activateOwner);
+  const clearRecentSearches = useRecentSearchStore((state) => state.clearSearches);
+  const recordRecentSearch = useRecentSearchStore((state) => state.recordSearch);
+  const removeRecentSearch = useRecentSearchStore((state) => state.removeSearch);
+  const recentSearchOwnerKey = useMemo(
+    () => recentSearchOwner ? getRecentSearchOwnerKey(recentSearchOwner) : null,
+    [recentSearchOwner],
+  );
+  const isRecentSearchHydrating = recentSearchOwnerKey !== null
+    && (
+      activeRecentSearchOwnerKey !== recentSearchOwnerKey
+      || recentSearchHydrationStatus === 'loading'
+    );
+  const recentQueries = activeRecentSearchOwnerKey === recentSearchOwnerKey
+    ? storedRecentQueries
+    : [];
+
+  useEffect(() => {
+    if (recentSearchOwner) void activateRecentSearchOwner(recentSearchOwner);
+  }, [activateRecentSearchOwner, recentSearchOwner, recentSearchOwnerKey]);
   const registeredSearch = usePlaceAutocomplete({
     keyword: registeredQuery,
     latitude: centerLat,
@@ -166,30 +198,42 @@ const MapSearchOverlay = ({
     clearSearchResults();
   };
 
-  const runSearch = async (nextQuery = query) => {
+  const runSearch = async (
+    nextQuery = query,
+    searchCategory: SearchCategory = activeCategory,
+  ) => {
+    if (searchRequestInFlight.current) return;
     const normalizedQuery = nextQuery.trim();
 
     if (!normalizedQuery) {
       setHasSearched(false);
       setRegisteredQuery('');
-      await searchPlaces(normalizedQuery, { centerLat, centerLng });
+      searchRequestInFlight.current = true;
+      try {
+        await searchPlaces(normalizedQuery, { centerLat, centerLng });
+      } finally {
+        searchRequestInFlight.current = false;
+      }
       return;
     }
 
     Keyboard.dismiss();
     setHasSearched(true);
     setQuery(normalizedQuery);
-    setRecentQueries((prev) => [{
-      category: activeCategory === 'all' ? 'art' : activeCategory,
-      date: new Intl.DateTimeFormat(resolveLocale(i18n.language), { day: '2-digit', month: '2-digit' })
-        .format(new Date()).replace(/\s/g, ''),
-      query: normalizedQuery,
-    }, ...prev.filter((item) => item.query !== normalizedQuery)].slice(0, 6));
+    if (recentSearchOwner) {
+      void recordRecentSearch({
+        category: searchCategory === 'all' ? 'art' : searchCategory,
+        query: normalizedQuery,
+      }, recentSearchOwner);
+    }
 
     setRegisteredQuery(normalizedQuery);
-    const localSearch = searchPlaces(normalizedQuery, { centerLat, centerLng });
-
-    await localSearch;
+    searchRequestInFlight.current = true;
+    try {
+      await searchPlaces(normalizedQuery, { centerLat, centerLng });
+    } finally {
+      searchRequestInFlight.current = false;
+    }
   };
 
   const handleSelect = (place: MapSearchSelection) => {
@@ -281,7 +325,7 @@ const MapSearchOverlay = ({
               key={id}
               onPress={() => {
                 setActiveCategory(id);
-                if (id !== 'all') void runSearch(label);
+                if (id !== 'all') void runSearch(label, id);
               }}
               style={[styles.categoryChip, active && styles.categoryChipActive]}
             >
@@ -299,24 +343,47 @@ const MapSearchOverlay = ({
       >
         {!isResultMode ? (
           <>
-            <Text style={styles.recentTitle}>{t('map.searchOverlay.recent')}</Text>
+            <View style={styles.recentHeader}>
+              <Text style={styles.recentTitle}>{t('map.searchOverlay.recent')}</Text>
+              {recentQueries.length > 0 && recentSearchOwner ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('map.searchOverlay.recentClearAll')}
+                  onPress={() => void clearRecentSearches(recentSearchOwner)}
+                >
+                  <Text style={styles.deleteText}>{t('map.searchOverlay.clearAll')}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {isRecentSearchHydrating ? (
+              <ActivityIndicator
+                accessibilityLabel={t('map.searchOverlay.recentLoading')}
+                color="#777983"
+                size="small"
+                style={styles.recentLoading}
+              />
+            ) : null}
             {recentQueries.map((item) => (
-              <View key={`${item.query}-${item.date}`} style={styles.recentRow}>
+              <View key={item.id} style={styles.recentRow}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('map.searchOverlay.recentSearch', { query: item.query })}
-                  onPress={() => void runSearch(item.query)}
+                  onPress={() => void runSearch(item.query, item.category)}
                   style={styles.recentMain}
                 >
                   <View style={styles.recentIcon}><RecentCategoryIcon category={item.category} /></View>
                   <Text numberOfLines={1} style={styles.recentQuery}>{item.query}</Text>
                 </Pressable>
-                <Text style={styles.recentDate}>{item.date}</Text>
+                <Text style={styles.recentDate}>
+                  {formatRecentSearchDate(item.searchedAt, i18n.language)}
+                </Text>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('map.searchOverlay.recentDelete', { query: item.query })}
                   hitSlop={10}
-                  onPress={() => setRecentQueries((prev) => prev.filter((query) => query.query !== item.query))}
+                  onPress={() => recentSearchOwner
+                    ? void removeRecentSearch(item.id, recentSearchOwner)
+                    : undefined}
                 >
                   <Text style={styles.recentRemove}>×</Text>
                 </Pressable>
@@ -617,6 +684,11 @@ const styles: Record<string, object> = {
     padding: 0,
   },
   recentDate: { color: '#777A85', fontSize: 14 },
+  recentHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   recentIcon: {
     alignItems: 'center',
     backgroundColor: '#E7E7E9',
@@ -636,6 +708,7 @@ const styles: Record<string, object> = {
     gap: 15,
     height: 77,
   },
+  recentLoading: { marginTop: 18 },
   recentTitle: { color: '#35373F', fontSize: 18, fontWeight: '800', marginBottom: 2 },
   sectionHeader: {
     alignItems: 'center',
