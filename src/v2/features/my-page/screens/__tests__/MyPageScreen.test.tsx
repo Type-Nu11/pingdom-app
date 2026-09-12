@@ -149,7 +149,9 @@ describe('MyPageScreen', () => {
 
     await renderMyPage();
 
-    await waitFor(() => expect(screen.getByText('아직 검증한 장소가 없어요')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('아직 검증한 장소가 없어요')).toHaveStyle({
+      fontFamily: 'Pretendard',
+    }));
   });
 
   test('체크인은 있는데 장소 조회가 모두 실패하면 "없음"이 아니라 오류를 보여준다', async () => {

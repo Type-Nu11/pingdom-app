@@ -2,6 +2,7 @@ import React, { type ReactNode } from 'react';
 import styled from 'styled-components/native';
 
 import Button from './Button';
+import { Text } from './Typography';
 
 export type StateLayoutProps = {
   actionLabel?: string;
@@ -43,7 +44,7 @@ const Container = styled.View<{ $fill: boolean }>`
   padding: ${({ theme }) => theme.spacing.xl}px;
 `;
 
-const Title = styled.Text`
+const Title = styled(Text)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.title.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.title.fontWeight};
@@ -51,7 +52,7 @@ const Title = styled.Text`
   text-align: center;
 `;
 
-const Description = styled.Text`
+const Description = styled(Text)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.body.fontWeight};

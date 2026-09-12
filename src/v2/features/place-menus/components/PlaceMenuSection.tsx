@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -147,7 +148,7 @@ const Section = styled.View`
   padding: 20px 24px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -160,21 +161,21 @@ const StateRow = styled.View`
   padding-vertical: ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const StateText = styled.Text`
+const StateText = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
   margin-top: ${({ theme }) => theme.spacing.sm}px;
 `;
 
-const EmptyText = styled.Text`
+const EmptyText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
   padding-vertical: ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const ErrorDescription = styled.Text`
+const ErrorDescription = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
@@ -193,7 +194,7 @@ const RetryButton = styled.Pressable`
   padding-horizontal: ${({ theme }) => theme.spacing.md}px;
 `;
 
-const RetryText = styled.Text`
+const RetryText = styled(AppText)`
   color: ${({ theme }) => theme.colors.primary};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -214,21 +215,21 @@ const MenuBody = styled.View`
   min-width: 0;
 `;
 
-const MenuName = styled.Text`
+const MenuName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 14px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
 `;
 
-const MenuDescription = styled.Text`
+const MenuDescription = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 13px;
   line-height: 18px;
   margin-top: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const MenuPrice = styled.Text`
+const MenuPrice = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   flex-shrink: 1;
   font-size: 14px;
@@ -236,7 +237,7 @@ const MenuPrice = styled.Text`
   margin-top: ${({ theme }) => theme.spacing.sm}px;
 `;
 
-const SoldOut = styled.Text`
+const SoldOut = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -259,7 +260,7 @@ const ImageFallback = styled.View`
   width: 100px;
 `;
 
-const ImageFallbackText = styled.Text`
+const ImageFallbackText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   text-align: center;

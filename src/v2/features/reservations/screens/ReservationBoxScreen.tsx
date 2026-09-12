@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { ActivityIndicator, FlatList, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -103,13 +104,13 @@ const IconButton = styled.Pressable`
   elevation: 2;
 `;
 
-const Title = styled.Text`
+const Title = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
 `;
 
-const Count = styled.Text`
+const Count = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 700;
@@ -123,7 +124,7 @@ const State = styled.View`
   padding: ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const StateText = styled.Text`
+const StateText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   text-align: center;
@@ -135,13 +136,13 @@ const RetryButton = styled.Pressable`
   background-color: ${({ theme }) => theme.colors.primarySoft};
 `;
 
-const RetryLabel = styled.Text`
+const RetryLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.primary};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: 700;
 `;
 
-const EmptyText = styled.Text`
+const EmptyText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   text-align: center;

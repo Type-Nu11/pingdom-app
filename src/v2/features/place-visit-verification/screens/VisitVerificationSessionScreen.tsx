@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -142,13 +143,13 @@ export default function VisitVerificationSessionScreen({
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const Header = styled.View`height: 56px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
 const Back = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
-const BackText = styled.Text`color: ${({ theme }) => theme.colors.textStrong}; font-size: 36px;`;
-const Title = styled.Text`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
+const BackText = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 36px;`;
+const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const Spacer = styled.View`width: 44px;`;
 const Content = styled.View`flex: 1; justify-content: center; gap: ${({ theme }) => theme.spacing.lg}px; padding: ${({ theme }) => theme.spacing.lg}px;`;
-const State = styled.Text`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
+const State = styled(AppText)`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 const Metrics = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
-const Metric = styled.Text`color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
+const Metric = styled(AppText)`color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 const NoPlaceHeader = styled.View`height: 64px; flex-direction: row; align-items: center; padding: 0 24px;`;
 const NoPlaceBack = styled.Pressable`
   width: 44px;
@@ -165,6 +166,6 @@ const NoPlaceBack = styled.Pressable`
 `;
 const NoPlaceContent = styled.View`flex: 1; align-items: center; justify-content: center; padding: 24px; padding-bottom: 96px;`;
 const NoPlaceIconCircle = styled.View`width: 96px; height: 96px; align-items: center; justify-content: center; margin-bottom: 28px; border-radius: 48px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
-const NoPlaceTitle = styled.Text`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 22px; font-weight: 800;`;
-const NoPlaceDescription = styled.Text`max-width: 340px; margin-top: 16px; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: 16px; line-height: 24px;`;
+const NoPlaceTitle = styled(AppText)`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 22px; font-weight: 800;`;
+const NoPlaceDescription = styled(AppText)`max-width: 340px; margin-top: 16px; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: 16px; line-height: 24px;`;
 const NoPlaceAction = styled.View`position: absolute; right: 24px; bottom: 24px; left: 24px;`;

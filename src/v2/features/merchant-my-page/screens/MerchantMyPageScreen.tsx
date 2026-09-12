@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -200,7 +201,7 @@ const IconButton = styled.Pressable`
   justify-content: center;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 500;
@@ -230,7 +231,7 @@ const SectionInner = styled.View`
   padding: 0 ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 700;
@@ -268,13 +269,13 @@ const Avatar = styled(Image)`
   border-radius: 28px;
 `;
 
-const Username = styled.Text`
+const Username = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 500;
 `;
 
-const ProfileRoleLabel = styled.Text`
+const ProfileRoleLabel = styled(AppText)`
   color: #5e5e66;
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
@@ -290,20 +291,20 @@ const StoreNameRow = styled.View`
   gap: 4px;
 `;
 
-const StoreName = styled.Text`
+const StoreName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.48px;
 `;
 
-const StoreCategory = styled.Text`
+const StoreCategory = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: 18px;
   font-weight: 500;
 `;
 
-const StoreVerifiedText = styled.Text`
+const StoreVerifiedText = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;
@@ -340,12 +341,12 @@ const EventHeaderText = styled.View`
   gap: 4px;
 `;
 
-const EventHeaderCaption = styled.Text`
+const EventHeaderCaption = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;
 
-const EmptyText = styled.Text`
+const EmptyText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;

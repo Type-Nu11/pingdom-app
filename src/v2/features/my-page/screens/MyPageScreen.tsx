@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Image } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
@@ -426,7 +427,7 @@ const IconButton = styled.Pressable`
   elevation: 2;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
@@ -444,13 +445,13 @@ const SectionContent = styled.View`
   padding: 0 ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 20px;
   font-weight: 700;
 `;
 
-const TravelSectionTitle = styled.Text.attrs({ maxFontSizeMultiplier: 1 })`
+const TravelSectionTitle = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 700;
@@ -462,7 +463,7 @@ const TravelTitleRow = styled.View`
   justify-content: space-between;
 `;
 
-const TravelSavingText = styled.Text.attrs({ maxFontSizeMultiplier: 1 })`
+const TravelSavingText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
@@ -495,7 +496,7 @@ const InlineRetryRow = styled.View`
   background-color: ${({ theme }) => theme.colors.dangerSoft};
 `;
 
-const InlineRetryText = styled.Text`
+const InlineRetryText = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.danger};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
@@ -506,7 +507,7 @@ const InlineRetryButton = styled.Pressable`
   justify-content: center;
 `;
 
-const InlineRetryLabel = styled.Text`
+const InlineRetryLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: 700;
@@ -533,13 +534,13 @@ const Avatar = styled(Image)`
   border-radius: 28px;
 `;
 
-const Username = styled.Text`
+const Username = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;
 `;
 
-const UserCountry = styled.Text`
+const UserCountry = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
@@ -563,13 +564,13 @@ const StatButton = styled.Pressable`
   gap: 6px;
 `;
 
-const StatLabel = styled.Text`
+const StatLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
 `;
 
-const StatValue = styled.Text`
+const StatValue = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 20px;
   font-weight: 700;
@@ -579,7 +580,7 @@ const PlacesScroll = styled.ScrollView.attrs({
   contentContainerStyle: { gap: 16 },
 })``;
 
-const EmptyPlacesText = styled.Text`
+const EmptyPlacesText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;

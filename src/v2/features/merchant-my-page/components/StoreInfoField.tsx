@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import styled from 'styled-components/native';
 
@@ -22,7 +23,7 @@ const Field = styled.View`
   gap: 4px;
 `;
 
-const FieldLabel = styled.Text`
+const FieldLabel = styled(AppText)`
   color: #5c5e5e;
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;
@@ -38,7 +39,7 @@ const FieldRow = styled.View`
   border-bottom-color: ${({ theme }) => theme.colors.border};
 `;
 
-const FieldValue = styled.Text`
+const FieldValue = styled(AppText)`
   flex: 1;
   margin-right: ${({ theme }) => theme.spacing.sm}px;
   color: #5e5e66;

@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
@@ -83,7 +84,7 @@ const IconBadge = styled.View`
   background-color: #ffc9d3;
 `;
 
-const Title = styled.Text`
+const Title = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
@@ -101,7 +102,7 @@ const StatusChip = styled.View`
   border-radius: ${({ theme }) => theme.radius.md}px;
 `;
 
-const StatusText = styled.Text`
+const StatusText = styled(AppText)`
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: 500;
 `;
@@ -111,13 +112,13 @@ const DeleteButton = styled.Pressable`
   justify-content: center;
 `;
 
-const Benefit = styled.Text`
+const Benefit = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
 `;
 
-const Period = styled.Text`
+const Period = styled(AppText)`
   color: #5e5e66;
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;

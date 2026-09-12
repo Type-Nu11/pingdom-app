@@ -7,6 +7,8 @@ import {
 } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 
+import { Text } from './Typography';
+
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 export type ButtonSize = 'medium' | 'large' | 'onboarding';
 export type ButtonShape = 'rounded' | 'pill';
@@ -140,7 +142,7 @@ const Container = styled.Pressable<ContainerProps>`
   background-color: ${({ $backgroundColor }) => $backgroundColor};
 `;
 
-const Label = styled.Text<{ $color: string; $size: ButtonSize }>`
+const Label = styled(Text)<{ $color: string; $size: ButtonSize }>`
   color: ${({ $color }) => $color};
   font-size: ${({ $size, theme }) =>
     $size === 'onboarding'
