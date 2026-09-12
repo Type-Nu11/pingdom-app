@@ -162,7 +162,7 @@ describe('TravelPurposeSelectionScreen', () => {
       { language: 'en' },
     );
 
-    expect(screen.getByText('Select Travel Purpose')).toBeVisible();
+    expect(screen.getByText('Select Travel Purpose')).toHaveStyle({ fontFamily: 'Pretendard' });
     expect(screen.getByRole('progressbar', { name: 'Onboarding progress' }).props.accessibilityValue)
       .toEqual({ max: 4, min: 1, now: 2, text: 'Step 2 of 4' });
   });

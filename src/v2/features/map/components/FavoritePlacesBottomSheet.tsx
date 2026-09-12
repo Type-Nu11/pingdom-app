@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -137,12 +138,12 @@ const FavoritePlaceRow = ({
       <View style={styles.placeHeading}>
         <View style={styles.placeText}>
           <View style={styles.nameRow}>
-            <Text accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.placeName}>{place.name}</Text>
-            <Text ellipsizeMode="tail" numberOfLines={1} style={styles.placeCategory}>{t(`map.categories.${getFavoriteCategory(place)}`)}</Text>
+            <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.placeName}>{place.name}</AppText>
+            <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.placeCategory}>{t(`map.categories.${getFavoriteCategory(place)}`)}</AppText>
           </View>
-          <Text accessibilityLabel={`${formatDistance(place, i18n.language)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.placeMeta}>
+          <AppText accessibilityLabel={`${formatDistance(place, i18n.language)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.placeMeta}>
             {formatDistance(place, i18n.language)} · {place.address}
-          </Text>
+          </AppText>
         </View>
         <Pressable
           accessibilityLabel={t('map.favorites.remove', { name: place.name })}
@@ -156,7 +157,7 @@ const FavoritePlaceRow = ({
           }}
           style={styles.moreButton}
         >
-          <Text style={styles.moreButtonText}>⋮</Text>
+          <AppText style={styles.moreButtonText}>⋮</AppText>
         </Pressable>
       </View>
       <View style={styles.imageRow}>
@@ -260,7 +261,7 @@ export default function FavoritePlacesBottomSheet({
         >
           <View style={styles.titleRow}>
             <HeaderStar />
-            <Text style={styles.title}>{t('map.favorites.title')}</Text>
+            <AppText style={styles.title}>{t('map.favorites.title')}</AppText>
           </View>
           <ScrollView
             contentContainerStyle={styles.categoryContent}
@@ -280,7 +281,7 @@ export default function FavoritePlacesBottomSheet({
                   style={[styles.categoryChip, active && styles.categoryChipActive]}
                 >
                   {Icon ? <Icon color={active ? colors.primary : colors.textAlternative} height={18} width={21} /> : null}
-                  <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</Text>
+                  <AppText style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</AppText>
                 </Pressable>
               );
             })}
@@ -309,31 +310,31 @@ export default function FavoritePlacesBottomSheet({
                 />
               )) : isLoading ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>{t('map.favorites.loading')}</Text>
+                  <AppText style={styles.emptyTitle}>{t('map.favorites.loading')}</AppText>
                 </View>
               ) : isUnauthorized ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>{t('map.favorites.sessionTitle')}</Text>
-                  <Text style={styles.emptyBody}>{t('map.favorites.sessionBody')}</Text>
+                  <AppText style={styles.emptyTitle}>{t('map.favorites.sessionTitle')}</AppText>
+                  <AppText style={styles.emptyBody}>{t('map.favorites.sessionBody')}</AppText>
                 </View>
               ) : isError ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>{t('map.favorites.error')}</Text>
+                  <AppText style={styles.emptyTitle}>{t('map.favorites.error')}</AppText>
                   <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
-                    <Text style={styles.retryLabel}>{t('map.favorites.retry')}</Text>
+                    <AppText style={styles.retryLabel}>{t('map.favorites.retry')}</AppText>
                   </Pressable>
                 </View>
               ) : (
                 <View style={styles.emptyState}>
                   <HeaderStar />
-                  <Text style={styles.emptyTitle}>{t('map.favorites.emptyTitle')}</Text>
-                  <Text style={styles.emptyBody}>{t('map.favorites.emptyBody')}</Text>
+                  <AppText style={styles.emptyTitle}>{t('map.favorites.emptyTitle')}</AppText>
+                  <AppText style={styles.emptyBody}>{t('map.favorites.emptyBody')}</AppText>
                 </View>
               )}
               {filteredPlaces.length > 0 && hasNextPage ? (
                 <View style={styles.loadMoreState}>
                   {isFetchNextPageError ? (
-                    <Text style={styles.loadMoreError}>{t('map.favorites.loadMoreError')}</Text>
+                    <AppText style={styles.loadMoreError}>{t('map.favorites.loadMoreError')}</AppText>
                   ) : null}
                   <Pressable
                     accessibilityLabel={t('map.favorites.loadMoreLabel')}
@@ -343,9 +344,9 @@ export default function FavoritePlacesBottomSheet({
                     onPress={onLoadMore}
                     style={styles.loadMoreButton}
                   >
-                    <Text style={styles.retryLabel}>
+                    <AppText style={styles.retryLabel}>
                       {isFetchingNextPage ? t('map.favorites.loading') : isFetchNextPageError ? t('map.favorites.retry') : t('map.favorites.loadMore')}
-                    </Text>
+                    </AppText>
                   </Pressable>
                 </View>
               ) : null}

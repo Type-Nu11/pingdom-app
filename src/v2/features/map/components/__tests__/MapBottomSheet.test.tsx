@@ -1011,7 +1011,7 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
-    ['팝업', '음악', '음식점', '패션', '뷰티', '전시', '카페', '문화재', '기타']
+    ['전체', '팝업', '음악', '음식점', '패션', '뷰티', '전시', '카페', '문화재', '기타']
       .forEach((name) => expect(screen.getByRole('tab', { name })).toBeVisible());
     expect(screen.getByRole('tab', { name: '팝업', selected: true })).toHaveStyle({
       backgroundColor: '#FAEDF0',
@@ -1021,5 +1021,119 @@ describe('MapBottomSheet recommendations', () => {
       backgroundColor: '#FFFFFF',
       borderColor: '#F2F2F3',
     });
+  });
+
+  const categoryFixture = (id: number, name: string, category: string): DecisionPlace => ({
+    ...places[0],
+    category,
+    id,
+    name,
+  });
+
+  const categoryProps = (categoryPlaces: DecisionPlace[], overrides: Partial<React.ComponentProps<typeof MapBottomSheet>> = {}) => ({
+    activeFilters: [],
+    bookmarkedPlaceIds: {},
+    collapsedTranslateY: 600,
+    content: { type: 'home' } as const,
+    height: 700,
+    mediumTranslateY: 300,
+    onBackHome: jest.fn(),
+    onDetailPress: jest.fn(),
+    onFilterPress: jest.fn(),
+    onGoNowPress: jest.fn(),
+    onHandlePress: jest.fn(),
+    onPlacePress: jest.fn(),
+    onQueryChange: jest.fn(),
+    onRetryPlaces: jest.fn(),
+    onRetryRecommendations: jest.fn(),
+    onSearchFocus: jest.fn(),
+    onSubmitSearch: jest.fn(),
+    onToggleBookmark: jest.fn(async () => undefined),
+    panHandlers: {} as GestureResponderHandlers,
+    places: categoryPlaces,
+    recommendationPlaces: [],
+    recommendationsState: 'ready' as const,
+    selectedPlace: null,
+    sheetChromeBottom: new Animated.Value(0),
+    sheetTranslateY: new Animated.Value(0),
+    snapPoint: 'expanded' as const,
+    ...overrides,
+  });
+
+  test.each([
+    ['local', '우리 지역 핫플'],
+    ['national', '전국 트렌드'],
+  ] as const)('%s 피드의 확장·축소 상태에서 빈 카페 결과를 음식점으로 대체하지 않는다', async (feed, feedLabel) => {
+    const food = categoryFixture(101, '음식점만 있는 곳', 'FOOD');
+    const props = categoryProps([food]);
+    const view = await renderWithProviders(<MapBottomSheet {...props} />);
+
+    if (feed === 'national') await view.user.press(screen.getByRole('tab', { name: feedLabel }));
+    await view.user.press(screen.getByRole('tab', { name: '카페' }));
+
+    expect(screen.queryByText('음식점만 있는 곳')).not.toBeOnTheScreen();
+    expect(screen.getByRole('status', { name: '이 카테고리에 해당하는 장소가 없어요' })).toBeOnTheScreen();
+
+    await view.rerender(<MapBottomSheet {...props} snapPoint="medium" />);
+    expect(screen.queryByText('음식점만 있는 곳')).not.toBeOnTheScreen();
+    expect(screen.getByRole('status', { name: '이 카테고리에 해당하는 장소가 없어요' })).toBeOnTheScreen();
+  });
+
+  test('선택 카테고리에는 해당 장소만 표시하고 전체를 선택하면 원본 목록을 복구한다', async () => {
+    const food = categoryFixture(102, '전체에만 보일 음식점', 'RESTAURANT');
+    const cafe = categoryFixture(103, '선택된 카페', 'CAFE');
+    const view = await renderWithProviders(<MapBottomSheet {...categoryProps([food, cafe])} />);
+
+    await view.user.press(screen.getByRole('tab', { name: '카페' }));
+    expect(screen.getAllByText('선택된 카페').length).toBeGreaterThan(0);
+    expect(screen.queryByText('전체에만 보일 음식점')).not.toBeOnTheScreen();
+
+    await view.user.press(screen.getByRole('tab', { name: '전체' }));
+    expect(screen.getAllByText('선택된 카페').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('전체에만 보일 음식점').length).toBeGreaterThan(0);
+  });
+
+  test('피드 전환 후에도 선택된 카테고리와 표시 데이터가 일치한다', async () => {
+    const food = categoryFixture(104, '전국에 섞이면 안 되는 음식점', 'FOOD');
+    const cafe = categoryFixture(105, '피드 전환 카페', 'CAFE');
+    const view = await renderWithProviders(<MapBottomSheet {...categoryProps([food, cafe])} />);
+
+    await view.user.press(screen.getByRole('tab', { name: '카페' }));
+    await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+
+    expect(screen.getByRole('tab', { name: '카페' }).props.accessibilityState)
+      .toEqual({ selected: true });
+    expect(screen.getByText('전국 카테고리 인기 장소')).toBeOnTheScreen();
+    expect(screen.queryByText('카테고리별 user님 주변 인기 장소들')).not.toBeOnTheScreen();
+    expect(screen.getAllByText('피드 전환 카페').length).toBeGreaterThan(0);
+    expect(screen.queryByText('전국에 섞이면 안 되는 음식점')).not.toBeOnTheScreen();
+  });
+
+  test.each([
+    ['loading', '주변 핫플을 찾는 중이에요'],
+    ['error', '목록을 불러오지 못했어요'],
+  ] as const)('%s 상태를 카테고리 빈 상태로 숨기지 않는다', async (placesState, message) => {
+    const onRetryPlaces = jest.fn();
+    const view = await renderWithProviders(
+      <MapBottomSheet {...categoryProps([], { onRetryPlaces, placesState })} />,
+    );
+
+    expect(screen.getByText(message)).toBeVisible();
+    expect(screen.queryByText('이 카테고리에 해당하는 장소가 없어요')).not.toBeOnTheScreen();
+    if (placesState === 'error') {
+      await view.user.press(screen.getByRole('button', { name: '다시 시도' }));
+      expect(onRetryPlaces).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  test('카테고리 빈 상태는 한국어·영어 문구와 status 접근성 정보를 제공한다', async () => {
+    const food = categoryFixture(106, 'Food only', 'FOOD');
+    const view = await renderWithProviders(<MapBottomSheet {...categoryProps([food])} />);
+
+    await view.user.press(screen.getByRole('tab', { name: '카페' }));
+    expect(screen.getByRole('status', { name: '이 카테고리에 해당하는 장소가 없어요' })).toBeVisible();
+
+    await act(async () => view.i18n.changeLanguage('en'));
+    expect(screen.getByRole('status', { name: 'No places found in this category.' })).toBeVisible();
   });
 });

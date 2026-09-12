@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -218,7 +219,7 @@ const TopBar = styled.View`
   padding: 0 ${({ theme }) => theme.spacing.md}px;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 600;
@@ -241,7 +242,7 @@ const Section = styled.View<{ $isLast: boolean }>`
   border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 20px;
   font-weight: 700;

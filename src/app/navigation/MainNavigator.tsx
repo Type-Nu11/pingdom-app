@@ -17,6 +17,7 @@ import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/
 import { useProfile } from '../../features/profile/hooks/useProfile';
 import { theme as v2Theme } from '../../v2/shared/theme';
 import { clearTokenSession } from '../../v2/shared/auth/tokenSession';
+import { UnsupportedFeatureScreen } from '../../v2/shared/components';
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
@@ -119,14 +120,7 @@ export const MyPageRouteScreen = ({ navigation }: Pick<MainScreenProps<'MyPage'>
       <V2ScreenBoundary>
         <MerchantMyPageContainer
           onBack={navigation.goBack}
-          onCreateEvent={openProfileEdit}
-          onEditAddress={openProfileEdit}
-          onEditBusinessHours={openProfileEdit}
-          onEditPhoneNumber={openProfileEdit}
-          onOpenAllReviews={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
-          onOpenProfileEdit={openProfileEdit}
           onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
-          onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
           userProfileImageUrl={profile.profileImageUrl}
           username={profile.username}
         />
@@ -156,23 +150,39 @@ const ProfileAliasRouteScreen = ({ navigation }: MainScreenProps<'Profile'>) => 
   <MyPageRouteScreen navigation={navigation as MainScreenProps<'MyPage'>['navigation']} />
 );
 
-export const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileEdit'>) => (
-  <V2ScreenBoundary>
-    <ProfileEditScreen onBack={navigation.goBack} />
-  </V2ScreenBoundary>
-);
+export const ProfileEditRouteScreen = ({ navigation }: MainScreenProps<'ProfileEdit'>) => {
+  const { profile } = useProfile();
 
-const VerifiedPlacesRouteScreen = ({ navigation }: MainScreenProps<'VerifiedPlaces'>) => (
-  <V2ScreenBoundary>
-    <VerifiedPlacesScreen
-      onBack={navigation.goBack}
-      onOpenPlace={(value) => {
-        const placeId = parsePlaceId(value);
-        if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
-      }}
-    />
-  </V2ScreenBoundary>
-);
+  return (
+    <V2ScreenBoundary>
+      {profile?.role === 'MERCHANT_OWNER' ? (
+        <UnsupportedFeatureScreen onBack={navigation.goBack} />
+      ) : profile ? (
+        <ProfileEditScreen onBack={navigation.goBack} />
+      ) : null}
+    </V2ScreenBoundary>
+  );
+};
+
+export const VerifiedPlacesRouteScreen = ({ navigation }: MainScreenProps<'VerifiedPlaces'>) => {
+  const { profile } = useProfile();
+
+  return (
+    <V2ScreenBoundary>
+      {profile?.role === 'MERCHANT_OWNER' ? (
+        <UnsupportedFeatureScreen onBack={navigation.goBack} />
+      ) : profile ? (
+        <VerifiedPlacesScreen
+          onBack={navigation.goBack}
+          onOpenPlace={(value) => {
+            const placeId = parsePlaceId(value);
+            if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
+          }}
+        />
+      ) : null}
+    </V2ScreenBoundary>
+  );
+};
 
 export const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
   const logout = useAuthStore((state) => state.logout);

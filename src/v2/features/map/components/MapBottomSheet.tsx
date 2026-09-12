@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -60,6 +61,11 @@ import { colors } from '../../../shared/theme/colors';
 import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { hasValidCoordinates } from '../services/placeActions';
+import {
+  selectMapHomeCategoryResult,
+  type MapHomeCategory,
+  type MapHomeDisplayState,
+} from '../model/mapHomeCategory';
 import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
 import { PlaceMenuSection } from '../../place-menus';
 import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapSheetBottomNavigation';
@@ -176,6 +182,7 @@ type MapBottomSheetProps = {
   recommendationPlaces: DecisionPlace[];
   recommendationsState: 'empty' | 'error' | 'loading' | 'ready';
   onRetryRecommendations: () => void;
+  onRetryPlaces?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onRetryReviews?: () => void;
@@ -191,7 +198,7 @@ type IconProps = {
   size?: number;
 };
 
-type SheetCategory = 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 'food' | 'heritage' | 'music' | 'popup';
+type SheetCategory = MapHomeCategory;
 
 // Keep the Figma typography stable when an Android device uses a larger system font scale.
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
@@ -210,6 +217,7 @@ export const getMapHomeSheetVisibleHeight = (viewportHeight: number, expandedShe
 
 const RECOMMENDATION_NAVIGATION_LOCK_MS = 500;
 const CATEGORY_OPTIONS: Array<{ id: SheetCategory }> = [
+  { id: 'all' },
   { id: 'popup' }, { id: 'music' }, { id: 'food' }, { id: 'fashion' }, { id: 'beauty' },
   { id: 'art' }, { id: 'cafe' }, { id: 'heritage' }, { id: 'etc' },
 ];
@@ -256,6 +264,8 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
   const color = active ? '#FF1956' : '#5E5E66';
 
   switch (category) {
+    case 'all':
+      return <MapPinIcon active={active} size={18} />;
     case 'popup':
       return <PopupAsset color={color} height={19} width={20} />;
     case 'music':
@@ -340,9 +350,9 @@ const FeedSegment = ({
               height={20}
               width={16}
             />
-            <Text style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+            <AppText style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
               {t('map.sheet.localHotPlaces')}
-            </Text>
+            </AppText>
           </Pressable>
           <Pressable
             accessibilityRole="tab"
@@ -355,9 +365,9 @@ const FeedSegment = ({
               height={20}
               width={18}
             />
-            <Text style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+            <AppText style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
               {t('map.sheet.nationwideTrends')}
-            </Text>
+            </AppText>
           </Pressable>
         </GlassSurface>
       </View>
@@ -419,7 +429,7 @@ const PlaceArtwork = ({
         style={[styles.artwork, styles.artworkFallback, variant === 'grid' && styles.gridArtwork]}
       >
         <MapPinIcon active size={24} />
-        <Text style={styles.artworkFallbackText}>{fallbackMessage}</Text>
+        <AppText style={styles.artworkFallbackText}>{fallbackMessage}</AppText>
       </View>
     );
   }
@@ -607,7 +617,7 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
     return (
       <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
         <MapPinIcon active size={28} />
-        <Text style={styles.previewArtworkFallbackText}>{fallbackMessage}</Text>
+        <AppText style={styles.previewArtworkFallbackText}>{fallbackMessage}</AppText>
       </View>
     );
   }
@@ -660,22 +670,22 @@ export const RecommendationFeaturedCard = ({
           style={styles.cardBookmarkStar}
         />
         <View style={styles.placeCardBody}>
-          <Text ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, designSize === 'reservation' && styles.reservationPlaceCardName]}>
+          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, designSize === 'reservation' && styles.reservationPlaceCardName]}>
             {place.name || t('map.sheet.placeMissing')}
-          </Text>
+          </AppText>
         </View>
       </View>
       {recommendationLabel ? (
         <View style={styles.recommendationMetaRow}>
           <RecommendationMetaIcon />
-          <Text ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationReason}>
+          <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationReason}>
             {recommendationLabel}
-          </Text>
+          </AppText>
         </View>
       ) : null}
-      <Text ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, designSize === 'reservation' && styles.reservationPlaceCardDistance]}>
+      <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, designSize === 'reservation' && styles.reservationPlaceCardDistance]}>
         {t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}
-      </Text>
+      </AppText>
     </RecommendationCardPressable>
   );
 };
@@ -712,10 +722,10 @@ const RecommendationGridCard = ({
         style={styles.gridBookmarkStar}
       />
       <View style={styles.gridCardBody}>
-        <Text ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
+        <AppText ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
           {place.name || t('map.sheet.placeMissing')}
-        </Text>
-        <Text ellipsizeMode="tail" numberOfLines={1} style={styles.gridCardDistance}>{place.address}</Text>
+        </AppText>
+        <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.gridCardDistance}>{place.address}</AppText>
       </View>
     </RecommendationCardPressable>
   );
@@ -761,12 +771,12 @@ const PlaceTrendCard = ({
       <BookmarkStar selected={bookmarked} />
     </Pressable>
     <View style={styles.homeTrendCardBody}>
-      <Text numberOfLines={1} style={styles.homeTrendCardName}>
+      <AppText numberOfLines={1} style={styles.homeTrendCardName}>
         {place.name || t('map.sheet.placeMissing')}
-      </Text>
-      <Text numberOfLines={1} style={styles.homeTrendCardDistance}>
+      </AppText>
+      <AppText numberOfLines={1} style={styles.homeTrendCardDistance}>
         {t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}
-      </Text>
+      </AppText>
     </View>
   </Pressable>
   );
@@ -812,28 +822,11 @@ const ExpandedPlaceCard = ({
       <BookmarkStar selected={bookmarked} />
     </Pressable>
     <View style={styles.homeGridCardBody}>
-      <Text numberOfLines={2} style={styles.homeGridCardName}>{place.name}</Text>
-      <Text numberOfLines={1} style={styles.homeGridCardDistance}>{t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}</Text>
+      <AppText numberOfLines={2} style={styles.homeGridCardName}>{place.name}</AppText>
+      <AppText numberOfLines={1} style={styles.homeGridCardDistance}>{t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}</AppText>
     </View>
   </Pressable>
   );
-};
-
-const placeMatchesCategory = (place: DecisionPlace, category: SheetCategory) => {
-  const value = place.category.trim().toLowerCase();
-  const aliases: Record<SheetCategory, string[]> = {
-    art: ['art', 'exhibit', 'exhibition', '전시'],
-    beauty: ['beauty', '뷰티', '미용'],
-    cafe: ['cafe', 'coffee', '카페', '커피'],
-    etc: ['etc', 'other', '기타'],
-    fashion: ['fashion', '패션'],
-    food: ['dining', 'food', 'restaurant', '음식', '식당'],
-    heritage: ['heritage', 'historic', 'ruin', '문화재', '유적'],
-    music: ['music', '음악'],
-    popup: ['pop-up', 'popup', '팝업'],
-  };
-
-  return aliases[category].some((alias) => value.includes(alias));
 };
 
 const ExpandedHomeContent = ({
@@ -848,6 +841,7 @@ const ExpandedHomeContent = ({
   onCategoryChange,
   onFeedChange,
   onPlacePress,
+  onRetry,
   onToggleBookmark,
   places,
   restingScrollEnabled = false,
@@ -865,6 +859,7 @@ const ExpandedHomeContent = ({
   onCategoryChange: (category: SheetCategory) => void;
   onFeedChange: (feed: 'local' | 'national') => void;
   onPlacePress: (place: DecisionPlace) => void;
+  onRetry: () => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   places: DecisionPlace[];
   restingScrollEnabled?: boolean;
@@ -876,8 +871,12 @@ const ExpandedHomeContent = ({
   const [hasRenderedExpandedContent, setHasRenderedExpandedContent] = useState(
     expandedInteractionsEnabled,
   );
-  const categoryPlaces = places.filter((place) => placeMatchesCategory(place, activeCategory));
-  const gridPlaces = categoryPlaces.length > 0 ? categoryPlaces : places;
+  const categoryResult = selectMapHomeCategoryResult(
+    places,
+    activeCategory,
+    state ?? (places.length > 0 ? 'ready' : 'empty'),
+  );
+  const displayedPlaces = categoryResult.places;
   const shouldRenderExpandedContent = expandedInteractionsEnabled || hasRenderedExpandedContent;
 
   useEffect(() => {
@@ -913,7 +912,7 @@ const ExpandedHomeContent = ({
           showsHorizontalScrollIndicator={false}
           style={styles.rowScroll}
         >
-          {places.length > 0 ? places.slice(0, 6).map((place) => (
+          {categoryResult.state === 'ready' ? displayedPlaces.slice(0, 6).map((place) => (
             <PlaceTrendCard
               bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
               imageUrl={imageUrlsByPlaceId[String(place.id)]}
@@ -926,7 +925,7 @@ const ExpandedHomeContent = ({
               pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
               place={place}
             />
-          )) : <EmptyCard state={state} variant="row" />}
+          )) : <EmptyCard onRetry={onRetry} state={categoryResult.state} variant="row" />}
         </ScrollView>
 
         {shouldRenderExpandedContent && !restingScrollEnabled ? (
@@ -935,7 +934,9 @@ const ExpandedHomeContent = ({
             style={{ opacity: expandedOnlyOpacity }}
             testID="expanded-home-only-content"
           >
-            <Text style={styles.expandedTitle}>{t('map.sheet.categoryPopular', { userName })}</Text>
+            <AppText style={styles.expandedTitle}>
+              {t(feed === 'local' ? 'map.sheet.categoryPopular' : 'map.sheet.categoryPopularNational', { userName })}
+            </AppText>
 
             <ScrollView
               contentContainerStyle={styles.categoryRow}
@@ -955,16 +956,16 @@ const ExpandedHomeContent = ({
                     style={[styles.categoryChip, active && styles.categoryChipActive]}
                   >
                     <CategoryIcon active={active} category={category.id} />
-                    <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
+                    <AppText style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
                       {t(`map.categories.${category.id}`)}
-                    </Text>
+                    </AppText>
                   </Pressable>
                 );
               })}
             </ScrollView>
 
             <View style={styles.gridRow}>
-              {gridPlaces.slice(0, 8).map((place) => (
+              {displayedPlaces.slice(0, 8).map((place) => (
                 <ExpandedPlaceCard
                   bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
                   imageUrl={imageUrlsByPlaceId[String(place.id)]}
@@ -987,20 +988,37 @@ const ExpandedHomeContent = ({
 };
 
 const EmptyCard = ({
+  onRetry,
   state = 'loading',
   variant = 'list',
 }: {
-  state?: 'empty' | 'error' | 'loading' | 'ready';
+  onRetry?: () => void;
+  state?: MapHomeDisplayState;
   variant?: 'list' | 'row';
 }) => {
   const { t } = useTranslation();
   const copyState = state === 'ready' ? 'empty' : state;
+  const isCategoryEmpty = copyState === 'category-empty';
+  const titleKey = isCategoryEmpty ? 'map.sheet.state.categoryEmptyTitle' : `map.sheet.state.${copyState}Title`;
+  const bodyKey = isCategoryEmpty ? null : `map.sheet.state.${copyState}Body`;
+  const accessibilityLabel = t(titleKey);
 
   return (
-    <View style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}>
+    <View
+      accessible
+      accessibilityLabel={accessibilityLabel}
+      accessibilityLiveRegion="polite"
+      role="status"
+      style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
+    >
       <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
-      <Text style={styles.emptyCardTitle}>{t(`map.sheet.state.${copyState}Title`)}</Text>
-      <Text style={styles.emptyCardBody}>{t(`map.sheet.state.${copyState}Body`)}</Text>
+      <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
+      {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
+      {copyState === 'error' && onRetry ? (
+        <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
+          <AppText style={styles.retryButtonText}>{t('common.error.retry')}</AppText>
+        </Pressable>
+      ) : null}
     </View>
   );
 };
@@ -1019,15 +1037,15 @@ const RecommendationState = ({
     style={styles.recommendationState}
     testID={`recommendation-state-${state}`}
   >
-    <Text style={styles.emptyCardTitle}>
+    <AppText style={styles.emptyCardTitle}>
       {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Title`)}
-    </Text>
-    <Text style={styles.emptyCardBody}>
+    </AppText>
+    <AppText style={styles.emptyCardBody}>
       {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Body`)}
-    </Text>
+    </AppText>
     {state === 'error' ? (
       <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
-        <Text style={styles.retryButtonText}>{t('common.error.retry')}</Text>
+        <AppText style={styles.retryButtonText}>{t('common.error.retry')}</AppText>
       </Pressable>
     ) : null}
   </View>
@@ -1119,11 +1137,11 @@ const RecommendationContent = ({
       <View style={styles.recommendationHeader}>
         <View style={styles.recommendationTitleRow}>
           <RecommendationTitleAsset height={22} width={22} />
-          <Text style={styles.recommendationTitle}>{t('map.sheet.recommendationTitle')}</Text>
+          <AppText style={styles.recommendationTitle}>{t('map.sheet.recommendationTitle')}</AppText>
         </View>
-        <Text ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationSubtitle}>
+        <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationSubtitle}>
           {t('map.recommendations.subtitle', { userName })}
-        </Text>
+        </AppText>
       </View>
       <RecommendationStateTransition state={state}>
         {state === 'ready' ? (
@@ -1156,9 +1174,9 @@ const RecommendationContent = ({
               style={{ opacity: expandedOnlyOpacity }}
               testID="expanded-recommendation-only-content"
             >
-              <Text style={styles.recommendationGridTitle}>
+              <AppText style={styles.recommendationGridTitle}>
                 {t('map.recommendations.verificationTitle')}
-              </Text>
+              </AppText>
               <View style={styles.recommendationGridRows}>
                 {gridRows.map((row, rowIndex) => (
                   <ScrollView
@@ -1209,10 +1227,10 @@ const ResultRow = ({
   <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
     <View style={styles.resultThumbnail}><MapPinIcon active size={25} /></View>
     <View style={styles.resultTextBody}>
-      <Text numberOfLines={1} style={styles.resultName}>{place.name}</Text>
-      <Text numberOfLines={1} style={styles.resultAddress}>{place.address}</Text>
+      <AppText numberOfLines={1} style={styles.resultName}>{place.name}</AppText>
+      <AppText numberOfLines={1} style={styles.resultAddress}>{place.address}</AppText>
     </View>
-    <Text style={styles.resultDistance}>{formatDistance(place, i18n.language)}</Text>
+    <AppText style={styles.resultDistance}>{formatDistance(place, i18n.language)}</AppText>
   </Pressable>
   );
 };
@@ -1224,7 +1242,7 @@ const PreviewAmenity = ({ type }: { type: 'english' | 'parking' }) => {
     {type === 'english'
       ? <GroupAsset height={20} width={20} />
       : <ParkAsset height={20} width={20} />}
-    <Text style={styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</Text>
+    <AppText style={styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</AppText>
   </View>
   );
 };
@@ -1250,7 +1268,7 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
   if (!url || hasError) {
     return (
       <View style={styles.detailReviewerAvatar}>
-        <Text style={styles.detailReviewerInitial}>{name.slice(0, 1)}</Text>
+        <AppText style={styles.detailReviewerInitial}>{name.slice(0, 1)}</AppText>
       </View>
     );
   }
@@ -1275,7 +1293,7 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
       {visibleTags.map((tag, index) => (
         <View key={`${tag}-${index}`} style={styles.detailReviewTag}>
           <ReviewHighlightIcon label={tag} />
-          <Text style={styles.detailReviewTagText}>{tag}</Text>
+          <AppText style={styles.detailReviewTagText}>{tag}</AppText>
         </View>
       ))}
       {hiddenTags.length > 0 ? (
@@ -1287,9 +1305,9 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
           onPress={() => setIsExpanded((current) => !current)}
           style={({ pressed }) => [styles.detailReviewTag, pressed && styles.pressed]}
         >
-          <Text style={styles.detailReviewTagText}>
+          <AppText style={styles.detailReviewTagText}>
             {isExpanded ? t('map.detail.collapseTags') : `+${hiddenTags.length}`}
-          </Text>
+          </AppText>
         </Pressable>
       ) : null}
     </View>
@@ -1340,7 +1358,7 @@ const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, di
     ]}
   >
     <PreviewActionIcon kind={kind} />
-    <Text style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</Text>
+    <AppText style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</AppText>
   </Pressable>
 );
 
@@ -1420,27 +1438,27 @@ const PreviewContent = ({
           style={styles.previewSummary}
         >
           <View style={styles.previewTitleRow}>
-            <Text accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</Text>
-            <Text ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</Text>
+            <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</AppText>
+            <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>
           </View>
           {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
             <View style={styles.previewStatusRow}>
               {verificationSummary ? (
-                <Text numberOfLines={1} style={styles.previewStatus}>
+                <AppText numberOfLines={1} style={styles.previewStatus}>
                   {verificationSummary}
-                </Text>
+                </AppText>
               ) : null}
               {fallbackContent.statusEmphasis ? (
-                <Text style={styles.previewStatusEmphasis}>
+                <AppText style={styles.previewStatusEmphasis}>
                   {verificationSummary ? ' · ' : ''}
                   {fallbackContent.statusEmphasis}
-                </Text>
+                </AppText>
               ) : null}
             </View>
           ) : null}
-          <Text accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
+          <AppText accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
             {formatPreviewLocation(place, i18n.language)}
-          </Text>
+          </AppText>
         </Pressable>
         <Pressable
           accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -1460,7 +1478,7 @@ const PreviewContent = ({
           style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
           testID="place-preview-close"
         >
-          <Text style={styles.previewCloseText}>×</Text>
+          <AppText style={styles.previewCloseText}>×</AppText>
         </Pressable>
       </View>
       {fallbackContent?.amenities.length ? (
@@ -1509,7 +1527,7 @@ const PreviewContent = ({
       </ScrollView>
       {fallbackContent?.imageState === 'error' ? (
         <Pressable accessibilityRole="button" onPress={onRetryMedia}>
-          <Text style={styles.detailEmptyText}>{t('map.detail.imageError')}</Text>
+          <AppText style={styles.detailEmptyText}>{t('map.detail.imageError')}</AppText>
         </Pressable>
       ) : null}
       <ScrollView
@@ -1640,11 +1658,11 @@ const ExpandedPlaceContent = ({
 
       <View style={styles.detailHeading}>
         <View style={styles.detailTitleRow}>
-          <Text accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={2} style={styles.detailTitle}>{place.name}</Text>
-          <Text ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</Text>
+          <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={2} style={styles.detailTitle}>{place.name}</AppText>
+          <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>
         </View>
         {verificationSummary ? (
-          <Text style={styles.detailVerified}>{verificationSummary}</Text>
+          <AppText style={styles.detailVerified}>{verificationSummary}</AppText>
         ) : null}
       </View>
 
@@ -1689,7 +1707,7 @@ const ExpandedPlaceContent = ({
       </ScrollView>
       {fallbackContent?.imageState === 'error' ? (
         <Pressable accessibilityRole="button" onPress={onRetryMedia}>
-          <Text style={styles.detailEmptyText}>{t('map.detail.imageError')}</Text>
+          <AppText style={styles.detailEmptyText}>{t('map.detail.imageError')}</AppText>
         </Pressable>
       ) : null}
 
@@ -1724,9 +1742,9 @@ const ExpandedPlaceContent = ({
             onPress={() => onTabChange(tab)}
             style={styles.detailTab}
           >
-            <Text style={[styles.detailTabText, activeTab === tab && styles.detailTabTextActive]}>
+            <AppText style={[styles.detailTabText, activeTab === tab && styles.detailTabTextActive]}>
               {t(tab === 'info' ? 'map.detail.info' : 'map.detail.reviews')}
-            </Text>
+            </AppText>
             {activeTab === tab ? (
               <View style={styles.detailTabIndicator} testID="map-detail-active-tab-indicator" />
             ) : null}
@@ -1739,14 +1757,14 @@ const ExpandedPlaceContent = ({
           <View style={styles.detailInfoBlock}>
             <View style={styles.detailInfoRow}>
               <PinAsset height={16} width={14} />
-              <Text style={styles.detailInfoText}>{detailAddress}</Text>
+              <AppText style={styles.detailInfoText}>{detailAddress}</AppText>
             </View>
             {fallbackContent ? (
               <>
                 <View style={styles.detailInfoRow}>
                   <InfoClockIcon />
-                  <Text numberOfLines={2} style={styles.detailInfoText}>
-                    <Text style={[
+                  <AppText numberOfLines={2} style={styles.detailInfoText}>
+                    <AppText style={[
                       styles.detailOperatingStatus,
                       fallbackContent.operatingSummary?.tone === 'positive'
                         ? styles.detailOperatingPositive
@@ -1756,15 +1774,15 @@ const ExpandedPlaceContent = ({
                     ]}>
                       {fallbackContent.operatingSummary?.statusText
                         ?? fallbackContent.statusEmphasis}
-                    </Text>
+                    </AppText>
                     {fallbackContent.operatingSummary?.detailText
                       ? ` · ${fallbackContent.operatingSummary.detailText}` : ''}
-                  </Text>
+                  </AppText>
                 </View>
                 {fallbackContent.phone ? (
                   <View style={styles.detailInfoRow}>
                     <CallAsset height={16} width={16} />
-                    <Text style={styles.detailInfoText}>{fallbackContent.phone}</Text>
+                    <AppText style={styles.detailInfoText}>{fallbackContent.phone}</AppText>
                   </View>
                 ) : null}
               </>
@@ -1780,27 +1798,27 @@ const ExpandedPlaceContent = ({
 
           {fallbackContent?.notice ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>{t('map.detail.notice')}</Text>
-              <Text style={styles.detailInfoText}>{fallbackContent.notice}</Text>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.notice')}</AppText>
+              <AppText style={styles.detailInfoText}>{fallbackContent.notice}</AppText>
             </View>
           ) : null}
 
           {fallbackContent?.summary ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>{t('map.detail.description')}</Text>
-              <Text style={styles.detailInfoText}>{fallbackContent.summary}</Text>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.description')}</AppText>
+              <AppText style={styles.detailInfoText}>{fallbackContent.summary}</AppText>
             </View>
           ) : null}
 
           {couponContent ?? (fallbackContent?.coupons?.length ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>{t('map.detail.coupon')}</Text>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.coupon')}</AppText>
               {fallbackContent.coupons.map((coupon, index) => (
                 <View key={`${coupon.title}-${index}`} style={styles.detailCouponRow}>
                   <View style={styles.detailCouponIcon}><TicketAsset height={24} width={24} /></View>
                   <View style={styles.detailCouponBody}>
-                    <Text style={styles.detailCouponTitle}>{coupon.title}</Text>
-                    <Text style={styles.detailCouponPeriod}>{coupon.period}</Text>
+                    <AppText style={styles.detailCouponTitle}>{coupon.title}</AppText>
+                    <AppText style={styles.detailCouponPeriod}>{coupon.period}</AppText>
                   </View>
                   <DownAsset height={17} width={14} />
                 </View>
@@ -1812,12 +1830,12 @@ const ExpandedPlaceContent = ({
 
           {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>{t('map.detail.events')}</Text>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.events')}</AppText>
               {fallbackContent.events.map((event, index) => (
                 <View key={`${event.title}-${index}`} style={styles.detailCouponRow}>
                   <View style={styles.detailCouponBody}>
-                    <Text style={styles.detailCouponTitle}>{event.title}</Text>
-                    {event.period ? <Text style={styles.detailCouponPeriod}>{event.period}</Text> : null}
+                    <AppText style={styles.detailCouponTitle}>{event.title}</AppText>
+                    {event.period ? <AppText style={styles.detailCouponPeriod}>{event.period}</AppText> : null}
                   </View>
                 </View>
               ))}
@@ -1829,12 +1847,12 @@ const ExpandedPlaceContent = ({
         <View>
           {fallbackContent?.reviewHighlights?.length ? (
             <View style={styles.detailReviewSection}>
-            <Text style={styles.detailReviewTitle}>
+            <AppText style={styles.detailReviewTitle}>
               {t('map.detail.reviewHighlights')}
               {fallbackContent?.reviewParticipantCount ? (
-                <Text style={styles.detailReviewCount}> {t('map.detail.participantCount', { count: fallbackContent.reviewParticipantCount })}</Text>
+                <AppText style={styles.detailReviewCount}> {t('map.detail.participantCount', { count: fallbackContent.reviewParticipantCount })}</AppText>
               ) : null}
-            </Text>
+            </AppText>
             {fallbackContent.reviewHighlights.map((highlight, index, items) => {
               const maxCount = Math.max(...items.map((item) => item.count), 1);
               const scoreRatio = Math.min(1, Math.max(0, highlight.count / maxCount));
@@ -1852,16 +1870,16 @@ const ExpandedPlaceContent = ({
                   />
                   <View style={styles.detailHighlightLabelRow}>
                     <ReviewHighlightIcon label={highlight.label} />
-                    <Text style={styles.detailHighlightLabel}>{highlight.label}</Text>
+                    <AppText style={styles.detailHighlightLabel}>{highlight.label}</AppText>
                   </View>
-                  <Text
+                  <AppText
                     style={[
                       styles.detailHighlightCount,
                       scoreRatio >= 0.88 && styles.detailHighlightCountOnStrong,
                     ]}
                   >
                     {highlight.count}
-                  </Text>
+                  </AppText>
                 </View>
               );
             })}
@@ -1870,7 +1888,7 @@ const ExpandedPlaceContent = ({
 
           {reviewImageUrls.length ? (
             <View style={styles.detailReviewSection}>
-              <Text style={styles.detailSectionTitle}>{t('map.detail.photoReviews')}</Text>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.photoReviews')}</AppText>
               <ScrollView contentContainerStyle={styles.detailReviewPhotos} horizontal showsHorizontalScrollIndicator={false}>
               {reviewImageUrls.map((url, index) => (
                 <Pressable
@@ -1893,23 +1911,23 @@ const ExpandedPlaceContent = ({
           ) : null}
 
           <View style={styles.detailReviewSection}>
-            <Text style={styles.detailSectionTitle}>{t('map.detail.reviewCount', { count: fallbackContent?.reviewCount ?? 0 })}</Text>
+            <AppText style={styles.detailSectionTitle}>{t('map.detail.reviewCount', { count: fallbackContent?.reviewCount ?? 0 })}</AppText>
             {fallbackContent?.reviewState === 'error' ? (
               <Pressable accessibilityRole="button" onPress={onRetryReviews}>
-                <Text style={styles.detailEmptyText}>{t('map.detail.reviewError')}</Text>
+                <AppText style={styles.detailEmptyText}>{t('map.detail.reviewError')}</AppText>
               </Pressable>
             ) : fallbackContent?.reviewState === 'loading' ? (
-              <Text accessibilityLiveRegion="polite" style={styles.detailEmptyText}>{t('map.detail.reviewLoading')}</Text>
+              <AppText accessibilityLiveRegion="polite" style={styles.detailEmptyText}>{t('map.detail.reviewLoading')}</AppText>
             ) : fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
               <View key={`${review.author}-${review.createdAt}-${index}`} style={styles.detailReviewItem}>
                 <View style={styles.detailReviewerRow}>
                   <ReviewerAvatar name={review.author} url={review.avatarUrl} />
                   <View style={styles.detailReviewBody}>
-                    <Text style={styles.detailReviewerName}>{review.author}</Text>
-                    <Text style={styles.detailReviewMeta}>{review.createdAt}</Text>
+                    <AppText style={styles.detailReviewerName}>{review.author}</AppText>
+                    <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
                   </View>
                 </View>
-                <Text style={styles.detailReviewText}>{review.text}</Text>
+                <AppText style={styles.detailReviewText}>{review.text}</AppText>
                 {review.imageUrls?.length ? (
                   <View style={styles.detailReviewImageGrid}>
                     {review.imageUrls.map((url, photoIndex) => (
@@ -1933,7 +1951,7 @@ const ExpandedPlaceContent = ({
                 <ReviewTags hiddenTags={review.hiddenTags} tags={review.tags} />
               </View>
             )) : (
-                <Text style={styles.detailEmptyText}>{t('map.detail.reviewEmpty')}</Text>
+                <AppText style={styles.detailEmptyText}>{t('map.detail.reviewEmpty')}</AppText>
               )}
           </View>
         </View>
@@ -1964,6 +1982,7 @@ export default function MapBottomSheet({
   onRetryAvailability,
   onRetryMedia,
   onRetryRecommendations,
+  onRetryPlaces = () => undefined,
   onRetryReviews,
   onSharePlace,
   onToggleBookmark,
@@ -2232,8 +2251,8 @@ export default function MapBottomSheet({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.resultsTitleRow}>
-            <Text style={styles.resultsTitle}>{query ? t('map.sheet.resultsFor', { query }) : t('map.sheet.aroundMe')}</Text>
-            <Text style={styles.resultsCount}>{places.length}</Text>
+            <AppText style={styles.resultsTitle}>{query ? t('map.sheet.resultsFor', { query }) : t('map.sheet.aroundMe')}</AppText>
+            <AppText style={styles.resultsCount}>{places.length}</AppText>
           </View>
           {places.length > 0 ? places.map((place) => (
             <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
@@ -2268,6 +2287,7 @@ export default function MapBottomSheet({
           onCategoryChange={setActiveCategory}
           onFeedChange={setFeed}
           onPlacePress={onPlacePress}
+          onRetry={onRetryPlaces}
           onToggleBookmark={onToggleBookmark}
           places={shownPlaces}
           restingScrollEnabled={restingScrollEnabled}

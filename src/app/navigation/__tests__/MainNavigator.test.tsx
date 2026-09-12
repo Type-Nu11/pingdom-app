@@ -8,6 +8,7 @@ import {
   MyPageRouteScreen,
   ProfileEditRouteScreen,
   SettingsRouteScreen,
+  VerifiedPlacesRouteScreen,
 } from '../MainNavigator';
 import { MAIN_ROUTES, type MainScreenProps } from '../types';
 
@@ -81,6 +82,38 @@ jest.mock('../../../v2/features/settings/screens/SettingsScreen', () => {
     default: ({ onOpenProfileEdit }: { onOpenProfileEdit: () => void }) => ReactLibrary.createElement(
       ReactNative.Pressable,
       { onPress: onOpenProfileEdit, testID: 'current-settings-profile-edit-entry' },
+    ),
+  };
+});
+
+jest.mock('../../../v2/features/merchant-my-page/screens/MerchantMyPageContainer', () => {
+  const ReactLibrary = require('react');
+  const ReactNative = require('react-native');
+  return {
+    __esModule: true,
+    default: ({
+      onCreateEvent,
+      onEditAddress,
+      onEditBusinessHours,
+      onEditPhoneNumber,
+      onOpenAllReviews,
+      onOpenProfileEdit,
+      onOpenVerifiedPlaces,
+    }: Record<string, (() => void) | undefined>) => ReactLibrary.createElement(
+      ReactNative.View,
+      { testID: 'current-merchant-my-page' },
+      ...[
+        ['merchant-create-event-entry', onCreateEvent],
+        ['merchant-edit-address-entry', onEditAddress],
+        ['merchant-edit-hours-entry', onEditBusinessHours],
+        ['merchant-edit-phone-entry', onEditPhoneNumber],
+        ['merchant-all-reviews-entry', onOpenAllReviews],
+        ['merchant-profile-edit-entry', onOpenProfileEdit],
+        ['merchant-verified-places-entry', onOpenVerifiedPlaces],
+      ].filter((entry) => entry[1]).map(([testID, onPress]) => ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { key: testID, onPress, testID },
+      )),
     ),
   };
 });
@@ -215,6 +248,98 @@ describe('현재 지도 경계', () => {
     );
     await view.user.press(screen.getByTestId('current-settings-profile-edit-entry'));
     expect(navigation.navigate).toHaveBeenLastCalledWith(MAIN_ROUTES.ProfileEdit);
+  });
+
+  test('MERCHANT 마이페이지는 미지원 액션을 관광객 route와 연결하지 않는다', async () => {
+    jest.mocked(useProfile).mockReturnValue({
+      profile: {
+        birthYear: 1998,
+        country: 'KR',
+        email: 'merchant@example.com',
+        id: 2,
+        language: 'ko',
+        profileImageUrl: null,
+        role: 'MERCHANT_OWNER',
+        username: 'merchant_owner',
+      },
+    } as ReturnType<typeof useProfile>);
+
+    const myPageRoute = {
+      key: 'MerchantMyPage-test',
+      name: MAIN_ROUTES.MyPage,
+      params: undefined,
+    } as MainScreenProps<'MyPage'>['route'];
+    await renderWithProviders(
+      <MyPageRouteScreen navigation={navigation as never} route={myPageRoute} />,
+    );
+
+    expect(screen.getByTestId('current-merchant-my-page')).toBeVisible();
+    expect(screen.queryByTestId('merchant-create-event-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-edit-address-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-edit-hours-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-edit-phone-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-all-reviews-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-profile-edit-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-verified-places-entry')).toBeNull();
+  });
+
+  test('MERCHANT의 저장된 ProfileEdit route는 관광객 편집 화면을 열지 않는다', async () => {
+    jest.mocked(useProfile).mockReturnValue({
+      isLoading: false,
+      profile: {
+        birthYear: 1998,
+        country: 'KR',
+        email: 'merchant@example.com',
+        id: 2,
+        language: 'ko',
+        profileImageUrl: null,
+        role: 'MERCHANT_OWNER',
+        username: 'merchant_owner',
+      },
+    } as ReturnType<typeof useProfile>);
+    const profileEditRoute = {
+      key: 'ProfileEdit-restore-test',
+      name: MAIN_ROUTES.ProfileEdit,
+      params: undefined,
+    } as MainScreenProps<'ProfileEdit'>['route'];
+
+    await renderWithProviders(
+      <ProfileEditRouteScreen navigation={navigation as never} route={profileEditRoute} />,
+    );
+
+    expect(screen.queryByTestId('current-profile-edit-back')).toBeNull();
+    expect(screen.getByText('이 기능은 현재 앱에서 지원하지 않습니다.')).toBeVisible();
+  });
+
+  test('MERCHANT의 저장된 VerifiedPlaces route는 방문 검증 목록을 열지 않는다', async () => {
+    jest.mocked(useProfile).mockReturnValue({
+      isLoading: false,
+      profile: {
+        birthYear: 1998,
+        country: 'KR',
+        email: 'merchant@example.com',
+        id: 2,
+        language: 'ko',
+        profileImageUrl: null,
+        role: 'MERCHANT_OWNER',
+        username: 'merchant_owner',
+      },
+    } as ReturnType<typeof useProfile>);
+    const verifiedPlacesRoute = {
+      key: 'VerifiedPlaces-restore-test',
+      name: MAIN_ROUTES.VerifiedPlaces,
+      params: undefined,
+    } as MainScreenProps<'VerifiedPlaces'>['route'];
+
+    await renderWithProviders(
+      <VerifiedPlacesRouteScreen
+        navigation={navigation as never}
+        route={verifiedPlacesRoute}
+      />,
+    );
+
+    expect(screen.getByText('이 기능은 현재 앱에서 지원하지 않습니다.')).toBeVisible();
+    expect(screen.queryByText('검증한 장소')).toBeNull();
   });
 
   test('마이페이지 검증 장소를 누르면 지도에서 해당 장소를 연다', async () => {

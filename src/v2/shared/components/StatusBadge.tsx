@@ -2,6 +2,7 @@ import React from 'react';
 import styled, { useTheme } from 'styled-components/native';
 
 import type { StatusTone } from '../model';
+import { Text } from './Typography';
 
 /** The badge speaks the same tone vocabulary as the shared status selectors. */
 export type StatusBadgeTone = StatusTone;
@@ -60,7 +61,7 @@ const Dot = styled.View<{ $color: string }>`
   background-color: ${({ $color }) => $color};
 `;
 
-const Label = styled.Text<{ $color: string }>`
+const Label = styled(Text)<{ $color: string }>`
   color: ${({ $color }) => $color};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};

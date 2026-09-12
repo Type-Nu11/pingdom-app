@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
@@ -67,14 +68,14 @@ const TopRow = styled.View`
   gap: ${({ theme }) => theme.spacing.sm}px;
 `;
 
-const ReservationNumber = styled.Text`
+const ReservationNumber = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 700;
 `;
 
-const Status = styled.Text<{ $tone: StatusTone }>`
+const Status = styled(AppText)<{ $tone: StatusTone }>`
   color: ${({ $tone, theme }) => {
     if ($tone === 'error') return theme.colors.danger;
     if ($tone === 'success') return theme.colors.success;
@@ -100,29 +101,29 @@ const ProductIcon = styled.View`
   background-color: ${({ theme }) => theme.colors.primarySoft};
 `;
 
-const ProductIconText = styled.Text`
+const ProductIconText = styled(AppText)`
   color: ${({ theme }) => theme.colors.primary};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 800;
 `;
 
-const ProductType = styled.Text`
+const ProductType = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 700;
 `;
 
-const Quantity = styled.Text`
+const Quantity = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;
 
-const ReservationWindow = styled.Text`
+const ReservationWindow = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;
 
-const RequestedAt = styled.Text`
+const RequestedAt = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;

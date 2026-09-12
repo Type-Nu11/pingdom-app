@@ -2,7 +2,6 @@ import React from 'react';
 import { ActivityIndicator, Animated, PanResponder } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts } from 'expo-font';
 import SearchAsset from '../../../../assets/v2/icons/search.svg';
 import ArtIcon from '../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyIcon from '../../../../assets/v2/icons/place/beati_svg.svg';
@@ -66,8 +65,6 @@ const categories: Array<{
   { Icon: EtcIcon, id: 'etc', iconSize: { width: 14, height: 2, drawingWidth: 16, drawingHeight: 4 } },
 ];
 
-const categoryFonts = { Pretendard: require('../../../../assets/v2/fonts/PretendardVariable.ttf') };
-
 export default function MapTopOverlay({
   activeCategory,
   onCategoryChange,
@@ -80,7 +77,6 @@ export default function MapTopOverlay({
   showCategories = true,
 }: MapTopOverlayProps) {
   const { t } = useTranslation();
-  const [categoryFontLoaded] = useFonts(categoryFonts);
   const insets = useSafeAreaInsets();
   const pullDistance = React.useRef(new Animated.Value(0)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -282,7 +278,6 @@ export default function MapTopOverlay({
                         <S.CategoryLabel
                           $active={isActive}
                           style={{
-                            fontFamily: categoryFontLoaded ? 'Pretendard' : undefined,
                             includeFontPadding: false,
                           }}
                         >{label}</S.CategoryLabel>

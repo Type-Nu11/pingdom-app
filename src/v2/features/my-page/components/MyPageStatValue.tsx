@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
@@ -41,7 +42,7 @@ const Slot = styled.View`
   justify-content: center;
 `;
 
-const Value = styled.Text`
+const Value = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 20px;
   font-weight: 700;

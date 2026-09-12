@@ -595,8 +595,8 @@ export default function MapScreen({
     setDismissedMarkerCenter({ lat: place.latitude, lng: place.longitude });
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_DISMISSED_ZOOM_LEVEL);
-    snapTo('medium');
-  }, [snapTo]);
+    jumpTo('medium');
+  }, [jumpTo]);
 
   const handleMarkerPress = (markerId: string) => {
     const place = findMapPreviewPlace(markerId, [
@@ -937,6 +937,7 @@ export default function MapScreen({
               ? (place) => onStartVisitVerification(place.id)
               : undefined}
             onPlacePress={handlePlacePress}
+            onRetryPlaces={() => void refetchPlaces()}
             onRetryRecommendations={() => void refetchRecommendations()}
             onRetryAvailability={() => void refetchAvailability()}
             onRetryMedia={() => void refetchMedia()}

@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import styled from 'styled-components/native';
 
@@ -66,7 +67,7 @@ const Card = styled.Pressable<{ disabled?: boolean }>`
   overflow: hidden;
 `;
 
-const PlaceName = styled.Text`
+const PlaceName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 700;
@@ -93,14 +94,14 @@ const IconBadge = styled.View<{ $muted: boolean }>`
   )};
 `;
 
-const Title = styled.Text`
+const Title = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 700;
 `;
 
-const Description = styled.Text`
+const Description = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
   font-weight: 500;
@@ -114,7 +115,7 @@ const MetaRow = styled.View`
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const Period = styled.Text`
+const Period = styled(AppText)`
   flex-shrink: 1;
   color: ${({ theme }) => theme.colors.textAlternative};
   font-size: 12px;
@@ -129,7 +130,7 @@ const StatusBadge = styled.View<{ $muted: boolean }>`
   )};
 `;
 
-const StatusText = styled.Text<{ $muted: boolean }>`
+const StatusText = styled(AppText)<{ $muted: boolean }>`
   color: ${({ $muted, theme }) => ($muted ? theme.colors.textMuted : theme.colors.success)};
   font-size: 12px;
   font-weight: 600;
