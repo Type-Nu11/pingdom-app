@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -460,7 +461,7 @@ const Wrapper = styled.View`
   margin-top: ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -471,7 +472,7 @@ const BenefitBlock = styled.View`
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const OfferTitle = styled.Text`
+const OfferTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -482,7 +483,7 @@ const DescriptionScroll = styled.ScrollView`
   margin: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.none}px;
 `;
 
-const DescriptionText = styled.Text`
+const DescriptionText = styled(AppText)`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
@@ -494,13 +495,13 @@ const DetailRow = styled.View`
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const DetailLabel = styled.Text`
+const DetailLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
-const DetailValue = styled.Text`
+const DetailValue = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
@@ -511,13 +512,13 @@ const Actions = styled.View`
   margin-top: ${({ theme }) => theme.spacing.sm}px;
 `;
 
-const HintText = styled.Text`
+const HintText = styled(AppText)`
   margin-top: ${({ theme }) => theme.spacing.sm}px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
 
-const StatusLine = styled.Text<{ $tone?: 'positive' | 'warning' }>`
+const StatusLine = styled(AppText)<{ $tone?: 'positive' | 'warning' }>`
   margin: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.none}px;
   color: ${({ $tone, theme }) => $tone === 'positive'
     ? theme.colors.success
@@ -543,7 +544,7 @@ const OfferChoice = styled.Pressable<{ $selected: boolean }>`
   background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primarySoft : theme.colors.surface)};
 `;
 
-const OfferChoiceText = styled.Text<{ $selected: boolean }>`
+const OfferChoiceText = styled(AppText)<{ $selected: boolean }>`
   color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.text)};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -555,7 +556,7 @@ const CompactSection = styled.View`
   padding: 20px 24px;
 `;
 
-const CompactSectionTitle = styled.Text`
+const CompactSectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 14px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -592,13 +593,13 @@ const CompactOfferBody = styled.View`
   min-width: 0;
 `;
 
-const CompactOfferTitle = styled.Text`
+const CompactOfferTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 13px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
-const CompactOfferPeriod = styled.Text`
+const CompactOfferPeriod = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 10px;
   margin-top: 3px;
@@ -611,7 +612,7 @@ const CompactIssueIcon = styled.View`
   width: 32px;
 `;
 
-const CompactStatusLine = styled.Text`
+const CompactStatusLine = styled(AppText)`
   color: ${({ theme }) => theme.colors.warning};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   margin-top: ${({ theme }) => theme.spacing.sm}px;
@@ -623,7 +624,7 @@ const CompactWalletAction = styled.Pressable`
   padding-vertical: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const CompactWalletActionText = styled.Text`
+const CompactWalletActionText = styled(AppText)`
   color: ${({ theme }) => theme.colors.primary};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};

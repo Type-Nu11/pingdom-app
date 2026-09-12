@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -78,7 +79,7 @@ const Header = styled.View`
   padding: 0 16px;
 `;
 
-const HeaderTitle = styled.Text`
+const HeaderTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   flex: 1;
   font-size: 16px;
@@ -96,7 +97,7 @@ const Content = styled.View`
   padding: 24px 16px;
 `;
 
-const Description = styled.Text`
+const Description = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
   line-height: 20px;
@@ -123,7 +124,7 @@ const LanguageOption = styled.Pressable<{ $selected: boolean }>`
   padding: 0 20px;
 `;
 
-const LanguageLabel = styled.Text`
+const LanguageLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 16px;
   font-weight: 600;

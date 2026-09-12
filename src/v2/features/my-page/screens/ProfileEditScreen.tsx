@@ -1,3 +1,4 @@
+import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -429,7 +430,7 @@ const IconButton = styled.Pressable`
   justify-content: center;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;
@@ -479,7 +480,7 @@ const InfoSection = styled.View`
   padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 700;
@@ -489,7 +490,7 @@ const Field = styled.View`
   gap: 4px;
 `;
 
-const FieldLabel = styled.Text`
+const FieldLabel = styled(AppText)`
   color: #5c5e5e;
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: 500;
@@ -503,7 +504,7 @@ const FieldRow = styled.View`
   border-bottom-color: ${({ theme }) => theme.colors.border};
 `;
 
-const FieldInput = styled.TextInput`
+const FieldInput = styled(AppTextInput)`
   flex: 1;
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
@@ -524,7 +525,7 @@ const SaveButton = styled.Pressable<{ disabled: boolean }>`
   background-color: ${({ theme, disabled }) => disabled ? theme.colors.disabled : theme.colors.primary};
 `;
 
-const SaveButtonText = styled.Text`
+const SaveButtonText = styled(AppText)`
   color: ${({ theme }) => theme.colors.onPrimary};
   font-size: 20px;
   font-weight: 700;

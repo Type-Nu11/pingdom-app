@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useRef } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import styled from 'styled-components/native';
@@ -53,7 +54,7 @@ const Container = styled.Pressable`
   border-radius: 24px;
   background-color: rgba(255, 25, 86, 0.8064);
 `;
-const Label = styled.Text`
+const Label = styled(AppText)`
   color: ${({ theme }) => theme.colors.onPrimary};
   font-size: 16px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};

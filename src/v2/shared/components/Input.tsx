@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 
+import { Text, TextInput } from './Typography';
+
 export type InputProps = Omit<TextInputProps, 'editable' | 'style'> & {
   disabled?: boolean;
   editable?: boolean;
@@ -68,14 +70,14 @@ const Field = styled.View`
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const Label = styled.Text`
+const Label = styled(Text)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
 `;
 
-const Control = styled(NativeTextInput)<{
+const Control = styled(TextInput)<{
   $disabled: boolean;
   $focused: boolean;
   $hasError: boolean;
@@ -98,7 +100,7 @@ const Control = styled(NativeTextInput)<{
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
 `;
 
-const SupportingText = styled.Text<{ $hasError: boolean }>`
+const SupportingText = styled(Text)<{ $hasError: boolean }>`
   color: ${({ $hasError, theme }) =>
     $hasError ? theme.colors.danger : theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;

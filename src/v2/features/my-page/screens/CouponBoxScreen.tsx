@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -226,7 +227,7 @@ const Spacer = styled.View`
   height: 44px;
 `;
 
-const TopBarTitle = styled.Text`
+const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 18px;
   font-weight: 500;
@@ -248,7 +249,7 @@ const FilterChip = styled.Pressable<{ $selected: boolean }>`
   )};
 `;
 
-const FilterLabel = styled.Text<{ $selected: boolean }>`
+const FilterLabel = styled(AppText)<{ $selected: boolean }>`
   color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.text)};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: 600;
@@ -265,13 +266,13 @@ const Footer = styled.View`
   padding: ${({ theme }) => theme.spacing.md}px;
 `;
 
-const FooterErrorText = styled.Text`
+const FooterErrorText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   text-align: center;
 `;
 
-const EmptyText = styled.Text`
+const EmptyText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   text-align: center;

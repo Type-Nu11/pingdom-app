@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { memo, useState } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -121,7 +122,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                   testID={`map-navigation-${id}-surface`}
                 >
                   <View style={styles.navIcon}>{icon}</View>
-                  <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+                  <AppText style={[styles.navLabel, active && styles.navLabelActive]}>{label}</AppText>
                 </View>
               </Pressable>
             );
