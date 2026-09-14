@@ -1,3 +1,5 @@
+import type { RankedPlaceFeedStatus } from '../../map-home-feeds';
+
 export type MapHomeCategory =
   | 'all'
   | 'art'
@@ -10,7 +12,7 @@ export type MapHomeCategory =
   | 'music'
   | 'popup';
 
-export type MapHomePlacesState = 'empty' | 'error' | 'loading' | 'ready';
+export type MapHomePlacesState = RankedPlaceFeedStatus;
 export type MapHomeDisplayState = MapHomePlacesState | 'category-empty';
 
 type CategorizedPlace = {

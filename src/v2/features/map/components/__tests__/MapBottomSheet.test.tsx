@@ -4,6 +4,11 @@ import { Animated, Text, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { runTimingMotion } from '../../../../shared/motion';
+import type {
+  RankedPlaceFeed,
+  RankedPlaceFeedStatus,
+  RankedPlaceViewModel,
+} from '../../../map-home-feeds';
 import MapBottomSheet, {
   getMapHomeSheetVisibleHeight,
   RecommendationFeaturedCard,
@@ -40,6 +45,32 @@ const places: DecisionPlace[] = Array.from({ length: 7 }, (_, index) => ({
   verifiedAgo: 'recently',
   wait: '예약 가능',
 }));
+
+const toRankedPlace = (place: DecisionPlace, rank = 1): RankedPlaceViewModel => ({
+  address: place.address,
+  bookmarkAdds: 10,
+  bookmarkCount: 100,
+  bookmarked: false,
+  bookmarkRemoves: 2,
+  category: place.category,
+  name: place.name,
+  netBookmarkGrowth: 8,
+  placeId: place.id,
+  rank,
+});
+
+const rankedFeed = (
+  feedPlaces: RankedPlaceViewModel[],
+  status: RankedPlaceFeedStatus = feedPlaces.length > 0 ? 'ready' : 'empty',
+  retry = jest.fn(),
+): RankedPlaceFeed => ({
+  hasNext: false,
+  places: feedPlaces,
+  retry,
+  status,
+});
+
+const rankedPlaces = places.map((place, index) => toRankedPlace(place, index + 1));
 
 describe('MapBottomSheet recommendations', () => {
   test('장소 상세 주소는 서버 도로명 주소 하나만 우선 표시한다', () => {
@@ -814,6 +845,8 @@ describe('MapBottomSheet recommendations', () => {
         onToggleBookmark={jest.fn(async () => undefined)}
         panHandlers={{} as GestureResponderHandlers}
         places={places}
+        localFeed={rankedFeed(rankedPlaces)}
+        nationalFeed={rankedFeed(rankedPlaces)}
         recommendationPlaces={[]}
         recommendationsState="ready"
         selectedPlace={null}
@@ -851,7 +884,7 @@ describe('MapBottomSheet recommendations', () => {
       top: 4,
       width: 181,
     });
-    expect(screen.getByRole('button', { name: '추천 장소 1, 1km' })).toHaveStyle({
+    expect(screen.getByRole('button', { name: '추천 장소 1, 테스트 주소 1' })).toHaveStyle({
       height: 182,
       width: 242,
     });
@@ -869,6 +902,61 @@ describe('MapBottomSheet recommendations', () => {
       1,
       expect.objectContaining({ useNativeDriver: true }),
     );
+  });
+
+  test('전국 탭은 지역 장소 역순이 아니라 독립적인 전국 트렌드 응답을 표시한다', async () => {
+    const localPlaces = places.slice(0, 2);
+    const nationalPlace = {
+      address: '부산광역시 해운대구',
+      bookmarkCount: 321,
+      bookmarked: false,
+      category: 'POPUP',
+      imageUrl: 'https://example.com/national.jpg',
+      name: '전국 트렌드 장소',
+      placeId: 901,
+      rank: 1,
+    };
+    const { user } = await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]}
+        bookmarkedPlaceIds={{}}
+        collapsedTranslateY={600}
+        content={{ type: 'home' }}
+        height={700}
+        mediumTranslateY={300}
+        onBackHome={jest.fn()}
+        onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()}
+        onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers}
+        places={localPlaces}
+        localFeed={rankedFeed([], 'empty')}
+        nationalFeed={rankedFeed([{
+          ...nationalPlace,
+          bookmarkAdds: 30,
+          bookmarkRemoves: 4,
+          netBookmarkGrowth: 26,
+        }])}
+        recommendationPlaces={[]}
+        recommendationsState="ready"
+        selectedPlace={null}
+        sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(300)}
+        snapPoint="medium"
+      />,
+    );
+
+    await user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+
+    expect(screen.getByText('전국 트렌드 장소')).toBeOnTheScreen();
+    expect(screen.queryByText('추천 장소 2')).not.toBeOnTheScreen();
   });
 
   test('medium 홈은 확장 전용 트리를 지연하고 첫 탭 feedback과 overlay 입력 상태를 보장한다', async () => {
@@ -896,6 +984,8 @@ describe('MapBottomSheet recommendations', () => {
       onToggleBookmark: jest.fn(async () => undefined),
       panHandlers: { onMoveShouldSetResponder } as GestureResponderHandlers,
       places,
+      localFeed: rankedFeed(rankedPlaces),
+      nationalFeed: rankedFeed(rankedPlaces),
       recommendationPlaces: [],
       recommendationsState: 'ready' as const,
       selectedPlace: null,
@@ -940,8 +1030,12 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('map-sheet-handle-target').props.onMoveShouldSetResponder)
       .toBe(onMoveShouldSetResponder);
     expect(screen.queryByTestId('expanded-home-only-content')).not.toBeOnTheScreen();
-    await view.user.press(screen.getByRole('button', { name: '추천 장소 1, 1km' }));
-    expect(commonProps.onPlacePress).toHaveBeenCalledWith(places[0]);
+    const onRankedPlacePress = jest.fn();
+    await view.rerender(
+      <MapBottomSheet {...commonProps} onRankedPlacePress={onRankedPlacePress} snapPoint="medium" />,
+    );
+    await view.user.press(screen.getAllByRole('button', { name: '추천 장소 1, 테스트 주소 1' })[0]);
+    expect(onRankedPlacePress).toHaveBeenCalledWith(rankedPlaces[0]);
   });
 
   test('장소 요청 실패를 빈 핫플 결과로 표시하지 않는다', async () => {
@@ -966,7 +1060,8 @@ describe('MapBottomSheet recommendations', () => {
         onToggleBookmark={jest.fn(async () => undefined)}
         panHandlers={{} as GestureResponderHandlers}
         places={[]}
-        placesState="error"
+        localFeed={rankedFeed([], 'error')}
+        nationalFeed={rankedFeed([], 'ready')}
         recommendationPlaces={[]}
         recommendationsState="ready"
         selectedPlace={null}
@@ -1002,6 +1097,8 @@ describe('MapBottomSheet recommendations', () => {
         onToggleBookmark={jest.fn(async () => undefined)}
         panHandlers={{} as GestureResponderHandlers}
         places={places}
+        localFeed={rankedFeed(rankedPlaces)}
+        nationalFeed={rankedFeed(rankedPlaces)}
         recommendationPlaces={[]}
         recommendationsState="ready"
         selectedPlace={null}
@@ -1023,14 +1120,14 @@ describe('MapBottomSheet recommendations', () => {
     });
   });
 
-  const categoryFixture = (id: number, name: string, category: string): DecisionPlace => ({
-    ...places[0],
+  const categoryFixture = (id: number, name: string, category: string): RankedPlaceViewModel => ({
+    ...rankedPlaces[0],
     category,
-    id,
+    placeId: id,
     name,
   });
 
-  const categoryProps = (categoryPlaces: DecisionPlace[], overrides: Partial<React.ComponentProps<typeof MapBottomSheet>> = {}) => ({
+  const categoryProps = (categoryPlaces: RankedPlaceViewModel[], overrides: Partial<React.ComponentProps<typeof MapBottomSheet>> = {}) => ({
     activeFilters: [],
     bookmarkedPlaceIds: {},
     collapsedTranslateY: 600,
@@ -1050,7 +1147,9 @@ describe('MapBottomSheet recommendations', () => {
     onSubmitSearch: jest.fn(),
     onToggleBookmark: jest.fn(async () => undefined),
     panHandlers: {} as GestureResponderHandlers,
-    places: categoryPlaces,
+    localFeed: rankedFeed(categoryPlaces),
+    nationalFeed: rankedFeed(categoryPlaces),
+    places,
     recommendationPlaces: [],
     recommendationsState: 'ready' as const,
     selectedPlace: null,
@@ -1096,16 +1195,22 @@ describe('MapBottomSheet recommendations', () => {
   test('피드 전환 후에도 선택된 카테고리와 표시 데이터가 일치한다', async () => {
     const food = categoryFixture(104, '전국에 섞이면 안 되는 음식점', 'FOOD');
     const cafe = categoryFixture(105, '피드 전환 카페', 'CAFE');
-    const view = await renderWithProviders(<MapBottomSheet {...categoryProps([food, cafe])} />);
+    const nationalPopup = categoryFixture(106, '전국 팝업', 'POPUP');
+    const view = await renderWithProviders(
+      <MapBottomSheet
+        {...categoryProps([food, cafe], { nationalFeed: rankedFeed([nationalPopup]) })}
+      />,
+    );
 
     await view.user.press(screen.getByRole('tab', { name: '카페' }));
     await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
 
     expect(screen.getByRole('tab', { name: '카페' }).props.accessibilityState)
-      .toEqual({ selected: true });
+      .toEqual({ selected: false });
     expect(screen.getByText('전국 카테고리 인기 장소')).toBeOnTheScreen();
     expect(screen.queryByText('카테고리별 user님 주변 인기 장소들')).not.toBeOnTheScreen();
-    expect(screen.getAllByText('피드 전환 카페').length).toBeGreaterThan(0);
+    expect(screen.queryByText('피드 전환 카페')).not.toBeOnTheScreen();
+    expect(screen.getAllByText('전국 팝업').length).toBeGreaterThan(0);
     expect(screen.queryByText('전국에 섞이면 안 되는 음식점')).not.toBeOnTheScreen();
   });
 
@@ -1113,17 +1218,44 @@ describe('MapBottomSheet recommendations', () => {
     ['loading', '주변 핫플을 찾는 중이에요'],
     ['error', '목록을 불러오지 못했어요'],
   ] as const)('%s 상태를 카테고리 빈 상태로 숨기지 않는다', async (placesState, message) => {
-    const onRetryPlaces = jest.fn();
+    const retry = jest.fn();
     const view = await renderWithProviders(
-      <MapBottomSheet {...categoryProps([], { onRetryPlaces, placesState })} />,
+      <MapBottomSheet {...categoryProps([], { localFeed: rankedFeed([], placesState, retry) })} />,
     );
 
     expect(screen.getByText(message)).toBeVisible();
     expect(screen.queryByText('이 카테고리에 해당하는 장소가 없어요')).not.toBeOnTheScreen();
     if (placesState === 'error') {
       await view.user.press(screen.getByRole('button', { name: '다시 시도' }));
-      expect(onRetryPlaces).toHaveBeenCalledTimes(1);
+      expect(retry).toHaveBeenCalledTimes(1);
     }
+  });
+
+  test('지역 오류와 전국 오류·retry가 서로 덮어쓰지 않고 영어 문구도 독립적으로 표시된다', async () => {
+    const localRetry = jest.fn();
+    const nationalRetry = jest.fn();
+    const view = await renderWithProviders(
+      <MapBottomSheet
+        {...categoryProps([], {
+          localFeed: rankedFeed([], 'region-not-found', localRetry),
+          nationalFeed: rankedFeed([], 'error', nationalRetry),
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('status', { name: '현재 지역을 판정하지 못했어요' })).toBeVisible();
+    await view.user.press(screen.getByRole('button', { name: '다시 시도' }));
+    expect(localRetry).toHaveBeenCalledTimes(1);
+    expect(nationalRetry).not.toHaveBeenCalled();
+
+    await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+    expect(screen.getByRole('status', { name: '전국 트렌드를 불러오지 못했어요' })).toBeOnTheScreen();
+    await view.user.press(screen.getByRole('button', { name: '다시 시도' }));
+    expect(nationalRetry).toHaveBeenCalledTimes(1);
+
+    await act(async () => view.i18n.changeLanguage('en'));
+    expect(screen.getByRole('status', { name: 'Could not load nationwide trends' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeOnTheScreen();
   });
 
   test('카테고리 빈 상태는 한국어·영어 문구와 status 접근성 정보를 제공한다', async () => {

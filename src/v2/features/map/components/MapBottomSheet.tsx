@@ -69,6 +69,11 @@ import {
 import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
 import { PlaceMenuSection } from '../../place-menus';
 import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapSheetBottomNavigation';
+import type {
+  RankedPlaceFeed,
+  RankedPlaceFeedStatus,
+  RankedPlaceViewModel,
+} from '../../map-home-feeds';
 
 export type BottomSheetContent =
   | { type: 'home' }
@@ -171,10 +176,16 @@ type MapBottomSheetProps = {
   onSharePlace?: (place: DecisionPlace) => void;
   onSubmitSearch: () => void;
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
+  onRankedPlacePress?: (place: RankedPlaceViewModel) => void;
+  onToggleRankedBookmark?: (
+    place: RankedPlaceViewModel,
+    nextBookmarked: boolean,
+  ) => Promise<void>;
   panHandlers: GestureResponderHandlers;
   placeActionBusy?: 'directions' | 'share' | null;
   places: DecisionPlace[];
-  placesState?: 'empty' | 'error' | 'loading' | 'ready';
+  localFeed?: RankedPlaceFeed;
+  nationalFeed?: RankedPlaceFeed;
   previewFallbackContentByPlaceId?: Record<string, MapPreviewFallbackContent>;
   explorationImageUrlsByPlaceId?: Record<string, string>;
   recommendationContext?: string | null;
@@ -182,7 +193,6 @@ type MapBottomSheetProps = {
   recommendationPlaces: DecisionPlace[];
   recommendationsState: 'empty' | 'error' | 'loading' | 'ready';
   onRetryRecommendations: () => void;
-  onRetryPlaces?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onRetryReviews?: () => void;
@@ -744,12 +754,12 @@ const PlaceTrendCard = ({
   onPress: () => void;
   onToggleBookmark: () => void;
   pending: boolean;
-  place: DecisionPlace;
+  place: RankedPlaceViewModel;
 }) => {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   return (
   <Pressable
-    accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
+    accessibilityLabel={`${place.name}, ${place.address}`}
     accessibilityRole="button"
     onPress={onPress}
     style={({ pressed }) => [styles.homeTrendCard, pressed && styles.pressed]}
@@ -775,7 +785,7 @@ const PlaceTrendCard = ({
         {place.name || t('map.sheet.placeMissing')}
       </AppText>
       <AppText numberOfLines={1} style={styles.homeTrendCardDistance}>
-        {t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}
+        {place.address}
       </AppText>
     </View>
   </Pressable>
@@ -795,12 +805,12 @@ const ExpandedPlaceCard = ({
   onPress: () => void;
   onToggleBookmark: () => void;
   pending: boolean;
-  place: DecisionPlace;
+  place: RankedPlaceViewModel;
 }) => {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   return (
   <Pressable
-    accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
+    accessibilityLabel={`${place.name}, ${place.address}`}
     accessibilityRole="button"
     onPress={onPress}
     style={({ pressed }) => [styles.homeGridCard, pressed && styles.pressed]}
@@ -823,7 +833,7 @@ const ExpandedPlaceCard = ({
     </Pressable>
     <View style={styles.homeGridCardBody}>
       <AppText numberOfLines={2} style={styles.homeGridCardName}>{place.name}</AppText>
-      <AppText numberOfLines={1} style={styles.homeGridCardDistance}>{t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}</AppText>
+      <AppText numberOfLines={1} style={styles.homeGridCardDistance}>{place.address}</AppText>
     </View>
   </Pressable>
   );
@@ -831,13 +841,10 @@ const ExpandedPlaceCard = ({
 
 const ExpandedHomeContent = ({
   activeCategory,
-  bookmarkedPlaceIds,
   bookmarkPendingPlaceIds,
   feed,
   expandedInteractionsEnabled,
   expandedOnlyOpacity,
-  imageUrlsByPlaceId,
-  isBookmarkStateLoading,
   onCategoryChange,
   onFeedChange,
   onPlacePress,
@@ -846,24 +853,23 @@ const ExpandedHomeContent = ({
   places,
   restingScrollEnabled = false,
   state,
+  title,
   userName,
 }: {
   activeCategory: SheetCategory;
-  bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds: Record<string, boolean>;
   feed: 'local' | 'national';
   expandedInteractionsEnabled: boolean;
   expandedOnlyOpacity: Animated.AnimatedInterpolation<number>;
-  imageUrlsByPlaceId: Record<string, string>;
-  isBookmarkStateLoading: boolean;
   onCategoryChange: (category: SheetCategory) => void;
   onFeedChange: (feed: 'local' | 'national') => void;
-  onPlacePress: (place: DecisionPlace) => void;
+  onPlacePress: (place: RankedPlaceViewModel) => void;
   onRetry: () => void;
-  onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
-  places: DecisionPlace[];
+  onToggleBookmark: (place: RankedPlaceViewModel, nextBookmarked: boolean) => Promise<void>;
+  places: RankedPlaceViewModel[];
   restingScrollEnabled?: boolean;
-  state?: 'empty' | 'error' | 'loading' | 'ready';
+  state?: RankedPlaceFeedStatus;
+  title?: string;
   userName: string;
 }) => {
   const { t } = useTranslation();
@@ -914,18 +920,18 @@ const ExpandedHomeContent = ({
         >
           {categoryResult.state === 'ready' ? displayedPlaces.slice(0, 6).map((place) => (
             <PlaceTrendCard
-              bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-              imageUrl={imageUrlsByPlaceId[String(place.id)]}
-              key={`featured-${place.id}`}
+              bookmarked={place.bookmarked}
+              imageUrl={place.imageUrl}
+              key={`featured-${place.placeId}`}
               onPress={() => onPlacePress(place)}
               onToggleBookmark={() => void onToggleBookmark(
                 place,
-                !bookmarkedPlaceIds[String(place.id)],
+                !place.bookmarked,
               )}
-              pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+              pending={Boolean(bookmarkPendingPlaceIds[String(place.placeId)])}
               place={place}
             />
-          )) : <EmptyCard onRetry={onRetry} state={categoryResult.state} variant="row" />}
+          )) : <EmptyCard feed={feed} onRetry={onRetry} state={categoryResult.state} variant="row" />}
         </ScrollView>
 
         {shouldRenderExpandedContent && !restingScrollEnabled ? (
@@ -935,7 +941,9 @@ const ExpandedHomeContent = ({
             testID="expanded-home-only-content"
           >
             <AppText style={styles.expandedTitle}>
-              {t(feed === 'local' ? 'map.sheet.categoryPopular' : 'map.sheet.categoryPopularNational', { userName })}
+              {feed === 'local' && title
+                ? t('map.sheet.categoryPopularRegion', { regionName: title })
+                : t(feed === 'local' ? 'map.sheet.categoryPopular' : 'map.sheet.categoryPopularNational', { userName })}
             </AppText>
 
             <ScrollView
@@ -967,15 +975,15 @@ const ExpandedHomeContent = ({
             <View style={styles.gridRow}>
               {displayedPlaces.slice(0, 8).map((place) => (
                 <ExpandedPlaceCard
-                  bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
-                  imageUrl={imageUrlsByPlaceId[String(place.id)]}
-                  key={`grid-${place.id}`}
+                  bookmarked={place.bookmarked}
+                  imageUrl={place.imageUrl}
+                  key={`grid-${place.placeId}`}
                   onPress={() => onPlacePress(place)}
                   onToggleBookmark={() => void onToggleBookmark(
                     place,
-                    !bookmarkedPlaceIds[String(place.id)],
+                    !place.bookmarked,
                   )}
-                  pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                  pending={Boolean(bookmarkPendingPlaceIds[String(place.placeId)])}
                   place={place}
                 />
               ))}
@@ -988,10 +996,12 @@ const ExpandedHomeContent = ({
 };
 
 const EmptyCard = ({
+  feed = 'local',
   onRetry,
   state = 'loading',
   variant = 'list',
 }: {
+  feed?: 'local' | 'national';
   onRetry?: () => void;
   state?: MapHomeDisplayState;
   variant?: 'list' | 'row';
@@ -999,9 +1009,23 @@ const EmptyCard = ({
   const { t } = useTranslation();
   const copyState = state === 'ready' ? 'empty' : state;
   const isCategoryEmpty = copyState === 'category-empty';
-  const titleKey = isCategoryEmpty ? 'map.sheet.state.categoryEmptyTitle' : `map.sheet.state.${copyState}Title`;
-  const bodyKey = isCategoryEmpty ? null : `map.sheet.state.${copyState}Body`;
+  const nationalCopy = feed === 'national' && ['empty', 'error', 'loading'].includes(copyState);
+  const nationalState = `${copyState[0]?.toUpperCase() ?? ''}${copyState.slice(1)}`;
+  const titleKey = isCategoryEmpty
+    ? 'map.sheet.state.categoryEmptyTitle'
+    : nationalCopy ? `map.sheet.state.national${nationalState}Title` : `map.sheet.state.${copyState}Title`;
+  const bodyKey = isCategoryEmpty
+    ? null
+    : nationalCopy ? `map.sheet.state.national${nationalState}Body` : `map.sheet.state.${copyState}Body`;
   const accessibilityLabel = t(titleKey);
+  const retryable = ![
+    'category-empty',
+    'disabled',
+    'empty',
+    'loading',
+    'location-denied',
+    'location-pending',
+  ].includes(copyState);
 
   return (
     <View
@@ -1010,12 +1034,18 @@ const EmptyCard = ({
       accessibilityLiveRegion="polite"
       role="status"
       style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
+      testID={`map-home-feed-state-${copyState}`}
     >
       <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
       <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
       {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
-      {copyState === 'error' && onRetry ? (
-        <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
+      {retryable && onRetry ? (
+        <Pressable
+          accessibilityLabel={t('common.error.retry')}
+          accessibilityRole="button"
+          onPress={onRetry}
+          style={styles.retryButton}
+        >
           <AppText style={styles.retryButtonText}>{t('common.error.retry')}</AppText>
         </Pressable>
       ) : null}
@@ -1960,6 +1990,13 @@ const ExpandedPlaceContent = ({
   );
 };
 
+const DISABLED_RANKED_FEED: RankedPlaceFeed = {
+  hasNext: false,
+  places: [],
+  retry: () => undefined,
+  status: 'disabled',
+};
+
 export default function MapBottomSheet({
   bookmarkPendingPlaceIds = {},
   bookmarkedPlaceIds,
@@ -1979,17 +2016,19 @@ export default function MapBottomSheet({
   onOpenSavedPlaces,
   onStartVisitVerification,
   onPlacePress,
+  onRankedPlacePress = () => undefined,
   onRetryAvailability,
   onRetryMedia,
   onRetryRecommendations,
-  onRetryPlaces = () => undefined,
   onRetryReviews,
   onSharePlace,
   onToggleBookmark,
+  onToggleRankedBookmark = async () => undefined,
   panHandlers,
   placeActionBusy = null,
   places,
-  placesState,
+  localFeed = DISABLED_RANKED_FEED,
+  nationalFeed = DISABLED_RANKED_FEED,
   previewFallbackContentByPlaceId,
   explorationImageUrlsByPlaceId = {},
   recommendationPlaces,
@@ -2003,7 +2042,8 @@ export default function MapBottomSheet({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [feed, setFeed] = useState<'local' | 'national'>('local');
-  const [activeCategory, setActiveCategory] = useState<SheetCategory>('popup');
+  const [localCategory, setLocalCategory] = useState<SheetCategory>('popup');
+  const [nationalCategory, setNationalCategory] = useState<SheetCategory>('popup');
   const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
   const [activePreviewAction, setActivePreviewAction] = useState<PreviewActionKind | null>(null);
   const [photoViewer, setPhotoViewer] = useState<{
@@ -2027,11 +2067,9 @@ export default function MapBottomSheet({
   }, [selectedPlace?.id]);
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
-  const resolvedPlacesState = placesState ?? (places.length > 0 ? 'ready' : 'empty');
-  const shownPlaces = useMemo(
-    () => (feed === 'local' ? places : [...places].reverse()),
-    [feed, places],
-  );
+  const selectedFeed = feed === 'local' ? localFeed : nationalFeed;
+  const activeCategory = feed === 'local' ? localCategory : nationalCategory;
+  const setActiveCategory = feed === 'local' ? setLocalCategory : setNationalCategory;
   const previewPlaces = useMemo(() => {
     const seenPlaceIds = new Set<number>();
 
@@ -2277,21 +2315,19 @@ export default function MapBottomSheet({
       ) : (
         <ExpandedHomeContent
           activeCategory={activeCategory}
-          bookmarkedPlaceIds={bookmarkedPlaceIds}
           bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
           expandedInteractionsEnabled={snapPoint === 'expanded'}
           expandedOnlyOpacity={expandedOnlyOpacity}
           feed={feed}
-          imageUrlsByPlaceId={imageUrlsByPlaceId}
-          isBookmarkStateLoading={isBookmarkStateLoading}
           onCategoryChange={setActiveCategory}
           onFeedChange={setFeed}
-          onPlacePress={onPlacePress}
-          onRetry={onRetryPlaces}
-          onToggleBookmark={onToggleBookmark}
-          places={shownPlaces}
+          onPlacePress={onRankedPlacePress}
+          onRetry={selectedFeed.retry}
+          onToggleBookmark={onToggleRankedBookmark}
+          places={selectedFeed.places}
           restingScrollEnabled={restingScrollEnabled}
-          state={resolvedPlacesState}
+          state={selectedFeed.status}
+          title={selectedFeed.title}
           userName={userName?.trim() || 'user'}
         />
       )}
