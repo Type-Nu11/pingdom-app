@@ -1,3 +1,4 @@
+import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -5,8 +6,7 @@ import {
   Keyboard,
   Pressable,
   ScrollView,
-  Text,
-  TextInput,
+  TextInput as NativeTextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -126,7 +126,7 @@ const MapSearchOverlay = ({
   recommendedPlaces = [],
 }: MapSearchOverlayProps) => {
   const { i18n, t } = useTranslation();
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<NativeTextInput>(null);
   const searchRequestInFlight = useRef(false);
   const [query, setQuery] = useState('');
   const [registeredQuery, setRegisteredQuery] = useState('');
@@ -273,9 +273,9 @@ const MapSearchOverlay = ({
             style={styles.backButton}
             onPress={onClose}
           >
-            <Text style={styles.backIcon}>‹</Text>
+            <AppText style={styles.backIcon}>‹</AppText>
           </Pressable>
-          <TextInput
+          <AppTextInput
             autoCapitalize="none"
             autoCorrect={false}
             autoFocus
@@ -302,7 +302,7 @@ const MapSearchOverlay = ({
                 inputRef.current?.focus();
               }}
             >
-              <Text style={styles.clearIcon}>×</Text>
+              <AppText style={styles.clearIcon}>×</AppText>
             </Pressable>
           ) : null}
         </View>
@@ -330,7 +330,7 @@ const MapSearchOverlay = ({
               style={[styles.categoryChip, active && styles.categoryChipActive]}
             >
               {Icon ? <Icon color={active ? '#FF245B' : '#5E6069'} height={18} width={22} /> : null}
-              <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</Text>
+              <AppText style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</AppText>
             </Pressable>
           );
         })}
@@ -344,14 +344,14 @@ const MapSearchOverlay = ({
         {!isResultMode ? (
           <>
             <View style={styles.recentHeader}>
-              <Text style={styles.recentTitle}>{t('map.searchOverlay.recent')}</Text>
+              <AppText style={styles.recentTitle}>{t('map.searchOverlay.recent')}</AppText>
               {recentQueries.length > 0 && recentSearchOwner ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('map.searchOverlay.recentClearAll')}
                   onPress={() => void clearRecentSearches(recentSearchOwner)}
                 >
-                  <Text style={styles.deleteText}>{t('map.searchOverlay.clearAll')}</Text>
+                  <AppText style={styles.deleteText}>{t('map.searchOverlay.clearAll')}</AppText>
                 </Pressable>
               ) : null}
             </View>
@@ -372,11 +372,11 @@ const MapSearchOverlay = ({
                   style={styles.recentMain}
                 >
                   <View style={styles.recentIcon}><RecentCategoryIcon category={item.category} /></View>
-                  <Text numberOfLines={1} style={styles.recentQuery}>{item.query}</Text>
+                  <AppText numberOfLines={1} style={styles.recentQuery}>{item.query}</AppText>
                 </Pressable>
-                <Text style={styles.recentDate}>
+                <AppText style={styles.recentDate}>
                   {formatRecentSearchDate(item.searchedAt, i18n.language)}
-                </Text>
+                </AppText>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('map.searchOverlay.recentDelete', { query: item.query })}
@@ -385,7 +385,7 @@ const MapSearchOverlay = ({
                     ? void removeRecentSearch(item.id, recentSearchOwner)
                     : undefined}
                 >
-                  <Text style={styles.recentRemove}>×</Text>
+                  <AppText style={styles.recentRemove}>×</AppText>
                 </Pressable>
               </View>
             ))}
@@ -395,7 +395,7 @@ const MapSearchOverlay = ({
         {isSearching ? (
           <View style={styles.statusRow}>
             <ActivityIndicator color="#ff1956" size="small" />
-            <Text style={styles.statusInlineText}>{t('map.searchOverlay.loading')}</Text>
+            <AppText style={styles.statusInlineText}>{t('map.searchOverlay.loading')}</AppText>
           </View>
         ) : null}
 
@@ -405,7 +405,7 @@ const MapSearchOverlay = ({
           <View style={styles.registeredStatus} testID={`registered-place-status-${
             env.apiMode === 'mock' && registeredStatus === 'ready' ? 'mock' : registeredStatus
           }`}>
-            <Text style={styles.statusInlineText}>
+            <AppText style={styles.statusInlineText}>
               {env.apiMode === 'mock' && registeredStatus === 'ready'
                 ? t('map.searchOverlay.registeredMock')
                 : registeredStatus === 'disabled'
@@ -413,13 +413,13 @@ const MapSearchOverlay = ({
                   : registeredStatus === 'error'
                     ? t('map.searchOverlay.registeredError')
                     : t('map.searchOverlay.registeredEmpty')}
-            </Text>
+            </AppText>
           </View>
         ) : null}
 
         {registeredResults.length > 0 ? (
           <View style={styles.resultGroup}>
-            <Text style={styles.sectionTitle}>{t('map.searchOverlay.pingdomResults')}</Text>
+            <AppText style={styles.sectionTitle}>{t('map.searchOverlay.pingdomResults')}</AppText>
             {registeredResults.slice(0, 5).map((item) => (
               <Pressable
                 accessibilityRole="button"
@@ -427,10 +427,10 @@ const MapSearchOverlay = ({
                 style={styles.resultItem}
                 onPress={() => handleSelect(toRegisteredSelection(item))}
               >
-                <Text numberOfLines={1} style={styles.resultName}>{item.name}</Text>
-                <Text numberOfLines={1} style={styles.resultAddress}>
+                <AppText numberOfLines={1} style={styles.resultName}>{item.name}</AppText>
+                <AppText numberOfLines={1} style={styles.resultAddress}>
                   {item.address}
-                </Text>
+                </AppText>
               </Pressable>
             ))}
           </View>
@@ -438,7 +438,7 @@ const MapSearchOverlay = ({
 
         {searchResults.length > 0 ? (
           <View style={styles.resultGroup}>
-            <Text style={styles.sectionTitle}>{t('map.searchOverlay.externalResults')}</Text>
+            <AppText style={styles.sectionTitle}>{t('map.searchOverlay.externalResults')}</AppText>
             {searchResults.slice(0, 8).map((item) => (
               <Pressable
                 accessibilityRole="button"
@@ -446,12 +446,12 @@ const MapSearchOverlay = ({
                 style={styles.resultItem}
                 onPress={() => handleSelect(toKakaoSelection(item))}
               >
-                <Text numberOfLines={1} style={styles.resultName}>{item.name}</Text>
-                <Text numberOfLines={1} style={styles.resultAddress}>
+                <AppText numberOfLines={1} style={styles.resultName}>{item.name}</AppText>
+                <AppText numberOfLines={1} style={styles.resultAddress}>
                   {item.roadAddress || item.address}
-                </Text>
+                </AppText>
                 {item.category ? (
-                  <Text numberOfLines={1} style={styles.resultCategory}>{item.category}</Text>
+                  <AppText numberOfLines={1} style={styles.resultCategory}>{item.category}</AppText>
                 ) : null}
               </Pressable>
             ))}
@@ -460,11 +460,11 @@ const MapSearchOverlay = ({
 
         {shouldShowEmptyState ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>{t('map.searchOverlay.emptyTitle')}</Text>
-            <Text style={styles.emptyDescription}>{t('map.searchOverlay.emptyBody')}</Text>
+            <AppText style={styles.emptyTitle}>{t('map.searchOverlay.emptyTitle')}</AppText>
+            <AppText style={styles.emptyDescription}>{t('map.searchOverlay.emptyBody')}</AppText>
           </View>
         ) : !isSearching && !hasResults && searchStatusMessage && !hasSearched ? (
-          <Text style={styles.statusText}>{searchStatusMessage}</Text>
+          <AppText style={styles.statusText}>{searchStatusMessage}</AppText>
         ) : null}
       </ScrollView>
     </SafeAreaView>

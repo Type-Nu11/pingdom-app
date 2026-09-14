@@ -42,7 +42,7 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('알림')).toBeTruthy();
     expect(screen.getByText('개인정보 · 위치')).toBeTruthy();
     expect(screen.getByText('앱 정보')).toBeTruthy();
-    expect(screen.getByText('프로필 편집')).toBeTruthy();
+    expect(await screen.findByText('프로필 편집')).toBeTruthy();
     expect(screen.getByText('아이디 · 이메일')).toBeTruthy();
     expect(screen.getByText('비밀번호 변경')).toBeTruthy();
     expect(screen.getByText('내 발자국 지도')).toBeTruthy();
@@ -72,7 +72,7 @@ describe('SettingsScreen', () => {
       />,
     );
 
-    await user.press(screen.getByText('프로필 편집'));
+    await user.press(await screen.findByText('프로필 편집'));
     await user.press(screen.getByText('아이디 · 이메일'));
     await user.press(screen.getByText('내 기록 관리'));
     await user.press(screen.getByText('로그아웃'));

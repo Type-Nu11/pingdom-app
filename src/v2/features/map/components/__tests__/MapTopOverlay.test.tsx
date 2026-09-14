@@ -1,9 +1,15 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import MapTopOverlay from '../MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../../styles/MapTopOverlay.styles';
+
+const mockUseFonts = jest.fn(() => [false, null]);
+
+jest.mock('expo-font', () => ({
+  useFonts: () => mockUseFonts(),
+}));
 
 const props = {
   activeCategory: 'all' as const,
@@ -27,9 +33,14 @@ describe('MapTopOverlay', () => {
 
     expect(MAP_TOP_OVERLAY_METRICS.headerHeight).toBe(60);
     expect(MAP_TOP_OVERLAY_METRICS.searchHeight).toBe(44);
-    expect(screen.getByText('검색하기')).toHaveStyle({ fontSize: 18, fontWeight: '500' });
-    expect(screen.getByText('전체')).toHaveStyle({ fontSize: 14, fontWeight: '500' });
+    expect(screen.getByText('검색하기')).toHaveStyle({
+      fontFamily: 'Pretendard', fontSize: 18, fontWeight: '500',
+    });
+    expect(screen.getByText('전체')).toHaveStyle({
+      fontFamily: 'Pretendard', fontSize: 14, fontWeight: '500',
+    });
     expect(screen.getByRole('button', { name: '전체' }).props.hitSlop).toEqual({ top: 5, bottom: 5 });
+    expect(mockUseFonts).not.toHaveBeenCalled();
   });
 
   test('expanded 시트에서는 검색창을 유지하고 지도 카테고리를 숨긴다', async () => {
@@ -53,9 +64,10 @@ describe('MapTopOverlay', () => {
 
   test('카테고리는 Pretendard Medium을 사용하고 선택한 라벨과 테두리만 분홍색으로 바뀐다', async () => {
     const view = await renderWithProviders(<MapTopOverlay {...props} />);
-    await waitFor(() => expect(screen.getByText('음식점')).toHaveStyle({
+    expect(screen.getByText('음식점')).toHaveStyle({
       fontFamily: 'Pretendard', fontSize: 14, fontWeight: '500', lineHeight: 18.2,
-    }));
+    });
+    expect(screen.getByText('음식점').props.numberOfLines).toBe(1);
     await view.user.press(screen.getByRole('button', { name: '음식점' }));
     expect(props.onCategoryChange).toHaveBeenCalledWith('food');
 

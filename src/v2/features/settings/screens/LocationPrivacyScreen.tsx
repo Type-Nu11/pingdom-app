@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useCallback } from 'react';
 import { Alert, Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -177,7 +178,7 @@ const Header = styled.View`
   padding: 0 16px;
 `;
 
-const HeaderTitle = styled.Text`
+const HeaderTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   flex: 1;
   font-size: 16px;
@@ -204,7 +205,7 @@ const InfoCard = styled.View`
   padding: 14px 16px;
 `;
 
-const InfoText = styled.Text`
+const InfoText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 13px;
   line-height: 19px;
@@ -220,7 +221,7 @@ const SectionInner = styled.View`
   padding: 0 16px;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: 16px;
   font-weight: 700;
@@ -249,7 +250,7 @@ const Row = styled.Pressable`
   padding: 10px 0;
 `;
 
-const RowLabel = styled.Text<{ $destructive?: boolean }>`
+const RowLabel = styled(AppText)<{ $destructive?: boolean }>`
   color: ${({ $destructive, theme }) => ($destructive ? theme.colors.danger : theme.colors.textStrong)};
   flex-shrink: 1;
   font-size: 15px;
@@ -257,7 +258,7 @@ const RowLabel = styled.Text<{ $destructive?: boolean }>`
   line-height: 22px;
 `;
 
-const RowDescription = styled.Text`
+const RowDescription = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
   line-height: 17px;
@@ -272,7 +273,7 @@ const RowTrailing = styled.View`
   max-width: 55%;
 `;
 
-const RowValue = styled.Text`
+const RowValue = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
   line-height: 20px;
@@ -285,7 +286,7 @@ const ConnectionNotice = styled.View`
   padding: 10px 12px;
 `;
 
-const ConnectionNoticeText = styled.Text`
+const ConnectionNoticeText = styled(AppText)`
   color: ${({ theme }) => theme.colors.warning};
   font-size: 12px;
   line-height: 18px;

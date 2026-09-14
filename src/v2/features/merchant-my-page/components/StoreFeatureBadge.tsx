@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
@@ -43,7 +44,7 @@ const IconCircle = styled.View`
   background-color: #f2f2f3;
 `;
 
-const Caption = styled.Text`
+const Caption = styled(AppText)`
   color: #5e5e66;
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;

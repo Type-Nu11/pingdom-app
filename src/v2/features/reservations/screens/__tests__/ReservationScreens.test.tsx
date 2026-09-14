@@ -132,10 +132,13 @@ describe('V2 reservation screens', () => {
     await renderReservationScreen(createScreen());
 
     expect(screen.getByTestId('v2-reservation-month')).toHaveTextContent('2026년 8월');
-    expect(screen.getByText('이 장소에 등록된 예약 가능 일정이 없습니다.')).toBeVisible();
+    expect(screen.getByText('이 장소에 등록된 예약 가능 일정이 없습니다.')).toHaveStyle({
+      fontFamily: 'Pretendard',
+    });
     // The booker fields are contract-backed (ReservationCreateRequest), so they
     // render; the screen still invents no fallback time.
     expect(screen.getByTestId('v2-booker-name')).toBeVisible();
+    expect(screen.getByTestId('v2-booker-name')).toHaveStyle({ fontFamily: 'Pretendard' });
     expect(screen.getByTestId('v2-booker-phone')).toBeVisible();
     expect(screen.getByTestId('v2-booker-note')).toBeVisible();
     expect(screen.queryByText('09:00')).not.toBeOnTheScreen();

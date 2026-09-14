@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated } from 'react-native';
@@ -292,14 +293,14 @@ const Heading = styled.View`
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
-const Title = styled.Text`
+const Title = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.display.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.display.fontWeight};
   line-height: ${({ theme }) => theme.typography.display.lineHeight}px;
 `;
 
-const Description = styled.Text`
+const Description = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.body.fontWeight};
@@ -310,7 +311,7 @@ const Options = styled.View`
   gap: 12px;
 `;
 
-const ErrorMessage = styled.Text`
+const ErrorMessage = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.caption.fontWeight};
@@ -339,7 +340,7 @@ const OptionIcon = styled.View`
   justify-content: center;
 `;
 
-const OptionLabel = styled.Text`
+const OptionLabel = styled(AppText)`
   flex: 1;
   flex-shrink: 1;
   color: ${({ theme }) => theme.colors.text};
@@ -358,7 +359,7 @@ const CheckCircle = styled.View`
   background-color: ${({ theme }) => theme.colors.primary};
 `;
 
-const CheckMark = styled.Text`
+const CheckMark = styled(AppText)`
   color: ${({ theme }) => theme.colors.onPrimary};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.title.fontWeight};

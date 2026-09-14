@@ -98,14 +98,7 @@ function renderContainer(overrides: Partial<React.ComponentProps<typeof Merchant
   return renderWithProviders(
     <MerchantMyPageContainer
       onBack={jest.fn()}
-      onCreateEvent={jest.fn()}
-      onEditAddress={jest.fn()}
-      onEditBusinessHours={jest.fn()}
-      onEditPhoneNumber={jest.fn()}
-      onOpenAllReviews={jest.fn()}
-      onOpenProfileEdit={jest.fn()}
       onOpenSettings={jest.fn()}
-      onOpenVerifiedPlaces={jest.fn()}
       userProfileImageUrl={null}
       username="woo._sm"
       {...overrides}

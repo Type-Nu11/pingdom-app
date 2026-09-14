@@ -76,6 +76,15 @@ test('map section changes do not fade the whole sheet or preserve expanded place
   assert.match(bottomSheet, /tintColor=\{isExpandedPlaceDetail \? colors\.surface : liquidGlass\.sheet\.tint\}/);
 });
 
+test('dismissing an expanded place resets the home sheet without an intermediate stretched frame', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const dismissPlace = screen.match(/const dismissPlaceAt = useCallback\([\s\S]*?\}, \[[^\]]*\]\);/)?.[0] ?? '';
+
+  assert.match(dismissPlace, /setContent\(\{ type: 'home' \}\)/);
+  assert.match(dismissPlace, /jumpTo\('medium'\)/);
+  assert.doesNotMatch(dismissPlace, /snapTo\('medium'\)/);
+});
+
 test('expanded sheet stops below the search header and temporarily hides map categories', () => {
   const screen = read('../screens/MapScreen.tsx');
   const expandedTop = screen.match(/const expandedSheetTop =[\s\S]*?;/)?.[0] ?? '';

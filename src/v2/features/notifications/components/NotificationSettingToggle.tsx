@@ -1,3 +1,4 @@
+import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
@@ -74,14 +75,14 @@ const Copy = styled.View`
   gap: 2px;
 `;
 
-const Label = styled.Text`
+const Label = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
 `;
 
-const Description = styled.Text`
+const Description = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.caption.fontWeight};
@@ -115,7 +116,7 @@ const Thumb = styled.View<{ $enabled: boolean }>`
   elevation: 2;
 `;
 
-const ErrorMessage = styled.Text`
+const ErrorMessage = styled(AppText)`
   margin-top: ${({ theme }) => theme.spacing.xs}px;
   color: ${({ theme }) => theme.colors.danger};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;

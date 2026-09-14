@@ -1,3 +1,4 @@
+import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -123,7 +124,7 @@ const SearchRow = styled.View`
   border-radius: ${({ theme }) => theme.radius.md}px;
   background-color: ${({ theme }) => theme.colors.inputBackground};
 `;
-const SearchInput = styled.TextInput`
+const SearchInput = styled(AppTextInput)`
   flex: 1;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
@@ -141,7 +142,7 @@ const FilterChip = styled.Pressable<{ $selected: boolean }>`
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surface};
 `;
-const FilterLabel = styled.Text<{ $selected: boolean }>`
+const FilterLabel = styled(AppText)<{ $selected: boolean }>`
   color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.text};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
@@ -157,15 +158,15 @@ const ResultRow = styled.Pressable`
   padding: ${({ theme }) => theme.spacing.sm}px;
 `;
 const ResultText = styled.View`flex: 1;`;
-const ResultName = styled.Text`
+const ResultName = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
-const ResultAddress = styled.Text`
+const ResultAddress = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
-const Distance = styled.Text`
+const Distance = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;

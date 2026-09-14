@@ -96,6 +96,10 @@ export const resources = {
       common: {
         missingTranslation: 'Translation unavailable',
         navigation: { back: 'Go back', close: 'Close', exitHint: 'Press back again to exit the app.', retry: 'Try again' },
+        unsupportedFeature: {
+          description: 'This feature is not currently supported in the app.',
+          title: 'Not available in the app',
+        },
         apiError: {
           actions: {
             back: 'Go back',
@@ -278,6 +282,14 @@ export const resources = {
             wifi: 'Free Wi-Fi',
           },
         },
+        placeActions: {
+          departureUnsupported: 'Starting from a place is not supported yet.',
+          directionsFailed: 'Could not start directions.',
+          directionsUnavailable: 'Could not open an external map.',
+          locationMissing: 'This place has no location information.',
+          shareFailed: 'Could not share this place.',
+          shareUnavailable: 'Sharing is not available on this device.',
+        },
         data: {
           disabledDescription: 'Enable the place-list runtime setting to request server data.',
           disabledTitle: 'Place discovery is off',
@@ -326,10 +338,12 @@ export const resources = {
           adjust: 'Resize recommendations panel', aroundMe: 'Places near me', bookmark: 'Save place',
           bookmarkRemove: 'Remove saved place', bookmarkSaveError: 'Could not save this place',
           bookmarkRemoveError: 'Could not remove this saved place', categoryPopular: 'Popular {{userName}} picks by category',
+          categoryPopularNational: 'Popular nationwide places by category',
           distanceAway: '{{distance}} away', image: 'Place image', imageError: 'Could not load image', imageMissing: 'No image',
           localHotPlaces: 'Local hot places', nationwideTrends: 'Nationwide trends', placeMissing: 'Unnamed place',
           recommendationTitle: 'Recommended for you', resultsFor: 'Results for “{{query}}”',
           state: {
+            categoryEmptyTitle: 'No places found in this category.',
             emptyBody: 'Move the map to explore another area.', emptyTitle: 'No hot places to show yet',
             errorBody: 'Please try again in a moment.', errorTitle: 'Could not load the list',
             loadingBody: 'Move the map to explore another area.', loadingTitle: 'Finding nearby hot places…',
@@ -764,7 +778,7 @@ export const resources = {
           },
         },
         reviews: {
-          title: 'Verified places',
+          title: 'Reviews',
           viewAll: 'See all reviews',
           empty: 'No reviews yet',
         },
@@ -952,6 +966,10 @@ export const resources = {
       common: {
         missingTranslation: '번역을 제공할 수 없습니다',
         navigation: { back: '뒤로 가기', close: '닫기', exitHint: '뒤로가기를 한 번 더 누르면 앱이 종료됩니다.', retry: '다시 시도' },
+        unsupportedFeature: {
+          description: '이 기능은 현재 앱에서 지원하지 않습니다.',
+          title: '앱에서 제공하지 않는 기능',
+        },
         apiError: {
           actions: {
             back: '목록으로',
@@ -1134,6 +1152,14 @@ export const resources = {
             wifi: '무료 Wi-Fi',
           },
         },
+        placeActions: {
+          departureUnsupported: '출발 기능은 아직 지원하지 않습니다.',
+          directionsFailed: '길찾기를 실행하지 못했습니다.',
+          directionsUnavailable: '외부 지도 앱을 열 수 없습니다.',
+          locationMissing: '장소 위치 정보가 없습니다.',
+          shareFailed: '공유를 실행하지 못했습니다.',
+          shareUnavailable: '이 기기에서는 공유 기능을 사용할 수 없습니다.',
+        },
         data: {
           disabledDescription: '장소 목록 실행 설정을 켜면 서버 데이터를 요청합니다.',
           disabledTitle: '장소 탐색 기능이 꺼져 있어요',
@@ -1180,11 +1206,12 @@ export const resources = {
         sheet: {
           adjust: '추천 패널 크기 조절', aroundMe: '내 주변 장소', bookmark: '즐겨찾기', bookmarkRemove: '즐겨찾기 해제',
           bookmarkSaveError: '장소를 저장하지 못했어요', bookmarkRemoveError: '저장을 해제하지 못했어요',
-          categoryPopular: '카테고리별 {{userName}}님 주변 인기 장소들', distanceAway: '여기서 {{distance}}', image: '장소 이미지',
+          categoryPopular: '카테고리별 {{userName}}님 주변 인기 장소들', categoryPopularNational: '전국 카테고리 인기 장소', distanceAway: '여기서 {{distance}}', image: '장소 이미지',
           imageError: '이미지를 불러오지 못했어요', imageMissing: '이미지 없음', localHotPlaces: '우리 지역 핫플',
           nationwideTrends: '전국 트렌드', placeMissing: '장소명 없음', recommendationTitle: '나만을 위한 추천 장소',
           resultsFor: '“{{query}}” 검색 결과',
           state: {
+            categoryEmptyTitle: '이 카테고리에 해당하는 장소가 없어요',
             emptyBody: '지도를 움직여 다른 지역도 둘러보세요.', emptyTitle: '표시할 핫플이 아직 없어요',
             errorBody: '잠시 후 다시 시도해 주세요.', errorTitle: '목록을 불러오지 못했어요',
             loadingBody: '지도를 움직여 다른 지역도 둘러보세요.', loadingTitle: '주변 핫플을 찾는 중이에요',
@@ -1612,7 +1639,7 @@ export const resources = {
           },
         },
         reviews: {
-          title: '검증한 장소',
+          title: '리뷰',
           viewAll: '리뷰 모두 보기',
           empty: '아직 리뷰가 없어요',
         },

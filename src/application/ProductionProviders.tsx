@@ -8,11 +8,18 @@ import { ThemeProvider } from 'styled-components/native';
 import AppErrorBoundary from '../v2/app/AppErrorBoundary';
 import { createQueryClient } from '../v2/app/queryClient';
 import { i18n, initializeI18n } from '../v2/shared/i18n';
-import { theme } from '../v2/shared/theme';
+import {
+  AppFontFamilyProvider,
+  PRETENDARD_FONT_FAMILY,
+  SYSTEM_FONT_FAMILY,
+  useAppFonts,
+} from '../v2/shared/fonts';
+import { createTheme, theme } from '../v2/shared/theme/theme';
 
 export default function ProductionProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(createQueryClient);
   const [isI18nReady, setIsI18nReady] = useState(false);
+  const fontStatus = useAppFonts();
 
   useEffect(() => {
     let isMounted = true;
@@ -38,17 +45,24 @@ export default function ProductionProviders({ children }: PropsWithChildren) {
     return () => subscription.remove();
   }, []);
 
-  if (!isI18nReady) return null;
+  if (!isI18nReady || fontStatus === 'loading') return null;
+
+  const activeTheme = fontStatus === 'loaded' ? theme : createTheme(SYSTEM_FONT_FAMILY);
+  const activeFontFamily = fontStatus === 'loaded'
+    ? PRETENDARD_FONT_FAMILY
+    : SYSTEM_FONT_FAMILY;
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider theme={theme}>
-        <I18nextProvider i18n={i18n}>
-          <AppErrorBoundary>
-            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-          </AppErrorBoundary>
-        </I18nextProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <AppFontFamilyProvider fontFamily={activeFontFamily}>
+      <SafeAreaProvider>
+        <ThemeProvider theme={activeTheme}>
+          <I18nextProvider i18n={i18n}>
+            <AppErrorBoundary>
+              <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+            </AppErrorBoundary>
+          </I18nextProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </AppFontFamilyProvider>
   );
 }
