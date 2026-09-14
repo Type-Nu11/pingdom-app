@@ -6,6 +6,7 @@ import {
   claimRecommendationClick,
   recordRecommendationClickOnce,
 } from '../../../features/map/model/recommendationClick.ts';
+import * as recommendationClick from '../../../features/map/model/recommendationClick.ts';
 import {
   createRecommendationPresentation,
   getRecommendationState,
@@ -18,6 +19,11 @@ import {
 } from '../../../features/current-activity-intent/hooks/useCurrentActivityIntent.ts';
 import { currentActivityIntentQueryKeys } from '../../../features/current-activity-intent/model/currentActivityIntentQueryKeys.ts';
 import { recommendationQueryKeys } from '../../../features/travel-purposes/model/travelPurposeQueryKeys.ts';
+import {
+  createPlaceRecommendationsQueryOptions,
+  createRecommendationExplanationQueryOptions,
+  placeQueryKeys,
+} from '../../../features/place-exploration/hooks/usePlaceExploration.ts';
 import { resources } from '../../i18n/resources.ts';
 
 const readTranslation = (key) => key.split('.').reduce(
@@ -101,6 +107,77 @@ test('failed recommendation clicks release their claim and can be retried', asyn
   assert.deepEqual(await recordRecommendationClickOnce(payload, sent, send), { recorded: true });
   assert.equal(await recordRecommendationClickOnce(payload, sent, send), undefined);
   assert.equal(attempts, 2);
+});
+
+test('click payload keeps the current response identifiers after card reordering', () => {
+  const input = {
+    placeId: 22,
+    recommendationPlaceIds: [11, 22],
+    recommendationRequestId: 'request-a',
+    recommendationVersion: 'place-rec-v2',
+  };
+
+  assert.deepEqual(recommendationClick.selectRecommendationClickPayload?.(input), {
+    placeId: 22,
+    recommendationVersion: 'place-rec-v2',
+    requestId: 'request-a',
+  });
+  assert.deepEqual(recommendationClick.selectRecommendationClickPayload?.({
+    ...input,
+    recommendationPlaceIds: [22, 11],
+  }), {
+    placeId: 22,
+    recommendationVersion: 'place-rec-v2',
+    requestId: 'request-a',
+  });
+  assert.equal(recommendationClick.selectRecommendationClickPayload?.({
+    ...input,
+    placeId: 99,
+  }), null);
+});
+
+test('explanation 404 leaves recommendation data and click tracking independently usable', async () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const listOptions = createPlaceRecommendationsQueryOptions(
+    { latitude: 37.5, longitude: 127 },
+    { getRecommendations: async () => ({
+      places: [{ id: 17, reasonCode: 'NEARBY' }],
+      recommendationRequestId: 'request-a',
+      recommendationVersion: 'place-rec-v2',
+    }) },
+  );
+  const explanationOptions = createRecommendationExplanationQueryOptions(
+    'request-a',
+    { getRecommendationExplanation: async () => {
+      throw Object.assign(new Error('not found'), { status: 404 });
+    } },
+  );
+
+  const recommendations = await queryClient.fetchQuery(listOptions);
+  await assert.rejects(queryClient.fetchQuery(explanationOptions));
+  assert.equal(
+    queryClient.getQueryData(placeQueryKeys.recommendationList({
+      latitude: 37.5,
+      limit: 10,
+      longitude: 127,
+      radiusKm: 5,
+    })),
+    recommendations,
+  );
+
+  const sent = [];
+  await recordRecommendationClickOnce(
+    { placeId: 17, recommendationVersion: 'place-rec-v2', requestId: 'request-a' },
+    new Set(),
+    async (payload) => { sent.push(payload); },
+  );
+  assert.deepEqual(sent, [{
+    placeId: 17,
+    recommendationVersion: 'place-rec-v2',
+    requestId: 'request-a',
+  }]);
 });
 
 test('current activity intent API preserves endpoint, nullable response, body, and signal', async () => {

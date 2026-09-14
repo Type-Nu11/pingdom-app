@@ -13,6 +13,7 @@ import {
   createPlaceOperatingNoticesQueryOptions,
   createPlaceVerificationMediaQueryOptions,
   createPlaceVisitDecisionQueryOptions,
+  createPlaceRecommendationsQueryOptions,
   createRecommendationExplanationQueryOptions,
   placeQueryKeys,
 } from '../../../features/place-exploration/hooks/usePlaceExploration.ts';
@@ -45,6 +46,7 @@ test('all place query options forward identifiers and TanStack AbortSignal uncha
     getPlaceOperatingNotices: async (placeId, signal) => { calls.push(['notices', placeId, signal]); return response; },
     getPlaceExplorationMedia: async (id, signal) => { calls.push(['exploration-media', id, signal]); return response; },
     getPlaceVerificationMedia: async (id, signal) => { calls.push(['media', id, signal]); return response; },
+    getRecommendations: async (params, signal) => { calls.push(['recommendations', params, signal]); return response; },
     getRecommendationExplanation: async (requestId, signal) => { calls.push(['explanation', requestId, signal]); return response; },
   };
   const signal = new AbortController().signal;
@@ -58,6 +60,7 @@ test('all place query options forward identifiers and TanStack AbortSignal uncha
     createPlaceOperatingNoticesQueryOptions(17, api),
     createPlaceExplorationMediaQueryOptions(18, api),
     createPlaceVerificationMediaQueryOptions(18, api),
+    createPlaceRecommendationsQueryOptions({ latitude: 37.5, longitude: 127 }, api),
     createRecommendationExplanationQueryOptions('request-a', api),
   ];
 
@@ -74,9 +77,15 @@ test('all place query options forward identifiers and TanStack AbortSignal uncha
     ['notices', 17],
     ['exploration-media', 18],
     ['media', 18],
+    ['recommendations', { latitude: 37.5, limit: 10, longitude: 127, radiusKm: 5 }],
     ['explanation', 'request-a'],
   ]);
   assert.ok(calls.every(([, , receivedSignal]) => receivedSignal === signal));
+});
+
+test('recommendation explanation is disabled without a requestId', () => {
+  assert.equal(createRecommendationExplanationQueryOptions('').enabled, false);
+  assert.equal(createRecommendationExplanationQueryOptions('request-a').enabled, true);
 });
 
 test('shared card query key deduplicates concurrent card consumers', async () => {

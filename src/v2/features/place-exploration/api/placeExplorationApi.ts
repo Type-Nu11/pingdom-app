@@ -11,14 +11,19 @@ import type {
   PlaceList,
   PlaceListParams,
   PlaceOperatingNotices,
+  PlaceRecommendations,
+  PlaceRecommendationsParams,
   PlaceVerificationMedia,
   PlaceVisitDecision,
+  RecommendationClickBody,
+  RecommendationClickResult,
   RecommendationExplanation,
 } from '../model/placeExploration.types';
 import {
   selectMapViewportParams,
   selectPlaceAutocompleteParams,
   selectPlaceListParams,
+  selectPlaceRecommendationsParams,
 } from '../model/placeExploration.types';
 
 export function createPlaceExplorationApi(client: ApiClient = apiClient) {
@@ -74,12 +79,31 @@ export function createPlaceExplorationApi(client: ApiClient = apiClient) {
     ): Promise<PlaceVerificationMedia> =>
       client.get<PlaceVerificationMedia>(`/places/${id}/media/verification`, { signal }),
 
+    getRecommendations: (
+      params: PlaceRecommendationsParams,
+      signal?: AbortSignal,
+    ): Promise<PlaceRecommendations> =>
+      client.get<PlaceRecommendations>('/places/recommendations', {
+        params: selectPlaceRecommendationsParams(params),
+        signal,
+      }),
+
     getRecommendationExplanation: (
       requestId: string,
       signal?: AbortSignal,
     ): Promise<RecommendationExplanation> =>
       client.get<RecommendationExplanation>(
         `/places/recommendations/${encodeURIComponent(requestId)}/explanation`,
+        { signal },
+      ),
+
+    recordRecommendationClick: (
+      body: RecommendationClickBody,
+      signal?: AbortSignal,
+    ): Promise<RecommendationClickResult> =>
+      client.post<RecommendationClickResult, RecommendationClickBody>(
+        '/places/recommendations/click',
+        body,
         { signal },
       ),
 

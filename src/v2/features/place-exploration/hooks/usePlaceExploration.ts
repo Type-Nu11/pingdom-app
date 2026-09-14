@@ -7,11 +7,13 @@ import type {
   MapViewportParams,
   PlaceAutocompleteParams,
   PlaceListParams,
+  PlaceRecommendationsParams,
 } from '../model/placeExploration.types';
 import {
   selectMapViewportParams,
   selectPlaceAutocompleteParams,
   selectPlaceListParams,
+  selectPlaceRecommendationsParams,
 } from '../model/placeExploration.types';
 
 type PlaceExplorationApi = typeof placeExplorationApi;
@@ -118,9 +120,23 @@ export function createRecommendationExplanationQueryOptions(
   api: Pick<PlaceExplorationApi, 'getRecommendationExplanation'> = placeExplorationApi,
 ) {
   return {
+    enabled: Boolean(requestId.trim()),
     queryFn: ({ signal }: { signal?: AbortSignal }) =>
       api.getRecommendationExplanation(requestId, signal),
     queryKey: placeQueryKeys.recommendationExplanation(requestId),
+  };
+}
+
+export function createPlaceRecommendationsQueryOptions(
+  params: PlaceRecommendationsParams,
+  api: Pick<PlaceExplorationApi, 'getRecommendations'> = placeExplorationApi,
+) {
+  const contractParams = selectPlaceRecommendationsParams(params);
+
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getRecommendations(contractParams, signal),
+    queryKey: placeQueryKeys.recommendationList(contractParams),
   };
 }
 
@@ -230,7 +246,10 @@ export function useRecommendationExplanation(
   requestId: string,
   { enabled = true }: PlaceExplorationQueryConfig = {},
 ) {
-  return useQuery({ ...createRecommendationExplanationQueryOptions(requestId), enabled });
+  return useQuery({
+    ...createRecommendationExplanationQueryOptions(requestId),
+    enabled: enabled && Boolean(requestId.trim()),
+  });
 }
 
 export function usePlaceCardResources(placeId: number) {

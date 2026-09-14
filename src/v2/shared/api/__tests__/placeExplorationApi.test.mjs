@@ -34,6 +34,9 @@ test('place exploration API uses current server paths, identifiers, viewport par
     requestId: 'request/with space',
   };
 
+  assert.equal(typeof api.getRecommendations, 'function');
+  assert.equal(typeof api.recordRecommendationClick, 'function');
+
   const results = await Promise.all([
     api.getPlaces({
       keyword: ' cafe ', category: 'CAFE', latitude: 37.5, longitude: 127,
@@ -49,7 +52,19 @@ test('place exploration API uses current server paths, identifiers, viewport par
     api.getPlaceOperatingNotices(17, signal),
     api.getPlaceExplorationMedia(18, signal),
     api.getPlaceVerificationMedia(18, signal),
+    api.getRecommendations({
+      latitude: 37.5,
+      limit: 8,
+      longitude: 127,
+      radiusKm: 5,
+      recommendationVersion: 'place-rec-v2',
+    }, signal),
     api.getRecommendationExplanation('request/with space', signal),
+    api.recordRecommendationClick({
+      placeId: 17,
+      recommendationVersion: 'place-rec-v2',
+      requestId: 'request-a',
+    }, signal),
     api.recordMapLinkConversion(17, conversion, signal),
   ]);
 
@@ -63,7 +78,9 @@ test('place exploration API uses current server paths, identifiers, viewport par
     'GET /places/17/operating-notices',
     'GET /places/18/media/exploration',
     'GET /places/18/media/verification',
+    'GET /places/recommendations',
     'GET /places/recommendations/request%2Fwith%20space/explanation',
+    'POST /places/recommendations/click',
     'POST /places/17/map-link-conversions',
   ]);
   assert.deepEqual(calls[0].options.params, {
@@ -89,6 +106,18 @@ test('place exploration API uses current server paths, identifiers, viewport par
     north: viewport.north,
     zoom: viewport.zoom,
   });
+  assert.deepEqual(calls[8].options.params, {
+    latitude: 37.5,
+    limit: 8,
+    longitude: 127,
+    radiusKm: 5,
+    recommendationVersion: 'place-rec-v2',
+  });
   assert.ok(calls.every(({ options }) => options.signal === signal));
-  assert.equal(calls[9].body, conversion);
+  assert.deepEqual(calls[10].body, {
+    placeId: 17,
+    recommendationVersion: 'place-rec-v2',
+    requestId: 'request-a',
+  });
+  assert.equal(calls[11].body, conversion);
 });

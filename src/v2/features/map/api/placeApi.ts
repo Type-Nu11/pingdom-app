@@ -1,5 +1,5 @@
 import { apiClient, toApiError } from '../../../shared/api';
-import type { PlaceRecommendations, PlacesPage } from '../model/place.types';
+import type { PlacesPage } from '../model/place.types';
 
 export type PlaceAutocompleteItem = {
   address: string;
@@ -38,14 +38,6 @@ export type GetPlacesRequest = {
   sort?: PlaceSort;
 };
 
-export type GetPlaceRecommendationsRequest = {
-  latitude: number;
-  limit?: number;
-  longitude: number;
-  radiusKm?: number;
-  recommendationVersion?: string;
-};
-
 export type CreateBookmarkRequest = {
   placeId: number;
 };
@@ -65,17 +57,6 @@ export type RemoveBookmarkResponse = {
 export type GetBookmarkedPlacesRequest = {
   limit?: number;
   page?: number;
-};
-
-export type RecordRecommendationClickRequest = {
-  placeId: number;
-  recommendationVersion: string;
-  requestId: string;
-};
-
-export type RecordRecommendationClickResponse = {
-  message: string;
-  placeId: number;
 };
 
 export type BookmarkApiErrorCode =
@@ -126,29 +107,6 @@ export const placeApi = {
         ...(params.sort ? { sort: params.sort } : {}),
       },
     });
-
-  },
-  getRecommendations: async (
-    params: GetPlaceRecommendationsRequest
-  ): Promise<PlaceRecommendations> => {
-    return apiClient.get<PlaceRecommendations>('/places/recommendations', {
-      params: {
-        latitude: params.latitude,
-        limit: params.limit ?? 10,
-        longitude: params.longitude,
-        radiusKm: params.radiusKm ?? 5,
-        ...(params.recommendationVersion ? { recommendationVersion: params.recommendationVersion } : {}),
-      },
-    });
-
-  },
-  recordRecommendationClick: async (
-    payload: RecordRecommendationClickRequest
-  ): Promise<RecordRecommendationClickResponse> => {
-    return apiClient.post<RecordRecommendationClickResponse, RecordRecommendationClickRequest>(
-      '/places/recommendations/click',
-      payload
-    );
 
   },
   autocompletePlaces: async (
