@@ -5,8 +5,15 @@ import { placeApi } from '../../api/placeApi';
 import type { Place, PlacesPage } from '../../model/place.types';
 import { bookmarkedPlaceQueryKeys } from '../useBookmarkedPlaces';
 import {
+  mapHomeFeedQueryKeys,
+  type LocalHotResponse,
+  type NationalTrendsResponse,
+  type RankedPlaceViewModel,
+} from '../../../map-home-feeds';
+import {
   updateBookmarkedPlaceMembership,
   updateBookmarkedPlaces,
+  updateRankedPlaceBookmarks,
   usePlaceBookmark,
 } from '../usePlaceBookmark';
 
@@ -34,6 +41,18 @@ const data: InfiniteData<PlacesPage> = {
     totalCount: 1,
     totalPages: 1,
   }],
+};
+const rankedPlace: RankedPlaceViewModel = {
+  address: '서울 성동구',
+  bookmarkAdds: 20,
+  bookmarkCount: 10,
+  bookmarked: false,
+  bookmarkRemoves: 3,
+  category: 'POPUP',
+  name: '랭킹 장소',
+  netBookmarkGrowth: 17,
+  placeId: 1,
+  rank: 1,
 };
 
 function createWrapper() {
@@ -85,17 +104,29 @@ describe('updateBookmarkedPlaceMembership', () => {
   });
 });
 
+describe('updateRankedPlaceBookmarks', () => {
+  test('같은 placeId의 표시 상태와 현재 북마크 수만 바꾸고 서버 성장량과 순서를 유지한다', () => {
+    const response = { places: [rankedPlace, { ...rankedPlace, placeId: 2, rank: 2 }] };
+
+    const updated = updateRankedPlaceBookmarks(response, 1, true);
+
+    expect(updated?.places?.map((place) => place.placeId)).toEqual([1, 2]);
+    expect(updated?.places?.[0]).toMatchObject({ bookmarked: true, bookmarkCount: 11 });
+    expect(updated?.places?.[0]?.netBookmarkGrowth).toBe(17);
+  });
+});
+
 describe('usePlaceBookmark', () => {
   test('query 취소를 기다리는 동안에도 membership을 즉시 낙관적으로 갱신한다', async () => {
-    let resolveCancellation!: () => void;
+    const resolveCancellations: Array<() => void> = [];
     const createBookmark = jest.spyOn(placeApi, 'createBookmark').mockResolvedValue({
       id: 10,
       message: 'created',
       placeId: secondPlace.id,
     });
     const { queryClient, wrapper } = createWrapper();
-    jest.spyOn(queryClient, 'cancelQueries').mockReturnValue(new Promise<void>((resolve) => {
-      resolveCancellation = resolve;
+    jest.spyOn(queryClient, 'cancelQueries').mockImplementation(() => new Promise<void>((resolve) => {
+      resolveCancellations.push(resolve);
     }));
     queryClient.setQueryData(bookmarkedPlaceQueryKeys.list(), data);
     queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), { '1': true });
@@ -112,10 +143,16 @@ describe('usePlaceBookmark', () => {
         '2': true,
       });
     });
+    expect(queryClient.cancelQueries).toHaveBeenCalledWith({
+      queryKey: mapHomeFeedQueryKeys.localHotRoot(),
+    });
+    expect(queryClient.cancelQueries).toHaveBeenCalledWith({
+      queryKey: mapHomeFeedQueryKeys.nationalTrendsRoot(),
+    });
     expect(createBookmark).not.toHaveBeenCalled();
 
     await act(async () => {
-      resolveCancellation();
+      resolveCancellations.forEach((resolve) => resolve());
       await togglePromise;
     });
     expect(createBookmark).toHaveBeenCalledWith({ placeId: secondPlace.id });
@@ -146,6 +183,61 @@ describe('usePlaceBookmark', () => {
     });
   });
 
+  test('랭킹 카드 즐겨찾기를 지역·전국의 분리된 cache에 동기화한다', async () => {
+    jest.spyOn(placeApi, 'createBookmark').mockResolvedValue({
+      id: 10,
+      message: 'created',
+      placeId: rankedPlace.placeId,
+    });
+    const { queryClient, wrapper } = createWrapper();
+    const localKey = mapHomeFeedQueryKeys.localHot({
+      latitude: 37.5, longitude: 127, page: 1, limit: 20,
+    });
+    const nationalKey = mapHomeFeedQueryKeys.nationalTrends({
+      period: 'WEEK', page: 1, limit: 20,
+    });
+    queryClient.setQueryData<LocalHotResponse>(localKey, { places: [rankedPlace] });
+    queryClient.setQueryData<NationalTrendsResponse>(nationalKey, { places: [rankedPlace] });
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), {});
+    const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
+
+    await act(async () => result.current.toggleRankedPlaceBookmark(rankedPlace, true));
+
+    expect(queryClient.getQueryData<LocalHotResponse>(localKey)?.places?.[0])
+      .toMatchObject({ bookmarked: true, bookmarkCount: 11, netBookmarkGrowth: 17 });
+    expect(queryClient.getQueryData<NationalTrendsResponse>(nationalKey)?.places?.[0])
+      .toMatchObject({ bookmarked: true, bookmarkCount: 11, netBookmarkGrowth: 17 });
+  });
+
+  test('랭킹 카드 mutation 실패 시 두 feed의 각각 다른 원본 cache를 정확히 복원한다', async () => {
+    const networkError = new Error('offline');
+    jest.spyOn(placeApi, 'createBookmark').mockRejectedValue(networkError);
+    const { queryClient, wrapper } = createWrapper();
+    const localKey = mapHomeFeedQueryKeys.localHot({
+      regionCode: '11680', page: 1, limit: 20,
+    });
+    const nationalKey = mapHomeFeedQueryKeys.nationalTrends({
+      period: 'WEEK', page: 1, limit: 20,
+    });
+    const localResponse = { places: [rankedPlace], region: { regionCode: '11680' } };
+    const nationalResponse = {
+      generatedAt: '2026-09-14T00:00:00Z',
+      places: [{ ...rankedPlace, bookmarkCount: 30 }],
+    };
+    queryClient.setQueryData(localKey, localResponse);
+    queryClient.setQueryData(nationalKey, nationalResponse);
+    queryClient.setQueryData(bookmarkedPlaceQueryKeys.membership(), {});
+    const { result } = await renderHook(() => usePlaceBookmark(), { wrapper });
+
+    await act(async () => {
+      await expect(result.current.toggleRankedPlaceBookmark(rankedPlace, true))
+        .rejects.toBe(networkError);
+    });
+
+    expect(queryClient.getQueryData(localKey)).toEqual(localResponse);
+    expect(queryClient.getQueryData(nationalKey)).toEqual(nationalResponse);
+  });
+
   test('북마크 쓰기 완료를 캐시 재검증과 분리하고 장소 미디어 쿼리는 무효화하지 않는다', async () => {
     let finishInvalidation!: () => void;
     let invalidationFinished = false;
@@ -172,9 +264,15 @@ describe('usePlaceBookmark', () => {
     expect(createBookmark).toHaveBeenCalledWith({ placeId: secondPlace.id });
     expect(invalidationFinished).toBe(false);
     expect(result.current.pendingPlaceIds).toEqual({});
-    expect(invalidateQueries).toHaveBeenCalledTimes(1);
+    expect(invalidateQueries).toHaveBeenCalledTimes(3);
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: bookmarkedPlaceQueryKeys.all,
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: mapHomeFeedQueryKeys.localHotRoot(),
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: mapHomeFeedQueryKeys.nationalTrendsRoot(),
     });
 
     await act(async () => {
