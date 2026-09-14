@@ -58,6 +58,16 @@ export type {
   PlaceExplorationSchemaName,
 } from './placeExplorationContract';
 export type {
+  MapHomeFeedsComponents,
+  MapHomeFeedsOperationName,
+  MapHomeFeedsOperationQuery,
+  MapHomeFeedsOperationResponse,
+  MapHomeFeedsOperations,
+  MapHomeFeedsPaths,
+  MapHomeFeedsSchema,
+  MapHomeFeedsSchemaName,
+} from './mapHomeFeedsContract';
+export type {
   PlaceMenusComponents,
   PlaceMenusOperationName,
   PlaceMenusOperationResponse,

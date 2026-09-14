@@ -1,0 +1,443 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "OpenAPI definition - map home feeds contract",
+    "version": "v0"
+  },
+  "x-source": {
+    "location": "https://www.typenull.xyz/v3/api-docs",
+    "sha256": "da3a3360dfccb67381a567905018c5e80304daaf055202aacc9f9a462a7b67c8"
+  },
+  "paths": {
+    "/places/local-hot": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "시·군·구 우리 지역 핫플 조회",
+        "description": "좌표 또는 이전 응답의 regionCode 중 하나로 시·군·구의 공개 운영 장소를 현재 북마크 수 순으로 조회합니다.",
+        "operationId": "findLocalHotPlaces",
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "description": "현재 위도. longitude와 함께 전달하며 regionCode와 동시에 전달할 수 없습니다.",
+            "required": false,
+            "schema": {
+              "maximum": 90,
+              "exclusiveMaximum": false,
+              "minimum": -90,
+              "exclusiveMinimum": false,
+              "type": "number",
+              "format": "double"
+            },
+            "example": 37.5172
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "description": "현재 경도. latitude와 함께 전달하며 regionCode와 동시에 전달할 수 없습니다.",
+            "required": false,
+            "schema": {
+              "maximum": 180,
+              "exclusiveMaximum": false,
+              "minimum": -180,
+              "exclusiveMinimum": false,
+              "type": "number",
+              "format": "double"
+            },
+            "example": 127.0473
+          },
+          {
+            "name": "regionCode",
+            "in": "query",
+            "description": "이전 좌표 조회 응답의 5자리 시·군·구 코드",
+            "required": false,
+            "schema": {
+              "pattern": "\\d{5}",
+              "type": "string"
+            },
+            "example": 11680
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "페이지 크기. 최대 50",
+            "required": false,
+            "schema": {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "지역 핫플 조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceLocalHotResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "좌표·지역 코드·페이지 조건이 올바르지 않음",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceLocalHotResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않은 요청",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "판정되거나 등록된 시·군·구를 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceLocalHotResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "외부 지역 판정 서비스 호출 실패",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceLocalHotResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "외부 지역 판정 서비스 미설정 또는 사용 불가",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceLocalHotResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/places/trends": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "전국 장소 트렌드 조회",
+        "description": "이력 수집 시작 시점부터 최근 7일의 북마크 순증가량으로 공개 운영 장소를 조회합니다.",
+        "operationId": "findTrends",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "지원 기간. 현재 WEEK만 지원합니다.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "WEEK"
+            },
+            "example": "WEEK"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "페이지 크기. 최대 50",
+            "required": false,
+            "schema": {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "전국 장소 트렌드 조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceTrendResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "지원하지 않는 기간 또는 페이지 조건",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceTrendResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않은 요청",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "에러 메시지",
+            "example": "유효하지 않은 토큰입니다."
+          },
+          "code": {
+            "type": "string",
+            "description": "도메인 에러 코드. 일부 공통 검증 오류에서는 제공되지 않을 수 있습니다.",
+            "nullable": true,
+            "example": "INVALID_TOKEN"
+          }
+        },
+        "description": "에러 응답"
+      },
+      "Item": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "placeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "placeName": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "bookmarkAdds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bookmarkRemoves": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "netBookmarkGrowth": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bookmarkCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bookmarked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PlaceLocalHotResponse": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "$ref": "#/components/schemas/Region"
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PlaceTrendResponse": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "WEEK"
+            ]
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Region": {
+        "type": "object",
+        "properties": {
+          "regionCode": {
+            "type": "string"
+          },
+          "sido": {
+            "type": "string"
+          },
+          "sigungu": {
+            "type": "string"
+          },
+          "regionName": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
