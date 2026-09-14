@@ -641,7 +641,6 @@ export const RecommendationFeaturedCard = ({
   onToggleBookmark,
   pending,
   place,
-  recommendationLabel,
 }: {
   bookmarked: boolean;
   designSize?: 'default' | 'reservation';
@@ -650,12 +649,14 @@ export const RecommendationFeaturedCard = ({
   onToggleBookmark: () => Promise<void> | void;
   pending: boolean;
   place: DecisionPlace;
-  recommendationLabel?: string;
 }) => {
   const { i18n, t } = useTranslation();
+  const distance = formatDistance(place, i18n.language);
   return (
     <RecommendationCardPressable
-      accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
+      accessibilityLabel={[place.name, place.recommendationReason, distance]
+        .filter(Boolean)
+        .join(', ')}
       onPress={onPress}
       style={[styles.placeCard, designSize === 'reservation' && styles.reservationPlaceCard]}
       testID={`recommendation-card-${place.id}`}
@@ -675,16 +676,16 @@ export const RecommendationFeaturedCard = ({
           </AppText>
         </View>
       </View>
-      {recommendationLabel ? (
+      {place.recommendationReason ? (
         <View style={styles.recommendationMetaRow}>
           <RecommendationMetaIcon />
           <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationReason}>
-            {recommendationLabel}
+            {place.recommendationReason}
           </AppText>
         </View>
       ) : null}
       <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, designSize === 'reservation' && styles.reservationPlaceCardDistance]}>
-        {t('map.sheet.distanceAway', { distance: formatDistance(place, i18n.language) })}
+        {t('map.sheet.distanceAway', { distance })}
       </AppText>
     </RecommendationCardPressable>
   );
@@ -1112,13 +1113,6 @@ const RecommendationContent = ({
     gridPlaces.filter((_, index) => index % 2 === 0),
     gridPlaces.filter((_, index) => index % 2 === 1),
   ].filter((row) => row.length > 0);
-  const recommendationLabel = (index: number) => t(
-    index % 2 === 0
-      ? 'map.recommendations.affinityLabel'
-      : 'map.recommendations.hiddenLabel',
-    { userName },
-  );
-
   useEffect(() => {
     if (!expandedInteractionsEnabled) {
       scrollRef.current?.scrollTo({ animated: false, y: 0 });
@@ -1152,7 +1146,7 @@ const RecommendationContent = ({
             nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
           >
-            {featuredPlaces.map((place, index) => (
+            {featuredPlaces.map((place) => (
               <RecommendationFeaturedCard
                 bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
@@ -1164,7 +1158,6 @@ const RecommendationContent = ({
                 )}
                 pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
                 place={place}
-                recommendationLabel={recommendationLabel(index)}
               />
             ))}
           </ScrollView>

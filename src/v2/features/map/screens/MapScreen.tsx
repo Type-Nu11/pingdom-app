@@ -63,6 +63,8 @@ import { getMapBackAction } from '../utils/mapBack';
 import {
   createRecommendationPresentation,
   getRecommendationState,
+  selectRecommendationExplanationsByPlaceId,
+  selectRecommendationReason,
 } from '../model/recommendationPresentation';
 import { toFavoritePlaceImageUrls } from '../utils/favoritePlaceImages';
 import {
@@ -72,6 +74,7 @@ import {
   shouldPresentMapSelection,
 } from '../utils/mapPreviewSelection';
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
+import { selectRecommendationClickPayload } from '../model/recommendationClick';
 import { selectMapExplorationPlaceIds } from '../utils/mapExplorationPlaceIds';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
 import { PlaceCouponCta } from '../../offers-coupons';
@@ -98,9 +101,6 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
   latitude: place.latitude,
   longitude: place.longitude,
   name: place.name,
-  recommendationReason: 'reason' in place && typeof place.reason === 'string'
-    ? place.reason
-    : undefined,
   tags: ['Visitor verified'],
   verifiedAgo: 'recently',
   verifiedMinutes: 0,
@@ -290,21 +290,28 @@ export default function MapScreen({
   }, [profile?.language]);
 
   const recommendationPlaces = useMemo(() => {
-    const explanationByPlaceId = new Map(
-      (recommendationExplanation.data?.items ?? [])
-        .filter((item) => typeof item.placeId === 'number')
-        .map((item) => [item.placeId as number, item]),
+    const explanationByPlaceId = selectRecommendationExplanationsByPlaceId(
+      recommendationRequestId ?? '',
+      recommendationExplanation.data,
     );
 
     return recommendedPlaces.map((place) => {
       const explanation = explanationByPlaceId.get(place.id);
+      const reason = selectRecommendationReason({
+        explanation,
+        placeId: place.id,
+        reason: place.reason,
+        reasonCode: place.reasonCode,
+      }, t);
+
       return {
         ...toDecisionPlace(place),
         recommendationRank: explanation?.ranking,
+        recommendationReason: reason.text ?? undefined,
         recommendationSource: explanation?.source,
       };
     });
-  }, [recommendationExplanation.data?.items, recommendedPlaces]);
+  }, [recommendationExplanation.data, recommendationRequestId, recommendedPlaces, t]);
   const allPlaces = useMemo(() => {
     const serverPlaces = mergeMapPreviewPlaces(
       recommendationPlaces,
@@ -619,13 +626,14 @@ export default function MapScreen({
     snapTo('medium');
   };
   const handlePlacePress = (place: DecisionPlace) => {
-    const isRecommendation = recommendedPlaces.some((item) => item.id === place.id);
-    if (isRecommendation && recommendationRequestId && recommendationVersion) {
-      void recordRecommendationClick({
-        placeId: place.id,
-        recommendationVersion,
-        requestId: recommendationRequestId,
-      }).catch(() => {
+    const clickPayload = selectRecommendationClickPayload({
+      placeId: place.id,
+      recommendationPlaceIds: recommendedPlaces.map((item) => item.id),
+      recommendationRequestId,
+      recommendationVersion,
+    });
+    if (clickPayload) {
+      void recordRecommendationClick(clickPayload).catch(() => {
         if (__DEV__) console.warn('[recommendation-click] failed.');
       });
     }
