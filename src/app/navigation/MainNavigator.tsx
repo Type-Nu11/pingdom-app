@@ -59,6 +59,7 @@ export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) =>
       <V2ScreenBoundary>
         <MapScreen
           canQueryBookmarks={isLoggedIn && !isAuthHydrating}
+          canQueryRankedFeeds={isLoggedIn && !isAuthHydrating}
           initialSection={initialSection}
           openedBookmarkedPlaceId={focusedPlaceId ?? null}
           onClearOpenedBookmarkedPlace={clearFocusedPlace}

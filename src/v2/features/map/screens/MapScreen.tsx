@@ -78,6 +78,16 @@ import { selectMapExplorationPlaceIds } from '../utils/mapExplorationPlaceIds';
 import { VisitVerificationMapCta } from '../../place-visit-verification';
 import { PlaceCouponCta } from '../../offers-coupons';
 import { LocationStatusOverlay } from '../components/MapStatusOverlays';
+import {
+  getLocalHotFeedStatus,
+  getNationalTrendsFeedStatus,
+  selectLocalHotParams,
+  toRankedPlaceViewModels,
+  useLocalHotPlaces,
+  useNationalTrends,
+  type RankedPlaceFeed,
+  type RankedPlaceViewModel,
+} from '../../map-home-feeds';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
@@ -112,6 +122,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 
 type MapScreenProps = {
   canQueryBookmarks?: boolean;
+  canQueryRankedFeeds?: boolean;
   initialSection?: 'favorites' | 'map' | 'reservations';
   onClearOpenedBookmarkedPlace?: () => void;
   onCreateReservation?: (place: {
@@ -131,6 +142,7 @@ type MapScreenProps = {
 
 export default function MapScreen({
   canQueryBookmarks = true,
+  canQueryRankedFeeds = canQueryBookmarks,
   initialSection = 'map',
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
@@ -152,11 +164,76 @@ export default function MapScreen({
   const center = location.coordinate;
   const userLat = center?.lat;
   const userLng = center?.lng;
+  const localHotRequest = {
+    latitude: userLat,
+    longitude: userLng,
+    page: 1,
+    limit: 20,
+  } as const;
+  const hasValidLocalHotLocation = selectLocalHotParams(localHotRequest) !== null;
+  const localHotQuery = useLocalHotPlaces(
+    localHotRequest,
+    canQueryRankedFeeds && location.status === 'granted',
+  );
+  const nationalTrendsQuery = useNationalTrends(canQueryRankedFeeds, {
+    period: 'WEEK',
+    page: 1,
+    limit: 20,
+  });
+  const localRankedPlaces = useMemo(
+    () => toRankedPlaceViewModels(localHotQuery.data?.places),
+    [localHotQuery.data?.places],
+  );
+  const nationalRankedPlaces = useMemo(
+    () => toRankedPlaceViewModels(nationalTrendsQuery.data?.places),
+    [nationalTrendsQuery.data?.places],
+  );
+  const localFeed = useMemo<RankedPlaceFeed>(() => ({
+    hasNext: localHotQuery.data?.hasNext ?? false,
+    places: localRankedPlaces,
+    retry: () => { void localHotQuery.refetch(); },
+    status: getLocalHotFeedStatus({
+      enabled: canQueryRankedFeeds,
+      error: localHotQuery.error,
+      hasValidLocation: hasValidLocalHotLocation,
+      isLoading: localHotQuery.isLoading,
+      locationStatus: location.status,
+      placeCount: localRankedPlaces.length,
+    }),
+    title: localHotQuery.data?.region?.regionName?.trim() || undefined,
+  }), [
+    canQueryRankedFeeds,
+    hasValidLocalHotLocation,
+    localHotQuery.data?.hasNext,
+    localHotQuery.data?.region?.regionName,
+    localHotQuery.error,
+    localHotQuery.isLoading,
+    localHotQuery.refetch,
+    localRankedPlaces,
+    location.status,
+  ]);
+  const nationalFeed = useMemo<RankedPlaceFeed>(() => ({
+    hasNext: nationalTrendsQuery.data?.hasNext ?? false,
+    places: nationalRankedPlaces,
+    retry: () => { void nationalTrendsQuery.refetch(); },
+    status: getNationalTrendsFeedStatus({
+      enabled: canQueryRankedFeeds,
+      error: nationalTrendsQuery.error,
+      isLoading: nationalTrendsQuery.isLoading,
+      placeCount: nationalRankedPlaces.length,
+    }),
+  }), [
+    canQueryRankedFeeds,
+    nationalRankedPlaces,
+    nationalTrendsQuery.data?.hasNext,
+    nationalTrendsQuery.error,
+    nationalTrendsQuery.isLoading,
+    nationalTrendsQuery.refetch,
+  ]);
   const {
     markers: apiMarkers,
     places: apiPlaces,
     refetch: refetchPlaces,
-    status: placeListStatus,
   } = usePlaces();
   const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
   const {
@@ -249,6 +326,7 @@ export default function MapScreen({
   const {
     pendingPlaceIds: bookmarkPendingPlaceIds,
     togglePlaceBookmark,
+    toggleRankedPlaceBookmark,
   } = usePlaceBookmark();
 
   // Bottom-sheet coordinates already begin below the translucent status-bar layer on Android.
@@ -370,21 +448,35 @@ export default function MapScreen({
     }),
     [favoriteExplorationImageUrlsByPlaceId, favoritePreviewImages],
   );
-  const selectedPlaceBase = useMemo(() => {
+  const selectedPlaceFromCurrentData = useMemo(() => {
     if (content.type !== 'place-preview') return null;
-    const selectedFromCurrentData = [...allPlaces, ...favoritePlaces]
+    return [...allPlaces, ...favoritePlaces]
       .find((place) => place.id === content.placeId);
-
-    return selectedFromCurrentData ?? null;
   }, [allPlaces, content, favoritePlaces]);
-  const selectedPlaceId = selectedPlaceBase?.id ?? 0;
-  const hasSelectedPlace = selectedPlaceBase !== null;
+  const selectedPlaceId = content.type === 'place-preview' ? content.placeId : 0;
+  const hasSelectedPlace = selectedPlaceId > 0;
   const {
+    detail: selectedPlaceDetail,
+    detailError: selectedPlaceDetailError,
+    isDetailPending: isSelectedPlaceDetailPending,
     presentation: selectedPlacePresentation,
     refetchAvailability,
     refetchMedia,
     refetchReviews,
   } = usePlaceDetailPresentation(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedPlaceBase = useMemo(() => {
+    if (selectedPlaceFromCurrentData) return selectedPlaceFromCurrentData;
+    if (!selectedPlaceDetail || selectedPlaceDetail.id !== selectedPlaceId) return null;
+
+    return toDecisionPlace({
+      address: selectedPlaceDetail.address,
+      category: selectedPlaceDetail.touristCategories?.[0],
+      id: selectedPlaceDetail.id,
+      latitude: selectedPlaceDetail.latitude,
+      longitude: selectedPlaceDetail.longitude,
+      name: selectedPlaceDetail.name,
+    });
+  }, [selectedPlaceDetail, selectedPlaceFromCurrentData, selectedPlaceId]);
   const selectedPlace = useMemo<DecisionPlace | null>(() => {
     if (!selectedPlaceBase) return null;
     if (!selectedPlacePresentation) return selectedPlaceBase;
@@ -516,12 +608,16 @@ export default function MapScreen({
     };
   }, [selectedPlace, selectedPlacePresentation, t]);
   useEffect(() => {
-    if (content.type !== 'place-preview' || selectedPlace) return;
+    if (
+      content.type !== 'place-preview'
+      || selectedPlace
+      || (hasSelectedPlace && isSelectedPlaceDetailPending && !selectedPlaceDetailError)
+    ) return;
 
     setContent({ type: 'home' });
     setIsFollowingUser(true);
     snapTo('medium');
-  }, [content, selectedPlace, snapTo]);
+  }, [content, hasSelectedPlace, isSelectedPlaceDetailPending, selectedPlace, selectedPlaceDetailError, snapTo]);
   const query = content.type === 'search' || content.type === 'results' ? content.query : '';
   const visiblePlaces = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -640,6 +736,12 @@ export default function MapScreen({
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     snapTo('medium');
   };
+  const handleRankedPlacePress = (place: RankedPlaceViewModel) => {
+    setMapSection('map');
+    setContent({ type: 'place-preview', placeId: place.placeId });
+    setDismissedMarkerCenter(null);
+    snapTo('medium');
+  };
   const handleQueryChange = (nextQuery: string) => {
     setContent({ type: 'search', query: nextQuery });
     snapTo('expanded');
@@ -748,6 +850,19 @@ export default function MapScreen({
   const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
     try {
       await togglePlaceBookmark(place, nextBookmarked);
+    } catch (error) {
+      Alert.alert(
+        t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
+        getApiErrorUx(error).error.message || t('common.error.description'),
+      );
+    }
+  };
+  const handleToggleRankedBookmark = async (
+    place: RankedPlaceViewModel,
+    nextBookmarked: boolean,
+  ) => {
+    try {
+      await toggleRankedPlaceBookmark(place, nextBookmarked);
     } catch (error) {
       Alert.alert(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
@@ -906,7 +1021,9 @@ export default function MapScreen({
             ) : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
+            localFeed={localFeed}
             mediumTranslateY={mediumTranslateY}
+            nationalFeed={nationalFeed}
             onBackHome={handleBackHome}
             onCreateReservation={(place, imageUrl) => {
               if (!onCreateReservation || reservationNavigationLock.current) return;
@@ -941,7 +1058,7 @@ export default function MapScreen({
               ? (place) => onStartVisitVerification(place.id)
               : undefined}
             onPlacePress={handlePlacePress}
-            onRetryPlaces={() => void refetchPlaces()}
+            onRankedPlacePress={handleRankedPlacePress}
             onRetryRecommendations={() => void refetchRecommendations()}
             onRetryAvailability={() => void refetchAvailability()}
             onRetryMedia={() => void refetchMedia()}
@@ -955,10 +1072,10 @@ export default function MapScreen({
               snapTo('expanded');
             }}
             onToggleBookmark={handleToggleBookmark}
+            onToggleRankedBookmark={handleToggleRankedBookmark}
             panHandlers={panHandlers}
             placeActionBusy={placeActionBusy}
             places={sheetPlaces}
-            placesState={placeListStatus === 'disabled' ? 'error' : placeListStatus}
             previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
             recommendationContext={recommendationPresentation.contextText}
             recommendationLimitMessage={recommendationPresentation.limitText}

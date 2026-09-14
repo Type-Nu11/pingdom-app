@@ -52,6 +52,9 @@ export function usePlaceDetailPresentation(
   }) : null;
 
   return {
+    detail: detail.data,
+    detailError: detail.error,
+    isDetailPending: detail.isPending,
     presentation,
     refetchAvailability: availabilities.refetch,
     refetchMedia: media.refetch,

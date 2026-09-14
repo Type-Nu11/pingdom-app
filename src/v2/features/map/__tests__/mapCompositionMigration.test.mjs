@@ -15,6 +15,30 @@ test('production Map route renders the V2-owned composition directly', () => {
   assert.doesNotMatch(screen, /src\/features|features\/place|app\/store|FALLBACK_COORD/);
 });
 
+test('map home composes independent local and national feeds without reusing marker places', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const bottomSheet = read('../components/MapBottomSheet.tsx');
+
+  assert.match(screen, /useLocalHotPlaces\(\s*localHotRequest/);
+  assert.match(screen, /useNationalTrends\(canQueryRankedFeeds, \{/);
+  assert.match(screen, /period: 'WEEK'/);
+  assert.match(screen, /localFeed=\{localFeed\}/);
+  assert.match(screen, /nationalFeed=\{nationalFeed\}/);
+  assert.match(screen, /markers: apiMarkers,[\s\S]*places: apiPlaces,[\s\S]*usePlaces\(\)/);
+  assert.match(bottomSheet, /const selectedFeed = feed === 'local' \? localFeed : nationalFeed/);
+  assert.doesNotMatch(bottomSheet, /\[\.\.\.places\]\.reverse\(\)|shownPlaces/);
+});
+
+test('ranking card selection opens detail by placeId and obtains coordinates only from place detail', () => {
+  const screen = read('../screens/MapScreen.tsx');
+
+  assert.match(screen, /handleRankedPlacePress[\s\S]*placeId: place\.placeId/);
+  assert.match(screen, /usePlaceDetailPresentation\(selectedPlaceId/);
+  assert.match(screen, /latitude: selectedPlaceDetail\.latitude/);
+  assert.match(screen, /longitude: selectedPlaceDetail\.longitude/);
+  assert.doesNotMatch(screen, /handleRankedPlacePress[\s\S]{0,250}(latitude|longitude|userLat|userLng)/);
+});
+
 test('the V2 production map preserves route callbacks and duplicate reservation navigation guard', () => {
   const screen = read('../screens/MapScreen.tsx');
 
