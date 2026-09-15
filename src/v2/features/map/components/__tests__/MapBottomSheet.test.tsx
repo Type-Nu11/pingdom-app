@@ -3,6 +3,7 @@ import React from 'react';
 import { Animated, Text, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { darkColors, lightColors } from '../../../../shared/theme';
 import { runTimingMotion } from '../../../../shared/motion';
 import type {
   RankedPlaceFeed,
@@ -10,6 +11,8 @@ import type {
   RankedPlaceViewModel,
 } from '../../../map-home-feeds';
 import MapBottomSheet, {
+  ExpandedPlaceCard,
+  getMapGridCardSize,
   getMapHomeSheetVisibleHeight,
   RecommendationFeaturedCard,
   selectPlaceDetailAddress,
@@ -72,6 +75,55 @@ const rankedFeed = (
 
 const rankedPlaces = places.map((place, index) => toRankedPlace(place, index + 1));
 
+describe('지도 확장 카드의 실제 표시 크기', () => {
+  test.each(['LIGHT', 'DARK'] as const)('%s 이미지가 없어도 테마 표면과 고정된 카드 영역을 유지한다', async (appearancePreference) => {
+    const colors = appearancePreference === 'DARK' ? darkColors : lightColors;
+    const place = rankedPlaces[0];
+    await renderWithProviders(<ExpandedPlaceCard
+      bookmarked={false}
+      onPress={jest.fn()}
+      onToggleBookmark={jest.fn()}
+      pending={false}
+      place={place}
+      size={getMapGridCardSize(359)}
+    />, { appearancePreference });
+    expect(screen.getByRole('button', { name: `${place.name}, ${place.address}` })).toHaveStyle({
+      backgroundColor: colors.surfaceMuted, borderColor: colors.border, width: 163.5,
+    });
+    expect(screen.queryByTestId('recommendation-featured-image')).not.toBeOnTheScreen();
+    expect(screen.getByText(place.name)).toBeOnTheScreen();
+  });
+  test.each([375, 402])('%i 폭에서 두 카드와 여백이 가용 폭 안에 들어간다', (width) => {
+    const size = getMapGridCardSize(width - 16);
+    expect(size.width * 2 + 16 + 16 + 16).toBeCloseTo(width);
+    expect(size.height / size.width).toBeCloseTo(222 / 177);
+    if (width === 402) expect(size).toEqual({ width: 177, height: 222 });
+  });
+
+  test.each(['ko', 'en'] as const)('%s 긴 이름과 이미지 실패에도 카드 크기와 원문을 유지한다', async (language) => {
+    const name = language === 'ko' ? '아주 긴 장소 이름을 가진 복합문화공간 '.repeat(5) : 'A very long cultural venue name '.repeat(5);
+    const place = { ...rankedPlaces[0], name };
+    await renderWithProviders(<ExpandedPlaceCard
+      bookmarked={false}
+      imageUrl="https://example.com/place.jpg"
+      onPress={jest.fn()}
+      onToggleBookmark={jest.fn()}
+      pending={false}
+      place={place}
+      size={getMapGridCardSize(386)}
+    />, { language });
+    const card = screen.getByRole('button', { name: `${name}, ${place.address}` });
+    expect(card).toHaveStyle({ width: 177, height: 222 });
+    expect(screen.getByText(name).props.numberOfLines).toBe(2);
+    expect(screen.getByText(name).props.ellipsizeMode).toBe('tail');
+    expect(screen.getByText(name)).toHaveStyle({ fontSize: 16, fontWeight: '700' });
+    await act(async () => fireEvent(screen.getByTestId('recommendation-featured-image'), 'error', { nativeEvent: { error: 'unavailable' } }));
+    expect(screen.queryByTestId('recommendation-featured-image')).not.toBeOnTheScreen();
+    expect(card).toHaveStyle({ width: 177, height: 222 });
+    expect(screen.getByText(name)).toBeOnTheScreen();
+  });
+});
+
 describe('MapBottomSheet recommendations', () => {
   test('장소 상세 주소는 서버 도로명 주소 하나만 우선 표시한다', () => {
     expect(selectPlaceDetailAddress('목록 주소', {
@@ -123,6 +175,7 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
+    expect(screen.getByRole('button', { name: '추천 장소 1 사진 1 상세 보기' })).toHaveStyle({ width: 242, height: 182 });
     await user.press(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' }));
     expect(screen.getByTestId('place-photo-viewer')).toBeVisible();
     expect(screen.getByLabelText('추천 장소 1 사진 2장 중 2번째')).toBeVisible();
@@ -962,6 +1015,7 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.getByText('전국 트렌드 장소')).toBeOnTheScreen();
     expect(screen.queryByText('추천 장소 2')).not.toBeOnTheScreen();
+
   });
 
   test('medium 홈은 확장 전용 트리를 지연하고 첫 탭 feedback과 overlay 입력 상태를 보장한다', async () => {
@@ -1008,6 +1062,16 @@ describe('MapBottomSheet recommendations', () => {
 
     await view.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('auto');
+
+    // Exercise the actual row measurement, not only the sizing helper. Horizontal
+    // preview cards remain 242x182 while grid cards respond to the sheet width.
+    for (const rowWidth of [359, 386]) {
+      await act(async () => fireEvent(screen.getByTestId('map-expanded-place-grid'), 'layout', {
+        nativeEvent: { layout: { x: 0, y: 0, width: rowWidth, height: 800 } },
+      }));
+      const cards = screen.getAllByRole('button', { name: `${rankedPlaces[0].name}, ${rankedPlaces[0].address}` });
+      expect(cards.at(-1)).toHaveStyle(getMapGridCardSize(rowWidth));
+    }
 
     await view.rerender(<MapBottomSheet {...commonProps} snapPoint="medium" />);
     expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');

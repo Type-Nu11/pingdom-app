@@ -2,6 +2,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { darkColors, lightColors } from '../../../../shared/theme';
 import MapTopOverlay from '../MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../../styles/MapTopOverlay.styles';
 
@@ -24,6 +25,16 @@ const props = {
 };
 
 describe('MapTopOverlay', () => {
+  test.each(['LIGHT', 'DARK', 'SYSTEM'] as const)('%s에서 선택 상태와 테마 대비를 유지한다', async (appearancePreference) => {
+    const colors = appearancePreference === 'LIGHT' ? lightColors : darkColors;
+    await renderWithProviders(<MapTopOverlay {...props} activeCategory="food" />, {
+      appearancePreference, colorScheme: 'dark',
+    });
+    expect(screen.getByRole('button', { name: '음식점', selected: true })).toHaveStyle({ borderTopLeftRadius: 16, borderBottomRightRadius: 16 });
+    expect(screen.getByText('음식점')).toHaveStyle({ color: colors.primary });
+    expect(screen.getByText('전체')).toHaveStyle({ color: colors.textAlternative });
+    expect(screen.getByText('검색하기')).toHaveStyle({ fontSize: 18, fontWeight: '500', fontFamily: 'Pretendard' });
+  });
   beforeEach(() => {
     jest.clearAllMocks();
   });
