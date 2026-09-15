@@ -24,7 +24,7 @@ const Field = styled.View`
 `;
 
 const FieldLabel = styled(AppText)`
-  color: #5c5e5e;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;
 `;
@@ -42,6 +42,6 @@ const FieldRow = styled.View`
 const FieldValue = styled(AppText)`
   flex: 1;
   margin-right: ${({ theme }) => theme.spacing.sm}px;
-  color: #5e5e66;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
 `;
