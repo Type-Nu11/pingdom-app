@@ -25,7 +25,7 @@ jest.mock('../../../v2/features/map/screens/MapScreen', () => {
       onStartVisitVerification: (placeId: number) => void;
     }) => ReactLibrary.createElement(
       ReactNative.View,
-      { testID: 'current-map-screen' },
+      { testID: 'current-map-screen', style: { backgroundColor: require('styled-components/native').useTheme().colors.background } },
       ReactLibrary.createElement(
         ReactNative.Pressable,
         { onPress: onOpenVisitVerification, testID: 'current-map-verification-entry' },
@@ -168,6 +168,14 @@ describe('현재 지도 경계', () => {
     );
 
     expect(screen.getByTestId('current-map-screen')).toBeVisible();
+  });
+
+  test('production route preserves the selected dark theme', async () => {
+    await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { appearancePreference: 'DARK' },
+    );
+    expect(screen.getByTestId('current-map-screen')).toHaveStyle({ backgroundColor: '#0F0F11' });
   });
 
   test('방문 검증 CTA callback을 foreground 세션 route로 연결한다', async () => {
