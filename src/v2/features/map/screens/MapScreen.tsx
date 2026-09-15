@@ -10,6 +10,7 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { registerAndroidBackOverride } from '../../../shared/navigation/androidBackOverride';
 import { getApiErrorUx } from '../../../shared/api';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components/native';
 import { syncProfileLanguage } from '../../../shared/i18n';
 import { useMapSettingsStore } from '../store/mapSettingsStore';
 import { useRecentSearchStore } from '../store/recentSearchStore';
@@ -154,6 +155,7 @@ export default function MapScreen({
   onOpenVisitVerification,
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
+  const theme = useTheme();
   const isFocused = useIsFocused();
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
@@ -890,11 +892,11 @@ export default function MapScreen({
     && content.type === 'place-preview'
     && snapPoint === 'expanded';
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <MapGlassBackdrop active={isFocused}>
       <StatusBar
-        backgroundColor={isExpandedPlaceDetail ? '#FFFFFF' : 'transparent'}
-        barStyle="dark-content"
+        backgroundColor={isExpandedPlaceDetail ? theme.colors.background : 'transparent'}
+        barStyle={theme.colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         translucent
       />
       <View style={styles.mapBackground}>
@@ -908,7 +910,6 @@ export default function MapScreen({
           userLng={userLng}
           zoomLevel={mapZoomLevel}
         /> : null}
-        <View pointerEvents="none" style={styles.mapTint} />
       </View>
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
         <MapTopOverlay
@@ -1149,8 +1150,7 @@ export default function MapScreen({
 
 const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
 const styles: Record<string, object> = {
-  container: { backgroundColor: '#E7ECEF', flex: 1 },
+  container: { flex: 1 },
   mapBackground: absoluteFill,
-  mapTint: { ...absoluteFill, backgroundColor: 'rgba(244, 247, 249, 0.03)' },
   sectionTransition: { ...absoluteFill, zIndex: 50 },
 };

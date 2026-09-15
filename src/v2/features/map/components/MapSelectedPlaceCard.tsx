@@ -111,7 +111,7 @@ const Sheet = styled.View`
   border-top-left-radius: ${({ theme }) => theme.radius.lg}px;
   border-top-right-radius: ${({ theme }) => theme.radius.lg}px;
   background-color: ${({ theme }) => theme.colors.surface};
-  shadow-color: #000000; shadow-opacity: 0.12; shadow-radius: 14px; elevation: 10;
+  shadow-color: ${({ theme }) => theme.colors.shadow}; shadow-opacity: 0.12; shadow-radius: 14px; elevation: 10;
 `;
 const Handle = styled.View`width: 64px; height: 5px; align-self: center; margin-bottom: ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.disabled};`;
 const CardState = styled.View`min-height: 180px; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.sm}px;`;

@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from 'styled-components/native';
 import ArtAsset from '../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyAsset from '../../../../assets/v2/icons/place/beati_svg.svg';
 import CafeAsset from '../../../../assets/v2/icons/place/cafe_svg.svg';
@@ -41,6 +42,7 @@ import {
   type RecentSearchOwner,
 } from '../services/recentSearchStorage';
 import { useRecentSearchStore } from '../store/recentSearchStore';
+import type { AppTheme } from '../../../shared/theme';
 
 export type MapSearchSelection = {
   address: string;
@@ -88,9 +90,9 @@ const categories: Array<{
   { Icon: CafeAsset, id: 'cafe' }, { Icon: HeritageAsset, id: 'heritage' }, { Icon: EtcAsset, id: 'etc' },
 ];
 
-const RecentCategoryIcon = ({ category }: { category: RecentSearch['category'] }) => {
+const RecentCategoryIcon = ({ category, color }: { category: RecentSearch['category']; color: string }) => {
   const Icon = categories.find((item) => item.id === category)?.Icon ?? ArtAsset;
-  return <Icon color="#777983" height={21} width={24} />;
+  return <Icon color={color} height={21} width={24} />;
 };
 
 const toKakaoSelection = (item: KakaoLocalSearchItem): MapSearchSelection => ({
@@ -126,6 +128,9 @@ const MapSearchOverlay = ({
   recommendedPlaces = [],
 }: MapSearchOverlayProps) => {
   const { i18n, t } = useTranslation();
+  const theme = useTheme();
+  const { colors } = theme;
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const inputRef = useRef<NativeTextInput>(null);
   const searchRequestInFlight = useRef(false);
   const [query, setQuery] = useState('');
@@ -283,7 +288,7 @@ const MapSearchOverlay = ({
             returnKeyType="search"
             style={styles.searchInput}
             placeholder={t('map.searchOverlay.placeholder')}
-            placeholderTextColor="#717481"
+            placeholderTextColor={colors.textMuted}
             value={query}
             onChangeText={handleQueryChange}
             onSubmitEditing={() => void runSearch()}
@@ -329,7 +334,7 @@ const MapSearchOverlay = ({
               }}
               style={[styles.categoryChip, active && styles.categoryChipActive]}
             >
-              {Icon ? <Icon color={active ? '#FF245B' : '#5E6069'} height={18} width={22} /> : null}
+              {Icon ? <Icon color={active ? colors.primary : colors.textMuted} height={18} width={22} /> : null}
               <AppText style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</AppText>
             </Pressable>
           );
@@ -358,7 +363,7 @@ const MapSearchOverlay = ({
             {isRecentSearchHydrating ? (
               <ActivityIndicator
                 accessibilityLabel={t('map.searchOverlay.recentLoading')}
-                color="#777983"
+                color={colors.textMuted}
                 size="small"
                 style={styles.recentLoading}
               />
@@ -371,7 +376,9 @@ const MapSearchOverlay = ({
                   onPress={() => void runSearch(item.query, item.category)}
                   style={styles.recentMain}
                 >
-                  <View style={styles.recentIcon}><RecentCategoryIcon category={item.category} /></View>
+                  <View style={styles.recentIcon}>
+                    <RecentCategoryIcon category={item.category} color={colors.textMuted} />
+                  </View>
                   <AppText numberOfLines={1} style={styles.recentQuery}>{item.query}</AppText>
                 </Pressable>
                 <AppText style={styles.recentDate}>
@@ -394,7 +401,7 @@ const MapSearchOverlay = ({
 
         {isSearching ? (
           <View style={styles.statusRow}>
-            <ActivityIndicator color="#ff1956" size="small" />
+            <ActivityIndicator color={colors.primary} size="small" />
             <AppText style={styles.statusInlineText}>{t('map.searchOverlay.loading')}</AppText>
           </View>
         ) : null}
@@ -472,7 +479,7 @@ const MapSearchOverlay = ({
 };
 
 const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
-const styles: Record<string, object> = {
+const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   backButton: {
     alignItems: 'center',
     height: 44,
@@ -480,15 +487,15 @@ const styles: Record<string, object> = {
     width: 26,
   },
   backIcon: {
-    color: '#5c606b',
+    color: colors.textMuted,
     fontSize: 36,
     fontWeight: '300',
     lineHeight: 40,
   },
   categoryChip: {
     alignItems: 'center',
-    backgroundColor: '#F7F7F8',
-    borderColor: '#F7F7F8',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.surfaceMuted,
     borderRadius: 18,
     borderWidth: 1,
     flexDirection: 'row',
@@ -497,14 +504,14 @@ const styles: Record<string, object> = {
     justifyContent: 'center',
     paddingHorizontal: 13,
   },
-  categoryChipActive: { borderColor: '#FF245B' },
+  categoryChipActive: { backgroundColor: colors.primarySelected, borderColor: colors.selectedBorder },
   categoryContent: { gap: 8, paddingHorizontal: 27, paddingVertical: 10 },
-  categoryLabel: { color: '#5E6069', fontSize: 14, fontWeight: '500' },
-  categoryLabelActive: { color: '#FF245B' },
+  categoryLabel: { color: colors.textMuted, fontSize: 14, fontWeight: '500' },
+  categoryLabelActive: { color: colors.primary },
   categoryScroll: { flexGrow: 0 },
   chip: {
     alignItems: 'center',
-    backgroundColor: '#f0f0f2',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 21,
     flexDirection: 'row',
     gap: 6,
@@ -512,7 +519,7 @@ const styles: Record<string, object> = {
     paddingHorizontal: 14,
   },
   chipRemove: {
-    color: '#7a7d86',
+    color: colors.textMuted,
     fontSize: 22,
     fontWeight: '400',
     lineHeight: 22,
@@ -524,19 +531,19 @@ const styles: Record<string, object> = {
     marginTop: 12,
   },
   chipText: {
-    color: '#696d78',
+    color: colors.textSecondary,
     fontSize: 15,
     fontWeight: '600',
   },
   clearIcon: {
-    color: '#777a84',
+    color: colors.textMuted,
     fontSize: 22,
     fontWeight: '700',
     lineHeight: 22,
   },
   container: {
     ...absoluteFill,
-    backgroundColor: '#fbfbfc',
+    backgroundColor: colors.background,
     zIndex: 200,
   },
   content: {
@@ -545,12 +552,12 @@ const styles: Record<string, object> = {
     paddingTop: 10,
   },
   deleteText: {
-    color: '#737781',
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: '600',
   },
   emptyDescription: {
-    color: '#777a84',
+    color: colors.textMuted,
     fontSize: 15,
     fontWeight: '700',
     marginTop: 7,
@@ -562,7 +569,7 @@ const styles: Record<string, object> = {
     paddingTop: 88,
   },
   emptyTitle: {
-    color: '#252934',
+    color: colors.textStrong,
     fontSize: 18,
     fontWeight: '900',
     textAlign: 'center',
@@ -578,7 +585,7 @@ const styles: Record<string, object> = {
   },
   recommendButton: {
     alignItems: 'center',
-    backgroundColor: '#ff1956',
+    backgroundColor: colors.primary,
     borderRadius: 18,
     height: 75,
     justifyContent: 'center',
@@ -586,13 +593,13 @@ const styles: Record<string, object> = {
     width: '100%',
   },
   recommendButtonText: {
-    color: '#ffffff',
+    color: colors.onPrimary,
     fontSize: 22,
     fontWeight: '900',
   },
   recommendBadge: {
     alignItems: 'center',
-    backgroundColor: '#ffedf3',
+    backgroundColor: colors.primarySoft,
     borderRadius: 16,
     height: 32,
     justifyContent: 'center',
@@ -600,13 +607,13 @@ const styles: Record<string, object> = {
     width: 32,
   },
   recommendBadgeText: {
-    color: '#ff1956',
+    color: colors.primary,
     fontSize: 15,
     fontWeight: '900',
   },
   recommendItem: {
     alignItems: 'center',
-    borderBottomColor: '#eff0f4',
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     paddingVertical: 13,
@@ -621,7 +628,7 @@ const styles: Record<string, object> = {
     minHeight: 52,
   },
   recommendStateText: {
-    color: '#747681',
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: '800',
   },
@@ -629,13 +636,13 @@ const styles: Record<string, object> = {
     flex: 1,
   },
   resultAddress: {
-    color: '#636774',
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
     marginTop: 4,
   },
   resultCategory: {
-    color: '#9a9da7',
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: '600',
     marginTop: 4,
@@ -644,17 +651,17 @@ const styles: Record<string, object> = {
     marginTop: 18,
   },
   resultItem: {
-    borderBottomColor: '#eff0f4',
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     paddingVertical: 13,
   },
   resultName: {
-    color: '#1d2028',
+    color: colors.textStrong,
     fontSize: 16,
     fontWeight: '900',
   },
   registeredStatus: {
-    backgroundColor: '#F7F7F8',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 10,
     marginTop: 14,
     paddingHorizontal: 14,
@@ -662,7 +669,7 @@ const styles: Record<string, object> = {
   },
   searchField: {
     alignItems: 'center',
-    backgroundColor: '#e8e8eb',
+    backgroundColor: colors.inputBackground,
     borderRadius: 26,
     flex: 1,
     flexDirection: 'row',
@@ -672,18 +679,18 @@ const styles: Record<string, object> = {
     paddingRight: 17,
   },
   searchIcon: {
-    color: '#717481',
+    color: colors.textMuted,
     fontSize: 30,
     lineHeight: 32,
   },
   searchInput: {
-    color: '#303440',
+    color: colors.text,
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
     padding: 0,
   },
-  recentDate: { color: '#777A85', fontSize: 14 },
+  recentDate: { color: colors.textMuted, fontSize: 14 },
   recentHeader: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -691,38 +698,38 @@ const styles: Record<string, object> = {
   },
   recentIcon: {
     alignItems: 'center',
-    backgroundColor: '#E7E7E9',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 20,
     height: 38,
     justifyContent: 'center',
     width: 38,
   },
   recentMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 14 },
-  recentQuery: { color: '#44464E', flex: 1, fontSize: 15, fontWeight: '500' },
-  recentRemove: { color: '#666A75', fontSize: 29, fontWeight: '300', lineHeight: 30 },
+  recentQuery: { color: colors.text, flex: 1, fontSize: 15, fontWeight: '500' },
+  recentRemove: { color: colors.textMuted, fontSize: 29, fontWeight: '300', lineHeight: 30 },
   recentRow: {
     alignItems: 'center',
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     gap: 15,
     height: 77,
   },
   recentLoading: { marginTop: 18 },
-  recentTitle: { color: '#35373F', fontSize: 18, fontWeight: '800', marginBottom: 2 },
+  recentTitle: { color: colors.textStrong, fontSize: 18, fontWeight: '800', marginBottom: 2 },
   sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    color: '#2f333d',
+    color: colors.textStrong,
     fontSize: 15,
     fontWeight: '900',
   },
   shortcut: {
     alignItems: 'center',
-    backgroundColor: '#f4f4f6',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 18,
     flexDirection: 'row',
     gap: 7,
@@ -731,7 +738,7 @@ const styles: Record<string, object> = {
     paddingHorizontal: 15,
   },
   shortcutIcon: {
-    color: '#ff1956',
+    color: colors.primary,
     fontSize: 22,
     fontWeight: '900',
   },
@@ -742,7 +749,7 @@ const styles: Record<string, object> = {
     paddingTop: 16,
   },
   shortcutText: {
-    color: '#5f626d',
+    color: colors.textSecondary,
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 20,
@@ -758,16 +765,16 @@ const styles: Record<string, object> = {
     marginTop: 22,
   },
   statusText: {
-    color: '#777a84',
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: '700',
     marginTop: 18,
   },
   statusInlineText: {
-    color: '#777a84',
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: '700',
   },
-};
+});
 
 export default MapSearchOverlay;

@@ -1,7 +1,6 @@
 import { Animated } from 'react-native';
 import styled from 'styled-components/native';
 
-import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import FrostedSurface from '../components/FrostedSurface';
 
 export const BottomSheetContainer = styled(Animated.View)`
@@ -18,19 +17,19 @@ export const SheetChromeShadow = styled(Animated.View)`
   top: 0;
   right: 0;
   left: 0;
-  border-radius: ${liquidGlass.sheet.topRadius}px;
-  border-bottom-right-radius: ${liquidGlass.sheet.bottomRadius}px;
-  border-bottom-left-radius: ${liquidGlass.sheet.bottomRadius}px;
-  background-color: ${liquidGlass.shadowFill};
+  border-radius: ${({ theme }) => theme.liquidGlass.sheet.topRadius}px;
+  border-bottom-right-radius: ${({ theme }) => theme.liquidGlass.sheet.bottomRadius}px;
+  border-bottom-left-radius: ${({ theme }) => theme.liquidGlass.sheet.bottomRadius}px;
+  background-color: ${({ theme }) => theme.liquidGlass.shadowFill};
 `;
 
 export const SheetChrome = styled(Animated.View)<{ $borderColor: string }>`
   flex: 1;
   border-width: 1px;
   border-color: ${({ $borderColor }) => $borderColor};
-  border-radius: ${liquidGlass.sheet.topRadius}px;
-  border-bottom-right-radius: ${liquidGlass.sheet.bottomRadius}px;
-  border-bottom-left-radius: ${liquidGlass.sheet.bottomRadius}px;
+  border-radius: ${({ theme }) => theme.liquidGlass.sheet.topRadius}px;
+  border-bottom-right-radius: ${({ theme }) => theme.liquidGlass.sheet.bottomRadius}px;
+  border-bottom-left-radius: ${({ theme }) => theme.liquidGlass.sheet.bottomRadius}px;
   overflow: hidden;
 `;
 
@@ -40,7 +39,7 @@ export const SheetGlass = styled(FrostedSurface)`
   right: 0;
   bottom: 0;
   left: 0;
-  border-radius: ${liquidGlass.sheet.topRadius}px;
+  border-radius: ${({ theme }) => theme.liquidGlass.sheet.topRadius}px;
   border-bottom-right-radius: 0px;
   border-bottom-left-radius: 0px;
   overflow: hidden;

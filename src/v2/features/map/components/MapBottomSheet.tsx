@@ -57,8 +57,10 @@ import type { PlaceOperatingSummaryText, ReservationCtaState } from '../../place
 import GlassSurface from './GlassSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
-import { colors } from '../../../shared/theme/colors';
+import { lightColors } from '../../../shared/theme/colors';
 import { liquidGlass } from '../../../shared/theme/liquidGlass';
+import { useTheme } from 'styled-components/native';
+import type { AppTheme } from '../../../shared/theme';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { hasValidCoordinates } from '../services/placeActions';
 import {
@@ -212,6 +214,10 @@ type SheetCategory = MapHomeCategory;
 
 // Keep the Figma typography stable when an Android device uses a larger system font scale.
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
+const useMapSheetStyles = () => {
+  const { colors } = useTheme();
+  return useMemo(() => createStyles(colors), [colors]);
+};
 
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
@@ -232,18 +238,20 @@ const CATEGORY_OPTIONS: Array<{ id: SheetCategory }> = [
   { id: 'art' }, { id: 'cafe' }, { id: 'heritage' }, { id: 'etc' },
 ];
 
-export const MapPinIcon = ({ active = false, size = 24 }: IconProps) => (
-  <Svg height={size} viewBox="0 0 24 24" width={size}>
+export const MapPinIcon = ({ active = false, size = 24 }: IconProps) => {
+  const themedColors = useTheme().colors ?? lightColors;
+  const color = active ? themedColors.primary : themedColors.text;
+  return <Svg height={size} viewBox="0 0 24 24" width={size}>
     <Path
       d="M12 22s7-6.1 7-13A7 7 0 0 0 5 9c0 6.9 7 13 7 13Z"
-      fill={active ? '#FF245B' : 'none'}
-      stroke={active ? '#FF245B' : '#383B43'}
+      fill={active ? color : 'none'}
+      stroke={color}
       strokeLinejoin="round"
       strokeWidth="2"
     />
-    <Circle cx="12" cy="9" fill={active ? '#FFFFFF' : 'none'} r="2.4" stroke={active ? '#FFFFFF' : '#383B43'} strokeWidth="1.5" />
+    <Circle cx="12" cy="9" fill={active ? themedColors.onPrimary : 'none'} r="2.4" stroke={active ? themedColors.onPrimary : color} strokeWidth="1.5" />
   </Svg>
-);
+};
 
 const CardScrim = () => (
   <View pointerEvents="none" style={styles.cardScrim}>
@@ -261,17 +269,19 @@ const CardScrim = () => (
   </View>
 );
 
-const RecommendationMetaIcon = () => (
-  <Svg height={16} viewBox="0 0 18 18" width={16}>
-    <Path d="M3 3.5h12v8H8l-3.5 3v-3H3z" fill="#E4E7EC" stroke="#777982" strokeLinejoin="round" />
-    <Circle cx="6.5" cy="7.5" fill="#777982" r=".8" />
-    <Circle cx="9" cy="7.5" fill="#777982" r=".8" />
-    <Circle cx="11.5" cy="7.5" fill="#777982" r=".8" />
+const RecommendationMetaIcon = () => {
+  const themedColors = useTheme().colors ?? lightColors;
+  return <Svg height={16} viewBox="0 0 18 18" width={16}>
+    <Path d="M3 3.5h12v8H8l-3.5 3v-3H3z" fill={themedColors.surfaceMuted} stroke={themedColors.textMuted} strokeLinejoin="round" />
+    <Circle cx="6.5" cy="7.5" fill={themedColors.textMuted} r=".8" />
+    <Circle cx="9" cy="7.5" fill={themedColors.textMuted} r=".8" />
+    <Circle cx="11.5" cy="7.5" fill={themedColors.textMuted} r=".8" />
   </Svg>
-);
+};
 
 const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCategory }) => {
-  const color = active ? '#FF1956' : '#5E5E66';
+  const themedColors = useTheme().colors ?? lightColors;
+  const color = active ? themedColors.primary : themedColors.textSecondary;
 
   switch (category) {
     case 'all':
@@ -305,6 +315,8 @@ const FeedSegment = ({
   onChange: (feed: 'local' | 'national') => void;
 }) => {
   const { t } = useTranslation();
+  const { colors, liquidGlass: themedGlass } = useTheme();
+  const styles = useMapSheetStyles();
   const [segmentWidth, setSegmentWidth] = useState(0);
   const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
   const reduceMotion = useReducedMotion();
@@ -329,7 +341,7 @@ const FeedSegment = ({
           onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
           style={styles.segmentOuter}
           testID="feed-segment-control"
-          tintColor="rgba(228,228,229,0.48)"
+          tintColor={themedGlass.navigation.tint}
         >
           {indicatorWidth > 0 ? (
             <Animated.View
@@ -356,7 +368,7 @@ const FeedSegment = ({
             style={styles.segment}
           >
             <HotPlaceAsset
-              color={feed === 'local' ? '#FF1956' : '#767680'}
+              color={feed === 'local' ? colors.primary : colors.textMuted}
               height={20}
               width={16}
             />
@@ -371,7 +383,7 @@ const FeedSegment = ({
             style={styles.segment}
           >
             <MapAsset
-              color={feed === 'national' ? '#FF1956' : '#767680'}
+              color={feed === 'national' ? colors.primary : colors.textMuted}
               height={20}
               width={18}
             />
@@ -418,6 +430,7 @@ const PlaceArtwork = ({
   variant?: 'grid' | 'trend';
 }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   const [hasImageError, setHasImageError] = useState(false);
   const imageOpacity = useRef(new Animated.Value(0)).current;
   const reduceMotion = useReducedMotion();
@@ -556,6 +569,7 @@ const RecommendationBookmarkButton = ({
   style: object;
 }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   const reduceMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(1)).current;
   const mutationLocked = useRef(false);
@@ -615,6 +629,7 @@ const RecommendationBookmarkButton = ({
 
 const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   const [hasImageError, setHasImageError] = useState(false);
 
   useEffect(() => {
@@ -661,6 +676,7 @@ export const RecommendationFeaturedCard = ({
   place: DecisionPlace;
 }) => {
   const { i18n, t } = useTranslation();
+  const styles = useMapSheetStyles();
   const distance = formatDistance(place, i18n.language);
   return (
     <RecommendationCardPressable
@@ -717,6 +733,7 @@ const RecommendationGridCard = ({
   place: DecisionPlace;
 }) => {
   const { i18n, t } = useTranslation();
+  const styles = useMapSheetStyles();
   return (
     <RecommendationCardPressable
       accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
@@ -758,6 +775,7 @@ const PlaceTrendCard = ({
   place: RankedPlaceViewModel;
 }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   return (
   <Pressable
     accessibilityLabel={`${place.name}, ${place.address}`}
@@ -809,6 +827,7 @@ const ExpandedPlaceCard = ({
   place: RankedPlaceViewModel;
 }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   return (
   <Pressable
     accessibilityLabel={`${place.name}, ${place.address}`}
@@ -874,6 +893,7 @@ const ExpandedHomeContent = ({
   userName: string;
 }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   const scrollRef = useRef<ScrollView>(null);
   const [hasRenderedExpandedContent, setHasRenderedExpandedContent] = useState(
     expandedInteractionsEnabled,
@@ -1008,6 +1028,7 @@ const EmptyCard = ({
   variant?: 'list' | 'row';
 }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   const copyState = state === 'ready' ? 'empty' : state;
   const isCategoryEmpty = copyState === 'category-empty';
   const nationalCopy = feed === 'national' && ['empty', 'error', 'loading'].includes(copyState);
@@ -1062,6 +1083,7 @@ const RecommendationState = ({
   state: 'empty' | 'error' | 'loading';
 }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   return (
   <View
     accessibilityLiveRegion="polite"
@@ -1136,6 +1158,7 @@ const RecommendationContent = ({
   userName: string;
 }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   const scrollRef = useRef<ScrollView>(null);
   const featuredPlaces = places.slice(0, 3);
   const gridPlaces = places.slice(3);
@@ -1246,6 +1269,7 @@ const ResultRow = ({
   place: DecisionPlace;
 }) => {
   const { i18n } = useTranslation();
+  const styles = useMapSheetStyles();
   return (
   <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
     <View style={styles.resultThumbnail}><MapPinIcon active size={25} /></View>
@@ -1260,6 +1284,7 @@ const ResultRow = ({
 
 const PreviewAmenity = ({ type }: { type: 'english' | 'parking' }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   return (
   <View style={styles.previewAmenityChip}>
     {type === 'english'
@@ -1278,15 +1303,17 @@ const ReviewHighlightIcon = ({ label }: { label: string }) => {
   return <DeliciousAsset height={16} width={16} />;
 };
 
-const InfoClockIcon = () => (
-  <Svg height={16} viewBox="0 0 16 16" width={16}>
-    <Circle cx={8} cy={8} fill="none" r={6.5} stroke="#7B7F88" strokeWidth={1.5} />
-    <Path d="M8 4.5V8L10.5 9.5" fill="none" stroke="#7B7F88" strokeLinecap="round" strokeWidth={1.5} />
+const InfoClockIcon = () => {
+  const color = (useTheme().colors ?? lightColors).textMuted;
+  return <Svg height={16} viewBox="0 0 16 16" width={16}>
+    <Circle cx={8} cy={8} fill="none" r={6.5} stroke={color} strokeWidth={1.5} />
+    <Path d="M8 4.5V8L10.5 9.5" fill="none" stroke={color} strokeLinecap="round" strokeWidth={1.5} />
   </Svg>
-);
+};
 
 const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
   const [hasError, setHasError] = useState(false);
+  const styles = useMapSheetStyles();
 
   if (!url || hasError) {
     return (
@@ -1308,6 +1335,7 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
 
 const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: string[] }) => {
   const { t } = useTranslation();
+  const styles = useMapSheetStyles();
   const [isExpanded, setIsExpanded] = useState(false);
   const visibleTags = isExpanded ? [...tags, ...hiddenTags] : tags;
 
@@ -1340,33 +1368,35 @@ const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: st
 type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
 const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
+  const color = (useTheme().colors ?? lightColors).textSecondary;
   if (kind === 'share') {
     return (
       <Svg height={13} viewBox="0 0 16 16" width={13}>
-        <Path d="M6 3H3.8A1.8 1.8 0 0 0 2 4.8v7.4A1.8 1.8 0 0 0 3.8 14h7.4a1.8 1.8 0 0 0 1.8-1.8V10M8 2h6v6M14 2 7.5 8.5" fill="none" stroke="#5A5D65" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
+        <Path d="M6 3H3.8A1.8 1.8 0 0 0 2 4.8v7.4A1.8 1.8 0 0 0 3.8 14h7.4a1.8 1.8 0 0 0 1.8-1.8V10M8 2h6v6M14 2 7.5 8.5" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
     );
   }
   if (kind === 'reservation') {
     return (
       <Svg height={13} viewBox="0 0 16 16" width={13}>
-        <Path d="M3 4.2A1.7 1.7 0 0 1 4.7 2.5h6.6A1.7 1.7 0 0 1 13 4.2v7.1a1.7 1.7 0 0 1-1.7 1.7H4.7A1.7 1.7 0 0 1 3 11.3V4.2Z" fill="none" stroke="#5A5D65" strokeWidth={1.4} />
-        <Path d="m6 8 1.3 1.3L10.4 6" fill="none" stroke="#5A5D65" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
+        <Path d="M3 4.2A1.7 1.7 0 0 1 4.7 2.5h6.6A1.7 1.7 0 0 1 13 4.2v7.1a1.7 1.7 0 0 1-1.7 1.7H4.7A1.7 1.7 0 0 1 3 11.3V4.2Z" fill="none" stroke={color} strokeWidth={1.4} />
+        <Path d="m6 8 1.3 1.3L10.4 6" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
     );
   }
   if (kind === 'directions') {
     return (
       <Svg height={14} viewBox="0 0 16 16" width={14}>
-        <Path d="m2.2 2.7 11.6 4.7-5 1.2-1.4 4.7-5.2-10.6Z" fill="none" stroke="#5A5D65" strokeLinejoin="round" strokeWidth={1.4} />
+        <Path d="m2.2 2.7 11.6 4.7-5 1.2-1.4 4.7-5.2-10.6Z" fill="none" stroke={color} strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
     );
   }
   return null;
 };
 
-const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, kind, label, onPress }: { accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => (
-  <Pressable
+const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, kind, label, onPress }: { accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => {
+  const styles = useMapSheetStyles();
+  return <Pressable
     accessibilityHint={accessibilityHint}
     accessibilityLabel={label}
     accessibilityRole={onPress && !disabled ? 'button' : undefined}
@@ -1382,8 +1412,8 @@ const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, di
   >
     <PreviewActionIcon kind={kind} />
     <AppText style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</AppText>
-  </Pressable>
-);
+  </Pressable>;
+};
 
 const formatPreviewCategory = (category: string) => {
   const normalized = normalizePlaceCategory(category);
@@ -1430,6 +1460,7 @@ const PreviewContent = ({
   place: DecisionPlace;
 }) => {
   const { i18n, t } = useTranslation();
+  const styles = useMapSheetStyles();
   const { width: windowWidth } = useWindowDimensions();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
@@ -1631,6 +1662,8 @@ const ExpandedPlaceContent = ({
   place: DecisionPlace;
 }) => {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMapSheetStyles();
   const insets = useSafeAreaInsets();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
@@ -1886,7 +1919,8 @@ const ExpandedPlaceContent = ({
                     style={[
                       styles.detailHighlightFill,
                       {
-                        backgroundColor: `rgba(255,36,91,${fillOpacity.toFixed(2)})`,
+                        backgroundColor: colors.primary,
+                        opacity: fillOpacity,
                         width: `${Math.max(24, scoreRatio * 100)}%`,
                       },
                     ]}
@@ -2032,6 +2066,10 @@ export default function MapBottomSheet({
   snapPoint,
   userName,
 }: MapBottomSheetProps) {
+  const activeTheme = useTheme();
+  const themedColors = activeTheme.colors;
+  const themedGlass = activeTheme.liquidGlass;
+  const styles = useMemo(() => createStyles(themedColors), [themedColors]);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [feed, setFeed] = useState<'local' | 'national'>('local');
@@ -2139,11 +2177,11 @@ export default function MapBottomSheet({
         pointerEvents="none"
         style={[
           {
-            boxShadow: liquidGlass.sheet.shadow,
+            boxShadow: themedGlass.sheet.shadow,
             borderBottomLeftRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
             borderBottomRightRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
-            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius,
-            borderTopRightRadius: isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius,
+            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
+            borderTopRightRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
             bottom: chromeBottomInset,
             left: chromeGap,
             right: chromeGap,
@@ -2151,23 +2189,23 @@ export default function MapBottomSheet({
         ]}
       >
         <GlassStyles.SheetChrome
-          $borderColor={isExpandedPlaceDetail ? 'transparent' : liquidGlass.sheet.rim}
+          $borderColor={isExpandedPlaceDetail ? 'transparent' : themedGlass.sheet.rim}
           style={[
             {
               borderBottomLeftRadius: chromeBottomRadius,
               borderBottomRightRadius: chromeBottomRadius,
-              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius,
-              borderTopRightRadius: isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius,
+              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
+              borderTopRightRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
             },
           ]}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={isExpandedPlaceDetail ? 0 : liquidGlass.sheet.topRadius}
+            cornerRadius={isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius}
             glassEffectStyle="regular"
             highlightHeight={40}
-            highlightOpacity={liquidGlass.sheet.highlightOpacity}
-            rimColor={liquidGlass.sheet.rim}
-            tintColor={isExpandedPlaceDetail ? colors.surface : liquidGlass.sheet.tint}
+            highlightOpacity={themedGlass.sheet.highlightOpacity}
+            rimColor={themedGlass.sheet.rim}
+            tintColor={isExpandedPlaceDetail ? themedColors.surface : themedGlass.sheet.tint}
             topRimOnly
           />
         </GlassStyles.SheetChrome>
@@ -2349,9 +2387,9 @@ export default function MapBottomSheet({
 }
 
 const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
-const styles: Record<string, object> = {
+const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   artwork: {
-    backgroundColor: '#E4E4E6',
+    backgroundColor: colors.surfaceMuted,
     height: '100%',
     overflow: 'hidden',
     width: '100%',
@@ -2376,26 +2414,26 @@ const styles: Record<string, object> = {
     width: '100%',
   },
   artworkFallback: { alignItems: 'center', justifyContent: 'center' },
-  artworkFallbackText: { color: '#FF245B', fontSize: 10, fontWeight: '700', marginTop: 5 },
+  artworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
   detailActionRow: { columnGap: 8, paddingBottom: 12, paddingHorizontal: 16 },
   detailAmenityRow: { columnGap: 10, flexDirection: 'row', paddingTop: 16 },
-  detailBackText: { color: '#555860', fontSize: 34, fontWeight: '300', lineHeight: 36, marginTop: -4 },
-  detailCategory: { color: '#63666E', flexShrink: 0, fontSize: 13, fontWeight: '600', includeFontPadding: false, lineHeight: 18, marginLeft: 4, paddingTop: 4 },
-  detailContent: { backgroundColor: '#FFFFFF', paddingBottom: 48 },
+  detailBackText: { color: colors.textMuted, fontSize: 34, fontWeight: '300', lineHeight: 36, marginTop: -4 },
+  detailCategory: { color: colors.textSecondary, flexShrink: 0, fontSize: 13, fontWeight: '600', includeFontPadding: false, lineHeight: 18, marginLeft: 4, paddingTop: 4 },
+  detailContent: { backgroundColor: colors.background, paddingBottom: 48 },
   detailCouponBody: { flex: 1 },
   detailCouponIcon: {
     alignItems: 'center',
-    backgroundColor: '#FFD9E4',
+    backgroundColor: colors.primaryAssistive,
     borderRadius: 8,
     height: 34,
     justifyContent: 'center',
     width: 34,
   },
-  detailCouponIconText: { color: '#FF245B', fontSize: 18, fontWeight: '900' },
-  detailCouponPeriod: { color: '#8B8E96', fontSize: 10, marginTop: 2 },
+  detailCouponIconText: { color: colors.primary, fontSize: 18, fontWeight: '900' },
+  detailCouponPeriod: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
   detailCouponRow: {
     alignItems: 'center',
-    backgroundColor: '#F7F7F8',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 10,
     flexDirection: 'row',
     gap: 10,
@@ -2403,13 +2441,13 @@ const styles: Record<string, object> = {
     minHeight: 58,
     paddingHorizontal: 10,
   },
-  detailCouponTitle: { color: '#2F3137', fontSize: 12, fontWeight: '700' },
-  detailEmptyText: { color: '#8A8D95', fontSize: 12, paddingVertical: 24, textAlign: 'center' },
+  detailCouponTitle: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  detailEmptyText: { color: colors.textMuted, fontSize: 12, paddingVertical: 24, textAlign: 'center' },
   detailHeading: { paddingBottom: 12, paddingHorizontal: 16 },
-  detailHighlightCount: { color: '#FF245B', fontSize: 11, fontWeight: '700', position: 'absolute', right: 14 },
-  detailHighlightCountOnStrong: { color: '#FFFFFF' },
+  detailHighlightCount: { color: colors.primary, fontSize: 11, fontWeight: '700', position: 'absolute', right: 14 },
+  detailHighlightCountOnStrong: { color: colors.textInverse },
   detailHighlightFill: {
-    backgroundColor: '#FFDDE6',
+    backgroundColor: colors.primaryAssistive,
     borderBottomLeftRadius: 9,
     borderTopLeftRadius: 9,
     bottom: 0,
@@ -2417,10 +2455,10 @@ const styles: Record<string, object> = {
     position: 'absolute',
     top: 0,
   },
-  detailHighlightLabel: { color: '#3B3E45', fontSize: 12, fontWeight: '700' },
+  detailHighlightLabel: { color: colors.text, fontSize: 12, fontWeight: '700' },
   detailHighlightLabelRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingLeft: 14 },
   detailHighlightRow: {
-    backgroundColor: '#F7F7F8',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 9,
     height: 39,
     justifyContent: 'center',
@@ -2429,31 +2467,31 @@ const styles: Record<string, object> = {
   },
   detailInfoBlock: { padding: 16 },
   detailInfoRow: { alignItems: 'center', flexDirection: 'row', gap: 11, minHeight: 31 },
-  detailInfoText: { color: '#5F636C', flex: 1, fontSize: 14, lineHeight: 21 },
+  detailInfoText: { color: colors.textSecondary, flex: 1, fontSize: 14, lineHeight: 21 },
   detailMenuBody: { flex: 1 },
-  detailMenuDescription: { color: '#858891', fontSize: 11, marginTop: 4 },
+  detailMenuDescription: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
   detailMenuImage: { borderRadius: 10, height: 64, overflow: 'hidden', width: 72 },
-  detailMenuName: { color: '#303238', fontSize: 13, fontWeight: '800' },
-  detailMenuPrice: { color: '#303238', fontSize: 12, fontWeight: '800', marginTop: 7 },
+  detailMenuName: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  detailMenuPrice: { color: colors.text, fontSize: 12, fontWeight: '800', marginTop: 7 },
   detailMenuRow: {
     alignItems: 'center',
-    borderBottomColor: '#ECEDEF',
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     minHeight: 105,
     paddingVertical: 12,
   },
-  detailOperatingNeutral: { color: '#5F636C' },
-  detailOperatingPositive: { color: '#168A43' },
+  detailOperatingNeutral: { color: colors.textSecondary },
+  detailOperatingPositive: { color: colors.success },
   detailOperatingStatus: { fontWeight: '800' },
-  detailOperatingWarning: { color: '#A15C00' },
+  detailOperatingWarning: { color: colors.warning },
   detailPhoto: { borderRadius: 16, height: 180, overflow: 'hidden', width: 180 },
   detailPhotoPrimary: { width: 242 },
   detailPhotoRow: { columnGap: 10, paddingBottom: 12, paddingHorizontal: 16 },
   detailReviewBody: { flex: 1 },
-  detailReviewCount: { color: '#797C84', fontSize: 11, fontWeight: '500' },
+  detailReviewCount: { color: colors.textMuted, fontSize: 11, fontWeight: '500' },
   detailReviewItem: {
-    borderBottomColor: '#ECEDEF',
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     paddingVertical: 13,
   },
@@ -2465,13 +2503,13 @@ const styles: Record<string, object> = {
     marginTop: 10,
     overflow: 'hidden',
   },
-  detailReviewMeta: { color: '#9A9CA3', fontSize: 9, marginTop: 2 },
+  detailReviewMeta: { color: colors.textMuted, fontSize: 9, marginTop: 2 },
   detailReviewPhoto: { borderRadius: 10, height: 124, overflow: 'hidden', width: 124 },
   detailReviewPhotos: { columnGap: 10, paddingTop: 12 },
-  detailReviewSection: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, padding: 16 },
+  detailReviewSection: { borderBottomColor: colors.border, borderBottomWidth: 1, padding: 16 },
   detailReviewTag: {
     alignItems: 'center',
-    backgroundColor: '#F1F2F4',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 9,
     flexDirection: 'row',
     gap: 4,
@@ -2485,36 +2523,36 @@ const styles: Record<string, object> = {
     paddingTop: 10,
     rowGap: 6,
   },
-  detailReviewTagText: { color: '#555A63', fontSize: 11, fontWeight: '600' },
-  detailReviewText: { color: '#30333A', fontSize: 14, lineHeight: 21, marginTop: 10 },
-  detailReviewTitle: { color: '#2C2E34', fontSize: 15, fontWeight: '900' },
+  detailReviewTagText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
+  detailReviewText: { color: colors.text, fontSize: 14, lineHeight: 21, marginTop: 10 },
+  detailReviewTitle: { color: colors.textStrong, fontSize: 15, fontWeight: '900' },
   detailReviewerAvatar: {
     alignItems: 'center',
-    backgroundColor: '#E5E5E7',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 18,
     height: 36,
     justifyContent: 'center',
     width: 36,
   },
   detailReviewerAvatarImage: { borderRadius: 22, height: 44, width: 44 },
-  detailReviewerInitial: { color: '#6F727A', fontSize: 13, fontWeight: '800' },
-  detailReviewerName: { color: '#202228', fontSize: 15, fontWeight: '700' },
+  detailReviewerInitial: { color: colors.textMuted, fontSize: 13, fontWeight: '800' },
+  detailReviewerName: { color: colors.text, fontSize: 15, fontWeight: '700' },
   detailReviewerRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
   detailRoundButton: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceElevated,
     borderRadius: 22,
     elevation: 2,
     height: 42,
     justifyContent: 'center',
-    shadowColor: '#11151B',
+    shadowColor: colors.shadow,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     width: 42,
   },
   detailSection: { padding: 16 },
-  detailSectionTitle: { color: '#303238', fontSize: 14, fontWeight: '900' },
+  detailSectionTitle: { color: colors.textStrong, fontSize: 14, fontWeight: '900' },
   detailTab: {
     alignItems: 'center',
     flex: 1,
@@ -2523,16 +2561,16 @@ const styles: Record<string, object> = {
     position: 'relative',
   },
   detailTabIndicator: {
-    backgroundColor: '#FF245B',
+    backgroundColor: colors.primary,
     bottom: -1,
     height: 2,
     position: 'absolute',
     width: 40,
   },
-  detailTabText: { color: '#6D7078', fontSize: 13, fontWeight: '700' },
-  detailTabTextActive: { color: '#FF245B' },
-  detailTabs: { borderBottomColor: '#ECEDEF', borderBottomWidth: 1, flexDirection: 'row' },
-  detailTitle: { color: '#17191D', flexShrink: 1, fontSize: 22, fontWeight: '900', includeFontPadding: false, lineHeight: 28, minWidth: 0 },
+  detailTabText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  detailTabTextActive: { color: colors.primary },
+  detailTabs: { borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row' },
+  detailTitle: { color: colors.textStrong, flexShrink: 1, fontSize: 22, fontWeight: '900', includeFontPadding: false, lineHeight: 28, minWidth: 0 },
   detailTitleRow: { alignItems: 'flex-start', flexDirection: 'row', minWidth: 0 },
   detailTopBar: {
     flexDirection: 'row',
@@ -2541,7 +2579,7 @@ const styles: Record<string, object> = {
     paddingHorizontal: 16,
     paddingTop: 2,
   },
-  detailVerified: { color: '#777A82', fontSize: 11, marginTop: 4 },
+  detailVerified: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
   cardRow: {
     gap: 12,
     paddingBottom: 10,
@@ -2559,23 +2597,23 @@ const styles: Record<string, object> = {
     justifyContent: 'center',
     padding: 18,
   },
-  emptyCardBody: { color: '#81838C', fontSize: 11, marginTop: 4, textAlign: 'center' },
+  emptyCardBody: { color: colors.textMuted, fontSize: 11, marginTop: 4, textAlign: 'center' },
   emptyCardRow: {
-    backgroundColor: '#F6F6F7',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 16,
     height: 182,
     width: 242,
   },
   emptyCardIcon: {
     alignItems: 'center',
-    backgroundColor: '#FFF0F4',
+    backgroundColor: colors.primarySoft,
     borderRadius: 20,
     height: 44,
     justifyContent: 'center',
     marginBottom: 8,
     width: 44,
   },
-  emptyCardTitle: { color: '#30323A', fontSize: 14, fontWeight: '800' },
+  emptyCardTitle: { color: colors.textStrong, fontSize: 14, fontWeight: '800' },
   expandedContent: { paddingBottom: 116 },
   expandedFeaturedRow: {
     gap: 16,
@@ -2585,17 +2623,17 @@ const styles: Record<string, object> = {
   },
   expandedScroll: { flex: 1 },
   expandedTitle: {
-    color: '#363840',
+    color: colors.textStrong,
     fontSize: 20,
     fontWeight: '900',
     lineHeight: 27,
     paddingHorizontal: 8,
   },
-  expandedTitleAccent: { color: '#FF1956' },
+  expandedTitleAccent: { color: colors.primary },
   bookmarkPill: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    borderColor: '#FF1956',
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.primary,
     borderRadius: 16,
     borderWidth: 1,
     elevation: 3,
@@ -2604,16 +2642,16 @@ const styles: Record<string, object> = {
     paddingVertical: 7,
     position: 'absolute',
     right: 10,
-    shadowColor: '#000000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     top: 10,
     zIndex: 3,
   },
-  bookmarkPillActive: { backgroundColor: '#FF1956' },
-  bookmarkPillText: { color: '#FF1956', fontSize: 12, fontWeight: '900' },
-  bookmarkPillTextActive: { color: '#FFFFFF' },
+  bookmarkPillActive: { backgroundColor: colors.primary },
+  bookmarkPillText: { color: colors.primary, fontSize: 12, fontWeight: '900' },
+  bookmarkPillTextActive: { color: colors.onPrimary },
   categoryChip: {
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -2692,7 +2730,7 @@ const styles: Record<string, object> = {
   homeTrendCardBody: { bottom: 0, left: 0, paddingBottom: 13, paddingHorizontal: 14, position: 'absolute', right: 0 },
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
-  handle: { backgroundColor: 'rgba(80,83,91,0.32)', borderRadius: 3, height: 5, width: 56 },
+  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 20, justifyContent: 'center', zIndex: 4 },
   handleButton: { alignItems: 'center', height: 20, justifyContent: 'center', width: 160 },
   homeHandleArea: { height: HOME_SHEET_HANDLE_HEIGHT },
@@ -2722,34 +2760,34 @@ const styles: Record<string, object> = {
     position: 'absolute',
     right: 0,
   },
-  placeCardDistance: { color: '#7E8088', flexShrink: 1, fontSize: 11, marginTop: 1, maxWidth: '100%' },
+  placeCardDistance: { color: colors.textMuted, flexShrink: 1, fontSize: 11, marginTop: 1, maxWidth: '100%' },
   placeCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 25 },
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   bookmarkPressed: { opacity: 0.64 },
   recommendationContent: { paddingBottom: 108 },
   recommendationCardRow: { gap: 12, paddingBottom: 10, paddingHorizontal: 8, paddingTop: 12 },
-  recommendationContext: { color: '#FF1956', fontSize: 10, fontWeight: '700', marginTop: 4 },
+  recommendationContext: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 4 },
   recommendationGridRows: { gap: 12 },
   recommendationGridScroll: { gap: 12, paddingHorizontal: 8 },
-  recommendationGridTitle: { color: '#202127', fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 8 },
+  recommendationGridTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 8 },
   recommendationHeader: { paddingHorizontal: 8, paddingTop: 5 },
-  recommendationReason: { color: '#35363C', flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
+  recommendationReason: { color: colors.text, flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
   reservationPlaceCard: { height: 214, minHeight: 214, width: 164 },
   reservationPlaceCardArtwork: { borderRadius: 16, height: 164 },
   reservationPlaceCardDistance: { fontSize: 14, marginTop: 1 },
   reservationPlaceCardName: { fontSize: 16, lineHeight: 21, paddingRight: 30 },
   recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5, maxWidth: '100%' },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
-  recommendationSubtitle: { color: '#73757D', fontSize: 12, marginTop: 5 },
-  recommendationTitle: { color: '#202127', fontSize: 20, fontWeight: '900' },
+  recommendationSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 5 },
+  recommendationTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900' },
   recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  retryButton: { backgroundColor: '#FF1956', borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
-  retryButtonText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
+  retryButton: { backgroundColor: colors.primary, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  retryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   previewActionChip: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderColor: 'rgba(231,232,236,0.90)',
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
     flexDirection: 'row',
@@ -2759,15 +2797,15 @@ const styles: Record<string, object> = {
     minWidth: 58,
     paddingHorizontal: 12,
   },
-  previewActionChipActive: { backgroundColor: '#FFF0F4', borderColor: '#FF5B82' },
+  previewActionChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.selectedBorder },
   previewActionRow: { columnGap: 7, paddingBottom: 12, paddingHorizontal: 1 },
-  previewActionText: { color: '#595C64', fontSize: 12, fontWeight: '700' },
-  previewActionTextActive: { color: '#FF245B' },
-  previewAddress: { color: '#5D6068', flexShrink: 1, fontSize: 13, fontWeight: '600', includeFontPadding: false, lineHeight: 18, marginTop: 4, minWidth: 0 },
+  previewActionText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  previewActionTextActive: { color: colors.primary },
+  previewAddress: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600', includeFontPadding: false, lineHeight: 18, marginTop: 4, minWidth: 0 },
   previewAmenityChip: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderColor: 'rgba(234,235,238,0.90)',
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
@@ -2783,21 +2821,21 @@ const styles: Record<string, object> = {
     justifyContent: 'center',
     width: 20,
   },
-  previewAmenityIconText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', lineHeight: 16 },
+  previewAmenityIconText: { color: colors.textInverse, fontSize: 13, fontWeight: '900', lineHeight: 16 },
   previewAmenityRow: { columnGap: 7, flexDirection: 'row', paddingBottom: 10 },
-  previewAmenityText: { color: '#5A5D65', fontSize: 12, fontWeight: '600' },
+  previewAmenityText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   previewArtwork: { height: '100%', width: '100%' },
   previewArtworkFallback: {
     alignItems: 'center',
-    backgroundColor: '#FFF0F4',
+    backgroundColor: colors.primarySoft,
     height: '100%',
     justifyContent: 'center',
     width: '100%',
   },
-  previewArtworkFallbackText: { color: '#FF245B', fontSize: 10, fontWeight: '700', marginTop: 5 },
+  previewArtworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
   previewBookmarkButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: colors.surfaceElevated,
     borderRadius: 20,
     height: 44,
     justifyContent: 'center',
@@ -2805,40 +2843,40 @@ const styles: Record<string, object> = {
     marginTop: 9,
     width: 44,
   },
-  previewCategory: { color: '#575A62', flexShrink: 0, fontSize: 13, fontWeight: '700', includeFontPadding: false, lineHeight: 19, marginLeft: 6 },
+  previewCategory: { color: colors.textSecondary, flexShrink: 0, fontSize: 13, fontWeight: '700', includeFontPadding: false, lineHeight: 19, marginLeft: 6 },
   previewCloseButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: colors.surfaceElevated,
     borderRadius: 20,
     height: 44,
     justifyContent: 'center',
     marginTop: 9,
     width: 44,
   },
-  previewCloseText: { color: '#5E616A', fontSize: 25, fontWeight: '300', lineHeight: 29 },
+  previewCloseText: { color: colors.textSecondary, fontSize: 25, fontWeight: '300', lineHeight: 29 },
   previewContent: { paddingHorizontal: 16 },
   previewHeader: { alignItems: 'flex-start', flexDirection: 'row', minHeight: 102 },
   previewImagePanel: {
-    backgroundColor: '#FFF0F4',
+    backgroundColor: colors.primarySoft,
     borderRadius: 17,
     height: 174,
     overflow: 'hidden',
     width: 180,
   },
   previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
-  previewName: { color: '#1B1D22', flexShrink: 1, fontSize: 21, fontWeight: '900', includeFontPadding: false, lineHeight: 27, minWidth: 0 },
+  previewName: { color: colors.textStrong, flexShrink: 1, fontSize: 21, fontWeight: '900', includeFontPadding: false, lineHeight: 27, minWidth: 0 },
   previewParkingIcon: { borderRadius: 5 },
-  previewStatus: { color: '#61646C', flexShrink: 1, fontSize: 13, fontWeight: '600' },
-  previewStatusEmphasis: { color: '#1CB957', fontWeight: '800' },
+  previewStatus: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600' },
+  previewStatusEmphasis: { color: colors.success, fontWeight: '800' },
   previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 6 },
   previewSummary: { flex: 1, minWidth: 0, paddingTop: 11 },
   previewTitleRow: { alignItems: 'center', flexDirection: 'row', minWidth: 0, paddingRight: 4 },
-  resultAddress: { color: '#7A7D85', fontSize: 11, marginTop: 3 },
-  resultDistance: { color: '#686B73', fontSize: 11, fontWeight: '700' },
-  resultName: { color: '#272930', fontSize: 14, fontWeight: '800' },
+  resultAddress: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
+  resultDistance: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
+  resultName: { color: colors.textStrong, fontSize: 14, fontWeight: '800' },
   resultRow: {
     alignItems: 'center',
-    borderBottomColor: 'rgba(255,255,255,0.8)',
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     gap: 11,
@@ -2847,15 +2885,15 @@ const styles: Record<string, object> = {
   resultTextBody: { flex: 1 },
   resultThumbnail: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,240,244,0.86)',
+    backgroundColor: colors.primarySoft,
     borderRadius: 13,
     height: 64,
     justifyContent: 'center',
     width: 48,
   },
   resultsContent: { paddingBottom: 105, paddingHorizontal: 17 },
-  resultsCount: { color: '#FF245B', fontSize: 13, fontWeight: '900' },
-  resultsTitle: { color: '#24262C', flex: 1, fontSize: 18, fontWeight: '900' },
+  resultsCount: { color: colors.primary, fontSize: 13, fontWeight: '900' },
+  resultsTitle: { color: colors.textStrong, flex: 1, fontSize: 18, fontWeight: '900' },
   resultsTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingBottom: 8, paddingTop: 6 },
   segment: {
     alignItems: 'center',
@@ -2868,17 +2906,17 @@ const styles: Record<string, object> = {
     zIndex: 1,
   },
   segmentLabel: {
-    color: '#767680',
+    color: colors.textMuted,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 21,
   },
-  segmentLabelActive: { color: '#FF1956', fontWeight: '700' },
+  segmentLabelActive: { color: colors.primary, fontWeight: '700' },
   segmentInset: {
     paddingHorizontal: 8,
   },
   segmentIndicator: {
-    backgroundColor: 'rgba(255,255,255,0.60)',
+    backgroundColor: colors.selectedTabSurface,
     borderRadius: 20,
     bottom: 4,
     left: 4,
@@ -2899,8 +2937,11 @@ const styles: Record<string, object> = {
   segmentShadow: {
     alignSelf: 'center',
     borderRadius: 24,
-    boxShadow: '0px 4px 20px -4px rgba(0, 0, 0, 0.12)',
+    boxShadow: `0px 4px 20px -4px ${colors.shadow}`,
     width: '100%',
   },
   sheetContent: { flex: 1 },
-};
+});
+
+// Compatibility for tiny icon/render helpers; screen content uses the live themed styles above.
+const styles = createStyles(lightColors);

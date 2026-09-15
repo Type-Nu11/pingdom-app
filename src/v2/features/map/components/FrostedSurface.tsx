@@ -1,5 +1,6 @@
 import React, { useId } from 'react';
 import { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { useTheme } from 'styled-components/native';
 
 import GlassSurface from './GlassSurface';
 import * as S from '../styles/FrostedSurface.styles';
@@ -18,13 +19,16 @@ const FrostedSurface = ({
   bottomShade = true,
   children,
   cornerRadius,
-  highlightColor = '#FFFFFF',
+  highlightColor,
   highlightHeight,
   highlightOpacity = 0.12,
-  rimColor = 'rgba(255,255,255,0.34)',
+  rimColor,
   topRimOnly = false,
   ...glassProps
 }: FrostedSurfaceProps) => {
+  const theme = useTheme();
+  const resolvedHighlightColor = highlightColor ?? theme.liquidGlass.highlight;
+  const resolvedRimColor = rimColor ?? theme.liquidGlass.navigation.rim;
   const gradientId = `frosted-highlight-${useId().replace(/:/g, '')}`;
 
   return (
@@ -32,17 +36,17 @@ const FrostedSurface = ({
       <S.HighlightGradient $height={highlightHeight} height={highlightHeight ?? '100%'} pointerEvents="none" width="100%">
         <Defs>
           <LinearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-            <Stop offset="0" stopColor={highlightColor} stopOpacity={highlightOpacity} />
-            <Stop offset="0.45" stopColor={highlightColor} stopOpacity={highlightOpacity * 0.24} />
-            <Stop offset="1" stopColor={highlightColor} stopOpacity={0} />
+            <Stop offset="0" stopColor={resolvedHighlightColor} stopOpacity={highlightOpacity} />
+            <Stop offset="0.45" stopColor={resolvedHighlightColor} stopOpacity={highlightOpacity * 0.24} />
+            <Stop offset="1" stopColor={resolvedHighlightColor} stopOpacity={0} />
           </LinearGradient>
         </Defs>
         <Rect fill={`url(#${gradientId})`} height="100%" rx={cornerRadius} width="100%" />
       </S.HighlightGradient>
       {topRimOnly ? (
-        <S.TopRim $color={rimColor} pointerEvents="none" style={{ borderTopLeftRadius: cornerRadius, borderTopRightRadius: cornerRadius }} />
+        <S.TopRim $color={resolvedRimColor} pointerEvents="none" style={{ borderTopLeftRadius: cornerRadius, borderTopRightRadius: cornerRadius }} />
       ) : (
-        <S.Rim $color={rimColor} pointerEvents="none" style={{ borderRadius: cornerRadius }} />
+        <S.Rim $color={resolvedRimColor} pointerEvents="none" style={{ borderRadius: cornerRadius }} />
       )}
       {bottomShade ? (
         <S.BottomShade pointerEvents="none" style={{ borderBottomLeftRadius: cornerRadius, borderBottomRightRadius: cornerRadius }} />

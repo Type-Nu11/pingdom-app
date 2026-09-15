@@ -14,7 +14,7 @@ import MusicIcon from '../../../../assets/v2/icons/place/music_svg.svg';
 import FinderIcon from '../../../../assets/v2/icons/finder.svg';
 import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
-import { liquidGlass } from '../../../shared/theme/liquidGlass';
+import { useTheme } from 'styled-components/native';
 import {
   getMapPullIndicatorDistance,
   isDownwardMapPull,
@@ -77,6 +77,7 @@ export default function MapTopOverlay({
   showCategories = true,
 }: MapTopOverlayProps) {
   const { t } = useTranslation();
+  const { colors, liquidGlass } = useTheme();
   const insets = useSafeAreaInsets();
   const pullDistance = React.useRef(new Animated.Value(0)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -153,7 +154,7 @@ export default function MapTopOverlay({
         <ActivityIndicator
           accessibilityLabel={t('map.refreshing')}
           animating
-          color="#FF245B"
+          color={colors.primary}
           size="small"
         />
       </S.RefreshIndicatorContainer>
@@ -269,7 +270,7 @@ export default function MapTopOverlay({
                             testID={`map-category-icon-${id}`}
                           >
                             <Icon
-                              color={isActive ? '#FF1956' : '#5E5E66'}
+                              color={isActive ? colors.primary : colors.textAlternative}
                               height={iconSize.drawingHeight ?? iconSize.height}
                               width={iconSize.drawingWidth ?? iconSize.width}
                             />
@@ -312,7 +313,7 @@ export default function MapTopOverlay({
                   tintColor={liquidGlass.navigation.tint}
                 />
                 <FinderIcon
-                  color={isLocatePressed ? '#FF1956' : '#3B3B40'}
+                  color={isLocatePressed ? colors.primary : colors.text}
                   height={20}
                   testID="map-locate-icon"
                   width={20}

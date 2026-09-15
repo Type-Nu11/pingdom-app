@@ -7,6 +7,8 @@ import {
   isLiquidGlassAvailable,
   type GlassViewProps,
 } from 'expo-glass-effect';
+import { ThemeContext } from 'styled-components/native';
+import { lightTheme } from '../../../shared/theme';
 import { GlassContainer, GlassTint, GlassBlur } from '../styles/GlassSurface.styles';
 import { useMapGlassBackdrop } from './MapGlassBackdrop';
 
@@ -27,25 +29,32 @@ export const supportsNativeLiquidGlass = () => (
 
 const GlassSurface = ({
   androidTintColor,
-  blurTint = 'systemUltraThinMaterialLight',
+  blurTint,
   children,
   glassEffectStyle = 'clear',
   intensity = 56,
   interactive = false,
   style,
-  tintColor = 'rgba(255,255,255,0.18)',
+  tintColor,
   ...viewProps
 }: GlassSurfaceProps) => {
+  const providedTheme = React.useContext(ThemeContext);
+  const theme = providedTheme?.colors ? providedTheme : lightTheme;
   const blurTarget = useMapGlassBackdrop();
+  const resolvedBlurTint = blurTint ?? (theme.colorScheme === 'dark'
+    ? 'systemUltraThinMaterialDark'
+    : 'systemUltraThinMaterialLight');
+  const resolvedNativeTint = tintColor ?? theme.liquidGlass.nativeTint;
+  const resolvedFallbackTint = tintColor ?? theme.liquidGlass.fallbackSurface;
 
   if (supportsNativeLiquidGlass()) {
     return (
       <GlassView
-        colorScheme="light"
+        colorScheme={theme.colorScheme}
         glassEffectStyle={glassEffectStyle}
         isInteractive={interactive}
         style={[style, { backgroundColor: 'transparent' }]}
-        tintColor={tintColor}
+        tintColor={resolvedNativeTint}
         {...viewProps}
       >
         {children}
@@ -62,11 +71,13 @@ const GlassSurface = ({
           blurTarget={blurTarget}
           intensity={intensity}
           pointerEvents="none"
-          tint={blurTint}
+          tint={resolvedBlurTint}
         />
       ) : null}
       <GlassTint
-        $backgroundColor={Platform.OS === 'android' && blurTarget ? androidTintColor ?? tintColor : tintColor}
+        $backgroundColor={Platform.OS === 'android' && blurTarget
+          ? androidTintColor ?? resolvedFallbackTint
+          : resolvedFallbackTint}
         pointerEvents="none"
       />
       {children}
