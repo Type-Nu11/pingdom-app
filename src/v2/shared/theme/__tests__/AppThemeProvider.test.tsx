@@ -45,11 +45,11 @@ describe('AppThemeProvider', () => {
         <Probe />
       </AppThemeProvider>,
     );
-    expect(screen.queryByText('#111114')).not.toBeOnTheScreen();
+    expect(screen.queryByText('#0F0F11')).not.toBeOnTheScreen();
     expect(screen.queryByText('#FFFFFF')).not.toBeOnTheScreen();
     await act(async () => release('DARK'));
     await waitFor(() => expect(screen.getByText('DARK:dark')).toBeVisible());
-    expect(screen.getAllByText('#111114')).toHaveLength(2);
+    expect(screen.getAllByText('#0F0F11')).toHaveLength(2);
   });
 
   test('releases the boot gate with SYSTEM when storage never responds', async () => {
@@ -108,6 +108,6 @@ describe('AppThemeProvider', () => {
     );
     await waitFor(() => expect(screen.getByText('DARK:dark')).toBeVisible());
     const statusBarProps = jest.mocked(StatusBar).mock.calls.at(-1)?.[0];
-    expect(statusBarProps).toMatchObject({ style: 'light', backgroundColor: '#111114' });
+    expect(statusBarProps).toMatchObject({ style: 'light', backgroundColor: '#0F0F11' });
   });
 });
