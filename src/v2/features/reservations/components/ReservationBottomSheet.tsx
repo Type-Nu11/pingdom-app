@@ -27,11 +27,18 @@ import { usePlaceExplorationMediaList } from '../../place-exploration';
 import * as GlassStyles from '../../map/styles/BottomSheetGlass.styles';
 import { useReservations } from '..';
 import { liquidGlass } from '../../../shared/theme/liquidGlass';
+import { useTheme } from 'styled-components/native';
+import type { AppTheme } from '../../../shared/theme';
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
+
+const useReservationStyles = () => {
+  const { colors } = useTheme();
+  return React.useMemo(() => createStyles(colors), [colors]);
+};
 
 type ReservationBottomSheetProps = {
   bookmarkedPlaceIds: Record<string, boolean>;
@@ -67,6 +74,7 @@ function formatDistance(place: DecisionPlace, language: string) {
 
 function ReservationPlaceImage({ uri }: { uri?: string }) {
   const [failed, setFailed] = React.useState(false);
+  const styles = useReservationStyles();
   React.useEffect(() => setFailed(false), [uri]);
 
   if (!uri || failed) {
@@ -87,6 +95,7 @@ function ReservationPlaceCard({
   reservationId: number;
 }) {
   const { i18n, t } = useTranslation();
+  const styles = useReservationStyles();
   const category = normalizePlaceCategory(place.category);
   const firstImage = imageUrls[0];
   const secondImage = imageUrls[1] ?? firstImage;
@@ -141,6 +150,8 @@ function NearbyReservationRail({
   places: DecisionPlace[];
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useReservationStyles();
   const { imageUrlsByPlaceId: inlineImageUrlsByPlaceId } = usePlacePreviewImages(places);
   const explorationImageUrlsByPlaceId = usePlaceExplorationMediaList(
     places.map((place) => place.id),
@@ -150,7 +161,7 @@ function NearbyReservationRail({
   if (isLoading && places.length === 0) {
     return (
       <View style={styles.nearbyEmpty} testID="nearby-reservations-loading">
-        <ActivityIndicator color="#FF1956" />
+        <ActivityIndicator color={colors.primary} />
         <AppText style={styles.nearbyEmptyText}>{t('reservation.list.nearbyLoading')}</AppText>
       </View>
     );
@@ -209,6 +220,9 @@ export default function ReservationBottomSheet({
   snapPoint,
 }: ReservationBottomSheetProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const { colors, liquidGlass: themedGlass } = theme;
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const reservations = useReservations({ limit: 20, page: 1 });
   const items = reservations.data?.reservations ?? [];
   const reservationPlaces = items.flatMap((reservation) => {
@@ -242,19 +256,19 @@ export default function ReservationBottomSheet({
     <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
       <GlassStyles.SheetChromeShadow
         pointerEvents="none"
-        style={{ boxShadow: liquidGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
+        style={{ boxShadow: themedGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
       >
         <GlassStyles.SheetChrome
-          $borderColor={liquidGlass.sheet.rim}
+          $borderColor={themedGlass.sheet.rim}
           style={{ borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius }}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={liquidGlass.sheet.topRadius}
+            cornerRadius={themedGlass.sheet.topRadius}
             glassEffectStyle="regular"
             highlightHeight={40}
-            highlightOpacity={liquidGlass.sheet.highlightOpacity}
-            rimColor={liquidGlass.sheet.rim}
-            tintColor={liquidGlass.sheet.tint}
+            highlightOpacity={themedGlass.sheet.highlightOpacity}
+            rimColor={themedGlass.sheet.rim}
+            tintColor={themedGlass.sheet.tint}
             topRimOnly
           />
         </GlassStyles.SheetChrome>
@@ -268,7 +282,7 @@ export default function ReservationBottomSheet({
         </View>
         <Animated.View pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={[styles.content, { opacity }]}>
           <View style={styles.titleRow}>
-            <MapAsset color="#FF1956" height={20} width={18} />
+            <MapAsset color={colors.primary} height={20} width={18} />
             <AppText accessibilityRole="header" style={styles.title}>{t('reservation.list.nearbyTitle')}</AppText>
           </View>
           <AppText style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</AppText>
@@ -326,39 +340,39 @@ export default function ReservationBottomSheet({
   );
 }
 
-const styles: Record<string, object> = {
+const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   content: { flex: 1 },
-  handle: { backgroundColor: 'rgba(80,83,91,0.34)', borderRadius: 3, height: 5, width: 56 },
+  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
   listContent: { paddingBottom: 120, paddingHorizontal: 16, paddingTop: 2 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 250, marginBottom: 0 },
   nearbyEmpty: { alignItems: 'center', minHeight: 72, justifyContent: 'center' },
-  nearbyEmptyText: { color: '#777982', fontSize: 12, fontWeight: '600' },
+  nearbyEmptyText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   nearbyRail: { gap: 16, paddingBottom: 4, paddingTop: 2 },
   pressed: { opacity: 0.72 },
   reservationCardItem: { marginBottom: 4 },
-  retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
-  retryLabel: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
-  savedImage: { borderRightColor: 'rgba(255,255,255,0.9)', borderRightWidth: 1, flex: 1, height: '100%' },
-  savedImageFallback: { alignItems: 'center', backgroundColor: '#E7E7EA', justifyContent: 'center' },
+  retryButton: { backgroundColor: colors.primary, borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
+  retryLabel: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
+  savedImage: { borderRightColor: colors.borderEmphasis, borderRightWidth: 1, flex: 1, height: '100%' },
+  savedImageFallback: { alignItems: 'center', backgroundColor: colors.surfaceMuted, justifyContent: 'center' },
   savedImageRow: { borderRadius: 12, flexDirection: 'row', height: 114, overflow: 'hidden' },
   savedMoreButton: { alignItems: 'center', height: 28, justifyContent: 'center', width: 18 },
-  savedMoreText: { color: '#3B3B40', fontSize: 21, lineHeight: 22 },
+  savedMoreText: { color: colors.text, fontSize: 21, lineHeight: 22 },
   savedNameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 4, minWidth: 0 },
-  savedPlaceCard: { borderBottomColor: '#E4E4E5', borderBottomWidth: 1, gap: 8, paddingBottom: 6, paddingTop: 6 },
-  savedPlaceCategory: { color: '#5E5E66', flexShrink: 1, fontSize: 12, fontWeight: '500', includeFontPadding: false, lineHeight: 16, minWidth: 0 },
+  savedPlaceCard: { borderBottomColor: colors.border, borderBottomWidth: 1, gap: 8, paddingBottom: 6, paddingTop: 6 },
+  savedPlaceCategory: { color: colors.textSecondary, flexShrink: 1, fontSize: 12, fontWeight: '500', includeFontPadding: false, lineHeight: 16, minWidth: 0 },
   savedPlaceHeading: { alignItems: 'flex-start', flexDirection: 'row' },
-  savedPlaceMeta: { color: '#5E5E66', flexShrink: 1, fontSize: 13, includeFontPadding: false, lineHeight: 18, marginTop: 2, minWidth: 0 },
-  savedPlaceName: { color: '#3B3B40', flexShrink: 1, fontSize: 16, fontWeight: '800', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
+  savedPlaceMeta: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, includeFontPadding: false, lineHeight: 18, marginTop: 2, minWidth: 0 },
+  savedPlaceName: { color: colors.text, flexShrink: 1, fontSize: 16, fontWeight: '800', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
   savedPlaceText: { flex: 1, minWidth: 0 },
-  savedTitle: { color: '#000000', fontSize: 20, fontWeight: '800', marginBottom: 2, marginTop: 0 },
+  savedTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '800', marginBottom: 2, marginTop: 0 },
   state: { alignItems: 'center', paddingTop: 34 },
-  stateBody: { color: '#777982', fontSize: 11, marginTop: 4 },
-  stateMark: { color: '#FF1956', fontSize: 20, fontWeight: '900' },
-  stateTitle: { color: '#27292F', fontSize: 14, fontWeight: '800', marginTop: 6 },
-  subtitle: { color: '#5E5E66', fontSize: 14, marginTop: 2, paddingHorizontal: 16 },
-  title: { color: '#000000', fontSize: 20, fontWeight: '800', letterSpacing: -0.4 },
+  stateBody: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+  stateMark: { color: colors.primary, fontSize: 20, fontWeight: '900' },
+  stateTitle: { color: colors.textStrong, fontSize: 14, fontWeight: '800', marginTop: 6 },
+  subtitle: { color: colors.textSecondary, fontSize: 14, marginTop: 2, paddingHorizontal: 16 },
+  title: { color: colors.textStrong, fontSize: 20, fontWeight: '800', letterSpacing: -0.4 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
-};
+});

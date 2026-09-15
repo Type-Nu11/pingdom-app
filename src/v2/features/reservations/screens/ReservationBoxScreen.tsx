@@ -97,7 +97,7 @@ const IconButton = styled.Pressable`
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.background};
-  shadow-color: #000;
+  shadow-color: ${({ theme }) => theme.colors.shadow};
   shadow-offset: 0 4px;
   shadow-opacity: 0.06;
   shadow-radius: 10px;
