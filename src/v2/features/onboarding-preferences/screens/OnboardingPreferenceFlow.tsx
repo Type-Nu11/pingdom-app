@@ -1,11 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BackHandler, Platform } from 'react-native';
-import { ThemeProvider } from 'styled-components/native';
 
 import LoadingState from '../../../shared/components/LoadingState';
 import { isSupportedLanguage } from '../../../shared/i18n';
-import { theme } from '../../../shared/theme';
 import TravelPurposeSelectionScreen from './TravelPurposeSelectionScreen';
 import TravelScheduleSelectionScreen from './TravelScheduleSelectionScreen';
 import { useOnboardingPreferenceStore } from '../store/onboardingPreferenceStore';
@@ -25,9 +23,7 @@ export type OnboardingPreferenceFlowProps = Readonly<{
 
 export default function OnboardingPreferenceFlow(props: OnboardingPreferenceFlowProps) {
   return (
-    <ThemeProvider theme={theme}>
-      <OnboardingPreferenceFlowContent {...props} />
-    </ThemeProvider>
+    <OnboardingPreferenceFlowContent {...props} />
   );
 }
 

@@ -23,7 +23,7 @@ describe('semantic themes', () => {
   test('creates the requested scheme without losing the active font family', () => {
     expect(createTheme('System Test', 'dark')).toMatchObject({
       colorScheme: 'dark',
-      colors: { background: '#111114' },
+      colors: { background: '#0F0F11' },
       typography: { body: { fontFamily: 'System Test' } },
     });
   });

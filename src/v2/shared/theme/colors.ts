@@ -15,19 +15,20 @@ export const lightColors = {
 
 export type ThemeColors = { [Key in keyof typeof lightColors]: string };
 
+// Figma Dark Theme (7963:8055): semantic roles mapped to the published variables.
 export const darkColors = {
-  background: '#111114', backgroundAssistive: '#18181C', backgroundNeutral: '#242429',
-  border: '#3A3A42', borderEmphasis: '#7D7D88', calendarSaturday: '#66B8FF', calendarSunday: '#FF7D86',
-  danger: '#FF8585', dangerSoft: '#3B1D22', disabled: '#38383F', focus: '#FF6B91',
-  info: '#70BAFF', infoSoft: '#162B3E', inputBackground: '#202025', onDisabled: '#A4A4AD',
-  onPrimary: '#21000A', overlay: 'rgba(0, 0, 0, 0.68)', primary: '#FF6B91',
-  primaryAssistive: '#5A2637', primaryPressed: '#FF86A5', primaryRange: 'rgba(255, 107, 145, 0.24)',
-  primarySelected: 'rgba(255, 107, 145, 0.18)', primarySoft: '#3B1D29', scrim: 'rgba(0, 0, 0, 0.72)',
-  selectedBorder: '#FF86A5', selectedSurface: '#3B222C', selectedTabSurface: 'rgba(92, 92, 102, 0.72)',
-  shadow: 'rgba(0, 0, 0, 0.48)', success: '#6DD69A', successSoft: '#173326', surface: '#1B1B20',
-  surfaceElevated: '#25252B', surfaceMuted: '#242429', surfacePressed: '#303037', text: '#E2E2E7',
-  textAlternative: '#C0C0C8', textDisabled: '#8A8A94', textInverse: '#FFFFFF', textMuted: '#ABABB4',
-  textSecondary: '#C0C0C8', textStrong: '#FAFAFC', warning: '#FFC46B', warningSoft: '#3A2A16',
+  background: '#0F0F11', backgroundAssistive: '#18181B', backgroundNeutral: '#08080A',
+  border: '#34343A', borderEmphasis: '#7D7D88', calendarSaturday: '#66B8FF', calendarSunday: '#FF7D86',
+  danger: '#FF5A5A', dangerSoft: '#3B1D22', disabled: '#38383F', focus: '#FF1956',
+  info: '#3FA3FF', infoSoft: '#162B3E', inputBackground: '#1C1C20', onDisabled: '#A4A4AD',
+  onPrimary: '#21000A', overlay: 'rgba(0, 0, 0, 0.68)', primary: '#FF1956',
+  primaryAssistive: '#3A1422', primaryPressed: '#FF4A75', primaryRange: 'rgba(255, 25, 86, 0.18)',
+  primarySelected: 'rgba(255, 25, 86, 0.12)', primarySoft: '#3A1422', scrim: 'rgba(0, 0, 0, 0.72)',
+  selectedBorder: '#FF4A75', selectedSurface: '#3A1422', selectedTabSurface: 'rgba(38, 38, 43, 0.72)',
+  shadow: 'rgba(0, 0, 0, 0.48)', success: '#3FD957', successSoft: '#173326', surface: '#16161A',
+  surfaceElevated: '#26262B', surfaceMuted: '#1C1C20', surfacePressed: '#2E2E33', text: '#F4F4F5',
+  textAlternative: '#A9A9B2', textDisabled: '#3C3C41', textInverse: '#FFFFFF', textMuted: '#85858F',
+  textSecondary: '#A9A9B2', textStrong: '#FFFFFF', warning: '#FFD43B', warningSoft: '#3A2A16',
 } as const satisfies ThemeColors;
 
 // Transitional alias while fixed light consumers are migrated to useTheme.

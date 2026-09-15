@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import styled, { ThemeProvider } from 'styled-components/native';
+import styled from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
 import MapScreen from '../../v2/features/map/screens/MapScreen';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
@@ -15,7 +15,6 @@ import ProfileEditScreen from '../../v2/features/my-page/screens/ProfileEditScre
 import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlacesScreen';
 import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/MerchantMyPageContainer';
 import { useProfile } from '../../features/profile/hooks/useProfile';
-import { theme as v2Theme } from '../../v2/shared/theme';
 import { clearTokenSession } from '../../v2/shared/auth/tokenSession';
 import { UnsupportedFeatureScreen } from '../../v2/shared/components';
 import {
@@ -37,7 +36,7 @@ import {
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
 const V2ScreenBoundary = ({ children }: React.PropsWithChildren) => (
-  <ThemeProvider theme={v2Theme}>{children}</ThemeProvider>
+  <>{children}</>
 );
 
 export const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
