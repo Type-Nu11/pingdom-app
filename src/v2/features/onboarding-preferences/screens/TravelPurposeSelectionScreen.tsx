@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Animated } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import ArtIcon from '../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyIcon from '../../../../assets/v2/icons/place/beati_svg.svg';
@@ -64,6 +64,7 @@ function TravelPurposeOption({
   selected,
 }: TravelPurposeOptionProps) {
   const Icon = ICON_COMPONENTS[option.iconId];
+  const { colors } = useTheme();
   const colorProgress = useRef(new Animated.Value(selected ? 1 : 0)).current;
   const iconProgress = useRef(new Animated.Value(selected ? 1 : 0)).current;
 
@@ -93,7 +94,7 @@ function TravelPurposeOption({
     <OptionSurface style={{
       backgroundColor: colorProgress.interpolate({
         inputRange: [0, 1],
-        outputRange: ['rgba(248, 248, 248, 0)', 'rgba(255, 25, 86, 0.08)'],
+        outputRange: ['transparent', colors.primarySelected],
       }),
     }}>
       <Option
@@ -117,7 +118,7 @@ function TravelPurposeOption({
           >
             <Icon
               accessible={false}
-              color={selected ? '#FF1956' : '#3B3B40'}
+              color={selected ? colors.primary : colors.text}
               height={24}
               width={24}
             />
