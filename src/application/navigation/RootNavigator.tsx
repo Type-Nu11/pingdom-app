@@ -33,11 +33,13 @@ import {
   resolveProductionRootState,
 } from './runtimeState';
 import { claimDeepLinkEvent, type DeepLinkEventReceipt } from './deepLinkDedupe';
+import { useAppNavigationTheme } from '../../v2/shared/theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export default function RootNavigator() {
+  const navigationTheme = useAppNavigationTheme();
   const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
   const isHydrating = useAuthStore((state) => state.isHydrating);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -140,7 +142,7 @@ export default function RootNavigator() {
     : undefined;
 
   return (
-    <NavigationContainer ref={navigationRef} onReady={() => setIsNavigationReady(true)}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavigationReady(true)}>
       <Stack.Navigator screenOptions={{ animation: 'none', headerShown: false }}>
         {rootRouteName === ROOT_ROUTES.Main ? (
           <Stack.Screen

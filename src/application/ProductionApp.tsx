@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 
 import ProductionProviders from './ProductionProviders';
@@ -10,7 +9,6 @@ configureProductionRuntime();
 export default function ProductionApp() {
   return (
     <ProductionProviders>
-      <StatusBar style="dark" />
       <RootNavigator />
     </ProductionProviders>
   );
