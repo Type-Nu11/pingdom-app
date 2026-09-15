@@ -2,7 +2,7 @@ import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useCallback } from 'react';
 import { Alert, Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import { HeaderBackButton } from '../../../shared/components';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
@@ -25,6 +25,7 @@ type LocationToggleRowProps = {
 };
 
 function LocationToggleRow({ description, label, value = false }: LocationToggleRowProps) {
+  const { colors } = useTheme();
   return (
     <ToggleRow>
       <ToggleCopy>
@@ -36,9 +37,9 @@ function LocationToggleRow({ description, label, value = false }: LocationToggle
         accessibilityRole="switch"
         accessibilityState={{ checked: value, disabled: true }}
         disabled
-        ios_backgroundColor="#E4E4E5"
-        thumbColor="#FFFFFF"
-        trackColor={{ false: '#E4E4E5', true: '#FF1956' }}
+        ios_backgroundColor={colors.disabled}
+        thumbColor={value ? colors.onPrimary : colors.surfaceElevated}
+        trackColor={{ false: colors.disabled, true: colors.primary }}
         value={value}
       />
     </ToggleRow>

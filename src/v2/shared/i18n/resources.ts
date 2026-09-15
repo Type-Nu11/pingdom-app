@@ -649,6 +649,15 @@ export const resources = {
         },
       },
       settings: {
+        appearance: {
+          dark: 'Dark mode',
+          description: 'Choose whether PingDom follows your device appearance or uses a fixed mode.',
+          light: 'Light mode',
+          section: 'Appearance',
+          selected: 'Selected',
+          system: 'Use system setting',
+          title: 'Appearance',
+        },
         language: {
           description: 'Choose the language used throughout PingDom.',
           english: 'English',
@@ -1533,6 +1542,15 @@ export const resources = {
         },
       },
       settings: {
+        appearance: {
+          dark: '다크 모드',
+          description: '기기 화면 설정을 따르거나 원하는 화면 모드를 고정할 수 있어요.',
+          light: '라이트 모드',
+          section: '화면 모드',
+          selected: '선택됨',
+          system: '시스템 설정 사용',
+          title: '화면 모드',
+        },
         language: {
           description: '핑덤에서 사용할 언어를 선택해 주세요.',
           english: '영어',
