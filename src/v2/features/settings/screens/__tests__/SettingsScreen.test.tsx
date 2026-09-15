@@ -103,6 +103,16 @@ describe('SettingsScreen', () => {
     expect(screen.getByRole('radio', { name: '영어' })).not.toBeSelected();
   });
 
+  test('현재 표시 모드를 보여주고 기존 내부 탐색에 appearance 페이지만 연결한다', async () => {
+    const view = await renderSettings();
+    expect(screen.getByText('화면 모드')).toBeVisible();
+    expect(screen.getByText('라이트 모드')).toBeVisible();
+
+    await view.user.press(screen.getByText('화면 모드'));
+    expect(screen.getByTestId('v2-appearance-settings-screen')).toBeVisible();
+    expect(screen.getByRole('radio', { name: '라이트 모드, 선택됨' })).toBeSelected();
+  });
+
   test('언어 전용 페이지에서 선택과 뒤로가기를 각각 처리한다', async () => {
     const onBack = jest.fn();
     const onSelectLanguage = jest.fn();

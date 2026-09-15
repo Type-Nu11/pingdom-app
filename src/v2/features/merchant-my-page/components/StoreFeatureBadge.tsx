@@ -41,11 +41,11 @@ const IconCircle = styled.View`
   width: 56px;
   height: 56px;
   border-radius: ${({ theme }) => theme.radius.lg}px;
-  background-color: #f2f2f3;
+  background-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
 const Caption = styled(AppText)`
-  color: #5e5e66;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   font-weight: 500;
 `;

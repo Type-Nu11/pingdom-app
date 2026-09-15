@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import { useProfile } from '../../my-page/hooks/useProfile';
 import {
@@ -24,8 +24,10 @@ import LocationPrivacyScreen, {
   type LocationPermissionPresentationState,
 } from './LocationPrivacyScreen';
 import LanguageSettingsScreen from './LanguageSettingsScreen';
+import AppearanceSettingsScreen from './AppearanceSettingsScreen';
+import { useAppearance, type AppearancePreference } from '../../../shared/theme';
 
-type SettingsPage = 'account' | 'language' | 'location' | 'notifications' | 'root';
+type SettingsPage = 'account' | 'appearance' | 'language' | 'location' | 'notifications' | 'root';
 
 export type SettingsScreenProps = {
   locationPermissionState?: LocationPermissionPresentationState;
@@ -82,6 +84,7 @@ type ToggleRowProps = {
 };
 
 function ToggleRow({ description, disabled = false, label, onValueChange, value }: ToggleRowProps) {
+  const theme = useTheme();
   return (
     <ToggleContainer>
       <ToggleCopy>
@@ -93,10 +96,10 @@ function ToggleRow({ description, disabled = false, label, onValueChange, value 
         accessibilityRole="switch"
         accessibilityState={{ checked: value, disabled }}
         disabled={disabled}
-        ios_backgroundColor="#E4E4E5"
+        ios_backgroundColor={theme.colors.disabled}
         onValueChange={onValueChange}
-        thumbColor="#FFFFFF"
-        trackColor={{ false: '#E4E4E5', true: '#FF1956' }}
+        thumbColor={value ? theme.colors.onPrimary : theme.colors.surfaceElevated}
+        trackColor={{ false: theme.colors.disabled, true: theme.colors.primary }}
         value={value}
       />
     </ToggleContainer>
@@ -142,6 +145,8 @@ export default function SettingsScreen({
   onOpenNotificationSettings,
   onOpenProfileEdit,
 }: SettingsScreenProps) {
+  const theme = useTheme();
+  const { preference } = useAppearance();
   const { i18n, t } = useTranslation();
   const { profile } = useProfile();
   const [page, setPage] = useState<SettingsPage>('root');
@@ -204,6 +209,11 @@ export default function SettingsScreen({
     ? undefined
     : t(anyNotificationEnabled ? 'settings.values.on' : 'settings.values.off');
   const canOpenTouristProfile = Boolean(profile) && profile?.role !== 'MERCHANT_OWNER';
+  const appearanceValueKeys: Record<AppearancePreference, string> = {
+    SYSTEM: 'settings.appearance.system',
+    LIGHT: 'settings.appearance.light',
+    DARK: 'settings.appearance.dark',
+  };
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-settings-screen">
@@ -261,6 +271,11 @@ export default function SettingsScreen({
 
             <SettingsSection title={t('settings.sections.preferences')}>
               <SettingsRow
+                label={t('settings.appearance.section')}
+                onPress={() => setPage('appearance')}
+                value={t(appearanceValueKeys[preference])}
+              />
+              <SettingsRow
                 label={t('settings.language.section')}
                 onPress={() => setPage('language')}
                 value={t(i18n.resolvedLanguage === 'ko'
@@ -305,7 +320,7 @@ export default function SettingsScreen({
                 disabled={isLoggingOut}
                 onPress={() => void handleLogout()}
               >
-                {isLoggingOut ? <ActivityIndicator color="#767680" /> : <FooterLabel>{t('settings.logout')}</FooterLabel>}
+                {isLoggingOut ? <ActivityIndicator color={theme.colors.textMuted} /> : <FooterLabel>{t('settings.logout')}</FooterLabel>}
               </FooterButton>
               <FooterButton
                 accessibilityLabel={t('settings.deleteAccount')}
@@ -378,6 +393,10 @@ export default function SettingsScreen({
 
       {page === 'language' ? (
         <LanguageSettingsScreen onBack={goBack} />
+      ) : null}
+
+      {page === 'appearance' ? (
+        <AppearanceSettingsScreen onBack={goBack} />
       ) : null}
 
       {page === 'account' ? (

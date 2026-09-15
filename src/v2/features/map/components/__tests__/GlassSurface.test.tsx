@@ -5,6 +5,7 @@ import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-ef
 
 import GlassSurface from '../GlassSurface';
 import MapGlassBackdrop from '../MapGlassBackdrop';
+import { renderWithProviders } from '../../../../shared/testing/testProviders';
 
 jest.mock('expo-glass-effect', () => {
   const React = require('react');
@@ -58,7 +59,7 @@ test('지원하는 iOS에서는 네이티브 Liquid Glass와 내부 버튼 동�
     accessibilityLabel: '지도 도구',
     glassEffectStyle: 'regular',
     isInteractive: true,
-    tintColor: 'rgba(255,255,255,0.18)',
+    tintColor: 'rgba(255, 255, 255, 0.18)',
   });
   expect(screen.queryByTestId('glass-blur')).toBeNull();
   fireEvent.press(screen.getByRole('button', { name: '현재 위치' }));
@@ -188,4 +189,25 @@ test('지도를 비활성화하면 공유 배경 캡처도 비활성화한다', 
 
   expect(screen.getByTestId('native-map-capture', { includeHiddenElements: true }).props.captureEnabled).toBe(false);
   expect(screen.getByText('지도 콘텐츠')).toBeVisible();
+});
+
+test('dark theme synchronizes native glass, blur, and opaque fallback defaults', async () => {
+  jest.replaceProperty(Platform, 'OS', 'ios');
+  await renderWithProviders(<GlassSurface testID="dark-glass" />, {
+    appearancePreference: 'DARK',
+    colorScheme: 'light',
+  });
+  expect(screen.getByTestId('native-glass').props).toMatchObject({
+    colorScheme: 'dark',
+    tintColor: 'rgba(27, 27, 32, 0.72)',
+  });
+
+  jest.mocked(isLiquidGlassAvailable).mockReturnValue(false);
+  await renderWithProviders(<GlassSurface testID="dark-blur" />, {
+    appearancePreference: 'DARK',
+  });
+  expect(screen.getByTestId('glass-blur').props.tint).toBe('systemUltraThinMaterialDark');
+  expect(screen.getByTestId('dark-blur').children.at(-1)).toHaveStyle({
+    backgroundColor: 'rgba(27, 27, 32, 0.96)',
+  });
 });

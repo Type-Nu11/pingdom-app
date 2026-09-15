@@ -1,7 +1,7 @@
 import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useRef } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import VerificationIcon from '../../../../assets/v2/icons/place/gamju.svg';
 
@@ -14,6 +14,7 @@ type Props = {
 const NAVIGATION_LOCK_MS = 500;
 
 export default function VisitVerificationMapCta({ label, onPress, style }: Props) {
+  const theme = useTheme();
   const navigationLocked = useRef(false);
   const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -34,7 +35,7 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
         }, NAVIGATION_LOCK_MS);
         onPress();
       }}
-      style={[{ boxShadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)' }, style]}
+      style={[{ boxShadow: theme.liquidGlass.search.shadow }, style]}
       testID="visit-verification-map-cta"
     >
       <VerificationIcon height={24} width={24} />
@@ -52,7 +53,7 @@ const Container = styled.Pressable`
   gap: 4px;
   padding: 0 18px;
   border-radius: 24px;
-  background-color: rgba(255, 25, 86, 0.8064);
+  background-color: ${({ theme }) => theme.colors.primary};
 `;
 const Label = styled(AppText)`
   color: ${({ theme }) => theme.colors.onPrimary};

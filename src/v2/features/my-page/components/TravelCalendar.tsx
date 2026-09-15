@@ -259,7 +259,7 @@ const CalendarDayCell = styled.Pressable<{
   border-bottom-left-radius: ${({ $segmentStart, theme }) => ($segmentStart ? theme.radius.full : 0)}px;
   border-top-right-radius: ${({ $segmentEnd, theme }) => ($segmentEnd ? theme.radius.full : 0)}px;
   border-bottom-right-radius: ${({ $segmentEnd, theme }) => ($segmentEnd ? theme.radius.full : 0)}px;
-  background-color: ${({ $inRange }) => ($inRange ? 'rgba(255, 201, 211, 0.48)' : 'transparent')};
+  background-color: ${({ $inRange, theme }) => ($inRange ? theme.colors.primaryRange : 'transparent')};
 `;
 
 const DayText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })<{ $inRange: boolean; $weekday: number }>`

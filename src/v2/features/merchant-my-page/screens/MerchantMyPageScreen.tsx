@@ -276,7 +276,7 @@ const Username = styled(AppText)`
 `;
 
 const ProfileRoleLabel = styled(AppText)`
-  color: #5e5e66;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;
 `;

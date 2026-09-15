@@ -3,7 +3,6 @@ import React, { type PropsWithChildren, useEffect, useState } from 'react';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ThemeProvider } from 'styled-components/native';
 
 import AppErrorBoundary from '../v2/app/AppErrorBoundary';
 import { createQueryClient } from '../v2/app/queryClient';
@@ -14,7 +13,7 @@ import {
   SYSTEM_FONT_FAMILY,
   useAppFonts,
 } from '../v2/shared/fonts';
-import { createTheme, theme } from '../v2/shared/theme/theme';
+import { AppThemeProvider } from '../v2/shared/theme';
 
 export default function ProductionProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(createQueryClient);
@@ -45,23 +44,23 @@ export default function ProductionProviders({ children }: PropsWithChildren) {
     return () => subscription.remove();
   }, []);
 
-  if (!isI18nReady || fontStatus === 'loading') return null;
-
-  const activeTheme = fontStatus === 'loaded' ? theme : createTheme(SYSTEM_FONT_FAMILY);
   const activeFontFamily = fontStatus === 'loaded'
     ? PRETENDARD_FONT_FAMILY
     : SYSTEM_FONT_FAMILY;
+  const isBootReady = isI18nReady && fontStatus !== 'loading';
 
   return (
     <AppFontFamilyProvider fontFamily={activeFontFamily}>
       <SafeAreaProvider>
-        <ThemeProvider theme={activeTheme}>
-          <I18nextProvider i18n={i18n}>
-            <AppErrorBoundary>
-              <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-            </AppErrorBoundary>
-          </I18nextProvider>
-        </ThemeProvider>
+        <AppThemeProvider fontFamily={activeFontFamily}>
+          {isBootReady ? (
+            <I18nextProvider i18n={i18n}>
+              <AppErrorBoundary>
+                <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+              </AppErrorBoundary>
+            </I18nextProvider>
+          ) : null}
+        </AppThemeProvider>
       </SafeAreaProvider>
     </AppFontFamilyProvider>
   );

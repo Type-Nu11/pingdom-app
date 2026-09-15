@@ -36,6 +36,7 @@ import {
 } from './notificationIntent';
 import { V2_ROUTES, parseCheckInId, parsePlaceId, type V2ScreenProps, type V2StackParamList } from './types';
 import { useAndroidBackHandler } from './useAndroidBackHandler';
+import { useAppNavigationTheme } from '../../shared/theme';
 
 const Stack = createNativeStackNavigator<V2StackParamList>();
 const navigationRef = createNavigationContainerRef<V2StackParamList>();
@@ -198,6 +199,7 @@ function VisitVerificationSessionRoute({ navigation, route }: V2ScreenProps<'Vis
 }
 
 export default function RootNavigator() {
+  const navigationTheme = useAppNavigationTheme();
   const [isNavigationReady, setIsNavigationReady] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<NotificationRoute | null>(null);
   const handledMessageIds = useRef(new Set<string>());
@@ -234,7 +236,7 @@ export default function RootNavigator() {
   }, [isNavigationReady, pendingRoute]);
 
   return (
-    <NavigationContainer ref={navigationRef} onReady={() => setIsNavigationReady(true)}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavigationReady(true)}>
       <Stack.Navigator initialRouteName={V2_ROUTES.Map} screenOptions={{ headerShown: false }}>
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
         <Stack.Screen name={V2_ROUTES.Map} component={MapRouteScreen} />

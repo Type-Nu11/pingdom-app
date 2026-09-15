@@ -55,7 +55,7 @@ test('map buttons expose immediate pressed-state feedback without delaying onPre
   const navigation = read('../components/MapSheetBottomNavigation.tsx');
 
   assert.match(navigation, /onPressIn=\{\(\) => setPressedTab\(id\)\}/);
-  assert.match(navigation, /getMapSheetTabSurfaceColor\(active, pressedTab === id\)/);
+  assert.match(navigation, /getMapSheetTabSurfaceColor\(active, pressedTab === id, liquidGlass\)/);
   assert.match(sheet, /style=\{\(\{ pressed \}\) => \[styles\.previewBookmarkButton, pressed && styles\.pressed\]\}/);
   assert.match(sheet, /onPress=\{onPress\}/);
 });
@@ -97,7 +97,7 @@ test('map section changes do not fade the whole sheet or preserve expanded place
   assert.match(screen, /const openMapSection = useCallback/);
   assert.match(screen, /setContent\(\{ type: 'home' \}\)/);
   assert.match(screen, /jumpTo\('medium'\)/);
-  assert.match(bottomSheet, /tintColor=\{isExpandedPlaceDetail \? colors\.surface : liquidGlass\.sheet\.tint\}/);
+  assert.match(bottomSheet, /tintColor=\{isExpandedPlaceDetail \? themedColors\.surface : themedGlass\.sheet\.tint\}/);
 });
 
 test('dismissing an expanded place resets the home sheet without an intermediate stretched frame', () => {
@@ -153,11 +153,11 @@ test('place actions retain selection across sheet expansion and expanded detail 
   const bottomSheet = read('../components/MapBottomSheet.tsx');
 
   assert.match(bottomSheet, /activePreviewAction/);
-  assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: '#FFF0F4'/);
+  assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: colors\.primarySoft, borderColor: colors\.selectedBorder/);
   assert.match(bottomSheet, /activeAction=\{activePreviewAction\}/);
   assert.match(bottomSheet, /borderBottomLeftRadius: isExpandedPlaceDetail \? 0/);
   assert.match(bottomSheet, /borderBottomRightRadius: isExpandedPlaceDetail \? 0/);
-  assert.match(bottomSheet, /cornerRadius=\{isExpandedPlaceDetail \? 0 : liquidGlass\.sheet\.topRadius\}/);
+  assert.match(bottomSheet, /cornerRadius=\{isExpandedPlaceDetail \? 0 : themedGlass\.sheet\.topRadius\}/);
 });
 
 test('the production map detail uses the compact Offer list before menus', () => {

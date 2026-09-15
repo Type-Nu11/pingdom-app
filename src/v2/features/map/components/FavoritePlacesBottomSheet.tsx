@@ -27,8 +27,9 @@ import MapSheetBottomNavigation from './MapSheetBottomNavigation';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { normalizePlaceCategory } from '../utils/placeCategory';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
-import { colors } from '../../../shared/theme/colors';
 import { liquidGlass } from '../../../shared/theme/liquidGlass';
+import { useTheme } from 'styled-components/native';
+import type { AppTheme } from '../../../shared/theme';
 
 type FavoriteCategory = 'all' | 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 'food' | 'heritage' | 'music' | 'popup';
 
@@ -89,8 +90,14 @@ const formatDistance = (place: DecisionPlace, language: string) => {
 
 const HeaderStar = () => <MyPlaceAsset height={42} width={42} />;
 
+const useFavoriteStyles = () => {
+  const { colors } = useTheme();
+  return useMemo(() => createStyles(colors), [colors]);
+};
+
 const FavoriteImage = ({ uri }: { uri?: string }) => {
   const [hasError, setHasError] = useState(false);
+  const styles = useFavoriteStyles();
 
   useEffect(() => setHasError(false), [uri]);
 
@@ -126,6 +133,7 @@ const FavoritePlaceRow = ({
   place: DecisionPlace;
 }) => {
   const { i18n, t } = useTranslation();
+  const styles = useFavoriteStyles();
   const sources = imageUrls.slice(0, 2);
 
   return (
@@ -195,6 +203,9 @@ export default function FavoritePlacesBottomSheet({
   snapPoint,
 }: FavoritePlacesBottomSheetProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const { colors, liquidGlass: themedGlass } = theme;
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [activeCategory, setActiveCategory] = useState<FavoriteCategory>('all');
   const filteredPlaces = useMemo(
     () => places.filter((place) => matchesCategory(place, activeCategory)),
@@ -224,21 +235,21 @@ export default function FavoritePlacesBottomSheet({
     <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
       <GlassStyles.SheetChromeShadow
         pointerEvents="none"
-        style={{ boxShadow: liquidGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
+        style={{ boxShadow: themedGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
       >
         <GlassStyles.SheetChrome
-          $borderColor={liquidGlass.sheet.rim}
+          $borderColor={themedGlass.sheet.rim}
           style={[
             { borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius },
           ]}
         >
           <GlassStyles.SheetGlass
-            cornerRadius={liquidGlass.sheet.topRadius}
+            cornerRadius={themedGlass.sheet.topRadius}
             glassEffectStyle="regular"
             highlightHeight={40}
-            highlightOpacity={liquidGlass.sheet.highlightOpacity}
-            rimColor={liquidGlass.sheet.rim}
-            tintColor={liquidGlass.sheet.tint}
+            highlightOpacity={themedGlass.sheet.highlightOpacity}
+            rimColor={themedGlass.sheet.rim}
+            tintColor={themedGlass.sheet.tint}
             topRimOnly
           />
         </GlassStyles.SheetChrome>
@@ -366,7 +377,7 @@ export default function FavoritePlacesBottomSheet({
   );
 }
 
-const styles: Record<string, object> = {
+const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   categoryChip: {
     alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.backgroundNeutral,
     borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
@@ -377,34 +388,34 @@ const styles: Record<string, object> = {
   categoryLabelActive: { color: colors.primary },
   categoryScroll: { flexGrow: 0, height: 58, overflow: 'hidden' },
   content: { flex: 1 },
-  emptyBody: { color: '#777982', fontSize: 13, marginTop: 5 },
+  emptyBody: { color: colors.textMuted, fontSize: 13, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingTop: 42 },
-  emptyTitle: { color: '#27292F', fontSize: 17, fontWeight: '800', marginTop: 12 },
-  handle: { backgroundColor: 'rgba(80,83,91,0.34)', borderRadius: 3, height: 5, width: 56 },
+  emptyTitle: { color: colors.textStrong, fontSize: 17, fontWeight: '800', marginTop: 12 },
+  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
   handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
-  imagePlaceholder: { alignItems: 'center', backgroundColor: '#E7E7EA', justifyContent: 'center' },
+  imagePlaceholder: { alignItems: 'center', backgroundColor: colors.surfaceMuted, justifyContent: 'center' },
   imageRow: { borderRadius: 15, flexDirection: 'row', height: 120, overflow: 'hidden' },
   list: { flex: 1 },
   listContent: { paddingBottom: 116, paddingHorizontal: 16 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 182, marginBottom: 0 },
-  loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#FF1956', borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
-  loadMoreError: { color: '#777982', fontSize: 13 },
+  loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primary, borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
+  loadMoreError: { color: colors.textMuted, fontSize: 13 },
   loadMoreState: { alignItems: 'center', gap: 8 },
   moreButton: { alignItems: 'center', height: 30, justifyContent: 'center', width: 24 },
-  moreButtonText: { color: '#3B3B40', fontSize: 22, lineHeight: 24 },
+  moreButtonText: { color: colors.text, fontSize: 22, lineHeight: 24 },
   nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5, minWidth: 0 },
   placeCategory: { color: colors.textAlternative, flexShrink: 1, fontSize: 12, includeFontPadding: false, lineHeight: 16, minWidth: 0 },
   placeHeading: { alignItems: 'center', flexDirection: 'row', marginBottom: 9 },
-  placeImage: { borderRightColor: 'rgba(255,255,255,0.9)', borderRightWidth: 1, flex: 1, height: '100%' },
+  placeImage: { borderRightColor: colors.borderEmphasis, borderRightWidth: 1, flex: 1, height: '100%' },
   placeMeta: { color: colors.textAlternative, flexShrink: 1, fontSize: 13, includeFontPadding: false, lineHeight: 18, marginTop: 3, minWidth: 0 },
   placeName: { color: colors.text, flexShrink: 1, fontSize: 16, fontWeight: '800', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
   placeRow: { marginBottom: 14 },
   placeText: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.72 },
-  retryButton: { backgroundColor: '#FF1956', borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
-  retryLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  title: { color: '#111217', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
+  retryButton: { backgroundColor: colors.primary, borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
+  retryLabel: { color: colors.onPrimary, fontSize: 13, fontWeight: '800' },
+  title: { color: colors.textStrong, fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
-};
+});

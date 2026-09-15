@@ -1,26 +1,25 @@
 import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import TrashIcon from '../../../../assets/v2/icons/edit/gg_trash.svg';
 import TicketIcon from '../../../../assets/v2/icons/place/Tiket.svg';
-import type { MerchantEvent, MerchantEventStatus } from '../model/types';
+import type { MerchantEvent } from '../model/types';
 
 type EventCardProps = {
   event: MerchantEvent;
   onDelete?: (eventId: string) => void;
 };
 
-const STATUS_PALETTE: Record<MerchantEventStatus, { background: string; foreground: string }> = {
-  ended: { background: '#f6cfcf', foreground: '#ee2b2b' },
-  ongoing: { background: '#d2f4d6', foreground: '#20c831' },
-  upcoming: { background: '#f9f4df', foreground: '#ffcc00' },
-};
-
 export default function EventCard({ event, onDelete }: EventCardProps) {
   const { t } = useTranslation();
-  const palette = STATUS_PALETTE[event.status];
+  const { colors } = useTheme();
+  const palette = event.status === 'ended'
+    ? { background: colors.dangerSoft, foreground: colors.danger }
+    : event.status === 'ongoing'
+      ? { background: colors.successSoft, foreground: colors.success }
+      : { background: colors.warningSoft, foreground: colors.warning };
 
   return (
     <Card testID="v2-merchant-event-card">
@@ -81,7 +80,7 @@ const IconBadge = styled.View`
   width: 36px;
   height: 36px;
   border-radius: ${({ theme }) => theme.radius.sm}px;
-  background-color: #ffc9d3;
+  background-color: ${({ theme }) => theme.colors.primaryAssistive};
 `;
 
 const Title = styled(AppText)`
@@ -119,6 +118,6 @@ const Benefit = styled(AppText)`
 `;
 
 const Period = styled(AppText)`
-  color: #5e5e66;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;

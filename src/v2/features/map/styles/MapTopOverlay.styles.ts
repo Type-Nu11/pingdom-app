@@ -3,7 +3,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import { Text } from '../../../shared/components/Typography';
-import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import FrostedSurface from '../components/FrostedSurface';
 import GlassSurface from '../components/GlassSurface';
 
@@ -40,9 +39,9 @@ export const RefreshIndicatorContainer = styled(Animated.View)`
   width: 36px;
   height: 36px;
   border-radius: 18px;
-  background-color: rgba(255, 255, 255, 0.96);
+  background-color: ${({ theme }) => theme.colors.surfaceElevated};
   elevation: 12;
-  shadow-color: #10141a;
+  shadow-color: ${({ theme }) => theme.colors.shadow};
   shadow-offset: 0px 2px;
   shadow-opacity: 0.14;
   shadow-radius: 6px;
@@ -51,8 +50,8 @@ export const RefreshIndicatorContainer = styled(Animated.View)`
 export const PullGestureArea = styled.View``;
 
 export const HeaderShadow = styled.View`
-  border-radius: ${liquidGlass.header.radius}px;
-  background-color: ${liquidGlass.shadowFill};
+  border-radius: ${({ theme }) => theme.liquidGlass.header.radius}px;
+  background-color: ${({ theme }) => theme.liquidGlass.shadowFill};
 `;
 
 export const HeaderSurface = styled.View`
@@ -61,7 +60,7 @@ export const HeaderSurface = styled.View`
   height: ${MAP_TOP_OVERLAY_METRICS.headerHeight}px;
   gap: 8px;
   padding: 8px;
-  border-radius: ${liquidGlass.header.radius}px;
+  border-radius: ${({ theme }) => theme.liquidGlass.header.radius}px;
   overflow: hidden;
 `;
 
@@ -71,13 +70,13 @@ export const HeaderGlass = styled(FrostedSurface)`
   right: 0;
   bottom: 0;
   left: 0;
-  border-radius: ${liquidGlass.header.radius}px;
+  border-radius: ${({ theme }) => theme.liquidGlass.header.radius}px;
 `;
 
 export const SearchShadow = styled.View`
   flex: 1;
   height: ${MAP_TOP_OVERLAY_METRICS.searchHeight}px;
-  border-radius: ${liquidGlass.search.radius}px;
+  border-radius: ${({ theme }) => theme.liquidGlass.search.radius}px;
   background-color: transparent;
   overflow: hidden;
 `;
@@ -89,7 +88,7 @@ export const SearchGlass = styled(FrostedSurface)`
   bottom: 0;
   left: 0;
   align-items: center;
-  border-radius: ${liquidGlass.search.radius}px;
+  border-radius: ${({ theme }) => theme.liquidGlass.search.radius}px;
   overflow: hidden;
 `;
 
@@ -99,7 +98,7 @@ export const SearchInsetShadow = styled.View`
   right: 0;
   bottom: 0;
   left: 0;
-  border-radius: ${liquidGlass.search.radius}px;
+  border-radius: ${({ theme }) => theme.liquidGlass.search.radius}px;
 `;
 
 export const SearchContent = styled.Pressable`
@@ -117,7 +116,7 @@ export const SearchContent = styled.Pressable`
 
 export const SearchInput = styled(Text).attrs({ maxFontSizeMultiplier: 1 })<{ $isPlaceholder: boolean }>`
   flex: 1;
-  color: ${({ $isPlaceholder }) => ($isPlaceholder ? '#5E5E66' : '#1D1E23')};
+  color: ${({ $isPlaceholder, theme }) => ($isPlaceholder ? theme.colors.textAlternative : theme.colors.textStrong)};
   font-size: ${MAP_TOP_OVERLAY_METRICS.searchLabelSize}px;
   font-weight: 500;
   line-height: 23px;
@@ -153,7 +152,7 @@ export const CategoryContent = styled.View`
 
 export const CategoryChipButton = styled.Pressable<{ $active: boolean }>`
   border-width: 1px;
-  border-color: ${({ $active }) => ($active ? liquidGlass.category.activeBorder : liquidGlass.category.border)};
+  border-color: ${({ $active, theme }) => ($active ? theme.liquidGlass.category.activeBorder : theme.liquidGlass.category.border)};
   border-radius: 16px;
   background-color: transparent;
 `;
@@ -190,7 +189,7 @@ export const CategoryIconFrame = styled.View`
 `;
 
 export const CategoryLabel = styled(Text).attrs({ maxFontSizeMultiplier: 1, numberOfLines: 1 })<{ $active: boolean }>`
-  color: ${({ $active }) => ($active ? '#FF1956' : '#5E5E66')};
+  color: ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.textAlternative)};
   font-size: ${MAP_TOP_OVERLAY_METRICS.categoryLabelSize}px;
   font-weight: 500;
   line-height: 18.2px;
@@ -209,9 +208,9 @@ export const LocateButton = styled.Pressable`
   width: 44px;
   height: 44px;
   border-width: 1px;
-  border-color: rgba(255, 255, 255, 0.9);
+  border-color: ${({ theme }) => theme.liquidGlass.navigation.rim};
   border-radius: 22px;
-  background-color: ${liquidGlass.shadowFill};
+  background-color: ${({ theme }) => theme.liquidGlass.shadowFill};
 `;
 
 export const LocateGlass = styled(FrostedSurface)`

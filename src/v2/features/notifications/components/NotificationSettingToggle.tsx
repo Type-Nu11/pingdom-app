@@ -109,7 +109,7 @@ const Thumb = styled.View<{ $enabled: boolean }>`
   align-self: ${({ $enabled }) => ($enabled ? 'flex-end' : 'flex-start')};
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.surface};
-  shadow-color: #000;
+  shadow-color: ${({ theme }) => theme.colors.shadow};
   shadow-offset: 0 1px;
   shadow-opacity: 0.15;
   shadow-radius: 2px;

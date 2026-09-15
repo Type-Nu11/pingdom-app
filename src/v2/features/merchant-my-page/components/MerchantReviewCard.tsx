@@ -97,7 +97,7 @@ const Avatar = styled(Image)`
   height: 44px;
   border-radius: 22px;
   border-width: 1.5px;
-  border-color: #bfc1c1;
+  border-color: ${({ theme }) => theme.colors.borderEmphasis};
 `;
 
 const AvatarFallback = styled.View`
@@ -107,7 +107,7 @@ const AvatarFallback = styled.View`
   justify-content: center;
   border-radius: 22px;
   border-width: 1.5px;
-  border-color: #bfc1c1;
+  border-color: ${({ theme }) => theme.colors.borderEmphasis};
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
   overflow: hidden;
 `;
@@ -123,7 +123,7 @@ const AuthorName = styled(AppText)`
 `;
 
 const AuthorMeta = styled(AppText)`
-  color: #5e5e66;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
 `;
 
@@ -156,7 +156,7 @@ const TagChip = styled.View`
   gap: 4px;
   padding: 4px 8px;
   border-radius: ${({ theme }) => theme.radius.sm}px;
-  background-color: #f2f2f3;
+  background-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
 const TagLabel = styled(AppText)`

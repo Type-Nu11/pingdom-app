@@ -34,5 +34,5 @@ export const BottomShade = styled.View`
   bottom: 0;
   left: 1px;
   height: 1px;
-  background-color: rgba(20, 24, 32, 0.08);
+  background-color: ${({ theme }) => theme.colors.shadow};
 `;

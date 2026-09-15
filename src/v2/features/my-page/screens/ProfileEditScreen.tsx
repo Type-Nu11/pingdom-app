@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import { ApiError } from '../../../shared/api';
 import {
@@ -50,6 +50,7 @@ function getPasswordErrorMessage(
 
 export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const { isError: isProfileError, isLoading: isProfileLoading, profile } = useProfile();
 
   const changeProfileImage = useChangeProfileImage();
@@ -255,7 +256,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
                 <ActivityIndicator
                   accessibilityLabel={t('myPage.profileEdit.avatarUploading')}
                   accessibilityRole="progressbar"
-                  color="#FFFFFF"
+                  color={colors.textInverse}
                 />
               </AvatarUploadingOverlay>
             ) : null}
@@ -463,7 +464,7 @@ const AvatarUploadingOverlay = styled.View`
   align-items: center;
   justify-content: center;
   border-radius: 41px;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: ${({ theme }) => theme.colors.overlay};
 `;
 
 const PencilBadge = styled.View`
@@ -491,7 +492,7 @@ const Field = styled.View`
 `;
 
 const FieldLabel = styled(AppText)`
-  color: #5c5e5e;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   font-weight: 500;
 `;
