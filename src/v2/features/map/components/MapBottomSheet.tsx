@@ -53,6 +53,7 @@ import {
 import { FavoriteIcon } from '../../../shared/components';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
+import { useMapFeedSwipe } from '../hooks/useMapFeedSwipe';
 import type { PlaceOperatingSummaryText, ReservationCtaState } from '../../place-detail';
 import GlassSurface from './GlassSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
@@ -811,13 +812,21 @@ const PlaceTrendCard = ({
   );
 };
 
-const ExpandedPlaceCard = ({
+// The measured row includes its own padding, but excludes SheetInner's inset.
+// Keep two columns at every width, including an odd final item.
+export const getMapGridCardSize = (rowWidth: number) => {
+  const width = Math.max(0, (rowWidth - 2 * 8 - 16) / 2);
+  return { width, height: width * 222 / 177 };
+};
+
+export const ExpandedPlaceCard = ({
   bookmarked,
   imageUrl,
   onPress,
   onToggleBookmark,
   pending,
   place,
+  size,
 }: {
   bookmarked: boolean;
   imageUrl?: string;
@@ -825,6 +834,7 @@ const ExpandedPlaceCard = ({
   onToggleBookmark: () => void;
   pending: boolean;
   place: RankedPlaceViewModel;
+  size: { width: number; height: number };
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
@@ -833,7 +843,7 @@ const ExpandedPlaceCard = ({
     accessibilityLabel={`${place.name}, ${place.address}`}
     accessibilityRole="button"
     onPress={onPress}
-    style={({ pressed }) => [styles.homeGridCard, pressed && styles.pressed]}
+    style={({ pressed }) => [styles.homeGridCard, size, pressed && styles.pressed]}
   >
     <PlaceArtwork blurBottom imageUrl={imageUrl} variant="grid" />
     <CardScrim />
@@ -852,8 +862,8 @@ const ExpandedPlaceCard = ({
       <BookmarkStar selected={bookmarked} />
     </Pressable>
     <View style={styles.homeGridCardBody}>
-      <AppText numberOfLines={2} style={styles.homeGridCardName}>{place.name}</AppText>
-      <AppText numberOfLines={1} style={styles.homeGridCardDistance}>{place.address}</AppText>
+      <AppText ellipsizeMode="tail" numberOfLines={2} style={styles.homeGridCardName}>{place.name}</AppText>
+      <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.homeGridCardDistance}>{place.address}</AppText>
     </View>
   </Pressable>
   );
@@ -895,6 +905,10 @@ const ExpandedHomeContent = ({
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   const scrollRef = useRef<ScrollView>(null);
+  const { width: windowWidth } = useWindowDimensions();
+  const [gridWidth, setGridWidth] = useState<number | null>(null);
+  const gridCardSize = getMapGridCardSize(gridWidth ?? windowWidth - SHEET_RESTING_GAP * 2);
+  const { panHandlers: feedPanHandlers, blockHorizontalSwipe } = useMapFeedSwipe(feed, onFeedChange);
   const [hasRenderedExpandedContent, setHasRenderedExpandedContent] = useState(
     expandedInteractionsEnabled,
   );
@@ -916,6 +930,7 @@ const ExpandedHomeContent = ({
   }, [expandedInteractionsEnabled]);
 
   return (
+    <View {...feedPanHandlers} style={styles.expandedScroll} testID="map-feed-swipe">
     <ScrollView
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
@@ -934,6 +949,8 @@ const ExpandedHomeContent = ({
       >
         <ScrollView
           contentContainerStyle={styles.expandedFeaturedRow}
+          onTouchStart={blockHorizontalSwipe}
+          testID="map-feed-featured-scroll"
           horizontal
           nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
@@ -969,6 +986,8 @@ const ExpandedHomeContent = ({
 
             <ScrollView
               contentContainerStyle={styles.categoryRow}
+              onTouchStart={blockHorizontalSwipe}
+              testID="map-feed-category-scroll"
               horizontal
               nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
@@ -993,7 +1012,11 @@ const ExpandedHomeContent = ({
               })}
             </ScrollView>
 
-            <View style={styles.gridRow}>
+            <View
+              onLayout={({ nativeEvent }) => setGridWidth(nativeEvent.layout.width)}
+              style={styles.gridRow}
+              testID="map-expanded-place-grid"
+            >
               {displayedPlaces.slice(0, 8).map((place) => (
                 <ExpandedPlaceCard
                   bookmarked={place.bookmarked}
@@ -1006,6 +1029,7 @@ const ExpandedHomeContent = ({
                   )}
                   pending={Boolean(bookmarkPendingPlaceIds[String(place.placeId)])}
                   place={place}
+                  size={gridCardSize}
                 />
               ))}
             </View>
@@ -1013,6 +1037,7 @@ const ExpandedHomeContent = ({
         ) : null}
       </FadeSlideTransition>
     </ScrollView>
+    </View>
   );
 };
 
@@ -1467,8 +1492,8 @@ const PreviewContent = ({
     : [imageUrl];
   const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
   const contentWidth = Math.min(windowWidth, 480) - 32;
-  const imageHeight = Math.min(188, Math.max(158, Math.round(contentWidth * 0.47)));
-  const primaryImageWidth = Math.min(252, Math.max(218, Math.round(contentWidth * 0.64)));
+  const primaryImageWidth = Math.min(242, contentWidth);
+  const imageHeight = primaryImageWidth * 182 / 242;
   const secondaryImageWidth = Math.min(184, Math.max(150, Math.round(contentWidth * 0.46)));
   const reservation = fallbackContent?.reservation ?? {
     kind: 'loading', disabled: true,
@@ -2706,19 +2731,15 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     paddingHorizontal: 8,
   },
   homeGridCard: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
-    flexBasis: '47%',
-    flexGrow: 1,
-    height: 196,
-    maxWidth: '48%',
     overflow: 'hidden',
   },
   homeGridCardBody: { bottom: 0, left: 0, paddingBottom: 12, paddingHorizontal: 14, position: 'absolute', right: 0 },
-  homeGridCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 11, marginTop: 2, paddingRight: 29 },
-  homeGridCardName: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 19, paddingRight: 31 },
+  homeGridCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, fontWeight: '500', lineHeight: 16, marginTop: 2, paddingRight: 29 },
+  homeGridCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', lineHeight: 21, paddingRight: 31 },
   homeBookmarkStar: { bottom: 9, padding: 4, position: 'absolute', right: 10, zIndex: 3 },
   homeTrendCard: {
     backgroundColor: 'rgba(255,255,255,0.9)',

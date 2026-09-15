@@ -17,6 +17,10 @@
     },
     "android": {
       "icon": "./src/assets/v2/icons/pingdomlogo.png",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/v2/icons/pingdomlogo-adaptive.png",
         "backgroundColor": "#FF1452"

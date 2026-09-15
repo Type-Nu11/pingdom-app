@@ -4,6 +4,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 
 import VerificationIcon from '../../../../assets/v2/icons/place/gamju.svg';
+import GlassSurface from '../../map/components/GlassSurface';
 
 type Props = {
   label: string;
@@ -38,8 +39,15 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
       style={[{ boxShadow: theme.liquidGlass.search.shadow }, style]}
       testID="visit-verification-map-cta"
     >
-      <VerificationIcon height={24} width={24} />
-      <Label>{label}</Label>
+      <Surface
+        pointerEvents="none"
+        tintColor={theme.liquidGlass.primaryCta.tint}
+        style={{ boxShadow: theme.liquidGlass.search.shadow }}
+        testID="visit-verification-map-cta-glass"
+      >
+        <VerificationIcon height={24} width={24} />
+        <Label>{label}</Label>
+      </Surface>
     </Container>
   );
 }
@@ -47,16 +55,23 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
 const Container = styled.Pressable`
   height: 48px;
   min-width: 120px;
+  border-radius: 24px;
+  overflow: hidden;
+  background-color: ${({ theme }) => theme.liquidGlass.primaryCta.tint};
+`;
+const Surface = styled(GlassSurface)`
+  height: 48px;
+  min-width: 120px;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 0 18px;
+  padding: 0 14px;
   border-radius: 24px;
-  background-color: ${({ theme }) => theme.colors.primary};
 `;
 const Label = styled(AppText)`
-  color: ${({ theme }) => theme.colors.onPrimary};
+  color: ${({ theme }) => theme.liquidGlass.primaryCta.foreground};
   font-size: 16px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  font-weight: 600;
+  line-height: 21px;
 `;

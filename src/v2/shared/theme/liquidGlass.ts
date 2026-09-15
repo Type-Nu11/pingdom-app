@@ -1,4 +1,5 @@
 const light = {
+  primaryCta: { tint: 'rgba(255, 25, 86, 0.56)', foreground: '#F6F6F7' },
   header: { radius: 30, tint: 'rgba(248, 248, 248, 0.56)', rim: 'rgba(255, 255, 255, 0.64)', highlightOpacity: 0.16, shadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.15)' },
   search: { radius: 26, tint: 'rgba(228, 228, 229, 0.60)', rim: 'rgba(255, 255, 255, 0.24)', highlightOpacity: 0.12, shadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)' },
   category: { tint: 'rgba(255, 255, 255, 0.36)', activeTint: 'rgba(255, 201, 211, 0.24)', androidTint: 'rgba(255, 255, 255, 0.2582)', androidActiveTint: 'rgba(255, 146, 166, 0.1191)', border: 'transparent', activeBorder: 'rgba(255, 74, 117, 0.88)', shadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.12)' },
@@ -8,6 +9,7 @@ const light = {
 } as const;
 
 export type LiquidGlassTheme = {
+  primaryCta: { tint: string; foreground: string };
   header: { radius: number; tint: string; rim: string; highlightOpacity: number; shadow: string };
   search: { radius: number; tint: string; rim: string; highlightOpacity: number; shadow: string };
   category: { tint: string; activeTint: string; androidTint: string; androidActiveTint: string; border: string; activeBorder: string; shadow: string };
@@ -21,6 +23,7 @@ export type LiquidGlassTheme = {
 
 export const lightLiquidGlass = light;
 export const darkLiquidGlass = {
+  primaryCta: { tint: 'rgba(255, 25, 86, 0.72)', foreground: '#F6F6F7' },
   header: { radius: 30, tint: 'rgba(28, 28, 33, 0.82)', rim: 'rgba(255, 255, 255, 0.18)', highlightOpacity: 0.08, shadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.42)' },
   search: { radius: 26, tint: 'rgba(38, 38, 44, 0.86)', rim: 'rgba(255, 255, 255, 0.14)', highlightOpacity: 0.07, shadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.28)' },
   category: { tint: 'rgba(30, 30, 35, 0.88)', activeTint: 'rgba(82, 33, 49, 0.90)', androidTint: 'rgba(27, 27, 32, 0.92)', androidActiveTint: 'rgba(75, 31, 45, 0.94)', border: 'rgba(255, 255, 255, 0.16)', activeBorder: 'rgba(255, 134, 165, 0.92)', shadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.38)' },

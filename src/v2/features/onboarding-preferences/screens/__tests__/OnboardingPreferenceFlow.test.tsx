@@ -104,13 +104,9 @@ describe('OnboardingPreferenceFlow', () => {
       .toEqual({ checked: true });
   });
 
-  test('빠른 Continue 연속 입력에도 저장과 화면 전환을 한 번만 실행한다', async () => {
+  test('관심 카테고리에서 일정 선택으로 즉시 전환하고 저장은 완료 시까지 미룬다', async () => {
     await seedPreferences();
-    let resolvePersist!: () => void;
-    const persistPromise = new Promise<void>((resolve) => {
-      resolvePersist = resolve;
-    });
-    const setItem = jest.spyOn(AsyncStorage, 'setItem').mockReturnValueOnce(persistPromise);
+    const setItem = jest.spyOn(AsyncStorage, 'setItem');
     setItem.mockClear();
     await renderWithProviders(
       <OnboardingPreferenceFlow onBack={jest.fn()} onComplete={jest.fn()} />,
@@ -118,32 +114,30 @@ describe('OnboardingPreferenceFlow', () => {
 
     const continueButton = await screen.findByRole('button', { name: '계속' });
     await fireEvent.press(continueButton);
-    await fireEvent.press(continueButton);
-    expect(setItem).toHaveBeenCalledTimes(1);
-
-    await act(async () => resolvePersist());
     expect(await screen.findByTestId('travel-schedule-screen')).toBeVisible();
+    expect(setItem).not.toHaveBeenCalled();
   });
 
-  test('keeps the current step and selection after a save failure so Continue can retry', async () => {
+  test('회원가입 완료 시 선택값 저장이 실패하면 일정 단계에 머물러 재시도한다', async () => {
     await seedPreferences();
     jest.spyOn(AsyncStorage, 'setItem').mockRejectedValueOnce(new Error('write failed'));
+    const onComplete = jest.fn();
     const { user } = await renderWithProviders(
-      <OnboardingPreferenceFlow onBack={jest.fn()} onComplete={jest.fn()} />,
+      <OnboardingPreferenceFlow onBack={jest.fn()} onComplete={onComplete} />,
     );
 
     await screen.findByRole('checkbox', { name: '카페' });
     await user.press(screen.getByRole('button', { name: '계속' }));
+    expect(await screen.findByTestId('travel-schedule-screen')).toBeVisible();
+    await user.press(screen.getByRole('button', { name: '계속' }));
 
-    expect(await screen.findByTestId('travel-purpose-error')).toHaveTextContent(
+    expect(await screen.findByTestId('travel-schedule-error')).toHaveTextContent(
       '선택값을 저장하지 못했어요. 계속 버튼을 다시 눌러 주세요.',
     );
-    expect(screen.queryByTestId('travel-schedule-screen')).toBeNull();
-    expect(screen.getByRole('checkbox', { name: '카페' }).props.accessibilityState)
-      .toEqual({ checked: true });
+    expect(onComplete).not.toHaveBeenCalled();
 
     await user.press(screen.getByRole('button', { name: '계속' }));
-    expect(await screen.findByTestId('travel-schedule-screen')).toBeVisible();
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1));
   });
 
   test('stays on the final step when host completion storage fails and allows retry', async () => {

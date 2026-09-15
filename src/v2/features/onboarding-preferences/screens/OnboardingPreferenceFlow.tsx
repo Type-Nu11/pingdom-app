@@ -150,7 +150,7 @@ function OnboardingPreferenceFlowContent({
         isContinuing={saveStatus === 'saving' || isCompleting}
         onBack={handleBack}
         onChange={updateSelectedPurposes}
-        onContinue={() => void continueAfterSave(() => setStep('schedule'))}
+        onContinue={() => setStep('schedule')}
         selectedPurposes={selectedPurposes}
         totalSteps={TOTAL_STEPS}
       />
