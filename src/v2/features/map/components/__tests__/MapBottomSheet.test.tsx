@@ -233,7 +233,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByText('영업시간 정보 없음')).toBeVisible();
   });
 
-  test('긴 장소명을 제한하고 추천 이유 없이 카드와 즐겨찾기 동작을 분리한다', async () => {
+  test('긴 장소명과 실제 추천 이유를 말줄임하고 접근성·즐겨찾기 동작을 일관되게 유지한다', async () => {
     const longName = '이름이 매우 긴 추천 장소 '.repeat(8);
     const longReason = '사용자의 여행 취향과 현재 위치를 반영한 추천 이유 '.repeat(8);
     const longSource = 'PERSONALIZED_LOCATION_RECOMMENDATION_SOURCE_'.repeat(8);
@@ -255,7 +255,10 @@ describe('MapBottomSheet recommendations', () => {
       ellipsizeMode: 'tail',
       numberOfLines: 2,
     });
-    expect(screen.queryByText(longReason)).not.toBeOnTheScreen();
+    expect(screen.getByText(longReason).props).toMatchObject({
+      ellipsizeMode: 'tail',
+      numberOfLines: 1,
+    });
     expect(screen.getByText('여기서 1km').props).toMatchObject({
       ellipsizeMode: 'tail',
       numberOfLines: 1,
@@ -273,7 +276,9 @@ describe('MapBottomSheet recommendations', () => {
     expect(onToggleBookmark).toHaveBeenCalledTimes(1);
     expect(onPress).not.toHaveBeenCalled();
 
-    await result.user.press(screen.getByRole('button', { name: `${longName}, 1km` }));
+    await result.user.press(screen.getByRole('button', {
+      name: `${longName}, ${longReason}, 1km`,
+    }));
     expect(onPress).toHaveBeenCalledTimes(1);
 
     await result.unmount();
@@ -708,7 +713,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryByRole('button', { name: '길찾기' })).not.toBeOnTheScreen();
   });
 
-  test('확장 추천 목록의 두 행은 각각 독립된 가로 스크롤로 렌더링된다', async () => {
+  test('확장 추천 목록은 배열 순번 대신 장소의 실제 추천 이유를 표시한다', async () => {
     await renderWithProviders(
       <MapBottomSheet
         activeFilters={[]}
@@ -742,9 +747,9 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('recommendation-grid-row-1')).toBeVisible();
     expect(screen.getByTestId('recommendation-grid-row-2')).toBeVisible();
     expect(screen.getByText('핑덤이 user님이 좋아할만한 장소를 추천해드려요!')).toBeVisible();
-    expect(screen.getAllByText('user님 취향 저격')).toHaveLength(2);
-    expect(screen.getAllByText('user님 주변 숨은 장소들')).toHaveLength(1);
-    expect(screen.queryByText('테스트 추천 이유')).not.toBeOnTheScreen();
+    expect(screen.getAllByText('테스트 추천 이유')).toHaveLength(3);
+    expect(screen.queryByText('user님 취향 저격')).not.toBeOnTheScreen();
+    expect(screen.queryByText('user님 주변 숨은 장소들')).not.toBeOnTheScreen();
     expect(screen.queryByText('현재 위치와 가까운 장소입니다')).not.toBeOnTheScreen();
     expect(screen.getByText('오늘 검증하고 쿠폰 받자!')).toBeVisible();
   });

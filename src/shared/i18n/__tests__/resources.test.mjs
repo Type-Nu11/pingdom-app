@@ -76,3 +76,34 @@ test('fallback, interpolation, pluralization, and missing-key behavior are safe'
   assert.equal(instance.t('map.detail.reviewCount', { count: 2 }), '2 reviews');
   assert.equal(instance.t('missing.key'), 'Translation unavailable');
 });
+
+test('recommendation reason codes have truthful Korean and English presentations', () => {
+  assert.deepEqual(resources.en.translation.map.recommendations.reasons, {
+    activeBenefit: 'A benefit is currently available here',
+    benefitAndReservable: 'A place with an available benefit and booking',
+    contextMatch: 'Matches your current travel plans',
+    exploration: 'A recommendation for discovering somewhere new',
+    freshContent: 'Recently updated with new information',
+    highConversion: 'Often leads to real visits',
+    highEngagement: 'A place receiving a lot of interest',
+    nearby: 'Close to your current location',
+    neutral: 'Recommended place',
+    personalSignal: 'Matches your interests and activity',
+    qualitySignal: 'Has reliable place information',
+    reservable: 'Currently available to book',
+  });
+  assert.deepEqual(resources.ko.translation.map.recommendations.reasons, {
+    activeBenefit: '현재 이용할 수 있는 혜택이 있어요',
+    benefitAndReservable: '혜택을 받고 바로 예약할 수 있어요',
+    contextMatch: '현재 여행 목적과 잘 맞는 장소예요',
+    exploration: '새로운 장소를 발견할 수 있는 추천이에요',
+    freshContent: '최근 새로운 정보가 추가됐어요',
+    highConversion: '실제 방문으로 자주 이어지는 장소예요',
+    highEngagement: '많은 사용자가 관심을 보이는 장소예요',
+    nearby: '현재 위치에서 가까운 장소예요',
+    neutral: '추천 장소',
+    personalSignal: '관심사와 반응에 잘 맞는 장소예요',
+    qualitySignal: '신뢰도 높은 장소 정보가 있어요',
+    reservable: '현재 예약할 수 있는 장소예요',
+  });
+});

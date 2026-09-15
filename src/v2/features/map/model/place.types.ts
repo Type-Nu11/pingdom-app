@@ -1,3 +1,5 @@
+import type { PlaceExplorationSchema } from '../../../shared/api';
+
 export type Place = {
   address: string;
   category?: string;
@@ -19,38 +21,38 @@ export type PlacesPage = {
   totalPages: number;
 };
 
-export type PlaceGrowth = {
-  currentLevelMinPhotoCount: number;
-  level: number;
-  nextLevelMinPhotoCount: number;
-  photoCount: number;
-  progressPercent: number;
-};
+type PlaceRecommendationContract = PlaceExplorationSchema<'PlaceRecommendationItem'>;
 
-export type RecommendedPlace = Place & {
-  distanceMeters: number;
-  boosted?: boolean;
-  currentlyOperating?: boolean | null;
-  hasActiveBenefit?: boolean;
-  placeGrowth?: PlaceGrowth;
-  reason?: string | null;
-  reasonCode?: string | null;
-  reservable?: boolean;
-  userId?: number;
-};
+/** Map-safe view created only after validating the optional OpenAPI response fields. */
+export type RecommendedPlace = PlaceRecommendationContract
+  & Required<Pick<Place, 'address' | 'id' | 'latitude' | 'longitude' | 'name'>>
+  & Pick<Place, 'category' | 'userId' | 'username'>;
 
-export type PlaceRecommendations = {
-  appliedActivityIntent?: ActivityIntent | null;
-  appliedRadiusKm?: number | null;
-  appliedTravelPurposes?: TravelPurpose[] | null;
-  limit?: number | null;
-  limitReasons?: RecommendationLimitReason[] | null;
-  places?: RecommendedPlace[] | null;
-  recommendationRequestId?: string | null;
-  recommendedCount?: number | null;
-  recommendationVersion?: string | null;
-  requestedRadiusKm?: number | null;
-};
+export function selectUsableRecommendedPlaces(
+  places?: readonly PlaceRecommendationContract[] | null,
+): RecommendedPlace[] {
+  return (places ?? []).flatMap((place) => {
+    if (
+      typeof place.id !== 'number'
+      || !Number.isFinite(place.id)
+      || typeof place.latitude !== 'number'
+      || !Number.isFinite(place.latitude)
+      || typeof place.longitude !== 'number'
+      || !Number.isFinite(place.longitude)
+    ) {
+      return [];
+    }
+
+    return [{
+      ...place,
+      address: place.address ?? '',
+      id: place.id,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      name: place.name ?? '',
+    }];
+  });
+}
 
 export type TravelPurpose =
   | 'K_POP'

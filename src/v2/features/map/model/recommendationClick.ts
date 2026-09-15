@@ -1,7 +1,33 @@
-import type { RecordRecommendationClickRequest } from '../api/placeApi';
+import type { RecommendationClickBody } from '../../place-exploration';
+
+export function selectRecommendationClickPayload({
+  placeId,
+  recommendationPlaceIds,
+  recommendationRequestId,
+  recommendationVersion,
+}: {
+  placeId: number;
+  recommendationPlaceIds: readonly number[];
+  recommendationRequestId?: string | null;
+  recommendationVersion?: string | null;
+}): RecommendationClickBody | null {
+  if (
+    !recommendationRequestId
+    || !recommendationVersion
+    || !recommendationPlaceIds.includes(placeId)
+  ) {
+    return null;
+  }
+
+  return {
+    placeId,
+    recommendationVersion,
+    requestId: recommendationRequestId,
+  };
+}
 
 export function claimRecommendationClick(
-  payload: RecordRecommendationClickRequest,
+  payload: RecommendationClickBody,
   sentClickKeys: Set<string>,
 ) {
   const clickKey = `${payload.requestId}:${payload.recommendationVersion}:${payload.placeId}`;
@@ -11,7 +37,7 @@ export function claimRecommendationClick(
 }
 
 export function releaseRecommendationClick(
-  payload: RecordRecommendationClickRequest,
+  payload: RecommendationClickBody,
   sentClickKeys: Set<string>,
 ) {
   const clickKey = `${payload.requestId}:${payload.recommendationVersion}:${payload.placeId}`;
@@ -19,9 +45,9 @@ export function releaseRecommendationClick(
 }
 
 export async function recordRecommendationClickOnce<T>(
-  payload: RecordRecommendationClickRequest,
+  payload: RecommendationClickBody,
   sentClickKeys: Set<string>,
-  send: (value: RecordRecommendationClickRequest) => Promise<T>,
+  send: (value: RecommendationClickBody) => Promise<T>,
 ) {
   if (!claimRecommendationClick(payload, sentClickKeys)) return undefined;
 

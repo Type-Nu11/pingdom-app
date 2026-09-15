@@ -399,10 +399,19 @@ export const resources = {
           retry: 'Check again',
         },
         recommendations: {
-          affinityLabel: 'Picked for {{userName}}',
-          hiddenLabel: 'Hidden gems near {{userName}}',
           subtitle: 'Pingdom recommends places {{userName}} might like!',
           verificationTitle: 'Verify today and get a coupon!',
+          reasons: {
+            activeBenefit: 'A benefit is currently available here', benefitAndReservable: 'A place with an available benefit and booking',
+            contextMatch: 'Matches your current travel plans', exploration: 'A recommendation for discovering somewhere new',
+            freshContent: 'Recently updated with new information', highConversion: 'Often leads to real visits',
+            highEngagement: 'A place receiving a lot of interest', nearby: 'Close to your current location', neutral: 'Recommended place',
+            personalSignal: 'Matches your interests and activity', qualitySignal: 'Has reliable place information', reservable: 'Currently available to book',
+          },
+          explanations: {
+            fallback: 'A place worth exploring', fresh: 'A place receiving new attention', geo: 'Close to your current location',
+            personal: 'Reflects your interests and activity', popular: 'A place receiving a lot of interest',
+          },
           context: {
             activity: { attendEvent: 'Events', cafe: 'Cafe visit', eat: 'Food', explore: 'Explore', nightlife: 'Nightlife', shop: 'Shopping' },
             purpose: { beauty: 'Beauty', cafe: 'Cafe', exhibition: 'Exhibitions', fashion: 'Fashion', food: 'Food', kPop: 'K-POP', nightlife: 'Nightlife', other: 'Other', popUp: 'Pop-ups' },
@@ -1274,10 +1283,19 @@ export const resources = {
           retry: '다시 확인',
         },
         recommendations: {
-          affinityLabel: '{{userName}}님 취향 저격',
-          hiddenLabel: '{{userName}}님 주변 숨은 장소들',
           subtitle: '핑덤이 {{userName}}님이 좋아할만한 장소를 추천해드려요!',
           verificationTitle: '오늘 검증하고 쿠폰 받자!',
+          reasons: {
+            activeBenefit: '현재 이용할 수 있는 혜택이 있어요', benefitAndReservable: '혜택을 받고 바로 예약할 수 있어요',
+            contextMatch: '현재 여행 목적과 잘 맞는 장소예요', exploration: '새로운 장소를 발견할 수 있는 추천이에요',
+            freshContent: '최근 새로운 정보가 추가됐어요', highConversion: '실제 방문으로 자주 이어지는 장소예요',
+            highEngagement: '많은 사용자가 관심을 보이는 장소예요', nearby: '현재 위치에서 가까운 장소예요', neutral: '추천 장소',
+            personalSignal: '관심사와 반응에 잘 맞는 장소예요', qualitySignal: '신뢰도 높은 장소 정보가 있어요', reservable: '현재 예약할 수 있는 장소예요',
+          },
+          explanations: {
+            fallback: '둘러볼 만한 추천 장소예요', fresh: '최근 새롭게 주목받는 장소예요', geo: '현재 위치에서 가까운 장소예요',
+            personal: '관심사와 반응을 반영한 추천이에요', popular: '많은 사용자가 관심을 보이는 장소예요',
+          },
           context: {
             activity: { attendEvent: '이벤트 참여', cafe: '카페 방문', eat: '식사', explore: '주변 탐색', nightlife: '나이트라이프', shop: '쇼핑' },
             purpose: { beauty: '뷰티', cafe: '카페', exhibition: '전시', fashion: '패션', food: '맛집', kPop: 'K-POP', nightlife: '나이트라이프', other: '기타', popUp: '팝업' },

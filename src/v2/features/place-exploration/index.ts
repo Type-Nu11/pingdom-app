@@ -9,6 +9,7 @@ export {
   createPlaceListQueryOptions,
   createPlaceMapQueryOptions,
   createPlaceOperatingNoticesQueryOptions,
+  createPlaceRecommendationsQueryOptions,
   createPlaceVerificationMediaQueryOptions,
   createPlaceVisitDecisionQueryOptions,
   createRecommendationExplanationQueryOptions,
@@ -39,9 +40,15 @@ export type {
   PlaceList,
   PlaceListParams,
   PlaceOperatingNotices,
+  PlaceRecommendationItem,
+  PlaceRecommendations,
+  PlaceRecommendationsParams,
   PlaceVerificationMedia,
   PlaceVisitDecision,
   RecommendationExplanation,
+  RecommendationExplanationItem,
+  RecommendationClickBody,
+  RecommendationClickResult,
 } from './model/placeExploration.types';
 export {
   getPlaceListRuntimeState,

@@ -201,6 +201,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/places/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 장소 추천 조회
+         * @description 현재 위치와 사용자 반응 이력을 기반으로 추천 장소를 조회합니다.
+         */
+        get: operations["recommendPlaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/places/recommendations/{requestId}/explanation": {
         parameters: {
             query?: never;
@@ -215,6 +235,26 @@ export interface paths {
         get: operations["getRecommendationExplanation"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/places/recommendations/click": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 추천 장소 클릭 기록
+         * @description 추천 목록에서 사용자가 선택한 장소 클릭을 기록합니다.
+         */
+        post: operations["recordRecommendationClick"];
         delete?: never;
         options?: never;
         head?: never;
@@ -581,6 +621,18 @@ export interface components {
             registrant: string;
             merchantOwner: components["schemas"]["MerchantOwnerPublicResponse"] | null;
         };
+        PlaceGrowthSnapshot: {
+            /** Format: int64 */
+            photoCount?: number;
+            /** Format: int32 */
+            level?: number;
+            /** Format: int64 */
+            currentLevelMinPhotoCount?: number;
+            /** Format: int64 */
+            nextLevelMinPhotoCount?: number;
+            /** Format: int32 */
+            progressPercent?: number;
+        };
         PlaceListItem: {
             /** Format: int64 */
             id?: number;
@@ -731,6 +783,39 @@ export interface components {
              */
             closesAt?: string;
         };
+        /** @description 추천 장소 클릭 기록 요청 */
+        PlaceRecommendationClickRequest: {
+            /**
+             * Format: int64
+             * @description 클릭한 추천 장소 ID
+             * @example 17
+             */
+            placeId: number;
+            /**
+             * @description 클릭한 추천 응답의 버전
+             * @example place-rec-v1
+             */
+            recommendationVersion: string;
+            /**
+             * @description 추천 응답 requestId
+             * @example 9f7263d5-65f1-4834-9ca3-86ad2fc4e7d0
+             */
+            requestId: string;
+        };
+        /** @description 추천 장소 클릭 기록 응답 */
+        PlaceRecommendationClickResponse: {
+            /**
+             * Format: int64
+             * @description 클릭 기록이 저장된 장소 ID
+             * @example 17
+             */
+            placeId?: number;
+            /**
+             * @description 처리 결과 메시지
+             * @example 추천 장소 클릭을 기록했습니다.
+             */
+            message?: string;
+        };
         /** @description 추천 설명 항목 */
         PlaceRecommendationExplanationItem: {
             /**
@@ -850,6 +935,138 @@ export interface components {
             requestId?: string;
             /** @description 추천 설명 항목 */
             items?: components["schemas"]["PlaceRecommendationExplanationItem"][];
+        };
+        /** @description 장소 추천 항목 */
+        PlaceRecommendationItem: {
+            /**
+             * Format: int64
+             * @description 장소 ID
+             * @example 5
+             */
+            id?: number;
+            /**
+             * @description 장소명
+             * @example 진주성
+             */
+            name?: string;
+            /**
+             * @description 장소 주소
+             * @example 경상남도 진주시 남강로 626
+             */
+            address?: string;
+            /** @description 도로명 주소 */
+            roadAddress?: string | null;
+            /** @description 지번 주소 */
+            jibunAddress?: string | null;
+            /** @description 우편번호 */
+            postalCode?: string | null;
+            /**
+             * @description 주소 및 좌표 생성 출처
+             * @enum {string}
+             */
+            geocodingSource?: "KAKAO" | "USER_PIN" | "ADMIN" | "LEGACY";
+            /**
+             * @description 장소 운영 상태
+             * @enum {string}
+             */
+            operatingStatus?: "OPERATING" | "TEMPORARILY_CLOSED" | "PERMANENTLY_CLOSED";
+            /**
+             * Format: date-time
+             * @description 운영 상태 최신 확인 시각
+             */
+            operatingStatusCheckedAt?: string | null;
+            /** @description 현재 영업 여부. 영업시간 미등록 시 null */
+            currentlyOperating?: boolean | null;
+            /**
+             * Format: date-time
+             * @description 현재 영업 여부 판정 시각
+             */
+            currentlyOperatingCheckedAt?: string | null;
+            /**
+             * Format: double
+             * @description 장소 위도
+             * @example 35.1894
+             */
+            latitude?: number;
+            /**
+             * Format: double
+             * @description 장소 경도
+             * @example 128.0789
+             */
+            longitude?: number;
+            /**
+             * Format: int64
+             * @description 현재 위치와의 거리(미터)
+             * @example 215
+             */
+            distanceMeters?: number;
+            /**
+             * @description 추천 사유
+             * @example 저장한 장소와 가까운 추천 장소입니다.
+             */
+            reason?: string;
+            /**
+             * @description 추천 사유 코드
+             * @example PERSONAL_SIGNAL
+             * @enum {string}
+             */
+            reasonCode?: "BENEFIT_AND_RESERVABLE" | "ACTIVE_BENEFIT" | "RESERVABLE" | "CONTEXT_MATCH" | "PERSONAL_SIGNAL" | "FRESH_CONTENT" | "HIGH_ENGAGEMENT" | "HIGH_CONVERSION" | "EXPLORATION" | "QUALITY_SIGNAL" | "NEARBY";
+            /** @description 현재 발급 가능한 관광 혜택 존재 여부 */
+            hasActiveBenefit?: boolean;
+            /** @description 현재 예약 가능한 시간 존재 여부 */
+            reservable?: boolean;
+            /** @description Verified Boost가 적용된 추천 여부 */
+            boosted?: boolean;
+            placeGrowth?: components["schemas"]["PlaceGrowthSnapshot"];
+        };
+        /** @description 장소 추천 조회 응답 */
+        PlaceRecommendationResponse: {
+            /** @description 추천 장소 목록 */
+            places?: components["schemas"]["PlaceRecommendationItem"][];
+            /**
+             * @description 추천 알고리즘 버전
+             * @example place-rec-v1
+             */
+            recommendationVersion?: string;
+            /**
+             * @description 추천 요청 식별자
+             * @example 9f7263d5-65f1-4834-9ca3-86ad2fc4e7d0
+             */
+            recommendationRequestId?: string;
+            /**
+             * Format: int32
+             * @description 요청 제한 수
+             * @example 10
+             */
+            limit?: number;
+            /**
+             * Format: double
+             * @description 요청 반경(km)
+             * @example 5
+             */
+            requestedRadiusKm?: number;
+            /**
+             * Format: double
+             * @description 실제 적용 반경(km)
+             * @example 10
+             */
+            appliedRadiusKm?: number;
+            /**
+             * Format: int32
+             * @description 추천 결과 수
+             * @example 4
+             */
+            recommendedCount?: number;
+            /** @description 추천에 적용된 K-컬처 및 여행 관심사 */
+            appliedTravelPurposes?: ("K_POP" | "BEAUTY" | "FASHION" | "CAFE" | "FOOD" | "POP_UP" | "EXHIBITION" | "NIGHTLIFE" | "OTHER")[];
+            /**
+             * @description 추천에 적용된 현재 행동 의도
+             * @example CAFE
+             * @enum {string|null}
+             */
+            appliedActivityIntent?: "EXPLORE" | "EAT" | "CAFE" | "SHOP" | "ATTEND_EVENT" | "NIGHTLIFE" | null;
+            /** @description 추천 결과에 영향을 준 제한 사유 코드 */
+            limitReasons?: ("REQUEST_LIMIT_CLAMPED" | "RADIUS_EXPANDED" | "OPERATING_STATUS_PRIORITY" | "INTERACTED_PLACE_EXCLUDED" | "FALLBACK_CANDIDATE_POOL")[];
         };
         /** @description 요일별 정규 영업 시간대 */
         PlaceRegularOperatingHourResponse: {
@@ -1615,6 +1832,90 @@ export interface operations {
             };
         };
     };
+    recommendPlaces: {
+        parameters: {
+            query: {
+                /**
+                 * @description 현재 위도
+                 * @example 35.1801
+                 */
+                latitude: number;
+                /**
+                 * @description 현재 경도
+                 * @example 128.1078
+                 */
+                longitude: number;
+                /**
+                 * @description 추천 최대 개수
+                 * @example 10
+                 */
+                limit?: number;
+                /**
+                 * @description 초기 탐색 반경(km)
+                 * @example 5
+                 */
+                radiusKm?: number;
+                /**
+                 * @description 강제 추천 버전
+                 * @example place-rec-v2
+                 */
+                recommendationVersion?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 장소 추천 조회 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceRecommendationResponse"];
+                };
+            };
+            /** @description 좌표 또는 요청값 검증 실패 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "recommendPlaces.latitude: 위도는 -90.0 이상이어야 합니다."
+                     *     }
+                     */
+                    "*/*": unknown;
+                };
+            };
+            /** @description 유효하지 않은 토큰 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "유효하지 않은 토큰입니다.",
+                     *       "code": "INVALID_TOKEN"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getRecommendationExplanation: {
         parameters: {
             query?: never;
@@ -1664,6 +1965,83 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recordRecommendationClick: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaceRecommendationClickRequest"];
+            };
+        };
+        responses: {
+            /** @description 추천 장소 클릭 기록 성공 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceRecommendationClickResponse"];
+                };
+            };
+            /** @description 요청값 검증 실패 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "placeId는 필수입니다."
+                     *     }
+                     */
+                    "*/*": unknown;
+                };
+            };
+            /** @description 유효하지 않은 토큰 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "유효하지 않은 토큰입니다.",
+                     *       "code": "INVALID_TOKEN"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 장소를 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "message": "장소를 찾을 수 없습니다.",
+                     *       "code": "PLACE_NOT_FOUND"
+                     *     }
+                     */
+                    "*/*": unknown;
                 };
             };
         };

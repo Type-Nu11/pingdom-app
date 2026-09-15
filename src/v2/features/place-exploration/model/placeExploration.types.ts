@@ -79,6 +79,34 @@ export type RecommendationExplanationPath =
   PlaceExplorationOperationPath<'getRecommendationExplanation'>;
 export type RecommendationExplanation =
   PlaceExplorationOperationResponse<'getRecommendationExplanation', 200>;
+export type RecommendationExplanationItem =
+  NonNullable<RecommendationExplanation['items']>[number];
+
+export type PlaceRecommendationsParams =
+  PlaceExplorationOperationQuery<'recommendPlaces'>;
+export type PlaceRecommendations =
+  PlaceExplorationOperationResponse<'recommendPlaces', 200>;
+export type PlaceRecommendationItem =
+  NonNullable<PlaceRecommendations['places']>[number];
+
+export function selectPlaceRecommendationsParams(
+  params: PlaceRecommendationsParams,
+): PlaceRecommendationsParams {
+  return {
+    latitude: params.latitude,
+    limit: params.limit ?? 10,
+    longitude: params.longitude,
+    radiusKm: params.radiusKm ?? 5,
+    ...(params.recommendationVersion
+      ? { recommendationVersion: params.recommendationVersion }
+      : {}),
+  };
+}
+
+export type RecommendationClickBody =
+  PlaceExplorationOperationRequestBody<'recordRecommendationClick'>;
+export type RecommendationClickResult =
+  PlaceExplorationOperationResponse<'recordRecommendationClick', 201>;
 
 export type MapLinkConversionPath = PlaceExplorationOperationPath<'record'>;
 export type MapLinkConversionBody =

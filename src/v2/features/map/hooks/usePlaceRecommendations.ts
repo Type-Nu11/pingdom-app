@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { recommendationQueryKeys } from '../../travel-purposes/model/travelPurposeQueryKeys';
-import { placeApi, type GetPlaceRecommendationsRequest } from '../api/placeApi';
+import {
+  createPlaceRecommendationsQueryOptions,
+  type PlaceRecommendationsParams,
+} from '../../place-exploration';
+import { selectUsableRecommendedPlaces } from '../model/place.types';
+
+export type GetPlaceRecommendationsRequest = PlaceRecommendationsParams;
 
 export const placeRecommendationQueryKeys = {
   all: recommendationQueryKeys.all,
@@ -23,10 +29,14 @@ export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) 
     params.recommendationVersion,
   ]);
   const recommendationsQuery = useQuery({
+    ...createPlaceRecommendationsQueryOptions(queryParams),
     enabled: Number.isFinite(queryParams.latitude) && Number.isFinite(queryParams.longitude),
     queryKey: placeRecommendationQueryKeys.list(queryParams),
-    queryFn: () => placeApi.getRecommendations(queryParams),
   });
+  const places = useMemo(
+    () => selectUsableRecommendedPlaces(recommendationsQuery.data?.places),
+    [recommendationsQuery.data?.places],
+  );
 
   return {
     appliedActivityIntent: recommendationsQuery.data?.appliedActivityIntent ?? null,
@@ -38,7 +48,7 @@ export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) 
     isFetching: recommendationsQuery.isFetching,
     isLoading: recommendationsQuery.isLoading,
     limitReasons: recommendationsQuery.data?.limitReasons ?? [],
-    places: recommendationsQuery.data?.places ?? [],
+    places,
     recommendationRequestId: recommendationsQuery.data?.recommendationRequestId,
     recommendationVersion: recommendationsQuery.data?.recommendationVersion,
     requestedRadiusKm: recommendationsQuery.data?.requestedRadiusKm,

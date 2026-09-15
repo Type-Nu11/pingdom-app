@@ -30,6 +30,8 @@ export const placeQueryKeys = {
   menus: (placeId: number) =>
     [...placeQueryKeys.entity(placeId), 'menus'] as const,
   recommendations: () => [...placeQueryKeys.all, 'recommendations'] as const,
+  recommendationList: <TParams extends object>(params: TParams) =>
+    [...placeQueryKeys.recommendations(), 'list', params] as const,
   recommendationExplanations: () =>
     [...placeQueryKeys.recommendations(), 'explanation'] as const,
   recommendationExplanation: (requestId: string) =>
