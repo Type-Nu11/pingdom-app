@@ -1015,7 +1015,28 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.getByText('전국 트렌드 장소')).toBeOnTheScreen();
     expect(screen.queryByText('추천 장소 2')).not.toBeOnTheScreen();
-
+    const swipe = screen.getByTestId('map-feed-swipe');
+    const event = (pageX: number, count = 1) => ({ nativeEvent: {
+      pageX, pageY: 100, touches: Array.from({ length: count }, () => ({ pageX, pageY: 100 })),
+    } });
+    await act(async () => {
+      fireEvent(swipe, 'startShouldSetResponderCapture', event(220));
+      fireEvent(swipe, 'responderRelease', event(100, 0));
+    });
+    expect(screen.getByRole('tab', { name: '우리 지역 핫플', selected: true })).toBeOnTheScreen();
+    expect(screen.queryByText('전국 트렌드 장소')).not.toBeOnTheScreen();
+    await act(async () => {
+      fireEvent(swipe, 'startShouldSetResponderCapture', event(100));
+      fireEvent(screen.getByTestId('map-feed-featured-scroll'), 'touchStart', event(100));
+      fireEvent(swipe, 'responderRelease', event(220, 0));
+    });
+    expect(screen.getByRole('tab', { name: '우리 지역 핫플', selected: true })).toBeOnTheScreen();
+    await act(async () => {
+      fireEvent(swipe, 'startShouldSetResponderCapture', event(100));
+      fireEvent(swipe, 'responderRelease', event(220, 0));
+    });
+    expect(screen.getByRole('tab', { name: '전국 트렌드', selected: true })).toBeOnTheScreen();
+    expect(screen.getByText('전국 트렌드 장소')).toBeOnTheScreen();
   });
 
   test('medium 홈은 확장 전용 트리를 지연하고 첫 탭 feedback과 overlay 입력 상태를 보장한다', async () => {

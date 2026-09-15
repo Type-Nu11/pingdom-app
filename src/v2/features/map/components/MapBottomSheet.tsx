@@ -53,6 +53,7 @@ import {
 import { FavoriteIcon } from '../../../shared/components';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
+import { useMapFeedSwipe } from '../hooks/useMapFeedSwipe';
 import type { PlaceOperatingSummaryText, ReservationCtaState } from '../../place-detail';
 import GlassSurface from './GlassSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
@@ -907,6 +908,7 @@ const ExpandedHomeContent = ({
   const { width: windowWidth } = useWindowDimensions();
   const [gridWidth, setGridWidth] = useState<number | null>(null);
   const gridCardSize = getMapGridCardSize(gridWidth ?? windowWidth - SHEET_RESTING_GAP * 2);
+  const { panHandlers: feedPanHandlers, blockHorizontalSwipe } = useMapFeedSwipe(feed, onFeedChange);
   const [hasRenderedExpandedContent, setHasRenderedExpandedContent] = useState(
     expandedInteractionsEnabled,
   );
@@ -928,6 +930,7 @@ const ExpandedHomeContent = ({
   }, [expandedInteractionsEnabled]);
 
   return (
+    <View {...feedPanHandlers} style={styles.expandedScroll} testID="map-feed-swipe">
     <ScrollView
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
@@ -946,6 +949,8 @@ const ExpandedHomeContent = ({
       >
         <ScrollView
           contentContainerStyle={styles.expandedFeaturedRow}
+          onTouchStart={blockHorizontalSwipe}
+          testID="map-feed-featured-scroll"
           horizontal
           nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
@@ -981,6 +986,8 @@ const ExpandedHomeContent = ({
 
             <ScrollView
               contentContainerStyle={styles.categoryRow}
+              onTouchStart={blockHorizontalSwipe}
+              testID="map-feed-category-scroll"
               horizontal
               nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
@@ -1030,6 +1037,7 @@ const ExpandedHomeContent = ({
         ) : null}
       </FadeSlideTransition>
     </ScrollView>
+    </View>
   );
 };
 
