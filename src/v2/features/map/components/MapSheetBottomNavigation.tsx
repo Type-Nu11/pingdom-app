@@ -106,7 +106,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 ? <FavoriteIcon selected={active} size={24} />
                 : active
                   ? <ActiveReservationIcon colors={colors} />
-                  : <CheckInAsset height={24} width={23} />;
+                  : <CheckInAsset color={colors.text} height={24} width={23} />;
 
             return (
               <Pressable
