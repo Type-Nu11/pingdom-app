@@ -2,7 +2,7 @@ import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useEffect, useState } from 'react';
 import { Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import PhotoIcon from '../../../../assets/v2/icons/edit/image.svg';
 import MoreIcon from '../../../../assets/v2/icons/place/etc_svg.svg';
@@ -32,6 +32,7 @@ function PlacePhoto({ index, name, url }: { index: number; name: string; url?: s
 
 export default function VisitPlaceCard({ candidate, onPress }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const distance = candidate.distanceMeters >= 1_000
     ? t('visitVerification.distanceKm', { value: (candidate.distanceMeters / 1_000).toFixed(1) })
     : t('visitVerification.distanceMeters', { value: Math.round(candidate.distanceMeters) });
@@ -55,7 +56,7 @@ export default function VisitPlaceCard({ candidate, onPress }: Props) {
           <Meta numberOfLines={1}>{distance} · {candidate.address}</Meta>
         </Copy>
         <Affordance accessibilityElementsHidden>
-          <MoreIcon color="#3B3B40" height={4} width={20} />
+          <MoreIcon color={colors.text} height={4} width={20} />
         </Affordance>
       </Heading>
       <Images>

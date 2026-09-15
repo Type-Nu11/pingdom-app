@@ -99,9 +99,9 @@ const BackButton = styled.Pressable`
   align-items: center;
   justify-content: center;
   border-radius: 22px;
-  background-color: rgba(255, 255, 255, 0.92);
+  background-color: ${({ theme }) => theme.colors.surfaceElevated};
   elevation: 2;
-  shadow-color: #11151b;
+  shadow-color: ${({ theme }) => theme.colors.shadow};
   shadow-offset: 0px 2px;
   shadow-opacity: 0.06;
   shadow-radius: 8px;

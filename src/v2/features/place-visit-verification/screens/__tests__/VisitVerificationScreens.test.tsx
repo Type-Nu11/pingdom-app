@@ -4,6 +4,7 @@ import React from 'react';
 import { ApiError } from '../../../../shared/api';
 import { registerVisitVerificationResources } from '../../i18n/visitVerificationResources';
 import { createTestI18n, renderWithProviders } from '../../../../shared/testing/testProviders';
+import { lightTheme } from '../../../../shared/theme';
 import VisitVerificationMapCta from '../../components/VisitVerificationMapCta';
 import VisitVerificationPlacesScreen from '../VisitVerificationPlacesScreen';
 import VisitVerificationReviewScreen from '../VisitVerificationReviewScreen';
@@ -164,7 +165,7 @@ test('review UI caps local photos and reasons without blocking submission for lo
   const view = await renderFeature(<VisitVerificationReviewScreen mediaPicker={mediaPicker} onBack={jest.fn()} onComplete={jest.fn()} placeId={17} />);
 
   expect(view.getByTestId('visit-photo-picker-icon')).toBeVisible();
-  expect(view.getByTestId('visit-review-input').props.placeholderTextColor).toBe('#767680');
+  expect(view.getByTestId('visit-review-input').props.placeholderTextColor).toBe(lightTheme.colors.textMuted);
   expect(view.getByTestId('visit-review-input')).toHaveStyle({ fontFamily: 'Pretendard' });
   for (const reason of ['kind', 'easyToFind', 'delicious', 'multilingual', 'parking', 'photoSpot', 'clean']) {
     expect(view.getByTestId(`visit-reason-icon-${reason}`, { includeHiddenElements: true })).toBeTruthy();
