@@ -1,20 +1,43 @@
 # PingDom V2
 
-V2 is isolated from the legacy application and follows a feature-first structure.
+V2 is isolated from legacy implementation. The current flat features migrate incrementally
+to the domain structure in [ADR 0001](../../docs/architecture/adr/0001-v2-domain-module-boundaries.md).
 
 Production entrypoint ownership and active composition bridges are documented in
 [`docs/v2-production-entrypoint-migration.md`](../../docs/v2-production-entrypoint-migration.md).
 
 ## Import boundaries
 
-- `app` composes providers and feature screens.
-- `features` may import from `shared` and `types`.
-- `shared` may import from `types`, but never from `features` or legacy code.
-- V2 code must not import legacy screens, stores, hooks, API clients, or styles.
-- `src/application` is the composition boundary that injects the production transport and active
-  bridge screens. `App.v2.tsx` is only an alias to that single production root.
-- V2 screens use `styled-components`; `StyleSheet.create` and screen-local design values are not allowed.
-- V2 application code reads environment values only through `shared/config/env.ts`.
+The target is `app → modules → shared`, with Place, Booking, User, Onboarding, Travel,
+Merchant and Voice Assistant modules. Existing `features` directories remain until their
+individual migration issues. See the ADR's [inventory and graph audit](../../docs/architecture/adr/0001-v2-boundary-audit.md)
+for all 28 feature owners, counts and removal issues #361/#358/#359/#360/#362.
+
+- External callers use a feature/module or subfeature public `index.ts`; internal
+  screen/hook/API/model/service/store/style/component indexes are not public entrypoints.
+- Public APIs use named exports, not `export *`. Type-only imports obey the same rules.
+- Shared cannot import domains or app; domains cannot import app. Module-internal relative
+  imports are allowed subject to data flow, cycle and legacy restrictions.
+- V2 must not import legacy source or escape V2, except static `src/assets/v2` assets.
+- Screens access APIs through hooks; feature/module hooks access shared API through domain API/model.
+- Production import cycles (including types/dynamic imports) and production imports of tests are forbidden.
+- `src/application` owns production composition/runtime injection only. Existing bridges are
+  frozen individually; semantic domain ownership also requires review.
+- V2 uses styled-components, reads environment values via `shared/config/env.ts`, and
+  imports axios only in `shared/api`. Comments and strings are not syntax violations.
+
+`npm run check:v2` checks the graph and runs its fixture tests; `validate:pr` includes both.
+`npm run test:v2-boundaries` runs the fixtures separately. `npm run audit:v2-boundaries`
+prints current inventory, graph and SCCs without modifying the baseline.
+[Exact migration exceptions](../../scripts/v2-boundaries/exceptions.json) include source,
+target, specifier, type/test flags, maximum count, reason and removal issue. New violations,
+extra occurrences and stale exceptions fail. Tests are checked too; existing integration
+imports have explicit exceptions, not a blanket test bypass.
+
+`app/i18n` composes feature-owned resources and registers them with the shared instance.
+Production and development providers use that initializer; the app test provider consumes
+that same resource object. Shared owns language hydration, base copy and formatters.
+The shared test-provider path is a test-only compatibility entrypoint until #360.
 
 ## Feature data flow
 
