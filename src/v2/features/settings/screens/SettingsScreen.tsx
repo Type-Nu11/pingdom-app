@@ -4,17 +4,13 @@ import {
   ActivityIndicator,
   Alert,
   BackHandler,
-  Switch,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import { useProfile } from '../../my-page/hooks/useProfile';
-import {
-  useNotificationSettings,
-  useUpdateNotificationSettings,
-} from '../../notifications/hooks/useNotificationSettings';
+import NotificationSettingsScreen from '../../notifications/screens/NotificationSettingsScreen';
 import { HeaderBackButton } from '../../../shared/components';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
 import { SETTINGS_DETAIL_IDS, type SettingsDetailId } from '../model/settings.types';
@@ -79,37 +75,6 @@ function SettingsRow({
   );
 }
 
-type ToggleRowProps = {
-  description?: string;
-  disabled?: boolean;
-  label: string;
-  onValueChange?: (value: boolean) => void;
-  value: boolean;
-};
-
-function ToggleRow({ description, disabled = false, label, onValueChange, value }: ToggleRowProps) {
-  const theme = useTheme();
-  return (
-    <ToggleContainer>
-      <ToggleCopy>
-        <RowLabel $disabled={disabled}>{label}</RowLabel>
-        {description ? <ToggleDescription>{description}</ToggleDescription> : null}
-      </ToggleCopy>
-      <Switch
-        accessibilityLabel={label}
-        accessibilityRole="switch"
-        accessibilityState={{ checked: value, disabled }}
-        disabled={disabled}
-        ios_backgroundColor={theme.colors.disabled}
-        onValueChange={onValueChange}
-        thumbColor={value ? theme.colors.onPrimary : theme.colors.surfaceElevated}
-        trackColor={{ false: theme.colors.disabled, true: theme.colors.primary }}
-        value={value}
-      />
-    </ToggleContainer>
-  );
-}
-
 type HeaderProps = {
   onBack: () => void;
   title: string;
@@ -167,8 +132,6 @@ export default function SettingsScreen({
   }, [navigateDetail, onOpenProfileEdit]);
   const logoutLock = useRef(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const notificationsQuery = useNotificationSettings();
-  const updateNotifications = useUpdateNotificationSettings();
 
   const goBack = useCallback(() => {
     if (localDetail) { setLocalDetail(null); return; }
@@ -206,26 +169,6 @@ export default function SettingsScreen({
     }
   }, [onLogout, onOpenDetail, t]);
 
-  const updateNotificationSetting = useCallback((update: {
-    newHotplaceEnabled?: boolean;
-    newLikeEnabled?: boolean;
-  }) => {
-    if (updateNotifications.isPending) return;
-    updateNotifications.mutate(update, {
-      onError: () => Alert.alert(
-        t('settings.notifications.updateFailedTitle'),
-        t('settings.notifications.updateFailedDescription'),
-      ),
-    });
-  }, [t, updateNotifications]);
-
-  const setting = notificationsQuery.data;
-  const notificationsDisabled = notificationsQuery.isLoading || updateNotifications.isPending;
-  const allNotificationsEnabled = Boolean(setting?.newHotplaceEnabled && setting?.newLikeEnabled);
-  const anyNotificationEnabled = Boolean(setting?.newHotplaceEnabled || setting?.newLikeEnabled);
-  const notificationStatus = notificationsQuery.isLoading || notificationsQuery.isError
-    ? undefined
-    : t(anyNotificationEnabled ? 'settings.values.on' : 'settings.values.off');
   const canOpenTouristProfile = Boolean(profile) && profile?.role !== 'MERCHANT_OWNER';
   const appearanceValueKeys: Record<AppearancePreference, string> = {
     SYSTEM: 'settings.appearance.system',
@@ -233,6 +176,7 @@ export default function SettingsScreen({
     DARK: 'settings.appearance.dark',
   };
 
+  if (page === 'notifications') return <NotificationSettingsScreen onBack={goBack} />;
   if (localDetail) return <SettingsDetailScreen detail={localDetail} onBack={goBack} />;
 
   return (
@@ -280,7 +224,6 @@ export default function SettingsScreen({
               <SettingsRow
                 label={t('settings.rows.notificationSettings')}
                 onPress={onOpenNotificationSettings ?? (() => setPage('notifications'))}
-                value={notificationStatus}
               />
             </SettingsSection>
 
@@ -346,55 +289,6 @@ export default function SettingsScreen({
                 <DangerLabel>{t('settings.deleteAccount')}</DangerLabel>
               </FooterButton>
             </FooterActions>
-          </Content>
-        </>
-      ) : null}
-
-      {page === 'notifications' ? (
-        <>
-          <SettingsHeader onBack={goBack} title={t('settings.notifications.title')} />
-          <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
-            {notificationsQuery.isError ? (
-              <ErrorBanner accessibilityRole="alert">
-                <ErrorText>{t('settings.notifications.loadFailed')}</ErrorText>
-              </ErrorBanner>
-            ) : null}
-            <SettingsSection>
-              <ToggleRow
-                description={t('settings.notifications.pushAllDescription')}
-                disabled={notificationsDisabled || notificationsQuery.isError}
-                label={t('settings.notifications.pushAll')}
-                onValueChange={(value) => updateNotificationSetting({
-                  newHotplaceEnabled: value,
-                  newLikeEnabled: value,
-                })}
-                value={allNotificationsEnabled}
-              />
-            </SettingsSection>
-            <SettingsSection title={t('settings.notifications.recordsSection')}>
-              <ToggleRow
-                description={t('settings.notifications.hotplaceDescription')}
-                disabled={notificationsDisabled || notificationsQuery.isError}
-                label={t('settings.notifications.hotplace')}
-                onValueChange={(value) => updateNotificationSetting({ newHotplaceEnabled: value })}
-                value={Boolean(setting?.newHotplaceEnabled)}
-              />
-              <ToggleRow
-                description={t('settings.notifications.likeDescription')}
-                disabled={notificationsDisabled || notificationsQuery.isError}
-                label={t('settings.notifications.like')}
-                onValueChange={(value) => updateNotificationSetting({ newLikeEnabled: value })}
-                value={Boolean(setting?.newLikeEnabled)}
-              />
-            </SettingsSection>
-            <SettingsSection title={t('settings.notifications.otherSection')}>
-              <ToggleRow
-                description={t('settings.notifications.quietDescription')}
-                disabled
-                label={t('settings.notifications.quiet')}
-                value={Boolean(setting?.quietHoursEnabled)}
-              />
-            </SettingsSection>
           </Content>
         </>
       ) : null}
@@ -508,26 +402,6 @@ const RowValue = styled(AppText)`
   line-height: 20px;
 `;
 
-const ToggleContainer = styled.View`
-  align-items: center;
-  flex-direction: row;
-  min-height: 64px;
-  justify-content: space-between;
-  padding: 8px 0;
-`;
-
-const ToggleCopy = styled.View`
-  flex: 1;
-  margin-right: 16px;
-`;
-
-const ToggleDescription = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 12px;
-  line-height: 17px;
-  margin-top: 2px;
-`;
-
 const FooterActions = styled.View`
   align-items: flex-start;
   gap: 4px;
@@ -549,16 +423,4 @@ const FooterLabel = styled(AppText)`
 const DangerLabel = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
   font-size: 14px;
-`;
-
-const ErrorBanner = styled.View`
-  background-color: ${({ theme }) => theme.colors.dangerSoft};
-  margin: 8px 16px 0;
-  padding: 12px;
-`;
-
-const ErrorText = styled(AppText)`
-  color: ${({ theme }) => theme.colors.danger};
-  font-size: 13px;
-  line-height: 18px;
 `;

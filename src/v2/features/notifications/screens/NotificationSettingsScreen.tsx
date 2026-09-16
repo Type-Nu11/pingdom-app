@@ -1,258 +1,158 @@
-import { Text as AppText } from '../../../shared/components/Typography';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import { HeaderBackButton } from '../../../shared/components';
-import { ErrorState, LoadingState } from '../../../shared/components';
+import { Text as AppText } from '../../../shared/components/Typography';
+import { HeaderBackButton, ErrorState, LoadingState } from '../../../shared/components';
 import NotificationSettingToggle from '../components/NotificationSettingToggle';
+import { useNotificationSettings, useUpdateNotificationSettings } from '../hooks/useNotificationSettings';
+import { notificationSettingsErrorKey, quietHoursPresentation } from '../model/settingsPresentation';
+import {
+  isNotificationPermissionGranted, notificationPermissionAdapter,
+  type NotificationPermissionAdapter, type NotificationPermissionStatus,
+} from '../services/notificationPermission';
 
-const SETTING_KEYS = [
-  'pushAll',
-  'firstRecordTrending',
-  'recordNewTags',
-  'favoriteMoodChange',
-  'frequentAreaHotPlace',
-  'todayMissionArea',
-  'weeklyReport',
-  'nightNotifications',
-  'marketingEvents',
+const CATEGORY_FIELDS = ['newHotplaceEnabled', 'newLikeEnabled'] as const;
+type CategoryField = typeof CATEGORY_FIELDS[number];
+const DESIGN_SECTIONS = [
+  { title: 'records', keys: ['firstRecordTrending', 'recordNewTags'] },
+  { title: 'interests', keys: ['favoriteMoodChange', 'frequentAreaHotPlace', 'todayMissionArea'] },
+  { title: 'reports', keys: ['weeklyReport'] },
+  { title: 'other', keys: ['nightNotifications', 'marketingEvents'] },
 ] as const;
-
-export type NotificationSettingKey = (typeof SETTING_KEYS)[number];
-export type NotificationSettingValues = Record<NotificationSettingKey, boolean>;
-
-export type NotificationSettingPresentationState = {
-  errorMessage?: string;
-  isLoading?: boolean;
-};
-
-// These are visual defaults from the approved design only. They are deliberately
-// kept out of storage and API state until notification consent policy is defined.
-export const DEFAULT_NOTIFICATION_SETTING_VALUES: NotificationSettingValues = {
-  favoriteMoodChange: true,
-  firstRecordTrending: true,
-  frequentAreaHotPlace: true,
-  marketingEvents: false,
-  nightNotifications: false,
-  pushAll: true,
-  recordNewTags: true,
-  todayMissionArea: false,
-  weeklyReport: true,
-};
-
-type ScreenState = 'error' | 'loading' | 'ready';
 
 export type NotificationSettingsScreenProps = {
-  initialValues?: Partial<NotificationSettingValues>;
   onBack: () => void;
-  onRetry?: () => void;
-  presentationStates?: Partial<Record<NotificationSettingKey, NotificationSettingPresentationState>>;
-  state?: ScreenState;
+  permissionAdapter?: NotificationPermissionAdapter;
 };
 
-type SettingDefinition = {
-  descriptionKey?: string;
-  key: NotificationSettingKey;
-  labelKey: string;
-};
+/** Single server-backed screen, composed by SettingsScreen's production detail page. */
+export default function NotificationSettingsScreen({ onBack, permissionAdapter = notificationPermissionAdapter }: NotificationSettingsScreenProps) {
+  const { t, i18n } = useTranslation();
+  const query = useNotificationSettings();
+  const mutation = useUpdateNotificationSettings();
+  const [permission, setPermission] = useState<NotificationPermissionStatus | 'loading'>('loading');
+  const [pending, setPending] = useState<Partial<Record<CategoryField, boolean>>>({});
+  const [errors, setErrors] = useState<Partial<Record<CategoryField, string>>>({});
+  const locks = useRef(new Set<CategoryField>());
+  const mounted = useRef(false);
+  const permissionRevision = useRef(0);
 
-type SectionDefinition = {
-  key: string;
-  settings: readonly SettingDefinition[];
-  titleKey?: string;
-};
+  useEffect(() => {
+    mounted.current = true;
+    const refresh = async () => {
+      const revision = ++permissionRevision.current;
+      let status: NotificationPermissionStatus;
+      try { status = await permissionAdapter.read(); } catch { status = 'error'; }
+      if (mounted.current && permissionRevision.current === revision) setPermission(status);
+    };
+    void refresh();
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refresh();
+    });
+    return () => { mounted.current = false; ++permissionRevision.current; subscription.remove(); };
+  }, [permissionAdapter]);
 
-const SECTIONS: readonly SectionDefinition[] = [
-  {
-    key: 'push',
-    settings: [{
-      descriptionKey: 'notificationSettings.settings.pushAll.description',
-      key: 'pushAll',
-      labelKey: 'notificationSettings.settings.pushAll.label',
-    }],
-  },
-  {
-    key: 'records',
-    settings: [
-      {
-        descriptionKey: 'notificationSettings.settings.firstRecordTrending.description',
-        key: 'firstRecordTrending',
-        labelKey: 'notificationSettings.settings.firstRecordTrending.label',
-      },
-      {
-        descriptionKey: 'notificationSettings.settings.recordNewTags.description',
-        key: 'recordNewTags',
-        labelKey: 'notificationSettings.settings.recordNewTags.label',
-      },
-    ],
-    titleKey: 'notificationSettings.sections.records',
-  },
-  {
-    key: 'interests',
-    settings: [
-      {
-        descriptionKey: 'notificationSettings.settings.favoriteMoodChange.description',
-        key: 'favoriteMoodChange',
-        labelKey: 'notificationSettings.settings.favoriteMoodChange.label',
-      },
-      {
-        descriptionKey: 'notificationSettings.settings.frequentAreaHotPlace.description',
-        key: 'frequentAreaHotPlace',
-        labelKey: 'notificationSettings.settings.frequentAreaHotPlace.label',
-      },
-      {
-        key: 'todayMissionArea',
-        labelKey: 'notificationSettings.settings.todayMissionArea.label',
-      },
-    ],
-    titleKey: 'notificationSettings.sections.interests',
-  },
-  {
-    key: 'reports',
-    settings: [{
-      descriptionKey: 'notificationSettings.settings.weeklyReport.description',
-      key: 'weeklyReport',
-      labelKey: 'notificationSettings.settings.weeklyReport.label',
-    }],
-    titleKey: 'notificationSettings.sections.reports',
-  },
-  {
-    key: 'other',
-    settings: [
-      {
-        descriptionKey: 'notificationSettings.settings.nightNotifications.description',
-        key: 'nightNotifications',
-        labelKey: 'notificationSettings.settings.nightNotifications.label',
-      },
-      {
-        key: 'marketingEvents',
-        labelKey: 'notificationSettings.settings.marketingEvents.label',
-      },
-    ],
-    titleKey: 'notificationSettings.sections.other',
-  },
-] as const;
-
-export default function NotificationSettingsScreen({
-  initialValues,
-  onBack,
-  onRetry,
-  presentationStates = {},
-  state = 'ready',
-}: NotificationSettingsScreenProps) {
-  const { t } = useTranslation();
-  const [values, setValues] = useState<NotificationSettingValues>(() => ({
-    ...DEFAULT_NOTIFICATION_SETTING_VALUES,
-    ...initialValues,
-  }));
-
-  const setValue = (key: NotificationSettingKey, value: boolean) => {
-    setValues((current) => ({ ...current, [key]: value }));
+  const change = async (field: CategoryField, value: boolean) => {
+    if (locks.current.has(field) || query.isError || typeof query.data?.[field] !== 'boolean') return;
+    locks.current.add(field);
+    setPending((current) => ({ ...current, [field]: true }));
+    setErrors((current) => ({ ...current, [field]: undefined }));
+    try {
+      if (value) {
+        ++permissionRevision.current;
+        let status: NotificationPermissionStatus;
+        try {
+          status = await permissionAdapter.read();
+          if (!mounted.current) return;
+          if (!isNotificationPermissionGranted(status) && (status === 'notDetermined' || status === 'denied')) {
+            status = await permissionAdapter.request();
+          }
+        } catch { status = 'error'; }
+        if (!mounted.current) return;
+        ++permissionRevision.current;
+        setPermission(status);
+        if (!isNotificationPermissionGranted(status)) {
+          setErrors((current) => ({ ...current, [field]: `notificationSettings.permission.${status}` }));
+          return;
+        }
+      }
+      if (!mounted.current) return;
+      await mutation.mutateAsync({ [field]: value });
+    } catch (error) {
+      if (mounted.current) setErrors((current) => ({ ...current, [field]: notificationSettingsErrorKey(error) }));
+    } finally {
+      locks.current.delete(field);
+      if (mounted.current) setPending((current) => ({ ...current, [field]: false }));
+    }
   };
+
+  const quiet = quietHoursPresentation(query.data, i18n.resolvedLanguage ?? i18n.language);
+  const unsupported = (key: string) => key === 'pushAll' ? t('notificationSettings.contract.allUnsupported')
+    : key === 'nightNotifications' ? t('notificationSettings.contract.nightUnsupported')
+      : t('notificationSettings.contract.unsupported');
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-notification-settings-screen">
-      <TopBar>
+      <Header>
         <HeaderBackButton accessibilityLabel={t('notificationSettings.back')} onPress={onBack} />
-        <TopBarTitle>{t('notificationSettings.title')}</TopBarTitle>
-        <TopBarSpacer />
-      </TopBar>
-
-      {state === 'loading' ? (
-        <StateSlot>
-          <LoadingState description={t('notificationSettings.loading')} fill />
-        </StateSlot>
-      ) : state === 'error' ? (
-        <StateSlot>
-          <ErrorState
-            actionLabel={onRetry ? t('notificationSettings.retry') : undefined}
-            description={t('notificationSettings.error')}
-            fill
-            onAction={onRetry}
-          />
-        </StateSlot>
-      ) : (
-        <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
-          {SECTIONS.map((section, sectionIndex) => (
-            <Section $isLast={sectionIndex === SECTIONS.length - 1} key={section.key}>
-              {section.titleKey ? <SectionTitle>{t(section.titleKey)}</SectionTitle> : null}
-              <SettingList>
-                {section.settings.map((setting) => {
-                  const presentationState = presentationStates[setting.key];
-
-                  return (
-                    <NotificationSettingToggle
-                      description={setting.descriptionKey ? t(setting.descriptionKey) : undefined}
-                      errorMessage={presentationState?.errorMessage}
-                      isLoading={presentationState?.isLoading}
-                      key={setting.key}
-                      label={t(setting.labelKey)}
-                      onValueChange={(value) => setValue(setting.key, value)}
-                      testID={`notification-setting-${setting.key}`}
-                      value={values[setting.key]}
-                    />
-                  );
-                })}
-              </SettingList>
-            </Section>
-          ))}
-        </Content>
-      )}
+        <Title>{t('notificationSettings.title')}</Title><Spacer />
+      </Header>
+      <Content contentContainerStyle={{ paddingBottom: 40 }}>
+        <Section>
+          <Title>{t('notificationSettings.permission.title')}</Title>
+          <Description accessibilityLiveRegion="polite">{t(`notificationSettings.permission.${permission}`)}</Description>
+          <Description>{t('notificationSettings.permission.description')}</Description>
+          <Action accessibilityRole="button" accessibilityLabel={t('notificationSettings.permission.openSettings')}
+            onPress={() => { void permissionAdapter.openSettings().catch(() => { if (mounted.current) setPermission('error'); }); }}>
+            <ActionLabel>{t('notificationSettings.permission.openSettings')}</ActionLabel>
+          </Action>
+          <NotificationSettingToggle disabled label={t('notificationSettings.settings.pushAll.label')}
+            description={unsupported('pushAll')} testID="notification-setting-pushAll" />
+        </Section>
+        {query.isPending ? <LoadingState description={t('notificationSettings.loading')} /> : query.isError ? (
+          <ErrorState description={t(notificationSettingsErrorKey(query.error, 'notificationSettings.error'))}
+            actionLabel={t('notificationSettings.retry')} onAction={() => { void query.refetch(); }} />
+        ) : (
+          <Section>
+            <Title>{t('notificationSettings.contract.categories')}</Title>
+            {CATEGORY_FIELDS.map((field) => (
+              <NotificationSettingToggle key={field} label={t(`notificationSettings.contract.${field}`)}
+                description={typeof query.data?.[field] === 'boolean' ? t('notificationSettings.contract.categoryHint') : t('notificationSettings.contract.unknown')}
+                disabled={typeof query.data?.[field] !== 'boolean'} isLoading={pending[field]}
+                errorMessage={errors[field] ? t(errors[field]) : undefined}
+                value={typeof query.data?.[field] === 'boolean' ? query.data[field] : undefined}
+                onValueChange={(value) => { void change(field, value); }} testID={`notification-setting-${field}`} />
+            ))}
+            <NotificationSettingToggle disabled label={t('notificationSettings.contract.quietHours')}
+              description={t('notificationSettings.contract.quietReadOnly')}
+              value={typeof query.data?.quietHoursEnabled === 'boolean' ? query.data.quietHoursEnabled : undefined}
+              testID="notification-setting-quietHoursEnabled" />
+            <Description>{quiet ?? t('notificationSettings.contract.quietIncomplete')}</Description>
+            {typeof query.data?.quietHoursEnabled !== 'boolean' ? <Description>{t('notificationSettings.contract.unknown')}</Description> : null}
+          </Section>
+        )}
+        {DESIGN_SECTIONS.map((section) => (
+          <Section key={section.title}>
+            <Title>{t(`notificationSettings.sections.${section.title}`)}</Title>
+            {section.keys.map((key) => <NotificationSettingToggle key={key} disabled
+              label={t(`notificationSettings.settings.${key}.label`)} description={unsupported(key)}
+              testID={`notification-setting-${key}`} />)}
+          </Section>
+        ))}
+      </Content>
     </Screen>
   );
 }
 
-const CONTENT_CONTAINER_STYLE = { flexGrow: 1 } as const;
-
-const Screen = styled(SafeAreaView)`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const TopBar = styled.View`
-  height: 84px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 ${({ theme }) => theme.spacing.md}px;
-`;
-
-const TopBarTitle = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: 600;
-`;
-
-const TopBarSpacer = styled.View`
-  width: 44px;
-  height: 44px;
-`;
-
-const Content = styled.ScrollView`
-  flex: 1;
-`;
-
-const Section = styled.View<{ $isLast: boolean }>`
-  width: 100%;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
-  border-bottom-width: ${({ $isLast }) => ($isLast ? 0 : 8)}px;
-  border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
-`;
-
-const SectionTitle = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 28px;
-`;
-
-const SettingList = styled.View`
-  width: 100%;
-`;
-
-const StateSlot = styled.View`
-  flex: 1;
-`;
+const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
+const Header = styled.View`min-height: 56px; padding: 0 16px; flex-direction: row; align-items: center; justify-content: space-between;`;
+const Spacer = styled.View`width: 44px;`;
+const Content = styled.ScrollView`flex: 1;`;
+const Section = styled.View`padding: 16px; border-bottom-width: 8px; border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted}; gap: 8px;`;
+const Title = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 16px; font-weight: 600; flex-shrink: 1;`;
+const Description = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: 13px; line-height: 20px;`;
+const Action = styled.Pressable`min-height: 44px; justify-content: center;`;
+const ActionLabel = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; font-size: 14px;`;

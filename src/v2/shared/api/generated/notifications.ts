@@ -4,27 +4,6 @@
  */
 
 export interface paths {
-    "/firebase/fcm-token": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * FCM 토큰 업데이트
-         * @deprecated
-         * @description 하위 호환성을 위한 기존 엔드포인트입니다. 곧 지원 중단될 예정이므로 POST /firebase/fcm-tokens를 사용하세요.
-         */
-        patch: operations["updateFcmToken"];
-        trace?: never;
-    };
     "/firebase/fcm-tokens": {
         parameters: {
             query?: never;
@@ -77,6 +56,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description 에러 응답 */
+        ErrorResponse: {
+            /**
+             * @description 에러 메시지
+             * @example 유효하지 않은 토큰입니다.
+             */
+            message: string;
+            /**
+             * @description 도메인 에러 코드. 일부 공통 검증 오류에서는 제공되지 않을 수 있습니다.
+             * @example INVALID_TOKEN
+             */
+            code?: string | null;
+        };
         /** @description FCM 토큰 업데이트 요청 */
         FcmTokenRequest: {
             /**
@@ -155,6 +147,15 @@ export interface components {
              */
             timezone?: string;
         };
+        /** @description 필드 검증 오류 응답 */
+        ValidationErrorResponse: {
+            message: string;
+            /** @example VALIDATION_FAILED */
+            code: string;
+            errors: {
+                [key: string]: string;
+            };
+        };
     };
     responses: never;
     parameters: never;
@@ -164,59 +165,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    updateFcmToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description 최신 FCM 기기 토큰 */
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FcmTokenRequest"];
-            };
-        };
-        responses: {
-            /** @description 토큰 업데이트 성공 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description 인증 실패 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "message": "유효하지 않은 토큰입니다.",
-                     *       "code": "INVALID_TOKEN"
-                     *     }
-                     */
-                    "*/*": unknown;
-                };
-            };
-            /** @description 사용자를 찾을 수 없음 */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "message": "사용자를 찾을 수 없습니다.",
-                     *       "code": "USER_NOT_FOUND"
-                     *     }
-                     */
-                    "*/*": unknown;
-                };
-            };
-        };
-    };
     registerFcmToken: {
         parameters: {
             query?: never;
@@ -236,6 +184,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };
@@ -258,6 +233,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };
@@ -287,6 +289,24 @@ export interface operations {
                      *     }
                      */
                     "*/*": components["schemas"]["NotificationSettingResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -326,6 +346,24 @@ export interface operations {
                      *     }
                      */
                     "*/*": unknown;
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
