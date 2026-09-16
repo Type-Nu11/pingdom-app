@@ -18,6 +18,7 @@ type FirebaseMessagingModule = {
   };
   getInitialNotification: (messaging: unknown) => Promise<FirebaseRemoteMessage | null>;
   getToken: (messaging: unknown) => Promise<string>;
+  hasPermission: (messaging: unknown) => Promise<number>;
   onMessage: (
     messaging: unknown,
     listener: (message: FirebaseRemoteMessage) => void,
