@@ -1,3 +1,4 @@
+import { foregroundPermission } from './foregroundPermission';
 import * as Location from 'expo-location';
 
 export type CurrentCoordinate = {
@@ -14,9 +15,9 @@ export type CurrentLocationOutcome =
 
 export async function getCurrentCoordinate(): Promise<CurrentLocationOutcome> {
   try {
-    let permission = await Location.getForegroundPermissionsAsync();
+    let permission = await foregroundPermission.get();
     if (permission.status !== 'granted' && permission.canAskAgain) {
-      permission = await Location.requestForegroundPermissionsAsync();
+      permission = await foregroundPermission.request();
     }
     if (permission.status !== 'granted') return { status: 'denied', coordinate: null };
 
