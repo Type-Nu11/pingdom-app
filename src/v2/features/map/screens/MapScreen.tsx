@@ -606,7 +606,7 @@ export default function MapScreen({
           author: t(review.authorKey),
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
-          tags: review.tags,
+          tags: review.reasonKeys?.map((key) => t(key)) ?? review.tags,
           text: review.text,
         })),
         summary: selectedPlacePresentation.touristSummary
