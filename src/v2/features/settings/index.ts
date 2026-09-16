@@ -1,3 +1,4 @@
+export { default as SettingsDetailScreen } from './screens/SettingsDetailScreen';
 export { default as AccountManagementScreen } from './screens/AccountManagementScreen';
 export { default as LanguageSettingsScreen } from './screens/LanguageSettingsScreen';
 export { default as SettingsDetailPendingScreen } from './screens/SettingsDetailPendingScreen';

@@ -6,7 +6,7 @@ import { useFcmTokenSync } from '../../features/notifications/hooks/useFcmTokenS
 import { useForegroundNotifications } from '../../features/notifications/hooks/useForegroundNotifications';
 import { useNotificationOpenSync } from '../../features/notifications/hooks/useNotificationOpenSync';
 import type { NotificationRoute } from '../../features/notifications/model/notification.types';
-import NotificationSettingsScreen from '../../features/notifications/screens/NotificationSettingsScreen';
+import { useSettingsDetailRedirect, useSettingsNavigation } from '../../features/settings/hooks/useSettingsNavigation';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import MapScreen from '../../features/map/screens/MapScreen';
 import CouponBoxScreen from '../../features/my-page/screens/CouponBoxScreen';
@@ -20,7 +20,8 @@ import ReservationBoxScreen from '../../features/reservations/screens/Reservatio
 import ReservationDetailScreen from '../../features/reservations/screens/ReservationDetailScreen';
 import {
   AccountManagementScreen,
-  SettingsDetailPendingScreen,
+  SettingsDetailScreen,
+  SETTINGS_DETAIL_IDS,
   SettingsScreen,
 } from '../../features/settings';
 import {
@@ -132,14 +133,16 @@ function CouponDetailRoute({ navigation, route }: V2ScreenProps<'CouponDetail'>)
   );
 }
 
-function SettingsRouteScreen({ navigation }: V2ScreenProps<'Settings'>) {
+export function SettingsRouteScreen({ navigation }: V2ScreenProps<'Settings'>) {
+  const openDetail = useSettingsNavigation(navigation);
   return (
     <SettingsScreen
       onBack={navigation.goBack}
-      onOpenAccountManagement={() => navigation.navigate(V2_ROUTES.AccountManagement)}
-      onOpenDetail={(detail) => navigation.navigate(V2_ROUTES.SettingsDetail, { detail })}
-      onOpenNotificationSettings={() => navigation.navigate(V2_ROUTES.NotificationSettings)}
-      onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
+      onLogout={clearTokenSession}
+      onOpenAccountManagement={() => openDetail(SETTINGS_DETAIL_IDS.AccountManagement)}
+      onOpenDetail={openDetail}
+      onOpenNotificationSettings={() => openDetail(SETTINGS_DETAIL_IDS.NotificationSettings)}
+      onOpenProfileEdit={() => openDetail(SETTINGS_DETAIL_IDS.ProfileEdit)}
     />
   );
 }
@@ -148,18 +151,22 @@ function ProfileEditRouteScreen({ navigation }: V2ScreenProps<'ProfileEdit'>) {
   return <ProfileEditScreen onBack={navigation.goBack} />;
 }
 
-function AccountManagementRouteScreen({ navigation }: V2ScreenProps<'AccountManagement'>) {
+export function AccountManagementRouteScreen({ navigation }: V2ScreenProps<'AccountManagement'>) {
+  const openDetail = useSettingsNavigation(navigation);
   return (
     <AccountManagementScreen
+      onLogout={clearTokenSession}
       onBack={navigation.goBack}
-      onOpenDetail={(detail) => navigation.navigate(V2_ROUTES.SettingsDetail, { detail })}
+      onOpenDetail={openDetail}
     />
   );
 }
 
 function SettingsDetailRouteScreen({ navigation, route }: V2ScreenProps<'SettingsDetail'>) {
+  const redirecting = useSettingsDetailRedirect(navigation, route.params.detail);
+  if (redirecting) return null;
   return (
-    <SettingsDetailPendingScreen
+    <SettingsDetailScreen
       detail={route.params.detail}
       onBack={navigation.goBack}
     />
@@ -167,7 +174,7 @@ function SettingsDetailRouteScreen({ navigation, route }: V2ScreenProps<'Setting
 }
 
 function NotificationSettingsRoute({ navigation }: V2ScreenProps<'NotificationSettings'>) {
-  return <NotificationSettingsScreen onBack={navigation.goBack} />;
+  return <SettingsScreen initialPage="notifications" onBack={navigation.goBack} />;
 }
 
 function VisitVerificationPlacesRoute({ navigation }: V2ScreenProps<'VisitVerificationPlaces'>) {
