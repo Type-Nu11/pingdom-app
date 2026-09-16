@@ -1,3 +1,4 @@
+import { voiceAssistantResources } from '../../features/voice-assistant/i18n/voiceAssistantResources';
 import { offerCouponResources } from '../../features/offers-coupons/i18n/offerCouponResources';
 import { reservationResources } from '../../features/reservations/i18n/reservationResources';
 import { visitVerificationResources } from '../../features/place-visit-verification/i18n/visitVerificationResources';
@@ -8,6 +9,7 @@ export const resources = {
       ...offerCouponResources.en,
       ...reservationResources.en,
       visitVerification: visitVerificationResources.en,
+      voiceAssistant: voiceAssistantResources.en,
       selectLanguage: {
         title: 'Select Language', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
         logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean' }, progress: 'Step {{current}} of {{total}}',
@@ -948,6 +950,7 @@ export const resources = {
       ...offerCouponResources.ko,
       ...reservationResources.ko,
       visitVerification: visitVerificationResources.ko,
+      voiceAssistant: voiceAssistantResources.ko,
       selectLanguage: {
         title: '언어 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기',
         logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어' }, progress: '총 {{total}}단계 중 {{current}}단계',
