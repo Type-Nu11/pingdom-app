@@ -1,3 +1,4 @@
+import { foregroundPermission } from '../../../shared/location/foregroundPermission';
 import * as Location from 'expo-location';
 
 import type { Coordinate } from '../model/map.types';
@@ -24,14 +25,14 @@ export function getCurrentLocation() {
       accuracy: Location.Accuracy.Balanced,
     })),
     getPermission: async () => {
-      const permission = await Location.getForegroundPermissionsAsync();
+      const permission = await foregroundPermission.get();
       return {
         canAskAgain: permission.canAskAgain,
         status: permission.status,
       };
     },
     requestPermission: async () => {
-      const permission = await Location.requestForegroundPermissionsAsync();
+      const permission = await foregroundPermission.request();
       return {
         canAskAgain: permission.canAskAgain,
         status: permission.status,

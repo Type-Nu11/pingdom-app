@@ -1,92 +1,48 @@
 import { Text as AppText } from '../../../shared/components/Typography';
-import React, { useCallback } from 'react';
-import { Alert, Switch } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { BackHandler } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import styled, { useTheme } from 'styled-components/native';
-
+import styled from 'styled-components/native';
 import { HeaderBackButton } from '../../../shared/components';
-import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
+import { useForegroundPermission } from '../../../shared/location/useForegroundPermission';
+import type { ForegroundPermissionState } from '../../../shared/location/foregroundPermission';
+import DataExportScreen from './DataExportScreen';
 
-export type LocationPermissionPresentationState =
-  | 'denied'
-  | 'granted'
-  | 'notConnected'
-  | 'restricted';
+type Props = { onBack: () => void };
 
-type LocationPrivacyScreenProps = {
-  onBack: () => void;
-  permissionState?: LocationPermissionPresentationState;
-};
-
-type LocationToggleRowProps = {
-  description: string;
-  label: string;
-  value?: boolean;
-};
-
-function LocationToggleRow({ description, label, value = false }: LocationToggleRowProps) {
-  const { colors } = useTheme();
-  return (
-    <ToggleRow>
-      <ToggleCopy>
-        <RowLabel>{label}</RowLabel>
-        <RowDescription>{description}</RowDescription>
-      </ToggleCopy>
-      <Switch
-        accessibilityLabel={label}
-        accessibilityRole="switch"
-        accessibilityState={{ checked: value, disabled: true }}
-        disabled
-        ios_backgroundColor={colors.disabled}
-        thumbColor={value ? colors.onPrimary : colors.surfaceElevated}
-        trackColor={{ false: colors.disabled, true: colors.primary }}
-        value={value}
-      />
-    </ToggleRow>
-  );
+function StatusRow({ label, description, state = 'unsupported' }: {
+  label: string; description: string; state?: ForegroundPermissionState | 'unsupported';
+}) {
+  return <ToggleRow accessible accessibilityRole="text"
+    accessibilityLabel={`${label}, ${description}`} accessibilityLiveRegion="polite"
+    accessibilityState={{ busy: state === 'loading', disabled: state === 'unsupported' }}>
+    <ToggleCopy>
+      <RowLabel>{label}</RowLabel>
+      <StatusDescription $state={state}>{description}</StatusDescription>
+    </ToggleCopy>
+  </ToggleRow>;
 }
 
-type NavigationRowProps = {
-  destructive?: boolean;
-  label: string;
-  onPress: () => void;
-  value?: string;
-};
-
-function NavigationRow({ destructive = false, label, onPress, value }: NavigationRowProps) {
-  return (
-    <Row accessibilityLabel={label} accessibilityRole="button" onPress={onPress}>
-      <RowLabel $destructive={destructive}>{label}</RowLabel>
-      <RowTrailing>
-        {value ? <RowValue>{value}</RowValue> : null}
-        <ChevronIcon height={20} width={20} />
-      </RowTrailing>
-    </Row>
-  );
+export default function LocationPrivacyScreen({ onBack }: Props) {
+  const [exporting, setExporting] = useState(false);
+  useEffect(() => {
+    if (!exporting) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setExporting(false);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [exporting]);
+  if (exporting) return <DataExportScreen onBack={() => setExporting(false)} />;
+  return <LocationPrivacyContent onBack={onBack} onExport={() => setExporting(true)} />;
 }
 
-export default function LocationPrivacyScreen({
-  onBack,
-  permissionState = 'notConnected',
-}: LocationPrivacyScreenProps) {
+function LocationPrivacyContent({ onBack, onExport }: Props & { onExport: () => void }) {
   const { t } = useTranslation();
-  const permissionGranted = permissionState === 'granted';
-  const permissionDescription = t(`settings.location.permissionStates.${permissionState}`);
-
-  const showUnavailable = useCallback((title: string) => {
-    Alert.alert(title, t('settings.location.notConnectedDescription'), [
-      { text: t('settings.location.confirm') },
-    ]);
-  }, [t]);
-
-  const showDeleteSafety = useCallback(() => {
-    Alert.alert(
-      t('settings.location.deleteSafetyTitle'),
-      t('settings.location.deleteSafetyDescription'),
-      [{ style: 'cancel', text: t('settings.location.confirm') }],
-    );
-  }, [t]);
-
+  const { state, refresh, openSettings, settingsError, openingSettings } = useForegroundPermission();
+  const permissionDescription = t(`settings.location.permissionStates.${state}`);
+  const settingsAction = state === 'granted' || state === 'restricted' || state === 'unavailable';
+  const action = settingsAction ? 'openSettings' : state === 'denied' ? 'request' : 'retry';
   return (
     <Container testID="v2-location-privacy-screen">
       <Header>
@@ -94,72 +50,43 @@ export default function LocationPrivacyScreen({
         <HeaderTitle numberOfLines={1}>{t('settings.location.title')}</HeaderTitle>
         <HeaderSpacer />
       </Header>
-
       <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
         <InfoCard accessibilityRole="summary">
           <InfoText>{t('settings.location.description')}</InfoText>
         </InfoCard>
-
-        <Section>
-          <SectionInner>
-            <SectionTitle>{t('settings.location.locationSection')}</SectionTitle>
-            <LocationToggleRow
-              description={permissionDescription}
-              label={t('settings.location.device')}
-              value={permissionGranted}
-            />
-            <LocationToggleRow
-              description={t('settings.location.foregroundDescription')}
-              label={t('settings.location.foreground')}
-            />
-            <LocationToggleRow
-              description={t('settings.location.verificationDescription')}
-              label={t('settings.location.verification')}
-            />
-            <ConnectionNotice accessibilityRole="alert">
-              <ConnectionNoticeText>{t('settings.location.permissionNotice')}</ConnectionNoticeText>
-            </ConnectionNotice>
-          </SectionInner>
-        </Section>
-
-        <Section>
-          <SectionInner>
-            <SectionTitle>{t('settings.location.visibilitySection')}</SectionTitle>
-            <NavigationRow
-              label={t('settings.rows.footprintMap')}
-              onPress={() => showUnavailable(t('settings.rows.footprintMap'))}
-              value={t('settings.values.notConnected')}
-            />
-            <NavigationRow
-              label={t('settings.location.profileVisibility')}
-              onPress={() => showUnavailable(t('settings.location.profileVisibility'))}
-              value={t('settings.values.notConnected')}
-            />
-            <LocationToggleRow
-              description={t('settings.location.nicknameDescription')}
-              label={t('settings.location.nickname')}
-            />
-          </SectionInner>
-        </Section>
-
-        <Section>
-          <SectionInner>
-            <SectionTitle>{t('settings.location.dataSection')}</SectionTitle>
-            <NavigationRow
-              label={t('settings.location.download')}
-              onPress={() => showUnavailable(t('settings.location.download'))}
-            />
-            <NavigationRow
-              label={t('settings.rows.privacyPolicy')}
-              onPress={() => showUnavailable(t('settings.rows.privacyPolicy'))}
-            />
-            <NavigationRow
-              destructive
-              label={t('settings.location.deleteHistory')}
-              onPress={showDeleteSafety}
-            />
-          </SectionInner>
-        </Section>
+        <Section><SectionInner>
+          <SectionTitle>{t('settings.location.locationSection')}</SectionTitle>
+          <StatusRow label={t('settings.location.device')} description={permissionDescription} state={state} />
+          {state !== 'loading' ? <Row accessibilityRole="button"
+            accessibilityLabel={t(`settings.location.${action}`)}
+            accessibilityState={{ disabled: openingSettings, busy: openingSettings }} disabled={openingSettings}
+            onPress={() => { void (settingsAction ? openSettings() : refresh(state === 'denied')); }}>
+            <ActionLabel>{t(`settings.location.${action}`)}</ActionLabel>
+          </Row> : null}
+          {settingsError ? <StatusDescription $state="error" accessibilityRole="alert">
+            {t('settings.location.settingsError')}
+          </StatusDescription> : null}
+          <RowDescription>{t('settings.location.permissionNotice')}</RowDescription>
+          <StatusRow label={t('settings.location.foreground')} description={t('settings.location.foregroundDescription')} />
+          <StatusRow label={t('settings.location.verification')} state={state}
+            description={t(`settings.location.capability.${state}`)} />
+        </SectionInner></Section>
+        <Section><SectionInner>
+          <SectionTitle>{t('settings.location.visibilitySection')}</SectionTitle>
+          <StatusRow label={t('settings.rows.footprintMap')} description={t('settings.location.footprintDescription')} />
+          <StatusRow label={t('settings.location.profileVisibility')} description={t('settings.location.visibilityDescription')} />
+          <StatusRow label={t('settings.location.nickname')} description={t('settings.location.nicknameDescription')} />
+        </SectionInner></Section>
+        <Section><SectionInner>
+          <SectionTitle>{t('settings.location.dataSection')}</SectionTitle>
+          <Row accessibilityRole="button" accessibilityLabel={t('settings.location.download')}
+            accessibilityState={{ disabled: false }} onPress={onExport}>
+            <ToggleCopy><ActionLabel>{t('settings.location.download')}</ActionLabel>
+              <RowDescription>{t('settings.location.downloadDescription')}</RowDescription></ToggleCopy>
+          </Row>
+          <StatusRow label={t('settings.rows.privacyPolicy')} description={t('settings.location.policyDescription')} />
+          <StatusRow label={t('settings.location.deleteHistory')} description={t('settings.location.deleteDescription')} />
+        </SectionInner></Section>
       </Content>
     </Container>
   );
@@ -168,6 +95,7 @@ export default function LocationPrivacyScreen({
 const CONTENT_CONTAINER_STYLE = { paddingBottom: 40 };
 
 const Container = styled.View`
+  background-color: ${({ theme }) => theme.colors.background};
   flex: 1;
 `;
 
@@ -266,29 +194,13 @@ const RowDescription = styled(AppText)`
   margin-top: 2px;
 `;
 
-const RowTrailing = styled.View`
-  align-items: center;
-  flex-direction: row;
-  gap: 4px;
-  margin-left: 12px;
-  max-width: 55%;
-`;
 
-const RowValue = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 14px;
-  line-height: 20px;
+const ActionLabel = styled(RowLabel)`
+  color: ${({ theme }) => theme.colors.primary};
 `;
-
-const ConnectionNotice = styled.View`
-  background-color: ${({ theme }) => theme.colors.warningSoft};
-  border-radius: 10px;
-  margin-top: 4px;
-  padding: 10px 12px;
-`;
-
-const ConnectionNoticeText = styled(AppText)`
-  color: ${({ theme }) => theme.colors.warning};
-  font-size: 12px;
-  line-height: 18px;
+const StatusDescription = styled(RowDescription)<{ $state: ForegroundPermissionState | 'unsupported' }>`
+  color: ${({ theme, $state }) => $state === 'error' ? theme.colors.danger
+    : $state === 'granted' ? theme.colors.primary
+      : $state === 'denied' || $state === 'restricted' || $state === 'unavailable'
+        ? theme.colors.warning : theme.colors.textMuted};
 `;
