@@ -222,3 +222,22 @@ export const LocateGlass = styled(FrostedSurface)`
   border-radius: 22px;
   overflow: hidden;
 `;
+
+// Separate action below locate; 48 dp target, centered on the existing 44 dp button.
+export const AssistantButton = styled.Pressable`
+  width: 48px;
+  height: 48px;
+  margin-right: -2px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.borderEmphasis};
+  background-color: ${({ theme }) => theme.colors.surfaceElevated};
+`;
+export const AssistantLabel = styled(Text)`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-family: ${({ theme }) => theme.typography.label.fontFamily};
+  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+`;

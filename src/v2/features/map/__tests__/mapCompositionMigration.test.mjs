@@ -180,3 +180,16 @@ test('expanded place detail keeps the design photo ratio, short tab accent, and 
   assert.match(menu, /const Section = styled\.View`[^`]*border-top-width: 8px/);
   assert.doesNotMatch(menu, /const Section = styled\.View`[^`]*border-bottom-width/);
 });
+
+test('production V2 map owns opt-in assistant FAB and modal; settings has no input session entry', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const overlay = read('../components/MapTopOverlay.tsx');
+  const settings = read('../../settings/screens/SettingsScreen.tsx');
+  assert.match(screen, /useMapAssistantEntry\(env\.featureFlags\.voiceAssistant, isFocused\)/);
+  assert.match(screen, /onAssistantPress=\{assistant\.enabled && !isSearchOpen \? assistant\.open : undefined\}/);
+  assert.match(screen, /assistantSheetTop=\{sheetTranslateY\}/);
+  assert.match(screen, /<MapAssistantModal visible=\{assistant\.isOpen\} onClose=\{assistant\.close\}/);
+  assert.match(screen, /onLocatePress=\{handleLocatePress\}/);
+  assert.ok(overlay.indexOf('testID="map-locate-button"') < overlay.indexOf('testID="map-assistant-fab"'));
+  assert.doesNotMatch(settings, /VoiceAssistantScreen|voiceAssistant\.title|setPage\('assistant'\)/);
+});

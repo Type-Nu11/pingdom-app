@@ -1,3 +1,6 @@
+import { env } from '../../../shared/config';
+import { useMapAssistantEntry } from '../hooks/useMapAssistantEntry';
+import MapAssistantModal from '../components/MapAssistantModal';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -157,6 +160,7 @@ export default function MapScreen({
 }: MapScreenProps) {
   const theme = useTheme();
   const isFocused = useIsFocused();
+  const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused);
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
   const reservationNavigationLock = useRef(false);
@@ -916,6 +920,10 @@ export default function MapScreen({
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
           onLocatePress={handleLocatePress}
+          onAssistantPress={assistant.enabled && !isSearchOpen ? assistant.open : undefined}
+          assistantDisabled={assistant.isOpen}
+          assistantSheetTop={sheetTranslateY}
+          assistantRestingTop={snapPoint === 'collapsed' ? collapsedTranslateY : snapPoint === 'expanded' ? expandedTranslateY : mediumTranslateY}
           onProfilePress={onOpenProfile}
           onQueryChange={handleQueryChange}
           onRefreshMap={handleMapRefresh}
@@ -1144,6 +1152,7 @@ export default function MapScreen({
         />
       ) : null}
       </MapGlassBackdrop>
+      <MapAssistantModal visible={assistant.isOpen} onClose={assistant.close} />
     </View>
   );
 }

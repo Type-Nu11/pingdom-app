@@ -117,6 +117,11 @@ export function resolvePlaceListEnabled({
   );
 }
 
+/** Explicit opt-in in every environment; no development/production auto-enable. */
+export function resolveVoiceAssistantEnabled(value?: string): boolean {
+  return readBoolean('EXPO_PUBLIC_ENABLE_VOICE_ASSISTANT', value, false);
+}
+
 const appEnvironment = readAppEnvironment(process.env.EXPO_PUBLIC_APP_ENV);
 const apiMode = readApiMode(process.env.EXPO_PUBLIC_API_MODE);
 
@@ -140,6 +145,7 @@ export const env = Object.freeze({
   apiMode,
   appEnvironment,
   featureFlags: Object.freeze({
+    voiceAssistant: resolveVoiceAssistantEnabled(process.env.EXPO_PUBLIC_ENABLE_VOICE_ASSISTANT),
     placeList: resolvePlaceListEnabled({
       apiMode,
       appEnvironment,
