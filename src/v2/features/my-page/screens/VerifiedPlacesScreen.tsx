@@ -1,5 +1,5 @@
 import { Text as AppText } from '../../../shared/components/Typography';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlatList } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,8 @@ import {
   type VerifiedPlaceEntry,
 } from '../model/verifiedPlaceEntries';
 
+import { getVerifiedPlaceGridCardWidth, VERIFIED_PLACE_GRID_GAP, VERIFIED_PLACE_GRID_PADDING } from '../model/verifiedPlaceLayout';
+
 export type VerifiedPlacesScreenProps = {
   onBack: () => void;
   onOpenPlace: (placeId: number) => void;
@@ -26,6 +28,8 @@ export type VerifiedPlacesScreenProps = {
 
 export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPlacesScreenProps) {
   const { t } = useTranslation();
+  const [listWidth, setListWidth] = useState(0);
+  const cardWidth = getVerifiedPlaceGridCardWidth(listWidth);
   // Each check-in costs one place detail request, so a page here is a fan-out of
   // the same size. A page of 10 keeps that burst to roughly one screen's worth
   // of cards instead of loading two screens ahead.
@@ -74,12 +78,15 @@ export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPl
         />
       ) : (
       <FlatList
+        testID="v2-verified-places-list"
+        onLayout={({ nativeEvent }) => setListWidth(nativeEvent.layout.width)}
+        extraData={cardWidth}
         columnWrapperStyle={COLUMN_WRAPPER_STYLE}
         contentContainerStyle={CONTENT_CONTAINER_STYLE}
-        data={listData}
+        data={cardWidth === null ? [] : listData}
         style={LIST_STYLE}
         keyExtractor={(entry) => String(entry.placeId)}
-        ListEmptyComponent={<EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText>}
+        ListEmptyComponent={cardWidth !== null ? <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText> : null}
         numColumns={2}
         onEndReached={() => {
           if (checkInsQuery.hasNextPage && !checkInsQuery.isFetchingNextPage) {
@@ -88,8 +95,9 @@ export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPl
         }}
         onEndReachedThreshold={0.5}
         renderItem={({ item: entry }) => (
-          entry.place ? (
+          cardWidth === null ? null : entry.place ? (
             <VerifiedPlaceCard
+              width={cardWidth}
               address={entry.place.address}
               favorited={bookmarkedPlaceIds.has(entry.placeId)}
               imageUrl={imageUrlsByPlaceId[String(entry.placeId)]?.[0] ?? null}
@@ -101,7 +109,7 @@ export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPl
               })}
             />
           ) : (
-            <VerifiedPlaceCardSkeleton />
+            <VerifiedPlaceCardSkeleton width={cardWidth} />
           )
         )}
       />
@@ -121,8 +129,8 @@ const SKELETON_ENTRIES: VerifiedPlaceEntry[] = [-1, -2, -3, -4].map((placeId) =>
   placeId,
 }));
 
-const CONTENT_CONTAINER_STYLE = { flexGrow: 1, gap: 12, padding: 24 } as const;
-const COLUMN_WRAPPER_STYLE = { gap: 12 } as const;
+const CONTENT_CONTAINER_STYLE = { flexGrow: 1, gap: VERIFIED_PLACE_GRID_GAP, padding: VERIFIED_PLACE_GRID_PADDING } as const;
+const COLUMN_WRAPPER_STYLE = { gap: VERIFIED_PLACE_GRID_GAP } as const;
 const LIST_STYLE = { flex: 1 } as const;
 
 const Screen = styled(SafeAreaView)`

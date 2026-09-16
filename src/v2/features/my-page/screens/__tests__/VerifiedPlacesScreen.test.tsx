@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen, waitFor, within } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { bookmarkApi } from '../../api/bookmarkApi';
@@ -35,11 +35,50 @@ beforeEach(() => {
   );
 });
 
+async function measureList(width = 402) {
+  const list = screen.queryByTestId('v2-verified-places-list');
+  if (list) await fireEvent(list, 'layout', { nativeEvent: { layout: { width, height: 600, x: 0, y: 0 } } });
+}
+
 describe('VerifiedPlacesScreen', () => {
+  test.each([375, 402])('폭 %s에서 홀수 마지막 카드도 같은 열 폭을 사용한다', async (width) => {
+    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([11, 22, 33]));
+    jest.spyOn(placeDetailApi, 'getPlaceDetail').mockImplementation(async (id) => place(id, `장소 ${id}`));
+    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await measureList(width);
+    await waitFor(() => expect(screen.getAllByTestId('v2-verified-place-card')).toHaveLength(3));
+    for (const card of screen.getAllByTestId('v2-verified-place-card')) {
+      expect(card).toHaveStyle({ width: width === 375 ? 157.5 : 171, flexGrow: 0 });
+    }
+  });
+
+  test.each([375, 402])('측정 전에는 카드를 숨기고 %s에서 로딩 슬롯과 실제 카드 폭을 유지한다', async (width) => {
+    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([11, 22, 33]));
+    jest.spyOn(placeDetailApi, 'getPlaceDetail').mockImplementation(async (id) => {
+      if (id === 22) return new Promise(() => {});
+      return place(id, `장소 ${id}`);
+    });
+    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    expect(screen.queryAllByTestId('v2-verified-place-card')).toHaveLength(0);
+    expect(screen.queryAllByTestId('v2-verified-place-card-skeleton')).toHaveLength(0);
+    await measureList(width);
+    await waitFor(() => expect(screen.getAllByTestId('v2-verified-place-card')).toHaveLength(2));
+    for (const card of [...screen.getAllByTestId('v2-verified-place-card'), ...screen.getAllByTestId('v2-verified-place-card-skeleton')]) {
+      expect(card).toHaveStyle({ width: width === 375 ? 157.5 : 171, height: 222, flexGrow: 0 });
+    }
+    await measureList(320);
+    for (const card of [...screen.getAllByTestId('v2-verified-place-card'), ...screen.getAllByTestId('v2-verified-place-card-skeleton')]) {
+      expect(card).toHaveStyle({ width: 130, height: 222 });
+    }
+    await measureList(0);
+    expect(screen.queryAllByTestId('v2-verified-place-card')).toHaveLength(0);
+  });
+
   test('체크인이 없으면 빈 상태를 보여준다', async () => {
     jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([]));
 
     await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await measureList();
 
     await waitFor(() => expect(screen.getByText('아직 검증한 장소가 없어요')).toBeTruthy());
   });
@@ -48,6 +87,7 @@ describe('VerifiedPlacesScreen', () => {
     jest.spyOn(checkInApi, 'listCheckIns').mockRejectedValue(new Error('실패'));
 
     await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await measureList();
 
     await waitFor(() => expect(screen.getByText('인증한 장소를 불러오지 못했어요.')).toBeTruthy());
     expect(screen.getByText('다시 시도')).toBeTruthy();
@@ -66,6 +106,7 @@ describe('VerifiedPlacesScreen', () => {
     });
 
     await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await measureList();
 
     await waitFor(() => expect(screen.getByText('촉석루')).toBeTruthy());
 
@@ -84,6 +125,7 @@ describe('VerifiedPlacesScreen', () => {
       <VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={onOpenPlace} />,
     );
 
+    await measureList();
     const card = await screen.findByTestId('v2-verified-place-card');
     expect(screen.getByTestId('v2-verified-place-card-image').props.source).toEqual({
       uri: 'https://cdn.test/11.jpg',
@@ -97,6 +139,7 @@ describe('VerifiedPlacesScreen', () => {
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockRejectedValue(new Error('실패'));
 
     await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await measureList();
 
     await waitFor(() => expect(screen.getByText('인증한 장소를 불러오지 못했어요.')).toBeTruthy());
     expect(screen.queryByText('아직 검증한 장소가 없어요')).toBeNull();
