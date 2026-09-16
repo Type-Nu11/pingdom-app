@@ -144,6 +144,15 @@ describe('MyPageScreen', () => {
     expect(onOpenProfileEdit).toHaveBeenCalled();
   });
 
+  test('캐러셀 로딩 카드도 177×222를 유지한다', async () => {
+    mockEverythingEmpty();
+    jest.spyOn(checkInApi, 'listCheckIns').mockImplementation(() => new Promise(() => {}));
+    await renderMyPage();
+    for (const card of screen.getAllByTestId('v2-verified-place-card-skeleton')) {
+      expect(card).toHaveStyle({ width: 177, height: 222 });
+    }
+  });
+
   test('체크인이 없으면 빈 상태 문구를 보여준다', async () => {
     mockEverythingEmpty();
 
@@ -208,6 +217,10 @@ describe('MyPageScreen', () => {
     );
 
     const card = await screen.findByTestId('v2-verified-place-card');
+    expect(card).toHaveStyle({ width: 177, height: 222 });
+    let ancestor = card.parent;
+    while (ancestor && !ancestor.props.horizontal) ancestor = ancestor.parent;
+    expect(ancestor?.props.horizontal).toBe(true);
     expect(screen.getByLabelText('촉석루, 진주시')).toBeTruthy();
     expect(screen.getByTestId('v2-verified-place-card-image').props.source).toEqual({
       uri: 'https://cdn.test/11.jpg',
