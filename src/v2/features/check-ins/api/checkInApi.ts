@@ -20,7 +20,7 @@ export type LocationCheckInListItem = Pick<
 export type LocationCheckInPage = Omit<
   OperationResponse<'listMyLocationCheckIns', 200>,
   'checkIns'
-> & { checkIns: LocationCheckInListItem[] };
+> & { checkIns: LocationCheckInListItem[]; serverTotalElements?: number };
 export type StatusVote = OperationResponse<'createPlaceStatusVote', 201>;
 
 type LocationCheckInWirePage = PlaceExplorationOperationResponse<'listMine_5', 200>;
@@ -55,6 +55,7 @@ export function normalizeLocationCheckInPage(
     limit: page.limit ?? params.limit ?? 20,
     page: currentPage,
     totalCount: page.totalElements ?? 0,
+    serverTotalElements: page.totalElements,
     totalPages: page.totalPages ?? (hasNext ? currentPage + 1 : currentPage),
   };
 }

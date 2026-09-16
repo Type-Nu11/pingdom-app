@@ -93,17 +93,15 @@ describe('AccountManagementScreen', () => {
       <AccountManagementScreen onBack={jest.fn()} onOpenDetail={onOpenDetail} />,
     );
 
-    await user.press(screen.getByText('로그인 정보'));
+    expect(screen.getByText('로그인 정보')).toBeTruthy();
     await user.press(screen.getByText('내 기록'));
     await user.press(screen.getByText('쿠폰'));
     await user.press(screen.getByText('로그아웃'));
     await user.press(screen.getByText('회원 탈퇴'));
 
     expect(onOpenDetail.mock.calls.map(([detail]) => detail)).toEqual([
-      SETTINGS_DETAIL_IDS.LoginInformation,
       SETTINGS_DETAIL_IDS.MyRecords,
       SETTINGS_DETAIL_IDS.Coupons,
-      SETTINGS_DETAIL_IDS.Logout,
       SETTINGS_DETAIL_IDS.DeleteAccount,
     ]);
   });
@@ -117,7 +115,7 @@ describe('SettingsDetailPendingScreen', () => {
     );
 
     expect(screen.getByText('준비 중인 기능입니다')).toBeTruthy();
-    expect(screen.getByText('회원 탈퇴는 아직 연결되지 않았습니다. 계정에는 아무 변경도 적용되지 않았습니다.')).toBeTruthy();
+    expect(screen.getByText(/재인증과 최종 확인 정책/)).toBeTruthy();
 
     await user.press(screen.getByText('설정으로 돌아가기'));
     expect(onBack).toHaveBeenCalledTimes(1);

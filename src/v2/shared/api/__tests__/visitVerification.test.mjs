@@ -410,6 +410,7 @@ test('check-in API normalizes the live items response and drops unusable identif
     page: 1,
     limit: 20,
     totalCount: 2,
+    serverTotalElements: 2,
     totalPages: 1,
     hasNext: false,
   });

@@ -50,12 +50,18 @@ export function SettingsSection({ children, title }: PropsWithChildren<{ title?:
 
 export function SettingsRow({
   danger = false,
+  disabled = false,
+  busy = false,
+  accessibilityHint,
   label,
   onPress,
   subtitle,
   value,
 }: {
   danger?: boolean;
+  disabled?: boolean;
+  busy?: boolean;
+  accessibilityHint?: string;
   label: string;
   onPress?: () => void;
   subtitle?: string;
@@ -72,10 +78,11 @@ export function SettingsRow({
     </>
   );
 
-  if (!onPress) return <StaticRow>{content}</StaticRow>;
+  if (!onPress && !disabled) return <StaticRow>{content}</StaticRow>;
 
   return (
-    <Row accessibilityRole="button" onPress={onPress}>
+    <Row accessibilityRole="button" accessibilityLabel={[label, value, subtitle].filter(Boolean).join(', ')}
+      accessibilityHint={accessibilityHint} accessibilityState={{ disabled, busy }} disabled={disabled} onPress={onPress}>
       {content}
     </Row>
   );
@@ -102,6 +109,8 @@ const Spacer = styled.View`
 `;
 
 const TopBarTitle = styled(AppText)`
+  flex: 1;
+  text-align: center;
   color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -164,6 +173,8 @@ const RowSubtitle = styled(AppText)`
 `;
 
 const RowValue = styled(AppText)`
+  flex-shrink: 1;
+  max-width: 55%;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
