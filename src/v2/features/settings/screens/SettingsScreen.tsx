@@ -14,9 +14,7 @@ import NotificationSettingsScreen from '../../notifications/screens/Notification
 import { HeaderBackButton } from '../../../shared/components';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
 import { SETTINGS_DETAIL_IDS, type SettingsDetailId } from '../model/settings.types';
-import LocationPrivacyScreen, {
-  type LocationPermissionPresentationState,
-} from './LocationPrivacyScreen';
+import LocationPrivacyScreen from './LocationPrivacyScreen';
 import LanguageSettingsScreen from './LanguageSettingsScreen';
 import AppearanceSettingsScreen from './AppearanceSettingsScreen';
 import AccountManagementScreen from './AccountManagementScreen';
@@ -27,7 +25,6 @@ type SettingsPage = 'account' | 'appearance' | 'language' | 'location' | 'notifi
 
 export type SettingsScreenProps = {
   initialPage?: 'root' | 'notifications';
-  locationPermissionState?: LocationPermissionPresentationState;
   onBack: () => void;
   onLogout?: () => Promise<void>;
   onOpenAccountManagement?: () => void;
@@ -107,7 +104,6 @@ function SettingsSection({ children, title }: SectionProps) {
 
 export default function SettingsScreen({
   initialPage = 'root',
-  locationPermissionState,
   onBack,
   onLogout,
   onOpenAccountManagement,
@@ -296,7 +292,6 @@ export default function SettingsScreen({
       {page === 'location' ? (
         <LocationPrivacyScreen
           onBack={goBack}
-          permissionState={locationPermissionState}
         />
       ) : null}
 
