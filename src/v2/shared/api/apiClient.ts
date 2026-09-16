@@ -238,10 +238,18 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       assertRelativeApiPath(path);
 
       try {
+        const authorizedOptions = await withAuthorization(options);
+        const contentType = Object.entries(authorizedOptions.headers ?? {})
+          .find(([key]) => key.toLowerCase() === 'content-type')?.[1];
         const response = await getTransport().post<TResponse>(
           path,
           body,
-          await withAuthorization(options),
+          body instanceof FormData
+            ? { ...authorizedOptions, headers: {
+              ...authorizedOptions.headers,
+              'Content-Type': contentType?.startsWith('multipart/form-data') ? contentType : undefined,
+            } }
+            : authorizedOptions,
         );
         return response.data;
       } catch (error) {

@@ -1,3 +1,4 @@
+import { reviewPhotoPart, type SelectedPhoto } from '../model/visitVerification';
 import {
   apiClient,
   type ApiClient,
@@ -15,9 +16,9 @@ export type VisitVerificationObservationBody = VisitVerificationOperationRequest
 export type VisitVerificationSession = VisitVerificationOperationResponse<'start', 201>;
 
 export type CreatePlaceReviewBody =
-  PlaceExplorationOperationRequestBody<'create_2'>;
+  Pick<PlaceExplorationOperationRequestBody<'create_3'>, 'content' | 'recommendReasons' | 'reviewMediaIds'>;
 export type PlaceReview =
-  PlaceExplorationOperationResponse<'create_2', 200>;
+  PlaceExplorationOperationResponse<'create_3', 200>;
 export type PlaceReviewListParams =
   PlaceExplorationOperationQuery<'list_4'>;
 export type PlaceReviewPage =
@@ -62,6 +63,14 @@ export function createVisitVerificationApi(client: ApiClient = apiClient) {
       `/places/${placeId}/reviews`,
       { params, signal },
     ),
+    uploadReviewMedia: (placeId: number, photo: SelectedPhoto, signal?: AbortSignal): Promise<PlaceExplorationOperationResponse<'upload_1', 201>> => {
+      const form = new FormData();
+      // React Native transports this file descriptor without reading the file into JS memory.
+      form.append('file', reviewPhotoPart(photo) as unknown as Blob);
+      return client.post(`/places/${placeId}/reviews/media`, form, { signal });
+    },
+    cancelReviewMedia: (placeId: number, reviewMediaId: number, signal?: AbortSignal): Promise<PlaceExplorationOperationResponse<'cancel_4', 204>> =>
+      client.delete(`/places/${placeId}/reviews/media/${reviewMediaId}`, undefined, { signal }),
     createReview: (
       placeId: number,
       body: CreatePlaceReviewBody,

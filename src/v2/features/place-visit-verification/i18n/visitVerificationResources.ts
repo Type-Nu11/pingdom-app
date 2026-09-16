@@ -35,6 +35,16 @@ export const visitVerificationResources = {
     reviewPlaceholder: 'Tell others what you liked about this place.',
     reviewSection: 'Write a review',
     submit: 'Verify',
+    uploading: 'Uploading photos...',
+    errors: {
+      unsupportedFormat: 'Choose a JPEG or PNG photo. HEIC is not supported.',
+      fileTooLarge: 'This photo is too large. Choose a smaller photo.',
+      unauthenticated: 'Sign in again to submit your review.',
+      forbidden: 'You do not have permission to submit this review or photo.',
+      serverUnavailable: 'The service is temporarily unavailable. Try again later.',
+      network: 'Check your connection and try again. Your draft is preserved.',
+      submitFailed: 'Could not submit your review. Your draft is preserved. Try again.',
+    },
     submitting: 'Submitting...',
     title: 'Verify',
     session: {
@@ -112,6 +122,16 @@ export const visitVerificationResources = {
     reviewPlaceholder: '다른 사람들에게 이 장소의 좋은 점을 알려주세요.',
     reviewSection: '후기 작성',
     submit: '검증하기',
+    uploading: '사진 업로드 중',
+    errors: {
+      unsupportedFormat: 'JPEG 또는 PNG 사진을 선택해 주세요. HEIC 형식은 지원하지 않아요.',
+      fileTooLarge: '사진 용량이 너무 커요. 더 작은 사진을 선택해 주세요.',
+      unauthenticated: '후기를 제출하려면 다시 로그인해 주세요.',
+      forbidden: '이 후기 또는 사진을 제출할 권한이 없어요.',
+      serverUnavailable: '서비스를 일시적으로 이용할 수 없어요. 잠시 후 다시 시도해 주세요.',
+      network: '네트워크를 확인한 뒤 다시 시도해 주세요. 작성 내용은 유지돼요.',
+      submitFailed: '후기를 제출하지 못했어요. 작성 내용은 유지돼요. 다시 시도해 주세요.',
+    },
     submitting: '제출 중',
     title: '검증하기',
     session: {

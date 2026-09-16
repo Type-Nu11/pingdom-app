@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
 import { ApiError } from '../../../../shared/api';
@@ -188,10 +188,9 @@ test('review UI caps local photos and reasons without blocking submission for lo
   await view.user.type(view.getByTestId('visit-review-input'), '좋았어요.');
   await view.user.press(view.getByTestId('visit-submit'));
   expect(mutateAsync).toHaveBeenCalledWith({
-    body: {
-      content: '좋았어요.',
-      recommendReason: '친절해요, 찾기 쉬워요, 맛있어요, 다국어 설명이 잘 되어 있어요, 주차하기 편해요',
-    },
+    content: '좋았어요.',
+    reasons: ['kind', 'easyToFind', 'delicious', 'multilingual', 'parking'],
+    photos: photos.slice(0,3),
     placeId: 17,
   });
 });
@@ -215,11 +214,9 @@ test('review submits up to three uploaded image URLs and multiple recommendation
   await view.user.press(view.getByTestId('visit-submit'));
 
   expect(mutateAsync).toHaveBeenCalledWith({
-    body: {
-      content: '정말 좋았어요.',
-      imageUrls: photos.map((photo) => photo.uri),
-      recommendReason: '친절해요, 매장이 깨끗해요',
-    },
+    content: '정말 좋았어요.',
+    reasons: ['kind', 'clean'],
+    photos,
     placeId: 17,
   });
   expect(onComplete).toHaveBeenCalledTimes(1);
@@ -238,7 +235,7 @@ test('confirmed one-reason text submission is locked against duplicate requests'
   await view.user.press(view.getByTestId('visit-submit'));
   expect(mutateAsync).toHaveBeenCalledTimes(1);
   expect(mutateAsync).toHaveBeenCalledWith({
-    body: { content: '정말 친절했어요.', recommendReason: '친절해요' },
+    content: '정말 친절했어요.', reasons: ['kind'], photos: [],
     placeId: 17,
   });
 
@@ -373,4 +370,44 @@ test('completed verification leaves the session UI and opens the recent visit fl
   });
   await renderFeature(<VisitVerificationSessionScreen onBack={jest.fn()} onComplete={onComplete} placeId={17} />);
   expect(onComplete).toHaveBeenCalledTimes(1);
+});
+
+
+test.each(['ko','en'] as const)('real submission hook retains draft through upload failure and retries in %s', async language => {
+  const { visitVerificationApi } = jest.requireActual('../../api/visitVerificationApi');
+  const { useSubmitVisitVerification } = jest.requireActual('../../hooks/useSubmitVisitVerification');
+  mockUseSubmit.mockImplementation(() => useSubmitVisitVerification());
+  let rejectUpload!: (error: unknown) => void;
+  let resolveCreate!: (value: unknown) => void;
+  const upload = jest.spyOn(visitVerificationApi,'uploadReviewMedia')
+    .mockImplementationOnce(() => new Promise((_,reject) => { rejectUpload=reject; }))
+    .mockResolvedValue({reviewMediaId:71});
+  const create = jest.spyOn(visitVerificationApi,'createReview').mockImplementation(() => new Promise(resolve => {resolveCreate=resolve;}));
+  const cancel = jest.spyOn(visitVerificationApi,'cancelReviewMedia').mockResolvedValue(undefined);
+  const complete=jest.fn();
+  const photo={uri:'file:///private/photo.jpg',mimeType:'image/jpeg',width:10,height:10};
+  const view=await renderFeature(<VisitVerificationReviewScreen placeId={17} onBack={jest.fn()} onComplete={complete} mediaPicker={{pickPhotos:jest.fn().mockResolvedValue({status:'selected',photos:[photo]})}} />,language);
+  await view.user.press(view.getByTestId('visit-photo-picker'));
+  await view.user.press(view.getByTestId('visit-reason-kind'));
+  await view.user.type(view.getByTestId('visit-review-input'),'Review');
+  await view.user.press(view.getByTestId('visit-submit'));
+  expect(view.getByTestId('visit-submit')).toBeDisabled();
+  expect(view.getByText(language==='ko' ? '사진 업로드 중' : 'Uploading photos...')).toBeVisible();
+  expect(complete).not.toHaveBeenCalled();
+  await act(async () => rejectUpload(new ApiError('file:///private/photo.jpg',{status:415})));
+  await waitFor(() => expect(view.getByTestId('visit-submit')).not.toBeDisabled());
+  expect(view.getByText(language==='ko' ? 'JPEG 또는 PNG 사진을 선택해 주세요. HEIC 형식은 지원하지 않아요.' : 'Choose a JPEG or PNG photo. HEIC is not supported.')).toBeVisible();
+  expect(view.queryByText('file:///private/photo.jpg')).toBeNull();
+  expect(view.getByTestId('visit-review-input').props.value).toBe('Review');
+  expect(view.getByTestId('visit-reason-kind').props.accessibilityState.checked).toBe(true);
+  expect(create).not.toHaveBeenCalled();
+  await view.user.press(view.getByTestId('visit-submit'));
+  await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+  expect(upload).toHaveBeenCalledTimes(2);
+  expect(view.getByTestId('visit-submit')).toBeDisabled();
+  expect(view.getByText(language==='ko' ? '제출 중' : 'Submitting...')).toBeVisible();
+  expect(create).toHaveBeenCalledWith(17,{content:'Review',recommendReasons:['FRIENDLY'],reviewMediaIds:[71]});
+  await act(async () => resolveCreate({reviewId:91,placeId:17}));
+  await waitFor(() => expect(complete).toHaveBeenCalledTimes(1));
+  expect(cancel).not.toHaveBeenCalled();
 });

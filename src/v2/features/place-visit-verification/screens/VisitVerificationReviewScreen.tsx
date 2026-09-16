@@ -23,8 +23,7 @@ import {
   MAX_REASONS,
   MAX_REVIEW_LENGTH,
   RECOMMEND_REASONS,
-  selectReviewImageUrls,
-  serializeRecommendReasons,
+  reviewSubmissionErrorKey,
   toggleReason,
   validateReviewDraft,
   type RecommendReason,
@@ -99,7 +98,6 @@ export default function VisitVerificationReviewScreen({
 
   const submit = async () => {
     if (submitLocked.current || mutation.isPending) return;
-    const imageUrls = selectReviewImageUrls(photos);
     const nextValidation = validateReviewDraft({
       content,
       reasons,
@@ -109,14 +107,9 @@ export default function VisitVerificationReviewScreen({
     submitLocked.current = true;
     try {
       await mutation.mutateAsync({
-        body: {
-          content: content.trim(),
-          ...(imageUrls.length ? { imageUrls } : {}),
-          recommendReason: serializeRecommendReasons(
-            reasons,
-            (reason) => t(`visitVerification.reasons.${reason}`),
-          ),
-        },
+        content,
+        photos,
+        reasons,
         placeId,
       });
       onComplete();
@@ -177,9 +170,9 @@ export default function VisitVerificationReviewScreen({
               <Count>{content.length}/{MAX_REVIEW_LENGTH}</Count>
             </Section>
             {validation ? <InlineMessage accessibilityLiveRegion="assertive">{t(VALIDATION_KEYS[validation])}</InlineMessage> : null}
-            {mutation.isError ? <ApiErrorState error={mutation.error} onRetry={() => void submit()} /> : null}
+            {mutation.isError ? <InlineMessage accessibilityLiveRegion="assertive">{t(`visitVerification.errors.${reviewSubmissionErrorKey(mutation.error)}`)}</InlineMessage> : null}
           </Content>
-          <SubmitBar><Button disabled={mutation.isPending} fullWidth label={mutation.isPending ? t('visitVerification.submitting') : t('visitVerification.submit')} onPress={() => void submit()} shape="pill" testID="visit-submit" /></SubmitBar>
+          <SubmitBar><Button disabled={mutation.isPending} fullWidth label={mutation.isPending ? t(mutation.phase === 'uploading' ? 'visitVerification.uploading' : 'visitVerification.submitting') : t('visitVerification.submit')} onPress={() => void submit()} shape="pill" testID="visit-submit" /></SubmitBar>
         </KeyboardArea>
       ) : null}
     </Screen>

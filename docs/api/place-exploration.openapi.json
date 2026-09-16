@@ -6,7 +6,7 @@
   },
   "x-source": {
     "location": "https://www.typenull.xyz/v3/api-docs",
-    "sha256": "da3a3360dfccb67381a567905018c5e80304daaf055202aacc9f9a462a7b67c8"
+    "sha256": "10cac55c1e57db3a20c8b36b2b4728bf05b20a3db501cbf23e243bdeecaaa2fc"
   },
   "paths": {
     "/location-check-ins": {
@@ -1379,7 +1379,7 @@
           "Common"
         ],
         "summary": "장소 리뷰 작성",
-        "operationId": "create_2",
+        "operationId": "create_3",
         "parameters": [
           {
             "name": "placeId",
@@ -1457,13 +1457,219 @@
         ]
       }
     },
+    "/places/{placeId}/reviews/media": {
+      "post": {
+        "tags": [
+          "Common"
+        ],
+        "summary": "장소 리뷰 사진 업로드",
+        "description": "리뷰 작성 전에 JPEG 또는 PNG 사진 한 개를 업로드합니다. 업로드된 사진은 24시간 안에 본인의 같은 장소 리뷰에 한 번만 연결할 수 있습니다.",
+        "operationId": "upload_1",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "리뷰 사진 업로드 완료",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceReviewMediaUploadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "비어 있거나 손상된 파일",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "장소를 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "파일 크기 초과",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "지원하지 않는 파일 형식",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "리뷰 사진 저장소 사용 불가",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/places/{placeId}/reviews/media/{reviewMediaId}": {
+      "delete": {
+        "tags": [
+          "Common"
+        ],
+        "summary": "장소 리뷰 사진 업로드 취소",
+        "description": "리뷰에 연결하지 않은 본인의 사진 업로드를 취소합니다.",
+        "operationId": "cancel_4",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "reviewMediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "리뷰 사진 업로드 취소 완료"
+          },
+          "401": {
+            "description": "유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "다른 사용자의 사진",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리뷰 사진을 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "이미 리뷰에 연결된 사진",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/places/{placeId}/availabilities": {
       "get": {
         "tags": [
           "App"
         ],
         "summary": "장소 예약 가능 시간 조회",
-        "operationId": "list_5",
+        "operationId": "list_6",
         "parameters": [
           {
             "name": "placeId",
@@ -1521,27 +1727,52 @@
   "components": {
     "schemas": {
       "AvailabilityResponse": {
+        "required": [
+          "endsAt",
+          "id",
+          "placeId",
+          "productId",
+          "productName",
+          "productType",
+          "remainingCapacity",
+          "startsAt",
+          "status",
+          "totalCapacity"
+        ],
         "type": "object",
         "properties": {
           "id": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "example": 77
           },
           "placeId": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "example": 70069
           },
           "productId": {
             "type": "integer",
-            "format": "int64"
+            "description": "GENERAL은 null이며 TICKET/CLASS는 상품 ID입니다.",
+            "format": "int64",
+            "nullable": true,
+            "example": 12
           },
           "productType": {
             "type": "string",
+            "description": "예약 대상 유형",
+            "example": "TICKET",
             "enum": [
               "GENERAL",
               "TICKET",
               "CLASS"
             ]
+          },
+          "productName": {
+            "type": "string",
+            "description": "GENERAL은 null이며 TICKET/CLASS는 상품명입니다.",
+            "nullable": true,
+            "example": "이월드 오후 입장권"
           },
           "startsAt": {
             "type": "string",
@@ -1553,20 +1784,24 @@
           },
           "totalCapacity": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "example": 100
           },
           "remainingCapacity": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "example": 42
           },
           "status": {
             "type": "string",
+            "example": "ACTIVE",
             "enum": [
               "ACTIVE",
               "INACTIVE"
             ]
           }
-        }
+        },
+        "description": "예약 가능 시간 응답"
       },
       "ErrorResponse": {
         "required": [
@@ -2125,6 +2360,7 @@
         "required": [
           "activeOperatingNotices",
           "address",
+          "communityViewCount",
           "currentlyOperating",
           "currentlyOperatingCheckedAt",
           "description",
@@ -2326,6 +2562,12 @@
           },
           "registrant": {
             "type": "string"
+          },
+          "communityViewCount": {
+            "type": "integer",
+            "description": "커뮤니티 게시글을 통해 유입된 일별 중복 제거 조회수",
+            "format": "int64",
+            "example": 12
           },
           "merchantOwner": {
             "nullable": true,
@@ -3224,30 +3466,107 @@
       },
       "PlaceReviewCreateRequest": {
         "required": [
-          "content",
-          "recommendReason"
+          "content"
         ],
         "type": "object",
         "properties": {
           "recommendReason": {
             "maxLength": 100,
             "minLength": 0,
-            "type": "string"
+            "type": "string",
+            "description": "기존 단일 추천 이유. recommendReasons가 없을 때만 사용할 수 있습니다.",
+            "deprecated": true
+          },
+          "recommendReasons": {
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array",
+            "description": "추천 이유 코드. 1~5개를 입력하며 저장·응답 순서가 유지됩니다.",
+            "items": {
+              "type": "string",
+              "description": "추천 이유 코드. 1~5개를 입력하며 저장·응답 순서가 유지됩니다.",
+              "enum": [
+                "FRIENDLY",
+                "EASY_TO_FIND",
+                "GOOD_FOOD",
+                "MULTILINGUAL_SUPPORT",
+                "PARKING",
+                "PHOTO_SPOT",
+                "CLEAN"
+              ]
+            }
           },
           "content": {
             "maxLength": 2000,
             "minLength": 0,
             "type": "string"
           },
+          "reviewMediaIds": {
+            "maxItems": 3,
+            "minItems": 0,
+            "type": "array",
+            "description": "리뷰 사진 업로드 API가 반환한 ID. 최대 3개이며 입력 순서가 사진 표시 순서입니다.",
+            "items": {
+              "type": "integer",
+              "description": "리뷰 사진 업로드 API가 반환한 ID. 최대 3개이며 입력 순서가 사진 표시 순서입니다.",
+              "format": "int64"
+            }
+          },
           "imageUrls": {
             "maxItems": 3,
             "minItems": 0,
             "type": "array",
+            "description": "임의 URL 입력은 지원하지 않습니다. 빈 배열만 허용하며 reviewMediaIds를 사용해야 합니다.",
+            "deprecated": true,
             "items": {
-              "type": "string"
+              "type": "string",
+              "description": "임의 URL 입력은 지원하지 않습니다. 빈 배열만 허용하며 reviewMediaIds를 사용해야 합니다.",
+              "deprecated": true
             }
           }
-        }
+        },
+        "description": "장소 리뷰 작성 요청. recommendReasons와 reviewMediaIds가 새 표준 계약입니다."
+      },
+      "PlaceReviewMediaResponse": {
+        "type": "object",
+        "properties": {
+          "reviewMediaId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          }
+        },
+        "description": "리뷰에 연결된 검증 완료 사진"
+      },
+      "PlaceReviewMediaUploadResponse": {
+        "type": "object",
+        "properties": {
+          "reviewMediaId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "fileSize": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "리뷰 연결 전까지 유효한 시각",
+            "format": "date-time"
+          }
+        },
+        "description": "리뷰 작성 전 임시 저장된 사진 업로드 결과"
       },
       "PlaceReviewResponse": {
         "type": "object",
@@ -3267,6 +3586,21 @@
           "recommendReason": {
             "type": "string"
           },
+          "recommendReasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "FRIENDLY",
+                "EASY_TO_FIND",
+                "GOOD_FOOD",
+                "MULTILINGUAL_SUPPORT",
+                "PARKING",
+                "PHOTO_SPOT",
+                "CLEAN"
+              ]
+            }
+          },
           "content": {
             "type": "string"
           },
@@ -3274,6 +3608,12 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "reviewMedia": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceReviewMediaResponse"
             }
           },
           "createdAt": {

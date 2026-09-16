@@ -12,8 +12,8 @@ import { createPlaceReviewsQueryOptions } from '../../../features/place-visit-ve
 import {
   appendPhotos,
   RECOMMEND_REASONS,
-  selectReviewImageUrls,
   serializeRecommendReasons,
+  reviewPhotoPart,
   toggleReason,
   selectCandidateImageUrls,
   uniquePlaceIdsInServerOrder,
@@ -246,7 +246,7 @@ test('visit review API forwards the confirmed body, place ID, and signal unchang
   };
   const api = createVisitVerificationApi(client);
   const signal = new AbortController().signal;
-  const body = { recommendReason: 'Friendly', content: 'A real review.' };
+  const body = { recommendReasons: ['FRIENDLY'], reviewMediaIds: [], content: 'A real review.' };
 
   assert.equal(await api.createReview(17, body, signal), response);
   assert.deepEqual(calls, [{ body, options: { signal }, path: '/places/17/reviews' }]);
@@ -283,19 +283,6 @@ test('candidate enrichment preserves server check-in order while deduplicating p
   ]), ['card.jpg', 'thumb.jpg']);
 });
 
-test('visit review mutation disables retry and does not reshape the contract body', async () => {
-  const calls = [];
-  const body = { recommendReason: 'Friendly', content: 'Review' };
-  const response = { reviewId: 91 };
-  const options = createVisitVerificationMutationOptions({
-    createReview: async (placeId, value) => { calls.push({ placeId, value }); return response; },
-  });
-
-  assert.equal(options.retry, false);
-  assert.equal(await options.mutationFn({ body, placeId: 17 }), response);
-  assert.deepEqual(calls, [{ placeId: 17, value: body }]);
-});
-
 test('successful review submission refreshes place reviews and the current user review list', async () => {
   const invalidated = [];
   const queryClient = {
@@ -307,6 +294,10 @@ test('successful review submission refreshes place reviews and the current user 
   assert.deepEqual(invalidated, [
     ['v2', 'places', 'entity', 17, 'reviews'],
     ['v2', 'users', 'me', 'reviews'],
+    ['v2', 'places', 'entity', 17, 'detail'],
+    ['v2', 'places', 'entity', 17, 'verification-media'],
+    ['v2', 'places', 'entity', 17, 'exploration-media'],
+    ['v2', 'visit-verification-sessions'],
   ]);
 });
 
@@ -325,6 +316,7 @@ test('successful review submission immediately primes place detail and my review
     reviewId: 91,
   };
 
+  queryClient.setQueryData(['v2', 'places', 'entity', 17, 'reviews', { limit: 20, page: 1 }], {content:[],size:20,totalElements:0});
   primeSubmittedReviewQueries(queryClient, review);
 
   assert.deepEqual(
@@ -334,8 +326,8 @@ test('successful review submission immediately primes place detail and my review
   const mine = queryClient.getQueryData(
     ['v2', 'users', 'me', 'reviews', { limit: 1, page: 1 }],
   );
-  assert.equal(mine.totalElements, 8);
-  assert.equal(mine.reviews[0].reviewId, 91);
+  assert.equal(mine.totalElements, 7); // My Page owns its response shape; invalidate instead of fabricating it.
+  assert.deepEqual(mine.reviews, []);
 });
 
 test('review draft limits photos, serializes multiple reasons, and never blocks text submission for local photos', () => {
@@ -345,11 +337,7 @@ test('review draft limits photos, serializes multiple reasons, and never blocks 
   let reasons = [];
   for (const reason of RECOMMEND_REASONS) reasons = toggleReason(reasons, reason);
   assert.equal(reasons.length, 5);
-  assert.equal(serializeRecommendReasons(reasons.slice(0, 2), (reason) => reason), 'kind, easyToFind');
-  assert.deepEqual(selectReviewImageUrls([
-    { height: 10, uri: 'file:///local.jpg', width: 10 },
-    { height: 10, uri: 'https://cdn.example.com/1.jpg', width: 10 },
-  ]), ['https://cdn.example.com/1.jpg']);
+  assert.deepEqual(serializeRecommendReasons(reasons.slice(0, 2)), ['FRIENDLY', 'EASY_TO_FIND']);
   assert.equal(validateReviewDraft({ content: 'Review', reasons: reasons.slice(0, 2) }), null);
   assert.equal(validateReviewDraft({ content: 'Review', reasons: reasons.slice(0, 1) }), null);
 });
@@ -414,4 +402,155 @@ test('check-in API normalizes the live items response and drops unusable identif
     totalPages: 1,
     hasNext: false,
   });
+});
+
+
+test('review reasons use stable server enums, reject unknown keys and preserve unique order', () => {
+  assert.deepEqual(serializeRecommendReasons(['clean', 'kind', 'clean']), ['CLEAN', 'FRIENDLY']);
+  for (const [key, value] of [['kind','FRIENDLY'], ['easyToFind','EASY_TO_FIND'], ['delicious','GOOD_FOOD'], ['multilingual','MULTILINGUAL_SUPPORT'], ['parking','PARKING'], ['photoSpot','PHOTO_SPOT'], ['clean','CLEAN']]) {
+    assert.deepEqual(serializeRecommendReasons([key]), [value]);
+  }
+  for (const keys of [[], ['unknown'], RECOMMEND_REASONS]) assert.throws(() => serializeRecommendReasons(keys));
+});
+
+test('local review photos upload in order and create only the standard request', async () => {
+  const calls = [];
+  const options = createVisitVerificationMutationOptions({
+    uploadReviewMedia: async (id, photo) => { calls.push(photo.uri); return { reviewMediaId: calls.length }; },
+    cancelReviewMedia: async () => { assert.fail('connected media must not be cancelled'); },
+    createReview: async (id, body) => { calls.push(body); return { reviewId: 91 }; },
+  });
+  await options.mutationFn({ placeId: 17, content: 'Review', reasons: ['kind', 'clean'], photos: [1,2,3].map(i => ({uri: `file://${i}.jpg`, mimeType:'image/jpeg', width:10, height:10})) });
+  assert.deepEqual(calls, ['file://1.jpg','file://2.jpg','file://3.jpg', {content:'Review', recommendReasons:['FRIENDLY','CLEAN'], reviewMediaIds:[1,2,3]}]);
+});
+
+
+const reviewDraft = (count = 0) => ({ placeId: 17, content: 'Review', reasons: ['kind'], photos: Array.from({length:count}, (_,i) => ({uri:`file://${i}.jpg`,mimeType:'image/jpeg',width:10,height:10})) });
+for (const count of [0,1,3]) test(`submission uploads ${count} photos and preserves returned ID order`, async () => {
+  const uploaded = [], cancelled = [], phases = [];
+  const api = {
+    uploadReviewMedia: async (_, photo) => { uploaded.push(photo); return {reviewMediaId: 10 + uploaded.length}; },
+    cancelReviewMedia: async (_, id) => cancelled.push(id),
+    createReview: async (_, body) => { assert.deepEqual(body, {content:'Review',recommendReasons:['FRIENDLY'],reviewMediaIds: [11,12,13].slice(0,count)}); return {reviewId:91}; },
+  };
+  const options = createVisitVerificationMutationOptions(api, phase => phases.push(phase));
+  assert.deepEqual(await options.mutationFn(reviewDraft(count)), {reviewId:91});
+  assert.equal(uploaded.length,count);
+  assert.deepEqual(cancelled,[]);
+  assert.deepEqual(phases,count ? ['uploading','submitting','idle'] : ['submitting','idle']);
+});
+for (const failure of ['upload','create','cleanup']) test(`${failure} failure preserves original error, cleans unlinked media, and supports retry`, async () => {
+  const original = new ApiError('original',{status:503});
+  const cancelled = []; let uploads = 0; let creates = 0; let fail = true;
+  const api = {
+    uploadReviewMedia: async () => { uploads++; if(fail && failure==='upload' && uploads===2) throw original; return {reviewMediaId:uploads}; },
+    cancelReviewMedia: async (_, id) => { cancelled.push(id); if(failure==='cleanup') throw new Error('cleanup'); },
+    createReview: async () => { creates++; if(fail) throw original; return {reviewId:91}; },
+  };
+  const options = createVisitVerificationMutationOptions(api);
+  const draft = reviewDraft(3); const before = structuredClone(draft);
+  await assert.rejects(options.mutationFn(draft), error => error===original);
+  assert.deepEqual(cancelled, failure==='upload' ? [1] : [1,2,3]);
+  assert.equal(creates, failure==='upload' ? 0 : 1);
+  assert.deepEqual(draft,before);
+  fail=false;
+  assert.deepEqual(await options.mutationFn(draft), {reviewId:91});
+});
+test('concurrent submission calls share the whole upload/create lock', async () => {
+  let release; let uploads=0; let creates=0;
+  const options=createVisitVerificationMutationOptions({
+    uploadReviewMedia: async () => { uploads++; await new Promise(resolve => {release=resolve;}); return {reviewMediaId:1}; },
+    cancelReviewMedia: async () => assert.fail('no cleanup on success'),
+    createReview: async () => { creates++; return {reviewId:91}; },
+  });
+  const a=options.mutationFn(reviewDraft(1)); const b=options.mutationFn(reviewDraft(1));
+  assert.equal(a,b); release(); await Promise.all([a,b]);
+  assert.equal(uploads,1); assert.equal(creates,1);
+});
+test('photo descriptors normalize MIME and safe names without leaking local paths in format errors', () => {
+  assert.deepEqual(reviewPhotoPart({uri:'file:///secret.jpg',mimeType:' IMAGE/JPG '}),{uri:'file:///secret.jpg',type:'image/jpeg',name:'review-photo.jpg'});
+  assert.equal(reviewPhotoPart({uri:'file:///secret.png'}).type,'image/png');
+  assert.equal(reviewPhotoPart({uri:'file:///secret',mimeType:'image/png',fileName:'../../photo.png'}).name,'photo.png');
+  assert.throws(() => reviewPhotoPart({uri:'file:///private.heic',mimeType:'image/heic'}), error => error.status===415 && !error.message.includes('private'));
+});
+
+test('review media uses authenticated multipart file and 204 cancellation through the common client', async () => {
+  const {createApiClient,configureApiAccessTokenProvider}=await import('../apiClient.ts');
+  const axios=(await import('axios')).default;
+  const originalForm=globalThis.FormData;
+  class NativeForm extends originalForm { parts=[]; append(key,value) {this.parts.push([key,value]);} }
+  globalThis.FormData=NativeForm;
+  const restore=configureApiAccessTokenProvider(()=>'test-token');
+  const calls=[];
+  const transport=axios.create({headers:{'Content-Type':'application/json'},adapter:async config => {
+    calls.push(config);
+    return {data:config.method==='delete' ? undefined : {reviewMediaId:71},status:config.method==='delete'?204:201,statusText:'',headers:{},config};
+  }});
+  try {
+    const api=createVisitVerificationApi(createApiClient(transport));
+    assert.deepEqual(await api.uploadReviewMedia(17,{uri:'file:///private/photo.jpg',fileName:'photo.jpg',mimeType:'image/jpeg'}),{reviewMediaId:71});
+    assert.equal(await api.cancelReviewMedia(17,71),undefined);
+    assert.equal(calls[0].url,'/places/17/reviews/media');
+    assert.equal(calls[0].headers.Authorization,'Bearer test-token');
+    assert.ok(!String(calls[0].headers.get('Content-Type')).includes('application/json'));
+    assert.deepEqual(calls[0].data.parts,[['file',{uri:'file:///private/photo.jpg',name:'photo.jpg',type:'image/jpeg'}]]);
+    assert.equal(calls[1].url,'/places/17/reviews/media/71');
+  } finally { restore();globalThis.FormData=originalForm; }
+});
+for(const status of [400,401,403,404,409,413,415,503]) test(`review media HTTP ${status} remains a common ApiError`,async()=>{
+  const {createApiClient}=await import('../apiClient.ts');
+  const failure={isAxiosError:true,message:'failure',response:{status,data:{code:'FAILED',message:'server detail'}}};
+  const api=createVisitVerificationApi(createApiClient({delete:async()=>{throw failure;},post:async()=>{throw failure;}}));
+  await assert.rejects(api.cancelReviewMedia(17,71),error=>error instanceof ApiError && error.status===status && error.code==='FAILED');
+  await assert.rejects(api.uploadReviewMedia(17,{uri:'file:///photo.jpg',mimeType:'image/jpeg'}),error=>error instanceof ApiError && error.status===status && error.code==='FAILED');
+});
+
+test('priming a new review does not inject it into later pagination pages', () => {
+  const client=new QueryClient();
+  const key=['v2','places','entity',17,'reviews',{page:2,limit:20}];
+  client.setQueryData(key,{content:[{reviewId:3}],totalElements:21});
+  primeSubmittedReviewQueries(client,{reviewId:91,placeId:17,content:'New'});
+  assert.deepEqual(client.getQueryData(key).content,[{reviewId:3}]);
+});
+
+test('invalid draft and unsupported photo fail before any upload or review creation', async () => {
+  const options=createVisitVerificationMutationOptions({
+    uploadReviewMedia: async()=>assert.fail('invalid input uploaded'),
+    createReview: async()=>assert.fail('invalid input submitted'),
+    cancelReviewMedia: async()=>assert.fail('nothing to cancel'),
+  });
+  for(const draft of [
+    {...reviewDraft(),content:''}, {...reviewDraft(),content:'x'.repeat(2001)},
+    {...reviewDraft(),reasons:[]}, {...reviewDraft(),reasons:['unknown']},
+    {...reviewDraft(),reasons:RECOMMEND_REASONS}, reviewDraft(4),
+    {...reviewDraft(),photos:[{uri:'file:///private.heic',mimeType:'image/heic'}]},
+  ]) await assert.rejects(options.mutationFn(draft), error=>error instanceof ApiError);
+});
+
+test('snapshot includes multipart, cancel, standard fields and all declared error schemas', async () => {
+  const {readFile}=await import('node:fs/promises');
+  const doc=JSON.parse(await readFile(new URL('../../../../../docs/api/place-exploration.openapi.json',import.meta.url),'utf8'));
+  const upload=doc.paths['/places/{placeId}/reviews/media'].post;
+  assert.deepEqual(upload.requestBody.content['multipart/form-data'].schema.required,['file']);
+  for(const status of [201,400,401,403,404,413,415,503]) assert.ok(upload.responses[status]);
+  const cancel=doc.paths['/places/{placeId}/reviews/media/{reviewMediaId}'].delete;
+  assert.equal(cancel.responses[204].content,undefined);
+  for(const status of [401,403,404,409]) assert.ok(cancel.responses[status]);
+  const request=doc.components.schemas.PlaceReviewCreateRequest.properties;
+  assert.equal(request.recommendReasons.maxItems,5);
+  assert.equal(request.recommendReasons.minItems,1);
+  assert.equal(request.reviewMediaIds.maxItems,3);
+  assert.equal(request.content.maxLength,2000);
+  assert.equal(request.recommendReason.deprecated,true);
+  assert.equal(request.imageUrls.deprecated,true);
+});
+
+test('review success invalidates verification sessions only for the submitted place', async () => {
+  const client=new QueryClient();
+  const own=visitVerificationSessionQueryKeys.detail(1);
+  const other=visitVerificationSessionQueryKeys.detail(2);
+  client.setQueryData(own,{placeId:17}); client.setQueryData(other,{placeId:99});
+  await invalidateReviewQueries(client,17);
+  assert.equal(client.getQueryState(own).isInvalidated,true);
+  assert.equal(client.getQueryState(other).isInvalidated,false);
 });
