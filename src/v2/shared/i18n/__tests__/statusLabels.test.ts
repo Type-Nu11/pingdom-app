@@ -17,7 +17,7 @@ import {
   RESERVATION_STATUSES,
 } from '../../../features/reservations/model/reservationPresentation';
 import { reservationResources } from '../../../features/reservations/i18n/reservationResources';
-import { resources } from '../resources';
+import { resources } from '../../../app/i18n/resources';
 
 /**
  * Every label key a status selector can return has to resolve to real ko and en

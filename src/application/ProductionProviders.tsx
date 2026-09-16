@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppErrorBoundary from '../v2/app/AppErrorBoundary';
 import { createQueryClient } from '../v2/app/queryClient';
-import { i18n, initializeI18n } from '../v2/shared/i18n';
+import { i18n, initializeI18n } from '../v2/app/i18n';
 import {
   AppFontFamilyProvider,
   PRETENDARD_FONT_FAMILY,

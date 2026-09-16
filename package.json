@@ -42,7 +42,7 @@
     "test:regression": "npm run test:navigation && npm run test:i18n-formatters && npm run test:v2-notifications && npm run test:v2-map && npm run test:v2-api",
     "validate:pr": "npm run check:v2 && npm run test:ownership-harness && npm run typecheck && npm run test:ci",
     "test:navigation": "tsx --test src/app/navigation/__tests__/*.test.mjs",
-    "test:i18n-formatters": "tsx --test src/shared/i18n/__tests__/*.test.mjs",
+    "test:i18n-formatters": "tsx --test src/shared/i18n/__tests__/*.test.mjs src/v2/app/i18n/__tests__/*.test.mjs",
     "test:v2-notifications": "tsx --test src/v2/app/navigation/__tests__/*.test.mjs",
     "test:v2-map": "tsx --test src/v2/features/map/__tests__/*.test.mjs",
     "test:v2-api": "EXPO_PUBLIC_APP_ENV=development EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1/api/v1 EXPO_PUBLIC_API_MODE=mock EXPO_PUBLIC_MOCK_LATENCY_MS=0 tsx --test src/v2/shared/api/__tests__/*.test.mjs",
