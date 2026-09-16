@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Animated, PanResponder } from 'react-native';
+import { ActivityIndicator, Animated, PanResponder, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SearchAsset from '../../../../assets/v2/icons/search.svg';
@@ -38,6 +38,10 @@ type MapTopOverlayProps = {
   activeCategory: MapCategoryId;
   onCategoryChange: (category: MapCategoryId) => void;
   onLocatePress?: () => void;
+  onAssistantPress?: () => void;
+  assistantDisabled?: boolean;
+  assistantSheetTop?: Animated.Value;
+  assistantRestingTop?: number;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
   onRefreshMap?: () => Promise<void> | void;
@@ -69,6 +73,10 @@ export default function MapTopOverlay({
   activeCategory,
   onCategoryChange,
   onLocatePress,
+  onAssistantPress,
+  assistantDisabled = false,
+  assistantSheetTop,
+  assistantRestingTop = 0,
   onProfilePress,
   onRefreshMap,
   onSearchFocus,
@@ -79,6 +87,23 @@ export default function MapTopOverlay({
   const { t } = useTranslation();
   const { colors, liquidGlass } = useTheme();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  // Measure the entire overlay (including Safe Area and a reserved FAB slot).
+  // Keep the slot while hidden to avoid a layout/visibility feedback loop.
+  const [overlayHeight, setOverlayHeight] = React.useState(0);
+  const [assistantFits, setAssistantFits] = React.useState(false);
+  React.useEffect(() => {
+    if (!onAssistantPress) {
+      setAssistantFits(false);
+      return;
+    }
+    const update = (top: number) => setAssistantFits(
+      overlayHeight > 0 && overlayHeight + 8 <= Math.min(top, windowHeight - insets.bottom),
+    );
+    update(assistantRestingTop);
+    const listener = assistantSheetTop?.addListener(({ value }) => update(value));
+    return () => { if (listener) assistantSheetTop?.removeListener(listener); };
+  }, [assistantRestingTop, assistantSheetTop, insets.bottom, onAssistantPress, overlayHeight, windowHeight]);
   const pullDistance = React.useRef(new Animated.Value(0)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [isLocatePressed, setIsLocatePressed] = React.useState(false);
@@ -139,7 +164,12 @@ export default function MapTopOverlay({
   });
 
   return (
-    <S.SafeOverlay edges={['top']} pointerEvents="box-none">
+    <S.SafeOverlay
+      edges={['top', 'left', 'right']}
+      pointerEvents="box-none"
+      testID="map-top-safe-overlay"
+      onLayout={event => setOverlayHeight(event.nativeEvent.layout.height)}
+    >
       <S.RefreshIndicatorContainer
         pointerEvents="none"
         style={{
@@ -319,6 +349,27 @@ export default function MapTopOverlay({
                   width={20}
                 />
               </S.LocateButton>
+              {onAssistantPress ? (
+                <View
+                  testID="map-assistant-slot"
+                  pointerEvents={assistantFits ? 'auto' : 'none'}
+                  accessibilityElementsHidden={!assistantFits}
+                  importantForAccessibility={assistantFits ? 'auto' : 'no-hide-descendants'}
+                  style={{ marginTop: 8, opacity: assistantFits ? 1 : 0 }}
+                >
+                  <S.AssistantButton
+                    testID="map-assistant-fab"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('voiceAssistant.open')}
+                    accessibilityState={{ disabled: assistantDisabled || !assistantFits, expanded: assistantDisabled }}
+                    disabled={assistantDisabled || !assistantFits}
+                    onPress={onAssistantPress}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.72 : 1 })}
+                  >
+                    <S.AssistantLabel accessible={false}>AI</S.AssistantLabel>
+                  </S.AssistantButton>
+                </View>
+              ) : null}
             </S.LocateButtonRow>
           ) : null}
         </>

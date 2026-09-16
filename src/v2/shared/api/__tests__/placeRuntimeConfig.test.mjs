@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { assertApiModeAllowed, resolvePlaceListEnabled } from '../../config/env.ts';
+import { assertApiModeAllowed, resolvePlaceListEnabled, resolveVoiceAssistantEnabled } from '../../config/env.ts';
 import { getPlaceListRuntimeState } from '../../../features/place-exploration/model/placeListRuntime.ts';
 
 test('real API environments enable place requests by default and explicit flags win', () => {
@@ -53,4 +53,13 @@ test('disabled, loading, error, empty, and server-backed ready states stay disti
   assert.equal(getPlaceListRuntimeState({
     enabled: true, isError: false, isLoading: false, placeCount: 1,
   }), 'ready');
+});
+
+
+test('assistant input preview requires explicit opt-in, including production', () => {
+  assert.equal(resolveVoiceAssistantEnabled(), false);
+  assert.equal(resolveVoiceAssistantEnabled('false'), false);
+  assert.equal(resolveVoiceAssistantEnabled('true'), true);
+  assert.throws(() => resolveVoiceAssistantEnabled('1'));
+  assert.throws(() => resolveVoiceAssistantEnabled('yes'));
 });

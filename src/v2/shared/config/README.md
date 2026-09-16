@@ -55,3 +55,11 @@ Prefer conspicuous values such as `Fixture`, `Mock`, reserved UUIDs, and
 Contract-backed fixtures use `satisfies ApiSchema<...>` (or the corresponding
 `OperationResponse<...>` type). Run `npm run check:mock-contract`; type checking
 then detects drift after OpenAPI type generation.
+
+## AI assistant input preview
+
+`EXPO_PUBLIC_ENABLE_VOICE_ASSISTANT=true` enables the map FAB below My location.
+It defaults to false in all environments, including production. Rebuild/restart Expo
+after changing this bundled flag. This enables local input preview only; it does not
+connect #347 transport or native STT. Settings owns future microphone/privacy/voice
+preferences, not the assistant input session.
