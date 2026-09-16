@@ -1,86 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
+import { inspect, applyExceptions } from './v2-boundaries/rules.mjs';
 
-const projectRoot = process.cwd();
-const v2Root = path.join(projectRoot, 'src', 'v2');
-const sourceExtensions = new Set(['.ts', '.tsx', '.mjs']);
-const violations = [];
-
-function visit(directory) {
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    const absolutePath = path.join(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      visit(absolutePath);
-    } else if (sourceExtensions.has(path.extname(entry.name))) {
-      checkFile(absolutePath);
-    }
-  }
+const root = process.cwd();
+const manifest = JSON.parse(fs.readFileSync(path.join(root, 'scripts/v2-boundaries/exceptions.json'), 'utf8'));
+const report = inspect(root);
+const result = applyExceptions(report.violations, manifest);
+if (result.remaining.length || result.stale.length) {
+  console.error('V2 boundary check failed:');
+  for (const violation of result.remaining) console.error(`- ${violation.source}:${violation.line} [${violation.rule}] ${violation.specifier} -> ${violation.target ?? '(unresolved)'}\n  ${violation.suggestion}`);
+  for (const exception of result.stale) console.error(`- ${exception.source} [stale-exception] ${exception.rule}: ${exception.specifier}; remove/reduce the exception (${exception.issue}).`);
+  process.exitCode = 1;
+} else {
+  console.log(`V2 boundary check passed: ${report.nodes.size} source files; ${result.allowed} explicit exception occurrences; ${report.cycles.length} documented production SCCs (including type-only imports).`);
 }
-
-function report(filePath, rule) {
-  violations.push(`${path.relative(projectRoot, filePath)}: ${rule}`);
-}
-
-function checkFile(filePath) {
-  const source = fs.readFileSync(filePath, 'utf8');
-  const normalizedPath = filePath.split(path.sep).join('/');
-  const isTestFile = normalizedPath.includes('/__tests__/');
-
-  if (/\bStyleSheet\b/.test(source)) {
-    report(filePath, 'StyleSheet is not allowed in V2');
-  }
-
-  if (/process\.env/.test(source) && !normalizedPath.endsWith('/shared/config/env.ts')) {
-    report(filePath, 'read environment values through shared/config/env.ts');
-  }
-
-  if (/from ['"]axios['"]/.test(source) && !normalizedPath.includes('/shared/api/')) {
-    report(filePath, 'axios may only be imported by the shared API layer');
-  }
-
-  const importPattern = /(?:from\s*|import\s*\(|require\s*\()\s*['"]([^'"]+)['"]/g;
-  let match;
-
-  while ((match = importPattern.exec(source)) !== null) {
-    const importPath = match[1];
-
-    if (/^(?:@\/|~\/)?(?:src\/)?features(?:\/|$)/.test(importPath) || /^(?:@|~)features(?:\/|$)/.test(importPath)) {
-      report(filePath, `V2 must not import V1 feature code: ${importPath}`);
-    }
-
-    if (!isTestFile && normalizedPath.includes('/screens/') && importPath.includes('/api/')) {
-      report(filePath, 'screens must access API modules through hooks');
-    }
-
-    if (normalizedPath.includes('/hooks/') && importPath.includes('/shared/api')) {
-      report(filePath, 'feature hooks must access the shared client through feature API modules');
-    }
-
-    if (importPath.startsWith('.')) {
-      const resolvedPath = path.resolve(path.dirname(filePath), importPath);
-      const relativeToV2 = path.relative(v2Root, resolvedPath);
-      const relativeToV2Assets = path.relative(
-        path.join(projectRoot, 'src', 'assets', 'v2'),
-        resolvedPath,
-      );
-      const isV2Asset = !relativeToV2Assets.startsWith('..')
-        && !path.isAbsolute(relativeToV2Assets);
-
-      if (!isTestFile && !isV2Asset
-        && (relativeToV2.startsWith('..') || path.isAbsolute(relativeToV2))) {
-        report(filePath, `relative import escapes the V2 boundary: ${importPath}`);
-      }
-    }
-  }
-}
-
-visit(v2Root);
-
-if (violations.length > 0) {
-  console.error(['V2 boundary check failed:', ...violations.map((item) => `- ${item}`)].join('\n'));
-  process.exit(1);
-}
-
-console.log('V2 boundary check passed.');
