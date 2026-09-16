@@ -7,11 +7,11 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { FavoriteIcon } from '../../../shared/components';
 
-const CARD_WIDTH = 177;
-const CARD_HEIGHT = 222;
+import { VERIFIED_PLACE_CARD_WIDTH, VERIFIED_PLACE_CARD_HEIGHT } from '../model/verifiedPlaceLayout';
 const GRADIENT_HEIGHT = 105;
 
 type VerifiedPlaceCardProps = {
+  width?: number;
   address: string;
   favorited: boolean;
   imageUrl: string | null;
@@ -21,6 +21,7 @@ type VerifiedPlaceCardProps = {
 };
 
 export default function VerifiedPlaceCard({
+  width = VERIFIED_PLACE_CARD_WIDTH,
   address,
   favorited,
   imageUrl,
@@ -40,6 +41,7 @@ export default function VerifiedPlaceCard({
 
   return (
     <Card
+      style={{ width }}
       accessibilityLabel={`${name}, ${address}`}
       accessibilityRole="button"
       onPress={onPress}
@@ -52,24 +54,24 @@ export default function VerifiedPlaceCard({
           testID="v2-verified-place-card-image"
         />
       ) : (
-        <PhotoFallback />
+        <PhotoFallback testID="v2-verified-place-card-fallback" />
       )}
-      <GradientLayer pointerEvents="none">
-        <Svg height={GRADIENT_HEIGHT} width={CARD_WIDTH}>
-          <Defs>
-            <LinearGradient id="verifiedPlaceShade" x1="0" x2="0" y1="0" y2="1">
-              <Stop offset="0" stopColor="#000000" stopOpacity={0} />
-              <Stop offset="0.65" stopColor="#000000" stopOpacity={0.45} />
-              <Stop offset="1" stopColor="#000000" stopOpacity={0.7} />
-            </LinearGradient>
-          </Defs>
-          <Rect fill="url(#verifiedPlaceShade)" height="100%" width="100%" />
-        </Svg>
-      </GradientLayer>
-      <Overlay>
-        <TextBlock>
-          <Name numberOfLines={2}>{name}</Name>
-          <Address numberOfLines={1}>{address}</Address>
+      <Overlay testID="v2-verified-place-card-overlay">
+        <GradientLayer pointerEvents="none">
+          <Svg height="100%" width="100%" testID="v2-verified-place-card-gradient">
+            <Defs>
+              <LinearGradient id="verifiedPlaceShade" x1="0" x2="0" y1="0" y2="1">
+                <Stop offset="0" stopColor="#000000" stopOpacity={0} />
+                <Stop offset="0.65" stopColor="#000000" stopOpacity={0.45} />
+                <Stop offset="1" stopColor="#000000" stopOpacity={0.7} />
+              </LinearGradient>
+            </Defs>
+            <Rect fill="url(#verifiedPlaceShade)" height="100%" width="100%" />
+          </Svg>
+        </GradientLayer>
+        <TextBlock testID="v2-verified-place-card-text">
+          <Name numberOfLines={2} maxFontSizeMultiplier={2}>{name}</Name>
+          <Address numberOfLines={1} maxFontSizeMultiplier={2}>{address}</Address>
         </TextBlock>
         <FavoriteButton
           accessibilityLabel={t(
@@ -88,8 +90,9 @@ export default function VerifiedPlaceCard({
 }
 
 const Card = styled.Pressable`
-  width: ${CARD_WIDTH}px;
-  height: ${CARD_HEIGHT}px;
+  height: ${VERIFIED_PLACE_CARD_HEIGHT}px;
+  flex-grow: 0;
+  flex-shrink: 0;
   border-radius: ${({ theme }) => theme.radius.lg}px;
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
@@ -111,7 +114,7 @@ const GradientLayer = styled.View`
   left: 0;
   right: 0;
   bottom: 0;
-  height: ${GRADIENT_HEIGHT}px;
+  top: 0;
 `;
 
 const Overlay = styled.View`
@@ -119,7 +122,7 @@ const Overlay = styled.View`
   left: 0;
   right: 0;
   bottom: 0;
-  height: ${GRADIENT_HEIGHT}px;
+  min-height: ${GRADIENT_HEIGHT}px;
   flex-direction: row;
   align-items: flex-end;
   justify-content: space-between;
@@ -129,6 +132,7 @@ const Overlay = styled.View`
 
 const TextBlock = styled.View`
   flex: 1;
+  min-width: 0;
   gap: 2px;
 `;
 
@@ -145,6 +149,7 @@ const Address = styled(AppText)`
 `;
 
 const FavoriteButton = styled.Pressable`
+  flex-shrink: 0;
   width: 28px;
   height: 28px;
   align-items: center;

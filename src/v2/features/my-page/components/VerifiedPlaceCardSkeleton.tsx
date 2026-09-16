@@ -5,20 +5,20 @@ import styled from 'styled-components/native';
 
 import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
 
-const CARD_WIDTH = 177;
-const CARD_HEIGHT = 222;
+import { VERIFIED_PLACE_CARD_WIDTH, VERIFIED_PLACE_CARD_HEIGHT } from '../model/verifiedPlaceLayout';
 
 /**
  * Holds a verified place slot while its place detail loads, so the list keeps a
  * fixed order instead of collapsing to a shorter list and reshuffling as each
  * query resolves.
  */
-export default function VerifiedPlaceCardSkeleton() {
+export default function VerifiedPlaceCardSkeleton({ width = VERIFIED_PLACE_CARD_WIDTH }: { width?: number }) {
   const { t } = useTranslation();
   const opacity = useSharedPulse();
 
   return (
     <Card
+      style={{ width }}
       accessibilityLabel={t('myPage.verifiedPlaces.loading')}
       accessibilityRole="progressbar"
       testID="v2-verified-place-card-skeleton"
@@ -34,8 +34,9 @@ export default function VerifiedPlaceCardSkeleton() {
 }
 
 const Card = styled.View`
-  width: ${CARD_WIDTH}px;
-  height: ${CARD_HEIGHT}px;
+  height: ${VERIFIED_PLACE_CARD_HEIGHT}px;
+  flex-grow: 0;
+  flex-shrink: 0;
   justify-content: flex-end;
   border-radius: ${({ theme }) => theme.radius.lg}px;
   overflow: hidden;
