@@ -5,16 +5,18 @@ import styled, { useTheme } from 'styled-components/native';
 
 export type NotificationSettingToggleProps = {
   description?: string;
+  disabled?: boolean;
   errorMessage?: string;
   isLoading?: boolean;
   label: string;
-  onValueChange: (value: boolean) => void;
+  onValueChange?: (value: boolean) => void;
   testID?: string;
-  value: boolean;
+  value?: boolean;
 };
 
 export default function NotificationSettingToggle({
   description,
+  disabled = false,
   errorMessage,
   isLoading = false,
   label,
@@ -32,17 +34,17 @@ export default function NotificationSettingToggle({
           {description ? <Description>{description}</Description> : null}
         </Copy>
         <Toggle
-          $enabled={value}
-          accessibilityHint={errorMessage}
+          $enabled={value === true}
+          accessibilityHint={errorMessage ?? description}
           accessibilityLabel={label}
           accessibilityRole="switch"
-          accessibilityState={{ busy: isLoading, checked: value, disabled: isLoading }}
-          disabled={isLoading}
+          accessibilityState={{ busy: isLoading, checked: value, disabled: disabled || isLoading }}
+          disabled={disabled || isLoading}
           hitSlop={8}
-          onPress={() => onValueChange(!value)}
+          onPress={() => { if (!disabled && !isLoading) onValueChange?.(!value); }}
           testID={testID}
         >
-          <Thumb $enabled={value}>
+          <Thumb $enabled={value === true}>
             {isLoading ? (
               <ActivityIndicator
                 color={value ? theme.colors.primary : theme.colors.textMuted}
@@ -53,7 +55,7 @@ export default function NotificationSettingToggle({
         </Toggle>
       </Row>
       {errorMessage ? (
-        <ErrorMessage accessibilityLiveRegion="polite">{errorMessage}</ErrorMessage>
+        <ErrorMessage accessibilityRole="alert" accessibilityLiveRegion="polite" testID={`${testID}-error`}>{errorMessage}</ErrorMessage>
       ) : null}
     </Container>
   );

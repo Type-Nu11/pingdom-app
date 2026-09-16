@@ -135,9 +135,9 @@ describe('SettingsScreen', () => {
     await view.user.press(screen.getByText('알림 설정'));
 
     await waitFor(() => expect(
-      screen.getByLabelText('내가 먼저 기록한 장소 급상승'),
+      screen.getByLabelText('핫플레이스 알림'),
     ).toBeEnabled());
-    await fireEvent(screen.getByLabelText('내가 먼저 기록한 장소 급상승'), 'valueChange', false);
+    await view.user.press(screen.getByLabelText('핫플레이스 알림'));
 
     await waitFor(() => expect(notificationApi.updateNotificationSettings).toHaveBeenCalledWith({
       newHotplaceEnabled: false,
