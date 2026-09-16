@@ -5,7 +5,8 @@ import test from 'node:test';
 import { createInstance } from 'i18next';
 import ts from 'typescript';
 
-import { resources, supportedLanguages } from '../../../v2/shared/i18n/resources.ts';
+import { resources } from '../resources.ts';
+import { supportedLanguages } from '../../../shared/i18n/resources.ts';
 
 const flattenKeys = (value, prefix = '') => Object.entries(value).flatMap(([key, child]) => {
   const path = prefix ? `${prefix}.${key}` : key;
@@ -15,7 +16,7 @@ const flattenKeys = (value, prefix = '') => Object.entries(value).flatMap(([key,
 const flattenValues = (value) => Object.values(value).flatMap((child) =>
   child && typeof child === 'object' ? flattenValues(child) : [String(child)]);
 
-const repositoryRoot = resolve(import.meta.dirname, '../../../..');
+const repositoryRoot = resolve(import.meta.dirname, '../../../../..');
 const sourceRoots = ['src/application', 'src/app', 'src/v2', 'src/features/auth', 'src/features/onboarding', 'src/features/place/screens'];
 const ignoredPaths = ['/__tests__/', '/testing/', '/generated/', '/mock/', '/dev/'];
 

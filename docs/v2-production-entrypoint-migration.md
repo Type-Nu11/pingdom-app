@@ -34,8 +34,8 @@ index.ts
       │  ├─ src/v2/shared/auth/tokenSession
       │  └─ src/v2/features/notifications/services/fcmTokenLifecycle
       ├─ src/application/ProductionProviders
-      │  ├─ V2 QueryClient, theme, i18n, and error boundary
-      │  └─ legacy translation resource bridge
+      │  ├─ V2 QueryClient, theme, and error boundary
+      │  └─ V2 app/i18n composition → shared instance + feature-owned resources
       └─ src/application/navigation/RootNavigator
          ├─ auth + onboarding hydration gate
          ├─ V2 FCM token/foreground/open lifecycle
@@ -115,7 +115,7 @@ Map → Profile → Settings → logout → AuthLanding
 | API transport | configureProductionRuntime | V2 client receives production Axios transport |
 | Access/refresh token | shared Axios/Keychain session | single-flight refresh, one replay; failure calls logout |
 | Logout cleanup | authStore + configured beforeLogout | best-effort FCM DELETE, then token removal |
-| Query/theme/i18n | ProductionProviders | V2 defaults; legacy strings are an explicit bridge |
+| Query/theme/i18n | ProductionProviders | V2 defaults; app/i18n registers the shared base and feature-owned resource bundles |
 | FCM token/foreground/open | application RootNavigator using V2 hooks | authenticated token/presentation paths only |
 | Notification/deep-link pending intent | application RootNavigator | hydration/readiness gate; message-ID or 750 ms event dedupe |
 | Android hardware back | application RootNavigator | local override, stack pop, double-back exit |
@@ -125,7 +125,7 @@ Map → Profile → Settings → logout → AuthLanding
 
 - `AuthNavigator`: onboarding and authentication screens.
 - `MainNavigator.CheckIn` and `CouponWallet`.
-- legacy translation resources needed by injected screens.
+- translation keys needed by injected screens remain in the existing V2 base copy; there is no production import of a V1 resource file.
 - auth store and production Axios/Keychain session injected into V2 APIs at the application boundary.
 - local Android-back override used by active Map and Settings screens.
 
@@ -189,3 +189,15 @@ dependencies, not unreachable legacy.
 - #139: remove explicit bridges and unreachable V1 roots after the above land.
 - Physical-device QA for login, native map/location, FCM/deep links, location check-in recent visits,
   contract-covered review submission, and real reservation remains a required PR/release gate.
+
+## #357 domain-boundary foundation
+
+[ADR 0001](architecture/adr/0001-v2-domain-module-boundaries.md) and its
+[graph audit](architecture/adr/0001-v2-boundary-audit.md) define the domain migration.
+`check:v2` now parses imports, checks public APIs and cycles, and runs boundary fixtures.
+The ten direct application-to-legacy import occurrences are individually frozen in
+`scripts/v2-boundaries/exceptions.json` for #362; no bridge was deleted in #357.
+ProductionProviders changes only its i18n import to `v2/app/i18n`; development uses the
+same initialization policy. The resource values, language hydration and fallback are unchanged.
+Place/User/Booking/remaining domain moves belong to #361/#358/#359/#360. #362 preserves
+#124/#139 parity gates before deleting V1 bridges. V1 dependency delta for #357: `none`.

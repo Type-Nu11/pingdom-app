@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createInstance } from 'i18next';
+import { createInstance, type Resource } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import {
@@ -19,6 +19,20 @@ export const LANGUAGE_STORAGE_KEY = 'language';
 export { DEFAULT_LANGUAGE, detectDeviceLanguage, isSupportedLanguage, normalizeSupportedLanguage, resolvePreferredLanguage } from './language';
 
 export const i18n = createInstance();
+
+let registeredResources: Resource = resources;
+
+/** Application composition supplies domain bundles; shared never imports domains. */
+export function configureI18nResources(nextResources: Resource): void {
+  registeredResources = nextResources;
+  if (i18n.isInitialized) {
+    for (const [language, namespaces] of Object.entries(nextResources)) {
+      for (const [namespace, bundle] of Object.entries(namespaces)) {
+        i18n.addResourceBundle(language, namespace, bundle, true, true);
+      }
+    }
+  }
+}
 
 let initializationPromise: Promise<void> | null = null;
 let hasExplicitLanguagePreference = false;
@@ -43,7 +57,7 @@ export function initializeI18n(profileLanguage?: unknown): Promise<void> {
         parseMissingKeyHandler: () => resources[DEFAULT_LANGUAGE].translation.common.missingTranslation,
         returnEmptyString: false,
         returnNull: false,
-        resources,
+        resources: registeredResources,
         supportedLngs: [...supportedLanguages],
       });
     })().catch((error) => {

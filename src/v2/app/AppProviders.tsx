@@ -4,8 +4,7 @@ import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { i18n, initializeI18n } from '../shared/i18n';
-import { registerOfferCouponResources } from '../features/offers-coupons/i18n/offerCouponResources';
+import { i18n, initializeI18n } from './i18n';
 import {
   AppFontFamilyProvider,
   PRETENDARD_FONT_FAMILY,
@@ -25,7 +24,6 @@ export default function AppProviders({ children }: PropsWithChildren) {
     let isMounted = true;
 
     void initializeI18n()
-      .then(() => registerOfferCouponResources(i18n))
       .catch(() => {
         console.warn('[V2 i18n] Initialization failed.');
       })
