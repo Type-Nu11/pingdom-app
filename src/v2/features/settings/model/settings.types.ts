@@ -1,4 +1,6 @@
 export const SETTINGS_DETAIL_IDS = {
+  ProfileEdit: 'profileEdit',
+  AccountManagement: 'accountManagement',
   AppInformation: 'appInformation',
   Coupons: 'coupons',
   DataManagement: 'dataManagement',

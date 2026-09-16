@@ -22,6 +22,8 @@ import {
   VisitVerificationReviewScreen,
   VisitVerificationSessionScreen,
 } from '../../v2/features/place-visit-verification';
+import { AccountManagementScreen, SettingsDetailScreen, SETTINGS_DETAIL_IDS } from '../../v2/features/settings';
+import { useSettingsDetailRedirect, useSettingsNavigation } from '../../v2/features/settings/hooks/useSettingsNavigation';
 import SettingsScreen from '../../v2/features/settings/screens/SettingsScreen';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import {
@@ -186,17 +188,36 @@ export const VerifiedPlacesRouteScreen = ({ navigation }: MainScreenProps<'Verif
 
 export const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
   const logout = useAuthStore((state) => state.logout);
+  const openDetail = useSettingsNavigation(navigation);
 
   return (
     <V2ScreenBoundary>
       <SettingsScreen
         onBack={navigation.goBack}
         onLogout={logout}
-        onOpenProfileEdit={() => navigation.navigate(MAIN_ROUTES.ProfileEdit)}
+        onOpenDetail={openDetail}
+        onOpenAccountManagement={() => openDetail(SETTINGS_DETAIL_IDS.AccountManagement)}
+        onOpenNotificationSettings={() => openDetail(SETTINGS_DETAIL_IDS.NotificationSettings)}
+        onOpenProfileEdit={() => openDetail(SETTINGS_DETAIL_IDS.ProfileEdit)}
       />
     </V2ScreenBoundary>
   );
 };
+
+export const AccountManagementRouteScreen = ({ navigation }: MainScreenProps<'AccountManagement'>) => {
+  const logout = useAuthStore((state) => state.logout);
+  const openDetail = useSettingsNavigation(navigation);
+  return <AccountManagementScreen onBack={navigation.goBack} onLogout={logout} onOpenDetail={openDetail} />;
+};
+
+export const SettingsDetailRouteScreen = ({ navigation, route }: MainScreenProps<'SettingsDetail'>) => {
+  const redirecting = useSettingsDetailRedirect(navigation, route.params.detail);
+  return redirecting ? null : <SettingsDetailScreen detail={route.params.detail} onBack={navigation.goBack} />;
+};
+
+export const NotificationSettingsRouteScreen = ({ navigation }: MainScreenProps<'NotificationSettings'>) => (
+  <SettingsScreen initialPage="notifications" onBack={navigation.goBack} />
+);
 
 const CheckInRouteScreen = ({ navigation, route }: MainScreenProps<'CheckIn'>) => (
   <CheckInScreen
@@ -341,6 +362,9 @@ const MainNavigator = () => (
     <Stack.Screen name={MAIN_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileAliasRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.SettingsDetail} component={SettingsDetailRouteScreen} />
+    <Stack.Screen name={MAIN_ROUTES.NotificationSettings} component={NotificationSettingsRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.Merchant} component={MerchantRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRouteScreen} />
     <Stack.Screen name={MAIN_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRouteScreen} />

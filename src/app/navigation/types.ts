@@ -1,3 +1,4 @@
+import type { SettingsDetailId } from '../../v2/features/settings';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type {
   NativeStackNavigationProp,
@@ -55,6 +56,9 @@ export const MAIN_ROUTES = {
   ReservationBox: 'ReservationBox',
   ReservationDetail: 'ReservationDetail',
   Settings: 'Settings',
+  AccountManagement: 'AccountManagement',
+  SettingsDetail: 'SettingsDetail',
+  NotificationSettings: 'NotificationSettings',
   VisitVerificationPlaces: 'VisitVerificationPlaces',
   VisitVerificationReview: 'VisitVerificationReview',
   VisitVerificationSession: 'VisitVerificationSession',
@@ -95,6 +99,9 @@ export type MainStackParamList = {
   };
   ReservationBox: undefined;
   Settings: undefined;
+  AccountManagement: undefined;
+  SettingsDetail: { detail: SettingsDetailId };
+  NotificationSettings: undefined;
   Merchant: {
     merchantId: MerchantId;
   };

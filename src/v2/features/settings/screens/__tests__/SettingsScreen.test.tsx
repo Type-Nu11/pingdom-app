@@ -137,7 +137,7 @@ describe('SettingsScreen', () => {
     await waitFor(() => expect(
       screen.getByLabelText('내가 먼저 기록한 장소 급상승'),
     ).toBeEnabled());
-    fireEvent(screen.getByLabelText('내가 먼저 기록한 장소 급상승'), 'valueChange', false);
+    await fireEvent(screen.getByLabelText('내가 먼저 기록한 장소 급상승'), 'valueChange', false);
 
     await waitFor(() => expect(notificationApi.updateNotificationSettings).toHaveBeenCalledWith({
       newHotplaceEnabled: false,
@@ -217,11 +217,34 @@ describe('SettingsScreen', () => {
     await renderSettings({ onLogout });
 
     const logout = screen.getByLabelText('로그아웃');
-    fireEvent.press(logout);
-    fireEvent.press(logout);
+    await fireEvent.press(logout);
+    await fireEvent.press(logout);
     expect(onLogout).toHaveBeenCalledTimes(1);
 
     await act(async () => resolveLogout?.());
     await waitFor(() => expect(screen.getByLabelText('로그아웃')).toBeEnabled());
   });
+});
+
+test('Android back closes a local language page before delegating to the stack', async () => {
+  const { BackHandler } = require('react-native');
+  const subscription = jest.spyOn(BackHandler, 'addEventListener');
+  const onBack = jest.fn();
+  const view = await renderSettings({ onBack });
+  await view.user.press(screen.getByText('언어'));
+  const handler = subscription.mock.calls.filter(([event]) => event === 'hardwareBackPress').at(-1)?.[1] as () => boolean;
+  await act(async () => { expect(handler()).toBe(true); });
+  expect(screen.getByText('설정')).toBeVisible();
+  expect(onBack).not.toHaveBeenCalled();
+  await view.user.press(screen.getByLabelText('뒤로가기'));
+  expect(onBack).toHaveBeenCalledTimes(1);
+});
+
+test('password keeps the existing profile callback when no detail navigator is injected', async () => {
+  jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+  const onOpenProfileEdit = jest.fn();
+  const view = await renderSettings({ onOpenProfileEdit });
+  await screen.findByText('woo._sm');
+  await view.user.press(screen.getByText('비밀번호 변경'));
+  expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
 });

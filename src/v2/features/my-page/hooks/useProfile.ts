@@ -98,6 +98,7 @@ export function useMyReviews(params: ListMyReviewsParams = {}) {
     isLoading: query.isLoading,
     refetch: query.refetch,
     reviewCount: query.data?.totalElements ?? 0,
+    serverReviewCount: query.data?.totalElements,
     reviews: query.data?.reviews ?? [],
   };
 }

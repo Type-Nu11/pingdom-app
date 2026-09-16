@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '../../../shared/components';
 import { SettingsScreenLayout, SettingsTopBar } from '../components/SettingsLayout';
-import type { SettingsDetailId } from '../model/settings.types';
+import type { UnsupportedSettingsDetail } from '../model/settingsNavigation';
 
 export type SettingsDetailPendingScreenProps = {
-  detail: SettingsDetailId;
+  detail: UnsupportedSettingsDetail | 'logout';
   onBack: () => void;
 };
 
