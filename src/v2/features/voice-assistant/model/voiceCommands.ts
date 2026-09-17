@@ -98,12 +98,15 @@ function requirePlace(request: { args: { placeId: number } }, ex: Execution) {
   const age = ex.runtime.monotonic() - known.observedAt;
   ex.force = age < 0 || age >= VOICE_PROVENANCE_MAX_AGE;
 }
-function validateSearch(request: Request<'searchNearbyReservablePlaces'>, ex: Execution) {
-  if (!request.args.useCurrentLocation) throw new VoiceClarification('useCurrentLocation');
-  const { location, locationPermission, radiusKm, placeListEnabled } = ex.runtime;
-  if (!placeListEnabled) throw new VoiceCommandError('FORBIDDEN');
+function requireLocation(runtime: VoiceCommandRuntime) {
+  const { location, locationPermission } = runtime;
   if (locationPermission !== 'granted' || !location || !Number.isFinite(location.latitude) || Math.abs(location.latitude) > 90
     || !Number.isFinite(location.longitude) || Math.abs(location.longitude) > 180) throw new VoiceCommandError('LOCATION_REQUIRED');
+}
+function validateSearch(request: Request<'searchNearbyReservablePlaces'>, ex: Execution) {
+  if (!request.args.useCurrentLocation) throw new VoiceClarification('useCurrentLocation');
+  const { radiusKm, placeListEnabled } = ex.runtime;
+  if (!placeListEnabled) throw new VoiceCommandError('FORBIDDEN');
   if (!Number.isFinite(radiusKm) || radiusKm <= 0) throw new VoiceCommandError('STALE_CONTEXT');
 }
 const searchNearby: VoiceCommandHandler<'searchNearbyReservablePlaces'> = async (request, ex) => {
@@ -226,6 +229,8 @@ export function createVoiceCommandDispatcher(options: {
       const invoke = entry as { policy: { allowsMutation: false }; validate: (c: CommandRequest, e: Execution) => void;
         handler: ((c: CommandRequest, e: Execution) => Promise<VoiceCommandOutput[VoiceCommandName]>) | null };
       if (invoke.policy.allowsMutation !== false || !invoke.handler) throw new VoiceCommandError('FORBIDDEN');
+      // Provider commands require approved location. The app's own close button remains unconditional.
+      requireLocation(initial);
       invoke.validate(command, ex);
       const data = await invoke.handler(command, ex);
       check();

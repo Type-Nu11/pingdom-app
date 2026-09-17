@@ -35,10 +35,11 @@ function setup() {
   let contextRevision = 1, accountRevision: string | null = 'account', monotonic = 0;
   let location: { latitude: number; longitude: number } | null = { latitude: 37.5, longitude: 127 };
   let timezone = 'Asia/Seoul';
+  let locationPermission = 'granted';
   let next: ProviderEnvelope = search();
   let transportDelay: Promise<void> | undefined;
   const dispatcher = commands.createVoiceCommandDispatcher({
-    runtime: () => ({ queryClient, accountRevision, contextRevision, location, locationPermission: 'granted', radiusKm: 5,
+    runtime: () => ({ queryClient, accountRevision, contextRevision, location, locationPermission, radiusKm: 5,
       timezone, now: () => now, monotonic: () => monotonic, session: controller.getIdentity(), placeListEnabled: true }),
     publish: result => results.push(result), stopSession: () => controller.close(),
     queries: { list: params => commands.voiceReadQueries.list(params, createPlaceExplorationApi(client)),
@@ -59,6 +60,7 @@ function setup() {
     setPlaces: (v: unknown) => { places = v; }, setDetail: (v: unknown) => { detail = v; }, setSlots: (v: unknown) => { slots = v; },
     setFailure: (v: unknown) => { failure = v; }, setDelay: (v: Promise<unknown>) => { delay = v; },
     setLocation: (v: typeof location) => { location = v; }, setTimezone: (v: string) => { timezone = v; },
+    setPermission: (v: string) => { locationPermission = v; },
     advance: (v: number) => { monotonic += v; }, changeContext: () => { contextRevision++; dispatcher.clear(); },
     logout: () => { accountRevision = null; controller.setAuthenticated(false); },
   };
@@ -86,6 +88,21 @@ test.each([null, false])('missing location or explicit refusal never calls a dom
   const x = setup(); await x.controller.start(); if (value === null) x.setLocation(null);
   const result = await x.send(search({ useCurrentLocation: value === false ? false : true }));
   expect(result?.outcome.status).not.toBe('succeeded'); expect(x.calls).toHaveLength(0);
+});
+test.each([
+  ['searchNearbyReservablePlaces', { date: '2026-09-20', startTime: '14:00', endTime: '17:00', quantity: 2, useCurrentLocation: true }],
+  ['getPlaceDetails', { placeId: 1 }],
+  ['getAvailabilities', { placeId: 1, date: '2026-09-20', quantity: 2 }],
+  ['cancelVoiceSession', {}],
+] as const)('location is required before executing %s even with valid provenance', async (name, args) => {
+  for (const missing of ['location', 'permission']) {
+    const x = setup(); await x.controller.start(); await x.send();
+    if (missing === 'location') x.setLocation(null); else x.setPermission('denied');
+    const count = x.calls.length;
+    expect((await x.send(command(name, args)))?.outcome).toEqual({ status: 'rejected', code: 'LOCATION_REQUIRED' });
+    expect(x.calls).toHaveLength(count);
+    expect(x.controller.getSnapshot().phase).toBe('ready');
+  }
 });
 test.each([
   { startsAt: '2026-09-20T08:00:00Z', endsAt: '2026-09-20T09:00:00Z' },
