@@ -49,3 +49,16 @@ test('explicit transport retry becomes enabled after backoff without another use
   expect(view.result.current.retryReady).toBe(true);
   await view.unmount(); queryClient.clear(); jest.useRealTimers();
 });
+
+test('provider unavailable is a safe error rather than a successful command or generic response error', async () => {
+  const queryClient = new QueryClient();
+  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'protocol_error', code: 'PROVIDER_UNAVAILABLE' }) });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'cafe', source: 'text', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'error', code: 'PROVIDER_UNAVAILABLE' });
+  expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
+  await view.unmount(); queryClient.clear();
+});

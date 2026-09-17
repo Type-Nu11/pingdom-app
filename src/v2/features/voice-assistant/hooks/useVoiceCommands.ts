@@ -33,7 +33,8 @@ export function useVoiceCommands(context: VoiceCommandContext) {
     if (!delivery.isCurrent() || delivery.signal.aborted) return;
     if (envelope.kind === 'command_request') await dispatcher.consume(envelope, delivery);
     else if (envelope.kind === 'clarification_request') setCommandState({ phase: 'clarification', field: envelope.field });
-    else if (envelope.kind === 'protocol_error') setCommandState({ phase: 'error', code: 'INVALID_RESPONSE' });
+    else if (envelope.kind === 'protocol_error') setCommandState({ phase: 'error',
+      code: envelope.code === 'PROVIDER_UNAVAILABLE' ? 'PROVIDER_UNAVAILABLE' : 'INVALID_RESPONSE' });
     else setCommandState({ phase: 'advisory' }); // Never display provider success claims or speak them.
   }, [dispatcher]);
   const { controller, state } = useVoiceSession(context.accountRevision, consume);
