@@ -3,6 +3,8 @@ import { toApiError } from '../../../shared/api';
 export type VoiceSessionErrorCode = 'CANCELED' | 'TIMEOUT' | 'AUTHENTICATION_REQUIRED'
   | 'FORBIDDEN' | 'RATE_LIMITED' | 'SERVER_ERROR' | 'PROVIDER_ERROR' | 'SESSION_EXPIRED'
   | 'NETWORK_ERROR' | 'CONNECTION_CLOSED' | 'INVALID_RESPONSE' | 'RESPONSE_TOO_LARGE'
+  | 'SESSION_NOT_FOUND' | 'PROVIDER_UNAVAILABLE' | 'PROVIDER_RESPONSE_INVALID'
+  | 'RATE_LIMIT_UNAVAILABLE' | 'RETRY_UNAVAILABLE' | 'RETRY_BACKOFF'
   | 'REPLAY_CONFLICT' | 'DELIVERY_FAILED' | 'SESSION_REQUIRED' | 'LEDGER_FULL' | 'INVALID_INPUT';
 
 /** Safe public failure: never retain ApiError, body, prompt, or raw message. */
@@ -19,7 +21,12 @@ export function voiceSessionError(error: unknown): VoiceSessionError {
   if (api.status === 403) return new VoiceSessionError('FORBIDDEN');
   if (api.status === 429) return new VoiceSessionError('RATE_LIMITED');
   if (api.status === 410) return new VoiceSessionError('SESSION_EXPIRED');
-  // The deployed messages operation documents 502 as provider failure/invalid response.
+  if (api.status === 404) return new VoiceSessionError('SESSION_NOT_FOUND');
+  if (api.status === 409 && api.code === 'REPLAY_CONFLICT') return new VoiceSessionError('REPLAY_CONFLICT');
+  if (api.status === 502 && api.code === 'PROVIDER_UNAVAILABLE') return new VoiceSessionError('PROVIDER_UNAVAILABLE');
+  if (api.status === 502 && api.code === 'PROVIDER_RESPONSE_INVALID') return new VoiceSessionError('PROVIDER_RESPONSE_INVALID');
+  if (api.status === 503 && api.code === 'RATE_LIMIT_UNAVAILABLE') return new VoiceSessionError('RATE_LIMIT_UNAVAILABLE');
+  // No server-specific timeout code exists; provider timeout stays PROVIDER_UNAVAILABLE.
   if (api.status === 502) return new VoiceSessionError('PROVIDER_ERROR');
   if (api.status && api.status >= 500) return new VoiceSessionError('SERVER_ERROR');
   if (api.isNetworkError) return new VoiceSessionError('NETWORK_ERROR');

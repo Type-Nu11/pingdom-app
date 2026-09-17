@@ -1,4 +1,4 @@
-import { createVoiceSessionController, VOICE_LEDGER_LIMIT, type VoiceDeliveryContext } from '../voiceSession';
+import { createVoiceSessionController, VOICE_LEDGER_LIMIT, type VoiceDeliveryContext, type VoiceSessionController } from '../voiceSession';
 import { createVoiceSessionApi, decodeVoiceFinal, utf8Length } from '../../api/voiceSessionApi';
 import { ApiError, createApiClient, configureApiAccessTokenProvider, type ApiClient, type ApiTransport } from '../../../../shared/api';
 import { voiceSessionError } from '../voiceSessionError';
@@ -6,20 +6,22 @@ import type { ProviderEnvelope } from '../voiceAssistantCommand.types';
 
 const envelope = (id = 'one'): ProviderEnvelope => ({ schemaVersion: 1, id, kind: 'assistant_message', text: '안내' });
 const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; };
+const controllers: VoiceSessionController[] = [];
+function tracked(controller: VoiceSessionController) { controllers.push(controller); return controller; }
 function setup(consumer = jest.fn()) {
   const api = {
-    create: jest.fn().mockResolvedValue({ sessionId: 's', expiresAt: '2026-09-17T12:00:00' }),
-    refresh: jest.fn().mockResolvedValue({ sessionId: 's', expiresAt: '2026-09-17T12:05:00' }),
+    create: jest.fn().mockImplementation(async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300_000).toISOString() })),
+    refresh: jest.fn().mockImplementation(async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 600_000).toISOString() })),
     close: jest.fn().mockResolvedValue(undefined), send: jest.fn().mockResolvedValue(envelope()),
   };
-  return { api, consumer, controller: createVoiceSessionController(consumer, api) };
+  return { api, consumer, controller: tracked(createVoiceSessionController(consumer, api)) };
 }
-afterEach(() => jest.useRealTimers());
+afterEach(() => { controllers.splice(0).forEach(c => c.dispose()); jest.useRealTimers(); });
 
-test('create, explicit refresh and close; expiresAt remains opaque', async () => {
+test('create, explicit refresh and close use offset-aware expiry', async () => {
   const { controller, api } = setup();
   await controller.start(); expect(controller.getSnapshot().phase).toBe('ready');
-  await controller.refresh(); expect(controller.getSession()?.expiresAt).toBe('2026-09-17T12:05:00');
+  await controller.refresh(); expect(Date.parse(controller.getSession()!.expiresAt)).toBeGreaterThan(Date.now() + 590_000);
   await controller.close(); expect(api.close).toHaveBeenCalledWith('s', expect.any(AbortSignal));
   expect(controller.getSession()).toBeUndefined(); expect(controller.getSnapshot().phase).toBe('closed');
 });
@@ -103,7 +105,7 @@ test('16 KiB checks raw UTF-8 before JSON decoding, including whitespace', () =>
   expect(utf8Length('한😀')).toBe(7);
 });
 test('API exact methods, paths, JWT, signal and raw response options', async () => {
-  const post = jest.fn().mockResolvedValue({ data: JSON.stringify(envelope()) });
+  const post = jest.fn().mockResolvedValue({ data: JSON.stringify(envelope('i')) });
   const remove = jest.fn().mockResolvedValue({ data: undefined });
   const restore = configureApiAccessTokenProvider(() => 'test-jwt');
   const client = createApiClient({ post, delete: remove } as unknown as ApiTransport);
@@ -112,7 +114,7 @@ test('API exact methods, paths, JWT, signal and raw response options', async () 
     await api.send('s/id', { requestId: 'i', text: '질문' }, signal);
     expect(post).toHaveBeenCalledWith('/voice-ai/sessions/s%2Fid/messages', { requestId: 'i', text: '질문' }, expect.objectContaining({ responseType: 'text', headers: { Authorization: 'Bearer test-jwt' }, maxContentLength: 16384 }));
     const options = post.mock.calls[0][2]; expect(options.transformResponse[0]('{')).toBe('{');
-    post.mockResolvedValue({ data: { sessionId: 's', expiresAt: 'opaque' } });
+    post.mockResolvedValue({ data: { sessionId: 's', expiresAt: '2030-09-17T12:00:00+09:00' } });
     await api.create(signal); await api.refresh('s', signal); await api.close('s', signal);
     expect(post.mock.calls.slice(1).map(call => call[0])).toEqual(['/voice-ai/sessions', '/voice-ai/sessions/s/refresh']);
     expect(remove).toHaveBeenCalledWith('/voice-ai/sessions/s', expect.objectContaining({ signal }));
@@ -143,7 +145,7 @@ test('download progress does not extend deadline and canceled final result is ne
   }));
   const base = setup();
   const api = { ...base.api, send: createVoiceSessionApi({ post } as unknown as ApiClient).send };
-  const consumer = jest.fn(); const controller = createVoiceSessionController(consumer, api);
+  const consumer = jest.fn(); const controller = tracked(createVoiceSessionController(consumer, api));
   await controller.start(); const pending = controller.send('hello');
   await jest.advanceTimersByTimeAsync(30_000); await pending;
   expect(controller.getSnapshot().error).toBe('TIMEOUT');
@@ -184,4 +186,122 @@ test('pre-aborted request never reaches API and a disposed controller cannot res
   await controller.start(abort.signal); expect(api.create).not.toHaveBeenCalled();
   expect(controller.getSnapshot().error).toBe('CANCELED');
   controller.dispose(); await expect(controller.start()).rejects.toThrow('AUTHENTICATION_REQUIRED');
+});
+
+test('offset-aware expiry rejects ambiguous and impossible timestamps', async () => {
+  const post = jest.fn(); const api = createVoiceSessionApi({ post } as unknown as ApiClient);
+  for (const expiresAt of ['2030-09-17T12:00:00', '2030-02-30T12:00:00Z', 'garbage', '2030-09-17T12:00:00+25:00']) {
+    post.mockResolvedValue({ sessionId: 's', expiresAt });
+    await expect(api.create(new AbortController().signal)).rejects.toThrow('INVALID_RESPONSE');
+  }
+  post.mockResolvedValue({ sessionId: 's', expiresAt: '2030-09-17T12:00:00+09:00' });
+  expect((await api.create(new AbortController().signal)).expiresAt).toBe('2030-09-17T12:00:00+09:00');
+});
+test('expiry boundary aborts pending input and discards its late final response', async () => {
+  jest.useFakeTimers(); const { controller, api, consumer } = setup();
+  api.create.mockResolvedValue({ sessionId: 's', expiresAt: new Date(Date.now() + 5_000).toISOString() });
+  await controller.start(); const late = deferred<ProviderEnvelope>(); api.send.mockReturnValue(late.promise);
+  const pending = controller.send('input');
+  await jest.advanceTimersByTimeAsync(5_000); await pending;
+  expect(controller.getSnapshot()).toMatchObject({ phase: 'closed', error: 'SESSION_EXPIRED', retryAvailable: false });
+  late.resolve(envelope()); await Promise.resolve(); expect(consumer).not.toHaveBeenCalled();
+  expect(controller.getSession()).toBeUndefined();
+});
+test('refresh replaces the expiry timer without resetting the replay ledger', async () => {
+  jest.useFakeTimers(); const { controller, consumer } = setup(); await controller.start(); await controller.send('first');
+  await jest.advanceTimersByTimeAsync(299_000); await controller.refresh();
+  await jest.advanceTimersByTimeAsync(2_000); expect(controller.getSnapshot().phase).toBe('ready');
+  await controller.send('duplicate'); expect(consumer).toHaveBeenCalledTimes(1);
+  await jest.advanceTimersByTimeAsync(598_000); expect(controller.getSnapshot().error).toBe('SESSION_EXPIRED');
+});
+test('backward wall-clock change does not extend monotonic session lifetime', async () => {
+  jest.useFakeTimers(); const { controller } = setup(); await controller.start();
+  jest.setSystemTime(Date.now() - 3600_000);
+  await jest.advanceTimersByTimeAsync(300_000);
+  expect(controller.getSnapshot().error).toBe('SESSION_EXPIRED');
+});
+test.each([401, 403, 404, 410])('HTTP %s invalidates the epoch and existing consumer context', async status => {
+  const { controller, api, consumer } = setup(); await controller.start(); await controller.send('first');
+  const context = consumer.mock.calls[0][1];
+  api.send.mockRejectedValueOnce(new ApiError('private', { status })); await controller.send('second');
+  expect(controller.getSnapshot().phase).toBe('closed'); expect(controller.getSession()).toBeUndefined();
+  expect(context.isCurrent()).toBe(false); expect(controller.getSnapshot().retryAvailable).toBe(false);
+});
+test('retry uses the same ID/text with no new generation and no automatic network call', async () => {
+  jest.useFakeTimers(); const { controller, api, consumer } = setup(); await controller.start();
+  api.send.mockRejectedValueOnce(new ApiError('private', { isNetworkError: true }));
+  await controller.send('same text'); const generation = controller.getSnapshot().generation;
+  expect(controller.getSnapshot().retryAvailable).toBe(true);
+  await expect(controller.retry()).rejects.toThrow('RETRY_BACKOFF');
+  await jest.advanceTimersByTimeAsync(1000); expect(api.send).toHaveBeenCalledTimes(1);
+  await controller.retry(); expect(api.send).toHaveBeenCalledTimes(2);
+  expect(api.send.mock.calls[1][1]).toEqual(api.send.mock.calls[0][1]);
+  expect(controller.getSnapshot()).toMatchObject({ generation, retryAvailable: false, error: null });
+  expect(consumer).toHaveBeenCalledTimes(1);
+  await expect(controller.retry()).rejects.toThrow('RETRY_UNAVAILABLE');
+});
+test('429 uses app backoff of at least 60s; no Retry-After is invented', async () => {
+  jest.useFakeTimers(); const { controller, api } = setup(); await controller.start();
+  api.send.mockRejectedValueOnce(new ApiError('private', { status: 429, code: 'RATE_LIMIT_EXCEEDED' }));
+  await controller.send('same text');
+  await jest.advanceTimersByTimeAsync(59_999); await expect(controller.retry()).rejects.toThrow('RETRY_BACKOFF');
+  await jest.advanceTimersByTimeAsync(1); await controller.retry();
+  expect(api.send.mock.calls[1][1]).toEqual(api.send.mock.calls[0][1]);
+});
+test.each(['cancel', 'close', 'dispose', 'background', 'logout', 'input'] as const)('%s removes pending retry data', async action => {
+  jest.useFakeTimers(); const { controller, api } = setup(); await controller.start();
+  api.send.mockRejectedValueOnce(new ApiError('private', { isNetworkError: true })); await controller.send('private text');
+  if (action === 'background') controller.setForeground(false);
+  else if (action === 'logout') controller.setAuthenticated(false);
+  else if (action === 'input') await controller.send('new text');
+  else await controller[action]();
+  expect(controller.getSnapshot().retryAvailable).toBe(false);
+  expect(JSON.stringify(controller.getSnapshot())).not.toContain('private text');
+});
+test('new input after failed request gets a different ID; retry never resurrects old input', async () => {
+  const { controller, api } = setup(); await controller.start();
+  api.send.mockRejectedValueOnce(new ApiError('private', { status: 503, code: 'RATE_LIMIT_UNAVAILABLE' }));
+  await controller.send('old'); await controller.send('new');
+  expect(api.send.mock.calls[0][1].requestId).not.toBe(api.send.mock.calls[1][1].requestId);
+  await expect(controller.retry()).rejects.toThrow('RETRY_UNAVAILABLE');
+});
+test.each([
+  [409, 'REPLAY_CONFLICT', 'REPLAY_CONFLICT'], [502, 'PROVIDER_UNAVAILABLE', 'PROVIDER_UNAVAILABLE'],
+  [502, 'PROVIDER_RESPONSE_INVALID', 'PROVIDER_RESPONSE_INVALID'], [503, 'RATE_LIMIT_UNAVAILABLE', 'RATE_LIMIT_UNAVAILABLE'],
+] as const)('documented %s/%s maps to %s', (status, code, expected) => {
+  expect(voiceSessionError(new ApiError('private', { status, code })).code).toBe(expected);
+});
+test('text-mode error response still flows through shared ApiError conversion', async () => {
+  const post = jest.fn().mockImplementation(async (_p, _b, options) => {
+    const data = options.transformResponse[0]('{"code":"REPLAY_CONFLICT","message":"private"}', {}, 409);
+    throw { isAxiosError: true, response: { status: 409, data }, message: 'private' };
+  });
+  const api = createVoiceSessionApi(createApiClient({ post } as unknown as ApiTransport));
+  await expect(api.send('s', { requestId: 'i', text: 'input' }, new AbortController().signal)).rejects.toThrow('REPLAY_CONFLICT');
+});
+test('final ID mismatch is rejected even when its envelope is parser-valid', async () => {
+  const client = { post: jest.fn().mockResolvedValue(JSON.stringify(envelope('wrong'))) } as unknown as ApiClient;
+  await expect(createVoiceSessionApi(client).send('s', { requestId: 'expected', text: 'input' }, new AbortController().signal)).rejects.toThrow('INVALID_RESPONSE');
+});
+
+test('retry after timeout cannot deliver the original late response twice', async () => {
+  jest.useFakeTimers(); const { controller, api, consumer } = setup(); await controller.start();
+  const late = deferred<ProviderEnvelope>(); api.send.mockReturnValueOnce(late.promise);
+  const first = controller.send('question'); await jest.advanceTimersByTimeAsync(30_000); await first;
+  await jest.advanceTimersByTimeAsync(1000); await controller.retry();
+  expect(api.send.mock.calls[0][1]).toEqual(api.send.mock.calls[1][1]);
+  late.resolve(envelope()); await Promise.resolve(); expect(consumer).toHaveBeenCalledTimes(1);
+});
+test('expiry clears backoff data and retry cannot create a new session implicitly', async () => {
+  jest.useFakeTimers(); const { controller, api } = setup();
+  api.create.mockResolvedValue({ sessionId: 's', expiresAt: new Date(Date.now() + 5000).toISOString() });
+  await controller.start(); api.send.mockRejectedValueOnce(new ApiError('private', { status: 429 }));
+  await controller.send('input'); await jest.advanceTimersByTimeAsync(5000);
+  expect(controller.getSnapshot()).toMatchObject({ error: 'SESSION_EXPIRED', retryAvailable: false });
+  await expect(controller.retry()).rejects.toThrow('SESSION_REQUIRED'); expect(api.create).toHaveBeenCalledTimes(1);
+});
+test('provider schema violation has no retry affordance', async () => {
+  const { controller, api } = setup(); await controller.start();
+  api.send.mockRejectedValueOnce(new ApiError('private', { status: 502, code: 'PROVIDER_RESPONSE_INVALID' }));
+  await controller.send('input'); expect(controller.getSnapshot()).toMatchObject({ error: 'PROVIDER_RESPONSE_INVALID', retryAvailable: false });
 });

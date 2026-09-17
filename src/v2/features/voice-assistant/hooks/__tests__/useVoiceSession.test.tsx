@@ -16,7 +16,7 @@ test('account change/logout, background and unmount invalidate owned session and
     callbacks.set(event, callback); return { remove };
   });
   factory.mockImplementation(() => ({
-    create: jest.fn().mockResolvedValue({ sessionId: 's', expiresAt: 'opaque' }),
+    create: jest.fn().mockResolvedValue({ sessionId: 's', expiresAt: new Date(Date.now() + 300_000).toISOString() }),
     send: jest.fn(), refresh: jest.fn(), close: jest.fn(),
   }));
   const consume = jest.fn();

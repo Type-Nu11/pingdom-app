@@ -1,9 +1,11 @@
 import { apiClient, type ApiClient } from '../../../shared/api';
 import type { components } from '../../../shared/api/generated/voiceAi';
+import { voiceSessionExpiresAt } from '../model/voiceSessionExpiry';
 import { parseVoiceAssistantEnvelope } from '../model/voiceAssistantCommandParser';
 import { VoiceSessionError, voiceSessionError } from '../model/voiceSessionError';
 
 export type VoiceSessionDto = components['schemas']['VoiceAiSessionResponse'];
+export type VoiceProviderEnvelopeDto = components['schemas']['ProviderEnvelopeV1'];
 export type VoiceMessageRequest = components['schemas']['VoiceAiMessageRequest'];
 export const VOICE_RESPONSE_LIMIT = 16 * 1024;
 
@@ -32,7 +34,7 @@ function session(value: VoiceSessionDto): Required<VoiceSessionDto> {
     || value.sessionId.length > 1024 || typeof value.expiresAt !== 'string' || !value.expiresAt) {
     throw new VoiceSessionError('INVALID_RESPONSE');
   }
-  // Opaque expiresAt: no timezone assumption or automatic scheduling before server #1645.
+  voiceSessionExpiresAt(value.expiresAt);
   return Object.freeze({ sessionId: value.sessionId, expiresAt: value.expiresAt });
 }
 export function createVoiceSessionApi(client: ApiClient = apiClient) {
@@ -68,7 +70,9 @@ export function createVoiceSessionApi(client: ApiClient = apiClient) {
         });
         if (oversized) throw new VoiceSessionError('RESPONSE_TOO_LARGE');
         if (signal.aborted) throw new VoiceSessionError('CANCELED');
-        return decodeVoiceFinal(raw);
+        const envelope = decodeVoiceFinal(raw);
+        if (envelope.id !== input.requestId) throw new VoiceSessionError('INVALID_RESPONSE');
+        return envelope;
       } catch (e) {
         if (oversized) throw new VoiceSessionError('RESPONSE_TOO_LARGE');
         if (signal.aborted) throw new VoiceSessionError('CANCELED');

@@ -19,7 +19,7 @@ export { createVoiceInputController, validateVoiceInput, unavailableSpeechAdapte
 export type { FinalInput, OnFinalInput, SpeechInputAdapter, SpeechSession, SpeechEvent, VoiceInputPhase, MicrophonePermission } from './model/voiceInput';
 
 export { createVoiceSessionApi } from './api/voiceSessionApi';
-export type { VoiceSessionApi, VoiceSessionDto, VoiceMessageRequest } from './api/voiceSessionApi';
+export type { VoiceSessionApi, VoiceSessionDto, VoiceMessageRequest, VoiceProviderEnvelopeDto } from './api/voiceSessionApi';
 export { createVoiceSessionController } from './model/voiceSession';
 export type { VoiceSessionController, VoiceSessionState, VoiceEnvelopeConsumer, VoiceDeliveryContext } from './model/voiceSession';
 export { VoiceSessionError } from './model/voiceSessionError';

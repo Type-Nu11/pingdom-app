@@ -244,7 +244,14 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       try {
         const authorizedOptions = {
           ...await withAuthorization(options),
-          ...(options.responseType === 'text' ? { transformResponse: [(data: unknown) => data] } : {}),
+          ...(options.responseType === 'text' ? { transformResponse: [(data: unknown, _headers: unknown, status?: number) => {
+            // Preserve raw success for pre-decode limits, but retain normal ApiError conversion.
+            if (status && status >= 400 && typeof data === 'string'
+              && data.length <= (options.maxContentLength ?? 16 * 1024)) {
+              try { return JSON.parse(data) as unknown; } catch { return data; }
+            }
+            return data;
+          }] } : {}),
         };
         const contentType = Object.entries(authorizedOptions.headers ?? {})
           .find(([key]) => key.toLowerCase() === 'content-type')?.[1];
