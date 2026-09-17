@@ -1,11 +1,13 @@
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
+import server from '../../docs/api/voice-ai.openapi.json';
 import schema from '../../docs/architecture/voice-assistant/provider-envelope.v1.schema.json';
 import { parseVoiceAssistantEnvelope } from '../../src/v2/features/voice-assistant/model/voiceAssistantCommandParser';
 
 const ajv = new Ajv2020({ strict: true });
 addFormats(ajv);
 const validate = ajv.compile(schema);
+const validateServer = ajv.compile(server.components.schemas.ProviderEnvelopeV1);
 const base = { schemaVersion: 1, id: 'fixture-1' };
 const commands = [
   { command: 'searchNearbyReservablePlaces', args: { date: '2026-09-20', startTime: '14:00', endTime: '17:00', quantity: 2, useCurrentLocation: true } },
@@ -22,6 +24,7 @@ const valid = [
 ];
 test.each(valid)('schema and runtime accept representative $kind fixture', fixture => {
   expect(validate(fixture)).toBe(true);
+  expect(validateServer(fixture)).toBe(true);
   expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(true);
 });
 const invalid = [
@@ -34,6 +37,7 @@ const invalid = [
 ];
 test.each(invalid)('schema and runtime reject representative invalid fixture %#', fixture => {
   expect(validate(fixture)).toBe(false);
+  expect(validateServer(fixture)).toBe(false);
   expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(false);
 });
 test('runtime retains semantic constraints beyond structural schema', () => {

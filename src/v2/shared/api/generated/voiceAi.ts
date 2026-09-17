@@ -55,7 +55,16 @@ export interface paths {
         put?: never;
         /**
          * 음성 AI 메시지 전송
-         * @description ProviderEnvelope v1 최종 JSON만 반환합니다. requestId는 앱 재전송 시 동일하게 유지해야 합니다.
+         * @description ProviderEnvelope v1 최종 JSON 1개만 반환합니다. SSE/WebSocket/reconnect cursor는 지원하지 않습니다.
+         *     최종 envelope는 UTF-8 16 KiB 이하이며 id는 requestId와 정확히 일치합니다.
+         *     활성 세션 내 requestId를 대소문자 구분하여 비교합니다. 동일 ID·동일 text(UTF-8 SHA-256)는 저장된 결과를
+         *     반환하고 다른 text는 409 REPLAY_CONFLICT입니다. 세션 단위로 전송·갱신·종료를 직렬화하므로 진행 중 재요청은
+         *     선행 트랜잭션 완료 후 재검사합니다. 실패하여 결과가 저장되지 않았다면 재시도에서 provider를 다시 호출합니다.
+         *     결과는 세션이 활성인 동안 재사용하며 refresh는 이 기간을 연장합니다. 만료·종료 후에는 replay도 410입니다.
+         *     현재 저장 데이터의 자동 삭제 기간은 설정되어 있지 않습니다. 앱의 epoch/generation 및 256개 ledger는 앱 소유입니다.
+         *     앱의 30초 deadline이나 연결 종료는 서버/provider 취소를 보장하지 않습니다. 서버 처리가 커밋되었다면
+         *     동일 ID/text 재시도로 결과를 회수할 수 있습니다. DELETE는 진행 중 전송 완료 후 세션을 종료하며 호출을 취소하지 않습니다.
+         *     provider 연결/read timeout은 gemini 설정(기본 2초/5초)이며 서버 전체 deadline을 의미하지 않습니다.
          */
         post: operations["send"];
         delete?: never;
@@ -89,9 +98,13 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         VoiceAiSessionResponse: {
-            sessionId?: string;
-            /** Format: date-time */
-            expiresAt?: string;
+            sessionId: string;
+            /**
+             * Format: date-time
+             * @description 만료 시각. ISO-8601 offset 포함. 현재 시각이 이 값 이상이면 만료됩니다.
+             * @example 2026-09-17T12:05:00+09:00
+             */
+            expiresAt: string;
         };
         /** @description 에러 응답 */
         ErrorResponse: {
@@ -108,9 +121,100 @@ export interface components {
         };
         VoiceAiMessageRequest: {
             text: string;
+            /** @description 최종 envelope.id와 동일한 요청 ID. 재시도 시 동일 text와 함께 유지합니다. */
             requestId: string;
         };
-        JsonNode: Record<string, never>;
+        /** Pingdom provider envelope v1 */
+        ProviderEnvelopeV1: {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            id: string;
+            /** @enum {string} */
+            kind: "command_request";
+            /** @enum {string} */
+            command: "searchNearbyReservablePlaces";
+            args: {
+                /** @enum {string} */
+                touristCategory?: "K_POP" | "BEAUTY" | "FASHION" | "CAFE" | "FOOD" | "POP_UP" | "EXHIBITION" | "NIGHTLIFE" | "OTHER";
+                /** Format: date */
+                date: string;
+                startTime: string;
+                endTime: string;
+                quantity: number;
+                useCurrentLocation: boolean;
+            };
+        } | {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            id: string;
+            /** @enum {string} */
+            kind: "command_request";
+            /** @enum {string} */
+            command: "getPlaceDetails";
+            args: {
+                placeId: number;
+            };
+        } | {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            id: string;
+            /** @enum {string} */
+            kind: "command_request";
+            /** @enum {string} */
+            command: "getAvailabilities";
+            args: {
+                placeId: number;
+                /** Format: date */
+                date: string;
+                quantity: number;
+            };
+        } | {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            id: string;
+            /** @enum {string} */
+            kind: "command_request";
+            /** @enum {string} */
+            command: "prepareReservation";
+            args: {
+                placeId: number;
+                availabilityId: number;
+                quantity: number;
+            };
+        } | {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            id: string;
+            /** @enum {string} */
+            kind: "command_request";
+            /** @enum {string} */
+            command: "cancelVoiceSession";
+            args: Record<string, never>;
+        } | {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            id: string;
+            /** @enum {string} */
+            kind: "clarification_request";
+            /** @enum {string} */
+            field: "touristCategory" | "date" | "timeRange" | "quantity" | "useCurrentLocation" | "placeId" | "availabilityId";
+            text: string;
+        } | {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            id: string;
+            /** @enum {string} */
+            kind: "assistant_message";
+            text: string;
+        } | {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            id: string;
+            /** @enum {string} */
+            kind: "protocol_error";
+            /** @enum {string} */
+            code: "UNSUPPORTED_REQUEST" | "PROVIDER_UNAVAILABLE" | "INVALID_RESPONSE";
+        };
         /** @description 필드 검증 오류 응답 */
         ValidationErrorResponse: {
             message: string;
@@ -144,7 +248,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["VoiceAiSessionResponse"];
+                    "application/json": components["schemas"]["VoiceAiSessionResponse"];
                 };
             };
             /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
@@ -184,7 +288,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["VoiceAiSessionResponse"];
+                    "application/json": components["schemas"]["VoiceAiSessionResponse"];
                 };
             };
             /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
@@ -196,8 +300,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            /** @description SESSION_FORBIDDEN: 다른 사용자 세션. ACCESS_DENIED: 공통 접근 거부 */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description SESSION_NOT_FOUND: 존재하지 않는 세션 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description SESSION_EXPIRED: 만료 또는 종료된 세션은 갱신할 수 없습니다. */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -222,16 +344,16 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 최종 envelope 반환 */
+            /** @description ProviderEnvelope v1 최종 JSON */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["JsonNode"];
+                    "application/json": components["schemas"]["ProviderEnvelopeV1"];
                 };
             };
-            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            /** @description VALIDATION_FAILED: text/requestId 검증 실패(errors 포함). INVALID_REQUEST_BODY: JSON 파싱 실패. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -249,7 +371,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            /** @description SESSION_FORBIDDEN: 다른 사용자 세션. ACCESS_DENIED: 공통 접근 거부 */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -258,22 +380,58 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description 만료 또는 종료된 세션 */
+            /** @description SESSION_NOT_FOUND: 존재하지 않는 세션 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description REPLAY_CONFLICT: 동일 세션·requestId에 다른 text를 보냈습니다. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description SESSION_EXPIRED: 만료 또는 종료된 세션. replay도 반환하지 않습니다. */
             410: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description provider 장애 또는 계약 위반 */
+            /** @description RATE_LIMIT_EXCEEDED: controller 진입 시 IP 기준 Redis 제한. consultations/intro와 공유하며 기본 1분 10회(설정 가능). replay도 제한에 포함됩니다. Retry-After는 제공하지 않습니다. 즉시 반복하지 말고 backoff 후 동일 requestId/text로 재시도합니다. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description PROVIDER_UNAVAILABLE: provider timeout·일반 장애·비활성 설정. PROVIDER_RESPONSE_INVALID: schema 위반·16 KiB 초과. timeout 전용 code는 없습니다. */
             502: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description RATE_LIMIT_UNAVAILABLE: fail-open=false일 때 제한 저장소 장애. backoff 후 재시도합니다. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -305,8 +463,17 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            /** @description SESSION_FORBIDDEN: 다른 사용자 세션. ACCESS_DENIED: 공통 접근 거부 */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description SESSION_NOT_FOUND: 존재하지 않는 세션 */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
