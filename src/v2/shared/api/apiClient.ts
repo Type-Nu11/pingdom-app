@@ -16,6 +16,10 @@ export type GetRequestOptions = {
 };
 
 export type MutationRequestOptions = {
+  /** Opt-in raw final response; existing JSON callers are unchanged. */
+  responseType?: 'text';
+  maxContentLength?: number;
+  onDownloadProgress?: (event: { loaded: number }) => void;
   headers?: Record<string, string>;
   signal?: AbortSignal;
 };
@@ -238,7 +242,10 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       assertRelativeApiPath(path);
 
       try {
-        const authorizedOptions = await withAuthorization(options);
+        const authorizedOptions = {
+          ...await withAuthorization(options),
+          ...(options.responseType === 'text' ? { transformResponse: [(data: unknown) => data] } : {}),
+        };
         const contentType = Object.entries(authorizedOptions.headers ?? {})
           .find(([key]) => key.toLowerCase() === 'content-type')?.[1];
         const response = await getTransport().post<TResponse>(
