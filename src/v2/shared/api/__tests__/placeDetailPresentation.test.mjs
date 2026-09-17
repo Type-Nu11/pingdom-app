@@ -270,3 +270,13 @@ test('place-scoped reviews retain omitted placeId and derive a missing total fro
   ]);
   assert.equal(result.reviewTotal, 2);
 });
+
+test('standard review media and ordered reason codes override legacy fields', () => {
+  const result = buildPlaceDetailPresentation(17, {
+    ...baseResources,
+    reviews: ready({content:[{reviewId:91, content:'Review', imageUrls:['legacy.jpg'], recommendReason:'legacy', recommendReasons:['CLEAN','FRIENDLY'],reviewMedia:[{reviewMediaId:1,imageUrl:'https://cdn.test/1.jpg'},{reviewMediaId:2,imageUrl:'https://cdn.test/2.jpg'}]}]}),
+  });
+  assert.deepEqual(result.reviews[0].imageUrls,['https://cdn.test/1.jpg','https://cdn.test/2.jpg']);
+  assert.deepEqual(result.reviews[0].reasonKeys,['visitVerification.reasons.clean','visitVerification.reasons.kind']);
+  assert.deepEqual(result.reviews[0].tags,[]);
+});

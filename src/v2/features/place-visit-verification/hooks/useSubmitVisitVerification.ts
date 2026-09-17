@@ -1,28 +1,67 @@
+import { useState } from 'react';
+import {
+  assertReviewSubmissionDraft,
+  requireReviewMediaId,
+  serializeRecommendReasons,
+  type SelectedPhoto,
+  type RecommendReason,
+} from '../model/visitVerification';
+import { visitVerificationSessionQueryKeys } from '../model/visitVerificationSession';
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { myReviewsQueryKeys } from '../../my-page/model/profileQueryKeys';
-import type { MyPlaceReviewPage } from '../../my-page/model/profile.types';
 import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
 import {
   visitVerificationApi,
-  type CreatePlaceReviewBody,
   type PlaceReview,
   type PlaceReviewPage,
 } from '../api/visitVerificationApi';
 
-type VisitVerificationApi = Pick<typeof visitVerificationApi, 'createReview'>;
-
+type VisitVerificationApi = Pick<typeof visitVerificationApi, 'createReview' | 'uploadReviewMedia' | 'cancelReviewMedia'>;
+export type ReviewSubmissionPhase = 'idle' | 'uploading' | 'submitting';
 export type SubmitVisitVerificationVariables = {
-  body: CreatePlaceReviewBody;
+  content: string;
+  reasons: readonly RecommendReason[];
+  photos: readonly SelectedPhoto[];
   placeId: number;
 };
 
 export function createVisitVerificationMutationOptions(
   api: VisitVerificationApi = visitVerificationApi,
+  onPhase: (phase: ReviewSubmissionPhase) => void = () => {},
 ) {
+  let inFlight: Promise<PlaceReview> | undefined;
+  const submit = async ({ content, reasons, photos, placeId }: SubmitVisitVerificationVariables) => {
+    const recommendReasons = serializeRecommendReasons(reasons);
+    assertReviewSubmissionDraft({ content, reasons, photos });
+    const reviewMediaIds: number[] = [];
+    try {
+      if (photos.length) onPhase('uploading');
+      for (const photo of photos) {
+        const uploaded = await api.uploadReviewMedia(placeId, photo);
+        reviewMediaIds.push(requireReviewMediaId(uploaded.reviewMediaId));
+      }
+      onPhase('submitting');
+      return await api.createReview(placeId, { content: content.trim(), recommendReasons, reviewMediaIds });
+    } catch (error) {
+      for (const id of reviewMediaIds) {
+        try {
+          await api.cancelReviewMedia(placeId, id);
+        } catch {
+          // Best effort: preserve the original failure.
+        }
+      }
+      throw error;
+    } finally {
+      onPhase('idle');
+    }
+  };
   return {
-    mutationFn: ({ body, placeId }: SubmitVisitVerificationVariables) =>
-      api.createReview(placeId, body),
+    mutationFn: (variables: SubmitVisitVerificationVariables) => {
+      if (inFlight) return inFlight;
+      inFlight = submit(variables).finally(() => { inFlight = undefined; });
+      return inFlight;
+    },
     retry: false as const,
   };
 }
@@ -34,6 +73,13 @@ export async function invalidateReviewQueries(
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: placeQueryKeys.reviews(placeId) }),
     queryClient.invalidateQueries({ queryKey: myReviewsQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: placeQueryKeys.detail(placeId) }),
+    queryClient.invalidateQueries({ queryKey: placeQueryKeys.verificationMedia(placeId) }),
+    queryClient.invalidateQueries({ queryKey: placeQueryKeys.explorationMedia(placeId) }),
+    queryClient.invalidateQueries({
+      queryKey: visitVerificationSessionQueryKeys.all,
+      predicate: (query) => (query.state.data as { placeId?: number } | undefined)?.placeId === placeId,
+    }),
   ]);
 }
 
@@ -46,68 +92,22 @@ export function primeSubmittedReviewQueries(
   if (!placeId || !reviewId) return;
 
   queryClient.setQueriesData<PlaceReviewPage>(
-    { queryKey: placeQueryKeys.reviews(placeId) },
+    {
+      queryKey: placeQueryKeys.reviews(placeId),
+      predicate: (query) => (query.queryKey.at(-1) as { page?: number })?.page === 1,
+    },
     (current) => {
       if (!current) return current;
       const alreadyIncluded = (current.content ?? []).some((item) => item.reviewId === reviewId);
       const content = [review, ...(current.content ?? []).filter(
         (item) => item.reviewId !== reviewId,
-      )];
+      )].slice(0, current.size ?? 20);
       return {
         ...current,
         content,
         empty: false,
         numberOfElements: content.length,
-        totalElements: Math.max(
-          (current.totalElements ?? 0) + (alreadyIncluded ? 0 : 1),
-          content.length,
-        ),
-      };
-    },
-  );
-  queryClient.setQueryData<PlaceReviewPage>(
-    placeQueryKeys.reviewList(placeId, { limit: 20, page: 1 }),
-    (current) => {
-      const content = [review, ...(current?.content ?? []).filter(
-        (item) => item.reviewId !== reviewId,
-      )];
-      return {
-        ...current,
-        content,
-        empty: false,
-        first: current?.first ?? true,
-        last: current?.last ?? true,
-        number: current?.number ?? 0,
-        numberOfElements: content.length,
-        size: current?.size ?? 20,
-        totalElements: Math.max(current?.totalElements ?? 0, content.length),
-        totalPages: Math.max(current?.totalPages ?? 0, 1),
-      };
-    },
-  );
-
-  queryClient.setQueryData<MyPlaceReviewPage>(
-    myReviewsQueryKeys.list({ limit: 1, page: 1 }),
-    (current) => {
-      const alreadyIncluded = current?.reviews.some((item) => item.reviewId === reviewId) ?? false;
-      return {
-        hasNext: current?.hasNext ?? false,
-        limit: current?.limit ?? 1,
-        page: current?.page ?? 1,
-        reviews: [{
-          content: review.content ?? '',
-          createdAt: review.createdAt ?? '',
-          imageUrls: review.imageUrls ?? [],
-          placeId,
-          recommendReason: review.recommendReason ?? '',
-          reviewId,
-          visibilityStatus: 'VISIBLE',
-        }],
-        totalElements: Math.max(
-          (current?.totalElements ?? 0) + (alreadyIncluded ? 0 : 1),
-          1,
-        ),
-        totalPages: Math.max(current?.totalPages ?? 0, 1),
+        totalElements: (current.totalElements ?? 0) + (alreadyIncluded ? 0 : 1),
       };
     },
   );
@@ -116,11 +116,15 @@ export function primeSubmittedReviewQueries(
 export function useSubmitVisitVerification() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    ...createVisitVerificationMutationOptions(),
+  const [phase, setPhase] = useState<ReviewSubmissionPhase>('idle');
+  const [options] = useState(() => createVisitVerificationMutationOptions(visitVerificationApi, setPhase));
+  const mutation = useMutation({
+    ...options,
     onSuccess: (review, variables) => {
       primeSubmittedReviewQueries(queryClient, review);
-      return invalidateReviewQueries(queryClient, variables.placeId);
+      // A cache refresh failure must not turn a persisted review into a retryable submission.
+      void invalidateReviewQueries(queryClient, variables.placeId).catch(() => {});
     },
   });
+  return { ...mutation, phase };
 }

@@ -109,6 +109,7 @@ export const livePlaceDetailFixture = {
   longitude: 128.1,
   registrant: 'mock-user',
   merchantOwner: null,
+  communityViewCount: 0,
 } satisfies PlaceExplorationSchema<'PlaceDetailResponse'>;
 
 export const availabilityFixture = {
@@ -116,6 +117,7 @@ export const availabilityFixture = {
   placeId: 17,
   productId: 901,
   productType: 'GENERAL',
+  productName: null,
   startsAt: '2026-09-01T03:00:00Z',
   endsAt: '2027-09-01T04:00:00Z',
   totalCapacity: 10,

@@ -20,9 +20,13 @@ const expectedOperations = new Map([
   ['/places/{placeId}/map-link-conversions', ['post', 'record']],
   ['/places/{placeId}/reviews', [
     ['get', 'list_4'],
-    ['post', 'create_2'],
+    ['post', 'create_3'],
   ]],
-  ['/places/{placeId}/availabilities', ['get', 'list_5']],
+  ['/places/{placeId}/reviews/media', ['post', 'upload_1']],
+  ['/places/{placeId}/reviews/media/{reviewMediaId}', ['delete', 'cancel_4']],
+  ['/places/recommendations', ['get', 'recommendPlaces']],
+  ['/places/recommendations/click', ['post', 'recordRecommendationClick']],
+  ['/places/{placeId}/availabilities', ['get', 'list_6']],
 ]);
 const failures = [];
 

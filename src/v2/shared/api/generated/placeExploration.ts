@@ -292,8 +292,48 @@ export interface paths {
         get: operations["list_4"];
         put?: never;
         /** 장소 리뷰 작성 */
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/places/{placeId}/reviews/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 장소 리뷰 사진 업로드
+         * @description 리뷰 작성 전에 JPEG 또는 PNG 사진 한 개를 업로드합니다. 업로드된 사진은 24시간 안에 본인의 같은 장소 리뷰에 한 번만 연결할 수 있습니다.
+         */
+        post: operations["upload_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/places/{placeId}/reviews/media/{reviewMediaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 장소 리뷰 사진 업로드 취소
+         * @description 리뷰에 연결하지 않은 본인의 사진 업로드를 취소합니다.
+         */
+        delete: operations["cancel_4"];
         options?: never;
         head?: never;
         patch?: never;
@@ -307,7 +347,7 @@ export interface paths {
             cookie?: never;
         };
         /** 장소 예약 가능 시간 조회 */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -320,25 +360,54 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description 예약 가능 시간 응답 */
         AvailabilityResponse: {
-            /** Format: int64 */
-            id?: number;
-            /** Format: int64 */
-            placeId?: number;
-            /** Format: int64 */
-            productId?: number;
-            /** @enum {string} */
-            productType?: "GENERAL" | "TICKET" | "CLASS";
+            /**
+             * Format: int64
+             * @example 77
+             */
+            id: number;
+            /**
+             * Format: int64
+             * @example 70069
+             */
+            placeId: number;
+            /**
+             * Format: int64
+             * @description GENERAL은 null이며 TICKET/CLASS는 상품 ID입니다.
+             * @example 12
+             */
+            productId: number | null;
+            /**
+             * @description 예약 대상 유형
+             * @example TICKET
+             * @enum {string}
+             */
+            productType: "GENERAL" | "TICKET" | "CLASS";
+            /**
+             * @description GENERAL은 null이며 TICKET/CLASS는 상품명입니다.
+             * @example 이월드 오후 입장권
+             */
+            productName: string | null;
             /** Format: date-time */
-            startsAt?: string;
+            startsAt: string;
             /** Format: date-time */
-            endsAt?: string;
-            /** Format: int32 */
-            totalCapacity?: number;
-            /** Format: int32 */
-            remainingCapacity?: number;
-            /** @enum {string} */
-            status?: "ACTIVE" | "INACTIVE";
+            endsAt: string;
+            /**
+             * Format: int32
+             * @example 100
+             */
+            totalCapacity: number;
+            /**
+             * Format: int32
+             * @example 42
+             */
+            remainingCapacity: number;
+            /**
+             * @example ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
         };
         /** @description 에러 응답 */
         ErrorResponse: {
@@ -619,6 +688,12 @@ export interface components {
             /** Format: double */
             longitude: number;
             registrant: string;
+            /**
+             * Format: int64
+             * @description 커뮤니티 게시글을 통해 유입된 일별 중복 제거 조회수
+             * @example 12
+             */
+            communityViewCount: number;
             merchantOwner: components["schemas"]["MerchantOwnerPublicResponse"] | null;
         };
         PlaceGrowthSnapshot: {
@@ -1086,10 +1161,44 @@ export interface components {
              */
             closesAt?: string;
         };
+        /** @description 장소 리뷰 작성 요청. recommendReasons와 reviewMediaIds가 새 표준 계약입니다. */
         PlaceReviewCreateRequest: {
-            recommendReason: string;
+            /**
+             * @deprecated
+             * @description 기존 단일 추천 이유. recommendReasons가 없을 때만 사용할 수 있습니다.
+             */
+            recommendReason?: string;
+            /** @description 추천 이유 코드. 1~5개를 입력하며 저장·응답 순서가 유지됩니다. */
+            recommendReasons?: ("FRIENDLY" | "EASY_TO_FIND" | "GOOD_FOOD" | "MULTILINGUAL_SUPPORT" | "PARKING" | "PHOTO_SPOT" | "CLEAN")[];
             content: string;
+            /** @description 리뷰 사진 업로드 API가 반환한 ID. 최대 3개이며 입력 순서가 사진 표시 순서입니다. */
+            reviewMediaIds?: number[];
+            /**
+             * @deprecated
+             * @description 임의 URL 입력은 지원하지 않습니다. 빈 배열만 허용하며 reviewMediaIds를 사용해야 합니다.
+             */
             imageUrls?: string[];
+        };
+        /** @description 리뷰에 연결된 검증 완료 사진 */
+        PlaceReviewMediaResponse: {
+            /** Format: int64 */
+            reviewMediaId?: number;
+            imageUrl?: string;
+            contentType?: string;
+        };
+        /** @description 리뷰 작성 전 임시 저장된 사진 업로드 결과 */
+        PlaceReviewMediaUploadResponse: {
+            /** Format: int64 */
+            reviewMediaId?: number;
+            imageUrl?: string;
+            contentType?: string;
+            /** Format: int64 */
+            fileSize?: number;
+            /**
+             * Format: date-time
+             * @description 리뷰 연결 전까지 유효한 시각
+             */
+            expiresAt?: string;
         };
         PlaceReviewResponse: {
             /** Format: int64 */
@@ -1099,8 +1208,10 @@ export interface components {
             /** Format: int64 */
             userId?: number;
             recommendReason?: string;
+            recommendReasons?: ("FRIENDLY" | "EASY_TO_FIND" | "GOOD_FOOD" | "MULTILINGUAL_SUPPORT" | "PARKING" | "PHOTO_SPOT" | "CLEAN")[];
             content?: string;
             imageUrls?: string[];
+            reviewMedia?: components["schemas"]["PlaceReviewMediaResponse"][];
             /** Format: date-time */
             createdAt?: string;
         };
@@ -2144,7 +2255,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2197,7 +2308,156 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    upload_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                placeId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 리뷰 사진 업로드 완료 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlaceReviewMediaUploadResponse"];
+                };
+            };
+            /** @description 비어 있거나 손상된 파일 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 장소를 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 파일 크기 초과 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 지원하지 않는 파일 형식 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 리뷰 사진 저장소 사용 불가 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    cancel_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                placeId: number;
+                reviewMediaId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 리뷰 사진 업로드 취소 완료 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 다른 사용자의 사진 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 리뷰 사진을 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 이미 리뷰에 연결된 사진 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_6: {
         parameters: {
             query?: never;
             header?: never;
