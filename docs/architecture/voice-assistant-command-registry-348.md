@@ -8,6 +8,32 @@
 - V1 소스 변경, V1 의존성 추가, boundary 예외 추가 없음.
 - V1 dependency delta: **none**. `legacy-exception`: **불필요**.
 
+## Provider-independent 완료 기준
+
+**Provider-independent Command Engine 구현 완료**를 #348의 완료 기준으로 삼습니다.
+실제 AI Provider E2E는 프록시 배포 후 **#350에서 검증 예정**입니다. Provider 부재는 #348의
+구현 blocker가 아니며 **mock/fixture 통과를 실서버 AI 성공으로 간주하지 않습니다.**
+**#349 예약 Mutation은 구현하지 않습니다.** 예약 초안 성공이나 예약 성공도 생성하지 않습니다.
+
+`voiceCommandEngine.integration.test.ts`는 HTTP transport만 주입된 fixture로 대체합니다.
+고정된 wall/monotonic clock과 QueryClient 아래에서 실제 #347 API의 최종 JSON decode → unknown parser →
+session/ledger → Registry/policy/runtime → 기존 공개 V2 Query/API → AppCommandResult를 실행합니다.
+fixture는 generated `ProviderEnvelopeV1` DTO와 타입 검사되며 production에 import되지 않습니다.
+실제 모델 호출, Provider SDK/API Key, 모델 이름별 분기, 새로운 AI API/cache는 없습니다.
+
+현재 production 연결은 `MapScreen → MapAssistantModal → VoiceCommandScreen → useVoiceCommands`입니다.
+기존 feature flag와 #347의 활성 세션이 필요합니다. parser 실패, stale session/epoch/generation/context,
+deadline/취소, 알 수 없는 ID, handler 부재, prepare 명령은 도메인 실행으로 이어지지 않습니다.
+승인된 위치/권한은 검색뿐 아니라 상세·availability와 provider의 로컬 cancel 명령에도 필요합니다.
+사용자가 직접 누르는 앱의 닫기/취소 버튼은 위치와 무관하게 세션을 정리합니다.
+Gateway 장애는 #347의 안전한 오류 코드로 종료하고, `PROVIDER_UNAVAILABLE` envelope도 화면에
+동일한 고정 오류 코드로 표시합니다. 성공 결과로 변환하지 않습니다.
+
+이번 보완은 기존 `features/voice-assistant` 안에서 진행했습니다. 폴더 이동과 공개 export 추가는 없습니다.
+Query observer(`voiceCommandQuery`), provenance(`voiceCommandProvenance`), 시간 검증(`voiceCommandTime`),
+Registry/dispatcher(`voiceCommands`), session lifecycle(`voiceSession`), 화면 연결(`useVoiceCommands`),
+결과 표시(`VoiceCommandResults`) 경계를 유지하여 #360의 모듈 이동과 섞지 않습니다.
+
 ## 실행과 정책
 
 `voiceCommands.ts`의 mapped Registry는 command union 전체를 포함하고 각 항목의 `policy`가
@@ -114,24 +140,28 @@ Android native Modal의 activity blur 후에도 사용자가 활성 앱의 입�
 실패 테스트를 먼저 실행한 뒤 구현했습니다. 핵심 Registry/실행 테스트, 화면/Hook 연결, replay 재진입,
 30초 slot 만료, 조건 변경 실패 시 출처 정리, 검색의 다른 ID 보존, nullable 상품명, Android blur 후
 명시적 입력 복구에서 실패 → 통과를 확인했습니다.
+Provider-independent 보완에서도 상세·availability·provider cancel의 위치 차단과
+PROVIDER_UNAVAILABLE 표시 테스트 **4개가 먼저 실패**한 뒤 수정으로 통과했습니다.
 
 최종 자동 검증 결과는 아래에 기록합니다.
 
-- 음성 feature Jest: **7 suites / 299 tests 통과** (신규 실행/provenance 53개 포함).
-- 장소·예약 및 지도 진입점 Jest: 10 suites / 90 tests 통과.
+- 음성 feature(#345/#347 포함)·장소 탐색/상세·예약 및 지도 진입점 Jest: **19 suites / 416 tests 통과**.
+- 새 Provider-independent 통합 fixture: **19 tests 통과**. 실제 JSON decode/parser와 Query/API를 사용합니다.
 - `test:v2-api`: 168 tests 통과. `test:v2-map`: 47 tests 통과.
 - `test:regression`: 255 tests 통과.
-- `validate:pr`: **통과**. 전체 Jest **125 suites / 1,206 tests**, 회귀 **255 tests** 통과.
+- `validate:pr`: **통과**. 전체 Jest **126 suites / 1,230 tests**, 회귀 **255 tests** 통과.
 - `check:v2`: 통과(경계 fixture 60개, 기존 예외 373개 유지). `typecheck`: 통과.
 - `check:v1-changes -- --base origin/dev`, `git diff --check`: 통과. untracked 신규 파일도 별도로 whitespace 검사했습니다.
 - tsx의 IPC 소켓은 sandbox에서 EPERM이 발생하여 동일 명령을 승인된 실행으로 재검증했습니다.
 - 전체 Jest의 기존 React act/overlapping act 경고는 원래 화면 테스트에서도 출력됩니다.
 
-Android SM-N981N에서 이 작업 폴더의 개발 번들을 로드하여 지도, AI 모달 진입, 전송 안내, timezone,
+이전 Android 확인 이력: SM-N981N에서 이 작업 폴더의 개발 번들을 로드하여 지도, AI 모달 진입, 전송 안내, timezone,
 닫기 후 지도 복귀를 확인했습니다. native Modal blur가 입력을 막는 현상을 발견하여 회귀 테스트와
 명시적 입력 복구를 추가했습니다. 이후 기기가 잠겨 최종 수정의 실기기 재검증은 완료하지 못했습니다. 검증용 개발 서버는 종료했습니다.
 **인증된 Gateway/서버 검색·상세·availability 성공, 취소·재시도의 end-to-end, 예약 화면 전체 회귀,
-iOS 및 실제 음성/STT는 미검증입니다.** 성공으로 집계하지 않습니다. 구현을 막는 새 계약 충돌은 없습니다.
+iOS 및 실제 음성/STT는 미검증입니다.** 이번 Provider-independent 보완의 실기기 검증도 수행하지 않았습니다.
+성공으로 집계하지 않습니다. 실제 AI Provider E2E는 프록시 배포 후 #350에서 검증하며,
+Provider 부재는 #348 blocker가 아닙니다. 구현을 막는 새 계약 충돌은 없습니다.
 
 ## 변경 파일
 
@@ -141,6 +171,7 @@ iOS 및 실제 음성/STT는 미검증입니다.** 성공으로 집계하지 않
 - `src/v2/features/voice-assistant/model/voiceCommandProvenance.ts`
 - `src/v2/features/voice-assistant/model/voiceSession.ts`
 - `src/v2/features/voice-assistant/model/__tests__/voiceCommands.test.ts`
+- `src/v2/features/voice-assistant/model/__tests__/voiceCommandEngine.integration.test.ts`
 - `src/v2/features/voice-assistant/hooks/useVoiceCommands.ts`
 - `src/v2/features/voice-assistant/hooks/__tests__/useVoiceCommands.test.tsx`
 - `src/v2/features/voice-assistant/components/VoiceCommandResults.tsx`
