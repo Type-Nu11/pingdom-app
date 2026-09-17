@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 const temporaryDirectory = await mkdtemp(join(tmpdir(), 'pingdom-openapi-'));
 const generatedContracts = [
+  { contractPath: 'docs/api/voice-ai.openapi.json', generatedPath: 'src/v2/shared/api/generated/voiceAi.ts' },
   {
     contractPath: 'docs/api/mvp.openapi.json',
     generatedPath: 'src/v2/shared/api/generated/mvp.ts',
