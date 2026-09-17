@@ -1152,7 +1152,14 @@ export default function MapScreen({
         />
       ) : null}
       </MapGlassBackdrop>
-      <MapAssistantModal visible={assistant.isOpen} onClose={assistant.close} />
+      <MapAssistantModal visible={assistant.isOpen} onClose={assistant.close} context={{
+        accountRevision: canQueryBookmarks && profile?.id ? String(profile.id) : null,
+        location: center ? { latitude: center.lat, longitude: center.lng } : null,
+        locationPermission: location.status, radiusKm: recommendationRadiusKm,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        placeListEnabled: env.featureFlags.placeList,
+        selectedPlaceId: hasSelectedPlace ? selectedPlaceId : undefined,
+      }} />
     </View>
   );
 }

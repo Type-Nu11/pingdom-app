@@ -6,7 +6,10 @@ import { VoiceSessionError, voiceSessionError, type VoiceSessionErrorCode } from
 export const VOICE_REQUEST_DEADLINE_MS = 30_000;
 export const VOICE_LEDGER_LIMIT = 256;
 export type VoiceDeliveryContext = Readonly<{
-  epoch: symbol; generation: number; signal: AbortSignal; isCurrent: () => boolean;
+  epoch: symbol; generation: number; sessionId: string; envelopeId: string;
+  deadline: number; signal: AbortSignal; isCurrent: () => boolean;
+  /** Uses the same session ledger; consumers cannot re-execute an already claimed command. */
+  claimExecution: (envelope: ProviderEnvelope) => boolean;
 }>;
 export type VoiceEnvelopeConsumer = (envelope: ProviderEnvelope, context: VoiceDeliveryContext) => void | Promise<void>;
 export type VoiceSessionState = Readonly<{
@@ -14,7 +17,7 @@ export type VoiceSessionState = Readonly<{
   generation: number; error: VoiceSessionErrorCode | null;
   retryAvailable: boolean; retryAt: number | null;
 }>;
-type LedgerEntry = { fingerprint: string; result: Promise<void> };
+type LedgerEntry = { fingerprint: string; result: Promise<void>; executionClaimed: boolean };
 
 // Only parser-normalized values enter this serializer. No raw prompt is retained.
 function fingerprint(value: unknown): string {
@@ -145,13 +148,22 @@ export function createVoiceSessionController(
         // The same delivery is never sent to the consumer twice, even across generations.
         await request(() => existing.result, currentTurn.signal, deadline);
       } else {
-        const context = Object.freeze({ epoch: captured, generation: revision, signal: currentTurn.signal, isCurrent: current });
+        const context: VoiceDeliveryContext = Object.freeze({ epoch: captured, generation: revision, sessionId: session.sessionId, envelopeId: envelope.id, deadline, signal: currentTurn.signal, isCurrent: current,
+          claimExecution: (candidate: ProviderEnvelope) => {
+            if (!current()) return false;
+            const entry = ledger.get(envelope.id);
+            if (!entry || candidate.id !== envelope.id || entry.fingerprint !== fingerprint(candidate)) throw new VoiceSessionError('REPLAY_CONFLICT');
+            if (entry.executionClaimed) return false;
+            entry.executionClaimed = true;
+            return true;
+          },
+        });
         // Claim synchronously BEFORE consumer invocation, including reentrant consumers.
         let resolve!: () => void; let reject!: (e: unknown) => void;
         const result = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
         // Attach before invoking a reentrant consumer, which may abort this turn.
         void result.catch(() => {});
-        ledger.set(envelope.id, { fingerprint: payload, result });
+        ledger.set(envelope.id, { fingerprint: payload, result, executionClaimed: false });
         try { Promise.resolve(onEnvelope(envelope, context)).then(resolve, () => reject(new VoiceSessionError('DELIVERY_FAILED'))); }
         catch { reject(new VoiceSessionError('DELIVERY_FAILED')); }
         await request(() => result, currentTurn.signal, deadline);
@@ -177,6 +189,8 @@ export function createVoiceSessionController(
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     getSnapshot: () => state,
     getSession: () => dto,
+    getIdentity: () => dto && !expired() && foreground && authenticated
+      ? Object.freeze({ sessionId: dto.sessionId, epoch, generation }) : undefined,
     async start(signal?: AbortSignal) {
       allowed(); invalidate();
       const captured = epoch; const revision = generation;

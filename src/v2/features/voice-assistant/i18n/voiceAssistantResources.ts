@@ -1,5 +1,15 @@
 export const voiceAssistantResources = {
   en: {
+    command: {
+      submission: 'Confirming sends your reviewed request to the AI server. Exact coordinates are used only by the existing place lookup.',
+      timezone: 'Request timezone: {{timezone}}', processing: 'Checking place information.', canceled: 'Voice session ended.',
+      advisory: 'Guidance received. Check the retrieved place facts.', bounded: 'Results checked among up to 12 nearby candidates.',
+      empty: 'No matching results among the checked candidates.', slots: 'Actual server intervals. These do not confirm product bookability or a reservation.',
+      general: 'General admission', capacity: 'Remaining capacity: {{count}}', failed: 'The request could not be completed. Check your conditions and try again.', retry: 'Try again',
+      operating: { OPERATING: 'Operating', TEMPORARILY_CLOSED: 'Temporarily closed', PERMANENTLY_CLOSED: 'Permanently closed' },
+      fields: { touristCategory: 'Specify a place category.', date: 'Confirm the requested date.', timeRange: 'Confirm the timezone and start/end times.', quantity: 'Specify the number of people.', useCurrentLocation: 'Confirm current location use and permission.', placeId: 'Choose a place from the retrieved results.', availabilityId: 'Choose a retrieved time slot.' },
+      errors: { LOCATION_REQUIRED: 'Current location and location permission are required.', ID_NOT_IN_CONTEXT: 'Search again or select a verified place.', STALE_CONTEXT: 'Your context changed. Submit a new request.', CANCELED: 'Request canceled.', TIMEOUT: 'The lookup timed out.', AUTHENTICATION_REQUIRED: 'Sign in to continue.', FORBIDDEN: 'This request is not currently supported or allowed.', NOT_FOUND: 'Information was not found.', RATE_LIMITED: 'Too many requests. Try again later.', NETWORK_ERROR: 'Check your network connection.', SERVER_ERROR: 'The server is unavailable. Try again.', INVALID_SERVER_RESPONSE: 'The server information could not be verified.', REPLAY_CONFLICT: 'Duplicate requests differ. Enter a new request.' },
+    },
     open: 'Open AI assistant', title: 'AI assistant', close: 'Close assistant', microphone: 'Start microphone', stop: 'Stop and review', cancel: 'Cancel input',
     input: 'Your request', placeholder: 'Type your request', submit: 'Confirm input', settings: 'Open microphone settings',
     preview: 'Input preview: nothing is sent to a server. Confirm input to prepare your text locally.',
@@ -15,6 +25,16 @@ export const voiceAssistantResources = {
     errors: { interrupted: 'Audio was interrupted. Try again or type your request.', noSpeech: 'No final speech was recognized. Try again or type your request.', unavailable: 'Speech recognition is unavailable. Please type your request.', failed: 'Speech recognition failed. Please type or try again.', empty: 'Enter a request first.', tooLong: 'Use 2,000 characters or fewer.', submitFailed: 'Input could not be handed over. Cancel to start a new request.' },
   },
   ko: {
+    command: {
+      submission: '입력 확인을 누르면 검토한 요청을 AI 서버에 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.',
+      timezone: '요청 시간대: {{timezone}}', processing: '장소 정보를 확인하고 있습니다.', canceled: '음성 세션을 종료했습니다.',
+      advisory: '안내를 받았습니다. 장소 정보는 조회 결과로 확인해 주세요.', bounded: '가까운 후보 최대 12곳에서 조건을 확인한 결과입니다.',
+      empty: '조회한 후보에 조건과 일치하는 결과가 없습니다.', slots: '서버의 실제 이용 시간입니다. 상품의 예약 가능 여부나 예약 확정을 의미하지 않습니다.',
+      general: '일반 이용', capacity: '남은 정원: {{count}}명', failed: '요청을 완료하지 못했습니다. 조건을 확인하고 다시 시도해 주세요.', retry: '다시 시도',
+      operating: { OPERATING: '운영 중', TEMPORARILY_CLOSED: '임시 휴업', PERMANENTLY_CLOSED: '폐업' },
+      fields: { touristCategory: '장소 카테고리를 알려 주세요.', date: '조회할 날짜를 확인해 주세요.', timeRange: '시간대와 시작·종료 시간을 확인해 주세요.', quantity: '인원을 알려 주세요.', useCurrentLocation: '현재 위치 사용 여부와 위치 권한을 확인해 주세요.', placeId: '조회 결과에서 장소를 선택해 주세요.', availabilityId: '조회한 이용 시간을 선택해 주세요.' },
+      errors: { LOCATION_REQUIRED: '현재 위치와 위치 권한이 필요합니다.', ID_NOT_IN_CONTEXT: '장소를 다시 검색하거나 선택해 주세요.', STALE_CONTEXT: '조건이 변경되었습니다. 다시 요청해 주세요.', CANCELED: '요청이 취소되었습니다.', TIMEOUT: '조회 시간이 초과되었습니다.', AUTHENTICATION_REQUIRED: '로그인이 필요합니다.', FORBIDDEN: '현재 지원하지 않거나 허용되지 않는 요청입니다.', NOT_FOUND: '정보를 찾을 수 없습니다.', RATE_LIMITED: '요청이 많습니다. 잠시 후 다시 시도해 주세요.', NETWORK_ERROR: '네트워크 연결을 확인해 주세요.', SERVER_ERROR: '서버에 연결할 수 없습니다. 다시 시도해 주세요.', INVALID_SERVER_RESPONSE: '서버 정보를 확인할 수 없습니다.', REPLAY_CONFLICT: '중복 요청의 내용이 다릅니다. 새 요청을 입력해 주세요.' },
+    },
     open: 'AI 어시스턴트 열기', title: 'AI 어시스턴트', close: '어시스턴트 닫기', microphone: '마이크 시작', stop: '중지하고 확인', cancel: '입력 취소',
     input: '요청 내용', placeholder: '요청을 입력해 주세요', submit: '입력 확인', settings: '마이크 설정 열기',
     preview: '입력 미리보기입니다. 서버로 전송되지 않으며, 입력 확인을 누르면 기기 안에서 요청을 준비합니다.',

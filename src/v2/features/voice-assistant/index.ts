@@ -1,6 +1,6 @@
 /**
  * 읽는 순서: command.types(입출력 계약) → CommandParser(외부 입력 검증) → CommandPolicy(실행 전제조건).
- * 후속 feature는 이 공개 경계만 import합니다. 입력 UI와 로컬 STT 경계는 #346에서 제공하며 router/API는 후속 이슈 소유입니다.
+ * 후속 feature는 이 공개 경계만 import합니다. 입력 UI는 #346, 세션 transport는 #347, read Registry/dispatcher는 #348 소유입니다. 예약 초안은 #349에서 연결합니다.
  */
 export { VOICE_QUANTITY_LIMITS, VOICE_SCHEMA_VERSION } from './model/voiceAssistantCommand.types';
 export type {
@@ -25,3 +25,8 @@ export type { VoiceSessionController, VoiceSessionState, VoiceEnvelopeConsumer, 
 export { VoiceSessionError } from './model/voiceSessionError';
 export type { VoiceSessionErrorCode } from './model/voiceSessionError';
 export { useVoiceSession } from './hooks/useVoiceSession';
+
+export { VOICE_COMMAND_REGISTRY, createVoiceCommandDispatcher } from './model/voiceCommands';
+export type { VoiceCommandHandler, VoiceCommandRuntime } from './model/voiceCommands';
+export { default as VoiceCommandScreen } from './screens/VoiceCommandScreen';
+export type { VoiceCommandContext, VoiceCommandViewState } from './hooks/useVoiceCommands';
