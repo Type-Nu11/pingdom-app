@@ -1,22 +1,29 @@
 import React from 'react';
-import { KeyboardAvoidingView, Linking, Platform } from 'react-native';
+import { AppState, KeyboardAvoidingView, Linking, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 import { Text, TextInput } from '../../../shared/components/Typography';
+import { VoiceCommandResults } from '../components/VoiceCommandResults';
+import type { VoiceCommandViewState } from '../hooks/useVoiceCommands';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { retainInputLocally, unavailableSpeechAdapter, validateVoiceInput, type OnFinalInput, type SpeechInputAdapter } from '../model/voiceInput';
 
 export type VoiceAssistantScreenProps = {
   onClose: () => void;
   adapter?: SpeechInputAdapter;
+  commandState?: VoiceCommandViewState;
+  onCommandCancel?: () => void;
+  onCommandRetry?: () => void;
+  commandRetryDisabled?: boolean;
+  timezone?: string;
   // Only informational text; never maps to success UI, execution or TTS.
   guidance?: { kind: 'assistant' | 'clarification' | 'invalidResponse'; text?: string };
 } & (
   | { onFinalInput?: undefined; submissionNotice?: never }
   | { onFinalInput: OnFinalInput; submissionNotice: string }
 );
-export default function VoiceAssistantScreen({ onClose, adapter = unavailableSpeechAdapter, onFinalInput = retainInputLocally, submissionNotice, guidance }: VoiceAssistantScreenProps) {
+export default function VoiceAssistantScreen({ onClose, adapter = unavailableSpeechAdapter, onFinalInput = retainInputLocally, submissionNotice, guidance, commandState, onCommandCancel, onCommandRetry, commandRetryDisabled, timezone }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { controller, state } = useVoiceInput(adapter, onFinalInput);
@@ -31,23 +38,28 @@ export default function VoiceAssistantScreen({ onClose, adapter = unavailableSpe
     <Screen testID="voice-assistant-screen" edges={['top', 'bottom', 'left', 'right']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Content keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, gap: 16 }}>
-          {button('close', () => { controller.cancel(); onClose(); })}
+          {button('close', () => { controller.cancel(); onCommandCancel?.(); onClose(); })}
           <Title accessibilityRole="header">{t('voiceAssistant.title')}</Title>
           <Copy>{submissionNotice ?? t('voiceAssistant.preview')}</Copy>
           <Copy accessibilityLiveRegion="polite" accessibilityState={{ busy }}>{t(`voiceAssistant.phases.${state.phase}`)}</Copy>
           <Copy>{t(`voiceAssistant.permissions.${state.permission}`)}</Copy>
           {!adapter.available && <Copy>{t('voiceAssistant.voiceUnavailable')}</Copy>}
-          {button('microphone', () => { void controller.start(i18n.resolvedLanguage === 'ko' ? 'ko-KR' : 'en-US'); }, busy || pending || !adapter.available)}
+          {button('microphone', () => { controller.setForeground(AppState.currentState === 'active'); void controller.start(i18n.resolvedLanguage === 'ko' ? 'ko-KR' : 'en-US'); }, busy || pending || !adapter.available)}
           {state.phase === 'listening' && button('stop', () => { void controller.stop(); })}
           {state.permission === 'blocked' && button('settings', () => { controller.cancel(); void Linking.openSettings().catch(() => undefined); })}
           {state.partial ? <Copy testID="voice-partial">{state.partial}</Copy> : null}
           <Copy>{t('voiceAssistant.review')}</Copy>
-          <Input accessibilityLabel={t('voiceAssistant.input')} accessibilityState={{ disabled: pending }} editable={!pending} multiline
+          <Input onFocus={() => controller.setForeground(AppState.currentState === 'active')} accessibilityLabel={t('voiceAssistant.input')} accessibilityState={{ disabled: pending }} editable={!pending} multiline
             placeholder={t('voiceAssistant.placeholder')} placeholderTextColor={theme.colors.textMuted}
             value={state.draft} onChangeText={controller.edit} textAlignVertical="top" autoCorrect={false} spellCheck={false} autoComplete="off" />
           {state.error && <Copy accessibilityRole="alert">{t(`voiceAssistant.errors.${state.error}`)}</Copy>}
           {button('submit', () => { void controller.submit(); }, busy || pending || validateVoiceInput(state.draft).error !== null || state.delivery !== 'none')}
-          {button('cancel', controller.cancel)}
+          {button('cancel', () => { controller.cancel(); onCommandCancel?.(); })}
+          {timezone && <Copy>{t('voiceAssistant.command.timezone', { timezone })}</Copy>}
+          {commandState && <VoiceCommandResults state={commandState} retryDisabled={commandRetryDisabled} onRetry={() => {
+            if (onCommandRetry) onCommandRetry();
+            else { const draft = state.draft; controller.cancel(); controller.edit(draft); void controller.submit(); }
+          }} />}
           {(state.delivery === 'localOnly' || state.delivery === 'accepted') && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.${state.delivery}`)}</Copy>}
           <Copy>{t('voiceAssistant.advisory')}</Copy>
           {guidance && <>

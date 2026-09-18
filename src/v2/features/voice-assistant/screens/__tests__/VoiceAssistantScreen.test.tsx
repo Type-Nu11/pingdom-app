@@ -137,3 +137,40 @@ test('ko/en have matching keys and all voice states have translated text', () =>
   expect(leaves(voiceAssistantResources.ko)).toEqual(leaves(voiceAssistantResources.en));
   expect(Object.keys(voiceAssistantResources.ko.phases)).toHaveLength(9);
 });
+
+test('shows app-owned read results, empty, clarification, processing and safe failure with retry', async () => {
+  const retry = jest.fn();
+  const base = { schemaVersion: 1, id: 'app-1', source: 'app', kind: 'command_result', commandId: 'cmd-1' } as const;
+  const props = { onClose: jest.fn(), onCommandCancel: jest.fn(), onCommandRetry: retry };
+  const View = (p: React.ComponentProps<typeof VoiceAssistantScreen>) => navigationWrapper(<VoiceAssistantScreen {...p} />).element;
+  const view = await renderWithProviders(<View {...props} commandState={{ phase: 'processing' }} />);
+  expect(screen.getByTestId('voice-command-state')).toBeOnTheScreen();
+  await view.rerender(<View {...props} commandState={{ phase: 'result', result: { ...base, command: 'searchNearbyReservablePlaces', outcome: { status: 'succeeded', data: { coverage: 'bounded_candidates', places: [] } } } }} />);
+  expect(screen.getByTestId('voice-command-empty')).toBeOnTheScreen();
+  await view.rerender(<View {...props} commandState={{ phase: 'result', result: { ...base, command: 'getPlaceDetails', outcome: { status: 'succeeded', data: { place: { id: 1, name: 'Actual cafe', address: 'Seoul', touristCategories: ['CAFE'], operatingStatus: 'OPERATING' } } } } }} />);
+  expect(screen.getByText('Actual cafe')).toBeOnTheScreen();
+  await view.rerender(<View {...props} commandState={{ phase: 'result', result: { ...base, command: 'getPlaceDetails', outcome: { status: 'rejected', code: 'NETWORK_ERROR' } } }} />);
+  await fireEvent.press(screen.getByTestId('voice-command-retry')); expect(retry).toHaveBeenCalledTimes(1);
+});
+
+test('explicit field focus resumes input after native modal blur, while background still clears it', async () => {
+  const callbacks = new Map<string, (state?: string) => void>();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((event, callback) => { callbacks.set(event, callback as (state?: string) => void); return { remove() {} }; });
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} />).element);
+  await act(() => callbacks.get('blur')?.());
+  await fireEvent(screen.getByLabelText('요청 내용'), 'focus');
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), 'cafe');
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('cafe');
+  await act(() => callbacks.get('change')?.('background'));
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
+});
+
+test('nullable TICKET names are not labeled as general admission and never imply booking success', async () => {
+  const result = { schemaVersion: 1, id: 'app-slot', kind: 'command_result', source: 'app', commandId: 'slot', command: 'getAvailabilities',
+    outcome: { status: 'succeeded', data: { placeId: 1, date: '2026-09-20', availabilities: [{ id: 5, placeId: 1, productId: 6, productName: null,
+      productType: 'TICKET', startsAt: '2026-09-20T05:00:00Z', endsAt: '2026-09-20T06:00:00Z', remainingCapacity: 3, status: 'ACTIVE' }] } } } as const;
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} commandState={{ phase: 'result', result }} />).element);
+  expect(screen.getByText('TICKET')).toBeOnTheScreen();
+  expect(screen.queryByText('일반 이용')).toBeNull();
+  expect(screen.queryByText('예약 성공')).toBeNull();
+});

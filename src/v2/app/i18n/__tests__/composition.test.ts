@@ -24,11 +24,12 @@ beforeEach(() => {
 });
 
 test('preserves every assembled translation and spread precedence from 27ace6b', () => {
-  // Preserve the migration baseline while allowing the reviewed #307 additions.
+  // Preserve the migration baseline while allowing the reviewed #307 and #348 additions.
   const baseline = JSON.parse(JSON.stringify(resources));
   for (const language of ['ko', 'en']) {
     delete baseline[language].translation.visitVerification.uploading;
     delete baseline[language].translation.visitVerification.errors;
+    delete baseline[language].translation.voiceAssistant.command;
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
     .toBe('729980606c4d19541a82bad8ea99b4820d407253e50f0b3fc5efbb636213dbec');
