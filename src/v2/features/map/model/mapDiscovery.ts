@@ -7,7 +7,7 @@ import type {
   PlaceVisitDecision,
   PlaceVerificationMedia,
 } from '../../place-exploration';
-import type { PlaceDetail } from '../../place-detail/model/placeDetail.types';
+import type { PlaceDetail } from '../../../modules/place/detail';
 import type { Coordinate, MapMarker, MapMarkerCategory } from './map.types';
 
 export type MapPlaceMarker = MapMarker & {

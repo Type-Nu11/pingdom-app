@@ -1,19 +1,29 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import type { V2ScreenProps } from '../../../app/navigation/types';
-import { V2_ROUTES } from '../../../app/navigation/types';
+import type { PlaceId } from '../../core';
+
+type PlaceDetailScreenProps = {
+  route: { params: { placeId: PlaceId } };
+  navigation: {
+    goBack: () => void;
+    navigate: {
+      (screen: 'CouponBox'): void;
+      (screen: 'VisitVerificationSession', params: { mode: 'place'; placeId: PlaceId }): void;
+    };
+  };
+};
 import {
   ApiErrorState,
   Button,
   LoadingState,
   StatusBadge,
   Surface,
-} from '../../../shared/components';
-import { PlaceCouponCta } from '../../offers-coupons';
+} from '../../../../shared/components';
+import { PlaceCouponCta } from '../../../../features/offers-coupons';
 import { usePlaceDetail } from '../hooks/usePlaceDetail';
 import {
   formatPlaceOperatingSummary,
@@ -21,7 +31,7 @@ import {
 } from '../model/placeOperatingSummary';
 import { getOperatingStatusPresentation } from '../model/placePresentation';
 
-export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'PlaceDetail'>) {
+export default function PlaceDetailScreen({ navigation, route }: PlaceDetailScreenProps) {
   const { t } = useTranslation();
   const placeQuery = usePlaceDetail(route.params.placeId);
 
@@ -71,13 +81,13 @@ export default function PlaceDetailScreen({ navigation, route }: V2ScreenProps<'
             </OperatingLine>
           </Section>
           <PlaceCouponCta
-            onViewMyCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
+            onViewMyCoupons={() => navigation.navigate('CouponBox')}
             placeId={route.params.placeId}
           />
           <VerificationAction>
             <Button
               label={t('visitVerification.session.start')}
-              onPress={() => navigation.navigate(V2_ROUTES.VisitVerificationSession, {
+              onPress={() => navigation.navigate('VisitVerificationSession', {
                 mode: 'place',
                 placeId: route.params.placeId,
               })}

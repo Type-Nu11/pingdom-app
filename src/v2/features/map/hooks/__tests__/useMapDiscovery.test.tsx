@@ -10,7 +10,7 @@ import {
   usePlaceVerificationMedia,
   usePlaceVisitDecision,
 } from '../../../place-exploration';
-import { usePlaceDetail } from '../../../place-detail/hooks/usePlaceDetail';
+import { usePlaceDetail } from '../../../../modules/place/detail';
 import { useMapDiscovery } from '../useMapDiscovery';
 
 jest.mock('../../../place-exploration', () => ({
@@ -23,7 +23,7 @@ jest.mock('../../../place-exploration', () => ({
   usePlaceVisitDecision: jest.fn(),
 }));
 
-jest.mock('../../../place-detail/hooks/usePlaceDetail', () => ({
+jest.mock('../../../../modules/place/detail', () => ({
   usePlaceDetail: jest.fn(),
 }));
 

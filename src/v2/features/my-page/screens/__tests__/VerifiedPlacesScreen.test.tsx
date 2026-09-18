@@ -4,7 +4,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react-nativ
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { bookmarkApi } from '../../api/bookmarkApi';
 import { checkInApi } from '../../../check-ins/api/checkInApi';
-import { placeDetailApi } from '../../../place-detail/api/placeDetailApi';
+import { placeDetailApi } from '../../../../modules/place/detail';
 import { placeExplorationApi } from '../../../place-exploration/api/placeExplorationApi';
 import VerifiedPlacesScreen from '../VerifiedPlacesScreen';
 

@@ -54,7 +54,7 @@ import {
   usePlaceExplorationMediaList,
   useRecommendationExplanation,
 } from '../../place-exploration';
-import { formatPlaceOperatingSummary, usePlaceDetailPresentation } from '../../place-detail';
+import { formatPlaceOperatingSummary, usePlaceDetailPresentation } from '../../../modules/place/detail';
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
   MAP_LOCATE_ZOOM_LEVEL,

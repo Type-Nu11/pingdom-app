@@ -5,8 +5,8 @@ import {
   usePlaceExplorationMedia,
   usePlaceOperatingNotices,
   usePlaceVisitDecision,
-} from '../../place-exploration/hooks/usePlaceExploration';
-import { createPlaceReviewsQueryOptions } from '../../place-visit-verification/hooks/usePlaceReviews';
+} from '../../../../features/place-exploration';
+import { createPlaceReviewsQueryOptions } from '../../../../features/place-visit-verification';
 import {
   buildPlaceDetailPresentation,
   type ResourceState,

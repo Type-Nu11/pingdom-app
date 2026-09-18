@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
+import { createPlaceDetailQueryOptions } from '../../../modules/place/detail';
 import { usePlaceExplorationMediaList } from '../../place-exploration';
 import { useInfiniteCheckIns } from '../../check-ins/hooks/useCheckIns';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';

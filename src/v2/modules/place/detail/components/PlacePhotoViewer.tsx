@@ -1,4 +1,4 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal } from 'react-native';
 import { useTranslation } from 'react-i18next';

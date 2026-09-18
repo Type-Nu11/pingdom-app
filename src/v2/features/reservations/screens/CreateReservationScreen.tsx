@@ -8,7 +8,7 @@ import styled, { useTheme } from 'styled-components/native';
 import BackIcon from '../../../../assets/v2/icons/header/back.svg';
 import PendingReservationIcon from '../../../../assets/v2/icons/smRlavy.svg';
 import { getApiErrorUx, toApiError } from '../../../shared/api';
-import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
+import { usePlaceDetail } from '../../../modules/place/detail';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import {
   addLocalMonths,

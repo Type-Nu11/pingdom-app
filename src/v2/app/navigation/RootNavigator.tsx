@@ -14,7 +14,7 @@ import CouponDetailContainer from '../../features/my-page/screens/CouponDetailCo
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
 import ProfileEditScreen from '../../features/my-page/screens/ProfileEditScreen';
 import { PlaceListExampleScreen } from '../../modules/place/search';
-import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
+import { PlaceDetailScreen } from '../../modules/place/detail';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
 import ReservationBoxScreen from '../../features/reservations/screens/ReservationBoxScreen';
 import ReservationDetailScreen from '../../features/reservations/screens/ReservationDetailScreen';

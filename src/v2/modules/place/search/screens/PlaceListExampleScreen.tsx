@@ -13,7 +13,7 @@ import {
 import {
   getOperatingStatusPresentation,
   getSupportLevelLabelKey,
-} from '../../../../features/place-detail';
+} from '../../detail';
 import { usePlaceList } from '../hooks/usePlaceList';
 
 export default function PlaceListExampleScreen() {

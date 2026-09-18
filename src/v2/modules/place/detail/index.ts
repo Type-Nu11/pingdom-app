@@ -30,3 +30,4 @@ export {
   getTrustConfidenceLabelKey,
 } from './model/placePresentation';
 export { default as PlaceDetailScreen } from './screens/PlaceDetailScreen';
+export { default as PlacePhotoViewer } from './components/PlacePhotoViewer';

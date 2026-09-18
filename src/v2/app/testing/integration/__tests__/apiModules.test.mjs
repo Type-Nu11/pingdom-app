@@ -5,7 +5,7 @@ import { createCheckInApi } from '../../../../features/check-ins/data/index.ts';
 import { createConversionApi } from '../../../../features/conversion/data/index.ts';
 import { createOfferCouponApi } from '../../../../features/offers-coupons/data/index.ts';
 import { createPlaceClaimApi } from '../../../../features/place-claims/data/index.ts';
-import { createPlaceDetailApi } from '../../../../features/place-detail/data/index.ts';
+import { createPlaceDetailApi } from '../../../../modules/place/detail/data/index.ts';
 import { createPlaceListApi } from '../../../../modules/place/search/data/index.ts';
 import { createReservationApi } from '../../../../features/reservations/data/index.ts';
 import { createTravelPurposeApi } from '../../../../features/travel-purposes/data/index.ts';

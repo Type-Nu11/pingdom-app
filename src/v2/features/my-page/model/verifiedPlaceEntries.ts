@@ -1,4 +1,4 @@
-import type { PlaceDetail } from '../../place-detail/model/placeDetail.types';
+import type { PlaceDetail } from '../../../modules/place/detail';
 
 /**
  * A verified place slot in render order. The slot exists as soon as its check-in

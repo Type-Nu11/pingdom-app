@@ -5,7 +5,7 @@ import { createTestI18n, renderWithProviders } from '../../../../shared/testing/
 import { registerOfferCouponResources } from '../../../offers-coupons';
 import { ApiError } from '../../../../shared/api';
 import { offerCouponApi, type CouponPage } from '../../../offers-coupons/api/offerCouponApi';
-import { placeDetailApi } from '../../../place-detail';
+import { placeDetailApi } from '../../../../modules/place/detail';
 import CouponBoxScreen from '../CouponBoxScreen';
 
 async function renderCouponBox(ui: React.ReactElement) {

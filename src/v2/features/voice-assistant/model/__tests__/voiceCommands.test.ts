@@ -1,6 +1,6 @@
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
 import { createPlaceExplorationApi, placeQueryKeys } from '../../../place-exploration';
-import { createPlaceDetailApi } from '../../../place-detail';
+import { createPlaceDetailApi } from '../../../../modules/place/detail';
 import { createReservationApi, reservationQueryKeys } from '../../../reservations';
 import { createApiClient, ApiError, type ApiTransport } from '../../../../shared/api';
 import { createVoiceSessionController, type VoiceDeliveryContext } from '../voiceSession';

@@ -8,7 +8,7 @@ import type { Profile } from '../../model/profile.types';
 import { bookmarkApi } from '../../api/bookmarkApi';
 import { checkInApi } from '../../../check-ins/api/checkInApi';
 import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
-import { placeDetailApi } from '../../../place-detail/api/placeDetailApi';
+import { placeDetailApi } from '../../../../modules/place/detail';
 import { placeExplorationApi } from '../../../place-exploration/api/placeExplorationApi';
 import { reservationApi } from '../../../reservations/api/reservationApi';
 import { travelScheduleApi } from '../../../travel-schedules/api/travelScheduleApi';

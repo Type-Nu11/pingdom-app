@@ -1,10 +1,10 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import { Button, StatusBadge } from '../../../shared/components';
-import type { Offer, OfferIssuanceView } from '../../offers-coupons';
+import { Button, StatusBadge } from '../../../../shared/components';
+import type { Offer, OfferIssuanceView } from '../../../../features/offers-coupons';
 
 export type PlaceOfferCtaProps = {
   issuance: OfferIssuanceView;

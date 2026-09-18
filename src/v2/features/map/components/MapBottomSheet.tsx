@@ -54,7 +54,7 @@ import { FavoriteIcon } from '../../../shared/components';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import { usePlacePreviewImages } from '../hooks/usePlacePreviewImages';
 import { useMapFeedSwipe } from '../hooks/useMapFeedSwipe';
-import type { PlaceOperatingSummaryText, ReservationCtaState } from '../../place-detail';
+import type { PlaceOperatingSummaryText, ReservationCtaState } from '../../../modules/place/detail';
 import GlassSurface from './GlassSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { formatDistance as formatLocalizedDistance } from '../../../shared/i18n/formatters';
@@ -69,7 +69,7 @@ import {
   type MapHomeCategory,
   type MapHomeDisplayState,
 } from '../model/mapHomeCategory';
-import PlacePhotoViewer from '../../place-detail/components/PlacePhotoViewer';
+import { PlacePhotoViewer } from '../../../modules/place/detail';
 import { PlaceMenuSection } from '../../place-menus';
 import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapSheetBottomNavigation';
 import type {

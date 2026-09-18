@@ -11,7 +11,7 @@ import {
 import { createConversionEventMutationOptions } from '../../../../features/conversion/data/index.ts';
 import { createRedeemCouponMutationOptions } from '../../../../features/offers-coupons/data/index.ts';
 import { createPlaceClaimMutationOptions } from '../../../../features/place-claims/data/index.ts';
-import { createPlaceDetailQueryOptions } from '../../../../features/place-detail/data/index.ts';
+import { createPlaceDetailQueryOptions } from '../../../../modules/place/detail/data/index.ts';
 import { createPlaceListQueryOptions } from '../../../../modules/place/search/data/index.ts';
 import {
   createReservationMutationOptions,

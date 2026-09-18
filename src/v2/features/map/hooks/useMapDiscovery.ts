@@ -9,7 +9,7 @@ import {
   usePlaceVerificationMedia,
   usePlaceVisitDecision,
 } from '../../place-exploration';
-import { usePlaceDetail } from '../../place-detail/hooks/usePlaceDetail';
+import { usePlaceDetail } from '../../../modules/place/detail';
 import { env } from '../../../shared/config';
 import {
   createViewport,

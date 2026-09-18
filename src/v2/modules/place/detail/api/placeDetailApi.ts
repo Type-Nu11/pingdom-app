@@ -1,4 +1,4 @@
-import { apiClient, type ApiClient } from '../../../shared/api';
+import { apiClient, type ApiClient } from '../../../../shared/api';
 import type { PlaceAvailabilities, PlaceDetail } from '../model/placeDetail.types';
 
 export function createPlaceDetailApi(client: ApiClient = apiClient) {

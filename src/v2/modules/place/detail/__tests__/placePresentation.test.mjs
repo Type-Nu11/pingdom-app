@@ -5,7 +5,7 @@ import {
   getOperatingStatusPresentation,
   getSupportLevelLabelKey,
   getTrustConfidenceLabelKey,
-} from '../../../features/place-detail/model/placePresentation.ts';
+} from '../model/placePresentation.ts';
 
 test('UNKNOWN and future enum values use safe place UI fallbacks', () => {
   assert.equal(getOperatingStatusPresentation('UNKNOWN').labelKey, 'placeStatus.unknown');

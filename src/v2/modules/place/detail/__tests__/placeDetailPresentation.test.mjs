@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { createPlaceDetailApi } from '../../../features/place-detail/api/placeDetailApi.ts';
-import { createPlaceAvailabilitiesQueryOptions } from '../../../features/place-detail/hooks/usePlaceDetail.ts';
+import { createPlaceDetailApi } from '../api/placeDetailApi.ts';
+import { createPlaceAvailabilitiesQueryOptions } from '../hooks/usePlaceDetail.ts';
 import {
   buildPlaceDetailPresentation,
   selectReservationCta,
-} from '../../../features/place-detail/model/placeDetailPresentation.ts';
+} from '../model/placeDetailPresentation.ts';
 
 const ready = (data) => ({ data, error: null, isError: false, isPending: false });
 const empty = ready(undefined);
@@ -70,7 +70,7 @@ const baseResources = {
 
 test('scoped live contract preserves place detail fields, nullable card image, pagination, and errors', async () => {
   const document = JSON.parse(await readFile(
-    new URL('../../../../../docs/api/place-exploration.openapi.json', import.meta.url),
+    new URL('../../../../../../docs/api/place-exploration.openapi.json', import.meta.url),
     'utf8',
   ));
   const schemas = document.components.schemas;

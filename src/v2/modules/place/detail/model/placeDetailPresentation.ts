@@ -1,11 +1,11 @@
-import { reviewReasonTranslationKey } from '../../../shared/api/reviewReasons';
-import type { PlaceReviewPage } from '../../place-visit-verification/api/visitVerificationApi';
+import { reviewReasonTranslationKey } from '../../../../shared/api/reviewReasons';
+import type { PlaceReviewPage } from '../../../../features/place-visit-verification';
 import type {
   PlaceCard,
   PlaceExplorationMedia,
   PlaceOperatingNotices,
   PlaceVisitDecision,
-} from '../../place-exploration/model/placeExploration.types';
+} from '../../../../features/place-exploration';
 import type { PlaceAvailabilities, PlaceDetail } from './placeDetail.types';
 import {
   selectPlaceOperatingSummary,
