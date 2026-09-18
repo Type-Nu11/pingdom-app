@@ -5,26 +5,26 @@ import { QueryClient } from '@tanstack/react-query';
 import {
   claimRecommendationClick,
   recordRecommendationClickOnce,
-} from '../../../features/map/model/recommendationClick.ts';
-import * as recommendationClick from '../../../features/map/model/recommendationClick.ts';
+} from '../../../../features/map/discovery/index.ts';
+import * as recommendationClick from '../../../../features/map/discovery/index.ts';
 import {
   createRecommendationPresentation,
   getRecommendationState,
-} from '../../../features/map/model/recommendationPresentation.ts';
-import { createCurrentActivityIntentApi } from '../../../features/current-activity-intent/api/currentActivityIntentApi.ts';
+} from '../../../../features/map/discovery/index.ts';
+import { createCurrentActivityIntentApi } from '../../../../features/current-activity-intent/data/index.ts';
 import {
   createCurrentActivityIntentQueryOptions,
   createReplaceCurrentActivityIntentMutationOptions,
   refreshCurrentActivityIntentCaches,
-} from '../../../features/current-activity-intent/hooks/useCurrentActivityIntent.ts';
-import { currentActivityIntentQueryKeys } from '../../../features/current-activity-intent/model/currentActivityIntentQueryKeys.ts';
-import { recommendationQueryKeys } from '../../../features/travel-purposes/model/travelPurposeQueryKeys.ts';
+} from '../../../../features/current-activity-intent/data/index.ts';
+import { currentActivityIntentQueryKeys } from '../../../../features/current-activity-intent/data/index.ts';
+import { recommendationQueryKeys } from '../../../../features/travel-purposes/data/index.ts';
 import {
   createPlaceRecommendationsQueryOptions,
   createRecommendationExplanationQueryOptions,
   placeQueryKeys,
-} from '../../../features/place-exploration/hooks/usePlaceExploration.ts';
-import { resources } from '../../i18n/resources.ts';
+} from '../../../../modules/place/exploration/index.ts';
+import { resources } from '../../../../shared/i18n/resources.ts';
 
 const readTranslation = (key) => key.split('.').reduce(
   (value, part) => value?.[part], resources.ko.translation,

@@ -15,7 +15,7 @@ import KindIcon from '../../../../assets/v2/icons/place/Kind.svg';
 import ParkIcon from '../../../../assets/v2/icons/place/Park.svg';
 import PinIcon from '../../../../assets/v2/icons/place/Pin.svg';
 import { ApiErrorState, Button, LoadingState } from '../../../shared/components';
-import { usePlaceCard } from '../../place-exploration/hooks/usePlaceExploration';
+import { usePlaceCard } from '../../../modules/place/exploration';
 import { useSubmitVisitVerification } from '../hooks/useSubmitVisitVerification';
 import {
   appendPhotos,

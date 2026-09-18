@@ -2,15 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
-import { usePlaceAutocomplete } from '../../../place-exploration';
+import { usePlaceAutocomplete } from '../../../../modules/place/exploration';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
 import { usePlaceRegistrantUsernames } from '../../hooks/usePlaceRegistrantUsernames';
 import { useRecentSearchStore } from '../../store/recentSearchStore';
 import MapSearchOverlay from '../MapSearchOverlay';
 
-jest.mock('../../../place-exploration', () => ({
-  ...jest.requireActual('../../../place-exploration'),
+jest.mock('../../../../modules/place/exploration', () => ({
+  ...jest.requireActual('../../../../modules/place/exploration'),
   usePlaceAutocomplete: jest.fn(),
 }));
 jest.mock('../../hooks/useKakaoLocalSearch', () => ({ useKakaoLocalSearch: jest.fn() }));

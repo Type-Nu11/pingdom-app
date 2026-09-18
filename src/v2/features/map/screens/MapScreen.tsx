@@ -53,7 +53,7 @@ import { useConfirmedRecentSearchOwner } from '../hooks/useConfirmedRecentSearch
 import {
   usePlaceExplorationMediaList,
   useRecommendationExplanation,
-} from '../../place-exploration';
+} from '../../../modules/place/exploration';
 import { formatPlaceOperatingSummary, usePlaceDetailPresentation } from '../../../modules/place/detail';
 import {
   MAP_DISMISSED_ZOOM_LEVEL,
@@ -94,7 +94,7 @@ import {
   useNationalTrends,
   type RankedPlaceFeed,
   type RankedPlaceViewModel,
-} from '../../map-home-feeds';
+} from '../../../modules/place/home-feeds';
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;

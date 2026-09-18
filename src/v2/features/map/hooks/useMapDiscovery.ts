@@ -8,7 +8,7 @@ import {
   usePlaceOperatingNotices,
   usePlaceVerificationMedia,
   usePlaceVisitDecision,
-} from '../../place-exploration';
+} from '../../../modules/place/exploration';
 import { usePlaceDetail } from '../../../modules/place/detail';
 import { env } from '../../../shared/config';
 import {

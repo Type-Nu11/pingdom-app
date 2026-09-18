@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-import { ApiError } from '../ApiError.ts';
+import { ApiError } from '../../../../shared/api/ApiError.ts';
 import {
   createMapLinkConversionMutationOptions,
   createPlaceAutocompleteQueryOptions,
@@ -16,7 +16,7 @@ import {
   createPlaceRecommendationsQueryOptions,
   createRecommendationExplanationQueryOptions,
   placeQueryKeys,
-} from '../../../features/place-exploration/hooks/usePlaceExploration.ts';
+} from '../hooks/usePlaceExploration.ts';
 
 test('place exploration query keys separate viewport, place resources, and recommendation requestId', () => {
   const viewportA = { west: 1, south: 2, east: 3, north: 4, zoom: 10 };

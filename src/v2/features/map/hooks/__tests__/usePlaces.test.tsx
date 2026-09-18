@@ -1,10 +1,10 @@
 import { renderHook } from '@testing-library/react-native';
 
-import { usePlaceList } from '../../../place-exploration';
+import { usePlaceList } from '../../../../modules/place/exploration';
 import { usePlaces } from '../usePlaces';
 
-jest.mock('../../../place-exploration', () => ({
-  ...jest.requireActual('../../../place-exploration'),
+jest.mock('../../../../modules/place/exploration', () => ({
+  ...jest.requireActual('../../../../modules/place/exploration'),
   usePlaceList: jest.fn(),
 }));
 

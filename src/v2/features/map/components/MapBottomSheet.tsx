@@ -76,7 +76,7 @@ import type {
   RankedPlaceFeed,
   RankedPlaceFeedStatus,
   RankedPlaceViewModel,
-} from '../../map-home-feeds';
+} from '../../../modules/place/home-feeds';
 
 export type BottomSheetContent =
   | { type: 'home' }

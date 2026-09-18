@@ -6,7 +6,7 @@ import type {
   RankedPlaceViewModel,
   RankingPlaceContract,
 } from './mapHomeFeeds.types';
-import { toApiError } from '../../../shared/api';
+import { toApiError } from '../../../../shared/api';
 import type { RankedPlaceFeedStatus } from './mapHomeFeeds.types';
 
 const DEFAULT_PAGE = 1;

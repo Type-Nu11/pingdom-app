@@ -1,5 +1,5 @@
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
-import { createPlaceExplorationApi, placeQueryKeys } from '../../../place-exploration';
+import { createPlaceExplorationApi, placeQueryKeys } from '../../../../modules/place/exploration';
 import { createPlaceDetailApi } from '../../../../modules/place/detail';
 import { createReservationApi, reservationQueryKeys } from '../../../reservations';
 import { createApiClient, ApiError, type ApiTransport } from '../../../../shared/api';

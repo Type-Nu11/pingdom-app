@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { createPlaceListQueryOptions, placeQueryKeys } from '../../place-exploration';
+import { createPlaceListQueryOptions, placeQueryKeys } from '../../../modules/place/exploration';
 import { createPlaceDetailQueryOptions } from '../../../modules/place/detail';
 import { createAvailabilitiesQueryOptions, isSelectableAvailability, NEARBY_RESERVATION_CANDIDATE_LIMIT, type AvailabilityList } from '../../reservations';
 import { ApiError } from '../../../shared/api';

@@ -3,7 +3,7 @@ import type {
   PlaceExplorationOperationQuery,
   PlaceExplorationOperationRequestBody,
   PlaceExplorationOperationResponse,
-} from '../../../shared/api';
+} from '../../../../shared/api';
 
 export type MapViewportParams = PlaceExplorationOperationQuery<'mapViewport'>;
 export type MapViewport = PlaceExplorationOperationResponse<'mapViewport', 200>;

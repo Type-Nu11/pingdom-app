@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createPlaceExplorationApi } from '../../../features/place-exploration/api/placeExplorationApi.ts';
+import { createPlaceExplorationApi } from '../api/placeExplorationApi.ts';
 
 test('place exploration API uses current server paths, identifiers, viewport params, and signals', async () => {
   const calls = [];

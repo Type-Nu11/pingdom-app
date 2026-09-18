@@ -19,7 +19,7 @@ const mockUseSessionController = jest.fn();
 jest.mock('../../hooks/useVisitVerificationCandidates', () => ({
   useVisitVerificationCandidates: () => mockUseCandidates(),
 }));
-jest.mock('../../../place-exploration/hooks/usePlaceExploration', () => ({
+jest.mock('../../../../modules/place/exploration', () => ({
   usePlaceCard: () => mockUsePlaceCard(),
 }));
 jest.mock('../../hooks/useSubmitVisitVerification', () => ({

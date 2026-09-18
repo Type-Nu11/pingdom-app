@@ -5,7 +5,7 @@ import {
   usePlaceExplorationMedia,
   usePlaceOperatingNotices,
   usePlaceVisitDecision,
-} from '../../../../features/place-exploration';
+} from '../../exploration';
 import { createPlaceReviewsQueryOptions } from '../../../../features/place-visit-verification';
 import {
   buildPlaceDetailPresentation,

@@ -1,4 +1,4 @@
-import type { RecommendationClickBody } from '../../place-exploration';
+import type { RecommendationClickBody } from '../../../modules/place/exploration';
 
 export function selectRecommendationClickPayload({
   placeId,

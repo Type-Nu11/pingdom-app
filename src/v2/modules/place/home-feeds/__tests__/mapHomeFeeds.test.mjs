@@ -2,20 +2,20 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { createMapHomeFeedsApi } from '../../../features/map-home-feeds/api/mapHomeFeedsApi.ts';
+import { createMapHomeFeedsApi } from '../api/mapHomeFeedsApi.ts';
 import {
   createLocalHotQueryOptions,
   createNationalTrendsQueryOptions,
   mapHomeFeedQueryKeys,
-} from '../../../features/map-home-feeds/hooks/useMapHomeFeeds.ts';
+} from '../hooks/useMapHomeFeeds.ts';
 import {
   getLocalHotFeedStatus,
   getNationalTrendsFeedStatus,
   selectLocalHotParams,
   selectNationalTrendsParams,
   toRankedPlaceViewModels,
-} from '../../../features/map-home-feeds/model/mapHomeFeeds.ts';
-import { ApiError } from '../ApiError.ts';
+} from '../model/mapHomeFeeds.ts';
+import { ApiError } from '../../../../shared/api/ApiError.ts';
 
 const rankedPlaces = [
   {

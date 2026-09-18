@@ -4,7 +4,7 @@ import {
   placeExplorationApi,
   type RecommendationClickBody,
   type RecommendationClickResult,
-} from '../../place-exploration';
+} from '../../../modules/place/exploration';
 import { recordRecommendationClickOnce } from '../model/recommendationClick';
 
 export const useRecordPlaceRecommendationClick = () => {

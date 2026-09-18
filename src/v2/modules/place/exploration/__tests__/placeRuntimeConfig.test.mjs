@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { assertApiModeAllowed, resolvePlaceListEnabled, resolveVoiceAssistantEnabled } from '../../config/env.ts';
-import { getPlaceListRuntimeState } from '../../../features/place-exploration/model/placeListRuntime.ts';
+import { assertApiModeAllowed, resolvePlaceListEnabled, resolveVoiceAssistantEnabled } from '../../../../shared/config/env.ts';
+import { getPlaceListRuntimeState } from '../model/placeListRuntime.ts';
 
 test('real API environments enable place requests by default and explicit flags win', () => {
   assert.equal(resolvePlaceListEnabled({

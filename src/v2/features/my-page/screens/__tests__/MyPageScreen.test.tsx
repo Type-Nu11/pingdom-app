@@ -9,7 +9,7 @@ import { bookmarkApi } from '../../api/bookmarkApi';
 import { checkInApi } from '../../../check-ins/api/checkInApi';
 import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
 import { placeDetailApi } from '../../../../modules/place/detail';
-import { placeExplorationApi } from '../../../place-exploration/api/placeExplorationApi';
+import { placeExplorationApi } from '../../../../modules/place/exploration';
 import { reservationApi } from '../../../reservations/api/reservationApi';
 import { travelScheduleApi } from '../../../travel-schedules/api/travelScheduleApi';
 import MyPageScreen from '../MyPageScreen';

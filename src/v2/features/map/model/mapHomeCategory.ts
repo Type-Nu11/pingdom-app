@@ -1,4 +1,4 @@
-import type { RankedPlaceFeedStatus } from '../../map-home-feeds';
+import type { RankedPlaceFeedStatus } from '../../../modules/place/home-feeds';
 
 export type MapHomeCategory =
   | 'all'

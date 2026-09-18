@@ -2,7 +2,7 @@ import type {
   MapHomeFeedsOperationQuery,
   MapHomeFeedsOperationResponse,
   MapHomeFeedsSchema,
-} from '../../../shared/api';
+} from '../../../../shared/api';
 
 export type LocalHotContractQuery = MapHomeFeedsOperationQuery<'findLocalHotPlaces'>;
 export type NationalTrendsContractQuery = MapHomeFeedsOperationQuery<'findTrends'>;

@@ -6,7 +6,7 @@ import type {
   PlaceOperatingNotices,
   PlaceVisitDecision,
   PlaceVerificationMedia,
-} from '../../place-exploration';
+} from '../../../modules/place/exploration';
 import type { PlaceDetail } from '../../../modules/place/detail';
 import type { Coordinate, MapMarker, MapMarkerCategory } from './map.types';
 

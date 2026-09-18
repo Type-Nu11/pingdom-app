@@ -15,7 +15,7 @@ import {
 } from '../../onboarding-preferences/model/travelScheduleCalendar';
 import type { TravelDateInput } from '../../onboarding-preferences/model/onboardingPreference';
 import { createPlaceDetailQueryOptions } from '../../../modules/place/detail';
-import { usePlaceExplorationMediaList } from '../../place-exploration';
+import { usePlaceExplorationMediaList } from '../../../modules/place/exploration';
 import { useCheckIns } from '../../check-ins/hooks/useCheckIns';
 import { useCoupons } from '../../offers-coupons/hooks/useOffersCoupons';
 import { useReservations } from '../../reservations/hooks/useReservations';

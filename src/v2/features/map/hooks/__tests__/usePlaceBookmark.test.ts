@@ -9,7 +9,7 @@ import {
   type LocalHotResponse,
   type NationalTrendsResponse,
   type RankedPlaceViewModel,
-} from '../../../map-home-feeds';
+} from '../../../../modules/place/home-feeds';
 import {
   updateBookmarkedPlaceMembership,
   updateBookmarkedPlaces,

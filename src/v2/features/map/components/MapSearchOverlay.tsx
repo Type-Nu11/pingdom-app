@@ -23,7 +23,7 @@ import PopupAsset from '../../../../assets/v2/icons/place/popup_svg.svg';
 import {
   getPlaceListRuntimeState,
   usePlaceAutocomplete,
-} from '../../place-exploration';
+} from '../../../modules/place/exploration';
 import {
   toAutocompleteResults,
   type MapPlaceResult,

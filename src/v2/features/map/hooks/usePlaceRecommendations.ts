@@ -4,7 +4,7 @@ import { recommendationQueryKeys } from '../../travel-purposes/model/travelPurpo
 import {
   createPlaceRecommendationsQueryOptions,
   type PlaceRecommendationsParams,
-} from '../../place-exploration';
+} from '../../../modules/place/exploration';
 import { selectUsableRecommendedPlaces } from '../model/place.types';
 
 export type GetPlaceRecommendationsRequest = PlaceRecommendationsParams;

@@ -23,7 +23,7 @@ import {
 } from '../../map/components/MapBottomSheet';
 import { usePlacePreviewImages } from '../../map/hooks/usePlacePreviewImages';
 import { normalizePlaceCategory } from '../../map/utils/placeCategory';
-import { usePlaceExplorationMediaList } from '../../place-exploration';
+import { usePlaceExplorationMediaList } from '../../../modules/place/exploration';
 import * as GlassStyles from '../../map/styles/BottomSheetGlass.styles';
 import { useReservations } from '..';
 import { liquidGlass } from '../../../shared/theme/liquidGlass';

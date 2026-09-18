@@ -54,3 +54,4 @@ export {
   getPlaceListRuntimeState,
   type PlaceListRuntimeState,
 } from './model/placeListRuntime';
+export { createPlaceExplorationMediaQueryOptions } from './hooks/usePlaceExploration';

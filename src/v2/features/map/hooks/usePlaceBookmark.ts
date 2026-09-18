@@ -7,7 +7,7 @@ import { bookmarkedPlaceQueryKeys } from './useBookmarkedPlaces';
 import {
   mapHomeFeedQueryKeys,
   type RankedPlaceViewModel,
-} from '../../map-home-feeds';
+} from '../../../modules/place/home-feeds';
 
 export type TogglePlaceBookmarkPayload = {
   nextBookmarked: boolean;

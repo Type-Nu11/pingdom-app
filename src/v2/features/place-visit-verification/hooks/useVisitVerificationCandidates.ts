@@ -5,11 +5,11 @@ import { useInfiniteCheckIns, type LocationCheckInListItem } from '../../check-i
 import {
   createPlaceCardQueryOptions,
   createPlaceExplorationMediaQueryOptions,
-} from '../../place-exploration/hooks/usePlaceExploration';
+} from '../../../modules/place/exploration';
 import type {
   PlaceCard,
   PlaceExplorationMedia,
-} from '../../place-exploration/model/placeExploration.types';
+} from '../../../modules/place/exploration';
 import {
   selectCandidateImageUrls,
   uniquePlaceIdsInServerOrder,

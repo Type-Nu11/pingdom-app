@@ -5,7 +5,7 @@ import type {
   PlaceExplorationMedia,
   PlaceOperatingNotices,
   PlaceVisitDecision,
-} from '../../../../features/place-exploration';
+} from '../../exploration';
 import type { PlaceAvailabilities, PlaceDetail } from './placeDetail.types';
 import {
   selectPlaceOperatingSummary,

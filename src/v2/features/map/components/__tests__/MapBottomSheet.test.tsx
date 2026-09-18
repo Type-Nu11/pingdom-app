@@ -9,7 +9,7 @@ import type {
   RankedPlaceFeed,
   RankedPlaceFeedStatus,
   RankedPlaceViewModel,
-} from '../../../map-home-feeds';
+} from '../../../../modules/place/home-feeds';
 import MapBottomSheet, {
   ExpandedPlaceCard,
   getMapGridCardSize,

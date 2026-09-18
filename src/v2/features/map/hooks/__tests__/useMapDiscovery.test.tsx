@@ -9,11 +9,11 @@ import {
   usePlaceOperatingNotices,
   usePlaceVerificationMedia,
   usePlaceVisitDecision,
-} from '../../../place-exploration';
+} from '../../../../modules/place/exploration';
 import { usePlaceDetail } from '../../../../modules/place/detail';
 import { useMapDiscovery } from '../useMapDiscovery';
 
-jest.mock('../../../place-exploration', () => ({
+jest.mock('../../../../modules/place/exploration', () => ({
   usePlaceAutocomplete: jest.fn(),
   usePlaceCard: jest.fn(),
   usePlaceList: jest.fn(),

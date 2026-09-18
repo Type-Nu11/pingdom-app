@@ -5,7 +5,7 @@ import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { bookmarkApi } from '../../api/bookmarkApi';
 import { checkInApi } from '../../../check-ins/api/checkInApi';
 import { placeDetailApi } from '../../../../modules/place/detail';
-import { placeExplorationApi } from '../../../place-exploration/api/placeExplorationApi';
+import { placeExplorationApi } from '../../../../modules/place/exploration';
 import VerifiedPlacesScreen from '../VerifiedPlacesScreen';
 
 function checkInPage(placeIds: number[]) {
