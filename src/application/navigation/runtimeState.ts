@@ -1,4 +1,4 @@
-import type { OnboardingEntryState } from '../../v2/features/onboarding-entry';
+import type { OnboardingEntryState } from '../../v2/modules/onboarding';
 
 export type ProductionRootState = 'auth' | 'loading' | 'main' | 'onboarding';
 
