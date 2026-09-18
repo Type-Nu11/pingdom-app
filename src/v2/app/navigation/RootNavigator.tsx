@@ -8,7 +8,7 @@ import { useNotificationOpenSync } from '../../features/notifications/hooks/useN
 import type { NotificationRoute } from '../../features/notifications/model/notification.types';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../features/settings/hooks/useSettingsNavigation';
 import HomeScreen from '../../features/home/screens/HomeScreen';
-import MapScreen from '../../features/map/screens/MapScreen';
+import { MapScreen } from '../../modules/place/map';
 import CouponBoxScreen from '../../features/my-page/screens/CouponBoxScreen';
 import CouponDetailContainer from '../../features/my-page/screens/CouponDetailContainer';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';

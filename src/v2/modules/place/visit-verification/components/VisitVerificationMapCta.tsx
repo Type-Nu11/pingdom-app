@@ -4,7 +4,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 
 import VerificationIcon from '../../../../../assets/v2/icons/place/gamju.svg';
-import { GlassSurface } from '../../../../features/map/presentation';
+import { GlassSurface } from '../../map/presentation';
 
 type Props = {
   label: string;

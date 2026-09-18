@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import { getCurrentCoordinate } from '../../../../shared/location/currentLocation';
-import { getCurrentLocation } from '../../../../features/map/location';
+import { getCurrentLocation } from '../../map/location';
 import { locationPermissionService } from '../services/locationPermission';
 
 jest.mock('expo-location', () => ({

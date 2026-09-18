@@ -20,47 +20,6 @@ type PlaceExplorationApi = typeof placeExplorationApi;
 
 export { placeQueryKeys } from '../../core';
 
-export function createPlaceListQueryOptions(
-  params: PlaceListParams,
-  api: Pick<PlaceExplorationApi, 'getPlaces'> = placeExplorationApi,
-) {
-  const contractParams = selectPlaceListParams(params);
-
-  return {
-    queryFn: ({ signal }: { signal?: AbortSignal }) => api.getPlaces(contractParams, signal),
-    queryKey: placeQueryKeys.list(contractParams),
-    staleTime: 15_000,
-  };
-}
-
-export function createPlaceAutocompleteQueryOptions(
-  params: PlaceAutocompleteParams,
-  api: Pick<PlaceExplorationApi, 'autocompletePlaces'> = placeExplorationApi,
-) {
-  const contractParams = selectPlaceAutocompleteParams(params);
-
-  return {
-    queryFn: ({ signal }: { signal?: AbortSignal }) =>
-      api.autocompletePlaces(contractParams, signal),
-    queryKey: placeQueryKeys.autocomplete(contractParams),
-    staleTime: 30_000,
-  };
-}
-
-export function createPlaceMapQueryOptions(
-  params: MapViewportParams,
-  api: Pick<PlaceExplorationApi, 'getMapViewport'> = placeExplorationApi,
-) {
-  const contractParams = selectMapViewportParams(params);
-
-  return {
-    queryFn: ({ signal }: { signal?: AbortSignal }) =>
-      api.getMapViewport(contractParams, signal),
-    queryKey: placeQueryKeys.map(contractParams),
-    staleTime: 15_000,
-  };
-}
-
 export function createPlaceCardQueryOptions(
   placeId: number,
   api: Pick<PlaceExplorationApi, 'getPlaceCard'> = placeExplorationApi,
@@ -156,27 +115,6 @@ type PlaceExplorationQueryConfig = {
 };
 
 const MAX_PARALLEL_EXPLORATION_MEDIA_QUERIES = 20;
-
-export function usePlaceMap(
-  params: MapViewportParams,
-  { enabled = true }: PlaceExplorationQueryConfig = {},
-) {
-  return useQuery({ ...createPlaceMapQueryOptions(params), enabled });
-}
-
-export function usePlaceList(
-  params: PlaceListParams,
-  { enabled = true }: PlaceExplorationQueryConfig = {},
-) {
-  return useQuery({ ...createPlaceListQueryOptions(params), enabled });
-}
-
-export function usePlaceAutocomplete(
-  params: PlaceAutocompleteParams,
-  { enabled = true }: PlaceExplorationQueryConfig = {},
-) {
-  return useQuery({ ...createPlaceAutocompleteQueryOptions(params), enabled });
-}
 
 export function usePlaceCard(
   placeId: number,
@@ -275,3 +213,5 @@ export function usePlaceVisitDecisionResources(placeId: number) {
 export function useRecordMapLinkConversion() {
   return useMutation(createMapLinkConversionMutationOptions());
 }
+
+export { createPlaceListQueryOptions, createPlaceAutocompleteQueryOptions, createPlaceMapQueryOptions, usePlaceMap, usePlaceList, usePlaceAutocomplete } from '../../search/queries';

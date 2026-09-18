@@ -31,3 +31,4 @@ export {
 } from './model/placePresentation';
 export { default as PlaceDetailScreen } from './screens/PlaceDetailScreen';
 export { default as PlacePhotoViewer } from './components/PlacePhotoViewer';
+export { usePlacePreviewImages } from './hooks/usePlacePreviewImages';

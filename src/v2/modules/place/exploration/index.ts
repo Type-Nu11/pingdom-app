@@ -6,6 +6,7 @@ export {
   createMapLinkConversionMutationOptions,
   createPlaceAutocompleteQueryOptions,
   createPlaceCardQueryOptions,
+  createPlaceExplorationMediaQueryOptions,
   createPlaceListQueryOptions,
   createPlaceMapQueryOptions,
   createPlaceOperatingNoticesQueryOptions,
@@ -54,4 +55,11 @@ export {
   getPlaceListRuntimeState,
   type PlaceListRuntimeState,
 } from './model/placeListRuntime';
-export { createPlaceExplorationMediaQueryOptions } from './hooks/usePlaceExploration';
+export { useBookmarkedPlaceMembership, useBookmarkedPlaces } from './hooks/useBookmarkedPlaces';
+export { usePlaceBookmark } from './hooks/usePlaceBookmark';
+export { usePlaceRecommendations } from './hooks/usePlaceRecommendations';
+export { useRecordPlaceRecommendationClick } from './hooks/useRecordPlaceRecommendationClick';
+export { getBookmarkErrorMessage } from './model/bookmarkError';
+export { createRecommendationPresentation, getRecommendationState, selectRecommendationExplanationsByPlaceId, selectRecommendationReason } from './model/recommendationPresentation';
+export { selectRecommendationClickPayload } from './model/recommendationClick';
+export { toFavoritePlaceImageUrls } from './utils/favoritePlaceImages';

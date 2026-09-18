@@ -1,0 +1,59 @@
+import type { PlaceRecommendationsParams } from '../model/placeExploration.types';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { recommendationQueryKeys } from '../../../../features/travel-purposes/data';
+import {
+  createPlaceRecommendationsQueryOptions,
+} from './usePlaceExploration';
+import { selectUsableRecommendedPlaces } from '../../core/place.types';
+
+export type GetPlaceRecommendationsRequest = PlaceRecommendationsParams;
+
+export const placeRecommendationQueryKeys = {
+  all: recommendationQueryKeys.all,
+  list: (params: GetPlaceRecommendationsRequest) => recommendationQueryKeys.list(params),
+};
+
+export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) => {
+  const queryParams = useMemo(() => ({
+    latitude: params.latitude,
+    limit: params.limit ?? 10,
+    longitude: params.longitude,
+    radiusKm: params.radiusKm ?? 5,
+    ...(params.recommendationVersion ? { recommendationVersion: params.recommendationVersion } : {}),
+  }), [
+    params.latitude,
+    params.limit,
+    params.longitude,
+    params.radiusKm,
+    params.recommendationVersion,
+  ]);
+  const recommendationsQuery = useQuery({
+    ...createPlaceRecommendationsQueryOptions(queryParams),
+    enabled: Number.isFinite(queryParams.latitude) && Number.isFinite(queryParams.longitude),
+    queryKey: placeRecommendationQueryKeys.list(queryParams),
+  });
+  const places = useMemo(
+    () => selectUsableRecommendedPlaces(recommendationsQuery.data?.places),
+    [recommendationsQuery.data?.places],
+  );
+
+  return {
+    appliedActivityIntent: recommendationsQuery.data?.appliedActivityIntent ?? null,
+    appliedRadiusKm: recommendationsQuery.data?.appliedRadiusKm,
+    appliedTravelPurposes: recommendationsQuery.data?.appliedTravelPurposes ?? [],
+    data: recommendationsQuery.data,
+    error: recommendationsQuery.error,
+    isError: recommendationsQuery.isError,
+    isFetching: recommendationsQuery.isFetching,
+    isLoading: recommendationsQuery.isLoading,
+    limitReasons: recommendationsQuery.data?.limitReasons ?? [],
+    places,
+    recommendationRequestId: recommendationsQuery.data?.recommendationRequestId,
+    recommendationVersion: recommendationsQuery.data?.recommendationVersion,
+    requestedRadiusKm: recommendationsQuery.data?.requestedRadiusKm,
+    refetch: recommendationsQuery.refetch,
+  };
+};
+
+export default usePlaceRecommendations;

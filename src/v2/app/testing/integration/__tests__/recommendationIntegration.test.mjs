@@ -5,12 +5,12 @@ import { QueryClient } from '@tanstack/react-query';
 import {
   claimRecommendationClick,
   recordRecommendationClickOnce,
-} from '../../../../features/map/discovery/index.ts';
-import * as recommendationClick from '../../../../features/map/discovery/index.ts';
+} from '../../../../modules/place/exploration/presentation/index.ts';
+import * as recommendationClick from '../../../../modules/place/exploration/presentation/index.ts';
 import {
   createRecommendationPresentation,
   getRecommendationState,
-} from '../../../../features/map/discovery/index.ts';
+} from '../../../../modules/place/exploration/presentation/index.ts';
 import { createCurrentActivityIntentApi } from '../../../../features/current-activity-intent/data/index.ts';
 import {
   createCurrentActivityIntentQueryOptions,
