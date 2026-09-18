@@ -1,6 +1,6 @@
 import { env, type MockScenario } from '../../config/env';
 import { ApiError } from '../ApiError';
-import type { ApiClient, GetRequestOptions, MutationRequestOptions } from '../apiClient';
+import type { ApiClient, GetRequestOptions, MutationRequestOptions } from '../transport';
 import { featureMockHandlers } from './features';
 import { getDomainMockHandlers } from './registry';
 import {
