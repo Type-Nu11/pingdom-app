@@ -21,7 +21,7 @@ export const PRODUCTION_ROUTE_PARITY: readonly RouteParityEntry[] = [
   { activeImplementation: 'src/features/place/screens/CheckInScreen.tsx', removalIssues: ['#139'], route: 'CheckIn', status: 'COMPOSITION_BRIDGE' },
   { activeImplementation: 'src/v2/features/my-page/screens/CouponBoxScreen.tsx', route: 'CouponBox', status: 'V2_READY' },
   { activeImplementation: 'src/v2/features/my-page/screens/MyPageScreen.tsx', removalIssues: [], route: 'Profile', status: 'V2_READY' },
-  { activeImplementation: 'src/v2/features/merchant-my-page', removalIssues: [], route: 'MyPage(MERCHANT_OWNER)', status: 'V2_READY' },
+  { activeImplementation: 'src/v2/modules/merchant', removalIssues: [], route: 'MyPage(MERCHANT_OWNER)', status: 'V2_READY' },
   { activeImplementation: 'src/v2/features/settings/screens/SettingsScreen.tsx', removalIssues: [], route: 'Settings/Logout', status: 'V2_READY' },
   { activeImplementation: 'src/app/navigation/RoutePlaceholderScreen.tsx', removalIssues: ['#139'], route: 'Merchant', status: 'REMOVE' },
 ] as const;

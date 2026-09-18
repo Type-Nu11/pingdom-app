@@ -1,13 +1,13 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import {
   merchantEventsFixture,
   merchantProfileFixture,
   merchantReviewsFixture,
   merchantStoreFixture,
-} from '../../testing/merchantMyPageFixtures';
+} from '../../__tests__/merchantMyPageFixtures';
 import MerchantMyPageScreen from '../MerchantMyPageScreen';
 
 function renderScreen(overrides: Partial<React.ComponentProps<typeof MerchantMyPageScreen>> = {}) {

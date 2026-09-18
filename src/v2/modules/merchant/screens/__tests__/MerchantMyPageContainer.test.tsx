@@ -2,8 +2,8 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { merchantOwnerApi } from '../../api/merchantOwnerApi';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
+import { merchantOwnerApi } from '../../__tests__';
 import MerchantMyPageContainer from '../MerchantMyPageContainer';
 
 const PLACE_ID = 10;

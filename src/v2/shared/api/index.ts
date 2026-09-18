@@ -8,7 +8,6 @@ export {
 export { getApiErrorUx } from './getApiErrorUx';
 export { getMockScenario, mockApiClient, setMockScenario } from './mock/mockApiClient';
 export {
-  merchantPerformanceFixture,
   trustFixture,
 } from './mock/fixtures';
 export type {
