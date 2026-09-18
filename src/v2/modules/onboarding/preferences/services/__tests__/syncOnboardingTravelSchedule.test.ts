@@ -1,10 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { TravelDateInput } from '../../model/onboardingPreference';
-import {
-  ONBOARDING_PREFERENCE_STORAGE_KEY,
-  persistOnboardingPreferences,
-} from '../..';
+import { ONBOARDING_PREFERENCE_STORAGE_KEY } from '../onboardingPreferenceStorage';
+import { persistOnboardingPreferences } from '../onboardingPreferenceStorage';
 import { syncOnboardingTravelScheduleToServer } from '../syncOnboardingTravelSchedule';
 
 const RANGE: TravelDateInput = {

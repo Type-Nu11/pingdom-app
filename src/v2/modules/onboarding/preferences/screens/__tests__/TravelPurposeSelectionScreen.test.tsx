@@ -1,11 +1,11 @@
 import { screen } from '@testing-library/react-native';
 import { Animated } from 'react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import TravelPurposeSelectionScreen from '../TravelPurposeSelectionScreen';
 
-jest.mock('../../../../shared/motion', () => {
-  const actual = jest.requireActual('../../../../shared/motion');
+jest.mock('../../../../../shared/motion', () => {
+  const actual = jest.requireActual('../../../../../shared/motion');
   return {
     ...actual,
     runTimingMotion: (value: Animated.Value, toValue: number) => {

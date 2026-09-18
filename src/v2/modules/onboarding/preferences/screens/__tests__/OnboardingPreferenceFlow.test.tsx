@@ -2,15 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Animated } from 'react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import {
-  ONBOARDING_PREFERENCE_STORAGE_KEY,
-  useOnboardingPreferenceStore,
-} from '../..';
+import { renderWithProviders } from '../../../../../app/testing/testProviders';
+import { ONBOARDING_PREFERENCE_STORAGE_KEY } from '../../services/onboardingPreferenceStorage';
+import { useOnboardingPreferenceStore } from '../../store/onboardingPreferenceStore';
 import OnboardingPreferenceFlow from '../OnboardingPreferenceFlow';
 
-jest.mock('../../../../shared/motion', () => {
-  const actual = jest.requireActual('../../../../shared/motion');
+jest.mock('../../../../../shared/motion', () => {
+  const actual = jest.requireActual('../../../../../shared/motion');
   return {
     ...actual,
     runTimingMotion: (value: Animated.Value, toValue: number) => {

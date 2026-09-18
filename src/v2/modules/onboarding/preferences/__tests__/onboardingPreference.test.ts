@@ -1,14 +1,13 @@
-import { resources } from '../../../shared/i18n/resources';
-import {
-  CURRENT_NEED_OPTIONS,
-  TRAVEL_PURPOSE_OPTIONS,
-  TRAVEL_PURPOSE_VALUES,
-  isCurrentNeed,
-  isServerTravelDate,
-  isTravelPurposeSelection,
-  parseTravelDateRange,
-  toCreateTravelScheduleBody,
-} from '..';
+import { onboardingResources } from '../../i18n';
+const resources = { en: { translation: { onboarding: onboardingResources.en } }, ko: { translation: { onboarding: onboardingResources.ko } } };
+import { CURRENT_NEED_OPTIONS } from '../model/onboardingPreference';
+import { TRAVEL_PURPOSE_OPTIONS } from '../model/onboardingPreference';
+import { TRAVEL_PURPOSE_VALUES } from '../model/onboardingPreference';
+import { isCurrentNeed } from '../model/onboardingPreference';
+import { isServerTravelDate } from '../model/onboardingPreference';
+import { isTravelPurposeSelection } from '../model/onboardingPreference';
+import { parseTravelDateRange } from '../model/onboardingPreference';
+import { toCreateTravelScheduleBody } from '../model/onboardingPreference';
 
 function readTranslation(path: string, language: 'en' | 'ko'): unknown {
   return path.split('.').reduce<unknown>((current, key) => {

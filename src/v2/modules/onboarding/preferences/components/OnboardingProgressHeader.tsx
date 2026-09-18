@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components/native';
 
-import BackIcon from '../../../../assets/v2/icons/header/back.svg';
+import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
 
 type Props = Readonly<{
   backLabel: string;

@@ -1,4 +1,4 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated } from 'react-native';
@@ -6,22 +6,22 @@ import type { SvgProps } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
-import ArtIcon from '../../../../assets/v2/icons/place/art_svg.svg';
-import BeautyIcon from '../../../../assets/v2/icons/place/beati_svg.svg';
-import CafeIcon from '../../../../assets/v2/icons/place/cafe_svg.svg';
-import EtcIcon from '../../../../assets/v2/icons/place/etc_svg.svg';
-import FashionIcon from '../../../../assets/v2/icons/place/fashion_svg.svg';
-import FoodIcon from '../../../../assets/v2/icons/place/food_svg.svg';
-import HotPlaceIcon from '../../../../assets/v2/icons/place/hotplace.svg';
-import MapIcon from '../../../../assets/v2/icons/place/maping_svg.svg';
-import MusicIcon from '../../../../assets/v2/icons/place/music_svg.svg';
-import PopupIcon from '../../../../assets/v2/icons/place/popup_svg.svg';
-import Button from '../../../shared/components/Button';
+import ArtIcon from '../../../../../assets/v2/icons/place/art_svg.svg';
+import BeautyIcon from '../../../../../assets/v2/icons/place/beati_svg.svg';
+import CafeIcon from '../../../../../assets/v2/icons/place/cafe_svg.svg';
+import EtcIcon from '../../../../../assets/v2/icons/place/etc_svg.svg';
+import FashionIcon from '../../../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodIcon from '../../../../../assets/v2/icons/place/food_svg.svg';
+import HotPlaceIcon from '../../../../../assets/v2/icons/place/hotplace.svg';
+import MapIcon from '../../../../../assets/v2/icons/place/maping_svg.svg';
+import MusicIcon from '../../../../../assets/v2/icons/place/music_svg.svg';
+import PopupIcon from '../../../../../assets/v2/icons/place/popup_svg.svg';
+import Button from '../../../../shared/components/Button';
 import {
   MOTION_DURATION,
   runTimingMotion,
   useReducedMotion,
-} from '../../../shared/motion';
+} from '../../../../shared/motion';
 import OnboardingProgressHeader from '../components/OnboardingProgressHeader';
 import {
   TRAVEL_PURPOSE_OPTIONS,

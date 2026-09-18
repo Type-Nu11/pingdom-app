@@ -1,14 +1,14 @@
 import {
   ACTIVITY_INTENT_VALUES,
   type ActivityIntent,
-} from '../../../modules/travel/current-activity-intent';
+} from '../../../travel/current-activity-intent';
 import {
   TRAVEL_PURPOSE_MAX_SELECTIONS,
   TRAVEL_PURPOSE_VALUES,
   isTravelPurpose,
   type TravelPurpose,
-} from '../../../modules/travel/purposes';
-import type { CreateTravelScheduleBody } from '../../../modules/travel/schedules';
+} from '../../../travel/purposes';
+import type { CreateTravelScheduleBody } from '../../../travel/schedules';
 
 export type CurrentNeed = ActivityIntent;
 export type TravelPurposeSelection = readonly TravelPurpose[];
@@ -90,5 +90,5 @@ export function isTravelPurposeSelection(
 export { TRAVEL_PURPOSE_MAX_SELECTIONS, TRAVEL_PURPOSE_VALUES };
 export type { CreateTravelScheduleBody, TravelPurpose };
 
-export { isServerTravelDate, parseTravelDateRange, toCreateTravelScheduleBody } from '../../../modules/travel/calendar';
-export type { TravelDateInput, ServerTravelDate, TravelDateRange } from '../../../modules/travel/calendar';
+export { isServerTravelDate, parseTravelDateRange, toCreateTravelScheduleBody } from '../../../travel/calendar';
+export type { TravelDateInput, ServerTravelDate, TravelDateRange } from '../../../travel/calendar';

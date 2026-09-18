@@ -1,10 +1,10 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import Button from '../../../shared/components/Button';
+import Button from '../../../../shared/components/Button';
 import OnboardingProgressHeader from '../components/OnboardingProgressHeader';
 import {
   isServerTravelDate,
@@ -20,7 +20,7 @@ import {
   getTravelScheduleSelectionState,
   selectTravelDate,
   shiftCalendarMonth,
-} from '../../../modules/travel/calendar';
+} from '../../../travel/calendar';
 
 const DEFAULT_CURRENT_STEP = 7;
 const DEFAULT_TOTAL_STEPS = 7;

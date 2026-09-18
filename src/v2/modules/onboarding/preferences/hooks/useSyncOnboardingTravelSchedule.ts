@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { invalidateTravelScheduleDependencies } from '../../../modules/travel/schedules';
+import { invalidateTravelScheduleDependencies } from '../../../travel/schedules';
 import { syncOnboardingTravelScheduleToServer } from '../services/syncOnboardingTravelSchedule';
 
 /**

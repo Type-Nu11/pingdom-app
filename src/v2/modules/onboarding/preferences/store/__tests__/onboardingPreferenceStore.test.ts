@@ -1,9 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import {
-  ONBOARDING_PREFERENCE_STORAGE_KEY,
-  useOnboardingPreferenceStore,
-} from '../..';
+import { ONBOARDING_PREFERENCE_STORAGE_KEY } from '../../services/onboardingPreferenceStorage';
+import { useOnboardingPreferenceStore } from '../onboardingPreferenceStore';
 
 function resetStoreMemory() {
   useOnboardingPreferenceStore.setState(
