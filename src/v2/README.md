@@ -11,7 +11,7 @@ Production entrypoint ownership and active composition bridges are documented in
 The target is `app → modules → shared`, with Place, Booking, User, Onboarding, Travel,
 Merchant and Voice Assistant modules. Existing `features` directories remain until their
 individual migration issues. See the ADR's [inventory and graph audit](../../docs/architecture/adr/0001-v2-boundary-audit.md)
-for all 28 feature owners, counts and removal issues #361/#358/#359/#360/#362.
+for current Place/User modules, transitional feature counts and remaining issues #359/#360/#362.
 
 - External callers use a feature/module or subfeature public `index.ts`; internal
   screen/hook/API/model/service/store/style/component indexes are not public entrypoints.
@@ -121,3 +121,14 @@ Eight named compatibility files remain in `features/map`, `features/check-ins`, 
 those callers migrate, subject to #124/#139 parity; they contain no implementation.
 See [the #361 handoff](../../docs/architecture/adr/0001-place-migration-handoff.md)
 and [pre-move inventory](../../docs/architecture/adr/0001-place-migration-inventory.md).
+
+## User module (#358)
+
+`modules/user` owns account/auth, profile/My Page, settings, notifications and Scout contracts.
+Use its named public submodule indexes. My Page travel, verified-place and coupon folders own
+presentation; Place/Booking/Travel contracts remain with their domains. User sibling imports are
+checked as public boundaries too. Account/notification/Scout mocks are User-owned and registered
+by `app/configureDomainMocks` into shared transport.
+
+See the [User handoff](../../docs/architecture/adr/0001-user-migration-handoff.md) for the exact
+legacy compatibility paths, preserved contracts, tests and outstanding device QA.
