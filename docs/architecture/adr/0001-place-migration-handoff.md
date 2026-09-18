@@ -199,3 +199,9 @@ Place map/detail now consume `modules/booking` headless reservation reads and `m
 The earlier #359 migration instructions above are historical. See [Booking handoff](0001-booking-migration-handoff.md) for the implemented boundaries and remaining contract-sync follow-up.
 
 Place availability transport, Hook, generated alias, query identity and reservation CTA selector now belong to Booking. Place detail and Map sheet consume their named Booking public API; both availability cache identities and the original CTA policy are preserved.
+
+## Current remaining-domain boundary after #360
+
+The [#360 handoff](0001-remaining-migration-handoff.md) and [exact compatibility inventory](0001-remaining-migration-inventory.md) supersede earlier pending #360 instructions. Travel implementations now live in `modules/travel`; User and Onboarding share `travel/calendar`. Place consumes Travel query keys and `shared/analytics/conversion`; its assistant consumes `modules/voice-assistant`. Onboarding hydration is `modules/onboarding`, Merchant presentation is `modules/merchant`, and Home is app-owned.
+
+All previously listed V1 compatibility paths remain required by their frozen consumers and contain named re-exports only. V2 test-provider callers now use app/testing; the V1 test adapter stays for #362. Remaining Place development handlers/fixtures move into Place and app registers them in the unchanged precedence. #360 exceptions and the final client/mock SCC are both zero; #362 retains 15 occurrences. These are automated structural results, not new device/live-server QA.

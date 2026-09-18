@@ -1,7 +1,6 @@
 # PingDom V2
 
-V2 is isolated from legacy implementation. The current flat features migrate incrementally
-to the domain structure in [ADR 0001](../../docs/architecture/adr/0001-v2-domain-module-boundaries.md).
+V2 is isolated from legacy implementation. The domain modules now follow the structure in [ADR 0001](../../docs/architecture/adr/0001-v2-domain-module-boundaries.md).
 
 Production entrypoint ownership and active composition bridges are documented in
 [`docs/v2-production-entrypoint-migration.md`](../../docs/v2-production-entrypoint-migration.md).
@@ -9,9 +8,9 @@ Production entrypoint ownership and active composition bridges are documented in
 ## Import boundaries
 
 The target is `app → modules → shared`, with Place, Booking, User, Onboarding, Travel,
-Merchant and Voice Assistant modules. Existing `features` directories remain until their
-individual migration issues. See the ADR's [inventory and graph audit](../../docs/architecture/adr/0001-v2-boundary-audit.md)
-for current Place/User modules, transitional feature counts and remaining issues #359/#360/#362.
+Merchant and Voice Assistant modules. `features` contains only named V1/root compatibility
+exports for #362. See the ADR's [inventory and graph audit](../../docs/architecture/adr/0001-v2-boundary-audit.md)
+for all seven modules, exact compatibility consumers and the zero-SCC graph.
 
 - External callers use a feature/module or subfeature public `index.ts`; internal
   screen/hook/API/model/service/store/style/component indexes are not public entrypoints.
@@ -37,7 +36,7 @@ imports have explicit exceptions, not a blanket test bypass.
 `app/i18n` composes feature-owned resources and registers them with the shared instance.
 Production and development providers use that initializer; the app test provider consumes
 that same resource object. Shared owns language hydration, base copy and formatters.
-The shared test-provider path is a test-only compatibility entrypoint until #360.
+The shared test-provider path is a test-only compatibility entrypoint until #362 for the two frozen V1 tests.
 
 ## Feature data flow
 
@@ -132,3 +131,9 @@ by `app/configureDomainMocks` into shared transport.
 
 See the [User handoff](../../docs/architecture/adr/0001-user-migration-handoff.md) for the exact
 legacy compatibility paths, preserved contracts, tests and outstanding device QA.
+
+## Remaining domain migration (#360)
+
+Onboarding, Travel, Merchant and Voice Assistant now live under `modules/`; conversion transport/retry lives at `shared/analytics/conversion`, and Home is app-owned. Travel is the single owner of shared calendar/date calculations. App composes domain mock handlers and i18n. Flat `features` contains only the 29 named V1/root compatibility exports for #362. Never add implementation there.
+
+Community has no implementation or skeleton. Start real work at `modules/community/**` only when a server API and implementation issue exist; app and Place/User/Booking integrations consume named public APIs. The [#360 handoff](../../docs/architecture/adr/0001-remaining-migration-handoff.md) records contracts, tests and device limitations; [inventory](../../docs/architecture/adr/0001-remaining-migration-inventory.md) lists every public and compatibility boundary.

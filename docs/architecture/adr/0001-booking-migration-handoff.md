@@ -234,3 +234,9 @@ No remaining automated implementation blocker. Follow-ups: additive Coupon contr
 #360 remaining domain/SCC work, #362 compatibility removal and Android/iOS/live-server QA.
 
 V1 dependency delta: **none**. `legacy-exception`: **not required**.
+
+## Current remaining-domain boundary after #360
+
+The [#360 handoff](0001-remaining-migration-handoff.md) and [exact compatibility inventory](0001-remaining-migration-inventory.md) supersede earlier pending #360 instructions. Travel implementations now live in `modules/travel`; User and Onboarding share `travel/calendar`. Place consumes Travel query keys and `shared/analytics/conversion`; its assistant consumes `modules/voice-assistant`. Onboarding hydration is `modules/onboarding`, Merchant presentation is `modules/merchant`, and Home is app-owned.
+
+All previously listed V1 compatibility paths remain required by their frozen consumers and contain named re-exports only. V2 test-provider callers now use app/testing; the V1 test adapter stays for #362. Remaining Place development handlers/fixtures move into Place and app registers them in the unchanged precedence. #360 exceptions and the final client/mock SCC are both zero; #362 retains 15 occurrences. These are automated structural results, not new device/live-server QA.

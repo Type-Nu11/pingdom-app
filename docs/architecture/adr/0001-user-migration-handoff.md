@@ -58,9 +58,9 @@ Axios refresh/replay, generated types and application NavigationContainer retain
   external-module rules, including type-only imports and tests.
 - User consumes Place detail, exploration and check-in public APIs, Booking's existing
   `features/offers-coupons` / `features/reservations` indexes, and Travel's public indexes.
-- `features/onboarding-preferences/calendar/index.ts` publishes only consumed date/calendar
-  helpers and types, without loading the onboarding screen/store barrel. #360 moves this
-  responsibility with Travel/Onboarding; no duplicated contract or implementation was introduced.
+- `modules/travel/calendar/index.ts` now publishes only consumed date/calendar
+  helpers and types, without loading the onboarding screen/store barrel. #360 moved this
+  responsibility to Travel; no duplicated contract or implementation was introduced.
 - Screen API-error interpretation moves into profile/travel presentation models. Error codes,
   precedence, localized keys and fallbacks remain unchanged. Travel candidate fields now use
   `Pick<TravelSchedule, ...>` from the existing domain public contract instead of repeating its enum.
@@ -233,3 +233,9 @@ The manual device-QA limitations above remain unchanged.
 User My Page reads reservation statistics through `modules/booking`; Coupon presentation and Settings read `modules/booking/offers-coupons`. User retains CouponBox/CouponDetail/QR UI ownership; Booking owns the generated contracts, queries and Coupon state selectors. API spies use Booking test-only indexes.
 
 The earlier #359 migration instructions above are historical. See [Booking handoff](0001-booking-migration-handoff.md) for the implemented boundaries and remaining contract-sync follow-up.
+
+## Current remaining-domain boundary after #360
+
+The [#360 handoff](0001-remaining-migration-handoff.md) and [exact compatibility inventory](0001-remaining-migration-inventory.md) supersede earlier pending #360 instructions. Travel implementations now live in `modules/travel`; User and Onboarding share `travel/calendar`. Place consumes Travel query keys and `shared/analytics/conversion`; its assistant consumes `modules/voice-assistant`. Onboarding hydration is `modules/onboarding`, Merchant presentation is `modules/merchant`, and Home is app-owned.
+
+All previously listed V1 compatibility paths remain required by their frozen consumers and contain named re-exports only. V2 test-provider callers now use app/testing; the V1 test adapter stays for #362. Remaining Place development handlers/fixtures move into Place and app registers them in the unchanged precedence. #360 exceptions and the final client/mock SCC are both zero; #362 retains 15 occurrences. These are automated structural results, not new device/live-server QA.
