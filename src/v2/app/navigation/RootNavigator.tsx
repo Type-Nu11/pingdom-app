@@ -9,8 +9,8 @@ import type { NotificationRoute } from '../../features/notifications/model/notif
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../features/settings/hooks/useSettingsNavigation';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import { MapScreen } from '../../modules/place/map';
-import CouponBoxScreen from '../../features/my-page/screens/CouponBoxScreen';
-import CouponDetailContainer from '../../features/my-page/screens/CouponDetailContainer';
+import { CouponBoxScreen } from '../../modules/user/profile/my-page';
+import { CouponDetailContainer } from '../../modules/user/profile/my-page';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
 import { ProfileEditScreen } from '../../modules/user/profile';
 import { PlaceListExampleScreen } from '../../modules/place/search';

@@ -1,8 +1,8 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../../../shared/components/Typography';
 import React from 'react';
 import styled from 'styled-components/native';
 
-import CouponIcon from '../../../shared/assets/icons/coupon.svg';
+import CouponIcon from '../../../../../../shared/assets/icons/coupon.svg';
 
 export type CouponCardProps = {
   /** Omitted while the place is unknown — a placeholder store name would misread as real. */

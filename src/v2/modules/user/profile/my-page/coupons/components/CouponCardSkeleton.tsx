@@ -3,7 +3,7 @@ import { Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
+import { useSharedPulse } from '../../../../../../shared/hooks/useSharedPulse';
 
 /**
  * Holds a coupon slot while the coupon list loads, so the screen shows its shape

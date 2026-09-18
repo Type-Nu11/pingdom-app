@@ -1,4 +1,4 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../../../shared/components/Typography';
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'react-native-qrcode-svg';
 import styled from 'styled-components/native';

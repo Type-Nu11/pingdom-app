@@ -1,6 +1,6 @@
-import { canPresentCoupon } from '../../offers-coupons';
-import type { Coupon, CouponStatus, Offer } from '../../offers-coupons';
-import type { PlaceDetail } from '../../../modules/place/detail';
+import { canPresentCoupon } from '../../../../../../features/offers-coupons';
+import type { Coupon, CouponStatus, Offer } from '../../../../../../features/offers-coupons';
+import type { PlaceDetail } from '../../../../../place/detail';
 
 /**
  * A coupon box row in render order. The coupon list is the source of truth for

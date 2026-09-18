@@ -1,14 +1,14 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../../../shared/components/Typography';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Line } from 'react-native-svg';
 import styled, { useTheme } from 'styled-components/native';
 
-import Button from '../../../shared/components/Button';
-import { HeaderBackButton } from '../../../shared/components';
+import Button from '../../../../../../shared/components/Button';
+import { HeaderBackButton } from '../../../../../../shared/components';
 import CouponQrCode from '../components/CouponQrCode';
-import CouponIcon from '../../../shared/assets/icons/coupon.svg';
+import CouponIcon from '../../../../../../shared/assets/icons/coupon.svg';
 
 export type CouponDetailInfoRow = Readonly<{ label: string; value: string }>;
 

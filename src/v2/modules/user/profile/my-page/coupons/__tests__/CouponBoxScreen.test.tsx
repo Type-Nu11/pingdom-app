@@ -1,12 +1,12 @@
 import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { createTestI18n, renderWithProviders } from '../../../../shared/testing/testProviders';
-import { registerOfferCouponResources } from '../../../offers-coupons';
-import { ApiError } from '../../../../shared/api';
-import { offerCouponApi, type CouponPage } from '../../../offers-coupons/api/offerCouponApi';
-import { placeDetailApi } from '../../../../modules/place/detail';
-import CouponBoxScreen from '../CouponBoxScreen';
+import { createTestI18n, renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { registerOfferCouponResources } from '../../../../../../features/offers-coupons';
+import { ApiError } from '../../../../../../shared/api';
+import { offerCouponApi, type CouponPage } from '../../../../../../features/offers-coupons';
+import { placeDetailApi } from '../../../../../place/detail';
+import CouponBoxScreen from '../screens/CouponBoxScreen';
 
 async function renderCouponBox(ui: React.ReactElement) {
   const i18n = await createTestI18n('ko');

@@ -5,8 +5,8 @@ import {
   createOfferQueryOptions,
   type Coupon,
   type Offer,
-} from '../../offers-coupons';
-import { createPlaceDetailQueryOptions, type PlaceDetail } from '../../../modules/place/detail';
+} from '../../../../../../features/offers-coupons';
+import { createPlaceDetailQueryOptions, type PlaceDetail } from '../../../../../place/detail';
 import { toCouponBoxEntries } from '../model/couponBoxEntries';
 
 type CouponBoxFallback = Readonly<{
