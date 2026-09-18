@@ -2,10 +2,10 @@ import React from 'react';
 import { screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { useReservations } from '../../hooks/useReservations';
-import ReservationBoxScreen from '../ReservationBoxScreen';
+import { useReservations } from '../hooks/useReservations';
+import ReservationBoxScreen from '../screens/ReservationBoxScreen';
 
-jest.mock('../../hooks/useReservations', () => ({ useReservations: jest.fn() }));
+jest.mock('../hooks/useReservations', () => ({ useReservations: jest.fn() }));
 
 const reservation = {
   availabilityId: 801,
