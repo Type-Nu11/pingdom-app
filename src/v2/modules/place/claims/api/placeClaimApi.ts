@@ -4,7 +4,7 @@ import {
   type OperationQuery,
   type OperationRequestBody,
   type OperationResponse,
-} from '../../../shared/api';
+} from '../../../../shared/api';
 
 export type ListPlaceClaimsParams = OperationQuery<'listMyPlaceClaims'>;
 export type CreatePlaceClaimBody = OperationRequestBody<'createPlaceClaim'>;

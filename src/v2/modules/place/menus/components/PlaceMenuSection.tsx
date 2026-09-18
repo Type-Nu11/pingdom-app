@@ -1,10 +1,10 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import { getApiErrorUx } from '../../../shared/api';
+import { getApiErrorUx } from '../../../../shared/api';
 import { isValidPlaceMenuId, usePlaceMenus } from '../hooks/usePlaceMenus';
 import { formatPlaceMenuPrice, selectPlaceMenus } from '../model/placeMenuPresentation';
 import type { PlaceMenuPresentation } from '../model/placeMenu.types';

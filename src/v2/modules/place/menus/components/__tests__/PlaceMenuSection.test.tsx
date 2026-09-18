@@ -1,8 +1,8 @@
 import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { ApiError } from '../../../../shared/api';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { ApiError } from '../../../../../shared/api';
+import { renderWithProviders } from '../../../../../shared/testing/testProviders';
 import { placeMenuApi } from '../../api/placeMenuApi';
 import type { PlaceMenus } from '../../model/placeMenu.types';
 import PlaceMenuSection from '../PlaceMenuSection';

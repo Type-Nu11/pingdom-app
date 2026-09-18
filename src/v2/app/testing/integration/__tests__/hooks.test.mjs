@@ -10,7 +10,7 @@ import {
 } from '../../../../features/check-ins/data/index.ts';
 import { createConversionEventMutationOptions } from '../../../../features/conversion/data/index.ts';
 import { createRedeemCouponMutationOptions } from '../../../../features/offers-coupons/data/index.ts';
-import { createPlaceClaimMutationOptions } from '../../../../features/place-claims/data/index.ts';
+import { createPlaceClaimMutationOptions } from '../../../../modules/place/claims/data/index.ts';
 import { createPlaceDetailQueryOptions } from '../../../../modules/place/detail/data/index.ts';
 import { createPlaceListQueryOptions } from '../../../../modules/place/search/data/index.ts';
 import {

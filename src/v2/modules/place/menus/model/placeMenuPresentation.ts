@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../../shared/i18n/formatters';
+import { formatCurrency } from '../../../../shared/i18n/formatters';
 import {
   PLACE_MENU_CURRENCIES,
   type PlaceMenu,

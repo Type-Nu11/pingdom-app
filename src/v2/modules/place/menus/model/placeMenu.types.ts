@@ -1,4 +1,4 @@
-import type { PlaceMenusOperationResponse } from '../../../shared/api';
+import type { PlaceMenusOperationResponse } from '../../../../shared/api';
 
 export type PlaceMenu = PlaceMenusOperationResponse<'list_5', 200>[number];
 export type PlaceMenus = PlaceMenusOperationResponse<'list_5', 200>;

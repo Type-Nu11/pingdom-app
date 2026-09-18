@@ -1,4 +1,4 @@
-import { apiClient, type ApiClient } from '../../../shared/api';
+import { apiClient, type ApiClient } from '../../../../shared/api';
 import type { PlaceMenus } from '../model/placeMenu.types';
 
 export function createPlaceMenuApi(client: ApiClient = apiClient) {

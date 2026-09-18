@@ -1,4 +1,6 @@
-import type { PlaceMenus } from '../../../../../features/place-menus/model/placeMenu.types';
+import type { PlaceMenusOperationResponse } from '../../../placeMenusContract';
+
+type PlaceMenus = PlaceMenusOperationResponse<'list_5', 200>;
 
 export const placeMenuFixture = [
   {

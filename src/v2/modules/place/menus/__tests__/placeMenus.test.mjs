@@ -3,17 +3,17 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-import { ApiError, getApiErrorUx } from '../index.ts';
-import { createPlaceMenuApi } from '../../../features/place-menus/api/placeMenuApi.ts';
+import { ApiError, getApiErrorUx } from '../../../../shared/api/index.ts';
+import { createPlaceMenuApi } from '../api/placeMenuApi.ts';
 import {
   createPlaceMenusQueryOptions,
   isValidPlaceMenuId,
   placeMenuQueryKeys,
-} from '../../../features/place-menus/hooks/usePlaceMenus.ts';
+} from '../hooks/usePlaceMenus.ts';
 import {
   formatPlaceMenuPrice,
   selectPlaceMenus,
-} from '../../../features/place-menus/model/placeMenuPresentation.ts';
+} from '../model/placeMenuPresentation.ts';
 
 const menu = (overrides = {}) => ({
   id: 1,

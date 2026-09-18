@@ -70,7 +70,7 @@ import {
   type MapHomeDisplayState,
 } from '../model/mapHomeCategory';
 import { PlacePhotoViewer } from '../../../modules/place/detail';
-import { PlaceMenuSection } from '../../place-menus';
+import { PlaceMenuSection } from '../../../modules/place/menus';
 import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapSheetBottomNavigation';
 import type {
   RankedPlaceFeed,
