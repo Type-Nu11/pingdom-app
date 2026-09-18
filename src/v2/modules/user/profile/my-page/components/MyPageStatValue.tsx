@@ -1,4 +1,4 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../../shared/components/Typography';
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';

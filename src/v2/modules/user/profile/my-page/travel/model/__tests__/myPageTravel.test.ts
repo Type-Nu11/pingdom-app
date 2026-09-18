@@ -1,7 +1,4 @@
-import {
-  isServerTravelDate,
-  type ServerTravelDate,
-} from '../../../onboarding-preferences/model/onboardingPreference';
+import { isServerTravelDate, type ServerTravelDate } from '../../../../../../../features/onboarding-preferences/calendar';
 import { selectFeaturedTravelSchedule } from '../myPageTravel';
 
 describe('selectFeaturedTravelSchedule', () => {

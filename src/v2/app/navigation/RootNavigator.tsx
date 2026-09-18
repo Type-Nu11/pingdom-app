@@ -11,7 +11,7 @@ import HomeScreen from '../../features/home/screens/HomeScreen';
 import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
-import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
+import { MyPageScreen } from '../../modules/user/profile/my-page';
 import { ProfileEditScreen } from '../../modules/user/profile';
 import { PlaceListExampleScreen } from '../../modules/place/search';
 import { PlaceDetailScreen } from '../../modules/place/detail';

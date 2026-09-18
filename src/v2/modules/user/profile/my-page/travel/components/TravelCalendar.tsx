@@ -1,18 +1,11 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../../../shared/components/Typography';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import type { ServerTravelDate } from '../../onboarding-preferences/model/onboardingPreference';
-import {
-  buildCalendarDays,
-  formatAccessibleTravelDate,
-  formatCalendarMonth,
-  shiftCalendarMonth,
-  type CalendarDay,
-  type CalendarMonth,
-} from '../../onboarding-preferences/model/travelScheduleCalendar';
-import ChevronIcon from '../../../shared/assets/icons/chevron-right-20.svg';
+import type { ServerTravelDate } from '../../../../../../features/onboarding-preferences/calendar';
+import { buildCalendarDays, formatAccessibleTravelDate, formatCalendarMonth, shiftCalendarMonth, type CalendarDay, type CalendarMonth } from '../../../../../../features/onboarding-preferences/calendar';
+import ChevronIcon from '../../../../../../shared/assets/icons/chevron-right-20.svg';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
 const FIGMA_CALENDAR_WIDTH = 354;

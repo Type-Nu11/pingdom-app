@@ -2,17 +2,17 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi } from '../../../../modules/user/profile/__tests__';
-import type { Profile } from '../../../../modules/user/profile';
-import { bookmarkApi } from '../../../../modules/user/profile/my-page/__tests__';
-import { checkInApi } from '../../../../modules/place/check-ins';
-import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
-import { placeDetailApi } from '../../../../modules/place/detail';
-import { placeExplorationApi } from '../../../../modules/place/exploration';
-import { reservationApi } from '../../../reservations/api/reservationApi';
-import { travelScheduleApi } from '../../../travel-schedules/api/travelScheduleApi';
-import MyPageScreen from '../MyPageScreen';
+import { renderWithProviders } from '../../../../../shared/testing/testProviders';
+import { profileApi } from '../../api/profileApi';
+import type { Profile } from '../../model/profile.types';
+import { bookmarkApi } from '../api/bookmarkApi';
+import { checkInApi } from '../../../../place/check-ins';
+import { offerCouponApi } from '../../../../../features/offers-coupons';
+import { placeDetailApi } from '../../../../place/detail';
+import { placeExplorationApi } from '../../../../place/exploration';
+import { reservationApi } from '../../../../../features/reservations';
+import { travelScheduleApi } from '../../../../../features/travel-schedules';
+import MyPageScreen from '../screens/MyPageScreen';
 
 const PROFILE: Profile = {
   birthYear: 1998,

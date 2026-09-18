@@ -1,7 +1,6 @@
-import {
-  isServerTravelDate,
-  type ServerTravelDate,
-} from '../../onboarding-preferences/model/onboardingPreference';
+import type { TravelSchedule } from '../../../../../../features/travel-schedules';
+import { ApiError } from '../../../../../../shared/api/ApiError';
+import { isServerTravelDate, type ServerTravelDate } from '../../../../../../features/onboarding-preferences/calendar';
 
 export type FeaturedTravelSchedule = Readonly<{
   endDate: ServerTravelDate;
@@ -9,12 +8,7 @@ export type FeaturedTravelSchedule = Readonly<{
   startDate: ServerTravelDate;
 }>;
 
-type TravelScheduleCandidate = Readonly<{
-  endDate?: string;
-  id?: number;
-  startDate?: string;
-  status?: 'CANCELLED' | 'ENDED' | 'ONGOING' | 'UPCOMING';
-}>;
+type TravelScheduleCandidate = Readonly<Pick<TravelSchedule, 'endDate' | 'id' | 'startDate' | 'status'>>;
 
 export function selectFeaturedTravelSchedule(
   schedules: readonly TravelScheduleCandidate[],
@@ -68,4 +62,13 @@ export function getTodayServerTravelDate(today: Date = new Date()): ServerTravel
   }
 
   return value;
+}
+
+export function getTravelUpdateErrorKey(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.code === 'TRAVEL_SCHEDULE_START_DATE_IN_PAST') return 'myPage.travel.startDateInPast';
+    if (error.code === 'TRAVEL_SCHEDULE_PERIOD_OVERLAP') return 'myPage.travel.periodOverlap';
+    if (error.code === 'TRAVEL_SCHEDULE_NOT_EDITABLE') return 'myPage.travel.notEditable';
+  }
+  return 'myPage.travel.updateError';
 }
