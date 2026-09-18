@@ -2,23 +2,23 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-import { ApiError } from '../ApiError.ts';
+import { ApiError } from '../../../../shared/api/ApiError.ts';
 
 import {
   createCheckInMutationOptions,
   createStatusVoteMutationOptions,
-} from '../../../features/check-ins/hooks/useCheckIns.ts';
-import { createConversionEventMutationOptions } from '../../../features/conversion/hooks/useConversionEvents.ts';
-import { createRedeemCouponMutationOptions } from '../../../features/offers-coupons/hooks/useOffersCoupons.ts';
-import { createPlaceClaimMutationOptions } from '../../../features/place-claims/hooks/usePlaceClaims.ts';
-import { createPlaceDetailQueryOptions } from '../../../features/place-detail/hooks/usePlaceDetail.ts';
-import { createPlaceListQueryOptions } from '../../../features/place-list/hooks/usePlaceList.ts';
+} from '../../../../features/check-ins/data/index.ts';
+import { createConversionEventMutationOptions } from '../../../../features/conversion/data/index.ts';
+import { createRedeemCouponMutationOptions } from '../../../../features/offers-coupons/data/index.ts';
+import { createPlaceClaimMutationOptions } from '../../../../features/place-claims/data/index.ts';
+import { createPlaceDetailQueryOptions } from '../../../../features/place-detail/data/index.ts';
+import { createPlaceListQueryOptions } from '../../../../modules/place/search/data/index.ts';
 import {
   createReservationMutationOptions,
   createReservationTransitionMutationOptions,
   invalidateReservationCreateDependencies,
   reservationQueryKeys,
-} from '../../../features/reservations/hooks/useReservations.ts';
+} from '../../../../features/reservations/data/index.ts';
 import {
   createReplaceTravelPurposesMutationOptions,
   createTravelPurposeQueryOptions,
@@ -26,28 +26,28 @@ import {
   refreshPersonalizationCaches,
   travelPurposeQueryKeys,
   userQueryKeys,
-} from '../../../features/travel-purposes/hooks/useTravelPurposes.ts';
+} from '../../../../features/travel-purposes/data/index.ts';
 import {
   validateReplaceTravelPurposesBody,
-} from '../../../features/travel-purposes/model/travelPurpose.types.ts';
+} from '../../../../features/travel-purposes/data/index.ts';
 import {
   createCancelTravelScheduleMutationOptions,
   createTravelScheduleMutationOptions,
   createTravelSchedulesQueryOptions,
   createUpdateTravelScheduleMutationOptions,
   invalidateTravelScheduleDependencies,
-} from '../../../features/travel-schedules/hooks/useTravelSchedules.ts';
-import { travelScheduleQueryKeys } from '../../../features/travel-schedules/model/travelScheduleQueryKeys.ts';
+} from '../../../../features/travel-schedules/data/index.ts';
+import { travelScheduleQueryKeys } from '../../../../features/travel-schedules/data/index.ts';
 import {
   createDeleteFcmTokenMutationOptions,
   createRegisterFcmTokenMutationOptions,
-} from '../../../features/notifications/hooks/useFcmTokenMutations.ts';
+} from '../../../../features/notifications/data/index.ts';
 import {
   createNotificationSettingsQueryOptions,
   createUpdateNotificationSettingsMutationOptions,
   notificationSettingsQueryKeys,
   optimisticallyUpdateNotificationSettings,
-} from '../../../features/notifications/hooks/useNotificationSettings.ts';
+} from '../../../../features/notifications/data/index.ts';
 
 test('place query Hook options pass API responses through without mapping', async () => {
   const listResponse = { places: [] };

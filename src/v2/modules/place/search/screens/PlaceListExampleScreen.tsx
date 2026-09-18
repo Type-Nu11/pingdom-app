@@ -9,11 +9,11 @@ import {
   LoadingState,
   StatusBadge,
   Surface,
-} from '../../../shared/components';
+} from '../../../../shared/components';
 import {
   getOperatingStatusPresentation,
   getSupportLevelLabelKey,
-} from '../../place-detail/model/placePresentation';
+} from '../../../../features/place-detail';
 import { usePlaceList } from '../hooks/usePlaceList';
 
 export default function PlaceListExampleScreen() {

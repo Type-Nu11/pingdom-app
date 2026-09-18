@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createCheckInApi } from '../../../features/check-ins/api/checkInApi.ts';
-import { createConversionApi } from '../../../features/conversion/api/conversionApi.ts';
-import { createOfferCouponApi } from '../../../features/offers-coupons/api/offerCouponApi.ts';
-import { createPlaceClaimApi } from '../../../features/place-claims/api/placeClaimApi.ts';
-import { createPlaceDetailApi } from '../../../features/place-detail/api/placeDetailApi.ts';
-import { createPlaceListApi } from '../../../features/place-list/api/placeListApi.ts';
-import { createReservationApi } from '../../../features/reservations/api/reservationApi.ts';
-import { createTravelPurposeApi } from '../../../features/travel-purposes/api/travelPurposeApi.ts';
-import { createTravelScheduleApi } from '../../../features/travel-schedules/api/travelScheduleApi.ts';
-import { createNotificationApi } from '../../../features/notifications/api/notificationApi.ts';
+import { createCheckInApi } from '../../../../features/check-ins/data/index.ts';
+import { createConversionApi } from '../../../../features/conversion/data/index.ts';
+import { createOfferCouponApi } from '../../../../features/offers-coupons/data/index.ts';
+import { createPlaceClaimApi } from '../../../../features/place-claims/data/index.ts';
+import { createPlaceDetailApi } from '../../../../features/place-detail/data/index.ts';
+import { createPlaceListApi } from '../../../../modules/place/search/data/index.ts';
+import { createReservationApi } from '../../../../features/reservations/data/index.ts';
+import { createTravelPurposeApi } from '../../../../features/travel-purposes/data/index.ts';
+import { createTravelScheduleApi } from '../../../../features/travel-schedules/data/index.ts';
+import { createNotificationApi } from '../../../../features/notifications/data/index.ts';
 
 test('API modules keep operation paths, params, bodies, and documented response mapping', async () => {
   const calls = [];

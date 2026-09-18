@@ -1,4 +1,4 @@
-import type { ApiSchema, OperationQuery } from '../../../shared/api';
+import type { ApiSchema, OperationQuery } from '../../../../shared/api';
 
 export type PlaceListItem = ApiSchema<'PlaceSummary'>;
 export type PlaceListPage = ApiSchema<'PlacePage'>;
