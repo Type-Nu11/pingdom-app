@@ -9,6 +9,12 @@ const counts = features.map((feature) => {
   return { feature, files: files.length, productionSource: files.filter((file) => r.nodes.has(file) && !isTest(file)).length,
     testSource: files.filter((file) => r.nodes.has(file) && isTest(file)).length };
 });
+const modules = [...new Set(filesUnder(root, 'src/v2/modules').map((file) => file.split('/')[3]))].sort();
+const moduleCounts = modules.map((module) => {
+  const files = filesUnder(root, `src/v2/modules/${module}`);
+  return { module, files: files.length, productionSource: files.filter((file) => r.nodes.has(file) && !isTest(file)).length,
+    testSource: files.filter((file) => r.nodes.has(file) && isTest(file)).length };
+});
 const scope = (file) => file?.startsWith('src/v2/') || file?.startsWith('src/application/');
 const productionEdges = r.edges.filter((edge) => !edge.test && scope(edge.source));
 const countRules = (test) => r.violations.filter((v) => v.test === test).reduce((result, v) => {
@@ -22,7 +28,7 @@ while (pending.length) {
     if (!reachable.has(edge.target)) { reachable.add(edge.target); pending.push(edge.target); }
   }
 }
-console.log(JSON.stringify({ reachableFromProductionEntry: [...reachable].sort(), featureCount: features.length, features: counts,
+console.log(JSON.stringify({ reachableFromProductionEntry: [...reachable].sort(), featureCount: features.length, features: counts, modules: moduleCounts,
   scopeProductionFiles: [...r.nodes.keys()].filter((file) => scope(file) && !isTest(file)).length,
   productionImportOccurrences: productionEdges.length,
   resolvedLocalImportOccurrences: productionEdges.filter((edge) => edge.target).length,
