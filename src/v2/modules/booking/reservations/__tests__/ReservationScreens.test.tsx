@@ -8,7 +8,7 @@ import {
 } from '../../../../shared/testing/testProviders';
 import { registerReservationResources } from '../i18n/reservationResources';
 import CreateReservationScreen from '../screens/CreateReservationScreen';
-import { ReservationDetailScreen } from '../../../../features/reservations/routes';
+import ReservationDetailScreen from '../screens/ReservationDetailScreen';
 import { usePlaceDetail } from '../../../place/detail';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import { useReservationDetail } from '../hooks/useReservations';
