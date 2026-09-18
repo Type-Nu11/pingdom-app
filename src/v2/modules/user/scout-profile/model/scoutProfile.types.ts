@@ -1,4 +1,4 @@
-import type { components, operations } from '../../../shared/api/generated/scoutProfile';
+import type { components, operations } from '../../../../shared/api/generated/scoutProfile';
 
 export type ScoutProfile =
   operations['get']['responses'][200]['content']['*/*'];

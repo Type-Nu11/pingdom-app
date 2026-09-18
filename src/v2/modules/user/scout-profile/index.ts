@@ -25,7 +25,6 @@ export {
 export type {
   ScoutActivityEligibilityStatus,
   ScoutProfile,
-  ScoutProfileContractAssertion,
   ScoutProfileErrorCode,
   ScoutProfileErrorResponse,
   ScoutProfileRequest,

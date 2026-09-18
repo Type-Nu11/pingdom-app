@@ -1,9 +1,11 @@
+import { scoutProfileMockHandlers } from '../mock/handlers.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { mockApiClient, setMockScenario } from '../index.ts';
+import { configureDomainMockHandlers, mockApiClient, setMockScenario } from '../../../../shared/api/index.ts';
 
 test('Scout mock handlers use contract-shaped fixtures and support apply/update/not-applied states', async () => {
+  configureDomainMockHandlers(scoutProfileMockHandlers);
   setMockScenario('success');
   const profile = await mockApiClient.get('/users/me/scout-profile');
   assert.equal(profile.profileStatus, 'ACTIVE');

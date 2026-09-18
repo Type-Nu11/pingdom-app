@@ -1,6 +1,6 @@
-import { ApiError } from '../../../ApiError';
-import type { components } from '../../../generated/scoutProfile';
-import type { MockHandler } from '../../handlers';
+import { ApiError } from '../../../../shared/api/ApiError';
+import type { components } from '../../../../shared/api/generated/scoutProfile';
+import type { MockHandler } from '../../../../shared/api/mock/handlers';
 import { pendingScoutProfileFixture, scoutProfileFixture } from './fixtures';
 
 type ScoutProfileRequest = components['schemas']['ScoutProfileRequest'];

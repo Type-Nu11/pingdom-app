@@ -3,25 +3,25 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-import { ApiError, toApiError } from '../index.ts';
-import { createScoutProfileApi } from '../../../features/scout-profile/api/scoutProfileApi.ts';
+import { ApiError, toApiError } from '../../../../shared/api/index.ts';
+import { createScoutProfileApi } from '../api/scoutProfileApi.ts';
 import {
   cacheScoutProfile,
   createApplyScoutProfileMutationOptions,
   createScoutProfileQueryOptions,
   createUpdateScoutProfileMutationOptions,
-} from '../../../features/scout-profile/hooks/useScoutProfile.ts';
-import { scoutProfileQueryKeys } from '../../../features/scout-profile/model/scoutProfileQueryKeys.ts';
+} from '../hooks/useScoutProfile.ts';
+import { scoutProfileQueryKeys } from '../model/scoutProfileQueryKeys.ts';
 import {
   isScoutActivityEligible,
   isScoutProfileApiError,
   isScoutProfileNotFoundError,
-} from '../../../features/scout-profile/model/scoutProfileSelectors.ts';
+} from '../model/scoutProfileSelectors.ts';
 import {
   SCOUT_ACTIVITY_ELIGIBILITY_STATUS_VALUES,
   SCOUT_PROFILE_STATUS_VALUES,
-} from '../../../features/scout-profile/model/scoutProfile.types.ts';
-import { scoutProfileFixture } from '../mock/features/scout-profile/fixtures.ts';
+} from '../model/scoutProfile.types.ts';
+import { scoutProfileFixture } from '../mock/fixtures.ts';
 
 test('live Scout contract snapshot preserves operations, constraints, and nullable response fields', async () => {
   const contract = JSON.parse(await readFile('docs/api/scout-profile.openapi.json', 'utf8'));

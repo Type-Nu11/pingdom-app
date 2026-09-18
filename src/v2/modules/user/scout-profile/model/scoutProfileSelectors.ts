@@ -1,4 +1,4 @@
-import { ApiError } from '../../../shared/api';
+import { ApiError } from '../../../../shared/api';
 import type {
   ScoutActivityEligibilityStatus,
   ScoutProfileErrorCode,

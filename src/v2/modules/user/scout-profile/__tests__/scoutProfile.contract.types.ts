@@ -1,7 +1,7 @@
 import type {
   ScoutProfile,
   ScoutProfileRequest,
-} from '../../../features/scout-profile/model/scoutProfile.types';
+} from '../model/scoutProfile.types';
 
 const requestWithoutOptionalIntroduction = {
   displayName: 'Scout',

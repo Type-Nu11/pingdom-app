@@ -1,4 +1,4 @@
-import type { components } from '../../../generated/scoutProfile';
+import type { components } from '../../../../shared/api/generated/scoutProfile';
 
 type ScoutProfileResponse = components['schemas']['ScoutProfileResponse'];
 
