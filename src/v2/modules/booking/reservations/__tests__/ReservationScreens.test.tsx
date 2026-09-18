@@ -6,24 +6,24 @@ import {
   createTestI18n,
   renderWithProviders,
 } from '../../../../shared/testing/testProviders';
-import { registerReservationResources } from '../../i18n/reservationResources';
-import CreateReservationScreen from '../CreateReservationScreen';
-import ReservationDetailScreen from '../ReservationDetailScreen';
-import { usePlaceDetail } from '../../../../modules/place/detail';
-import { useAvailabilities, useCreateReservation } from '../../hooks/useReservations';
-import { useReservationDetail } from '../../hooks/useReservations';
-import { useAllPayments } from '../../../../modules/booking/payments';
-import { createReservationIdempotencyKey, localDateKey } from '../../model/reservationAvailability';
+import { registerReservationResources } from '../i18n/reservationResources';
+import CreateReservationScreen from '../screens/CreateReservationScreen';
+import { ReservationDetailScreen } from '../../../../features/reservations/routes';
+import { usePlaceDetail } from '../../../place/detail';
+import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
+import { useReservationDetail } from '../hooks/useReservations';
+import { useAllPayments } from '../../payments';
+import { createReservationIdempotencyKey, localDateKey } from '../model/reservationAvailability';
 
 const FIXED_NOW = new Date(2026, 7, 26, 9, 0, 0);
 
-jest.mock('../../../../modules/place/detail', () => ({ usePlaceDetail: jest.fn() }));
-jest.mock('../../hooks/useReservations', () => ({
+jest.mock('../../../place/detail', () => ({ usePlaceDetail: jest.fn() }));
+jest.mock('../hooks/useReservations', () => ({
   useAvailabilities: jest.fn(),
   useCreateReservation: jest.fn(),
   useReservationDetail: jest.fn(),
 }));
-jest.mock('../../../../modules/booking/payments', () => ({ ...jest.requireActual('../../../../modules/booking/payments'), useAllPayments: jest.fn() }));
+jest.mock('../../payments', () => ({ ...jest.requireActual('../../payments'), useAllPayments: jest.fn() }));
 
 async function renderReservationScreen(ui: ReactElement, language: 'ko' | 'en' = 'ko') {
   const i18n = await createTestI18n(language);
