@@ -227,3 +227,9 @@ account-stage API 168 passed; profile-stage related Jest 23 suites / 191 tests p
 notification-stage API 168 passed. Final snapshot `validate:pr` passed with 126 Jest suites /
 1,230 tests plus navigation 22, i18n 11, notifications 7, map 48 and API 168.
 The manual device-QA limitations above remain unchanged.
+
+## Current Booking boundary after #359
+
+User My Page reads reservation statistics through `modules/booking`; Coupon presentation and Settings read `modules/booking/offers-coupons`. User retains CouponBox/CouponDetail/QR UI ownership; Booking owns the generated contracts, queries and Coupon state selectors. API spies use Booking test-only indexes.
+
+The earlier #359 migration instructions above are historical. See [Booking handoff](0001-booking-migration-handoff.md) for the implemented boundaries and remaining contract-sync follow-up.

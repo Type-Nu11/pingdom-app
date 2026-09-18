@@ -191,3 +191,11 @@ The complete final implementation also passed `validate:pr` immediately before t
 (`/private/tmp/361-rcp-validate-pr.txt`). Splitting introduced no behavior change; a trailing blank
 line in `search/model/placeSearch.ts` was removed after the staged whitespace check identified it.
 The historical device smoke-test limitations remain; #348 merge/base synchronization is now resolved as recorded above.
+
+## Current Booking boundary after #359
+
+Place map/detail now consume `modules/booking` headless reservation reads and `modules/booking/offers-coupons` CTA/Offer APIs. App injects `modules/booking/reservations/map-sheet`; the Place slot and route behavior are unchanged.
+
+The earlier #359 migration instructions above are historical. See [Booking handoff](0001-booking-migration-handoff.md) for the implemented boundaries and remaining contract-sync follow-up.
+
+Place availability transport, Hook, generated alias, query identity and reservation CTA selector now belong to Booking. Place detail and Map sheet consume their named Booking public API; both availability cache identities and the original CTA policy are preserved.

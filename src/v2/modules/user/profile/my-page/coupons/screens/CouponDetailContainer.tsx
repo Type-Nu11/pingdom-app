@@ -9,7 +9,7 @@ import {
   useCoupon,
   useOffer,
   type Coupon,
-} from '../../../../../../features/offers-coupons';
+} from '../../../../../booking/offers-coupons';
 import { usePlaceDetail } from '../../../../../place/detail';
 import { ErrorState, LoadingState } from '../../../../../../shared/components';
 import {

@@ -1,6 +1,6 @@
 # ADR 0001: V2 domain modules and import boundaries
 
-- Status: accepted; Place migration #361 and User migration #358 implemented. Remaining migrations are #359/#360/#362.
+- Status: accepted; Place #361, User #358 and Booking #359 implemented. Remaining migrations are #360/#362.
 - Baseline: `refactor/357-v2-domain-boundary`, `27ace6bc71c50c5e9c8c626c7026359e06306827`.
 - Parent: #356. Sequence: #357 → #361 → #358 → #359 → #360 → #362.
 - Inspected: AGENTS.md, complete bodies/comments of #356–#362, V2 README,
@@ -133,7 +133,7 @@ several rules. See the audit for counts and exact production inventory.
 
 - #361: no remaining exceptions.
 - #358: no remaining exceptions; User siblings also enforce public indexes.
-- #359: Booking internal imports, reservation screen API support access and Booking tests.
+- #359: no remaining exceptions; Booking siblings enforce public indexes and domain tests/mocks follow their owner.
 - #360: remaining domain migration, public wildcard exports, shared mock/type SCC cleanup,
   and remaining integration-test ownership.
 - #362: ten active legacy bridge occurrences and production-navigator bridge assertions; User/Place production deep imports and PlaceDetail upward type edges are removed.
@@ -193,3 +193,18 @@ Application configures User development mock handlers through the generic shared
 imports no User module. The remaining SCC has only the unchanged client/mock type boundary (#360).
 V1 MainNavigator/root background consumers retain eleven documented compatibility exports until #362;
 no new V1 dependency, maxCount increase or Booking folder move. Device smoke QA remains unverified.
+
+## Booking migration implementation (#359)
+
+[Booking handoff](0001-booking-migration-handoff.md) and [exact inventory/public API](0001-booking-migration-inventory.md)
+record Reservations, Payments and Offers/Coupons ownership. App/Place/User/Voice consume named
+Booking indexes. Headless root queries are separate from reservation routes, map-sheet, Offer UI,
+i18n and mock registration. Tests consume test-only indexes for API spies.
+
+Screen API error interpretation is in a Booking presentation model; Place summary reads pass through
+an internal Booking hook without replacing Place query/cache ownership. Reservations use Payments'
+public hook/presentation API. Generated payment aliases are at the payment API contract boundary.
+
+App injects Booking handlers through the #358 generic domain registry. Shared has no Booking import.
+#359 exceptions are 35 entries/37 occurrences → 0; #360 remains 22/22, #362 falls 16/16 → 15/15.
+No SCC growth or V1 dependency is introduced. V1 compatibility files retain identity until #362.

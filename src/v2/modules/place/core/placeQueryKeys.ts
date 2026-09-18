@@ -25,8 +25,6 @@ export const placeQueryKeys = {
     [...placeQueryKeys.entity(placeId), 'reviews'] as const,
   reviewList: <TParams extends object>(placeId: number, params: TParams) =>
     [...placeQueryKeys.reviews(placeId), params] as const,
-  availabilities: (placeId: number) =>
-    [...placeQueryKeys.entity(placeId), 'availabilities'] as const,
   menus: (placeId: number) =>
     [...placeQueryKeys.entity(placeId), 'menus'] as const,
   recommendations: () => [...placeQueryKeys.all, 'recommendations'] as const,

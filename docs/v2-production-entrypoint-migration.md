@@ -231,3 +231,18 @@ User-owned boundary exceptions are zero. The remaining shared client/mock type S
 and the existing V1 composition/test adapters remain #362 work behind #124/#139 parity gates.
 Android connectivity was checked but changed-build smoke QA was not performed; no iOS simulator
 was booted. The release QA checklist above remains open.
+
+## #359 Booking composition
+
+Booking lives in `src/v2/modules/booking/{reservations,payments,offers-coupons}`.
+Standalone navigation uses `booking/reservations/routes`; production V1 MainNavigator retains
+three named compatibility re-exports to those same components until #362. App composes
+`booking/reservations/map-sheet`, both Booking resource bundles and `booking/mock` through
+the existing domain registry. Route parity metadata now names the actual Booking implementation.
+No route name, params, deep link, provider lifecycle or native bridge changed.
+
+See [Booking handoff](architecture/adr/0001-booking-migration-handoff.md) for public APIs,
+contract preservation, exceptions and exact validation. #359 has zero boundary exceptions;
+Android/iOS changed-build smoke and real-server reservation/payment/Coupon mutations remain unverified.
+The live CouponResponse has four additional nullable fields versus the frozen snapshot; synchronizing
+them is a separate follow-up and is intentionally excluded from this structural refactor.

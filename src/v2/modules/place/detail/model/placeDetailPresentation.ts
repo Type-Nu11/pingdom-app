@@ -6,7 +6,8 @@ import type {
   PlaceOperatingNotices,
   PlaceVisitDecision,
 } from '../../exploration';
-import type { PlaceAvailabilities, PlaceDetail } from './placeDetail.types';
+import { selectReservationCta, type ReservationCtaState, type PlaceAvailabilities } from '../../../booking';
+import type { PlaceDetail } from './placeDetail.types';
 import {
   selectPlaceOperatingSummary,
   type PlaceOperatingSummary,
@@ -19,13 +20,6 @@ export type ResourceState<T> = {
   isPending: boolean;
 };
 
-export type ReservationCtaState =
-  | { kind: 'loading'; disabled: true }
-  | { kind: 'available'; disabled: false }
-  | { kind: 'empty'; disabled: false }
-  | { kind: 'full'; disabled: false }
-  | { kind: 'auth-error'; disabled: true }
-  | { kind: 'error'; disabled: true };
 
 export type PlaceDetailPresentation = {
   address: string | null;
@@ -83,9 +77,6 @@ export type PlaceDetailPresentationResources = {
 const clean = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value.trim() : null;
 
-const isAuthError = (error: unknown): boolean =>
-  Boolean(error && typeof error === 'object' && 'status' in error
-    && ((error as { status?: unknown }).status === 401));
 
 function formatDateRange(startsAt: unknown, endsAt: unknown): string {
   const start = clean(startsAt);
@@ -94,33 +85,7 @@ function formatDateRange(startsAt: unknown, endsAt: unknown): string {
   return start ?? end ?? '';
 }
 
-export function selectReservationCta(
-  resource: ResourceState<PlaceAvailabilities>,
-  now: Date = new Date(),
-): ReservationCtaState {
-  if (resource.isPending) {
-    return { kind: 'loading', disabled: true };
-  }
-  if (resource.isError) {
-    return isAuthError(resource.error)
-      ? { kind: 'auth-error', disabled: true }
-      : { kind: 'error', disabled: true };
-  }
 
-  const items = Array.isArray(resource.data) ? resource.data : [];
-  const futureActive = items.filter((item) => item.status === 'ACTIVE'
-    && typeof item.endsAt === 'string'
-    && Number.isFinite(Date.parse(item.endsAt))
-    && Date.parse(item.endsAt) > now.getTime());
-  if (futureActive.some((item) => typeof item.remainingCapacity === 'number'
-    && item.remainingCapacity > 0)) {
-    return { kind: 'available', disabled: false };
-  }
-  if (futureActive.some((item) => (item.remainingCapacity ?? 0) <= 0)) {
-    return { kind: 'full', disabled: false };
-  }
-  return { kind: 'empty', disabled: false };
-}
 
 export function buildPlaceDetailPresentation(
   placeId: number,

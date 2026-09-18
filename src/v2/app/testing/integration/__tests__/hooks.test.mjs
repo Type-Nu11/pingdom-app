@@ -9,7 +9,7 @@ import {
   createStatusVoteMutationOptions,
 } from '../../../../modules/place/check-ins/data/index.ts';
 import { createConversionEventMutationOptions } from '../../../../features/conversion/data/index.ts';
-import { createRedeemCouponMutationOptions } from '../../../../features/offers-coupons/data/index.ts';
+import { createRedeemCouponMutationOptions } from '../../../../modules/booking/offers-coupons/__tests__/index.ts';
 import { createPlaceClaimMutationOptions } from '../../../../modules/place/claims/data/index.ts';
 import { createPlaceDetailQueryOptions } from '../../../../modules/place/detail/data/index.ts';
 import { createPlaceListQueryOptions } from '../../../../modules/place/search/data/index.ts';
@@ -18,7 +18,7 @@ import {
   createReservationTransitionMutationOptions,
   invalidateReservationCreateDependencies,
   reservationQueryKeys,
-} from '../../../../features/reservations/data/index.ts';
+} from '../../../../modules/booking/reservations/__tests__/index.ts';
 import {
   createReplaceTravelPurposesMutationOptions,
   createTravelPurposeQueryOptions,

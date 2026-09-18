@@ -2,9 +2,9 @@ import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { createTestI18n, renderWithProviders } from '../../../../../../shared/testing/testProviders';
-import { registerOfferCouponResources } from '../../../../../../features/offers-coupons';
+import { registerOfferCouponResources } from '../../../../../booking/offers-coupons/__tests__';
 import { ApiError } from '../../../../../../shared/api';
-import { offerCouponApi, type CouponPage } from '../../../../../../features/offers-coupons';
+import { offerCouponApi, type CouponPage } from '../../../../../booking/offers-coupons/__tests__';
 import { placeDetailApi } from '../../../../../place/detail';
 import CouponBoxScreen from '../screens/CouponBoxScreen';
 

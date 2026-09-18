@@ -112,19 +112,6 @@ export const livePlaceDetailFixture = {
   communityViewCount: 0,
 } satisfies PlaceExplorationSchema<'PlaceDetailResponse'>;
 
-export const availabilityFixture = {
-  id: 801,
-  placeId: 17,
-  productId: 901,
-  productType: 'GENERAL',
-  productName: null,
-  startsAt: '2026-09-01T03:00:00Z',
-  endsAt: '2027-09-01T04:00:00Z',
-  totalCapacity: 10,
-  remainingCapacity: 5,
-  status: 'ACTIVE',
-} satisfies PlaceExplorationSchema<'AvailabilityResponse'>;
-
 export const verificationMediaFixture = {
   placeId: 17,
   media: [{

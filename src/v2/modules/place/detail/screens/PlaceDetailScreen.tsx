@@ -23,7 +23,7 @@ import {
   StatusBadge,
   Surface,
 } from '../../../../shared/components';
-import { PlaceCouponCta } from '../../../../features/offers-coupons';
+import { PlaceCouponCta } from '../../../booking/offers-coupons';
 import { usePlaceDetail } from '../hooks/usePlaceDetail';
 import {
   formatPlaceOperatingSummary,

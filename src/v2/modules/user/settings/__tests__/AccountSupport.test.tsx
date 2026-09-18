@@ -2,7 +2,7 @@ import React from 'react';
 import { screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { profileApi } from '../../profile/__tests__';
-import { offerCouponApi } from '../../../../features/offers-coupons';
+import { offerCouponApi } from '../../../booking/offers-coupons/__tests__';
 import { checkInApi, normalizeLocationCheckInPage } from '../../../place/check-ins';
 import AccountManagementScreen from '../screens/AccountManagementScreen';
 

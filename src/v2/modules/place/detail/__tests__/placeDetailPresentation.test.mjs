@@ -3,10 +3,9 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import { createPlaceDetailApi } from '../api/placeDetailApi.ts';
-import { createPlaceAvailabilitiesQueryOptions } from '../hooks/usePlaceDetail.ts';
+import { createPlaceAvailabilityApi } from '../../../booking/reservations/__tests__/index.ts';
 import {
   buildPlaceDetailPresentation,
-  selectReservationCta,
 } from '../model/placeDetailPresentation.ts';
 
 const ready = (data) => ({ data, error: null, isError: false, isPending: false });
@@ -106,7 +105,7 @@ test('place detail API uses live paths and forwards AbortSignal', async () => {
   };
   const api = createPlaceDetailApi(client);
   await api.getPlaceDetail(70069, signal);
-  await api.getPlaceAvailabilities(70069, signal);
+  await createPlaceAvailabilityApi(client).getPlaceAvailabilities(70069, signal);
   assert.deepEqual(calls.map((call) => call.path), [
     '/places/70069',
     '/places/70069/availabilities',
@@ -114,19 +113,6 @@ test('place detail API uses live paths and forwards AbortSignal', async () => {
   assert.ok(calls.every((call) => call.options.signal === signal));
 });
 
-test('availability Query key contains place id and forwards TanStack AbortSignal', async () => {
-  const signal = new AbortController().signal;
-  let received;
-  const options = createPlaceAvailabilitiesQueryOptions(70069, {
-    getPlaceAvailabilities: async (placeId, querySignal) => {
-      received = { placeId, querySignal };
-      return [];
-    },
-  });
-  assert.deepEqual(options.queryKey, ['v2', 'places', 'entity', 70069, 'availabilities']);
-  assert.deepEqual(await options.queryFn({ signal }), []);
-  assert.deepEqual(received, { placeId: 70069, querySignal: signal });
-});
 
 test('70069-shaped empty availability can open the reservation page without inventing slots', () => {
   const result = buildPlaceDetailPresentation(
@@ -195,30 +181,6 @@ test('images are exploration-first, stable, clean, and de-duplicated before card
   assert.equal(result.imageState, 'ready');
 });
 
-test('availability requires ACTIVE, future end, and remaining capacity', () => {
-  const now = new Date('2026-08-31T00:00:00Z');
-  const active = (remainingCapacity) => ({
-    placeId: 70069,
-    status: 'ACTIVE',
-    endsAt: '2026-09-01T00:00:00Z',
-    remainingCapacity,
-  });
-  assert.deepEqual(selectReservationCta(ready([active(1)]), now), {
-    kind: 'available', disabled: false,
-  });
-  assert.deepEqual(selectReservationCta(ready([active(0)]), now), {
-    kind: 'full', disabled: false,
-  });
-  assert.deepEqual(selectReservationCta(ready([
-    { ...active(2), status: 'INACTIVE' },
-    { ...active(2), endsAt: '2026-08-30T00:00:00Z' },
-  ]), now), {
-    kind: 'empty', disabled: false,
-  });
-  assert.equal(selectReservationCta(pending, now).kind, 'loading');
-  assert.equal(selectReservationCta(failed(401), now).kind, 'auth-error');
-  assert.equal(selectReservationCta(failed(), now).kind, 'error');
-});
 
 test('partial failures remain section-specific and stale place resources are ignored', () => {
   const result = buildPlaceDetailPresentation(70069, {

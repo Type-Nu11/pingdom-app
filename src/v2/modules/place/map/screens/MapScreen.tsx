@@ -30,7 +30,7 @@ import { useMapReservationSheet } from '../sheet/mapReservationSheet';
 import {
   NEARBY_RESERVATION_CANDIDATE_LIMIT,
   useNearbyReservablePlaceIds,
-} from '../../../../features/reservations';
+} from '../../../booking/reservations';
 import MapCanvas from '../native/components/MapCanvas';
 import MapGlassBackdrop from '../presentation/components/MapGlassBackdrop';
 import MapSearchOverlay from '../../search/components/MapSearchOverlay';
@@ -82,7 +82,7 @@ import { createFocusedRecommendationMarker } from '../markers/utils/recommendati
 import { selectRecommendationClickPayload } from '../../exploration';
 import { selectMapExplorationPlaceIds } from '../selection/utils/mapExplorationPlaceIds';
 import { VisitVerificationMapCta } from '../../visit-verification';
-import { PlaceCouponCta } from '../../../../features/offers-coupons';
+import { PlaceCouponCta } from '../../../booking/offers-coupons';
 import { LocationStatusOverlay } from '../presentation/components/MapStatusOverlays';
 import {
   getLocalHotFeedStatus,

@@ -13,8 +13,8 @@ import type { TravelDateInput } from '../../../../../features/onboarding-prefere
 import { createPlaceDetailQueryOptions } from '../../../../place/detail';
 import { usePlaceExplorationMediaList } from '../../../../place/exploration';
 import { useCheckIns } from '../../../../place/check-ins';
-import { useCoupons } from '../../../../../features/offers-coupons';
-import { useReservations } from '../../../../../features/reservations';
+import { useCoupons } from '../../../../booking/offers-coupons';
+import { useReservations } from '../../../../booking/reservations';
 import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../../features/travel-schedules';
 import { ErrorState, LoadingState } from '../../../../../shared/components';
 import MyPageStatValue from '../components/MyPageStatValue';

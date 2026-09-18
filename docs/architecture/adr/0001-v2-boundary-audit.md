@@ -1,57 +1,47 @@
 # V2 boundary audit for ADR 0001
 
-Current audit: #358 on `refactor/358-user-settings-domain-module`, based on merged
-`origin/dev` `793f0a2` (includes #348/#361). The starting tree was clean, behind/ahead 0/0.
-The original #357 audit is available in Git history; the current paths and blockers below
-supersede its flat-feature inventory and the pre-merge #361 working-tree notes.
+Current audit: #359 on `refactor/359-booking-domain-module`, based on merged `origin/dev`
+`ea321b9` (#358 PR #372). Starting working tree clean, fetched origin/dev behind/ahead 0/0.
+Historical #357/#358 audit results remain in Git history and the Place/User handoffs.
 
-User ownership and exact before/after paths: [inventory](0001-user-migration-inventory.md).
-Place ownership: [Place handoff](0001-place-migration-handoff.md).
-User contracts, compatibility consumers and QA: [User handoff](0001-user-migration-handoff.md).
+- [Booking inventory and public API](0001-booking-migration-inventory.md)
+- [Booking handoff and contract evidence](0001-booking-migration-handoff.md)
+- [Place handoff](0001-place-migration-handoff.md)
+- [User handoff](0001-user-migration-handoff.md)
 
 ## Production graph
 
-The graph includes every non-test V2/application source, including development mock transport,
-plus transitive legacy composition paths. Type-only and lazy imports count toward SCCs.
+All non-test V2/application sources and their transitive local dependencies are audited;
+SCCs include type-only and lazy imports.
 
-| Metric | Before #358 | After #358 |
+| Metric | Before #359 | After #359 |
 |---|---:|---:|
-| V2/application production sources | 460 | 481 |
-| Production import occurrences | 1852 | 1900 |
-| Resolved local imports | 1363 | 1411 |
+| Production sources | 481 | 505 |
+| Production import occurrences | 1900 | 1920 |
+| Resolved local imports | 1411 | 1430 |
 | SCCs including types | 1 | 1 |
 | Value-only SCCs | 0 | 0 |
 
-User external deep imports, shared → User, User → app/application **production** imports,
-new SCCs and new V1 dependencies are all zero. Tests use the existing app testing provider;
-production cannot import that support. User sibling submodules must also use public indexes.
-
-The retained SCC consists only of `shared/api/apiClient.ts` and
-`shared/api/mock/mockApiClient.ts`: client → mock value import and mock → client type import.
-It is a strict subset of the seven-file pre-migration SCC. #360 owns the remaining type boundary.
-There is no value-only cycle. Account fixtures now belong to User; app registers them in a
-generic shared registry, and account type aliases use the shared generated-contract adapter.
+The single SCC is unchanged: `shared/api/apiClient.ts` ↔ `shared/api/mock/mockApiClient.ts`.
+Its two frozen #360 edges and member set are unchanged. New production SCCs: **0**.
+External → Booking internal, Place/User → Booking internal, shared → Booking and Booking → app/application
+production imports are **0**. Domain tests use the established app/testing provider boundary only.
+Booking siblings now enforce named public indexes, with positive and negative fixtures.
 
 ## Exception ownership
 
-Entries count exact tuples; occurrences sum `maxCount`. No maximum increased.
-
-| Owner | Entries before → after | Occurrences before → after |
+| Owner | Entries before → after | Allowed occurrences before → after |
 |---|---:|---:|
-| #358 | 84 → 0 | 84 → 0 |
-| #359 | 46 → 35 | 48 → 37 |
-| #360 | 42 → 22 | 42 → 22 |
-| #362 | 21 → 16 | 21 → 16 |
+| #359 | 35 → 0 | 37 → 0 |
+| #360 | 22 → 22 | 22 → 22 |
+| #362 | 16 → 15 | 16 → 15 |
 
-#361 remains at zero. All removed tuples correspond to deleted or corrected edges.
-The only non-identical retained tuples are four existing #362 test rules: the same two
-V1 navigation dependencies moved from Settings screen tests to
-`app/testing/integration/__tests__/NotificationProduction.test.tsx`; target, specifier,
-type/test flags and maxCount=1 are unchanged. No new V1 dependency was introduced.
+#358/#361 remain at zero. Every retained tuple and maxCount is unchanged. #362 drops one
+shared status-label test → app resources exception because Booking now composes its own test resources.
+Compatibility re-exports have no boundary exception and no implementation; #362 owns their removal.
+Test-only Coupon compatibility is classified as test support and blocked from production.
 
 ## Current production exceptions
-
-The executable manifest also enumerates every remaining test exception; no blanket test exemption.
 
 | Owner | Rule | Source | Target | Count |
 |---|---|---|---|---:|
@@ -66,13 +56,7 @@ The executable manifest also enumerates every remaining test exception; no blank
 | #362 | application-bridge | `src/application/runtime/configureProductionRuntime.ts` | `src/shared/api/apiClient.ts` | 1 |
 | #362 | application-bridge | `src/application/runtime/configureProductionRuntime.ts` | `src/shared/api/authTokens.ts` | 1 |
 | #360 | domain-public-api | `src/v2/app/navigation/RootNavigator.tsx` | `src/v2/features/home/screens/HomeScreen.tsx` | 1 |
-| #359 | domain-public-api | `src/v2/app/navigation/RootNavigator.tsx` | `src/v2/features/reservations/screens/CreateReservationScreen.tsx` | 1 |
-| #359 | domain-public-api | `src/v2/app/navigation/RootNavigator.tsx` | `src/v2/features/reservations/screens/ReservationBoxScreen.tsx` | 1 |
-| #359 | domain-public-api | `src/v2/app/navigation/RootNavigator.tsx` | `src/v2/features/reservations/screens/ReservationDetailScreen.tsx` | 1 |
 | #360 | domain-public-api | `src/v2/features/current-activity-intent/model/currentActivityIntentQueryKeys.ts` | `src/v2/features/travel-purposes/model/travelPurposeQueryKeys.ts` | 1 |
-| #359 | screen-no-api | `src/v2/features/reservations/screens/CreateReservationScreen.tsx` | `src/v2/shared/api/index.ts` | 1 |
-| #359 | domain-public-api | `src/v2/features/reservations/screens/ReservationDetailScreen.tsx` | `src/v2/features/payments/hooks/usePayments.ts` | 1 |
-| #359 | domain-public-api | `src/v2/features/reservations/screens/ReservationDetailScreen.tsx` | `src/v2/features/payments/model/paymentPresentation.ts` | 1 |
 | #360 | domain-public-api | `src/v2/features/travel-schedules/hooks/useTravelSchedules.ts` | `src/v2/features/travel-purposes/model/travelPurposeQueryKeys.ts` | 1 |
 | #360 | domain-public-api | `src/v2/features/travel-schedules/model/travelScheduleQueryKeys.ts` | `src/v2/features/travel-purposes/model/travelPurposeQueryKeys.ts` | 1 |
 | #360 | production-cycle | `src/v2/shared/api/apiClient.ts` | `src/v2/shared/api/mock/mockApiClient.ts` | 1 |
@@ -85,6 +69,7 @@ The executable manifest also enumerates every remaining test exception; no blank
 
 | Kind | Name | Files | Production sources | Test sources |
 |---|---|---:|---:|---:|
+| module | booking | 85 | 58 | 27 |
 | module | place | 200 | 144 | 54 |
 | module | user | 131 | 94 | 36 |
 | feature | check-ins | 2 | 2 | 0 |
@@ -95,17 +80,15 @@ The executable manifest also enumerates every remaining test exception; no blank
 | feature | merchant-my-page | 17 | 14 | 3 |
 | feature | my-page | 6 | 5 | 1 |
 | feature | notifications | 2 | 1 | 1 |
-| feature | offers-coupons | 20 | 11 | 9 |
+| feature | offers-coupons | 2 | 1 | 1 |
 | feature | onboarding-entry | 5 | 4 | 1 |
 | feature | onboarding-preferences | 19 | 12 | 7 |
-| feature | payments | 7 | 6 | 1 |
 | feature | place-visit-verification | 2 | 2 | 0 |
-| feature | reservations | 25 | 17 | 8 |
+| feature | reservations | 3 | 3 | 0 |
 | feature | settings | 3 | 3 | 0 |
 | feature | travel-purposes | 6 | 6 | 0 |
 | feature | travel-schedules | 6 | 5 | 0 |
 | feature | voice-assistant | 30 | 21 | 9 |
 
-Run `npm run audit:v2-boundaries` to reproduce the entire directed graph. Local before/after
-JSON logs: `/private/tmp/358-boundary-before.txt`, `/private/tmp/358-boundary-after.txt`.
-The audit never rewrites the exception manifest. `check:v2` additionally rejects stale exceptions.
+Run `npm run audit:v2-boundaries` to reproduce the complete directed graph; it never rewrites exceptions.
+Local evidence: `/private/tmp/359-before-audit.txt`, `/private/tmp/359-after-audit.txt`.

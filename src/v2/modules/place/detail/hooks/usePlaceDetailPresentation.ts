@@ -11,7 +11,8 @@ import {
   buildPlaceDetailPresentation,
   type ResourceState,
 } from '../model/placeDetailPresentation';
-import { usePlaceAvailabilities, usePlaceDetail } from './usePlaceDetail';
+import { usePlaceAvailabilities } from '../../../booking';
+import { usePlaceDetail } from './usePlaceDetail';
 
 const asResource = <T,>(query: {
   data?: T;
