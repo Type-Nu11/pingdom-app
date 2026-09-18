@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react-native';
 import React from 'react';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import AppearanceSettingsScreen from '../AppearanceSettingsScreen';
+import AppearanceSettingsScreen from '../screens/AppearanceSettingsScreen';
 
 describe('AppearanceSettingsScreen', () => {
   test('renders three Korean radio options and updates selection immediately', async () => {

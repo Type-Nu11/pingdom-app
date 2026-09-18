@@ -2,12 +2,12 @@ import React from 'react';
 import { screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi } from '../../../../modules/user/profile/__tests__';
-import { notificationApi } from '../../../../modules/user/notifications/__tests__';
-import { SETTINGS_DETAIL_IDS } from '../../model/settings.types';
-import AccountManagementScreen from '../AccountManagementScreen';
-import SettingsDetailPendingScreen from '../SettingsDetailPendingScreen';
-import SettingsScreen from '../SettingsScreen';
+import { profileApi } from '../../profile/__tests__';
+import { notificationApi } from '../../notifications/__tests__';
+import { SETTINGS_DETAIL_IDS } from '../model/settings.types';
+import AccountManagementScreen from '../screens/AccountManagementScreen';
+import SettingsDetailPendingScreen from '../screens/SettingsDetailPendingScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 describe('SettingsScreen', () => {
   beforeEach(() => {

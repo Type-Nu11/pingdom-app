@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { EmptyState } from '../../../shared/components';
+import { EmptyState } from '../../../../shared/components';
 import { resolveSettingsDestination } from '../model/settingsNavigation';
 import AccountInformation from '../components/AccountInformation';
 import { SettingsList, SettingsScreenLayout, SettingsTopBar } from '../components/SettingsLayout';

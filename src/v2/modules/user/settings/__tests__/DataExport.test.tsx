@@ -2,9 +2,9 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { act, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { accountApi } from '../../../../modules/user/account';
-import { userDataExportWriter as writer } from '../../../../modules/user/account/__tests__';
-import DataExportScreen from '../DataExportScreen';
+import { accountApi } from '../../account';
+import { userDataExportWriter as writer } from '../../account/__tests__';
+import DataExportScreen from '../screens/DataExportScreen';
 
 beforeEach(() => {
   jest.spyOn(accountApi, 'getUserDataExport').mockResolvedValue({ user: { id: 1, username: 'actual' } });

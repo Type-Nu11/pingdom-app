@@ -2,11 +2,11 @@ import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi } from '../../../../modules/user/profile/__tests__';
-import type { Profile } from '../../../../modules/user/profile';
-import { notificationApi } from '../../../../modules/user/notifications/__tests__';
-import LanguageSettingsScreen from '../LanguageSettingsScreen';
-import SettingsScreen from '../SettingsScreen';
+import { profileApi } from '../../profile/__tests__';
+import type { Profile } from '../../profile';
+import { notificationApi } from '../../notifications/__tests__';
+import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const PROFILE: Profile = {
   birthYear: 1998,

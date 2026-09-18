@@ -1,10 +1,10 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi } from '../../../../modules/user/profile/__tests__';
-import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
-import { checkInApi, normalizeLocationCheckInPage } from '../../../../modules/place/check-ins';
-import AccountManagementScreen from '../AccountManagementScreen';
+import { profileApi } from '../../profile/__tests__';
+import { offerCouponApi } from '../../../../features/offers-coupons';
+import { checkInApi, normalizeLocationCheckInPage } from '../../../place/check-ins';
+import AccountManagementScreen from '../screens/AccountManagementScreen';
 
 beforeEach(() => {
   jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(normalizeLocationCheckInPage({ items: [], totalElements: 24 }));

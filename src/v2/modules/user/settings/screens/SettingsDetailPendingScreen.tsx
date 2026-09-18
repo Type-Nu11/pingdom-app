@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { EmptyState } from '../../../shared/components';
+import { EmptyState } from '../../../../shared/components';
 import { SettingsScreenLayout, SettingsTopBar } from '../components/SettingsLayout';
 import type { UnsupportedSettingsDetail } from '../model/settingsNavigation';
 

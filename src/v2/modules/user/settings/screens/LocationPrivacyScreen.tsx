@@ -1,11 +1,11 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useEffect, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
-import { HeaderBackButton } from '../../../shared/components';
-import { useForegroundPermission } from '../../../shared/location/useForegroundPermission';
-import type { ForegroundPermissionState } from '../../../shared/location/foregroundPermission';
+import { HeaderBackButton } from '../../../../shared/components';
+import { useForegroundPermission } from '../../../../shared/location/useForegroundPermission';
+import type { ForegroundPermissionState } from '../../../../shared/location/foregroundPermission';
 import DataExportScreen from './DataExportScreen';
 
 type Props = { onBack: () => void };

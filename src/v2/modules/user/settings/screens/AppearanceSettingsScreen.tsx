@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { HeaderBackButton } from '../../../shared/components';
-import { Text as AppText } from '../../../shared/components/Typography';
+import { HeaderBackButton } from '../../../../shared/components';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import {
   APPEARANCE_PREFERENCES,
   useAppearance,
   type AppearancePreference,
-} from '../../../shared/theme';
+} from '../../../../shared/theme';
 
 type AppearanceSettingsScreenProps = {
   onBack: () => void;

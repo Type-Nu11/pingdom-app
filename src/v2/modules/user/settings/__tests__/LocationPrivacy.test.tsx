@@ -6,8 +6,8 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { apiClient } from '../../../../shared/api';
 import { darkTheme } from '../../../../shared/theme';
-import { accountApi } from '../../../../modules/user/account';
-import LocationPrivacyScreen from '../LocationPrivacyScreen';
+import { accountApi } from '../../account';
+import LocationPrivacyScreen from '../screens/LocationPrivacyScreen';
 
 jest.mock('expo-location', () => ({
   getForegroundPermissionsAsync: jest.fn(), requestForegroundPermissionsAsync: jest.fn(),

@@ -6,7 +6,7 @@ import MainNavigator, { NotificationSettingsRouteScreen } from '../../../../../a
 import type { MainStackParamList } from '../../../../../app/navigation/types';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { notificationApi } from '../../../../modules/user/notifications/__tests__';
-import { SettingsScreen } from '../../../../features/settings';
+import { SettingsScreen } from '../../../../modules/user/settings';
 
 jest.mock('../../../../modules/place/map/screens/MapScreen', () => () => null);
 jest.mock('expo-notifications', () => ({}));

@@ -1,15 +1,15 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { HeaderBackButton } from '../../../shared/components';
+import { HeaderBackButton } from '../../../../shared/components';
 import {
   normalizeSupportedLanguage,
   setLanguage,
   type SupportedLanguage,
-} from '../../../shared/i18n';
+} from '../../../../shared/i18n';
 
 type LanguageSettingsScreenProps = {
   onBack: () => void;

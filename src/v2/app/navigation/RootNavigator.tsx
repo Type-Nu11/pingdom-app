@@ -6,7 +6,7 @@ import { useFcmTokenSync } from '../../modules/user/notifications/lifecycle';
 import { useForegroundNotifications } from '../../modules/user/notifications/lifecycle';
 import { useNotificationOpenSync } from '../../modules/user/notifications/lifecycle';
 import type { NotificationRoute } from '../../modules/user/notifications/routing';
-import { useSettingsDetailRedirect, useSettingsNavigation } from '../../features/settings/hooks/useSettingsNavigation';
+import { useSettingsDetailRedirect, useSettingsNavigation } from '../../modules/user/settings';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
@@ -23,7 +23,7 @@ import {
   SettingsDetailScreen,
   SETTINGS_DETAIL_IDS,
   SettingsScreen,
-} from '../../features/settings';
+} from '../../modules/user/settings';
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,

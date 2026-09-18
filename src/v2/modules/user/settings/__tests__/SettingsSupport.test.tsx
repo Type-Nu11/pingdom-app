@@ -2,9 +2,9 @@ import React from 'react';
 import { View } from 'react-native';
 import { screen } from '@testing-library/react-native';
 import { renderWithProviders, createTestI18n } from '../../../../shared/testing/testProviders';
-import { SettingsRow, SettingsScreenLayout } from '../../components/SettingsLayout';
-import SettingsDetailScreen from '../SettingsDetailScreen';
-import SettingsDetailPendingScreen from '../SettingsDetailPendingScreen';
+import { SettingsRow, SettingsScreenLayout } from '../components/SettingsLayout';
+import SettingsDetailScreen from '../screens/SettingsDetailScreen';
+import SettingsDetailPendingScreen from '../screens/SettingsDetailPendingScreen';
 
 const unsupported = ['deleteAccount', 'footprintMap', 'myRecords', 'notices', 'privacyPolicy', 'savedPlaces', 'terms'] as const;
 
