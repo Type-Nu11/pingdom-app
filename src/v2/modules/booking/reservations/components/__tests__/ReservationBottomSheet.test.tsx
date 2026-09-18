@@ -6,12 +6,12 @@ import { ThemeProvider } from 'styled-components/native';
 
 import { useReservations } from '../..';
 import { registerReservationResources } from '../../i18n/reservationResources';
-import { createTestI18n } from '../../../../shared/testing/testProviders';
-import { theme } from '../../../../shared/theme';
-import ReservationBottomSheet from '../../components/ReservationBottomSheet';
+import { createTestI18n } from '../../../../../shared/testing/testProviders';
+import { theme } from '../../../../../shared/theme';
+import ReservationBottomSheet from '../ReservationBottomSheet';
 
 jest.mock('../..', () => ({ useReservations: jest.fn() }));
-jest.mock('../../../../modules/place/exploration', () => ({
+jest.mock('../../../../place/exploration', () => ({
   usePlaceExplorationMediaList: jest.fn(() => ({
     '101': ['https://example.test/first.jpg', 'https://example.test/second.jpg'],
   })),

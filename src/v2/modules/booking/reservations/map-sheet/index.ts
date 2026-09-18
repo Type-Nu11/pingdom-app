@@ -1,2 +1,1 @@
 export { default as ReservationBottomSheet } from '../components/ReservationBottomSheet';
-export { default as ReservationRecordCard } from '../components/ReservationRecordCard';

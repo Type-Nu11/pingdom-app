@@ -30,7 +30,7 @@ import { useMapReservationSheet } from '../sheet/mapReservationSheet';
 import {
   NEARBY_RESERVATION_CANDIDATE_LIMIT,
   useNearbyReservablePlaceIds,
-} from '../../../../features/reservations';
+} from '../../../booking/reservations';
 import MapCanvas from '../native/components/MapCanvas';
 import MapGlassBackdrop from '../presentation/components/MapGlassBackdrop';
 import MapSearchOverlay from '../../search/components/MapSearchOverlay';

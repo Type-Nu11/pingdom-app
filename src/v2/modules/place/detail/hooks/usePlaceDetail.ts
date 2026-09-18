@@ -4,7 +4,6 @@ import { placeQueryKeys } from '../../core';
 import { placeDetailApi } from '../api/placeDetailApi';
 
 type PlaceDetailApi = Pick<typeof placeDetailApi, 'getPlaceDetail'>;
-type PlaceAvailabilityApi = Pick<typeof placeDetailApi, 'getPlaceAvailabilities'>;
 
 export const placeDetailQueryKeys = {
   all: placeQueryKeys.entities(),
@@ -30,22 +29,4 @@ export function createPlaceDetailQueryOptions(
 
 export function usePlaceDetail(placeId: number, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({ ...createPlaceDetailQueryOptions(placeId), enabled });
-}
-
-export function createPlaceAvailabilitiesQueryOptions(
-  placeId: number,
-  api: PlaceAvailabilityApi = placeDetailApi,
-) {
-  return {
-    queryFn: ({ signal }: { signal?: AbortSignal }) =>
-      api.getPlaceAvailabilities(placeId, signal),
-    queryKey: placeQueryKeys.availabilities(placeId),
-  };
-}
-
-export function usePlaceAvailabilities(
-  placeId: number,
-  { enabled = true }: { enabled?: boolean } = {},
-) {
-  return useQuery({ ...createPlaceAvailabilitiesQueryOptions(placeId), enabled });
 }
