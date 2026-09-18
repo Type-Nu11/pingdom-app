@@ -12,7 +12,7 @@ import { MapScreen } from '../../modules/place/map';
 import CouponBoxScreen from '../../features/my-page/screens/CouponBoxScreen';
 import CouponDetailContainer from '../../features/my-page/screens/CouponDetailContainer';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
-import ProfileEditScreen from '../../features/my-page/screens/ProfileEditScreen';
+import { ProfileEditScreen } from '../../modules/user/profile';
 import { PlaceListExampleScreen } from '../../modules/place/search';
 import { PlaceDetailScreen } from '../../modules/place/detail';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';

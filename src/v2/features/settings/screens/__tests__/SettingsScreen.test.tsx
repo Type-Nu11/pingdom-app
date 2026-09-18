@@ -2,8 +2,8 @@ import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi } from '../../../my-page/api/profileApi';
-import type { Profile } from '../../../my-page/model/profile.types';
+import { profileApi } from '../../../../modules/user/profile/__tests__';
+import type { Profile } from '../../../../modules/user/profile';
 import { notificationApi } from '../../../notifications/api/notificationApi';
 import LanguageSettingsScreen from '../LanguageSettingsScreen';
 import SettingsScreen from '../SettingsScreen';

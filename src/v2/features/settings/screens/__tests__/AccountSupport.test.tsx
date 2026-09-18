@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi } from '../../../my-page/api/profileApi';
+import { profileApi } from '../../../../modules/user/profile/__tests__';
 import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
 import { checkInApi, normalizeLocationCheckInPage } from '../../../../modules/place/check-ins';
 import AccountManagementScreen from '../AccountManagementScreen';

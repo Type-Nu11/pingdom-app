@@ -7,7 +7,7 @@ import { darkTheme, lightTheme } from '../../../../shared/theme';
 import { voiceAssistantResources } from '../../i18n/voiceAssistantResources';
 import VoiceAssistantScreen from '../VoiceAssistantScreen';
 import SettingsScreen from '../../../settings/screens/SettingsScreen';
-import { profileApi } from '../../../my-page/api/profileApi';
+import { profileApi } from '../../../../modules/user/profile/__tests__';
 import { notificationApi } from '../../../notifications/api/notificationApi';
 import type { SpeechEvent, SpeechInputAdapter } from '../../model/voiceInput';
 

@@ -5,9 +5,9 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { ApiError } from '../../../../shared/api';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi } from '../../api/profileApi';
-import type { Profile } from '../../model/profile.types';
-import ProfileEditScreen from '../ProfileEditScreen';
+import { profileApi } from '../api/profileApi';
+import type { Profile } from '../model/profile.types';
+import ProfileEditScreen from '../screens/ProfileEditScreen';
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),

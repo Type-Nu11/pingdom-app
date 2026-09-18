@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMyReviews, useProfile } from '../../my-page/hooks/useProfile';
+import { useMyReviews, useProfile } from '../../../modules/user/profile';
 import { useCoupons } from '../../offers-coupons/hooks/useOffersCoupons';
 import { useCheckIns } from '../../../modules/place/check-ins';
 import AccountInformation from '../components/AccountInformation';

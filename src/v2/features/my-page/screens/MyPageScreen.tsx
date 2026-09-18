@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { useMyReviews, useProfile } from '../hooks/useProfile';
+import { useMyReviews, useProfile } from '../../../modules/user/profile';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
 import {
   getInitialCalendarMonth,

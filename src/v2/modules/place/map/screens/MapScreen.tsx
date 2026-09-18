@@ -60,7 +60,7 @@ import {
   markersForSelectedPlace,
 } from '../selection/model/mapSelection';
 import { usePlacePreviewImages } from '../../detail';
-import { useProfile } from '../../../../features/my-page/profile';
+import { useProfile } from '../../../user/profile';
 import type { Place } from '../../core';
 import type { MapMarker } from '../markers/model/placeMarker';
 import { normalizePlaceCategory } from '../../core/placeCategory';

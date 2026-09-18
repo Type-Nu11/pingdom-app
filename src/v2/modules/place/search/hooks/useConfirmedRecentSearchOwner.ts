@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Profile } from '../../../../features/my-page/profile';
+import type { Profile } from '../../../user/profile';
 import type { RecentSearchOwner } from '../services/recentSearchStorage';
 
 type ProfileRefetch = () => PromiseLike<Readonly<{

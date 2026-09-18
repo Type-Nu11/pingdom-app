@@ -3,8 +3,8 @@ import { Alert } from 'react-native';
 import { screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { profileApi } from '../../api/profileApi';
-import type { Profile } from '../../model/profile.types';
+import { profileApi } from '../../../../modules/user/profile/__tests__';
+import type { Profile } from '../../../../modules/user/profile';
 import { bookmarkApi } from '../../api/bookmarkApi';
 import { checkInApi } from '../../../../modules/place/check-ins';
 import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useProfile } from '../../my-page/hooks/useProfile';
+import { useProfile } from '../../../modules/user/profile';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 
 export default function AccountInformation() {
