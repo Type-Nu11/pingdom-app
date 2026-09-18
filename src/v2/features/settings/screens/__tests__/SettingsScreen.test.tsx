@@ -4,7 +4,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { profileApi } from '../../../../modules/user/profile/__tests__';
 import type { Profile } from '../../../../modules/user/profile';
-import { notificationApi } from '../../../notifications/api/notificationApi';
+import { notificationApi } from '../../../../modules/user/notifications/__tests__';
 import LanguageSettingsScreen from '../LanguageSettingsScreen';
 import SettingsScreen from '../SettingsScreen';
 

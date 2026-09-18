@@ -1,4 +1,4 @@
-import type { components } from '../../../generated/notifications';
+import type { components } from '../../../../shared/api/generated/notifications';
 
 export const notificationSettingFixture = {
   newHotplaceEnabled: true,

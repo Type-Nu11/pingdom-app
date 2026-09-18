@@ -2,10 +2,10 @@ import { createNavigationContainerRef, NavigationContainer } from '@react-naviga
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useFcmTokenSync } from '../../features/notifications/hooks/useFcmTokenSync';
-import { useForegroundNotifications } from '../../features/notifications/hooks/useForegroundNotifications';
-import { useNotificationOpenSync } from '../../features/notifications/hooks/useNotificationOpenSync';
-import type { NotificationRoute } from '../../features/notifications/model/notification.types';
+import { useFcmTokenSync } from '../../modules/user/notifications/lifecycle';
+import { useForegroundNotifications } from '../../modules/user/notifications/lifecycle';
+import { useNotificationOpenSync } from '../../modules/user/notifications/lifecycle';
+import type { NotificationRoute } from '../../modules/user/notifications/routing';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../features/settings/hooks/useSettingsNavigation';
 import HomeScreen from '../../features/home/screens/HomeScreen';
 import { MapScreen } from '../../modules/place/map';

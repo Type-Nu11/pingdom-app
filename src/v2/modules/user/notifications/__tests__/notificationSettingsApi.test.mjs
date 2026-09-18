@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import axios from 'axios';
-import { ApiError, configureApiTransport, createApiClient } from '../index.ts';
-import { createNotificationApi } from '../../../features/notifications/api/notificationApi.ts';
+import { createAxiosResponseError } from '../../../../shared/api/__tests__/support/recordingTransport.ts';
+import { ApiError, configureApiTransport, createApiClient } from '../../../../shared/api/index.ts';
+import { createNotificationApi } from '../api/notificationApi.ts';
 
 test('notification GET forwards cancellation and PATCH preserves partial body and server response', async () => {
   const signal = new AbortController().signal;
@@ -29,9 +29,7 @@ test('notification GET forwards cancellation and PATCH preserves partial body an
 for (const [status, code] of [[400, 'INVALID_QUIET_HOURS'], [401, 'INVALID_TOKEN'], [401, 'EXPIRED_TOKEN'], [403, 'ACCESS_DENIED']]) {
   test(`notification PATCH propagates ${status} ${code} through common ApiError`, async () => {
     const restore = configureApiTransport({ patch: async () => {
-      throw new axios.AxiosError('request failed', undefined, undefined, undefined, {
-        status, data: { code, message: 'server error' },
-      });
+      throw createAxiosResponseError(status, { code, message: 'server error' });
     } });
     try {
       const api = createNotificationApi(createApiClient());

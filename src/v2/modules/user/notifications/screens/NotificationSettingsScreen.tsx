@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import { Text as AppText } from '../../../shared/components/Typography';
-import { HeaderBackButton, ErrorState, LoadingState } from '../../../shared/components';
+import { Text as AppText } from '../../../../shared/components/Typography';
+import { HeaderBackButton, ErrorState, LoadingState } from '../../../../shared/components';
 import NotificationSettingToggle from '../components/NotificationSettingToggle';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../hooks/useNotificationSettings';
 import { notificationSettingsErrorKey, quietHoursPresentation } from '../model/settingsPresentation';

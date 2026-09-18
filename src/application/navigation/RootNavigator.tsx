@@ -20,10 +20,10 @@ import { ROOT_ROUTES, type RootStackParamList } from '../../app/navigation/types
 import { useAndroidBackHandler } from '../../app/navigation/useAndroidBackHandler';
 import { useMapSettingsStore } from '../../v2/modules/place/map/settings';
 import { useAuthStore } from '../../app/store/authStore';
-import { useFcmTokenSync } from '../../v2/features/notifications/hooks/useFcmTokenSync';
-import { useForegroundNotifications } from '../../v2/features/notifications/hooks/useForegroundNotifications';
-import { useNotificationOpenSync } from '../../v2/features/notifications/hooks/useNotificationOpenSync';
-import type { NotificationRoute } from '../../v2/features/notifications/model/notification.types';
+import { useFcmTokenSync } from '../../v2/modules/user/notifications/lifecycle';
+import { useForegroundNotifications } from '../../v2/modules/user/notifications/lifecycle';
+import { useNotificationOpenSync } from '../../v2/modules/user/notifications/lifecycle';
+import type { NotificationRoute } from '../../v2/modules/user/notifications/routing';
 import {
   getUnauthenticatedNavigationKey,
   useOnboardingEntry,

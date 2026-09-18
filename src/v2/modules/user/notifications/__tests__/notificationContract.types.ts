@@ -1,9 +1,9 @@
-import type { components, operations } from '../generated/notifications';
+import type { components, operations } from '../../../../shared/api/generated/notifications';
 import type {
   FcmTokenRequest,
   NotificationSetting,
   NotificationSettingUpdateRequest,
-} from '../../../features/notifications/model/notificationApi.types';
+} from '../model/notificationApi.types';
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends

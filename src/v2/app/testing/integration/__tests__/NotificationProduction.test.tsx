@@ -5,8 +5,8 @@ import { createNavigationContainerRef, NavigationContainer } from '@react-naviga
 import MainNavigator, { NotificationSettingsRouteScreen } from '../../../../../app/navigation/MainNavigator';
 import type { MainStackParamList } from '../../../../../app/navigation/types';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { notificationApi } from '../../../notifications/api/notificationApi';
-import SettingsScreen from '../SettingsScreen';
+import { notificationApi } from '../../../../modules/user/notifications/__tests__';
+import { SettingsScreen } from '../../../../features/settings';
 
 jest.mock('../../../../modules/place/map/screens/MapScreen', () => () => null);
 jest.mock('expo-notifications', () => ({}));

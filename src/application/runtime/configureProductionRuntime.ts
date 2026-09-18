@@ -2,7 +2,7 @@ import '../../v2/app/configureDomainMocks';
 import { configureBeforeLogout, logout } from '../../app/store/authStore';
 import { api } from '../../shared/api/apiClient';
 import { getCachedAccessToken } from '../../shared/api/authTokens';
-import { unregisterStoredFcmToken } from '../../v2/features/notifications/services/fcmTokenLifecycle';
+import { unregisterStoredFcmToken } from '../../v2/modules/user/notifications/lifecycle';
 import {
   configureApiAccessTokenProvider,
   configureApiTransport,

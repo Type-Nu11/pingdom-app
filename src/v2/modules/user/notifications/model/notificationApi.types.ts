@@ -1,7 +1,7 @@
 import type {
   components,
   operations,
-} from '../../../shared/api/generated/notifications';
+} from '../../../../shared/api/generated/notifications';
 
 export type FcmTokenRequest = components['schemas']['FcmTokenRequest'];
 export type NotificationSettingUpdateRequest =

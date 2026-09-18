@@ -15,3 +15,9 @@ export function createRecordingApiTransport(
   });
   return { client: createApiClient(transport), requests };
 }
+
+export function createAxiosResponseError(status: number, data: unknown) {
+  return new axios.AxiosError('request failed', undefined, undefined, undefined, {
+    status, data,
+  } as never);
+}

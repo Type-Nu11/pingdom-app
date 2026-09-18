@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { profileApi } from '../../../../modules/user/profile/__tests__';
-import { notificationApi } from '../../../notifications/api/notificationApi';
+import { notificationApi } from '../../../../modules/user/notifications/__tests__';
 import { SETTINGS_DETAIL_IDS } from '../../model/settings.types';
 import AccountManagementScreen from '../AccountManagementScreen';
 import SettingsDetailPendingScreen from '../SettingsDetailPendingScreen';

@@ -3,9 +3,9 @@ import { AppState } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { ApiError } from '../../../../shared/api/ApiError';
-import { notificationApi } from '../../api/notificationApi';
-import type { NotificationPermissionAdapter, NotificationPermissionStatus } from '../../services/notificationPermission';
-import NotificationSettingsScreen from '../NotificationSettingsScreen';
+import { notificationApi } from '../api/notificationApi';
+import type { NotificationPermissionAdapter, NotificationPermissionStatus } from '../services/notificationPermission';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 
 const initial = { newHotplaceEnabled: false, newLikeEnabled: true, quietHoursEnabled: false,
   quietHoursStart: '22:00:30', quietHoursEnd: '08:00:00', timezone: 'Asia/Seoul' };

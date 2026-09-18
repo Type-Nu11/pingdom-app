@@ -1,7 +1,6 @@
 import { currentActivityIntentMockHandlers } from './current-activity-intent/handlers';
 import { placeExplorationMockHandlers } from './place-exploration/handlers';
 import { placeMenuMockHandlers } from './place-menus/handlers';
-import { notificationMockHandlers } from './notifications/handlers';
 import { reservationMockHandlers } from './reservations/handlers';
 import { reservationPaymentMockHandlers } from './reservation-payments/handlers';
 import { scoutProfileMockHandlers } from './scout-profile/handlers';
@@ -13,7 +12,6 @@ import { visitVerificationMockHandlers } from './visit-verification/handlers';
 /** Register each feature's handlers here; feature fixtures stay beside their handlers. */
 export const featureMockHandlers = [
   ...currentActivityIntentMockHandlers,
-  ...notificationMockHandlers,
   ...reservationMockHandlers,
   ...reservationPaymentMockHandlers,
   ...scoutProfileMockHandlers,

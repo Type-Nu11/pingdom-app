@@ -10,7 +10,7 @@ import { createPlaceListApi } from '../../../../modules/place/search/data/index.
 import { createReservationApi } from '../../../../features/reservations/data/index.ts';
 import { createTravelPurposeApi } from '../../../../features/travel-purposes/data/index.ts';
 import { createTravelScheduleApi } from '../../../../features/travel-schedules/data/index.ts';
-import { createNotificationApi } from '../../../../features/notifications/data/index.ts';
+import { createNotificationApi } from '../../../../modules/user/notifications/__tests__/index.ts';
 
 test('API modules keep operation paths, params, bodies, and documented response mapping', async () => {
   const calls = [];
@@ -196,54 +196,4 @@ test('API modules keep operation paths, params, bodies, and documented response 
   assert.deepEqual(calls[28].body, { token: 'fcm-token' });
   assert.equal(calls[29].options.signal, signal);
   assert.deepEqual(calls[31].body, { newLikeEnabled: false });
-});
-
-test('FCM registration coalesces concurrent requests for the same token', async () => {
-  let releaseRequest;
-  let postCount = 0;
-  const pending = new Promise((resolve) => { releaseRequest = resolve; });
-  const notifications = createNotificationApi({
-    delete: async () => undefined,
-    get: async () => ({}),
-    patch: async () => ({}),
-    post: async () => {
-      postCount += 1;
-      await pending;
-    },
-    put: async () => ({}),
-  });
-
-  const first = notifications.registerFcmToken({ token: 'same-token' });
-  const second = notifications.registerFcmToken({ token: 'same-token' });
-
-  assert.equal(first, second);
-  assert.equal(postCount, 1);
-  releaseRequest();
-  await Promise.all([first, second]);
-});
-
-test('FCM deletion waits for an in-flight registration of the same token', async () => {
-  let releaseRegistration;
-  const calls = [];
-  const pending = new Promise((resolve) => { releaseRegistration = resolve; });
-  const notifications = createNotificationApi({
-    delete: async () => { calls.push('delete'); },
-    get: async () => ({}),
-    patch: async () => ({}),
-    post: async () => {
-      calls.push('register:start');
-      await pending;
-      calls.push('register:end');
-    },
-    put: async () => ({}),
-  });
-
-  const registration = notifications.registerFcmToken({ token: 'same-token' });
-  const deletion = notifications.deleteFcmToken({ token: 'same-token' });
-  await Promise.resolve();
-  assert.deepEqual(calls, ['register:start']);
-
-  releaseRegistration();
-  await Promise.all([registration, deletion]);
-  assert.deepEqual(calls, ['register:start', 'register:end', 'delete']);
 });

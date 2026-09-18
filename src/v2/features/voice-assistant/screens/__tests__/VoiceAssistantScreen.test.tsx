@@ -8,7 +8,7 @@ import { voiceAssistantResources } from '../../i18n/voiceAssistantResources';
 import VoiceAssistantScreen from '../VoiceAssistantScreen';
 import SettingsScreen from '../../../settings/screens/SettingsScreen';
 import { profileApi } from '../../../../modules/user/profile/__tests__';
-import { notificationApi } from '../../../notifications/api/notificationApi';
+import { notificationApi } from '../../../../modules/user/notifications/__tests__';
 import type { SpeechEvent, SpeechInputAdapter } from '../../model/voiceInput';
 
 function navigationWrapper(children: React.ReactNode) {

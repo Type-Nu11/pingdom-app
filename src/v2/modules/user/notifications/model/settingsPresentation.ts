@@ -1,4 +1,4 @@
-import { ApiError } from '../../../shared/api/ApiError';
+import { ApiError } from '../../../../shared/api/ApiError';
 import type { NotificationSetting } from './notificationApi.types';
 
 export function notificationSettingsErrorKey(error: unknown, fallback = 'notificationSettings.contract.saveFailed'): string {

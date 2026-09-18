@@ -1,5 +1,5 @@
-import type { components } from '../../../generated/notifications';
-import type { MockHandler } from '../../handlers';
+import type { components } from '../../../../shared/api/generated/notifications';
+import type { MockHandler } from '../../../../shared/api/mock/handlers';
 import { notificationSettingFixture } from './fixtures';
 
 const FCM_TOKENS_PATH = '/firebase/fcm-tokens';
