@@ -275,3 +275,11 @@ above (`mock/features/account/fixtures.ts` and `mock/features/place-menus/fixtur
 
 The exact ten application-to-legacy bridge edges are also listed above under
 `application-bridge`; #362 reviews their removal only after #124/#139 parity.
+
+
+## #361 working-tree migration update
+
+The tables above retain the historical #357 baseline. Current Place ownership, exact file moves,
+exception removals, compatibility consumers and verified before/after graph metrics are recorded
+in [the #361 handoff](0001-place-migration-handoff.md). Run `audit:v2-boundaries` for the current
+feature and module inventory. #361 has no remaining exception; no manifest capacity was added.

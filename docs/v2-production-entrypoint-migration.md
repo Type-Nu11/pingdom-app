@@ -201,3 +201,18 @@ ProductionProviders changes only its i18n import to `v2/app/i18n`; development u
 same initialization policy. The resource values, language hydration and fallback are unchanged.
 Place/User/Booking/remaining domain moves belong to #361/#358/#359/#360. #362 preserves
 #124/#139 parity gates before deleting V1 bridges. V1 dependency delta for #357: `none`.
+
+
+## #361 Place composition
+
+The V1 MainNavigator remains frozen and reaches the new Place module through named
+compatibility exports. ProductionProviders composes `v2/app/PlaceMapComposition`, which
+injects Booking's reservation sheet into the Place-owned slot. The standalone V2 provider
+uses the same composition. Route names, params, deep links, native adapters and session
+runtime bridges are unchanged. The root navigator now reads Map settings through
+`modules/place/map/settings`. PlaceDetail no longer imports app navigation types.
+
+The eight compatibility files and remaining domain-boundary exceptions are enumerated in
+[the #361 handoff](architecture/adr/0001-place-migration-handoff.md). Remove the compatibility
+files with their V1 callers in #362, preserving the #124/#139 parity gates. Their existence
+does not imply native-device validation; Android/iOS smoke remains unverified for #361.
