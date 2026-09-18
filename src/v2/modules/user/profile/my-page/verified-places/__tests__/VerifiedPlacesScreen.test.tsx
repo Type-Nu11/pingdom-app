@@ -1,12 +1,12 @@
 import React from 'react';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../shared/testing/testProviders';
 import { bookmarkApi } from '../../api/bookmarkApi';
-import { checkInApi } from '../../../../modules/place/check-ins';
-import { placeDetailApi } from '../../../../modules/place/detail';
-import { placeExplorationApi } from '../../../../modules/place/exploration';
-import VerifiedPlacesScreen from '../VerifiedPlacesScreen';
+import { checkInApi } from '../../../../../place/check-ins';
+import { placeDetailApi } from '../../../../../place/detail';
+import { placeExplorationApi } from '../../../../../place/exploration';
+import VerifiedPlacesScreen from '../screens/VerifiedPlacesScreen';
 
 function checkInPage(placeIds: number[]) {
   return {

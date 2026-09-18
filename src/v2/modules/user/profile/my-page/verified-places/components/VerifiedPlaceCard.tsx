@@ -1,11 +1,11 @@
-import { Text as AppText } from '../../../shared/components/Typography';
+import { Text as AppText } from '../../../../../../shared/components/Typography';
 import React, { useEffect, useState } from 'react';
 import { Image, type GestureResponderEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { FavoriteIcon } from '../../../shared/components';
+import { FavoriteIcon } from '../../../../../../shared/components';
 
 import { VERIFIED_PLACE_CARD_WIDTH, VERIFIED_PLACE_CARD_HEIGHT } from '../model/verifiedPlaceLayout';
 const GRADIENT_HEIGHT = 105;

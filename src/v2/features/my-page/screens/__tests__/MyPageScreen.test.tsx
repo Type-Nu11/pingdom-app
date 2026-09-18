@@ -5,7 +5,7 @@ import { screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { profileApi } from '../../../../modules/user/profile/__tests__';
 import type { Profile } from '../../../../modules/user/profile';
-import { bookmarkApi } from '../../api/bookmarkApi';
+import { bookmarkApi } from '../../../../modules/user/profile/my-page/__tests__';
 import { checkInApi } from '../../../../modules/place/check-ins';
 import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
 import { placeDetailApi } from '../../../../modules/place/detail';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dimensions } from 'react-native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../../shared/testing/testProviders';
 import VerifiedPlaceCard from '../VerifiedPlaceCard';
 import VerifiedPlaceCardSkeleton from '../VerifiedPlaceCardSkeleton';
 

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import { useMyReviews, useProfile } from '../../../modules/user/profile';
-import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
+import { useBookmarkedPlaceIds, useToggleBookmark } from '../../../modules/user/profile/my-page';
 import {
   getInitialCalendarMonth,
   getTravelScheduleSelectionState,
@@ -28,13 +28,10 @@ import { ApiError } from '../../../shared/api';
 import { ErrorState, LoadingState } from '../../../shared/components';
 import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../components/TravelCalendar';
-import VerifiedPlaceCard from '../components/VerifiedPlaceCard';
-import VerifiedPlaceCardSkeleton from '../components/VerifiedPlaceCardSkeleton';
+import { VerifiedPlaceCard } from '../../../modules/user/profile/my-page';
+import { VerifiedPlaceCardSkeleton } from '../../../modules/user/profile/my-page';
 import { getTodayServerTravelDate, selectFeaturedTravelSchedule } from '../model/myPageTravel';
-import {
-  toVerifiedPlaceEntries,
-  toVerifiedPlaceListState,
-} from '../model/verifiedPlaceEntries';
+import { toVerifiedPlaceEntries, toVerifiedPlaceListState } from '../../../modules/user/profile/my-page';
 import { HeaderBackButton } from '../../../shared/components';
 import ChevronIcon from '../../../shared/assets/icons/chevron-right-24.svg';
 import DividerIcon from '../../../shared/assets/icons/divider.svg';

@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
-import { createTestWrapper } from '../../../../shared/testing/testProviders';
+import { createTestWrapper } from '../../../../../../shared/testing/testProviders';
 import { bookmarkApi, type BookmarkedPlacesPage } from '../../api/bookmarkApi';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../useBookmarks';
 

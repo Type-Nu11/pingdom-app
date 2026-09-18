@@ -3,7 +3,7 @@ import { Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
+import { useSharedPulse } from '../../../../../../shared/hooks/useSharedPulse';
 
 import { VERIFIED_PLACE_CARD_WIDTH, VERIFIED_PLACE_CARD_HEIGHT } from '../model/verifiedPlaceLayout';
 
