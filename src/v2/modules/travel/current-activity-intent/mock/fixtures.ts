@@ -1,4 +1,4 @@
-import type { components } from '../../../generated/currentActivityIntent';
+import type { components } from '../../../../shared/api/generated/currentActivityIntent';
 
 type CurrentActivityIntentResponse =
   components['schemas']['CurrentActivityIntentResponse'];

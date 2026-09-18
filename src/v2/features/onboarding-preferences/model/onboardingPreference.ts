@@ -1,13 +1,13 @@
 import {
   ACTIVITY_INTENT_VALUES,
   type ActivityIntent,
-} from '../../current-activity-intent';
+} from '../../../modules/travel/current-activity-intent';
 import {
   TRAVEL_PURPOSE_MAX_SELECTIONS,
   TRAVEL_PURPOSE_VALUES,
   isTravelPurpose,
   type TravelPurpose,
-} from '../../travel-purposes';
+} from '../../../modules/travel/purposes';
 import type { CreateTravelScheduleBody } from '../../travel-schedules';
 
 export type CurrentNeed = ActivityIntent;

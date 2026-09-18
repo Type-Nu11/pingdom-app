@@ -1,4 +1,4 @@
-import { userQueryKeys } from '../../../../features/travel-purposes/data';
+import { userQueryKeys } from '../../../travel';
 import type { ListMyReviewsParams } from './profile.types';
 
 export const profileQueryKeys = {

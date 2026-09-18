@@ -2,18 +2,18 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-import { createCurrentActivityIntentApi } from '../../../features/current-activity-intent/api/currentActivityIntentApi.ts';
+import { createCurrentActivityIntentApi } from '../current-activity-intent/api/currentActivityIntentApi.ts';
 import {
   createClearCurrentActivityIntentMutationOptions,
   createCurrentActivityIntentQueryOptions,
   createReplaceCurrentActivityIntentMutationOptions,
   refreshCachesAfterCurrentActivityIntentClear,
   refreshCachesAfterCurrentActivityIntentReplace,
-} from '../../../features/current-activity-intent/hooks/useCurrentActivityIntent.ts';
+} from '../current-activity-intent/hooks/useCurrentActivityIntent.ts';
 import {
   currentActivityIntentQueryKeys,
   recommendationQueryKeys,
-} from '../../../features/current-activity-intent/model/currentActivityIntentQueryKeys.ts';
+} from '../current-activity-intent/model/currentActivityIntentQueryKeys.ts';
 
 test('current activity intent API implements GET, PUT replace, and DELETE clear', async () => {
   const calls = [];

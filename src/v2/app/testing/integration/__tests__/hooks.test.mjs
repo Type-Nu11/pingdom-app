@@ -26,10 +26,10 @@ import {
   refreshPersonalizationCaches,
   travelPurposeQueryKeys,
   userQueryKeys,
-} from '../../../../features/travel-purposes/data/index.ts';
+} from '../../../../modules/travel/purposes/__tests__/index.ts';
 import {
   validateReplaceTravelPurposesBody,
-} from '../../../../features/travel-purposes/data/index.ts';
+} from '../../../../modules/travel/purposes/__tests__/index.ts';
 import {
   createCancelTravelScheduleMutationOptions,
   createTravelScheduleMutationOptions,

@@ -8,7 +8,7 @@ import { createPlaceClaimApi } from '../../../../modules/place/claims/data/index
 import { createPlaceDetailApi } from '../../../../modules/place/detail/data/index.ts';
 import { createPlaceListApi } from '../../../../modules/place/search/data/index.ts';
 import { createReservationApi } from '../../../../modules/booking/reservations/__tests__/index.ts';
-import { createTravelPurposeApi } from '../../../../features/travel-purposes/data/index.ts';
+import { createTravelPurposeApi } from '../../../../modules/travel/purposes/__tests__/index.ts';
 import { createTravelScheduleApi } from '../../../../features/travel-schedules/data/index.ts';
 import { createNotificationApi } from '../../../../modules/user/notifications/__tests__/index.ts';
 

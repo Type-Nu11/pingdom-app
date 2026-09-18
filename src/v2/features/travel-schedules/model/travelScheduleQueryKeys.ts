@@ -1,4 +1,4 @@
-import { userQueryKeys } from '../../travel-purposes/model/travelPurposeQueryKeys';
+import { userQueryKeys } from '../../../modules/travel';
 
 export const travelScheduleQueryKeys = {
   all: [...userQueryKeys.me(), 'travel-schedules'] as const,

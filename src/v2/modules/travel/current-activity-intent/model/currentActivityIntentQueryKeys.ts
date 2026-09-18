@@ -1,7 +1,7 @@
 import {
   recommendationQueryKeys,
   userQueryKeys,
-} from '../../travel-purposes/model/travelPurposeQueryKeys';
+} from '../../purposes/model/travelPurposeQueryKeys';
 
 export { recommendationQueryKeys, userQueryKeys };
 

@@ -1,7 +1,7 @@
 import type { PlaceRecommendationsParams } from '../model/placeExploration.types';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { recommendationQueryKeys } from '../../../../features/travel-purposes/data';
+import { recommendationQueryKeys } from '../../../travel';
 import {
   createPlaceRecommendationsQueryOptions,
 } from './usePlaceExploration';

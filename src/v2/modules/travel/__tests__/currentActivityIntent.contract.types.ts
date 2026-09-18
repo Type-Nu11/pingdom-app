@@ -1,8 +1,8 @@
-import type { components, operations } from '../generated/currentActivityIntent';
+import type { components, operations } from '../../../shared/api/generated/currentActivityIntent';
 import type {
   CurrentActivityIntent,
   ReplaceCurrentActivityIntentBody,
-} from '../../../features/current-activity-intent/model/currentActivityIntent.types';
+} from '../current-activity-intent/model/currentActivityIntent.types';
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends

@@ -1,4 +1,4 @@
-import { apiClient, type ApiClient } from '../../../shared/api';
+import { apiClient, type ApiClient } from '../../../../shared/api';
 import {
   validateReplaceTravelPurposesBody,
   type ReplaceTravelPurposesBody,

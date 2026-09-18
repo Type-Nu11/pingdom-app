@@ -2,7 +2,7 @@ import type {
   ApiSchema,
   OperationRequestBody,
   OperationResponse,
-} from '../../../shared/api';
+} from '../../../../shared/api';
 
 export type TravelPurpose = ApiSchema<'TravelPurpose'>;
 export type ReplaceTravelPurposesBody = OperationRequestBody<'replaceTravelPurposes'>;

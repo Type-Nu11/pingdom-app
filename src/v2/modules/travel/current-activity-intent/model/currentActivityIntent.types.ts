@@ -1,4 +1,4 @@
-import type { components, operations } from '../../../shared/api/generated/currentActivityIntent';
+import type { components, operations } from '../../../../shared/api/generated/currentActivityIntent';
 
 export type ActivityIntent = NonNullable<
   components['schemas']['CurrentActivityIntentResponse']['intent']
