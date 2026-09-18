@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import type { ServerTravelDate } from '../../../../../../features/onboarding-preferences/calendar';
-import { buildCalendarDays, formatAccessibleTravelDate, formatCalendarMonth, shiftCalendarMonth, type CalendarDay, type CalendarMonth } from '../../../../../../features/onboarding-preferences/calendar';
+import type { ServerTravelDate } from '../../../../../travel/calendar';
+import { buildCalendarDays, formatAccessibleTravelDate, formatCalendarMonth, shiftCalendarMonth, type CalendarDay, type CalendarMonth } from '../../../../../travel/calendar';
 import ChevronIcon from '../../../../../../shared/assets/icons/chevron-right-20.svg';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;

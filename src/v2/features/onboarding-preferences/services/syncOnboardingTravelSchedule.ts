@@ -1,4 +1,4 @@
-import { travelScheduleApi } from '../../travel-schedules';
+import { travelScheduleApi } from '../../../modules/travel/schedules';
 import {
   parseTravelDateRange,
   toCreateTravelScheduleBody,

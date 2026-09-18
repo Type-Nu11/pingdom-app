@@ -1,9 +1,9 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../../../shared/testing/testProviders';
-import { buildCalendarDays } from '../../../../../../../features/onboarding-preferences/calendar';
-import { isServerTravelDate, type ServerTravelDate } from '../../../../../../../features/onboarding-preferences/calendar';
+import { renderWithProviders } from '../../../../../../../app/testing/testProviders';
+import { buildCalendarDays } from '../../../../../../travel/calendar';
+import { isServerTravelDate, type ServerTravelDate } from '../../../../../../travel/calendar';
 import TravelCalendar, { getCalendarHeight, getRangeCellState } from '../TravelCalendar';
 
 describe('TravelCalendar layout', () => {

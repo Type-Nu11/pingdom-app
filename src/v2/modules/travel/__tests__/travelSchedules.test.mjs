@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { createTravelScheduleApi } from '../../../features/travel-schedules/api/travelScheduleApi.ts';
+import { createTravelScheduleApi } from '../schedules/api/travelScheduleApi.ts';
 
 test('travel schedule OpenAPI uses date-only strings without a timezone field', async () => {
   const contractUrl = new URL('../../../../../docs/api/mvp.openapi.json', import.meta.url);

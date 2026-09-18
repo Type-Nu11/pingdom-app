@@ -1,6 +1,5 @@
 import { placeExplorationMockHandlers } from './place-exploration/handlers';
 import { placeMenuMockHandlers } from './place-menus/handlers';
-import { travelScheduleMockHandlers } from './travel-schedules/handlers';
 import { visitorVerificationReportMockHandlers } from './visitor-verification-reports/handlers';
 import { visitVerificationMockHandlers } from './visit-verification/handlers';
 
@@ -8,7 +7,6 @@ import { visitVerificationMockHandlers } from './visit-verification/handlers';
 export const featureMockHandlers = [
   ...placeExplorationMockHandlers,
   ...placeMenuMockHandlers,
-  ...travelScheduleMockHandlers,
   ...visitorVerificationReportMockHandlers,
   ...visitVerificationMockHandlers,
 ];

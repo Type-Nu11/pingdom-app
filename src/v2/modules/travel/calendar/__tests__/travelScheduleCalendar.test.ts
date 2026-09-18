@@ -4,11 +4,11 @@ import {
   getTravelScheduleSelectionState,
   selectTravelDate,
   shiftCalendarMonth,
-} from '../model/travelScheduleCalendar';
+} from '../travelScheduleCalendar';
 import {
   isServerTravelDate,
   type ServerTravelDate,
-} from '..';
+} from '../travelDate';
 
 function serverDate(value: string): ServerTravelDate {
   if (!isServerTravelDate(value)) {

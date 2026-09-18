@@ -1,4 +1,4 @@
-import type { ApiSchema } from '../../../contract';
+import type { ApiSchema } from '../../../../shared/api/contract';
 
 export const travelScheduleFixture = {
   endDate: '2026-08-14',

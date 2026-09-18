@@ -20,7 +20,7 @@ import {
   getTravelScheduleSelectionState,
   selectTravelDate,
   shiftCalendarMonth,
-} from '../model/travelScheduleCalendar';
+} from '../../../modules/travel/calendar';
 
 const DEFAULT_CURRENT_STEP = 7;
 const DEFAULT_TOTAL_STEPS = 7;

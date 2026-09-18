@@ -11,7 +11,7 @@ import { offerCouponApi } from '../../../../booking/offers-coupons/__tests__';
 import { placeDetailApi } from '../../../../place/detail';
 import { placeExplorationApi } from '../../../../place/exploration';
 import { reservationApi } from '../../../../booking/reservations/__tests__';
-import { travelScheduleApi } from '../../../../../features/travel-schedules';
+import { travelScheduleApi } from '../../../../travel/schedules';
 import MyPageScreen from '../screens/MyPageScreen';
 
 const PROFILE: Profile = {

@@ -1,6 +1,6 @@
-import type { TravelSchedule } from '../../../../../../features/travel-schedules';
+import type { TravelSchedule } from '../../../../../travel/schedules';
 import { ApiError } from '../../../../../../shared/api/ApiError';
-import { isServerTravelDate, type ServerTravelDate } from '../../../../../../features/onboarding-preferences/calendar';
+import { isServerTravelDate, type ServerTravelDate } from '../../../../../travel/calendar';
 
 export type FeaturedTravelSchedule = Readonly<{
   endDate: ServerTravelDate;

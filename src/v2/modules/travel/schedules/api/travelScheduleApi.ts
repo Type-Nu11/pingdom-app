@@ -3,7 +3,7 @@ import {
   type ApiClient,
   type OperationRequestBody,
   type OperationResponse,
-} from '../../../shared/api';
+} from '../../../../shared/api';
 
 export type CreateTravelScheduleBody = OperationRequestBody<'createTravelSchedule'>;
 export type UpdateTravelScheduleBody = OperationRequestBody<'updateTravelSchedule'>;

@@ -1,4 +1,4 @@
-import { isServerTravelDate, type ServerTravelDate } from '../../../../../../../features/onboarding-preferences/calendar';
+import { isServerTravelDate, type ServerTravelDate } from '../../../../../../travel/calendar';
 import { selectFeaturedTravelSchedule } from '../myPageTravel';
 
 describe('selectFeaturedTravelSchedule', () => {

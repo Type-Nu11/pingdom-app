@@ -5,7 +5,7 @@ import {
   type TravelDateInput,
   type TravelPurposeSelection,
 } from '../model/onboardingPreference';
-import { getTravelScheduleSelectionState } from '../model/travelScheduleCalendar';
+import { getTravelScheduleSelectionState } from '../../../modules/travel/calendar';
 
 export const ONBOARDING_PREFERENCE_STORAGE_KEY =
   '@pingdom/v2/onboarding-preferences:v1';

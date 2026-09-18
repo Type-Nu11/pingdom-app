@@ -8,14 +8,14 @@ import styled from 'styled-components/native';
 
 import { useMyReviews, useProfile } from '../../hooks/useProfile';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
-import { getInitialCalendarMonth, getTravelScheduleSelectionState, selectTravelDate } from '../../../../../features/onboarding-preferences/calendar';
-import type { TravelDateInput } from '../../../../../features/onboarding-preferences/calendar';
+import { getInitialCalendarMonth, getTravelScheduleSelectionState, selectTravelDate } from '../../../../travel/calendar';
+import type { TravelDateInput } from '../../../../travel/calendar';
 import { createPlaceDetailQueryOptions } from '../../../../place/detail';
 import { usePlaceExplorationMediaList } from '../../../../place/exploration';
 import { useCheckIns } from '../../../../place/check-ins';
 import { useCoupons } from '../../../../booking/offers-coupons';
 import { useReservations } from '../../../../booking/reservations';
-import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../../features/travel-schedules';
+import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../travel/schedules';
 import { ErrorState, LoadingState } from '../../../../../shared/components';
 import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../travel/components/TravelCalendar';

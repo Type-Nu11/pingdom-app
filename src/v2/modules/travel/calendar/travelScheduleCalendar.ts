@@ -4,7 +4,7 @@ import {
   type ServerTravelDate,
   type TravelDateInput,
   type TravelDateRange,
-} from './onboardingPreference';
+} from './travelDate';
 
 export type CalendarMonth = Readonly<{
   month: number;

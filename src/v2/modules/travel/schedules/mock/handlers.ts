@@ -1,5 +1,5 @@
-import type { ApiSchema } from '../../../contract';
-import type { MockHandler } from '../../handlers';
+import type { ApiSchema } from '../../../../shared/api/contract';
+import type { MockHandler } from '../../../../shared/api/mock/handlers';
 import { travelScheduleFixture, travelScheduleListFixture } from './fixtures';
 
 const TRAVEL_SCHEDULES_PATH = '/users/me/travel-schedules';

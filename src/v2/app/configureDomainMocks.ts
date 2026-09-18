@@ -1,4 +1,4 @@
-import { currentActivityIntentMockHandlers, travelPurposeMockHandlers } from '../modules/travel/mock';
+import { currentActivityIntentMockHandlers, travelPurposeMockHandlers, travelScheduleMockHandlers } from '../modules/travel/mock';
 import { bookingMockHandlers } from '../modules/booking/mock';
 import { accountMockHandlers, notificationMockHandlers, scoutProfileMockHandlers } from '../modules/user/mock';
 import { configureDomainMockHandlers } from '../shared/api/mock/registry';
@@ -10,4 +10,5 @@ configureDomainMockHandlers([
   ...scoutProfileMockHandlers,
   ...currentActivityIntentMockHandlers,
   ...travelPurposeMockHandlers,
+  ...travelScheduleMockHandlers,
 ]);

@@ -8,7 +8,7 @@ import {
 import {
   recommendationQueryKeys,
   userQueryKeys,
-} from '../../../modules/travel';
+} from '../../purposes/model/travelPurposeQueryKeys';
 import {
   travelScheduleApi,
   type CreateTravelScheduleBody,

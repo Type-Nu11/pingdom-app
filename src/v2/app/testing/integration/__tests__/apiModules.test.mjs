@@ -9,7 +9,7 @@ import { createPlaceDetailApi } from '../../../../modules/place/detail/data/inde
 import { createPlaceListApi } from '../../../../modules/place/search/data/index.ts';
 import { createReservationApi } from '../../../../modules/booking/reservations/__tests__/index.ts';
 import { createTravelPurposeApi } from '../../../../modules/travel/purposes/__tests__/index.ts';
-import { createTravelScheduleApi } from '../../../../features/travel-schedules/data/index.ts';
+import { createTravelScheduleApi } from '../../../../modules/travel/schedules/__tests__/index.ts';
 import { createNotificationApi } from '../../../../modules/user/notifications/__tests__/index.ts';
 
 test('API modules keep operation paths, params, bodies, and documented response mapping', async () => {
