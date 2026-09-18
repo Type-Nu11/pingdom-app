@@ -1,4 +1,3 @@
-import { accountMockHandlers } from './account/handlers';
 import { currentActivityIntentMockHandlers } from './current-activity-intent/handlers';
 import { placeExplorationMockHandlers } from './place-exploration/handlers';
 import { placeMenuMockHandlers } from './place-menus/handlers';
@@ -13,7 +12,6 @@ import { visitVerificationMockHandlers } from './visit-verification/handlers';
 
 /** Register each feature's handlers here; feature fixtures stay beside their handlers. */
 export const featureMockHandlers = [
-  ...accountMockHandlers,
   ...currentActivityIntentMockHandlers,
   ...notificationMockHandlers,
   ...reservationMockHandlers,

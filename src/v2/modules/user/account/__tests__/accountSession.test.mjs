@@ -2,35 +2,35 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-import { createAccountApi } from '../../../features/account/api/accountApi.ts';
+import { createAccountApi } from '../api/accountApi.ts';
 import {
   createGoogleLinkMutationOptions,
   createGoogleUnlinkMutationOptions,
   createUserDataExportQueryOptions,
   refreshOAuthAccountQueries,
   shouldRefreshAfterOAuthReturn,
-} from '../../../features/account/hooks/useAccount.ts';
+} from '../hooks/useAccount.ts';
 import {
   accountUserQueryKeys,
   oauthAccountQueryKeys,
-} from '../../../features/account/model/accountQueryKeys.ts';
+} from '../model/accountQueryKeys.ts';
 import {
   openGoogleAuthorization,
   resolveGoogleAuthorizationUrl,
-} from '../../../features/account/services/googleOAuth.ts';
+} from '../services/googleOAuth.ts';
 import {
   createUserDataExportFileName,
   serializeUserDataExport,
   writeUserDataExport,
   writeUserDataExportForPlatform,
-} from '../../../features/account/services/userDataExport.ts';
-import { createAuthApi } from '../../../features/auth/api/authApi.ts';
+} from '../services/userDataExport.ts';
+import { createAuthApi } from '../auth/api/authApi.ts';
 import {
   createEmailResendMutationOptions,
   createPasswordResetConfirmMutationOptions,
   createPasswordResetRequestMutationOptions,
   logoutAndClearSession,
-} from '../../../features/auth/hooks/useAccountAuth.ts';
+} from '../auth/hooks/useAccountAuth.ts';
 
 test('account and auth API modules keep the seven server operation contracts', async () => {
   const calls = [];

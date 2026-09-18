@@ -1,4 +1,4 @@
-import { env } from '../../../shared/config';
+import { env } from '../../../../shared/config';
 import type { GoogleLinkStartResponse } from '../model/account.types';
 
 export function resolveGoogleAuthorizationUrl(

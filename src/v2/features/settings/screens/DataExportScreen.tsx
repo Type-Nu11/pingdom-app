@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useDownloadUserDataExport } from '../../account/hooks/useAccount';
+import { useDownloadUserDataExport } from '../../../modules/user/account';
 import { SettingsList, SettingsRow, SettingsScreenLayout, SettingsSection, SettingsTopBar } from '../components/SettingsLayout';
 
 export default function DataExportScreen({ onBack }: { onBack: () => void }) {

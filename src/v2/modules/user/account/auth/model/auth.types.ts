@@ -1,6 +1,6 @@
 import type {
   AccountOperationRequestBody,
-} from '../../../shared/api';
+} from '../../../../../shared/api';
 
 export type PasswordResetRequest =
   AccountOperationRequestBody<'requestPasswordReset'>;

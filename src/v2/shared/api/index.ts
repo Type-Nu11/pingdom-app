@@ -110,3 +110,5 @@ export type {
   AccountOperations,
   AccountPaths,
 } from './accountContract';
+
+export { configureDomainMockHandlers } from './mock/registry';

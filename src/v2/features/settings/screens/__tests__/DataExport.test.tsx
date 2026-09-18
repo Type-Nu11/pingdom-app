@@ -2,8 +2,8 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { act, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
-import { accountApi } from '../../../account/api/accountApi';
-import * as writer from '../../../account/services/userDataExport';
+import { accountApi } from '../../../../modules/user/account';
+import { userDataExportWriter as writer } from '../../../../modules/user/account/__tests__';
 import DataExportScreen from '../DataExportScreen';
 
 beforeEach(() => {

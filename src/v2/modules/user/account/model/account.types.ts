@@ -1,4 +1,4 @@
-import type { AccountApiSchema } from '../../../shared/api';
+import type { AccountApiSchema } from '../../../../shared/api/accountContract';
 
 export type GoogleLinkStartResponse = AccountApiSchema<'OAuthAccountLinkStartResponse'>;
 export type GoogleUnlinkRequest = AccountApiSchema<'OAuthAccountDisconnectRequest'>;

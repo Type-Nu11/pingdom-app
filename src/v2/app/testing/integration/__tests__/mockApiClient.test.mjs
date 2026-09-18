@@ -1,3 +1,4 @@
+import '../../../configureDomainMocks.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
@@ -7,7 +8,7 @@ import {
   merchantPerformanceFixture,
   mockApiClient,
   setMockScenario,
-} from '../index.ts';
+} from '../../../../shared/api/index.ts';
 
 test('mock scenarios serve contract fixtures and reproduce empty and error states', async () => {
   setMockScenario('success');

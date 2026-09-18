@@ -2,7 +2,7 @@ import type {
   GoogleAccountResponse,
   GoogleLinkStartResponse,
   UserDataExport,
-} from '../../../../../features/account/model/account.types';
+} from '../model/account.types';
 
 export const googleLinkStartFixture: GoogleLinkStartResponse = {
   authorizationUrl: '/oauth2/authorization/google',

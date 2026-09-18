@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
-import { clearTokenSession, type TokenSession } from '../../../shared/auth/tokenSession';
+import { clearTokenSession, type TokenSession } from '../../../../../shared/auth/tokenSession';
 import { authApi } from '../api/authApi';
 import type {
   EmailResendRequest,

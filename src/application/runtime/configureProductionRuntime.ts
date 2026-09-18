@@ -1,3 +1,4 @@
+import '../../v2/app/configureDomainMocks';
 import { configureBeforeLogout, logout } from '../../app/store/authStore';
 import { api } from '../../shared/api/apiClient';
 import { getCachedAccessToken } from '../../shared/api/authTokens';
