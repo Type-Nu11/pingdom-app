@@ -32,6 +32,11 @@ export function inspect(root) {
     if (owner(target) && owner(source) !== owner(target) && !publicIndex(target)) {
       add(edge, 'domain-public-api', `Import ${owner(target)}/index.ts or a subfeature public index.ts.`);
     }
+    const userSubmodule = (file) => file?.match(/^src\/v2\/modules\/user\/([^/]+)\//)?.[1];
+    if (userSubmodule(source) && userSubmodule(target)
+      && userSubmodule(source) !== userSubmodule(target) && !publicIndex(target)) {
+      add(edge, 'user-submodule-public-api', 'Consume the sibling User submodule through its named public index.');
+    }
     if (edge.exportAll && owner(source) && publicIndex(source)) add(edge, 'public-no-export-star', 'Explicitly export only the supported public API.');
     if ((/\/screens\//.test(source) || /Screen\.[jt]sx?$/.test(source)) && api(target)) add(edge, 'screen-no-api', 'Access APIs through domain hooks.');
     // Shared API exports include transport and contracts. Ban the whole surface in hooks,

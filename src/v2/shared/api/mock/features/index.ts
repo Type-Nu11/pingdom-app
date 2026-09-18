@@ -8,7 +8,7 @@ import { travelScheduleMockHandlers } from './travel-schedules/handlers';
 import { visitorVerificationReportMockHandlers } from './visitor-verification-reports/handlers';
 import { visitVerificationMockHandlers } from './visit-verification/handlers';
 
-/** Register each feature's handlers here; feature fixtures stay beside their handlers. */
+/** Remaining flat-feature handlers (#360). App injects migrated domain handlers via the registry. */
 export const featureMockHandlers = [
   ...currentActivityIntentMockHandlers,
   ...reservationMockHandlers,
