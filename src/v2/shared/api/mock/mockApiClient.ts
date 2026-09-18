@@ -1,3 +1,4 @@
+import { conversionBatchResultFixture } from '../../analytics/conversion/mock/fixtures';
 import { env, type MockScenario } from '../../config/env';
 import { ApiError } from '../ApiError';
 import type { ApiClient, GetRequestOptions, MutationRequestOptions } from '../transport';
@@ -6,7 +7,6 @@ import { getDomainMockHandlers } from './registry';
 import {
   checkInFixture,
   checkInPageFixture,
-  conversionBatchResultFixture,
   emptyPageFixtures,
   placeClaimFixture,
   placeClaimPageFixture,

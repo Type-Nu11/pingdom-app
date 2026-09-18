@@ -1,4 +1,4 @@
-import { ApiError } from '../../../shared/api';
+import { ApiError } from '../../../api';
 
 const MAX_CONVERSION_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 500;

@@ -3,7 +3,7 @@ import {
   type ApiClient,
   type OperationRequestBody,
   type OperationResponse,
-} from '../../../shared/api';
+} from '../../../api';
 
 export type ConversionEventBatchBody = OperationRequestBody<'ingestConversionEventBatch'>;
 export type ConversionEventBatchResult = OperationResponse<'ingestConversionEventBatch', 202>;

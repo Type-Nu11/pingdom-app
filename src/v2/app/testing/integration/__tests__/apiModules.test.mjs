@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { createCheckInApi } from '../../../../modules/place/check-ins/data/index.ts';
-import { createConversionApi } from '../../../../features/conversion/data/index.ts';
+import { createConversionApi } from '../../../../shared/analytics/conversion/data/index.ts';
 import { createOfferCouponApi } from '../../../../modules/booking/offers-coupons/__tests__/index.ts';
 import { createPlaceClaimApi } from '../../../../modules/place/claims/data/index.ts';
 import { createPlaceDetailApi } from '../../../../modules/place/detail/data/index.ts';

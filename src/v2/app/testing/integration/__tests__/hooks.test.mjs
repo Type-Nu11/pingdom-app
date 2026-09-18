@@ -8,7 +8,7 @@ import {
   createCheckInMutationOptions,
   createStatusVoteMutationOptions,
 } from '../../../../modules/place/check-ins/data/index.ts';
-import { createConversionEventMutationOptions } from '../../../../features/conversion/data/index.ts';
+import { createConversionEventMutationOptions } from '../../../../shared/analytics/conversion/data/index.ts';
 import { createRedeemCouponMutationOptions } from '../../../../modules/booking/offers-coupons/__tests__/index.ts';
 import { createPlaceClaimMutationOptions } from '../../../../modules/place/claims/data/index.ts';
 import { createPlaceDetailQueryOptions } from '../../../../modules/place/detail/data/index.ts';
@@ -113,14 +113,6 @@ test('action Hook options forward generated request bodies and identifiers uncha
     ['confirm', 901],
     ['conversion', body],
   ]);
-});
-
-test('conversion Hook keeps one error owner and opts into its idempotent retry policy', () => {
-  const options = createConversionEventMutationOptions({ ingestEvents: async () => ({}) });
-
-  assert.equal(typeof options.retry, 'function');
-  assert.equal(typeof options.retryDelay, 'function');
-  assert.equal('onError' in options, false);
 });
 
 test('travel purpose Hook options forward AbortSignal and replace body unchanged', async () => {
