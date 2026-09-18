@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../../app/testing/testProviders';
 import CouponQrCode from '../CouponQrCode';
 
 jest.mock('react-native-qrcode-svg', () => {

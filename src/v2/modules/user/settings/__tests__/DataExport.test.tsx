@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert } from 'react-native';
 import { act, screen } from '@testing-library/react-native';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { accountApi } from '../../account';
 import { userDataExportWriter as writer } from '../../account/__tests__';
 import DataExportScreen from '../screens/DataExportScreen';

@@ -3,7 +3,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
 import { usePlaceAutocomplete } from '../../../exploration';
-import { renderWithProviders } from '../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { useKakaoLocalSearch } from '../../hooks/useKakaoLocalSearch';
 import { usePlaceRegistrantUsernames } from '../../../detail/hooks/usePlaceRegistrantUsernames';
 import { useRecentSearchStore } from '../../store/recentSearchStore';

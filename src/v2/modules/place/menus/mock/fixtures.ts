@@ -1,4 +1,4 @@
-import type { PlaceMenusOperationResponse } from '../../../placeMenusContract';
+import type { PlaceMenusOperationResponse } from '../../../../shared/api/placeMenusContract';
 
 type PlaceMenus = PlaceMenusOperationResponse<'list_5', 200>;
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { ApiError } from '../../../../../shared/api/ApiError';
 import { offerCouponApi } from '../../api/offerCouponApi';
 import PlaceCouponCta from '../PlaceCouponCta';

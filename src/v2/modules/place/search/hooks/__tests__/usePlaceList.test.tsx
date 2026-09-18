@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 
-import { createTestWrapper } from '../../../../../shared/testing/testProviders';
+import { createTestWrapper } from '../../../../../app/testing/testProviders';
 import { placeListApi } from '../../api/placeListApi';
 import { emptyPlaceListPage } from '../../testing/placeListFixtures';
 import {

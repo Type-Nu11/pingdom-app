@@ -1,8 +1,8 @@
 import type {
   VisitorVerificationReportCorrectionRequest,
   VisitorVerificationReportCreateRequest,
-} from '../../../generated/visitorVerificationReports';
-import type { MockHandler } from '../../handlers';
+} from '../../../../shared/api/generated/visitorVerificationReports';
+import type { MockHandler } from '../../../../shared/api/mock/handlers';
 import {
   visitorVerificationReportCorrectionFixture,
   visitorVerificationReportCorrectionPageFixture,

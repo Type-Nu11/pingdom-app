@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { Animated, Text, type GestureResponderHandlers } from 'react-native';
 
-import { renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
 import { runTimingMotion } from '../../../../../../shared/motion';
 import type {

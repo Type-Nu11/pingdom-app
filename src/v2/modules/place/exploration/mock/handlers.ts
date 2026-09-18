@@ -1,4 +1,4 @@
-import type { MockHandler } from '../../handlers';
+import type { MockHandler } from '../../../../shared/api/mock/handlers';
 import {
   emptyPlaceExplorationFixtures,
   explorationMediaFixture,

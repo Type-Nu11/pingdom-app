@@ -3,7 +3,7 @@ import type {
   MyVisitorVerificationReportCorrection,
   MyVisitorVerificationReportCorrectionPage,
   MyVisitorVerificationReportPage,
-} from '../../../generated/visitorVerificationReports';
+} from '../../../../shared/api/generated/visitorVerificationReports';
 
 export const visitorVerificationReportFixture = {
   id: 172,

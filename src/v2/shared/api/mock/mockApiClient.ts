@@ -2,7 +2,6 @@ import { conversionBatchResultFixture } from '../../analytics/conversion/mock/fi
 import { env, type MockScenario } from '../../config/env';
 import { ApiError } from '../ApiError';
 import type { ApiClient, GetRequestOptions, MutationRequestOptions } from '../transport';
-import { featureMockHandlers } from './features';
 import { getDomainMockHandlers } from './registry';
 import {
   checkInFixture,
@@ -121,7 +120,7 @@ async function resolve<T>(
   const error = scenarioError(path);
   if (error) throw error;
 
-  const featureResult = resolveMockHandler([...getDomainMockHandlers(), ...featureMockHandlers], {
+  const featureResult = resolveMockHandler(getDomainMockHandlers(), {
     body,
     method,
     path,

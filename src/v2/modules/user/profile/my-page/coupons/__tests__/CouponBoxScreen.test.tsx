@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { createTestI18n, renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { createTestI18n, renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { registerOfferCouponResources } from '../../../../../booking/offers-coupons/__tests__';
 import { ApiError } from '../../../../../../shared/api';
 import { offerCouponApi, type CouponPage } from '../../../../../booking/offers-coupons/__tests__';

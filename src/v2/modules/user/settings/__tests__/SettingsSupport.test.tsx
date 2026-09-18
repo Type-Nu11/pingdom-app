@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { screen } from '@testing-library/react-native';
-import { renderWithProviders, createTestI18n } from '../../../../shared/testing/testProviders';
+import { renderWithProviders, createTestI18n } from '../../../../app/testing/testProviders';
 import { SettingsRow, SettingsScreenLayout } from '../components/SettingsLayout';
 import SettingsDetailScreen from '../screens/SettingsDetailScreen';
 import SettingsDetailPendingScreen from '../screens/SettingsDetailPendingScreen';

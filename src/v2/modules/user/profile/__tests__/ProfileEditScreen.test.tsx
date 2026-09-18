@@ -4,7 +4,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { ApiError } from '../../../../shared/api';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { profileApi } from '../api/profileApi';
 import type { Profile } from '../model/profile.types';
 import ProfileEditScreen from '../screens/ProfileEditScreen';

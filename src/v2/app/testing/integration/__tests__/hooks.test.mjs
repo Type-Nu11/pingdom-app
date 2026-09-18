@@ -2,8 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 
-import { ApiError } from '../../../../shared/api/ApiError.ts';
-
 import {
   createCheckInMutationOptions,
   createStatusVoteMutationOptions,
@@ -27,17 +25,6 @@ import {
   travelPurposeQueryKeys,
   userQueryKeys,
 } from '../../../../modules/travel/purposes/__tests__/index.ts';
-import {
-  validateReplaceTravelPurposesBody,
-} from '../../../../modules/travel/purposes/__tests__/index.ts';
-import {
-  createCancelTravelScheduleMutationOptions,
-  createTravelScheduleMutationOptions,
-  createTravelSchedulesQueryOptions,
-  createUpdateTravelScheduleMutationOptions,
-  invalidateTravelScheduleDependencies,
-} from '../../../../modules/travel/schedules/__tests__/index.ts';
-import { travelScheduleQueryKeys } from '../../../../modules/travel/schedules/__tests__/index.ts';
 
 test('place query Hook options pass API responses through without mapping', async () => {
   const listResponse = { places: [] };

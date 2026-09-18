@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { profileApi } from '../../profile/__tests__';
 import { notificationApi } from '../../notifications/__tests__';
 import { SETTINGS_DETAIL_IDS } from '../model/settings.types';

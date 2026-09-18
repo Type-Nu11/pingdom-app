@@ -248,3 +248,47 @@ test('Booking migration has no #359 exceptions', () => {
   const exceptions = JSON.parse(fs.readFileSync(new URL('../v2-boundaries/exceptions.json', import.meta.url), 'utf8'));
   assert.equal(exceptions.filter(e => e.issue === '#359').length, 0);
 });
+
+for (const adapter of ['check-ins/api/checkInApi.ts', 'map/utils/mapBack.ts', 'onboarding-entry/model/onboardingEntry.ts']) {
+  test(`GREEN: frozen test adapter ${adapter} stays available to V1 tests`, t => {
+    const result = fixture(t, {
+      'src/app/navigation/__tests__/example.test.ts': `import '../../../v2/features/${adapter}';`,
+      [`src/v2/features/${adapter}`]: 'export {};',
+    });
+    assert.deepEqual(result.violations, []);
+  });
+  test(`RED: frozen test adapter ${adapter} cannot enter production`, t => {
+    const result = fixture(t, {
+      'src/v2/app/example.ts': `import '../features/${adapter}';`,
+      [`src/v2/features/${adapter}`]: 'export {};',
+    });
+    assert.ok(result.violations.some(v => v.rule === 'production-no-test'));
+  });
+}
+
+test('Remaining migration: no #360 exceptions, SCCs, implementations or V2 compatibility consumers', async () => {
+  const { default: ts } = await import('typescript');
+  const manifest = JSON.parse(fs.readFileSync('scripts/v2-boundaries/exceptions.json', 'utf8'));
+  assert.equal(manifest.filter(e => e.issue === '#360').length, 0);
+  assert.equal(manifest.filter(e => e.issue === '#362').length, 15);
+  assert.equal(manifest.reduce((sum, e) => sum + e.maxCount, 0), 15);
+  const result = inspect(process.cwd());
+  assert.deepEqual(result.cycles, []);
+  assert.deepEqual(result.violations.filter(v => !['application-bridge', 'v2-no-legacy', 'v2-no-escape', 'no-upward-composition'].includes(v.rule)), []);
+  for (const file of result.nodes.keys()) {
+    if (!file.startsWith('src/v2/features/')) continue;
+    const source = fs.readFileSync(file, 'utf8');
+    const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
+    assert.ok(source.includes('#362'), `${file}: missing removal owner`);
+    assert.ok(ast.statements.length > 0, `${file}: empty compatibility file`);
+    assert.ok(ast.statements.every(n => ts.isExportDeclaration(n) && n.moduleSpecifier
+      && n.exportClause && ts.isNamedExports(n.exportClause)), `${file}: only named re-exports are permitted`);
+    assert.deepEqual(result.edges.filter(e => e.target === file
+      && (e.source.startsWith('src/v2/') || e.source.startsWith('src/application/'))), [], `${file}: migrate V2 consumers`);
+  }
+  for (const module of ['onboarding', 'travel', 'merchant', 'voice-assistant']) {
+    assert.ok(result.nodes.has(`src/v2/modules/${module}/index.ts`));
+  }
+  assert.equal(result.nodes.has('src/v2/modules/home/index.ts'), false);
+  assert.equal(result.nodes.has('src/v2/modules/community/index.ts'), false);
+});

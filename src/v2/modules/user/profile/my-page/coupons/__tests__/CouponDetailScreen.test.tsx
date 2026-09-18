@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
 
 import { ApiError } from '../../../../../../shared/api';
-import { renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { offerCouponApi, type Coupon } from '../../../../../booking/offers-coupons/__tests__';
 import { placeDetailApi } from '../../../../../place/detail';
 import CouponDetailContainer from '../screens/CouponDetailContainer';

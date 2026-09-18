@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { createTestWrapper } from '../../../../../shared/testing/testProviders';
+import { createTestWrapper } from '../../../../../app/testing/testProviders';
 import { notificationApi } from '../../api/notificationApi';
 import { notificationSettingsQueryKeys, useUpdateNotificationSettings } from '../useNotificationSettings';
 

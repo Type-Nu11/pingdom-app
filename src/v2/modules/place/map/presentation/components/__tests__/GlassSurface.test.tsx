@@ -5,7 +5,7 @@ import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-ef
 
 import GlassSurface from '../GlassSurface';
 import MapGlassBackdrop from '../MapGlassBackdrop';
-import { renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 
 jest.mock('expo-glass-effect', () => {
   const React = require('react');

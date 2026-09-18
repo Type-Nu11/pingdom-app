@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppState } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { ApiError } from '../../../../shared/api/ApiError';
 import { notificationApi } from '../api/notificationApi';
 import type { NotificationPermissionAdapter, NotificationPermissionStatus } from '../services/notificationPermission';

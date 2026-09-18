@@ -5,7 +5,7 @@ import { ApiError } from '../../../../shared/api';
 import {
   createTestI18n,
   renderWithProviders,
-} from '../../../../shared/testing/testProviders';
+} from '../../../../app/testing/testProviders';
 import { registerReservationResources } from '../i18n/reservationResources';
 import CreateReservationScreen from '../screens/CreateReservationScreen';
 import ReservationDetailScreen from '../screens/ReservationDetailScreen';

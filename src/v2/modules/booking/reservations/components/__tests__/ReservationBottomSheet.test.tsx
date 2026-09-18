@@ -6,7 +6,7 @@ import { ThemeProvider } from 'styled-components/native';
 
 import { useReservations } from '../..';
 import { registerReservationResources } from '../../i18n/reservationResources';
-import { createTestI18n } from '../../../../../shared/testing/testProviders';
+import { createTestI18n } from '../../../../../app/testing/testProviders';
 import { theme } from '../../../../../shared/theme';
 import ReservationBottomSheet from '../ReservationBottomSheet';
 

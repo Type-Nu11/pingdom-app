@@ -147,8 +147,6 @@ export const placeClaimPageFixture = {
   hasNext: false,
 } satisfies ApiSchema<'PlaceClaimPage'>;
 
-
-
 export const emptyPageFixtures = {
   checkIns: { ...checkInPageFixture, checkIns: [], totalCount: 0, totalPages: 0 },
   claims: { ...placeClaimPageFixture, claims: [], totalCount: 0, totalPages: 0 },

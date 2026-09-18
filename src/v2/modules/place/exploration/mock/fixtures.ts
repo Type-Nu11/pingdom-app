@@ -1,4 +1,4 @@
-import type { PlaceExplorationSchema } from '../../../placeExplorationContract';
+import type { PlaceExplorationSchema } from '../../../../shared/api/placeExplorationContract';
 
 export const placeAutocompleteFixture = {
   keyword: 'PingDom',

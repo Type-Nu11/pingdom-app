@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { profileApi } from '../../api/profileApi';
 import type { Profile } from '../../model/profile.types';
 import { bookmarkApi } from '../api/bookmarkApi';

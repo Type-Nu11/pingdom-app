@@ -3,7 +3,7 @@ import React from 'react';
 
 import { ApiError } from '../../../../shared/api';
 import { registerVisitVerificationResources } from '../i18n/visitVerificationResources';
-import { createTestI18n, renderWithProviders } from '../../../../shared/testing/testProviders';
+import { createTestI18n, renderWithProviders } from '../../../../app/testing/testProviders';
 import { lightTheme } from '../../../../shared/theme';
 import VisitVerificationMapCta from '../components/VisitVerificationMapCta';
 import VisitVerificationPlacesScreen from '../screens/VisitVerificationPlacesScreen';

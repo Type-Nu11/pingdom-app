@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { profileApi } from '../../profile/__tests__';
 import type { Profile } from '../../profile';
 import { notificationApi } from '../../notifications/__tests__';

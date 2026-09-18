@@ -2,7 +2,7 @@ import React from 'react';
 import { Animated, processColor } from 'react-native';
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import MapSheetBottomNavigation, {
   getMapSheetNavigationBottom,
   getMapSheetTabSurfaceColor,

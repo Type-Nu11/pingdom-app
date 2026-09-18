@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 
-import { createTestI18n, renderWithProviders } from '../../../../../shared/testing/testProviders';
+import { createTestI18n, renderWithProviders } from '../../../../../app/testing/testProviders';
 import { ApiError } from '../../../../../shared/api';
 import { registerOfferCouponResources } from '../../i18n/offerCouponResources';
 import OfferCouponErrorState from '../OfferCouponErrorState';

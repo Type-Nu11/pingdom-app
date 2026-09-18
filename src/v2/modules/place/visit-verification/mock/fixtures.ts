@@ -1,4 +1,4 @@
-import type { VisitVerificationSchema } from '../../../visitVerificationContract';
+import type { VisitVerificationSchema } from '../../../../shared/api/visitVerificationContract';
 
 export type VisitVerificationSessionFixture = VisitVerificationSchema<'VisitVerificationSessionResponse'>;
 

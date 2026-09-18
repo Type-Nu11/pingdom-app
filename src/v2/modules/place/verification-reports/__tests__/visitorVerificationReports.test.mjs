@@ -1,3 +1,8 @@
+import { configureDomainMockHandlers } from '../../../../shared/api/index.ts';
+import { visitorVerificationReportMockHandlers } from '../mock/handlers.ts';
+
+configureDomainMockHandlers(visitorVerificationReportMockHandlers);
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
@@ -13,7 +18,7 @@ import {
 } from '../hooks/useVisitorVerificationReports.ts';
 import { visitorVerificationReportQueryKeys } from '../model/visitorVerificationReportQueryKeys.ts';
 import { ApiError, createApiClient } from '../../../../shared/api/index.ts';
-import { mockApiClient, setMockScenario } from '../../../../shared/api/mock/mockApiClient.ts';
+import { mockApiClient, setMockScenario } from '../../../../shared/api/index.ts';
 
 test('visitor verification report API preserves all live OpenAPI paths, params, bodies, and signals', async () => {
   const calls = [];
