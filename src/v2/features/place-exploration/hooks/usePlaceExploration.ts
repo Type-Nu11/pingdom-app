@@ -1,6 +1,6 @@
 import { useMutation, useQueries, useQuery } from '@tanstack/react-query';
 
-import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
+import { placeQueryKeys } from '../../../modules/place/core';
 import { placeExplorationApi } from '../api/placeExplorationApi';
 import type {
   MapLinkConversionVariables,
@@ -18,7 +18,7 @@ import {
 
 type PlaceExplorationApi = typeof placeExplorationApi;
 
-export { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
+export { placeQueryKeys } from '../../../modules/place/core';
 
 export function createPlaceListQueryOptions(
   params: PlaceListParams,

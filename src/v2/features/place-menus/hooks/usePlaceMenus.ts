@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
+import { placeQueryKeys } from '../../../modules/place/core';
 import { placeMenuApi } from '../api/placeMenuApi';
 
 type PlaceMenuApi = Pick<typeof placeMenuApi, 'listPlaceMenus'>;

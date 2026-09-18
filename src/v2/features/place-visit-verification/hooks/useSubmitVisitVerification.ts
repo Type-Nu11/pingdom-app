@@ -10,7 +10,7 @@ import { visitVerificationSessionQueryKeys } from '../model/visitVerificationSes
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { myReviewsQueryKeys } from '../../my-page/model/profileQueryKeys';
-import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
+import { placeQueryKeys } from '../../../modules/place/core';
 import {
   visitVerificationApi,
   type PlaceReview,

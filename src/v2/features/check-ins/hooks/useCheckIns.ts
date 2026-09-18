@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
+import { placeQueryKeys } from '../../../modules/place/core';
 import {
   checkInApi,
   type CreateCheckInBody,

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { placeQueryKeys } from '../../../shared/query/placeQueryKeys';
+import { placeQueryKeys } from '../../../modules/place/core';
 import { placeDetailApi } from '../api/placeDetailApi';
 
 type PlaceDetailApi = Pick<typeof placeDetailApi, 'getPlaceDetail'>;
