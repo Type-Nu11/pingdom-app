@@ -1,5 +1,4 @@
 import type { ApiSchema } from '../contract';
-import type { OffersCouponsSchema } from '../offersCouponsContract';
 
 const liveStatus = {
   operatingStatus: 'OPERATING',
@@ -127,62 +126,6 @@ export const statusVoteFixture = {
   liveStatus,
 } satisfies ApiSchema<'StatusVote'>;
 
-export const offerFixture = {
-  id: 401,
-  placeId: 17,
-  title: 'Mock tourist-only deal',
-  description: 'Synthetic offer for UI development.',
-  benefitDescription: '10% off',
-  status: 'PUBLISHED',
-  startsAt: '2026-07-01T00:00:00Z',
-  endsAt: '2026-08-31T14:59:59Z',
-  totalQuantity: 100,
-  issuedQuantity: 12,
-  remainingQuantity: 88,
-  couponValidityDays: 7,
-  eligibilityPolicy: 'ACTIVE_TRAVEL_SCHEDULE',
-  inventoryPolicy: 'LIMITED',
-  expiryPolicy: 'ISSUE_PLUS_DAYS',
-  createdAt: '2026-07-01T00:00:00Z',
-  updatedAt: '2026-07-23T05:30:00Z',
-} satisfies OffersCouponsSchema<'OfferResponse'>;
-
-export const offerPageFixture = {
-  offers: [offerFixture],
-  page: 1,
-  limit: 20,
-  totalElements: 1,
-  totalPages: 1,
-  hasNext: false,
-} satisfies OffersCouponsSchema<'OfferPageResponse'>;
-
-export const couponFixture = {
-  id: 501,
-  offerId: 401,
-  code: '00000000-0000-4000-8000-000000000501',
-  status: 'ISSUED',
-  issuedAt: '2026-07-23T05:30:00Z',
-  expiresAt: '2026-07-30T05:30:00Z',
-  redeemedAt: null,
-} satisfies OffersCouponsSchema<'CouponResponse'>;
-
-export const expiredCouponFixture = {
-  ...couponFixture,
-  id: 502,
-  code: '00000000-0000-4000-8000-000000000502',
-  status: 'EXPIRED',
-  expiresAt: '2026-07-22T05:30:00Z',
-} satisfies OffersCouponsSchema<'CouponResponse'>;
-
-export const couponPageFixture = {
-  coupons: [couponFixture, expiredCouponFixture],
-  page: 1,
-  limit: 20,
-  totalElements: 2,
-  totalPages: 1,
-  hasNext: false,
-} satisfies OffersCouponsSchema<'CouponPageResponse'>;
-
 export const placeClaimFixture = {
   id: 301,
   placeId: 17,
@@ -203,42 +146,6 @@ export const placeClaimPageFixture = {
   totalPages: 1,
   hasNext: false,
 } satisfies ApiSchema<'PlaceClaimPage'>;
-
-export const availabilityFixture = {
-  id: 801,
-  placeId: 17,
-  productId: 601,
-  productType: 'GENERAL',
-  startsAt: '2026-07-25T05:00:00Z',
-  endsAt: '2026-07-25T06:00:00Z',
-  totalCapacity: 10,
-  remainingCapacity: 6,
-  status: 'ACTIVE',
-} satisfies ApiSchema<'Availability'>;
-
-export const reservationFixture = {
-  id: 901,
-  touristUserId: 201,
-  availabilityId: 801,
-  productId: 601,
-  productType: 'SERVICE',
-  quantity: 2,
-  status: 'PENDING',
-  createdAt: '2026-07-23T05:30:00Z',
-  confirmedAt: null,
-  canceledAt: null,
-  completedAt: null,
-  updatedAt: '2026-07-23T05:30:00Z',
-} satisfies ApiSchema<'Reservation'>;
-
-export const reservationPageFixture = {
-  reservations: [reservationFixture],
-  page: 1,
-  limit: 20,
-  totalCount: 1,
-  totalPages: 1,
-  hasNext: false,
-} satisfies ApiSchema<'ReservationPage'>;
 
 export const conversionBatchResultFixture = {
   acceptedAt: '2026-07-23T05:30:02Z',
@@ -286,15 +193,9 @@ export const merchantPerformanceFixture = {
 export const emptyPageFixtures = {
   checkIns: { ...checkInPageFixture, checkIns: [], totalCount: 0, totalPages: 0 },
   claims: { ...placeClaimPageFixture, claims: [], totalCount: 0, totalPages: 0 },
-  coupons: { ...couponPageFixture, coupons: [], totalElements: 0, totalPages: 0 },
-  offers: { ...offerPageFixture, offers: [], totalElements: 0, totalPages: 0 },
   places: emptyPlacePageFixture,
-  reservations: { ...reservationPageFixture, reservations: [], totalCount: 0, totalPages: 0 },
 } satisfies {
   checkIns: ApiSchema<'LocationCheckInPage'>;
   claims: ApiSchema<'PlaceClaimPage'>;
-  coupons: OffersCouponsSchema<'CouponPageResponse'>;
-  offers: OffersCouponsSchema<'OfferPageResponse'>;
   places: ApiSchema<'PlacePage'>;
-  reservations: ApiSchema<'ReservationPage'>;
 };

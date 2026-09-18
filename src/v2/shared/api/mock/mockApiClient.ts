@@ -4,21 +4,14 @@ import type { ApiClient, GetRequestOptions, MutationRequestOptions } from '../ap
 import { featureMockHandlers } from './features';
 import { getDomainMockHandlers } from './registry';
 import {
-  availabilityFixture,
   checkInFixture,
   checkInPageFixture,
   conversionBatchResultFixture,
-  couponFixture,
-  couponPageFixture,
   emptyPageFixtures,
-  offerFixture,
-  offerPageFixture,
   placeClaimFixture,
   placeClaimPageFixture,
   placeDetailFixture,
   placePageFixture,
-  reservationFixture,
-  reservationPageFixture,
   statusVoteFixture,
 } from './fixtures';
 import { resolveMockHandler, type MockMethod } from './handlers';
@@ -97,13 +90,6 @@ function getSuccess(path: string): unknown {
   if (path === '/location-check-ins') return toLocationCheckInWirePage(checkInPageFixture);
   if (path === '/merchant-owner/place-claims') return placeClaimPageFixture;
   if (/^\/merchant-owner\/place-claims\/\d+$/.test(path)) return placeClaimFixture;
-  if (path === '/offers') return offerPageFixture;
-  if (/^\/offers\/\d+$/.test(path)) return offerFixture;
-  if (path === '/coupons') return couponPageFixture;
-  if (/^\/places\/\d+\/availabilities$/.test(path)) return [availabilityFixture];
-  if (path === '/reservations' || path === '/merchant-owner/reservations') {
-    return reservationPageFixture;
-  }
   return notFound(path);
 }
 
@@ -111,12 +97,6 @@ function getEmpty(path: string): unknown {
   if (path === '/places') return emptyPageFixtures.places;
   if (path === '/location-check-ins') return toLocationCheckInWirePage(emptyPageFixtures.checkIns);
   if (path === '/merchant-owner/place-claims') return emptyPageFixtures.claims;
-  if (path === '/offers') return emptyPageFixtures.offers;
-  if (path === '/coupons') return emptyPageFixtures.coupons;
-  if (/^\/places\/\d+\/availabilities$/.test(path)) return [];
-  if (path === '/reservations' || path === '/merchant-owner/reservations') {
-    return emptyPageFixtures.reservations;
-  }
   return notFound(path);
 }
 
@@ -126,17 +106,6 @@ function postSuccess(path: string): unknown {
   if (path === '/merchant-owner/place-claims') return placeClaimFixture;
   if (/^\/merchant-owner\/place-claims\/\d+\/cancel$/.test(path)) {
     return { ...placeClaimFixture, status: 'CANCELED' };
-  }
-  if (/^\/offers\/\d+\/coupons$/.test(path)) return couponFixture;
-  if (path === '/merchant-owner/offers/coupons/redeem') {
-    return { ...couponFixture, status: 'REDEEMED', redeemedAt: '2026-07-23T05:35:00Z' };
-  }
-  if (path === '/reservations') return reservationFixture;
-  if (/\/reservations\/\d+\/confirm$/.test(path)) {
-    return { ...reservationFixture, status: 'CONFIRMED', confirmedAt: '2026-07-23T05:35:00Z' };
-  }
-  if (/\/reservations\/\d+\/cancel$/.test(path)) {
-    return { ...reservationFixture, status: 'CANCELED', canceledAt: '2026-07-23T05:35:00Z' };
   }
   if (path === '/conversion-events/batch') return conversionBatchResultFixture;
   return notFound(path);

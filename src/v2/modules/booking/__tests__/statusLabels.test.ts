@@ -1,3 +1,4 @@
+import { paymentResources } from '../payments/i18n';
 import {
   COUPON_STATUSES,
   getCouponStatusView,
@@ -9,15 +10,16 @@ import {
   OFFER_EXPIRY_POLICIES,
   OFFER_INVENTORY_POLICIES,
   OFFER_STATUSES,
-} from '../../../features/offers-coupons';
-import { PAYMENT_STATUSES } from '../../../features/payments/model/payment.types';
-import { getPaymentStatusView } from '../../../features/payments/model/paymentPresentation';
+} from '../offers-coupons/__tests__';
+import { PAYMENT_STATUSES } from '../payments/__tests__';
+import { getPaymentStatusView } from '../payments/__tests__';
 import {
   getReservationStatusView,
   RESERVATION_STATUSES,
-} from '../../../features/reservations/model/reservationPresentation';
-import { reservationResources } from '../../../features/reservations/i18n/reservationResources';
-import { resources } from '../../../app/i18n/resources';
+} from '../reservations/model/reservationPresentation';
+import { reservationResources } from '../reservations/i18n/reservationResources';
+import { offerCouponResources, offerStatusResources } from '../offers-coupons/i18n';
+import { resources } from '../../../shared/i18n/resources';
 
 /**
  * Every label key a status selector can return has to resolve to real ko and en
@@ -25,8 +27,8 @@ import { resources } from '../../../app/i18n/resources';
  * server ships a state this build has never heard of.
  */
 const BUNDLES = {
-  en: { ...resources.en.translation, ...reservationResources.en },
-  ko: { ...resources.ko.translation, ...reservationResources.ko },
+  en: { ...resources.en.translation, ...offerCouponResources.en, ...offerStatusResources.en, ...paymentResources.en, ...reservationResources.en },
+  ko: { ...resources.ko.translation, ...offerCouponResources.ko, ...offerStatusResources.ko, ...paymentResources.ko, ...reservationResources.ko },
 } as const;
 
 function lookup(language: keyof typeof BUNDLES, key: string): unknown {

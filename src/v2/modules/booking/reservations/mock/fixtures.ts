@@ -1,4 +1,4 @@
-import type { ApiSchema } from '../../../contract';
+import type { ApiSchema } from '../../../../shared/api/contract';
 
 /**
  * Availabilities for the reservation create flow. The list deliberately mixes

@@ -44,7 +44,7 @@ export {
   initializeOfferCouponI18n,
   offerCouponResources,
   registerOfferCouponResources,
-} from './i18n/offerCouponResources';
+} from '../../modules/booking/offers-coupons/data';
 export {
   CouponNotFoundError,
   createCouponQueryOptions,

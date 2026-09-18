@@ -1,3 +1,4 @@
+import { bookingMockHandlers } from '../mock/index.ts';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -16,6 +17,7 @@ import {
 } from '../reservations/hooks/useReservations.ts';
 import { ApiError, mockApiClient, setMockScenario, configureDomainMockHandlers } from '../../../shared/api/index.ts';
 
+configureDomainMockHandlers(bookingMockHandlers);
 
 test('reservation detail and tourist payment APIs forward identifiers, params, and AbortSignal', async () => {
   const calls = [];
