@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { parseNotificationRoute } from '../../../features/notifications/services/notificationPayload.ts';
+import { parseNotificationRoute } from '../../../modules/user/notifications/routing/index.ts';
 import {
   claimNotificationMessage,
   createNotificationNavigationIntent,
@@ -11,7 +11,7 @@ import {
   ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
   getAndroidBackAction,
 } from '../androidBack.ts';
-import { selectInitialNotificationRoute } from '../../../features/notifications/services/initialNotification.ts';
+import { selectInitialNotificationRoute } from '../../../modules/user/notifications/routing/index.ts';
 
 test('V2 place route parameters accept only positive safe integers', () => {
   assert.equal(parsePlaceId('42'), 42);

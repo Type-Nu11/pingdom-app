@@ -24,7 +24,7 @@ Current #262 status:
 
 ```text
 index.ts
-├─ src/v2/features/notifications/services/backgroundNotification
+├─ src/v2/features/notifications/services/backgroundNotification (frozen root re-export → modules/user/notifications/background)
 └─ App.tsx
    └─ src/application/ProductionApp
       ├─ src/application/runtime/configureProductionRuntime
@@ -32,7 +32,7 @@ index.ts
       │  ├─ src/app/store/authStore (session hydration/logout)
       │  ├─ src/v2/shared/api/apiClient (V2 transport adapter)
       │  ├─ src/v2/shared/auth/tokenSession
-      │  └─ src/v2/features/notifications/services/fcmTokenLifecycle
+      │  └─ src/v2/modules/user/notifications/lifecycle
       ├─ src/application/ProductionProviders
       │  ├─ V2 QueryClient, theme, and error boundary
       │  └─ V2 app/i18n composition → shared instance + feature-owned resources
@@ -216,3 +216,18 @@ The eight compatibility files and remaining domain-boundary exceptions are enume
 [the #361 handoff](architecture/adr/0001-place-migration-handoff.md). Remove the compatibility
 files with their V1 callers in #362, preserving the #124/#139 parity gates. Their existence
 does not imply native-device validation; Android/iOS smoke remains unverified for #361.
+
+## #358 User composition
+
+Production RootNavigator uses `modules/user/notifications/lifecycle` and `/routing`. Runtime
+composition retains the same beforeLogout callback and additionally installs development domain
+mocks through `v2/app/configureDomainMocks`; real Axios/token-session selection is unchanged.
+V1 MainNavigator still reaches User screens/settings through the exact compatibility exports in
+[the User handoff](architecture/adr/0001-user-migration-handoff.md). Standalone V2 app navigation
+uses the new public User indexes directly. No route, params, deep link or lifecycle policy changed.
+
+#348/#361 are merged in the #358 base `793f0a2`; there is no pending stacked-base synchronization.
+User-owned boundary exceptions are zero. The remaining shared client/mock type SCC belongs to #360,
+and the existing V1 composition/test adapters remain #362 work behind #124/#139 parity gates.
+Android connectivity was checked but changed-build smoke QA was not performed; no iOS simulator
+was booted. The release QA checklist above remains open.

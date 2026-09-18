@@ -1,3 +1,4 @@
+import './configureDomainMocks';
 import { PlaceMapComposition } from './PlaceMapComposition';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import React, { type PropsWithChildren, useEffect, useState } from 'react';

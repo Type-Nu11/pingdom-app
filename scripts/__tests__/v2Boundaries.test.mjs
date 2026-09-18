@@ -176,3 +176,35 @@ test('RED: a test file cannot use a production exception for a V1 import', (t) =
   });
   assert.ok(r.violations.some((v) => v.rule === 'v2-no-legacy' && v.test));
 });
+
+test('User migration: no owned exceptions or reverse/deep production dependencies', () => {
+  const root = process.cwd();
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'scripts/v2-boundaries/exceptions.json'), 'utf8'));
+  assert.equal(manifest.filter((entry) => entry.issue === '#358').length, 0);
+  const r = inspect(root);
+  const user = 'src/v2/modules/user/';
+  assert.ok(r.nodes.has(`${user}index.ts`));
+  const forbidden = r.violations.filter((v) =>
+    (v.target?.startsWith(user) || v.source.startsWith(user))
+    && ['domain-public-api', 'user-submodule-public-api', 'shared-no-domain', 'production-cycle', 'no-upward-composition', 'production-no-test', 'v2-no-legacy'].includes(v.rule));
+  assert.deepEqual(forbidden, []);
+  assert.equal(r.cycles.some((cycle) => JSON.stringify(cycle).includes(user)), false);
+});
+
+
+test('RED: User sibling submodules cannot reach into each other', (t) => {
+  // Use a resolved User sibling edge, including type-only imports.
+  const siblings = fixture(t, {
+    'src/v2/modules/user/settings/example.ts': "import type { Profile } from '../profile/model/types';",
+    'src/v2/modules/user/profile/model/types.ts': 'export type Profile = {};',
+  });
+  assert.ok(siblings.violations.some((v) => v.rule === 'user-submodule-public-api'));
+});
+
+test('RED: frozen V1 test adapters cannot enter the production graph', (t) => {
+  const r = fixture(t, {
+    'src/v2/app/example.ts': "import '../features/my-page/api/profileApi';",
+    'src/v2/features/my-page/api/profileApi.ts': 'export {};',
+  });
+  assert.ok(r.violations.some((v) => v.rule === 'production-no-test'));
+});

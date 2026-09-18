@@ -5,6 +5,8 @@ import ts from 'typescript';
 const extensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.mts', '.cts']);
 export const isTest = (file) => /(?:^|\/)(?:__tests__|__mocks__)\//.test(file)
   || /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file)
+  // Frozen V1 navigation tests use these two compatibility adapters (#362).
+  || ['src/v2/features/my-page/api/profileApi.ts', 'src/v2/features/notifications/api/notificationApi.ts'].includes(file)
   || file.startsWith('src/v2/shared/testing/') || file.startsWith('src/v2/app/testing/');
 export function filesUnder(root, directory) {
   const absolute = path.join(root, directory);

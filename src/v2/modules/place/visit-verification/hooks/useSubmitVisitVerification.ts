@@ -9,7 +9,7 @@ import {
 import { visitVerificationSessionQueryKeys } from '../model/visitVerificationSession';
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
-import { myReviewsQueryKeys } from '../../../../features/my-page/data';
+import { myReviewsQueryKeys } from '../../../user/profile/data';
 import { placeQueryKeys } from '../../core';
 import {
   visitVerificationApi,

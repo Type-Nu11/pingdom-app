@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import type { SettingsDetailId } from '../../features/settings';
+import type { SettingsDetailId } from '../../modules/user/settings';
 
 import type { PlaceId, CheckInId } from '../../modules/place/core';
 export { parsePlaceId, parseCheckInId } from '../../modules/place/core';

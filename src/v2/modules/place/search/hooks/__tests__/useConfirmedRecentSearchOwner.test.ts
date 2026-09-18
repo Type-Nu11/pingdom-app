@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
-import type { Profile } from '../../../../../features/my-page/profile';
+import type { Profile } from '../../../../user/profile';
 import { useConfirmedRecentSearchOwner } from '../useConfirmedRecentSearchOwner';
 
 const profile = (id: number) => ({ id } as Profile);

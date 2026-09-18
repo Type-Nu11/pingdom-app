@@ -4,10 +4,12 @@
 
 - Implementation location: **V2**. Application changes only compose providers and consume public Map settings.
 - Branch: `refactor/361-place-map-domain-module`; starting stacked HEAD: `fd2cd14ce78ce9c81aca83f36dd57f36472fd2bd`.
-- #348 PR [#370](https://github.com/Type-Nu11/pingdom-app/pull/370) is still **OPEN** at final inspection on 2026-09-17.
-- Latest fetched `origin/dev`: `7f77f7bd7418a16b33b37efe99763ea2544704fa`; behind/ahead is **0/4**. Those four commits are exclusively #348.
-- On 2026-09-18, the user authorized nine feature/page commits using `rcp` and approved all nine exact messages. The migration is recorded as nine local commits above `fd2cd14`; no push or PR creation.
-- **PR base synchronization remains pending #348 merge.** Do not describe an `origin/dev...HEAD` PR diff as #361-only yet. After #370 merges, fetch dev again, preserve the nine local #361 commits, synchronize to the merged base without replaying #348, then verify the commit list and final diff. This run did not discard or duplicate the stack.
+- Historical validation/commit notes below describe the #361 implementation run.
+- Current base update (2026-09-18, #358 inspection): #348 PR #370 and #361 PR #371 are merged.
+  Fetched `origin/dev` is `793f0a2`; the #358 starting branch is aligned 0/0 and clean.
+  The former pending #348 merge/base synchronization blocker is resolved.
+- Current User paths, reduced exceptions and mock SCC are recorded in
+  [the User handoff](0001-user-migration-handoff.md) and [current audit](0001-v2-boundary-audit.md).
 
 ## Ownership before / after
 
@@ -188,4 +190,4 @@ Commit messages were explicitly approved through the `rcp` workflow. No existing
 The complete final implementation also passed `validate:pr` immediately before the commit split
 (`/private/tmp/361-rcp-validate-pr.txt`). Splitting introduced no behavior change; a trailing blank
 line in `search/model/placeSearch.ts` was removed after the staged whitespace check identified it.
-The device smoke-test limitations and pending #348 merge/base synchronization above still apply.
+The historical device smoke-test limitations remain; #348 merge/base synchronization is now resolved as recorded above.

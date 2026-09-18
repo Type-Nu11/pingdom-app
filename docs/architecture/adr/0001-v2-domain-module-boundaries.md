@@ -1,6 +1,6 @@
 # ADR 0001: V2 domain modules and import boundaries
 
-- Status: accepted for incremental migration in #357; no domain folder moves here.
+- Status: accepted; Place migration #361 and User migration #358 implemented. Remaining migrations are #359/#360/#362.
 - Baseline: `refactor/357-v2-domain-boundary`, `27ace6bc71c50c5e9c8c626c7026359e06306827`.
 - Parent: #356. Sequence: #357 → #361 → #358 → #359 → #360 → #362.
 - Inspected: AGENTS.md, complete bodies/comments of #356–#362, V2 README,
@@ -39,8 +39,7 @@ The checker restricts its imports and freezes its existing V1 bridge edges.
 own boundary until its migration, even where two features will share a domain.
 There is no blanket exemption for `features`. No existing feature directory moves in #357.
 
-The table in the audit maps **all 28** current feature folders, with baseline file counts,
-into these owners. Decisions for ambiguous features:
+The audit records the current module and transitional-feature inventory. The original #357 inventory of 28 feature folders remains available in Git history. Decisions for ambiguous features:
 
 - `auth`: User account/session API and mutations (#358). Auth route composition stays
   in app; parity-dependent V1 auth screens remain explicit production bridges (#362).
@@ -64,8 +63,8 @@ Outside a feature/module, import only its `index.ts` or a subfeature's public `i
 The target must actually resolve to that file. An `index.ts` underneath `screens`,
 `hooks`, `api`, `model`, `services`, `store`, `styles` or `components` is internal, not
 an escape hatch. Resource-only `i18n/index.ts` is a supported subfeature entrypoint.
-Use named exports; public `export *` is rejected (four existing exports are frozen
-until #360/#361). Keep exports small and intentional; review the necessity of each.
+Use named exports; public `export *` is rejected (three existing exports are frozen
+until #360). Keep exports small and intentional; review the necessity of each.
 
 Relative imports within the same module are allowed, subject to the data-flow,
 cycle and V1 rules. Type-only imports, inline `import { type T }`, type re-exports
@@ -114,9 +113,9 @@ Tests may consume the explicit app testing support boundary; production cannot.
 Tarjan strongly connected components (SCCs) include **type-only and lazy import edges**.
 Type erasure prevents some runtime cycles but does not remove architectural coupling;
 including types avoids a public barrel becoming a migration trap. The audit also shows
-value-only SCCs separately. The baseline had two SCCs; i18n is removed here. One mock/type
-SCC remains with every participating edge frozen. #360 coordinates its removal with
-#358/#361. It contains no value-only cycle. New SCC members or internal edges fail.
+value-only SCCs separately. The baseline had two SCCs; i18n is removed here. One two-file client/mock type
+SCC remains with both participating edges frozen for #360. Place/User fixture reversals have
+been removed. It contains no value-only cycle. New SCC members or internal edges fail.
 
 The previous StyleSheet, centralized `process.env` and axios-layer rules are preserved,
 now on parsed syntax rather than raw comments/strings. These also apply to test code.
@@ -132,15 +131,12 @@ capacity fail so removals reduce the inventory in the same PR. Duplicate/malform
 entries fail. Counts describe rule occurrences, not unique dependencies: one edge can break
 several rules. See the audit for counts and exact production inventory.
 
-- #361: Place/Map internal imports, Place mock fixture type, Map screen API support access,
-  verification public wildcard export and Place contract tests.
-- #358: User/Settings internal imports, account mock fixture type, My Page screen API support
-  access and User integration tests.
+- #361: no remaining exceptions.
+- #358: no remaining exceptions; User siblings also enforce public indexes.
 - #359: Booking internal imports, reservation screen API support access and Booking tests.
 - #360: remaining domain migration, public wildcard exports, shared mock/type SCC cleanup,
   and remaining integration-test ownership.
-- #362: production deep imports and ten active legacy bridge occurrences, PlaceDetail's app
-  navigation type dependency, and production-navigator bridge assertions.
+- #362: ten active legacy bridge occurrences and production-navigator bridge assertions; User/Place production deep imports and PlaceDetail upward type edges are removed.
 
 The exception manifest is a reviewed migration inventory, not permission to grow debt.
 As each domain moves, update callers to public indexes and delete its exceptions.
@@ -180,7 +176,20 @@ No new package. No V1 production source changes: dependency delta `none`; no `le
 With explicit user approval, the catalog regression test moves from
 `src/shared/i18n/__tests__/resources.test.mjs` to `src/v2/app/i18n/__tests__/resources.test.mjs`;
 all four assertions remain in `test:i18n-formatters`. The old location is deleted only.
-The user subsequently authorized separate i18n, checker and documentation commits; no push. Domain moves stay in #361/#358/#359/#360; production
+The user subsequently authorized separate i18n, checker and documentation commits; no push. The historical #357 run deferred domain moves to #361/#358/#359/#360; production
 bridge deletion remains gated by #124/#139 and reviewed in #362. Automated checks do not
 claim physical-device QA. Import checks cannot prove absence of arbitrary business logic
 inside `src/application`; review remains necessary for semantic ownership.
+
+## User migration implementation (#358)
+
+[User handoff](0001-user-migration-handoff.md) and [exact inventory/public API](0001-user-migration-inventory.md)
+record the six feature moves, separated profile/My Page presentation, mock injection and compatibility consumers.
+User sibling submodules consume named indexes; the checker enforces this even within the User module.
+Domain tests move with their contracts. Test-only indexes and the two frozen V1 test adapters are
+classified as test support and rejected as production dependencies.
+
+Application configures User development mock handlers through the generic shared registry. Shared
+imports no User module. The remaining SCC has only the unchanged client/mock type boundary (#360).
+V1 MainNavigator/root background consumers retain eleven documented compatibility exports until #362;
+no new V1 dependency, maxCount increase or Booking folder move. Device smoke QA remains unverified.
