@@ -8,7 +8,7 @@ import styled from 'styled-components/native';
 
 import { createPlaceDetailQueryOptions } from '../../../modules/place/detail';
 import { usePlaceExplorationMediaList } from '../../../modules/place/exploration';
-import { useInfiniteCheckIns } from '../../check-ins/hooks/useCheckIns';
+import { useInfiniteCheckIns } from '../../../modules/place/check-ins';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
 import { ErrorState, HeaderBackButton } from '../../../shared/components';
 import VerifiedPlaceCard from '../components/VerifiedPlaceCard';

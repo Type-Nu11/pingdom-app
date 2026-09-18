@@ -7,7 +7,7 @@ import { ApiError } from '../../../../shared/api/ApiError.ts';
 import {
   createCheckInMutationOptions,
   createStatusVoteMutationOptions,
-} from '../../../../features/check-ins/data/index.ts';
+} from '../../../../modules/place/check-ins/data/index.ts';
 import { createConversionEventMutationOptions } from '../../../../features/conversion/data/index.ts';
 import { createRedeemCouponMutationOptions } from '../../../../features/offers-coupons/data/index.ts';
 import { createPlaceClaimMutationOptions } from '../../../../modules/place/claims/data/index.ts';

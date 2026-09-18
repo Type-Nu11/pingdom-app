@@ -28,7 +28,7 @@ import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
   VisitVerificationSessionScreen,
-} from '../../features/place-visit-verification';
+} from '../../modules/place/visit-verification';
 import { env } from '../../shared/config';
 import { clearTokenSession } from '../../shared/auth/tokenSession';
 import {

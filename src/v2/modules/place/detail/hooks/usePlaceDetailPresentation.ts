@@ -6,7 +6,7 @@ import {
   usePlaceOperatingNotices,
   usePlaceVisitDecision,
 } from '../../exploration';
-import { createPlaceReviewsQueryOptions } from '../../../../features/place-visit-verification';
+import { createPlaceReviewsQueryOptions } from '../../visit-verification';
 import {
   buildPlaceDetailPresentation,
   type ResourceState,

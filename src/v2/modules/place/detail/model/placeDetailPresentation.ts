@@ -1,5 +1,5 @@
 import { reviewReasonTranslationKey } from '../../../../shared/api/reviewReasons';
-import type { PlaceReviewPage } from '../../../../features/place-visit-verification';
+import type { PlaceReviewPage } from '../../visit-verification';
 import type {
   PlaceCard,
   PlaceExplorationMedia,

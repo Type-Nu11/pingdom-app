@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createCheckInApi } from '../../../../features/check-ins/data/index.ts';
+import { createCheckInApi } from '../../../../modules/place/check-ins/data/index.ts';
 import { createConversionApi } from '../../../../features/conversion/data/index.ts';
 import { createOfferCouponApi } from '../../../../features/offers-coupons/data/index.ts';
 import { createPlaceClaimApi } from '../../../../modules/place/claims/data/index.ts';

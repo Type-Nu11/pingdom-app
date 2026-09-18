@@ -82,7 +82,7 @@ import {
 import { createFocusedRecommendationMarker } from '../utils/recommendationMarkers';
 import { selectRecommendationClickPayload } from '../model/recommendationClick';
 import { selectMapExplorationPlaceIds } from '../utils/mapExplorationPlaceIds';
-import { VisitVerificationMapCta } from '../../place-visit-verification';
+import { VisitVerificationMapCta } from '../../../modules/place/visit-verification';
 import { PlaceCouponCta } from '../../offers-coupons';
 import { LocationStatusOverlay } from '../components/MapStatusOverlays';
 import {

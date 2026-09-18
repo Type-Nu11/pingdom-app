@@ -6,7 +6,7 @@ import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { profileApi } from '../../api/profileApi';
 import type { Profile } from '../../model/profile.types';
 import { bookmarkApi } from '../../api/bookmarkApi';
-import { checkInApi } from '../../../check-ins/api/checkInApi';
+import { checkInApi } from '../../../../modules/place/check-ins';
 import { offerCouponApi } from '../../../offers-coupons/api/offerCouponApi';
 import { placeDetailApi } from '../../../../modules/place/detail';
 import { placeExplorationApi } from '../../../../modules/place/exploration';

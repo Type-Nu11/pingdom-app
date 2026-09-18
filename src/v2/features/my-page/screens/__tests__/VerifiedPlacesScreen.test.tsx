@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react-nativ
 
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { bookmarkApi } from '../../api/bookmarkApi';
-import { checkInApi } from '../../../check-ins/api/checkInApi';
+import { checkInApi } from '../../../../modules/place/check-ins';
 import { placeDetailApi } from '../../../../modules/place/detail';
 import { placeExplorationApi } from '../../../../modules/place/exploration';
 import VerifiedPlacesScreen from '../VerifiedPlacesScreen';
