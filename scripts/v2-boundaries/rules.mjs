@@ -37,6 +37,11 @@ export function inspect(root) {
       && userSubmodule(source) !== userSubmodule(target) && !publicIndex(target)) {
       add(edge, 'user-submodule-public-api', 'Consume the sibling User submodule through its named public index.');
     }
+    const bookingSubmodule = (file) => file?.match(/^src\/v2\/modules\/booking\/(reservations|payments|offers-coupons)\//)?.[1];
+    if (bookingSubmodule(source) && bookingSubmodule(target)
+      && bookingSubmodule(source) !== bookingSubmodule(target) && !publicIndex(target)) {
+      add(edge, 'booking-submodule-public-api', 'Consume the sibling Booking submodule through its named public index.');
+    }
     if (edge.exportAll && owner(source) && publicIndex(source)) add(edge, 'public-no-export-star', 'Explicitly export only the supported public API.');
     if ((/\/screens\//.test(source) || /Screen\.[jt]sx?$/.test(source)) && api(target)) add(edge, 'screen-no-api', 'Access APIs through domain hooks.');
     // Shared API exports include transport and contracts. Ban the whole surface in hooks,

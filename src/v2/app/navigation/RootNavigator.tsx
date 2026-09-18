@@ -15,9 +15,9 @@ import { MyPageScreen } from '../../modules/user/profile/my-page';
 import { ProfileEditScreen } from '../../modules/user/profile';
 import { PlaceListExampleScreen } from '../../modules/place/search';
 import { PlaceDetailScreen } from '../../modules/place/detail';
-import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
-import ReservationBoxScreen from '../../features/reservations/screens/ReservationBoxScreen';
-import ReservationDetailScreen from '../../features/reservations/screens/ReservationDetailScreen';
+import { CreateReservationScreen } from '../../modules/booking/reservations/routes';
+import { ReservationBoxScreen } from '../../modules/booking/reservations/routes';
+import { ReservationDetailScreen } from '../../modules/booking/reservations/routes';
 import {
   AccountManagementScreen,
   SettingsDetailScreen,

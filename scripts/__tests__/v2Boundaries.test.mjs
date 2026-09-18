@@ -208,3 +208,43 @@ test('RED: frozen V1 test adapters cannot enter the production graph', (t) => {
   });
   assert.ok(r.violations.some((v) => v.rule === 'production-no-test'));
 });
+
+test('GREEN: Booking siblings consume named public indexes', (t) => {
+  const result = fixture(t, {
+    'src/v2/modules/booking/reservations/screens/Detail.ts': "import { Value } from '../../payments';",
+    'src/v2/modules/booking/payments/index.ts': "export { Value } from './model/value';",
+    'src/v2/modules/booking/payments/model/value.ts': 'export const Value = 1;',
+  });
+  assert.deepEqual(result.violations, []);
+});
+
+test('RED: Booking sibling deep imports cannot bypass the public boundary', (t) => {
+  const result = fixture(t, {
+    'src/v2/modules/booking/reservations/screens/Detail.ts': "import { Value } from '../../payments/model/value';",
+    'src/v2/modules/booking/payments/model/value.ts': 'export const Value = 1;',
+  });
+  assert.ok(result.violations.some(v => v.rule === 'booking-submodule-public-api'));
+});
+
+test('GREEN: frozen Coupon test adapter is available to V1 tests', (t) => {
+  const result = fixture(t, {
+    'src/app/navigation/__tests__/coupon.test.ts': "import { Value } from '../../../v2/features/offers-coupons/api/offerCouponApi';",
+    'src/v2/features/offers-coupons/api/offerCouponApi.ts': "export { Value } from '../../../modules/booking/offers-coupons/__tests__';",
+    'src/v2/modules/booking/offers-coupons/__tests__/index.ts': 'export const Value = 1;',
+  });
+  assert.deepEqual(result.violations, []);
+});
+
+test('RED: frozen Coupon test adapter is forbidden in production', (t) => {
+  const result = fixture(t, {
+    'src/v2/app/main.ts': "import { Value } from '../features/offers-coupons/api/offerCouponApi';",
+    'src/v2/features/offers-coupons/api/offerCouponApi.ts': "export { Value } from '../../../modules/booking/offers-coupons/__tests__';",
+    'src/v2/modules/booking/offers-coupons/__tests__/index.ts': 'export const Value = 1;',
+  });
+  assert.ok(result.violations.some(v => v.rule === 'production-no-test'));
+});
+
+test('Booking migration has no #359 exceptions', () => {
+  const exceptions = JSON.parse(fs.readFileSync(new URL('../v2-boundaries/exceptions.json', import.meta.url), 'utf8'));
+  assert.equal(exceptions.filter(e => e.issue === '#359').length, 0);
+});

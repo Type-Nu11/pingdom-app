@@ -1,12 +1,3 @@
-export { ApiError } from '../../../modules/booking/offers-coupons/data';
-export type { ListOffersParams } from '../../../modules/booking/offers-coupons/data';
-export type { OfferPage } from '../../../modules/booking/offers-coupons/data';
-export type { Offer } from '../../../modules/booking/offers-coupons/data';
-export type { ListCouponsParams } from '../../../modules/booking/offers-coupons/data';
-export type { CouponPage } from '../../../modules/booking/offers-coupons/data';
-export type { Coupon } from '../../../modules/booking/offers-coupons/data';
-export type { RedeemCouponBody } from '../../../modules/booking/offers-coupons/data';
-export type { RedeemedCoupon } from '../../../modules/booking/offers-coupons/data';
-export { createOfferCouponApi } from '../../../modules/booking/offers-coupons/data';
-export { offerCouponApi } from '../../../modules/booking/offers-coupons/data';
-export type { CouponStatus } from '../../../modules/booking/offers-coupons';
+// #362 test-only compatibility: src/app/navigation/__tests__/SettingsNavigation.test.tsx.
+// Preserves offerCouponApi spy object identity. Production imports are forbidden.
+export { offerCouponApi } from '../../../modules/booking/offers-coupons/__tests__';

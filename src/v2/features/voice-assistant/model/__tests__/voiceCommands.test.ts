@@ -1,7 +1,7 @@
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
 import { createPlaceExplorationApi, placeQueryKeys } from '../../../../modules/place/exploration';
 import { createPlaceDetailApi } from '../../../../modules/place/detail';
-import { createReservationApi, reservationQueryKeys } from '../../../reservations';
+import { createReservationApi, reservationQueryKeys } from '../../../../modules/booking/reservations/__tests__';
 import { createApiClient, ApiError, type ApiTransport } from '../../../../shared/api';
 import { createVoiceSessionController, type VoiceDeliveryContext } from '../voiceSession';
 import { VOICE_COMMAND_POLICIES } from '../voiceAssistantCommandPolicy';

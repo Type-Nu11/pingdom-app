@@ -2,7 +2,7 @@ import type {
   AppCommandResult, CommandRequest, ProviderEnvelope, ReservationDraft,
   VoiceAssistantCommand, VoiceCommandName, VoiceCommandOutput,
 } from '../../index';
-import type { AvailabilityList } from '../../../reservations';
+import type { AvailabilityList } from '../../../../modules/booking/reservations/__tests__';
 
 type AssertNever<T extends never> = T;
 export type ContractCoverage = [
