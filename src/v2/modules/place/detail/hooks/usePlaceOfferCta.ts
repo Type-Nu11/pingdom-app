@@ -5,7 +5,7 @@ import {
   useOffers,
   type Offer,
   type OfferIssuanceView,
-} from '../../../../features/offers-coupons';
+} from '../../../booking/offers-coupons';
 
 export type PlaceOfferCtaState =
   | Readonly<{ kind: 'loading' }>

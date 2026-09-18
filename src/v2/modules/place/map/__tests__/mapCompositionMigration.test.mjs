@@ -168,7 +168,7 @@ test('the production map detail uses the compact Offer list before menus', () =>
 
 test('expanded place detail keeps the design photo ratio, short tab accent, and section bands', () => {
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
-  const coupon = read('../../../../features/offers-coupons/components/PlaceCouponCta.tsx');
+  const coupon = read('../../../booking/offers-coupons/components/PlaceCouponCta.tsx');
   const menu = read('../../menus/components/PlaceMenuSection.tsx');
 
   assert.match(bottomSheet, /detailPhoto: \{[^}]*height: 180[^}]*width: 180/);

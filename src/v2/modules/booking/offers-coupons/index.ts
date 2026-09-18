@@ -75,3 +75,6 @@ export { offerCouponApi } from './api/offerCouponApi';
 export { offerCouponResources } from './i18n/offerCouponResources';
 export { registerOfferCouponResources } from './i18n/offerCouponResources';
 export { initializeOfferCouponI18n } from './i18n/offerCouponResources';
+export { default as OfferCouponErrorState } from './components/OfferCouponErrorState';
+export type { PlaceCouponCtaProps } from './components/PlaceCouponCta';
+export { default as PlaceCouponCta } from './components/PlaceCouponCta';

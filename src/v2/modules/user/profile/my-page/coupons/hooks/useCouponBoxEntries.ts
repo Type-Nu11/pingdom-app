@@ -5,7 +5,7 @@ import {
   createOfferQueryOptions,
   type Coupon,
   type Offer,
-} from '../../../../../../features/offers-coupons';
+} from '../../../../../booking/offers-coupons';
 import { createPlaceDetailQueryOptions, type PlaceDetail } from '../../../../../place/detail';
 import { toCouponBoxEntries } from '../model/couponBoxEntries';
 

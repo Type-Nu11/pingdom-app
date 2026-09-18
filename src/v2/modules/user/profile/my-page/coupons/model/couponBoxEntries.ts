@@ -1,5 +1,5 @@
-import { canPresentCoupon } from '../../../../../../features/offers-coupons';
-import type { Coupon, CouponStatus, Offer } from '../../../../../../features/offers-coupons';
+import { canPresentCoupon } from '../../../../../booking/offers-coupons';
+import type { Coupon, CouponStatus, Offer } from '../../../../../booking/offers-coupons';
 import type { PlaceDetail } from '../../../../../place/detail';
 
 /**

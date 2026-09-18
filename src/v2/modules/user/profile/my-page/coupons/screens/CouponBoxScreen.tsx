@@ -10,7 +10,7 @@ import {
   OfferCouponErrorState,
   useInfiniteCoupons,
   type Coupon,
-} from '../../../../../../features/offers-coupons';
+} from '../../../../../booking/offers-coupons';
 import Button from '../../../../../../shared/components/Button';
 import { HeaderBackButton } from '../../../../../../shared/components';
 import CouponCard from '../components/CouponCard';

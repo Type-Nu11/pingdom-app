@@ -1,4 +1,4 @@
-import type { Coupon, Offer } from '../../../../../../../features/offers-coupons';
+import type { Coupon, Offer } from '../../../../../../booking/offers-coupons/__tests__';
 import type { PlaceDetail } from '../../../../../../place/detail';
 import {
   formatCouponInstant,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMyReviews, useProfile } from '../../profile';
-import { useCoupons } from '../../../../features/offers-coupons';
+import { useCoupons } from '../../../booking/offers-coupons';
 import { useCheckIns } from '../../../place/check-ins';
 import AccountInformation from '../components/AccountInformation';
 import { SettingsList, SettingsRow, SettingsScreenLayout, SettingsSection, SettingsTopBar } from '../components/SettingsLayout';
