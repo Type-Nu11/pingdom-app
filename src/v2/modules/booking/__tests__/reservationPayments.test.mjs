@@ -2,19 +2,20 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { createPaymentApi } from '../../../features/payments/api/paymentApi.ts';
+import { createPaymentApi } from '../payments/api/paymentApi.ts';
 import {
   createAllPaymentsQueryOptions,
   createPaymentDetailQueryOptions,
   createPaymentsQueryOptions,
-} from '../../../features/payments/hooks/usePayments.ts';
-import { PAYMENT_STATUSES } from '../../../features/payments/model/payment.types.ts';
-import { createReservationApi } from '../../../features/reservations/api/reservationApi.ts';
+} from '../payments/__tests__/index.ts';
+import { PAYMENT_STATUSES } from '../payments/__tests__/index.ts';
+import { createReservationApi } from '../reservations/api/reservationApi.ts';
 import {
   createReservationDetailQueryOptions,
   reservationQueryKeys,
-} from '../../../features/reservations/hooks/useReservations.ts';
-import { ApiError, mockApiClient, setMockScenario } from '../index.ts';
+} from '../reservations/hooks/useReservations.ts';
+import { ApiError, mockApiClient, setMockScenario, configureDomainMockHandlers } from '../../../shared/api/index.ts';
+
 
 test('reservation detail and tourist payment APIs forward identifiers, params, and AbortSignal', async () => {
   const calls = [];

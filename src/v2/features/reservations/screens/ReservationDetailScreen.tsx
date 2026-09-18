@@ -5,8 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import BackIcon from '../../../../assets/v2/icons/header/back.svg';
-import { useAllPayments } from '../../payments/hooks/usePayments';
-import { getPaymentAmount, getPaymentStatusView } from '../../payments/model/paymentPresentation';
+import { useAllPayments } from '../../../modules/booking/payments';
+import { getPaymentAmount, getPaymentStatusView } from '../../../modules/booking/payments';
 import { ApiErrorState, EmptyState, LoadingState } from '../../../shared/components';
 import {
   formatReservationWindow,

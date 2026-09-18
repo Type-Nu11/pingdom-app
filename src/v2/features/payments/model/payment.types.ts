@@ -1,26 +1,6 @@
-import type { AssertNever } from '../../../shared/model';
-import type {
-  ReservationPaymentOperationQuery,
-  ReservationPaymentOperationResponse,
-  ReservationPaymentSchema,
-} from '../../../shared/api';
-
-export type ListPaymentsParams = ReservationPaymentOperationQuery<'listMyPayments'>;
-export type Payment = ReservationPaymentSchema<'PaymentResponse'>;
-export type PaymentPage = ReservationPaymentOperationResponse<'listMyPayments', 200>;
-
-export type PaymentStatus = Payment['status'];
-
-export const PAYMENT_STATUSES = [
-  'PROCESSING',
-  'PAID',
-  'REFUND_PROCESSING',
-  'FAILED',
-  'REFUNDED',
-] as const satisfies readonly PaymentStatus[];
-
-type AllOpenApiPaymentStatusesAreListed = AssertNever<
-  Exclude<PaymentStatus, (typeof PAYMENT_STATUSES)[number]>
->;
-
-export type PaymentStatusContractAssertion = AllOpenApiPaymentStatusesAreListed;
+export type { ListPaymentsParams } from '../../../modules/booking/payments/data';
+export type { Payment } from '../../../modules/booking/payments/data';
+export type { PaymentPage } from '../../../modules/booking/payments/data';
+export type { PaymentStatus } from '../../../modules/booking/payments/data';
+export { PAYMENT_STATUSES } from '../../../modules/booking/payments/data';
+export type { PaymentStatusContractAssertion } from '../../../modules/booking/payments/data';

@@ -2,8 +2,8 @@ import type {
   ListPaymentsParams,
   Payment,
   PaymentPage,
-} from '../../../features/payments/model/payment.types';
-import type { ReservationDetail } from '../../../features/reservations/api/reservationApi';
+} from '../payments/__tests__';
+import type { ReservationDetail } from '../reservations/api/reservationApi';
 
 const reservation: ReservationDetail = {
   availabilityId: 801,
