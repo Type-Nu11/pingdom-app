@@ -2,14 +2,14 @@ import React from 'react';
 import { AppState } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { darkTheme, lightTheme } from '../../../../shared/theme';
-import { voiceAssistantResources } from '../../../../features/voice-assistant/i18n';
-import { VoiceAssistantScreen } from '../../../../features/voice-assistant';
-import { SettingsScreen } from '../../../../modules/user/settings';
-import { profileApi } from '../../../../modules/user/profile/__tests__';
-import { notificationApi } from '../../../../modules/user/notifications/__tests__';
-import type { SpeechEvent, SpeechInputAdapter } from '../../../../features/voice-assistant';
+import { voiceAssistantResources } from '../../i18n';
+import VoiceAssistantScreen from '../VoiceAssistantScreen';
+import { SettingsScreen } from '../../../user/settings';
+import { profileApi } from '../../../user/profile/__tests__';
+import { notificationApi } from '../../../user/notifications/__tests__';
+import type { SpeechEvent, SpeechInputAdapter } from '../../model/voiceInput';
 
 function navigationWrapper(children: React.ReactNode) {
   const listeners = new Map<string, () => void>();

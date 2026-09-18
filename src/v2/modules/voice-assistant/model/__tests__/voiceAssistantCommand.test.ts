@@ -1,5 +1,6 @@
-import { parseVoiceAssistantEnvelope, VOICE_COMMAND_POLICIES } from '../../index';
-import type { VoiceAssistantCommand, ProviderEnvelope, AppCommandResult } from '../../index';
+import { parseVoiceAssistantEnvelope } from '../voiceAssistantCommandParser';
+import { VOICE_COMMAND_POLICIES } from '../voiceAssistantCommandPolicy';
+import type { VoiceAssistantCommand, ProviderEnvelope, AppCommandResult } from '../voiceAssistantCommand.types';
 
 const commands = {
   searchNearbyReservablePlaces: { command: 'searchNearbyReservablePlaces', args: {

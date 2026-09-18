@@ -3,7 +3,7 @@ import { paymentResources } from '../../modules/booking/payments/i18n';
 import { offerCouponResources, offerStatusResources } from '../../modules/booking/offers-coupons/i18n';
 import { reservationResources } from '../../modules/booking/reservations/i18n';
 import { visitVerificationResources } from '../../modules/place/visit-verification/i18n';
-import { voiceAssistantResources } from '../../features/voice-assistant/i18n';
+import { voiceAssistantResources } from '../../modules/voice-assistant/i18n';
 import { resources as sharedResources } from '../../shared/i18n/resources';
 
 // Preserve the original shared-catalog insertion order as well as its values.

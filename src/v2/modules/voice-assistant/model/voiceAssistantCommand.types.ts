@@ -1,6 +1,6 @@
 // 기존 feature의 공개 타입만 참조합니다. 타입 전용 import이므로 화면/API를 런타임에 불러오지 않습니다.
-import type { PlaceDetail } from '../../../modules/place';
-import type { AvailabilityList } from '../../../modules/booking';
+import type { PlaceDetail } from '../../place';
+import type { AvailabilityList } from '../../booking';
 
 export const VOICE_SCHEMA_VERSION = 1 as const;
 // 서버 계약은 최소 1명만 규정합니다. 최대 12명은 현재 예약 화면의 선택 범위에 맞춘 앱 정책입니다.

@@ -1,8 +1,9 @@
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
-import server from '../../docs/api/voice-ai.openapi.json';
-import schema from '../../docs/architecture/voice-assistant/provider-envelope.v1.schema.json';
-import { parseVoiceAssistantEnvelope } from '../../src/v2/features/voice-assistant/model/voiceAssistantCommandParser';
+const { readFileSync } = jest.requireActual<{ readFileSync(path: string, encoding: string): string }>('fs');
+const server = JSON.parse(readFileSync('docs/api/voice-ai.openapi.json', 'utf8'));
+const schema = JSON.parse(readFileSync('docs/architecture/voice-assistant/provider-envelope.v1.schema.json', 'utf8'));
+import { parseVoiceAssistantEnvelope } from '../voiceAssistantCommandParser';
 
 const ajv = new Ajv2020({ strict: true });
 addFormats(ajv);

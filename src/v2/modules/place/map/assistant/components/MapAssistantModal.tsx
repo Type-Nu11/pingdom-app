@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from 'react-native';
-import { VoiceAssistantScreen, VoiceCommandScreen, type VoiceCommandContext } from '../../../../../features/voice-assistant';
+import { VoiceAssistantScreen, VoiceCommandScreen, type VoiceCommandContext } from '../../../../voice-assistant';
 
 type Props = { visible: boolean; onClose: () => void; context?: VoiceCommandContext };
 
