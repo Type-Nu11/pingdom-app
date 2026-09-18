@@ -15,16 +15,16 @@ import {
 
 import MapAsset from '../../../../assets/v2/icons/place/maping_svg.svg';
 import MyPlaceAsset from '../../../../assets/v2/icons/place/my_place.svg';
-import type { BottomSheetSnapPoint } from '../../map/hooks/useBottomSheet';
-import MapSheetBottomNavigation from '../../map/components/MapSheetBottomNavigation';
+import type { MapReservationSheetProps } from '../../../modules/place/map/sheet';
+import { MapSheetBottomNavigation } from '../../../modules/place/map/sheet';
 import {
   RecommendationFeaturedCard,
   type DecisionPlace,
-} from '../../map/components/MapBottomSheet';
-import { usePlacePreviewImages } from '../../map/hooks/usePlacePreviewImages';
-import { normalizePlaceCategory } from '../../map/utils/placeCategory';
-import { usePlaceExplorationMediaList } from '../../place-exploration';
-import * as GlassStyles from '../../map/styles/BottomSheetGlass.styles';
+} from '../../../modules/place/map/sheet';
+import { usePlacePreviewImages } from '../../../modules/place/map/sheet';
+import { normalizePlaceCategory } from '../../../modules/place/map/sheet';
+import { usePlaceExplorationMediaList } from '../../../modules/place/exploration';
+import * as GlassStyles from '../../../modules/place/map/sheet';
 import { useReservations } from '..';
 import { liquidGlass } from '../../../shared/theme/liquidGlass';
 import { useTheme } from 'styled-components/native';
@@ -40,28 +40,7 @@ const useReservationStyles = () => {
   return React.useMemo(() => createStyles(colors), [colors]);
 };
 
-type ReservationBottomSheetProps = {
-  bookmarkedPlaceIds: Record<string, boolean>;
-  bookmarkPendingPlaceIds: Record<string, boolean>;
-  collapsedTranslateY: number;
-  height: number;
-  isBookmarkStateLoading: boolean;
-  isNearbyLoading?: boolean;
-  mediumTranslateY: number;
-  nearbyPlaces: DecisionPlace[];
-  reservationPlaceByAvailabilityId: Record<string, DecisionPlace>;
-  onHandlePress: () => void;
-  onOpenFavorites: () => void;
-  onOpenMap: () => void;
-  onOpenRecommendations: () => void;
-  onOpenReservation: (reservationId: number) => void;
-  onPlacePress: (place: DecisionPlace) => void;
-  onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
-  panHandlers: GestureResponderHandlers;
-  sheetChromeBottom: Animated.Value;
-  sheetTranslateY: Animated.Value;
-  snapPoint: BottomSheetSnapPoint;
-};
+
 
 function formatDistance(place: DecisionPlace, language: string) {
   if (typeof place.distanceMeters !== 'number') return place.distance || '';
@@ -218,7 +197,7 @@ export default function ReservationBottomSheet({
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
-}: ReservationBottomSheetProps) {
+}: MapReservationSheetProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const { colors, liquidGlass: themedGlass } = theme;

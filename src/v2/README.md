@@ -42,7 +42,7 @@ The shared test-provider path is a test-only compatibility entrypoint until #360
 ## Feature data flow
 
 Feature data flows from `Screen` to `Hook` to `API`. The reference implementation lives in
-`features/place-list`. Place list/search defaults on whenever `EXPO_PUBLIC_API_MODE=real` and can
+`modules/place/search`. Place list/search defaults on whenever `EXPO_PUBLIC_API_MODE=real` and can
 be overridden with `EXPO_PUBLIC_ENABLE_PLACE_LIST=true|false`.
 
 ## OpenAPI types
@@ -72,7 +72,7 @@ The snapshot is `docs/api/place-exploration.openapi.json`, and its generated typ
 `shared/api/generated/placeExploration.ts`. Feature aliases must use
 `placeExplorationContract.ts`; update the snapshot from the server before regenerating.
 
-Tourist place menus are an independent domain and use a dedicated scoped snapshot. This also
+Tourist place menus are a Place subfeature and use a dedicated scoped snapshot. This also
 avoids the deployed document's duplicate `list_5` operation ID for menus and availabilities:
 
 ```sh
@@ -97,3 +97,27 @@ npm run check:visit-verification-api-types
 The snapshot is `docs/api/visit-verification.openapi.json`; feature aliases use
 `visitVerificationContract.ts`. A session-detail query must not be implemented until the GET 200
 response schema exists in that snapshot.
+
+
+## Place module (#361)
+
+Place implementations now live under `modules/place`, with `core`, `search`, `detail`,
+`exploration`, `home-feeds`, `claims`, `menus`, `check-ins`, `visit-verification`,
+`verification-reports`, and responsibility-specific `map` boundaries.
+Use the root public index for headless Place read queries and facts, subfeature indexes
+for domain UI, and `map/index.ts` for the Map route. `search/queries` exposes the active
+list/autocomplete/viewport queries; the separate example list remains unchanged.
+`data/index.ts` entries provide named, headless API/query access for integration consumers.
+Generated contracts and transport-only mock fixtures stay shared; Place contract tests live
+with Place and cross-domain integration tests live in `app/testing/integration`.
+
+`app/PlaceMapComposition.tsx` injects Booking's public reservation sheet implementation
+into the Place-owned sheet slot in both production and standalone providers. Booking's
+Place presentation imports use `map/sheet/index.ts`; #359 owns further separation of the
+Booking presentation contract. No business logic moved into `src/application`.
+
+Eight named compatibility files remain in `features/map`, `features/check-ins`, and
+`features/place-visit-verification` solely for frozen V1 callers. Remove them in #362 when
+those callers migrate, subject to #124/#139 parity; they contain no implementation.
+See [the #361 handoff](../../docs/architecture/adr/0001-place-migration-handoff.md)
+and [pre-move inventory](../../docs/architecture/adr/0001-place-migration-inventory.md).

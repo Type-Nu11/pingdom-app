@@ -6,7 +6,6 @@ export {
   createApiClient,
 } from './apiClient';
 export { getApiErrorUx } from './getApiErrorUx';
-export { placeQueryKeys } from '../query/placeQueryKeys';
 export { getMockScenario, mockApiClient, setMockScenario } from './mock/mockApiClient';
 export {
   merchantPerformanceFixture,

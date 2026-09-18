@@ -1,5 +1,5 @@
 import type { Coupon, Offer } from '../../../offers-coupons';
-import type { PlaceDetail } from '../../../place-detail';
+import type { PlaceDetail } from '../../../../modules/place/detail';
 import {
   formatCouponInstant,
   formatOfferPeriod,

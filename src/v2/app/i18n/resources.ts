@@ -1,6 +1,6 @@
 import { offerCouponResources } from '../../features/offers-coupons/i18n';
 import { reservationResources } from '../../features/reservations/i18n';
-import { visitVerificationResources } from '../../features/place-visit-verification/i18n';
+import { visitVerificationResources } from '../../modules/place/visit-verification/i18n';
 import { voiceAssistantResources } from '../../features/voice-assistant/i18n';
 import { resources as sharedResources } from '../../shared/i18n/resources';
 

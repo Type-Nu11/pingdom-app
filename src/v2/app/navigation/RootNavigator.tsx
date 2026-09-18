@@ -8,13 +8,13 @@ import { useNotificationOpenSync } from '../../features/notifications/hooks/useN
 import type { NotificationRoute } from '../../features/notifications/model/notification.types';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../features/settings/hooks/useSettingsNavigation';
 import HomeScreen from '../../features/home/screens/HomeScreen';
-import MapScreen from '../../features/map/screens/MapScreen';
+import { MapScreen } from '../../modules/place/map';
 import CouponBoxScreen from '../../features/my-page/screens/CouponBoxScreen';
 import CouponDetailContainer from '../../features/my-page/screens/CouponDetailContainer';
 import MyPageScreen from '../../features/my-page/screens/MyPageScreen';
 import ProfileEditScreen from '../../features/my-page/screens/ProfileEditScreen';
-import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
-import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
+import { PlaceListExampleScreen } from '../../modules/place/search';
+import { PlaceDetailScreen } from '../../modules/place/detail';
 import CreateReservationScreen from '../../features/reservations/screens/CreateReservationScreen';
 import ReservationBoxScreen from '../../features/reservations/screens/ReservationBoxScreen';
 import ReservationDetailScreen from '../../features/reservations/screens/ReservationDetailScreen';
@@ -28,7 +28,7 @@ import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
   VisitVerificationSessionScreen,
-} from '../../features/place-visit-verification';
+} from '../../modules/place/visit-verification';
 import { env } from '../../shared/config';
 import { clearTokenSession } from '../../shared/auth/tokenSession';
 import {

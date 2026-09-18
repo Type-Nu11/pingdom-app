@@ -14,9 +14,9 @@ import {
   selectTravelDate,
 } from '../../onboarding-preferences/model/travelScheduleCalendar';
 import type { TravelDateInput } from '../../onboarding-preferences/model/onboardingPreference';
-import { createPlaceDetailQueryOptions } from '../../place-detail/hooks/usePlaceDetail';
-import { usePlaceExplorationMediaList } from '../../place-exploration';
-import { useCheckIns } from '../../check-ins/hooks/useCheckIns';
+import { createPlaceDetailQueryOptions } from '../../../modules/place/detail';
+import { usePlaceExplorationMediaList } from '../../../modules/place/exploration';
+import { useCheckIns } from '../../../modules/place/check-ins';
 import { useCoupons } from '../../offers-coupons/hooks/useOffersCoupons';
 import { useReservations } from '../../reservations/hooks/useReservations';
 import {

@@ -1,5 +1,5 @@
 // 기존 feature의 공개 타입만 참조합니다. 타입 전용 import이므로 화면/API를 런타임에 불러오지 않습니다.
-import type { PlaceDetail } from '../../place-detail';
+import type { PlaceDetail } from '../../../modules/place';
 import type { AvailabilityList } from '../../reservations';
 
 export const VOICE_SCHEMA_VERSION = 1 as const;

@@ -9,7 +9,7 @@ import {
 import { registerReservationResources } from '../../i18n/reservationResources';
 import CreateReservationScreen from '../CreateReservationScreen';
 import ReservationDetailScreen from '../ReservationDetailScreen';
-import { usePlaceDetail } from '../../../place-detail/hooks/usePlaceDetail';
+import { usePlaceDetail } from '../../../../modules/place/detail';
 import { useAvailabilities, useCreateReservation } from '../../hooks/useReservations';
 import { useReservationDetail } from '../../hooks/useReservations';
 import { useAllPayments } from '../../../payments/hooks/usePayments';
@@ -17,7 +17,7 @@ import { createReservationIdempotencyKey, localDateKey } from '../../model/reser
 
 const FIXED_NOW = new Date(2026, 7, 26, 9, 0, 0);
 
-jest.mock('../../../place-detail/hooks/usePlaceDetail', () => ({ usePlaceDetail: jest.fn() }));
+jest.mock('../../../../modules/place/detail', () => ({ usePlaceDetail: jest.fn() }));
 jest.mock('../../hooks/useReservations', () => ({
   useAvailabilities: jest.fn(),
   useCreateReservation: jest.fn(),

@@ -11,7 +11,7 @@ import { theme } from '../../../../shared/theme';
 import ReservationBottomSheet from '../../components/ReservationBottomSheet';
 
 jest.mock('../..', () => ({ useReservations: jest.fn() }));
-jest.mock('../../../place-exploration', () => ({
+jest.mock('../../../../modules/place/exploration', () => ({
   usePlaceExplorationMediaList: jest.fn(() => ({
     '101': ['https://example.test/first.jpg', 'https://example.test/second.jpg'],
   })),

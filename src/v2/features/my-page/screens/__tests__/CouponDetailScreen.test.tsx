@@ -4,7 +4,7 @@ import { screen, waitFor } from '@testing-library/react-native';
 import { ApiError } from '../../../../shared/api';
 import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { offerCouponApi, type Coupon } from '../../../offers-coupons';
-import { placeDetailApi } from '../../../place-detail';
+import { placeDetailApi } from '../../../../modules/place/detail';
 import CouponDetailContainer from '../CouponDetailContainer';
 
 function coupon(overrides: Partial<Coupon> = {}): Coupon {

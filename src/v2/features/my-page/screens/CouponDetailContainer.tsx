@@ -10,7 +10,7 @@ import {
   useOffer,
   type Coupon,
 } from '../../offers-coupons';
-import { usePlaceDetail } from '../../place-detail';
+import { usePlaceDetail } from '../../../modules/place/detail';
 import { ErrorState, LoadingState } from '../../../shared/components';
 import {
   formatCouponInstant,

@@ -1,3 +1,4 @@
+import { PlaceMapComposition } from './PlaceMapComposition';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import React, { type PropsWithChildren, useEffect, useState } from 'react';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
@@ -62,7 +63,7 @@ export default function AppProviders({ children }: PropsWithChildren) {
           {isBootReady ? (
             <I18nextProvider i18n={i18n}>
               <AppErrorBoundary>
-                <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+                <QueryClientProvider client={queryClient}><PlaceMapComposition>{children}</PlaceMapComposition></QueryClientProvider>
               </AppErrorBoundary>
             </I18nextProvider>
           ) : null}

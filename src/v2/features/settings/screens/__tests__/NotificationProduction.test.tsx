@@ -8,7 +8,7 @@ import { renderWithProviders } from '../../../../shared/testing/testProviders';
 import { notificationApi } from '../../../notifications/api/notificationApi';
 import SettingsScreen from '../SettingsScreen';
 
-jest.mock('../../../map/screens/MapScreen', () => () => null);
+jest.mock('../../../../modules/place/map/screens/MapScreen', () => () => null);
 jest.mock('expo-notifications', () => ({}));
 
 test('production notification page never interprets allow-all as two category consents', async () => {
