@@ -1,4 +1,4 @@
-import type { OffersCouponsSchema } from '../../../shared/api';
+import type { OffersCouponsSchema } from '../../../../shared/api';
 import type { Coupon } from '../api/offerCouponApi';
 
 type Equal<Left, Right> =

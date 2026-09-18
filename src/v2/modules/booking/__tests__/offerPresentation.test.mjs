@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { ApiError } from '../ApiError.ts';
+import { ApiError } from '../../../shared/api/ApiError.ts';
 import {
   createOffersQueryOptions,
   offerCouponQueryKeys,
-} from '../../../features/offers-coupons/hooks/useOffersCoupons.ts';
-import { createIssueCouponMutationOptions } from '../../../features/offers-coupons/hooks/useOffersCoupons.ts';
+} from '../offers-coupons/hooks/useOffersCoupons.ts';
+import { createIssueCouponMutationOptions } from '../offers-coupons/hooks/useOffersCoupons.ts';
 import {
   classifyConflictCause,
   formatOfferEligibility,
@@ -16,7 +16,7 @@ import {
   selectCouponCtaState,
   selectPlaceOffers,
   toOfferView,
-} from '../../../features/offers-coupons/model/offerPresentation.ts';
+} from '../offers-coupons/model/offerPresentation.ts';
 
 const t = (key, options) => (options && 'count' in options ? `${key}:${options.count}` : key);
 

@@ -1,4 +1,4 @@
-import { ApiError, type ApiClient } from '../../../../shared/api';
+import { ApiError, type ApiClient } from '../../../../../shared/api';
 import { createOfferCouponApi, type Coupon } from '../offerCouponApi';
 
 function fakeClient(overrides: Partial<ApiClient>): ApiClient {
