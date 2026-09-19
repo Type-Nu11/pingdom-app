@@ -16,7 +16,7 @@ import {
   claimDeepLinkEvent,
   DEEP_LINK_EVENT_DEDUPE_WINDOW_MS,
 } from '../../../application/navigation/deepLinkDedupe.ts';
-import { createOnboardingCompletion } from '../../../v2/features/onboarding-entry/model/onboardingEntry.ts';
+import { createOnboardingCompletion } from '../../../v2/modules/onboarding/entry/__tests__/index.ts';
 
 const completed = {
   completion: createOnboardingCompletion({ birthYear: 2000, country: 'KR', language: 'ko' }),

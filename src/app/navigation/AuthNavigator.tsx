@@ -8,8 +8,8 @@ import LogInKrScreen from '../../features/onboarding/LogInKrScreen';
 import type {
   OnboardingCompletion,
   SignupOnboardingContext,
-} from '../../v2/features/onboarding-entry';
-import { getAuthInitialRoute } from '../../v2/features/onboarding-entry';
+} from '../../v2/modules/onboarding';
+import { getAuthInitialRoute } from '../../v2/modules/onboarding';
 import { normalizeSupportedLanguage } from '../../v2/shared/i18n';
 import {
   AUTH_ROUTES,

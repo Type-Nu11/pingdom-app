@@ -29,7 +29,7 @@ import {
   getAuthInitialRoute,
   getInitialAppRoute,
   getUnauthenticatedNavigationKey,
-} from '../../../v2/features/onboarding-entry/model/onboardingEntry.ts';
+} from '../../../v2/modules/onboarding/entry/__tests__/index.ts';
 
 test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parsePlaceId(123), 123);

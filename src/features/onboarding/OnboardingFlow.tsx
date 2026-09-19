@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { OnboardingPreferenceFlow } from '../../v2/features/onboarding-preferences';
-import type { SignupOnboardingContext } from '../../v2/features/onboarding-entry';
+import { OnboardingPreferenceFlow } from '../../v2/modules/onboarding';
+import type { SignupOnboardingContext } from '../../v2/modules/onboarding';
 import { setLanguage as setV2Language } from '../../v2/shared/i18n';
 import SelectAgeScreen from './SelectAgeScreen';
 import SelectCountryScreen from './SelectCountryScreen';
