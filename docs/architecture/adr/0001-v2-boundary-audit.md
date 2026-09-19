@@ -1,6 +1,25 @@
 # V2 boundary audit for ADR 0001
 
-Current: #360, branch `refactor/360-remaining-v2-domain-modules`, clean start at fetched `origin/dev` `0f43336`; behind/ahead 0/0. Prior audits are in Git history and the Place/User/Booking handoffs.
+Current: **#362**, branch `refactor/362-production-composition-boundary`, clean start at fetched
+`origin/dev` `62e3b621`, ahead/behind 0/0. See [#362 handoff](0001-production-composition-handoff.md)
+and [current production graph](0001-production-dependency-graph.json).
+
+| #362 metric | Before | After |
+|---|---:|---:|
+| Exception entries / occurrences | 15 / 15 | 6 / 6 |
+| Production / test exceptions | 10 / 5 | 6 / 0 |
+| Production SCC including types | 0 | 0 |
+| Flat feature compatibility files | 29 | 0 |
+| Production reachable local dependencies / edges | re-audited below | 536 / 1349 |
+
+No new exception tuples or maxCount increases. The remaining six exact imports preserve auth UI,
+CheckIn/Merchant injection and session/transport/token runtime; each reason specifies #124/#139.
+No V2 upward/legacy test exceptions remain. All compatibility consumer replacements are public APIs.
+Device QA remains incomplete; V1 dependency delta `removed`, `legacy-exception` required for V1 edits.
+
+The following #360 measurements are historical, not the current folder/exception inventory.
+
+Historical #360 snapshot: branch `refactor/360-remaining-v2-domain-modules`, clean start at fetched `origin/dev` `0f43336`; behind/ahead 0/0. Prior audits are in Git history and the Place/User/Booking handoffs.
 
 See [remaining migration handoff](0001-remaining-migration-handoff.md) and [full inventory / exact compatibility consumers](0001-remaining-migration-inventory.md).
 
