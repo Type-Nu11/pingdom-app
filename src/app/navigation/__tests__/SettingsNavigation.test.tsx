@@ -8,7 +8,7 @@ import { profileApi } from '../../../v2/features/my-page/api/profileApi';
 import { notificationApi } from '../../../v2/features/notifications/api/notificationApi';
 import { AccountManagementRouteScreen, NotificationSettingsRouteScreen, SettingsDetailRouteScreen, SettingsRouteScreen } from '../MainNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { offerCouponApi } from '../../../v2/features/offers-coupons/api/offerCouponApi';
+import { offerCouponApi } from '../../../v2/modules/booking/offers-coupons/__tests__';
 import { checkInApi } from '../../../v2/modules/place/check-ins';
 import type { MainScreenProps } from '../types';
 

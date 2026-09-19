@@ -4,7 +4,7 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import type { Coupon } from '../../v2/features/offers-coupons';
+import type { Coupon } from '../../v2/modules/booking/offers-coupons';
 
 declare const routeIdBrand: unique symbol;
 
