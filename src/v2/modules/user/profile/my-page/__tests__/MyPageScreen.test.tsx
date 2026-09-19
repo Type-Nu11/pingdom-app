@@ -13,6 +13,7 @@ import { placeExplorationApi } from '../../../../place/exploration';
 import { reservationApi } from '../../../../booking/reservations/__tests__';
 import { travelScheduleApi } from '../../../../travel/schedules';
 import MyPageScreen from '../screens/MyPageScreen';
+import { lightTheme, darkTheme } from '../../../../../shared/theme';
 
 const PROFILE: Profile = {
   birthYear: 1998,
@@ -75,6 +76,77 @@ function mockEverythingEmpty() {
 }
 
 describe('MyPageScreen', () => {
+  test.each(['ko', 'en'] as const)('%s 헤더는 안전 영역 아래 44px와 18 Medium 제목, 버튼 동작을 유지한다', async (language) => {
+    mockEverythingEmpty();
+    const onBack = jest.fn();
+    const onOpenSettings = jest.fn();
+    const onOpenProfileEdit = jest.fn();
+    const { user, i18n, queryClient } = await renderWithProviders(
+      <MyPageScreen onBack={onBack} onOpenSettings={onOpenSettings}
+        onOpenProfileEdit={onOpenProfileEdit} onOpenCoupons={jest.fn()}
+        onOpenPlace={jest.fn()} onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />,
+      { language },
+    );
+    await screen.findByText(PROFILE.username);
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+    expect(screen.getByTestId('v2-my-page-screen').props.edges).toContain('top');
+    expect(screen.getByTestId('v2-my-page-header')).toHaveStyle({ minHeight: 44, alignItems: 'center' });
+    const title = screen.getByText(i18n.t('myPage.title'));
+    expect(title).toHaveStyle({ fontSize: 18, fontWeight: '500', lineHeight: 23.4, textAlign: 'center', flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
+    expect(title).toHaveStyle(lightTheme.typography.navigationTitle);
+    expect(screen.getByTestId('v2-my-page-back-icon')).toHaveStyle({ left: -16, top: -16 });
+    expect(screen.getByTestId('v2-my-page-settings-icon')).toHaveStyle({ left: -20, top: -16 });
+    expect(title.props.numberOfLines).toBe(1);
+    expect(title.props.allowFontScaling).not.toBe(false);
+    expect(screen.getByTestId('v2-my-page-profile-section')).toHaveStyle({ paddingTop: 16 });
+    for (const key of ['back', 'settings']) {
+      expect(screen.getByRole('button', { name: i18n.t(`myPage.${key}`) })).toHaveStyle({ width: 44, height: 44, flexShrink: 0 });
+    }
+    await user.press(screen.getByRole('button', { name: i18n.t('myPage.back') }));
+    await user.press(screen.getByRole('button', { name: i18n.t('myPage.settings') }));
+    await user.press(screen.getByText(PROFILE.username));
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('v2-my-page-scroll').props.contentContainerStyle).toEqual({ flexGrow: 1 });
+  });
+
+  test.each(['아주긴사용자이름'.repeat(12), 'LongUnbrokenUsername'.repeat(12)])('긴 사용자명 원문과 국가를 보존하며 고정 아이콘 사이에서 축소한다: %s', async (username) => {
+    mockEverythingEmpty();
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue({ ...PROFILE, username });
+    const { queryClient } = await renderMyPage();
+    const name = await screen.findByText(username);
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+    expect(name.props.numberOfLines).toBe(1);
+    expect(screen.getByTestId('v2-my-page-country').props.numberOfLines).toBe(1);
+    expect(screen.getByTestId('v2-my-page-profile-info')).toHaveStyle({ flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
+    expect(screen.getByTestId('v2-my-page-profile-text')).toHaveStyle({ flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
+    expect(screen.getByTestId('v2-my-page-avatar')).toHaveStyle({ width: 56, height: 56, flexShrink: 0 });
+    expect(screen.getByTestId('v2-my-page-profile-chevron')).toHaveStyle({ width: 24, flexShrink: 0 });
+  });
+
+  test.each(['LIGHT', 'DARK'] as const)('%s 제목은 공통 폰트와 theme 색상을 유지한다', async (appearancePreference) => {
+    mockEverythingEmpty();
+    const theme = appearancePreference === 'DARK' ? darkTheme : lightTheme;
+    const { i18n, queryClient } = await renderWithProviders(<MyPageScreen onBack={jest.fn()} onOpenSettings={jest.fn()}
+      onOpenProfileEdit={jest.fn()} onOpenCoupons={jest.fn()} onOpenPlace={jest.fn()}
+      onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />, { appearancePreference });
+    await screen.findByText(PROFILE.username);
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+    expect(screen.getByText(i18n.t('myPage.title'))).toHaveStyle({ color: theme.colors.textStrong, fontFamily: 'Pretendard' });
+    expect(screen.getByTestId('v2-my-page-screen')).toHaveStyle({ backgroundColor: theme.colors.background });
+  });
+
+  test('프로필 로딩 중에도 헤더와 설정은 유지한다', async () => {
+    mockEverythingEmpty();
+    jest.spyOn(profileApi, 'getProfile').mockImplementation(() => new Promise(() => {}));
+    const { i18n, queryClient } = await renderMyPage();
+    await waitFor(() => expect(queryClient.isFetching()).toBe(1));
+    expect(screen.getByText(i18n.t('myPage.profileLoading'))).toBeTruthy();
+    expect(screen.getByRole('button', { name: i18n.t('myPage.settings') })).toBeTruthy();
+    expect(screen.queryByText(PROFILE.username)).toBeNull();
+  });
+
   test('예약·리뷰·쿠폰 개수를 실데이터로 보여준다', async () => {
     mockEverythingEmpty();
 

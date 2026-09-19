@@ -26,7 +26,7 @@ import {
   toVerifiedPlaceEntries,
   toVerifiedPlaceListState,
 } from '../verified-places/model/verifiedPlaceEntries';
-import { HeaderBackButton } from '../../../../../shared/components';
+import BackIcon from '../../../../../shared/assets/icons/back.svg';
 import ChevronIcon from '../../../../../shared/assets/icons/chevron-right-24.svg';
 import DividerIcon from '../../../../../shared/assets/icons/divider.svg';
 import SettingsIcon from '../../../../../shared/assets/icons/settings.svg';
@@ -182,21 +182,23 @@ export default function MyPageScreen({
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-my-page-screen">
-      <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
-        <TopBar>
-          <HeaderBackButton accessibilityLabel={t('myPage.back')} onPress={onBack} />
-          <TopBarTitle>{t('myPage.title')}</TopBarTitle>
+      <Content testID="v2-my-page-scroll" contentContainerStyle={CONTENT_CONTAINER_STYLE}>
+        <TopBar testID="v2-my-page-header">
+          <IconButton accessibilityLabel={t('myPage.back')} accessibilityRole="button" hitSlop={8} onPress={onBack}>
+            <BackIcon testID="v2-my-page-back-icon" height={84} style={BACK_ICON_STYLE} width={80} />
+          </IconButton>
+          <TopBarTitle numberOfLines={1}>{t('myPage.title')}</TopBarTitle>
           <IconButton
             accessibilityLabel={t('myPage.settings')}
             accessibilityRole="button"
             hitSlop={8}
             onPress={onOpenSettings}
           >
-            <SettingsIcon height={84} style={TOP_BAR_ICON_STYLE} width={80} />
+            <SettingsIcon testID="v2-my-page-settings-icon" height={84} style={SETTINGS_ICON_STYLE} width={80} />
           </IconButton>
         </TopBar>
 
-        <Section $borderWidth={8} $compactTop>
+        <Section $borderWidth={8} testID="v2-my-page-profile-section">
           <SectionContent>
             {isProfileLoading ? (
               <Slot $minHeight={PROFILE_ROW_HEIGHT}>
@@ -211,24 +213,26 @@ export default function MyPageScreen({
                   make the edit screen unreachable.
                 */}
                 <ProfileRow accessibilityRole="button" onPress={onOpenProfileEdit}>
-                  <ProfileInfo>
-                    {profile?.profileImageUrl ? (
-                      <Avatar source={{ uri: profile.profileImageUrl }} />
-                    ) : (
-                      <AvatarPlaceholder height={56} width={56} />
-                    )}
-                    <ProfileText>
+                  <ProfileInfo testID="v2-my-page-profile-info">
+                    <AvatarSlot testID="v2-my-page-avatar">
+                      {profile?.profileImageUrl ? (
+                        <Avatar source={{ uri: profile.profileImageUrl }} />
+                      ) : (
+                        <AvatarPlaceholder height={56} width={56} />
+                      )}
+                    </AvatarSlot>
+                    <ProfileText testID="v2-my-page-profile-text">
                       <Username numberOfLines={1}>
                         {profile?.username ?? t('myPage.profileUnavailable')}
                       </Username>
                       {profile?.country ? (
-                        <UserCountry numberOfLines={1}>
+                        <UserCountry numberOfLines={1} testID="v2-my-page-country">
                           {t(`countries.${profile.country.toLowerCase()}`, { defaultValue: profile.country })}
                         </UserCountry>
                       ) : null}
                     </ProfileText>
                   </ProfileInfo>
-                  <ChevronIcon height={24} width={24} />
+                  <ProfileChevron testID="v2-my-page-profile-chevron"><ChevronIcon height={24} width={24} /></ProfileChevron>
                 </ProfileRow>
                 {isProfileError ? (
                   <InlineRetryRow>
@@ -371,7 +375,9 @@ export default function MyPageScreen({
 }
 
 const CONTENT_CONTAINER_STYLE = { flexGrow: 1 } as const;
-const TOP_BAR_ICON_STYLE = { position: 'absolute' } as const;
+// SVG viewBoxes include shadow padding; align the 44px circle with its touch target.
+const BACK_ICON_STYLE = { left: -16, top: -16, position: 'absolute' } as const;
+const SETTINGS_ICON_STYLE = { left: -20, top: -16, position: 'absolute' } as const;
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -386,33 +392,33 @@ const TopBar = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  height: 84px;
+  min-height: 44px;
   padding: 0 ${({ theme }) => theme.spacing.md}px;
 `;
 
 const IconButton = styled.Pressable`
-  align-items: center;
-  justify-content: center;
   width: 44px;
   height: 44px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: visible;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.background};
-  shadow-color: ${({ theme }) => theme.colors.shadow};
-  shadow-offset: 0 4px;
-  shadow-opacity: 0.06;
-  shadow-radius: 10px;
-  elevation: 2;
 `;
 
 const TopBarTitle = styled(AppText)`
+  flex: 1;
+  min-width: 0;
+  text-align: center;
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: 500;
+  font-size: ${({ theme }) => theme.typography.navigationTitle.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.navigationTitle.fontWeight};
+  line-height: ${({ theme }) => theme.typography.navigationTitle.lineHeight}px;
 `;
 
-const Section = styled.View<{ $borderWidth: number; $compactTop?: boolean }>`
+const Section = styled.View<{ $borderWidth: number }>`
   width: 100%;
-  padding: ${({ $compactTop, theme }) => ($compactTop ? theme.spacing.xs : theme.spacing.md)}px 0 ${({ theme }) => theme.spacing.md}px;
+  padding: ${({ theme }) => theme.spacing.md}px 0 ${({ theme }) => theme.spacing.md}px;
   border-bottom-width: ${({ $borderWidth }) => $borderWidth}px;
   border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
@@ -498,12 +504,30 @@ const ProfileRow = styled.Pressable`
 `;
 
 const ProfileInfo = styled.View`
+  flex: 1;
+  min-width: 0;
   flex-direction: row;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm}px;
 `;
 
-const ProfileText = styled.View``;
+const ProfileText = styled.View`
+  flex: 1;
+  min-width: 0;
+`;
+
+const AvatarSlot = styled.View`
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+`;
+
+const ProfileChevron = styled.View`
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-left: ${({ theme }) => theme.spacing.sm}px;
+`;
 
 const Avatar = styled(Image)`
   width: 56px;

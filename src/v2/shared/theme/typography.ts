@@ -2,6 +2,12 @@ import { PRETENDARD_FONT_FAMILY } from '../fonts';
 
 export function createTypography(fontFamily: string) {
   return {
+    navigationTitle: {
+      fontFamily,
+      fontSize: 18,
+      fontWeight: '500',
+      lineHeight: 23.4,
+    },
     onboardingAction: {
       fontFamily,
       fontSize: 20,
