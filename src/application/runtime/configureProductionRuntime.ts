@@ -2,12 +2,7 @@ import '../../v2/app/configureDomainMocks';
 import { configureBeforeLogout, logout } from '../../app/store/authStore';
 import { api } from '../../shared/api/apiClient';
 import { getCachedAccessToken } from '../../shared/api/authTokens';
-import { unregisterStoredFcmToken } from '../../v2/modules/user/notifications/lifecycle';
-import {
-  configureApiAccessTokenProvider,
-  configureApiTransport,
-} from '../../v2/shared/api/apiClient';
-import { configureTokenSession } from '../../v2/shared/auth/tokenSession';
+import { installProductionRuntime } from './productionRuntime';
 
 let isConfigured = false;
 
@@ -20,11 +15,11 @@ let isConfigured = false;
 export function configureProductionRuntime(): void {
   if (isConfigured) return;
 
-  configureApiTransport(api);
-  // The token cache is updated by both login and the Axios refresh interceptor. Reading it
-  // directly prevents V2 fetch fallbacks from reusing the pre-refresh Zustand snapshot.
-  configureApiAccessTokenProvider(getCachedAccessToken);
-  configureBeforeLogout(unregisterStoredFcmToken);
-  configureTokenSession({ clear: logout });
+  installProductionRuntime({
+    transport: api,
+    getAccessToken: getCachedAccessToken,
+    beforeLogout: configureBeforeLogout,
+    logout,
+  });
   isConfigured = true;
 }

@@ -1,3 +1,5 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { clearActiveForegroundVisitVerificationSession } from '../../v2/modules/place/visit-verification/session';
 import {
   createNavigationContainerRef,
   NavigationContainer,
@@ -40,6 +42,7 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export default function RootNavigator() {
   const navigationTheme = useAppNavigationTheme();
+  const queryClient = useQueryClient();
   const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
   const isHydrating = useAuthStore((state) => state.isHydrating);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -127,12 +130,15 @@ export default function RootNavigator() {
 
   useEffect(() => {
     if (previousIsLoggedIn.current && !isLoggedIn) {
+      // This provider survives logout. Cancel/remove data before another session can reuse it.
+      queryClient.clear();
+      clearActiveForegroundVisitVerificationSession();
       setPendingNotification(null);
       setPendingDeepLinkIntent(null);
       handledNotificationIds.current.clear();
     }
     previousIsLoggedIn.current = isLoggedIn;
-  }, [isLoggedIn]);
+  }, [isLoggedIn, queryClient]);
 
   if (rootState === 'loading') return null;
 
