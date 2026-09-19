@@ -3,7 +3,7 @@ import { createNavigationContainerRef, NavigationContainer } from '@react-naviga
 import MainNavigator from '../MainNavigator';
 import { SettingsRouteScreen as StandaloneSettingsRouteScreen, AccountManagementRouteScreen as StandaloneAccountRouteScreen } from '../../../v2/app/navigation/RootNavigator';
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { renderWithProviders } from '../../../v2/shared/testing/testProviders';
+import { renderWithProviders } from '../../../v2/app/testing/testProviders';
 import { profileApi } from '../../../v2/modules/user/profile/__tests__';
 import { notificationApi } from '../../../v2/modules/user/notifications/__tests__';
 import { AccountManagementRouteScreen, NotificationSettingsRouteScreen, SettingsDetailRouteScreen, SettingsRouteScreen } from '../MainNavigator';

@@ -201,10 +201,10 @@ test('RED: User sibling submodules cannot reach into each other', (t) => {
   assert.ok(siblings.violations.some((v) => v.rule === 'user-submodule-public-api'));
 });
 
-test('RED: frozen V1 test adapters cannot enter the production graph', (t) => {
+test('RED: public User test support cannot enter the production graph', (t) => {
   const r = fixture(t, {
-    'src/v2/app/example.ts': "import '../features/my-page/api/profileApi';",
-    'src/v2/features/my-page/api/profileApi.ts': 'export {};',
+    'src/v2/app/example.ts': "import '../modules/user/profile/__tests__';",
+    'src/v2/modules/user/profile/__tests__/index.ts': 'export {};',
   });
   assert.ok(r.violations.some((v) => v.rule === 'production-no-test'));
 });
@@ -226,19 +226,17 @@ test('RED: Booking sibling deep imports cannot bypass the public boundary', (t) 
   assert.ok(result.violations.some(v => v.rule === 'booking-submodule-public-api'));
 });
 
-test('GREEN: frozen Coupon test adapter is available to V1 tests', (t) => {
+test('GREEN: public Coupon test support is available to V1 tests', (t) => {
   const result = fixture(t, {
-    'src/app/navigation/__tests__/coupon.test.ts': "import { Value } from '../../../v2/features/offers-coupons/api/offerCouponApi';",
-    'src/v2/features/offers-coupons/api/offerCouponApi.ts': "export { Value } from '../../../modules/booking/offers-coupons/__tests__';",
+    'src/app/navigation/__tests__/coupon.test.ts': "import { Value } from '../../../v2/modules/booking/offers-coupons/__tests__';",
     'src/v2/modules/booking/offers-coupons/__tests__/index.ts': 'export const Value = 1;',
   });
   assert.deepEqual(result.violations, []);
 });
 
-test('RED: frozen Coupon test adapter is forbidden in production', (t) => {
+test('RED: public Coupon test support is forbidden in production', (t) => {
   const result = fixture(t, {
-    'src/v2/app/main.ts': "import { Value } from '../features/offers-coupons/api/offerCouponApi';",
-    'src/v2/features/offers-coupons/api/offerCouponApi.ts': "export { Value } from '../../../modules/booking/offers-coupons/__tests__';",
+    'src/v2/app/main.ts': "import { Value } from '../modules/booking/offers-coupons/__tests__';",
     'src/v2/modules/booking/offers-coupons/__tests__/index.ts': 'export const Value = 1;',
   });
   assert.ok(result.violations.some(v => v.rule === 'production-no-test'));
@@ -249,18 +247,18 @@ test('Booking migration has no #359 exceptions', () => {
   assert.equal(exceptions.filter(e => e.issue === '#359').length, 0);
 });
 
-for (const adapter of ['check-ins/api/checkInApi.ts', 'map/utils/mapBack.ts', 'onboarding-entry/model/onboardingEntry.ts']) {
-  test(`GREEN: frozen test adapter ${adapter} stays available to V1 tests`, t => {
+for (const adapter of ['place/check-ins/__tests__/index.ts', 'place/map/navigation/__tests__/index.ts', 'onboarding/entry/__tests__/index.ts']) {
+  test(`GREEN: public test support ${adapter} stays available to V1 tests`, t => {
     const result = fixture(t, {
-      'src/app/navigation/__tests__/example.test.ts': `import '../../../v2/features/${adapter}';`,
-      [`src/v2/features/${adapter}`]: 'export {};',
+      'src/app/navigation/__tests__/example.test.ts': `import '../../../v2/modules/${adapter}';`,
+      [`src/v2/modules/${adapter}`]: 'export {};',
     });
     assert.deepEqual(result.violations, []);
   });
-  test(`RED: frozen test adapter ${adapter} cannot enter production`, t => {
+  test(`RED: public test support ${adapter} cannot enter production`, t => {
     const result = fixture(t, {
-      'src/v2/app/example.ts': `import '../features/${adapter}';`,
-      [`src/v2/features/${adapter}`]: 'export {};',
+      'src/v2/app/example.ts': `import '../modules/${adapter}';`,
+      [`src/v2/modules/${adapter}`]: 'export {};',
     });
     assert.ok(result.violations.some(v => v.rule === 'production-no-test'));
   });
@@ -270,11 +268,13 @@ test('Remaining migration: no #360 exceptions, SCCs, implementations or V2 compa
   const { default: ts } = await import('typescript');
   const manifest = JSON.parse(fs.readFileSync('scripts/v2-boundaries/exceptions.json', 'utf8'));
   assert.equal(manifest.filter(e => e.issue === '#360').length, 0);
-  assert.equal(manifest.filter(e => e.issue === '#362').length, 11);
-  assert.equal(manifest.reduce((sum, e) => sum + e.maxCount, 0), 11);
+  assert.equal(manifest.filter(e => e.issue === '#362').length, 6);
+  assert.equal(manifest.reduce((sum, e) => sum + e.maxCount, 0), 6);
   const result = inspect(process.cwd());
   assert.deepEqual(result.cycles, []);
-  assert.deepEqual(result.violations.filter(v => !['application-bridge', 'v2-no-legacy', 'v2-no-escape', 'no-upward-composition'].includes(v.rule)), []);
+  assert.deepEqual(result.violations.filter(v => v.rule !== 'application-bridge'), []);
+  assert.deepEqual([...result.nodes.keys()].filter(file => file.startsWith('src/v2/features/')), []);
+  assert.equal(manifest.some(e => e.test), false);
   for (const file of result.nodes.keys()) {
     if (!file.startsWith('src/v2/features/')) continue;
     const source = fs.readFileSync(file, 'utf8');
@@ -291,4 +291,43 @@ test('Remaining migration: no #360 exceptions, SCCs, implementations or V2 compa
   }
   assert.equal(result.nodes.has('src/v2/modules/home/index.ts'), false);
   assert.equal(result.nodes.has('src/v2/modules/community/index.ts'), false);
+});
+
+test('#362 production graph has no old roots, compatibility adapters, tests, deep imports or SCCs', async () => {
+  const { auditProductionGraph, productionRoots } = await import('../production-dependencies.mjs');
+  const actual = auditProductionGraph();
+  const snapshot = JSON.parse(fs.readFileSync('docs/architecture/adr/0001-production-dependency-graph.json', 'utf8'));
+  assert.deepEqual(actual, snapshot, 'Regenerate the reviewed production graph with node scripts/production-dependencies.mjs --write');
+  assert.equal(actual.roots.length, 6);
+  assert.ok(actual.roots.every(root => root.exists && root.reachable));
+  assert.deepEqual(actual.productionScc, []);
+  assert.deepEqual(actual.dependencies.filter(d => d.category === 'D' || d.path.startsWith('src/v2/features/')), []);
+  for (const candidate of actual.removalCandidates) {
+    assert.equal(candidate.reachable, candidate.path.endsWith('/RoutePlaceholderScreen.tsx'));
+  }
+  for (const dependency of actual.dependencies.filter(d => ['B', 'C'].includes(d.category))) {
+    assert.ok(dependency.owner && dependency.reason && dependency.removalIssues.includes('#139'));
+  }
+  const inspected = inspect(process.cwd());
+  assert.deepEqual(inspected.violations.filter(v => v.test || v.rule !== 'application-bridge'), []);
+  const exceptions = JSON.parse(fs.readFileSync('scripts/v2-boundaries/exceptions.json', 'utf8'));
+  assert.deepEqual(exceptions.map(e => [e.source, e.target, e.maxCount]), [
+    ['src/application/navigation/RootNavigator.tsx', 'src/app/navigation/AuthNavigator.tsx', 1],
+    ['src/application/navigation/RootNavigator.tsx', 'src/app/navigation/MainNavigator.tsx', 1],
+    ['src/application/navigation/RootNavigator.tsx', 'src/app/store/authStore.ts', 1],
+    ['src/application/runtime/configureProductionRuntime.ts', 'src/app/store/authStore.ts', 1],
+    ['src/application/runtime/configureProductionRuntime.ts', 'src/shared/api/apiClient.ts', 1],
+    ['src/application/runtime/configureProductionRuntime.ts', 'src/shared/api/authTokens.ts', 1],
+  ]);
+  const index = fs.readFileSync(productionRoots[0], 'utf8');
+  assert.match(index, /modules\/user\/notifications\/background/);
+  assert.ok(index.indexOf('registerBackgroundNotificationHandler();') < index.indexOf('registerRootComponent(App);'));
+  const composition = fs.readFileSync('src/application/navigation/MainNavigator.tsx', 'utf8');
+  assert.doesNotMatch(composition, /(?:from|import)\s*['"].*(?:\/features\/|\/app\/store\/)/);
+  assert.match(composition, /useProfile.*from.*modules\/user\/profile/);
+  // All existing route names remain registered, including the unsupported Merchant and legacy CheckIn.
+  const contract = fs.readFileSync('src/application/navigation/types.ts', 'utf8').split('export const MAIN_ROUTES = {')[1].split('} as const;')[0];
+  const routes = [...contract.matchAll(/(\w+): '/g)].map(match => match[1]);
+  assert.equal(routes.length, 19);
+  for (const route of routes) assert.match(composition, new RegExp(`name=\\{MAIN_ROUTES\\.${route}\\}`));
 });

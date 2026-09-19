@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { createTestI18n, renderWithProviders } from '../../../v2/shared/testing/testProviders';
+import { createTestI18n, renderWithProviders } from '../../../v2/app/testing/testProviders';
 import { useProfile } from '../../../v2/modules/user/profile';
 import {
   MapRouteScreen,

@@ -1,4 +1,4 @@
-import { createTestI18n } from '../../testing/testProviders';
+import { createTestI18n } from '../../../app/testing/testProviders';
 
 describe('place action translations', () => {
   test.each([

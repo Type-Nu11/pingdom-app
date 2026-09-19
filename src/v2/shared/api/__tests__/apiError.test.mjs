@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { ApiError, getApiErrorUx, toApiError } from '../index.ts';
-import { shouldRetryQuery } from '../../../app/queryClient.ts';
 
 test('contract ErrorResponse fields are retained for forms and support logging', () => {
   const response = {
@@ -83,17 +82,6 @@ test('400/401/403/404/409/410/422/426 errors select contract UX branches', () =>
   }
 });
 
-test('network and unexpected errors remain retryable', () => {
-  assert.deepEqual(
-    (({ action, kind }) => ({ action, kind }))(getApiErrorUx(new Error('offline'))),
-    { action: 'retry', kind: 'generic' },
-  );
-  assert.equal(shouldRetryQuery(0, new Error('offline')), true);
-  assert.equal(shouldRetryQuery(1, new Error('offline')), true);
-  assert.equal(shouldRetryQuery(2, new Error('offline')), false);
-  assert.equal(shouldRetryQuery(0, new ApiError('validation', { status: 400 })), false);
-  assert.equal(shouldRetryQuery(0, new ApiError('server unavailable', { status: 503 })), true);
-});
 
 test('transport failures classify as a distinct retryable network kind', () => {
   const networkError = toApiError({

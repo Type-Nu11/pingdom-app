@@ -5,8 +5,6 @@ import ts from 'typescript';
 const extensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.mts', '.cts']);
 export const isTest = (file) => /(?:^|\/)(?:__tests__|__mocks__)\//.test(file)
   || /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file)
-  // Frozen V1 navigation tests use these compatibility adapters (#362).
-  || ['src/v2/features/check-ins/api/checkInApi.ts', 'src/v2/features/map/utils/mapBack.ts', 'src/v2/features/onboarding-entry/model/onboardingEntry.ts', 'src/v2/features/my-page/api/profileApi.ts', 'src/v2/features/notifications/api/notificationApi.ts', 'src/v2/features/offers-coupons/api/offerCouponApi.ts'].includes(file)
   || file.startsWith('src/v2/shared/testing/') || file.startsWith('src/v2/app/testing/');
 export function filesUnder(root, directory) {
   const absolute = path.join(root, directory);
@@ -57,7 +55,7 @@ export function buildGraph(root) {
   const config = configFile ? ts.readConfigFile(configFile, ts.sys.readFile).config : {};
   const options = ts.parseJsonConfigFileContent(config, ts.sys, root).options;
   const files = filesUnder(root, 'src').filter((file) => extensions.has(path.extname(file)));
-  for (const entry of ['index.ts', 'App.tsx', 'App.v2.tsx']) if (fs.existsSync(path.join(root, entry))) files.push(entry);
+  for (const entry of ['index.ts', 'App.tsx', 'App.v1.tsx', 'App.v2.tsx']) if (fs.existsSync(path.join(root, entry))) files.push(entry);
   const fileSet = new Set(files);
   function resolve(source, specifier) {
     const resolved = ts.resolveModuleName(specifier, path.join(root, source), options, ts.sys).resolvedModule;
