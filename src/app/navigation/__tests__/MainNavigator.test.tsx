@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react-native';
 import React from 'react';
 
 import { createTestI18n, renderWithProviders } from '../../../v2/shared/testing/testProviders';
-import { useProfile } from '../../../features/profile/hooks/useProfile';
+import { useProfile } from '../../../v2/modules/user/profile';
 import {
   MapRouteScreen,
   MyPageRouteScreen,
@@ -38,11 +38,11 @@ jest.mock('../../../v2/modules/place/map/screens/MapScreen', () => {
   };
 });
 
-jest.mock('../../../features/profile/hooks/useProfile', () => ({
+jest.mock('../../../v2/modules/user/profile/hooks/useProfile', () => ({
   useProfile: jest.fn(),
 }));
 
-jest.mock('../../../v2/features/my-page/screens/MyPageScreen', () => {
+jest.mock('../../../v2/modules/user/profile/my-page/screens/MyPageScreen', () => {
   const ReactLibrary = require('react');
   const ReactNative = require('react-native');
   return {
@@ -86,7 +86,7 @@ jest.mock('../../../v2/features/settings/screens/SettingsScreen', () => {
   };
 });
 
-jest.mock('../../../v2/features/merchant-my-page/screens/MerchantMyPageContainer', () => {
+jest.mock('../../../v2/modules/merchant/screens/MerchantMyPageContainer', () => {
   const ReactLibrary = require('react');
   const ReactNative = require('react-native');
   return {
@@ -118,7 +118,7 @@ jest.mock('../../../v2/features/merchant-my-page/screens/MerchantMyPageContainer
   };
 });
 
-jest.mock('../../../v2/features/my-page/screens/ProfileEditScreen', () => {
+jest.mock('../../../v2/modules/user/profile/screens/ProfileEditScreen', () => {
   const ReactLibrary = require('react');
   const ReactNative = require('react-native');
   return {

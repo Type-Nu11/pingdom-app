@@ -10,11 +10,11 @@ import { ReservationBoxScreen } from '../../v2/modules/booking/reservations/rout
 import { CreateReservationScreen } from '../../v2/modules/booking/reservations/routes';
 import { CouponBoxScreen } from '../../v2/modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../v2/modules/user/profile/my-page';
-import MyPageScreen from '../../v2/features/my-page/screens/MyPageScreen';
-import ProfileEditScreen from '../../v2/features/my-page/screens/ProfileEditScreen';
-import VerifiedPlacesScreen from '../../v2/features/my-page/screens/VerifiedPlacesScreen';
-import MerchantMyPageContainer from '../../v2/features/merchant-my-page/screens/MerchantMyPageContainer';
-import { useProfile } from '../../features/profile/hooks/useProfile';
+import { MyPageScreen } from '../../v2/modules/user/profile/my-page';
+import { ProfileEditScreen } from '../../v2/modules/user/profile';
+import { VerifiedPlacesScreen } from '../../v2/modules/user/profile/my-page';
+import { MerchantMyPageContainer } from '../../v2/modules/merchant';
+import { useProfile } from '../../v2/modules/user/profile';
 import { clearTokenSession } from '../../v2/shared/auth/tokenSession';
 import { UnsupportedFeatureScreen } from '../../v2/shared/components';
 import {
