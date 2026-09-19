@@ -9,10 +9,10 @@ import { notificationApi } from '../../../v2/features/notifications/api/notifica
 import { AccountManagementRouteScreen, NotificationSettingsRouteScreen, SettingsDetailRouteScreen, SettingsRouteScreen } from '../MainNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { offerCouponApi } from '../../../v2/features/offers-coupons/api/offerCouponApi';
-import { checkInApi } from '../../../v2/features/check-ins/api/checkInApi';
+import { checkInApi } from '../../../v2/modules/place/check-ins';
 import type { MainScreenProps } from '../types';
 
-jest.mock('../../../v2/features/map/screens/MapScreen', () => () => null);
+jest.mock('../../../v2/modules/place/map/screens/MapScreen', () => () => null);
 jest.mock('expo-notifications', () => ({}));
 
 const navigation = {

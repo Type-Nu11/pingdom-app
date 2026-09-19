@@ -12,7 +12,7 @@ import {
 } from '../MainNavigator';
 import { MAIN_ROUTES, type MainScreenProps } from '../types';
 
-jest.mock('../../../v2/features/map/screens/MapScreen', () => {
+jest.mock('../../../v2/modules/place/map/screens/MapScreen', () => {
   const ReactLibrary = require('react');
   const ReactNative = require('react-native');
   return {

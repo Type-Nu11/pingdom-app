@@ -5,9 +5,9 @@ import {
   type CreateCheckInBody,
   useCreateCheckIn,
   useInfiniteCheckIns,
-} from '../../../v2/features/check-ins';
-import { useCurrentLocation } from '../../../v2/features/map/hooks/useCurrentLocation';
-import type { Coordinate } from '../../../v2/features/map/model/map.types';
+} from '../../../v2/modules/place/check-ins';
+import { useCurrentLocation } from '../../../v2/modules/place/map/location';
+import type { Coordinate } from '../../../v2/modules/place/map/location';
 
 export const CHECK_IN_PAGE_SIZE = 20;
 

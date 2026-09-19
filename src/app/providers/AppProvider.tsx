@@ -12,7 +12,7 @@ import {
 } from '../../v2/shared/api';
 import { configureTokenSession } from '../../v2/shared/auth/tokenSession';
 import { i18n, initializeI18n } from '../../v2/shared/i18n';
-import { clearActiveForegroundVisitVerificationSession } from '../../v2/features/place-visit-verification/model/visitVerificationSession';
+import { clearActiveForegroundVisitVerificationSession } from '../../v2/modules/place/visit-verification/session';
 
 const AppProvider = ({ children }: PropsWithChildren) => {
   const [queryClient] = useState(() => createQueryClient());

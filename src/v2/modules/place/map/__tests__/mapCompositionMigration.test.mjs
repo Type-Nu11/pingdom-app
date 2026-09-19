@@ -8,7 +8,7 @@ test('production Map route renders the V2-owned composition directly', () => {
   const navigator = read('../../../../../app/navigation/MainNavigator.tsx');
   const screen = read('../screens/MapScreen.tsx');
 
-  assert.match(navigator, /v2\/features\/map\/screens\/MapScreen/);
+  assert.match(navigator, /import \{ MapScreen \} from '..\/..\/v2\/modules\/place\/map'/);
   assert.doesNotMatch(navigator, /features\/place\/screens\/MapScreen/);
   assert.match(screen, /usePlaceDetailPresentation/);
   assert.match(screen, /canQueryBookmarks/);

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled from 'styled-components/native';
 import { useAuthStore } from '../store/authStore';
-import MapScreen from '../../v2/features/map/screens/MapScreen';
+import { MapScreen } from '../../v2/modules/place/map';
 import CheckInScreen from '../../features/place/screens/CheckInScreen';
 import ReservationDetailScreen from '../../v2/features/reservations/screens/ReservationDetailScreen';
 import ReservationBoxScreen from '../../v2/features/reservations/screens/ReservationBoxScreen';
@@ -21,7 +21,7 @@ import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
   VisitVerificationSessionScreen,
-} from '../../v2/features/place-visit-verification';
+} from '../../v2/modules/place/visit-verification';
 import { AccountManagementScreen, SettingsDetailScreen, SETTINGS_DETAIL_IDS } from '../../v2/features/settings';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../v2/features/settings/hooks/useSettingsNavigation';
 import SettingsScreen from '../../v2/features/settings/screens/SettingsScreen';
