@@ -7,50 +7,12 @@ import { mockApiClient } from './mock/mockApiClient';
 const REQUEST_TIMEOUT_MS = 10_000;
 const FETCH_FALLBACK_TIMEOUT_MS = 10_000;
 
-type QueryValue = boolean | number | string | null | undefined;
-
-export type GetRequestOptions = {
-  headers?: Record<string, string>;
-  params?: Record<string, QueryValue>;
-  signal?: AbortSignal;
-};
-
-export type MutationRequestOptions = {
-  /** Opt-in raw final response; existing JSON callers are unchanged. */
-  responseType?: 'text';
-  maxContentLength?: number;
-  onDownloadProgress?: (event: { loaded: number }) => void;
-  headers?: Record<string, string>;
-  signal?: AbortSignal;
-};
+import type { ApiClient, GetRequestOptions, MutationRequestOptions } from './transport';
+export type { ApiClient, GetRequestOptions, MutationRequestOptions } from './transport';
 
 export type ApiAccessTokenProvider = () => Promise<string | null> | string | null;
 export type ApiTransport = Pick<AxiosInstance, 'delete' | 'get' | 'patch' | 'post' | 'put'>;
 export type HttpTransport = ApiTransport;
-
-export type ApiClient = {
-  delete<TResponse, TBody = never>(
-    path: string,
-    body?: TBody,
-    options?: MutationRequestOptions,
-  ): Promise<TResponse>;
-  get<TResponse>(path: string, options?: GetRequestOptions): Promise<TResponse>;
-  patch<TResponse, TBody = unknown>(
-    path: string,
-    body: TBody,
-    options?: MutationRequestOptions,
-  ): Promise<TResponse>;
-  post<TResponse, TBody = never>(
-    path: string,
-    body?: TBody,
-    options?: MutationRequestOptions,
-  ): Promise<TResponse>;
-  put<TResponse, TBody = unknown>(
-    path: string,
-    body: TBody,
-    options?: MutationRequestOptions,
-  ): Promise<TResponse>;
-};
 
 const axiosInstance = axios.create({
   baseURL: env.apiBaseUrl,

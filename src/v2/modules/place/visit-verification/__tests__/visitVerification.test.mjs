@@ -1,3 +1,8 @@
+import { configureDomainMockHandlers } from '../../../../shared/api/index.ts';
+import { visitVerificationMockHandlers } from '../mock/handlers.ts';
+
+configureDomainMockHandlers(visitVerificationMockHandlers);
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
@@ -41,7 +46,7 @@ import { ApiError, mockApiClient, setMockScenario } from '../../../../shared/api
 import {
   visitVerificationAlternatePolicyFixture,
   visitVerificationStartedFixture,
-} from '../../../../shared/api/mock/features/visit-verification/fixtures.ts';
+} from '../mock/fixtures.ts';
 
 test('development fixtures default to 500m/30s while arbitrary server policies remain representable', () => {
   assert.deepEqual(

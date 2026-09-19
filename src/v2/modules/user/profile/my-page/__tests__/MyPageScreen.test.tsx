@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { profileApi } from '../../api/profileApi';
 import type { Profile } from '../../model/profile.types';
 import { bookmarkApi } from '../api/bookmarkApi';
@@ -11,7 +11,7 @@ import { offerCouponApi } from '../../../../booking/offers-coupons/__tests__';
 import { placeDetailApi } from '../../../../place/detail';
 import { placeExplorationApi } from '../../../../place/exploration';
 import { reservationApi } from '../../../../booking/reservations/__tests__';
-import { travelScheduleApi } from '../../../../../features/travel-schedules';
+import { travelScheduleApi } from '../../../../travel/schedules';
 import MyPageScreen from '../screens/MyPageScreen';
 
 const PROFILE: Profile = {

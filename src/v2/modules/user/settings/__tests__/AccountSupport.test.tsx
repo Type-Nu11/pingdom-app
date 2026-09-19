@@ -1,6 +1,6 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { profileApi } from '../../profile/__tests__';
 import { offerCouponApi } from '../../../booking/offers-coupons/__tests__';
 import { checkInApi, normalizeLocationCheckInPage } from '../../../place/check-ins';

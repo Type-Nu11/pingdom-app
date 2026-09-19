@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { bookmarkApi } from '../../api/bookmarkApi';
 import { checkInApi } from '../../../../../place/check-ins';
 import { placeDetailApi } from '../../../../../place/detail';

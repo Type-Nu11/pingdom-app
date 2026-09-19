@@ -1,14 +1,6 @@
-export const userQueryKeys = {
-  all: ['v2', 'users'] as const,
-  me: () => [...userQueryKeys.all, 'me'] as const,
-};
-
-export const recommendationQueryKeys = {
-  all: ['v2', 'recommendations'] as const,
-  list: (params: object) => [...recommendationQueryKeys.all, 'list', params] as const,
-};
-
-export const travelPurposeQueryKeys = {
-  all: [...userQueryKeys.me(), 'travel-purposes'] as const,
-  mine: () => travelPurposeQueryKeys.all,
-};
+// #362 compatibility only; remove with the consumers below after #124/#139 parity.
+// production: src/features/profile/hooks/useMyReviews.ts
+// production: src/features/profile/hooks/useProfile.ts
+// Implementation: src/v2/modules/travel/purposes/model/travelPurposeQueryKeys.ts
+// Direct named re-exports preserve the original function/component/object/type identity.
+export { userQueryKeys } from '../../../modules/travel';

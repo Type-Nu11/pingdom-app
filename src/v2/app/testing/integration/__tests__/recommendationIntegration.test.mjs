@@ -11,14 +11,14 @@ import {
   createRecommendationPresentation,
   getRecommendationState,
 } from '../../../../modules/place/exploration/presentation/index.ts';
-import { createCurrentActivityIntentApi } from '../../../../features/current-activity-intent/data/index.ts';
+import { createCurrentActivityIntentApi } from '../../../../modules/travel/current-activity-intent/__tests__/index.ts';
 import {
   createCurrentActivityIntentQueryOptions,
   createReplaceCurrentActivityIntentMutationOptions,
   refreshCurrentActivityIntentCaches,
-} from '../../../../features/current-activity-intent/data/index.ts';
-import { currentActivityIntentQueryKeys } from '../../../../features/current-activity-intent/data/index.ts';
-import { recommendationQueryKeys } from '../../../../features/travel-purposes/data/index.ts';
+} from '../../../../modules/travel/current-activity-intent/__tests__/index.ts';
+import { currentActivityIntentQueryKeys } from '../../../../modules/travel/current-activity-intent/__tests__/index.ts';
+import { recommendationQueryKeys } from '../../../../modules/travel/purposes/__tests__/index.ts';
 import {
   createPlaceRecommendationsQueryOptions,
   createRecommendationExplanationQueryOptions,

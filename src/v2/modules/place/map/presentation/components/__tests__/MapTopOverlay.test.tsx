@@ -1,7 +1,7 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
 import MapTopOverlay from '../MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../../styles/MapTopOverlay.styles';

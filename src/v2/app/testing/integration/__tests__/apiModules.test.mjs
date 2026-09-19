@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { createCheckInApi } from '../../../../modules/place/check-ins/data/index.ts';
-import { createConversionApi } from '../../../../features/conversion/data/index.ts';
+import { createConversionApi } from '../../../../shared/analytics/conversion/data/index.ts';
 import { createOfferCouponApi } from '../../../../modules/booking/offers-coupons/__tests__/index.ts';
 import { createPlaceClaimApi } from '../../../../modules/place/claims/data/index.ts';
 import { createPlaceDetailApi } from '../../../../modules/place/detail/data/index.ts';
 import { createPlaceListApi } from '../../../../modules/place/search/data/index.ts';
 import { createReservationApi } from '../../../../modules/booking/reservations/__tests__/index.ts';
-import { createTravelPurposeApi } from '../../../../features/travel-purposes/data/index.ts';
-import { createTravelScheduleApi } from '../../../../features/travel-schedules/data/index.ts';
+import { createTravelPurposeApi } from '../../../../modules/travel/purposes/__tests__/index.ts';
+import { createTravelScheduleApi } from '../../../../modules/travel/schedules/__tests__/index.ts';
 import { createNotificationApi } from '../../../../modules/user/notifications/__tests__/index.ts';
 
 test('API modules keep operation paths, params, bodies, and documented response mapping', async () => {

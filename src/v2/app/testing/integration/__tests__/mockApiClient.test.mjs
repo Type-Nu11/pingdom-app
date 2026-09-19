@@ -1,11 +1,11 @@
 import '../../../configureDomainMocks.ts';
+import { merchantPerformanceFixture } from '../../../../modules/merchant/__tests__/index.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
   apiClient,
   getMockScenario,
-  merchantPerformanceFixture,
   mockApiClient,
   setMockScenario,
 } from '../../../../shared/api/index.ts';

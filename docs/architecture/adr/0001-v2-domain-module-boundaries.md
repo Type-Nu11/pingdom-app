@@ -1,6 +1,6 @@
 # ADR 0001: V2 domain modules and import boundaries
 
-- Status: accepted; Place #361, User #358 and Booking #359 implemented. Remaining migrations are #360/#362.
+- Status: accepted; Place #361, User #358 and Booking #359 implemented. Remaining domains #360 are implemented; #362 owns the remaining V1 compatibility/bridge review.
 - Baseline: `refactor/357-v2-domain-boundary`, `27ace6bc71c50c5e9c8c626c7026359e06306827`.
 - Parent: #356. Sequence: #357 → #361 → #358 → #359 → #360 → #362.
 - Inspected: AGENTS.md, complete bodies/comments of #356–#362, V2 README,
@@ -35,9 +35,9 @@ it is not a second home for domain logic. Semantic ownership (for example busine
 calculations in a composition file) requires code review; an import graph cannot prove it.
 The checker restricts its imports and freezes its existing V1 bridge edges.
 
-`features` remains the transitional layout. Each existing feature is checked as its
-own boundary until its migration, even where two features will share a domain.
-There is no blanket exemption for `features`. No existing feature directory moves in #357.
+At the #357 baseline, `features` was transitional; #360 completes all implementation moves.
+It now contains only named V1/root compatibility exports for #362. There is no blanket exemption
+for `features`; the repository invariant rejects implementation statements and V2 consumers.
 
 The audit records the current module and transitional-feature inventory. The original #357 inventory of 28 feature folders remains available in Git history. Decisions for ambiguous features:
 
@@ -54,8 +54,9 @@ The audit records the current module and transitional-feature inventory. The ori
 - `visitor-verification-reports`: Place verification/report corrections (#361). User's
   verified-place presentation consumes this API; it does not own the report contract.
 - `place-claims`: Place claim contract (#361); Merchant consumes its public API.
-- Community: no current feature folder. Additional ownership decision is required in
-  #360 before adding functionality; do not invent an eighth module in this refactor.
+- Community: no implementation folder or skeleton. Real implementation starts at
+  `modules/community/**` only after a server contract and an implementation issue exist;
+  app and cross-domain integration consume named public APIs.
 
 ## Public API and data flow
 
@@ -63,8 +64,7 @@ Outside a feature/module, import only its `index.ts` or a subfeature's public `i
 The target must actually resolve to that file. An `index.ts` underneath `screens`,
 `hooks`, `api`, `model`, `services`, `store`, `styles` or `components` is internal, not
 an escape hatch. Resource-only `i18n/index.ts` is a supported subfeature entrypoint.
-Use named exports; public `export *` is rejected (three existing exports are frozen
-until #360). Keep exports small and intentional; review the necessity of each.
+Use named exports; public `export *` is rejected (no wildcard public exports remain after #360). Keep exports small and intentional; review the necessity of each.
 
 Relative imports within the same module are allowed, subject to the data-flow,
 cycle and V1 rules. Type-only imports, inline `import { type T }`, type re-exports
@@ -113,9 +113,8 @@ Tests may consume the explicit app testing support boundary; production cannot.
 Tarjan strongly connected components (SCCs) include **type-only and lazy import edges**.
 Type erasure prevents some runtime cycles but does not remove architectural coupling;
 including types avoids a public barrel becoming a migration trap. The audit also shows
-value-only SCCs separately. The baseline had two SCCs; i18n is removed here. One two-file client/mock type
-SCC remains with both participating edges frozen for #360. Place/User fixture reversals have
-been removed. It contains no value-only cycle. New SCC members or internal edges fail.
+value-only SCCs separately. The baseline had two SCCs; i18n is removed here. The last two-file client/mock type SCC is removed in #360 via shared transport contracts. Place/User fixture reversals have
+been removed. No type-inclusive or value-only production SCC remains. New SCC members or internal edges fail.
 
 The previous StyleSheet, centralized `process.env` and axios-layer rules are preserved,
 now on parsed syntax rather than raw comments/strings. These also apply to test code.
@@ -134,15 +133,13 @@ several rules. See the audit for counts and exact production inventory.
 - #361: no remaining exceptions.
 - #358: no remaining exceptions; User siblings also enforce public indexes.
 - #359: no remaining exceptions; Booking siblings enforce public indexes and domain tests/mocks follow their owner.
-- #360: remaining domain migration, public wildcard exports, shared mock/type SCC cleanup,
-  and remaining integration-test ownership.
+- #360: no remaining exceptions; domain/test/mock moves, explicit public indexes and shared type SCC cleanup are implemented.
 - #362: ten active legacy bridge occurrences and production-navigator bridge assertions; User/Place production deep imports and PlaceDetail upward type edges are removed.
 
 The exception manifest is a reviewed migration inventory, not permission to grow debt.
 As each domain moves, update callers to public indexes and delete its exceptions.
 The test-only `shared/testing/testProviders.tsx` compatibility re-export remains so V1
-and existing tests need no churn. Its implementation is now app-owned; move callers and
-remove the compatibility path in #360. This is a test-support boundary, not a production
+and existing tests need no churn. Its implementation is now app-owned; V2 callers move to app/testing in #360; the two frozen V1 tests retain the compatibility path until #362. This is a test-support boundary, not a production
 shared-to-domain exception.
 
 ## i18n composition
@@ -208,3 +205,11 @@ public hook/presentation API. Generated payment aliases are at the payment API c
 App injects Booking handlers through the #358 generic domain registry. Shared has no Booking import.
 #359 exceptions are 35 entries/37 occurrences → 0; #360 remains 22/22, #362 falls 16/16 → 15/15.
 No SCC growth or V1 dependency is introduced. V1 compatibility files retain identity until #362.
+
+## Remaining modules after #360
+
+[Remaining handoff](0001-remaining-migration-handoff.md) and [complete inventory](0001-remaining-migration-inventory.md) are the current source of truth. Onboarding owns completion/hydration/local input, Travel owns server contracts and shared calendar calculations, Merchant owns owner presentation/API, Voice owns the existing #345–#348 lifecycle/registry, and shared analytics owns conversion transport/retry. Home is app-owned.
+
+`features` now contains 29 named V1/root compatibility exports only; no implementation remains. Their exact consumers and identity-preserving targets are documented for #362. All V2 callers use public modules or app test support. The #360 exception count is 22 → 0, total occurrences 37 → 15, production SCC 1 → 0; retained #362 caps are unchanged.
+
+App composes Onboarding/Voice i18n and Travel/Place development handlers without shared-to-module imports. Future Community starts at `modules/community/**` only when its server API and implementation issue exist; app and cross-domain consumers use public APIs. No skeleton is created. Historical migration measurements below/above remain identified by issue; the linked audit records the current graph.

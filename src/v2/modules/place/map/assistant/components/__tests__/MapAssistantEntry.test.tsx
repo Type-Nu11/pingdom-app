@@ -3,7 +3,7 @@ import { Animated, AppState } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import * as SafeArea from 'react-native-safe-area-context';
-import { renderWithProviders } from '../../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
 import { useMapAssistantEntry } from '../../hooks/useMapAssistantEntry';
 import MapTopOverlay from '../../../presentation/components/MapTopOverlay';

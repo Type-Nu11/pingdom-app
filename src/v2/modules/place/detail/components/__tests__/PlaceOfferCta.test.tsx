@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { offerCouponApi, type Offer, type OfferPage } from '../../../../booking/offers-coupons/__tests__';
 import { placeDetailApi } from '../..';
 import PlaceDetailScreen from '../../screens/PlaceDetailScreen';

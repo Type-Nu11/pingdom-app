@@ -1,12 +1,11 @@
+import { conversionBatchResultFixture } from '../../analytics/conversion/mock/fixtures';
 import { env, type MockScenario } from '../../config/env';
 import { ApiError } from '../ApiError';
-import type { ApiClient, GetRequestOptions, MutationRequestOptions } from '../apiClient';
-import { featureMockHandlers } from './features';
+import type { ApiClient, GetRequestOptions, MutationRequestOptions } from '../transport';
 import { getDomainMockHandlers } from './registry';
 import {
   checkInFixture,
   checkInPageFixture,
-  conversionBatchResultFixture,
   emptyPageFixtures,
   placeClaimFixture,
   placeClaimPageFixture,
@@ -121,7 +120,7 @@ async function resolve<T>(
   const error = scenarioError(path);
   if (error) throw error;
 
-  const featureResult = resolveMockHandler([...getDomainMockHandlers(), ...featureMockHandlers], {
+  const featureResult = resolveMockHandler(getDomainMockHandlers(), {
     body,
     method,
     path,

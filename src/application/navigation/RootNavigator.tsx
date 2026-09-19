@@ -27,7 +27,7 @@ import type { NotificationRoute } from '../../v2/modules/user/notifications/rout
 import {
   getUnauthenticatedNavigationKey,
   useOnboardingEntry,
-} from '../../v2/features/onboarding-entry';
+} from '../../v2/modules/onboarding';
 import {
   canDeliverProtectedIntent,
   resolveProductionRootState,

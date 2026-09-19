@@ -111,7 +111,7 @@ Map → Profile → Settings → logout → AuthLanding
 | Responsibility | Single owner | Notes |
 |---|---|---|
 | Auth/session hydration | application RootNavigator + authStore | invoked once at root mount |
-| Onboarding hydration | application RootNavigator + V2 onboarding-entry | independent of logout |
+| Onboarding hydration | application RootNavigator + modules/onboarding | independent of logout |
 | API transport | configureProductionRuntime | V2 client receives production Axios transport |
 | Access/refresh token | shared Axios/Keychain session | single-flight refresh, one replay; failure calls logout |
 | Logout cleanup | authStore + configured beforeLogout | best-effort FCM DELETE, then token removal |
@@ -246,3 +246,9 @@ contract preservation, exceptions and exact validation. #359 has zero boundary e
 Android/iOS changed-build smoke and real-server reservation/payment/Coupon mutations remain unverified.
 The live CouponResponse has four additional nullable fields versus the frozen snapshot; synchronizing
 them is a separate follow-up and is intentionally excluded from this structural refactor.
+
+## #360 remaining-domain composition
+
+Production RootNavigator and runtimeState consume `v2/modules/onboarding` for the same completion/hydration contract. Merchant route metadata points to `modules/merchant`; frozen V1 MainNavigator still uses its identity-preserving component re-export. Home belongs to standalone app composition. No production provider order, route/deep link, auth/session bridge or runtime policy changes.
+
+App composes the remaining Travel/Place mock handlers and Onboarding/Voice i18n resources with unchanged precedence and copy. Shared owns only generic registry/transport infrastructure; the shared client/mock SCC is removed. See [#360 handoff](architecture/adr/0001-remaining-migration-handoff.md) and [exact #362 compatibility paths](architecture/adr/0001-remaining-migration-inventory.md). All flat features are named V1 compatibility exports. #360 exceptions 22 → 0; #362 stays 15. Community is deferred to a real `modules/community` implementation issue. Device/server QA and #124/#139 parity gates remain unsatisfied by automated tests.

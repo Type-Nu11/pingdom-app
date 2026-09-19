@@ -3,7 +3,7 @@ import { AppState, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { apiClient } from '../../../../shared/api';
 import { darkTheme } from '../../../../shared/theme';
 import { accountApi } from '../../account';

@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { usePlaceList } from '../../hooks/usePlaceList';
 import { emptyPlaceListPage, placeListPage } from '../../testing/placeListFixtures';
 import PlaceListExampleScreen from '../PlaceListExampleScreen';

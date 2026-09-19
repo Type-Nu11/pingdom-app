@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
 import AppearanceSettingsScreen from '../screens/AppearanceSettingsScreen';
 
 describe('AppearanceSettingsScreen', () => {

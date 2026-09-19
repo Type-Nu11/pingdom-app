@@ -4,7 +4,7 @@ import { BackHandler } from 'react-native';
 import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import MainNavigator, { NotificationSettingsRouteScreen } from '../../../../../app/navigation/MainNavigator';
 import type { MainStackParamList } from '../../../../../app/navigation/types';
-import { renderWithProviders } from '../../../../shared/testing/testProviders';
+import { renderWithProviders } from '../../testProviders';
 import { notificationApi } from '../../../../modules/user/notifications/__tests__';
 import { SettingsScreen } from '../../../../modules/user/settings';
 
