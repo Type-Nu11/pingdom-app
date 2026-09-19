@@ -74,7 +74,7 @@ jest.mock('../../../v2/modules/user/profile/my-page/screens/MyPageScreen', () =>
   };
 });
 
-jest.mock('../../../v2/features/settings/screens/SettingsScreen', () => {
+jest.mock('../../../v2/modules/user/settings/screens/SettingsScreen', () => {
   const ReactLibrary = require('react');
   const ReactNative = require('react-native');
   return {

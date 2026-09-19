@@ -22,9 +22,9 @@ import {
   VisitVerificationReviewScreen,
   VisitVerificationSessionScreen,
 } from '../../v2/modules/place/visit-verification';
-import { AccountManagementScreen, SettingsDetailScreen, SETTINGS_DETAIL_IDS } from '../../v2/features/settings';
-import { useSettingsDetailRedirect, useSettingsNavigation } from '../../v2/features/settings/hooks/useSettingsNavigation';
-import SettingsScreen from '../../v2/features/settings/screens/SettingsScreen';
+import { AccountManagementScreen, SettingsDetailScreen, SETTINGS_DETAIL_IDS } from '../../v2/modules/user/settings';
+import { useSettingsDetailRedirect, useSettingsNavigation } from '../../v2/modules/user/settings';
+import { SettingsScreen } from '../../v2/modules/user/settings';
 import RoutePlaceholderScreen from './RoutePlaceholderScreen';
 import {
   MAIN_ROUTES,

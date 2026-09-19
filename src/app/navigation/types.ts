@@ -1,4 +1,4 @@
-import type { SettingsDetailId } from '../../v2/features/settings';
+import type { SettingsDetailId } from '../../v2/modules/user/settings';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type {
   NativeStackNavigationProp,
