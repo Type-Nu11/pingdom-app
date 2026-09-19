@@ -729,7 +729,8 @@ export default function MapScreen({
     setDismissedMarkerCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
-    snapTo('medium');
+    // Keep the close/bookmark targets stationary from the first detail frame.
+    jumpTo('medium');
   };
   const handlePlacePress = (place: DecisionPlace) => {
     const clickPayload = selectRecommendationClickPayload({

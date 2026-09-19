@@ -11,8 +11,10 @@ type UseBottomSheetParams = {
 };
 
 const SNAP_ORDER: BottomSheetSnapPoint[] = ['expanded', 'medium', 'collapsed'];
+// Preserve button presses while a finger moves slightly inside the touch target.
+const VERTICAL_DRAG_THRESHOLD = 8;
 export const shouldClaimVerticalDrag = (gesture: { dx: number; dy: number }) => (
-  Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx)
+  Math.abs(gesture.dy) > VERTICAL_DRAG_THRESHOLD && Math.abs(gesture.dy) > Math.abs(gesture.dx)
 );
 
 export const useBottomSheet = ({
@@ -35,32 +37,20 @@ export const useBottomSheet = ({
   const snapPointRef = useRef<BottomSheetSnapPoint>(initialSnapPoint);
   const [snapPoint, setSnapPoint] = useState<BottomSheetSnapPoint>(initialSnapPoint);
 
-  const snapTo = (nextSnapPoint: BottomSheetSnapPoint) => {
-    const nextValue = snapValuesRef.current[nextSnapPoint];
+  const pendingSnap = useRef(false);
+  const [snapRequest, setSnapRequest] = useState(0);
 
-    sheetOffsetY.current = nextValue;
+  const snapTo = (nextSnapPoint: BottomSheetSnapPoint) => {
     snapPointRef.current = nextSnapPoint;
     setSnapPoint(nextSnapPoint);
-
-    Animated.parallel([
-      Animated.spring(sheetTranslateY, {
-        damping: 26,
-        mass: 0.82,
-        stiffness: 240,
-        toValue: nextValue,
-        useNativeDriver: true,
-      }),
-      Animated.spring(sheetChromeBottom, {
-        damping: 26,
-        mass: 0.82,
-        stiffness: 240,
-        toValue: nextValue,
-        useNativeDriver: false,
-      }),
-    ]).start();
+    // Content changes in the same event can change the destination coordinates.
+    // Start only after that render commits, using its updated snap values.
+    pendingSnap.current = true;
+    setSnapRequest((request) => request + 1);
   };
 
   const jumpTo = (nextSnapPoint: BottomSheetSnapPoint) => {
+    pendingSnap.current = false;
     const nextValue = snapValuesRef.current[nextSnapPoint];
 
     sheetChromeBottom.stopAnimation();
@@ -76,9 +66,29 @@ export const useBottomSheet = ({
     const nextValue = snapValues[snapPointRef.current];
 
     sheetOffsetY.current = nextValue;
+    if (pendingSnap.current) {
+      pendingSnap.current = false;
+      Animated.parallel([
+        Animated.spring(sheetTranslateY, {
+          damping: 26,
+          mass: 0.82,
+          stiffness: 240,
+          toValue: nextValue,
+          useNativeDriver: true,
+        }),
+        Animated.spring(sheetChromeBottom, {
+          damping: 26,
+          mass: 0.82,
+          stiffness: 240,
+          toValue: nextValue,
+          useNativeDriver: false,
+        }),
+      ]).start();
+      return;
+    }
     sheetTranslateY.setValue(nextValue);
     sheetChromeBottom.setValue(nextValue);
-  }, [sheetChromeBottom, sheetTranslateY, snapValues]);
+  }, [sheetChromeBottom, sheetTranslateY, snapRequest, snapValues]);
 
   const panResponder = useMemo(() => PanResponder.create({
     onMoveShouldSetPanResponder: (_, gesture) => shouldClaimVerticalDrag(gesture),

@@ -196,3 +196,11 @@ test('production V2 map owns opt-in assistant FAB and modal; settings has no inp
   assert.ok(overlay.indexOf('testID="map-locate-button"') < overlay.indexOf('testID="map-assistant-fab"'));
   assert.doesNotMatch(settings, /VoiceAssistantScreen|voiceAssistant\.title|setPage\('assistant'\)/);
 });
+
+
+test('marker details open without a settling animation before their buttons can be pressed', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const markerPress = screen.slice(screen.indexOf('const handleMarkerPress ='), screen.indexOf('const handlePlacePress ='));
+  assert.match(markerPress, /jumpTo\('medium'\)/);
+  assert.doesNotMatch(markerPress, /snapTo\('medium'\)/);
+});
