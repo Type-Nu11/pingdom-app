@@ -1619,7 +1619,7 @@
     {"source":"src/v2/modules/user/profile/my-page/screens/MyPageScreen.tsx","target":"src/v2/modules/user/profile/my-page/verified-places/components/VerifiedPlaceCardSkeleton.tsx","typeOnly":false},
     {"source":"src/v2/modules/user/profile/my-page/screens/MyPageScreen.tsx","target":"src/v2/modules/user/profile/my-page/travel/model/myPageTravel.ts","typeOnly":false},
     {"source":"src/v2/modules/user/profile/my-page/screens/MyPageScreen.tsx","target":"src/v2/modules/user/profile/my-page/verified-places/model/verifiedPlaceEntries.ts","typeOnly":false},
-    {"source":"src/v2/modules/user/profile/my-page/screens/MyPageScreen.tsx","target":"src/v2/shared/components/index.ts","typeOnly":false},
+    {"source":"src/v2/modules/user/profile/my-page/screens/MyPageScreen.tsx","target":"src/v2/shared/assets/icons/back.svg","typeOnly":false},
     {"source":"src/v2/modules/user/profile/my-page/screens/MyPageScreen.tsx","target":"src/v2/shared/assets/icons/chevron-right-24.svg","typeOnly":false},
     {"source":"src/v2/modules/user/profile/my-page/screens/MyPageScreen.tsx","target":"src/v2/shared/assets/icons/divider.svg","typeOnly":false},
     {"source":"src/v2/modules/user/profile/my-page/screens/MyPageScreen.tsx","target":"src/v2/shared/assets/icons/settings.svg","typeOnly":false},
