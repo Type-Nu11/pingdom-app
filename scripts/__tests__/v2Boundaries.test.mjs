@@ -270,8 +270,8 @@ test('Remaining migration: no #360 exceptions, SCCs, implementations or V2 compa
   const { default: ts } = await import('typescript');
   const manifest = JSON.parse(fs.readFileSync('scripts/v2-boundaries/exceptions.json', 'utf8'));
   assert.equal(manifest.filter(e => e.issue === '#360').length, 0);
-  assert.equal(manifest.filter(e => e.issue === '#362').length, 15);
-  assert.equal(manifest.reduce((sum, e) => sum + e.maxCount, 0), 15);
+  assert.equal(manifest.filter(e => e.issue === '#362').length, 11);
+  assert.equal(manifest.reduce((sum, e) => sum + e.maxCount, 0), 11);
   const result = inspect(process.cwd());
   assert.deepEqual(result.cycles, []);
   assert.deepEqual(result.violations.filter(v => !['application-bridge', 'v2-no-legacy', 'v2-no-escape', 'no-upward-composition'].includes(v.rule)), []);

@@ -23,7 +23,7 @@ import { getMapBackAction } from '../../../v2/modules/place/map/navigation/index
 import {
   ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
   getAndroidBackAction,
-} from '../androidBack.ts';
+} from '../../../application/navigation/androidBack.ts';
 import {
   createOnboardingCompletion,
   getAuthInitialRoute,

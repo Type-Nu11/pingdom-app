@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking } from 'react-native';
 
 import AuthNavigator from '../../app/navigation/AuthNavigator';
-import { parseDeepLink } from '../../app/navigation/deepLink';
+import { parseDeepLink } from './deepLink';
 import MainNavigator from '../../app/navigation/MainNavigator';
 import {
   claimNotificationMessage,
@@ -15,9 +15,9 @@ import {
   getRootRouteName,
   toMainNavigatorParams,
   type MainNavigationIntent,
-} from '../../app/navigation/navigationIntent';
-import { ROOT_ROUTES, type RootStackParamList } from '../../app/navigation/types';
-import { useAndroidBackHandler } from '../../app/navigation/useAndroidBackHandler';
+} from './navigationIntent';
+import { ROOT_ROUTES, type RootStackParamList } from './types';
+import { useAndroidBackHandler } from './useAndroidBackHandler';
 import { useMapSettingsStore } from '../../v2/modules/place/map/settings';
 import { useAuthStore } from '../../app/store/authStore';
 import { useFcmTokenSync } from '../../v2/modules/user/notifications/lifecycle';

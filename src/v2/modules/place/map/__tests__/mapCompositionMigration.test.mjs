@@ -5,8 +5,11 @@ import test from 'node:test';
 const read = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), 'utf8');
 
 test('production Map route renders the V2-owned composition directly', () => {
-  const navigator = read('../../../../../app/navigation/MainNavigator.tsx');
+  const navigator = read('../../../../../application/navigation/MainNavigator.tsx');
   const screen = read('../screens/MapScreen.tsx');
+  const bridge = read('../../../../../app/navigation/MainNavigator.tsx');
+  assert.match(bridge, /createProductionMainNavigator/);
+  assert.doesNotMatch(bridge, /v2\/features|features\/place\/screens\/MapScreen/);
 
   assert.match(navigator, /import \{ MapScreen \} from '..\/..\/v2\/modules\/place\/map'/);
   assert.doesNotMatch(navigator, /features\/place\/screens\/MapScreen/);
