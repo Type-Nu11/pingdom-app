@@ -2,14 +2,22 @@ import React from 'react';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { BackHandler } from 'react-native';
 import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
-import MainNavigator, { NotificationSettingsRouteScreen } from '../../../../../app/navigation/MainNavigator';
-import type { MainStackParamList } from '../../../../../app/navigation/types';
-import { renderWithProviders } from '../../testProviders';
-import { notificationApi } from '../../../../modules/user/notifications/__tests__';
-import { SettingsScreen } from '../../../../modules/user/settings';
+import { createProductionMainNavigator } from '../navigation/MainNavigator';
+import type { MainStackParamList } from '../navigation/types';
+import { renderWithProviders } from '../../v2/app/testing/testProviders';
+import { notificationApi } from '../../v2/modules/user/notifications/__tests__';
+import { SettingsScreen } from '../../v2/modules/user/settings';
 
-jest.mock('../../../../modules/place/map/screens/MapScreen', () => () => null);
+jest.mock('../../v2/modules/place/map/screens/MapScreen', () => () => null);
 jest.mock('expo-notifications', () => ({}));
+
+// Test boundary supplies only the legacy dependencies irrelevant to notification routing.
+// V2 screens and all route registration remain the actual production composition.
+const { MainNavigator, NotificationSettingsRouteScreen } = createProductionMainNavigator({
+  useAuthStore: selector => selector({ isHydrating: false, isLoggedIn: true, logout: async () => {} }),
+  CheckInScreen: () => null,
+  RoutePlaceholderScreen: () => null,
+});
 
 test('production notification page never interprets allow-all as two category consents', async () => {
   jest.spyOn(notificationApi, 'getNotificationSettings').mockResolvedValue({

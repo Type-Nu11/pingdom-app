@@ -1,17 +1,68 @@
 [
-  {"source":"src/application/navigation/RootNavigator.tsx","target":"src/app/navigation/AuthNavigator.tsx","specifier":"../../app/navigation/AuthNavigator","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/navigation/RootNavigator.tsx","target":"src/app/navigation/deepLink.ts","specifier":"../../app/navigation/deepLink","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/navigation/RootNavigator.tsx","target":"src/app/navigation/MainNavigator.tsx","specifier":"../../app/navigation/MainNavigator","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/navigation/RootNavigator.tsx","target":"src/app/navigation/navigationIntent.ts","specifier":"../../app/navigation/navigationIntent","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/navigation/RootNavigator.tsx","target":"src/app/navigation/types.ts","specifier":"../../app/navigation/types","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/navigation/RootNavigator.tsx","target":"src/app/navigation/useAndroidBackHandler.ts","specifier":"../../app/navigation/useAndroidBackHandler","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/navigation/RootNavigator.tsx","target":"src/app/store/authStore.ts","specifier":"../../app/store/authStore","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/runtime/configureProductionRuntime.ts","target":"src/app/store/authStore.ts","specifier":"../../app/store/authStore","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/runtime/configureProductionRuntime.ts","target":"src/shared/api/apiClient.ts","specifier":"../../shared/api/apiClient","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/application/runtime/configureProductionRuntime.ts","target":"src/shared/api/authTokens.ts","specifier":"../../shared/api/authTokens","rule":"application-bridge","typeOnly":false,"test":false,"maxCount":1,"issue":"#362","reason":"Existing auth/navigation/session runtime composition bridge; retain until parity review in #362 (#124/#139)."},
-  {"source":"src/v2/app/testing/integration/__tests__/NotificationProduction.test.tsx","target":"src/app/navigation/MainNavigator.tsx","specifier":"../../../../../app/navigation/MainNavigator","rule":"v2-no-legacy","typeOnly":false,"test":true,"maxCount":1,"issue":"#362","reason":"Existing integration/contract assertion; move alongside its owning domain or app test in the removal issue."},
-  {"source":"src/v2/app/testing/integration/__tests__/NotificationProduction.test.tsx","target":"src/app/navigation/MainNavigator.tsx","specifier":"../../../../../app/navigation/MainNavigator","rule":"v2-no-escape","typeOnly":false,"test":true,"maxCount":1,"issue":"#362","reason":"Existing integration/contract assertion; move alongside its owning domain or app test in the removal issue."},
-  {"source":"src/v2/app/testing/integration/__tests__/NotificationProduction.test.tsx","target":"src/app/navigation/types.ts","specifier":"../../../../../app/navigation/types","rule":"v2-no-legacy","typeOnly":true,"test":true,"maxCount":1,"issue":"#362","reason":"Existing integration/contract assertion; move alongside its owning domain or app test in the removal issue."},
-  {"source":"src/v2/app/testing/integration/__tests__/NotificationProduction.test.tsx","target":"src/app/navigation/types.ts","specifier":"../../../../../app/navigation/types","rule":"v2-no-escape","typeOnly":true,"test":true,"maxCount":1,"issue":"#362","reason":"Existing integration/contract assertion; move alongside its owning domain or app test in the removal issue."},
-  {"source":"src/v2/shared/api/__tests__/apiError.test.mjs","target":"src/v2/app/queryClient.ts","specifier":"../../../app/queryClient.ts","rule":"no-upward-composition","typeOnly":false,"test":true,"maxCount":1,"issue":"#362","reason":"Existing integration/contract assertion; move alongside its owning domain or app test in the removal issue."}
+  {
+    "source": "src/application/navigation/RootNavigator.tsx",
+    "target": "src/app/navigation/AuthNavigator.tsx",
+    "specifier": "../../app/navigation/AuthNavigator",
+    "rule": "application-bridge",
+    "typeOnly": false,
+    "test": false,
+    "maxCount": 1,
+    "issue": "#362",
+    "reason": "Auth landing/login/signup and first-run onboarding UI lack V2 parity; #124 parity, then #139 deletion and device QA."
+  },
+  {
+    "source": "src/application/navigation/RootNavigator.tsx",
+    "target": "src/app/navigation/MainNavigator.tsx",
+    "specifier": "../../app/navigation/MainNavigator",
+    "rule": "application-bridge",
+    "typeOnly": false,
+    "test": false,
+    "maxCount": 1,
+    "issue": "#362",
+    "reason": "Explicit injection bridge: existing auth selectors plus reachable CheckIn and Merchant placeholder; V2 route composition is application-owned. Remove after #124 CheckIn parity and #139 deep-link/support-version review."
+  },
+  {
+    "source": "src/application/navigation/RootNavigator.tsx",
+    "target": "src/app/store/authStore.ts",
+    "specifier": "../../app/store/authStore",
+    "rule": "application-bridge",
+    "typeOnly": false,
+    "test": false,
+    "maxCount": 1,
+    "issue": "#362",
+    "reason": "Preserve hydration and logout/FCM/token ordering; #124 session parity and #139 migration/device QA required."
+  },
+  {
+    "source": "src/application/runtime/configureProductionRuntime.ts",
+    "target": "src/app/store/authStore.ts",
+    "specifier": "../../app/store/authStore",
+    "rule": "application-bridge",
+    "typeOnly": false,
+    "test": false,
+    "maxCount": 1,
+    "issue": "#362",
+    "reason": "Preserve hydration and logout/FCM/token ordering; #124 session parity and #139 migration/device QA required."
+  },
+  {
+    "source": "src/application/runtime/configureProductionRuntime.ts",
+    "target": "src/shared/api/apiClient.ts",
+    "specifier": "../../shared/api/apiClient",
+    "rule": "application-bridge",
+    "typeOnly": false,
+    "test": false,
+    "maxCount": 1,
+    "issue": "#362",
+    "reason": "Inject established Axios refresh/replay transport; #124 session parity and #139 secure-runtime migration required."
+  },
+  {
+    "source": "src/application/runtime/configureProductionRuntime.ts",
+    "target": "src/shared/api/authTokens.ts",
+    "specifier": "../../shared/api/authTokens",
+    "rule": "application-bridge",
+    "typeOnly": false,
+    "test": false,
+    "maxCount": 1,
+    "issue": "#362",
+    "reason": "Inject live Keychain access-token cache (including refresh updates); #124 token/session parity and #139 migration required."
+  }
 ]

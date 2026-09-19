@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../testing/testProviders';
+import { renderWithProviders } from '../../../app/testing/testProviders';
 import { HeaderBackButton } from '../HeaderBackButton';
 
 test('공통 뒤로가기 버튼은 44x44 터치 영역과 기존 pop callback을 유지한다', async () => {

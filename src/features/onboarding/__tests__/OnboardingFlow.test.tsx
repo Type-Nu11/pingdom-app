@@ -46,7 +46,7 @@ jest.mock('../SelectGenderScreen', () => ({
     <MockText>gender</MockText>
   </MockPressable>
 ));
-jest.mock('../../../v2/features/onboarding-preferences', () => ({
+jest.mock('../../../v2/modules/onboarding', () => ({
   OnboardingPreferenceFlow: ({
     initialStep,
     onBack,

@@ -4,15 +4,15 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { ApiError } from '../../../../v2/shared/api';
-import { checkInApi } from '../../../../v2/features/check-ins';
-import { useCurrentLocation } from '../../../../v2/features/map/hooks/useCurrentLocation';
+import { checkInApi } from '../../../../v2/modules/place/check-ins';
+import { useCurrentLocation } from '../../../../v2/modules/place/map/location';
 import {
   classifyCheckInError,
   createLocationCheckInBody,
   useLocationCheckIn,
 } from '../useLocationCheckIn';
 
-jest.mock('../../../../v2/features/map/hooks/useCurrentLocation', () => ({
+jest.mock('../../../../v2/modules/place/map/location', () => ({
   useCurrentLocation: jest.fn(),
 }));
 

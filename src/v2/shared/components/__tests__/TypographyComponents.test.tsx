@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react-native';
 import React from 'react';
 
-import { renderWithProviders } from '../../testing/testProviders';
+import { renderWithProviders } from '../../../app/testing/testProviders';
 import Button from '../Button';
 import Input from '../Input';
 import StateLayout from '../StateLayout';

@@ -3,16 +3,16 @@ import { createNavigationContainerRef, NavigationContainer } from '@react-naviga
 import MainNavigator from '../MainNavigator';
 import { SettingsRouteScreen as StandaloneSettingsRouteScreen, AccountManagementRouteScreen as StandaloneAccountRouteScreen } from '../../../v2/app/navigation/RootNavigator';
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { renderWithProviders } from '../../../v2/shared/testing/testProviders';
-import { profileApi } from '../../../v2/features/my-page/api/profileApi';
-import { notificationApi } from '../../../v2/features/notifications/api/notificationApi';
+import { renderWithProviders } from '../../../v2/app/testing/testProviders';
+import { profileApi } from '../../../v2/modules/user/profile/__tests__';
+import { notificationApi } from '../../../v2/modules/user/notifications/__tests__';
 import { AccountManagementRouteScreen, NotificationSettingsRouteScreen, SettingsDetailRouteScreen, SettingsRouteScreen } from '../MainNavigator';
 import { useAuthStore } from '../../store/authStore';
-import { offerCouponApi } from '../../../v2/features/offers-coupons/api/offerCouponApi';
-import { checkInApi } from '../../../v2/features/check-ins/api/checkInApi';
+import { offerCouponApi } from '../../../v2/modules/booking/offers-coupons/__tests__';
+import { checkInApi } from '../../../v2/modules/place/check-ins';
 import type { MainScreenProps } from '../types';
 
-jest.mock('../../../v2/features/map/screens/MapScreen', () => () => null);
+jest.mock('../../../v2/modules/place/map/screens/MapScreen', () => () => null);
 jest.mock('expo-notifications', () => ({}));
 
 const navigation = {

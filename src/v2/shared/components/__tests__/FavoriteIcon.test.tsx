@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 
-import { renderWithProviders } from '../../testing/testProviders';
+import { renderWithProviders } from '../../../app/testing/testProviders';
 import { FavoriteIcon } from '../FavoriteIcon';
 
 describe('FavoriteIcon', () => {

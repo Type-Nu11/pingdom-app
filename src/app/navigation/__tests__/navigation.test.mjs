@@ -19,17 +19,17 @@ import {
   parseCheckInId,
 } from '../types.ts';
 import { getSettingsBackAction } from '../../../features/settings/utils/settingsBack.ts';
-import { getMapBackAction } from '../../../v2/features/map/utils/mapBack.ts';
+import { getMapBackAction } from '../../../v2/modules/place/map/navigation/index.ts';
 import {
   ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
   getAndroidBackAction,
-} from '../androidBack.ts';
+} from '../../../application/navigation/androidBack.ts';
 import {
   createOnboardingCompletion,
   getAuthInitialRoute,
   getInitialAppRoute,
   getUnauthenticatedNavigationKey,
-} from '../../../v2/features/onboarding-entry/model/onboardingEntry.ts';
+} from '../../../v2/modules/onboarding/entry/__tests__/index.ts';
 
 test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parsePlaceId(123), 123);
