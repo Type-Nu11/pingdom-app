@@ -2,7 +2,7 @@ import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/c
 import React, { useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
@@ -87,6 +87,7 @@ export default function VisitVerificationReviewScreen({
 }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const place = usePlaceCard(placeId);
   const mutation = useSubmitVisitVerification();
   const submitLocked = useRef(false);
@@ -122,15 +123,15 @@ export default function VisitVerificationReviewScreen({
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
-      <Header>
+      <Header testID="visit-review-header">
         <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackIcon width={44} height={44} /></BackButton>
         <Title accessibilityRole="header">{t('visitVerification.title')}</Title><HeaderSpacer />
       </Header>
       {place.isLoading ? <LoadingState description={t('visitVerification.placeLoading')} fill /> : place.isError ? (
         <ApiErrorState error={place.error} fill onBack={onBack} onRetry={() => void place.refetch()} />
       ) : place.data ? (
-        <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Content keyboardShouldPersistTaps="handled">
+        <KeyboardArea testID="visit-review-keyboard" keyboardVerticalOffset={insets.top} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <Content keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" testID="visit-review-scroll">
             <PlaceSummary>
               <SelectedPlaceImage uri={place.data.imageUrl} />
               <PlaceCopy><Category numberOfLines={1}>{place.data.category ?? t('visitVerification.unknownCategory')}</Category><PlaceName numberOfLines={1}>{place.data.name}</PlaceName></PlaceCopy>
@@ -172,7 +173,7 @@ export default function VisitVerificationReviewScreen({
             {validation ? <InlineMessage accessibilityLiveRegion="assertive">{t(VALIDATION_KEYS[validation])}</InlineMessage> : null}
             {mutation.isError ? <InlineMessage accessibilityLiveRegion="assertive">{t(`visitVerification.errors.${reviewSubmissionErrorKey(mutation.error)}`)}</InlineMessage> : null}
           </Content>
-          <SubmitBar><Button disabled={mutation.isPending} fullWidth label={mutation.isPending ? t(mutation.phase === 'uploading' ? 'visitVerification.uploading' : 'visitVerification.submitting') : t('visitVerification.submit')} onPress={() => void submit()} shape="pill" testID="visit-submit" /></SubmitBar>
+          <SubmitBar testID="visit-review-submit-bar"><Button disabled={mutation.isPending} fullWidth label={mutation.isPending ? t(mutation.phase === 'uploading' ? 'visitVerification.uploading' : 'visitVerification.submitting') : t('visitVerification.submit')} onPress={() => void submit()} shape="pill" size="onboarding" testID="visit-submit" /></SubmitBar>
         </KeyboardArea>
       ) : null}
     </Screen>
@@ -180,13 +181,13 @@ export default function VisitVerificationReviewScreen({
 }
 
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
-const Header = styled.View`height: 56px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px; border-bottom-width: 1px; border-bottom-color: ${({ theme }) => theme.colors.border};`;
-const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
-const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
+const Header = styled.View`height: 44px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
+const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 22px; background-color: ${({ theme }) => theme.colors.surfaceElevated}; elevation: 2; shadow-color: ${({ theme }) => theme.colors.shadow}; shadow-offset: 0px 2px; shadow-opacity: 0.06; shadow-radius: 8px;`;
+const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.navigationTitle.fontSize}px; font-weight: ${({ theme }) => theme.typography.navigationTitle.fontWeight}; line-height: ${({ theme }) => theme.typography.navigationTitle.lineHeight}px;`;
 const HeaderSpacer = styled.View`width: 44px;`;
 const Content = styled.ScrollView.attrs(({ theme }) => ({
   contentContainerStyle: {
-    paddingBottom: (theme.spacing.xxl * 2) + theme.spacing.sm,
+    paddingBottom: theme.spacing.md,
   },
 }))`flex: 1;`;
 const KeyboardArea = styled(KeyboardAvoidingView)`flex: 1;`;
@@ -196,8 +197,8 @@ const PlaceImageFallback = styled.View`width: 56px; height: 56px; align-items: c
 const PlaceCopy = styled.View`flex: 1; min-width: 0;`;
 const Category = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const PlaceName = styled(AppText)`margin-top: ${({ theme }) => theme.spacing.xs}px; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
-const Section = styled.View`padding: ${({ theme }) => theme.spacing.md}px; border-top-width: 8px; border-top-color: ${({ theme }) => theme.colors.surfaceMuted};`;
-const SectionRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between;`;
+const Section = styled.View`padding: 16px 24px; border-top-width: 8px; border-top-color: ${({ theme }) => theme.colors.surfaceMuted};`;
+const SectionRow = styled.View`gap: 4px; margin-bottom: 16px;`;
 const SectionTitle = styled(AppText)`margin-bottom: ${({ theme }) => theme.spacing.sm}px; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight};`;
 const Count = styled(AppText)`align-self: flex-end; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const PhotoRow = styled.ScrollView`flex-grow: 0;`;
@@ -208,8 +209,8 @@ const DeleteText = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimar
 const PhotoPicker = styled.Pressable`width: 80px; height: 80px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.sm}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const PickerCount = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const Chips = styled.View`flex-direction: row; flex-wrap: wrap; gap: ${({ theme }) => theme.spacing.sm}px;`;
-const Chip = styled.Pressable<{ $selected: boolean }>`min-height: 40px; flex-direction: row; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.xs}px; padding: 0 ${({ theme }) => theme.spacing.md}px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.border}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surface};`;
-const ChipText = styled(AppText)<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
-const ReviewInput = styled(AppTextInput)`min-height: 112px; padding: ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.text};`;
+const Chip = styled.Pressable<{ $selected: boolean }>`max-width: 100%; min-height: 40px; flex-direction: row; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.xs}px; padding: 0 ${({ theme }) => theme.spacing.md}px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.border}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surface};`;
+const ChipText = styled(AppText)<{ $selected: boolean }>`flex-shrink: 1; color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
+const ReviewInput = styled(AppTextInput)`min-height: 139px; padding: ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.text};`;
 const InlineMessage = styled(AppText)`margin: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px 0; color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; line-height: 18px;`;
-const SubmitBar = styled.View`position: absolute; right: 0; bottom: 0; left: 0; padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px; background-color: ${({ theme }) => theme.colors.surface};`;
+const SubmitBar = styled.View`flex-shrink: 0; padding: 0 24px 16px; background-color: ${({ theme }) => theme.colors.surface};`;

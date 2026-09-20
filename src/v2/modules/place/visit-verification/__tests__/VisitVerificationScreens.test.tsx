@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { Keyboard, Platform } from 'react-native';
 
 import { ApiError } from '../../../../shared/api';
 import { registerVisitVerificationResources } from '../i18n/visitVerificationResources';
@@ -162,6 +163,11 @@ test('ready recent visits pass actual place and check-in IDs', async () => {
   });
   const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={onSelectPlace} />);
   expect(view.getByTestId('visit-place-image-fallback')).toBeVisible();
+  expect(view.getByRole('header', { name: '검증하기' })).toHaveStyle({ fontSize: 18, fontWeight: '500', lineHeight: 23.4 });
+  expect(view.getByText('최근 방문')).toHaveStyle({ marginTop: 16, marginBottom: 16, marginLeft: 24, marginRight: 24 });
+  expect(view.getByTestId('visit-place-7001')).toHaveStyle({ marginBottom: 16, paddingBottom: 16 });
+  expect(view.getByText(place.name).props.numberOfLines).toBe(1);
+  expect(view.getByTestId('visit-verification-list').props.contentContainerStyle.paddingHorizontal).toBe(24);
   fireEvent.press(view.getByTestId('visit-place-7001'));
   expect(onSelectPlace).toHaveBeenCalledWith({ checkInId: 7001, placeId: 17 });
 });
@@ -410,4 +416,108 @@ test.each(['ko','en'] as const)('real submission hook retains draft through uplo
   await act(async () => resolveCreate({reviewId:91,placeId:17}));
   await waitFor(() => expect(complete).toHaveBeenCalledTimes(1));
   expect(cancel).not.toHaveBeenCalled();
+});
+
+
+test.each(['LIGHT', 'DARK'] as const)('review preserves Figma header and CTA in %s', async appearancePreference => {
+  const view = await renderWithProviders(<VisitVerificationReviewScreen onBack={jest.fn()} onComplete={jest.fn()} placeId={17} />, { language: 'ko', appearancePreference });
+  expect(view.getByTestId('visit-review-header')).toHaveStyle({ height: 44 });
+  expect(view.getByRole('header')).toHaveStyle({ fontSize: 18, fontWeight: '500', lineHeight: 23.4 });
+  expect(view.getByRole('button', { name: '뒤로' })).toHaveStyle({ width: 44, height: 44 });
+  expect(view.getByTestId('visit-submit')).toHaveStyle({ minHeight: 64 });
+  expect(view.getByTestId('visit-review-submit-bar')).toHaveStyle({ paddingLeft: 24, paddingRight: 24, paddingTop: 0, paddingBottom: 16 });
+  expect(view.getByTestId('visit-review-submit-bar')).not.toHaveStyle({ position: 'absolute' });
+});
+
+test.each(['granted', 'denied'])('empty layout uses the real location warning asset for %s', async permission => {
+  mockUseLocationPermission.mockReturnValue(permission);
+  mockUseCandidates.mockReturnValue({ candidates: [], checkInsQuery: { isError: false, isLoading: false } });
+  const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={jest.fn()} />);
+  expect(view.getByTestId('visit-empty-circle')).toHaveStyle({ width: 96, height: 96, marginBottom: 16 });
+  expect(view.getByTestId('visit-empty-title')).toHaveStyle({ fontSize: 20, fontWeight: '700', lineHeight: 26 });
+  expect(view.getByRole('button', { name: '돌아가기' })).toHaveStyle({ minHeight: 64 });
+  expect(view.queryByText('!')).toBeNull();
+});
+
+test('next-page errors preserve ready cards and expose footer retry', async () => {
+  const fetchNextPage = jest.fn();
+  mockUseCandidates.mockReturnValue({ candidates: [{ ...place, placeId: 17, checkInId: 7, address: 'Long address', distanceMeters: 123, imageUrls: ['https://example.com/a.jpg', 'https://example.com/b.jpg'], status: 'ready' }], checkInsQuery: { isError: true, isFetchNextPageError: true, isLoading: false, fetchNextPage } });
+  const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={jest.fn()} />);
+  expect(view.getByTestId('visit-place-7')).toBeVisible();
+  expect(view.getAllByTestId('visit-place-image')).toHaveLength(2);
+  expect(view.getByTestId('visit-verification-next-error')).toBeVisible();
+  fireEvent.press(view.getByText('다시 시도'));
+  expect(fetchNextPage).toHaveBeenCalledTimes(1);
+});
+
+
+test.each(['ko', 'en'] as const)('validation and long drafts remain accessible in %s', async language => {
+  const mutateAsync = jest.fn();
+  mockUseSubmit.mockReturnValue({ isPending: false, isError: false, mutateAsync });
+  const view = await renderFeature(<VisitVerificationReviewScreen placeId={17} onBack={jest.fn()} onComplete={jest.fn()} />, language);
+  await fireEvent.press(view.getByTestId('visit-submit'));
+  const required = view.getByText(language === 'ko' ? '후기를 작성해 주세요.' : 'Write a review before submitting.');
+  expect(required.props.accessibilityLiveRegion).toBe('assertive');
+  const content = '긴 후기 Long review '.repeat(100);
+  await fireEvent.changeText(view.getByTestId('visit-review-input'), content);
+  await fireEvent.press(view.getByTestId('visit-submit'));
+  expect(mutateAsync).not.toHaveBeenCalled();
+  await fireEvent.press(view.getByTestId('visit-reason-kind'));
+  expect(view.getByTestId('visit-reason-kind').props.accessibilityState.checked).toBe(true);
+  await fireEvent.press(view.getByTestId('visit-submit'));
+  await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ content, reasons: ['kind'], photos: [], placeId: 17 }));
+});
+
+test.each(['loading', 'error'] as const)('review place %s does not allow submission', async state => {
+  const refetch = jest.fn();
+  mockUsePlaceCard.mockReturnValue({ isLoading: state === 'loading', isError: state === 'error', error: new ApiError('offline', { isNetworkError: true }), refetch });
+  const view = await renderFeature(<VisitVerificationReviewScreen placeId={17} onBack={jest.fn()} onComplete={jest.fn()} />);
+  expect(view.queryByTestId('visit-submit')).toBeNull();
+  if (state === 'error') { await fireEvent.press(view.getByText('다시 시도')); expect(refetch).toHaveBeenCalledTimes(1); }
+  else expect(view.getByText('장소 정보를 불러오는 중이에요...')).toBeVisible();
+});
+
+test('review creation failure keeps the draft and announces the error', async () => {
+  const complete = jest.fn();
+  const mutation = { isPending: false, isError: false, error: null as unknown, mutateAsync: jest.fn().mockRejectedValue(new Error('failed')) };
+  mockUseSubmit.mockReturnValue(mutation);
+  const view = await renderFeature(<VisitVerificationReviewScreen placeId={17} onBack={jest.fn()} onComplete={complete} />, 'en');
+  await fireEvent.changeText(view.getByTestId('visit-review-input'), 'Saved draft');
+  await fireEvent.press(view.getByTestId('visit-reason-kind'));
+  await act(async () => fireEvent.press(view.getByTestId('visit-submit')));
+  mutation.isError = true;
+  mutation.error = new Error('failed');
+  await view.rerender(<VisitVerificationReviewScreen placeId={17} onBack={jest.fn()} onComplete={complete} />);
+  expect(view.getByText('Could not submit your review. Your draft is preserved. Try again.').props.accessibilityLiveRegion).toBe('assertive');
+  expect(view.getByTestId('visit-review-input').props.value).toBe('Saved draft');
+  expect(complete).not.toHaveBeenCalled();
+});
+
+test.each([false, true])('list loading state nextPage=%s stays distinct from empty', async nextPage => {
+  mockUseCandidates.mockReturnValue({ candidates: nextPage ? [{ ...place, checkInId: 7, placeId: 17, distanceMeters: 1, imageUrls: [], status: 'ready' }] : [], checkInsQuery: { isLoading: !nextPage, isFetchingNextPage: nextPage } });
+  const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={jest.fn()} />);
+  expect(view.queryByTestId('visit-verification-empty')).toBeNull();
+  if (nextPage) expect(view.getByTestId('visit-verification-next-loading')).toBeVisible();
+  else expect(view.getByText('장소 정보를 불러오는 중이에요...')).toBeVisible();
+});
+
+test('iOS keyboard events reserve space below the scrollable draft and CTA', async () => {
+  const callbacks: Record<string, Parameters<typeof Keyboard.addListener>[1]> = {};
+  const addListener = Keyboard.addListener.bind(Keyboard);
+  const listener = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, callback) => {
+    callbacks[event] = callback;
+    return addListener(event, callback);
+  });
+  const view = await renderFeature(<VisitVerificationReviewScreen placeId={17} onBack={jest.fn()} onComplete={jest.fn()} />);
+  await act(async () => {
+    fireEvent(view.getByTestId('visit-review-keyboard'), 'layout', { persist: jest.fn(), nativeEvent: { layout: { x: 0, y: 44, width: 320, height: 600 } } });
+  });
+  await act(async () => {
+    callbacks[Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow']({ duration: 0, easing: 'keyboard', isEventFromThisApp: true, startCoordinates: { screenY: 644, height: 0, width: 320, screenX: 0 }, endCoordinates: { screenY: 400, height: 244, width: 320, screenX: 0 } });
+  });
+  if (Platform.OS === 'ios') expect(view.getByTestId('visit-review-keyboard')).toHaveStyle({ paddingBottom: 244 });
+  expect(view.getByTestId('visit-review-scroll').props.keyboardShouldPersistTaps).toBe('handled');
+  expect(view.getByTestId('visit-review-input').props.multiline).toBe(true);
+  expect(view.getByTestId('visit-review-submit-bar')).not.toHaveStyle({ position: 'absolute' });
+  listener.mockRestore();
 });

@@ -39,23 +39,27 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
 
       {checkInsQuery.isLoading ? (
         <LoadingState description={t('visitVerification.placeLoading')} fill />
-      ) : checkInsQuery.isError ? (
+      ) : checkInsQuery.isError && !checkInsQuery.isFetchNextPageError ? (
         <ApiErrorState error={checkInsQuery.error} fill onBack={onBack} onRetry={() => void checkInsQuery.refetch()} />
       ) : candidates.length === 0 && locationPermission === 'denied' ? (
         <Empty testID="visit-verification-permission-denied">
-          <EmptyIcon><EmptyMark>!</EmptyMark></EmptyIcon>
-          <EmptyTitle>{t('visitVerification.permissionTitle')}</EmptyTitle>
-          <EmptyDescription>{t('visitVerification.locationPermissionDenied')}</EmptyDescription>
-          <EmptyAction><Button fullWidth label={t('visitVerification.return')} onPress={onBack} shape="pill" /></EmptyAction>
+          <EmptyCopy>
+            <EmptyIcon testID="visit-empty-circle"><NoNearbyPlaceIcon height={50} width={44} /></EmptyIcon>
+            <EmptyTitle testID="visit-empty-title">{t('visitVerification.permissionTitle')}</EmptyTitle>
+            <EmptyDescription>{t('visitVerification.locationPermissionDenied')}</EmptyDescription>
+          </EmptyCopy>
+          <EmptyAction><Button fullWidth label={t('visitVerification.return')} onPress={onBack} shape="pill" size="onboarding" /></EmptyAction>
         </Empty>
       ) : candidates.length === 0 ? (
         <Empty testID="visit-verification-empty">
-          <EmptyIcon>
-            <NoNearbyPlaceIcon height={50} testID="visit-verification-empty-icon" width={44} />
-          </EmptyIcon>
-          <EmptyTitle>{t('visitVerification.emptyTitle')}</EmptyTitle>
-          <EmptyDescription>{t('visitVerification.emptyDescription')}</EmptyDescription>
-          <EmptyAction><Button fullWidth label={t('visitVerification.return')} onPress={onBack} shape="pill" /></EmptyAction>
+          <EmptyCopy>
+            <EmptyIcon testID="visit-empty-circle">
+              <NoNearbyPlaceIcon height={50} testID="visit-verification-empty-icon" width={44} />
+            </EmptyIcon>
+            <EmptyTitle testID="visit-empty-title">{t('visitVerification.emptyTitle')}</EmptyTitle>
+            <EmptyDescription>{t('visitVerification.emptyDescription')}</EmptyDescription>
+          </EmptyCopy>
+          <EmptyAction><Button fullWidth label={t('visitVerification.return')} onPress={onBack} shape="pill" size="onboarding" /></EmptyAction>
         </Empty>
       ) : (
         <Body>
@@ -106,18 +110,19 @@ const BackButton = styled.Pressable`
   shadow-opacity: 0.06;
   shadow-radius: 8px;
 `;
-const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 18px; line-height: 23px; font-weight: 500;`;
+const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.navigationTitle.fontSize}px; line-height: ${({ theme }) => theme.typography.navigationTitle.lineHeight}px; font-weight: ${({ theme }) => theme.typography.navigationTitle.fontWeight};`;
 const HeaderSpacer = styled.View`width: 44px;`;
 const Body = styled.View`flex: 1;`;
 const SectionTitle = styled(AppText)`margin: 16px 24px; color: ${({ theme }) => theme.colors.textStrong}; font-size: 18px; line-height: 23px; font-weight: 700;`;
 const List = styled(FlatList<VisitVerificationCandidate>).attrs(({ theme }) => ({ contentContainerStyle: { paddingBottom: theme.spacing.xxl, paddingHorizontal: 24 } }))``;
-const Empty = styled.View`flex: 1; align-items: center; justify-content: center; padding: 24px; padding-bottom: 96px;`;
-const EmptyIcon = styled.View`width: 96px; height: 96px; align-items: center; justify-content: center; margin-bottom: 28px; border-radius: 48px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
-const EmptyMark = styled(AppText)`width: 38px; height: 48px; padding-top: 8px; text-align: center; color: ${({ theme }) => theme.colors.onPrimary}; font-size: 24px; font-weight: 900; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary}; overflow: hidden;`;
-const EmptyTitle = styled(AppText)`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 22px; font-weight: 800;`;
-const EmptyDescription = styled(AppText)`max-width: 340px; margin-top: 16px; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: 16px; line-height: 24px;`;
-const EmptyAction = styled.View`position: absolute; right: 24px; bottom: 24px; left: 24px;`;
+const Empty = styled.View`flex: 1;`;
+const EmptyIcon = styled.View`width: 96px; height: 96px; align-items: center; justify-content: center; margin-bottom: 16px; border-radius: 48px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
+const EmptyTitle = styled(AppText)`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 20px; line-height: 26px; font-weight: 700;`;
+const EmptyDescription = styled(AppText)`width: 100%; margin-top: 16px; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: 14px; line-height: 18.2px; font-weight: 500;`;
+const EmptyAction = styled.View`flex-shrink: 0; padding: 0 24px 16px;`;
 const Footer = styled.View`min-height: 72px; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.sm}px;`;
 const FooterText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted};`;
 const Retry = styled.Pressable`min-height: 40px; justify-content: center; padding: 0 ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
 const RetryText = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
+
+const EmptyCopy = styled.ScrollView.attrs({ contentContainerStyle: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24, paddingBottom: 48 } })`flex: 1;`;

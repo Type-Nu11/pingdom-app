@@ -94,13 +94,15 @@ export default function VisitVerificationSessionScreen({
           </NoPlaceBack>
         </NoPlaceHeader>
         <NoPlaceContent accessibilityLiveRegion="polite" testID="visit-verification-foreground-no-place">
-          <NoPlaceIconCircle>
-            <NoNearbyPlaceIcon height={50} testID="visit-verification-foreground-no-place-icon" width={44} />
-          </NoPlaceIconCircle>
-          <NoPlaceTitle>{t('visitVerification.emptyTitle')}</NoPlaceTitle>
-          <NoPlaceDescription>{t('visitVerification.emptyDescription')}</NoPlaceDescription>
+          <EmptyCopy>
+            <NoPlaceIconCircle>
+              <NoNearbyPlaceIcon height={50} testID="visit-verification-foreground-no-place-icon" width={44} />
+            </NoPlaceIconCircle>
+            <NoPlaceTitle>{t('visitVerification.emptyTitle')}</NoPlaceTitle>
+            <NoPlaceDescription>{t('visitVerification.emptyDescription')}</NoPlaceDescription>
+          </EmptyCopy>
           <NoPlaceAction>
-            <Button fullWidth label={t('visitVerification.return')} onPress={onBack} shape="pill" />
+            <Button fullWidth label={t('visitVerification.return')} onPress={onBack} shape="pill" size="onboarding" />
           </NoPlaceAction>
         </NoPlaceContent>
       </Screen>
@@ -150,7 +152,7 @@ const Content = styled.View`flex: 1; justify-content: center; gap: ${({ theme })
 const State = styled(AppText)`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 const Metrics = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const Metric = styled(AppText)`color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
-const NoPlaceHeader = styled.View`height: 64px; flex-direction: row; align-items: center; padding: 0 24px;`;
+const NoPlaceHeader = styled.View`height: 44px; flex-direction: row; align-items: center; padding: 0 16px;`;
 const NoPlaceBack = styled.Pressable`
   width: 44px;
   height: 44px;
@@ -164,8 +166,10 @@ const NoPlaceBack = styled.Pressable`
   shadow-opacity: 0.06;
   shadow-radius: 8px;
 `;
-const NoPlaceContent = styled.View`flex: 1; align-items: center; justify-content: center; padding: 24px; padding-bottom: 96px;`;
-const NoPlaceIconCircle = styled.View`width: 96px; height: 96px; align-items: center; justify-content: center; margin-bottom: 28px; border-radius: 48px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
-const NoPlaceTitle = styled(AppText)`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 22px; font-weight: 800;`;
-const NoPlaceDescription = styled(AppText)`max-width: 340px; margin-top: 16px; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: 16px; line-height: 24px;`;
-const NoPlaceAction = styled.View`position: absolute; right: 24px; bottom: 24px; left: 24px;`;
+const NoPlaceContent = styled.View`flex: 1;`;
+const NoPlaceIconCircle = styled.View`width: 96px; height: 96px; align-items: center; justify-content: center; margin-bottom: 16px; border-radius: 48px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
+const NoPlaceTitle = styled(AppText)`text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: 20px; line-height: 26px; font-weight: 700;`;
+const NoPlaceDescription = styled(AppText)`width: 100%; margin-top: 16px; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: 14px; line-height: 18.2px; font-weight: 500;`;
+const NoPlaceAction = styled.View`flex-shrink: 0; padding: 0 24px 16px;`;
+
+const EmptyCopy = styled.ScrollView.attrs({ contentContainerStyle: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24, paddingBottom: 48 } })`flex: 1;`;
