@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppState } from 'react-native';
+import { AppState, Keyboard } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../app/testing/testProviders';
@@ -33,11 +33,11 @@ test.each(['ko', 'en'] as const)('%s text preview has accessible controls and ne
   const { element } = navigationWrapper(<VoiceAssistantScreen onClose={onClose} />);
   await renderWithProviders(element, { language });
   expect(screen.getByRole('button', { name: strings.microphone })).toBeDisabled();
-  expect(screen.getByRole('button', { name: strings.submit })).toBeDisabled();
+  expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
   await fireEvent.changeText(screen.getByLabelText(strings.input), '   ');
-  expect(screen.getByRole('button', { name: strings.submit })).toBeDisabled();
+  expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
   await fireEvent.changeText(screen.getByLabelText(strings.input), '카페');
-  await fireEvent.press(screen.getByRole('button', { name: strings.submit }));
+  await fireEvent(screen.getByLabelText(strings.input), 'submitEditing');
   expect(screen.getByText(strings.localOnly)).toBeVisible();
   expect(screen.getByRole('button', { name: strings.submit })).toBeDisabled();
   await fireEvent.press(screen.getByRole('button', { name: strings.close }));
@@ -48,9 +48,20 @@ test.each(['LIGHT', 'DARK'] as const)('%s theme applies to screen, typography an
   const theme = appearancePreference === 'DARK' ? darkTheme : lightTheme;
   const { element } = navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} />);
   await renderWithProviders(element, { appearancePreference });
-  expect(screen.getByTestId('voice-assistant-screen')).toHaveStyle({ backgroundColor: theme.colors.background });
-  expect(screen.getByLabelText('요청 내용')).toHaveStyle({ color: theme.colors.text, backgroundColor: theme.colors.inputBackground, fontFamily: 'Pretendard' });
-  expect(screen.getByRole('header', { name: 'AI 어시스턴트' })).toHaveStyle({ fontFamily: 'Pretendard' });
+  expect(screen.getByTestId('voice-assistant-screen')).toHaveStyle({ backgroundColor: 'transparent' });
+  expect(screen.getByTestId('voice-assistant-composer')).toHaveStyle({ backgroundColor: theme.liquidGlass.sheet.tint });
+  expect(screen.getByLabelText('요청 내용')).toHaveStyle({ color: theme.colors.text, fontFamily: 'Pretendard' });
+  await fireEvent(screen.getByLabelText('요청 내용'), 'focus');
+  expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
+});
+
+test('focus and blur do not mount the details panel during the keyboard transition', async () => {
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} />).element);
+  const input = screen.getByLabelText('요청 내용');
+  await fireEvent(input, 'focus');
+  expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
+  await fireEvent(input, 'blur');
+  expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
 });
 
 test('partial speech cannot submit; stop/final is reviewed and confirmed once', async () => {
@@ -107,7 +118,7 @@ test('audio interruption preserves text fallback and close action', async () => 
   await act(() => x.emit({ type: 'error', reason: 'interrupted' }));
   expect(screen.getByRole('alert')).toHaveTextContent(voiceAssistantResources.ko.errors.interrupted);
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '텍스트 대체');
-  await fireEvent.press(screen.getByRole('button', { name: '입력 확인' }));
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   expect(screen.getByText(voiceAssistantResources.ko.localOnly)).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: '어시스턴트 닫기' }));
   expect(onClose).toHaveBeenCalled();
@@ -153,12 +164,12 @@ test('shows app-owned read results, empty, clarification, processing and safe fa
   await fireEvent.press(screen.getByTestId('voice-command-retry')); expect(retry).toHaveBeenCalledTimes(1);
 });
 
-test('explicit field focus resumes input after native modal blur, while background still clears it', async () => {
+test('app focus resumes input after Android focus loss, while background still clears it', async () => {
   const callbacks = new Map<string, (state?: string) => void>();
   jest.spyOn(AppState, 'addEventListener').mockImplementation((event, callback) => { callbacks.set(event, callback as (state?: string) => void); return { remove() {} }; });
   await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} />).element);
   await act(() => callbacks.get('blur')?.());
-  await fireEvent(screen.getByLabelText('요청 내용'), 'focus');
+  await act(() => callbacks.get('focus')?.());
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), 'cafe');
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('cafe');
   await act(() => callbacks.get('change')?.('background'));
@@ -173,4 +184,13 @@ test('nullable TICKET names are not labeled as general admission and never imply
   expect(screen.getByText('TICKET')).toBeOnTheScreen();
   expect(screen.queryByText('일반 이용')).toBeNull();
   expect(screen.queryByText('예약 성공')).toBeNull();
+});
+
+
+test('composer uses native keyboard animation instead of waiting for JS keyboardDidShow', async () => {
+  const listener = jest.spyOn(Keyboard, 'addListener');
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} />).element);
+  expect(screen.getByTestId('voice-assistant-keyboard-layout')).toHaveProp('behavior', 'padding');
+  expect(screen.getByTestId('voice-assistant-composer')).toBeOnTheScreen();
+  expect(listener.mock.calls.some(([name]) => name === 'keyboardDidShow')).toBe(false);
 });

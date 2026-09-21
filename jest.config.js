@@ -10,7 +10,7 @@ module.exports = {
   testMatch: ['<rootDir>/**/__tests__/**/*.test.{ts,tsx}'],
   transformIgnorePatterns: [
     // react-native-qrcode-svg publishes JSX under src/, so Babel must transform it.
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@react-navigation/.*|react-native-svg|react-native-qrcode-svg|react-native-safe-area-context|@tanstack/.*)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@react-navigation/.*|react-native-reanimated|react-native-worklets|react-native-keyboard-controller|react-native-svg|react-native-qrcode-svg|react-native-safe-area-context|@tanstack/.*)',
   ],
   watchman: false,
 };
