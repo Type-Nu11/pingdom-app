@@ -286,11 +286,10 @@ test('Remaining migration: no #360 exceptions, SCCs, implementations or V2 compa
     assert.deepEqual(result.edges.filter(e => e.target === file
       && (e.source.startsWith('src/v2/') || e.source.startsWith('src/application/'))), [], `${file}: migrate V2 consumers`);
   }
-  for (const module of ['onboarding', 'travel', 'merchant', 'voice-assistant']) {
+  for (const module of ['community', 'onboarding', 'travel', 'merchant', 'voice-assistant']) {
     assert.ok(result.nodes.has(`src/v2/modules/${module}/index.ts`));
   }
   assert.equal(result.nodes.has('src/v2/modules/home/index.ts'), false);
-  assert.equal(result.nodes.has('src/v2/modules/community/index.ts'), false);
 });
 
 test('#362 production graph has no old roots, compatibility adapters, tests, deep imports or SCCs', async () => {
