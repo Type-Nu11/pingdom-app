@@ -10,6 +10,8 @@
 	<string>Photo library access is required to add photos to place reviews.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Microphone access lets you ask Pingdy with your voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Speech recognition converts your voice to text. Audio may be processed by the device speech service outside this device.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

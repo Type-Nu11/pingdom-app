@@ -11,7 +11,8 @@
       "icon": "./src/assets/v2/icons/pingdomlogo-ios.png",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Photo library access is required to add photos to place reviews.",
-        "NSMicrophoneUsageDescription": "Microphone access lets you ask Pingdy with your voice."
+        "NSMicrophoneUsageDescription": "Microphone access lets you ask Pingdy with your voice.",
+        "NSSpeechRecognitionUsageDescription": "Speech recognition converts your voice to text. Audio may be processed by the device speech service outside this device."
       },
       "supportsTablet": true,
       "bundleIdentifier": "com.rmdka.pingdomapp"
