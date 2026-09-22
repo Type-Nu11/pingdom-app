@@ -53,12 +53,13 @@ test('FAB opens one existing input screen; close discards text and permits reope
   await fireEvent.press(fab);
   expect(screen.getAllByTestId('voice-assistant-screen')).toHaveLength(1);
   expect(screen.getAllByTestId('map-assistant-modal')).toHaveLength(1);
+  expect(screen.getByTestId('map-assistant-modal')).toHaveStyle({ position: 'absolute', top: 0, bottom: 0 });
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), 'private draft');
   await fireEvent.press(screen.getByRole('button', { name: '어시스턴트 닫기' }));
   expect(screen.queryByTestId('voice-assistant-screen')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'AI 어시스턴트 열기' }));
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
-  await fireEvent(screen.getByTestId('map-assistant-modal'), 'requestClose');
+  await fireEvent(screen.getByTestId('map-assistant-modal'), 'accessibilityEscape');
   expect(screen.queryByTestId('voice-assistant-screen')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: '내 위치' }));
   expect(locate).toHaveBeenCalledTimes(1);

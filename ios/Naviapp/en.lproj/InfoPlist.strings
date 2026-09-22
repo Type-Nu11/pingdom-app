@@ -1,3 +1,4 @@
 "NSPhotoLibraryUsageDescription" = "Photo library access is required to add photos to place reviews.";
+"NSMicrophoneUsageDescription" = "Microphone access lets you ask Pingdy with your voice.";
 "NSLocationWhenInUseUsageDescription" = "Location access is required to show nearby places and verify visits.";
 "NSLocationAlwaysAndWhenInUseUsageDescription" = "Location access is required to show nearby places and verify visits.";

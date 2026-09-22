@@ -60,3 +60,14 @@ jest.mock('react-native-keychain', () => ({
 beforeEach(async () => {
   await AsyncStorage.clear();
 });
+
+jest.mock('react-native-keyboard-controller', () => require('react-native-keyboard-controller/jest'));
+
+jest.mock('expo-audio', () => ({
+  getRecordingPermissionsAsync: jest.fn(async () => ({ status: 'undetermined', granted: false, canAskAgain: true })),
+  requestRecordingPermissionsAsync: jest.fn(async () => ({ status: 'denied', granted: false, canAskAgain: false })),
+}));
+
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+
+jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));

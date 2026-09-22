@@ -123,3 +123,7 @@ main
 ---
 
 Pingdom is developed and maintained by **Team Type:Null**.
+
+## Android 개발용 서명
+
+작업 폴더와 기기 간 서명을 통일하기 위해 공용 개발 키를 사용합니다. [설정 안내](docs/android-debug-signing.md)를 참고하세요.

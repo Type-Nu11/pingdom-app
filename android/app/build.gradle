@@ -129,7 +129,7 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
+            storeFile file(System.getenv('PINGDOM_DEBUG_KEYSTORE') ?: new File(System.getProperty('user.home'), '.android/pingdom-debug.keystore').absolutePath)
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
@@ -211,5 +211,26 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// Worktrees must share the same signing identity; never generate a replacement silently.
+def verifyPingdomDebugKey = tasks.register('verifyPingdomDebugKey') {
+    doLast {
+        def keyFile = android.signingConfigs.debug.storeFile
+        if (!keyFile.isFile()) {
+            throw new GradleException("Missing shared Pingdom debug key: ${keyFile}. Restore the team key; see docs/android-debug-signing.md.")
+        }
+        def keyStore = java.security.KeyStore.getInstance(keyFile, 'android'.toCharArray())
+        def certificate = keyStore.getCertificate('androiddebugkey')
+        def fingerprint = certificate == null ? '' : java.security.MessageDigest.getInstance('SHA-256').digest(certificate.encoded).encodeHex().toString()
+        if (fingerprint != '84d91790b44bc957b9eed6ab30d2aa79f9f5d20b1889c578a652123c5552a6b8') {
+            throw new GradleException('Wrong Pingdom debug signing identity. Restore the shared key; see docs/android-debug-signing.md.')
+        }
+    }
+}
+tasks.configureEach { task ->
+    if (task.name.startsWith('validateSigning')) {
+        task.dependsOn(verifyPingdomDebugKey)
     }
 }

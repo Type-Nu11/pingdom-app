@@ -14,6 +14,7 @@ type LocationWorkflowDependencies = {
   getPermission: () => Promise<PermissionSnapshot>;
   requestPermission: () => Promise<PermissionSnapshot>;
   getCoordinate: () => Promise<Coordinate>;
+  requestIfNeeded?: boolean;
 };
 
 function isValidCoordinate(coordinate: Coordinate): boolean {
@@ -29,11 +30,12 @@ export async function resolveCurrentLocation({
   getCoordinate,
   getPermission,
   requestPermission,
+  requestIfNeeded = true,
 }: LocationWorkflowDependencies): Promise<LocationOutcome> {
   try {
     let permission = await getPermission();
 
-    if (permission.status !== 'granted' && permission.canAskAgain) {
+    if (requestIfNeeded && permission.status !== 'granted' && permission.canAskAgain) {
       permission = await requestPermission();
     }
 

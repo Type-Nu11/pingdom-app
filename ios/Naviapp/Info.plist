@@ -8,6 +8,8 @@
 	<string>Location access is required to show nearby places and verify visits.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photo library access is required to add photos to place reviews.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access lets you ask Pingdy with your voice.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
