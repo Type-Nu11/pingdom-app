@@ -1,6 +1,6 @@
 export type VoiceInputPhase = 'idle' | 'permissionRequesting' | 'listening' | 'processing' | 'final' | 'canceled' | 'permissionDenied' | 'unavailable' | 'error';
-export type MicrophonePermission = 'undetermined' | 'granted' | 'denied' | 'blocked';
-export type SpeechFailure = 'interrupted' | 'noSpeech' | 'unavailable' | 'failed';
+export type MicrophonePermission = 'undetermined' | 'granted' | 'denied' | 'blocked' | 'restricted';
+export type SpeechFailure = 'interrupted' | 'noSpeech' | 'unavailable' | 'network' | 'failed';
 export type SpeechEvent = { type: 'partial' | 'final'; text: string } | { type: 'processing' } | { type: 'error'; reason: SpeechFailure };
 /** A session owns its listeners and native buffers. cancel must synchronously detach
  * listeners, abort pending startup and stop capture; it is idempotent. No disk/log storage.
@@ -37,7 +37,7 @@ export function validateVoiceInput(value: string): { text: string; error: null }
   if (text.length > MAX_VOICE_INPUT_LENGTH) return { text: null, error: 'tooLong' };
   return { text, error: null };
 }
-/** Fail closed until STT processing, consent and provider retention policy are approved. */
+/** Text-only fallback for missing native modules and tests. */
 export const unavailableSpeechAdapter: SpeechInputAdapter = {
   available: false,
   getPermission: async () => 'undetermined',
