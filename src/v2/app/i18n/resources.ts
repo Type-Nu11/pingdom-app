@@ -1,4 +1,5 @@
 import { onboardingResources } from '../../modules/onboarding/i18n';
+import { communityResources } from '../../modules/community/i18n';
 import { paymentResources } from '../../modules/booking/payments/i18n';
 import { offerCouponResources, offerStatusResources } from '../../modules/booking/offers-coupons/i18n';
 import { reservationResources } from '../../modules/booking/reservations/i18n';
@@ -28,6 +29,7 @@ export const resources = {
   en: { translation: {
     ...offerCouponResources.en,
     ...reservationResources.en,
+    community: communityResources.en,
     visitVerification: visitVerificationResources.en,
     voiceAssistant: voiceAssistantResources.en,
     ...withBookingStatuses(withOnboarding(sharedResources.en.translation, onboardingResources.en), { ...offerStatusResources.en, ...paymentResources.en }),
@@ -35,6 +37,7 @@ export const resources = {
   ko: { translation: {
     ...offerCouponResources.ko,
     ...reservationResources.ko,
+    community: communityResources.ko,
     visitVerification: visitVerificationResources.ko,
     voiceAssistant: voiceAssistantResources.ko,
     ...withBookingStatuses(withOnboarding(sharedResources.ko.translation, onboardingResources.ko), { ...offerStatusResources.ko, ...paymentResources.ko }),

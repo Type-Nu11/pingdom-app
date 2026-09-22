@@ -26,6 +26,7 @@ import MapBottomSheet, {
   type VisitFilter,
 } from '../sheet/components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../sheet/components/FavoritePlacesBottomSheet';
+import { useMapCommunitySheet } from '../sheet/mapCommunitySheet';
 import { useMapReservationSheet } from '../sheet/mapReservationSheet';
 import {
   NEARBY_RESERVATION_CANDIDATE_LIMIT,
@@ -126,7 +127,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 type MapScreenProps = {
   canQueryBookmarks?: boolean;
   canQueryRankedFeeds?: boolean;
-  initialSection?: 'favorites' | 'map' | 'reservations';
+  initialSection?: 'community' | 'favorites' | 'map' | 'reservations';
   onClearOpenedBookmarkedPlace?: () => void;
   onCreateReservation?: (place: {
     category: string;
@@ -134,6 +135,8 @@ type MapScreenProps = {
     imageUrl?: string;
     name: string;
   }) => void;
+  onOpenCommunityPost?: (postId: number) => void;
+  onOpenCommunityWrite?: () => void;
   onOpenCoupons?: () => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
@@ -149,6 +152,8 @@ export default function MapScreen({
   initialSection = 'map',
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
+  onOpenCommunityPost,
+  onOpenCommunityWrite,
   onOpenCoupons,
   onOpenProfile,
   onOpenReservation,
@@ -158,6 +163,7 @@ export default function MapScreen({
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const ReservationBottomSheet = useMapReservationSheet();
+  const CommunityBottomSheet = useMapCommunitySheet();
   const theme = useTheme();
   const isFocused = useIsFocused();
   const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused);
@@ -270,7 +276,7 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
-  const [mapSection, setMapSection] = useState<'map' | 'favorites' | 'reservations'>(initialSection);
+  const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
   const [reservationEntryPlace, setReservationEntryPlace] = useState<DecisionPlace | null>(null);
   const [dismissedMarkerCenter, setDismissedMarkerCenter] = useState<{
     lat: number;
@@ -764,7 +770,7 @@ export default function MapScreen({
   const handleSearchFocus = () => {
     setIsSearchOpen(true);
   };
-  const openMapSection = useCallback((nextSection: 'favorites' | 'map' | 'reservations') => {
+  const openMapSection = useCallback((nextSection: 'community' | 'favorites' | 'map' | 'reservations') => {
     setContent({ type: 'home' });
     setMapSection(nextSection);
     jumpTo('medium');
@@ -834,7 +840,7 @@ export default function MapScreen({
         return true;
       }
 
-      if (mapSection === 'favorites') {
+      if (mapSection === 'favorites' || mapSection === 'community') {
         setMapSection('map');
         snapTo('medium');
         return true;
@@ -939,7 +945,35 @@ export default function MapScreen({
           style={styles.sectionTransition}
           testID={`map-section-transition-${mapSection}`}
         >
-        {mapSection === 'favorites' ? (
+        {mapSection === 'community' ? (
+          <CommunityBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            height={fullSheetHeight}
+            mediumTranslateY={mediumTranslateY}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenMap={() => {
+              openMapSection('map');
+            }}
+            onOpenPost={(postId) => onOpenCommunityPost?.(postId)}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservations={() => {
+              openMapSection('reservations');
+            }}
+            onOpenWrite={() => onOpenCommunityWrite?.()}
+            panHandlers={panHandlers}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
             hasNextPage={Boolean(hasNextFavoritePage)}
@@ -955,6 +989,9 @@ export default function MapScreen({
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
               else snapTo('medium');
+            }}
+            onOpenCommunity={() => {
+              openMapSection('community');
             }}
             onOpenMap={() => {
               openMapSection('map');
@@ -998,6 +1035,9 @@ export default function MapScreen({
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
               else snapTo('medium');
+            }}
+            onOpenCommunity={() => {
+              openMapSection('community');
             }}
             onOpenFavorites={() => {
               openMapSection('favorites');
@@ -1058,6 +1098,9 @@ export default function MapScreen({
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
               else snapTo('medium');
+            }}
+            onOpenCommunity={() => {
+              openMapSection('community');
             }}
             onOpenLikedPlaces={() => {
               openMapSection('favorites');

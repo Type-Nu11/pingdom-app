@@ -45,6 +45,7 @@ type FavoritePlacesBottomSheetProps = {
   isUnauthorized: boolean;
   mediumTranslateY: number;
   onHandlePress: () => void;
+  onOpenCommunity?: () => void;
   onOpenMap: () => void;
   onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
@@ -188,6 +189,7 @@ export default function FavoritePlacesBottomSheet({
   isUnauthorized,
   mediumTranslateY,
   onHandlePress,
+  onOpenCommunity,
   onOpenMap,
   onOpenRecommendations,
   onOpenReservations,
@@ -368,6 +370,7 @@ export default function FavoritePlacesBottomSheet({
 
       <MapSheetBottomNavigation
         activeTab="favorites"
+        onOpenCommunity={onOpenCommunity}
         onOpenMap={onOpenMap}
         onOpenRecommendations={onOpenRecommendations}
         onOpenReservations={onOpenReservations}
