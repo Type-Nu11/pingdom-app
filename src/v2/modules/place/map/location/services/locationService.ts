@@ -19,8 +19,9 @@ const toCoordinate = (location: Location.LocationObject): Coordinate => {
   };
 };
 
-export function getCurrentLocation() {
+export function getCurrentLocation(requestIfNeeded = true) {
   return resolveCurrentLocation({
+    requestIfNeeded,
     getCoordinate: async () => toCoordinate(await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     })),
