@@ -33,6 +33,7 @@ test.each(['ko', 'en'] as const)('%s text preview has accessible controls and ne
   const { element } = navigationWrapper(<VoiceAssistantScreen onClose={onClose} />);
   await renderWithProviders(element, { language });
   expect(screen.getByRole('button', { name: strings.microphone })).toBeDisabled();
+  expect(screen.getByText(strings.voiceUnavailable)).toBeVisible();
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
   await fireEvent.changeText(screen.getByLabelText(strings.input), '   ');
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
@@ -69,6 +70,7 @@ test('partial speech cannot submit; stop/final is reviewed and confirmed once', 
   const submit = jest.fn(() => 'localOnly' as const);
   const { element } = navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onFinalInput={submit} submissionNotice="Local test preview" onClose={jest.fn()} />);
   await renderWithProviders(element);
+  expect(screen.getByText(voiceAssistantResources.ko.speechProcessing)).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
   expect(x.session.start).toHaveBeenCalledTimes(1);
   await act(() => x.emit({ type: 'partial', text: '카페' }));
@@ -79,8 +81,33 @@ test('partial speech cannot submit; stop/final is reviewed and confirmed once', 
   await act(() => { x.emit({ type: 'final', text: '카페 검색' }); x.emit({ type: 'final', text: '중복' }); });
   expect(submit).not.toHaveBeenCalled();
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('카페 검색');
+  expect(screen.getByText('Local test preview')).toBeVisible();
+  expect(screen.getByText(voiceAssistantResources.ko.review)).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: '입력 확인' }));
   expect(submit).toHaveBeenCalledTimes(1);
+});
+
+test('denied voice permission is visible, offers settings when blocked, and keeps text input', async () => {
+  const x = speech();
+  x.adapter.getPermission = async () => 'blocked';
+  const { element } = navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} />);
+  await renderWithProviders(element);
+  await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+  expect(screen.getByRole('alert')).toHaveTextContent(voiceAssistantResources.ko.permissions.blocked);
+  expect(screen.getByRole('button', { name: voiceAssistantResources.ko.settings })).toBeVisible();
+  expect(x.session.start).not.toHaveBeenCalled();
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '텍스트 대안');
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('텍스트 대안');
+});
+
+test('restricted speech permission is identified without suggesting a normal permission retry', async () => {
+  const x = speech();
+  x.adapter.getPermission = async () => 'restricted';
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} />).element);
+  await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+  expect(screen.getByRole('alert')).toHaveTextContent(voiceAssistantResources.ko.permissions.restricted);
+  expect(screen.queryByRole('button', { name: voiceAssistantResources.ko.settings })).toBeNull();
+  expect(x.session.start).not.toHaveBeenCalled();
 });
 
 test.each(['background', 'unmount', 'navigationBlur', 'androidBlur', 'close'] as const)('%s cancels capture, detaches lifecycle listeners and clears buffers', async reason => {

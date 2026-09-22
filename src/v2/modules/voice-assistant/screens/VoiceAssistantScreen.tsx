@@ -14,7 +14,8 @@ import StopIcon from '../assets/stop.svg';
 import { VoiceCommandResults } from '../components/VoiceCommandResults';
 import type { VoiceCommandViewState } from '../hooks/useVoiceCommands';
 import { useVoiceInput } from '../hooks/useVoiceInput';
-import { retainInputLocally, unavailableSpeechAdapter, validateVoiceInput, type OnFinalInput, type SpeechInputAdapter } from '../model/voiceInput';
+import { expoSpeechInputAdapter } from '../adapters/expoSpeechInputAdapter';
+import { retainInputLocally, validateVoiceInput, type OnFinalInput, type SpeechInputAdapter } from '../model/voiceInput';
 
 export type VoiceAssistantScreenProps = {
   onClose: () => void;
@@ -30,14 +31,14 @@ export type VoiceAssistantScreenProps = {
   | { onFinalInput?: undefined; submissionNotice?: never }
   | { onFinalInput: OnFinalInput; submissionNotice: string }
 );
-export default function VoiceAssistantScreen({ onClose, adapter = unavailableSpeechAdapter, onFinalInput = retainInputLocally, submissionNotice, guidance, commandState, onCommandCancel, onCommandRetry, commandRetryDisabled }: VoiceAssistantScreenProps) {
+export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, onFinalInput = retainInputLocally, submissionNotice, guidance, commandState, onCommandCancel, onCommandRetry, commandRetryDisabled }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { controller, state } = useVoiceInput(adapter, onFinalInput);
   const busy = ['permissionRequesting', 'listening', 'processing'].includes(state.phase);
   const pending = state.delivery === 'pending';
-  const showDetails = (state.source === 'voice' && !!state.draft) || busy || !!state.error || !!guidance
+  const showDetails = (state.source === 'voice' && !!state.draft) || busy || !!state.error || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
     || state.delivery !== 'none' || (commandState && commandState.phase !== 'idle');
   const close = () => { controller.cancel(); onCommandCancel?.(); onClose(); };
   const start = () => {
@@ -72,6 +73,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = unavailableSpe
         <MicrophoneIcon width={24} height={24} />
       </MicrophoneButton>}
     </InputRow>
+    <Notice>{t(adapter.available ? 'voiceAssistant.speechProcessing' : 'voiceAssistant.voiceUnavailable')}</Notice>
+    {submissionNotice && <Notice>{submissionNotice}</Notice>}
   </Composer>;
   return (
     <KeyboardProvider><Screen testID="voice-assistant-screen" accessibilityViewIsModal onAccessibilityEscape={close}>
@@ -91,10 +94,13 @@ export default function VoiceAssistantScreen({ onClose, adapter = unavailableSpe
             </Header>
             <Content keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, gap: 8 }}>
             {!!state.draft && <QueryText>“{state.draft}”</QueryText>}
-            {busy && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.phases.${state.phase}`)}</Copy>}
+            {(busy || state.phase === 'permissionDenied' || state.phase === 'unavailable') && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.phases.${state.phase}`)}</Copy>}
+            {state.phase === 'permissionDenied' && <Copy accessibilityRole="alert">{t(`voiceAssistant.permissions.${state.permission}`)}</Copy>}
             {state.permission === 'blocked' && button('settings', () => { controller.cancel(); void Linking.openSettings().catch(() => undefined); })}
             {state.partial ? <Copy testID="voice-partial">{state.partial}</Copy> : null}
             {state.error && <Copy accessibilityRole="alert">{t(`voiceAssistant.errors.${state.error}`)}</Copy>}
+            {!!state.draft && <Copy>{t('voiceAssistant.review')}</Copy>}
+            {!!state.draft && !submissionNotice && <Copy>{t('voiceAssistant.preview')}</Copy>}
             {(state.draft || busy || pending) && (!commandState || commandState.phase === 'idle') && <ReviewActions>
               {button('submit', () => { void controller.submit(); }, submitDisabled)}
               {button('cancel', () => { controller.cancel(); onCommandCancel?.(); })}
@@ -169,6 +175,12 @@ const Copy = styled(Text)`
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
   color: ${({ theme }) => theme.colors.text};
+`;
+const Notice = styled(Text)`
+  padding: 4px 12px 8px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 12px;
+  line-height: 17px;
 `;
 const Label = styled(Text)`
   font-family: ${({ theme }) => theme.typography.label.fontFamily};
