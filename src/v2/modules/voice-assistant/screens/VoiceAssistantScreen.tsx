@@ -131,7 +131,7 @@ const WaveBar = styled.View<{ $height: number; $strong?: boolean }>`
 `;
 const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))`
   width: 100%; max-width: 386px; max-height: 78%; align-self: center; padding-top: 6px; padding-bottom: 12px;
-  gap: 8px; border-radius: 36px; overflow: hidden; background-color: ${({ theme }) => theme.liquidGlass.sheet.tint};
+  gap: 8px; border-radius: 36px; overflow: visible; background-color: ${({ theme }) => theme.liquidGlass.sheet.tint};
 `;
 const Grabber = styled.View`width: 56px; height: 5px; border-radius: 3px; align-self: center; background-color: #bfc1c1;`;
 const Header = styled.View`height: 40px; padding-horizontal: 16px; flex-direction: row; align-items: center; justify-content: space-between;`;
@@ -146,7 +146,7 @@ const Content = styled.ScrollView`
   flex-shrink: 1;
   min-height: 0px;
 `;
-const Composer = styled.View.attrs({ style: { boxShadow: '0px -1px 4px rgba(255, 25, 86, 0.15), 0px 4px 20px rgba(255, 25, 86, 0.15)' } })<{ $embedded: boolean }>`
+const Composer = styled.View.attrs({ style: { boxShadow: '0px 4px 4px rgba(255, 25, 86, 0.15), 0px 4px 20px rgba(255, 25, 86, 0.15)' } })<{ $embedded: boolean }>`
   padding: ${({ $embedded }) => $embedded ? 0 : 8}px;
   margin-horizontal: ${({ $embedded }) => $embedded ? 12 : 0}px;
   border-radius: ${({ theme }) => theme.liquidGlass.header.radius}px;
@@ -154,7 +154,7 @@ const Composer = styled.View.attrs({ style: { boxShadow: '0px -1px 4px rgba(255,
   border-width: ${({ $embedded }) => $embedded ? 0 : 1}px;
   border-color: ${({ theme }) => theme.liquidGlass.header.rim};
 `;
-const InputRow = styled.View.attrs<{ $embedded: boolean }>(({ theme, $embedded }) => ({ style: { boxShadow: $embedded ? undefined : theme.liquidGlass.search.shadow } }))<{ $embedded: boolean }>`
+const InputRow = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.search.shadow } }))<{ $embedded: boolean }>`
   min-height: 44px;
   flex-direction: row;
   align-items: center;
