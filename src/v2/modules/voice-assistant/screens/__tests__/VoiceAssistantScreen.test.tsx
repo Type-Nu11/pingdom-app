@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppState, Keyboard } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { darkTheme, lightTheme } from '../../../../shared/theme';
 import { voiceAssistantResources } from '../../i18n';
@@ -9,7 +9,7 @@ import VoiceAssistantScreen from '../VoiceAssistantScreen';
 import { SettingsScreen } from '../../../user/settings';
 import { profileApi } from '../../../user/profile/__tests__';
 import { notificationApi } from '../../../user/notifications/__tests__';
-import type { SpeechEvent, SpeechInputAdapter } from '../../model/voiceInput';
+import type { FinalInput, SpeechEvent, SpeechInputAdapter } from '../../model/voiceInput';
 
 function navigationWrapper(children: React.ReactNode) {
   const listeners = new Map<string, () => void>();
@@ -18,7 +18,7 @@ function navigationWrapper(children: React.ReactNode) {
 }
 const originalState = AppState.currentState;
 beforeEach(() => { (AppState as { currentState: string }).currentState = 'active'; });
-afterEach(() => { (AppState as { currentState: string }).currentState = originalState; });
+afterEach(() => { (AppState as { currentState: string }).currentState = originalState; jest.useRealTimers(); });
 
 function speech() {
   let emit!: (event: SpeechEvent) => void;
@@ -33,14 +33,15 @@ test.each(['ko', 'en'] as const)('%s text preview has accessible controls and ne
   const { element } = navigationWrapper(<VoiceAssistantScreen onClose={onClose} />);
   await renderWithProviders(element, { language });
   expect(screen.getByRole('button', { name: strings.microphone })).toBeDisabled();
-  expect(screen.getByText(strings.voiceUnavailable)).toBeVisible();
+  expect(screen.getByRole('button', { name: strings.microphone })).toHaveProp('accessibilityHint', strings.voiceUnavailable);
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
   await fireEvent.changeText(screen.getByLabelText(strings.input), '   ');
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
   await fireEvent.changeText(screen.getByLabelText(strings.input), '카페');
   await fireEvent(screen.getByLabelText(strings.input), 'submitEditing');
   expect(screen.getByText(strings.localOnly)).toBeVisible();
-  expect(screen.getByRole('button', { name: strings.submit })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: language === 'ko' ? '입력 확인' : 'Confirm input' })).toBeNull();
+  expect(screen.queryByRole('button', { name: language === 'ko' ? '입력 취소' : 'Cancel input' })).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: strings.close }));
   expect(onClose).toHaveBeenCalledTimes(1);
 });
@@ -65,26 +66,97 @@ test('focus and blur do not mount the details panel during the keyboard transiti
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
 });
 
-test('partial speech cannot submit; stop/final is reviewed and confirmed once', async () => {
+test('partial speech stays on screen and final speech sends once after five seconds of silence', async () => {
   const x = speech();
   const submit = jest.fn(() => 'localOnly' as const);
-  const { element } = navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onFinalInput={submit} submissionNotice="Local test preview" onClose={jest.fn()} />);
+  const { element } = navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onFinalInput={submit} serverSubmission onClose={jest.fn()} />);
   await renderWithProviders(element);
-  expect(screen.getByText(voiceAssistantResources.ko.speechProcessing)).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
   expect(x.session.start).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId('voice-listening-prompt')).toHaveTextContent('듣고있어요!');
+  expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
+  expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '입력 취소' })).toBeNull();
   await act(() => x.emit({ type: 'partial', text: '카페' }));
   expect(screen.getByTestId('voice-partial')).toBeVisible();
-  expect(screen.getByRole('button', { name: '입력 확인' })).toBeDisabled();
-  await fireEvent.press(screen.getByRole('button', { name: '중지하고 확인' }));
-  expect(x.session.stop).toHaveBeenCalledTimes(1);
-  await act(() => { x.emit({ type: 'final', text: '카페 검색' }); x.emit({ type: 'final', text: '중복' }); });
+  expect(screen.getByTestId('voice-partial')).toHaveTextContent('카페');
+  expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
+  await act(() => { x.emit({ type: 'final', text: '카페 검색' }); x.emit({ type: 'final', text: '카페 검색' }); });
   expect(submit).not.toHaveBeenCalled();
+  expect(screen.getByTestId('voice-listening-prompt')).toHaveTextContent('카페 검색');
+  expect(screen.queryByText(voiceAssistantResources.ko.command.submission)).toBeNull();
+  expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '입력 취소' })).toBeNull();
+  await waitFor(() => expect(submit).toHaveBeenCalledTimes(1), { timeout: 6500 });
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('카페 검색');
-  expect(screen.getByText('Local test preview')).toBeVisible();
-  expect(screen.getByText(voiceAssistantResources.ko.review)).toBeVisible();
-  await fireEvent.press(screen.getByRole('button', { name: '입력 확인' }));
+}, 8000);
+
+test.each([['ko', 'ko-KR'], ['en', 'en-US']] as const)('%s AI entry starts STT once without submitting speech', async (language, locale) => {
+  const x = speech();
+  const submit = jest.fn(() => 'accepted' as const);
+  const create = jest.spyOn(x.adapter, 'createSession');
+  const navigation = { isFocused: () => true, addListener: () => () => undefined };
+  const element = () => <NavigationContext.Provider value={navigation as never}><VoiceAssistantScreen adapter={x.adapter}
+    autoStart serverSubmission onFinalInput={submit} onClose={jest.fn()} /></NavigationContext.Provider>;
+  const view = await renderWithProviders(element(), { language });
+  await waitFor(() => expect(x.session.start).toHaveBeenCalledTimes(1));
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ locale }));
+  await view.rerender(element());
+  expect(x.session.start).toHaveBeenCalledTimes(1);
+  await act(() => x.emit({ type: 'partial', text: 'hello' }));
+  expect(submit).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByRole('button', { name: voiceAssistantResources[language].stop }));
+  await act(() => x.emit({ type: 'final', text: 'hello' }));
   expect(submit).toHaveBeenCalledTimes(1);
+});
+
+test('automatic STT permission rejection keeps the text alternative available', async () => {
+  const x = speech();
+  x.adapter.getPermission = async () => 'denied';
+  x.adapter.requestPermission = async () => 'blocked';
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} autoStart onClose={jest.fn()} />).element);
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(voiceAssistantResources.ko.permissions.blocked));
+  expect(x.session.start).not.toHaveBeenCalled();
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '텍스트 입력');
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('텍스트 입력');
+});
+
+test('closing during automatic permission lookup prevents late native capture', async () => {
+  const x = speech();
+  let finish!: (permission: 'granted') => void;
+  x.adapter.getPermission = () => new Promise(resolve => { finish = resolve; });
+  const onClose = jest.fn();
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} autoStart onClose={onClose} />).element);
+  expect(screen.getByText(voiceAssistantResources.ko.phases.permissionRequesting)).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: '어시스턴트 닫기' }));
+  await act(async () => finish('granted'));
+  expect(x.session.start).not.toHaveBeenCalled();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test('automatic entry on an unsupported device leaves text input usable', async () => {
+  const x = speech();
+  const unavailable = { ...x.adapter, available: false };
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={unavailable} autoStart onClose={jest.fn()} />).element);
+  expect(screen.getByText(voiceAssistantResources.ko.phases.unavailable)).toBeVisible();
+  expect(x.session.start).not.toHaveBeenCalled();
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '텍스트 대안');
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('텍스트 대안');
+});
+
+test('AI entry while backgrounded does not start capture on foreground return', async () => {
+  const x = speech();
+  (AppState as { currentState: string }).currentState = 'background';
+  const events = new Map<string, (state?: string) => void>();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((event, listener) => {
+    events.set(event, listener as never);
+    return { remove() {} };
+  });
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} autoStart onClose={jest.fn()} />).element);
+  expect(x.session.start).not.toHaveBeenCalled();
+  (AppState as { currentState: string }).currentState = 'active';
+  await act(() => events.get('change')?.('active'));
+  expect(x.session.start).not.toHaveBeenCalled();
 });
 
 test('denied voice permission is visible, offers settings when blocked, and keeps text input', async () => {
@@ -151,13 +223,83 @@ test('audio interruption preserves text fallback and close action', async () => 
   expect(onClose).toHaveBeenCalled();
 });
 
+test('unsupported AI request shows Figma feedback, then speak again starts a fresh capture', async () => {
+  const x = speech();
+  const dismiss = jest.fn();
+  const props = { adapter: x.adapter, serverSubmission: true as const, onFinalInput: jest.fn(() => 'accepted' as const),
+    onClose: jest.fn(), onCommandFeedbackDismiss: dismiss };
+  const navigation = { isFocused: () => true, addListener: () => () => undefined };
+  const View = (commandState?: React.ComponentProps<typeof VoiceAssistantScreen>['commandState']) =>
+    <NavigationContext.Provider value={navigation as never}><VoiceAssistantScreen {...props} commandState={commandState} /></NavigationContext.Provider>;
+  const view = await renderWithProviders(View());
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '응애 나 아기 용인용인용인');
+  await view.rerender(View({ phase: 'unrecognized' }));
+  expect(screen.getByText('“응애 나 아기 용인용인용인”')).toBeVisible();
+  expect(screen.getByText(voiceAssistantResources.ko.feedback.unrecognized)).toBeVisible();
+  expect(screen.queryByText('Translation unavailable')).toBeNull();
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
+  expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '입력 취소' })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: '다시 말하기' }));
+  expect(dismiss).toHaveBeenCalledTimes(1);
+  expect(x.session.start).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId('voice-listening-prompt')).toBeVisible();
+  expect(screen.queryByText('응애 나 아기 용인용인용인')).toBeNull();
+  expect(props.onFinalInput).not.toHaveBeenCalled();
+});
+
+test('stopping voice input leaves the composer available for a new text request', async () => {
+  const x = speech();
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} serverSubmission onFinalInput={submit} onClose={jest.fn()} />).element);
+  await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+  await act(() => x.emit({ type: 'final', text: '첫 음성 요청' }));
+  await fireEvent.press(screen.getByRole('button', { name: '중지하고 보내기' }));
+  await act(() => x.emit({ type: 'ended' }));
+  await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+  const input = screen.getByLabelText('요청 내용');
+  expect(input.props.editable).not.toBe(false);
+  await fireEvent(input, 'focus');
+  expect(screen.getByLabelText('요청 내용')).toBe(input);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '새 텍스트 요청');
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('새 텍스트 요청');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+  expect(submit.mock.calls[1][0]).toMatchObject({ text: '새 텍스트 요청', source: 'text' });
+  expect(screen.queryByText('Translation unavailable')).toBeNull();
+});
+
+test('no speech shows recovery without a fabricated quote; dismiss preserves text input', async () => {
+  const x = speech();
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} />).element);
+  await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+  await act(() => x.emit({ type: 'error', reason: 'noSpeech' }));
+  expect(screen.getByText(voiceAssistantResources.ko.feedback.noSpeech)).toBeVisible();
+  expect(screen.queryByText('“”')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: '괜찮아요' }));
+  expect(screen.queryByText(voiceAssistantResources.ko.feedback.noSpeech)).toBeNull();
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '텍스트로 요청');
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('텍스트로 요청');
+});
+
 test.each(['assistant', 'clarification', 'invalidResponse'] as const)('%s remains informational and uses translated labels', async kind => {
   const { element } = navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} guidance={{ kind, text: '예약 성공' }} />);
   await renderWithProviders(element);
   expect(screen.getByText(voiceAssistantResources.ko.advisory)).toBeVisible();
   if (kind !== 'assistant') expect(screen.getByText(voiceAssistantResources.ko[kind])).toBeVisible();
   if (kind !== 'invalidResponse') expect(screen.getByText('예약 성공')).toHaveStyle({ color: lightTheme.colors.text });
-  expect(screen.queryByText(voiceAssistantResources.ko.accepted)).toBeNull();
+  expect(screen.queryByText(/예약 확정 여부/)).toBeNull();
+});
+
+test('unrelated accepted request does not show reservation or delivery boilerplate', async () => {
+  const onFinalInput = jest.fn(() => 'accepted' as const);
+  const { element } = navigationWrapper(<VoiceAssistantScreen serverSubmission onFinalInput={onFinalInput} onClose={jest.fn()} />);
+  await renderWithProviders(element);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '오늘 날씨 어때?');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  await waitFor(() => expect(onFinalInput).toHaveBeenCalledTimes(1));
+  expect(screen.queryByText(/예약이 확정|예약 확정 여부|입력을 어시스턴트에 전달/)).toBeNull();
+  expect(screen.getByText('“오늘 날씨 어때?”')).toBeVisible();
 });
 
 test('settings has no assistant input entry and retains appearance preferences', async () => {
@@ -188,6 +330,7 @@ test('shows app-owned read results, empty, clarification, processing and safe fa
   await view.rerender(<View {...props} commandState={{ phase: 'result', result: { ...base, command: 'getPlaceDetails', outcome: { status: 'succeeded', data: { place: { id: 1, name: 'Actual cafe', address: 'Seoul', touristCategories: ['CAFE'], operatingStatus: 'OPERATING' } } } } }} />);
   expect(screen.getByText('Actual cafe')).toBeOnTheScreen();
   await view.rerender(<View {...props} commandState={{ phase: 'result', result: { ...base, command: 'getPlaceDetails', outcome: { status: 'rejected', code: 'NETWORK_ERROR' } } }} />);
+  expect(screen.getByTestId('voice-command-retry')).toHaveStyle({ minHeight: 34, backgroundColor: lightTheme.liquidGlass.category.activeTint });
   await fireEvent.press(screen.getByTestId('voice-command-retry')); expect(retry).toHaveBeenCalledTimes(1);
 });
 

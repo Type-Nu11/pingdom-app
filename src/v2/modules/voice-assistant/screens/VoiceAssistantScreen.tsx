@@ -1,5 +1,5 @@
-import React from 'react';
-import { AppState, Linking } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { AppState, Keyboard, Linking } from 'react-native';
 import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-controller';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,46 +20,70 @@ import { retainInputLocally, validateVoiceInput, type OnFinalInput, type SpeechI
 export type VoiceAssistantScreenProps = {
   onClose: () => void;
   adapter?: SpeechInputAdapter;
+  autoStart?: boolean;
   commandState?: VoiceCommandViewState;
   onCommandCancel?: () => void;
+  onCommandFeedbackDismiss?: () => void;
   onCommandRetry?: () => void;
   commandRetryDisabled?: boolean;
   timezone?: string;
   // Only informational text; never maps to success UI, execution or TTS.
   guidance?: { kind: 'assistant' | 'clarification' | 'invalidResponse'; text?: string };
 } & (
-  | { onFinalInput?: undefined; submissionNotice?: never }
-  | { onFinalInput: OnFinalInput; submissionNotice: string }
+  | { serverSubmission?: false; onFinalInput?: OnFinalInput }
+  | { serverSubmission: true; onFinalInput: OnFinalInput }
 );
-export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, onFinalInput = retainInputLocally, submissionNotice, guidance, commandState, onCommandCancel, onCommandRetry, commandRetryDisabled }: VoiceAssistantScreenProps) {
+export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { controller, state } = useVoiceInput(adapter, onFinalInput);
+  const [editingInSheet, setEditingInSheet] = useState(false);
   const busy = ['permissionRequesting', 'listening', 'processing'].includes(state.phase);
   const pending = state.delivery === 'pending';
-  const showDetails = (state.source === 'voice' && !!state.draft) || busy || !!state.error || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
-    || state.delivery !== 'none' || (commandState && commandState.phase !== 'idle');
+  const feedback = commandState?.phase === 'unrecognized' ? 'unrecognized' : state.error === 'noSpeech' ? 'noSpeech' : null;
+  const previousTurnVisible = state.delivery !== 'none' || !!feedback || (!!commandState && commandState.phase !== 'idle');
+  const showDetails = state.phase !== 'listening' && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
+    || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
+    || state.delivery !== 'none' || editingInSheet || (commandState && commandState.phase !== 'idle'));
   const close = () => { controller.cancel(); onCommandCancel?.(); onClose(); };
   const start = () => {
+    Keyboard.dismiss();
     controller.setForeground(AppState.currentState === 'active');
     void controller.start(i18n.resolvedLanguage === 'ko' ? 'ko-KR' : 'en-US');
   };
+  const dismissFeedback = () => { controller.cancel(); onCommandFeedbackDismiss?.(); };
+  const retrySpeech = () => { dismissFeedback(); start(); };
+  const startedOnEntry = useRef(false);
+  useEffect(() => {
+    if (!autoStart || startedOnEntry.current) return;
+    startedOnEntry.current = true;
+    if (AppState.currentState !== 'active') return;
+    Keyboard.dismiss();
+    controller.setForeground(true);
+    void controller.start(i18n.resolvedLanguage === 'ko' ? 'ko-KR' : 'en-US');
+  }, [autoStart, controller, i18n.resolvedLanguage]);
   const submitDisabled = busy || pending || validateVoiceInput(state.draft).error !== null || state.delivery !== 'none';
-  const button = (key: 'close' | 'microphone' | 'stop' | 'cancel' | 'submit' | 'settings', onPress: () => void, disabled = false) => (
-    <Action accessibilityRole="button" accessibilityLabel={t(`voiceAssistant.${key}`)} accessibilityState={{ disabled, busy: key === 'submit' ? pending : key === 'microphone' && busy }} disabled={disabled} onPress={onPress}>
-      <Label>{t(`voiceAssistant.${key}`)}</Label>
+  const settingsButton = () => (
+    <Action accessibilityRole="button" accessibilityLabel={t('voiceAssistant.settings')} onPress={() => { controller.cancel(); void Linking.openSettings().catch(() => undefined); }}>
+      <Label>{t('voiceAssistant.settings')}</Label>
     </Action>
   );
   const composer = (embedded = false) => <Composer testID="voice-assistant-composer" $embedded={embedded}>
     <InputRow $embedded={embedded}>
       <AssistantIcon width={23} height={23} />
-      <Input accessibilityLabel={t('voiceAssistant.input')}
-        accessibilityState={{ disabled: pending }} editable={!pending}
+      {state.phase === 'listening' ? <ListeningText testID={state.partial ? 'voice-partial' : 'voice-listening-prompt'}
+        accessibilityLiveRegion="polite" numberOfLines={1}>{state.partial || state.draft || t('voiceAssistant.listeningPrompt')}</ListeningText>
+        : <Input accessibilityLabel={t('voiceAssistant.input')}
+        onFocus={() => {
+          if (showDetails) setEditingInSheet(true);
+          if (previousTurnVisible) { controller.edit(''); onCommandFeedbackDismiss?.(); }
+        }}
+        onBlur={() => setEditingInSheet(false)}
         placeholder={t('voiceAssistant.placeholder')} placeholderTextColor={theme.colors.textMuted}
-        value={state.draft} onChangeText={controller.edit} returnKeyType="send"
+        value={feedback ? '' : state.draft} onChangeText={text => { if (previousTurnVisible) onCommandFeedbackDismiss?.(); controller.edit(text); }} returnKeyType="send"
         onSubmitEditing={() => { if (!submitDisabled) void controller.submit(); }}
-        autoCorrect={false} spellCheck={false} autoComplete="off" />
+        autoCorrect={false} spellCheck={false} autoComplete="off" />}
       {state.phase === 'listening' ? <RecordingButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.stop')}
         onPress={() => { void controller.stop(); }}>
         <StopIcon width={24} height={24} />
@@ -73,14 +97,12 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
         <MicrophoneIcon width={24} height={24} />
       </MicrophoneButton>}
     </InputRow>
-    <Notice>{t(adapter.available ? 'voiceAssistant.speechProcessing' : 'voiceAssistant.voiceUnavailable')}</Notice>
-    {submissionNotice && <Notice>{submissionNotice}</Notice>}
   </Composer>;
   return (
     <KeyboardProvider><Screen testID="voice-assistant-screen" accessibilityViewIsModal onAccessibilityEscape={close}>
       <Backdrop accessibilityRole="button"
         accessibilityLabel={t('voiceAssistant.close')} accessible={!showDetails} onPress={close} />
-      <AssistantEdgeGlow />
+      <AssistantEdgeGlow speaking={state.phase === 'listening' && state.speaking} />
       <SafeArea edges={['top', 'left', 'right']} pointerEvents="box-none">
         <KeyboardAvoidingView testID="voice-assistant-keyboard-layout" behavior="padding" style={{ flex: 1 }} pointerEvents="box-none">
         <KeyboardLayout pointerEvents="box-none" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
@@ -93,27 +115,32 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
               </CloseButton>
             </Header>
             <Content keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, gap: 8 }}>
+            {feedback ? <>
+              {feedback === 'unrecognized' && !!state.draft && <QueryText>“{state.draft}”</QueryText>}
+              <FeedbackMessage accessibilityRole="alert">{t(`voiceAssistant.feedback.${feedback}`)}</FeedbackMessage>
+              <FeedbackActions>
+                <FeedbackRetry accessibilityRole="button" accessibilityLabel={t('voiceAssistant.feedback.retry')}
+                  onPress={retrySpeech}><FeedbackRetryText>{t('voiceAssistant.feedback.retry')}</FeedbackRetryText></FeedbackRetry>
+                <FeedbackDismiss accessibilityRole="button" accessibilityLabel={t('voiceAssistant.feedback.dismiss')}
+                  onPress={dismissFeedback}><FeedbackDismissText>{t('voiceAssistant.feedback.dismiss')}</FeedbackDismissText></FeedbackDismiss>
+              </FeedbackActions>
+            </> : <>
             {!!state.draft && <QueryText>“{state.draft}”</QueryText>}
             {(busy || state.phase === 'permissionDenied' || state.phase === 'unavailable') && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.phases.${state.phase}`)}</Copy>}
             {state.phase === 'permissionDenied' && <Copy accessibilityRole="alert">{t(`voiceAssistant.permissions.${state.permission}`)}</Copy>}
-            {state.permission === 'blocked' && button('settings', () => { controller.cancel(); void Linking.openSettings().catch(() => undefined); })}
-            {state.partial ? <Copy testID="voice-partial">{state.partial}</Copy> : null}
+            {state.permission === 'blocked' && settingsButton()}
             {state.error && <Copy accessibilityRole="alert">{t(`voiceAssistant.errors.${state.error}`)}</Copy>}
-            {!!state.draft && <Copy>{t('voiceAssistant.review')}</Copy>}
-            {!!state.draft && !submissionNotice && <Copy>{t('voiceAssistant.preview')}</Copy>}
-            {(state.draft || busy || pending) && (!commandState || commandState.phase === 'idle') && <ReviewActions>
-              {button('submit', () => { void controller.submit(); }, submitDisabled)}
-              {button('cancel', () => { controller.cancel(); onCommandCancel?.(); })}
-            </ReviewActions>}
+            {!!state.draft && !serverSubmission && state.source === 'text' && <Copy>{t('voiceAssistant.preview')}</Copy>}
             {commandState && <VoiceCommandResults state={commandState} retryDisabled={commandRetryDisabled} onShowMap={close} onRetry={() => {
               if (onCommandRetry) onCommandRetry();
               else { const draft = state.draft; controller.cancel(); controller.edit(draft); void controller.submit(); }
             }} />}
-            {(state.delivery === 'localOnly' || state.delivery === 'accepted') && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.${state.delivery}`)}</Copy>}
-            {(guidance || state.delivery === 'accepted') && <Copy>{t('voiceAssistant.advisory')}</Copy>}
+            {state.delivery === 'localOnly' && <Copy accessibilityLiveRegion="polite">{t('voiceAssistant.localOnly')}</Copy>}
+            {guidance && <Copy>{t('voiceAssistant.advisory')}</Copy>}
             {guidance && <>
               {guidance.kind !== 'assistant' && <Label>{t(`voiceAssistant.${guidance.kind}`)}</Label>}
               {guidance.kind !== 'invalidResponse' && guidance.text && <Copy>{guidance.text}</Copy>}
+            </>}
             </>}
             </Content>
             {composer(true)}
@@ -176,12 +203,6 @@ const Copy = styled(Text)`
   line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
   color: ${({ theme }) => theme.colors.text};
 `;
-const Notice = styled(Text)`
-  padding: 4px 12px 8px;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 12px;
-  line-height: 17px;
-`;
 const Label = styled(Text)`
   font-family: ${({ theme }) => theme.typography.label.fontFamily};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
@@ -198,8 +219,25 @@ const Input = styled(TextInput)`
   font-weight: 500;
   color: ${({ theme }) => theme.colors.text};
 `;
+const ListeningText = styled(Text)`
+  flex: 1;
+  min-width: 0px;
+  font-family: ${({ theme }) => theme.typography.body.fontFamily};
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 23px;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
 const QueryText = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px; font-weight: 500;`;
-const ReviewActions = styled.View`gap: 8px;`;
+const FeedbackMessage = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 16px; line-height: 21px; font-weight: 500;`;
+const FeedbackActions = styled.View`flex-direction: row; gap: 8px; padding-top: 8px;`;
+const FeedbackButton = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.category.shadow } }))`
+  min-height: 34px; padding: 8px 16px; border-radius: 16px; align-items: center; justify-content: center;
+`;
+const FeedbackRetry = styled(FeedbackButton)`background-color: ${({ theme }) => theme.liquidGlass.category.activeTint}; border-width: 1px; border-color: ${({ theme }) => theme.liquidGlass.category.activeBorder};`;
+const FeedbackDismiss = styled(FeedbackButton)`background-color: ${({ theme }) => theme.liquidGlass.category.tint};`;
+const FeedbackRetryText = styled(Text)`color: ${({ theme }) => theme.colors.primary}; font-size: 14px; line-height: 18px; font-weight: 500;`;
+const FeedbackDismissText = styled(Text)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const Action = styled.Pressable`
   min-height: 48px;
   padding: 12px 16px;

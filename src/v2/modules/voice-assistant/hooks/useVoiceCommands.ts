@@ -10,12 +10,12 @@ import { voiceSessionError, type VoiceSessionErrorCode } from '../model/voiceSes
 
 export type VoiceCommandContext = Omit<VoiceCommandRuntime, 'session' | 'queryClient' | 'now' | 'monotonic' | 'contextRevision'>;
 export type VoiceCommandViewState =
-  | { phase: 'idle' | 'processing' | 'canceled' | 'advisory' }
+  | { phase: 'idle' | 'processing' | 'canceled' | 'advisory' | 'unrecognized' }
   | { phase: 'clarification'; field: ClarificationField }
   | { phase: 'result'; result: AppCommandResult }
   | { phase: 'error'; code: VoiceSessionErrorCode };
 
-/** App-owned context never enters the gateway body. Only reviewed text is submitted. */
+/** App-owned context never enters the gateway body. Only final text enters the gateway. */
 export function useVoiceCommands(context: VoiceCommandContext) {
   const queryClient = useQueryClient();
   const latest = useRef(context); latest.current = context;
@@ -33,8 +33,11 @@ export function useVoiceCommands(context: VoiceCommandContext) {
     if (!delivery.isCurrent() || delivery.signal.aborted) return;
     if (envelope.kind === 'command_request') await dispatcher.consume(envelope, delivery);
     else if (envelope.kind === 'clarification_request') setCommandState({ phase: 'clarification', field: envelope.field });
-    else if (envelope.kind === 'protocol_error') setCommandState({ phase: 'error',
-      code: envelope.code === 'PROVIDER_UNAVAILABLE' ? 'PROVIDER_UNAVAILABLE' : 'INVALID_RESPONSE' });
+    else if (envelope.kind === 'protocol_error') {
+      if (envelope.code === 'UNSUPPORTED_REQUEST') setCommandState({ phase: 'unrecognized' });
+      else setCommandState({ phase: 'error',
+        code: envelope.code === 'PROVIDER_UNAVAILABLE' ? 'PROVIDER_UNAVAILABLE' : 'INVALID_RESPONSE' });
+    }
     else setCommandState({ phase: 'advisory' }); // Never display provider success claims or speak them.
   }, [dispatcher]);
   const { controller, state } = useVoiceSession(context.accountRevision, consume);
@@ -61,7 +64,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   const onFinalInput = useCallback<OnFinalInput>(async input => {
     setCommandState({ phase: 'processing' });
     try {
-      // A reviewed, explicit submission can resume after the native Modal's activity blur.
+      // User-initiated voice capture or text send can resume after the native Modal's activity blur.
       // Background still blocks submission and never auto-restarts a session.
       controller.setForeground(AppState.currentState === 'active');
       if (!controller.getIdentity()) await controller.start(input.signal);
@@ -71,13 +74,14 @@ export function useVoiceCommands(context: VoiceCommandContext) {
         return 'accepted' as const;
       }
       await controller.send(input.text, input.signal);
-    } catch (error) { setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
+    } catch (error) { if (!input.signal.aborted) setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
     return 'accepted' as const;
   }, [controller]);
   const cancel = useCallback(() => { dispatcher.clear(); void controller.close(); setCommandState({ phase: 'canceled' }); }, [controller, dispatcher]);
+  const dismissFeedback = useCallback(() => { dispatcher.clear(); setCommandState({ phase: 'idle' }); }, [dispatcher]);
   const retry = useCallback(async () => {
     try { setCommandState({ phase: 'processing' }); await controller.retry(); }
     catch (error) { setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
   }, [controller]);
-  return { commandState, onFinalInput, cancel, retry, retryReady, retryAvailable: state.retryAvailable, retryAt: state.retryAt };
+  return { commandState, onFinalInput, cancel, dismissFeedback, retry, retryReady, retryAvailable: state.retryAvailable, retryAt: state.retryAt };
 }

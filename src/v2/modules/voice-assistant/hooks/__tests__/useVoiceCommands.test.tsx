@@ -62,3 +62,20 @@ test('provider unavailable is a safe error rather than a successful command or g
   expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
   await view.unmount(); queryClient.clear();
 });
+
+test('unsupported request shows recoverable feedback without retrying the submitted turn', async () => {
+  const queryClient = new QueryClient();
+  const send = jest.fn(async () => ({ schemaVersion: 1 as const, id: 'input-2', kind: 'protocol_error' as const, code: 'UNSUPPORTED_REQUEST' as const }));
+  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'unexpected phrase', source: 'voice', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'unrecognized' });
+  expect(send).toHaveBeenCalledTimes(1);
+  await act(() => view.result.current.dismissFeedback());
+  expect(view.result.current.commandState).toEqual({ phase: 'idle' });
+  expect(send).toHaveBeenCalledTimes(1);
+  await view.unmount(); queryClient.clear();
+});
