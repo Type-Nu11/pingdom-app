@@ -23,13 +23,17 @@ beforeEach(() => {
   configureI18nResources(resources);
 });
 
-test('preserves every assembled translation and spread precedence from 27ace6b', () => {
-  // Preserve the migration baseline while allowing the reviewed #307 and #348 additions.
+test('preserves assembled translations outside reviewed feature copy changes', () => {
+  // Preserve the migration baseline while allowing the reviewed #307, #348 and #346 additions.
   const baseline = JSON.parse(JSON.stringify(resources));
   for (const language of ['ko', 'en']) {
     delete baseline[language].translation.visitVerification.uploading;
     delete baseline[language].translation.visitVerification.errors;
-    delete baseline[language].translation.voiceAssistant.command;
+    const voiceAssistant = baseline[language].translation.voiceAssistant;
+    delete voiceAssistant.command;
+    delete voiceAssistant.shortLabel;
+    delete voiceAssistant.brand;
+    voiceAssistant.placeholder = language === 'ko' ? '요청을 입력해 주세요' : 'Type your request';
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
     .toBe('729980606c4d19541a82bad8ea99b4820d407253e50f0b3fc5efbb636213dbec');
