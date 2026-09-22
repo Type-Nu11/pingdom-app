@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 test('preserves assembled translations outside reviewed feature copy changes', () => {
-  // Preserve the migration baseline while allowing the reviewed #307, #348 and #346 additions.
+  // Preserve the migration baseline with the reviewed #346 voice input, automatic voice submission, and recovery feedback.
   const baseline = JSON.parse(JSON.stringify(resources));
   for (const language of ['ko', 'en']) {
     delete baseline[language].translation.visitVerification.uploading;
@@ -36,7 +36,7 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     voiceAssistant.placeholder = language === 'ko' ? '요청을 입력해 주세요' : 'Type your request';
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
-    .toBe('729980606c4d19541a82bad8ea99b4820d407253e50f0b3fc5efbb636213dbec');
+    .toBe('f2dc1044fdfdba80886ded680f6c6b25b694134c843365c57988f7f1b3f4b478');
 });
 
 test('Korean and English key sets remain equal', () => {

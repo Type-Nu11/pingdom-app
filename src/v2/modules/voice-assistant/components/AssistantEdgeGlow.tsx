@@ -1,14 +1,15 @@
 import React, { memo, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import Animated, {
-  cancelAnimation, Easing, interpolateColor, ReduceMotion, useAnimatedProps,
-  useSharedValue, withRepeat, withTiming, type SharedValue,
+  cancelAnimation, interpolateColor, ReduceMotion, useAnimatedProps,
+  useFrameCallback, useSharedValue, withTiming, type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { G, Rect } from 'react-native-svg';
 import styled from 'styled-components/native';
 
 const FLOW_SEGMENTS = 24;
 const FLOW_DURATION_MS = 5000;
+const SPEAKING_SPEED = 1.6;
 const FLOW_COLORS = ['#FF1956', '#FFC9D3', '#FF4A75', '#FFF2F5', '#FF1956', '#FFC9D3', '#FF1956'];
 const FLOW_STEPS = FLOW_COLORS.map((_, index) => index / (FLOW_COLORS.length - 1));
 const FLOW_HAZE_LAYERS = Array.from({ length: 8 }, (_, index) => ({
@@ -34,24 +35,26 @@ const FlowSegment = memo(function FlowSegment({ progress, segment, width, height
 });
 
 // Input focus and text changes do not rebuild the glow or occupy the JS thread.
-export const AssistantEdgeGlow = memo(function AssistantEdgeGlow() {
+export const AssistantEdgeGlow = memo(function AssistantEdgeGlow({ speaking = false }: { speaking?: boolean }) {
   const progress = useSharedValue(0);
+  const speed = useSharedValue(1);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const perimeter = Math.max(1, 2 * (size.width + size.height - 4) - 64 + 16 * Math.PI);
+  const frame = useFrameCallback(({ timeSincePreviousFrame }) => {
+    const elapsed = Math.min(timeSincePreviousFrame ?? 0, 64);
+    progress.value = (progress.value + elapsed * speed.value / FLOW_DURATION_MS) % 1;
+  }, false);
+  useEffect(() => {
+    speed.value = withTiming(speaking ? SPEAKING_SPEED : 1, { duration: 220, reduceMotion: ReduceMotion.Never });
+  }, [speaking, speed]);
   useEffect(() => {
     const update = (status: string) => {
-      cancelAnimation(progress);
-      if (status === 'active') {
-        progress.value = 0;
-        progress.value = withRepeat(withTiming(1, {
-          duration: FLOW_DURATION_MS, easing: Easing.linear, reduceMotion: ReduceMotion.Never,
-        }), -1, false, undefined, ReduceMotion.Never);
-      }
+      frame.setActive(status === 'active');
     };
     update(AppState.currentState);
     const subscription = AppState.addEventListener('change', update);
-    return () => { cancelAnimation(progress); subscription.remove(); };
-  }, [progress]);
+    return () => { frame.setActive(false); cancelAnimation(speed); subscription.remove(); };
+  }, [frame, speed]);
   return <GlowContainer pointerEvents="none" onLayout={({ nativeEvent: { layout } }) => setSize({ width: layout.width, height: layout.height })}>
     <Glow source={require('../assets/edge-glow-transparent.png')} resizeMode="stretch" accessible={false} />
     {size.width > 0 && size.height > 0 && <Svg width="100%" height="100%" accessible={false}>

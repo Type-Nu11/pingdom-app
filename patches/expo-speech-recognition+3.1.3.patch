@@ -1,0 +1,10 @@
+diff --git a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechService.kt b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechService.kt
+index 06ff2e0..9abc566 100644
+--- a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechService.kt
++++ b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechService.kt
+@@ -88,3 +88,2 @@ class ExpoSpeechService(
+-    private fun log(message: String) {
+-        Log.d("ExpoSpeechService", message)
+-    }
++    // Never write recognition results (including partial results) to device logs.
++    private fun log(@Suppress("UNUSED_PARAMETER") message: String) {}

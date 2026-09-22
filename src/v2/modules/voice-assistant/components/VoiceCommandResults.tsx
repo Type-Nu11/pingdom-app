@@ -27,7 +27,7 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
     <Copy accessibilityRole="alert">{t(`voiceAssistant.command.errors.${code}`, { defaultValue: t('voiceAssistant.command.failed') })}</Copy>
     <RetryButton testID="voice-command-retry" accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.retry')}
       accessibilityState={{ disabled: retryDisabled }} disabled={retryDisabled} onPress={onRetry}>
-      <ActionText>{t('voiceAssistant.command.retry')}</ActionText>
+      <RetryText>{t('voiceAssistant.command.retry')}</RetryText>
     </RetryButton>
   </>;
   const places = (items: readonly VoicePlaceFacts[]) => <>
@@ -49,6 +49,7 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   </>;
 
   if (state.phase === 'idle') return null;
+  if (state.phase === 'unrecognized') return null;
   if (state.phase === 'error') return error(state.code);
   if (state.phase === 'clarification') return clarification(state.field);
   if (state.phase !== 'result') return copy(state.phase);
@@ -109,4 +110,10 @@ const PrimaryActionText = styled(Text)`color: ${({ theme }) => theme.colors.prim
 const ActionText = styled(Text)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const Block = styled.View`gap: 4px; padding: 12px 0;`;
 const Copy = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 16px; line-height: 21px;`;
-const RetryButton = styled.Pressable`min-height: 48px; padding: 12px;`;
+const RetryButton = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.category.shadow } }))`
+  align-self: flex-start; min-height: 34px; padding: 8px 16px; border-radius: 16px;
+  align-items: center; justify-content: center;
+  background-color: ${({ theme }) => theme.liquidGlass.category.activeTint};
+  border-width: 1px; border-color: ${({ theme }) => theme.liquidGlass.category.activeBorder};
+`;
+const RetryText = styled(Text)`color: ${({ theme }) => theme.colors.primary}; font-size: 14px; line-height: 18px; font-weight: 500;`;

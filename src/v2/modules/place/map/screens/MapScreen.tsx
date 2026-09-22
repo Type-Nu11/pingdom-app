@@ -2,6 +2,7 @@ import { MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL
 import { env } from '../../../../shared/config';
 import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
 import MapAssistantModal from '../assistant/components/MapAssistantModal';
+import MapAssistantIntro from '../assistant/components/MapAssistantIntro';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -919,7 +920,7 @@ export default function MapScreen({
           onCategoryChange={setActiveCategory}
           onLocatePress={handleLocatePress}
           onAssistantPress={assistant.enabled && !isSearchOpen ? assistant.open : undefined}
-          assistantDisabled={assistant.isOpen}
+          assistantDisabled={assistant.isBusy}
           assistantSheetTop={sheetTranslateY}
           assistantRestingTop={snapPoint === 'collapsed' ? collapsedTranslateY : snapPoint === 'expanded' ? expandedTranslateY : mediumTranslateY}
           onProfilePress={onOpenProfile}
@@ -1158,6 +1159,8 @@ export default function MapScreen({
         placeListEnabled: env.featureFlags.placeList,
         selectedPlaceId: hasSelectedPlace ? selectedPlaceId : undefined,
       }} />
+      <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}
+        onContinue={assistant.continueToAssistant} />
     </View>
   );
 }
