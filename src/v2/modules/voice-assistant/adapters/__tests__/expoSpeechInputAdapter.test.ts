@@ -5,7 +5,7 @@ import { PermissionStatus } from 'expo-modules-core';
 const permission = (status: 'granted' | 'denied' | 'undetermined', canAskAgain = status === 'undetermined', restricted = false) =>
   ({ status: status as PermissionStatus, granted: status === 'granted', canAskAgain, restricted, expires: 'never' as const });
 
-function setup(platform: 'ios' | 'android' = 'ios') {
+function setup(platform: 'ios' | 'android' = 'ios', androidApiLevel = 33) {
   const listeners = new Map<string, Array<(value: never) => void>>();
   const removed: string[] = [];
   const module = {
@@ -22,7 +22,7 @@ function setup(platform: 'ios' | 'android' = 'ios') {
   };
   const getMicrophone = jest.fn(async () => permission('granted'));
   const requestMicrophone = jest.fn(async () => permission('granted'));
-  const adapter = createExpoSpeechInputAdapter({ platform, module: module as never, getMicrophone, requestMicrophone });
+  const adapter = createExpoSpeechInputAdapter({ platform, androidApiLevel, module: module as never, getMicrophone, requestMicrophone });
   const emit = (name: string, value?: object) => { for (const listener of [...(listeners.get(name) ?? [])]) listener(value as never); };
   return { adapter, module, getMicrophone, requestMicrophone, emit, listeners, removed };
 }
@@ -60,26 +60,39 @@ test('Android uses startup microphone permission and no separate speech authoriz
   expect(x.module.getSpeechRecognizerPermissionsAsync).not.toHaveBeenCalled();
 });
 
-test('explicit start uses selected locale, no file persistence, partial preview, one confirmed final', async () => {
+test('continuous capture is enabled only where the native engine supports it', async () => {
+  for (const [platform, apiLevel, expected] of [['ios', 0, true], ['android', 33, true], ['android', 32, false]] as const) {
+    const x = setup(platform, apiLevel);
+    const controller = createVoiceInputController(x.adapter, jest.fn(() => 'localOnly'));
+    await controller.start('en-US');
+    expect(x.module.start).toHaveBeenCalledWith(expect.objectContaining({ continuous: expected }));
+    controller.dispose();
+  }
+});
+
+test('explicit start uses selected locale, no file persistence, partial preview, and manual stop sends one final', async () => {
   const x = setup();
   const delivered = jest.fn(() => 'localOnly' as const);
   const controller = createVoiceInputController(x.adapter, delivered);
   expect(x.module.start).not.toHaveBeenCalled();
   await controller.start('ko-KR');
   expect(x.module.start).toHaveBeenCalledWith(expect.objectContaining({ lang: 'ko-KR', interimResults: true,
-    requiresOnDeviceRecognition: false, recordingOptions: { persist: false } }));
+    requiresOnDeviceRecognition: false, recordingOptions: { persist: false },
+    volumeChangeEventOptions: { enabled: true, intervalMillis: 250 } }));
+  x.emit('volumechange', { value: 3 });
+  expect(controller.getSnapshot().speaking).toBe(true);
+  x.emit('volumechange', { value: -1 });
+  expect(controller.getSnapshot().speaking).toBe(false);
   x.emit('result', { isFinal: false, results: [{ transcript: '부분' }] });
   expect(controller.getSnapshot().partial).toBe('부분');
   expect(delivered).not.toHaveBeenCalled();
   await controller.stop();
   expect(x.module.stop).toHaveBeenCalledTimes(1);
   x.emit('result', { isFinal: true, results: [{ transcript: '최종' }] });
-  x.emit('result', { isFinal: true, results: [{ transcript: '중복' }] });
+  x.emit('result', { isFinal: true, results: [{ transcript: '최종' }] });
   expect(controller.getSnapshot().draft).toBe('최종');
-  expect(delivered).not.toHaveBeenCalled();
-  await Promise.all([controller.submit(), controller.submit()]);
   expect(delivered).toHaveBeenCalledTimes(1);
-  expect(x.removed).toEqual(expect.arrayContaining(['result', 'error', 'end']));
+  expect(x.removed).toEqual(expect.arrayContaining(['result', 'error', 'volumechange', 'end']));
   controller.dispose();
 });
 
@@ -107,11 +120,13 @@ test('cancel and background detach listeners before abort; late events cannot pu
   const controller = createVoiceInputController(x.adapter, jest.fn(() => 'localOnly'));
   await controller.start('en-US');
   const stale = x.listeners.get('result')?.[0];
+  const staleVolume = x.listeners.get('volumechange')?.[0];
   controller.setForeground(false);
   expect(x.module.abort).toHaveBeenCalledTimes(1);
   expect(x.listeners.get('result')).toHaveLength(0);
   stale?.({ isFinal: true, results: [{ transcript: 'late' }] } as never);
-  expect(controller.getSnapshot()).toMatchObject({ phase: 'canceled', draft: '' });
+  staleVolume?.({ value: 5 } as never);
+  expect(controller.getSnapshot()).toMatchObject({ phase: 'canceled', draft: '', speaking: false });
   controller.dispose();
 });
 

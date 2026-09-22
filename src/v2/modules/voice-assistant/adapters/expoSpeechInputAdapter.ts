@@ -8,6 +8,7 @@ type Permission = PermissionResponse & { restricted?: boolean };
 type SpeechModule = typeof import('expo-speech-recognition').ExpoSpeechRecognitionModule;
 type Dependencies = {
   platform: 'android' | 'ios';
+  androidApiLevel?: number;
   module: SpeechModule;
   getMicrophone: () => Promise<Permission>;
   requestMicrophone: () => Promise<Permission>;
@@ -30,6 +31,7 @@ const failure = (error: ExpoSpeechRecognitionErrorCode): SpeechEvent => {
 
 export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAdapter {
   const { module, platform } = deps;
+  const continuous = platform === 'ios' || (deps.androidApiLevel ?? 0) >= 33;
   let current: SpeechSession | undefined;
   const available = () => {
     try { return module.isRecognitionAvailable(); } catch { return false; }
@@ -71,19 +73,23 @@ export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAda
           current = session;
           subscriptions.push(module.addListener('result', event => {
             const text = event.results[0]?.transcript ?? '';
-            if (event.isFinal) emit(text.trim() ? { type: 'final', text } : { type: 'error', reason: 'noSpeech' });
+            if (event.isFinal) emit({ type: 'final', text });
             else if (text) emit({ type: 'partial', text });
           }));
           subscriptions.push(module.addListener('error', event => {
             if (event.error !== 'aborted') emit(failure(event.error));
           }));
-          subscriptions.push(module.addListener('end', () => emit({ type: 'error', reason: 'noSpeech' })));
+          subscriptions.push(module.addListener('volumechange', event => {
+            if (Number.isFinite(event.value)) emit({ type: 'activity', speaking: event.value > 0 });
+          }));
+          subscriptions.push(module.addListener('end', () => emit({ type: 'ended' })));
           signal.addEventListener('abort', cancel, { once: true });
           if (signal.aborted || closed) { cancel(); return; }
           started = true;
           try {
-            module.start({ lang: locale, interimResults: true, maxAlternatives: 1, continuous: false,
-              requiresOnDeviceRecognition: false, recordingOptions: { persist: false } });
+            module.start({ lang: locale, interimResults: true, maxAlternatives: 1, continuous,
+              requiresOnDeviceRecognition: false, recordingOptions: { persist: false },
+              volumeChangeEventOptions: { enabled: true, intervalMillis: 250 } });
           } catch (error) { cancel(); throw error; }
         },
         stop() {
@@ -107,6 +113,7 @@ function nativeModule(): SpeechModule | null {
 const module = nativeModule();
 export const expoSpeechInputAdapter: SpeechInputAdapter = module && (Platform.OS === 'ios' || Platform.OS === 'android')
   ? createExpoSpeechInputAdapter({ platform: Platform.OS, module,
+    androidApiLevel: Platform.OS === 'android' ? Number(Platform.Version) : undefined,
     getMicrophone: getRecordingPermissionsAsync, requestMicrophone: requestRecordingPermissionsAsync })
   : { available: false, getPermission: async () => 'undetermined', requestPermission: async () => 'undetermined',
     createSession: () => { throw new Error('STT_UNAVAILABLE'); } };
