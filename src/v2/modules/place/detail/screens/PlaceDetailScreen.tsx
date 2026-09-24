@@ -13,6 +13,7 @@ type PlaceDetailScreenProps = {
     navigate: {
       (screen: 'CouponBox'): void;
       (screen: 'VisitVerificationSession', params: { mode: 'place'; placeId: PlaceId }): void;
+      (screen: 'RoutePlanner', params: { destination: { address?: string | null; englishName?: string | null; latitude: number | null; longitude: number | null; name: string; placeId: number } }): void;
     };
   };
 };
@@ -93,6 +94,17 @@ export default function PlaceDetailScreen({ navigation, route }: PlaceDetailScre
               })}
             />
           </VerificationAction>
+          <Button
+            label={t('map.card.actions.directions')}
+            onPress={() => navigation.navigate('RoutePlanner', { destination: {
+              address: place.address,
+              englishName: place.englishName,
+              latitude: place.latitude,
+              longitude: place.longitude,
+              name: place.name,
+              placeId: place.id,
+            } })}
+          />
           <Button label={t('placeDetail.back')} onPress={navigation.goBack} />
         </Surface>
       </Content>

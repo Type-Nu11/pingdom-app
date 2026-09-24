@@ -44,6 +44,7 @@ import {
 } from '../../exploration';
 import { usePlaceBookmark } from '../../exploration';
 import { useCurrentLocation } from '../location/hooks/useCurrentLocation';
+import type { RouteDestination } from '../routes/model/routeUi';
 import {
   usePlaceActions,
   type PlaceActionFeedback,
@@ -137,6 +138,7 @@ type MapScreenProps = {
   }) => void;
   onOpenCoupons?: () => void;
   onOpenProfile?: () => void;
+  onOpenDirections?: (destination: RouteDestination) => void;
   onOpenReservation?: (reservationId: number) => void;
   onStartVisitVerification?: (placeId: number) => void;
   onSignIn?: () => void;
@@ -151,6 +153,7 @@ export default function MapScreen({
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
   onOpenCoupons,
+  onOpenDirections,
   onOpenProfile,
   onOpenReservation,
   onStartVisitVerification,
@@ -515,13 +518,19 @@ export default function MapScreen({
   }, [t]);
   const {
     busyAction: placeActionBusy,
-    directions: openSelectedPlaceDirections,
     share: shareSelectedPlace,
   } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
   const handleDirectionsPress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
-    void openSelectedPlaceDirections(selectedPlaceActionTarget);
-  }, [openSelectedPlaceDirections, selectedPlaceActionTarget]);
+    onOpenDirections?.({
+      address: selectedPlaceActionTarget.address,
+      englishName: selectedPlaceDetail?.englishName,
+      latitude: selectedPlaceActionTarget.latitude,
+      longitude: selectedPlaceActionTarget.longitude,
+      name: selectedPlaceActionTarget.name,
+      placeId: selectedPlaceActionTarget.placeId,
+    });
+  }, [onOpenDirections, selectedPlaceActionTarget, selectedPlaceDetail?.englishName]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     void shareSelectedPlace(selectedPlaceActionTarget);

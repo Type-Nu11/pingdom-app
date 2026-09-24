@@ -53,6 +53,17 @@ test('the V2 production map preserves route callbacks and duplicate reservation 
   assert.match(screen, /pointerEvents=\{snapPoint === 'expanded' \? 'none' : 'auto'\}/);
 });
 
+test('selected-place directions enter the V2 route screen while visit verification keeps its callback', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const root = read('../../../../../application/navigation/MainNavigator.tsx');
+
+  assert.match(screen, /onOpenDirections\?\.\(\{[\s\S]*placeId: selectedPlaceActionTarget\.placeId/);
+  assert.doesNotMatch(screen, /openSelectedPlaceDirections/);
+  assert.match(root, /onOpenDirections=\{\(destination\) => navigation\.navigate\(MAIN_ROUTES\.RoutePlanner, \{ destination \}\)\}/);
+  assert.match(root, /onOpenVisitVerification=\{\(\) => navigation\.navigate\(\s*MAIN_ROUTES\.VisitVerificationSession/);
+  assert.match(root, /onStartVisitVerification=\{\(value\) => \{[\s\S]*mode: 'place'/);
+});
+
 test('map buttons expose immediate pressed-state feedback without delaying onPress', () => {
   const sheet = read('../sheet/components/MapBottomSheet.tsx');
   const navigation = read('../sheet/components/MapSheetBottomNavigation.tsx');

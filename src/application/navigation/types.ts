@@ -5,6 +5,7 @@ import type {
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
 import type { Coupon } from '../../v2/modules/booking/offers-coupons';
+import type { RouteDestination } from '../../v2/modules/place/map/routes';
 
 declare const routeIdBrand: unique symbol;
 
@@ -47,6 +48,7 @@ export const MAIN_ROUTES = {
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   Map: 'Map',
+  RoutePlanner: 'RoutePlanner',
   Merchant: 'Merchant',
   MyPage: 'MyPage',
   Profile: 'Profile',
@@ -77,6 +79,7 @@ export type MainStackParamList = {
     initialSection?: 'favorites' | 'map' | 'reservations';
     notificationContext?: NotificationNavigationContext;
   } | undefined;
+  RoutePlanner: { destination: RouteDestination };
   CheckIn: {
     placeId: PlaceId;
   };

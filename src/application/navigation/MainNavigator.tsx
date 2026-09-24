@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled from 'styled-components/native';
 import { MapScreen } from '../../v2/modules/place/map';
+import { RoutePlannerScreen } from '../../v2/modules/place/map/routes';
 import { ReservationDetailScreen } from '../../v2/modules/booking/reservations/routes';
 import { ReservationBoxScreen } from '../../v2/modules/booking/reservations/routes';
 import { CreateReservationScreen } from '../../v2/modules/booking/reservations/routes';
@@ -71,6 +72,7 @@ export function createProductionMainNavigator({
       <MapRouteContainer>
         <V2ScreenBoundary>
           <MapScreen
+            onOpenDirections={(destination) => navigation.navigate(MAIN_ROUTES.RoutePlanner, { destination })}
             canQueryBookmarks={isLoggedIn && !isAuthHydrating}
             canQueryRankedFeeds={isLoggedIn && !isAuthHydrating}
             initialSection={initialSection}
@@ -363,6 +365,7 @@ export function createProductionMainNavigator({
       screenOptions={{ headerShown: false }}
     >
       <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
+      <Stack.Screen name={MAIN_ROUTES.RoutePlanner} component={RoutePlannerScreen} />
       <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CouponDetail} component={CouponDetailRouteScreen} />

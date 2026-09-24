@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { SettingsDetailId } from '../../modules/user/settings';
 
 import type { PlaceId, CheckInId } from '../../modules/place/core';
+import type { RouteDestination } from '../../modules/place/map/routes';
 export { parsePlaceId, parseCheckInId } from '../../modules/place/core';
 export type { PlaceId, CheckInId } from '../../modules/place/core';
 
@@ -18,6 +19,7 @@ export const V2_ROUTES = {
   ProfileEdit: 'ProfileEdit',
   NotificationSettings: 'NotificationSettings',
   PlaceDetail: 'PlaceDetail',
+  RoutePlanner: 'RoutePlanner',
   AccountManagement: 'AccountManagement',
   Settings: 'Settings',
   SettingsDetail: 'SettingsDetail',
@@ -54,6 +56,7 @@ export type V2StackParamList = {
   PlaceDetail: {
     placeId: PlaceId;
   };
+  RoutePlanner: { destination: RouteDestination };
   VisitVerificationPlaces: undefined;
   VisitVerificationReview: {
     checkInId?: CheckInId;

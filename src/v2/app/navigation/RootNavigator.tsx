@@ -10,6 +10,7 @@ import type { NotificationRoute } from '../../modules/user/notifications/routing
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../modules/user/settings';
 import HomeScreen from '../home/screens/HomeScreen';
 import { MapScreen } from '../../modules/place/map';
+import { RoutePlannerScreen } from '../../modules/place/map/routes';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
 import { MyPageScreen } from '../../modules/user/profile/my-page';
@@ -51,6 +52,7 @@ function HomeRouteScreen() {
 function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
   return (
     <MapScreen
+      onOpenDirections={(destination) => navigation.navigate(V2_ROUTES.RoutePlanner, { destination })}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenVisitVerification={() => navigation.navigate(
         V2_ROUTES.VisitVerificationSession,
@@ -266,6 +268,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.SettingsDetail} component={SettingsDetailRouteScreen} />
         <Stack.Screen name={V2_ROUTES.NotificationSettings} component={NotificationSettingsRoute} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
+        <Stack.Screen name={V2_ROUTES.RoutePlanner} component={RoutePlannerScreen} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />
         <Stack.Screen name={V2_ROUTES.VisitVerificationSession} component={VisitVerificationSessionRoute} />

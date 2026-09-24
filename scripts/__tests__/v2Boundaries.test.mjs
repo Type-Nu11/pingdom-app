@@ -328,6 +328,6 @@ test('#362 production graph has no old roots, compatibility adapters, tests, dee
   // All existing route names remain registered, including the unsupported Merchant and legacy CheckIn.
   const contract = fs.readFileSync('src/application/navigation/types.ts', 'utf8').split('export const MAIN_ROUTES = {')[1].split('} as const;')[0];
   const routes = [...contract.matchAll(/(\w+): '/g)].map(match => match[1]);
-  assert.equal(routes.length, 19);
+  assert.equal(routes.length, 20);
   for (const route of routes) assert.match(composition, new RegExp(`name=\\{MAIN_ROUTES\\.${route}\\}`));
 });
