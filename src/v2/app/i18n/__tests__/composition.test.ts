@@ -27,6 +27,7 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // Preserve the migration baseline with the reviewed #346 voice input, automatic voice submission, and recovery feedback.
   const baseline = JSON.parse(JSON.stringify(resources));
   for (const language of ['ko', 'en']) {
+    delete baseline[language].translation.map.route;
     delete baseline[language].translation.visitVerification.uploading;
     delete baseline[language].translation.visitVerification.errors;
     const voiceAssistant = baseline[language].translation.voiceAssistant;
