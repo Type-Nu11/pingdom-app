@@ -72,7 +72,7 @@ export type CommunityBottomSheetProps = {
   onOpenPost: (postId: number) => void;
   onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
-  onOpenWrite: () => void;
+  onOpenWrite: (categoryId?: string) => void;
   panHandlers: GestureResponderHandlers;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
@@ -282,7 +282,7 @@ export default function CommunityBottomSheet({
       <WriteFab
         accessibilityLabel={t('community.write')}
         accessibilityRole="button"
-        onPress={onOpenWrite}
+        onPress={() => onOpenWrite(selectedCategoryId ?? undefined)}
         testID="v2-community-sheet-write-fab"
       >
         <AddPlusIcon height={24} width={24} />

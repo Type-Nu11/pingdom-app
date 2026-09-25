@@ -137,7 +137,7 @@ type MapScreenProps = {
     name: string;
   }) => void;
   onOpenCommunityPost?: (postId: number) => void;
-  onOpenCommunityWrite?: () => void;
+  onOpenCommunityWrite?: (categoryId?: string) => void;
   onOpenCoupons?: () => void;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
@@ -968,7 +968,7 @@ export default function MapScreen({
             onOpenReservations={() => {
               openMapSection('reservations');
             }}
-            onOpenWrite={() => onOpenCommunityWrite?.()}
+            onOpenWrite={(categoryId) => onOpenCommunityWrite?.(categoryId)}
             panHandlers={panHandlers}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}

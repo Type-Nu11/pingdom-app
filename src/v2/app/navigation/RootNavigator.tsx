@@ -1,7 +1,8 @@
 import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useFcmTokenSync } from '../../modules/user/notifications/lifecycle';
 import { useForegroundNotifications } from '../../modules/user/notifications/lifecycle';
@@ -53,7 +54,10 @@ function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
   return (
     <MapScreen
       onOpenCommunityPost={(postId) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })}
-      onOpenCommunityWrite={() => navigation.navigate(V2_ROUTES.CommunityWrite)}
+      onOpenCommunityWrite={(categoryId) => navigation.navigate(
+        V2_ROUTES.CommunityWrite,
+        categoryId ? { initialCategoryId: categoryId } : undefined,
+      )}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenVisitVerification={() => navigation.navigate(
         V2_ROUTES.VisitVerificationSession,
@@ -85,11 +89,37 @@ function CommunityDetailRouteScreen({ navigation, route }: V2ScreenProps<'Commun
   );
 }
 
-function CommunityWriteRouteScreen({ navigation }: V2ScreenProps<'CommunityWrite'>) {
+function CommunityWriteRouteScreen({ navigation, route }: V2ScreenProps<'CommunityWrite'>) {
+  const { t } = useTranslation();
+  const hasUnsavedInput = useRef(false);
+
+  useEffect(() => navigation.addListener('beforeRemove', (event) => {
+    if (!hasUnsavedInput.current) return;
+    event.preventDefault();
+    Alert.alert(
+      t('community.write_screen.discard.title'),
+      t('community.write_screen.discard.body'),
+      [
+        { style: 'cancel', text: t('community.write_screen.discard.cancel') },
+        {
+          onPress: () => navigation.dispatch(event.data.action),
+          style: 'destructive',
+          text: t('community.write_screen.discard.confirm'),
+        },
+      ],
+    );
+  }), [navigation, t]);
+
   return (
     <CommunityWriteScreen
+      initialCategoryId={route.params?.initialCategoryId}
       onBack={navigation.goBack}
-      onSubmit={() => navigation.goBack()}
+      onDirtyChange={(dirty) => { hasUnsavedInput.current = dirty; }}
+      onSignIn={() => void clearTokenSession()}
+      onSubmitSuccess={({ postId }) => {
+        hasUnsavedInput.current = false;
+        navigation.replace(V2_ROUTES.CommunityDetail, { postId });
+      }}
     />
   );
 }
