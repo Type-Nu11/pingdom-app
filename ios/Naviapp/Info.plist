@@ -48,6 +48,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NMFNcpKeyId</key>
+	<string>$(NAVER_MAP_CLIENT_ID)</string>
 	<key>KAKAO_NATIVE_APP_KEY</key>
 	<string>$(KAKAO_NATIVE_APP_KEY)</string>
 	<key>LSMinimumSystemVersion</key>
