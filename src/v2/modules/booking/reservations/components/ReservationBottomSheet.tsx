@@ -187,6 +187,7 @@ export default function ReservationBottomSheet({
   nearbyPlaces,
   reservationPlaceByAvailabilityId,
   onHandlePress,
+  onOpenCommunity,
   onOpenFavorites,
   onOpenMap,
   onOpenRecommendations,
@@ -310,6 +311,7 @@ export default function ReservationBottomSheet({
       </GlassStyles.SheetInner>
       <MapSheetBottomNavigation
         activeTab="reservations"
+        onOpenCommunity={onOpenCommunity}
         onOpenFavorites={onOpenFavorites}
         onOpenMap={onOpenMap}
         onOpenRecommendations={onOpenRecommendations}

@@ -170,6 +170,7 @@ type MapBottomSheetProps = {
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
   onHandlePress: () => void;
+  onOpenCommunity?: () => void;
   onOpenLikedPlaces?: () => void;
   onOpenSavedPlaces?: () => void;
   onStartVisitVerification?: (place: DecisionPlace) => void;
@@ -2064,6 +2065,7 @@ export default function MapBottomSheet({
   onDetailPress,
   onDirectionsPress,
   onHandlePress,
+  onOpenCommunity,
   onOpenLikedPlaces,
   onOpenRecommendations,
   onOpenSavedPlaces,
@@ -2394,6 +2396,7 @@ export default function MapBottomSheet({
       {content.type !== 'place-preview' ? (
         <MapSheetBottomNavigation
           activeTab={content.type === 'recommendations' ? 'recommendations' : 'map'}
+          onOpenCommunity={onOpenCommunity}
           onOpenFavorites={onOpenLikedPlaces}
           onOpenMap={onBackHome}
           onOpenRecommendations={onOpenRecommendations}
