@@ -1,6 +1,6 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import KakaoMapAdapter from './KakaoMapAdapter';
+import NaverMapAdapter from './NaverMapAdapter';
 import type { MapMarker } from '../../markers/model/placeMarker';
 
 type MapCanvasProps = {
@@ -28,7 +28,7 @@ const MapCanvas = ({
   userLng,
   zoomLevel,
 }: MapCanvasProps) => (
-  <KakaoMapAdapter
+  <NaverMapAdapter
     center={{ lat: centerLat, lng: centerLng }}
     followUser={followUser}
     markers={markers}
