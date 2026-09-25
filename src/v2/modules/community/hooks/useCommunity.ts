@@ -9,13 +9,17 @@ import {
   communityApi,
   type CommunityCommentPage,
   type CommunityLikeStatus,
+  type CommunityPostDetail,
   type CommunityPostPage,
+  type CommunityPostSummary,
   type CreateCommentBody,
   type CreatePostBody,
   type ListCommentsParams,
   type ListPostsByCategoryParams,
   type ReportBody,
 } from '../api/communityApi';
+
+export type { CommunityPostDetail, CommunityPostSummary };
 
 type CommunityApi = typeof communityApi;
 

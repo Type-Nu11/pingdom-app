@@ -79,6 +79,7 @@ function CommunityDetailRouteScreen({ navigation, route }: V2ScreenProps<'Commun
         const placeId = parsePlaceId(value);
         if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
       }}
+      onSignIn={() => void clearTokenSession()}
       postId={route.params.postId}
     />
   );
