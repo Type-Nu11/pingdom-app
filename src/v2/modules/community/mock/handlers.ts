@@ -5,6 +5,7 @@ import {
   commentPageFixture,
   createCommentResponseFixture,
   createPostResponseFixture,
+  emptyCommentPageFixture,
   emptyPostPageFixture,
   likeStatusFixture,
   likedStatusFixture,
@@ -32,7 +33,11 @@ export const communityMockHandlers = [
       return postDetailFixture;
     },
   },
-  { method: 'GET', path: /^\/community\/posts\/\d+\/comments$/, resolve: () => commentPageFixture },
+  {
+    method: 'GET',
+    path: /^\/community\/posts\/\d+\/comments$/,
+    resolve: ({ scenario }) => (scenario === 'empty' ? emptyCommentPageFixture : commentPageFixture),
+  },
   { method: 'POST', path: /^\/community\/posts\/\d+\/comments$/, resolve: () => createCommentResponseFixture },
   { method: 'GET', path: /^\/community\/posts\/\d+\/likes$/, resolve: () => likeStatusFixture },
   { method: 'POST', path: /^\/community\/posts\/\d+\/likes$/, resolve: () => likedStatusFixture },
