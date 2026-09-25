@@ -37,6 +37,22 @@ test('an undetermined permission can be granted by the permission prompt', async
   assert.equal(coordinateLookupCount, 1);
 });
 
+test('initial map lookup does not request location permission again after startup denial', async () => {
+  let requestCount = 0;
+  const outcome = await resolveCurrentLocation({
+    getCoordinate: async () => { throw new Error('must not read coordinates'); },
+    getPermission: async () => ({ status: 'denied', canAskAgain: true }),
+    requestPermission: async () => {
+      requestCount += 1;
+      return { status: 'granted', canAskAgain: true };
+    },
+    requestIfNeeded: false,
+  });
+
+  assert.deepEqual(outcome, { status: 'denied', coordinate: null, canAskAgain: true });
+  assert.equal(requestCount, 0);
+});
+
 test('denied permission is distinct from a location lookup failure', async () => {
   const denied = await resolveCurrentLocation({
     getCoordinate: async () => ({ lat: 37.55, lng: 126.98 }),

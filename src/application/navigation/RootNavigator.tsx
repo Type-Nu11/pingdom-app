@@ -36,12 +36,14 @@ import {
 } from './runtimeState';
 import { claimDeepLinkEvent, type DeepLinkEventReceipt } from './deepLinkDedupe';
 import { useAppNavigationTheme } from '../../v2/shared/theme';
+import { useStartupPermissions } from '../../v2/app/permissions';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export default function RootNavigator() {
   const navigationTheme = useAppNavigationTheme();
+  const startupPermissions = useStartupPermissions();
   const queryClient = useQueryClient();
   const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
   const isHydrating = useAuthStore((state) => state.isHydrating);
@@ -58,8 +60,8 @@ export default function RootNavigator() {
   const rootState = resolveProductionRootState(isHydrating, isLoggedIn, onboardingState);
 
   useAndroidBackHandler(navigationRef);
-  useFcmTokenSync(isLoggedIn);
-  useForegroundNotifications(isLoggedIn);
+  useFcmTokenSync(isLoggedIn && startupPermissions.ready && startupPermissions.notificationsGranted);
+  useForegroundNotifications(isLoggedIn && startupPermissions.ready && startupPermissions.notificationsGranted);
   useNotificationOpenSync(useCallback((route) => setPendingNotification(route), []));
 
   useEffect(() => {
@@ -140,7 +142,7 @@ export default function RootNavigator() {
     previousIsLoggedIn.current = isLoggedIn;
   }, [isLoggedIn, queryClient]);
 
-  if (rootState === 'loading') return null;
+  if (rootState === 'loading' || !startupPermissions.ready) return null;
 
   const rootRouteName = getRootRouteName(rootState === 'main');
   const completion = onboardingState.kind === 'completed'

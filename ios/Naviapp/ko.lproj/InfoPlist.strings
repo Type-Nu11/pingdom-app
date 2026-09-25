@@ -1,3 +1,5 @@
 "NSPhotoLibraryUsageDescription" = "장소 리뷰에 사진을 추가하려면 사진 보관함 접근 권한이 필요합니다.";
+"NSMicrophoneUsageDescription" = "Pingdy에게 음성으로 질문하려면 마이크 권한이 필요합니다.";
+"NSSpeechRecognitionUsageDescription" = "음성을 텍스트로 바꾸기 위해 음성 인식 권한이 필요합니다. 기기의 인식 서비스가 음성을 기기 밖에서 처리할 수 있습니다.";
 "NSLocationWhenInUseUsageDescription" = "주변 장소를 표시하고 방문을 검증하려면 위치 권한이 필요합니다.";
 "NSLocationAlwaysAndWhenInUseUsageDescription" = "주변 장소를 표시하고 방문을 검증하려면 위치 권한이 필요합니다.";

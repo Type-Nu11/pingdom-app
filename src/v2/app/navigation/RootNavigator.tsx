@@ -1,6 +1,7 @@
 import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
 
 import { useFcmTokenSync } from '../../modules/user/notifications/lifecycle';
 import { useForegroundNotifications } from '../../modules/user/notifications/lifecycle';
@@ -39,6 +40,7 @@ import {
 import { V2_ROUTES, parseCheckInId, parsePlaceId, type V2ScreenProps, type V2StackParamList } from './types';
 import { useAndroidBackHandler } from './useAndroidBackHandler';
 import { useAppNavigationTheme } from '../../shared/theme';
+import { useStartupPermissions } from '../permissions/useStartupPermissions';
 
 const Stack = createNativeStackNavigator<V2StackParamList>();
 const navigationRef = createNavigationContainerRef<V2StackParamList>();
@@ -232,6 +234,7 @@ function VisitVerificationSessionRoute({ navigation, route }: V2ScreenProps<'Vis
 
 export default function RootNavigator() {
   const navigationTheme = useAppNavigationTheme();
+  const startupPermissions = useStartupPermissions();
   const [isNavigationReady, setIsNavigationReady] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<NotificationRoute | null>(null);
   const handledMessageIds = useRef(new Set<string>());
@@ -242,8 +245,8 @@ export default function RootNavigator() {
     setPendingRoute(route);
   }, []);
 
-  useFcmTokenSync();
-  useForegroundNotifications();
+  useFcmTokenSync(startupPermissions.ready && startupPermissions.notificationsGranted);
+  useForegroundNotifications(startupPermissions.ready && startupPermissions.notificationsGranted);
   useNotificationOpenSync(handleNotificationOpen);
 
   useEffect(() => {
@@ -266,6 +269,10 @@ export default function RootNavigator() {
 
     setPendingRoute(null);
   }, [isNavigationReady, pendingRoute]);
+
+  if (!startupPermissions.ready) {
+    return <View style={{ flex: 1, backgroundColor: navigationTheme.colors.background }} />;
+  }
 
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavigationReady(true)}>

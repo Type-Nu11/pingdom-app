@@ -21,14 +21,14 @@ export function useCurrentLocation() {
     subscriptionRef.current = null;
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (requestPermission = true) => {
     const requestId = ++requestIdRef.current;
     stopWatching();
     setState((current) => (
       current.status === 'granted' ? current : INITIAL_STATE
     ));
 
-    const outcome = await getCurrentLocation();
+    const outcome = await getCurrentLocation(requestPermission);
     if (!mountedRef.current || requestId !== requestIdRef.current) return;
 
     setState(outcome);
@@ -53,7 +53,7 @@ export function useCurrentLocation() {
 
   useEffect(() => {
     mountedRef.current = true;
-    void refresh();
+    void refresh(false);
 
     return () => {
       mountedRef.current = false;

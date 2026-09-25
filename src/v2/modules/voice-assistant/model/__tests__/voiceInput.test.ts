@@ -1,4 +1,4 @@
-import { createVoiceInputController, unavailableSpeechAdapter, validateVoiceInput, type MicrophonePermission, type SpeechEvent, type SpeechInputAdapter, type OnFinalInput } from '../voiceInput';
+import { createVoiceInputController, unavailableSpeechAdapter, validateVoiceInput, VOICE_SILENCE_MS, type MicrophonePermission, type SpeechEvent, type SpeechInputAdapter, type OnFinalInput } from '../voiceInput';
 
 function setup(permission: MicrophonePermission = 'granted', callback: OnFinalInput = jest.fn(() => 'localOnly')) {
   let emit!: (event: SpeechEvent) => void;
@@ -16,28 +16,104 @@ function setup(permission: MicrophonePermission = 'granted', callback: OnFinalIn
 const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; };
 afterEach(() => jest.useRealTimers());
 
-test('idle → permission → listening → processing → final; only explicit final confirmation submits once', async () => {
+test('final speech is submitted once after five seconds of silence without a keyboard action', async () => {
+  jest.useFakeTimers();
   const x = setup();
   const phases: string[] = [x.controller.getSnapshot().phase];
   x.controller.subscribe(() => phases.push(x.controller.getSnapshot().phase));
   const start = x.controller.start('ko-KR');
   expect(x.controller.getSnapshot().phase).toBe('permissionRequesting');
   await start;
+  x.emit({ type: 'activity', speaking: true });
+  expect(x.controller.getSnapshot().speaking).toBe(true);
   x.emit({ type: 'partial', text: 'partial private text' });
   await x.controller.submit();
   expect(x.callback).not.toHaveBeenCalled();
   expect(x.controller.getSnapshot().partial).toBe('partial private text');
-  await x.controller.stop();
   x.emit({ type: 'final', text: '  카페 검색  ' });
-  x.emit({ type: 'final', text: 'duplicate' });
-  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'final', draft: '카페 검색', partial: '' });
+  x.emit({ type: 'final', text: '  카페 검색  ' });
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'listening', draft: '카페 검색', partial: '' });
   expect(x.callback).not.toHaveBeenCalled();
-  await Promise.all([x.controller.submit(), x.controller.submit()]);
+  await jest.advanceTimersByTimeAsync(VOICE_SILENCE_MS - 1);
+  expect(x.callback).not.toHaveBeenCalled();
+  await jest.advanceTimersByTimeAsync(1);
   expect(x.callback).toHaveBeenCalledTimes(1);
   expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: '카페 검색', source: 'voice' }));
   expect(x.session.cancel).toHaveBeenCalledTimes(1);
   expect(x.signal().aborted).toBe(true);
-  expect(phases).toEqual(expect.arrayContaining(['idle', 'permissionRequesting', 'listening', 'processing', 'final']));
+  expect(phases).toEqual(expect.arrayContaining(['idle', 'permissionRequesting', 'listening', 'final']));
+  x.controller.dispose();
+});
+
+test('new speech within five seconds restarts the clock and appends a new final segment', async () => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('ko-KR');
+  x.emit({ type: 'final', text: '근처 카페' });
+  await jest.advanceTimersByTimeAsync(4000);
+  x.emit({ type: 'partial', text: '조용한 곳' });
+  x.emit({ type: 'activity', speaking: true });
+  await jest.advanceTimersByTimeAsync(4000);
+  expect(x.callback).not.toHaveBeenCalled();
+  x.emit({ type: 'final', text: '조용한 곳' });
+  await jest.advanceTimersByTimeAsync(999);
+  expect(x.callback).not.toHaveBeenCalled();
+  await jest.advanceTimersByTimeAsync(1);
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: '근처 카페 조용한 곳', source: 'voice' }));
+  x.controller.dispose();
+});
+
+test('silence with only a partial stops capture and waits for a final result', async () => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('en-US');
+  x.emit({ type: 'partial', text: 'find a cafe' });
+  await jest.advanceTimersByTimeAsync(VOICE_SILENCE_MS);
+  expect(x.session.stop).toHaveBeenCalledTimes(1);
+  expect(x.callback).not.toHaveBeenCalled();
+  x.emit({ type: 'final', text: 'find a cafe' });
+  await Promise.resolve();
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  x.controller.dispose();
+});
+
+test('partial speech is never sent if native recognition ends without a final result', async () => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('ko-KR');
+  x.emit({ type: 'partial', text: '카페' });
+  await jest.advanceTimersByTimeAsync(VOICE_SILENCE_MS);
+  x.emit({ type: 'ended' });
+  expect(x.controller.getSnapshot().error).toBe('noSpeech');
+  expect(x.callback).not.toHaveBeenCalled();
+  x.controller.dispose();
+});
+
+test('native no-speech after a finalized phrase keeps the pending silence handoff', async () => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('en-US');
+  x.emit({ type: 'final', text: 'coffee' });
+  x.emit({ type: 'error', reason: 'noSpeech' });
+  await jest.advanceTimersByTimeAsync(VOICE_SILENCE_MS);
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: 'coffee' }));
+  x.controller.dispose();
+});
+
+test('native end preserves a final result until silence expires; closing cancels the timer', async () => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('en-US');
+  x.emit({ type: 'final', text: 'coffee' });
+  x.emit({ type: 'ended' });
+  await jest.advanceTimersByTimeAsync(VOICE_SILENCE_MS - 1);
+  expect(x.callback).not.toHaveBeenCalled();
+  x.controller.cancel();
+  await jest.advanceTimersByTimeAsync(1);
+  expect(x.callback).not.toHaveBeenCalled();
+  expect(jest.getTimerCount()).toBe(0);
   x.controller.dispose();
 });
 
@@ -82,6 +158,7 @@ test('validation trims and accepts exactly 2000 characters', () => {
 test.each(['cancel', 'background', 'unmount'] as const)('%s stops capture, erases draft and rejects late callbacks', async reason => {
   const x = setup();
   await x.controller.start('ko-KR');
+  x.emit({ type: 'activity', speaking: true });
   x.emit({ type: 'partial', text: 'private' });
   if (reason === 'cancel') x.controller.cancel();
   else if (reason === 'background') x.controller.setForeground(false);
@@ -89,7 +166,8 @@ test.each(['cancel', 'background', 'unmount'] as const)('%s stops capture, erase
   expect(x.session.cancel).toHaveBeenCalledTimes(1);
   expect(x.signal().aborted).toBe(true);
   x.emit({ type: 'final', text: 'late private final' });
-  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'canceled', draft: '', partial: '' });
+  x.emit({ type: 'activity', speaking: true });
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'canceled', draft: '', partial: '', speaking: false });
   await x.controller.submit();
   expect(x.callback).not.toHaveBeenCalled();
 });
@@ -193,6 +271,29 @@ test('submission failure never logs or automatically resubmits text, late succes
   pending.resolve('accepted');
   await submit;
   expect(x.controller.getSnapshot()).toMatchObject({ phase: 'canceled', draft: '', delivery: 'none' });
+  x.controller.dispose();
+});
+
+test('typing during a pending voice handoff cancels it and allows a fresh text request', async () => {
+  const pending = deferred<'accepted'>();
+  const callback = jest.fn<ReturnType<OnFinalInput>, Parameters<OnFinalInput>>()
+    .mockReturnValueOnce(pending.promise).mockReturnValueOnce('accepted');
+  const x = setup('granted', callback);
+  await x.controller.start('ko-KR');
+  x.emit({ type: 'final', text: 'old request' });
+  const first = x.controller.stop();
+  await first;
+  x.emit({ type: 'ended' });
+  const oldSignal = callback.mock.calls[0][0].signal;
+  expect(x.controller.getSnapshot().delivery).toBe('pending');
+  x.controller.edit('new text request');
+  expect(oldSignal.aborted).toBe(true);
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'idle', source: 'text', draft: 'new text request', delivery: 'none' });
+  await x.controller.submit();
+  expect(callback).toHaveBeenCalledTimes(2);
+  pending.resolve('accepted');
+  await Promise.resolve();
+  expect(x.controller.getSnapshot()).toMatchObject({ draft: 'new text request', delivery: 'accepted' });
   x.controller.dispose();
 });
 

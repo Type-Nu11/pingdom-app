@@ -1,6 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../v2/app/testing/testProviders';
+import { useFcmTokenSync, useForegroundNotifications } from '../../v2/modules/user/notifications/lifecycle';
 import RootNavigator from '../navigation/RootNavigator';
 
 const mockBootstrap = jest.fn(async () => {});
@@ -9,6 +10,9 @@ const mockMapHydrate = jest.fn(async () => {});
 const mockClearVisitSession = jest.fn();
 let mockSession = { isHydrating: true, isLoggedIn: false, bootstrapAuth: mockBootstrap };
 let mockOnboarding: { kind: string; completion?: object } = { kind: 'hydrating' };
+let mockStartupPermissions = { ready: true, notificationsGranted: true };
+
+jest.mock('../../v2/app/permissions', () => ({ useStartupPermissions: () => mockStartupPermissions }));
 
 jest.mock('../../app/store/authStore', () => ({
   useAuthStore: (selector: (state: typeof mockSession) => unknown) => selector(mockSession),
@@ -40,6 +44,22 @@ jest.mock('../../v2/modules/place/visit-verification/session', () => ({
 beforeEach(() => {
   mockSession = { isHydrating: true, isLoggedIn: false, bootstrapAuth: mockBootstrap };
   mockOnboarding = { kind: 'hydrating' };
+  mockStartupPermissions = { ready: true, notificationsGranted: true };
+});
+
+test('production root waits for startup permission prompts before mounting the map', async () => {
+  mockSession = { ...mockSession, isHydrating: false, isLoggedIn: true };
+  mockOnboarding = { kind: 'completed', completion: { country: 'KR', language: 'ko', birthYear: 2000 } };
+  mockStartupPermissions = { ready: false, notificationsGranted: false };
+  const view = await renderWithProviders(<RootNavigator />);
+  expect(screen.queryByText('protected map')).toBeNull();
+  expect(useFcmTokenSync).toHaveBeenLastCalledWith(false);
+  expect(useForegroundNotifications).toHaveBeenLastCalledWith(false);
+  mockStartupPermissions = { ready: true, notificationsGranted: true };
+  await view.rerender(<RootNavigator />);
+  expect(await screen.findByText('protected map')).toBeVisible();
+  expect(useFcmTokenSync).toHaveBeenLastCalledWith(true);
+  expect(useForegroundNotifications).toHaveBeenLastCalledWith(true);
 });
 
 test('actual production root hides routes until both hydration gates finish', async () => {

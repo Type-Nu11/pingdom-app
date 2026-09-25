@@ -366,7 +366,7 @@ export default function MapTopOverlay({
                     onPress={onAssistantPress}
                     style={({ pressed }) => ({ opacity: pressed ? 0.72 : 1 })}
                   >
-                    <S.AssistantLabel accessible={false}>AI</S.AssistantLabel>
+                    <S.AssistantLabel accessible={false}>{t('voiceAssistant.shortLabel')}</S.AssistantLabel>
                   </S.AssistantButton>
                 </View>
               ) : null}
