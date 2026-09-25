@@ -1,6 +1,7 @@
 import { placeExplorationMockHandlers, placeMenuMockHandlers, visitorVerificationReportMockHandlers, visitVerificationMockHandlers } from '../modules/place/mock';
 import { currentActivityIntentMockHandlers, travelPurposeMockHandlers, travelScheduleMockHandlers } from '../modules/travel/mock';
 import { bookingMockHandlers } from '../modules/booking/mock';
+import { communityMockHandlers } from '../modules/community/mock';
 import { accountMockHandlers, notificationMockHandlers, scoutProfileMockHandlers } from '../modules/user/mock';
 import { configureDomainMockHandlers } from '../shared/api/mock/registry';
 
@@ -16,4 +17,5 @@ configureDomainMockHandlers([
   ...travelScheduleMockHandlers,
   ...visitorVerificationReportMockHandlers,
   ...visitVerificationMockHandlers,
+  ...communityMockHandlers,
 ]);
