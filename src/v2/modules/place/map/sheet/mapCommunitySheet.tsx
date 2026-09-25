@@ -11,7 +11,7 @@ export type MapCommunitySheetProps = {
   onOpenPost: (postId: number) => void;
   onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
-  onOpenWrite: () => void;
+  onOpenWrite: (categoryId?: string) => void;
   panHandlers: GestureResponderHandlers;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;

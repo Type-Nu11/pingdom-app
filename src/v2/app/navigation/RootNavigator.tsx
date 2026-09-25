@@ -9,7 +9,7 @@ import { useNotificationOpenSync } from '../../modules/user/notifications/lifecy
 import type { NotificationRoute } from '../../modules/user/notifications/routing';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../modules/user/settings';
 import HomeScreen from '../home/screens/HomeScreen';
-import { CommunityDetailScreen, CommunityWriteScreen } from '../../modules/community';
+import { CommunityDetailScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../modules/community';
 import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
@@ -53,7 +53,10 @@ function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
   return (
     <MapScreen
       onOpenCommunityPost={(postId) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })}
-      onOpenCommunityWrite={() => navigation.navigate(V2_ROUTES.CommunityWrite)}
+      onOpenCommunityWrite={(categoryId) => navigation.navigate(
+        V2_ROUTES.CommunityWrite,
+        categoryId ? { initialCategoryId: categoryId } : undefined,
+      )}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenVisitVerification={() => navigation.navigate(
         V2_ROUTES.VisitVerificationSession,
@@ -85,11 +88,19 @@ function CommunityDetailRouteScreen({ navigation, route }: V2ScreenProps<'Commun
   );
 }
 
-function CommunityWriteRouteScreen({ navigation }: V2ScreenProps<'CommunityWrite'>) {
+function CommunityWriteRouteScreen({ navigation, route }: V2ScreenProps<'CommunityWrite'>) {
+  const hasUnsavedInput = useDiscardOnLeaveGuard(navigation);
+
   return (
     <CommunityWriteScreen
+      initialCategoryId={route.params?.initialCategoryId}
       onBack={navigation.goBack}
-      onSubmit={() => navigation.goBack()}
+      onDirtyChange={(dirty) => { hasUnsavedInput.current = dirty; }}
+      onSignIn={() => void clearTokenSession()}
+      onSubmitSuccess={({ postId }) => {
+        hasUnsavedInput.current = false;
+        navigation.replace(V2_ROUTES.CommunityDetail, { postId });
+      }}
     />
   );
 }

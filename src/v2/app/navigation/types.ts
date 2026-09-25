@@ -32,7 +32,7 @@ export type V2StackParamList = {
   CommunityDetail: {
     postId: number;
   };
-  CommunityWrite: undefined;
+  CommunityWrite: { initialCategoryId?: string } | undefined;
   CouponBox: undefined;
   CouponDetail: {
     couponId: number;
