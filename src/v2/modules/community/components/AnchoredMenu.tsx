@@ -36,6 +36,10 @@ const Card = styled.View`
   min-width: 168px;
   border-radius: ${({ theme }) => theme.radius.lg}px;
   background-color: rgba(255, 255, 255, 0.96);
-  box-shadow: 0px 4px 20px 0px ${({ theme }) => theme.colors.shadow};
+  shadow-color: ${({ theme }) => theme.colors.shadow};
+  shadow-offset: 0px 4px;
+  shadow-opacity: 0.16;
+  shadow-radius: 20px;
+  elevation: 4;
   overflow: hidden;
 `;
