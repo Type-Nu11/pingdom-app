@@ -14,6 +14,6 @@ class KakaoMapPackage : ReactPackage {
     override fun createViewManagers(
         reactContext: ReactApplicationContext
     ): List<ViewManager<*, *>> {
-        return listOf(KakaoMapViewManager(), MapGlassBackdropViewManager())
+        return listOf(KakaoMapViewManager(), NaverMapViewManager(), MapGlassBackdropViewManager())
     }
 }

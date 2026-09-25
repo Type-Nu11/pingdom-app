@@ -15,6 +15,7 @@ import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.kakao.vectormap.KakaoMapSdk
+import com.naver.maps.map.NaverMapSdk
 
 import expo.modules.ApplicationLifecycleDispatcher
 
@@ -49,6 +50,11 @@ class MainApplication : Application(), ReactApplication {
       Log.e(TAG, "KAKAO_NATIVE_APP_KEY is empty. Set env var before build.")
     } else {
       KakaoMapSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
+    }
+    if (BuildConfig.NAVER_MAP_CLIENT_ID.isBlank()) {
+      Log.e(TAG, "NAVER_MAP_CLIENT_ID is empty. Set it in .env before building.")
+    } else {
+      NaverMapSdk.getInstance(this).client = NaverMapSdk.NcpKeyClient(BuildConfig.NAVER_MAP_CLIENT_ID)
     }
     DefaultNewArchitectureEntryPoint.releaseLevel = try {
       ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())

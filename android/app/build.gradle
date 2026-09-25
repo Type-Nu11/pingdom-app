@@ -110,6 +110,8 @@ def readEnvValue(String key) {
 
 def kakaoNativeAppKey = System.getenv("KAKAO_NATIVE_APP_KEY") ?: readEnvValue("KAKAO_NATIVE_APP_KEY") ?: ""
 
+def naverMapClientId = System.getenv("NAVER_MAP_CLIENT_ID") ?: readEnvValue("NAVER_MAP_CLIENT_ID") ?: ""
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -125,6 +127,7 @@ android {
         versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        buildConfigField "String", "NAVER_MAP_CLIENT_ID", "\"${naverMapClientId}\""
         buildConfigField "String", "KAKAO_NATIVE_APP_KEY", "\"${kakaoNativeAppKey}\""
     }
     signingConfigs {
@@ -186,6 +189,7 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation 'com.kakao.maps.open:android:2.13.1'
+    implementation 'com.naver.maps:map-sdk:3.24.0'
     implementation 'com.google.mlkit:language-id:17.0.6'
     implementation 'com.google.mlkit:translate:17.0.3'
 
