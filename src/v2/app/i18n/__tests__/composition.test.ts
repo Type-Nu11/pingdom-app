@@ -24,7 +24,8 @@ beforeEach(() => {
 });
 
 test('preserves assembled translations outside reviewed feature copy changes', () => {
-  // Preserve the migration baseline with the reviewed #346 voice input, automatic voice submission, and recovery feedback.
+  // Preserve the migration baseline with the reviewed #346 voice input, automatic voice submission,
+  // recovery feedback, and #338 community list/detail/write copy.
   const baseline = JSON.parse(JSON.stringify(resources));
   for (const language of ['ko', 'en']) {
     delete baseline[language].translation.visitVerification.uploading;
@@ -34,6 +35,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     delete voiceAssistant.shortLabel;
     delete voiceAssistant.brand;
     voiceAssistant.placeholder = language === 'ko' ? '요청을 입력해 주세요' : 'Type your request';
+    delete baseline[language].translation.community;
+    delete baseline[language].translation.map.navigation.community;
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
     .toBe('f2dc1044fdfdba80886ded680f6c6b25b694134c843365c57988f7f1b3f4b478');
