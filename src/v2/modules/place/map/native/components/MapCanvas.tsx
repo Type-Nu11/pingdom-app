@@ -11,8 +11,8 @@ type MapCanvasProps = {
   onCameraIdle?: () => void;
   onMarkerPress: (markerId: string) => void;
   style?: StyleProp<ViewStyle>;
-  userLat: number;
-  userLng: number;
+  userLat?: number;
+  userLng?: number;
   zoomLevel: number;
 };
 
@@ -35,7 +35,7 @@ const MapCanvas = ({
     onCameraIdle={() => onCameraIdle?.()}
     onMarkerSelect={onMarkerPress}
     style={[styles.map, style]}
-    userCoordinate={{ lat: userLat, lng: userLng }}
+    userCoordinate={userLat !== undefined && userLng !== undefined ? { lat: userLat, lng: userLng } : undefined}
     zoomLevel={zoomLevel}
   />
 );

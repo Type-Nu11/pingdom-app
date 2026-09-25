@@ -903,7 +903,7 @@ export default function MapScreen({
         translucent
       />
       <View style={styles.mapBackground}>
-        {mapCenterLat !== undefined && mapCenterLng !== undefined && userLat !== undefined && userLng !== undefined ? <MapCanvas
+        <MapCanvas
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
@@ -912,7 +912,7 @@ export default function MapScreen({
           userLat={userLat}
           userLng={userLng}
           zoomLevel={mapZoomLevel}
-        /> : null}
+        />
       </View>
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
         <MapTopOverlay
