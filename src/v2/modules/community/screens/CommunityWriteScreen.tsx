@@ -95,7 +95,7 @@ export default function CommunityWriteScreen({
   }, [isDirty, onDirtyChange]);
 
   const submit = () => {
-    if (submissionGuard.current || createPost.isPending || !selectedCategoryId) return;
+    if (submissionGuard.current || createPost.isPending || !selectedCategoryId || isBlockedByAuthorization) return;
     setShowErrors(true);
     if (Object.keys(fieldErrors).length > 0) return;
 
@@ -126,6 +126,10 @@ export default function CommunityWriteScreen({
   const bannerKind = createPost.isError ? communityWriteErrorKind(createPost.error) : null;
   const bannerAction = createPost.isError ? communityWriteBannerAction(createPost.error) : 'none';
   const hasUnmappedServerError = createPost.isError && communityWriteHasUnmappedFieldError(createPost.error);
+  // A 403 means this account cannot post here at all — nothing the user
+  // changes on this form fixes that, so resubmitting is blocked outright
+  // rather than just left to fail again.
+  const isBlockedByAuthorization = bannerKind === 'authorization';
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-write-screen">
@@ -307,10 +311,13 @@ export default function CommunityWriteScreen({
 
         <SubmitBar>
           <SubmitButton
-            $enabled={isValid}
+            $enabled={isValid && !isBlockedByAuthorization}
             accessibilityRole="button"
-            accessibilityState={{ busy: createPost.isPending, disabled: createPost.isPending || !selectedCategoryId }}
-            disabled={createPost.isPending || !selectedCategoryId}
+            accessibilityState={{
+              busy: createPost.isPending,
+              disabled: createPost.isPending || !selectedCategoryId || isBlockedByAuthorization,
+            }}
+            disabled={createPost.isPending || !selectedCategoryId || isBlockedByAuthorization}
             onPress={submit}
             testID="v2-community-write-submit"
           >
@@ -320,7 +327,7 @@ export default function CommunityWriteScreen({
                 color={theme.colors.onPrimary}
               />
             ) : (
-              <SubmitLabel $enabled={isValid}>{t('community.write_screen.submit')}</SubmitLabel>
+              <SubmitLabel $enabled={isValid && !isBlockedByAuthorization}>{t('community.write_screen.submit')}</SubmitLabel>
             )}
           </SubmitButton>
         </SubmitBar>

@@ -215,8 +215,9 @@ describe('CommunityWriteScreen', () => {
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
-  test('403 오류는 버튼 없이 배너만 보여준다', async () => {
-    jest.spyOn(communityApi, 'createPost').mockRejectedValue(new ApiError('권한 없음', { status: 403 }));
+  test('403 오류는 버튼 없이 배너만 보여주고, 제출을 막는다', async () => {
+    const createPost = jest.spyOn(communityApi, 'createPost')
+      .mockRejectedValue(new ApiError('권한 없음', { status: 403 }));
     const { user } = await renderScreen();
 
     await waitFor(() => expect(screen.getByTestId('v2-community-write-category-TRAVEL')).toBeVisible());
@@ -227,6 +228,10 @@ describe('CommunityWriteScreen', () => {
     await waitFor(() => expect(screen.getByTestId('v2-community-write-error-banner')).toBeVisible());
     expect(screen.queryByTestId('v2-community-write-sign-in')).toBeNull();
     expect(screen.queryByTestId('v2-community-write-retry')).toBeNull();
+
+    expect(screen.getByTestId('v2-community-write-submit').props.accessibilityState.disabled).toBe(true);
+    await user.press(screen.getByTestId('v2-community-write-submit'));
+    expect(createPost).toHaveBeenCalledTimes(1);
   });
 
   test('404 오류는 연결 장소 안내 문구를 보여주고 화면을 벗어나지 않는다', async () => {
