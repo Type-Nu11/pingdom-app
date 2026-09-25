@@ -1,8 +1,7 @@
 import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { View } from 'react-native';
 
 import { useFcmTokenSync } from '../../modules/user/notifications/lifecycle';
 import { useForegroundNotifications } from '../../modules/user/notifications/lifecycle';
@@ -10,7 +9,7 @@ import { useNotificationOpenSync } from '../../modules/user/notifications/lifecy
 import type { NotificationRoute } from '../../modules/user/notifications/routing';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../modules/user/settings';
 import HomeScreen from '../home/screens/HomeScreen';
-import { CommunityDetailScreen, CommunityWriteScreen } from '../../modules/community';
+import { CommunityDetailScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../modules/community';
 import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
@@ -90,25 +89,7 @@ function CommunityDetailRouteScreen({ navigation, route }: V2ScreenProps<'Commun
 }
 
 function CommunityWriteRouteScreen({ navigation, route }: V2ScreenProps<'CommunityWrite'>) {
-  const { t } = useTranslation();
-  const hasUnsavedInput = useRef(false);
-
-  useEffect(() => navigation.addListener('beforeRemove', (event) => {
-    if (!hasUnsavedInput.current) return;
-    event.preventDefault();
-    Alert.alert(
-      t('community.write_screen.discard.title'),
-      t('community.write_screen.discard.body'),
-      [
-        { style: 'cancel', text: t('community.write_screen.discard.cancel') },
-        {
-          onPress: () => navigation.dispatch(event.data.action),
-          style: 'destructive',
-          text: t('community.write_screen.discard.confirm'),
-        },
-      ],
-    );
-  }), [navigation, t]);
+  const hasUnsavedInput = useDiscardOnLeaveGuard(navigation);
 
   return (
     <CommunityWriteScreen

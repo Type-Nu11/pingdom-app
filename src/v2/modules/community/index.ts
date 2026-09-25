@@ -35,3 +35,5 @@ export {
   useReportPost,
   useToggleLike,
 } from './hooks/useCommunity';
+export { useDiscardOnLeaveGuard } from './hooks/useDiscardOnLeaveGuard';
+export type { LeaveGuardNavigation } from './hooks/useDiscardOnLeaveGuard';
