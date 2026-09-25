@@ -136,11 +136,22 @@ export function useLikeStatus(postId: number, options: { enabled?: boolean } = {
   });
 }
 
+/**
+ * Post creation is non-idempotent: no AbortSignal is attached (a torn-down
+ * screen must not leave the server unaware a create actually went through)
+ * and retry is explicitly disabled so a transient failure never becomes a
+ * silent duplicate post.
+ */
 export function useCreatePost(api: Pick<CommunityApi, 'createPost'> = communityApi) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CreatePostBody) => api.createPost(body),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: ['v2', 'community', 'categories'] }),
+    retry: false,
+    // Only the category the post was created in is invalidated — other
+    // categories' cached pages, and the category list itself, are untouched.
+    onSuccess: async (_data, variables) => queryClient.invalidateQueries({
+      queryKey: communityQueryKeys.postsRoot(variables.categoryId),
+    }),
   });
 }
 
