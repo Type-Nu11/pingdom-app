@@ -37,14 +37,14 @@ export default function ReservationDetailScreen({
     );
   }
 
-  if (reservationQuery.isError) {
+  if (reservationQuery.isError && !reservationQuery.data) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <ApiErrorState
-          error={reservationQuery.error}
+          busy={reservationQuery.isFetching} error={reservationQuery.error}
           fill
           onBack={onBack}
-          onRetry={() => void reservationQuery.refetch()}
+          onRetry={() => reservationQuery.refetch({ cancelRefetch: false })}
         />
       </Screen>
     );
@@ -75,6 +75,7 @@ export default function ReservationDetailScreen({
         <HeaderSpacer />
       </Header>
       <Content>
+        {reservationQuery.isError ? <ApiErrorState error={reservationQuery.error} busy={reservationQuery.isFetching} onRetry={() => reservationQuery.refetch({ cancelRefetch: false })} /> : null}
         <Card>
           <Eyebrow>{t('reservation.detail.identifier')}</Eyebrow>
           <ReservationId>{reservation.id}</ReservationId>
@@ -121,12 +122,14 @@ export default function ReservationDetailScreen({
           </Field>
           <Divider />
           <NoticeTitle>{t('reservation.detail.payments')}</NoticeTitle>
+          {paymentsQuery.isError && paymentsQuery.data ? <ApiErrorState error={paymentsQuery.error} busy={paymentsQuery.isFetching} onRetry={() => paymentsQuery.refetch({ cancelRefetch: false })} /> : null}
           {paymentsQuery.isPending ? (
             <LoadingState description={t('reservation.detail.paymentsLoading')} />
-          ) : paymentsQuery.isError ? (
+          ) : paymentsQuery.isError && !paymentsQuery.data ? (
             <ApiErrorState
               error={paymentsQuery.error}
-              onRetry={() => void paymentsQuery.refetch()}
+              busy={paymentsQuery.isFetching}
+              onRetry={() => paymentsQuery.refetch({ cancelRefetch: false })}
             />
           ) : linkedPayments.length === 0 ? (
             <EmptyState

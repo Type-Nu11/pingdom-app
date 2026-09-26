@@ -97,7 +97,7 @@ test('transport failures classify as a distinct retryable network kind', () => {
 
   // A 5xx with a response is NOT a network error: still generic + retryable.
   const serverError = getApiErrorUx(new ApiError('unavailable', { status: 503 }));
-  assert.equal(serverError.kind, 'generic');
+  assert.equal(serverError.kind, 'server');
   assert.equal(serverError.retryable, true);
 });
 
@@ -139,7 +139,7 @@ test('coupon and offer operation errors map to stable UX kinds', () => {
     [409, undefined, 'conflict'],
     [410, 'COUPON_EXPIRED', 'expired'],
     // listMyCoupons
-    [400, undefined, 'validation'],
+    [400, undefined, 'generic'],
     // redeemCoupon
     [409, 'COUPON_ALREADY_REDEEMED', 'conflict'],
   ];
@@ -229,4 +229,35 @@ test('travel schedule validation and conflict codes keep distinct server meaning
     assert.equal(ux.error, error);
     assert.equal(ux.kind, kind);
   }
+});
+
+test('unclassified 400 and signing failures never blame input or require sign-in', () => {
+  assert.equal(getApiErrorUx(new ApiError('html', { status: 400 })).kind, 'generic');
+  for (const code of ['SIGNATURE_REQUIRED', 'INVALID_SIGNATURE', 'REQUEST_TIMESTAMP_OUT_OF_RANGE', 'SIGNING_KEY_EXPIRED']) {
+    assert.equal(getApiErrorUx(new ApiError('secret', { code, status: 401 })).action, 'none');
+  }
+});
+
+test('rate limits, timeouts, server outages and cancellation have explicit presentation', () => {
+  assert.equal(getApiErrorUx(new ApiError('secret', { status: 429 })).kind, 'rateLimited');
+  assert.equal(getApiErrorUx(new ApiError('html', { status: 503 })).kind, 'server');
+  assert.equal(getApiErrorUx(toApiError({ isAxiosError: true, code: 'ECONNABORTED' })).kind, 'timeout');
+  assert.equal(getApiErrorUx(toApiError({ isAxiosError: true, code: 'ERR_CANCELED' })).kind, 'canceled');
+});
+
+test('Axios transport codes do not shadow HTTP 401/403/400 classification', () => {
+  for (const [status, kind] of [[401, 'authentication'], [403, 'authorization'], [400, 'generic']]) {
+    const error = toApiError({ isAxiosError: true, code: 'ERR_BAD_REQUEST', response: { status, data: {} } });
+    assert.equal(getApiErrorUx(error).kind, kind);
+  }
+  const abort = new Error('screen left');
+  abort.name = 'AbortError';
+  assert.equal(getApiErrorUx(abort).kind, 'canceled');
+});
+
+
+test('HTML proxy 401 does not suggest sign-in', () => {
+  const error = toApiError({ isAxiosError: true, response: { status: 401, data: '<html>proxy</html>' } });
+  assert.equal(getApiErrorUx(error).kind, 'generic');
+  assert.equal(getApiErrorUx(error).action, 'none');
 });

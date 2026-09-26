@@ -28,6 +28,15 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // recovery feedback, and #338 community list/detail/write copy.
   const baseline = JSON.parse(JSON.stringify(resources));
   for (const language of ['ko', 'en']) {
+    // #390 reviews only shared error presentation and uncertain reservation outcomes.
+    const apiError = baseline[language].translation.common.apiError;
+    for (const key of ['timeout', 'server', 'rateLimited', 'mutationUnknown']) delete apiError[key];
+    apiError.authentication.description = language === 'ko'
+      ? '로그인 정보 또는 요청 키가 만료되었습니다. 다시 로그인해 주세요.'
+      : 'Your session or request key is no longer valid. Please sign in again.';
+    baseline[language].translation.reservation.create.submitNetworkError = language === 'ko'
+      ? '네트워크 문제예요. 연결을 확인하고 다시 시도해 주세요.'
+      : 'Network problem. Check your connection and try again.';
     delete baseline[language].translation.visitVerification.uploading;
     delete baseline[language].translation.visitVerification.errors;
     const voiceAssistant = baseline[language].translation.voiceAssistant;

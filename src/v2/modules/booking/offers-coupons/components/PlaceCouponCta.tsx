@@ -146,7 +146,8 @@ export default function PlaceCouponCta({
       <Wrapper accessibilityRole="summary">
         <OfferCouponErrorState
           error={state.error}
-          onRetry={() => void offersQuery.refetch()}
+          busy={offersQuery.isFetching}
+          onRetry={() => void offersQuery.refetch({ cancelRefetch: false })}
           onSignIn={onRequestSignIn}
           onViewWallet={onViewMyCoupons}
           operation="listOffers"

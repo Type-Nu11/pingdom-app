@@ -69,7 +69,7 @@ describe('useBookmarkedPlaces', () => {
 
     expect(bookmarkedPlaceQueryKeys.list()[0]).toBe('placeBookmarks');
     expect(result.current.places).toEqual(places);
-    expect(placeApi.getBookmarkedPlaces).toHaveBeenCalledWith({ limit: 20, page: 1 });
+    expect(placeApi.getBookmarkedPlaces).toHaveBeenCalledWith({ limit: 20, page: 1 }, expect.any(AbortSignal));
   });
 
   test('hasNext 응답에 따라 다음 페이지를 중복 없이 이어 붙인다', async () => {

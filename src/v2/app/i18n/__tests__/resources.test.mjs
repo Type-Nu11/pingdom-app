@@ -108,3 +108,18 @@ test('recommendation reason codes have truthful Korean and English presentations
     reservable: '현재 예약할 수 있는 장소예요',
   });
 });
+
+test('#390 shared error keys preserve ko/en interpolation contracts', () => {
+  const walk = (node, prefix = '') => Object.fromEntries(Object.entries(node).flatMap(([key, value]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    return typeof value === 'object' ? Object.entries(walk(value, path)) : [[path, value]];
+  }));
+  const en = walk(resources.en.translation.common.apiError);
+  const ko = walk(resources.ko.translation.common.apiError);
+  assert.deepEqual(Object.keys(en).sort(), Object.keys(ko).sort());
+  for (const key of Object.keys(en)) {
+    assert.ok(en[key].trim() && ko[key].trim(), key);
+    const variables = value => [...value.matchAll(/{{\s*([^}]+)\s*}}/g)].map(match => match[1].trim()).sort();
+    assert.deepEqual(variables(en[key]), variables(ko[key]), key);
+  }
+});

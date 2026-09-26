@@ -73,6 +73,7 @@ export const usePlaces = (
     enabled,
     error: placesQuery.error,
     isError: placesQuery.isError,
+    isFetching: placesQuery.isFetching,
     isLoading: placesQuery.isLoading,
     markers,
     places,

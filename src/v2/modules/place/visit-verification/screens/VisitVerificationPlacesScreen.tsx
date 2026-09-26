@@ -39,8 +39,8 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
 
       {checkInsQuery.isLoading ? (
         <LoadingState description={t('visitVerification.placeLoading')} fill />
-      ) : checkInsQuery.isError && !checkInsQuery.isFetchNextPageError ? (
-        <ApiErrorState error={checkInsQuery.error} fill onBack={onBack} onRetry={() => void checkInsQuery.refetch()} />
+      ) : checkInsQuery.isError && !checkInsQuery.isFetchNextPageError && !checkInsQuery.data ? (
+        <ApiErrorState error={checkInsQuery.error} fill onBack={onBack} busy={checkInsQuery.isFetching} onRetry={() => checkInsQuery.refetch({ cancelRefetch: false })} />
       ) : candidates.length === 0 && locationPermission === 'denied' ? (
         <Empty testID="visit-verification-permission-denied">
           <EmptyCopy>
@@ -65,6 +65,7 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
         <Body>
           <SectionTitle accessibilityRole="header">{t('visitVerification.recentVisits')}</SectionTitle>
           <List
+            ListHeaderComponent={checkInsQuery.isError && !checkInsQuery.isFetchNextPageError ? <ApiErrorState error={checkInsQuery.error} busy={checkInsQuery.isFetching} onRetry={() => checkInsQuery.refetch({ cancelRefetch: false })} /> : null}
             data={candidates}
             keyExtractor={(item) => String(item.checkInId)}
             onEndReached={() => {

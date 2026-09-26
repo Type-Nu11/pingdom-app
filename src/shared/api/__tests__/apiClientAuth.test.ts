@@ -113,3 +113,24 @@ test('갱신 후에도 보호된 요청이 401이면 세션을 정리하고 추�
   expect(mockAdapter).toHaveBeenCalledTimes(3);
   expect(clearExpiredSession).toHaveBeenCalledTimes(1);
 });
+
+test.each(['SIGNATURE_REQUIRED', 'INVALID_SIGNATURE', 'REQUEST_TIMESTAMP_OUT_OF_RANGE', 'SIGNING_KEY_EXPIRED'])('%s does not refresh or clear the session', async code => {
+  mockAdapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
+    throw new AxiosError('private proxy diagnostic', 'ERR_BAD_REQUEST', config, undefined,
+      response(config, 401, { code }));
+  });
+  await expect(api.get('/users/me')).rejects.toMatchObject({ response: { data: { code } } });
+  expect(mockAdapter).toHaveBeenCalledTimes(1);
+  expect(clearExpiredSession).not.toHaveBeenCalled();
+});
+
+
+test('HTML proxy 401 does not refresh or clear the session', async () => {
+  mockAdapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
+    throw new AxiosError('private proxy diagnostic', 'ERR_BAD_REQUEST', config, undefined,
+      response(config, 401, '<html>proxy authentication</html>'));
+  });
+  await expect(api.get('/users/me')).rejects.toMatchObject({ response: { status: 401 } });
+  expect(mockAdapter).toHaveBeenCalledTimes(1);
+  expect(clearExpiredSession).not.toHaveBeenCalled();
+});

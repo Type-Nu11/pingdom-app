@@ -1,4 +1,4 @@
-import { apiClient, toApiError } from '../../../../shared/api';
+import { apiClient, getApiErrorUx, toApiError } from '../../../../shared/api';
 import type { PlacesPage } from '../../core/place.types';
 
 export type PlaceAutocompleteItem = {
@@ -65,7 +65,7 @@ export type BookmarkApiErrorCode =
   | 'PLACE_NOT_FOUND';
 
 export function isBookmarkAuthenticationError(error: unknown) {
-  return toApiError(error).status === 401;
+  return getApiErrorUx(error).kind === 'authentication';
 }
 
 export function isExpectedBookmarkStateError(error: unknown, nextBookmarked: boolean) {
@@ -80,8 +80,10 @@ export const placeApi = {
   },
   getBookmarkedPlaces: async (
     params: GetBookmarkedPlacesRequest = {},
+    signal?: AbortSignal,
   ): Promise<PlacesPage> => {
     return apiClient.get<PlacesPage>('/users/me/bookmarks', {
+      signal,
       params: {
         limit: params.limit ?? 20,
         page: params.page ?? 1,

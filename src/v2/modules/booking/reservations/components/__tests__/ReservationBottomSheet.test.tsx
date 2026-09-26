@@ -127,7 +127,8 @@ describe('ReservationBottomSheet', () => {
     }));
     await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
     expect(screen.queryByTestId('reservation-place-card-901')).toBeNull();
-    expect(screen.getByTestId('reservations-empty')).toBeVisible();
+    expect(screen.queryByTestId('reservations-empty')).toBeNull();
+    expect(screen.getByTestId('reservation-card-901')).toBeVisible();
   });
 
   test('예약 탭 선택 상태와 다른 탭 이동을 제공한다', async () => {
@@ -217,4 +218,22 @@ describe('ReservationBottomSheet', () => {
     expect(screen.getByText('Reservations near your current location')).toBeVisible();
     expect(screen.getByRole('tab', { name: 'Reservations', selected: true })).toBeVisible();
   });
+});
+
+test('a reservation whose place cannot be loaded is still visible and opens its detail', async () => {
+  const onOpenReservation = jest.fn();
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [reservation] } }));
+  await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} reservationPlaceByAvailabilityId={{}} onOpenReservation={onOpenReservation} />);
+  expect(screen.queryByTestId('reservations-empty')).toBeNull();
+  await userEvent.setup().press(screen.getByTestId('reservation-card-901'));
+  expect(onOpenReservation).toHaveBeenCalledWith(901);
+});
+
+test('nearby lookup failure is not rendered as a successful empty list', async () => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [] } }));
+  const retry = jest.fn().mockResolvedValue([]);
+  await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} nearbyPlaces={[]} nearbyError={new Error('secret')} onRetryNearby={retry} />);
+  expect(screen.queryByTestId('nearby-reservations-empty')).toBeNull();
+  await userEvent.setup().press(screen.getByText('다시 시도'));
+  expect(retry).toHaveBeenCalledTimes(1);
 });

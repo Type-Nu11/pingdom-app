@@ -118,7 +118,7 @@ export function toApiError(error: unknown): ApiError {
     const response = getErrorResponseData(error.response?.data);
 
     return new ApiError(response.message ?? error.message, {
-      code: response.code ?? error.code,
+      code: response.code ?? (error.response ? undefined : error.code),
       details: response.details,
       fieldErrors: response.fieldErrors,
       isNetworkError: error.response === undefined && error.code !== 'ERR_CANCELED',
@@ -130,5 +130,7 @@ export function toApiError(error: unknown): ApiError {
     });
   }
 
-  return new ApiError(error instanceof Error ? error.message : 'Unknown API error');
+  return new ApiError(error instanceof Error ? error.message : 'Unknown API error', {
+    code: error instanceof Error && error.name === 'AbortError' ? 'ERR_CANCELED' : undefined,
+  });
 }

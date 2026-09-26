@@ -1,13 +1,15 @@
 import React from 'react';
+import ApiErrorState from '../../../../shared/components/ApiErrorState';
 import { useTranslation } from 'react-i18next';
 import { useProfile } from '../../profile';
 import { SettingsRow, SettingsSection } from './SettingsLayout';
 
 export default function AccountInformation() {
   const { t } = useTranslation();
-  const { profile, isLoading, isError, refetch } = useProfile();
+  const { profile, error, isFetching, isLoading, isError, refetch } = useProfile();
   return <SettingsSection title={t('settings.account.loginSection')}>
-    {isLoading || isError || !profile ? (
+    {isError ? <ApiErrorState error={error} busy={isFetching} onRetry={() => refetch({ cancelRefetch: false })} /> : null}
+    {isError && !profile ? null : isLoading || !profile ? (
       <SettingsRow label={t(`settings.support.${isLoading ? 'loading' : isError ? 'error' : 'empty'}`)}
         onPress={isError ? () => { void refetch(); } : undefined} />
     ) : <>
