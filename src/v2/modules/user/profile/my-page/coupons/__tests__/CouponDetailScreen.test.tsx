@@ -80,7 +80,7 @@ describe('CouponDetailContainer', () => {
     );
 
     await waitFor(() => expect(screen.getByText('생일 10% 할인 쿠폰')).toBeTruthy());
-    expect(screen.getByText('사용 가능 매장')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('사용 가능 매장')).toBeTruthy());
     expect(screen.getByText('매장 방문 · 핑덤 예약 전용')).toBeTruthy();
     expect(screen.getByText('2026.08.18(화) ~ 2027.08.18(수)')).toBeTruthy();
     expect(screen.getByText('발급 후 30일')).toBeTruthy();

@@ -1,3 +1,5 @@
+import { ApiError } from '../../../../shared/api/ApiError';
+import { getApiErrorUx } from '../../../../shared/api/getApiErrorUx';
 import {
   createLabelKeyResolver,
   createStatusViewResolver,
@@ -339,10 +341,11 @@ const WINDOW_CLOSED_COUPON_CODES = new Set(['COUPON_EXPIRED', 'RESOURCE_EXPIRED'
  * inspect errors (see place-detail `placeDetailPresentation`) rather than
  * relying on `instanceof ApiError` across module boundaries.
  */
-function readError(error: unknown): { status?: number; code?: string } {
+function readError(error: unknown): { status?: number; code?: string; responseData?: unknown } {
   if (!error || typeof error !== 'object') return {};
-  const record = error as { status?: unknown; code?: unknown };
+  const record = error as { status?: unknown; code?: unknown; responseData?: unknown };
   return {
+    responseData: record.responseData,
     status: typeof record.status === 'number' ? record.status : undefined,
     code: typeof record.code === 'string' ? record.code : undefined,
   };
@@ -360,7 +363,7 @@ export function classifyConflictCause(error: unknown): CouponConflictCause {
 
 function classifyIssueError(error: unknown): CouponCtaState {
   const { status } = readError(error);
-  if (status === 401) return { kind: 'auth-required', error };
+  if (getApiErrorUx(new ApiError('', readError(error))).kind === 'authentication') return { kind: 'auth-required', error };
   if (status === 403) return { kind: 'eligibility-unmet', error };
   if (status === 404) return { kind: 'issue-not-found', error };
   if (status === 409) return { kind: 'conflict', cause: classifyConflictCause(error), error };
@@ -398,7 +401,7 @@ export function selectCouponCtaState(input: {
   if (offers.isPending) return { kind: 'offer-loading' };
   if (offers.isError) {
     const status = readError(offers.error).status;
-    if (status === 401) return { kind: 'auth-required', error: offers.error };
+    if (getApiErrorUx(new ApiError('', readError(offers.error))).kind === 'authentication') return { kind: 'auth-required', error: offers.error };
     return { kind: 'offer-error', error: offers.error };
   }
   if (list.length === 0 || activeOfferId == null) return { kind: 'no-offer' };
