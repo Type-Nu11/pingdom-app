@@ -55,10 +55,10 @@ export const useBookmarkedPlaces = (enabled = true) => {
   const placesQuery = useInfiniteQuery({
     enabled,
     initialPageParam: 1,
-    queryFn: ({ pageParam }) => placeApi.getBookmarkedPlaces({
+    queryFn: ({ pageParam, signal }) => placeApi.getBookmarkedPlaces({
       limit: BOOKMARKED_PLACES_PAGE_SIZE,
       page: pageParam,
-    }),
+    }, signal),
     queryKey: bookmarkedPlaceQueryKeys.list(),
     retry: (failureCount, error) => (
       !isBookmarkAuthenticationError(error) && failureCount < 1
@@ -81,6 +81,7 @@ export const useBookmarkedPlaces = (enabled = true) => {
     isFetchNextPageError: placesQuery.isFetchNextPageError,
     isFetchingNextPage: placesQuery.isFetchingNextPage,
     isLoading: placesQuery.isLoading,
+    isFetching: placesQuery.isFetching,
     isUnauthorized: isBookmarkAuthenticationError(placesQuery.error),
     places,
     refetch: placesQuery.refetch,
