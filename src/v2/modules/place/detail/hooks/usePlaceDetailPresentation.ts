@@ -55,6 +55,8 @@ export function usePlaceDetailPresentation(
   return {
     detail: detail.data,
     detailError: detail.error,
+    isDetailFetching: detail.isFetching,
+    refetchDetail: detail.refetch,
     isDetailPending: detail.isPending,
     presentation,
     refetchAvailability: availabilities.refetch,
