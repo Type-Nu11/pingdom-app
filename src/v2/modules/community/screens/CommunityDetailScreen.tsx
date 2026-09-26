@@ -11,6 +11,7 @@ import MoreButtonIcon from '../../../../assets/v2/icons/community/more-button.sv
 import ApiErrorState from '../../../shared/components/ApiErrorState';
 import CommentInputBar from '../components/CommentInputBar';
 import CommentsSection from '../components/CommentsSection';
+import LikeButton from '../components/LikeButton';
 import { useCreateComment, useInfiniteComments, usePost, type CommunityPostDetail } from '../hooks/useCommunity';
 import { validateCommentContent } from '../model/commentForm';
 import {
@@ -27,8 +28,8 @@ export type CommunityDetailScreenProps = {
 };
 
 // getPost only returns { postId, title, content, places } (see communityApi.ts) —
-// author, tags, photos, and like count aren't part of the real contract yet.
-// Likes (#342) own that part of the screen and stay out of scope here.
+// author, tags, and photos aren't part of the real contract yet. Like status
+// comes from a separate `GET .../likes` call (see LikeButton), not this response.
 function Places({ onOpenPlace, places }: { onOpenPlace?: (placeId: number) => void; places: CommunityPostDetail['places'] }) {
   const { t } = useTranslation();
   if (!places || places.length === 0) return null;
@@ -205,6 +206,10 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
               <Places onOpenPlace={onOpenPlace} places={postQuery.data?.places} />
             </Post>
 
+            <ActionBar>
+              <LikeButton onSignIn={onSignIn} postId={postId} />
+            </ActionBar>
+
             <CommentsSection
               commentsQuery={commentsQuery}
               now={new Date()}
@@ -264,6 +269,7 @@ const Content = styled(ScrollView)`flex: 1;`;
 const CenteredState = styled.View`flex: 1; align-items: center; justify-content: center;`;
 
 const Post = styled.View`gap: ${({ theme }) => theme.spacing.md}px; padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.xl}px;`;
+const ActionBar = styled.View`padding: 0 ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.lg}px;`;
 
 const Title = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 20px; font-weight: 700; line-height: 26px;`;
 const Body = styled.View`gap: 6px;`;

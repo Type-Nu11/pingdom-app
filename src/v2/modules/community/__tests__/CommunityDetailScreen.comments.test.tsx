@@ -39,6 +39,9 @@ describe('CommunityDetailScreen 댓글', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
     jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail());
+    // The like row (#342) is out of scope for these cases — give it a settled
+    // resolved status so it doesn't render its own error/retry UI here.
+    jest.spyOn(communityApi, 'getLikeStatus').mockResolvedValue({ likeCount: 0, liked: false, postId: 1 });
   });
 
   test('댓글을 불러오는 동안 스켈레톤을 보여준다', async () => {
