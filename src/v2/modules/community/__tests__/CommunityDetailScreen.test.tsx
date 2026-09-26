@@ -19,6 +19,9 @@ function detail(overrides: Partial<CommunityPostDetail> = {}): CommunityPostDeta
 describe('CommunityDetailScreen', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
+    // The like row (#342) is out of scope for these cases — give it a settled
+    // resolved status so it doesn't render its own error/retry UI here.
+    jest.spyOn(communityApi, 'getLikeStatus').mockResolvedValue({ likeCount: 0, liked: false, postId: 1 });
   });
 
   test('불러오는 동안 로딩 상태를 보여준다', async () => {
