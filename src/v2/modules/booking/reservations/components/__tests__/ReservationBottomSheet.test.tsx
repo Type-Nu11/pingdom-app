@@ -18,6 +18,7 @@ jest.mock('../../../../place/exploration', () => ({
 }));
 
 const navigation = {
+  onOpenCommunity: jest.fn(),
   onOpenFavorites: jest.fn(),
   onOpenMap: jest.fn(),
   onOpenRecommendations: jest.fn(),

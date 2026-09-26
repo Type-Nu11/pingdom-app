@@ -1,6 +1,9 @@
 export { MapReservationSheetProvider } from './mapReservationSheet';
 export type { MapReservationSheetProps } from './mapReservationSheet';
+export { MapCommunitySheetProvider } from './mapCommunitySheet';
+export type { MapCommunitySheetProps } from './mapCommunitySheet';
 export { default as MapSheetBottomNavigation } from './components/MapSheetBottomNavigation';
+export type { BottomSheetSnapPoint } from './hooks/useBottomSheet';
 export { RecommendationFeaturedCard } from './components/MapBottomSheet';
 export type { DecisionPlace } from './components/MapBottomSheet';
 export { usePlacePreviewImages } from '../../detail';

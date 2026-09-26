@@ -14,6 +14,7 @@ export type MapReservationSheetProps = {
   nearbyPlaces: DecisionPlace[];
   reservationPlaceByAvailabilityId: Record<string, DecisionPlace>;
   onHandlePress: () => void;
+  onOpenCommunity: () => void;
   onOpenFavorites: () => void;
   onOpenMap: () => void;
   onOpenRecommendations: () => void;

@@ -7,6 +7,8 @@ export { parsePlaceId, parseCheckInId } from '../../modules/place/core';
 export type { PlaceId, CheckInId } from '../../modules/place/core';
 
 export const V2_ROUTES = {
+  CommunityDetail: 'CommunityDetail',
+  CommunityWrite: 'CommunityWrite',
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   CreateReservation: 'CreateReservation',
@@ -27,6 +29,10 @@ export const V2_ROUTES = {
 } as const;
 
 export type V2StackParamList = {
+  CommunityDetail: {
+    postId: number;
+  };
+  CommunityWrite: { initialCategoryId?: string } | undefined;
   CouponBox: undefined;
   CouponDetail: {
     couponId: number;

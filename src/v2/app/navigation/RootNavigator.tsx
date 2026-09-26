@@ -9,6 +9,7 @@ import { useNotificationOpenSync } from '../../modules/user/notifications/lifecy
 import type { NotificationRoute } from '../../modules/user/notifications/routing';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../modules/user/settings';
 import HomeScreen from '../home/screens/HomeScreen';
+import { CommunityDetailScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../modules/community';
 import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
@@ -51,6 +52,11 @@ function HomeRouteScreen() {
 function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
   return (
     <MapScreen
+      onOpenCommunityPost={(postId) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })}
+      onOpenCommunityWrite={(categoryId) => navigation.navigate(
+        V2_ROUTES.CommunityWrite,
+        categoryId ? { initialCategoryId: categoryId } : undefined,
+      )}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenVisitVerification={() => navigation.navigate(
         V2_ROUTES.VisitVerificationSession,
@@ -64,6 +70,37 @@ function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
         });
       }}
       onSignIn={() => void clearTokenSession()}
+    />
+  );
+}
+
+function CommunityDetailRouteScreen({ navigation, route }: V2ScreenProps<'CommunityDetail'>) {
+  return (
+    <CommunityDetailScreen
+      onBack={navigation.goBack}
+      onOpenPlace={(value) => {
+        const placeId = parsePlaceId(value);
+        if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
+      }}
+      onSignIn={() => void clearTokenSession()}
+      postId={route.params.postId}
+    />
+  );
+}
+
+function CommunityWriteRouteScreen({ navigation, route }: V2ScreenProps<'CommunityWrite'>) {
+  const hasUnsavedInput = useDiscardOnLeaveGuard(navigation);
+
+  return (
+    <CommunityWriteScreen
+      initialCategoryId={route.params?.initialCategoryId}
+      onBack={navigation.goBack}
+      onDirtyChange={(dirty) => { hasUnsavedInput.current = dirty; }}
+      onSignIn={() => void clearTokenSession()}
+      onSubmitSuccess={({ postId }) => {
+        hasUnsavedInput.current = false;
+        navigation.replace(V2_ROUTES.CommunityDetail, { postId });
+      }}
     />
   );
 }
@@ -253,6 +290,8 @@ export default function RootNavigator() {
     <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavigationReady(true)}>
       <Stack.Navigator initialRouteName={V2_ROUTES.Map} screenOptions={{ headerShown: false }}>
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
+        <Stack.Screen name={V2_ROUTES.CommunityDetail} component={CommunityDetailRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CommunityWrite} component={CommunityWriteRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Map} component={MapRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
