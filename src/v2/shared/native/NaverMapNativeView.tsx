@@ -1,5 +1,6 @@
 import {
   type NativeSyntheticEvent,
+  type HostComponent,
   requireNativeComponent,
   type ViewProps,
 } from 'react-native';
@@ -53,6 +54,14 @@ export type NaverMapNativeViewProps = ViewProps & {
  * 등록된 이름이다. React Native가 현재 플랫폼의 뷰를 생성하고 위 props/이벤트를 연결한다.
  * SDK 설치와 매니저 등록은 네이티브 빌드에 포함되므로 새로 연결할 때 앱 재빌드가 필요하다.
  */
-const NaverMapNativeView = requireNativeComponent<NaverMapNativeViewProps>('NaverMapView');
+// Fast Refresh는 이 파일을 다시 실행해도 RN의 뷰 등록 정보를 유지한다.
+// 같은 JS 런타임에서는 최초 생성한 호스트를 재사용해 중복 등록을 막는다.
+// 앱 전체 Reload 시에는 런타임과 캐시가 함께 초기화된다.
+const nativeMapRuntime = globalThis as typeof globalThis & {
+  __pingdomNaverMapHost?: HostComponent<NaverMapNativeViewProps>;
+};
+const NaverMapNativeView = nativeMapRuntime.__pingdomNaverMapHost ?? (
+  nativeMapRuntime.__pingdomNaverMapHost = requireNativeComponent<NaverMapNativeViewProps>('NaverMapView')
+);
 
 export default NaverMapNativeView;
