@@ -16,6 +16,8 @@ type MapCanvasProps = {
   zoomLevel: number;
 };
 
+// 연결 흐름: MapScreen → MapCanvas → NaverMapAdapter → 각 플랫폼의 NaverMapView.
+// 화면이 계산한 좌표·마커를 전달하고, SDK별 속성/이벤트 변환은 어댑터가 담당한다.
 const MapCanvas = ({
   centerLat,
   centerLng,

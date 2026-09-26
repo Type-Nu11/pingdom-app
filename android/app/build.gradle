@@ -110,6 +110,8 @@ def readEnvValue(String key) {
 
 def kakaoNativeAppKey = System.getenv("KAKAO_NATIVE_APP_KEY") ?: readEnvValue("KAKAO_NATIVE_APP_KEY") ?: ""
 
+// 빌드 환경변수 → 루트 .env 순으로 지도 SDK의 공개 식별자를 읽는다.
+// 아래 BuildConfig 필드를 통해 MainApplication에 전달하며 Client Secret은 앱에 넣지 않는다.
 def naverMapClientId = System.getenv("NAVER_MAP_CLIENT_ID") ?: readEnvValue("NAVER_MAP_CLIENT_ID") ?: ""
 
 android {

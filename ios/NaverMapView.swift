@@ -11,6 +11,9 @@ private struct NaverPlaceMarker: Equatable {
 
 @objc(NaverMapView)
 final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDelegate {
+    // pod install 시 .env의 NAVER_MAP_CLIENT_ID → NaverMap.generated.xcconfig를 생성한다.
+    // Debug/Release 설정을 거쳐 Info.plist의 NMFNcpKeyId로 들어가며 SDK가 이 값으로 인증한다.
+    // iOS Bundle ID는 네이버 클라우드 Maps 앱에 등록해야 한다. Client Secret은 사용하지 않는다.
     private let mapView = NMFMapView(frame: .zero)
     private var placeData: [NaverPlaceMarker] = []
     private var placeMarkers: [String: NMFMarker] = [:]
@@ -40,6 +43,8 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         addSubview(mapView)
         mapView.addCameraDelegate(delegate: self)
         mapView.touchDelegate = self
+        // 로고는 숨기거나 다른 UI로 가리지 않고, 검색/카테고리 아래로 위치와 여백만 조정한다.
+        // https://navermaps.github.io/ios-map-sdk/guide-ko/4-1.html
         mapView.logoAlign = .leftTop
         mapView.logoMargin = UIEdgeInsets(top: 160, left: 16, bottom: 0, right: 0)
         userMarker.iconImage = NMFOverlayImage(image: makeUserLocationImage())
@@ -55,7 +60,8 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         mapView.frame = bounds
     }
 
-    // React batches latitude/longitude/follow props before applying one camera update.
+    // .m에 공개한 props를 RN이 모두 설정한 뒤 마커와 카메라를 한 번에 갱신한다.
+    // 위도만 바뀐 중간 좌표로 이동하는 것을 막으며, 이후 SDK 이벤트는 RCTDirectEventBlock으로 JS에 전달한다.
     override func didSetProps(_ changedProps: [String]!) {
         super.didSetProps(changedProps)
         applyProps()

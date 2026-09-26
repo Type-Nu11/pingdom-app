@@ -51,6 +51,8 @@ class MainApplication : Application(), ReactApplication {
     } else {
       KakaoMapSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
     }
+    // Gradle이 .env에서 읽은 ID로 지도 뷰 생성 전에 SDK 인증 클라이언트를 설정한다.
+    // 이 ID의 네이버 클라우드 Maps 앱에 Android 패키지명과 Dynamic Map 사용이 등록되어 있어야 한다.
     if (BuildConfig.NAVER_MAP_CLIENT_ID.isBlank()) {
       Log.e(TAG, "NAVER_MAP_CLIENT_ID is empty. Set it in .env before building.")
     } else {

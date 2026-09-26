@@ -1,5 +1,7 @@
 #import <React/RCTViewManager.h>
 
+// Swift 매니저와 @objc 속성을 React Native에 공개하는 Objective-C 브리지 선언이다.
+// JS props 이름은 Android의 @ReactProp 이름 및 NaverMapNativeView.tsx의 타입과 맞춘다.
 @interface RCT_EXTERN_MODULE(NaverMapViewManager, RCTViewManager)
 RCT_EXPORT_VIEW_PROPERTY(centerLat, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(centerLng, NSNumber)

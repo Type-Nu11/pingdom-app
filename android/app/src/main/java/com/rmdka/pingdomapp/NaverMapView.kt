@@ -67,6 +67,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         addView(mapView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         mapView.onCreate(null)
         reactContext.addLifecycleEventListener(this)
+        // SDK의 지도 제어 객체가 준비된 뒤에만 마커/카메라 API를 호출한다.
+        // 준비 전에 들어온 React props는 필드에 보관했다가 마지막 applyProps()에서 반영한다.
         mapView.getMapAsync { map ->
             if (!disposed) {
                 naverMap = map
@@ -75,6 +77,9 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
                     isLocationButtonEnabled = false
                     isCompassEnabled = false
                     isScaleBarEnabled = false
+                    // 공식 SDK 안내상 로고는 숨기거나 다른 UI로 가리지 않고 위치/여백만 조정한다.
+                    // https://navermaps.github.io/android-map-sdk/guide-ko/4-1.html
+                    // 검색창·카테고리 아래 왼쪽에 두어 우측의 앱 버튼과 겹치지 않게 한다.
                     logoGravity = Gravity.TOP or Gravity.LEFT
                     setLogoMargin(dp(16f), dp(160f), 0, 0)
                 }
@@ -132,6 +137,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         }
     }
 
+    // 앱의 마커 ID를 SDK Marker와 연결한다. SDK 터치 시 같은 ID를 JS에 돌려줘 장소를 선택한다.
+    // 현재 위치도 앱에서 받은 좌표로 표시하며, SDK가 별도로 GPS 권한을 요청하지 않는다.
     fun applyProps() {
         if (disposed) return
         val map = naverMap ?: return
@@ -225,6 +232,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     override fun onHostPause() { hostResumed = false; pauseMap() }
     override fun onHostDestroy() { dispose() }
 
+    // RN 화면 부착 상태와 앱 foreground 상태를 SDK 수명주기에 전달한다.
+    // 화면 이탈/백그라운드에서는 pauseMap(), 실제 뷰 폐기 시에는 dispose()로 렌더링 자원을 정리한다.
     private fun updateLifecycle() {
         if (disposed || !isAttachedToWindow || !hostResumed) return
         if (!started) { mapView.onStart(); started = true }

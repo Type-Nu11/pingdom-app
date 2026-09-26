@@ -7,6 +7,7 @@ import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 
+// @ReactProp은 JS props를 Kotlin setter에 연결하고, 아래 이벤트 맵은 native → JS 콜백을 연결한다.
 class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
     override fun getName(): String = "NaverMapView"
 
@@ -14,6 +15,7 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
         return NaverMapView(reactContext)
     }
 
+    // 위도/경도가 각각 전달되는 도중에는 이동하지 않고 한 묶음의 props 수신 후 반영한다.
     override fun onAfterUpdateTransaction(view: NaverMapView) {
         super.onAfterUpdateTransaction(view)
         view.applyProps()
@@ -47,6 +49,8 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
     fun setZoomLevel(view: NaverMapView, zoomLevel: Int) {
         view.setZoomLevel(zoomLevel)
     }
+    // RN의 이 브리지는 nullable Double setter를 지원하지 않는다. 삭제된 위치 prop은
+    // NaN으로 받아 뷰의 validCoordinate 검사에서 제외하므로 (0, 0)에 사용자 마커가 생기지 않는다.
     @ReactProp(name = "userLat", defaultDouble = Double.NaN)
     fun setUserLat(view: NaverMapView, userLat: Double) {
         view.setUserLat(userLat)
