@@ -46,6 +46,27 @@ export const postDetailFixture = {
   title: '대소고 다녀왔어요',
 } satisfies CommunityPostDetail;
 
+export const postDetailMultiplePlacesFixture = {
+  content: '오늘 하루 여러 곳을 다녀왔어요.',
+  places: [
+    { deleted: false, placeId: 17, placeName: '대소고' },
+    { deleted: false, placeId: 21, placeName: '오아시스 영화관' },
+    { deleted: false, placeId: 22, placeName: '다사 전통시장' },
+  ],
+  postId: 2,
+  title: '오늘 오아시스 영화 봤어요',
+} satisfies CommunityPostDetail;
+
+export const postDetailWithDeletedPlaceFixture = {
+  content: '이 게시글의 연결 장소 중 하나는 삭제되었어요.',
+  places: [
+    { deleted: false, placeId: 17, placeName: '대소고' },
+    { deleted: true, placeId: undefined, placeName: '삭제된 장소예요' },
+  ],
+  postId: 3,
+  title: '삭제된 장소가 포함된 글',
+} satisfies CommunityPostDetail;
+
 export const commentPageFixture = {
   comments: [
     {

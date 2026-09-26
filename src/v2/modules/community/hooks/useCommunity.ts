@@ -234,10 +234,16 @@ export function useToggleLike(
   });
 }
 
+/**
+ * Non-idempotent: no AbortSignal (leaving the screen mid-request must not
+ * cancel a view the server may already be counting) and retry disabled
+ * (retrying a timed-out request would risk a second view for the same tap).
+ */
 export function useRecordPlaceView(api: Pick<CommunityApi, 'recordPlaceView'> = communityApi) {
   return useMutation({
     mutationFn: ({ placeId, postId }: { placeId: number; postId: number }) =>
       api.recordPlaceView(postId, placeId),
+    retry: false,
   });
 }
 

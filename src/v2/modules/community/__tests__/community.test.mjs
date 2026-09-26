@@ -60,6 +60,26 @@ test('Community mock handlers cover the full category → post → comment → l
   assert.equal(placeView.id, 17);
   assert.equal(placeView.communityViewCount, 13);
 
+  const multiplePlacesDetail = await mockApiClient.get('/community/posts/2');
+  assert.equal(multiplePlacesDetail.places.length, 3);
+
+  const deletedPlaceDetail = await mockApiClient.get('/community/posts/3');
+  assert.equal(deletedPlaceDetail.places[1].deleted, true);
+  assert.equal(deletedPlaceDetail.places[1].placeId, undefined);
+
+  await assert.rejects(
+    mockApiClient.post('/community/posts/1/places/401/view'),
+    (error) => error.status === 401 && error.code === 'INVALID_TOKEN',
+  );
+  await assert.rejects(
+    mockApiClient.post('/community/posts/1/places/403/view'),
+    (error) => error.status === 403 && error.code === 'ACCESS_DENIED',
+  );
+  await assert.rejects(
+    mockApiClient.post('/community/posts/1/places/500/view'),
+    (error) => error.isNetworkError === true,
+  );
+
   const postReport = await mockApiClient.post('/community/posts/1/reports', {
     description: '같은 광고를 반복 게시합니다.',
     reason: 'SPAM',

@@ -13,12 +13,14 @@ import CommentInputBar from '../components/CommentInputBar';
 import CommentsSection from '../components/CommentsSection';
 import LikeButton from '../components/LikeButton';
 import { useCreateComment, useInfiniteComments, usePost, type CommunityPostDetail } from '../hooks/useCommunity';
+import { useCommunityPlaceEntry } from '../hooks/useCommunityPlaceEntry';
 import { validateCommentContent } from '../model/commentForm';
 import {
   communityCommentBannerAction,
   communityCommentErrorKind,
   communityCommentFieldError,
 } from '../model/commentSubmitError';
+import type { PlaceEntryError } from '../model/placeEntryError';
 
 export type CommunityDetailScreenProps = {
   onBack: () => void;
@@ -27,10 +29,34 @@ export type CommunityDetailScreenProps = {
   postId: number;
 };
 
+function placeEntryErrorMessageKey(kind: PlaceEntryError['kind']): string {
+  if (kind === 'authentication') return 'common.apiError.authentication.description';
+  if (kind === 'authorization') return 'common.apiError.authorization.description';
+  if (kind === 'network') return 'common.apiError.network.description';
+  return 'community.detail.placeCard.errors.unavailable';
+}
+
+type PlaceEntry = ReturnType<typeof useCommunityPlaceEntry>;
+
 // getPost only returns { postId, title, content, places } (see communityApi.ts) —
 // author, tags, and photos aren't part of the real contract yet. Like status
 // comes from a separate `GET .../likes` call (see LikeButton), not this response.
-function Places({ onOpenPlace, places }: { onOpenPlace?: (placeId: number) => void; places: CommunityPostDetail['places'] }) {
+// Thumbnail/category display (the Figma PlaceTag design) is deliberately
+// skipped: the contract only gives `placeName`, and prefetching a place GET
+// to fill them in would bypass the view-count endpoint this card exists for.
+function Places({
+  onOpenPlace,
+  onPlaceUnavailable,
+  onSignIn,
+  placeEntry,
+  places,
+}: {
+  onOpenPlace?: (placeId: number) => void;
+  onPlaceUnavailable?: () => void;
+  onSignIn?: () => void;
+  placeEntry: PlaceEntry;
+  places: CommunityPostDetail['places'];
+}) {
   const { t } = useTranslation();
   if (!places || places.length === 0) return null;
 
@@ -40,22 +66,76 @@ function Places({ onOpenPlace, places }: { onOpenPlace?: (placeId: number) => vo
         const key = place.placeId ?? `place-${index}`;
         if (place.deleted || place.placeId === undefined) {
           return (
-            <PlaceRowStatic key={key}>
+            <PlaceRowStatic
+              accessibilityLabel={place.placeName ?? t('community.detail.placeDeleted')}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: true }}
+              disabled
+              key={key}
+            >
               <PlaceName $muted numberOfLines={1}>{place.placeName ?? t('community.detail.placeDeleted')}</PlaceName>
             </PlaceRowStatic>
           );
         }
         const placeId = place.placeId;
+        const busy = placeEntry.isBusy(placeId);
+        const error = placeEntry.errorFor(placeId);
+
+        const attempt = () => {
+          if (busy) return;
+          placeEntry.openPlace(placeId, {
+            onError: (error) => {
+              AccessibilityInfo.announceForAccessibility(t('community.detail.placeCard.announceFailure'));
+              if (error.kind === 'unavailable') onPlaceUnavailable?.();
+            },
+            onSuccess: () => onOpenPlace?.(placeId),
+          });
+        };
+
         return (
-          <PlaceRowPressable
-            accessibilityLabel={`${t('community.detail.placeTagPrefix')} ${place.placeName ?? ''}`}
-            accessibilityRole="button"
-            key={key}
-            onPress={onOpenPlace ? () => onOpenPlace(placeId) : undefined}
-          >
-            <PlaceName numberOfLines={1}>{place.placeName}</PlaceName>
-            <ChevronRightIcon height={20} width={20} />
-          </PlaceRowPressable>
+          <PlaceCardColumn key={key}>
+            <PlaceRowPressable
+              accessibilityHint={t('community.detail.placeCard.a11yHint')}
+              accessibilityLabel={t('community.detail.placeCard.a11yLabel', { name: place.placeName ?? '' })}
+              accessibilityRole="button"
+              accessibilityState={{ busy, disabled: busy }}
+              disabled={busy}
+              onPress={onOpenPlace ? attempt : undefined}
+              testID={`v2-community-place-${placeId}`}
+            >
+              <PlaceName numberOfLines={1}>{place.placeName}</PlaceName>
+              {busy ? (
+                <ActivityIndicator size="small" testID={`v2-community-place-busy-${placeId}`} />
+              ) : (
+                <ChevronRightIcon height={20} width={20} />
+              )}
+            </PlaceRowPressable>
+
+            {error ? (
+              <PlaceErrorRow>
+                <PlaceErrorText accessibilityLiveRegion="assertive" accessibilityRole="alert">
+                  {t(placeEntryErrorMessageKey(error.kind))}
+                </PlaceErrorText>
+                {error.kind === 'network' ? (
+                  <PlaceRetryButton
+                    accessibilityRole="button"
+                    onPress={attempt}
+                    testID={`v2-community-place-retry-${placeId}`}
+                  >
+                    <PlaceRetryLabel>{t('common.apiError.actions.retry')}</PlaceRetryLabel>
+                  </PlaceRetryButton>
+                ) : error.kind === 'authentication' ? (
+                  <PlaceRetryButton
+                    accessibilityRole="button"
+                    onPress={onSignIn}
+                    testID={`v2-community-place-sign-in-${placeId}`}
+                  >
+                    <PlaceRetryLabel>{t('common.apiError.actions.signIn')}</PlaceRetryLabel>
+                  </PlaceRetryButton>
+                ) : null}
+              </PlaceErrorRow>
+            ) : null}
+          </PlaceCardColumn>
         );
       })}
     </PlaceList>
@@ -68,6 +148,7 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
   const postQuery = usePost(postId);
   const commentsQuery = useInfiniteComments(postId, {}, { enabled: postQuery.isSuccess });
   const createComment = useCreateComment(postId);
+  const placeEntry = useCommunityPlaceEntry(postId);
 
   const scrollRef = useRef<ScrollView>(null);
   const commentsSectionY = useRef(0);
@@ -203,7 +284,13 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
                 ))}
               </Body>
 
-              <Places onOpenPlace={onOpenPlace} places={postQuery.data?.places} />
+              <Places
+                onOpenPlace={onOpenPlace}
+                onPlaceUnavailable={() => void postQuery.refetch()}
+                onSignIn={onSignIn}
+                placeEntry={placeEntry}
+                places={postQuery.data?.places}
+              />
             </Post>
 
             <ActionBar>
@@ -276,12 +363,14 @@ const Body = styled.View`gap: 6px;`;
 const BodyParagraph = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; line-height: ${({ theme }) => theme.typography.body.lineHeight}px;`;
 
 const PlaceList = styled.View`gap: ${({ theme }) => theme.spacing.sm}px;`;
-const PlaceRowStatic = styled.View`
+const PlaceCardColumn = styled.View`gap: ${({ theme }) => theme.spacing.xs}px;`;
+const PlaceRowStatic = styled.Pressable`
   flex-direction: row; align-items: center; justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.sm}px;
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border-radius: ${({ theme }) => theme.radius.md}px;
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
+  opacity: 0.6;
 `;
 const PlaceRowPressable = styled.Pressable`
   flex-direction: row; align-items: center; justify-content: space-between;
@@ -291,6 +380,11 @@ const PlaceRowPressable = styled.Pressable`
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 const PlaceName = styled(AppText)<{ $muted?: boolean }>`flex-shrink: 1; color: ${({ $muted, theme }) => ($muted ? theme.colors.textMuted : theme.colors.textStrong)}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: 700;`;
+
+const PlaceErrorRow = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
+const PlaceErrorText = styled(AppText)`flex-shrink: 1; color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const PlaceRetryButton = styled.Pressable`align-self: flex-start; padding: 6px 14px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary};`;
+const PlaceRetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
 const BannerWrap = styled.View`padding: 0 ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.lg}px;`;
 const ErrorBanner = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.dangerSoft};`;
