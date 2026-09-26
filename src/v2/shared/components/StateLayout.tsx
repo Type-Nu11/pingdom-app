@@ -6,6 +6,7 @@ import { Text } from './Typography';
 
 export type StateLayoutProps = {
   actionLabel?: string;
+  actionBusy?: boolean;
   description?: string;
   fill?: boolean;
   onAction?: () => void;
@@ -15,6 +16,7 @@ export type StateLayoutProps = {
 
 export default function StateLayout({
   actionLabel,
+  actionBusy,
   description,
   fill = false,
   onAction,
@@ -24,11 +26,11 @@ export default function StateLayout({
   return (
     <Container $fill={fill} accessibilityLiveRegion="polite">
       {visual}
-      {title ? <Title>{title}</Title> : null}
+      {title ? <Title accessibilityRole="header">{title}</Title> : null}
       {description ? <Description>{description}</Description> : null}
       {actionLabel && onAction ? (
         <Action>
-          <Button label={actionLabel} onPress={onAction} variant="secondary" />
+          <Button loading={actionBusy} label={actionLabel} onPress={onAction} variant="secondary" />
         </Action>
       ) : null}
     </Container>
@@ -61,5 +63,6 @@ const Description = styled(Text)`
 `;
 
 const Action = styled.View`
+  max-width: 100%;
   margin-top: ${({ theme }) => theme.spacing.sm}px;
 `;
