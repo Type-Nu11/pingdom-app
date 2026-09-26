@@ -66,6 +66,11 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
         view.setFollowUser(followUser)
     }
 
+    @ReactProp(name = "nightMode", defaultBoolean = false)
+    fun setNightMode(view: NaverMapView, nightMode: Boolean) {
+        view.setNightMode(nightMode)
+    }
+
     @ReactProp(name = "markers")
     fun setMarkers(view: NaverMapView, markers: ReadableArray?) {
         view.setMarkers(markers)

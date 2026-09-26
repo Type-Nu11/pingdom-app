@@ -19,6 +19,12 @@ NAVER Cloud Maps, and enable Dynamic Map.
 
 ## Behavior
 
+- App appearance (Light/Dark/System) is resolved by the theme provider and forwarded
+  through `nightMode`. Dark uses Navi + night mode because Basic does not support
+  night mode; Light restores Basic. This also means map labels/layers can differ
+  between themes (for example, Navi does not support indoor maps). Styles update
+  on the existing native view, preserving the camera and marker selection.
+
 - Category artwork is reused for default/hot/search markers, as in the existing V2 UI.
 - Place marker IDs and press events are preserved. Both platforms offer a 54-point/dp
   nearest-marker touch fallback, with direct marker taps consumed once.

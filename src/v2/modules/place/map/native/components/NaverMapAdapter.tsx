@@ -1,6 +1,6 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import NaverMapNativeView, {
   type NaverMapNativeMarker,
@@ -37,12 +37,15 @@ export default function NaverMapAdapter({
   userCoordinate,
   zoomLevel = 17,
 }: NaverMapAdapterProps) {
+  // 앱 설정의 LIGHT/DARK/SYSTEM을 해석한 최종 테마를 네이티브 지도에도 전달한다.
+  const theme = useTheme();
   return (
     <MapView
       centerLat={center.lat}
       centerLng={center.lng}
       followUser={followUser}
       markers={markers}
+      nightMode={theme.colorScheme === 'dark'}
       onCameraIdle={(event) => onCameraIdle?.(event.nativeEvent)}
       onMarkerPress={(event) => onMarkerSelect?.(event.nativeEvent.markerId)}
       style={style}

@@ -40,6 +40,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private var userLat: Double? = null
     private var userLng: Double? = null
     private var followUser = true
+    private var nightMode = false
+    private var appliedNightMode: Boolean? = null
     private var zoomLevel = 17
     private var placeData = emptyList<NaverPlaceMarker>()
     private var markersDirty = true
@@ -117,6 +119,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun setUserLng(value: Double?) { userLng = value }
     fun setZoomLevel(value: Int) { zoomLevel = value.coerceIn(0, 21) }
     fun setFollowUser(value: Boolean) { followUser = value }
+    fun setNightMode(value: Boolean) { nightMode = value }
 
     fun setMarkers(value: ReadableArray?) {
         val next = buildList {
@@ -142,6 +145,13 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun applyProps() {
         if (disposed) return
         val map = naverMap ?: return
+        if (appliedNightMode != nightMode) {
+            // Basic 유형에는 야간 모드가 적용되지 않으므로 다크 테마에서 Navi로 전환한다.
+            // 지도 뷰를 재생성하지 않아 카메라와 마커 선택 상태는 유지된다.
+            map.mapType = if (nightMode) NaverMap.MapType.Navi else NaverMap.MapType.Basic
+            map.isNightModeEnabled = nightMode
+            appliedNightMode = nightMode
+        }
         if (markersDirty) {
             val ids = placeData.map { it.id }.toSet()
             placeMarkers.keys.filter { it !in ids }.forEach { id ->

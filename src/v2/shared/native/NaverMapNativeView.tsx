@@ -35,6 +35,7 @@ export type NaverMapNativeViewProps = ViewProps & {
   centerLat: number;
   centerLng: number;
   followUser?: boolean;
+  nightMode?: boolean;
   markers?: NaverMapNativeMarker[];
   onCameraIdle?: (event: NaverMapCameraIdleEvent) => void;
   onMarkerPress?: (event: NaverMapMarkerPressEvent) => void;

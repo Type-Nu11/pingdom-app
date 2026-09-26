@@ -22,6 +22,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     private var markersDirty = true
     private var lastCamera: (lat: Double, lng: Double, zoom: Double)?
     private var lastFollowUser = false
+    private var appliedNightMode: Bool?
 
     @objc var centerLat: NSNumber?
     @objc var centerLng: NSNumber?
@@ -29,6 +30,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     @objc var userLat: NSNumber?
     @objc var userLng: NSNumber?
     @objc var followUser = true
+    @objc var nightMode = false
     @objc var markers: NSArray? {
         didSet {
             let next = parseMarkers(markers)
@@ -84,6 +86,13 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     }
 
     private func applyProps() {
+        if appliedNightMode != nightMode {
+            // 네이버 SDK 야간 모드는 Navi 유형에서 지원한다. 라이트 모드에서는 Basic으로 복원한다.
+            // 같은 지도 뷰에서 스타일만 변경하여 카메라와 마커 선택 상태를 유지한다.
+            mapView.mapType = nightMode ? .navi : .basic
+            mapView.isNightModeEnabled = nightMode
+            appliedNightMode = nightMode
+        }
         if markersDirty {
             let ids = Set(placeData.map { $0.id })
             for id in Array(placeMarkers.keys) where !ids.contains(id) {
