@@ -242,6 +242,15 @@ api.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as RetryableRequestConfig | undefined;
         const status = error.response?.status;
+        // Signing/proxy failures cannot be repaired by refreshing a user token.
+        // Preserve the diagnostic response without logging out a valid session.
+        if (status === 401 && typeof error.response?.data === 'string'
+            && /^\s*</.test(error.response.data)) return Promise.reject(error);
+        const responseCode = (error.response?.data as { code?: unknown } | undefined)?.code;
+        if (typeof responseCode === 'string' && [
+            'SIGNATURE_REQUIRED', 'INVALID_SIGNATURE',
+            'REQUEST_TIMESTAMP_OUT_OF_RANGE', 'SIGNING_KEY_EXPIRED',
+        ].includes(responseCode)) return Promise.reject(error);
         const isPublicAuthRequest = isPublicAuthUrl(originalRequest?.url);
         const shouldSkipRetry =
             !originalRequest ||
