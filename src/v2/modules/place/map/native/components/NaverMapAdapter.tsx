@@ -37,7 +37,10 @@ export default function NaverMapAdapter({
   userCoordinate,
   zoomLevel = 17,
 }: NaverMapAdapterProps) {
-  // 앱 설정의 LIGHT/DARK/SYSTEM을 해석한 최종 테마를 네이티브 지도에도 전달한다.
+  // AppThemeProvider가 앱 설정(LIGHT/DARK/SYSTEM)과 기기 테마를 합쳐 결정한 테마를 읽는다.
+  // 설정 또는 SYSTEM 모드의 기기 테마가 바뀌면 다시 렌더링되어 아래 nightMode prop도 갱신된다.
+  // 전달 경로: NaverMapNativeView → Android @ReactProp / iOS RCT_EXPORT_VIEW_PROPERTY
+  // → 각 플랫폼 NaverMapView.applyProps() → 네이버 SDK 야간 모드.
   const theme = useTheme();
   return (
     <MapView

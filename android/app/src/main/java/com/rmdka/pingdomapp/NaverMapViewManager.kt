@@ -66,6 +66,7 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
         view.setFollowUser(followUser)
     }
 
+    // JS의 nightMode를 저장하고, props 묶음 수신이 끝난 onAfterUpdateTransaction에서 적용한다.
     @ReactProp(name = "nightMode", defaultBoolean = false)
     fun setNightMode(view: NaverMapView, nightMode: Boolean) {
         view.setNightMode(nightMode)

@@ -35,6 +35,7 @@ export type NaverMapNativeViewProps = ViewProps & {
   centerLat: number;
   centerLng: number;
   followUser?: boolean;
+  /** 앱의 최종 테마가 dark이면 true. 양쪽 네이티브 브리지에서 Navi + 야간 모드로 반영한다. */
   nightMode?: boolean;
   markers?: NaverMapNativeMarker[];
   onCameraIdle?: (event: NaverMapCameraIdleEvent) => void;

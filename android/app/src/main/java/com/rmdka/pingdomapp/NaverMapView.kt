@@ -119,6 +119,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun setUserLng(value: Double?) { userLng = value }
     fun setZoomLevel(value: Int) { zoomLevel = value.coerceIn(0, 21) }
     fun setFollowUser(value: Boolean) { followUser = value }
+    // SDK 준비 전에도 최신 테마를 보관한다. getMapAsync 완료 시 applyProps()가 반영한다.
     fun setNightMode(value: Boolean) { nightMode = value }
 
     fun setMarkers(value: ReadableArray?) {
@@ -145,9 +146,11 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun applyProps() {
         if (disposed) return
         val map = naverMap ?: return
+        // 최초 적용(null) 또는 테마 변경 때만 SDK 스타일을 갱신한다.
         if (appliedNightMode != nightMode) {
             // Basic 유형에는 야간 모드가 적용되지 않으므로 다크 테마에서 Navi로 전환한다.
             // 지도 뷰를 재생성하지 않아 카메라와 마커 선택 상태는 유지된다.
+            // 라이트로 돌아오면 Basic으로 복원하며, 지도 유형에 따라 라벨/실내 지도 표시가 달라질 수 있다.
             map.mapType = if (nightMode) NaverMap.MapType.Navi else NaverMap.MapType.Basic
             map.isNightModeEnabled = nightMode
             appliedNightMode = nightMode

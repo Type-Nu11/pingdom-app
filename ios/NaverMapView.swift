@@ -86,9 +86,11 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     }
 
     private func applyProps() {
+        // RN이 전달한 nightMode를 최초 적용(nil) 또는 테마 변경 때만 SDK에 반영한다.
         if appliedNightMode != nightMode {
             // 네이버 SDK 야간 모드는 Navi 유형에서 지원한다. 라이트 모드에서는 Basic으로 복원한다.
             // 같은 지도 뷰에서 스타일만 변경하여 카메라와 마커 선택 상태를 유지한다.
+            // 지도 유형도 바뀌므로 테마에 따라 라벨/실내 지도 표시가 달라질 수 있다.
             mapView.mapType = nightMode ? .navi : .basic
             mapView.isNightModeEnabled = nightMode
             appliedNightMode = nightMode

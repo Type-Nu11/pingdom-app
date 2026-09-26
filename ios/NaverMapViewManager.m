@@ -10,6 +10,7 @@ RCT_EXPORT_VIEW_PROPERTY(markers, NSArray)
 RCT_EXPORT_VIEW_PROPERTY(userLat, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(userLng, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(followUser, BOOL)
+// JS의 nightMode를 Swift @objc 프로퍼티에 연결한다. didSetProps에서 SDK에 반영한다.
 RCT_EXPORT_VIEW_PROPERTY(nightMode, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(onCameraIdle, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onMarkerPress, RCTDirectEventBlock)
