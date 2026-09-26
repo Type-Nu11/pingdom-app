@@ -63,6 +63,15 @@ export const commentPageFixture = {
   totalPages: 1,
 } satisfies CommunityCommentPage;
 
+export const emptyCommentPageFixture = {
+  comments: [],
+  hasNext: false,
+  limit: 20,
+  page: 1,
+  totalCount: 0,
+  totalPages: 0,
+} satisfies CommunityCommentPage;
+
 export const createPostResponseFixture = {
   placeIds: [17],
   postId: 9001,
