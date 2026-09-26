@@ -14,7 +14,7 @@ import {
   useProfile,
   useSaveProfile,
 } from '../hooks/useProfile';
-import { HeaderBackButton } from '../../../../shared/components';
+import { ApiErrorState, LoadingState, HeaderBackButton } from '../../../../shared/components';
 import CheckmarkIcon from '../../../../shared/assets/icons/checkmark.svg';
 import PencilIcon from '../../../../shared/assets/icons/pencil.svg';
 import EyeOpenIcon from '../../../../shared/assets/icons/eye-open.svg';
@@ -28,7 +28,7 @@ export type ProfileEditScreenProps = {
 export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const { isError: isProfileError, isLoading: isProfileLoading, profile } = useProfile();
+  const { error: profileError, isFetching, refetch, isError: isProfileError, isLoading: isProfileLoading, profile } = useProfile();
 
   const changeProfileImage = useChangeProfileImage();
   const saveProfile = useSaveProfile();
@@ -207,6 +207,9 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
             <CheckmarkIcon height={44} width={44} />
           </IconButton>
         </TopBar>
+
+        {isProfileLoading ? <LoadingState description={t('myPage.profileLoading')} /> : null}
+        {isProfileError ? <ApiErrorState error={profileError} busy={isFetching} onRetry={() => refetch({ cancelRefetch: false })} /> : null}
 
         <AvatarSection>
           <AvatarWrapper
