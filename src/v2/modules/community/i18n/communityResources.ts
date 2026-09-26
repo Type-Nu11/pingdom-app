@@ -21,6 +21,14 @@ export const communityResources = {
       settings: 'Post options',
       placeTagPrefix: 'View place',
       placeDeleted: 'This place was removed',
+      placeCard: {
+        a11yLabel: 'Connected place, {{name}}',
+        a11yHint: 'Opens the place detail',
+        announceFailure: "Couldn't open this place.",
+        errors: {
+          unavailable: "This place can't be opened right now.",
+        },
+      },
       comments: {
         headerLabel: 'Comments',
         loading: 'Loading comments…',
@@ -140,6 +148,14 @@ export const communityResources = {
       settings: '게시글 옵션',
       placeTagPrefix: '장소 보기',
       placeDeleted: '삭제된 장소예요',
+      placeCard: {
+        a11yLabel: '연결 장소, {{name}}',
+        a11yHint: '장소 상세로 이동',
+        announceFailure: '장소를 열지 못했어요.',
+        errors: {
+          unavailable: '장소를 불러올 수 없어요',
+        },
+      },
       comments: {
         headerLabel: '댓글',
         loading: '댓글을 불러오는 중…',
