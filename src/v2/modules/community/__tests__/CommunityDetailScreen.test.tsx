@@ -44,38 +44,30 @@ describe('CommunityDetailScreen', () => {
     expect(screen.getByText('두번째 문단입니다.')).toBeVisible();
   });
 
-  test('연결 장소를 누르면 해당 장소로 이동한다', async () => {
+  test('삭제된 연결 장소는 안내 문구만 보여주고 이동할 수 없다', async () => {
     jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({
-      places: [{ deleted: false, placeId: 17, placeName: '대소고' }],
+      places: [{ deleted: true, placeId: 17, placeName: '삭제된 장소입니다' }],
     }));
     const onOpenPlace = jest.fn();
+    const recordPlaceView = jest.spyOn(communityApi, 'recordPlaceView');
 
     const { user } = await renderWithProviders(
       <CommunityDetailScreen onBack={jest.fn()} onOpenPlace={onOpenPlace} postId={1} />,
       { language: 'ko' },
     );
 
-    await waitFor(() => expect(screen.getByText('대소고')).toBeVisible());
-    await user.press(screen.getByLabelText('장소 보기 대소고'));
-
-    expect(onOpenPlace).toHaveBeenCalledWith(17);
-  });
-
-  test('삭제된 연결 장소는 안내 문구만 보여주고 이동할 수 없다', async () => {
-    jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({
-      places: [{ deleted: true, placeId: 17, placeName: '삭제된 장소입니다' }],
-    }));
-    const onOpenPlace = jest.fn();
-
-    await renderWithProviders(
-      <CommunityDetailScreen onBack={jest.fn()} onOpenPlace={onOpenPlace} postId={1} />,
-      { language: 'ko' },
-    );
-
     await waitFor(() => expect(screen.getByText('삭제된 장소입니다')).toBeVisible());
-    expect(screen.queryByLabelText(/장소 보기/)).toBeNull();
+    const row = screen.getByLabelText('삭제된 장소입니다');
+    expect(row.props.accessibilityState).toMatchObject({ disabled: true });
+
+    await user.press(row);
+    expect(recordPlaceView).not.toHaveBeenCalled();
     expect(onOpenPlace).not.toHaveBeenCalled();
   });
+
+  // The full view-endpoint → cache-seed → navigation flow (including busy
+  // state, dedup, and error handling) is covered in
+  // CommunityDetailScreen.places.test.tsx.
 
   test('찾을 수 없는 게시글은 오류와 뒤로가기를 보여준다', async () => {
     jest.spyOn(communityApi, 'getPost').mockRejectedValue(
