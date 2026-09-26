@@ -65,7 +65,7 @@ test('map buttons expose immediate pressed-state feedback without delaying onPre
 
 test('bookmark state changes do not recreate native marker payloads', () => {
   const screen = read('../screens/MapScreen.tsx');
-  const adapter = read('../native/components/KakaoMapAdapter.tsx');
+  const adapter = read('../native/components/NaverMapAdapter.tsx');
   const canvas = read('../native/components/MapCanvas.tsx');
 
   assert.doesNotMatch(screen, /applyBookmarkStateToMarkers/);

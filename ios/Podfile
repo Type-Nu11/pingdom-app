@@ -20,11 +20,19 @@ platform :ios, podfile_properties['ios.deploymentTarget'] || '15.5'
 project 'Naviapp.xcodeproj'
 use_modular_headers!
 
+# Sync the map SDK identifier from .env at pod installation (CI env takes precedence).
+naver_env_path = File.join(__dir__, '..', '.env')
+naver_env_line = File.exist?(naver_env_path) ? File.readlines(naver_env_path).find { |line| line.strip.start_with?('NAVER_MAP_CLIENT_ID=') } : nil
+naver_map_id = ENV['NAVER_MAP_CLIENT_ID'] || naver_env_line&.split('=', 2)&.last&.strip&.delete_prefix('"')&.delete_suffix('"') || ''
+raise 'NAVER_MAP_CLIENT_ID must contain only letters and numbers' unless naver_map_id.match?(/\A[a-zA-Z0-9]*\z/)
+File.write(File.join(__dir__, 'Config', 'NaverMap.generated.xcconfig'), "NAVER_MAP_CLIENT_ID = #{naver_map_id}\n")
+
 prepare_react_native_project!
 
 target 'Naviapp' do
   use_expo_modules!
   pod 'KakaoMapsSDK'
+  pod 'NMapsMap', '3.24.0'
   pod 'GoogleMLKit/LanguageID', '8.0.0'
   pod 'GoogleMLKit/Translate', '8.0.0'
   pod 'GoogleUtilities', :modular_headers => true

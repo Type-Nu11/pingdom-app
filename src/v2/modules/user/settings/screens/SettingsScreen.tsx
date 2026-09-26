@@ -262,7 +262,7 @@ export default function SettingsScreen({
                 hint={t(`settings.details.${SETTINGS_DETAIL_IDS.PrivacyPolicy}.description`)}
                 onPress={() => onOpenDetail(SETTINGS_DETAIL_IDS.PrivacyPolicy)}
               />
-              <SettingsRow label={t('settings.rows.version')} value="1.0.0" />
+              <SettingsRow label={t('settings.rows.version')} value="3.0.0" />
             </SettingsSection>
 
             <FooterActions>

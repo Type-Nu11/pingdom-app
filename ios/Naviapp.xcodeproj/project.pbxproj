@@ -7,14 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		08DED17CC1494B6682533342 /* NaverMapViewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF2F727BD5E148AC90F26588 /* NaverMapViewManager.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		211A11F12F9000010066590E /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 211A11F42F9000010066590E /* InfoPlist.strings */; };
 		141E64EF2F8CAED80066590E /* KakaoMapViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */; };
 		141E64F12F8CAEE20066590E /* KakaoMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141E64F02F8CAEE20066590E /* KakaoMapView.swift */; };
 		141E64F32F8CAEEC0066590E /* KakaoMapViewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */; };
+		211A11F12F9000010066590E /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 211A11F42F9000010066590E /* InfoPlist.strings */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		4E22484701EF4F5CAE5CF5B0 /* NaverMapViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 1810883A1C144FEB9EA70C81 /* NaverMapViewManager.m */; };
 		76D32FCE9C026EBD3AC8B2C4 /* libPods-Naviapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 11020DC6118E4AA4D211D86E /* libPods-Naviapp.a */; };
 		77C8FBC2CC737EDBC8206BEA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */; };
+		A82DF619FB064D0D8857F030 /* NaverMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE462A20150D4775982540AF /* NaverMapView.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		C36EA07CF57F33A5B0C2BCF6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */; };
 		D0F1A0012F8DB0000066590E /* MLKitTranslation.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F1A0022F8DB0000066590E /* MLKitTranslation.m */; };
@@ -27,11 +30,12 @@
 		13B07F961A680F5B00A75B9A /* Naviapp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Naviapp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Naviapp/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Naviapp/Info.plist; sourceTree = "<group>"; };
-		211A11F22F9000010066590E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Naviapp/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		211A11F32F9000010066590E /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = Naviapp/ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KakaoMapViewManager.m; sourceTree = "<group>"; };
 		141E64F02F8CAEE20066590E /* KakaoMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KakaoMapView.swift; sourceTree = "<group>"; };
 		141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KakaoMapViewManager.swift; sourceTree = "<group>"; };
+		1810883A1C144FEB9EA70C81 /* NaverMapViewManager.m */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.objc; name = NaverMapViewManager.m; path = NaverMapViewManager.m; sourceTree = "<group>"; };
+		211A11F22F9000010066590E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Naviapp/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		211A11F32F9000010066590E /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = Naviapp/ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Naviapp/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		84FF0E2D0DB9224FD3B8C2CC /* Pods-Naviapp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Naviapp.debug.xcconfig"; path = "Target Support Files/Pods-Naviapp/Pods-Naviapp.debug.xcconfig"; sourceTree = "<group>"; };
 		879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Naviapp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -42,9 +46,11 @@
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		D0F1A0022F8DB0000066590E /* MLKitTranslation.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MLKitTranslation.m; sourceTree = "<group>"; };
 		D0F1A0042F8DB0000066590E /* MLKitTranslation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLKitTranslation.swift; sourceTree = "<group>"; };
+		DF2F727BD5E148AC90F26588 /* NaverMapViewManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = NaverMapViewManager.swift; path = NaverMapViewManager.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Naviapp/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Naviapp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Naviapp-Bridging-Header.h"; path = "Naviapp/Naviapp-Bridging-Header.h"; sourceTree = "<group>"; };
+		FE462A20150D4775982540AF /* NaverMapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = NaverMapView.swift; path = NaverMapView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +69,9 @@
 			isa = PBXGroup;
 			children = (
 				6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */,
+				FE462A20150D4775982540AF /* NaverMapView.swift */,
+				DF2F727BD5E148AC90F26588 /* NaverMapViewManager.swift */,
+				1810883A1C144FEB9EA70C81 /* NaverMapViewManager.m */,
 			);
 			name = Naviapp;
 			sourceTree = "<group>";
@@ -197,8 +206,8 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
+						DevelopmentTeam = 2N6MZG4VJH;
 						LastSwiftMigration = 1250;
-						DevelopmentTeam = "2N6MZG4VJH";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -236,18 +245,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXVariantGroup section */
-		211A11F42F9000010066590E /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				211A11F22F9000010066590E /* en */,
-				211A11F32F9000010066590E /* ko */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */ = {
@@ -321,6 +318,8 @@
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/KakaoMapsSDK/KakaoMapsSDK.framework/KakaoMapsSDK",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/NMapsGeometry/NMapsGeometry.framework/NMapsGeometry",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/NMapsMap/NMapsMap.framework/NMapsMap",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
@@ -328,6 +327,8 @@
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/KakaoMapsSDK.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/NMapsGeometry.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/NMapsMap.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
@@ -428,10 +429,25 @@
 				D0F1A0032F8DB0000066590E /* MLKitTranslation.swift in Sources */,
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				C36EA07CF57F33A5B0C2BCF6 /* ExpoModulesProvider.swift in Sources */,
+				A82DF619FB064D0D8857F030 /* NaverMapView.swift in Sources */,
+				08DED17CC1494B6682533342 /* NaverMapViewManager.swift in Sources */,
+				4E22484701EF4F5CAE5CF5B0 /* NaverMapViewManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		211A11F42F9000010066590E /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				211A11F22F9000010066590E /* en */,
+				211A11F32F9000010066590E /* ko */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
@@ -441,7 +457,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Naviapp/Naviapp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2N6MZG4VJH;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -467,9 +486,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-				DEVELOPMENT_TEAM = "2N6MZG4VJH";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Debug;
 		};
@@ -480,7 +496,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Naviapp/Naviapp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2N6MZG4VJH;
 				INFOPLIST_FILE = Naviapp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -500,9 +519,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-				DEVELOPMENT_TEAM = "2N6MZG4VJH";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Release;
 		};
