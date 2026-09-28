@@ -112,7 +112,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 : id === 'community'
                   ? active
                     ? <CommunityActiveAsset height={24} width={24} />
-                    : <CommunityInactiveAsset height={24} width={24} />
+                    : <CommunityInactiveAsset color={colors.text} height={24} width={24} />
                   : active
                     ? <ActiveReservationIcon colors={colors} />
                     : <CheckInAsset color={colors.text} height={24} width={23} />;
