@@ -23,11 +23,12 @@ import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.MapView
 import com.naver.maps.map.NaverMap
 import com.naver.maps.map.NaverMapOptions
+import com.naver.maps.map.overlay.PolylineOverlay
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.OverlayImage
 import kotlin.math.roundToInt
 
-private data class NaverPlaceMarker(val id: String, val category: String, val lat: Double, val lng: Double)
+private data class NaverPlaceMarker(val id: String, val category: String, val lat: Double, val lng: Double, val caption: String = "")
 
 /** Native V2 host. Props are applied together to avoid moving to a half-updated coordinate. */
 class NaverMapView(private val reactContext: ThemedReactContext) :
@@ -48,6 +49,9 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private val placeMarkers = mutableMapOf<String, Marker>()
     private val icons = mutableMapOf<String, OverlayImage>()
     private val userMarker = Marker()
+    private val routeLine = PolylineOverlay()
+    private var routePoints = emptyList<LatLng>()
+    private var routeDirty = false
     private var lastCamera: Triple<Double, Double, Int>? = null
     private var lastFollowUser = false
     private var started = false
@@ -122,6 +126,21 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     // SDK 준비 전에도 최신 테마를 보관한다. getMapAsync 완료 시 applyProps()가 반영한다.
     fun setNightMode(value: Boolean) { nightMode = value }
 
+    fun setRouteCoordinates(value: ReadableArray?) {
+        val next = buildList {
+            for (index in 0 until (value?.size() ?: 0)) {
+                val item = value?.getMap(index) ?: continue
+                if (!item.hasKey("lat") || item.isNull("lat") || !item.hasKey("lng") || item.isNull("lng")) continue
+                val lat = item.getDouble("lat")
+                val lng = item.getDouble("lng")
+                if (validCoordinate(lat, lng)) add(LatLng(lat, lng))
+            }
+        }
+        // Reject an incomplete path rather than drawing across an invalid segment.
+        val valid = if (next.size == (value?.size() ?: 0) && next.distinct().size >= 2) next else emptyList()
+        if (valid != routePoints) { routePoints = valid; routeDirty = true }
+    }
+
     fun setMarkers(value: ReadableArray?) {
         val next = buildList {
             for (index in 0 until (value?.size() ?: 0)) {
@@ -132,7 +151,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
                 if (!validCoordinate(lat, lng)) continue
                 val id = if (item.hasKey("id")) item.getString("id") else null
                 val category = if (item.hasKey("category")) item.getString("category") else null
-                add(NaverPlaceMarker(id ?: "marker-$index", normalizeCategory(category), lat, lng))
+                add(NaverPlaceMarker(id ?: "marker-$index", normalizeCategory(category), lat, lng, if (item.hasKey("caption")) item.getString("caption") ?: "" else ""))
             }
         }
         if (next != placeData) {
@@ -155,6 +174,16 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
             map.isNightModeEnabled = nightMode
             appliedNightMode = nightMode
         }
+        if (routeDirty) {
+            routeLine.map = null
+            if (routePoints.size >= 2) {
+                routeLine.coords = routePoints
+                routeLine.width = dp(6f)
+                routeLine.color = Color.rgb(255, 25, 86)
+                routeLine.map = map
+            }
+            routeDirty = false
+        }
         if (markersDirty) {
             val ids = placeData.map { it.id }.toSet()
             placeMarkers.keys.filter { it !in ids }.forEach { id ->
@@ -163,6 +192,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
             for (data in placeData) {
                 val marker = placeMarkers.getOrPut(data.id) { Marker() }
                 marker.position = LatLng(data.lat, data.lng)
+                marker.captionText = data.caption
                 marker.icon = placeIcon(data.category)
                 marker.anchor = PointF(0.5f, 0.62f)
                 marker.isHideCollidedMarkers = false
@@ -261,6 +291,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun dispose() {
         if (disposed) return
         disposed = true
+        routeLine.map = null
         removeCallbacks(layoutChildren)
         reactContext.removeLifecycleEventListener(this)
         placeMarkers.values.forEach { it.map = null; it.onClickListener = null }

@@ -72,6 +72,9 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
         view.setNightMode(nightMode)
     }
 
+    @ReactProp(name = "routeCoordinates")
+    fun setRouteCoordinates(view: NaverMapView, points: ReadableArray?) { view.setRouteCoordinates(points) }
+
     @ReactProp(name = "markers")
     fun setMarkers(view: NaverMapView, markers: ReadableArray?) {
         view.setMarkers(markers)

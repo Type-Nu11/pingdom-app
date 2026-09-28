@@ -7,6 +7,7 @@ private struct NaverPlaceMarker: Equatable {
     let category: String
     let lat: Double
     let lng: Double
+    let caption: String
 }
 
 @objc(NaverMapView)
@@ -19,6 +20,9 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     private var placeMarkers: [String: NMFMarker] = [:]
     private var icons: [String: NMFOverlayImage] = [:]
     private let userMarker = NMFMarker()
+    private var routeLine: NMFPolylineOverlay?
+    private var routeDirty = false
+    @objc var routeCoordinates: NSArray? { didSet { routeDirty = true } }
     private var markersDirty = true
     private var lastCamera: (lat: Double, lng: Double, zoom: Double)?
     private var lastFollowUser = false
@@ -95,6 +99,26 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             mapView.isNightModeEnabled = nightMode
             appliedNightMode = nightMode
         }
+        if routeDirty {
+            routeLine?.mapView = nil
+            routeLine = nil
+            let raw = routeCoordinates ?? []
+            let points = raw.compactMap { value -> NMGLatLng? in
+                guard let item = value as? NSDictionary,
+                      let lat = item["lat"] as? Double, let lng = item["lng"] as? Double,
+                      validCoordinate(lat, lng) else { return nil }
+                return NMGLatLng(lat: lat, lng: lng)
+            }
+            if points.count == raw.count, points.count >= 2,
+               points.contains(where: { $0.lat != points[0].lat || $0.lng != points[0].lng }) {
+                let line = NMFPolylineOverlay(points)
+                line?.width = 6
+                line?.color = UIColor(red: 1, green: 0.098, blue: 0.337, alpha: 1)
+                line?.mapView = mapView
+                routeLine = line
+            }
+            routeDirty = false
+        }
         if markersDirty {
             let ids = Set(placeData.map { $0.id })
             for id in Array(placeMarkers.keys) where !ids.contains(id) {
@@ -105,6 +129,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             for data in placeData {
                 let marker = placeMarkers[data.id] ?? NMFMarker()
                 marker.position = NMGLatLng(lat: data.lat, lng: data.lng)
+                marker.captionText = data.caption
                 marker.iconImage = placeIcon(data.category)
                 marker.anchor = CGPoint(x: 0.5, y: 0.62)
                 marker.isHideCollidedMarkers = false
@@ -157,7 +182,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             let category = item["category"] as? String ?? "etc"
             let categories = ["art", "beauty", "cafe", "etc", "fashion", "food", "game", "heritage", "music", "popup"]
             return NaverPlaceMarker(id: item["id"] as? String ?? "marker-\(index)",
-                                    category: categories.contains(category) ? category : "etc", lat: lat, lng: lng)
+                                    category: categories.contains(category) ? category : "etc", lat: lat, lng: lng, caption: item["caption"] as? String ?? "")
         }
     }
 
@@ -171,6 +196,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     }
 
     deinit {
+        routeLine?.mapView = nil
         mapView.removeCameraDelegate(delegate: self)
         placeMarkers.values.forEach { $0.touchHandler = nil; $0.mapView = nil }
         userMarker.mapView = nil
