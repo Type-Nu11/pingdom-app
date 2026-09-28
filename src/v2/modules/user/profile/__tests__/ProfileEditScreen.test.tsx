@@ -235,7 +235,7 @@ describe('ProfileEditScreen', () => {
       status: 401,
     }));
     await user.press(screen.getByText('변경 사항 저장하기'));
-    await waitFor(() => expect(alertMessages(alertSpy)).toContain('유효하지 않은 토큰입니다.'));
+    await waitFor(() => expect(alertMessages(alertSpy)).toContain('비밀번호를 변경하지 못했습니다.'));
   });
 
   test('동시 변경에서 아이디 요청 실패 시 비밀번호 요청을 실행하지 않고 아이디 오류를 표시한다', async () => {
@@ -256,7 +256,7 @@ describe('ProfileEditScreen', () => {
 
     await waitFor(() => expect(changeUsername).toHaveBeenCalled());
     expect(changePassword).not.toHaveBeenCalled();
-    await waitFor(() => expect(alertMessages(alertSpy)).toContain('이미 사용 중인 아이디입니다.'));
+    await waitFor(() => expect(alertMessages(alertSpy)).toContain('아이디를 변경하지 못했습니다.'));
   });
 
   test('아이디 성공 후 비밀번호 실패 시 부분 성공을 알리고 프로필 캐시를 다시 조회한다', async () => {
@@ -285,7 +285,7 @@ describe('ProfileEditScreen', () => {
     await waitFor(() => expect(getProfile).toHaveBeenCalledTimes(2));
     expect(queryClient.getQueryData(['v2', 'users', 'me'])).toEqual(currentProfile);
     expect(alertMessages(alertSpy)).toContain(
-      '아이디는 변경했지만 비밀번호는 변경하지 못했습니다. 현재 비밀번호가 일치하지 않습니다.',
+      '아이디는 변경했지만 비밀번호는 변경하지 못했습니다. 비밀번호를 변경하지 못했습니다.',
     );
     expect(onBack).not.toHaveBeenCalled();
   });

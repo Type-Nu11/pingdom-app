@@ -1,0 +1,1 @@
+export { communityResources } from './communityResources';

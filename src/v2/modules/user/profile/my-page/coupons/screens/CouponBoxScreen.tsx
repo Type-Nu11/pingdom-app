@@ -80,7 +80,7 @@ export default function CouponBoxScreen({
   }, [couponsQuery]);
 
   const retry = () => {
-    void couponsQuery.refetch();
+    void couponsQuery.refetch({ cancelRefetch: false });
   };
 
   const renderCoupon = ({ item }: { item: CouponBoxEntry }) => (
@@ -166,6 +166,7 @@ export default function CouponBoxScreen({
         </SkeletonList>
       ) : listState.kind === 'error' ? (
         <OfferCouponErrorState
+          busy={couponsQuery.isFetching}
           error={couponsQuery.error}
           fill
           onRetry={retry}
@@ -188,12 +189,13 @@ export default function CouponBoxScreen({
                 })}
             </EmptyText>
           )}
+          ListHeaderComponent={couponsQuery.isError && !couponsQuery.isFetchNextPageError ? <OfferCouponErrorState error={couponsQuery.error} busy={couponsQuery.isFetching} onRetry={retry} onSignIn={onSignIn} operation="listCoupons" surface="wallet" /> : null}
           ListFooterComponent={renderFooter()}
           onEndReached={loadNextPage}
           onEndReachedThreshold={0.5}
           refreshControl={(
             <RefreshControl
-              onRefresh={() => void couponsQuery.refetch()}
+              onRefresh={() => void couponsQuery.refetch({ cancelRefetch: false })}
               refreshing={couponsQuery.isRefetching && !couponsQuery.isFetchingNextPage}
               tintColor={theme.colors.primary}
             />

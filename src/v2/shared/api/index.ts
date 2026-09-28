@@ -87,6 +87,18 @@ export type {
   OffersCouponsSchemaName,
 } from './offersCouponsContract';
 export type {
+  CommunityComponents,
+  CommunityOperationName,
+  CommunityOperationPath,
+  CommunityOperationQuery,
+  CommunityOperationRequestBody,
+  CommunityOperationResponse,
+  CommunityOperations,
+  CommunityPaths,
+  CommunitySchema,
+  CommunitySchemaName,
+} from './communityContract';
+export type {
   ReservationPaymentComponents,
   ReservationPaymentOperationName,
   ReservationPaymentOperationPath,

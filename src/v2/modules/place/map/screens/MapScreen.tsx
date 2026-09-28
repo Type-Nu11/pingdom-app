@@ -27,6 +27,7 @@ import MapBottomSheet, {
   type VisitFilter,
 } from '../sheet/components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../sheet/components/FavoritePlacesBottomSheet';
+import { useMapCommunitySheet } from '../sheet/mapCommunitySheet';
 import { useMapReservationSheet } from '../sheet/mapReservationSheet';
 import {
   NEARBY_RESERVATION_CANDIDATE_LIMIT,
@@ -128,7 +129,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 type MapScreenProps = {
   canQueryBookmarks?: boolean;
   canQueryRankedFeeds?: boolean;
-  initialSection?: 'favorites' | 'map' | 'reservations';
+  initialSection?: 'community' | 'favorites' | 'map' | 'reservations';
   onClearOpenedBookmarkedPlace?: () => void;
   onCreateReservation?: (place: {
     category: string;
@@ -136,6 +137,8 @@ type MapScreenProps = {
     imageUrl?: string;
     name: string;
   }) => void;
+  onOpenCommunityPost?: (postId: number) => void;
+  onOpenCommunityWrite?: (categoryId?: string) => void;
   onOpenCoupons?: () => void;
   onOpenProfile?: () => void;
   onOpenDirections?: (destination: RouteDestination) => void;
@@ -152,6 +155,8 @@ export default function MapScreen({
   initialSection = 'map',
   onClearOpenedBookmarkedPlace,
   onCreateReservation,
+  onOpenCommunityPost,
+  onOpenCommunityWrite,
   onOpenCoupons,
   onOpenDirections,
   onOpenProfile,
@@ -162,8 +167,14 @@ export default function MapScreen({
   openedBookmarkedPlaceId,
 }: MapScreenProps) {
   const ReservationBottomSheet = useMapReservationSheet();
+  const CommunityBottomSheet = useMapCommunitySheet();
   const theme = useTheme();
   const isFocused = useIsFocused();
+  const feedbackActive = useRef(isFocused);
+  useEffect(() => {
+    feedbackActive.current = isFocused;
+    return () => { feedbackActive.current = false; };
+  }, [isFocused]);
   const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused);
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
@@ -241,6 +252,9 @@ export default function MapScreen({
     nationalTrendsQuery.refetch,
   ]);
   const {
+    error: placesError,
+    isLoading: placesLoading,
+    isFetching: placesFetching,
     markers: apiMarkers,
     places: apiPlaces,
     refetch: refetchPlaces,
@@ -274,7 +288,7 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
-  const [mapSection, setMapSection] = useState<'map' | 'favorites' | 'reservations'>(initialSection);
+  const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
   const [reservationEntryPlace, setReservationEntryPlace] = useState<DecisionPlace | null>(null);
   const [dismissedMarkerCenter, setDismissedMarkerCenter] = useState<{
     lat: number;
@@ -285,6 +299,9 @@ export default function MapScreen({
     && Number.isFinite(userLat)
     && Number.isFinite(userLng);
   const {
+    error: nearbyCandidatesError,
+    isFetching: nearbyCandidatesFetching,
+    refetch: refetchNearbyCandidates,
     isLoading: isNearbyReservationCandidatesLoading,
     places: nearbyReservationCandidates,
   } = usePlaces({
@@ -302,6 +319,9 @@ export default function MapScreen({
     [nearbyReservationCandidates, reservationEntryPlace],
   );
   const {
+    error: nearbyAvailabilityError,
+    isFetching: nearbyAvailabilityFetching,
+    refetch: refetchNearbyAvailability,
     isLoading: isNearbyReservationsLoading,
     placeIdByAvailabilityId,
     reservablePlaceIds: discoveredReservablePlaceIds,
@@ -321,6 +341,8 @@ export default function MapScreen({
   const {
     fetchNextPage: fetchNextFavoritePage,
     hasNextPage: hasNextFavoritePage,
+    error: favoritesError,
+    isFetching: isFavoritesFetching,
     isError: isFavoritesError,
     isFetchNextPageError: isFetchNextFavoritePageError,
     isFetchingNextPage: isFetchingNextFavoritePage,
@@ -475,6 +497,8 @@ export default function MapScreen({
   const {
     detail: selectedPlaceDetail,
     detailError: selectedPlaceDetailError,
+    isDetailFetching: selectedPlaceDetailFetching,
+    refetchDetail,
     isDetailPending: isSelectedPlaceDetailPending,
     presentation: selectedPlacePresentation,
     refetchAvailability,
@@ -774,7 +798,7 @@ export default function MapScreen({
   const handleSearchFocus = () => {
     setIsSearchOpen(true);
   };
-  const openMapSection = useCallback((nextSection: 'favorites' | 'map' | 'reservations') => {
+  const openMapSection = useCallback((nextSection: 'community' | 'favorites' | 'map' | 'reservations') => {
     setContent({ type: 'home' });
     setMapSection(nextSection);
     jumpTo('medium');
@@ -844,7 +868,7 @@ export default function MapScreen({
         return true;
       }
 
-      if (mapSection === 'favorites') {
+      if (mapSection === 'favorites' || mapSection === 'community') {
         setMapSection('map');
         snapTo('medium');
         return true;
@@ -876,9 +900,11 @@ export default function MapScreen({
     try {
       await togglePlaceBookmark(place, nextBookmarked);
     } catch (error) {
+      const messageKey = getBookmarkErrorMessage(error);
+      if (!feedbackActive.current || !messageKey) return;
       Alert.alert(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
-        getBookmarkErrorMessage(error) || t('common.error.description'),
+        t(messageKey),
       );
     }
   };
@@ -889,9 +915,11 @@ export default function MapScreen({
     try {
       await toggleRankedPlaceBookmark(place, nextBookmarked);
     } catch (error) {
+      const messageKey = getBookmarkErrorMessage(error);
+      if (!feedbackActive.current || !messageKey) return;
       Alert.alert(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
-        getBookmarkErrorMessage(error) || t('common.error.description'),
+        t(messageKey),
       );
     }
   };
@@ -912,7 +940,7 @@ export default function MapScreen({
         translucent
       />
       <View style={styles.mapBackground}>
-        {mapCenterLat !== undefined && mapCenterLng !== undefined && userLat !== undefined && userLng !== undefined ? <MapCanvas
+        <MapCanvas
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
@@ -921,7 +949,7 @@ export default function MapScreen({
           userLat={userLat}
           userLng={userLng}
           zoomLevel={mapZoomLevel}
-        /> : null}
+        />
       </View>
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
         <MapTopOverlay
@@ -949,12 +977,42 @@ export default function MapScreen({
           style={styles.sectionTransition}
           testID={`map-section-transition-${mapSection}`}
         >
-        {mapSection === 'favorites' ? (
+        {mapSection === 'community' ? (
+          <CommunityBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            height={fullSheetHeight}
+            mediumTranslateY={mediumTranslateY}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenMap={() => {
+              openMapSection('map');
+            }}
+            onOpenPost={(postId) => onOpenCommunityPost?.(postId)}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservations={() => {
+              openMapSection('reservations');
+            }}
+            onOpenWrite={(categoryId) => onOpenCommunityWrite?.(categoryId)}
+            panHandlers={panHandlers}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
             hasNextPage={Boolean(hasNextFavoritePage)}
             height={fullSheetHeight}
             imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
+            error={favoritesError}
+            isFetching={isFavoritesFetching}
             isError={isFavoritesError}
             isFetchNextPageError={isFetchNextFavoritePageError}
             isFetchingNextPage={isFetchingNextFavoritePage}
@@ -965,6 +1023,9 @@ export default function MapScreen({
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
               else snapTo('medium');
+            }}
+            onOpenCommunity={() => {
+              openMapSection('community');
             }}
             onOpenMap={() => {
               openMapSection('map');
@@ -978,7 +1039,7 @@ export default function MapScreen({
               openMapSection('reservations');
             }}
             onLoadMore={() => void fetchNextFavoritePage()}
-            onRetry={() => void refetchFavorites()}
+            onRetry={() => refetchFavorites({ cancelRefetch: false })}
             onRemovePlace={(place) => void handleToggleBookmark(place, false)}
             onPlacePress={(place) => {
               setMapSection('map');
@@ -1002,12 +1063,18 @@ export default function MapScreen({
               isNearbyReservationCandidatesLoading || isNearbyReservationsLoading
             )}
             mediumTranslateY={mediumTranslateY}
+            nearbyError={nearbyCandidatesError ?? nearbyAvailabilityError}
+            nearbyBusy={nearbyCandidatesFetching || nearbyAvailabilityFetching}
+            onRetryNearby={() => Promise.all([refetchNearbyCandidates({ cancelRefetch: false }), refetchNearbyAvailability()])}
             nearbyPlaces={nearbyReservationPlaces}
             reservationPlaceByAvailabilityId={reservationPlaceByAvailabilityId}
             onHandlePress={() => {
               if (snapPoint === 'collapsed') snapTo('medium');
               else if (snapPoint === 'medium') snapTo('expanded');
               else snapTo('medium');
+            }}
+            onOpenCommunity={() => {
+              openMapSection('community');
             }}
             onOpenFavorites={() => {
               openMapSection('favorites');
@@ -1069,6 +1136,9 @@ export default function MapScreen({
               else if (snapPoint === 'medium') snapTo('expanded');
               else snapTo('medium');
             }}
+            onOpenCommunity={() => {
+              openMapSection('community');
+            }}
             onOpenLikedPlaces={() => {
               openMapSection('favorites');
             }}
@@ -1107,6 +1177,13 @@ export default function MapScreen({
             recommendationPlaces={recommendationPlaces}
             recommendationsState={recommendationsState}
             selectedPlace={selectedPlace}
+            detailError={selectedPlaceDetailError}
+            detailBusy={selectedPlaceDetailFetching}
+            onRetryDetail={() => refetchDetail({ cancelRefetch: false })}
+            resultsError={placesError}
+            resultsLoading={placesLoading}
+            resultsBusy={placesFetching}
+            onRetryResults={() => refetchPlaces({ cancelRefetch: false })}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
             snapPoint={snapPoint}

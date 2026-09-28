@@ -254,3 +254,9 @@ test('formatters parse dates in the presentation layer with a safe fallback', ()
     'placeOffers.detail.validityUnknown',
   );
 });
+
+test('coupon CTA never converts signing or HTML proxy errors into sign-in recovery', () => {
+  for (const error of [new ApiError('secret', { code: 'INVALID_SIGNATURE', status: 401 }), new ApiError('secret', { status: 401, responseData: '<html>proxy</html>' })]) {
+    assert.equal(selectCouponCtaState({ offers: { data: undefined, error, isError: true, isPending: false }, issue: { isError: false, isPending: false, isSuccess: false }, selectedOfferId: null }).kind, 'offer-error');
+  }
+});

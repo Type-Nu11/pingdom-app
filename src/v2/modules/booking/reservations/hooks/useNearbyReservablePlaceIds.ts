@@ -50,6 +50,9 @@ export function useNearbyReservablePlaceIds(
   ), [placeIds, queries]);
 
   return {
+    error: queries.find((query) => query.isError)?.error ?? null,
+    isFetching: queries.some((query) => query.isFetching),
+    refetch: () => Promise.all(queries.map((query) => query.refetch({ cancelRefetch: false }))),
     isLoading: enabled && queries.some((query) => query.isPending),
     placeIdByAvailabilityId,
     reservablePlaceIds,

@@ -85,3 +85,17 @@ describe('ReservationBoxScreen', () => {
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 });
+
+test('initial failure is not empty and refresh failure preserves existing reservations', async () => {
+  const retry = jest.fn().mockResolvedValue({});
+  jest.mocked(useReservations).mockReturnValue(queryResult({ isError: true, error: new Error('secret'), refetch: retry }));
+  const view = await renderWithProviders(<ReservationBoxScreen onBack={jest.fn()} onOpenReservation={jest.fn()} onOpenSettings={jest.fn()} />);
+  expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy();
+  expect(screen.queryByText('아직 예약 내역이 없어요.')).toBeNull();
+  await view.user.press(screen.getByText('다시 시도'));
+  expect(retry).toHaveBeenCalledWith({ cancelRefetch: false });
+  jest.mocked(useReservations).mockReturnValue(queryResult({ isError: true, error: new Error('secret'), data: { reservations: [reservation], totalElements: 1 } }));
+  await view.rerender(<ReservationBoxScreen onBack={jest.fn()} onOpenReservation={jest.fn()} onOpenSettings={jest.fn()} />);
+  expect(screen.getByText('예약 번호 901')).toBeTruthy();
+  expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy();
+});

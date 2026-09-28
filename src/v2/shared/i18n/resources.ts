@@ -94,6 +94,11 @@ export const resources = {
           title: 'Not available in the app',
         },
         apiError: {
+          timeout: { title: 'The response is taking too long', description: 'Check your connection and try loading again.' },
+          server: { title: 'Service temporarily unavailable', description: 'Please try loading again in a moment.' },
+          rateLimited: { title: 'Too many requests', description: 'Please wait a moment before trying again.' },
+          mutationUnknown: { title: 'Result not confirmed', description: 'We could not confirm the result. Check the latest status before submitting again.' },
+
           actions: {
             back: 'Go back',
             retry: 'Try again',
@@ -101,7 +106,7 @@ export const resources = {
             update: 'Update app',
           },
           authentication: {
-            description: 'Your session or request key is no longer valid. Please sign in again.',
+            description: 'Your session is no longer valid. Please sign in again.',
             title: 'Sign-in required',
           },
           authorization: {
@@ -272,7 +277,7 @@ export const resources = {
           all: 'All', art: 'Exhibitions', beauty: 'Beauty', cafe: 'Cafe', etc: 'Other',
           fashion: 'Fashion', food: 'Restaurants', heritage: 'Cultural heritage', music: 'Music', popup: 'Pop-ups',
         },
-        navigation: { favorites: 'Favorites', map: 'Map', recommendations: 'Recommendations', reservations: 'Reservations' },
+        navigation: { community: 'Community', favorites: 'Favorites', map: 'Map', recommendations: 'Recommendations', reservations: 'Reservations' },
         favorites: {
           adjust: 'Resize favorites panel', emptyBody: 'Tap the star on a place you like to save it.',
           emptyTitle: 'No saved places', error: 'Could not load places', loadMore: 'Show more',
@@ -958,6 +963,11 @@ export const resources = {
           title: '앱에서 제공하지 않는 기능',
         },
         apiError: {
+          timeout: { title: '응답 시간이 초과되었어요', description: '연결을 확인하고 다시 조회해 주세요.' },
+          server: { title: '서비스에 잠시 연결할 수 없어요', description: '잠시 후 다시 조회해 주세요.' },
+          rateLimited: { title: '요청이 너무 많아요', description: '잠시 기다린 후 다시 시도해 주세요.' },
+          mutationUnknown: { title: '처리 결과를 확인해 주세요', description: '처리 결과를 확인하지 못했어요. 다시 제출하기 전에 최신 상태를 확인해 주세요.' },
+
           actions: {
             back: '목록으로',
             retry: '다시 시도',
@@ -965,7 +975,7 @@ export const resources = {
             update: '앱 업데이트',
           },
           authentication: {
-            description: '로그인 정보 또는 요청 키가 만료되었습니다. 다시 로그인해 주세요.',
+            description: '로그인 정보가 만료되었습니다. 다시 로그인해 주세요.',
             title: '로그인이 필요합니다',
           },
           authorization: {
@@ -1136,7 +1146,7 @@ export const resources = {
           all: '전체', art: '전시', beauty: '뷰티', cafe: '카페', etc: '기타', fashion: '패션',
           food: '음식점', heritage: '문화재', music: '음악', popup: '팝업',
         },
-        navigation: { favorites: '즐겨찾기', map: '지도', recommendations: '장소추천', reservations: '예약' },
+        navigation: { community: '커뮤니티', favorites: '즐겨찾기', map: '지도', recommendations: '장소추천', reservations: '예약' },
         favorites: {
           adjust: '즐겨찾기 패널 크기 조절', emptyBody: '마음에 드는 장소의 별을 눌러 모아보세요.',
           emptyTitle: '저장한 장소가 없어요', error: '장소를 불러오지 못했어요', loadMore: '더 보기',

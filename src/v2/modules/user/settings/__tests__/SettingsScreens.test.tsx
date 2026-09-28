@@ -54,7 +54,7 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('이용약관')).toBeTruthy();
     expect(screen.getByText('개인정보 처리방침')).toBeTruthy();
     expect(screen.getByText('버전 정보')).toBeTruthy();
-    expect(screen.getByText('1.0.0')).toBeTruthy();
+    expect(screen.getByText('3.0.0')).toBeTruthy();
     expect(screen.getByText('로그아웃')).toBeTruthy();
     expect(screen.getByText('회원 탈퇴')).toBeTruthy();
   });

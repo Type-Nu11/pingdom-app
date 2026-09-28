@@ -192,7 +192,7 @@ describe('MyPageScreen', () => {
     expect(screen.getByTestId('v2-my-page-stat-reviews')).toHaveTextContent('7');
   });
 
-  test('프로필 조회가 실패해도 프로필 행은 남겨 편집 화면으로 갈 수 있다', async () => {
+  test('프로필 초기 조회 실패는 빈 프로필 대신 복구 동작을 표시한다', async () => {
     mockEverythingEmpty();
     jest.spyOn(profileApi, 'getProfile').mockRejectedValue(new Error('실패'));
     const onOpenProfileEdit = jest.fn();
@@ -209,11 +209,12 @@ describe('MyPageScreen', () => {
       />,
     );
 
-    await waitFor(() => expect(screen.getByText('프로필을 불러오지 못했어요.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy());
     expect(screen.getByText('다시 시도')).toBeTruthy();
 
-    await user.press(screen.getByText('프로필 정보 없음'));
-    expect(onOpenProfileEdit).toHaveBeenCalled();
+    expect(screen.queryByText('프로필 정보 없음')).toBeNull();
+    await user.press(screen.getByText('다시 시도'));
+    expect(profileApi.getProfile).toHaveBeenCalledTimes(2);
   });
 
   test('캐러셀 로딩 카드도 177×222를 유지한다', async () => {
@@ -427,4 +428,21 @@ describe('MyPageScreen', () => {
       { endDate: futureDates.endDate, startDate: futureDates.startDate },
     ));
   });
+});
+
+test('initial profile failure never presents successful absence', async () => {
+  mockEverythingEmpty();
+  jest.mocked(profileApi.getProfile).mockRejectedValue(new Error('<html>internal secret</html>'));
+  await renderMyPage();
+  await waitFor(() => expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy());
+  expect(screen.queryByText('프로필 정보 없음')).toBeNull();
+  expect(screen.queryByText('<html>internal secret</html>')).toBeNull();
+});
+
+test('a successful empty profile is distinct from a failed request', async () => {
+  mockEverythingEmpty();
+  jest.mocked(profileApi.getProfile).mockResolvedValue(null as never);
+  await renderMyPage();
+  await waitFor(() => expect(screen.getByText('프로필 정보 없음')).toBeTruthy());
+  expect(screen.queryByText('데이터를 불러오지 못했습니다')).toBeNull();
 });

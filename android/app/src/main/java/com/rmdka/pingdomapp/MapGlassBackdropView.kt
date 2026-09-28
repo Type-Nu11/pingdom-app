@@ -16,11 +16,12 @@ import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.common.LifecycleState
 import com.facebook.react.uimanager.ThemedReactContext
 import com.kakao.vectormap.MapView as KakaoSdkMapView
+import com.naver.maps.map.MapView as NaverSdkMapView
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 /**
- * Supplies ordinary View pixels to Expo's BlurTargetView. Kakao renders into a
+ * Supplies ordinary View pixels to Expo's BlurTargetView. Native maps render into a
  * SurfaceView, which Android view snapshots cannot otherwise capture.
  *
  * Mount one full-size instance behind the real map and share its BlurTargetView
@@ -233,6 +234,9 @@ class MapGlassBackdropView(
         if (view is KakaoSdkMapView && view.isShown) {
             return view.surfaceView?.takeIf(::isUsableSurface)
         }
+        if (view is NaverSdkMapView && view.isShown) {
+            return findSurface(view)
+        }
         if (view is ViewGroup && view.visibility == VISIBLE) {
             for (index in 0 until view.childCount) {
                 findMapSurface(view.getChildAt(index))?.let { return it }
@@ -240,4 +244,14 @@ class MapGlassBackdropView(
         }
         return null
     }
+    private fun findSurface(view: View): SurfaceView? {
+        if (view is SurfaceView && isUsableSurface(view)) return view
+        if (view is ViewGroup && view.visibility == VISIBLE) {
+            for (index in 0 until view.childCount) {
+                findSurface(view.getChildAt(index))?.let { return it }
+            }
+        }
+        return null
+    }
+
 }

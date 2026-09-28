@@ -7,13 +7,15 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from 'styled-components/native';
 
 import CheckInAsset from '../../../../../../assets/v2/icons/place/checkin_svg.svg';
+import CommunityActiveAsset from '../../../../../../assets/v2/icons/place/community-active.svg';
+import CommunityInactiveAsset from '../../../../../../assets/v2/icons/place/community-inactive.svg';
 import MapAsset from '../../../../../../assets/v2/icons/place/maping_svg.svg';
 import PlaceRecommendAsset from '../../../../../../assets/v2/icons/place/placerecommend.svg';
 import { FavoriteIcon } from '../../../../../shared/components';
 import { lightLiquidGlass, type AppTheme } from '../../../../../shared/theme';
 import FrostedSurface from '../../presentation/components/FrostedSurface';
 
-export type MapSheetNavigationTab = 'favorites' | 'map' | 'recommendations' | 'reservations';
+export type MapSheetNavigationTab = 'community' | 'favorites' | 'map' | 'recommendations' | 'reservations';
 
 export const getMapSheetTabSurfaceColor = (
   active: boolean,
@@ -28,6 +30,7 @@ export const getMapSheetNavigationBottom = (bottomInset: number) => Math.max(16,
 
 type Props = {
   activeTab: MapSheetNavigationTab;
+  onOpenCommunity?: () => void;
   onOpenFavorites?: () => void;
   onOpenMap?: () => void;
   onOpenRecommendations?: () => void;
@@ -59,6 +62,7 @@ const ActiveReservationIcon = ({ colors }: { colors: AppTheme['colors'] }) => (
 
 const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
   activeTab,
+  onOpenCommunity,
   onOpenFavorites,
   onOpenMap,
   onOpenRecommendations,
@@ -73,6 +77,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
   const tabs = [
     { id: 'map' as const, label: t('map.navigation.map'), onPress: onOpenMap },
     { id: 'favorites' as const, label: t('map.navigation.favorites'), onPress: onOpenFavorites },
+    { id: 'community' as const, label: t('map.navigation.community'), onPress: onOpenCommunity },
     { id: 'reservations' as const, label: t('map.navigation.reservations'), onPress: onOpenReservations },
   ];
 
@@ -104,9 +109,13 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 : <InactiveMapIcon color={colors.text} />
               : id === 'favorites'
                 ? <FavoriteIcon selected={active} size={24} />
-                : active
-                  ? <ActiveReservationIcon colors={colors} />
-                  : <CheckInAsset color={colors.text} height={24} width={23} />;
+                : id === 'community'
+                  ? active
+                    ? <CommunityActiveAsset height={24} width={24} />
+                    : <CommunityInactiveAsset height={24} width={24} />
+                  : active
+                    ? <ActiveReservationIcon colors={colors} />
+                    : <CheckInAsset color={colors.text} height={24} width={23} />;
 
             return (
               <Pressable

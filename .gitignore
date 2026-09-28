@@ -61,3 +61,6 @@ ios/Naviapp.xcworkspace/
 ios/Config/Secrets.xcconfig
 
 android/app/google-services.json
+
+# Generated public map SDK build configuration
+ios/Config/NaverMap.generated.xcconfig

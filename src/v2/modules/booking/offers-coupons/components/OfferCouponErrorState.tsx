@@ -11,6 +11,7 @@ import {
 type OfferCouponErrorStateProps = {
   error: unknown;
   fill?: boolean;
+  busy?: boolean;
   onBack?: () => void;
   onRetry?: () => void;
   onSignIn?: () => void;
@@ -28,6 +29,7 @@ type OfferCouponErrorStateProps = {
 export default function OfferCouponErrorState({
   error,
   fill,
+  busy,
   onBack,
   onRetry,
   onSignIn,
@@ -53,11 +55,14 @@ export default function OfferCouponErrorState({
     }
   })();
 
+  if (ux.kind === 'canceled') return null;
+
   return (
     <ErrorState
       actionLabel={handler && ux.ctaLabelKey ? t(ux.ctaLabelKey) : undefined}
       description={t(ux.descriptionKey)}
       fill={fill}
+      actionBusy={busy}
       onAction={handler}
       title={t(ux.titleKey)}
     />

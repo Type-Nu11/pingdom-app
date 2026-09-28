@@ -1,4 +1,5 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
+import ApiErrorState from '../../../../../shared/components/ApiErrorState';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -39,19 +40,22 @@ type FavoritePlacesBottomSheetProps = {
   imageUrlsByPlaceId: Record<string, string[]>;
   hasNextPage: boolean;
   isError: boolean;
+  error?: unknown;
+  isFetching?: boolean;
   isFetchNextPageError: boolean;
   isFetchingNextPage: boolean;
   isLoading: boolean;
   isUnauthorized: boolean;
   mediumTranslateY: number;
   onHandlePress: () => void;
+  onOpenCommunity?: () => void;
   onOpenMap: () => void;
   onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
   onPlacePress: (place: DecisionPlace) => void;
   onLoadMore: () => void;
   onRemovePlace: (place: DecisionPlace) => void;
-  onRetry: () => void;
+  onRetry: () => unknown;
   panHandlers: GestureResponderHandlers;
   places: DecisionPlace[];
   pendingPlaceIds?: Record<string, boolean>;
@@ -182,12 +186,15 @@ export default function FavoritePlacesBottomSheet({
   height,
   imageUrlsByPlaceId,
   isError,
+  error,
+  isFetching,
   isFetchNextPageError,
   isFetchingNextPage,
   isLoading,
   isUnauthorized,
   mediumTranslateY,
   onHandlePress,
+  onOpenCommunity,
   onOpenMap,
   onOpenRecommendations,
   onOpenReservations,
@@ -310,6 +317,7 @@ export default function FavoritePlacesBottomSheet({
               showsVerticalScrollIndicator={false}
               style={styles.list}
             >
+              {isError && filteredPlaces.length > 0 && !isFetchNextPageError ? <ApiErrorState error={error} busy={isFetching} onRetry={onRetry} /> : null}
               {filteredPlaces.length > 0 ? filteredPlaces.map((place) => (
                 <FavoritePlaceRow
                   imageUrls={imageUrlsByPlaceId[String(place.id)] ?? []}
@@ -329,12 +337,7 @@ export default function FavoritePlacesBottomSheet({
                   <AppText style={styles.emptyBody}>{t('map.favorites.sessionBody')}</AppText>
                 </View>
               ) : isError ? (
-                <View style={styles.emptyState}>
-                  <AppText style={styles.emptyTitle}>{t('map.favorites.error')}</AppText>
-                  <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
-                    <AppText style={styles.retryLabel}>{t('map.favorites.retry')}</AppText>
-                  </Pressable>
-                </View>
+                <ApiErrorState error={error} busy={isFetching} onRetry={onRetry} />
               ) : (
                 <View style={styles.emptyState}>
                   <HeaderStar />
@@ -368,6 +371,7 @@ export default function FavoritePlacesBottomSheet({
 
       <MapSheetBottomNavigation
         activeTab="favorites"
+        onOpenCommunity={onOpenCommunity}
         onOpenMap={onOpenMap}
         onOpenRecommendations={onOpenRecommendations}
         onOpenReservations={onOpenReservations}

@@ -98,3 +98,12 @@ describe('FavoritePlacesBottomSheet categories', () => {
     expect(screen.queryByText('저장한 카페')).not.toBeOnTheScreen();
   });
 });
+
+test('refresh failure keeps favorites and offers query recovery', async () => {
+  const retry = jest.fn().mockResolvedValue({});
+  const view = await renderWithProviders(<FavoritePlacesBottomSheet {...props} isError error={new Error('secret')} onRetry={retry} />);
+  expect(screen.getByText('저장한 카페')).toBeTruthy();
+  expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy();
+  await view.user.press(screen.getByText('다시 시도'));
+  expect(retry).toHaveBeenCalledTimes(1);
+});

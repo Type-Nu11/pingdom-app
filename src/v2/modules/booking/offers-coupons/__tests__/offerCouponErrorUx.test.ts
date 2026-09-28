@@ -77,12 +77,12 @@ describe('getOfferCouponErrorUx', () => {
       retryable: false,
     },
     {
-      title: 'wallet 400 → non-actionable list load failure',
+      title: 'wallet 400 → safe load failure without blaming input',
       surface: 'wallet',
       error: { status: 400 },
-      reason: 'validation',
-      cta: 'none',
-      retryable: false,
+      reason: 'generic',
+      cta: 'retry',
+      retryable: true,
     },
     {
       title: 'placeCta 409 without a server code stays unconfirmed',
@@ -102,13 +102,13 @@ describe('getOfferCouponErrorUx', () => {
       retryable: false,
     },
     {
-      title: '401 with a future server code still uses authentication recovery',
+      title: '401 with an unknown code keeps safe fallback',
       surface: 'wallet',
       operation: 'listCoupons',
       error: { status: 401, code: 'SESSION_REVOKED' },
-      reason: 'authentication',
-      cta: 'signIn',
-      retryable: false,
+      reason: 'generic',
+      cta: 'retry',
+      retryable: true,
     },
     {
       title: 'wallet 409 without a server code stays unconfirmed, no onward CTA',
@@ -199,13 +199,13 @@ describe('getOfferCouponErrorUx', () => {
     expect(ux.cta).toBe(cta);
     expect(ux.retryable).toBe(retryable);
     expect(ux.titleKey).toBe(`offerCoupon.error.${reason}.title`);
-    expect(ux.descriptionKey).toBe(`offerCoupon.error.${reason}.description`);
+    expect(ux.descriptionKey).toBe(error.status === 503 ? 'common.apiError.server.description' : `offerCoupon.error.${reason}.description`);
     expect(ux.ctaLabelKey).toBe(cta === 'none' ? null : `offerCoupon.error.actions.${cta}`);
   });
 
   it('classifies transport failures as retryable network errors', () => {
     const networkError = new ApiError('Network Error', { isNetworkError: true });
-    const ux = getOfferCouponErrorUx(networkError, 'placeCta');
+    const ux = getOfferCouponErrorUx(networkError, 'placeCta', 'listOffers');
 
     expect(ux.kind).toBe('network');
     expect(ux.reason).toBe('network');
