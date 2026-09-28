@@ -366,14 +366,14 @@ export default function MapScreen({
   // category-overlay gap above it.
   const expandedSheetTop = MAP_TOP_OVERLAY_METRICS.headerHeight + 2;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
-  // Home and recommendations share the Figma resting height. The taller list/detail
-  // surfaces retain their own space, while full-screen place details can expand to the top.
+  // All bottom-navigation tabs share the map home resting height.
+  // Place previews and search retain their separate detail layout.
   const fullSheetHeight = Math.round(height);
   const expandedTranslateY = isPlacePreview ? 0 : expandedSheetTop;
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
-  const isHomeFeed = mapSection === 'map'
-    && (content.type === 'home' || content.type === 'recommendations');
-  const mediumVisibleHeight = isHomeFeed
+  const isBottomNavigationSheet = mapSection !== 'map'
+    || content.type === 'home' || content.type === 'recommendations';
+  const mediumVisibleHeight = isBottomNavigationSheet
     ? getMapHomeSheetVisibleHeight(fullSheetHeight, expandedSheetTop)
     : Math.min(
       Math.round(442 * designScale) + SHEET_RESTING_GAP,
