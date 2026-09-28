@@ -183,7 +183,7 @@ describe('CommunityWriteScreen', () => {
     await fillValidGeneralForm(user);
     await user.press(screen.getByTestId('v2-community-write-submit'));
 
-    await waitFor(() => expect(screen.getByTestId('v2-community-write-title-error')).toHaveTextContent('제목이 중복됩니다.'));
+    await waitFor(() => expect(screen.getByTestId('v2-community-write-title-error')).toHaveTextContent('입력한 정보를 확인한 후 다시 시도해 주세요.'));
   });
 
   test('필드 정보 없는 400 오류는 배너와 재시도 버튼을 보여준다', async () => {

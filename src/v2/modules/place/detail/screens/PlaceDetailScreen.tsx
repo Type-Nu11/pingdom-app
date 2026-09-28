@@ -43,14 +43,14 @@ export default function PlaceDetailScreen({ navigation, route }: PlaceDetailScre
     );
   }
 
-  if (placeQuery.isError) {
+  if (placeQuery.isError && !placeQuery.data) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <ApiErrorState
-          error={placeQuery.error}
+          busy={placeQuery.isFetching} error={placeQuery.error}
           fill
           onBack={navigation.goBack}
-          onRetry={() => void placeQuery.refetch()}
+          onRetry={() => placeQuery.refetch({ cancelRefetch: false })}
         />
       </Screen>
     );
@@ -66,6 +66,7 @@ export default function PlaceDetailScreen({ navigation, route }: PlaceDetailScre
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
       <Content>
+        {placeQuery.isError ? <ApiErrorState error={placeQuery.error} busy={placeQuery.isFetching} onRetry={() => placeQuery.refetch({ cancelRefetch: false })} /> : null}
         <Surface padding="lg">
           <StatusBadge label={t(status.labelKey)} tone={status.tone} />
           <Title>{place.name}</Title>

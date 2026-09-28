@@ -178,28 +178,24 @@ export function getOfferCouponErrorUx(
       : 'listCoupons',
 ): OfferCouponErrorUx {
   const base = getApiErrorUx(value);
-  const kind = (() => {
-    if (base.kind !== 'generic') return base.kind;
-    switch (base.error.status) {
-      case 400: return 'validation';
-      case 401: return 'authentication';
-      case 403: return 'authorization';
-      case 404: return 'notFound';
-      case 409: return 'conflict';
-      default: return base.kind;
-    }
-  })();
+  // Coupon endpoint status contracts include bare/future-code 409 conflicts;
+  // never reinterpret an explicitly classified signing failure as authentication.
+  const kind = base.kind === 'generic' && base.action !== 'none' && base.error.status === 409
+    ? 'conflict' : base.kind;
   const reason = resolveReason(kind, base.error.code, surface, operation);
-  const retryable = kind === 'generic' || kind === 'network';
-  const cta = resolveCta(reason, retryable, surface);
+  const mutation = operation === 'issueCoupon' || operation === 'redeemCoupon';
+  const uncertain = mutation && ['network', 'timeout', 'server', 'generic'].includes(kind);
+  const retryable = !mutation && base.retryable && base.action === 'retry';
+  const cta = uncertain ? (surface === 'placeCta' ? 'viewWallet' : 'none') : resolveCta(reason, retryable, surface);
 
   return {
     cta,
     ctaLabelKey: cta === 'none' ? null : CTA_LABEL_KEYS[cta],
-    descriptionKey: `offerCoupon.error.${reason}.description`,
+    descriptionKey: uncertain ? 'common.apiError.mutationUnknown.description'
+      : ['server', 'timeout', 'rateLimited'].includes(kind) ? `common.apiError.${kind}.description` : `offerCoupon.error.${reason}.description`,
     kind,
     reason,
     retryable,
-    titleKey: `offerCoupon.error.${reason}.title`,
+    titleKey: uncertain ? 'common.apiError.mutationUnknown.title' : `offerCoupon.error.${reason}.title`,
   };
 }

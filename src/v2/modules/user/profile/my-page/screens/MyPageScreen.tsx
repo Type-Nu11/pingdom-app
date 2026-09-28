@@ -16,7 +16,7 @@ import { useCheckIns } from '../../../../place/check-ins';
 import { useCoupons } from '../../../../booking/offers-coupons';
 import { useReservations } from '../../../../booking/reservations';
 import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../travel/schedules';
-import { ErrorState, LoadingState } from '../../../../../shared/components';
+import { ApiErrorState, ErrorState, LoadingState } from '../../../../../shared/components';
 import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../travel/components/TravelCalendar';
 import VerifiedPlaceCard from '../verified-places/components/VerifiedPlaceCard';
@@ -62,6 +62,8 @@ export default function MyPageScreen({
 }: MyPageScreenProps) {
   const { t } = useTranslation();
   const {
+    error: profileError,
+    isFetching: isProfileFetching,
     isError: isProfileError,
     isLoading: isProfileLoading,
     profile,
@@ -204,14 +206,10 @@ export default function MyPageScreen({
               <Slot $minHeight={PROFILE_ROW_HEIGHT}>
                 <LoadingState description={t('myPage.profileLoading')} />
               </Slot>
+            ) : isProfileError && !profile ? (
+              <ApiErrorState error={profileError} busy={isProfileFetching} onRetry={() => refetchProfile({ cancelRefetch: false })} />
             ) : (
               <>
-                {/*
-                  The row stays tappable even when the profile failed to load:
-                  changing a password or a profile image does not depend on the
-                  profile response, and replacing the row with an error box would
-                  make the edit screen unreachable.
-                */}
                 <ProfileRow accessibilityRole="button" onPress={onOpenProfileEdit}>
                   <ProfileInfo testID="v2-my-page-profile-info">
                     <AvatarSlot testID="v2-my-page-avatar">
@@ -235,16 +233,7 @@ export default function MyPageScreen({
                   <ProfileChevron testID="v2-my-page-profile-chevron"><ChevronIcon height={24} width={24} /></ProfileChevron>
                 </ProfileRow>
                 {isProfileError ? (
-                  <InlineRetryRow>
-                    <InlineRetryText>{t('myPage.profileError')}</InlineRetryText>
-                    <InlineRetryButton
-                      accessibilityRole="button"
-                      hitSlop={8}
-                      onPress={() => void refetchProfile()}
-                    >
-                      <InlineRetryLabel>{t('myPage.retry')}</InlineRetryLabel>
-                    </InlineRetryButton>
-                  </InlineRetryRow>
+                  <ApiErrorState error={profileError} busy={isProfileFetching} onRetry={() => refetchProfile({ cancelRefetch: false })} />
                 ) : null}
               </>
             )}
@@ -469,25 +458,10 @@ const Slot = styled.View<{ $minHeight: number }>`
   justify-content: center;
 `;
 
-const InlineRetryRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  background-color: ${({ theme }) => theme.colors.dangerSoft};
-`;
-
 const InlineRetryText = styled(AppText)`
   flex: 1;
   color: ${({ theme }) => theme.colors.danger};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-`;
-
-const InlineRetryButton = styled.Pressable`
-  align-items: center;
-  justify-content: center;
 `;
 
 const InlineRetryLabel = styled(AppText)`

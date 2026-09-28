@@ -1,3 +1,5 @@
+import { ApiErrorState } from '../../../../shared/components';
+import ReservationRecordCard from './ReservationRecordCard';
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -192,6 +194,7 @@ export default function ReservationBottomSheet({
   onOpenMap,
   onOpenRecommendations,
   onOpenReservation,
+  nearbyError, nearbyBusy, onRetryNearby,
   onPlacePress,
   onToggleBookmark,
   panHandlers,
@@ -268,7 +271,8 @@ export default function ReservationBottomSheet({
           <AppText style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</AppText>
           <View style={[styles.listViewport, snapPoint === 'medium' && styles.listViewportMedium]}>
             <ScrollView contentContainerStyle={styles.listContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-              <NearbyReservationRail
+              {nearbyError ? <ApiErrorState error={nearbyError} busy={nearbyBusy} onRetry={onRetryNearby} /> : null}
+              {nearbyPlaces.length > 0 || !nearbyError ? <NearbyReservationRail
                 bookmarkedPlaceIds={bookmarkedPlaceIds}
                 bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
                 isBookmarkStateLoading={isBookmarkStateLoading}
@@ -276,24 +280,27 @@ export default function ReservationBottomSheet({
                 onPlacePress={onPlacePress}
                 onToggleBookmark={onToggleBookmark}
                 places={nearbyPlaces}
-              />
+              /> : null}
               {snapPoint === 'expanded' ? (
                 <>
                   <AppText style={styles.savedTitle}>{t('reservation.list.savedTitle')}</AppText>
+                  {reservations.isError && reservations.data ? <ApiErrorState error={reservations.error} busy={reservations.isFetching} onRetry={() => reservations.refetch({ cancelRefetch: false })} /> : null}
                   {reservations.isLoading ? (
                     <View style={styles.state} testID="reservations-loading"><AppText style={styles.stateTitle}>{t('reservation.list.loading')}</AppText></View>
-                  ) : reservations.isError ? (
+                  ) : reservations.isError && !reservations.data ? (
                     <View style={styles.state} testID="reservations-error">
-                      <AppText style={styles.stateTitle}>{t('reservation.list.error')}</AppText>
-                      <Pressable accessibilityRole="button" onPress={() => void reservations.refetch()} style={styles.retryButton}><AppText style={styles.retryLabel}>{t('reservation.list.retry')}</AppText></Pressable>
+                      <ApiErrorState error={reservations.error} busy={reservations.isFetching} onRetry={() => reservations.refetch({ cancelRefetch: false })} />
                     </View>
-                  ) : reservationPlaces.length === 0 ? (
+                  ) : items.length === 0 ? (
                     <View style={styles.state} testID="reservations-empty">
-                      <AppText style={styles.stateMark}>R</AppText>
+                      <MapAsset color={colors.primary} height={32} width={32} />
                       <AppText style={styles.stateTitle}>{t('reservation.list.emptyTitle')}</AppText>
                       <AppText style={styles.stateBody}>{t('reservation.list.emptyDescription')}</AppText>
                     </View>
-                  ) : reservationPlaces.map(({ place, reservation }, index) => (
+                  ) : items.map((reservation, index) => {
+                    const place = reservationPlaceByAvailabilityId[String(reservation.availabilityId)];
+                    if (!place) return <ReservationRecordCard key={reservation.id} reservation={reservation} onPress={() => onOpenReservation(reservation.id)} />;
+                    return (
                     <View key={reservation.id} style={index < reservationPlaces.length - 1 ? styles.reservationCardItem : undefined}>
                       <ReservationPlaceCard
                         imageUrls={reservationImageUrlsByPlaceId[String(place.id)] ?? []}
@@ -302,7 +309,7 @@ export default function ReservationBottomSheet({
                         reservationId={reservation.id}
                       />
                     </View>
-                  ))}
+                  ); })}
                 </>
               ) : null}
             </ScrollView>

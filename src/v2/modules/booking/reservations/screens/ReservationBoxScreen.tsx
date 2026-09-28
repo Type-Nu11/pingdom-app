@@ -7,6 +7,7 @@ import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
 import SettingsIcon from '../../../../shared/assets/icons/settings.svg';
+import { ApiErrorState } from '../../../../shared/components';
 import ReservationRecordCard from '../components/ReservationRecordCard';
 import { useReservations } from '../hooks/useReservations';
 import type { Reservation } from '..';
@@ -41,23 +42,19 @@ export default function ReservationBoxScreen({ onBack, onOpenReservation, onOpen
           <ActivityIndicator color={theme.colors.primary} />
           <StateText>{t('reservation.box.loading')}</StateText>
         </State>
-      ) : reservations.isError ? (
-        <State>
-          <StateText>{t('reservation.box.error')}</StateText>
-          <RetryButton accessibilityRole="button" onPress={() => void reservations.refetch()}>
-            <RetryLabel>{t('reservation.list.retry')}</RetryLabel>
-          </RetryButton>
-        </State>
+      ) : reservations.isError && !reservations.data ? (
+        <ApiErrorState error={reservations.error} busy={reservations.isFetching}
+          onBack={onBack} onRetry={() => reservations.refetch({ cancelRefetch: false })} />
       ) : (
         <FlatList
           contentContainerStyle={LIST_CONTENT_STYLE}
           data={items}
           keyExtractor={(item) => String(item.id)}
-          ListHeaderComponent={<Count>{t('reservation.box.count', { count: totalCount })}</Count>}
+          ListHeaderComponent={<>{reservations.isError ? <ApiErrorState error={reservations.error} busy={reservations.isFetching} onRetry={() => reservations.refetch({ cancelRefetch: false })} /> : null}<Count>{t('reservation.box.count', { count: totalCount })}</Count></>}
           ListEmptyComponent={<EmptyText>{t('reservation.box.empty')}</EmptyText>}
           refreshControl={(
             <RefreshControl
-              onRefresh={() => void reservations.refetch()}
+              onRefresh={() => void reservations.refetch({ cancelRefetch: false })}
               refreshing={reservations.isRefetching}
               tintColor={theme.colors.primary}
             />
@@ -128,12 +125,6 @@ const StateText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   text-align: center;
-`;
-
-const RetryButton = styled.Pressable`
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.primarySoft};
 `;
 
 const RetryLabel = styled(AppText)`

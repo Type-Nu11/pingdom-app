@@ -212,14 +212,14 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
     ? t(`community.detail.commentInput.validation.${validationErrorKey === 'contentRequired' ? 'required' : 'tooLong'}`)
     : undefined;
   const serverFieldError = createComment.isError ? communityCommentFieldError(createComment.error) : undefined;
-  const fieldErrorText = serverFieldError ?? clientFieldError;
+  const fieldErrorText = serverFieldError ? t('common.apiError.validation.description') : clientFieldError;
 
   const bannerKind = createComment.isError ? communityCommentErrorKind(createComment.error) : null;
   const bannerAction = createComment.isError ? communityCommentBannerAction(createComment.error) : 'none';
   // The banner covers everything except a 400 whose `content` field error is
   // already shown inline under the input — that case would otherwise say the
   // same thing twice.
-  const showBanner = createComment.isError && !(bannerKind === 'validation' && Boolean(serverFieldError));
+  const showBanner = createComment.isError && bannerKind !== 'canceled' && !(bannerKind === 'validation' && Boolean(serverFieldError));
 
   // Only a 404 with no comment data at all (nothing was ever fetched)
   // triggers the full-screen not-found swap; a 404 on a later page while

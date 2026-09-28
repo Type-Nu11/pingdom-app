@@ -59,14 +59,15 @@ export default function CouponDetailContainer(props: CouponDetailContainerProps)
     );
   }
 
-  if (couponQuery.isError && !(couponQuery.error instanceof CouponNotFoundError)) {
+  if (couponQuery.isError && !coupon && !(couponQuery.error instanceof CouponNotFoundError)) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <OfferCouponErrorState
+          busy={couponQuery.isFetching}
           error={couponQuery.error}
           fill
           onBack={onBack}
-          onRetry={() => void couponQuery.refetch()}
+          onRetry={() => void couponQuery.refetch({ cancelRefetch: false })}
           onSignIn={onSignIn}
           operation="listCoupons"
           surface="wallet"
@@ -138,6 +139,8 @@ export default function CouponDetailContainer(props: CouponDetailContainerProps)
   const placeId = offer?.placeId;
 
   return (
+    <Screen edges={[]}>
+    {couponQuery.isError ? <OfferCouponErrorState error={couponQuery.error} busy={couponQuery.isFetching} onRetry={() => void couponQuery.refetch({ cancelRefetch: false })} onSignIn={onSignIn} surface="wallet" /> : null}
     <CouponDetailScreen
       benefit={offer?.benefitDescription || t('myPage.couponBox.fallbackDescription')}
       code={coupon.code}
@@ -150,6 +153,7 @@ export default function CouponDetailContainer(props: CouponDetailContainerProps)
       title={offer?.title || t('myPage.couponBox.fallbackTitle')}
       usable={usable}
     />
+    </Screen>
   );
 }
 

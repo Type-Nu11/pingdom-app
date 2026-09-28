@@ -240,7 +240,7 @@ describe('CommunityDetailScreen 댓글', () => {
     await user.type(screen.getByTestId('v2-community-comment-input'), '문제 있는 댓글');
     await user.press(screen.getByTestId('v2-community-comment-send'));
 
-    await waitFor(() => expect(screen.getByTestId('v2-community-comment-input-error')).toHaveTextContent('댓글 내용을 확인해 주세요.'));
+    await waitFor(() => expect(screen.getByTestId('v2-community-comment-input-error')).toHaveTextContent('입력한 정보를 확인한 후 다시 시도해 주세요.'));
     expect(screen.queryByTestId('v2-community-comment-error-banner')).toBeNull();
     // The failed content is kept so the user doesn't have to retype it.
     expect(screen.getByTestId('v2-community-comment-input').props.value).toBe('문제 있는 댓글');

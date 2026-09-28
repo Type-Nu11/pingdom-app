@@ -80,6 +80,7 @@ export function useProfile() {
 
   return {
     error: query.error,
+    isFetching: query.isFetching,
     isError: query.isError,
     isLoading: query.isLoading,
     profile: query.data ?? null,

@@ -1,3 +1,4 @@
+import { ApiErrorState, LoadingState } from '../../../../../shared/components';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -201,6 +202,13 @@ type MapBottomSheetProps = {
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onRetryReviews?: () => void;
+  detailError?: unknown;
+  detailBusy?: boolean;
+  onRetryDetail?: () => unknown;
+  resultsError?: unknown;
+  resultsLoading?: boolean;
+  resultsBusy?: boolean;
+  onRetryResults?: () => unknown;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
   sheetTranslateY: Animated.Value;
@@ -2089,6 +2097,7 @@ export default function MapBottomSheet({
   recommendationPlaces,
   recommendationsState,
   selectedPlace,
+  detailError, detailBusy, onRetryDetail, resultsError, resultsLoading, resultsBusy, onRetryResults,
   sheetChromeBottom,
   sheetTranslateY,
   snapPoint,
@@ -2266,7 +2275,8 @@ export default function MapBottomSheet({
         ]}
         testID="map-sheet-content"
       >
-      {content.type === 'place-preview' && selectedPlace ? (
+      {content.type === 'place-preview' && detailError ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
+      {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
           <ExpandedPlaceContent
             activeAction={activePreviewAction}
@@ -2351,9 +2361,10 @@ export default function MapBottomSheet({
             <AppText style={styles.resultsTitle}>{query ? t('map.sheet.resultsFor', { query }) : t('map.sheet.aroundMe')}</AppText>
             <AppText style={styles.resultsCount}>{places.length}</AppText>
           </View>
+          {resultsError ? <ApiErrorState error={resultsError} busy={resultsBusy} onRetry={onRetryResults} /> : null}
           {places.length > 0 ? places.map((place) => (
             <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
-          )) : <EmptyCard />}
+          )) : resultsLoading ? <LoadingState description={t('placeDetail.loading')} /> : resultsError ? null : <EmptyCard />}
         </ScrollView>
       ) : content.type === 'recommendations' ? (
         <RecommendationContent

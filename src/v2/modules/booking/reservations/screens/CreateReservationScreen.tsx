@@ -1,3 +1,4 @@
+import { ApiErrorState, Button } from '../../../../shared/components';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
@@ -47,7 +48,7 @@ type TimePeriod = 'morning' | 'afternoon';
 // not-found, generic, …) falls back to the generic retry message.
 
 type CreateReservationScreenProps = {
-  navigation: { goBack: () => void };
+  navigation: { goBack: () => void; navigate?: (screen: 'ReservationBox') => void };
   now?: Date;
   route: { params: { category?: string; imageUrl?: string; placeId: number; placeName?: string } };
 };
@@ -326,10 +327,11 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
         </Section>
 
         <Section><SectionTitle>{t('reservation.create.time')}</SectionTitle>
+          {availabilities.isError ? <ApiErrorState error={availabilities.error} busy={availabilities.isFetching} onRetry={() => availabilities.refetch({ cancelRefetch: false })} /> : null}
           {renderAvailabilityState({
             availabilityData,
             bookableCount: bookableAvailabilities.length,
-            isError: availabilities.isError,
+            isError: availabilities.isError && !availabilities.data,
             isPending: availabilities.isPending,
             onRetry: () => { void availabilities.refetch(); },
             placeName: route.params.placeName ?? detail.data?.name ?? t('reservation.create.loadingPlace'),
@@ -425,6 +427,9 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
           {submitErrorKey ? (
             <ErrorText accessibilityLiveRegion="polite" accessibilityRole="alert">{t(submitErrorKey)}</ErrorText>
           ) : null}
+          {submitErrorKey === 'reservation.create.submitNetworkError' && navigation.navigate ? (
+            <Button label={t('reservation.box.title')} onPress={() => navigation.navigate?.('ReservationBox')} />
+          ) : null}
           <SubmitButton $enabled={canSubmit} accessibilityRole="button" accessibilityState={{ disabled: !slotReady, busy: createReservation.isPending || isSubmitting }} disabled={!slotReady} onPress={submit} testID="v2-reservation-submit">
             {createReservation.isPending || isSubmitting ? <ActivityIndicator color={theme.colors.onPrimary} /> : <SubmitLabel $enabled={canSubmit}>{t('reservation.create.submit')}</SubmitLabel>}
           </SubmitButton>
@@ -459,7 +464,7 @@ type AvailabilityStateProps = {
 function renderAvailabilityState(props: AvailabilityStateProps) {
   const { t } = props;
   if (props.isPending) return <StateBox><ActivityIndicator color={props.themeColor} /><Helper>{t('reservation.create.availabilityLoading')}</Helper></StateBox>;
-  if (props.isError) return <StateBox><ErrorText>{t('reservation.create.availabilityError')}</ErrorText><RetryButton accessibilityRole="button" onPress={props.onRetry}><RetryText>{t('reservation.create.retry')}</RetryText></RetryButton></StateBox>;
+  if (props.isError) return null;
   if (props.availabilityData.length === 0) return <StateBox><Helper>{t('reservation.create.availabilityEmpty')}</Helper></StateBox>;
   // Availabilities exist, but none is a GENERAL place reservation. Say so
   // explicitly instead of reusing the empty or capacity copy, and never present

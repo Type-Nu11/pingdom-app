@@ -10,6 +10,9 @@ export type MapReservationSheetProps = {
   height: number;
   isBookmarkStateLoading: boolean;
   isNearbyLoading?: boolean;
+  nearbyError?: unknown;
+  nearbyBusy?: boolean;
+  onRetryNearby?: () => unknown;
   mediumTranslateY: number;
   nearbyPlaces: DecisionPlace[];
   reservationPlaceByAvailabilityId: Record<string, DecisionPlace>;

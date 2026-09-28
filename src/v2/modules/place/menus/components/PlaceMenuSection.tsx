@@ -4,12 +4,17 @@ import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
+import { ApiErrorState } from '../../../../shared/components';
 import { getApiErrorUx } from '../../../../shared/api';
 import { isValidPlaceMenuId, usePlaceMenus } from '../hooks/usePlaceMenus';
 import { formatPlaceMenuPrice, selectPlaceMenus } from '../model/placeMenuPresentation';
 import type { PlaceMenuPresentation } from '../model/placeMenu.types';
 
 const API_ERROR_DESCRIPTION_KEYS = {
+  canceled: 'common.apiError.generic.description',
+  server: 'common.apiError.server.description',
+  timeout: 'common.apiError.timeout.description',
+  rateLimited: 'common.apiError.rateLimited.description',
   authentication: 'common.apiError.authentication.description',
   authorization: 'common.apiError.authorization.description',
   conflict: 'common.apiError.conflict.description',
@@ -107,20 +112,23 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
     );
   }
 
-  if (query.isError) {
+  if (query.isError && !menus.length) {
     const ux = getApiErrorUx(query.error);
+    if (ux.kind === 'canceled') return null;
     return (
       <Section accessibilityRole="summary" testID="place-menu-error">
         <SectionTitle>{t('placeMenu.title')}</SectionTitle>
         <StateText accessibilityLiveRegion="polite">{t('placeMenu.error.title')}</StateText>
         <ErrorDescription>{t(API_ERROR_DESCRIPTION_KEYS[ux.kind])}</ErrorDescription>
-        <RetryButton
+        {ux.action === 'retry' || ux.kind === 'notFound' ? <RetryButton
+          disabled={query.isFetching}
+          accessibilityState={{ busy: query.isFetching, disabled: query.isFetching }}
           accessibilityLabel={t('placeMenu.retry')}
           accessibilityRole="button"
-          onPress={() => void query.refetch()}
+          onPress={() => void query.refetch({ cancelRefetch: false })}
         >
           <RetryText>{t('placeMenu.retry')}</RetryText>
-        </RetryButton>
+        </RetryButton> : null}
       </Section>
     );
   }
@@ -137,6 +145,7 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
   return (
     <Section accessibilityRole="summary" testID="place-menu-section">
       <SectionTitle>{t('placeMenu.title')}</SectionTitle>
+      {query.isError ? <ApiErrorState error={query.error} busy={query.isFetching} onRetry={() => query.refetch({ cancelRefetch: false })} /> : null}
       {menus.map((menu) => <MenuRow item={menu} key={menu.id} />)}
     </Section>
   );

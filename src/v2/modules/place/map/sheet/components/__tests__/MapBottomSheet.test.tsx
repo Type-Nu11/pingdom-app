@@ -1250,6 +1250,26 @@ describe('MapBottomSheet recommendations', () => {
     ...overrides,
   });
 
+  test('production search errors are distinct from empty results and preserve rows on refresh failure', async () => {
+    const retry = jest.fn().mockResolvedValue({});
+    const base = categoryProps([], { content: { type: 'results', query: 'cafe' }, places: [], resultsError: new Error('secret'), onRetryResults: retry });
+    const view = await renderWithProviders(<MapBottomSheet {...base} />);
+    expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy();
+    await view.user.press(screen.getByText('다시 시도'));
+    expect(retry).toHaveBeenCalledTimes(1);
+    await view.rerender(<MapBottomSheet {...base} places={places} />);
+    expect(screen.getByText(places[0].name)).toBeTruthy();
+    expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy();
+  });
+
+  test('deep-linked place failure shows recovery without falling into the home feed', async () => {
+    const base = categoryProps([], { content: { type: 'place-preview', placeId: 77 }, selectedPlace: null, detailError: new Error('secret'), onRetryDetail: jest.fn() });
+    await renderWithProviders(<MapBottomSheet {...base} />);
+    expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy();
+    expect(screen.queryByText('secret')).toBeNull();
+    expect(screen.getByText('다시 시도')).toBeTruthy();
+  });
+
   test.each([
     ['local', '우리 지역 핫플'],
     ['national', '전국 트렌드'],

@@ -1,6 +1,10 @@
 import { ApiError, toApiError } from './ApiError';
 
 export type ApiErrorUxKind =
+  | 'canceled'
+  | 'timeout'
+  | 'server'
+  | 'rateLimited'
   | 'authentication'
   | 'authorization'
   | 'conflict'
@@ -29,10 +33,6 @@ const AUTHENTICATION_CODES = new Set([
   'INVALID_TOKEN',
   'EXPIRED_TOKEN',
   'TOKEN_EXPIRED',
-  'SIGNATURE_REQUIRED',
-  'INVALID_SIGNATURE',
-  'REQUEST_TIMESTAMP_OUT_OF_RANGE',
-  'SIGNING_KEY_EXPIRED',
 ]);
 
 const AUTHORIZATION_CODES = new Set([
@@ -42,22 +42,32 @@ const AUTHORIZATION_CODES = new Set([
   'RESOURCE_OWNERSHIP_REQUIRED',
 ]);
 
-const RETRYABLE_KINDS = new Set<ApiErrorUxKind>(['generic', 'network']);
+const RETRYABLE_KINDS = new Set<ApiErrorUxKind>(['generic', 'network', 'timeout', 'server']);
 
 function build(
   error: ApiError,
   kind: ApiErrorUxKind,
   action: ApiErrorUx['action'],
 ): ApiErrorUx {
-  return { action, error, kind, retryable: RETRYABLE_KINDS.has(kind) };
+  return { action, error, kind, retryable: action === 'retry' && RETRYABLE_KINDS.has(kind) };
 }
 
 export function getApiErrorUx(value: unknown): ApiErrorUx {
   const error = toApiError(value);
   const { code, status } = error;
 
+  // An HTML gateway/login page is not a contract authentication response.
+  if (status === 401 && typeof error.responseData === 'string' && /^\s*</.test(error.responseData)) {
+    return build(error, 'generic', 'none');
+  }
+  if (code === 'ERR_CANCELED') return build(error, 'canceled', 'none');
+  if (['SIGNATURE_REQUIRED', 'INVALID_SIGNATURE', 'REQUEST_TIMESTAMP_OUT_OF_RANGE', 'SIGNING_KEY_EXPIRED'].includes(code ?? '')) return build(error, 'generic', 'none');
+  if (status === 429) return build(error, 'rateLimited', 'none');
+  if (status && status >= 500) return build(error, 'server', 'retry');
+  if (code === 'REQUEST_TIMEOUT' || (error.isNetworkError && (code === 'ECONNABORTED' || code === 'ETIMEDOUT'))) return build(error, 'timeout', 'retry');
+
   // Transport failure: no HTTP response reached the client. Distinct from a 5xx
-  // or an empty list, and always safe to retry.
+  // or an empty list, eligible for query retry; mutations may have completed on the server.
   if (error.isNetworkError) {
     return build(error, 'network', 'retry');
   }
@@ -78,7 +88,7 @@ export function getApiErrorUx(value: unknown): ApiErrorUx {
     code === 'VALIDATION_FAILED' ||
     code === 'INVALID_TRAVEL_SCHEDULE_PERIOD' ||
     code === 'COUPON_LIST_FILTER_INVALID' ||
-    (!code && status === 400)
+    (!code && status === 400 && Boolean(error.fieldErrors?.length))
   ) {
     return build(error, 'validation', 'none');
   }

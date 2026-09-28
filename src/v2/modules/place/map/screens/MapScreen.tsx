@@ -167,6 +167,11 @@ export default function MapScreen({
   const CommunityBottomSheet = useMapCommunitySheet();
   const theme = useTheme();
   const isFocused = useIsFocused();
+  const feedbackActive = useRef(isFocused);
+  useEffect(() => {
+    feedbackActive.current = isFocused;
+    return () => { feedbackActive.current = false; };
+  }, [isFocused]);
   const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused);
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
@@ -244,6 +249,9 @@ export default function MapScreen({
     nationalTrendsQuery.refetch,
   ]);
   const {
+    error: placesError,
+    isLoading: placesLoading,
+    isFetching: placesFetching,
     markers: apiMarkers,
     places: apiPlaces,
     refetch: refetchPlaces,
@@ -288,6 +296,9 @@ export default function MapScreen({
     && Number.isFinite(userLat)
     && Number.isFinite(userLng);
   const {
+    error: nearbyCandidatesError,
+    isFetching: nearbyCandidatesFetching,
+    refetch: refetchNearbyCandidates,
     isLoading: isNearbyReservationCandidatesLoading,
     places: nearbyReservationCandidates,
   } = usePlaces({
@@ -305,6 +316,9 @@ export default function MapScreen({
     [nearbyReservationCandidates, reservationEntryPlace],
   );
   const {
+    error: nearbyAvailabilityError,
+    isFetching: nearbyAvailabilityFetching,
+    refetch: refetchNearbyAvailability,
     isLoading: isNearbyReservationsLoading,
     placeIdByAvailabilityId,
     reservablePlaceIds: discoveredReservablePlaceIds,
@@ -324,6 +338,8 @@ export default function MapScreen({
   const {
     fetchNextPage: fetchNextFavoritePage,
     hasNextPage: hasNextFavoritePage,
+    error: favoritesError,
+    isFetching: isFavoritesFetching,
     isError: isFavoritesError,
     isFetchNextPageError: isFetchNextFavoritePageError,
     isFetchingNextPage: isFetchingNextFavoritePage,
@@ -478,6 +494,8 @@ export default function MapScreen({
   const {
     detail: selectedPlaceDetail,
     detailError: selectedPlaceDetailError,
+    isDetailFetching: selectedPlaceDetailFetching,
+    refetchDetail,
     isDetailPending: isSelectedPlaceDetailPending,
     presentation: selectedPlacePresentation,
     refetchAvailability,
@@ -873,9 +891,11 @@ export default function MapScreen({
     try {
       await togglePlaceBookmark(place, nextBookmarked);
     } catch (error) {
+      const messageKey = getBookmarkErrorMessage(error);
+      if (!feedbackActive.current || !messageKey) return;
       Alert.alert(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
-        getBookmarkErrorMessage(error) || t('common.error.description'),
+        t(messageKey),
       );
     }
   };
@@ -886,9 +906,11 @@ export default function MapScreen({
     try {
       await toggleRankedPlaceBookmark(place, nextBookmarked);
     } catch (error) {
+      const messageKey = getBookmarkErrorMessage(error);
+      if (!feedbackActive.current || !messageKey) return;
       Alert.alert(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
-        getBookmarkErrorMessage(error) || t('common.error.description'),
+        t(messageKey),
       );
     }
   };
@@ -980,6 +1002,8 @@ export default function MapScreen({
             hasNextPage={Boolean(hasNextFavoritePage)}
             height={fullSheetHeight}
             imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
+            error={favoritesError}
+            isFetching={isFavoritesFetching}
             isError={isFavoritesError}
             isFetchNextPageError={isFetchNextFavoritePageError}
             isFetchingNextPage={isFetchingNextFavoritePage}
@@ -1006,7 +1030,7 @@ export default function MapScreen({
               openMapSection('reservations');
             }}
             onLoadMore={() => void fetchNextFavoritePage()}
-            onRetry={() => void refetchFavorites()}
+            onRetry={() => refetchFavorites({ cancelRefetch: false })}
             onRemovePlace={(place) => void handleToggleBookmark(place, false)}
             onPlacePress={(place) => {
               setMapSection('map');
@@ -1030,6 +1054,9 @@ export default function MapScreen({
               isNearbyReservationCandidatesLoading || isNearbyReservationsLoading
             )}
             mediumTranslateY={mediumTranslateY}
+            nearbyError={nearbyCandidatesError ?? nearbyAvailabilityError}
+            nearbyBusy={nearbyCandidatesFetching || nearbyAvailabilityFetching}
+            onRetryNearby={() => Promise.all([refetchNearbyCandidates({ cancelRefetch: false }), refetchNearbyAvailability()])}
             nearbyPlaces={nearbyReservationPlaces}
             reservationPlaceByAvailabilityId={reservationPlaceByAvailabilityId}
             onHandlePress={() => {
@@ -1141,6 +1168,13 @@ export default function MapScreen({
             recommendationPlaces={recommendationPlaces}
             recommendationsState={recommendationsState}
             selectedPlace={selectedPlace}
+            detailError={selectedPlaceDetailError}
+            detailBusy={selectedPlaceDetailFetching}
+            onRetryDetail={() => refetchDetail({ cancelRefetch: false })}
+            resultsError={placesError}
+            resultsLoading={placesLoading}
+            resultsBusy={placesFetching}
+            onRetryResults={() => refetchPlaces({ cancelRefetch: false })}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
             snapPoint={snapPoint}

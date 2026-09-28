@@ -208,7 +208,7 @@ describe('V2 reservation screens', () => {
     } as unknown as ReturnType<typeof useAvailabilities>);
 
     const { user } = await renderReservationScreen(createScreen());
-    expect(screen.getByText('예약 가능 일정을 불러오지 못했습니다.')).toBeVisible();
+    expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeVisible();
     expect(screen.queryByText('이 장소에 등록된 예약 가능 일정이 없습니다.')).not.toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: '다시 시도' }));
     expect(refetch).toHaveBeenCalledTimes(1);
@@ -846,7 +846,7 @@ describe('V2 reservation screens', () => {
       ],
       [
         new ApiError('offline', { isNetworkError: true }),
-        '네트워크 문제예요. 연결을 확인하고 다시 시도해 주세요.',
+        '예약 처리 결과를 확인하지 못했어요. 다시 제출하기 전에 예약함을 확인해 주세요.',
       ],
       [
         new ApiError('bad input', { code: 'VALIDATION_FAILED', status: 400 }),
@@ -854,7 +854,7 @@ describe('V2 reservation screens', () => {
       ],
       [
         new ApiError('boom', { status: 500 }),
-        '예약을 접수하지 못했습니다. 다시 시도해 주세요.',
+        '예약 처리 결과를 확인하지 못했어요. 다시 제출하기 전에 예약함을 확인해 주세요.',
       ],
     ];
 

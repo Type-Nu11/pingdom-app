@@ -82,7 +82,7 @@ export default function CommunityWriteScreen({
   });
   const serverFieldErrors = createPost.isError ? communityWriteServerFieldErrors(createPost.error) : {};
   const fieldErrorText = (field: keyof typeof fieldErrors) => {
-    if (serverFieldErrors[field]) return serverFieldErrors[field];
+    if (serverFieldErrors[field]) return t('common.apiError.validation.description');
     if (!showErrors) return undefined;
     const key = fieldErrors[field];
     return key ? t(VALIDATION_KEY_TO_I18N[key]) : undefined;
@@ -284,7 +284,7 @@ export default function CommunityWriteScreen({
             ) : null}
           </PlaceSection>
 
-          {createPost.isError && hasUnmappedServerError ? (
+          {createPost.isError && bannerKind !== 'canceled' && hasUnmappedServerError ? (
             <Section>
               <ErrorBanner testID="v2-community-write-error-banner">
                 <ErrorBannerText accessibilityLiveRegion="assertive" accessibilityRole="alert">

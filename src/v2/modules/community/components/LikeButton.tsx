@@ -125,7 +125,7 @@ export default function LikeButton({ onSignIn, postId }: LikeButtonProps) {
         </Count>
       </Row>
 
-      {toggleUx ? (
+      {toggleUx && toggleUx.kind !== 'canceled' ? (
         <ErrorRow>
           <ErrorText accessibilityLiveRegion="assertive" accessibilityRole="alert">
             {t(`common.apiError.${toggleUx.kind}.description`)}
