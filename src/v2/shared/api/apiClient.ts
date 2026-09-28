@@ -2,6 +2,7 @@ import axios, { type AxiosInstance } from 'axios';
 
 import { env } from '../config';
 import { ApiError, toApiError } from './ApiError';
+import { withApiDiagnostics } from './apiDiagnostics';
 import { mockApiClient } from './mock/mockApiClient';
 
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -141,7 +142,10 @@ function assertRelativeApiPath(path: string) {
 }
 
 export function createApiClient(transport?: ApiTransport): ApiClient {
-  const getTransport = () => transport ?? apiTransport;
+  const getTransport = () => withApiDiagnostics(
+    transport ?? apiTransport, env.apiBaseUrl,
+    typeof __DEV__ !== 'undefined' && __DEV__ && env.isDevelopment,
+  );
 
   return {
     async delete<TResponse, TBody = never>(
