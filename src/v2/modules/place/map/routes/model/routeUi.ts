@@ -31,6 +31,9 @@ export type RouteUiState =
   | { kind: 'missing-destination' }
   | { kind: 'unavailable' }
   | { kind: 'no-transit' }
+  | { kind: 'no-route' }
+  | { kind: 'error' }
+  | { kind: 'location-failed' }
   | { kind: 'ready'; preview: RoutePreview };
 
 export function hasRouteDestinationCoordinates(destination: RouteDestination): boolean {

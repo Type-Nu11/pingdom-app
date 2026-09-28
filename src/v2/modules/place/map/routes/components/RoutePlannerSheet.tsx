@@ -26,6 +26,11 @@ import type { RouteDestination, RouteMode, RouteSegment, RouteUiState } from '..
 
 type Props = {
   destination: RouteDestination;
+  originName?: string;
+  onEditOrigin?: () => void;
+  onOpenExternal?: () => void;
+  externalBusy?: boolean;
+  onRetry?: () => void;
   mode: RouteMode;
   onClose: () => void;
   onEditPlaces: () => void;
@@ -78,8 +83,8 @@ function RouteSegments({ segments }: { segments: RouteSegment[] }) {
 }
 
 function StatusCard({
-  onClose, onEditPlaces, onModeChange, onOpenSettings, state,
-}: Pick<Props, 'onClose' | 'onEditPlaces' | 'onModeChange' | 'onOpenSettings' | 'state'>) {
+  onClose, onEditPlaces, onModeChange, onOpenSettings, onRetry, state,
+}: Pick<Props, 'onClose' | 'onEditPlaces' | 'onModeChange' | 'onOpenSettings' | 'onRetry' | 'state'>) {
   const { t } = useTranslation();
   const theme = useTheme();
   if (state.kind === 'loading') {
@@ -96,12 +101,13 @@ function StatusCard({
 
   const isDenied = state.kind === 'location-denied';
   const isMissing = state.kind === 'missing-destination';
-  const isNoTransit = state.kind === 'no-transit';
-  const title = isDenied ? t('map.route.deniedTitle')
+  const isNoTransit = state.kind === 'no-transit' || state.kind === 'no-route';
+  const retryable = state.kind === 'error' || state.kind === 'location-failed';
+  const title = retryable ? t('map.route.errorTitle') : isDenied ? t('map.route.deniedTitle')
     : isMissing ? t('map.route.missingTitle')
       : isNoTransit ? t('map.route.noTransitTitle')
         : t('map.route.unavailableTitle');
-  const body = isDenied ? t('map.route.deniedBody')
+  const body = retryable ? t('map.route.errorBody') : isDenied ? t('map.route.deniedBody')
     : isMissing ? t('map.route.missingBody')
       : isNoTransit ? t('map.route.noTransitBody')
         : t('map.route.unavailableBody');
@@ -116,20 +122,20 @@ function StatusCard({
         <Pressable accessibilityRole="button" onPress={onEditPlaces} style={{ alignItems: 'center', borderColor: theme.colors.border, borderRadius: 22, borderWidth: 1, flex: 1, justifyContent: 'center', minHeight: 44 }}>
           <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>{isDenied ? t('map.route.enterManually') : t('map.route.editPlaces')}</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" onPress={isDenied ? onOpenSettings : isNoTransit ? () => onModeChange('car') : onClose} style={{ alignItems: 'center', backgroundColor: theme.colors.primary, borderRadius: 22, flex: 1, justifyContent: 'center', minHeight: 44 }}>
-          <Text style={{ color: theme.colors.textInverse, fontSize: 13, fontWeight: '700' }}>{isDenied ? t('map.route.openSettings') : isNoTransit ? t('map.route.car') : t('map.route.close')}</Text>
+        <Pressable accessibilityRole="button" onPress={retryable ? onRetry : isDenied ? onOpenSettings : isNoTransit ? () => onModeChange('car') : onClose} style={{ alignItems: 'center', backgroundColor: theme.colors.primary, borderRadius: 22, flex: 1, justifyContent: 'center', minHeight: 44 }}>
+          <Text style={{ color: theme.colors.textInverse, fontSize: 13, fontWeight: '700' }}>{retryable ? t('map.route.retry') : isDenied ? t('map.route.openSettings') : isNoTransit ? t('map.route.car') : t('map.route.close')}</Text>
         </Pressable>
       </View>
     </View>
   );
 }
 
-export default function RoutePlannerSheet({ destination, mode, onClose, onEditPlaces, onModeChange, onPreviewAction, onShare, onOpenSettings, state }: Props) {
+export default function RoutePlannerSheet({ onEditOrigin, originName, onOpenExternal, externalBusy, onRetry, destination, mode, onClose, onEditPlaces, onModeChange, onPreviewAction, onShare, onOpenSettings, state }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
   const active = state.kind === 'ready' ? state.preview : null;
   return (
-    <View style={{ backgroundColor: theme.colors.backgroundAssistive, borderColor: theme.colors.surface, borderRadius: 36, borderWidth: 1, marginHorizontal: 8, paddingBottom: 14, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 20 }} testID="route-planner-sheet">
+    <View style={{ flex: 1, backgroundColor: theme.colors.backgroundAssistive, borderColor: theme.colors.surface, borderRadius: 36, borderWidth: 1, marginHorizontal: 8, paddingBottom: 14, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 20 }} testID="route-planner-sheet">
       <View style={{ alignSelf: 'center', backgroundColor: '#BFC1C1', borderRadius: 3, height: 5, marginTop: 8, width: 56 }} />
       <ScrollView contentContainerStyle={{ gap: 12, paddingHorizontal: 16, paddingTop: 12 }} showsVerticalScrollIndicator={false}>
         <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 48 }}>
@@ -161,11 +167,11 @@ export default function RoutePlannerSheet({ destination, mode, onClose, onEditPl
           })}
         </View>
         <View style={{ backgroundColor: theme.colors.surface, borderRadius: 20, overflow: 'hidden' }}>
-          <Pressable accessibilityLabel={t('map.route.editPlaces')} accessibilityRole="button" onPress={onEditPlaces} style={{ alignItems: 'center', flexDirection: 'row', gap: 12, height: 56, paddingHorizontal: 12 }}>
+          <Pressable accessibilityLabel={t('map.route.from')} accessibilityRole="button" onPress={onEditOrigin ?? onEditPlaces} style={{ alignItems: 'center', flexDirection: 'row', gap: 12, height: 56, paddingHorizontal: 12 }}>
             <View style={{ alignItems: 'center', backgroundColor: theme.colors.primarySoft, borderRadius: 16, height: 32, justifyContent: 'center', width: 32 }}><OriginIcon /></View>
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={{ color: theme.colors.textStrong, fontSize: 16, fontWeight: '500' }}>{state.kind === 'location-denied' ? t('map.route.setStart') : t('map.route.myLocation')}</Text>
-              <Text numberOfLines={1} style={{ color: theme.colors.textMuted, fontSize: 12 }}>{state.kind === 'location-denied' ? t('map.route.setStartHint') : t('map.route.currentPosition')}</Text>
+              <Text numberOfLines={1} style={{ color: theme.colors.textStrong, fontSize: 16, fontWeight: '500' }}>{originName ?? (state.kind === 'location-denied' ? t('map.route.setStart') : t('map.route.myLocation'))}</Text>
+              <Text numberOfLines={1} style={{ color: theme.colors.textMuted, fontSize: 12 }}>{t('map.route.from')}</Text>
             </View>
             <HandleIcon />
           </Pressable>
@@ -194,16 +200,14 @@ export default function RoutePlannerSheet({ destination, mode, onClose, onEditPl
               </View>
               <Pressable accessibilityRole="button" onPress={onPreviewAction} style={{ alignItems: 'center', backgroundColor: theme.colors.primary, borderRadius: 24, flexDirection: 'row', gap: 5, height: 48, justifyContent: 'center', paddingHorizontal: 20 }}>
                 <StartIcon />
-                <Text style={{ color: theme.colors.textInverse, fontSize: 16, fontWeight: '700' }}>{mode === 'car' ? t('map.route.call') : t('map.route.start')}</Text>
+                <Text style={{ color: theme.colors.textInverse, fontSize: 16, fontWeight: '700' }}>{t('map.route.detail')}</Text>
               </Pressable>
             </View>
             {active.segments ? <RouteSegments segments={active.segments} /> : null}
             <View style={{ alignItems: 'center', flexDirection: 'row', gap: 4 }}><ClockIcon /><Text style={{ color: theme.colors.primary, fontSize: 12 }}>{t('map.route.previewHint')}</Text></View>
           </View>
-        ) : <StatusCard onClose={onClose} onEditPlaces={onEditPlaces} onModeChange={onModeChange} onOpenSettings={onOpenSettings} state={state} />}
-        <View style={{ alignSelf: 'center', flexDirection: 'row', gap: 6, marginBottom: 2, marginTop: 2 }}>
-          {[0, 1, 2].map((index) => <View key={index} style={{ backgroundColor: index === 0 ? theme.colors.primary : '#BFC1C1', borderRadius: 3, height: 6, width: index === 0 ? 16 : 6 }} />)}
-        </View>
+        ) : <StatusCard onRetry={onRetry} onClose={onClose} onEditPlaces={state.kind === 'location-denied' ? onEditOrigin ?? onEditPlaces : onEditPlaces} onModeChange={onModeChange} onOpenSettings={onOpenSettings} state={state} />}
+        {onOpenExternal ? <Pressable accessibilityRole="button" accessibilityState={{ disabled: externalBusy || state.kind === 'missing-destination' }} disabled={externalBusy || state.kind === 'missing-destination'} onPress={onOpenExternal} style={{ alignItems: 'center', backgroundColor: theme.colors.primary, borderRadius: 22, padding: 14, opacity: externalBusy || state.kind === 'missing-destination' ? 0.5 : 1 }}><Text style={{ color: theme.colors.textInverse, fontWeight: '700' }}>{t('map.route.openExternal')}</Text></Pressable> : null}
       </ScrollView>
     </View>
   );
