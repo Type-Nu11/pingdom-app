@@ -3,6 +3,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
+import { textStyleCss } from '../../../shared/theme/typography';
+
 import NotInterestedIcon from '../../../../assets/v2/icons/community/not-interested.svg';
 import ReportIcon from '../../../../assets/v2/icons/community/report.svg';
 import AnchoredMenu, { type AnchoredMenuPosition } from './AnchoredMenu';
@@ -56,24 +58,24 @@ export default function PostOverflowMenu({
 const Row = styled.Pressable`
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   height: 52px;
-  padding: 0 16px;
+  padding: 0 8px;
 `;
 
+// Rows sit 6px apart with the 1px divider centred in the gap.
 const Divider = styled.View`
   height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
+  margin: 2.5px 0;
+  background-color: ${({ theme }) => theme.colors.secondaryAlternative};
 `;
 
 const RowLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
-  font-weight: 500;
+  color: ${({ theme }) => theme.colors.labelNeutral};
+  ${({ theme }) => textStyleCss(theme.typography.bodyMedium)}
 `;
 
 const RowLabelDanger = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
-  font-size: 16px;
-  font-weight: 500;
+  ${({ theme }) => textStyleCss(theme.typography.bodyMedium)}
 `;

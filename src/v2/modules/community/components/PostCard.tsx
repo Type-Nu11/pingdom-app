@@ -1,6 +1,6 @@
 import { Text as AppText } from '../../../shared/components/Typography';
-import React from 'react';
-import { type GestureResponderEvent } from 'react-native';
+import React, { useRef } from 'react';
+import { type GestureResponderEvent, type View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
@@ -8,9 +8,12 @@ import EtcVerticalIcon from '../../../../assets/v2/icons/community/etc-vertical.
 import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityPostSummary } from '../api/communityApi';
 
+/** Window-space bottom edge of the overflow icon, used to anchor its menu. */
+export type OverflowAnchor = { bottom: number };
+
 export type PostCardProps = {
   categoryName?: string;
-  onOpenOverflow: (event: GestureResponderEvent) => void;
+  onOpenOverflow: (anchor: OverflowAnchor) => void;
   onPress: () => void;
   post: CommunityPostSummary;
 };
@@ -21,6 +24,17 @@ export type PostCardProps = {
 // The category tag comes from the category the list was fetched for.
 export default function PostCard({ categoryName, onOpenOverflow, onPress, post }: PostCardProps) {
   const { t } = useTranslation();
+  const overflowRef = useRef<View>(null);
+
+  const openOverflow = (event: GestureResponderEvent) => {
+    event.stopPropagation();
+    // Open at the touch point immediately, then snap to the icon's measured
+    // bottom edge once layout reports it (hidden behind the menu's fade-in).
+    onOpenOverflow({ bottom: event.nativeEvent.pageY });
+    overflowRef.current?.measureInWindow?.((_x, y, _width, height) => {
+      if (Number.isFinite(y) && height > 0) onOpenOverflow({ bottom: y + height });
+    });
+  };
 
   return (
     <Card
@@ -41,10 +55,8 @@ export default function PostCard({ categoryName, onOpenOverflow, onPress, post }
           accessibilityLabel={t('community.moreOptions')}
           accessibilityRole="button"
           hitSlop={8}
-          onPress={(event) => {
-            event.stopPropagation();
-            onOpenOverflow(event);
-          }}
+          onPress={openOverflow}
+          ref={overflowRef}
           testID={`v2-community-post-${post.postId}-overflow`}
         >
           <EtcVerticalIcon height={23.4} width={24.0021} />

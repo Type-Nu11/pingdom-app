@@ -161,8 +161,9 @@ export default function CommunityBottomSheet({
   const renderPost: ListRenderItem<CommunityPostSummary & { postId: number }> = ({ item }) => (
     <PostCard
       categoryName={selectedCategoryName}
-      onOpenOverflow={(event) => setOverflowMenu({
-        position: { right: 16, top: event.nativeEvent.pageY + 8 },
+      onOpenOverflow={(anchor) => setOverflowMenu({
+        // Figma: the menu's right edge lines up with the card, 8px below the icon.
+        position: { right: 16, top: anchor.bottom + 8 },
         postId: item.postId,
       })}
       onPress={() => onOpenPost(item.postId)}
