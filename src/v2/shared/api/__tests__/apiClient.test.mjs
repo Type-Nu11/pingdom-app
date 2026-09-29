@@ -110,3 +110,16 @@ test('app composition can inject the authenticated transport after the shared cl
     resetTransport();
   }
 });
+
+test('collection GET requests use canonical paths without changing query options or other routes', async () => {
+  const calls = [];
+  const client = createApiClient({ get: async (path, options) => {
+    calls.push({ path, options }); return { data: {} };
+  } });
+  const options = { params: { page: 1, limit: 20 }, signal: new AbortController().signal };
+  for (const path of ['/places', '/reservations', '/coupons', '/location-check-ins', '/places/', '/places/trends', '/users/me']) {
+    await client.get(path, options);
+  }
+  assert.deepEqual(calls.map(call => call.path), ['/places/', '/reservations/', '/coupons/', '/location-check-ins/', '/places/', '/places/trends', '/users/me']);
+  assert.ok(calls.every(call => call.options === options));
+});

@@ -28,6 +28,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // recovery feedback, and #338 community list/detail/write copy.
   const baseline = JSON.parse(JSON.stringify(resources));
   for (const language of ['ko', 'en']) {
+    // #393 adds the reviewed first-run tutorial catalog.
+    delete baseline[language].translation.mapTutorial;
     // #390 reviews only shared error presentation and uncertain reservation outcomes.
     const apiError = baseline[language].translation.common.apiError;
     for (const key of ['timeout', 'server', 'rateLimited', 'mutationUnknown']) delete apiError[key];

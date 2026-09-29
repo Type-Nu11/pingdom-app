@@ -21,6 +21,7 @@ import {
   shouldRefreshMapFromPullGesture,
 } from '../../sheet/utils/mapRefreshGesture';
 import * as S from '../styles/MapTopOverlay.styles';
+import { MapTutorialTarget } from '../../tutorial/context';
 
 export type MapCategoryId =
   | 'all'
@@ -237,6 +238,7 @@ export default function MapTopOverlay({
                 </S.SearchInput>
               </S.SearchContent>
             </S.SearchShadow>
+            <MapTutorialTarget id="profile">
             <S.ProfileButton
               accessibilityLabel={t('map.search.profileAccessibilityLabel')}
               accessibilityRole="button"
@@ -256,12 +258,14 @@ export default function MapTopOverlay({
                 />
               )}
             </S.ProfileButton>
+            </MapTutorialTarget>
           </S.HeaderSurface>
         </S.HeaderShadow>
       </S.Header>
 
       {showCategories ? (
         <>
+          <MapTutorialTarget id="categories">
           <S.CategoryScroll
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -319,6 +323,7 @@ export default function MapTopOverlay({
               })}
             </S.CategoryContent>
           </S.CategoryScroll>
+          </MapTutorialTarget>
           {onLocatePress ? (
             <S.LocateButtonRow pointerEvents="box-none">
               <S.LocateButton

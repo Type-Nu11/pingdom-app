@@ -957,7 +957,11 @@ const ExpandedHomeContent = ({
         style={styles.feedTransition}
         testID="feed-content-transition"
       >
-        <ScrollView
+        {categoryResult.state !== 'ready' ? (
+          <View style={styles.feedStateContainer}>
+            <EmptyCard feed={feed} onRetry={onRetry} state={categoryResult.state} variant="row" />
+          </View>
+        ) : <ScrollView
           contentContainerStyle={styles.expandedFeaturedRow}
           onTouchStart={blockHorizontalSwipe}
           testID="map-feed-featured-scroll"
@@ -979,8 +983,8 @@ const ExpandedHomeContent = ({
               pending={Boolean(bookmarkPendingPlaceIds[String(place.placeId)])}
               place={place}
             />
-          )) : <EmptyCard feed={feed} onRetry={onRetry} state={categoryResult.state} variant="row" />}
-        </ScrollView>
+          )) : null}
+        </ScrollView>}
 
         {shouldRenderExpandedContent && !restingScrollEnabled ? (
           <Animated.View
@@ -2642,8 +2646,9 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     backgroundColor: colors.surfaceMuted,
     borderRadius: 16,
     height: 182,
-    width: 242,
+    width: '100%',
   },
+  feedStateContainer: { paddingHorizontal: 16, paddingTop: 29, paddingBottom: 18 },
   emptyCardIcon: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
