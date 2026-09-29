@@ -7,14 +7,16 @@ import SearchIcon from '../../assets/v2/icons/header/search.svg';
 import ProgressBar from './components/ProgressBar';
 import type { Language } from './types';
 import { colors } from '../../styles/colors';
+import { supportedLanguages } from '../../v2/shared/i18n';
 
 const PINK = colors.primaryNormal;
 const BG = colors.bgAssistive;
 
-const LANGUAGES: { code: Language; labelKey: string }[] = [
-  { code: 'en', labelKey: 'selectLanguage.options.en' },
-  { code: 'ko', labelKey: 'selectLanguage.options.ko' },
-];
+// Legacy exception (#389): options come from the V2 language list. Removal: #396.
+const LANGUAGES: { code: Language; labelKey: string }[] = supportedLanguages.map((code) => ({
+  code,
+  labelKey: `selectLanguage.options.${code}`,
+}));
 
 type Props = {
   onBack: () => void;

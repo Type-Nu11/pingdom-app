@@ -19,4 +19,14 @@ export const paymentResources = {
           UNKNOWN: '상태 확인 필요',
         },
       } },
+  ja: { payment: {
+        statuses: {
+          FAILED: '決済失敗',
+          PAID: '決済完了',
+          PROCESSING: '決済処理中',
+          REFUNDED: '返金完了',
+          REFUND_PROCESSING: '返金処理中',
+          UNKNOWN: '状態の確認が必要です',
+        },
+      } },
 } as const;

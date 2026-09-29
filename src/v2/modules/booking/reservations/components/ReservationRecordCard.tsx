@@ -3,6 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
+import { resolveLocale } from '../../../../shared/i18n/formatters';
 import type { StatusTone } from '../../../../shared/model';
 import type { Reservation } from '../api/reservationApi';
 import { formatReservationWindow } from '../model/reservationBooker';
@@ -19,7 +20,7 @@ export default function ReservationRecordCard({ onPress, reservation }: Props) {
   const statusLabel = t(status.labelKey);
   const language = i18n.resolvedLanguage ?? i18n.language;
   const requestedAt = new Intl.DateTimeFormat(
-    language.startsWith('en') ? 'en-US' : 'ko-KR',
+    resolveLocale(language),
     { dateStyle: 'medium', timeStyle: 'short' },
   ).format(new Date(reservation.createdAt));
   const reservationWindow = formatReservationWindow(reservation, language);

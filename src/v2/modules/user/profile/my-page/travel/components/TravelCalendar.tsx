@@ -7,7 +7,7 @@ import type { ServerTravelDate } from '../../../../../travel/calendar';
 import { buildCalendarDays, formatAccessibleTravelDate, formatCalendarMonth, shiftCalendarMonth, type CalendarDay, type CalendarMonth } from '../../../../../travel/calendar';
 import ChevronIcon from '../../../../../../shared/assets/icons/chevron-right-20.svg';
 
-const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const FIGMA_CALENDAR_WIDTH = 354;
 const FIGMA_CALENDAR_HEIGHT = 320;
 const CALENDAR_ROW_GAP = 2;
@@ -58,9 +58,9 @@ export default function TravelCalendar({
       </Header>
 
       <WeekdayRow>
-        {WEEKDAY_LABELS.map((label, index) => (
+        {WEEKDAY_KEYS.map((key, index) => (
           <DayCell key={`weekday-${index}`}>
-            <WeekdayText $weekday={index}>{label}</WeekdayText>
+            <WeekdayText $weekday={index}>{t(`myPage.travel.weekdays.${key}`)}</WeekdayText>
           </DayCell>
         ))}
       </WeekdayRow>

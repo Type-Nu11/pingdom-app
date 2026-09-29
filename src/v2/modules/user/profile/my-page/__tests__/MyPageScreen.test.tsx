@@ -137,6 +137,27 @@ describe('MyPageScreen', () => {
     expect(screen.getByTestId('v2-my-page-screen')).toHaveStyle({ backgroundColor: theme.colors.background });
   });
 
+  test('#389 일본어 통계 라벨은 큰 글꼴에서 서로 겹치지 않도록 한 줄로 축소된다', async () => {
+    mockEverythingEmpty();
+    const { i18n, queryClient } = await renderWithProviders(
+      <MyPageScreen onBack={jest.fn()} onOpenSettings={jest.fn()}
+        onOpenProfileEdit={jest.fn()} onOpenCoupons={jest.fn()}
+        onOpenPlace={jest.fn()} onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />,
+      { language: 'ja' },
+    );
+    await screen.findByText(PROFILE.username);
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+
+    for (const key of ['myPage.stats.reservations', 'myPage.stats.reviews', 'myPage.stats.coupons']) {
+      const label = screen.getByText(i18n.t(key));
+      expect(label.props.numberOfLines).toBe(1);
+      expect(label.props.adjustsFontSizeToFit).toBe(true);
+    }
+    expect(screen.getByText('予約')).toBeVisible();
+    expect(screen.getByText('レビュー')).toBeVisible();
+    expect(screen.getByText('クーポン')).toBeVisible();
+  });
+
   test('프로필 로딩 중에도 헤더와 설정은 유지한다', async () => {
     mockEverythingEmpty();
     jest.spyOn(profileApi, 'getProfile').mockImplementation(() => new Promise(() => {}));

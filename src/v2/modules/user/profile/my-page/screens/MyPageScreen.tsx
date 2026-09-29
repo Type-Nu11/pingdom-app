@@ -523,23 +523,28 @@ const UserCountry = styled(AppText)`
 const StatsCard = styled.View`
   flex-direction: row;
   align-items: center;
+  column-gap: 8px;
   justify-content: space-evenly;
-  height: 85px;
+  min-height: 85px;
+  padding: 0 8px;
   border-radius: ${({ theme }) => theme.radius.lg}px;
   background-color: ${({ theme }) => theme.colors.inputBackground};
 `;
 
 const StatItem = styled.View`
   align-items: center;
+  flex-shrink: 1;
   gap: 6px;
 `;
 
 const StatButton = styled.Pressable`
   align-items: center;
+  flex-shrink: 1;
   gap: 6px;
 `;
 
-const StatLabel = styled(AppText)`
+// Longer labels (e.g. Japanese) shrink to one line instead of colliding at large text sizes.
+const StatLabel = styled(AppText).attrs({ adjustsFontSizeToFit: true, minimumFontScale: 0.5, numberOfLines: 1 })`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 500;

@@ -45,4 +45,13 @@ export const resources = {
     voiceAssistant: voiceAssistantResources.ko,
     ...withBookingStatuses(withOnboarding(sharedResources.ko.translation, onboardingResources.ko), { ...offerStatusResources.ko, ...paymentResources.ko }),
   } },
+  ja: { translation: {
+    mapTutorial: mapTutorialResources.ja,
+    ...offerCouponResources.ja,
+    ...reservationResources.ja,
+    community: communityResources.ja,
+    visitVerification: visitVerificationResources.ja,
+    voiceAssistant: voiceAssistantResources.ja,
+    ...withBookingStatuses(withOnboarding(sharedResources.ja.translation, onboardingResources.ja), { ...offerStatusResources.ja, ...paymentResources.ja }),
+  } },
 } as const;
