@@ -53,26 +53,32 @@ const resolveRelativeValue = (minutesAgo: number) => {
   return { unit: 'minute' as const, value: minutes };
 };
 
+type RelativeUnit = ReturnType<typeof resolveRelativeValue>['unit'];
+
+// Used only when Intl.RelativeTimeFormat is missing; every other language keeps the English form.
+const RELATIVE_FALLBACKS: Record<string, {
+  format: (value: number, unit: string) => string;
+  now: string;
+  units: Record<RelativeUnit, string>;
+}> = {
+  en: { format: (value, unit) => `${value} ${unit} ago`, now: 'now', units: { day: 'day', hour: 'hr', minute: 'min' } },
+  ko: { format: (value, unit) => `${value}${unit} 전`, now: '지금', units: { day: '일', hour: '시간', minute: '분' } },
+};
+
+const RELATIVE_NOW_ONLY: Record<string, string> = {
+  ja: '今',
+  th: 'ตอนนี้',
+  vi: 'bây giờ',
+  zh: '现在',
+};
+
 const formatRelativeMinutesFallback = (minutesAgo: number, language: string) => {
   const { unit, value } = resolveRelativeValue(minutesAgo);
   const baseLanguage = language.toLowerCase().split('-')[0];
+  const fallback = RELATIVE_FALLBACKS[baseLanguage] ?? RELATIVE_FALLBACKS.en;
 
-  if (value === 0) {
-    if (baseLanguage === 'ko') return '지금';
-    if (baseLanguage === 'ja') return '今';
-    if (baseLanguage === 'zh') return '现在';
-    if (baseLanguage === 'vi') return 'bây giờ';
-    if (baseLanguage === 'th') return 'ตอนนี้';
-    return 'now';
-  }
-
-  const fallbackUnits = {
-    day: { en: 'day', ko: '일' },
-    hour: { en: 'hr', ko: '시간' },
-    minute: { en: 'min', ko: '분' },
-  } as const;
-  if (baseLanguage === 'ko') return `${value}${fallbackUnits[unit].ko} 전`;
-  return `${value} ${fallbackUnits[unit].en} ago`;
+  if (value === 0) return RELATIVE_NOW_ONLY[baseLanguage] ?? fallback.now;
+  return fallback.format(value, fallback.units[unit]);
 };
 
 export const formatRelativeMinutes = (minutesAgo: number, language: string) => {

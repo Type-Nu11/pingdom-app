@@ -178,7 +178,7 @@ export const visitVerificationResources = {
 } as const;
 
 export function registerVisitVerificationResources(instance: I18nInstance) {
-  (['en', 'ko'] as const).forEach((language) => {
+  (Object.keys(visitVerificationResources) as Array<keyof typeof visitVerificationResources>).forEach((language) => {
     instance.addResourceBundle(
       language,
       'translation',

@@ -5,25 +5,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import { HeaderBackButton } from '../../../../shared/components';
+import { setLanguage, type SupportedLanguage } from '../../../../shared/i18n';
 import {
-  normalizeSupportedLanguage,
-  setLanguage,
-  type SupportedLanguage,
-} from '../../../../shared/i18n';
+  getLanguageLabelKey,
+  LANGUAGE_SETTING_OPTIONS,
+  resolveSelectedLanguage,
+} from '../model/languageOptions';
 
 type LanguageSettingsScreenProps = {
   onBack: () => void;
   onSelectLanguage?: (language: SupportedLanguage) => Promise<void> | void;
 };
 
-const LANGUAGE_OPTIONS = ['ko', 'en'] as const satisfies readonly SupportedLanguage[];
-
 export default function LanguageSettingsScreen({
   onBack,
   onSelectLanguage = setLanguage,
 }: LanguageSettingsScreenProps) {
   const { i18n, t } = useTranslation();
-  const selectedLanguage = normalizeSupportedLanguage(i18n.resolvedLanguage) ?? 'en';
+  const selectedLanguage = resolveSelectedLanguage(i18n.resolvedLanguage);
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-language-settings-screen">
@@ -36,11 +35,9 @@ export default function LanguageSettingsScreen({
       <Content>
         <Description>{t('settings.language.description')}</Description>
         <Options>
-          {LANGUAGE_OPTIONS.map((language) => {
+          {LANGUAGE_SETTING_OPTIONS.map((language) => {
             const selected = language === selectedLanguage;
-            const label = t(language === 'ko'
-              ? 'settings.language.korean'
-              : 'settings.language.english');
+            const label = t(getLanguageLabelKey(language));
 
             return (
               <LanguageOption

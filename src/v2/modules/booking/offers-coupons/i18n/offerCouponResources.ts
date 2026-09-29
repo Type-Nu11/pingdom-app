@@ -196,7 +196,7 @@ export const offerCouponResources = {
 } as const;
 
 export function registerOfferCouponResources(instance: I18nInstance) {
-  (['en', 'ko'] as const).forEach((language) => {
+  (Object.keys(offerCouponResources) as Array<keyof typeof offerCouponResources>).forEach((language) => {
     instance.addResourceBundle(
       language,
       'translation',

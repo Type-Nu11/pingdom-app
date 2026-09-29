@@ -111,6 +111,8 @@ export const reservationResources = {
       },
       list: {
         available: 'Bookable',
+        distanceFar: '{{kilometers}} km away',
+        distanceNear: '{{meters}} m away',
         card: {
           createdAt: 'Requested at',
           detail: 'View reservation details  ›',
@@ -258,6 +260,8 @@ export const reservationResources = {
       },
       list: {
         available: '예약 가능',
+        distanceFar: '여기서 {{kilometers}}km',
+        distanceNear: '여기서 {{kilometers}}km',
         card: {
           createdAt: '접수 일시',
           detail: '예약 상세 보기  ›',
@@ -298,7 +302,7 @@ export const reservationResources = {
 } as const;
 
 export function registerReservationResources(instance: I18nInstance) {
-  (['en', 'ko'] as const).forEach((language) => {
+  (Object.keys(reservationResources) as Array<keyof typeof reservationResources>).forEach((language) => {
     instance.addResourceBundle(
       language,
       'translation',

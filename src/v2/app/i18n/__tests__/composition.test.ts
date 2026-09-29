@@ -48,6 +48,9 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     voiceAssistant.placeholder = language === 'ko' ? '요청을 입력해 주세요' : 'Type your request';
     delete baseline[language].translation.community;
     delete baseline[language].translation.map.navigation.community;
+    // #389 moves the reservation sheet distance copy out of the component.
+    delete baseline[language].translation.reservation.list.distanceFar;
+    delete baseline[language].translation.reservation.list.distanceNear;
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
     .toBe('f2dc1044fdfdba80886ded680f6c6b25b694134c843365c57988f7f1b3f4b478');

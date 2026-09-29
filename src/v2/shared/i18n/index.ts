@@ -99,4 +99,4 @@ export function resetI18nForTests(): void {
   hasExplicitLanguagePreference = false;
 }
 
-export type { SupportedLanguage } from './resources';
+export { supportedLanguages, type SupportedLanguage } from './resources';
