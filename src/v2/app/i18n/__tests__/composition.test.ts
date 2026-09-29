@@ -56,6 +56,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     // #389 adds the Japanese option label to the language pickers.
     delete baseline[language].translation.selectLanguage.options.ja;
     delete baseline[language].translation.settings.language.japanese;
+    // #389 moves the My Trip weekday header out of the component.
+    delete baseline[language].translation.myPage.travel.weekdays;
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
     .toBe('f2dc1044fdfdba80886ded680f6c6b25b694134c843365c57988f7f1b3f4b478');

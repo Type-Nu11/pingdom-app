@@ -559,6 +559,7 @@ export const resources = {
           startDateInPast: 'Choose today or a future date.',
           title: 'My trips',
           updateError: 'Could not save your travel dates.',
+          weekdays: { sun: 'S', mon: 'M', tue: 'T', wed: 'W', thu: 'T', fri: 'F', sat: 'S' },
         },
         verifiedPlaces: {
           empty: 'No verified places yet',
@@ -1396,6 +1397,7 @@ export const resources = {
           startDateInPast: '오늘 또는 이후 날짜를 선택해주세요.',
           title: '나의 여행',
           updateError: '여행 날짜를 저장하지 못했어요.',
+          weekdays: { sun: 'S', mon: 'M', tue: 'T', wed: 'W', thu: 'T', fri: 'F', sat: 'S' },
         },
         verifiedPlaces: {
           empty: '아직 검증한 장소가 없어요',
@@ -2274,6 +2276,7 @@ export const resources = {
           startDateInPast: '今日以降の日付を選択してください。',
           title: 'マイトリップ',
           updateError: '旅行日程を保存できませんでした。',
+          weekdays: { sun: '日', mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土' },
         },
         verifiedPlaces: {
           empty: 'まだ認証した場所はありません',
