@@ -47,6 +47,15 @@ describe('CommunityWriteScreen', () => {
     } as never);
   });
 
+  test('Figma처럼 글자 수 카운터 없이 입력 길이만 제한한다', async () => {
+    await renderScreen();
+
+    await waitFor(() => expect(screen.getByTestId('v2-community-write-category-TRAVEL')).toBeVisible());
+    expect(screen.queryByText(/^\d+\/\d+$/)).toBeNull();
+    expect(screen.getByTestId('v2-community-write-title').props.maxLength).toBeGreaterThan(0);
+    expect(screen.getByTestId('v2-community-write-body').props.maxLength).toBeGreaterThan(0);
+  });
+
   test('일반 카테고리는 장소 없이도 제출할 수 있다', async () => {
     const createPost = jest.spyOn(communityApi, 'createPost').mockResolvedValue({ placeIds: [], postId: 9001 });
     const onSubmitSuccess = jest.fn();
