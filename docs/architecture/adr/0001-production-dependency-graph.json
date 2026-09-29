@@ -1464,6 +1464,7 @@
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/v2/shared/components/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/v2/shared/components/Typography.tsx","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/header/back.svg","typeOnly":false},
+    {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/smRlavy.svg","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/ion_call.svg","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/place/Camera.svg","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/place/Clean.svg","typeOnly":false},

@@ -23,6 +23,7 @@ import Svg, {
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackIcon from '../../../../../../assets/v2/icons/header/back.svg';
+import NoNearbyPlaceIcon from '../../../../../../assets/v2/icons/smRlavy.svg';
 import CallAsset from '../../../../../../assets/v2/icons/ion_call.svg';
 import CameraAsset from '../../../../../../assets/v2/icons/place/Camera.svg';
 import CleanAsset from '../../../../../../assets/v2/icons/place/Clean.svg';
@@ -1097,7 +1098,7 @@ const EmptyCard = ({
       style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
       testID={`map-home-feed-state-${copyState}`}
     >
-      <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
+      <View style={styles.emptyCardIcon}><NoNearbyPlaceIcon height={25} width={22} /></View>
       <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
       {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
       {retryable && onRetry ? (
