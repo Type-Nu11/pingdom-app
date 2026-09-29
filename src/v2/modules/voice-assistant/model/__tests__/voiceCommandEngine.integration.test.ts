@@ -176,7 +176,11 @@ test('domain error maps to a safe result without exposing credentials, input, co
   await x.controller.start(); await x.send();
   expect(x.results[0].outcome).toEqual({ status: 'rejected', code: 'NETWORK_ERROR' });
   expect(JSON.stringify(x.results)).not.toMatch(/raw|fixture-private|37\.512345|127\.012345|private-server-body|stack/);
-  expect(logs.flatMap(log => log.mock.calls)).toEqual([]);
+  const diagnosticCalls = logs.flatMap(log => log.mock.calls);
+  expect(diagnosticCalls).toHaveLength(1);
+  expect(diagnosticCalls[0][0]).toBe('[V2 API failure]');
+  expect(JSON.stringify(diagnosticCalls)).not.toMatch(/raw|fixture-private|37\.512345|127\.012345|private-server-body|stack/);
+  expect(JSON.parse(diagnosticCalls[0][1])).toMatchObject({ method: 'GET', kind: 'network' });
   expect(x.writes).toEqual([]);
 });
 

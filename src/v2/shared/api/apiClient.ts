@@ -2,6 +2,7 @@ import axios, { type AxiosInstance } from 'axios';
 
 import { env } from '../config';
 import { ApiError, toApiError } from './ApiError';
+import { logRequestFailure } from './requestDiagnostics';
 import { mockApiClient } from './mock/mockApiClient';
 
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -150,6 +151,7 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       options: MutationRequestOptions = {},
     ): Promise<TResponse> {
       assertRelativeApiPath(path);
+      const startedAt = Date.now();
 
       try {
         const authorizedOptions = await withAuthorization(options);
@@ -159,12 +161,14 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
         });
         return response.data;
       } catch (error) {
+        logRequestFailure('DELETE', path, startedAt, error);
         throw toApiError(error);
       }
     },
 
     async get<TResponse>(path: string, options: GetRequestOptions = {}): Promise<TResponse> {
       assertRelativeApiPath(path);
+      const startedAt = Date.now();
 
       try {
         const response = await getTransport().get<TResponse>(
@@ -173,6 +177,7 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
         );
         return response.data;
       } catch (error) {
+        logRequestFailure('GET', path, startedAt, error);
         throw toApiError(error);
       }
     },
@@ -183,6 +188,7 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       options: MutationRequestOptions = {},
     ): Promise<TResponse> {
       assertRelativeApiPath(path);
+      const startedAt = Date.now();
 
       try {
         const response = await getTransport().patch<TResponse>(
@@ -192,6 +198,7 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
         );
         return response.data;
       } catch (error) {
+        logRequestFailure('PATCH', path, startedAt, error);
         throw toApiError(error);
       }
     },
@@ -202,6 +209,7 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       options: MutationRequestOptions = {},
     ): Promise<TResponse> {
       assertRelativeApiPath(path);
+      const startedAt = Date.now();
 
       try {
         const authorizedOptions = {
@@ -229,6 +237,7 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
         );
         return response.data;
       } catch (error) {
+        logRequestFailure('POST', path, startedAt, error);
         throw toApiError(error);
       }
     },
@@ -239,6 +248,7 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       options: MutationRequestOptions = {},
     ): Promise<TResponse> {
       assertRelativeApiPath(path);
+      const startedAt = Date.now();
 
       try {
         const response = await getTransport().put<TResponse>(
@@ -248,10 +258,12 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
         );
         return response.data;
       } catch (error) {
+        logRequestFailure('PUT', path, startedAt, error);
         if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
           try {
             return await putWithFetchFallback<TResponse, TBody>(path, body, options);
           } catch (fallbackError) {
+            logRequestFailure('PUT', path, startedAt, fallbackError, 'fetch-fallback');
             throw toApiError(fallbackError);
           }
         }

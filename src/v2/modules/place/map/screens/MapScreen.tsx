@@ -232,6 +232,15 @@ export default function MapScreen({
     localRankedPlaces,
     location.status,
   ]);
+  useEffect(() => {
+    if (!__DEV__ || !canQueryRankedFeeds || location.status === 'loading') return;
+    if (location.status !== 'granted' || !hasValidLocalHotLocation) {
+      console.warn('[V2 map feed blocked]', JSON.stringify({
+        feed: 'local-hot', locationStatus: location.status,
+        hasValidLocation: hasValidLocalHotLocation, requestSent: false,
+      }));
+    }
+  }, [canQueryRankedFeeds, hasValidLocalHotLocation, location.status]);
   const nationalFeed = useMemo<RankedPlaceFeed>(() => ({
     hasNext: nationalTrendsQuery.data?.hasNext ?? false,
     places: nationalRankedPlaces,
