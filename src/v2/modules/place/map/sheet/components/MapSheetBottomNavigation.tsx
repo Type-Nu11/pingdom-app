@@ -1,5 +1,5 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
-import React, { memo, useState } from 'react';
+import React, { memo } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -76,7 +76,6 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
   const selectedTab = activeTarget ?? activeTab;
   const styles = React.useMemo(() => createStyles(colors, liquidGlass), [colors, liquidGlass]);
   const insets = useSafeAreaInsets();
-  const [pressedTab, setPressedTab] = useState<MapSheetNavigationTab | null>(null);
   const tabs = [
     { id: 'map' as const, label: t('map.navigation.map'), onPress: onOpenMap },
     { id: 'favorites' as const, label: t('map.navigation.favorites'), onPress: onOpenFavorites },
@@ -128,15 +127,13 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 accessibilityState={{ selected: active }}
                 key={id}
                 onPress={onPress}
-                onPressIn={() => setPressedTab(id)}
-                onPressOut={() => setPressedTab(null)}
                 style={styles.navItem}
                 testID={`map-navigation-${id}`}
               >
                 <View
                   style={[
                     styles.navItemSurface,
-                    { backgroundColor: getMapSheetTabSurfaceColor(active, pressedTab === id, liquidGlass) },
+                    { backgroundColor: getMapSheetTabSurfaceColor(active, false, liquidGlass) },
                   ]}
                   testID={`map-navigation-${id}-surface`}
                 >
@@ -155,8 +152,6 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
         accessibilityRole="tab"
         accessibilityState={{ selected: selectedTab === 'recommendations' }}
         onPress={onOpenRecommendations}
-        onPressIn={() => setPressedTab('recommendations')}
-        onPressOut={() => setPressedTab(null)}
         style={styles.sendButton}
         testID="map-navigation-recommendations"
       >
@@ -169,9 +164,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
             rimColor={liquidGlass.navigation.rim}
             style={styles.sendButtonGlass}
             testID="map-navigation-recommendations-surface"
-            tintColor={pressedTab === 'recommendations'
-              ? liquidGlass.navigation.pressedTint
-              : selectedTab === 'recommendations'
+            tintColor={selectedTab === 'recommendations'
                 ? liquidGlass.navigation.selectedTint
                 : liquidGlass.navigation.tint}
           >
