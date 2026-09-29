@@ -27,6 +27,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // Preserve the migration baseline with the reviewed #346 voice input, automatic voice submission,
   // recovery feedback, and #338 community list/detail/write copy.
   const baseline = JSON.parse(JSON.stringify(resources));
+  // #389 adds the Japanese catalog; its key parity is checked separately.
+  delete baseline.ja;
   for (const language of ['ko', 'en']) {
     // #393 adds the reviewed first-run tutorial catalog.
     delete baseline[language].translation.mapTutorial;
