@@ -1,4 +1,5 @@
 import { onboardingResources } from '../../modules/onboarding/i18n';
+import { mapTutorialResources } from '../../modules/place/map/tutorial';
 import { communityResources } from '../../modules/community/i18n';
 import { paymentResources } from '../../modules/booking/payments/i18n';
 import { offerCouponResources, offerStatusResources } from '../../modules/booking/offers-coupons/i18n';
@@ -27,6 +28,7 @@ function withOnboarding<Base extends Record<string, unknown>, Copy>(base: Base, 
 // Keep the previous spread precedence: common copy wins on overlapping keys.
 export const resources = {
   en: { translation: {
+    mapTutorial: mapTutorialResources.en,
     ...offerCouponResources.en,
     ...reservationResources.en,
     community: communityResources.en,
@@ -35,6 +37,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.en.translation, onboardingResources.en), { ...offerStatusResources.en, ...paymentResources.en }),
   } },
   ko: { translation: {
+    mapTutorial: mapTutorialResources.ko,
     ...offerCouponResources.ko,
     ...reservationResources.ko,
     community: communityResources.ko,

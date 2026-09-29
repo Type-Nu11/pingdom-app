@@ -14,6 +14,7 @@ import PlaceRecommendAsset from '../../../../../../assets/v2/icons/place/placere
 import { FavoriteIcon } from '../../../../../shared/components';
 import { lightLiquidGlass, type AppTheme } from '../../../../../shared/theme';
 import FrostedSurface from '../../presentation/components/FrostedSurface';
+import { MapTutorialTarget, useMapTutorial } from '../../tutorial/context';
 
 export type MapSheetNavigationTab = 'community' | 'favorites' | 'map' | 'recommendations' | 'reservations';
 
@@ -71,6 +72,8 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
 }: Props) {
   const { t } = useTranslation();
   const { colors, liquidGlass } = useTheme();
+  const { activeTarget } = useMapTutorial();
+  const selectedTab = activeTarget ?? activeTab;
   const styles = React.useMemo(() => createStyles(colors, liquidGlass), [colors, liquidGlass]);
   const insets = useSafeAreaInsets();
   const [pressedTab, setPressedTab] = useState<MapSheetNavigationTab | null>(null);
@@ -102,7 +105,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
           tintColor={liquidGlass.navigation.tint}
         >
           {tabs.map(({ id, label, onPress }) => {
-            const active = activeTab === id;
+            const active = selectedTab === id;
             const icon = id === 'map'
               ? active
                 ? <MapAsset color={colors.primary} height={24} width={21} />
@@ -118,6 +121,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                     : <CheckInAsset color={colors.text} height={24} width={23} />;
 
             return (
+              <MapTutorialTarget id={id} key={id} style={{ flex: 1 }}>
               <Pressable
                 accessibilityLabel={label}
                 accessibilityRole="tab"
@@ -140,14 +144,16 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                   <AppText style={[styles.navLabel, active && styles.navLabelActive]}>{label}</AppText>
                 </View>
               </Pressable>
+              </MapTutorialTarget>
             );
           })}
         </FrostedSurface>
       </View>
+      <MapTutorialTarget id="recommendations">
       <Pressable
         accessibilityLabel={t('map.navigation.recommendations')}
         accessibilityRole="tab"
-        accessibilityState={{ selected: activeTab === 'recommendations' }}
+        accessibilityState={{ selected: selectedTab === 'recommendations' }}
         onPress={onOpenRecommendations}
         onPressIn={() => setPressedTab('recommendations')}
         onPressOut={() => setPressedTab(null)}
@@ -165,17 +171,18 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
             testID="map-navigation-recommendations-surface"
             tintColor={pressedTab === 'recommendations'
               ? liquidGlass.navigation.pressedTint
-              : activeTab === 'recommendations'
+              : selectedTab === 'recommendations'
                 ? liquidGlass.navigation.selectedTint
                 : liquidGlass.navigation.tint}
           >
             <PlaceRecommendAsset
-              color={activeTab === 'recommendations' ? colors.primary : colors.text}
+              color={selectedTab === 'recommendations' ? colors.primary : colors.text}
               height={24}
               width={24}
             />
           </FrostedSurface>
       </Pressable>
+      </MapTutorialTarget>
     </Animated.View>
   );
 });

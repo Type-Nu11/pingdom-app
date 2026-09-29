@@ -3,6 +3,8 @@ import { env } from '../../../../shared/config';
 import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
 import MapAssistantModal from '../assistant/components/MapAssistantModal';
 import MapAssistantIntro from '../assistant/components/MapAssistantIntro';
+import { MapTutorialProvider } from '../tutorial/MapTutorialProvider';
+import { MapTutorialTarget } from '../tutorial/context';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -233,6 +235,15 @@ export default function MapScreen({
     localRankedPlaces,
     location.status,
   ]);
+  useEffect(() => {
+    if (!__DEV__ || !canQueryRankedFeeds || location.status === 'loading') return;
+    if (location.status !== 'granted' || !hasValidLocalHotLocation) {
+      console.warn('[V2 map feed blocked]', JSON.stringify({
+        feed: 'local-hot', locationStatus: location.status,
+        hasValidLocation: hasValidLocalHotLocation, requestSent: false,
+      }));
+    }
+  }, [canQueryRankedFeeds, hasValidLocalHotLocation, location.status]);
   const nationalFeed = useMemo<RankedPlaceFeed>(() => ({
     hasNext: nationalTrendsQuery.data?.hasNext ?? false,
     places: nationalRankedPlaces,
@@ -932,6 +943,11 @@ export default function MapScreen({
     && content.type === 'place-preview'
     && snapPoint === 'expanded';
   return (
+    <MapTutorialProvider
+      enabled={isFocused && mapSection === 'map' && content.type === 'home' && !isSearchOpen
+        && !assistant.isBusy && snapPoint === 'medium' && !openedBookmarkedPlaceId}
+      username={profile?.username}
+    >
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <MapGlassBackdrop active={isFocused}>
       <StatusBar
@@ -1204,10 +1220,12 @@ export default function MapScreen({
           }}
           testID="visit-verification-map-cta-motion"
         >
+          <MapTutorialTarget id="verification">
           <VisitVerificationMapCta
             label={t('visitVerification.title')}
             onPress={onOpenVisitVerification}
           />
+          </MapTutorialTarget>
         </Animated.View>
       ) : null}
       {isSearchOpen && center ? (
@@ -1248,6 +1266,7 @@ export default function MapScreen({
       <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}
         onContinue={assistant.continueToAssistant} />
     </View>
+    </MapTutorialProvider>
   );
 }
 
