@@ -193,6 +193,99 @@ export const offerCouponResources = {
       },
     },
   },
+  ja: {
+    offerCoupon: {
+      error: {
+        actions: {
+          back: '戻る',
+          retry: '再試行',
+          signIn: '再度ログイン',
+          viewWallet: 'マイクーポンを確認',
+        },
+        alreadyIssued: {
+          description: 'このクーポンはすでに発行済みです。マイクーポンで確認してください。',
+          title: '発行済み',
+        },
+        alreadyRedeemed: {
+          description: 'このクーポンはすでに使用済みのため、再度使用することはできません。',
+          title: '使用済み',
+        },
+        authentication: {
+          description: 'ログインの有効期限が切れました。続けるには再度ログインしてください。',
+          title: 'ログインが必要です',
+        },
+        expired: {
+          description: 'このクーポンの利用期間は終了しました。',
+          title: 'ご利用いただけません',
+        },
+        forbidden: {
+          description: 'このアカウントには、この操作を行う権限がありません。',
+          title: '権限が必要です',
+        },
+        generic: {
+          description: 'サーバー側で問題が発生しました。しばらくしてからもう一度お試しください。',
+          title: 'リクエストを完了できませんでした',
+        },
+        ineligible: {
+          description:
+            '現在、このアカウントではこの特典をご利用いただけません。有効な旅行日程が必要な場合があります。',
+          title: '対象外です',
+        },
+        network: {
+          description: 'サーバーに接続できませんでした。接続を確認して、もう一度お試しください。',
+          title: '接続の問題',
+        },
+        notFound: {
+          description: 'この特典またはクーポンはご利用いただけなくなりました。最新の一覧に戻ってください。',
+          title: '見つかりません',
+        },
+        redeemInvalidInput: {
+          description: 'クーポンを確認して、もう一度読み取ってください。',
+          title: '処理できませんでした',
+        },
+        redeemUsedOrExpired: {
+          description: 'このクーポンは使用済みか、有効期限が切れています。',
+          title: 'ご利用いただけません',
+        },
+        soldOut: {
+          description: 'この特典のクーポンはすべて配布済みです。',
+          title: '配布終了',
+        },
+        unconfirmedConflict: {
+          description:
+            'この特典を発行できませんでした。すでにマイクーポンにあるか、発行が終了した可能性があります。',
+          title: '発行できませんでした',
+        },
+        updateRequired: {
+          description: 'クーポンを引き続き利用するには、最新バージョンをインストールしてください。',
+          title: 'アップデートが必要です',
+        },
+        validation: {
+          description: '一覧を読み込めませんでした。もう一度お試しください。',
+          title: 'クーポンを読み込めませんでした',
+        },
+      },
+      place: {
+        eligibility: {
+          ACTIVE_TRAVEL_SCHEDULE: '有効な旅行日程が必要です',
+          PUBLIC: '対象の訪問者どなたでも利用できます',
+        },
+        emptyDescription: '現在、この場所で利用できるクーポンはありません。',
+        emptyTitle: '利用できる特典がありません',
+        inventoryRemaining: '残り{{count}}枚',
+        inventoryUnlimited: '数量制限なし',
+        issue: 'クーポンを受け取る',
+        loading: '利用できるクーポンを読み込んでいます…',
+        period: '発行期間：{{value}}',
+        periodUnknown: '期間情報がありません',
+        successDescription: '発行したクーポンはマイクーポンで確認できます。',
+        successTitle: 'クーポンを発行しました',
+        untitled: 'クーポン特典',
+        validityDays: '発行から{{count}}日間有効',
+        validityDays_other: '発行から{{count}}日間有効',
+      },
+    },
+  },
 } as const;
 
 export function registerOfferCouponResources(instance: I18nInstance) {

@@ -73,4 +73,41 @@ export const offerStatusResources = {
           UNKNOWN: '상태 확인 필요',
         },
       } },
+  ja: { offer: {
+        cta: {
+          ended: '終了した特典',
+          issue: 'クーポンを受け取る',
+          notStarted: 'まだ開始していません',
+          soldOut: '配布終了',
+          unavailable: '受け取れません',
+        },
+        eligibility: {
+          ACTIVE_TRAVEL_SCHEDULE: '有効な旅行日程があるアカウント',
+          PUBLIC: 'どなたでも',
+          UNKNOWN: '条件の確認が必要です',
+        },
+        expiry: {
+          ISSUE_PLUS_DAYS: '発行後、一定の日数のあいだ有効',
+          ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: '発行後、一定の日数のあいだ有効（特典終了日まで）',
+          OFFER_END: '特典終了まで有効',
+          UNKNOWN: '有効期間の確認が必要です',
+        },
+        inventory: {
+          LIMITED: '数量限定',
+          UNKNOWN: '数量の確認が必要です',
+          UNLIMITED: '数量制限なし',
+        },
+        remaining: {
+          limited_one: '残り{{count}}枚',
+          limited_other: '残り{{count}}枚',
+          unknown: '残り数量の情報がありません',
+          unlimited: '数量制限なし',
+        },
+        statuses: {
+          CLOSED: '終了',
+          DRAFT: '下書き',
+          PUBLISHED: '受け取り可能',
+          UNKNOWN: '状態の確認が必要です',
+        },
+      } },
 } as const;
