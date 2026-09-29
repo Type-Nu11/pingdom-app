@@ -13,11 +13,18 @@ export function MapTutorialProvider({ children, enabled, username }: PropsWithCh
   const window = useWindowDimensions();
   const [size, setSize] = useState({ width: window.width, height: window.height });
   const [unseen, setUnseen] = useState(false);
-  const [index, setIndex] = useState(0);
-  const [target, setTarget] = useState<TutorialRect | null>(null);
+  const [{ index, target }, setPresentation] = useState<{ index: number; target: TutorialRect | null }>({
+    index: 0, target: null,
+  });
   const root = useRef<View>(null);
   const targets = useRef(new Map<MapTutorialTargetId, View>());
   const measurement = useRef(0);
+  const transitioning = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const completeTransition = useCallback(() => {
+    transitioning.current = false;
+    setBusy(false);
+  }, []);
   const active = enabled && unseen;
   const step = MAP_TUTORIAL_STEPS[index];
   const activeTarget = active && step !== 'welcome' ? step : null;
@@ -31,16 +38,44 @@ export function MapTutorialProvider({ children, enabled, username }: PropsWithCh
   }, []);
 
   const finish = useCallback(() => {
+    if (transitioning.current) return;
+    measurement.current++;
     setUnseen(false);
     void AsyncStorage.setItem(MAP_TUTORIAL_SEEN_KEY, '1').catch(() => {
       if (__DEV__) console.warn('[map-tutorial] Could not save completion.');
     });
   }, []);
+  const measureTarget = useCallback((
+    id: MapTutorialTargetId | null,
+    onMeasured: (rect: TutorialRect | null) => void,
+  ) => {
+    const revision = ++measurement.current;
+    const view = id ? targets.current.get(id) : null;
+    if (!view || !root.current) { onMeasured(null); return; }
+    // Window coordinates include the native sheet translation. Keep the visible
+    // guide unchanged while these callbacks resolve, then publish one snapshot.
+    root.current.measureInWindow((rootX, rootY) => {
+      if (revision !== measurement.current) return;
+      view.measureInWindow((x, y, width, height) => {
+        if (revision !== measurement.current) return;
+        onMeasured(width > 0 && height > 0 ? { x: x - rootX, y: y - rootY, width, height } : null);
+      });
+    });
+  }, []);
+  const showStep = useCallback((nextIndex: number) => {
+    if (transitioning.current) return;
+    transitioning.current = true;
+    setBusy(true);
+    const nextStep = MAP_TUTORIAL_STEPS[nextIndex];
+    measureTarget(nextStep === 'welcome' ? null : nextStep, nextTarget => {
+      setPresentation({ index: nextIndex, target: nextTarget });
+    });
+  }, [measureTarget]);
   const next = useCallback(() => {
     if (index === MAP_TUTORIAL_STEPS.length - 1) finish();
-    else setIndex(current => Math.min(current + 1, MAP_TUTORIAL_STEPS.length - 1));
-  }, [finish, index]);
-  const previous = useCallback(() => setIndex(current => Math.max(0, current - 1)), []);
+    else showStep(index + 1);
+  }, [finish, index, showStep]);
+  const previous = useCallback(() => showStep(Math.max(0, index - 1)), [index, showStep]);
 
   useEffect(() => {
     if (!active) return;
@@ -52,30 +87,30 @@ export function MapTutorialProvider({ children, enabled, username }: PropsWithCh
   }, [active, finish, index, previous]);
 
   const refresh = useCallback(() => {
-    const revision = ++measurement.current;
-    const view = activeTarget ? targets.current.get(activeTarget) : null;
-    if (!view || !root.current) { setTarget(null); return; }
-    // measureLayout excludes the sheet's native animated translation. Window
-    // coordinates include it, and subtracting our root also handles safe areas.
-    root.current.measureInWindow((rootX, rootY) => {
-      view.measureInWindow((x, y, width, height) => {
-        if (revision !== measurement.current) return;
-        const rect = width > 0 && height > 0 ? { x: x - rootX, y: y - rootY, width, height } : null;
-        setTarget(current => current && rect && Object.keys(rect).every(
-          key => current[key as keyof TutorialRect] === rect[key as keyof TutorialRect],
-        ) ? current : rect);
+    if (!active || transitioning.current) return;
+    measureTarget(activeTarget, nextTarget => {
+      setPresentation(current => {
+        const unchanged = current.target === nextTarget || (current.target && nextTarget
+          && current.target.x === nextTarget.x && current.target.y === nextTarget.y
+          && current.target.width === nextTarget.width && current.target.height === nextTarget.height);
+        return unchanged ? current : { ...current, target: nextTarget };
       });
     });
-  }, [activeTarget]);
+  }, [active, activeTarget, measureTarget]);
   const register = useCallback((id: MapTutorialTargetId, view: View | null) => {
     if (view) targets.current.set(id, view);
     else targets.current.delete(id);
   }, []);
   useEffect(() => {
-    setTarget(null);
     const frame = requestAnimationFrame(refresh);
-    return () => { cancelAnimationFrame(frame); measurement.current++; };
+    return () => {
+      cancelAnimationFrame(frame);
+      measurement.current++;
+    };
   }, [refresh, size.width, size.height]);
+  useEffect(() => {
+    if (!active) completeTransition();
+  }, [active, completeTransition]);
   const context = useMemo(() => ({ activeTarget, register, refresh }), [activeTarget, register, refresh]);
 
   return <MapTutorialContext.Provider value={context}>
@@ -87,7 +122,7 @@ export function MapTutorialProvider({ children, enabled, username }: PropsWithCh
         {children}
       </Container>
       {active ? <MapTutorialOverlay index={index} width={size.width} height={size.height} target={target}
-        username={username} onClose={finish} onNext={next} onPrevious={previous} /> : null}
+        busy={busy} onTransitionEnd={completeTransition} username={username} onClose={finish} onNext={next} onPrevious={previous} /> : null}
     </View>
   </MapTutorialContext.Provider>;
 }

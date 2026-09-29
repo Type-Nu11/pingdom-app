@@ -1467,6 +1467,7 @@
     {"source":"src/v2/modules/place/map/sheet/styles/BottomSheetGlass.styles.ts","target":"src/v2/modules/place/map/presentation/components/FrostedSurface.tsx","typeOnly":false},
     {"source":"src/v2/modules/place/map/tutorial/context.tsx","target":"src/v2/modules/place/map/tutorial/model.ts","typeOnly":true},
     {"source":"src/v2/modules/place/map/tutorial/index.ts","target":"src/v2/modules/place/map/tutorial/i18n.ts","typeOnly":false},
+    {"source":"src/v2/modules/place/map/tutorial/MapTutorialOverlay.tsx","target":"src/v2/shared/motion/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/map/tutorial/MapTutorialOverlay.tsx","target":"src/assets/v2/icons/tutorial/pingdi.svg","typeOnly":false},
     {"source":"src/v2/modules/place/map/tutorial/MapTutorialOverlay.tsx","target":"src/assets/v2/icons/tutorial/close.svg","typeOnly":false},
     {"source":"src/v2/modules/place/map/tutorial/MapTutorialOverlay.tsx","target":"src/assets/v2/icons/tutorial/next.svg","typeOnly":false},
