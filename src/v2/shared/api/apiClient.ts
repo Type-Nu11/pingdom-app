@@ -171,8 +171,14 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       const startedAt = Date.now();
 
       try {
+        // Collection routes redirect slashless requests to an insecure upstream
+        // URL on the deployed proxy. Request the canonical HTTPS path directly.
+        const canonicalPath = path.replace(
+          /^\/(places|reservations|coupons|location-check-ins)(?=[?#]|$)/,
+          '/$1/',
+        );
         const response = await getTransport().get<TResponse>(
-          path,
+          canonicalPath,
           await withAuthorization(options),
         );
         return response.data;
