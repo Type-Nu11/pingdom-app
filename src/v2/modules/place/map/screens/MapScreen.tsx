@@ -3,6 +3,8 @@ import { env } from '../../../../shared/config';
 import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
 import MapAssistantModal from '../assistant/components/MapAssistantModal';
 import MapAssistantIntro from '../assistant/components/MapAssistantIntro';
+import { MapTutorialProvider } from '../tutorial/MapTutorialProvider';
+import { MapTutorialTarget } from '../tutorial/context';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -923,6 +925,11 @@ export default function MapScreen({
     && content.type === 'place-preview'
     && snapPoint === 'expanded';
   return (
+    <MapTutorialProvider
+      enabled={isFocused && mapSection === 'map' && content.type === 'home' && !isSearchOpen
+        && !assistant.isBusy && snapPoint === 'medium' && !openedBookmarkedPlaceId}
+      username={profile?.username}
+    >
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <MapGlassBackdrop active={isFocused}>
       <StatusBar
@@ -1195,10 +1202,12 @@ export default function MapScreen({
           }}
           testID="visit-verification-map-cta-motion"
         >
+          <MapTutorialTarget id="verification">
           <VisitVerificationMapCta
             label={t('visitVerification.title')}
             onPress={onOpenVisitVerification}
           />
+          </MapTutorialTarget>
         </Animated.View>
       ) : null}
       {isSearchOpen && center ? (
@@ -1239,6 +1248,7 @@ export default function MapScreen({
       <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}
         onContinue={assistant.continueToAssistant} />
     </View>
+    </MapTutorialProvider>
   );
 }
 
