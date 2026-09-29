@@ -118,3 +118,28 @@ describe('CommunityBottomSheet loading/empty/error states', () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('CommunityBottomSheet Figma layout', () => {
+  beforeEach(() => {
+    jest.mocked(useCategories).mockReturnValue(categoriesResult());
+    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult({
+      data: { pages: [postPage({ posts: [{ postId: 7, title: '성수 팝업 후기' }], totalCount: 1, totalPages: 1 })], pageParams: [1] },
+    }));
+  });
+
+  test('tags each card with the category the list was fetched for', async () => {
+    await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
+
+    expect(screen.getByTestId('v2-community-post-7-tag')).toHaveTextContent('장소');
+  });
+
+  test('shows the write button only on the expanded sheet, like the Figma frames', async () => {
+    const { rerender } = await renderSheet(
+      <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} snapPoint="medium" />,
+    );
+    expect(screen.queryByTestId('v2-community-sheet-write-fab')).toBeNull();
+
+    await rerender(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} snapPoint="expanded" />);
+    expect(screen.getByTestId('v2-community-sheet-write-fab')).toBeTruthy();
+  });
+});

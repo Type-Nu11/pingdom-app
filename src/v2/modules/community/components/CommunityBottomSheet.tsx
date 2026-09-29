@@ -10,14 +10,17 @@ import {
   type ListRenderItem,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import AddPlusIcon from '../../../../assets/v2/icons/community/add-plus.svg';
 import * as GlassStyles from '../../place/map/sheet';
-import { MapSheetBottomNavigation } from '../../place/map/sheet';
+import { getMapSheetNavigationBottom, MapSheetBottomNavigation } from '../../place/map/sheet';
+import { GlassSurface } from '../../place/map/presentation';
 import type { BottomSheetSnapPoint } from '../../place/map/sheet';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
 import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
+import { textStyleCss } from '../../../shared/theme/typography';
 import { useCategories, useInfinitePostsByCategory } from '../hooks/useCommunity';
 import type { CommunityPostSummary } from '../api/communityApi';
 import type { AnchoredMenuPosition } from './AnchoredMenu';
@@ -25,6 +28,9 @@ import PostCard from './PostCard';
 import PostOverflowMenu from './PostOverflowMenu';
 
 const SHEET_RESTING_GAP = 8;
+// Figma `FAB/Write` sits 12px above the 64px bottom navigation bar.
+const NAVIGATION_BAR_HEIGHT = 64;
+const WRITE_FAB_NAVIGATION_GAP = 12;
 const PAGE_LIMIT = 20;
 const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3', 'skeleton-4'] as const;
 
@@ -96,6 +102,7 @@ export default function CommunityBottomSheet({
 }: CommunityBottomSheetProps) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { colors, liquidGlass: themedGlass } = theme;
   const [manualCategoryId, setManualCategoryId] = useState<string | null>(null);
   const [hiddenPostIds, setHiddenPostIds] = useState<number[]>([]);
@@ -147,8 +154,13 @@ export default function CommunityBottomSheet({
     outputRange: [0, themedGlass.sheet.bottomRadius],
   });
 
+  // Posts are listed per category, so the selected category is the only
+  // category tag the list contract can back for each card.
+  const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
+
   const renderPost: ListRenderItem<CommunityPostSummary & { postId: number }> = ({ item }) => (
     <PostCard
+      categoryName={selectedCategoryName}
       onOpenOverflow={(event) => setOverflowMenu({
         position: { right: 16, top: event.nativeEvent.pageY + 8 },
         postId: item.postId,
@@ -231,6 +243,7 @@ export default function CommunityBottomSheet({
                   <CategoryChip
                     $selected={selected}
                     accessibilityRole="tab"
+                    style={{ boxShadow: themedGlass.category.shadow }}
                     accessibilityState={{ selected }}
                     key={category.categoryId}
                     onPress={() => {
@@ -279,15 +292,23 @@ export default function CommunityBottomSheet({
         </Animated.View>
       </GlassStyles.SheetInner>
 
-      <WriteFab
-        accessibilityLabel={t('community.write')}
-        accessibilityRole="button"
-        onPress={() => onOpenWrite(selectedCategoryId ?? undefined)}
-        testID="v2-community-sheet-write-fab"
-      >
-        <AddPlusIcon height={24} width={24} />
-        <WriteFabLabel>{t('community.write')}</WriteFabLabel>
-      </WriteFab>
+      {snapPoint === 'expanded' ? (
+        <WriteFab
+          accessibilityLabel={t('community.write')}
+          accessibilityRole="button"
+          onPress={() => onOpenWrite(selectedCategoryId ?? undefined)}
+          style={{
+            bottom: getMapSheetNavigationBottom(insets.bottom) + NAVIGATION_BAR_HEIGHT + WRITE_FAB_NAVIGATION_GAP,
+            boxShadow: themedGlass.search.shadow,
+          }}
+          testID="v2-community-sheet-write-fab"
+        >
+          <WriteFabSurface pointerEvents="none" tintColor={themedGlass.primaryCta.tint}>
+            <AddPlusIcon height={24} width={24} />
+            <WriteFabLabel>{t('community.write')}</WriteFabLabel>
+          </WriteFabSurface>
+        </WriteFab>
+      ) : null}
 
       <MapSheetBottomNavigation
         activeTab="community"
@@ -310,34 +331,37 @@ export default function CommunityBottomSheet({
   );
 }
 
-const CATEGORY_CONTENT_STYLE = { gap: 8, paddingHorizontal: 16, paddingVertical: 10 } as const;
+const CATEGORY_CONTENT_STYLE = { gap: 8, paddingHorizontal: 16 } as const;
 const LIST_CONTENT_STYLE = { paddingBottom: 116, paddingHorizontal: 16 } as const;
 const MEDIUM_VIEWPORT_STYLE = { flex: 0, height: 182 } as const;
 
-const HandleArea = styled(View)`align-items: center; height: 36px; justify-content: center;`;
-const HandleButton = styled(Pressable)`align-items: center; height: 36px; justify-content: center; width: 96px;`;
-const Handle = styled.View`background-color: ${({ theme }) => theme.colors.borderEmphasis}; border-radius: 3px; height: 5px; width: 56px;`;
+// Figma sheet header: 6px above a 5px grabber, 8px below it, then a 44px
+// title row and a 34px category row.
+const HandleArea = styled(View)`align-items: center; height: 19px;`;
+const HandleButton = styled(Pressable)`align-items: center; height: 19px; padding-top: 6px; width: 160px;`;
+const Handle = styled.View`background-color: ${({ theme }) => theme.colors.secondaryNormal}; border-radius: 3px; height: 5px; width: 56px;`;
 
-const TitleRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; padding: 0 16px;`;
-const Title = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 20px; font-weight: 700;`;
+const TitleRow = styled.View`height: 44px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 16px;`;
+const Title = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
 
-const CategoryScroll = styled.ScrollView`flex-grow: 0; height: 58px;`;
+const CategoryScroll = styled.ScrollView`flex-grow: 0; height: 34px; overflow: visible;`;
 const CategoryChip = styled.Pressable<{ $selected: boolean }>`
-  padding: 8px 12px;
+  height: 34px;
+  justify-content: center;
+  padding: 0 11px;
   border-width: 1px;
-  border-color: ${({ $selected, theme }) => ($selected ? theme.colors.primaryPressed : 'transparent')};
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primaryRange : 'rgba(255, 255, 255, 0.36)')};
+  border-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeBorder : theme.liquidGlass.category.border)};
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.liquidGlass.category.tint)};
 `;
 const CategoryLabel = styled(AppText)<{ $selected: boolean }>`
   color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.textAlternative)};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: 500;
+  ${({ theme }) => textStyleCss(theme.typography.labelMedium)}
 `;
 
-const CategorySkeletonRow = styled.View`height: 58px; justify-content: center; padding: 0 16px;`;
-const CategorySkeletonChip = styled.View`width: 64px; height: 36px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.border};`;
-const CategoriesErrorRow = styled.View`min-height: 58px; justify-content: center;`;
+const CategorySkeletonRow = styled.View`height: 34px; justify-content: center; padding: 0 16px;`;
+const CategorySkeletonChip = styled.View`width: 64px; height: 34px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.border};`;
+const CategoriesErrorRow = styled.View`min-height: 34px; justify-content: center;`;
 
 const ListViewport = styled.View`flex: 1; margin-bottom: 92px; overflow: hidden;`;
 const ErrorViewport = styled.View`flex: 1; justify-content: center;`;
@@ -351,21 +375,21 @@ const FooterErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.tex
 const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primary}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
+// Same glass primary CTA recipe as the map's visit-verification button.
 const WriteFab = styled.Pressable`
   position: absolute;
-  right: 16px;
-  bottom: 108px;
+  right: 24px;
+  height: 48px;
+  border-radius: 24px;
+  overflow: hidden;
+  background-color: ${({ theme }) => theme.liquidGlass.primaryCta.tint};
+`;
+const WriteFabSurface = styled(GlassSurface)`
   height: 48px;
   flex-direction: row;
   align-items: center;
   gap: 4px;
-  padding: 0 18px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.primary};
-  shadow-color: ${({ theme }) => theme.colors.shadow};
-  shadow-offset: 0px 4px;
-  shadow-opacity: 0.16;
-  shadow-radius: 20px;
-  elevation: 4;
+  padding: 0 17px;
+  border-radius: 24px;
 `;
-const WriteFabLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.label.fontSize}px; font-weight: 600;`;
+const WriteFabLabel = styled(AppText)`color: ${({ theme }) => theme.liquidGlass.primaryCta.foreground}; ${({ theme }) => textStyleCss(theme.typography.bodyMedium)}`;
