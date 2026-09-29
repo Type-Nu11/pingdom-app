@@ -31,6 +31,8 @@ export const communityResources = {
       },
       comments: {
         headerLabel: 'Comments',
+        count: 'Comments {{count}}',
+        jumpA11yLabel: 'Go to {{count}} comments',
         loading: 'Loading comments…',
         empty: 'No comments yet. Be the first to leave one!',
         errorRetry: 'Retry',
@@ -158,6 +160,8 @@ export const communityResources = {
       },
       comments: {
         headerLabel: '댓글',
+        count: '댓글 {{count}}',
+        jumpA11yLabel: '댓글 {{count}}개로 이동',
         loading: '댓글을 불러오는 중…',
         empty: '아직 댓글이 없어요. 첫 댓글을 남겨보세요!',
         errorRetry: '다시 시도',
@@ -285,6 +289,8 @@ export const communityResources = {
       },
       comments: {
         headerLabel: 'コメント',
+        count: 'コメント {{count}}',
+        jumpA11yLabel: 'コメント{{count}}件へ移動',
         loading: 'コメントを読み込んでいます…',
         empty: 'まだコメントがありません。最初のコメントを残してみましょう！',
         errorRetry: '再試行',

@@ -32,16 +32,15 @@ describe('CommunityDetailScreen', () => {
     await waitFor(() => expect(screen.getByTestId('v2-community-detail-loading')).toBeVisible());
   });
 
-  test('게시글 제목과 본문을 문단으로 표시한다', async () => {
+  test('게시글 제목과 본문을 작성자가 넣은 빈 줄까지 그대로 표시한다', async () => {
     jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({
-      content: '첫 문단입니다.\n두번째 문단입니다.',
+      content: '첫 문단입니다.\n\n두번째 문단입니다.',
     }));
 
     await renderWithProviders(<CommunityDetailScreen onBack={jest.fn()} postId={1} />, { language: 'ko' });
 
     await waitFor(() => expect(screen.getByText('대소고 다녀왔어요')).toBeVisible());
-    expect(screen.getByText('첫 문단입니다.')).toBeVisible();
-    expect(screen.getByText('두번째 문단입니다.')).toBeVisible();
+    expect(screen.getByTestId('v2-community-detail-body').props.children).toBe('첫 문단입니다.\n\n두번째 문단입니다.');
   });
 
   test('삭제된 연결 장소는 안내 문구만 보여주고 이동할 수 없다', async () => {
