@@ -94,8 +94,6 @@ export const communityResources = {
       removePlace: 'Remove {{name}}',
       submit: 'Post',
       submitBusy: 'Posting…',
-      titleCounter: '{{count}}/{{max}}',
-      contentCounter: '{{count}}/{{max}}',
       validation: {
         titleRequired: 'Enter a title.',
         titleTooLong: 'Title must be 50 characters or fewer.',
@@ -223,8 +221,6 @@ export const communityResources = {
       removePlace: '{{name}} 삭제',
       submit: '등록하기',
       submitBusy: '등록 중…',
-      titleCounter: '{{count}}/{{max}}',
-      contentCounter: '{{count}}/{{max}}',
       validation: {
         titleRequired: '제목을 입력해 주세요.',
         titleTooLong: '제목은 50자 이하로 입력해 주세요.',
@@ -352,8 +348,6 @@ export const communityResources = {
       removePlace: '{{name}}を削除',
       submit: '投稿',
       submitBusy: '投稿しています…',
-      titleCounter: '{{count}}/{{max}}',
-      contentCounter: '{{count}}/{{max}}',
       validation: {
         titleRequired: 'タイトルを入力してください。',
         titleTooLong: 'タイトルは50文字以内で入力してください。',

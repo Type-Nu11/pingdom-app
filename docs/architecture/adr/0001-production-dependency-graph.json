@@ -1076,6 +1076,8 @@
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/model/writeSubmitError.ts","typeOnly":false},
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/model/writeForm.ts","typeOnly":false},
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/components/CommunityPlacePicker.tsx","typeOnly":false},
+    {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/components/HeaderIconButton.tsx","typeOnly":false},
+    {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/shared/theme/typography.ts","typeOnly":false},
     {"source":"src/v2/modules/merchant/api/merchantOwnerApi.ts","target":"src/v2/shared/api/index.ts","typeOnly":false},
     {"source":"src/v2/modules/merchant/components/EventCard.tsx","target":"src/v2/shared/components/Typography.tsx","typeOnly":false},
     {"source":"src/v2/modules/merchant/components/EventCard.tsx","target":"src/assets/v2/icons/edit/gg_trash.svg","typeOnly":false},
