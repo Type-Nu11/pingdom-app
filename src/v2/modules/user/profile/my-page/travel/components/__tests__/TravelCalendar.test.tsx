@@ -21,6 +21,20 @@ describe('TravelCalendar layout', () => {
     });
   });
 
+  test.each([
+    ['ko', ['S', 'M', 'T', 'W', 'T', 'F', 'S']],
+    ['en', ['S', 'M', 'T', 'W', 'T', 'F', 'S']],
+    ['ja', ['日', '月', '火', '水', '木', '金', '土']],
+  ] as const)('#389 %s 요일 머리글은 카탈로그 문구를 쓴다', async (language, labels) => {
+    await renderWithProviders(
+      <TravelCalendar highlightedRange={null} initialMonth={{ month: 9, year: 2026 }} />,
+      { language },
+    );
+
+    for (const label of new Set(labels)) expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    if (language === 'ja') expect(screen.queryByText('M')).not.toBeOnTheScreen();
+  });
+
   test('기기 폭에서도 Figma 달력의 354:320 비율을 유지한다', () => {
     expect(getCalendarHeight(354)).toBe(320);
     expect(getCalendarHeight(339)).toBeCloseTo(306.44, 2);

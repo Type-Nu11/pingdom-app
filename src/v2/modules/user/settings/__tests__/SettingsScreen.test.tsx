@@ -122,6 +122,42 @@ describe('SettingsScreen', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
+  test('#389 언어 페이지는 日本語를 선택지로 제공하고 선택 상태를 표시한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    expect(screen.getAllByRole('radio').map((radio) => radio.props.accessibilityLabel))
+      .toEqual(['한국어, 선택됨', '영어', '日本語']);
+    await view.user.press(screen.getByRole('radio', { name: '日本語' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('ja');
+  });
+
+  test('#389 일본어로 선택하면 설정 루트가 즉시 일본어와 日本語 값을 표시한다', async () => {
+    const view = await renderWithProviders(
+      <SettingsScreen onBack={jest.fn()} onLogout={jest.fn(async () => undefined)} onOpenProfileEdit={jest.fn()} />,
+      { language: 'ja' },
+    );
+
+    expect(screen.getByText('設定')).toBeVisible();
+    expect(screen.getByText('環境設定')).toBeVisible();
+    expect(screen.getByText('日本語')).toBeVisible();
+    await view.user.press(screen.getByText('言語'));
+    expect(screen.getByRole('radio', { name: '日本語, 選択中' })).toBeSelected();
+  });
+
+  test('#389 일본어 UI에서는 언어 페이지와 설정 행이 일본어로 표시된다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'ja' },
+    );
+
+    expect(screen.getByText('言語')).toBeVisible();
+    expect(screen.getByRole('radio', { name: '日本語, 選択中' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '韓国語' })).not.toBeSelected();
+  });
+
   test('알림 하위 화면은 서버 설정을 읽고 해당 field만 변경한다', async () => {
     const view = await renderSettings();
     await view.user.press(screen.getByText('알림 설정'));

@@ -3,6 +3,7 @@ import ReservationRecordCard from './ReservationRecordCard';
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   ActivityIndicator,
   Animated,
@@ -44,13 +45,15 @@ const useReservationStyles = () => {
 
 
 
-function formatDistance(place: DecisionPlace, language: string) {
+function formatDistance(place: DecisionPlace, t: TFunction) {
   if (typeof place.distanceMeters !== 'number') return place.distance || '';
-  if (place.distanceMeters < 1000) return language.startsWith('en')
-    ? `${Math.round(place.distanceMeters)} m away`
-    : `여기서 ${(place.distanceMeters / 1000).toFixed(1)}km`;
-  const km = (place.distanceMeters / 1000).toFixed(1);
-  return language.startsWith('en') ? `${km} km away` : `여기서 ${km}km`;
+  const distance = {
+    kilometers: (place.distanceMeters / 1000).toFixed(1),
+    meters: Math.round(place.distanceMeters),
+  };
+  return t(place.distanceMeters < 1000
+    ? 'reservation.list.distanceNear'
+    : 'reservation.list.distanceFar', distance);
 }
 
 function ReservationPlaceImage({ uri }: { uri?: string }) {
@@ -75,7 +78,7 @@ function ReservationPlaceCard({
   place: DecisionPlace;
   reservationId: number;
 }) {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const styles = useReservationStyles();
   const category = normalizePlaceCategory(place.category);
   const firstImage = imageUrls[0];
@@ -83,7 +86,7 @@ function ReservationPlaceCard({
 
   return (
     <Pressable
-      accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
+      accessibilityLabel={`${place.name}, ${formatDistance(place, t)}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.savedPlaceCard, pressed && styles.pressed]}
@@ -97,8 +100,8 @@ function ReservationPlaceCard({
               {t(`map.categories.${category}`, { defaultValue: place.category })}
             </AppText>
           </View>
-          <AppText accessibilityLabel={`${formatDistance(place, i18n.language)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceMeta}>
-            {formatDistance(place, i18n.language)} · {place.address}
+          <AppText accessibilityLabel={`${formatDistance(place, t)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.savedPlaceMeta}>
+            {formatDistance(place, t)} · {place.address}
           </AppText>
         </View>
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.savedMoreButton}>

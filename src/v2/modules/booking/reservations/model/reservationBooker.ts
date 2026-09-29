@@ -1,3 +1,4 @@
+import { resolveLocale } from '../../../../shared/i18n/formatters';
 import type { CreateReservationBody, Reservation } from '../api/reservationApi';
 
 /**
@@ -120,7 +121,7 @@ export function formatReservationWindow(
   const start = new Date(reservationStartsAt);
   if (Number.isNaN(start.getTime())) return null;
 
-  const locale = language.startsWith('en') ? 'en-US' : 'ko-KR';
+  const locale = resolveLocale(language);
   const startLabel = new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',

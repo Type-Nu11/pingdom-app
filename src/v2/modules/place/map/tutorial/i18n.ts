@@ -87,4 +87,48 @@ export const mapTutorialResources = {
       body: 'Manage your profile and travel dates,\nand browse the places you’ve verified.',
     },
   },
+  ja: {
+    name: 'ピンディ', title: 'ピンディの使い方', guest: '旅行者',
+    close: 'チュートリアルを閉じる', previous: '前の案内', next: '次の案内',
+    finish: 'チュートリアルを完了', progress: '{{current}} / {{total}} ステップ',
+    welcome: {
+      greeting: 'こんにちは、{{username}}さん',
+      introduction: '{{username}}さんの旅をもっと気軽にする',
+      agent: 'AIエージェントの<accent>ピンディ</accent>です。',
+      help: '行きたい場所探しから予約の準備まで、\n会話ひとつでお手伝いします。',
+      start: 'それでは、簡単に使い方をご紹介します！',
+    },
+    map: {
+      prompt: '<accent>地図ボタン</accent>をタップしてください。',
+      body: '周辺のピンを確認できます。\n地域や全国の人気スポットも見られます。',
+    },
+    favorites: {
+      prompt: '<accent>お気に入りボタン</accent>をタップしてください。',
+      body: '気になる場所をお気に入りに保存して、\nいつでも見返せます。',
+    },
+    community: {
+      prompt: '<accent>コミュニティボタン</accent>をタップしてください。',
+      body: 'ほかの旅行者の体験をのぞいたり、\n場所をタグ付けして自分の体験を共有できます。',
+    },
+    reservations: {
+      prompt: '<accent>予約ボタン</accent>をタップしてください。',
+      body: 'お気に入りの場所の空き状況を確認し、\n都合のよい日時で予約できます。',
+    },
+    recommendations: {
+      prompt: '<accent>おすすめボタン</accent>をタップしてください。',
+      body: '{{username}}さんの興味や行動に合わせた\nおすすめスポットを見つけられます。',
+    },
+    verification: {
+      prompt: '<accent>認証ボタン</accent>をタップしてください。',
+      body: '訪れた場所を振り返って体験を認証し、\nほかの旅行者が安心して\n訪れられるようにしましょう。',
+    },
+    categories: {
+      prompt: '<accent>カテゴリー</accent>をタップしてください。',
+      body: 'グルメや音楽などのカテゴリーを選ぶと、\n該当するピンだけを表示できます。',
+    },
+    profile: {
+      prompt: '<accent>マイページ</accent>をタップしてください。',
+      body: 'プロフィールや旅行日程を管理し、\n認証した場所を確認できます。',
+    },
+  },
 } as const;

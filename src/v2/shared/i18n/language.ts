@@ -12,13 +12,21 @@ export function isSupportedLanguage(value: unknown): value is SupportedLanguage 
     && supportedLanguages.includes(value as SupportedLanguage);
 }
 
+// Language names that stored profiles or legacy selections may carry instead of a code.
+const LANGUAGE_NAME_ALIASES: Record<SupportedLanguage, readonly string[]> = {
+  en: ['english', '영어'],
+  ko: ['korean', '한국어'],
+  ja: ['japanese', '日本語', '일본어'],
+};
+
 export function normalizeSupportedLanguage(value: unknown): SupportedLanguage | null {
   if (typeof value !== 'string') return null;
 
   const normalized = value.trim().toLowerCase().replace('_', '-');
-  if (normalized === 'korean' || normalized === '한국어' || normalized.split('-')[0] === 'ko') return 'ko';
-  if (normalized === 'english' || normalized === '영어' || normalized.split('-')[0] === 'en') return 'en';
-  return null;
+  const baseLanguage = normalized.split('-')[0];
+  return supportedLanguages.find((language) => (
+    baseLanguage === language || LANGUAGE_NAME_ALIASES[language].includes(normalized)
+  )) ?? null;
 }
 
 export function detectDeviceLanguage(): SupportedLanguage | null {
