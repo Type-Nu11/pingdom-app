@@ -1,4 +1,5 @@
 import { createTheme, darkTheme, lightTheme } from '../theme';
+import { textStyleCss } from '../typography';
 
 const luminance = (hex: string) => {
   const values = hex.slice(1).match(/.{2}/g)?.map((value) => Number.parseInt(value, 16) / 255) ?? [];
@@ -39,5 +40,22 @@ describe('semantic themes', () => {
     ['dark border', darkTheme.colors.borderEmphasis, darkTheme.colors.surface, 3],
   ] as const)('%s contrast is at least %s:1', (_name, foreground, background, minimum) => {
     expect(contrast(foreground, background)).toBeGreaterThanOrEqual(minimum);
+  });
+});
+
+describe('Figma text styles', () => {
+  test('every Figma style uses the library 1.3 line-height multiplier', () => {
+    const figmaKeys = [
+      'headline1Bold', 'headline2Bold', 'headline2Medium', 'bodyRegular', 'bodyMedium',
+      'labelBold', 'labelMedium', 'labelRegular', 'captionBold', 'captionMedium', 'captionRegular',
+    ] as const;
+    for (const key of figmaKeys) {
+      const style = lightTheme.typography[key];
+      expect(style.lineHeight).toBeCloseTo(style.fontSize * 1.3, 5);
+    }
+  });
+
+  test('textStyleCss renders size, weight and line height declarations', () => {
+    expect(textStyleCss(lightTheme.typography.labelMedium)).toBe('font-size: 14px; font-weight: 500; line-height: 18.2px;');
   });
 });
