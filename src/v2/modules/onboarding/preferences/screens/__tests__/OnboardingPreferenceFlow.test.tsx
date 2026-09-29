@@ -206,7 +206,7 @@ describe('OnboardingPreferenceFlow', () => {
     resetStoreMemory();
     await renderWithProviders(
       <OnboardingPreferenceFlow
-        language="ja"
+        language="zh"
         onBack={jest.fn()}
         onComplete={jest.fn()}
       />,
@@ -214,5 +214,18 @@ describe('OnboardingPreferenceFlow', () => {
     );
 
     expect(await screen.findByText('여행 목적을 선택해 주세요')).toBeVisible();
+  });
+
+  test('uses Japanese when selected', async () => {
+    await renderWithProviders(
+      <OnboardingPreferenceFlow
+        language="ja"
+        onBack={jest.fn()}
+        onComplete={jest.fn()}
+      />,
+      { language: 'en' },
+    );
+
+    expect(await screen.findByText('旅行の目的を選択')).toBeVisible();
   });
 });

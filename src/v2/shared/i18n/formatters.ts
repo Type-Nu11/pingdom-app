@@ -63,10 +63,10 @@ const RELATIVE_FALLBACKS: Record<string, {
 }> = {
   en: { format: (value, unit) => `${value} ${unit} ago`, now: 'now', units: { day: 'day', hour: 'hr', minute: 'min' } },
   ko: { format: (value, unit) => `${value}${unit} 전`, now: '지금', units: { day: '일', hour: '시간', minute: '분' } },
+  ja: { format: (value, unit) => `${value}${unit}前`, now: '今', units: { day: '日', hour: '時間', minute: '分' } },
 };
 
 const RELATIVE_NOW_ONLY: Record<string, string> = {
-  ja: '今',
   th: 'ตอนนี้',
   vi: 'bây giờ',
   zh: '现在',

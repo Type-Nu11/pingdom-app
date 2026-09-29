@@ -11,14 +11,16 @@ import {
 test('normalizes supported locale variants and rejects unsupported languages', () => {
   assert.equal(normalizeSupportedLanguage('ko-KR'), 'ko');
   assert.equal(normalizeSupportedLanguage('en_US'), 'en');
-  assert.equal(normalizeSupportedLanguage('ja-JP'), null);
+  assert.equal(normalizeSupportedLanguage('ja-JP'), 'ja');
+  assert.equal(normalizeSupportedLanguage('fr-FR'), null);
 });
 
 test('resolves stored, profile, device, and default language in priority order', () => {
   assert.equal(resolvePreferredLanguage({ storedLanguage: 'ko', profileLanguage: 'en', deviceLanguage: 'en' }), 'ko');
   assert.equal(resolvePreferredLanguage({ profileLanguage: 'ko', deviceLanguage: 'en' }), 'ko');
   assert.equal(resolvePreferredLanguage({ deviceLanguage: 'ko-KR' }), 'ko');
-  assert.equal(resolvePreferredLanguage({ deviceLanguage: 'ja-JP' }), 'en');
+  assert.equal(resolvePreferredLanguage({ deviceLanguage: 'ja-JP' }), 'ja');
+  assert.equal(resolvePreferredLanguage({ deviceLanguage: 'fr-FR' }), 'en');
 });
 
 test('restores a persisted language across app initialization', async () => {

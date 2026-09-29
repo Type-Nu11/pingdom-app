@@ -53,6 +53,9 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     // #389 moves the reservation sheet distance copy out of the component.
     delete baseline[language].translation.reservation.list.distanceFar;
     delete baseline[language].translation.reservation.list.distanceNear;
+    // #389 adds the Japanese option label to the language pickers.
+    delete baseline[language].translation.selectLanguage.options.ja;
+    delete baseline[language].translation.settings.language.japanese;
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
     .toBe('f2dc1044fdfdba80886ded680f6c6b25b694134c843365c57988f7f1b3f4b478');

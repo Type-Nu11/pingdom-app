@@ -16,6 +16,7 @@ export function isSupportedLanguage(value: unknown): value is SupportedLanguage 
 const LANGUAGE_NAME_ALIASES: Record<SupportedLanguage, readonly string[]> = {
   en: ['english', '영어'],
   ko: ['korean', '한국어'],
+  ja: ['japanese', '日本語', '일본어'],
 };
 
 export function normalizeSupportedLanguage(value: unknown): SupportedLanguage | null {

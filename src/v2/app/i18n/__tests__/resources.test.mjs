@@ -47,8 +47,8 @@ function staticTranslationKeys() {
   return [...new Set(keys)].sort();
 }
 
-test('canonical resources support only ko and en with exact key parity', () => {
-  assert.deepEqual([...supportedLanguages], ['en', 'ko']);
+test('canonical resources support en, ko, and ja with exact key parity', () => {
+  assert.deepEqual([...supportedLanguages], ['en', 'ko', 'ja']);
   const en = flattenKeys(resources.en.translation).sort();
   const ko = flattenKeys(resources.ko.translation).sort();
   assert.deepEqual(ko, en);
