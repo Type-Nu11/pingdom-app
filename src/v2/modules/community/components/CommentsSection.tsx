@@ -7,6 +7,7 @@ import styled, { useTheme } from 'styled-components/native';
 import ChevronRightIcon from '../../../../assets/v2/icons/community/chevron-right.svg';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
 import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
+import { textStyleCss } from '../../../shared/theme/typography';
 import type { useInfiniteComments } from '../hooks/useCommunity';
 import CommentItem from './CommentItem';
 
@@ -132,20 +133,23 @@ export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn
   );
 }
 
-const Section = styled.View`gap: ${({ theme }) => theme.spacing.md}px; padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.xl}px; border-top-width: 8px; border-top-color: ${({ theme }) => theme.colors.backgroundAssistive};`;
+// Figma `Comments`: 20px top / 24px bottom / 24px side padding and 20px
+// between the head, each comment and the load-more pill. The 8px band above
+// belongs to the detail ActionBar.
+const Section = styled.View`gap: 20px; padding: 20px 24px 24px;`;
 const Head = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
-const HeadLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 18px; font-weight: 700;`;
-const HeadCount = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; font-size: 18px; font-weight: 700;`;
+const HeadLabel = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
+const HeadCount = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
 
-const List = styled.View`gap: ${({ theme }) => theme.spacing.md}px;`;
+const List = styled.View`gap: 20px;`;
 const EmptyText = styled(AppText)`padding: ${({ theme }) => theme.spacing.lg}px 0; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 
 const LoadMoreButton = styled.Pressable`
   flex-direction: row; align-items: center; justify-content: center; gap: 6px;
   align-self: stretch; padding: 14px 0; border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.fillAlternative};
 `;
-const LoadMoreLabel = styled(AppText)`color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
+const LoadMoreLabel = styled(AppText)`color: ${({ theme }) => theme.colors.labelNeutral}; ${({ theme }) => textStyleCss(theme.typography.bodyRegular)}`;
 const ChevronDown = styled.View`transform: rotate(90deg);`;
 
 const FooterState = styled.View`align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.sm}px 0;`;

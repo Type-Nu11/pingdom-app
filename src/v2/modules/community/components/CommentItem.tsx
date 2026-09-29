@@ -3,8 +3,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import CommentAvatarIcon from '../../../../assets/v2/icons/community/comment-avatar.svg';
+import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
 import { formatRelativeMinutes } from '../../../shared/i18n/formatters';
+import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityComment } from '../api/communityApi';
 
 export type CommentItemProps = {
@@ -12,9 +13,9 @@ export type CommentItemProps = {
   now: Date;
 };
 
-// The contract's `CommunityCommentSummary` has no `parentId` (no replies) and
-// no like count, so this row is intentionally flat with no Actions row —
-// unlike the Figma reference, which shows reply/like affordances that don't
+// The contract's `CommunityCommentSummary` has no `parentId` (no replies), no
+// like count and no post-author flag, so this row is intentionally flat: the
+// Figma reply/like Actions row, indented replies and the 작성자 badge don't
 // exist on the server yet.
 export default function CommentItem({ comment, now }: CommentItemProps) {
   const { i18n, t } = useTranslation();
@@ -34,9 +35,7 @@ export default function CommentItem({ comment, now }: CommentItemProps) {
       })}
       testID={`v2-community-comment-${comment.commentId}`}
     >
-      <Avatar>
-        <CommentAvatarIcon height={18} width={18} />
-      </Avatar>
+      <AvatarPlaceholder height={32} width={32} />
       <Content>
         <NameRow>
           <Name>{authorName}</Name>
@@ -48,10 +47,10 @@ export default function CommentItem({ comment, now }: CommentItemProps) {
   );
 }
 
-const Row = styled.View`flex-direction: row; align-items: flex-start; gap: ${({ theme }) => theme.spacing.sm}px; width: 100%;`;
-const Avatar = styled.View`width: 32px; height: 32px; border-radius: 16px; align-items: center; justify-content: center; background-color: ${({ theme }) => theme.colors.backgroundNeutral};`;
+// Figma `Comment`: 32px `User_Circle` avatar, 10px gap, name row → 4px → body.
+const Row = styled.View`flex-direction: row; align-items: flex-start; gap: 10px; width: 100%;`;
 const Content = styled.View`flex: 1; gap: 4px; min-width: 0;`;
 const NameRow = styled.View`flex-direction: row; align-items: center; gap: 6px;`;
-const Name = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 14px; font-weight: 700;`;
-const Time = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: 12px;`;
-const Body = styled(AppText)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px;`;
+const Name = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.labelBold)}`;
+const Time = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;
+const Body = styled(AppText)`color: ${({ theme }) => theme.colors.labelNeutral}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;

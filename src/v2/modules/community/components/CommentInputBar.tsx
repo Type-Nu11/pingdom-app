@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
 import SendIcon from '../../../../assets/v2/icons/community/send.svg';
+import { textStyleCss } from '../../../shared/theme/typography';
 import { COMMENT_CONTENT_MAX_LENGTH, COMMENT_COUNTER_WARNING_THRESHOLD } from '../model/commentForm';
 
 export type CommentInputBarProps = {
@@ -47,7 +48,7 @@ export default function CommentInputBar({
           multiline
           onChangeText={onChangeText}
           placeholder={t('community.detail.commentInput.placeholder')}
-          placeholderTextColor={theme.colors.textAlternative}
+          placeholderTextColor={theme.colors.textMuted}
           testID="v2-community-comment-input"
           value={value}
         />
@@ -75,23 +76,25 @@ export default function CommentInputBar({
   );
 }
 
+// Figma `CommentInput`: 1px `Line/Alternative` rule, then a 316×44 field and
+// 44px send button 8px apart inside 16px + 1px / 25px bottom insets.
 const Bar = styled.View`
   gap: 6px;
-  padding: 16px ${({ theme }) => theme.spacing.md}px 24px;
+  padding: 16px 17px 25px;
   background-color: ${({ theme }) => theme.colors.background};
   border-top-width: 1px;
-  border-top-color: ${({ theme }) => theme.colors.surfaceMuted};
+  border-top-color: ${({ theme }) => theme.colors.lineAlternative};
 `;
 const Row = styled.View`flex-direction: row; align-items: flex-end; gap: 8px;`;
 const Field = styled(AppTextInput)`
   flex: 1;
   max-height: 96px;
   min-height: 44px;
-  padding: 12px 16px;
+  padding: 12.9px 16px;
   border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.fillAlternative};
   color: ${({ theme }) => theme.colors.text};
-  font-size: 14px;
+  ${({ theme }) => textStyleCss(theme.typography.labelRegular)}
 `;
 const SendButton = styled.Pressable<{ $enabled: boolean }>`
   width: 44px; height: 44px; align-items: center; justify-content: center;
