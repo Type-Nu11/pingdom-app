@@ -5,9 +5,9 @@
     "version": "v0"
   },
   "x-source": {
-    "checkedAt": "2026-09-25T06:31:09.688Z",
+    "checkedAt": "2026-09-30T07:21:38.623Z",
     "location": "https://www.typenull.xyz/v3/api-docs/app",
-    "sha256": "8ef5918df8a3efef452e0c9eed1a909305cbde7d2301f4737bdf2583b9748ba8"
+    "sha256": "b675a7582c15bf84d9a0d1fdfff61875eef0beec3de4a91dbd94090c95f1d85d"
   },
   "paths": {
     "/community/categories": {
@@ -967,6 +967,41 @@
   },
   "components": {
     "schemas": {
+      "Author": {
+        "type": "object",
+        "properties": {
+          "authorId": {
+            "type": "integer",
+            "description": "게시글 작성자 ID",
+            "format": "int64"
+          },
+          "authorName": {
+            "type": "string",
+            "description": "작성자 표시 이름. 탈퇴 또는 조회 불가 시 대체 이름"
+          },
+          "profileImageUrl": {
+            "type": "string",
+            "description": "프로필 이미지 URL. 없거나 탈퇴한 경우 null"
+          }
+        },
+        "description": "게시글 작성자 표시 정보"
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "description": "카테고리 식별자",
+            "example": "TRAVEL"
+          },
+          "categoryName": {
+            "type": "string",
+            "description": "카테고리 표시 이름",
+            "example": "여행"
+          }
+        },
+        "description": "게시글 카테고리 표시 정보"
+      },
       "CommunityCategoryItem": {
         "type": "object",
         "properties": {
@@ -1205,6 +1240,17 @@
             "items": {
               "$ref": "#/components/schemas/Place"
             }
+          },
+          "author": {
+            "$ref": "#/components/schemas/Author"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "게시글 작성 시각",
+            "format": "date-time"
           }
         },
         "description": "커뮤니티 게시글 상세 조회 응답"
@@ -1499,6 +1545,7 @@
           },
           "currentlyOperatingCheckedAt": {
             "type": "string",
+            "description": "현재 영업 여부를 평가한 UTC 기준 시각. 영업 일정은 Asia/Seoul 기준으로 해석합니다.",
             "format": "date-time"
           },
           "regularHours": {
@@ -1640,6 +1687,7 @@
         "properties": {
           "date": {
             "type": "string",
+            "description": "Asia/Seoul 기준 예외 날짜",
             "format": "date",
             "example": "2026-08-15"
           },
@@ -1654,7 +1702,7 @@
             }
           }
         },
-        "description": "특정 날짜의 휴무 또는 대체 영업 시간"
+        "description": "Asia/Seoul 기준 특정 날짜의 휴무 또는 대체 영업 시간"
       },
       "PlaceOperatingNoticeResponse": {
         "required": [
@@ -1754,22 +1802,25 @@
         "properties": {
           "opensAt": {
             "type": "string",
+            "description": "Asia/Seoul 기준 시작 시각(포함)",
             "format": "time",
             "example": "09:00:00"
           },
           "closesAt": {
             "type": "string",
+            "description": "Asia/Seoul 기준 종료 시각(제외)",
             "format": "time",
             "example": "18:00:00"
           }
         },
-        "description": "하루 중 장소 운영 시간대"
+        "description": "Asia/Seoul 기준 하루 중 장소 운영 시간대"
       },
       "PlaceRegularOperatingHourResponse": {
         "type": "object",
         "properties": {
           "dayOfWeek": {
             "type": "string",
+            "description": "Asia/Seoul 기준 요일",
             "example": "MONDAY",
             "enum": [
               "MONDAY",
@@ -1783,16 +1834,18 @@
           },
           "opensAt": {
             "type": "string",
+            "description": "Asia/Seoul 기준 시작 시각(포함)",
             "format": "time",
             "example": "09:00:00"
           },
           "closesAt": {
             "type": "string",
+            "description": "Asia/Seoul 기준 종료 시각(제외)",
             "format": "time",
             "example": "18:00:00"
           }
         },
-        "description": "요일별 정규 영업 시간대"
+        "description": "Asia/Seoul 기준 요일별 정규 영업 시간대"
       },
       "ValidationErrorResponse": {
         "required": [

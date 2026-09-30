@@ -1,6 +1,8 @@
 import React from 'react';
 import { Modal, Pressable } from 'react-native';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
+
+import { GlassSurface } from '../../place/map/presentation';
 
 export type AnchoredMenuPosition = { left?: number; right?: number; top: number };
 
@@ -13,14 +15,17 @@ type AnchoredMenuProps = {
 };
 
 export default function AnchoredMenu({ children, dismissLabel, onClose, position, visible }: AnchoredMenuProps) {
+  const theme = useTheme();
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
       <Backdrop accessibilityLabel={dismissLabel} accessibilityRole="button" onPress={onClose}>
         <Card
           onStartShouldSetResponder={() => true}
-          style={{ left: position.left, right: position.right, top: position.top }}
+          style={{ boxShadow: theme.liquidGlass.category.shadow, left: position.left, right: position.right, top: position.top }}
         >
-          {children}
+          <Glass glassEffectStyle="regular">
+            {children}
+          </Glass>
         </Card>
       </Backdrop>
     </Modal>
@@ -31,15 +36,16 @@ const Backdrop = styled(Pressable)`
   flex: 1;
 `;
 
+// Figma `alert`: a 200px frosted card with 8px/16px padding and the
+// `Shadow/Float` elevation shared with the map glass chips.
 const Card = styled.View`
   position: absolute;
-  min-width: 168px;
+  width: 200px;
   border-radius: ${({ theme }) => theme.radius.lg}px;
-  background-color: rgba(255, 255, 255, 0.96);
-  shadow-color: ${({ theme }) => theme.colors.shadow};
-  shadow-offset: 0px 4px;
-  shadow-opacity: 0.16;
-  shadow-radius: 20px;
-  elevation: 4;
+`;
+
+const Glass = styled(GlassSurface)`
+  padding: 8px 16px;
+  border-radius: ${({ theme }) => theme.radius.lg}px;
   overflow: hidden;
 `;

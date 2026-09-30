@@ -1,23 +1,42 @@
 import { Text as AppText } from '../../../shared/components/Typography';
-import React from 'react';
-import { type GestureResponderEvent } from 'react-native';
+import React, { useRef } from 'react';
+import { type GestureResponderEvent, type View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import EtcVerticalIcon from '../../../../assets/v2/icons/community/etc-vertical.svg';
+import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityPostSummary } from '../api/communityApi';
+import CategoryTag from './CategoryTag';
+
+/** Window-space bottom edge of the overflow icon, used to anchor its menu. */
+export type OverflowAnchor = { bottom: number };
 
 export type PostCardProps = {
-  onOpenOverflow: (event: GestureResponderEvent) => void;
+  categoryName?: string;
+  onOpenOverflow: (anchor: OverflowAnchor) => void;
   onPress: () => void;
   post: CommunityPostSummary;
 };
 
 // The list endpoint only returns `{ postId, title }` (see communityApi.ts) —
-// tags, thumbnails, and like/comment counts aren't part of the real contract,
-// so this card can't show them yet.
-export default function PostCard({ onOpenOverflow, onPress, post }: PostCardProps) {
+// the Figma card's preview, thumbnail, region/time/view meta and like/comment
+// counts aren't part of the real contract, so this card can't show them yet.
+// The category tag comes from the category the list was fetched for.
+export default function PostCard({ categoryName, onOpenOverflow, onPress, post }: PostCardProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const overflowRef = useRef<View>(null);
+
+  const openOverflow = (event: GestureResponderEvent) => {
+    event.stopPropagation();
+    // Open at the touch point immediately, then snap to the icon's measured
+    // bottom edge once layout reports it (hidden behind the menu's fade-in).
+    onOpenOverflow({ bottom: event.nativeEvent.pageY });
+    overflowRef.current?.measureInWindow?.((_x, y, _width, height) => {
+      if (Number.isFinite(y) && height > 0) onOpenOverflow({ bottom: y + height });
+    });
+  };
 
   return (
     <Card
@@ -26,43 +45,59 @@ export default function PostCard({ onOpenOverflow, onPress, post }: PostCardProp
       onPress={onPress}
       testID={`v2-community-post-${post.postId}`}
     >
+      <TagRow>
+        <Tags>
+          {categoryName ? (
+            <CategoryTag label={categoryName} testID={`v2-community-post-${post.postId}-tag`} />
+          ) : null}
+        </Tags>
+        <OverflowButton
+          accessibilityLabel={t('community.moreOptions')}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={openOverflow}
+          ref={overflowRef}
+          testID={`v2-community-post-${post.postId}-overflow`}
+        >
+          <EtcVerticalIcon color={theme.colors.labelNeutral} height={23.4} width={24.0021} />
+        </OverflowButton>
+      </TagRow>
       <Title numberOfLines={2}>{post.title}</Title>
-      <OverflowButton
-        accessibilityLabel={t('community.moreOptions')}
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={(event) => {
-          event.stopPropagation();
-          onOpenOverflow(event);
-        }}
-        testID={`v2-community-post-${post.postId}-overflow`}
-      >
-        <EtcVerticalIcon height={20} width={20} />
-      </OverflowButton>
     </Card>
   );
 }
 
+// Figma `FeedItem/Post`: 16px vertical padding, 24px tag row, 8px gap.
 const Card = styled.Pressable`
   width: 100%;
-  flex-direction: row;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.md}px;
-  padding: ${({ theme }) => theme.spacing.md}px 0;
+  gap: 8px;
+  padding: 16px 0;
   border-bottom-width: 1px;
   border-bottom-color: ${({ theme }) => theme.colors.border};
 `;
 
-const Title = styled(AppText)`
+const TagRow = styled.View`
+  height: 24px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const Tags = styled.View`
   flex: 1;
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.title.fontSize}px;
-  font-weight: 700;
+  flex-direction: row;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const Title = styled(AppText)`
+  color: ${({ theme }) => theme.colors.labelNormal};
+  ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}
 `;
 
 const OverflowButton = styled.Pressable`
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   align-items: center;
   justify-content: center;
 `;

@@ -51,10 +51,12 @@ test('다른 탭에서는 지도 아이콘 내부를 비우고 지도 선택 시
   expect(outline()).toHaveProp('stroke', { type: 0, payload: processColor('#3B3B40') });
 });
 
-test('Figma의 하단 16px 간격을 유지하고 시스템 영역은 피한다', () => {
-  expect(getMapSheetNavigationBottom(0)).toBe(16);
-  expect(getMapSheetNavigationBottom(6)).toBe(16);
-  expect(getMapSheetNavigationBottom(34)).toBe(44);
+test('iOS는 Figma처럼 화면 아래 16px에 두고 Android는 시스템 내비게이션 영역을 피한다', () => {
+  expect(getMapSheetNavigationBottom(0, 'ios')).toBe(16);
+  expect(getMapSheetNavigationBottom(34, 'ios')).toBe(16);
+  expect(getMapSheetNavigationBottom(0, 'android')).toBe(16);
+  expect(getMapSheetNavigationBottom(6, 'android')).toBe(16);
+  expect(getMapSheetNavigationBottom(48, 'android')).toBe(58);
 });
 
 test('Android elevation 대신 Figma의 6% 확산 그림자를 사용한다', async () => {
