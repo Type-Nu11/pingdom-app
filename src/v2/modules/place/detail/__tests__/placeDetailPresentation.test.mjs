@@ -242,3 +242,16 @@ test('standard review media and ordered reason codes override legacy fields', ()
   assert.deepEqual(result.reviews[0].reasonKeys,['visitVerification.reasons.clean','visitVerification.reasons.kind']);
   assert.deepEqual(result.reviews[0].tags,[]);
 });
+
+test('review authors retain server user IDs and never invent an identity for missing IDs', () => {
+  const result = buildPlaceDetailPresentation(17, {
+    ...baseResources,
+    reviews: ready({ content: [
+      { reviewId: 91, userId: 42, content: 'My review' },
+      { reviewId: 92, userId: 43, content: 'Another author' },
+      { reviewId: 93, content: 'Missing author' },
+      { reviewId: 94, userId: 0, content: 'Invalid author' },
+    ] }),
+  });
+  assert.deepEqual(result.reviews.map(review => review.userId), [42, 43, null, null]);
+});

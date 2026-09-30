@@ -642,7 +642,9 @@ export default function MapScreen({
         reviewState: selectedPlacePresentation.reviewState,
         roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
         reviews: selectedPlacePresentation.reviews.map((review) => ({
-          author: t(review.authorKey),
+          author: review.userId !== null && review.userId === profile?.id
+            ? profile.username?.trim() || t(review.authorKey)
+            : t(review.authorKey),
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
           tags: review.reasonKeys?.map((key) => t(key)) ?? review.tags,
@@ -658,7 +660,7 @@ export default function MapScreen({
         verifiedEvidenceCount: selectedPlacePresentation.verifiedEvidenceCount ?? undefined,
       },
     };
-  }, [selectedPlace, selectedPlacePresentation, t]);
+  }, [selectedPlace, selectedPlacePresentation, profile?.id, profile?.username, t]);
   useEffect(() => {
     if (
       content.type !== 'place-preview'

@@ -49,6 +49,7 @@ export type PlaceDetailPresentation = {
   reservation: ReservationCtaState;
   reviewState: 'empty' | 'error' | 'loading' | 'ready';
   reviews: Array<{
+    userId: number | null;
     authorKey: 'placeDetail.review.anonymousUser';
     createdAt: string;
     imageUrls: string[];
@@ -163,6 +164,7 @@ export function buildPlaceDetailPresentation(
       : resources.reviews.isError ? 'error'
         : reviewItems.length ? 'ready' : 'empty',
     reviews: reviewItems.map((review) => ({
+      userId: typeof review.userId === 'number' && Number.isSafeInteger(review.userId) && review.userId > 0 ? review.userId : null,
       authorKey: 'placeDetail.review.anonymousUser',
       createdAt: clean(review.createdAt) ?? '',
       imageUrls: (review.reviewMedia !== undefined ? review.reviewMedia.map(media => media.imageUrl) : review.imageUrls ?? []).map(clean).filter((url): url is string => Boolean(url)),
