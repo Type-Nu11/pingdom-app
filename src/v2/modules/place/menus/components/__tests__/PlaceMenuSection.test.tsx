@@ -6,6 +6,10 @@ import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { placeMenuApi } from '../../api/placeMenuApi';
 import type { PlaceMenus } from '../../model/placeMenu.types';
 import PlaceMenuSection from '../PlaceMenuSection';
+import { useProfile } from '../../../../user/profile';
+
+jest.mock('../../../../user/profile', () => ({ useProfile: jest.fn() }));
+import * as exchangeApi from '../../api/menuExchangeRateApi';
 
 const menu = (overrides: PlaceMenus[number] = {}): PlaceMenus[number] => ({
   id: 1,
@@ -23,6 +27,59 @@ const menu = (overrides: PlaceMenus[number] = {}): PlaceMenus[number] => ({
 });
 
 describe('PlaceMenuSection', () => {
+  beforeEach(() => {
+    jest.mocked(useProfile).mockReturnValue({
+      error: null, isFetching: false, isError: false, isLoading: false, refetch: jest.fn(),
+      profile: {
+      id: 1, username: 'user', email: 'user@example.com', country: 'KR', language: 'ko',
+      birthYear: 1998, profileImageUrl: null,
+      },
+    });
+  });
+
+  test.each([
+    ['US', 'USD', 0.00074], ['JP', 'JPY', 0.1], ['CN', 'CNY', 0.005],
+    ['TH', 'THB', 0.025], ['VN', 'VND', 18],
+  ] as const)('automatically displays %s user currency below the original price', async (country, quote, rate) => {
+    jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([
+      menu({ priceAmount: 9000 }), menu({ id: 2, name: '두 번째 메뉴', priceAmount: 4500 }),
+    ]);
+    jest.mocked(useProfile).mockReturnValue({
+      error: null, isFetching: false, isError: false, isLoading: false, refetch: jest.fn(),
+      profile: {
+      id: 1, username: 'user', email: 'user@example.com', country, language: 'ko',
+      birthYear: 1998, profileImageUrl: null,
+      },
+    });
+    const request = jest.spyOn(exchangeApi, 'getMenuExchangeRate').mockResolvedValue({
+      base: 'KRW', quote, date: '2026-09-01', rate, fetchedAt: Date.now(),
+    });
+    await renderWithProviders(<PlaceMenuSection placeId={17} />);
+    expect(await screen.findByTestId('place-menu-converted-1')).toBeTruthy();
+    expect(screen.getByTestId('place-menu-converted-2')).toBeTruthy();
+    expect(screen.getByText('₩9,000')).toBeTruthy();
+    expect(request).toHaveBeenCalledWith(quote);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/Frankfurter/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'USD로 보기' })).toBeNull();
+    const body = screen.getByTestId('place-menu-1').children[0];
+    expect(typeof body).not.toBe('string');
+    if (typeof body !== 'string') {
+      const children = body.children.filter((child) => typeof child !== 'string');
+      const priceIndex = children.findIndex((child) => child.props.accessibilityLabel === '가격: ₩9,000');
+      expect(children[priceIndex + 1].props.testID).toBe('place-menu-converted-1');
+    }
+  });
+
+  test('does not convert prices for a Korean user', async () => {
+    jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([menu()]);
+    const request = jest.spyOn(exchangeApi, 'getMenuExchangeRate');
+    await renderWithProviders(<PlaceMenuSection placeId={17} />);
+    await screen.findByText('₩6,500');
+    expect(screen.queryByTestId('place-menu-converted-1')).toBeNull();
+    expect(request).not.toHaveBeenCalled();
+  });
+
   test('does not request or render a loading state for an invalid place id', async () => {
     const request = jest.spyOn(placeMenuApi, 'listPlaceMenus');
 

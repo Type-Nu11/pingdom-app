@@ -30,6 +30,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // #389 adds the Japanese catalog; its key parity is checked separately.
   delete baseline.ja;
   for (const language of ['ko', 'en']) {
+    // #392 adds the reviewed menu price conversion copy.
+    delete baseline[language].translation.placeMenu.exchange;
     // #393 adds the reviewed first-run tutorial catalog.
     delete baseline[language].translation.mapTutorial;
     // #390 reviews only shared error presentation and uncertain reservation outcomes.

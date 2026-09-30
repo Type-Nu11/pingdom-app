@@ -9,6 +9,11 @@ import { getApiErrorUx } from '../../../../shared/api';
 import { isValidPlaceMenuId, usePlaceMenus } from '../hooks/usePlaceMenus';
 import { formatPlaceMenuPrice, selectPlaceMenus } from '../model/placeMenuPresentation';
 import type { PlaceMenuPresentation } from '../model/placeMenu.types';
+import { useMenuExchangeRate } from '../hooks/useMenuExchangeRate';
+import type { MenuExchangeRate } from '../api/menuExchangeRateApi';
+import { useProfile } from '../../../user/profile';
+import { getMenuExchangeCurrency } from '../model/menuExchangeCurrency';
+import { formatCurrency } from '../../../../shared/i18n/formatters';
 
 const API_ERROR_DESCRIPTION_KEYS = {
   canceled: 'common.apiError.generic.description',
@@ -55,11 +60,20 @@ function MenuImage({ imageUrl, name }: { imageUrl: string | null; name: string }
   );
 }
 
-function MenuRow({ item }: { item: PlaceMenuPresentation }) {
+function MenuRow({ item, exchange, loading, failed, onRetry }: {
+  item: PlaceMenuPresentation;
+  exchange?: MenuExchangeRate;
+  loading: boolean;
+  failed: boolean;
+  onRetry: () => void;
+}) {
   const { t, i18n } = useTranslation();
   const price = formatPlaceMenuPrice(item.priceAmount, item.currency, i18n.language);
   const priceText = price ?? t('placeMenu.priceUnavailable');
   const soldOut = item.status === 'SOLD_OUT';
+  const convertible = item.currency === 'KRW' && item.priceAmount !== null;
+  const converted = convertible && exchange
+    ? formatCurrency(item.priceAmount! * exchange.rate, exchange.quote, i18n.language) : null;
 
   return (
     <Row testID={`place-menu-${item.id}`}>
@@ -76,6 +90,17 @@ function MenuRow({ item }: { item: PlaceMenuPresentation }) {
         >
           {priceText}
         </MenuPrice>
+        {convertible && converted ? (
+          <ConversionText accessibilityLiveRegion="polite" testID={`place-menu-converted-${item.id}`}>
+            {t('placeMenu.exchange.amount', { price: converted })}
+          </ConversionText>
+        ) : convertible && failed ? (
+          <ConversionButton accessibilityRole="button" onPress={onRetry} accessibilityLabel={t('placeMenu.exchange.retry')}>
+            <ConversionText>{t('placeMenu.exchange.retry')}</ConversionText>
+          </ConversionButton>
+        ) : convertible && loading ? (
+          <ConversionText accessibilityLiveRegion="polite">{t('placeMenu.exchange.loading')}</ConversionText>
+        ) : null}
         {soldOut ? (
           <SoldOut
             accessibilityLabel={t('placeMenu.accessibility.status', {
@@ -97,6 +122,10 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
   const { t } = useTranslation();
   const query = usePlaceMenus(placeId);
   const menus = useMemo(() => selectPlaceMenus(query.data), [query.data]);
+  const { profile } = useProfile({ enabled: isValidPlaceMenuId(placeId) && menus.length > 0 });
+  const currency = getMenuExchangeCurrency(profile?.country);
+  const hasConversion = currency !== null && menus.some((menu) => menu.currency === 'KRW' && menu.priceAmount !== null);
+  const exchange = useMenuExchangeRate(currency, hasConversion);
 
   if (!isValidPlaceMenuId(placeId)) return null;
 
@@ -146,7 +175,12 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
     <Section accessibilityRole="summary" testID="place-menu-section">
       <SectionTitle>{t('placeMenu.title')}</SectionTitle>
       {query.isError ? <ApiErrorState error={query.error} busy={query.isFetching} onRetry={() => query.refetch({ cancelRefetch: false })} /> : null}
-      {menus.map((menu) => <MenuRow item={menu} key={menu.id} />)}
+      {menus.map((menu) => <MenuRow item={menu} key={menu.id}
+        exchange={hasConversion ? exchange.data : undefined}
+        loading={hasConversion && exchange.isPending}
+        failed={hasConversion && exchange.isError}
+        onRetry={() => void exchange.refetch()}
+      />)}
     </Section>
   );
 }
@@ -244,6 +278,18 @@ const MenuPrice = styled(AppText)`
   font-size: 14px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   margin-top: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+const ConversionButton = styled.Pressable`
+  align-self: flex-start;
+  min-height: 44px;
+  justify-content: center;
+`;
+
+const ConversionText = styled(AppText)`
+  margin-top: 3px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
 `;
 
 const SoldOut = styled(AppText)`
