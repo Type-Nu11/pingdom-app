@@ -232,11 +232,7 @@ export default function CommunityBottomSheet({
 
           {categoriesQuery.isLoading ? (
             <CategorySkeleton />
-          ) : categoriesQuery.isError ? (
-            <CategoriesErrorRow testID="v2-community-categories-error">
-              <ApiErrorState error={categoriesQuery.error} onRetry={() => void categoriesQuery.refetch()} />
-            </CategoriesErrorRow>
-          ) : (
+          ) : categoriesQuery.isError ? null : (
             <CategoryScroll contentContainerStyle={CATEGORY_CONTENT_STYLE} horizontal showsHorizontalScrollIndicator={false}>
               {categories.map((category) => {
                 const selected = category.categoryId === selectedCategoryId;
@@ -260,7 +256,13 @@ export default function CommunityBottomSheet({
           )}
 
           <ListViewport style={snapPoint === 'medium' ? MEDIUM_VIEWPORT_STYLE : undefined}>
-            {postsQuery.isLoading ? (
+            {categoriesQuery.isError ? (
+              // The full error block doesn't fit the 34px chip row, and with no
+              // category there is no list to call empty — it takes the list area.
+              <ErrorViewport testID="v2-community-categories-error">
+                <ApiErrorState error={categoriesQuery.error} onRetry={() => void categoriesQuery.refetch()} />
+              </ErrorViewport>
+            ) : postsQuery.isLoading ? (
               <PostListSkeleton />
             ) : postsQuery.isError ? (
               <ErrorViewport testID="v2-community-list-error">
@@ -368,10 +370,11 @@ const CategoryLabel = styled(AppText)<{ $selected: boolean }>`
 
 const CategorySkeletonRow = styled.View`height: 34px; justify-content: center; padding: 0 16px;`;
 const CategorySkeletonChip = styled.View`width: 64px; height: 34px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.border};`;
-const CategoriesErrorRow = styled.View`min-height: 34px; justify-content: center;`;
 
 const ListViewport = styled.View`flex: 1; margin-bottom: 92px; overflow: hidden;`;
-const ErrorViewport = styled.View`flex: 1; justify-content: center;`;
+// Top-aligned: the viewport spans the full sheet height, so a centred error
+// would sit below the visible part of the medium sheet.
+const ErrorViewport = styled.View`flex: 1; justify-content: flex-start;`;
 const EmptyText = styled(AppText)`margin-top: ${({ theme }) => theme.spacing.xl}px; text-align: center; color: ${({ theme }) => theme.colors.textMuted};`;
 
 const SkeletonList = styled.View`gap: 14px; padding: ${({ theme }) => theme.spacing.md}px 16px;`;
