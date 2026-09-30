@@ -371,7 +371,9 @@ const CategoryLabel = styled(AppText)<{ $selected: boolean }>`
 const CategorySkeletonRow = styled.View`height: 34px; justify-content: center; padding: 0 16px;`;
 const CategorySkeletonChip = styled.View`width: 64px; height: 34px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.border};`;
 
-const ListViewport = styled.View`flex: 1; margin-bottom: 92px; overflow: hidden;`;
+// Figma lets the feed run underneath the glass bottom navigation; the list's
+// bottom padding still lets the last card scroll clear of it.
+const ListViewport = styled.View`flex: 1; overflow: hidden;`;
 // Top-aligned: the viewport spans the full sheet height, so a centred error
 // would sit below the visible part of the medium sheet.
 const ErrorViewport = styled.View`flex: 1; justify-content: flex-start;`;
