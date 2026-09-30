@@ -47,6 +47,14 @@ describe('CommunityWriteScreen', () => {
     } as never);
   });
 
+  test('장소 태그 제목 옆에 선택한 카테고리 이름을 보여준다', async () => {
+    const { user } = await renderScreen();
+
+    await waitFor(() => expect(screen.getByTestId('v2-community-write-place-category')).toHaveTextContent('여행'));
+    await user.press(screen.getByTestId('v2-community-write-category-PLACE'));
+    expect(screen.getByTestId('v2-community-write-place-category')).toHaveTextContent('장소');
+  });
+
   test('Figma처럼 글자 수 카운터 없이 입력 길이만 제한한다', async () => {
     await renderScreen();
 

@@ -17,7 +17,6 @@ import {
 import {
   WRITE_CONTENT_MAX_LENGTH,
   WRITE_TITLE_MAX_LENGTH,
-  isPlaceCategory,
   validateWriteForm,
   type WriteFormFieldErrorKey,
   type WritePlaceTag,
@@ -72,7 +71,7 @@ export default function CommunityWriteScreen({
     ?? categories.find((category) => category.categoryId === initialCategoryId)?.categoryId
     ?? categories[0]?.categoryId
     ?? null;
-  const placeCategorySelected = isPlaceCategory(selectedCategoryId);
+  const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
 
   const createPost = useCreatePost();
 
@@ -242,9 +241,11 @@ export default function CommunityWriteScreen({
             <SectionHead>
               <PlaceHead>
                 <PlaceHeadTitle>{t('community.write_screen.placeTagTitle')}</PlaceHeadTitle>
-                <PlaceHeadTag>
-                  {t(placeCategorySelected ? 'community.write_screen.placeTagRequired' : 'community.write_screen.placeTagOptional')}
-                </PlaceHeadTag>
+                {/* Figma shows the selected category next to the heading; a category is
+                    always selected, and a missing required place is reported on submit. */}
+                {selectedCategoryName ? (
+                  <PlaceHeadTag testID="v2-community-write-place-category">{selectedCategoryName}</PlaceHeadTag>
+                ) : null}
               </PlaceHead>
               <PlaceSubtitle>{t('community.write_screen.placeTagHint')}</PlaceSubtitle>
             </SectionHead>
