@@ -1210,7 +1210,9 @@ export default function MapScreen({
           />
         )}
         </View>
-      {!isSearchOpen && content.type !== 'place-preview' && onOpenVisitVerification ? (
+      {/* The community frames (Figma 4698:11054 etc.) keep the map clear of the
+          visit-verification CTA; the sheet carries its own write action there. */}
+      {!isSearchOpen && content.type !== 'place-preview' && mapSection !== 'community' && onOpenVisitVerification ? (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
           style={{
