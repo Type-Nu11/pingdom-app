@@ -30,7 +30,9 @@ export function resolveFontFace(
 ): FontFace {
   if (fontFamily !== PRETENDARD_FONT_FAMILY || platform !== 'ios') return { fontFamily, fontWeight };
   const instance = PRETENDARD_INSTANCE_BY_WEIGHT[String(fontWeight ?? 400)] ?? 'Regular';
-  return { fontFamily: `PretendardStdVariable-${instance}` };
+  // The instance already encodes the weight. Leaving `fontWeight` set makes iOS
+  // re-resolve it against the family and land on a heavier member for 500.
+  return { fontFamily: `PretendardStdVariable-${instance}`, fontWeight: undefined };
 }
 
 export const appFontAssets = {

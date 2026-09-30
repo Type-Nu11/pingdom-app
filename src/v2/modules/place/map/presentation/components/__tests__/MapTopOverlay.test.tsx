@@ -33,7 +33,7 @@ describe('MapTopOverlay', () => {
     expect(screen.getByRole('button', { name: '음식점', selected: true })).toHaveStyle({ borderTopLeftRadius: 16, borderBottomRightRadius: 16 });
     expect(screen.getByText('음식점')).toHaveStyle({ color: colors.primary });
     expect(screen.getByText('전체')).toHaveStyle({ color: colors.textAlternative });
-    expect(screen.getByText('검색하기')).toHaveStyle({ fontSize: 18, fontWeight: '500', fontFamily: expect.stringMatching(/^Pretendard/) });
+    expect(screen.getByText('검색하기')).toHaveStyle({ fontSize: 18, fontFamily: 'PretendardStdVariable-Medium' });
   });
   beforeEach(() => {
     jest.clearAllMocks();
@@ -44,11 +44,9 @@ describe('MapTopOverlay', () => {
 
     expect(MAP_TOP_OVERLAY_METRICS.headerHeight).toBe(60);
     expect(MAP_TOP_OVERLAY_METRICS.searchHeight).toBe(44);
-    expect(screen.getByText('검색하기')).toHaveStyle({
-      fontFamily: expect.stringMatching(/^Pretendard/), fontSize: 18, fontWeight: '500',
+    expect(screen.getByText('검색하기')).toHaveStyle({ fontSize: 18, fontFamily: 'PretendardStdVariable-Medium',
     });
-    expect(screen.getByText('전체')).toHaveStyle({
-      fontFamily: expect.stringMatching(/^Pretendard/), fontSize: 14, fontWeight: '500',
+    expect(screen.getByText('전체')).toHaveStyle({ fontSize: 14, fontFamily: 'PretendardStdVariable-Medium',
     });
     expect(screen.getByRole('button', { name: '전체' }).props.hitSlop).toEqual({ top: 5, bottom: 5 });
     expect(mockUseFonts).not.toHaveBeenCalled();
@@ -75,8 +73,7 @@ describe('MapTopOverlay', () => {
 
   test('카테고리는 Pretendard Medium을 사용하고 선택한 라벨과 테두리만 분홍색으로 바뀐다', async () => {
     const view = await renderWithProviders(<MapTopOverlay {...props} />);
-    expect(screen.getByText('음식점')).toHaveStyle({
-      fontFamily: expect.stringMatching(/^Pretendard/), fontSize: 14, fontWeight: '500', lineHeight: 18.2,
+    expect(screen.getByText('음식점')).toHaveStyle({ fontSize: 14, fontFamily: 'PretendardStdVariable-Medium', lineHeight: 18.2,
     });
     expect(screen.getByText('음식점').props.numberOfLines).toBe(1);
     await view.user.press(screen.getByRole('button', { name: '음식점' }));

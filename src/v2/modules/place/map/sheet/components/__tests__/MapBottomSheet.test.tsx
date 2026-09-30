@@ -117,7 +117,7 @@ describe('지도 확장 카드의 실제 표시 크기', () => {
     expect(card).toHaveStyle({ width: 177, height: 222 });
     expect(screen.getByText(name).props.numberOfLines).toBe(2);
     expect(screen.getByText(name).props.ellipsizeMode).toBe('tail');
-    expect(screen.getByText(name)).toHaveStyle({ fontSize: 16, fontWeight: '700' });
+    expect(screen.getByText(name)).toHaveStyle({ fontSize: 16, fontFamily: 'PretendardStdVariable-Bold' });
     await act(async () => fireEvent(screen.getByTestId('recommendation-featured-image'), 'error', { nativeEvent: { error: 'unavailable' } }));
     expect(screen.queryByTestId('recommendation-featured-image')).not.toBeOnTheScreen();
     expect(card).toHaveStyle({ width: 177, height: 222 });

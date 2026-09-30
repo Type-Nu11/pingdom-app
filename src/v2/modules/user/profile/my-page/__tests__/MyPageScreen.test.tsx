@@ -92,8 +92,9 @@ describe('MyPageScreen', () => {
     expect(screen.getByTestId('v2-my-page-screen').props.edges).toContain('top');
     expect(screen.getByTestId('v2-my-page-header')).toHaveStyle({ minHeight: 44, alignItems: 'center' });
     const title = screen.getByText(i18n.t('myPage.title'));
-    expect(title).toHaveStyle({ fontSize: 18, fontWeight: '500', lineHeight: 23.4, textAlign: 'center', flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
-    expect(title).toHaveStyle({ ...lightTheme.typography.navigationTitle, fontFamily: expect.stringMatching(/^Pretendard/) });
+    expect(title).toHaveStyle({ fontSize: 18, fontFamily: 'PretendardStdVariable-Medium', lineHeight: 23.4, textAlign: 'center', flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
+    const { fontFamily: _family, fontWeight: _weight, ...navigationTitleMetrics } = lightTheme.typography.navigationTitle;
+    expect(title).toHaveStyle({ ...navigationTitleMetrics, fontFamily: 'PretendardStdVariable-Medium' });
     expect(screen.getByTestId('v2-my-page-back-icon')).toHaveStyle({ left: -16, top: -16 });
     expect(screen.getByTestId('v2-my-page-settings-icon')).toHaveStyle({ left: -20, top: -16 });
     expect(title.props.numberOfLines).toBe(1);

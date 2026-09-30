@@ -20,11 +20,9 @@ describe('V2 shared component typography', () => {
 
     expect(screen.getByText('continue')).toHaveStyle({
       fontFamily: 'PretendardStdVariable-SemiBold',
-      fontWeight: '600',
     });
     expect(screen.getByText('available')).toHaveStyle({
       fontFamily: 'PretendardStdVariable-SemiBold',
-      fontWeight: '600',
     });
   });
 
@@ -36,18 +34,15 @@ describe('V2 shared component typography', () => {
       </>,
     );
 
-    expect(screen.getByText('name')).toHaveStyle({ fontFamily: 'PretendardStdVariable-SemiBold', fontWeight: '600' });
+    expect(screen.getByText('name')).toHaveStyle({ fontFamily: 'PretendardStdVariable-SemiBold' });
     expect(screen.getByPlaceholderText('enter name')).toHaveStyle({
       fontFamily: 'PretendardStdVariable-Regular',
-      fontWeight: '400',
     });
     expect(screen.getByText('unavailable')).toHaveStyle({
       fontFamily: 'PretendardStdVariable-Bold',
-      fontWeight: '700',
     });
     expect(screen.getByText('try again later')).toHaveStyle({
       fontFamily: 'PretendardStdVariable-Regular',
-      fontWeight: '400',
     });
   });
 });
