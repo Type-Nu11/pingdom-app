@@ -44,6 +44,8 @@ export const AUTH_ROUTES = {
 
 export const MAIN_ROUTES = {
   CheckIn: 'CheckIn',
+  CommunityDetail: 'CommunityDetail',
+  CommunityWrite: 'CommunityWrite',
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   Map: 'Map',
@@ -80,6 +82,12 @@ export type MainStackParamList = {
   CheckIn: {
     placeId: PlaceId;
   };
+  CommunityDetail: {
+    postId: PostId;
+  };
+  CommunityWrite: {
+    initialCategoryId?: string;
+  } | undefined;
   CouponBox: undefined;
   CouponDetail: {
     coupon: Coupon;

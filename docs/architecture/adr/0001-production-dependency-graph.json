@@ -656,6 +656,7 @@
     {"source":"src/application/navigation/deepLink.ts","target":"src/application/navigation/types.ts","typeOnly":false},
     {"source":"src/application/navigation/deepLink.ts","target":"src/application/navigation/navigationIntent.ts","typeOnly":true},
     {"source":"src/application/navigation/MainNavigator.tsx","target":"src/v2/modules/place/map/index.ts","typeOnly":false},
+    {"source":"src/application/navigation/MainNavigator.tsx","target":"src/v2/modules/community/index.ts","typeOnly":false},
     {"source":"src/application/navigation/MainNavigator.tsx","target":"src/v2/modules/booking/reservations/routes/index.ts","typeOnly":false},
     {"source":"src/application/navigation/MainNavigator.tsx","target":"src/v2/modules/booking/reservations/routes/index.ts","typeOnly":false},
     {"source":"src/application/navigation/MainNavigator.tsx","target":"src/v2/modules/booking/reservations/routes/index.ts","typeOnly":false},
