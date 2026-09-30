@@ -15,9 +15,9 @@ import {
 const CURRENT_STEP = 2;
 const TOTAL_STEPS = 7;
 
-// Same outline as assets/v2/icons/header/search.svg, drawn inline so the
-// stroke follows the theme instead of a fixed light-mode color.
-const SEARCH_ICON_PATH = 'M19 19L14.657 14.657M14.657 14.657C15.3999 13.9142 15.9892 13.0322 16.3913 12.0616C16.7933 11.091 17.0002 10.0507 17.0002 9.00011C17.0002 7.94952 16.7933 6.90922 16.3913 5.9386C15.9892 4.96798 15.3999 4.08606 14.657 3.34318C13.9142 2.6003 13.0322 2.01102 12.0616 1.60897C11.091 1.20693 10.0507 1 9.00011 1C7.94952 1 6.90922 1.20693 5.9386 1.60897C4.96798 2.01102 4.08606 2.6003 3.34318 3.34318C1.84287 4.84349 1 6.87835 1 9.00011C1 11.1219 1.84287 13.1567 3.34318 14.657C4.84349 16.1574 6.87835 17.0002 9.00011 17.0002C11.1219 17.0002 13.1567 16.1574 14.657 14.657Z';
+// Outline of assets/v2/icons/header/search.svg as the SVG transformer emits
+// it, drawn inline so the stroke follows the theme instead of a fixed color.
+const SEARCH_ICON_PATH = 'm19 19-4.343-4.343m0 0A8 8 0 1 0 3.343 3.343a8 8 0 0 0 11.314 11.314';
 
 const listContent = { flexGrow: 1, gap: 26, paddingBottom: 8 } as const;
 
