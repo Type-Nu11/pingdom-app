@@ -75,6 +75,7 @@ const HeaderSide = styled.View`
 
 const BackButton = styled.Pressable`
   width: 44px;
+  height: 44px;
   align-items: flex-start;
   justify-content: center;
 `;
