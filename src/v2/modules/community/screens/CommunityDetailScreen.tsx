@@ -11,10 +11,12 @@ import ChevronRightIcon from '../../../../assets/v2/icons/community/chevron-righ
 import MoreButtonIcon from '../../../../assets/v2/icons/community/more-button.svg';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
 import { textStyleCss } from '../../../shared/theme/typography';
+import CategoryTag from '../components/CategoryTag';
 import CommentInputBar from '../components/CommentInputBar';
 import CommentsSection from '../components/CommentsSection';
 import HeaderIconButton from '../components/HeaderIconButton';
 import LikeButton from '../components/LikeButton';
+import PostAuthor from '../components/PostAuthor';
 import { useCreateComment, useInfiniteComments, usePost, type CommunityPostDetail } from '../hooks/useCommunity';
 import { useCommunityPlaceEntry } from '../hooks/useCommunityPlaceEntry';
 import { validateCommentContent } from '../model/commentForm';
@@ -214,6 +216,7 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
   };
 
   const commentCount = commentsQuery.data?.pages[0]?.totalCount ?? 0;
+  const now = new Date();
   const validationErrorKey = validateCommentContent(draft);
   const clientFieldError = showValidation && validationErrorKey
     ? t(`community.detail.commentInput.validation.${validationErrorKey === 'contentRequired' ? 'required' : 'tooLong'}`)
@@ -284,6 +287,10 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
         <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef}>
             <Post>
+              <PostAuthor author={postQuery.data?.author} createdAt={postQuery.data?.createdAt} now={now} />
+              {postQuery.data?.category?.categoryName ? (
+                <CategoryTag label={postQuery.data.category.categoryName} testID="v2-community-detail-category" />
+              ) : null}
               <Title accessibilityRole="header">{postQuery.data?.title}</Title>
 
               {/* Figma keeps the author's blank lines between paragraphs, so the
@@ -314,7 +321,7 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
 
             <CommentsSection
               commentsQuery={commentsQuery}
-              now={new Date()}
+              now={now}
               onLayout={(event) => { commentsSectionY.current = event.nativeEvent.layout.y; }}
               onSignIn={onSignIn}
             />

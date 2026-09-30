@@ -7,6 +7,7 @@ import styled, { useTheme } from 'styled-components/native';
 import EtcVerticalIcon from '../../../../assets/v2/icons/community/etc-vertical.svg';
 import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityPostSummary } from '../api/communityApi';
+import CategoryTag from './CategoryTag';
 
 /** Window-space bottom edge of the overflow icon, used to anchor its menu. */
 export type OverflowAnchor = { bottom: number };
@@ -47,9 +48,7 @@ export default function PostCard({ categoryName, onOpenOverflow, onPress, post }
       <TagRow>
         <Tags>
           {categoryName ? (
-            <Tag testID={`v2-community-post-${post.postId}-tag`}>
-              <TagLabel numberOfLines={1}>{categoryName}</TagLabel>
-            </Tag>
+            <CategoryTag label={categoryName} testID={`v2-community-post-${post.postId}-tag`} />
           ) : null}
         </Tags>
         <OverflowButton
@@ -89,19 +88,6 @@ const Tags = styled.View`
   flex-direction: row;
   gap: 4px;
   min-width: 0;
-`;
-
-const Tag = styled.View`
-  height: 24px;
-  justify-content: center;
-  padding: 0 8px;
-  border-radius: 6px;
-  background-color: ${({ theme }) => theme.colors.fillNeutral};
-`;
-
-const TagLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.labelNeutral};
-  ${({ theme }) => textStyleCss(theme.typography.captionMedium)}
 `;
 
 const Title = styled(AppText)`
