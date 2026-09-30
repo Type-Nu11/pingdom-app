@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'styled-components/native';
+import { Text } from '../../../../../shared/components/Typography';
+import MyLocationIcon from '../assets/my_location.svg';
 import { env } from '../../../../../shared/config';
 import MapCanvas from '../../native/components/MapCanvas';
 import { useCurrentLocation } from '../../location/hooks/useCurrentLocation';
@@ -23,6 +25,10 @@ export default function RoutePlannerScreen({ navigation, route }: Props) {
   const [manualOrigin, setManualOrigin] = useState<RouteEndpoint | null>(null);
   const [mode, setMode] = useState<RouteMode>('transit');
   const [picker, setPicker] = useState<'origin' | 'destination' | null>(null);
+  const [showPreviewControls, setShowPreviewControls] = useState(false);
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const sheetHeight = Math.min(600, windowHeight * 0.64);
   const [demo, setDemo] = useState<Demo>('off');
   const [demoLoading, setDemoLoading] = useState(false);
   const [detail, setDetail] = useState(false);
@@ -83,30 +89,27 @@ export default function RoutePlannerScreen({ navigation, route }: Props) {
     <Text style={{ color: theme.colors.textStrong }}>{state.preview.duration} · {state.preview.distance}</Text>
   </SafeAreaView>;
   return <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: theme.colors.backgroundAssistive }}>
-    <View style={{ flex: 0.42, minHeight: 180 }} onLayout={e => setMapSize(e.nativeEvent.layout)}>
+    <View style={{ flex: 1, marginBottom: sheetHeight - 36 }} onLayout={e => setMapSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}>
       <MapCanvas centerLat={camera.lat} centerLng={camera.lng} zoomLevel={camera.zoom} followUser={false}
         routeCoordinates={path}
         markers={endpoints.map((p, i) => ({ ...p, id: `route-${i}`, category: 'etc' as const, caption: i === 0 && origin ? t('map.route.from') : t('map.route.to') }))}
         onMarkerPress={() => undefined} />
-      <Pressable accessibilityRole="button" accessibilityLabel={t('map.route.locate')} onPress={() => { setManualOrigin(null); setDemo('off'); void location.refresh(true); }} style={{ ...buttonStyle, position: 'absolute', top: 12, right: 12 }}>
-        <Text style={{ color: theme.colors.primary }}>{t('map.route.myLocation')}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('map.route.locate')} onPress={() => { setManualOrigin(null); setDemo('off'); void location.refresh(true); }} style={{ ...buttonStyle, position: 'absolute', top: 8, right: 12, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
+        <MyLocationIcon />
       </Pressable>
       {isDemo ? <Text style={{ position: 'absolute', top: 12, left: 12, backgroundColor: theme.colors.surface, color: theme.colors.primary, padding: 8 }}>{t('map.route.preview')}</Text> : null}
     </View>
-    <View style={{ flex: 0.58 }}>
-      <View style={{ flexDirection: 'row', gap: 8, padding: 8 }}>
-        <Pressable accessibilityRole="button" onPress={() => { setDemo('off'); setPicker('origin'); }} style={buttonStyle}><Text style={{ color: theme.colors.primary }}>{t('map.route.from')}</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => { setDemo('off'); setPicker('destination'); }} style={buttonStyle}><Text style={{ color: theme.colors.primary }}>{t('map.route.to')}</Text></Pressable>
-        <Pressable accessibilityRole="button" accessibilityState={{ disabled: isDemo || !origin || !endpointCoordinate(destination) }} disabled={isDemo || !origin || !endpointCoordinate(destination)} onPress={() => { if (origin) { setManualOrigin(destination); setDestination(origin); } }} style={buttonStyle}><Text style={{ color: theme.colors.primary }}>{t('map.route.swap')}</Text></Pressable>
-      </View>
+    <View style={{ position: 'absolute', bottom: Math.max(8, insets.bottom), left: 0, right: 0, height: sheetHeight }}>
       <RoutePlannerSheet destination={target} originName={origin?.name} mode={mode} onModeChange={setMode} state={state}
+        onTogglePreviewControls={previewEnabled ? () => setShowPreviewControls(value => !value) : undefined}
+        onSwap={!isDemo && origin && endpointCoordinate(destination) ? () => { setManualOrigin(destination); setDestination(origin); } : undefined}
         onClose={navigation.goBack} onEditOrigin={() => { setDemo('off'); setPicker('origin'); }} onEditPlaces={() => { setDemo('off'); setPicker('destination'); }}
         onOpenSettings={() => void Linking.openSettings().catch(() => Alert.alert(t('map.route.deniedBody')))}
         onRetry={() => { if (isDemo) { setDemo('ready'); } else void location.refresh(true); }}
         onPreviewAction={() => setDetail(true)} onOpenExternal={isDemo ? undefined : () => void external()} externalBusy={opening}
         onShare={() => void Share.share({ message: [target.name, target.address].filter(Boolean).join('\n') }).catch(() => Alert.alert(t('map.route.externalFailed')))} />
     </View>
-    {previewEnabled ? <ScrollView horizontal style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 8, padding: 8 }}>
+    {previewEnabled && showPreviewControls ? <ScrollView horizontal style={{ position: 'absolute', top: 60, left: 8, right: 8, flexGrow: 0 }} contentContainerStyle={{ gap: 8, padding: 8 }}>
       {(['off', 'ready', 'empty', 'error'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: demo === value }} onPress={() => setDemo(value)} style={buttonStyle}><Text style={{ color: theme.colors.primary }}>{t(`map.route.demo_${value}`)}</Text></Pressable>)}
     </ScrollView> : null}
   </SafeAreaView>;

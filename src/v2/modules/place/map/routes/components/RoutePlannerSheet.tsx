@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
+import { Text } from '../../../../../shared/components/Typography';
 import type { SvgProps } from 'react-native-svg';
 
 import AddStopIcon from '../assets/add_stop.svg';
@@ -27,6 +28,8 @@ import type { RouteDestination, RouteMode, RouteSegment, RouteUiState } from '..
 type Props = {
   destination: RouteDestination;
   originName?: string;
+  onSwap?: () => void;
+  onTogglePreviewControls?: () => void;
   onEditOrigin?: () => void;
   onOpenExternal?: () => void;
   externalBusy?: boolean;
@@ -130,19 +133,18 @@ function StatusCard({
   );
 }
 
-export default function RoutePlannerSheet({ onEditOrigin, originName, onOpenExternal, externalBusy, onRetry, destination, mode, onClose, onEditPlaces, onModeChange, onPreviewAction, onShare, onOpenSettings, state }: Props) {
+export default function RoutePlannerSheet({ onSwap, onTogglePreviewControls, onEditOrigin, originName, onOpenExternal, externalBusy, onRetry, destination, mode, onClose, onEditPlaces, onModeChange, onPreviewAction, onShare, onOpenSettings, state }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
   const active = state.kind === 'ready' ? state.preview : null;
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.backgroundAssistive, borderColor: theme.colors.surface, borderRadius: 36, borderWidth: 1, marginHorizontal: 8, paddingBottom: 14, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 20 }} testID="route-planner-sheet">
+    <View style={{ flex: 1, backgroundColor: theme.colors.backgroundAssistive, overflow: 'hidden', borderColor: theme.colors.surface, borderTopLeftRadius: 36, borderTopRightRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, borderWidth: 1, marginHorizontal: 8, paddingBottom: 14, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 20 }} testID="route-planner-sheet">
       <View style={{ alignSelf: 'center', backgroundColor: '#BFC1C1', borderRadius: 3, height: 5, marginTop: 8, width: 56 }} />
-      <ScrollView contentContainerStyle={{ gap: 12, paddingHorizontal: 16, paddingTop: 12 }} showsVerticalScrollIndicator={false}>
-        <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 48 }}>
+      <ScrollView contentContainerStyle={{ gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
+        <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 44 }}>
           <Pressable accessibilityLabel={t('map.route.share')} accessibilityRole="button" onPress={onShare} style={{ alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: 22, height: 44, justifyContent: 'center', width: 44 }}><ShareIcon /></Pressable>
           <View style={{ alignItems: 'center' }}>
-            <Text accessibilityRole="header" style={{ color: theme.colors.textStrong, fontSize: 20, fontWeight: '700' }}>{t('map.route.title')}</Text>
-            <Text style={{ color: theme.colors.primary, fontSize: 12 }}>{t('map.route.options')}</Text>
+            <Text accessibilityRole="header" onLongPress={onTogglePreviewControls} style={{ color: theme.colors.textStrong, fontSize: 20, fontWeight: '700' }}>{t('map.route.title')}</Text>
           </View>
           <Pressable accessibilityLabel={t('map.route.close')} accessibilityRole="button" onPress={onClose} style={{ alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: 22, height: 44, justifyContent: 'center', width: 44 }}><CloseIcon /></Pressable>
         </View>
@@ -161,7 +163,6 @@ export default function RoutePlannerSheet({ onEditOrigin, originName, onOpenExte
                 testID={`route-mode-${item}`}
               >
                 <Icon />
-                <Text numberOfLines={1} style={{ color: selected ? theme.colors.primary : theme.colors.textMuted, fontSize: 12, fontWeight: selected ? '700' : '500' }}>{t(`map.route.${item}`)}</Text>
               </Pressable>
             );
           })}
@@ -173,7 +174,7 @@ export default function RoutePlannerSheet({ onEditOrigin, originName, onOpenExte
               <Text numberOfLines={1} style={{ color: theme.colors.textStrong, fontSize: 16, fontWeight: '500' }}>{originName ?? (state.kind === 'location-denied' ? t('map.route.setStart') : t('map.route.myLocation'))}</Text>
               <Text numberOfLines={1} style={{ color: theme.colors.textMuted, fontSize: 12 }}>{t('map.route.from')}</Text>
             </View>
-            <HandleIcon />
+            <Pressable accessibilityRole="button" accessibilityLabel={t('map.route.swap')} disabled={!onSwap} accessibilityState={{ disabled: !onSwap }} onPress={event => { event.stopPropagation(); onSwap?.(); }} hitSlop={8}><HandleIcon /></Pressable>
           </Pressable>
           <View style={{ backgroundColor: theme.colors.border, height: 1, marginLeft: 56 }} />
           <Pressable accessibilityLabel={`${t('map.route.destination')}: ${destination.name}`} accessibilityRole="button" onPress={onEditPlaces} style={{ alignItems: 'center', flexDirection: 'row', gap: 12, height: 56, paddingHorizontal: 12 }}>
@@ -182,7 +183,7 @@ export default function RoutePlannerSheet({ onEditOrigin, originName, onOpenExte
               <Text numberOfLines={1} style={{ color: theme.colors.textStrong, fontSize: 16, fontWeight: '500' }}>{destination.englishName || destination.name}</Text>
               <Text numberOfLines={1} style={{ color: theme.colors.textMuted, fontSize: 12 }}>{destination.englishName ? `${destination.name} · ${destination.address ?? ''}` : destination.address ?? ''}</Text>
             </View>
-            <HandleIcon />
+            <Pressable accessibilityRole="button" accessibilityLabel={t('map.route.swap')} disabled={!onSwap} accessibilityState={{ disabled: !onSwap }} onPress={event => { event.stopPropagation(); onSwap?.(); }} hitSlop={8}><HandleIcon /></Pressable>
           </Pressable>
           <View style={{ backgroundColor: theme.colors.border, height: 1, marginLeft: 56 }} />
           <Pressable accessibilityRole="button" accessibilityState={{ disabled: true }} disabled style={{ alignItems: 'center', flexDirection: 'row', gap: 12, height: 56, opacity: 0.65, paddingHorizontal: 12 }}>

@@ -24,12 +24,14 @@ test('manual start works without location permission and swap preserves both coo
   await user.press(screen.getAllByText('출발')[0]);
   await user.press(screen.getByText('pick-origin'));
   expect(screen.queryByTestId('route-location-denied')).toBeNull();
-  await user.press(screen.getByText('출발지와 도착지 바꾸기'));
+  await user.press(screen.getAllByRole('button', { name: '출발지와 도착지 바꾸기' })[0]);
   await user.press(screen.getByText('네이버 지도에서 길찾기'));
   expect(openNaverRoute).toHaveBeenCalledWith(expect.objectContaining({ placeId: 11, latitude: 37.56 }), destination, 'transit');
 });
 test('sample route uses fixed endpoints, clears on empty result, and restores actual destination on exit', async () => {
   const { user } = await renderScreen();
+  expect(screen.queryByText('예시 경로 보기')).toBeNull();
+  await user.longPress(screen.getByRole('header', { name: '경로' }));
   await user.press(screen.getByText('예시 경로 보기'));
   await waitFor(() => expect(canvas().routeCoordinates).toHaveLength(5));
   expect(screen.queryByText('네이버 지도에서 길찾기')).toBeNull();
