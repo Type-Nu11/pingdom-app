@@ -119,7 +119,8 @@ export type MapPreviewFallbackContent = {
   }>;
   statusDescription: string;
   statusEmphasis: string;
-  verifiedEvidenceCount?: number;
+  verifiedReviewerCount?: number;
+  verifiedReviewerCountIsLowerBound?: boolean;
 };
 
 export type DecisionPlace = {
@@ -1518,8 +1519,10 @@ const PreviewContent = ({
     onSelectAction(action);
     callback?.();
   };
-  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+  const verificationSummary = typeof fallbackContent?.verifiedReviewerCount === 'number'
+    ? (fallbackContent.verifiedReviewerCountIsLowerBound
+      ? t('map.detail.verifiedCountAtLeast', { count: fallbackContent.verifiedReviewerCount })
+      : t('map.detail.verifiedCount', { count: fallbackContent.verifiedReviewerCount }))
     : fallbackContent?.statusDescription;
 
   return (
@@ -1720,8 +1723,10 @@ const ExpandedPlaceContent = ({
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
   const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
-  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+  const verificationSummary = typeof fallbackContent?.verifiedReviewerCount === 'number'
+    ? (fallbackContent.verifiedReviewerCountIsLowerBound
+      ? t('map.detail.verifiedCountAtLeast', { count: fallbackContent.verifiedReviewerCount })
+      : t('map.detail.verifiedCount', { count: fallbackContent.verifiedReviewerCount }))
     : fallbackContent?.statusDescription || fallbackContent?.englishName;
 
   return (

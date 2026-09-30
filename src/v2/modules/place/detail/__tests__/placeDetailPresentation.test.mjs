@@ -242,3 +242,27 @@ test('standard review media and ordered reason codes override legacy fields', ()
   assert.deepEqual(result.reviews[0].reasonKeys,['visitVerification.reasons.clean','visitVerification.reasons.kind']);
   assert.deepEqual(result.reviews[0].tags,[]);
 });
+
+test('verification people count deduplicates six reviews by the same author, independently of evidence', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    reviews: ready({ content: Array.from({ length: 6 }, (_, i) => ({ reviewId: i + 1, placeId: 70069, userId: 42 })), totalElements: 6 }),
+  });
+  assert.equal(result.reviewTotal, 6);
+  assert.equal(result.verifiedEvidenceCount, 0);
+  assert.equal(result.verifiedReviewerCount, 1);
+  assert.equal(result.verifiedReviewerCountIsLowerBound, false);
+});
+
+test('partial review pages only establish a lower bound, and unknown authors are not invented', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    reviews: ready({ content: [{ userId: 42 }, { userId: 42 }, { userId: 43 }, {}], totalElements: 30 }),
+  });
+  assert.equal(result.verifiedReviewerCount, 2);
+  assert.equal(result.verifiedReviewerCountIsLowerBound, true);
+  for (const reviews of [pending, failed(), ready({ content: [{}], totalElements: 1 })]) {
+    assert.equal(buildPlaceDetailPresentation(70069, { ...baseResources, reviews }).verifiedReviewerCount, null);
+  }
+  assert.equal(buildPlaceDetailPresentation(70069, baseResources).verifiedReviewerCount, 0);
+});

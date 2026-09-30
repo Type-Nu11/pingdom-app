@@ -61,6 +61,8 @@ export type PlaceDetailPresentation = {
   jibunAddress: string | null;
   touristSummary: string | null;
   verifiedEvidenceCount: number | null;
+  verifiedReviewerCount: number | null;
+  verifiedReviewerCountIsLowerBound: boolean;
   verificationLabelKey: 'placeDetail.verification.admin' | 'placeDetail.verification.owner' | 'placeDetail.verification.source' | null;
 };
 
@@ -111,6 +113,13 @@ export function buildPlaceDetailPresentation(
   const reviewItems = (resources.reviews.data?.content ?? []).filter(
     (review) => review.placeId === undefined || review.placeId === placeId,
   );
+  const reviewerIds = new Set(reviewItems.map(review => review.userId).filter(
+    (id): id is number => typeof id === 'number' && Number.isSafeInteger(id) && id > 0,
+  ));
+  const completeReviewAuthors = resources.reviews.data?.totalElements === reviewItems.length
+    && reviewItems.every(review => typeof review.userId === 'number' && Number.isSafeInteger(review.userId) && review.userId > 0);
+  const verifiedReviewerCount = resources.reviews.isPending || resources.reviews.isError
+    || (!reviewerIds.size && !completeReviewAuthors) ? null : reviewerIds.size;
   const owner = base?.merchantOwner;
   const operatingSource = base ?? card;
   const merchantInformation = decision?.merchantInformation;
@@ -175,6 +184,8 @@ export function buildPlaceDetailPresentation(
     roadAddress: clean(base?.roadAddress) ?? clean(card?.roadAddress),
     jibunAddress: clean(base?.jibunAddress),
     touristSummary: clean(base?.touristSummary) ?? clean(card?.touristSummary),
+    verifiedReviewerCount,
+    verifiedReviewerCountIsLowerBound: !completeReviewAuthors,
     verifiedEvidenceCount: typeof (base?.verifiedEvidenceCount ?? card?.verifiedEvidenceCount) === 'number'
       ? Math.max(0, base?.verifiedEvidenceCount ?? card?.verifiedEvidenceCount ?? 0)
       : null,

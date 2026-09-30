@@ -204,7 +204,7 @@ describe('MapBottomSheet recommendations', () => {
       previewFallbackContentByPlaceId: {
         [String(selectedPlace.id)]: {
           amenities: [], coupons: [{ period: '2026.09.01~2026.09.30', title: '관광객 쿠폰' }],
-          imageUrls: [], statusDescription: '', statusEmphasis: '', verifiedEvidenceCount: 23,
+          imageUrls: [], statusDescription: '', statusEmphasis: '', verifiedReviewerCount: 23,
         },
       },
       selectedPlace, sheetChromeBottom: new Animated.Value(0),

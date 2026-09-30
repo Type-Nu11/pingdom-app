@@ -661,7 +661,8 @@ export default function MapScreen({
           ? t(selectedPlacePresentation.verificationLabelKey)
           : '',
         statusEmphasis: operatingSummary?.statusText ?? '',
-        verifiedEvidenceCount: selectedPlacePresentation.verifiedEvidenceCount ?? undefined,
+        verifiedReviewerCount: selectedPlacePresentation.verifiedReviewerCount ?? undefined,
+        verifiedReviewerCountIsLowerBound: selectedPlacePresentation.verifiedReviewerCountIsLowerBound,
       },
     };
   }, [selectedPlace, selectedPlacePresentation, t]);
