@@ -181,7 +181,7 @@ const Container = styled.View`
   aspect-ratio: ${FIGMA_CALENDAR_WIDTH / FIGMA_CALENDAR_HEIGHT};
   gap: 6px;
   border-radius: ${({ theme }) => theme.radius.lg}px;
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;
 
 const Header = styled.View`
@@ -199,7 +199,7 @@ const NavButton = styled.Pressable`
 `;
 
 const MonthLabel = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`
-  color: ${({ theme }) => theme.colors.textStrong};
+  color: ${({ theme }) => theme.colors.text};
   font-size: 18px;
   font-weight: 700;
 `;
@@ -212,10 +212,10 @@ const WeekdayRow = styled.View`
 `;
 
 const WeekdayText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })<{ $weekday: number }>`
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+  font-size: 14px;
   font-weight: 500;
   text-align: center;
-  color: ${({ $weekday, theme }) => weekdayColor($weekday, theme)};
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const Grid = styled.View`
@@ -271,13 +271,13 @@ const DayBadge = styled.View`
 `;
 
 const DayBadgeText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`
-  color: ${({ theme }) => theme.colors.onPrimary};
+  color: ${({ theme }) => theme.colorScheme === 'light' ? theme.colors.textInverse : theme.colors.onPrimary};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 600;
 `;
 
-function weekdayColor(weekday: number, theme: { colors: { danger: string; info: string; text: string } }): string {
+function weekdayColor(weekday: number, theme: { colors: { danger: string; calendarSaturday: string; textAlternative: string } }): string {
   if (weekday === 0) return theme.colors.danger;
-  if (weekday === 6) return theme.colors.info;
-  return theme.colors.text;
+  if (weekday === 6) return theme.colors.calendarSaturday;
+  return theme.colors.textAlternative;
 }

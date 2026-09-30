@@ -1,4 +1,6 @@
 import React from 'react';
+import { ThemeProvider } from 'styled-components/native';
+import { lightTheme, darkTheme } from '../../../../../../../shared/theme';
 import { screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../../../../app/testing/testProviders';
@@ -7,6 +9,22 @@ import { isServerTravelDate, type ServerTravelDate } from '../../../../../../tra
 import TravelCalendar, { getCalendarHeight, getRangeCellState } from '../TravelCalendar';
 
 describe('TravelCalendar layout', () => {
+  test.each([lightTheme, darkTheme])('$colorScheme 선택 날짜와 일반 날짜에 테마별 색상을 적용한다', async (theme) => {
+    await renderWithProviders(
+      <ThemeProvider theme={theme}>
+        <TravelCalendar highlightedRange={null} initialMonth={{ month: 9, year: 2026 }}
+          selectedStartDate={serverDate('2026-09-05')} />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText('5')).toHaveStyle({
+      color: theme.colorScheme === 'light' ? '#FFFFFF' : theme.colors.onPrimary,
+      fontWeight: '600',
+    });
+    expect(screen.getByText('8')).toHaveStyle({ color: theme.colors.textAlternative, fontWeight: '400' });
+    expect(screen.getByText('M')).toHaveStyle({ color: theme.colors.text, fontSize: 14, fontWeight: '500' });
+    expect(screen.getByTestId('v2-my-page-calendar')).toHaveStyle({ backgroundColor: theme.colors.backgroundAssistive });
+  });
+
   test('요일과 날짜를 각 열의 중앙에 정렬한다', async () => {
     await renderWithProviders(
       <TravelCalendar

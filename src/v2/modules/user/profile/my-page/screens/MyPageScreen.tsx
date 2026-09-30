@@ -511,13 +511,14 @@ const Avatar = styled(Image)`
 
 const Username = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-size: 18px;
   font-weight: 500;
 `;
 
 const UserCountry = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  color: ${({ theme }) => theme.colors.textAlternative};
+  font-size: 16px;
+  font-weight: 500;
 `;
 
 const StatsCard = styled.View`
