@@ -4,20 +4,8 @@ import { Pressable as MockPressable, Text as MockText } from 'react-native';
 
 import OnboardingFlow from '../OnboardingFlow';
 
-jest.mock('../../../v2/shared/i18n', () => ({
-  setLanguage: jest.fn().mockResolvedValue(undefined),
-}));
 jest.mock('../SelectFirstScreen', () => ({ onNext }: { onNext: () => void }) => (
   <MockPressable onPress={onNext} testID="first-next"><MockText>first</MockText></MockPressable>
-));
-jest.mock('../SelectLanguageScreen', () => ({
-  onNext,
-}: {
-  onNext: (language: 'en') => void;
-}) => (
-  <MockPressable onPress={() => onNext('en')} testID="language-next">
-    <MockText>language</MockText>
-  </MockPressable>
 ));
 jest.mock('../SelectCountryScreen', () => ({
   onNext,
@@ -47,6 +35,15 @@ jest.mock('../SelectGenderScreen', () => ({
   </MockPressable>
 ));
 jest.mock('../../../v2/modules/onboarding', () => ({
+  LanguageSelectionScreen: ({
+    onNext,
+  }: {
+    onNext: (language: 'ja') => void;
+  }) => (
+    <MockPressable onPress={() => onNext('ja')} testID="language-next">
+      <MockText>language</MockText>
+    </MockPressable>
+  ),
   OnboardingPreferenceFlow: ({
     initialStep,
     onBack,
@@ -90,7 +87,7 @@ describe('OnboardingFlow', () => {
     expect(onComplete).toHaveBeenCalledWith({
       birthYear: 2000,
       country: 'US',
-      language: 'en',
+      language: 'ja',
     });
   });
 });

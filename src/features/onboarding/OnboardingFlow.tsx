@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { OnboardingPreferenceFlow } from '../../v2/modules/onboarding';
+import { LanguageSelectionScreen, OnboardingPreferenceFlow } from '../../v2/modules/onboarding';
 import type { SignupOnboardingContext } from '../../v2/modules/onboarding';
-import { setLanguage as setV2Language } from '../../v2/shared/i18n';
 import SelectAgeScreen from './SelectAgeScreen';
 import SelectCountryScreen from './SelectCountryScreen';
 import SelectFirstScreen from './SelectFirstScreen';
 import SelectGenderScreen from './SelectGenderScreen';
-import SelectLanguageScreen from './SelectLanguageScreen';
 import type { Country, Gender, Language } from './types';
 
 type Step =
@@ -40,11 +38,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
     case 'language':
       return (
-        <SelectLanguageScreen
+        <LanguageSelectionScreen
           onBack={() => setStep('first')}
           onNext={(lang) => {
             setLanguage(lang);
-            void setV2Language(lang);
             setStep('country');
           }}
         />
