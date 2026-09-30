@@ -27,7 +27,7 @@ function setup() {
     calls.push({ path, params: options.params, signal: options.signal });
     if (failure) throw failure;
     if (delay) return { data: await delay };
-    return { data: path === '/places/' ? places : path.endsWith('/availabilities') ? slots : detail };
+    return { data: path === '/places' ? places : path.endsWith('/availabilities') ? slots : detail };
   } } as unknown as ApiTransport;
   const client = createApiClient(transport);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
@@ -78,7 +78,7 @@ test('search reuses canonical keys, category and bounded list params; projects o
   const x = setup(); await x.controller.start();
   const result = await x.send(search({ touristCategory: 'CAFE' }));
   expect(result?.outcome).toEqual({ status: 'succeeded', data: { places: [facts], coverage: 'bounded_candidates' } });
-  expect(x.calls[0]).toMatchObject({ path: '/places/', params: { page: 1, limit: 12, latitude: 37.5, longitude: 127, radiusKm: 5, sort: 'NEAREST', touristCategory: 'CAFE' } });
+  expect(x.calls[0]).toMatchObject({ path: '/places', params: { page: 1, limit: 12, latitude: 37.5, longitude: 127, radiusKm: 5, sort: 'NEAREST', touristCategory: 'CAFE' } });
   expect(x.calls[0].params).not.toHaveProperty('date');
   expect(x.queryClient.getQueryData(reservationQueryKeys.availabilities(1, {}))).toEqual([slot()]);
   expect(JSON.stringify(result)).not.toMatch(/latitude|longitude|price|cancellation/);
