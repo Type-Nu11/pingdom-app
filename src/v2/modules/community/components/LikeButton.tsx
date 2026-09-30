@@ -2,7 +2,7 @@ import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useRef } from 'react';
 import { AccessibilityInfo, Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import StarFilledIcon from '../../../../assets/v2/icons/community/star-filled.svg';
 import StarOutlineIcon from '../../../../assets/v2/icons/community/star-outline.svg';
@@ -24,6 +24,7 @@ export type LikeButtonProps = {
  */
 export default function LikeButton({ onSignIn, postId }: LikeButtonProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const likeQuery = useLikeStatus(postId);
   const toggleLike = useToggleLike(postId);
   const pulse = useSharedPulse();
@@ -119,7 +120,7 @@ export default function LikeButton({ onSignIn, postId }: LikeButtonProps) {
         onPress={handlePress}
         testID="v2-community-like-button"
       >
-        {liked ? <StarFilledIcon height={20} width={20} /> : <StarOutlineIcon height={20} width={20} />}
+        {liked ? <StarFilledIcon height={20} width={20} /> : <StarOutlineIcon color={theme.colors.labelNeutral} height={20} width={20} />}
         <Count $active={liked} $muted={loadFailed}>
           {loadFailed ? t('community.detail.like.retryLabel') : t('community.detail.like.count', { count: likeCount })}
         </Count>

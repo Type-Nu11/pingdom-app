@@ -61,6 +61,7 @@ function Places({
   places: CommunityPostDetail['places'];
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
   if (!places || places.length === 0) return null;
 
   return (
@@ -111,7 +112,7 @@ function Places({
                 {busy ? (
                   <ActivityIndicator size="small" testID={`v2-community-place-busy-${placeId}`} />
                 ) : (
-                  <ChevronRightIcon height={24} width={24} />
+                  <ChevronRightIcon color={theme.colors.textMuted} height={24} width={24} />
                 )}
               </PlaceNameRow>
             </PlaceRowPressable>
@@ -306,7 +307,7 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
                 onPress={() => scrollRef.current?.scrollTo({ animated: true, y: commentsSectionY.current })}
                 testID="v2-community-comment-jump"
               >
-                <ChatDotsIcon height={20} width={20} />
+                <ChatDotsIcon color={theme.colors.textAlternative} height={20} width={20} />
                 <CommentJumpLabel>{t('community.detail.comments.count', { count: commentCount })}</CommentJumpLabel>
               </CommentJump>
             </ActionBar>

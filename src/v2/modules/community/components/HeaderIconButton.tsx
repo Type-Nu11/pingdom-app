@@ -25,7 +25,7 @@ export default function HeaderIconButton({ Icon, style, ...pressableProps }: Hea
       style={(state) => [{ boxShadow: theme.liquidGlass.navigation.shadow }, typeof style === 'function' ? style(state) : style]}
     >
       <Artboard pointerEvents="none">
-        <Icon height={ARTBOARD_HEIGHT} width={ARTBOARD_WIDTH} />
+        <Icon color={theme.colors.textAlternative} height={ARTBOARD_HEIGHT} width={ARTBOARD_WIDTH} />
       </Artboard>
     </Button>
   );

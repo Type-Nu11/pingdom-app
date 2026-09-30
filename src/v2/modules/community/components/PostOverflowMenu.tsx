@@ -1,7 +1,7 @@
 import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import { textStyleCss } from '../../../shared/theme/typography';
 
@@ -25,6 +25,7 @@ export default function PostOverflowMenu({
   visible,
 }: PostOverflowMenuProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
 
   return (
     <AnchoredMenu dismissLabel={t('community.moreOptions')} onClose={onClose} position={position} visible={visible}>
@@ -36,7 +37,7 @@ export default function PostOverflowMenu({
         }}
         testID="v2-community-overflow-not-interested"
       >
-        <NotInterestedIcon height={24} width={24} />
+        <NotInterestedIcon color={theme.colors.labelNeutral} height={24} width={24} />
         <RowLabel>{t('community.notInterested')}</RowLabel>
       </Row>
       <Divider />
@@ -48,7 +49,7 @@ export default function PostOverflowMenu({
         }}
         testID="v2-community-overflow-report"
       >
-        <ReportIcon height={24} width={24} />
+        <ReportIcon color={theme.colors.danger} height={24} width={24} />
         <RowLabelDanger>{t('community.report')}</RowLabelDanger>
       </Row>
     </AnchoredMenu>

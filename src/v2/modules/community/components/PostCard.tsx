@@ -2,7 +2,7 @@ import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useRef } from 'react';
 import { type GestureResponderEvent, type View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 import EtcVerticalIcon from '../../../../assets/v2/icons/community/etc-vertical.svg';
 import { textStyleCss } from '../../../shared/theme/typography';
@@ -24,6 +24,7 @@ export type PostCardProps = {
 // The category tag comes from the category the list was fetched for.
 export default function PostCard({ categoryName, onOpenOverflow, onPress, post }: PostCardProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const overflowRef = useRef<View>(null);
 
   const openOverflow = (event: GestureResponderEvent) => {
@@ -59,7 +60,7 @@ export default function PostCard({ categoryName, onOpenOverflow, onPress, post }
           ref={overflowRef}
           testID={`v2-community-post-${post.postId}-overflow`}
         >
-          <EtcVerticalIcon height={23.4} width={24.0021} />
+          <EtcVerticalIcon color={theme.colors.labelNeutral} height={23.4} width={24.0021} />
         </OverflowButton>
       </TagRow>
       <Title numberOfLines={2}>{post.title}</Title>

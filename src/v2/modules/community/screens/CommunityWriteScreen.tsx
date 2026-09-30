@@ -261,7 +261,7 @@ export default function CommunityWriteScreen({
                   onPress={() => setPlaceTags((current) => current.filter((tag) => tag.id !== place.id))}
                   testID={`v2-community-write-remove-place-${place.id}`}
                 >
-                  <CloseMediumIcon height={19} width={19} />
+                  <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
                 </RemovePlace>
               </PlaceCard>
             ))}
