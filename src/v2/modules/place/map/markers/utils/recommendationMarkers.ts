@@ -1,19 +1,18 @@
 import type { MapMarker } from '../model/placeMarker';
 import { normalizePlaceCategory } from '../../../core/placeCategory';
 
-type RecommendationMarkerPlace = {
+type FocusedMarkerPlace = {
   category: string;
   id: number;
   latitude: number;
   longitude: number;
 };
 
-export function createFocusedRecommendationMarker(
-  selectedPlace: RecommendationMarkerPlace | null,
-  recommendationPlaceIds: ReadonlySet<number>,
+export function createFocusedPlaceMarker(
+  selectedPlace: FocusedMarkerPlace | null,
   existingMarkerIds: ReadonlySet<string>,
 ): MapMarker | null {
-  if (!selectedPlace || !recommendationPlaceIds.has(selectedPlace.id)) return null;
+  if (!selectedPlace || !Number.isFinite(selectedPlace.latitude) || !Number.isFinite(selectedPlace.longitude)) return null;
 
   const markerId = String(selectedPlace.id);
   if (existingMarkerIds.has(markerId)) return null;

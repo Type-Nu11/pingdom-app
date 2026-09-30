@@ -2,13 +2,14 @@ import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import NaverMapAdapter from './NaverMapAdapter';
 import type { MapMarker } from '../../markers/model/placeMarker';
+import type { Coordinate } from '../../camera/model/map.types';
 
 type MapCanvasProps = {
   centerLat: number;
   centerLng: number;
   followUser: boolean;
   markers: MapMarker[];
-  onCameraIdle?: () => void;
+  onCameraIdle?: (coordinate: Coordinate) => void;
   onMarkerPress: (markerId: string) => void;
   style?: StyleProp<ViewStyle>;
   userLat?: number;
@@ -34,7 +35,7 @@ const MapCanvas = ({
     center={{ lat: centerLat, lng: centerLng }}
     followUser={followUser}
     markers={markers}
-    onCameraIdle={() => onCameraIdle?.()}
+    onCameraIdle={onCameraIdle}
     onMarkerSelect={onMarkerPress}
     style={[styles.map, style]}
     userCoordinate={userLat !== undefined && userLng !== undefined ? { lat: userLat, lng: userLng } : undefined}
