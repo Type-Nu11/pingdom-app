@@ -294,21 +294,27 @@ export default function CommunityBottomSheet({
       </GlassStyles.SheetInner>
 
       {snapPoint === 'expanded' ? (
-        <WriteFab
-          accessibilityLabel={t('community.write')}
-          accessibilityRole="button"
-          onPress={() => onOpenWrite(selectedCategoryId ?? undefined)}
+        // Pinned to the screen like MapSheetBottomNavigation: the sheet
+        // container is translated, so the FAB cancels that translation.
+        <WriteFabAnchor
           style={{
             bottom: getMapSheetNavigationBottom(insets.bottom) + NAVIGATION_BAR_HEIGHT + WRITE_FAB_NAVIGATION_GAP,
-            boxShadow: themedGlass.search.shadow,
+            transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
           }}
-          testID="v2-community-sheet-write-fab"
         >
-          <WriteFabSurface pointerEvents="none" tintColor={themedGlass.primaryCta.tint}>
-            <AddPlusIcon height={24} width={24} />
-            <WriteFabLabel>{t('community.write')}</WriteFabLabel>
-          </WriteFabSurface>
-        </WriteFab>
+          <WriteFab
+            accessibilityLabel={t('community.write')}
+            accessibilityRole="button"
+            onPress={() => onOpenWrite(selectedCategoryId ?? undefined)}
+            style={{ boxShadow: themedGlass.search.shadow }}
+            testID="v2-community-sheet-write-fab"
+          >
+            <WriteFabSurface pointerEvents="none" tintColor={themedGlass.primaryCta.tint}>
+              <AddPlusIcon height={24} width={24} />
+              <WriteFabLabel>{t('community.write')}</WriteFabLabel>
+            </WriteFabSurface>
+          </WriteFab>
+        </WriteFabAnchor>
       ) : null}
 
       <MapSheetBottomNavigation
@@ -376,14 +382,14 @@ const FooterErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.tex
 const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primary}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
-// Same glass primary CTA recipe as the map's visit-verification button.
+const WriteFabAnchor = styled(Animated.View)`position: absolute; right: 24px;`;
+// Glass primary CTA over a solid `Primary/Normal` base: Figma's FAB renders
+// fully saturated, while native glass alone washes the 56% tint out.
 const WriteFab = styled.Pressable`
-  position: absolute;
-  right: 24px;
   height: 48px;
   border-radius: 24px;
   overflow: hidden;
-  background-color: ${({ theme }) => theme.liquidGlass.primaryCta.tint};
+  background-color: ${({ theme }) => theme.colors.primary};
 `;
 const WriteFabSurface = styled(GlassSurface)`
   height: 48px;
