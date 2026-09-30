@@ -1,6 +1,6 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { memo, useState } from 'react';
-import { Animated, Pressable, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, Text, View, type PlatformOSType } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -27,7 +27,12 @@ export const getMapSheetTabSurfaceColor = (
   return active ? liquidGlass.navigation.selectedTint : 'transparent';
 };
 
-export const getMapSheetNavigationBottom = (bottomInset: number) => Math.max(16, bottomInset + 10);
+// Figma pins the bar 16px above the screen edge. iOS follows it and lets the bar
+// sit over the home-indicator area; Android keeps clear of a visible system
+// navigation bar, which would otherwise cover the tabs.
+export const getMapSheetNavigationBottom = (bottomInset: number, platform: PlatformOSType = Platform.OS) => (
+  platform === 'ios' ? 16 : Math.max(16, bottomInset + 10)
+);
 
 type Props = {
   activeTab: MapSheetNavigationTab;
