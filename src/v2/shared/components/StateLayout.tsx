@@ -37,8 +37,11 @@ export default function StateLayout({
   );
 }
 
+// `flex: 0` compiles to flexBasis 0 / flexShrink 1 (web shorthand), which let a
+// non-fill state collapse to its button inside column parents and hid the
+// title and description. Non-fill states keep their content height instead.
 const Container = styled.View<{ $fill: boolean }>`
-  flex: ${({ $fill }) => ($fill ? 1 : 0)};
+  ${({ $fill }) => ($fill ? 'flex: 1;' : 'flex-grow: 0; flex-shrink: 0;')}
   width: 100%;
   align-items: center;
   justify-content: center;
