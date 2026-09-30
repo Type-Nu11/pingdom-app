@@ -90,7 +90,7 @@ const Field = styled(AppTextInput)`
   flex: 1;
   max-height: 96px;
   min-height: 44px;
-  padding: 12.9px 16px;
+  padding: 13px 16px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.fillAlternative};
   color: ${({ theme }) => theme.colors.text};

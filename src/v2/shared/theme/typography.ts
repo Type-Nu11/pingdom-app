@@ -44,19 +44,20 @@ export function createTypography(fontFamily: string) {
       fontWeight: '400',
       lineHeight: 18,
     },
-    // Figma text styles (`Headline1/Bold`, `Label/Medium`, ...): every style in
-    // the published library uses a 1.3 line-height multiplier.
+    // Figma text styles (`Headline1/Bold`, `Label/Medium`, ...): the library
+    // uses a 1.3 line-height multiplier and lays text boxes out on whole
+    // pixels (18px → 23, 14px → 18), so the rounded value is what matches.
     headline1Bold: { fontFamily, fontSize: 20, fontWeight: '700', lineHeight: 26 },
-    headline2Bold: { fontFamily, fontSize: 18, fontWeight: '700', lineHeight: 23.4 },
-    headline2Medium: { fontFamily, fontSize: 18, fontWeight: '500', lineHeight: 23.4 },
-    bodyRegular: { fontFamily, fontSize: 16, fontWeight: '400', lineHeight: 20.8 },
-    bodyMedium: { fontFamily, fontSize: 16, fontWeight: '500', lineHeight: 20.8 },
-    labelBold: { fontFamily, fontSize: 14, fontWeight: '700', lineHeight: 18.2 },
-    labelMedium: { fontFamily, fontSize: 14, fontWeight: '500', lineHeight: 18.2 },
-    labelRegular: { fontFamily, fontSize: 14, fontWeight: '400', lineHeight: 18.2 },
-    captionBold: { fontFamily, fontSize: 12, fontWeight: '700', lineHeight: 15.6 },
-    captionMedium: { fontFamily, fontSize: 12, fontWeight: '500', lineHeight: 15.6 },
-    captionRegular: { fontFamily, fontSize: 12, fontWeight: '400', lineHeight: 15.6 },
+    headline2Bold: { fontFamily, fontSize: 18, fontWeight: '700', lineHeight: 23 },
+    headline2Medium: { fontFamily, fontSize: 18, fontWeight: '500', lineHeight: 23 },
+    bodyRegular: { fontFamily, fontSize: 16, fontWeight: '400', lineHeight: 21 },
+    bodyMedium: { fontFamily, fontSize: 16, fontWeight: '500', lineHeight: 21 },
+    labelBold: { fontFamily, fontSize: 14, fontWeight: '700', lineHeight: 18 },
+    labelMedium: { fontFamily, fontSize: 14, fontWeight: '500', lineHeight: 18 },
+    labelRegular: { fontFamily, fontSize: 14, fontWeight: '400', lineHeight: 18 },
+    captionBold: { fontFamily, fontSize: 12, fontWeight: '700', lineHeight: 16 },
+    captionMedium: { fontFamily, fontSize: 12, fontWeight: '500', lineHeight: 16 },
+    captionRegular: { fontFamily, fontSize: 12, fontWeight: '400', lineHeight: 16 },
   } as const;
 }
 
