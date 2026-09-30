@@ -37,7 +37,9 @@ export default function PostOverflowMenu({
         }}
         testID="v2-community-overflow-not-interested"
       >
-        <NotInterestedIcon color={theme.colors.labelNeutral} height={24} width={24} />
+        <IconBox>
+          <NotInterestedIcon color={theme.colors.labelNeutral} height={18} width={18} />
+        </IconBox>
         <RowLabel>{t('community.notInterested')}</RowLabel>
       </Row>
       <Divider />
@@ -65,6 +67,15 @@ const Row = styled.Pressable`
 `;
 
 // Rows sit 6px apart with the 1px divider centred in the gap.
+// Figma's `Not interested` instance is a 24px slot around an 18px glyph, which
+// is exactly the exported artboard — scaling the artboard to 24 overdraws it.
+const IconBox = styled.View`
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+`;
+
 const Divider = styled.View`
   height: 1px;
   margin: 2.5px 0;
