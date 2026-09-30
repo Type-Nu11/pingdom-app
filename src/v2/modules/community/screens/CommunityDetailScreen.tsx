@@ -322,6 +322,7 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
             <CommentsSection
               commentsQuery={commentsQuery}
               now={now}
+              postAuthorId={postQuery.data?.author?.authorId}
               onLayout={(event) => { commentsSectionY.current = event.nativeEvent.layout.y; }}
               onSignIn={onSignIn}
             />

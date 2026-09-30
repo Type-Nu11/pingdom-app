@@ -31,6 +31,7 @@ export const communityResources = {
       },
       comments: {
         headerLabel: 'Comments',
+        authorBadge: 'Author',
         count: 'Comments {{count}}',
         jumpA11yLabel: 'Go to {{count}} comments',
         loading: 'Loading comments…',
@@ -156,6 +157,7 @@ export const communityResources = {
       },
       comments: {
         headerLabel: '댓글',
+        authorBadge: '작성자',
         count: '댓글 {{count}}',
         jumpA11yLabel: '댓글 {{count}}개로 이동',
         loading: '댓글을 불러오는 중…',
@@ -281,6 +283,7 @@ export const communityResources = {
       },
       comments: {
         headerLabel: 'コメント',
+        authorBadge: '投稿者',
         count: 'コメント {{count}}',
         jumpA11yLabel: 'コメント{{count}}件へ移動',
         loading: 'コメントを読み込んでいます…',

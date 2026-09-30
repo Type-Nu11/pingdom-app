@@ -16,6 +16,8 @@ export type CommentsSectionProps = {
   now: Date;
   onLayout?: (event: LayoutChangeEvent) => void;
   onSignIn?: () => void;
+  /** Author of the post; their comments get the Figma 작성자 badge. */
+  postAuthorId?: number;
 };
 
 const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2'] as const;
@@ -37,7 +39,7 @@ function CommentsSkeleton() {
   );
 }
 
-export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn }: CommentsSectionProps) {
+export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn, postAuthorId }: CommentsSectionProps) {
   const { t } = useTranslation();
   const theme = useTheme();
 
@@ -94,7 +96,12 @@ export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn
         <>
           <List>
             {comments.map((comment, index) => (
-              <CommentItem comment={comment} key={comment.commentId ?? `comment-${index}`} now={now} />
+              <CommentItem
+                comment={comment}
+                isPostAuthor={postAuthorId !== undefined && comment.authorId === postAuthorId}
+                key={comment.commentId ?? `comment-${index}`}
+                now={now}
+              />
             ))}
           </List>
 

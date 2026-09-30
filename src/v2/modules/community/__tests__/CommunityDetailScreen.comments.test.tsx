@@ -44,6 +44,22 @@ describe('CommunityDetailScreen 댓글', () => {
     jest.spyOn(communityApi, 'getLikeStatus').mockResolvedValue({ likeCount: 0, liked: false, postId: 1 });
   });
 
+  test('게시글 작성자가 단 댓글에만 작성자 배지를 붙인다', async () => {
+    jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({ author: { authorId: 7, authorName: 'pingdom' } }));
+    jest.spyOn(communityApi, 'listComments').mockResolvedValue(commentPage({
+      comments: [
+        { authorId: 7, authorName: 'pingdom', commentId: 1, content: '작성자 댓글', createdAt: new Date().toISOString() },
+        { authorId: 8, authorName: 'guest', commentId: 2, content: '다른 댓글', createdAt: new Date().toISOString() },
+      ],
+      totalCount: 2,
+    }));
+
+    await renderDetail();
+
+    await waitFor(() => expect(screen.getByTestId('v2-community-comment-1-author-badge')).toHaveTextContent('작성자'));
+    expect(screen.queryByTestId('v2-community-comment-2-author-badge')).toBeNull();
+  });
+
   test('댓글을 불러오는 동안 스켈레톤을 보여준다', async () => {
     jest.spyOn(communityApi, 'listComments').mockImplementation(() => new Promise(() => {}));
 
