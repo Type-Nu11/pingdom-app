@@ -153,6 +153,10 @@ export const resources = {
         },
       },
       placeMenu: {
+        exchange: {
+          amount: 'Approx. {{price}}',
+          loading: 'Loading exchange rate…', retry: 'Exchange rate unavailable · Try again',
+        },
         accessibility: {
           image: '{{name}} menu image',
           imageUnavailable: 'No image for {{name}}',
@@ -1000,6 +1004,10 @@ export const resources = {
         },
       },
       placeMenu: {
+        exchange: {
+          amount: '약 {{price}}',
+          loading: '환율을 불러오는 중입니다…', retry: '환율 조회 실패 · 다시 시도',
+        },
         accessibility: {
           image: '{{name}} 메뉴 이미지',
           imageUnavailable: '{{name}} 메뉴 이미지 없음',
@@ -1870,6 +1878,10 @@ export const resources = {
         },
       },
       placeMenu: {
+        exchange: {
+          amount: '約{{price}}',
+          loading: '為替レートを読み込んでいます…', retry: '為替レートを取得できません · 再試行',
+        },
         accessibility: {
           image: '{{name}}のメニュー画像',
           imageUnavailable: '{{name}}の画像はありません',
