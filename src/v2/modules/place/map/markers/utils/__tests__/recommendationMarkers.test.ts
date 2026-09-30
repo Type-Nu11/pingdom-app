@@ -1,4 +1,4 @@
-import { createFocusedRecommendationMarker } from '../recommendationMarkers';
+import { createFocusedRecommendationMarker, withRecommendationFallbackMarkers } from '../recommendationMarkers';
 
 const recommendation = {
   category: 'CAFE',
@@ -6,6 +6,26 @@ const recommendation = {
   latitude: 37.5,
   longitude: 127,
 };
+
+describe('withRecommendationFallbackMarkers', () => {
+  test('성공한 빈 목록에는 추천 마커를 추가하지 않는다', () => {
+    expect(withRecommendationFallbackMarkers([], [recommendation], false)).toEqual([]);
+  });
+
+  test('목록 실패 시 실제 추천 좌표를 표시하고 중복을 제거한다', () => {
+    const markers = withRecommendationFallbackMarkers([], [recommendation, recommendation], true);
+    expect(markers).toEqual([{ id: '17', category: 'cafe', lat: 37.5, lng: 127, markerType: 'default' }]);
+    expect(withRecommendationFallbackMarkers(markers, [recommendation], true)).toEqual(markers);
+  });
+
+  test('잘못된 추천 좌표는 표시하지 않는다', () => {
+    expect(withRecommendationFallbackMarkers([], [
+      { ...recommendation, latitude: NaN },
+      { ...recommendation, latitude: 91 },
+      { ...recommendation, longitude: 181 },
+    ], true)).toEqual([]);
+  });
+});
 
 describe('createFocusedRecommendationMarker', () => {
   test('선택되지 않은 추천 장소를 marker collection에 추가하지 않는다', () => {

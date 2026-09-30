@@ -83,7 +83,7 @@ import {
   mergeMapPreviewPlaces,
   shouldPresentMapSelection,
 } from '../selection/utils/mapPreviewSelection';
-import { createFocusedRecommendationMarker } from '../markers/utils/recommendationMarkers';
+import { createFocusedRecommendationMarker, withRecommendationFallbackMarkers } from '../markers/utils/recommendationMarkers';
 import { selectRecommendationClickPayload } from '../../exploration';
 import { selectMapExplorationPlaceIds } from '../selection/utils/mapExplorationPlaceIds';
 import { VisitVerificationMapCta } from '../../visit-verification';
@@ -704,7 +704,10 @@ export default function MapScreen({
     return visiblePlaces;
   }, [content.type, selectedPlace, visiblePlaces]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
-    const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
+    const availableMarkers = withRecommendationFallbackMarkers(
+      apiMarkers, recommendationPlaces, Boolean(placesError),
+    );
+    const liveMarkerIds = new Set(availableMarkers.map((marker) => marker.id));
     const recommendationPlaceIds = new Set(recommendationPlaces.map((place) => place.id));
     const focusedRecommendationMarker = createFocusedRecommendationMarker(
       content.type === 'place-preview' ? mapSelectedPlace : null,
@@ -714,7 +717,7 @@ export default function MapScreen({
     const visibleMarkerIds = new Set(liveMarkerIds);
     if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
     const markers = [
-      ...apiMarkers.map((marker) => ({
+      ...availableMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
@@ -728,6 +731,7 @@ export default function MapScreen({
   }, [
     activeCategory,
     apiMarkers,
+    placesError,
     content.type,
     recommendationPlaces,
     mapSelectedPlace,

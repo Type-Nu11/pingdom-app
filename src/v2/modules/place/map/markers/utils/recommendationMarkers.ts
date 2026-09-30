@@ -8,6 +8,31 @@ type RecommendationMarkerPlace = {
   longitude: number;
 };
 
+export function withRecommendationFallbackMarkers(
+  markers: MapMarker[],
+  recommendations: RecommendationMarkerPlace[],
+  listFailed: boolean,
+): MapMarker[] {
+  if (!listFailed) return markers;
+
+  const result = [...markers];
+  const ids = new Set(markers.map((marker) => marker.id));
+  for (const place of recommendations) {
+    const id = String(place.id);
+    if (ids.has(id) || !Number.isFinite(place.latitude) || !Number.isFinite(place.longitude)
+      || Math.abs(place.latitude) > 90 || Math.abs(place.longitude) > 180) continue;
+    ids.add(id);
+    result.push({
+      category: normalizePlaceCategory(place.category),
+      id,
+      lat: place.latitude,
+      lng: place.longitude,
+      markerType: 'default',
+    });
+  }
+  return result;
+}
+
 export function createFocusedRecommendationMarker(
   selectedPlace: RecommendationMarkerPlace | null,
   recommendationPlaceIds: ReadonlySet<number>,
