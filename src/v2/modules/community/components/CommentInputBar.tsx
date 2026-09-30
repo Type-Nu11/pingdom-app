@@ -53,7 +53,6 @@ export default function CommentInputBar({
           value={value}
         />
         <SendButton
-          $enabled={canSubmit}
           accessibilityLabel={t('community.detail.commentInput.send')}
           accessibilityRole="button"
           accessibilityState={{ busy, disabled: !canSubmit }}
@@ -96,11 +95,12 @@ const Field = styled(AppTextInput)`
   color: ${({ theme }) => theme.colors.text};
   ${({ theme }) => textStyleCss(theme.typography.labelRegular)}
 `;
-const SendButton = styled.Pressable<{ $enabled: boolean }>`
+// Figma shows the send button at full strength even with an empty field; it
+// stays disabled (and announces so) until there is something to send.
+const SendButton = styled.Pressable`
   width: 44px; height: 44px; align-items: center; justify-content: center;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.primary};
-  opacity: ${({ $enabled }) => ($enabled ? 1 : 0.4)};
 `;
 const CounterText = styled(AppText)`align-self: flex-end; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const ErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;

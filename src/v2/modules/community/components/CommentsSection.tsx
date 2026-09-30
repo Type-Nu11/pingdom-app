@@ -123,7 +123,7 @@ export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn
             >
               <LoadMoreLabel>{t('community.detail.comments.loadMore', { count: remainingCount })}</LoadMoreLabel>
               <ChevronDown>
-                <ChevronRightIcon color={theme.colors.textMuted} height={16} width={16} />
+                <ChevronRightIcon color={theme.colors.labelNeutral} height={24} width={24} />
               </ChevronDown>
             </LoadMoreButton>
           ) : null}
@@ -144,8 +144,10 @@ const HeadCount = styled(AppText)`color: ${({ theme }) => theme.colors.primary};
 const List = styled.View`gap: 20px;`;
 const EmptyText = styled(AppText)`padding: ${({ theme }) => theme.spacing.lg}px 0; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 
+// Figma `Component 1`: 14×8 Label/Neutral chevron 9px after the label — the
+// 24px chevron asset draws exactly that glyph, 5px inside its box.
 const LoadMoreButton = styled.Pressable`
-  flex-direction: row; align-items: center; justify-content: center; gap: 6px;
+  flex-direction: row; align-items: center; justify-content: center; gap: 4px;
   align-self: stretch; padding: 14px 0; border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.fillAlternative};
 `;
