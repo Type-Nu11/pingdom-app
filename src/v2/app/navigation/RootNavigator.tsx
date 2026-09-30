@@ -29,7 +29,8 @@ import {
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
-  VisitVerificationSessionScreen,
+  useForegroundVisitVerification,
+  useVisitVerificationCandidates,
 } from '../../modules/place/visit-verification';
 import { env } from '../../shared/config';
 import { clearTokenSession } from '../../shared/auth/tokenSession';
@@ -59,15 +60,11 @@ function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
       )}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenVisitVerification={() => navigation.navigate(
-        V2_ROUTES.VisitVerificationSession,
-        { mode: 'foreground' },
+        V2_ROUTES.VisitVerificationPlaces,
       )}
       onStartVisitVerification={(value) => {
         const placeId = parsePlaceId(value);
-        if (placeId) navigation.navigate(V2_ROUTES.VisitVerificationSession, {
-          mode: 'place',
-          placeId,
-        });
+        if (placeId) navigation.navigate(V2_ROUTES.VisitVerificationPlaces);
       }}
       onSignIn={() => void clearTokenSession()}
     />
@@ -228,20 +225,9 @@ function VisitVerificationReviewRoute({ navigation, route }: V2ScreenProps<'Visi
   return <VisitVerificationReviewScreen checkInId={route.params.checkInId} onBack={navigation.goBack} onComplete={() => navigation.popTo(V2_ROUTES.Map)} placeId={route.params.placeId} />;
 }
 
-function VisitVerificationSessionRoute({ navigation, route }: V2ScreenProps<'VisitVerificationSession'>) {
-  const commonProps = {
-    onBack: navigation.goBack,
-    onComplete: () => navigation.replace(V2_ROUTES.VisitVerificationPlaces),
-  };
-  return route.params.mode === 'foreground' ? (
-    <VisitVerificationSessionScreen mode="foreground" {...commonProps} />
-  ) : (
-    <VisitVerificationSessionScreen
-      mode="place"
-      placeId={route.params.placeId}
-      {...commonProps}
-    />
-  );
+function VisitVerificationSessionRoute({ navigation }: V2ScreenProps<'VisitVerificationSession'>) {
+  useEffect(() => { navigation.replace(V2_ROUTES.VisitVerificationPlaces); }, [navigation]);
+  return null;
 }
 
 export default function RootNavigator() {
@@ -288,6 +274,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavigationReady(true)}>
+      <ForegroundVisitVerification />
       <Stack.Navigator initialRouteName={V2_ROUTES.Map} screenOptions={{ headerShown: false }}>
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
         <Stack.Screen name={V2_ROUTES.CommunityDetail} component={CommunityDetailRouteScreen} />
@@ -311,4 +298,11 @@ export default function RootNavigator() {
       </Stack.Navigator>
     </NavigationContainer>
   );
+}
+
+function ForegroundVisitVerification() {
+  useForegroundVisitVerification();
+  // Keep the recent visits and their photos warm for immediate button navigation.
+  useVisitVerificationCandidates();
+  return null;
 }

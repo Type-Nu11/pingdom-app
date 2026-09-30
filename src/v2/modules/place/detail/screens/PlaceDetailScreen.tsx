@@ -12,7 +12,7 @@ type PlaceDetailScreenProps = {
     goBack: () => void;
     navigate: {
       (screen: 'CouponBox'): void;
-      (screen: 'VisitVerificationSession', params: { mode: 'place'; placeId: PlaceId }): void;
+      (screen: 'VisitVerificationPlaces'): void;
     };
   };
 };
@@ -87,11 +87,8 @@ export default function PlaceDetailScreen({ navigation, route }: PlaceDetailScre
           />
           <VerificationAction>
             <Button
-              label={t('visitVerification.session.start')}
-              onPress={() => navigation.navigate('VisitVerificationSession', {
-                mode: 'place',
-                placeId: route.params.placeId,
-              })}
+              label={t('visitVerification.title')}
+              onPress={() => navigation.navigate('VisitVerificationPlaces')}
             />
           </VerificationAction>
           <Button label={t('placeDetail.back')} onPress={navigation.goBack} />

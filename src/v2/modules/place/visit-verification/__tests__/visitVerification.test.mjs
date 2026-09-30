@@ -257,6 +257,20 @@ test('visit review API forwards the confirmed body, place ID, and signal unchang
   assert.deepEqual(calls, [{ body, options: { signal }, path: '/places/17/reviews' }]);
 });
 
+test('a server-completed session immediately supplies a review candidate even before list refresh', async () => {
+  const client = new QueryClient();
+  const session = {
+    id: 9201, placeId: 17, status: 'COMPLETED', completedCheckInId: 7002,
+    completedAt: '2026-09-30T02:00:30Z', latestDistanceMeters: 23.9, reviewEligible: true,
+  };
+  await applyVisitVerificationSessionResult(client, session);
+  await applyVisitVerificationSessionResult(client, session);
+  const data = client.getQueryData(['v2', 'check-ins', 'infinite', { limit: 20 }]);
+  assert.deepEqual(data?.pages.flatMap(page => page.checkIns).map(item => item.id), [7002]);
+  assert.equal(data.pages[0].checkIns[0].placeId, 17);
+  client.clear();
+});
+
 test('review count query requests one review and uses server totalElements', async () => {
   const calls = [];
   const response = { content: [], totalElements: 7 };

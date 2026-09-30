@@ -13,10 +13,12 @@ export type CurrentLocationOutcome =
   | { status: 'denied'; coordinate: null }
   | { status: 'failed'; coordinate: null };
 
-export async function getCurrentCoordinate(): Promise<CurrentLocationOutcome> {
+export async function getCurrentCoordinate(
+  options: { requestPermission?: boolean } = {},
+): Promise<CurrentLocationOutcome> {
   try {
     let permission = await foregroundPermission.get();
-    if (permission.status !== 'granted' && permission.canAskAgain) {
+    if (options.requestPermission !== false && permission.status !== 'granted' && permission.canAskAgain) {
       permission = await foregroundPermission.request();
     }
     if (permission.status !== 'granted') return { status: 'denied', coordinate: null };

@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 
-import { checkInQueryKeys } from '../../check-ins';
+import { checkInQueryKeys, type LocationCheckInPage, type LocationCheckInListItem } from '../../check-ins';
 import {
   visitVerificationApi,
   type ForegroundVisitVerificationStartBody,
@@ -69,6 +69,31 @@ export async function applyVisitVerificationSessionResult(
     queryClient.setQueryData(visitVerificationSessionQueryKeys.detail(session.id), session);
   }
   if (session.status === 'COMPLETED' && session.completedCheckInId != null) {
+    if (
+      session.placeId != null && Number.isInteger(session.placeId) && session.placeId > 0 &&
+      Number.isInteger(session.completedCheckInId) && session.completedCheckInId > 0 &&
+      session.completedAt && Number.isFinite(Date.parse(session.completedAt)) &&
+      session.latestDistanceMeters != null && Number.isFinite(session.latestDistanceMeters) && session.latestDistanceMeters >= 0
+    ) {
+      const checkIn: LocationCheckInListItem = {
+        id: session.completedCheckInId, placeId: session.placeId,
+        distanceMeters: session.latestDistanceMeters, observedAt: session.completedAt,
+        status: 'DWELL_VERIFIED',
+      };
+      // The server already issued this check-in ID. Display it immediately, even if
+      // the independent list endpoint is unavailable or has not caught up yet.
+      queryClient.setQueryData<InfiniteData<LocationCheckInPage>>(
+        checkInQueryKeys.infinite(20),
+        (previous) => {
+          if (previous?.pages.some(page => page.checkIns.some(item => item.id === checkIn.id))) return previous;
+          const first = previous?.pages[0] ?? { checkIns: [], page: 1, limit: 20, totalCount: 0, totalPages: 1, hasNext: false };
+          return {
+            pageParams: previous?.pageParams ?? [1],
+            pages: [{ ...first, checkIns: [checkIn, ...first.checkIns], totalCount: first.totalCount + 1 }, ...(previous?.pages.slice(1) ?? [])],
+          };
+        },
+      );
+    }
     await queryClient.invalidateQueries({ queryKey: checkInQueryKeys.all });
   }
 }

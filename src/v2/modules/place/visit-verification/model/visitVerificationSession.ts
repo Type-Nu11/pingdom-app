@@ -18,9 +18,9 @@ export function getActiveForegroundVisitVerificationSession() {
 }
 
 export function rememberActiveForegroundVisitVerificationSession(
-  session: VisitVerificationSession,
+  session: VisitVerificationSession | null,
 ) {
-  activeForegroundSession = isTerminalVisitVerificationSession(session) ? null : session;
+  activeForegroundSession = !session || isTerminalVisitVerificationSession(session) ? null : session;
 }
 
 export function clearActiveForegroundVisitVerificationSession() {

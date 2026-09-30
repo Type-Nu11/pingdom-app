@@ -14,6 +14,7 @@ export {
 } from './hooks/useSubmitVisitVerification';
 export { createPlaceReviewsQueryOptions, usePlaceReviews } from './hooks/usePlaceReviews';
 export { useVisitVerificationCandidates } from './hooks/useVisitVerificationCandidates';
+export { useForegroundVisitVerification } from './hooks/useForegroundVisitVerification';
 export { useLocationPermissionStatus } from './hooks/useLocationPermissionStatus';
 export { MAX_PHOTOS, MAX_REASONS, MAX_REVIEW_LENGTH, RECOMMEND_REASONS, serializeRecommendReasons, reviewPhotoPart, reviewSubmissionErrorKey, uniquePlaceIdsInServerOrder, selectCandidateImageUrls, toggleReason, appendPhotos, validateReviewDraft, assertReviewSubmissionDraft, requireReviewMediaId } from './model/visitVerification';
 export type { RecommendReason, SelectedPhoto, ReviewValidation } from './model/visitVerification';

@@ -72,7 +72,7 @@ test('required protected route flows return to Map and Profile/Settings are V2-r
     'Map', 'Map.PlaceDetail', 'CreateReservation', 'ReservationDetail', 'Map',
   ]);
   assert.deepEqual(PROTECTED_ROUTE_FLOWS.visitVerification, [
-    'Map', 'Map.PlaceDetail', 'VisitVerificationSession', 'VisitVerificationReview', 'Map',
+    'Map', 'Map.PlaceDetail', 'VisitVerificationPlaces', 'VisitVerificationReview', 'Map',
   ]);
 
   for (const route of ['Profile', 'Settings/Logout']) {
