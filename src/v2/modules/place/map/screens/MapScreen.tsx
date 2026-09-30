@@ -10,10 +10,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Alert,
+  Platform,
   StatusBar,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { registerAndroidBackOverride } from '../../../../shared/navigation/androidBackOverride';
 import { getBookmarkErrorMessage } from '../../exploration';
@@ -178,6 +180,7 @@ export default function MapScreen({
   const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused);
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const reservationNavigationLock = useRef(false);
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
@@ -374,8 +377,12 @@ export default function MapScreen({
 
   // Bottom-sheet coordinates already begin below the translucent status-bar layer on Android.
   // Align the expanded sheet with the bottom of the search header instead of leaving the
-  // category-overlay gap above it.
-  const expandedSheetTop = MAP_TOP_OVERLAY_METRICS.headerHeight + 2;
+  // category-overlay gap above it. On iOS the sheet shares the window origin with the
+  // header (which sits below the status bar), so the Figma layout — header, then an 8px
+  // gap — needs the top inset added or the expanded sheet covers the search bar.
+  const expandedSheetTop = Platform.OS === 'ios'
+    ? insets.top + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP
+    : MAP_TOP_OVERLAY_METRICS.headerHeight + 2;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
   // All bottom-navigation tabs share the map home resting height.
   // Place previews and search retain their separate detail layout.
