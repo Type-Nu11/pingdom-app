@@ -72,8 +72,9 @@ export async function pickProfileImage(): Promise<ProfileImageFile | null> {
   };
 }
 
-export function useProfile() {
+export function useProfile({ enabled = true }: { enabled?: boolean } = {}) {
   const query = useQuery({
+    enabled,
     queryFn: ({ signal }) => profileApi.getProfile(signal),
     queryKey: profileQueryKeys.me(),
   });
