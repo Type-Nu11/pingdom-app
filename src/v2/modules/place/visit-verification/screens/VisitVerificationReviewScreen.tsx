@@ -173,7 +173,7 @@ export default function VisitVerificationReviewScreen({
             {validation ? <InlineMessage accessibilityLiveRegion="assertive">{t(VALIDATION_KEYS[validation])}</InlineMessage> : null}
             {mutation.isError ? <InlineMessage accessibilityLiveRegion="assertive">{t(`visitVerification.errors.${reviewSubmissionErrorKey(mutation.error)}`)}</InlineMessage> : null}
           </Content>
-          <SubmitBar testID="visit-review-submit-bar"><Button disabled={mutation.isPending} fullWidth label={mutation.isPending ? t(mutation.phase === 'uploading' ? 'visitVerification.uploading' : 'visitVerification.submitting') : t('visitVerification.submit')} onPress={() => void submit()} shape="pill" size="onboarding" testID="visit-submit" /></SubmitBar>
+          <SubmitBar testID="visit-review-submit-bar"><Button disabled={mutation.isPending} fullWidth labelColor={theme.colors.textInverse} label={mutation.isPending ? t(mutation.phase === 'uploading' ? 'visitVerification.uploading' : 'visitVerification.submitting') : t('visitVerification.submit')} onPress={() => void submit()} shape="pill" size="onboarding" testID="visit-submit" /></SubmitBar>
         </KeyboardArea>
       ) : null}
     </Screen>

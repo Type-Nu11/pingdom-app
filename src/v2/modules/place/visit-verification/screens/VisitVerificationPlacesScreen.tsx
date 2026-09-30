@@ -12,6 +12,7 @@ import VisitPlaceCard from '../components/VisitPlaceCard';
 import { useVisitVerificationCandidates } from '../hooks/useVisitVerificationCandidates';
 import type { VisitVerificationCandidate } from '../hooks/useVisitVerificationCandidates';
 import { useLocationPermissionStatus } from '../hooks/useLocationPermissionStatus';
+import { sessionErrorPhase } from '../model/visitVerificationSession';
 
 type Props = {
   onBack: () => void;
@@ -65,7 +66,7 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
         <Body>
           <SectionTitle accessibilityRole="header">{t('visitVerification.recentVisits')}</SectionTitle>
           <List
-            ListHeaderComponent={checkInsQuery.isError && !checkInsQuery.isFetchNextPageError ? <ApiErrorState error={checkInsQuery.error} busy={checkInsQuery.isFetching} onRetry={() => checkInsQuery.refetch({ cancelRefetch: false })} /> : null}
+            ListHeaderComponent={checkInsQuery.isError && !checkInsQuery.isFetchNextPageError && sessionErrorPhase(checkInsQuery.error) !== 'no-place' ? <ApiErrorState error={checkInsQuery.error} busy={checkInsQuery.isFetching} onRetry={() => checkInsQuery.refetch({ cancelRefetch: false })} /> : null}
             data={candidates}
             keyExtractor={(item) => String(item.checkInId)}
             onEndReached={() => {

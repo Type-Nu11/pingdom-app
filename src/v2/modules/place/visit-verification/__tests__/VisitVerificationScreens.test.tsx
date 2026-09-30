@@ -439,6 +439,21 @@ test.each(['granted', 'denied'])('empty layout uses the real location warning as
   expect(view.queryByText('!')).toBeNull();
 });
 
+test('eligible visits open photo cards and review directly without starting a dwell countdown', async () => {
+  const onSelectPlace = jest.fn();
+  mockUseCandidates.mockReturnValue({
+    candidates: [{ ...place, placeId: 17, checkInId: 7, address: 'Address', distanceMeters: 123, imageUrls: ['https://example.com/a.jpg', 'https://example.com/b.jpg'], status: 'ready' }],
+    checkInsQuery: { isError: false, isLoading: false },
+  });
+  const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={onSelectPlace} />);
+  expect(view.getAllByTestId('visit-place-image')).toHaveLength(2);
+  expect(view.getByText('최근 방문')).toBeVisible();
+  expect(view.queryByTestId('visit-verification-session')).toBeNull();
+  expect(mockUseSessionController).not.toHaveBeenCalled();
+  await view.user.press(view.getByTestId('visit-place-7'));
+  expect(onSelectPlace).toHaveBeenCalledWith({ checkInId: 7, placeId: 17 });
+});
+
 test('next-page errors preserve ready cards and expose footer retry', async () => {
   const fetchNextPage = jest.fn();
   mockUseCandidates.mockReturnValue({ candidates: [{ ...place, placeId: 17, checkInId: 7, address: 'Long address', distanceMeters: 123, imageUrls: ['https://example.com/a.jpg', 'https://example.com/b.jpg'], status: 'ready' }], checkInsQuery: { isError: true, isFetchNextPageError: true, isLoading: false, fetchNextPage } });

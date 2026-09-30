@@ -18,7 +18,8 @@ import { UnsupportedFeatureScreen } from '../../v2/shared/components';
 import {
   VisitVerificationPlacesScreen,
   VisitVerificationReviewScreen,
-  VisitVerificationSessionScreen,
+  useForegroundVisitVerification,
+  useVisitVerificationCandidates,
 } from '../../v2/modules/place/visit-verification';
 import { AccountManagementScreen, SettingsDetailScreen, SETTINGS_DETAIL_IDS } from '../../v2/modules/user/settings';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../v2/modules/user/settings';
@@ -94,16 +95,12 @@ export function createProductionMainNavigator({
               }
             }}
             onOpenVisitVerification={() => navigation.navigate(
-              MAIN_ROUTES.VisitVerificationSession,
-              { mode: 'foreground' },
+              MAIN_ROUTES.VisitVerificationPlaces,
             )}
             onStartVisitVerification={(value) => {
               const placeId = parsePlaceId(value);
               if (placeId) {
-                navigation.navigate(MAIN_ROUTES.VisitVerificationSession, {
-                  mode: 'place',
-                  placeId,
-                });
+                navigation.navigate(MAIN_ROUTES.VisitVerificationPlaces);
               }
             }}
             onSignIn={() => void clearTokenSession()}
@@ -335,29 +332,14 @@ export function createProductionMainNavigator({
 
   const VisitVerificationSessionRouteScreen = ({
     navigation,
-    route,
   }: MainScreenProps<'VisitVerificationSession'>) => {
-    const commonProps = {
-      onBack: navigation.goBack,
-      onComplete: () => navigation.replace(MAIN_ROUTES.VisitVerificationPlaces),
-    };
-
-    return (
-      <V2ScreenBoundary>
-        {route.params.mode === 'foreground' ? (
-          <VisitVerificationSessionScreen mode="foreground" {...commonProps} />
-        ) : (
-          <VisitVerificationSessionScreen
-            mode="place"
-            placeId={route.params.placeId}
-            {...commonProps}
-          />
-        )}
-      </V2ScreenBoundary>
-    );
+    useEffect(() => { navigation.replace(MAIN_ROUTES.VisitVerificationPlaces); }, [navigation]);
+    return null;
   };
 
   const MainNavigator = () => (
+    <>
+    <ForegroundVisitVerification />
     <Stack.Navigator
       initialRouteName={MAIN_ROUTES.Map}
       screenOptions={{ headerShown: false }}
@@ -382,9 +364,16 @@ export function createProductionMainNavigator({
       <Stack.Screen name={MAIN_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.VisitVerificationSession} component={VisitVerificationSessionRouteScreen} />
     </Stack.Navigator>
+    </>
   );
 
   return { MainNavigator, MapRouteScreen, MyPageRouteScreen, ProfileEditRouteScreen, VerifiedPlacesRouteScreen, SettingsRouteScreen, AccountManagementRouteScreen, SettingsDetailRouteScreen, NotificationSettingsRouteScreen };
+}
+
+function ForegroundVisitVerification() {
+  useForegroundVisitVerification();
+  useVisitVerificationCandidates();
+  return null;
 }
 
 const MapRouteContainer = styled.View`

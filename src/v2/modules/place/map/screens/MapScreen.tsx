@@ -1,4 +1,5 @@
-import { MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
+import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
+import { createViewport } from '../selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
 import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
 import MapAssistantModal from '../assistant/components/MapAssistantModal';
@@ -82,7 +83,7 @@ import {
   mergeMapPreviewPlaces,
   shouldPresentMapSelection,
 } from '../selection/utils/mapPreviewSelection';
-import { createFocusedRecommendationMarker } from '../markers/utils/recommendationMarkers';
+import { createFocusedPlaceMarker } from '../markers/utils/recommendationMarkers';
 import { selectRecommendationClickPayload } from '../../exploration';
 import { selectMapExplorationPlaceIds } from '../selection/utils/mapExplorationPlaceIds';
 import { VisitVerificationMapCta } from '../../visit-verification';
@@ -259,6 +260,10 @@ export default function MapScreen({
     nationalTrendsQuery.isLoading,
     nationalTrendsQuery.refetch,
   ]);
+  const [viewportCenter, setViewportCenter] = useState(DEFAULT_MAP_CENTER);
+  const [mapZoomLevel, setMapZoomLevel] = useState(MAP_PREVIEW_ZOOM_LEVEL);
+  const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
+  const markerViewport = useMemo(() => createViewport(viewportCenter, recommendationRadiusKm, mapZoomLevel), [viewportCenter, recommendationRadiusKm, mapZoomLevel]);
   const {
     error: placesError,
     isLoading: placesLoading,
@@ -266,8 +271,7 @@ export default function MapScreen({
     markers: apiMarkers,
     places: apiPlaces,
     refetch: refetchPlaces,
-  } = usePlaces();
-  const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
+  } = usePlaces({}, env.featureFlags.placeList, markerViewport);
   const {
     appliedActivityIntent,
     appliedTravelPurposes,
@@ -302,7 +306,6 @@ export default function MapScreen({
     lat: number;
     lng: number;
   } | null>(null);
-  const [mapZoomLevel, setMapZoomLevel] = useState(MAP_PREVIEW_ZOOM_LEVEL);
   const reservationDiscoveryEnabled = mapSection === 'reservations'
     && Number.isFinite(userLat)
     && Number.isFinite(userLng);
@@ -639,7 +642,9 @@ export default function MapScreen({
         reviewState: selectedPlacePresentation.reviewState,
         roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
         reviews: selectedPlacePresentation.reviews.map((review) => ({
-          author: t(review.authorKey),
+          author: review.userId !== null && review.userId === profile?.id
+            ? profile.username?.trim() || t(review.authorKey)
+            : t(review.authorKey),
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
           tags: review.reasonKeys?.map((key) => t(key)) ?? review.tags,
@@ -655,7 +660,7 @@ export default function MapScreen({
         verifiedEvidenceCount: selectedPlacePresentation.verifiedEvidenceCount ?? undefined,
       },
     };
-  }, [selectedPlace, selectedPlacePresentation, t]);
+  }, [selectedPlace, selectedPlacePresentation, profile?.id, profile?.username, t]);
   useEffect(() => {
     if (
       content.type !== 'place-preview'
@@ -696,20 +701,16 @@ export default function MapScreen({
   }, [content.type, selectedPlace, visiblePlaces]);
   const mapMarkers = useMemo<MapMarker[]>(() => {
     const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
-    const recommendationPlaceIds = new Set(recommendationPlaces.map((place) => place.id));
-    const focusedRecommendationMarker = createFocusedRecommendationMarker(
+    const focusedPlaceMarker = createFocusedPlaceMarker(
       content.type === 'place-preview' ? mapSelectedPlace : null,
-      recommendationPlaceIds,
       liveMarkerIds,
     );
-    const visibleMarkerIds = new Set(liveMarkerIds);
-    if (focusedRecommendationMarker) visibleMarkerIds.add(focusedRecommendationMarker.id);
     const markers = [
       ...apiMarkers.map((marker) => ({
         ...marker,
         category: normalizePlaceCategory(marker.category),
       })),
-      ...(focusedRecommendationMarker ? [focusedRecommendationMarker] : []),
+      ...(focusedPlaceMarker ? [focusedPlaceMarker] : []),
     ];
 
     if (activeCategory === 'all') return markers;
@@ -720,7 +721,6 @@ export default function MapScreen({
     activeCategory,
     apiMarkers,
     content.type,
-    recommendationPlaces,
     mapSelectedPlace,
   ]);
   const visibleMapMarkers = useMemo(() => markersForSelectedPlace(
@@ -952,6 +952,11 @@ export default function MapScreen({
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
           markers={visibleMapMarkers}
+          onCameraIdle={(coordinate) => {
+            if (!Number.isFinite(coordinate.lat) || !Number.isFinite(coordinate.lng)) return;
+            setViewportCenter((previous) => Math.abs(previous.lat - coordinate.lat) < 0.0001 && Math.abs(previous.lng - coordinate.lng) < 0.0001
+              ? previous : { lat: coordinate.lat, lng: coordinate.lng });
+          }}
           onMarkerPress={handleMarkerPress}
           userLat={userLat}
           userLng={userLng}

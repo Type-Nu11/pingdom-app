@@ -2,8 +2,10 @@ import { useMemo } from 'react';
 import {
   getPlaceListRuntimeState,
   usePlaceList,
+  usePlaceMap,
+  type MapViewportParams,
 } from '../../exploration';
-import { toPlaceResults } from '../../map/selection/model/mapDiscovery';
+import { toPlaceResults, toViewportMarkers } from '../../map/selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
 import type { GetPlacesRequest } from '../../exploration/api/placeApi';
 import type { MapMarker } from '../../map/markers/model/placeMarker';
@@ -29,6 +31,7 @@ function toMapMarker(place: {
 export const usePlaces = (
   params: GetPlacesRequest = {},
   enabled = env.featureFlags.placeList,
+  viewport?: MapViewportParams,
 ) => {
   const queryParams = useMemo(() => ({
     limit: params.limit ?? 100,
@@ -49,8 +52,16 @@ export const usePlaces = (
     params.radiusKm,
     params.sort,
   ]);
-  const placesQuery = usePlaceList(queryParams, { enabled });
-  const places = useMemo(() => toPlaceResults(placesQuery.data).map((place) => ({
+  const placesQuery = usePlaceList(queryParams, { enabled: enabled && !viewport });
+  // The placeholder is only used by a disabled query for list consumers.
+  const mapQuery = usePlaceMap(viewport ?? { west: 0, south: 0, east: 0, north: 0, zoom: 0 }, { enabled: enabled && Boolean(viewport) });
+  const viewportMarkers = useMemo(() => toViewportMarkers(mapQuery.data), [mapQuery.data]);
+  const places = useMemo(() => viewport
+    ? viewportMarkers.flatMap((marker) => marker.placeId === null ? [] : [{
+        address: '', category: marker.category, distanceMeters: undefined,
+        id: marker.placeId, latitude: marker.lat, longitude: marker.lng, name: marker.name,
+      }])
+    : toPlaceResults(placesQuery.data).map((place) => ({
     address: place.address,
     category: place.category,
     distanceMeters: place.distanceMeters ?? undefined,
@@ -58,26 +69,31 @@ export const usePlaces = (
     latitude: place.coordinate.lat,
     longitude: place.coordinate.lng,
     name: place.name,
-  })), [placesQuery.data]);
+  })), [placesQuery.data, viewport, viewportMarkers]);
 
-  const markers = useMemo(() => places.map(toMapMarker), [places]);
+  const markers = useMemo(() => viewport ? viewportMarkers.map((marker): MapMarker => ({
+    category: normalizePlaceCategory(marker.category),
+    id: marker.placeId === null ? marker.id : String(marker.placeId),
+    lat: marker.lat, lng: marker.lng, markerType: marker.markerType,
+  })) : places.map(toMapMarker), [places, viewport, viewportMarkers]);
+  const activeQuery = viewport ? mapQuery : placesQuery;
   const status = getPlaceListRuntimeState({
     enabled,
-    isError: placesQuery.isError,
-    isLoading: placesQuery.isLoading,
+    isError: activeQuery.isError,
+    isLoading: activeQuery.isLoading,
     placeCount: places.length,
   });
 
   return {
     dataSource: env.apiMode,
     enabled,
-    error: placesQuery.error,
-    isError: placesQuery.isError,
-    isFetching: placesQuery.isFetching,
-    isLoading: placesQuery.isLoading,
+    error: activeQuery.error,
+    isError: activeQuery.isError,
+    isFetching: activeQuery.isFetching,
+    isLoading: activeQuery.isLoading,
     markers,
     places,
-    refetch: placesQuery.refetch,
+    refetch: activeQuery.refetch,
     status,
   };
 };

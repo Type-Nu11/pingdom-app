@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { placeQueryKeys } from '../../core';
 import { placeExplorationApi } from '../../exploration/api/placeExplorationApi';
 import { selectPlaceListParams, selectPlaceAutocompleteParams, selectMapViewportParams } from '../model/placeSearch';
@@ -45,6 +45,7 @@ export function createPlaceMapQueryOptions(
     queryFn: ({ signal }: { signal?: AbortSignal }) =>
       api.getMapViewport(contractParams, signal),
     queryKey: placeQueryKeys.map(contractParams),
+    placeholderData: keepPreviousData,
     staleTime: 15_000,
   };
 }

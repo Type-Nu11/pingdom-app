@@ -17,6 +17,7 @@ export type ButtonProps = Omit<PressableProps, 'children' | 'disabled' | 'style'
   disabled?: boolean;
   fullWidth?: boolean;
   label: string;
+  labelColor?: string;
   loading?: boolean;
   shape?: ButtonShape;
   size?: ButtonSize;
@@ -29,6 +30,7 @@ const Button = forwardRef<View, ButtonProps>(function Button(
     disabled = false,
     fullWidth = false,
     label,
+    labelColor,
     loading = false,
     onPressIn,
     onPressOut,
@@ -43,6 +45,7 @@ const Button = forwardRef<View, ButtonProps>(function Button(
   const [pressed, setPressed] = useState(false);
   const isDisabled = disabled || loading;
   const palette = getButtonPalette(theme, variant, pressed, isDisabled);
+  const contentColor = isDisabled ? palette.content : labelColor ?? palette.content;
 
   const handlePressIn = (event: GestureResponderEvent) => {
     setPressed(true);
@@ -71,9 +74,9 @@ const Button = forwardRef<View, ButtonProps>(function Button(
       onPressOut={handlePressOut}
     >
       {loading ? (
-        <ActivityIndicator color={palette.content} />
+        <ActivityIndicator color={contentColor} />
       ) : (
-        <Label $color={palette.content} $size={size}>{label}</Label>
+        <Label $color={contentColor} $size={size}>{label}</Label>
       )}
     </Container>
   );
