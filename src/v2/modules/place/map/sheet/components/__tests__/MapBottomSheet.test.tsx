@@ -4,6 +4,7 @@ import { Animated, Text, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
+import type { ReviewReasonKey } from '../../../../../../shared/api/reviewReasons';
 import { runTimingMotion } from '../../../../../../shared/motion';
 import type {
   RankedPlaceFeed,
@@ -285,6 +286,59 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
     expect(screen.getByText('영업시간 정보 없음')).toBeVisible();
+  });
+
+  test('정보 탭 리뷰 요약은 요약 태그를 보여주고 모두 보기를 누르면 이동 없이 전체 리뷰를 펼친다', async () => {
+    const selectedPlace = places[0];
+    const onDetailPress = jest.fn();
+    const review = (n: number, reasons: ReviewReasonKey[]) => ({
+      author: `작성자${n}`, createdAt: '2026-09-03', reasons, text: `리뷰 본문 ${n}`,
+    });
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700} mediumTranslateY={300} onBackHome={jest.fn()}
+        onCreateReservation={jest.fn()} onDetailPress={onDetailPress}
+        onFilterPress={jest.fn()} onGoNowPress={jest.fn()} onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()} onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)} panHandlers={{} as GestureResponderHandlers}
+        places={places} previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '',
+            reviewCount: 4, reviewState: 'ready',
+            reviews: [
+              review(1, ['delicious', 'photoSpot', 'kind', 'clean']),
+              review(2, []),
+              review(3, ['parking']),
+              review(4, ['easyToFind', 'multilingual']),
+            ],
+          },
+        }}
+        recommendationPlaces={[]} recommendationsState="ready"
+        selectedPlace={selectedPlace} sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(0)} snapPoint="expanded"
+      />,
+      { language: 'ko' },
+    );
+    expect(screen.getByText('리뷰 본문 1')).toBeVisible();
+    expect(screen.getByText('리뷰 본문 3')).toBeVisible();
+    expect(screen.queryByText('리뷰 본문 4')).not.toBeOnTheScreen();
+    expect(screen.getByText('맛있어요')).toBeVisible();
+    expect(screen.getByText('+3')).toBeVisible();
+    expect(screen.queryByText('사진 찍기 좋아요')).not.toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByText('리뷰 모두 보기'));
+    expect(screen.getByText('리뷰 본문 4')).toBeVisible();
+    expect(screen.getByText('사진 찍기 좋아요')).toBeVisible();
+    expect(screen.getByText('매장이 깨끗해요')).toBeVisible();
+    expect(screen.queryByText('+3')).not.toBeOnTheScreen();
+    expect(screen.getByText('리뷰 접기')).toBeVisible();
+    expect(onDetailPress).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByText('리뷰 접기'));
+    expect(screen.queryByText('리뷰 본문 4')).not.toBeOnTheScreen();
   });
 
   test('리뷰 탭은 추천 이유가 있는 리뷰에만 전체 태그를 보여주고 없는 리뷰에는 빈 영역을 만들지 않는다', async () => {

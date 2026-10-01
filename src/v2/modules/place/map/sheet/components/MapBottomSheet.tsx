@@ -1621,6 +1621,101 @@ const PreviewContent = ({
   );
 };
 
+type DetailReview = NonNullable<MapPreviewFallbackContent['reviews']>[number];
+
+const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
+  onOpenImages?: (urls: string[], index: number) => void;
+  placeName: string;
+  review: DetailReview;
+  variant: 'full' | 'summary';
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+
+  return (
+    <View style={styles.detailReviewItem}>
+      <View style={styles.detailReviewerRow}>
+        <ReviewerAvatar name={review.author} url={review.avatarUrl} />
+        <View style={styles.detailReviewBody}>
+          <AppText style={styles.detailReviewerName}>{review.author}</AppText>
+          <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
+        </View>
+      </View>
+      <AppText
+        ellipsizeMode="tail"
+        numberOfLines={variant === 'summary' ? 2 : undefined}
+        style={styles.detailReviewText}
+      >
+        {review.text}
+      </AppText>
+      {review.imageUrls?.length ? (
+        <View style={styles.detailReviewImageGrid}>
+          {review.imageUrls.map((url, photoIndex) => (
+            <Pressable
+              accessibilityLabel={t('map.detail.imageDetail', { count: photoIndex + 1, name: placeName })}
+              accessibilityRole="button"
+              key={`${url}-${photoIndex}`}
+              onPress={onOpenImages
+                ? () => onOpenImages(review.imageUrls ?? [], photoIndex)
+                : undefined}
+              style={styles.detailReviewImageCell}
+            >
+              <PreviewArtwork imageUrl={url} />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      {review.reasons.length > 0 ? (
+        <View style={styles.detailReviewTags}>
+          <ReviewFeatureTags reasons={review.reasons} variant={variant} />
+        </View>
+      ) : null}
+    </View>
+  );
+};
+
+const REVIEW_SUMMARY_COUNT = 3;
+
+/** Info-tab review preview; "view all" expands the full reviews in place instead of navigating. */
+const DetailReviewSummary = ({ count, onOpenImages, placeName, reviews }: {
+  count: number;
+  onOpenImages?: (urls: string[], index: number) => void;
+  placeName: string;
+  reviews: readonly DetailReview[];
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const [isExpanded, setIsExpanded] = useState(false);
+  if (reviews.length === 0) return null;
+  const visibleReviews = isExpanded ? reviews : reviews.slice(0, REVIEW_SUMMARY_COUNT);
+  const label = t(isExpanded ? 'map.detail.collapseReviews' : 'map.detail.viewAllReviews');
+
+  return (
+    <View style={styles.detailReviewSection} testID="map-detail-review-summary">
+      <AppText style={styles.detailSectionTitle}>{t('map.detail.reviewCount', { count })}</AppText>
+      {visibleReviews.map((review, index) => (
+        <DetailReviewItem
+          key={`${review.author}-${review.createdAt}-${index}`}
+          onOpenImages={onOpenImages}
+          placeName={placeName}
+          review={review}
+          variant={isExpanded ? 'full' : 'summary'}
+        />
+      ))}
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isExpanded }}
+        onPress={() => setIsExpanded((current) => !current)}
+        style={({ pressed }) => [styles.detailReviewMore, pressed && styles.pressed]}
+        testID="map-detail-review-more"
+      >
+        <AppText style={styles.detailReviewMoreText}>{label}</AppText>
+      </Pressable>
+    </View>
+  );
+};
+
 type PlaceDetailTab = 'info' | 'reviews';
 
 const ExpandedPlaceContent = ({
@@ -1905,6 +2000,14 @@ const ExpandedPlaceContent = ({
             </View>
           ) : null}
 
+          {fallbackContent?.reviewState === 'ready' && fallbackContent.reviews?.length ? (
+            <DetailReviewSummary
+              count={fallbackContent.reviewCount ?? fallbackContent.reviews.length}
+              onOpenImages={onOpenImages}
+              placeName={place.name}
+              reviews={fallbackContent.reviews}
+            />
+          ) : null}
         </View>
       ) : (
         <View>
@@ -1983,41 +2086,13 @@ const ExpandedPlaceContent = ({
             ) : fallbackContent?.reviewState === 'loading' ? (
               <AppText accessibilityLiveRegion="polite" style={styles.detailEmptyText}>{t('map.detail.reviewLoading')}</AppText>
             ) : fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
-              <View key={`${review.author}-${review.createdAt}-${index}`} style={styles.detailReviewItem}>
-                <View style={styles.detailReviewerRow}>
-                  <ReviewerAvatar name={review.author} url={review.avatarUrl} />
-                  <View style={styles.detailReviewBody}>
-                    <AppText style={styles.detailReviewerName}>{review.author}</AppText>
-                    <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
-                  </View>
-                </View>
-                <AppText style={styles.detailReviewText}>{review.text}</AppText>
-                {review.imageUrls?.length ? (
-                  <View style={styles.detailReviewImageGrid}>
-                    {review.imageUrls.map((url, photoIndex) => (
-                      <Pressable
-                        accessibilityLabel={t('map.detail.imageDetail', {
-                          count: photoIndex + 1,
-                          name: place.name,
-                        })}
-                        accessibilityRole="button"
-                        key={`${url}-${photoIndex}`}
-                        onPress={onOpenImages
-                          ? () => onOpenImages(review.imageUrls ?? [], photoIndex)
-                          : undefined}
-                        style={styles.detailReviewImageCell}
-                      >
-                        <PreviewArtwork imageUrl={url} />
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : null}
-                {review.reasons.length > 0 ? (
-                  <View style={styles.detailReviewTags}>
-                    <ReviewFeatureTags reasons={review.reasons} variant="full" />
-                  </View>
-                ) : null}
-              </View>
+              <DetailReviewItem
+                key={`${review.author}-${review.createdAt}-${index}`}
+                onOpenImages={onOpenImages}
+                placeName={place.name}
+                review={review}
+                variant="full"
+              />
             )) : (
                 <AppText style={styles.detailEmptyText}>{t('map.detail.reviewEmpty')}</AppText>
               )}
@@ -2524,6 +2599,15 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   detailReviewPhotos: { columnGap: 10, paddingTop: 12 },
   detailReviewSection: { borderBottomColor: colors.border, borderBottomWidth: 1, padding: 16 },
   detailReviewTags: { paddingTop: 10 },
+  detailReviewMore: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 20,
+    height: 48,
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  detailReviewMoreText: { color: colors.textStrong, fontSize: 14, fontWeight: '600' },
   detailReviewText: { color: colors.text, fontSize: 14, lineHeight: 21, marginTop: 10 },
   detailReviewTitle: { color: colors.textStrong, fontSize: 15, fontWeight: '900' },
   detailReviewerAvatar: {
