@@ -191,6 +191,8 @@ test('review UI caps local photos and reasons without blocking submission for lo
     await view.user.press(view.getByTestId(`visit-reason-${reason}`));
   }
   expect(view.getByTestId('visit-reason-photoSpot')).toBeDisabled();
+  expect(view.getByText('최대 5개까지 선택할 수 있어요')).toBeVisible();
+  expect(view.getByText('5/5개 선택됨')).toBeVisible();
   await view.user.type(view.getByTestId('visit-review-input'), '좋았어요.');
   await view.user.press(view.getByTestId('visit-submit'));
   expect(mutateAsync).toHaveBeenCalledWith({
