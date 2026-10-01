@@ -10,7 +10,9 @@ import type { Profile } from '../model/profile.types';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
 
 jest.mock('expo-image-picker', () => ({
+  launchCameraAsync: jest.fn(),
   launchImageLibraryAsync: jest.fn(),
+  requestCameraPermissionsAsync: jest.fn(),
   requestMediaLibraryPermissionsAsync: jest.fn(),
 }));
 
@@ -26,6 +28,20 @@ const PROFILE: Profile = {
 
 function alertMessages(spy: jest.SpyInstance) {
   return spy.mock.calls.map((call) => call[0] as string);
+}
+
+// The photo source picker is an Alert; pick one of its buttons the way a user would.
+async function chooseAvatarOption(
+  user: ReturnType<typeof import('@testing-library/react-native').userEvent.setup>,
+  alertSpy: jest.SpyInstance,
+  label: string,
+) {
+  await user.press(await screen.findByRole('button', { name: '프로필 이미지 변경' }));
+  const sheet = [...alertSpy.mock.calls].reverse().find((call) => call[0] === '프로필 사진 변경');
+  const button = (sheet?.[2] as { onPress?: () => void; text: string }[]).find(
+    (option) => option.text === label,
+  );
+  await act(async () => { button?.onPress?.(); });
 }
 
 async function enterPasswordChange(user: ReturnType<typeof import('@testing-library/react-native').userEvent.setup>) {
@@ -344,14 +360,14 @@ describe('ProfileEditScreen', () => {
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
     permission.mockResolvedValueOnce({ granted: false } as never);
-    await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
     expect(alertMessages(alertSpy)).toContain(
       '프로필 이미지를 변경하려면 사진 접근 권한이 필요합니다. 설정에서 허용해주세요.',
     );
 
     permission.mockResolvedValueOnce({ granted: true } as never);
     launchPicker.mockResolvedValueOnce({ assets: null, canceled: true } as never);
-    await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
     expect(changeImage).not.toHaveBeenCalled();
   });
 
@@ -367,7 +383,7 @@ describe('ProfileEditScreen', () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
-    await user.press(await screen.findByRole('button', { name: '프로필 이미지 변경' }));
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
 
     expect(changeImage).not.toHaveBeenCalled();
     expect(alertMessages(alertSpy)).toContain(
@@ -391,7 +407,7 @@ describe('ProfileEditScreen', () => {
 
     await screen.findByTestId('v2-profile-edit-avatar-image');
     changeImage.mockRejectedValueOnce(new Error('upload failed'));
-    await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
     await waitFor(() => expect(alertMessages(alertSpy)).toContain(
       '프로필 이미지를 변경하지 못했습니다. 다시 시도해주세요.',
     ));
@@ -403,7 +419,7 @@ describe('ProfileEditScreen', () => {
       currentProfile = { ...currentProfile, profileImageUrl: 'https://cdn/new.jpg' };
       return { profileImageUrl: currentProfile.profileImageUrl };
     });
-    await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
 
     await waitFor(() => expect(screen.getByTestId('v2-profile-edit-avatar-image').props.source.uri)
       .toBe('https://cdn/new.jpg'));

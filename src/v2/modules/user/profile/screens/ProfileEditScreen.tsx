@@ -8,6 +8,7 @@ import styled, { useTheme } from 'styled-components/native';
 import { getUsernameErrorMessage, getPasswordErrorMessage } from '../model/profileErrorPresentation';
 import {
   ProfileImagePermissionError,
+  type ProfileImageSource,
   SaveProfileError,
   useProfile,
   useSaveProfile,
@@ -40,6 +41,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   // the user has already typed is not overwritten by a later refetch.
   const hasSeededUsername = useRef(profile !== null);
   const hasEditedUsername = useRef(false);
+  const avatarSheetOpen = useRef(false);
   const backActionLock = useRef(false);
   const isMounted = useRef(true);
   const saveActionLock = useRef(false);
@@ -72,9 +74,9 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     setUsername(value);
   };
 
-  const handleEditAvatar = async () => {
+  const startAvatarChange = async (source: ProfileImageSource) => {
     try {
-      await changeProfileImage.change('library');
+      await changeProfileImage.change(source);
     } catch (error) {
       if (!isMounted.current) return;
       if (error instanceof ProfileImagePermissionError) {
@@ -83,6 +85,29 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
       }
       Alert.alert(t('myPage.profileEdit.avatarChangeFailed'));
     }
+  };
+
+  const handleEditAvatar = () => {
+    if (avatarSheetOpen.current || changeProfileImage.isPending) return;
+    avatarSheetOpen.current = true;
+    const closeSheet = () => { avatarSheetOpen.current = false; };
+
+    Alert.alert(
+      t('myPage.profileEdit.avatarSheetTitle'),
+      undefined,
+      [
+        {
+          onPress: () => { closeSheet(); void startAvatarChange('library'); },
+          text: t('myPage.profileEdit.avatarFromLibrary'),
+        },
+        {
+          onPress: () => { closeSheet(); void startAvatarChange('camera'); },
+          text: t('myPage.profileEdit.avatarFromCamera'),
+        },
+        { onPress: closeSheet, style: 'cancel', text: t('myPage.profileEdit.avatarCancel') },
+      ],
+      { cancelable: true, onDismiss: closeSheet },
+    );
   };
 
   const handleSave = async () => {
@@ -211,7 +236,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
               disabled: changeProfileImage.isPending,
             }}
             disabled={changeProfileImage.isPending}
-            onPress={() => void handleEditAvatar()}
+            onPress={handleEditAvatar}
             testID="v2-profile-edit-avatar-action"
           >
             <ProfileAvatar
