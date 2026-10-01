@@ -10,6 +10,9 @@
   - 수정 파일: `src/features/onboarding/SelectLanguageScreen.tsx`, `src/features/onboarding/types.ts`.
   - 변경 내용: 하드코딩된 `'en' | 'ko'` 목록을 V2 `supportedLanguages`/`SupportedLanguage`에서 파생하도록 바꾼 것뿐이다.
     V1 → V2 import 방향이며(V2 → V1 import 없음), 이후 언어를 추가해도 V1 수정이 필요 없다.
+  - **해소(#396)**: 언어 선택 화면을 V2 `src/v2/modules/onboarding/language`로 이관했다. V1
+    `SelectLanguageScreen.tsx`는 삭제했고 `types.ts`의 `Language`·`OnboardingData`도 제거했다.
+    V1 `OnboardingFlow`는 V2 화면을 조립만 하며, 흐름 자체의 제거는 #139가 맡는다.
 - 제외 범위: 일본어 외 언어, 서버 동적 콘텐츠(장소명·리뷰 태그 등), AI 응답·STT/TTS/Wake Word
   (일본어 UI에서 음성 입력 locale은 기존대로 `en-US`), 번역팩, 지도 SDK.
 

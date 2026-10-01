@@ -51,7 +51,7 @@ describe('SettingsScreen', () => {
     await renderSettings();
 
     expect(screen.getByTestId('v2-settings-screen')).toBeVisible();
-    expect(screen.getByText('설정')).toHaveStyle({ fontFamily: 'Pretendard' });
+    expect(screen.getByText('설정')).toHaveStyle({ fontFamily: expect.stringMatching(/^Pretendard/) });
     expect(screen.getByText('계정')).toBeVisible();
     expect(screen.getByText('기록 · 장소')).toBeVisible();
     expect(screen.getByText('개인정보 · 위치')).toBeVisible();
@@ -85,14 +85,14 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('환경설정')).toBeVisible();
     expect(screen.getByText('언어')).toBeVisible();
     expect(screen.getByText('한국어')).toBeVisible();
-    expect(screen.queryByText('영어')).not.toBeOnTheScreen();
+    expect(screen.queryByText('English')).not.toBeOnTheScreen();
 
     await view.user.press(screen.getByText('언어'));
 
     expect(screen.getByTestId('v2-language-settings-screen')).toBeVisible();
     expect(screen.getByText('언어 설정')).toBeVisible();
     expect(screen.getByRole('radio', { name: '한국어, 선택됨' })).toBeSelected();
-    expect(screen.getByRole('radio', { name: '영어' })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: 'English' })).not.toBeSelected();
   });
 
   test('현재 표시 모드를 보여주고 기존 내부 탐색에 appearance 페이지만 연결한다', async () => {
@@ -115,7 +115,7 @@ describe('SettingsScreen', () => {
       />,
     );
 
-    await view.user.press(screen.getByRole('radio', { name: '영어' }));
+    await view.user.press(screen.getByRole('radio', { name: 'English' }));
     expect(onSelectLanguage).toHaveBeenCalledWith('en');
 
     await view.user.press(screen.getByLabelText('뒤로가기'));
@@ -129,7 +129,7 @@ describe('SettingsScreen', () => {
     );
 
     expect(screen.getAllByRole('radio').map((radio) => radio.props.accessibilityLabel))
-      .toEqual(['한국어, 선택됨', '영어', '日本語']);
+      .toEqual(['한국어, 선택됨', 'English', '日本語']);
     await view.user.press(screen.getByRole('radio', { name: '日本語' }));
     expect(onSelectLanguage).toHaveBeenCalledWith('ja');
   });
@@ -155,7 +155,9 @@ describe('SettingsScreen', () => {
 
     expect(screen.getByText('言語')).toBeVisible();
     expect(screen.getByRole('radio', { name: '日本語, 選択中' })).toBeSelected();
-    expect(screen.getByRole('radio', { name: '韓国語' })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: 'English' })).not.toBeSelected();
+    expect(screen.queryByText('韓国語')).not.toBeOnTheScreen();
   });
 
   test('알림 하위 화면은 서버 설정을 읽고 해당 field만 변경한다', async () => {

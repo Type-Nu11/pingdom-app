@@ -11,7 +11,8 @@ describe('V2 typography boundary', () => {
 
     await render(<SharedComponents.Text>default text</SharedComponents.Text>);
 
-    expect(screen.getByText('default text')).toHaveStyle({ fontFamily: 'Pretendard' });
+    // iOS (the Jest platform) resolves Pretendard to its Regular named instance.
+    expect(screen.getByText('default text')).toHaveStyle({ fontFamily: 'PretendardStdVariable-Regular' });
   });
 
   test('배열과 styled-components 호출자 fontFamily가 기본값보다 우선한다', async () => {
@@ -41,7 +42,7 @@ describe('V2 typography boundary', () => {
       <SharedComponents.TextInput placeholder="placeholder" value="typed value" />,
     );
 
-    expect(screen.getByPlaceholderText('placeholder')).toHaveStyle({ fontFamily: 'Pretendard' });
+    expect(screen.getByPlaceholderText('placeholder')).toHaveStyle({ fontFamily: 'PretendardStdVariable-Regular' });
   });
 
   test('여러 번 mount해도 React 전역 생성 함수를 변경하지 않는다', async () => {

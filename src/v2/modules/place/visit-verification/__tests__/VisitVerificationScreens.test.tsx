@@ -92,7 +92,7 @@ test('floating CTA uses the Figma 120 by 48 pill without an Android drop shadow'
 
 test.each(['LIGHT', 'DARK'] as const)('floating CTA keeps bright semibold text on a translucent %s surface', async (appearancePreference) => {
   const view = await renderWithProviders(<VisitVerificationMapCta label="검증하기" onPress={jest.fn()} />, { appearancePreference });
-  expect(view.getByText('검증하기')).toHaveStyle({ color: '#F6F6F7', fontSize: 16, fontWeight: '600', lineHeight: 21 });
+  expect(view.getByText('검증하기')).toHaveStyle({ color: '#F6F6F7', fontSize: 16, fontFamily: 'PretendardStdVariable-SemiBold', lineHeight: 21 });
   expect(view.getByTestId('visit-verification-map-cta')).toHaveStyle({
     backgroundColor: appearancePreference === 'LIGHT' ? 'rgba(255, 25, 86, 0.56)' : 'rgba(255, 25, 86, 0.72)',
   });
@@ -110,7 +110,7 @@ test('recent visits render the normal empty state', async () => {
   expect(view.getByTestId('visit-verification-empty')).toBeVisible();
   expect(view.getByTestId('visit-verification-empty-icon')).toBeVisible();
   expect(view.getByText('근처에 검증할 장소가 없어요!')).toHaveStyle({
-    fontFamily: 'Pretendard',
+    fontFamily: expect.stringMatching(/^Pretendard/),
   });
   expect(view.getByText('현재 위치에서 검증할 수 있는 장소를 찾지 못했어요\n현재 위치를 다시 확인해주세요')).toBeVisible();
   expect(view.queryByRole('header', { name: '검증하기' })).toBeNull();
@@ -163,7 +163,7 @@ test('ready recent visits pass actual place and check-in IDs', async () => {
   });
   const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={onSelectPlace} />);
   expect(view.getByTestId('visit-place-image-fallback')).toBeVisible();
-  expect(view.getByRole('header', { name: '검증하기' })).toHaveStyle({ fontSize: 18, fontWeight: '500', lineHeight: 23.4 });
+  expect(view.getByRole('header', { name: '검증하기' })).toHaveStyle({ fontSize: 18, fontFamily: 'PretendardStdVariable-Medium', lineHeight: 23.4 });
   expect(view.getByText('최근 방문')).toHaveStyle({ marginTop: 16, marginBottom: 16, marginLeft: 24, marginRight: 24 });
   expect(view.getByTestId('visit-place-7001')).toHaveStyle({ marginBottom: 16, paddingBottom: 16 });
   expect(view.getByText(place.name).props.numberOfLines).toBe(1);
@@ -181,7 +181,7 @@ test('review UI caps local photos and reasons without blocking submission for lo
 
   expect(view.getByTestId('visit-photo-picker-icon')).toBeVisible();
   expect(view.getByTestId('visit-review-input').props.placeholderTextColor).toBe(lightTheme.colors.textMuted);
-  expect(view.getByTestId('visit-review-input')).toHaveStyle({ fontFamily: 'Pretendard' });
+  expect(view.getByTestId('visit-review-input')).toHaveStyle({ fontFamily: expect.stringMatching(/^Pretendard/) });
   for (const reason of ['kind', 'easyToFind', 'delicious', 'multilingual', 'parking', 'photoSpot', 'clean']) {
     expect(view.getByTestId(`visit-reason-icon-${reason}`, { includeHiddenElements: true })).toBeTruthy();
   }
@@ -422,7 +422,7 @@ test.each(['ko','en'] as const)('real submission hook retains draft through uplo
 test.each(['LIGHT', 'DARK'] as const)('review preserves Figma header and CTA in %s', async appearancePreference => {
   const view = await renderWithProviders(<VisitVerificationReviewScreen onBack={jest.fn()} onComplete={jest.fn()} placeId={17} />, { language: 'ko', appearancePreference });
   expect(view.getByTestId('visit-review-header')).toHaveStyle({ height: 44 });
-  expect(view.getByRole('header')).toHaveStyle({ fontSize: 18, fontWeight: '500', lineHeight: 23.4 });
+  expect(view.getByRole('header')).toHaveStyle({ fontSize: 18, fontFamily: 'PretendardStdVariable-Medium', lineHeight: 23.4 });
   expect(view.getByRole('button', { name: '뒤로' })).toHaveStyle({ width: 44, height: 44 });
   expect(view.getByTestId('visit-submit')).toHaveStyle({ minHeight: 64 });
   expect(view.getByTestId('visit-review-submit-bar')).toHaveStyle({ paddingLeft: 24, paddingRight: 24, paddingTop: 0, paddingBottom: 16 });
@@ -434,7 +434,7 @@ test.each(['granted', 'denied'])('empty layout uses the real location warning as
   mockUseCandidates.mockReturnValue({ candidates: [], checkInsQuery: { isError: false, isLoading: false } });
   const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={jest.fn()} />);
   expect(view.getByTestId('visit-empty-circle')).toHaveStyle({ width: 96, height: 96, marginBottom: 16 });
-  expect(view.getByTestId('visit-empty-title')).toHaveStyle({ fontSize: 20, fontWeight: '700', lineHeight: 26 });
+  expect(view.getByTestId('visit-empty-title')).toHaveStyle({ fontSize: 20, fontFamily: 'PretendardStdVariable-Bold', lineHeight: 26 });
   expect(view.getByRole('button', { name: '돌아가기' })).toHaveStyle({ minHeight: 64 });
   expect(view.queryByText('!')).toBeNull();
 });

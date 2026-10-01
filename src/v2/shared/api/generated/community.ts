@@ -191,6 +191,31 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description 게시글 작성자 표시 정보 */
+        Author: {
+            /**
+             * Format: int64
+             * @description 게시글 작성자 ID
+             */
+            authorId?: number;
+            /** @description 작성자 표시 이름. 탈퇴 또는 조회 불가 시 대체 이름 */
+            authorName?: string;
+            /** @description 프로필 이미지 URL. 없거나 탈퇴한 경우 null */
+            profileImageUrl?: string;
+        };
+        /** @description 게시글 카테고리 표시 정보 */
+        Category: {
+            /**
+             * @description 카테고리 식별자
+             * @example TRAVEL
+             */
+            categoryId?: string;
+            /**
+             * @description 카테고리 표시 이름
+             * @example 여행
+             */
+            categoryName?: string;
+        };
         /** @description 커뮤니티 카테고리 목록 항목 */
         CommunityCategoryItem: {
             /**
@@ -364,6 +389,13 @@ export interface components {
             content?: string;
             /** @description 연결 장소 목록 */
             places?: components["schemas"]["Place"][];
+            author?: components["schemas"]["Author"];
+            category?: components["schemas"]["Category"];
+            /**
+             * Format: date-time
+             * @description 게시글 작성 시각
+             */
+            createdAt?: string;
         };
         /** @description 커뮤니티 게시글 좋아요 상태 응답 */
         CommunityPostLikeResponse: {
@@ -521,7 +553,10 @@ export interface components {
             /** Format: date-time */
             operatingStatusCheckedAt: string | null;
             currentlyOperating: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description 현재 영업 여부를 평가한 UTC 기준 시각. 영업 일정은 Asia/Seoul 기준으로 해석합니다.
+             */
             currentlyOperatingCheckedAt: string;
             regularHours: components["schemas"]["PlaceRegularOperatingHourResponse"][];
             operatingExceptions: components["schemas"]["PlaceOperatingExceptionResponse"][];
@@ -566,10 +601,11 @@ export interface components {
             communityViewCount: number;
             merchantOwner: components["schemas"]["MerchantOwnerPublicResponse"] | null;
         };
-        /** @description 특정 날짜의 휴무 또는 대체 영업 시간 */
+        /** @description Asia/Seoul 기준 특정 날짜의 휴무 또는 대체 영업 시간 */
         PlaceOperatingExceptionResponse: {
             /**
              * Format: date
+             * @description Asia/Seoul 기준 예외 날짜
              * @example 2026-08-15
              */
             date?: string;
@@ -605,33 +641,38 @@ export interface components {
             updatedAt: string;
             visibleNow: boolean;
         };
-        /** @description 하루 중 장소 운영 시간대 */
+        /** @description Asia/Seoul 기준 하루 중 장소 운영 시간대 */
         PlaceOperatingTimeRangeResponse: {
             /**
              * Format: time
+             * @description Asia/Seoul 기준 시작 시각(포함)
              * @example 09:00:00
              */
             opensAt?: string;
             /**
              * Format: time
+             * @description Asia/Seoul 기준 종료 시각(제외)
              * @example 18:00:00
              */
             closesAt?: string;
         };
-        /** @description 요일별 정규 영업 시간대 */
+        /** @description Asia/Seoul 기준 요일별 정규 영업 시간대 */
         PlaceRegularOperatingHourResponse: {
             /**
+             * @description Asia/Seoul 기준 요일
              * @example MONDAY
              * @enum {string}
              */
             dayOfWeek?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
             /**
              * Format: time
+             * @description Asia/Seoul 기준 시작 시각(포함)
              * @example 09:00:00
              */
             opensAt?: string;
             /**
              * Format: time
+             * @description Asia/Seoul 기준 종료 시각(제외)
              * @example 18:00:00
              */
             closesAt?: string;

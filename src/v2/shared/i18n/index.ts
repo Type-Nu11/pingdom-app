@@ -16,7 +16,7 @@ import {
 } from './language';
 
 export const LANGUAGE_STORAGE_KEY = 'language';
-export { DEFAULT_LANGUAGE, detectDeviceLanguage, isSupportedLanguage, normalizeSupportedLanguage, resolvePreferredLanguage } from './language';
+export { DEFAULT_LANGUAGE, detectDeviceLanguage, getLanguageEndonym, isSupportedLanguage, normalizeSupportedLanguage, resolvePreferredLanguage } from './language';
 
 export const i18n = createInstance();
 

@@ -11,6 +11,9 @@ export const lightColors = {
   surfaceElevated: '#FFFFFF', surfaceMuted: '#F6F6F7', surfacePressed: '#EDEDEF', text: '#3B3B40',
   textAlternative: '#5E5E66', textDisabled: '#9C9CA3', textInverse: '#FFFFFF', textMuted: '#75757F',
   textSecondary: '#5E5E66', textStrong: '#0C0C0D', warning: '#C77800', warningSoft: '#FFF5E5',
+  // Figma variables with no equivalent semantic role above (light values).
+  fillAlternative: '#E4E4E5', fillNeutral: '#F2F2F3', fillSupport: '#FFFFFF', labelNeutral: '#3B3B40', labelNormal: '#0C0C0D',
+  labelStrong: '#000000', lineAlternative: '#F6F6F7', lineNeutral: '#F2F2F3', secondaryAlternative: '#D1D4D5', secondaryNormal: '#BFC1C1',
 } as const;
 
 export type ThemeColors = { [Key in keyof typeof lightColors]: string };
@@ -29,6 +32,8 @@ export const darkColors = {
   surfaceElevated: '#26262B', surfaceMuted: '#1C1C20', surfacePressed: '#2E2E33', text: '#F4F4F5',
   textAlternative: '#A9A9B2', textDisabled: '#3C3C41', textInverse: '#FFFFFF', textMuted: '#85858F',
   textSecondary: '#A9A9B2', textStrong: '#FFFFFF', warning: '#FFD43B', warningSoft: '#3A2A16',
+  fillAlternative: '#2E2E33', fillNeutral: '#222226', fillSupport: '#26262B', labelNeutral: '#D2D2D6', labelNormal: '#F4F4F5',
+  labelStrong: '#FFFFFF', lineAlternative: '#202024', lineNeutral: '#2A2A2F', secondaryAlternative: '#3E4043', secondaryNormal: '#55575A',
 } as const satisfies ThemeColors;
 
 // Transitional alias while fixed light consumers are migrated to useTheme.

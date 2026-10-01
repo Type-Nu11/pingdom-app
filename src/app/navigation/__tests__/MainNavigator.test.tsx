@@ -18,9 +18,13 @@ jest.mock('../../../v2/modules/place/map/screens/MapScreen', () => {
   return {
     __esModule: true,
     default: ({
+      onOpenCommunityPost,
+      onOpenCommunityWrite,
       onOpenVisitVerification,
       onStartVisitVerification,
     }: {
+      onOpenCommunityPost?: (postId: number) => void;
+      onOpenCommunityWrite?: (categoryId?: string) => void;
       onOpenVisitVerification: () => void;
       onStartVisitVerification: (placeId: number) => void;
     }) => ReactLibrary.createElement(
@@ -33,6 +37,14 @@ jest.mock('../../../v2/modules/place/map/screens/MapScreen', () => {
       ReactLibrary.createElement(
         ReactNative.Pressable,
         { onPress: () => onStartVisitVerification(17), testID: 'selected-place-verification-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: () => onOpenCommunityPost?.(42), testID: 'community-post-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: () => onOpenCommunityWrite?.('PLACE'), testID: 'community-write-entry' },
       ),
     ),
   };
@@ -189,6 +201,20 @@ describe('현재 지도 경계', () => {
     expect(navigation.navigate).toHaveBeenCalledWith(
       MAIN_ROUTES.VisitVerificationPlaces,
     );
+  });
+
+  test('커뮤니티 시트의 게시글과 글쓰기 진입을 production route로 연결한다', async () => {
+    const i18n = await createTestI18n();
+    const view = await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { i18n },
+    );
+
+    await view.user.press(screen.getByTestId('community-post-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.CommunityDetail, { postId: 42 });
+
+    await view.user.press(screen.getByTestId('community-write-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.CommunityWrite, { initialCategoryId: 'PLACE' });
   });
 
   test('선택한 장소에서도 대기 화면 없이 검증 목록에 진입한다', async () => {

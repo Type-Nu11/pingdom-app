@@ -1,4 +1,4 @@
-import { supportedLanguages, type SupportedLanguage } from './resources';
+import { resources, supportedLanguages, type SupportedLanguage } from './resources';
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
 
@@ -18,6 +18,12 @@ const LANGUAGE_NAME_ALIASES: Record<SupportedLanguage, readonly string[]> = {
   ko: ['korean', '한국어'],
   ja: ['japanese', '日本語', '일본어'],
 };
+
+// Each language is named in its own script (English, 한국어, 日本語), taken from
+// that language's own catalog so a new language needs no extra table.
+export function getLanguageEndonym(language: SupportedLanguage): string {
+  return resources[language].translation.selectLanguage.options[language];
+}
 
 export function normalizeSupportedLanguage(value: unknown): SupportedLanguage | null {
   if (typeof value !== 'string') return null;

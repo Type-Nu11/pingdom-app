@@ -613,9 +613,6 @@ export const resources = {
         },
         language: {
           description: 'Choose the language used throughout PingDom.',
-          english: 'English',
-          japanese: '日本語',
-          korean: 'Korean',
           section: 'Language',
           selected: 'Selected',
           title: 'Language',
@@ -1455,9 +1452,6 @@ export const resources = {
         },
         language: {
           description: '핑덤에서 사용할 언어를 선택해 주세요.',
-          english: '영어',
-          japanese: '日本語',
-          korean: '한국어',
           section: '언어',
           selected: '선택됨',
           title: '언어 설정',
@@ -2338,9 +2332,6 @@ export const resources = {
         },
         language: {
           description: 'PingDom全体で使用する言語を選択してください。',
-          english: '英語',
-          japanese: '日本語',
-          korean: '韓国語',
           section: '言語',
           selected: '選択中',
           title: '言語',

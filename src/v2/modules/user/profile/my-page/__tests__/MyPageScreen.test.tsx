@@ -92,8 +92,9 @@ describe('MyPageScreen', () => {
     expect(screen.getByTestId('v2-my-page-screen').props.edges).toContain('top');
     expect(screen.getByTestId('v2-my-page-header')).toHaveStyle({ minHeight: 44, alignItems: 'center' });
     const title = screen.getByText(i18n.t('myPage.title'));
-    expect(title).toHaveStyle({ fontSize: 18, fontWeight: '500', lineHeight: 23.4, textAlign: 'center', flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
-    expect(title).toHaveStyle(lightTheme.typography.navigationTitle);
+    expect(title).toHaveStyle({ fontSize: 18, fontFamily: 'PretendardStdVariable-Medium', lineHeight: 23.4, textAlign: 'center', flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
+    const { fontFamily: _family, fontWeight: _weight, ...navigationTitleMetrics } = lightTheme.typography.navigationTitle;
+    expect(title).toHaveStyle({ ...navigationTitleMetrics, fontFamily: 'PretendardStdVariable-Medium' });
     expect(screen.getByTestId('v2-my-page-back-icon')).toHaveStyle({ left: -16, top: -16 });
     expect(screen.getByTestId('v2-my-page-settings-icon')).toHaveStyle({ left: -20, top: -16 });
     expect(title.props.numberOfLines).toBe(1);
@@ -133,7 +134,7 @@ describe('MyPageScreen', () => {
       onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />, { appearancePreference });
     await screen.findByText(PROFILE.username);
     await waitFor(() => expect(queryClient.isFetching()).toBe(0));
-    expect(screen.getByText(i18n.t('myPage.title'))).toHaveStyle({ color: theme.colors.textStrong, fontFamily: 'Pretendard' });
+    expect(screen.getByText(i18n.t('myPage.title'))).toHaveStyle({ color: theme.colors.textStrong, fontFamily: expect.stringMatching(/^Pretendard/) });
     expect(screen.getByTestId('v2-my-page-screen')).toHaveStyle({ backgroundColor: theme.colors.background });
   });
 
@@ -253,7 +254,7 @@ describe('MyPageScreen', () => {
     await renderMyPage();
 
     await waitFor(() => expect(screen.getByText('아직 검증한 장소가 없어요')).toHaveStyle({
-      fontFamily: 'Pretendard',
+      fontFamily: expect.stringMatching(/^Pretendard/),
     }));
   });
 

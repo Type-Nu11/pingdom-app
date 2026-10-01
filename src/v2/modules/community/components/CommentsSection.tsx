@@ -7,6 +7,7 @@ import styled, { useTheme } from 'styled-components/native';
 import ChevronRightIcon from '../../../../assets/v2/icons/community/chevron-right.svg';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
 import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
+import { textStyleCss } from '../../../shared/theme/typography';
 import type { useInfiniteComments } from '../hooks/useCommunity';
 import CommentItem from './CommentItem';
 
@@ -15,6 +16,8 @@ export type CommentsSectionProps = {
   now: Date;
   onLayout?: (event: LayoutChangeEvent) => void;
   onSignIn?: () => void;
+  /** Author of the post; their comments get the Figma 작성자 badge. */
+  postAuthorId?: number;
 };
 
 const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2'] as const;
@@ -36,7 +39,7 @@ function CommentsSkeleton() {
   );
 }
 
-export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn }: CommentsSectionProps) {
+export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn, postAuthorId }: CommentsSectionProps) {
   const { t } = useTranslation();
   const theme = useTheme();
 
@@ -93,7 +96,12 @@ export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn
         <>
           <List>
             {comments.map((comment, index) => (
-              <CommentItem comment={comment} key={comment.commentId ?? `comment-${index}`} now={now} />
+              <CommentItem
+                comment={comment}
+                isPostAuthor={postAuthorId !== undefined && comment.authorId === postAuthorId}
+                key={comment.commentId ?? `comment-${index}`}
+                now={now}
+              />
             ))}
           </List>
 
@@ -122,7 +130,7 @@ export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn
             >
               <LoadMoreLabel>{t('community.detail.comments.loadMore', { count: remainingCount })}</LoadMoreLabel>
               <ChevronDown>
-                <ChevronRightIcon height={16} width={16} />
+                <ChevronRightIcon color={theme.colors.labelNeutral} height={24} width={24} />
               </ChevronDown>
             </LoadMoreButton>
           ) : null}
@@ -132,20 +140,25 @@ export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn
   );
 }
 
-const Section = styled.View`gap: ${({ theme }) => theme.spacing.md}px; padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.xl}px; border-top-width: 8px; border-top-color: ${({ theme }) => theme.colors.backgroundAssistive};`;
+// Figma `Comments`: 20px top / 24px bottom / 24px side padding and 20px
+// between the head, each comment and the load-more pill. The 8px band above
+// belongs to the detail ActionBar.
+const Section = styled.View`gap: 20px; padding: 20px 24px 24px;`;
 const Head = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
-const HeadLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 18px; font-weight: 700;`;
-const HeadCount = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; font-size: 18px; font-weight: 700;`;
+const HeadLabel = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
+const HeadCount = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
 
-const List = styled.View`gap: ${({ theme }) => theme.spacing.md}px;`;
+const List = styled.View`gap: 20px;`;
 const EmptyText = styled(AppText)`padding: ${({ theme }) => theme.spacing.lg}px 0; text-align: center; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 
+// Figma `Component 1`: 14×8 Label/Neutral chevron 9px after the label — the
+// 24px chevron asset draws exactly that glyph, 5px inside its box.
 const LoadMoreButton = styled.Pressable`
-  flex-direction: row; align-items: center; justify-content: center; gap: 6px;
+  flex-direction: row; align-items: center; justify-content: center; gap: 4px;
   align-self: stretch; padding: 14px 0; border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.fillAlternative};
 `;
-const LoadMoreLabel = styled(AppText)`color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
+const LoadMoreLabel = styled(AppText)`color: ${({ theme }) => theme.colors.labelNeutral}; ${({ theme }) => textStyleCss(theme.typography.bodyRegular)}`;
 const ChevronDown = styled.View`transform: rotate(90deg);`;
 
 const FooterState = styled.View`align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.sm}px 0;`;
