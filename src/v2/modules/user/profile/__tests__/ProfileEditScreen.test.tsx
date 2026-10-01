@@ -387,7 +387,7 @@ describe('ProfileEditScreen', () => {
 
     expect(changeImage).not.toHaveBeenCalled();
     expect(alertMessages(alertSpy)).toContain(
-      '프로필 이미지를 변경하지 못했습니다. 다시 시도해주세요.',
+      'JPEG 또는 PNG 이미지만 프로필 이미지로 사용할 수 있습니다.',
     );
   });
 

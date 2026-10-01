@@ -1,14 +1,19 @@
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Alert, Linking, type AlertButton } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
-import { getUsernameErrorMessage, getPasswordErrorMessage } from '../model/profileErrorPresentation';
+import {
+  getPasswordErrorMessage,
+  getProfileImageApiErrorKind,
+  getUsernameErrorMessage,
+} from '../model/profileErrorPresentation';
 import {
   ProfileImagePermissionError,
   type ProfileImageSource,
+  ProfileImageTypeError,
   SaveProfileError,
   useProfile,
   useSaveProfile,
@@ -63,6 +68,12 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     isMounted.current = false;
   }, []);
 
+  useEffect(() => {
+    if (changeProfileImage.isPending) {
+      AccessibilityInfo.announceForAccessibility(t('myPage.profileEdit.avatarUploading'));
+    }
+  }, [changeProfileImage.isPending, t]);
+
   const handleBack = () => {
     if (backActionLock.current) return;
     backActionLock.current = true;
@@ -74,16 +85,59 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     setUsername(value);
   };
 
+  const showAvatarError = (error: unknown, source: ProfileImageSource) => {
+    if (error instanceof ProfileImagePermissionError) {
+      Alert.alert(
+        t(source === 'camera'
+          ? 'myPage.profileEdit.avatarCameraPermissionDenied'
+          : 'myPage.profileEdit.avatarPermissionDenied'),
+        undefined,
+        [
+          { style: 'cancel', text: t('myPage.profileEdit.avatarCancel') },
+          {
+            onPress: () => { void Linking.openSettings().catch(() => undefined); },
+            text: t('myPage.profileEdit.avatarOpenSettings'),
+          },
+        ],
+      );
+      return;
+    }
+
+    const kind = error instanceof ProfileImageTypeError
+      ? 'typeUnsupported'
+      : getProfileImageApiErrorKind(error);
+    if (kind === 'typeUnsupported') {
+      Alert.alert(t('myPage.profileEdit.avatarTypeUnsupported'));
+      return;
+    }
+    if (kind === 'tooLarge') {
+      Alert.alert(t('myPage.profileEdit.avatarFileTooLarge'));
+      return;
+    }
+
+    const buttons: AlertButton[] = [{ style: 'cancel', text: t('myPage.profileEdit.avatarCancel') }];
+    if (changeProfileImage.canRetry()) {
+      buttons.push({
+        onPress: () => { void retryAvatarChange(source); },
+        text: t('myPage.profileEdit.avatarRetry'),
+      });
+    }
+    Alert.alert(t('myPage.profileEdit.avatarChangeFailed'), undefined, buttons);
+  };
+
   const startAvatarChange = async (source: ProfileImageSource) => {
     try {
       await changeProfileImage.change(source);
     } catch (error) {
-      if (!isMounted.current) return;
-      if (error instanceof ProfileImagePermissionError) {
-        Alert.alert(t('myPage.profileEdit.avatarPermissionDenied'));
-        return;
-      }
-      Alert.alert(t('myPage.profileEdit.avatarChangeFailed'));
+      if (isMounted.current) showAvatarError(error, source);
+    }
+  };
+
+  const retryAvatarChange = async (source: ProfileImageSource) => {
+    try {
+      await changeProfileImage.retry();
+    } catch (error) {
+      if (isMounted.current) showAvatarError(error, source);
     }
   };
 
@@ -245,7 +299,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
               uri={getProfileImageUri(profile)}
             />
             {changeProfileImage.isPending ? (
-              <AvatarUploadingOverlay>
+              <AvatarUploadingOverlay accessibilityLiveRegion="polite">
                 <ActivityIndicator
                   accessibilityLabel={t('myPage.profileEdit.avatarUploading')}
                   accessibilityRole="progressbar"

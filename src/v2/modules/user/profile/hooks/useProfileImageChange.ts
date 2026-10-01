@@ -35,6 +35,7 @@ export function useProfileImageChange() {
     controller.current = abort;
     try {
       await mutateAsync({ file, signal: abort.signal });
+      lastFile.current = null;
       return 'changed';
     } finally {
       if (controller.current === abort) controller.current = null;
@@ -44,6 +45,8 @@ export function useProfileImageChange() {
   const change = useCallback(async (source: ProfileImageSource): Promise<ProfileImageChangeResult> => {
     if (busy.current) return 'ignored';
     busy.current = true;
+    // A failure while picking must not leave an earlier file available to retry().
+    lastFile.current = null;
     try {
       const file = await pickProfileImage(source);
       if (!file || !mounted.current) return 'cancelled';
@@ -65,5 +68,7 @@ export function useProfileImageChange() {
     }
   }, [upload]);
 
-  return { change, isPending: mutation.isPending, isMounted: mounted, retry };
+  const canRetry = useCallback(() => lastFile.current !== null, []);
+
+  return { canRetry, change, isPending: mutation.isPending, retry };
 }
