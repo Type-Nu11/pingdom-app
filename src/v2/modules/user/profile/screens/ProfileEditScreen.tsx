@@ -257,25 +257,33 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-profile-edit-screen">
       <Content contentContainerStyle={CONTENT_CONTAINER_STYLE} testID="v2-profile-edit-scroll">
         <TopBar>
-          <HeaderBackButton
-            accessibilityLabel={t('myPage.back')}
-            onPress={handleBack}
-            testID="v2-profile-edit-back"
-          />
+          <HeaderSlot>
+            <GlassShadow />
+            <BackButtonOffset>
+              <HeaderBackButton
+                accessibilityLabel={t('myPage.back')}
+                onPress={handleBack}
+                testID="v2-profile-edit-back"
+              />
+            </BackButtonOffset>
+          </HeaderSlot>
           <TopBarTitle>{t('myPage.profileEdit.title')}</TopBarTitle>
-          <IconButton
-            accessibilityLabel={isSaving
-              ? t('myPage.profileEdit.saving')
-              : t('myPage.profileEdit.save')}
-            accessibilityRole="button"
-            accessibilityState={{ busy: isSaving, disabled: isSaveDisabled }}
-            disabled={isSaveDisabled}
-            hitSlop={8}
-            onPress={() => void handleSave()}
-            testID="v2-profile-edit-save-header"
-          >
-            <CheckmarkIcon height={44} width={44} />
-          </IconButton>
+          <HeaderSlot>
+            <GlassShadow />
+            <IconButton
+              accessibilityLabel={isSaving
+                ? t('myPage.profileEdit.saving')
+                : t('myPage.profileEdit.save')}
+              accessibilityRole="button"
+              accessibilityState={{ busy: isSaving, disabled: isSaveDisabled }}
+              disabled={isSaveDisabled}
+              hitSlop={8}
+              onPress={() => void handleSave()}
+              testID="v2-profile-edit-save-header"
+            >
+              <CheckmarkIcon height={84} style={CHECK_ICON_STYLE} width={80} />
+            </IconButton>
+          </HeaderSlot>
         </TopBar>
 
         {isProfileLoading ? <LoadingState description={t('myPage.profileLoading')} /> : null}
@@ -453,6 +461,9 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
 }
 
 const CONTENT_CONTAINER_STYLE = { flexGrow: 1 } as const;
+// The asset is 80x84 with the 44px glass circle at (20, 16); offset it so the
+// circle fills the 44px button box the way the Figma frame places it.
+const CHECK_ICON_STYLE = { left: -20, position: 'absolute' as const, top: -16 };
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -473,9 +484,38 @@ const TopBar = styled.View`
   padding: 0 ${({ theme }) => theme.spacing.md}px;
 `;
 
+const HeaderSlot = styled.View`
+  width: 44px;
+  height: 44px;
+`;
+
+// The shared back icon is drawn 2px left and 4px above the Figma circle origin;
+// shift it here rather than changing every screen that uses it.
+const BackButtonOffset = styled.View`
+  transform: translate(2px, 4px);
+`;
+
+// react-native-svg ignores the blur filter baked into the header icon assets,
+// so the soft shadow under the glass circle is drawn natively behind them.
+const GlassShadow = styled.View`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 22px;
+  background-color: ${({ theme }) => theme.colors.background};
+  shadow-color: #000000;
+  shadow-offset: 0px 4px;
+  shadow-opacity: 0.06;
+  shadow-radius: 10px;
+`;
+
 const IconButton = styled.Pressable`
-  align-items: center;
-  justify-content: center;
+  width: 44px;
+  height: 44px;
+  overflow: visible;
+  position: relative;
 `;
 
 const TopBarTitle = styled(AppText)`
@@ -556,7 +596,6 @@ const FieldInput = styled(AppTextInput)`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.typography.bodyRegular.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.bodyRegular.fontWeight};
-  line-height: ${({ theme }) => theme.typography.bodyRegular.lineHeight}px;
   padding: 0;
 `;
 
