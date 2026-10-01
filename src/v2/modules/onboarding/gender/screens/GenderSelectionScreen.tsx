@@ -24,7 +24,7 @@ export type GenderSelectionScreenProps = Readonly<{
 
 function GenderIcon({ code, selected }: Readonly<{ code: OnboardingGender; selected: boolean }>) {
   const { colors } = useTheme();
-  const color = selected ? colors.textInverse : colors.labelNeutral;
+  const color = selected ? colors.textInverse : colors.labelNormal;
 
   return (
     <IconCircle $selected={selected}>
@@ -86,10 +86,12 @@ const Screen = styled.View`
   background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;
 
+// Figma keeps this frame's content 24px from the left edge at 370px wide.
 const Body = styled.View`
   flex: 1;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.xl + theme.spacing.xs}px;
+  width: 394px;
+  max-width: 100%;
+  padding: 16px 0 51px 24px;
 `;
 
 const Options = styled.View`
@@ -100,11 +102,11 @@ const Card = styled.Pressable<{ $selected: boolean }>`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 28px;
+  padding: 16px 26px;
   border-width: 2px;
   border-radius: 20px;
-  border-color: ${({ $selected, theme }) => ($selected ? theme.colors.selectedBorder : 'transparent')};
-  background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.fillNeutral)};
+  border-color: ${({ $selected, theme }) => ($selected ? theme.colors.primaryAlternative : 'transparent')};
+  background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primaryAlternativeTint : theme.colors.fillNormal)};
 `;
 
 const CardLeft = styled.View`
@@ -119,11 +121,11 @@ const IconCircle = styled.View<{ $selected: boolean }>`
   align-items: center;
   justify-content: center;
   border-radius: 22px;
-  background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.surface)};
+  background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.onboardingIconSurface)};
 `;
 
 const CardText = styled.Text<{ $selected: boolean }>`
-  color: ${({ $selected, theme }) => ($selected ? theme.colors.textInverse : theme.colors.labelStrong)};
+  color: ${({ $selected, theme }) => ($selected ? theme.colors.textInverse : theme.colors.labelNormal)};
   font-size: ${({ theme }) => theme.typography.headline1Bold.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.headline1Bold.fontWeight};
 `;
