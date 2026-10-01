@@ -14,6 +14,9 @@ const VISIBLE = 5;
 const PAD = 2;
 const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE;
 
+// Figma lays the rows out with a wider gap around the highlighted year.
+const ROW_SHIFT: Record<number, number> = { 0: 0, 1: 5, 2: 3 };
+
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - 1939 }, (_, index) => 1940 + index);
 const DEFAULT_YEAR = 2000;
@@ -61,7 +64,11 @@ export default function BirthYearSelectionScreen({ onBack, onNext }: BirthYearSe
             >
               {YEARS.map((year, index) => (
                 <Item key={year}>
-                  <Year $distance={Math.abs(index - selectedIndex)} $below={index > selectedIndex}>
+                  <Year
+                    $above={index < selectedIndex}
+                    $distance={Math.abs(index - selectedIndex)}
+                    $shift={(ROW_SHIFT[Math.abs(index - selectedIndex)] ?? 0) * Math.sign(index - selectedIndex)}
+                  >
                     {year}
                   </Year>
                 </Item>
@@ -69,6 +76,7 @@ export default function BirthYearSelectionScreen({ onBack, onNext }: BirthYearSe
             </Wheel>
           </WheelInner>
         </WheelOuter>
+        <Spacer />
         <OnboardingCtaButton
           label={t('selectAge.button')}
           onPress={() => onNext(YEARS[selectedIndex])}
@@ -86,17 +94,21 @@ const Screen = styled.View`
 
 const Body = styled.View`
   flex: 1;
-  gap: 18px;
+  gap: 0;
   padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.xl + theme.spacing.xs}px;
+    51px;
+`;
+
+const Spacer = styled.View`
+  flex: 1;
 `;
 
 const WheelOuter = styled.View`
-  flex: 1;
+  height: ${WHEEL_HEIGHT + 20}px;
   justify-content: center;
-  padding: 13px 18px;
+  padding: 0 18px;
   border-radius: 16px;
-  background-color: ${({ theme }) => theme.colors.fillNeutral};
+  background-color: ${({ theme }) => theme.colors.backgroundNeutral};
 `;
 
 const WheelInner = styled.View`
@@ -113,7 +125,7 @@ const SelectionBox = styled.View`
   z-index: 1;
   border-width: 2px;
   border-radius: 16px;
-  border-color: ${({ theme }) => theme.colors.selectedBorder};
+  border-color: ${({ theme }) => theme.colors.primaryAlternative};
 `;
 
 const Wheel = styled.ScrollView`
@@ -126,15 +138,20 @@ const Item = styled.View`
   justify-content: center;
 `;
 
-const Year = styled.Text<{ $below: boolean; $distance: number }>`
+// Figma fades the years above the selection (50%, 25%) and keeps the ones
+// below at the full label color.
+function yearOpacity(above: boolean, distance: number): number {
+  if (distance === 0) return 1;
+  if (above) return distance === 1 ? 0.5 : 0.25;
+  return distance <= 2 ? 1 : 0.5;
+}
+
+const Year = styled.Text<{ $above: boolean; $distance: number; $shift: number }>`
   font-size: ${({ $distance }) => ($distance === 0 ? 32 : 28)}px;
   line-height: ${({ $distance }) => ($distance === 0 ? 38 : 34)}px;
   font-weight: 700;
   text-align: center;
-  color: ${({ $below, $distance, theme }) => {
-    if ($distance === 0) return theme.colors.primary;
-    if ($distance === 1) return $below ? theme.colors.textAlternative : theme.colors.textMuted;
-    if ($distance === 2) return theme.colors.textAlternative;
-    return theme.colors.textDisabled;
-  }};
+  transform: translateY(${({ $shift }) => $shift}px);
+  color: ${({ $distance, theme }) => ($distance === 0 ? theme.colors.primary : theme.colors.labelAssistive)};
+  opacity: ${({ $above, $distance }) => yearOpacity($above, $distance)};
 `;
