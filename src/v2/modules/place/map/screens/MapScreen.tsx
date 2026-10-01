@@ -186,6 +186,7 @@ export default function MapScreen({
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation();
+  const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
   const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
   const center = location.coordinate;
   const userLat = center?.lat;
@@ -570,6 +571,12 @@ export default function MapScreen({
   } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
   const handleDirectionsPress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    setRouteEndpointRole('destination');
+    setRoutePreviewPlaceId(place.id);
+  }, [selectedPlaceActionTarget]);
+  const handleDeparturePress = useCallback((place: DecisionPlace) => {
+    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    setRouteEndpointRole('origin');
     setRoutePreviewPlaceId(place.id);
   }, [selectedPlaceActionTarget]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
@@ -976,8 +983,8 @@ export default function MapScreen({
         />
       </View>
       {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
-        <CarRoutePreview key={`${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
-          destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
+        <CarRoutePreview key={`${routeEndpointRole}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
+          initialEndpointRole={routeEndpointRole} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
           onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
       )}
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
@@ -1157,6 +1164,7 @@ export default function MapScreen({
               });
             }}
             onDetailPress={() => snapTo('expanded')}
+            onDeparturePress={handleDeparturePress}
             onDirectionsPress={handleDirectionsPress}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}

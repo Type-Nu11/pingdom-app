@@ -550,8 +550,8 @@ describe('MapBottomSheet recommendations', () => {
     expect(onCreateReservation).toHaveBeenCalledWith(selectedPlace, undefined);
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
 
-    await result.user.press(screen.getByRole('button', { name: '도착' }));
-    expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
+    await result.user.press(screen.getByLabelText('도착'));
+    expect(onStartVisitVerification).not.toHaveBeenCalled();
 
     const bookmark = screen.getByTestId('place-preview-bookmark');
     const close = screen.getByTestId('place-preview-close');
@@ -619,7 +619,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(onCreateReservation).toHaveBeenCalledTimes(1);
   });
 
-  test('미지원 출발은 초기 선택이나 활성 버튼으로 노출하지 않고 도착 동작은 유지한다', async () => {
+  test('경로 callback이 없으면 출발·도착을 비활성화하고 방문 인증을 호출하지 않는다', async () => {
     const selectedPlace = places[0];
     const onStartVisitVerification = jest.fn();
     const { user } = await renderWithProviders(
@@ -666,31 +666,33 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
     expect(screen.queryByText('방문 인증 시작')).not.toBeOnTheScreen();
     const departure = screen.getByLabelText('출발');
-    const arrival = screen.getByRole('button', { name: '도착' });
+    const arrival = screen.getByLabelText('도착');
     expect(screen.queryByRole('button', { name: '출발' })).not.toBeOnTheScreen();
     expect(departure.props.accessibilityState).toEqual({
       busy: false,
       disabled: true,
       selected: false,
     });
-    expect(departure.props.accessibilityHint).toBe('출발 기능은 아직 지원하지 않습니다.');
+    expect(arrival.props.accessibilityState.disabled).toBe(true);
     expect(departure).not.toHaveStyle({ backgroundColor: '#FFF0F4' });
     await user.press(arrival);
-    expect(arrival.props.accessibilityState.selected).toBe(true);
+    expect(arrival.props.accessibilityState.selected).toBe(false);
     expect(departure.props.accessibilityState.selected).toBe(false);
-    expect(onStartVisitVerification).toHaveBeenCalledWith(selectedPlace);
+    expect(onStartVisitVerification).not.toHaveBeenCalled();
   });
 
-  test('프리뷰와 확장 상세의 공유·길찾기는 같은 선택 장소 callback을 사용한다', async () => {
+  test('프리뷰와 확장 상세의 출발·도착·길찾기를 선택 장소의 경로 callback에 연결한다', async () => {
     const selectedPlace = places[0];
     const onSharePlace = jest.fn();
     const onDirectionsPress = jest.fn();
+    const onDeparturePress = jest.fn();
+    const onStartVisitVerification = jest.fn();
     const commonProps = {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
       content: { type: 'place-preview', placeId: selectedPlace.id } as const,
       height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
       onCreateReservation: jest.fn(), onDetailPress: jest.fn(),
-      onDirectionsPress, onFilterPress: jest.fn(), onGoNowPress: jest.fn(),
+      onDeparturePress, onStartVisitVerification, onDirectionsPress, onFilterPress: jest.fn(), onGoNowPress: jest.fn(),
       onHandlePress: jest.fn(), onPlacePress: jest.fn(), onQueryChange: jest.fn(),
       onRetryRecommendations: jest.fn(), onSearchFocus: jest.fn(), onSharePlace,
       onSubmitSearch: jest.fn(), onToggleBookmark: jest.fn(async () => undefined),
@@ -703,6 +705,8 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     await view.user.press(screen.getByRole('button', { name: '공유' }));
+    await view.user.press(screen.getByRole('button', { name: '출발' }));
+    await view.user.press(screen.getByRole('button', { name: '도착' }));
     await view.user.press(screen.getByRole('button', { name: '길찾기' }));
     expect(onSharePlace).toHaveBeenLastCalledWith(selectedPlace);
     expect(onDirectionsPress).toHaveBeenLastCalledWith(selectedPlace);
@@ -711,9 +715,14 @@ describe('MapBottomSheet recommendations', () => {
       <MapBottomSheet {...commonProps} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded" />,
     );
     await view.user.press(screen.getByRole('button', { name: '공유' }));
+    await view.user.press(screen.getByRole('button', { name: '출발' }));
+    await view.user.press(screen.getByRole('button', { name: '도착' }));
     await view.user.press(screen.getByRole('button', { name: '길찾기' }));
     expect(onSharePlace).toHaveBeenCalledTimes(2);
-    expect(onDirectionsPress).toHaveBeenCalledTimes(2);
+    expect(onDirectionsPress).toHaveBeenCalledTimes(4);
+    expect(onDeparturePress).toHaveBeenCalledTimes(2);
+    expect(onDeparturePress).toHaveBeenLastCalledWith(selectedPlace);
+    expect(onStartVisitVerification).not.toHaveBeenCalled();
     expect(onSharePlace).toHaveBeenLastCalledWith(selectedPlace);
     expect(onDirectionsPress).toHaveBeenLastCalledWith(selectedPlace);
   });
@@ -730,6 +739,7 @@ describe('MapBottomSheet recommendations', () => {
         mediumTranslateY={300}
         onBackHome={jest.fn()}
         onDetailPress={jest.fn()}
+        onDeparturePress={jest.fn()}
         onDirectionsPress={jest.fn()}
         onFilterPress={jest.fn()}
         onGoNowPress={jest.fn()}
@@ -765,6 +775,8 @@ describe('MapBottomSheet recommendations', () => {
       selected: false,
     });
     expect(screen.queryByRole('button', { name: '길찾기' })).not.toBeOnTheScreen();
+    expect(screen.getByLabelText('출발').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText('도착').props.accessibilityState.disabled).toBe(true);
   });
 
   test('확장 추천 목록은 배열 순번 대신 장소의 실제 추천 이유를 표시한다', async () => {

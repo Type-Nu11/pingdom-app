@@ -24,8 +24,8 @@ import type { EndpointRole } from './RouteEndpointRows';
 import type { RecentSearchOwner } from '../../../search/services/recentSearchStorage';
 import DestinationIcon from '../assets/destination.svg';
 
-type Props = { destination: RouteDestination; location: LocationState; onClose: () => void; onRefreshLocation: () => void; recentSearchOwner?: RecentSearchOwner };
-export default function CarRoutePreview({ destination: initialDestination, location, onClose, onRefreshLocation, recentSearchOwner }: Props) {
+type Props = { initialEndpointRole?: EndpointRole; destination: RouteDestination; location: LocationState; onClose: () => void; onRefreshLocation: () => void; recentSearchOwner?: RecentSearchOwner };
+export default function CarRoutePreview({ initialEndpointRole = 'destination', destination: initialDestination, location, onClose, onRefreshLocation, recentSearchOwner }: Props) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -33,7 +33,7 @@ export default function CarRoutePreview({ destination: initialDestination, locat
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [mode, setMode] = useState<RouteMode>('car');
   // A null selection means live current location, in either endpoint slot.
-  const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>([null, initialDestination]);
+  const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>(() => initialEndpointRole === 'origin' ? [initialDestination, null] : [null, initialDestination]);
   const [endpointRevision, setEndpointRevision] = useState(0);
   const [editing, setEditing] = useState<EndpointRole | null>(null);
   const [mapPicking, setMapPicking] = useState(false);

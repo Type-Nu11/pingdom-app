@@ -227,3 +227,24 @@ test('long press without crossing a row does not edit or swap endpoints', async 
   await user.press(screen.getByTestId('route-external'));
   expect(openNaverRoute).toHaveBeenLastCalledWith(destination, expect.objectContaining({ latitude: 37.5, longitude: 127 }), 'car');
 });
+
+
+test('departure entry routes from selected place to current location internally and externally', async () => {
+  jest.mocked(findCarRoute).mockResolvedValue(route);
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" />, { language: 'en' });
+  expect(findCarRoute).not.toHaveBeenCalled();
+  await user.press(screen.getByTestId('route-request'));
+  expect(findCarRoute).toHaveBeenLastCalledWith(destination, expect.objectContaining({ isCurrentLocation: true, latitude: 37.5, longitude: 127 }), expect.any(AbortSignal));
+  await user.press(screen.getByTestId('route-external'));
+  expect(openNaverRoute).toHaveBeenLastCalledWith(expect.objectContaining({ isCurrentLocation: true, latitude: 37.5, longitude: 127 }), destination, 'car');
+});
+
+
+test('departure entry without current location cannot route to a missing destination', async () => {
+  await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin"
+    location={{ status: 'denied', coordinate: null, canAskAgain: false }} />, { language: 'en' });
+  expect(screen.getByTestId('route-request')).toBeDisabled();
+  expect(screen.getByTestId('route-external')).toBeDisabled();
+  expect(findCarRoute).not.toHaveBeenCalled();
+  expect(mockMapProps.markers.map(marker => marker.id)).toEqual(['route-origin']);
+});

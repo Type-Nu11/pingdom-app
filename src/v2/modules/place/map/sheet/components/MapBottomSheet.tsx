@@ -167,6 +167,7 @@ type MapBottomSheetProps = {
   onCreateReservation?: (place: DecisionPlace, imageUrl?: string) => void;
   onOpenRecommendations?: () => void;
   onDetailPress: (place: DecisionPlace) => void;
+  onDeparturePress?: (place: DecisionPlace) => void;
   onDirectionsPress?: (place: DecisionPlace) => void;
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
@@ -1466,11 +1467,11 @@ const PreviewContent = ({
   imageUrl,
   onBack,
   onDetail,
+  onDeparture,
   onDirections,
   onOpenImages,
   onReserve,
   onShare,
-  onVerify,
   onRetryAvailability,
   onRetryMedia,
   onSelectAction,
@@ -1485,11 +1486,11 @@ const PreviewContent = ({
   imageUrl?: string;
   onBack: () => void;
   onDetail: () => void;
+  onDeparture?: () => void;
   onDirections?: () => void;
   onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
   onShare?: () => void;
-  onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onSelectAction: (action: PreviewActionKind) => void;
@@ -1585,16 +1586,18 @@ const PreviewContent = ({
         showsHorizontalScrollIndicator={false}
       >
         <PreviewActionChip
-          accessibilityHint={t('map.placeActions.departureUnsupported')}
-          disabled
+          active={activeAction === 'departure'}
+          disabled={!onDeparture || placeActionBusy != null}
           kind="departure"
           label={t('map.card.actions.start')}
+          onPress={() => selectAction('departure', onDeparture)}
         />
         <PreviewActionChip
           active={activeAction === 'arrival'}
+          disabled={!onDirections || placeActionBusy != null}
           kind="arrival"
           label={t('map.card.actions.arrive')}
-          onPress={() => selectAction('arrival', onVerify)}
+          onPress={() => selectAction('arrival', onDirections)}
         />
         <PreviewActionChip
           busy={placeActionBusy === 'share'}
@@ -1663,11 +1666,11 @@ const ExpandedPlaceContent = ({
   fallbackContent,
   imageUrl,
   onBack,
+  onDeparture,
   onDirections,
   onOpenImages,
   onReserve,
   onShare,
-  onVerify,
   onRetryAvailability,
   onRetryMedia,
   onRetryReviews,
@@ -1685,11 +1688,11 @@ const ExpandedPlaceContent = ({
   fallbackContent?: MapPreviewFallbackContent;
   imageUrl?: string;
   onBack: () => void;
+  onDeparture?: () => void;
   onDirections?: () => void;
   onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
   onReserve: () => void;
   onShare?: () => void;
-  onVerify?: () => void;
   onRetryAvailability?: () => void;
   onRetryMedia?: () => void;
   onRetryReviews?: () => void;
@@ -1767,16 +1770,18 @@ const ExpandedPlaceContent = ({
         showsHorizontalScrollIndicator={false}
       >
         <PreviewActionChip
-          accessibilityHint={t('map.placeActions.departureUnsupported')}
-          disabled
+          active={activeAction === 'departure'}
+          disabled={!onDeparture || placeActionBusy != null}
           kind="departure"
           label={t('map.card.actions.start')}
+          onPress={() => selectAction('departure', onDeparture)}
         />
         <PreviewActionChip
           active={activeAction === 'arrival'}
+          disabled={!onDirections || placeActionBusy != null}
           kind="arrival"
           label={t('map.card.actions.arrive')}
-          onPress={() => selectAction('arrival', onVerify)}
+          onPress={() => selectAction('arrival', onDirections)}
         />
         <PreviewActionChip
           busy={placeActionBusy === 'share'}
@@ -2075,13 +2080,13 @@ export default function MapBottomSheet({
   onBackHome,
   onCreateReservation,
   onDetailPress,
+  onDeparturePress,
   onDirectionsPress,
   onHandlePress,
   onOpenCommunity,
   onOpenLikedPlaces,
   onOpenRecommendations,
   onOpenSavedPlaces,
-  onStartVisitVerification,
   onPlacePress,
   onRankedPlacePress = () => undefined,
   onRetryAvailability,
@@ -2290,6 +2295,10 @@ export default function MapBottomSheet({
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
+            onDeparture={onDeparturePress && hasValidCoordinates({
+              latitude: selectedPlace.latitude,
+              longitude: selectedPlace.longitude,
+            }) ? () => onDeparturePress(selectedPlace) : undefined}
             onDirections={onDirectionsPress && hasValidCoordinates({
               latitude: selectedPlace.latitude,
               longitude: selectedPlace.longitude,
@@ -2303,9 +2312,6 @@ export default function MapBottomSheet({
             })}
             onReserve={handleCreateReservation}
             onShare={onSharePlace ? () => onSharePlace(selectedPlace) : undefined}
-            onVerify={onStartVisitVerification
-              ? () => onStartVisitVerification(selectedPlace)
-              : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
             onRetryReviews={onRetryReviews}
@@ -2327,6 +2333,10 @@ export default function MapBottomSheet({
             imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
             onBack={onBackHome}
             onDetail={() => onDetailPress(selectedPlace)}
+            onDeparture={onDeparturePress && hasValidCoordinates({
+              latitude: selectedPlace.latitude,
+              longitude: selectedPlace.longitude,
+            }) ? () => onDeparturePress(selectedPlace) : undefined}
             onDirections={onDirectionsPress && hasValidCoordinates({
               latitude: selectedPlace.latitude,
               longitude: selectedPlace.longitude,
@@ -2340,9 +2350,6 @@ export default function MapBottomSheet({
             })}
             onReserve={handleCreateReservation}
             onShare={onSharePlace ? () => onSharePlace(selectedPlace) : undefined}
-            onVerify={onStartVisitVerification
-              ? () => onStartVisitVerification(selectedPlace)
-              : undefined}
             onRetryAvailability={onRetryAvailability}
             onRetryMedia={onRetryMedia}
             onSelectAction={setActivePreviewAction}
