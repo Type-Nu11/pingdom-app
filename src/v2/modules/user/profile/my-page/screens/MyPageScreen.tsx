@@ -1,6 +1,6 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image } from 'react-native';
+import { Alert } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +16,8 @@ import { useCheckIns } from '../../../../place/check-ins';
 import { useCoupons } from '../../../../booking/offers-coupons';
 import { useReservations } from '../../../../booking/reservations';
 import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../travel/schedules';
-import { ApiErrorState, ErrorState, LoadingState } from '../../../../../shared/components';
+import { ApiErrorState, ErrorState, LoadingState, ProfileAvatar } from '../../../../../shared/components';
+import { getProfileImageUri } from '../../model/profileImageUri';
 import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../travel/components/TravelCalendar';
 import VerifiedPlaceCard from '../verified-places/components/VerifiedPlaceCard';
@@ -30,7 +31,6 @@ import BackIcon from '../../../../../shared/assets/icons/back.svg';
 import ChevronIcon from '../../../../../shared/assets/icons/chevron-right-24.svg';
 import DividerIcon from '../../../../../shared/assets/icons/divider.svg';
 import SettingsIcon from '../../../../../shared/assets/icons/settings.svg';
-import AvatarPlaceholder from '../../../../../shared/assets/icons/avatar-placeholder.svg';
 
 const VERIFIED_PLACES_LIMIT = 4;
 const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3'] as const;
@@ -213,11 +213,7 @@ export default function MyPageScreen({
                 <ProfileRow accessibilityRole="button" onPress={onOpenProfileEdit}>
                   <ProfileInfo testID="v2-my-page-profile-info">
                     <AvatarSlot testID="v2-my-page-avatar">
-                      {profile?.profileImageUrl ? (
-                        <Avatar source={{ uri: profile.profileImageUrl }} />
-                      ) : (
-                        <AvatarPlaceholder height={56} width={56} />
-                      )}
+                      <ProfileAvatar size={56} uri={getProfileImageUri(profile)} />
                     </AvatarSlot>
                     <ProfileText testID="v2-my-page-profile-text">
                       <Username numberOfLines={1}>
@@ -501,12 +497,6 @@ const ProfileChevron = styled.View`
   height: 24px;
   flex-shrink: 0;
   margin-left: ${({ theme }) => theme.spacing.sm}px;
-`;
-
-const Avatar = styled(Image)`
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
 `;
 
 const Username = styled(AppText)`

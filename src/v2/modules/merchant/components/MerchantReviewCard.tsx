@@ -4,22 +4,12 @@ import { Image } from 'react-native';
 import styled from 'styled-components/native';
 
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
-import CleanIcon from '../../../../assets/v2/icons/place/Clean.svg';
-import DeliciousIcon from '../../../../assets/v2/icons/place/Delicious.svg';
-import KindIcon from '../../../../assets/v2/icons/place/Kind.svg';
-import PhotogenicIcon from '../../../../assets/v2/icons/place/Camera.svg';
-import type { MerchantReview, MerchantReviewTagKind } from '../model/types';
+import { ReviewFeatureTags } from '../../../shared/components';
+import type { MerchantReview } from '../model/types';
 
 type MerchantReviewCardProps = {
   review: MerchantReview;
   showDivider?: boolean;
-};
-
-const TAG_ICON: Record<MerchantReviewTagKind, React.FC<{ height: number; width: number }>> = {
-  clean: CleanIcon,
-  delicious: DeliciousIcon,
-  kind: KindIcon,
-  photogenic: PhotogenicIcon,
 };
 
 const REVIEW_PHOTO_WIDTH = 242;
@@ -61,19 +51,7 @@ export default function MerchantReviewCard({ review, showDivider = true }: Merch
         </PhotoScroll>
       ) : null}
 
-      {review.tags.length > 0 ? (
-        <TagRow>
-          {review.tags.map((tag) => {
-            const Icon = tag.kind ? TAG_ICON[tag.kind] : null;
-            return (
-              <TagChip key={tag.label}>
-                {Icon ? <Icon height={14} width={14} /> : null}
-                <TagLabel numberOfLines={1}>{tag.label}</TagLabel>
-              </TagChip>
-            );
-          })}
-        </TagRow>
-      ) : null}
+      <ReviewFeatureTags reasons={review.reasons} testID="v2-merchant-review-tags" variant="full" />
     </Card>
   );
 }
@@ -141,26 +119,4 @@ const ReviewPhoto = styled(Image)`
   width: ${REVIEW_PHOTO_WIDTH}px;
   height: ${REVIEW_PHOTO_HEIGHT}px;
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
-`;
-
-const TagRow = styled.View`
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-`;
-
-const TagChip = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: ${({ theme }) => theme.radius.sm}px;
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
-`;
-
-const TagLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  font-weight: 500;
 `;

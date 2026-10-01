@@ -2,19 +2,35 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
 import { profileApi } from '../api/profileApi';
+import { markProfileImageReplaced } from '../model/profileImageUri';
 import { myReviewsQueryKeys, profileQueryKeys } from '../model/profileQueryKeys';
 import type {
   ListMyReviewsParams,
+  Profile,
   ProfileImageFile,
   ProfileImageUploadResponse,
   SaveProfileInput,
   SaveProfileResult,
 } from '../model/profile.types';
 
+export type ProfileImageSource = 'camera' | 'library';
+
 export class ProfileImagePermissionError extends Error {
-  constructor() {
-    super('MEDIA_LIBRARY_PERMISSION_DENIED');
+  readonly canAskAgain: boolean;
+  readonly source: ProfileImageSource;
+
+  constructor(source: ProfileImageSource = 'library', canAskAgain = true) {
+    super(source === 'camera' ? 'CAMERA_PERMISSION_DENIED' : 'MEDIA_LIBRARY_PERMISSION_DENIED');
     this.name = 'ProfileImagePermissionError';
+    this.canAskAgain = canAskAgain;
+    this.source = source;
+  }
+}
+
+export class ProfileImageTypeError extends Error {
+  constructor() {
+    super('PROFILE_IMAGE_TYPE_UNSUPPORTED');
+    this.name = 'ProfileImageTypeError';
   }
 }
 
@@ -38,16 +54,25 @@ export class SaveProfileError extends Error {
   }
 }
 
-export async function pickProfileImage(): Promise<ProfileImageFile | null> {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) throw new ProfileImagePermissionError();
+export async function pickProfileImage(
+  source: ProfileImageSource = 'library',
+): Promise<ProfileImageFile | null> {
+  const permission = source === 'camera'
+    ? await ImagePicker.requestCameraPermissionsAsync()
+    : await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) {
+    throw new ProfileImagePermissionError(source, permission.canAskAgain ?? true);
+  }
 
-  const result = await ImagePicker.launchImageLibraryAsync({
+  const options: ImagePicker.ImagePickerOptions = {
     allowsEditing: true,
     aspect: [1, 1],
     mediaTypes: ['images'],
     quality: 0.8,
-  });
+  };
+  const result = source === 'camera'
+    ? await ImagePicker.launchCameraAsync(options)
+    : await ImagePicker.launchImageLibraryAsync(options);
 
   if (result.canceled || result.assets.length === 0) return null;
 
@@ -61,7 +86,7 @@ export async function pickProfileImage(): Promise<ProfileImageFile | null> {
     ?? (filenameExtension === 'jpg' || filenameExtension === 'jpeg' ? 'image/jpeg' : undefined);
 
   if (type !== 'image/jpeg' && type !== 'image/png') {
-    throw new Error('PROFILE_IMAGE_TYPE_UNSUPPORTED');
+    throw new ProfileImageTypeError();
   }
 
   const extension = type.split('/')[1] ?? 'jpg';
@@ -142,10 +167,20 @@ export function useSaveProfile() {
 export function useChangeProfileImage() {
   const queryClient = useQueryClient();
 
-  return useMutation<ProfileImageUploadResponse, unknown, ProfileImageFile>({
-    mutationFn: (file) => profileApi.changeProfileImage(file),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: profileQueryKeys.me() });
+  return useMutation<
+    ProfileImageUploadResponse,
+    unknown,
+    { file: ProfileImageFile; signal?: AbortSignal }
+  >({
+    mutationFn: ({ file, signal }) => profileApi.changeProfileImage(file, signal),
+    onSuccess: async ({ profileImageUrl }) => {
+      const key = profileQueryKeys.me();
+      const previous = queryClient.getQueryData<Profile>(key);
+      if (previous) {
+        markProfileImageReplaced(previous.id, previous.profileImageUrl, profileImageUrl);
+        queryClient.setQueryData<Profile>(key, { ...previous, profileImageUrl });
+      }
+      await queryClient.invalidateQueries({ queryKey: key });
     },
   });
 }

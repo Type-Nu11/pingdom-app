@@ -16,9 +16,13 @@ const mockUsePlaceCard = jest.fn();
 const mockUseSubmit = jest.fn();
 const mockUseLocationPermission = jest.fn();
 const mockUseSessionController = jest.fn();
+const mockUseProfile = jest.fn();
 
 jest.mock('../hooks/useVisitVerificationCandidates', () => ({
   useVisitVerificationCandidates: () => mockUseCandidates(),
+}));
+jest.mock('../../../user/profile', () => ({
+  useProfile: () => mockUseProfile(),
 }));
 jest.mock('../../exploration', () => ({
   usePlaceCard: () => mockUsePlaceCard(),
@@ -47,6 +51,7 @@ async function renderFeature(ui: React.ReactElement, language: 'en' | 'ko' = 'ko
 }
 
 beforeEach(() => {
+  mockUseProfile.mockReturnValue({ profile: { username: '민수' } });
   jest.clearAllMocks();
   mockUsePlaceCard.mockReturnValue({ data: place, isError: false, isLoading: false });
   mockUseSubmit.mockReturnValue({ error: null, isError: false, isPending: false, mutateAsync: jest.fn() });
@@ -180,6 +185,7 @@ test('review UI caps local photos and reasons without blocking submission for lo
   const view = await renderFeature(<VisitVerificationReviewScreen mediaPicker={mediaPicker} onBack={jest.fn()} onComplete={jest.fn()} placeId={17} />);
 
   expect(view.getByTestId('visit-photo-picker-icon')).toBeVisible();
+  expect(view.getByTestId('visit-review-input').props.placeholder).toBe('다른 사람들에게 민수님의 후기를 알려주세요');
   expect(view.getByTestId('visit-review-input').props.placeholderTextColor).toBe(lightTheme.colors.textMuted);
   expect(view.getByTestId('visit-review-input')).toHaveStyle({ fontFamily: expect.stringMatching(/^Pretendard/) });
   for (const reason of ['kind', 'easyToFind', 'delicious', 'multilingual', 'parking', 'photoSpot', 'clean']) {
@@ -191,6 +197,8 @@ test('review UI caps local photos and reasons without blocking submission for lo
     await view.user.press(view.getByTestId(`visit-reason-${reason}`));
   }
   expect(view.getByTestId('visit-reason-photoSpot')).toBeDisabled();
+  expect(view.getByText('최대 5개까지 선택할 수 있어요')).toBeVisible();
+  expect(view.getByText('5/5개 선택됨')).toBeVisible();
   await view.user.type(view.getByTestId('visit-review-input'), '좋았어요.');
   await view.user.press(view.getByTestId('visit-submit'));
   expect(mutateAsync).toHaveBeenCalledWith({

@@ -7,7 +7,7 @@ import styled from 'styled-components/native';
 
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import SettingsIcon from '../../../shared/assets/icons/settings.svg';
-import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
+import { ProfileAvatar } from '../../../shared/components';
 import EventCard from '../components/EventCard';
 import MerchantReviewCard from '../components/MerchantReviewCard';
 import StoreFeatureBadge from '../components/StoreFeatureBadge';
@@ -70,11 +70,7 @@ export default function MerchantMyPageScreen({
         <ProfileSection>
           <ProfileRow>
             <ProfileInfo>
-              {profile.profileImageUrl ? (
-                <Avatar source={{ uri: profile.profileImageUrl }} />
-              ) : (
-                <AvatarPlaceholder height={56} width={56} />
-              )}
+              <ProfileAvatar size={56} uri={profile.profileImageUrl} />
               <ProfileText>
                 <ProfileNameRow>
                   <Username numberOfLines={1}>{profile.username}</Username>
@@ -261,12 +257,6 @@ const ProfileNameRow = styled.View`
   flex-direction: row;
   align-items: center;
   gap: 4px;
-`;
-
-const Avatar = styled(Image)`
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
 `;
 
 const Username = styled(AppText)`

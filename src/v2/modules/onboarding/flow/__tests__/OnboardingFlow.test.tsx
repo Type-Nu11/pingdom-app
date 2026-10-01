@@ -4,10 +4,10 @@ import { Pressable as MockPressable, Text as MockText } from 'react-native';
 
 import OnboardingFlow from '../OnboardingFlow';
 
-jest.mock('../SelectFirstScreen', () => ({ onNext }: { onNext: () => void }) => (
+jest.mock('../../welcome/screens/WelcomeScreen', () => ({ onNext }: { onNext: () => void }) => (
   <MockPressable onPress={onNext} testID="first-next"><MockText>first</MockText></MockPressable>
 ));
-jest.mock('../SelectCountryScreen', () => ({
+jest.mock('../../country/screens/CountrySelectionScreen', () => ({
   onNext,
 }: {
   onNext: (country: 'US') => void;
@@ -16,7 +16,7 @@ jest.mock('../SelectCountryScreen', () => ({
     <MockText>country</MockText>
   </MockPressable>
 ));
-jest.mock('../SelectAgeScreen', () => ({
+jest.mock('../../age/screens/BirthYearSelectionScreen', () => ({
   onNext,
 }: {
   onNext: (year: number) => void;
@@ -25,7 +25,7 @@ jest.mock('../SelectAgeScreen', () => ({
     <MockText>age</MockText>
   </MockPressable>
 ));
-jest.mock('../SelectGenderScreen', () => ({
+jest.mock('../../gender/screens/GenderSelectionScreen', () => ({
   onNext,
 }: {
   onNext: (gender: 'female') => void;
@@ -34,7 +34,7 @@ jest.mock('../SelectGenderScreen', () => ({
     <MockText>gender</MockText>
   </MockPressable>
 ));
-jest.mock('../../../v2/modules/onboarding', () => ({
+jest.mock('../../language', () => ({
   LanguageSelectionScreen: ({
     onNext,
   }: {
@@ -44,6 +44,8 @@ jest.mock('../../../v2/modules/onboarding', () => ({
       <MockText>language</MockText>
     </MockPressable>
   ),
+}));
+jest.mock('../../preferences', () => ({
   OnboardingPreferenceFlow: ({
     initialStep,
     onBack,

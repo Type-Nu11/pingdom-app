@@ -17,7 +17,7 @@ const flattenValues = (value) => Object.values(value).flatMap((child) =>
   child && typeof child === 'object' ? flattenValues(child) : [String(child)]);
 
 const repositoryRoot = resolve(import.meta.dirname, '../../../../..');
-const sourceRoots = ['src/application', 'src/app', 'src/v2', 'src/features/auth', 'src/features/onboarding', 'src/features/place/screens'];
+const sourceRoots = ['src/application', 'src/app', 'src/v2', 'src/features/auth', 'src/features/place/screens'];
 const ignoredPaths = ['/__tests__/', '/testing/', '/generated/', '/mock/', '/dev/'];
 
 function sourceFiles(path) {

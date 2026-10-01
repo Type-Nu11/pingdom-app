@@ -97,7 +97,9 @@ export type PlaceReview = {
   createdAt: string;
   imageUrls: string[];
   placeId: number;
-  recommendReason: string;
+  /** @deprecated Single free-text reason; use `recommendReasons`. */
+  recommendReason?: string | null;
+  recommendReasons?: readonly string[] | null;
   reviewId: number;
   userId: number;
 };

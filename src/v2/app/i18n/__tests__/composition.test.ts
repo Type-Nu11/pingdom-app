@@ -47,6 +47,17 @@ test('preserves assembled translations outside reviewed feature copy changes', (
       : 'Network problem. Check your connection and try again.';
     delete baseline[language].translation.visitVerification.uploading;
     delete baseline[language].translation.visitVerification.errors;
+    // #398 adds the accessibility label for the extra review reason count.
+    // #398 adds inline review expansion copy to the place detail info tab.
+    delete baseline[language].translation.map.detail.viewAllReviews;
+    delete baseline[language].translation.map.detail.collapseReviews;
+    delete baseline[language].translation.visitVerification.reasonMoreCount;
+    // #398 aligns the recommendation-reason screen copy with the reviewed Figma design.
+    delete baseline[language].translation.visitVerification.reasonSelectedSuffix;
+    baseline[language].translation.visitVerification.reasonHelp = language === 'ko' ? '최대 5개 선택' : 'Select up to 5';
+    baseline[language].translation.visitVerification.reviewPlaceholder = language === 'ko'
+      ? '다른 사람들에게 이 장소의 좋은 점을 알려주세요.'
+      : 'Tell others what you liked about this place.';
     const voiceAssistant = baseline[language].translation.voiceAssistant;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
@@ -70,6 +81,26 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     };
     // #389 moves the My Trip weekday header out of the component.
     delete baseline[language].translation.myPage.travel.weekdays;
+    // #399 adds the profile photo picker, retry, and permission copy.
+    for (const key of [
+      'avatarCameraPermissionDenied',
+      'avatarCancel',
+      'avatarFileTooLarge',
+      'avatarFromCamera',
+      'avatarFromLibrary',
+      'avatarOpenSettings',
+      'avatarRetry',
+      'avatarSheetTitle',
+      'avatarTypeUnsupported',
+    ]) {
+      delete baseline[language].translation.myPage.profileEdit[key];
+    }
+    // #399 extends the existing permission message with a Settings hint.
+    baseline[language].translation.myPage.profileEdit.avatarPermissionDenied = ({
+      en: 'Photo library access is required to change your profile image.',
+      ja: 'プロフィール画像を変更するには、写真ライブラリへのアクセスが必要です。',
+      ko: '프로필 이미지를 변경하려면 사진 접근 권한이 필요합니다.',
+    } as Record<string, string>)[language];
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
     .toBe('f2dc1044fdfdba80886ded680f6c6b25b694134c843365c57988f7f1b3f4b478');

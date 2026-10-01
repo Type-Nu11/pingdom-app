@@ -15,3 +15,15 @@ export function getPasswordErrorMessage(
   }
   return messages.fallback;
 }
+
+export type ProfileImageApiErrorKind = 'failed' | 'tooLarge' | 'typeUnsupported';
+
+// Server contract for POST /users/me/profile-image: 400 = empty file or a type
+// other than JPEG/PNG, 413 = file too large. Anything else is retryable.
+export function getProfileImageApiErrorKind(error: unknown): ProfileImageApiErrorKind {
+  if (error instanceof ApiError) {
+    if (error.status === 413) return 'tooLarge';
+    if (error.status === 400) return 'typeUnsupported';
+  }
+  return 'failed';
+}
