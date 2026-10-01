@@ -1,16 +1,26 @@
 import React from 'react';
-import { Image } from 'react-native';
+import { Image, useWindowDimensions } from 'react-native';
 import styled from 'styled-components/native';
 
 type Props = Readonly<{
+  // Figma offset of the logo block below the header, for the 874px frame.
+  heroTop: number;
   logoAccessibilityLabel: string;
   subtitle: string;
   title: string;
 }>;
 
-export default function OnboardingHero({ logoAccessibilityLabel, subtitle, title }: Props) {
+// Figma frame (402x874): the logo block starts 183px below the header; shorter
+// screens give that space back so the CTA never collides with the text.
+const FIGMA_FRAME_HEIGHT = 874;
+const MIN_HERO_TOP = 24;
+
+export default function OnboardingHero({ heroTop, logoAccessibilityLabel, subtitle, title }: Props) {
+  const { height } = useWindowDimensions();
+  const top = Math.max(MIN_HERO_TOP, heroTop - Math.max(0, FIGMA_FRAME_HEIGHT - height));
+
   return (
-    <Group>
+    <Group style={{ paddingTop: top }}>
       <Logo
         accessibilityLabel={logoAccessibilityLabel}
         resizeMode="contain"
@@ -27,7 +37,7 @@ export default function OnboardingHero({ logoAccessibilityLabel, subtitle, title
 const Group = styled.View`
   flex: 1;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 32px;
 `;
 

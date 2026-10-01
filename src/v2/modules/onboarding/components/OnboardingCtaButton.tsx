@@ -1,24 +1,36 @@
 import React from 'react';
-import styled from 'styled-components/native';
+import { ActivityIndicator } from 'react-native';
+import styled, { useTheme } from 'styled-components/native';
 
 type Props = Readonly<{
   disabled?: boolean;
   label: string;
+  loading?: boolean;
   onPress: () => void;
   testID?: string;
 }>;
 
-export default function OnboardingCtaButton({ disabled = false, label, onPress, testID }: Props) {
+export default function OnboardingCtaButton({
+  disabled = false,
+  label,
+  loading = false,
+  onPress,
+  testID,
+}: Props) {
+  const { colors } = useTheme();
+  const inactive = disabled || loading;
+
   return (
     <Button
       $disabled={disabled}
+      accessibilityLabel={label}
       accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={{ busy: loading, disabled: inactive }}
+      disabled={inactive}
       onPress={onPress}
       testID={testID}
     >
-      <Label $disabled={disabled}>{label}</Label>
+      {loading ? <ActivityIndicator color={colors.textInverse} /> : <Label $disabled={disabled}>{label}</Label>}
     </Button>
   );
 }

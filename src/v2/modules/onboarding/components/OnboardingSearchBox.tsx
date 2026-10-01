@@ -42,9 +42,10 @@ const Box = styled.View`
   flex-direction: row;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
-  padding: ${({ theme }) => theme.spacing.md}px 20px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
+  height: 56px;
+  margin-bottom: 20px;
+  padding: 0 20px;
+  border-radius: 30px;
   background-color: ${({ theme }) => theme.colors.fillAlternative};
 `;
 

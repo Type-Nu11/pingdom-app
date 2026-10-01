@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import styled, { useTheme } from 'styled-components/native';
 
@@ -9,6 +10,9 @@ type Props = Readonly<{
   progressLabel: string;
   progressValueText: string;
   totalSteps: number;
+  // Figma: first-run and login frames leave 10px below the status bar.
+  topGap?: number;
+  sidePadding?: number;
 }>;
 
 export default function OnboardingProgressHeader({
@@ -17,18 +21,22 @@ export default function OnboardingProgressHeader({
   onBack,
   progressLabel,
   progressValueText,
+  sidePadding = 24,
+  topGap = 0,
   totalSteps,
 }: Props) {
-  const { colors } = useTheme();
+  const { colors, liquidGlass } = useTheme();
+  const { top } = useSafeAreaInsets();
 
   return (
-    <Header>
+    <Header style={{ paddingHorizontal: sidePadding, paddingTop: top + topGap }}>
       {onBack ? (
         <BackButton
           accessibilityLabel={backLabel}
           accessibilityRole="button"
           hitSlop={12}
           onPress={onBack}
+          style={{ boxShadow: liquidGlass.header.shadow }}
         >
           <Svg fill="none" height={44} viewBox="16 16 44 44" width={44}>
             <Path
@@ -44,28 +52,30 @@ export default function OnboardingProgressHeader({
         <HeaderSide />
       )}
 
-      <Progress
-        accessibilityLabel={progressLabel}
-        accessibilityRole="progressbar"
-        accessibilityValue={{
-          max: totalSteps,
-          min: 1,
-          now: currentStep,
-          text: progressValueText,
-        }}
-        accessible
-      >
-        {Array.from({ length: totalSteps }, (_, index) => {
-          const step = index + 1;
-          return (
-            <ProgressSegment
-              key={step}
-              $active={step <= currentStep}
-              $current={step === currentStep}
-            />
-          );
-        })}
-      </Progress>
+      {totalSteps > 0 ? (
+        <Progress
+          accessibilityLabel={progressLabel}
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            max: totalSteps,
+            min: 1,
+            now: currentStep,
+            text: progressValueText,
+          }}
+          accessible
+        >
+          {Array.from({ length: totalSteps }, (_, index) => {
+            const step = index + 1;
+            return (
+              <ProgressSegment
+                key={step}
+                $active={step <= currentStep}
+                $current={step === currentStep}
+              />
+            );
+          })}
+        </Progress>
+      ) : null}
 
       <HeaderSide />
     </Header>
@@ -73,17 +83,14 @@ export default function OnboardingProgressHeader({
 }
 
 const Header = styled.View`
-  height: 105px;
-  padding-top: 80px;
-  padding-right: 24px;
-  padding-left: 24px;
   flex-direction: row;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
 `;
 
 const HeaderSide = styled.View`
   width: 44px;
+  height: 44px;
 `;
 
 const BackButton = styled.Pressable`
@@ -98,6 +105,7 @@ const BackButton = styled.Pressable`
 `;
 
 const Progress = styled.View`
+  height: 44px;
   flex-direction: row;
   align-items: center;
   gap: 6px;
