@@ -19,6 +19,7 @@ export const visitVerificationResources = {
     placeLoading: 'Loading place information...',
     placePhoto: '{{name}} photo {{index}}',
     reasonHelp: 'Select up to 5',
+    reasonMoreCount: '{{count}} more reasons',
     reasonSection: 'Recommendation reasons',
     reasons: {
       clean: 'Clean store',
@@ -106,6 +107,7 @@ export const visitVerificationResources = {
     placeLoading: '장소 정보를 불러오는 중이에요...',
     placePhoto: '{{name}} 사진 {{index}}',
     reasonHelp: '최대 5개 선택',
+    reasonMoreCount: '추천 이유 {{count}}개 더 있음',
     reasonSection: '추천 이유',
     reasons: {
       clean: '매장이 깨끗해요',
@@ -193,6 +195,7 @@ export const visitVerificationResources = {
     placeLoading: '場所の情報を読み込んでいます...',
     placePhoto: '{{name}}の写真{{index}}',
     reasonHelp: '最大5つまで選択',
+    reasonMoreCount: 'ほか{{count}}件のおすすめ理由',
     reasonSection: 'おすすめの理由',
     reasons: {
       clean: 'お店が清潔',
