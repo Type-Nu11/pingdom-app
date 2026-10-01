@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -425,6 +425,184 @@ describe('ProfileEditScreen', () => {
       .toBe('https://cdn/new.jpg'));
     expect(permission).toHaveBeenCalledTimes(2);
     expect(launchPicker).toHaveBeenCalledTimes(2);
+  });
+
+  describe('프로필 이미지 변경 흐름', () => {
+    const IMAGE_ASSET = { fileName: 'photo.jpg', mimeType: 'image/jpeg', uri: 'file:///photo.jpg' };
+
+    function alertButtons(spy: jest.SpyInstance, title: string) {
+      const call = [...spy.mock.calls].reverse().find((args) => args[0] === title);
+      return (call?.[2] ?? []) as { onPress?: () => void; style?: string; text: string }[];
+    }
+
+    function grantLibrary() {
+      jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync)
+        .mockResolvedValue({ granted: true } as never);
+      jest.mocked(ImagePicker.launchImageLibraryAsync)
+        .mockResolvedValue({ assets: [IMAGE_ASSET], canceled: false } as never);
+    }
+
+    async function setupWithImage() {
+      jest.spyOn(profileApi, 'getProfile')
+        .mockResolvedValue({ ...PROFILE, profileImageUrl: 'https://cdn/old.jpg' });
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      const view = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+      await screen.findByTestId('v2-profile-edit-avatar-image');
+      return { ...view, alertSpy };
+    }
+
+    test('진입점에 버튼 역할과 라벨이 있고 시트에 앨범·촬영·취소가 순서대로 나온다', async () => {
+      const { alertSpy, user } = await setupWithImage();
+
+      const entry = screen.getByRole('button', { name: '프로필 이미지 변경' });
+      expect(entry).toBeEnabled();
+      await user.press(entry);
+
+      expect(alertSpy).toHaveBeenCalledWith(
+        '프로필 사진 변경',
+        undefined,
+        expect.any(Array),
+        expect.objectContaining({ cancelable: true }),
+      );
+      expect(alertButtons(alertSpy, '프로필 사진 변경').map((button) => button.text))
+        .toEqual(['앨범에서 선택', '사진 촬영', '취소']);
+    });
+
+    test('시트가 열려 있는 동안 다시 눌러도 시트는 한 번만 열린다', async () => {
+      const { alertSpy, user } = await setupWithImage();
+
+      await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
+      await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
+
+      expect(alertSpy.mock.calls.filter((args) => args[0] === '프로필 사진 변경')).toHaveLength(1);
+    });
+
+    test('업로드 중에는 진입점이 비활성화되고 진행 표시가 보이며 요청은 한 번이다', async () => {
+      grantLibrary();
+      let finish: (value: { profileImageUrl: string }) => void = () => {};
+      const upload = jest.spyOn(profileApi, 'changeProfileImage')
+        .mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+
+      await waitFor(() => expect(screen.getByRole('button', { name: '프로필 이미지 변경' })).toBeDisabled());
+      const entry = screen.getByRole('button', { name: '프로필 이미지 변경' });
+      expect(entry.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
+      expect(screen.getByLabelText('프로필 이미지 업로드 중')).toBeOnTheScreen();
+
+      await user.press(entry);
+      expect(alertSpy.mock.calls.filter((args) => args[0] === '프로필 사진 변경')).toHaveLength(1);
+      expect(upload).toHaveBeenCalledTimes(1);
+
+      await act(async () => { finish({ profileImageUrl: 'https://cdn/new.jpg' }); });
+      await waitFor(() => expect(screen.queryByLabelText('프로필 이미지 업로드 중')).toBeNull());
+    });
+
+    test('업로드 실패 안내의 다시 시도는 사진을 다시 고르지 않고 같은 파일을 보낸다', async () => {
+      grantLibrary();
+      const upload = jest.spyOn(profileApi, 'changeProfileImage')
+        .mockRejectedValueOnce(new ApiError('network', { isNetworkError: true }))
+        .mockResolvedValueOnce({ profileImageUrl: 'https://cdn/new.jpg' });
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      await waitFor(() => expect(alertButtons(
+        alertSpy,
+        '프로필 이미지를 변경하지 못했습니다. 다시 시도해주세요.',
+      ).map((button) => button.text)).toEqual(['취소', '다시 시도']));
+      expect(screen.getByTestId('v2-profile-edit-avatar-image').props.source.uri)
+        .toBe('https://cdn/old.jpg');
+
+      const retry = alertButtons(alertSpy, '프로필 이미지를 변경하지 못했습니다. 다시 시도해주세요.')[1];
+      await act(async () => { retry.onPress?.(); });
+
+      await waitFor(() => expect(upload).toHaveBeenCalledTimes(2));
+      expect(upload.mock.calls[1][0]).toEqual({
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+        uri: 'file:///photo.jpg',
+      });
+      expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+    });
+
+    test('용량 초과(413)와 형식 오류(400)는 재시도 없이 각각 안내한다', async () => {
+      grantLibrary();
+      const upload = jest.spyOn(profileApi, 'changeProfileImage')
+        .mockRejectedValueOnce(new ApiError('too large', { status: 413 }))
+        .mockRejectedValueOnce(new ApiError('bad type', { status: 400 }));
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      await waitFor(() => expect(alertMessages(alertSpy)).toContain(
+        '이미지 용량이 너무 큽니다. 더 작은 이미지를 선택해주세요.',
+      ));
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      await waitFor(() => expect(alertMessages(alertSpy)).toContain(
+        'JPEG 또는 PNG 이미지만 프로필 이미지로 사용할 수 있습니다.',
+      ));
+
+      expect(upload).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('v2-profile-edit-avatar-image').props.source.uri)
+        .toBe('https://cdn/old.jpg');
+    });
+
+    test('권한이 거부되면 설정 열기 버튼을 제공하고 업로드하지 않는다', async () => {
+      jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync)
+        .mockResolvedValue({ canAskAgain: false, granted: false } as never);
+      const upload = jest.spyOn(profileApi, 'changeProfileImage');
+      const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      const message = '프로필 이미지를 변경하려면 사진 접근 권한이 필요합니다. 설정에서 허용해주세요.';
+      await waitFor(() => expect(alertMessages(alertSpy)).toContain(message));
+
+      const buttons = alertButtons(alertSpy, message);
+      expect(buttons.map((button) => button.text)).toEqual(['취소', '설정 열기']);
+      await act(async () => { buttons[1].onPress?.(); });
+
+      expect(openSettings).toHaveBeenCalledTimes(1);
+      expect(upload).not.toHaveBeenCalled();
+    });
+
+    test('사진 촬영을 고르면 카메라 권한과 카메라로 사진을 받는다', async () => {
+      jest.mocked(ImagePicker.requestCameraPermissionsAsync)
+        .mockResolvedValue({ granted: true } as never);
+      jest.mocked(ImagePicker.launchCameraAsync)
+        .mockResolvedValue({ assets: [IMAGE_ASSET], canceled: false } as never);
+      const upload = jest.spyOn(profileApi, 'changeProfileImage')
+        .mockResolvedValue({ profileImageUrl: 'https://cdn/new.jpg' });
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '사진 촬영');
+
+      await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+      expect(ImagePicker.launchCameraAsync).toHaveBeenCalledTimes(1);
+      expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
+    });
+
+    test('카메라 권한이 거부되면 카메라 전용 안내를 보여준다', async () => {
+      jest.mocked(ImagePicker.requestCameraPermissionsAsync)
+        .mockResolvedValue({ granted: false } as never);
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '사진 촬영');
+
+      await waitFor(() => expect(alertMessages(alertSpy)).toContain(
+        '프로필 사진을 촬영하려면 카메라 접근 권한이 필요합니다. 설정에서 허용해주세요.',
+      ));
+    });
+
+    test('프로필 이미지 URL이 깨지면 기본 아바타로 대체한다', async () => {
+      await setupWithImage();
+
+      await fireEvent(screen.getByTestId('v2-profile-edit-avatar-image'), 'error');
+
+      expect(screen.queryByTestId('v2-profile-edit-avatar-image')).toBeNull();
+      expect(screen.getByRole('button', { name: '프로필 이미지 변경' })).toBeEnabled();
+    });
   });
 
   test('비밀번호 보기 버튼과 저장 버튼이 접근성 상태를 노출한다', async () => {
