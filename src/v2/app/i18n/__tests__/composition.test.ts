@@ -45,6 +45,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
       : 'Network problem. Check your connection and try again.';
     delete baseline[language].translation.visitVerification.uploading;
     delete baseline[language].translation.visitVerification.errors;
+    // #398 adds the accessibility label for the extra review reason count.
+    delete baseline[language].translation.visitVerification.reasonMoreCount;
     const voiceAssistant = baseline[language].translation.voiceAssistant;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
