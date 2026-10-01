@@ -1,5 +1,6 @@
 export type RouteMode = 'car' | 'walk' | 'transit' | 'bike';
 export type RouteDestination = {
+  isCurrentLocation?: boolean;
   category?: import('../../../../../shared/native/NaverMapNativeView').NaverMapNativeMarker['category'];
   placeId: number;
   name: string;

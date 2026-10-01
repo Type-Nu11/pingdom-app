@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, View, type LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
@@ -16,19 +16,18 @@ import WalkSelectedIcon from '../assets/mode_walk_selected.svg';
 import CarIcon from '../assets/mode_car.svg';
 import CarSelectedIcon from '../assets/mode_car_selected.svg';
 import BikeIcon from '../assets/mode_bike.svg';
-import OriginIcon from '../assets/origin.svg';
-import OriginDeniedIcon from '../assets/origin_denied.svg';
-import DestinationIcon from '../assets/destination.svg';
+import RouteEndpointRows, { type EndpointRole } from './RouteEndpointRows';
 import ErrorIcon from '../assets/error.svg';
 import StartIcon from '../assets/start.svg';
 
 type Props = {
-  destination: RouteDestination; mode: RouteMode; stateKey: string; ready: CarRoute | null;
+  origin: RouteDestination | null; destination: RouteDestination | null; mode: RouteMode; stateKey: string; ready: CarRoute | null;
   canRequest: boolean; canOpenExternal: boolean; bottomInset: number; maxHeight: number;
   hasOrigin: boolean; deniedPermanently: boolean;
   onLayout: (event: LayoutChangeEvent) => void; onMode: (mode: RouteMode) => void;
   onClose: () => void; onShare: () => void; onRequest: () => void; onCancel: () => void;
   onExternal: () => void; onRefreshLocation: () => void; onSettings: () => void;
+  onEditEndpoint: (role: EndpointRole) => void; onSwapEndpoints: () => void;
 };
 const modes = ['transit', 'walk', 'car', 'bike'] as const;
 const icons = { transit: TransitInactiveIcon, walk: WalkIcon, car: CarIcon, bike: BikeIcon };
@@ -38,6 +37,7 @@ const selectedIcons = { transit: TransitIcon, walk: WalkSelectedIcon, car: CarSe
 export default function RoutePlannerSheet(props: Props) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const [dragging, setDragging] = useState(false);
   const language = i18n.resolvedLanguage ?? 'en';
   const arrivalTime = useMemo(() => props.ready ? new Date(Date.now() + props.ready.durationSeconds * 1000) : null, [props.ready]);
   const metrics = props.ready ? routeMetrics(props.ready, language, t) : null;
@@ -57,7 +57,7 @@ export default function RoutePlannerSheet(props: Props) {
     style={{ bottom: Math.max(8, props.bottomInset), maxHeight: props.maxHeight }}>
     <SheetGlass tintColor={theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
       style={{ borderColor: theme.liquidGlass.sheet.rim }}>
-      <SheetContent bounces={false} showsVerticalScrollIndicator={false}>
+      <SheetContent bounces={false} scrollEnabled={!dragging} showsVerticalScrollIndicator={false}>
         <Grabber accessible={false} style={{ backgroundColor: theme.colors.border }} />
         <Header>
           <IconButton accessibilityRole="button" accessibilityLabel={t('routes.share')} onPress={props.onShare}><ShareIcon /></IconButton>
@@ -73,23 +73,8 @@ export default function RoutePlannerSheet(props: Props) {
               style={selected ? { shadowColor: '#000000', shadowOpacity: 0.08, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 2 } : undefined}><Icon /></ModeTab>;
           })}
         </ModeTrack>
-        <Places style={{ backgroundColor: raised }}>
-          <PlaceRow>
-            <OriginBadge style={{ backgroundColor: theme.colors.primarySoft }}>{props.hasOrigin ? <OriginIcon /> : <OriginDeniedIcon />}</OriginBadge>
-            <PlaceText>
-              <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{t(props.hasOrigin ? 'routes.currentLocation' : 'routes.setOrigin')}</Text>
-              <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{t(props.hasOrigin ? 'routes.origin' : 'routes.locationNeeded')}</Text>
-            </PlaceText>
-          </PlaceRow>
-          <Divider style={{ backgroundColor: theme.colors.border }} />
-          <PlaceRow>
-            <DestinationIcon />
-            <PlaceText>
-              <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{props.destination.name}</Text>
-              <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{props.destination.address || t('routes.destination')}</Text>
-            </PlaceText>
-          </PlaceRow>
-        </Places>
+        <RouteEndpointRows origin={props.origin} destination={props.destination} onDragging={setDragging}
+          onEdit={props.onEditEndpoint} onSwap={props.onSwapEndpoints} />
         {metrics && props.ready ? <Result accessible accessibilityLabel={routeSummary(props.ready, language, t)} testID="route-status"
           style={{ backgroundColor: raised }}>
           <View style={{ flex: 1, gap: 4 }}>
@@ -180,32 +165,6 @@ const ModeTab = styled.Pressable<{ $selected: boolean }>`
   justify-content: center;
   min-height: 40px;
   background-color: ${({ $selected }) => $selected ? '#FFFFFF' : 'transparent'};
-`;
-const Places = styled.View`
-  border-radius: 20px;
-  overflow: hidden;
-`;
-const PlaceRow = styled.View`
-  min-height: 56px;
-  padding: 8px 12px;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-`;
-const OriginBadge = styled.View`
-  width: 32px;
-  height: 32px;
-  border-radius: 16px;
-  align-items: center;
-  justify-content: center;
-`;
-const PlaceText = styled.View`
-  flex: 1;
-  gap: 2px;
-`;
-const Divider = styled.View`
-  height: 0.5px;
-  margin-left: 56px;
 `;
 const Result = styled.View`
   padding: 16px;

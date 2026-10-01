@@ -9,6 +9,15 @@ import { openNaverRoute } from '../services/openNaverRoute';
 import type { NaverMapAdapterProps } from '../../native/components/NaverMapAdapter';
 
 let mockMapProps: NaverMapAdapterProps;
+const mockSaved = { places: [{ id: 2, name: 'Saved cafe', address: 'Cafe street', category: 'CAFE', latitude: 37.7, longitude: 127.2 }], isLoading: false, isError: false, hasNextPage: false, isFetchingNextPage: false, refetch: jest.fn(), fetchNextPage: jest.fn() };
+jest.mock('../../../exploration', () => ({
+  ...jest.requireActual('../../../exploration'),
+  useBookmarkedPlaces: () => mockSaved,
+  usePlaceAutocomplete: ({ keyword }: { keyword: string }) => ({
+    data: { places: keyword === 'New place' ? [{ id: 3, name: 'New place', address: 'New street', category: 'FOOD', latitude: 37.9, longitude: 127.4 }] : [] },
+    isLoading: false, isError: false, refetch: jest.fn(),
+  }),
+}));
 jest.mock('../../native/components/NaverMapAdapter', () => ({ __esModule: true, default: (props: NaverMapAdapterProps) => {
   mockMapProps = props;
   const { View } = require('react-native');
@@ -152,4 +161,69 @@ test.each(['light', 'dark'] as const)('Figma sheet uses icon tabs, real result v
   await user.press(screen.getByTestId('route-external'));
   expect(openNaverRoute).toHaveBeenLastCalledWith(destination, expect.anything(), 'car');
   expect(findCarRoute).toHaveBeenCalledTimes(1);
+});
+
+test('swap clears pending geometry, drops late response and uses reversed endpoints in both route actions', async () => {
+  let resolve!: (value: typeof route) => void;
+  jest.mocked(findCarRoute).mockImplementationOnce(() => new Promise(yes => { resolve = yes; })).mockResolvedValue(route);
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByTestId('route-request'));
+  const firstSignal = jest.mocked(findCarRoute).mock.calls[0][2];
+  await fireEvent(screen.getByTestId('route-destination-row'), 'accessibilityAction', { nativeEvent: { actionName: 'swap' } });
+  expect(firstSignal.aborted).toBe(true);
+  await act(async () => resolve(route));
+  expect(mockMapProps.routeCoordinates).toBeUndefined();
+  expect(mockMapProps.userCoordinate).toEqual(location.coordinate);
+  await user.press(screen.getByTestId('route-request'));
+  expect(findCarRoute).toHaveBeenLastCalledWith(destination, expect.objectContaining({ latitude: 37.5, longitude: 127 }), expect.anything());
+  await screen.findByText('30 min');
+  await user.press(screen.getByTestId('route-external'));
+  expect(openNaverRoute).toHaveBeenLastCalledWith(expect.objectContaining({ latitude: 37.5, longitude: 127 }), destination, 'car');
+});
+
+test.each(['light', 'dark'] as const)('tap opens Figma place editor and saved selection changes the real destination in %s', async colorScheme => {
+  jest.mocked(findCarRoute).mockResolvedValue(route);
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en', colorScheme, appearancePreference: colorScheme === 'dark' ? 'DARK' : 'LIGHT' });
+  await user.press(screen.getByTestId('route-destination-row'));
+  expect(screen.getByTestId('route-endpoint-editor')).toBeVisible();
+  expect(screen.queryByRole('tab', { name: 'Car' })).toBeNull();
+  expect(screen.getByLabelText('Search places')).toBeVisible();
+  expect(screen.getByText('Saved places')).toBeVisible();
+  expect(screen.getByText('Recent searches')).toBeVisible();
+  await user.press(screen.getByRole('button', { name: 'Saved cafe' }));
+  expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
+  await user.press(screen.getByTestId('route-request'));
+  expect(findCarRoute).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ placeId: 2, latitude: 37.7, longitude: 127.2 }), expect.anything());
+});
+
+test('search result edits origin, and changing both endpoints permits routes without GPS permission', async () => {
+  jest.mocked(findCarRoute).mockResolvedValue(route);
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} location={{ status: 'denied', coordinate: null, canAskAgain: false }} />, { language: 'en' });
+  await user.press(screen.getByTestId('route-origin-row'));
+  await fireEvent.changeText(screen.getByTestId('route-endpoint-search'), 'New place');
+  await user.press(await screen.findByText('New place'));
+  expect(screen.getByTestId('route-request')).toBeEnabled();
+  await user.press(screen.getByTestId('route-request'));
+  expect(findCarRoute).toHaveBeenLastCalledWith(expect.objectContaining({ latitude: 37.9, longitude: 127.4 }), destination, expect.anything());
+});
+
+test('map confirmation uses the native camera coordinate and keeps user GPS separate', async () => {
+  jest.mocked(findCarRoute).mockResolvedValue(route);
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByTestId('route-origin-row'));
+  await user.press(screen.getByRole('button', { name: 'Select on map' }));
+  await act(() => mockMapProps.onCameraIdle?.({ lat: 36.9, lng: 126.9 }));
+  await user.press(screen.getByTestId('route-map-confirm'));
+  await user.press(screen.getByTestId('route-request'));
+  expect(findCarRoute).toHaveBeenLastCalledWith(expect.objectContaining({ latitude: 36.9, longitude: 126.9 }), destination, expect.anything());
+  expect(mockMapProps.userCoordinate).toEqual(location.coordinate);
+});
+
+test('long press without crossing a row does not edit or swap endpoints', async () => {
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await fireEvent(screen.getByTestId('route-origin-row'), 'longPress');
+  await fireEvent.press(screen.getByTestId('route-origin-row'));
+  expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
+  await user.press(screen.getByTestId('route-external'));
+  expect(openNaverRoute).toHaveBeenLastCalledWith(destination, expect.objectContaining({ latitude: 37.5, longitude: 127 }), 'car');
 });

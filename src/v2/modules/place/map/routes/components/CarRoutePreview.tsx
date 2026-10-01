@@ -19,17 +19,27 @@ import MyLocationIcon from '../assets/my_location.svg';
 import BubbleCarIcon from '../assets/bubble_car.svg';
 import type { RouteDestination, RouteMode } from '../model/routeUi';
 import { openNaverRoute } from '../services/openNaverRoute';
+import RouteEndpointEditor from './RouteEndpointEditor';
+import type { EndpointRole } from './RouteEndpointRows';
+import type { RecentSearchOwner } from '../../../search/services/recentSearchStorage';
+import DestinationIcon from '../assets/destination.svg';
 
-type Props = { destination: RouteDestination; location: LocationState; onClose: () => void; onRefreshLocation: () => void };
-export default function CarRoutePreview({ destination, location, onClose, onRefreshLocation }: Props) {
+type Props = { destination: RouteDestination; location: LocationState; onClose: () => void; onRefreshLocation: () => void; recentSearchOwner?: RecentSearchOwner };
+export default function CarRoutePreview({ destination: initialDestination, location, onClose, onRefreshLocation, recentSearchOwner }: Props) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [sheetHeight, setSheetHeight] = useState(407);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [mode, setMode] = useState<RouteMode>('car');
-  const route = useCarRoute(`${destination.placeId}:${destination.latitude}:${destination.longitude}:${mode}`);
-  const [camera, setCamera] = useState<{ center: { lat: number; lng: number }; zoom: number; revision: number; fit?: NaverMapCameraFit }>({ center: endpointCoordinate(destination) ?? DEFAULT_MAP_CENTER, zoom: 14, revision: 0 });
+  // A null selection means live current location, in either endpoint slot.
+  const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>([null, initialDestination]);
+  const [endpointRevision, setEndpointRevision] = useState(0);
+  const [editing, setEditing] = useState<EndpointRole | null>(null);
+  const [mapPicking, setMapPicking] = useState(false);
+  const route = useCarRoute(`${endpointRevision}:${mode}`);
+  const [camera, setCamera] = useState<{ center: { lat: number; lng: number }; zoom: number; revision: number; fit?: NaverMapCameraFit }>({ center: endpointCoordinate(initialDestination) ?? DEFAULT_MAP_CENTER, zoom: 14, revision: 0 });
+  const [mapPoint, setMapPoint] = useState(camera.center);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const manualCamera = useRef(false);
   const fittedPath = useRef<unknown>(null);
@@ -38,12 +48,15 @@ export default function CarRoutePreview({ destination, location, onClose, onRefr
   const externalBusy = useRef(false);
   const [openingExternal, setOpeningExternal] = useState(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const currentPoint: RouteDestination | null = location.status === 'granted' ? { placeId: 0, name: t('routes.currentLocation'), isCurrentLocation: true, latitude: location.coordinate.lat, longitude: location.coordinate.lng } : null;
+  const origin = selections[0] ?? currentPoint;
+  const destination = selections[1] ?? currentPoint;
   const destinationCoordinate = endpointCoordinate(destination);
-  const origin = location.status === 'granted' ? { placeId: 0, name: t('routes.origin'), latitude: location.coordinate.lat, longitude: location.coordinate.lng } : null;
   const originCoordinate = endpointCoordinate(origin);
   const ready = mode === 'car' && !!originCoordinate && route.state.kind === 'ready' ? route.state.route : null;
   const markers: NaverMapNativeMarker[] = [];
-  if (destinationCoordinate) markers.push({ id: 'route-destination', category: destination.category ?? 'etc', ...destinationCoordinate, caption: t('routes.destination') });
+  if (destinationCoordinate) markers.push({ id: 'route-destination', category: destination?.category ?? 'etc', ...destinationCoordinate, caption: t('routes.destination') });
+  if (originCoordinate && !origin?.isCurrentLocation) markers.push({ id: 'route-origin', category: origin?.category ?? 'etc', ...originCoordinate, caption: t('routes.origin') });
 
   // Frame the real endpoints without drawing a route before a provider response exists.
   useEffect(() => {
@@ -62,18 +75,19 @@ export default function CarRoutePreview({ destination, location, onClose, onRefr
     if (!manualCamera.current) setCamera(previous => ({ ...fitRoutePreviewCamera(ready.path, viewport.width, viewport.height, sheetHeight + Math.max(8, insets.bottom), insets.top), revision: previous.revision + 1 }));
   }, [ready, viewport, sheetHeight, insets]);
   useEffect(() => {
-    if (location.status !== 'granted' || !originCoordinate) route.cancel();
+    if (selections.some(point => point === null) && (location.status !== 'granted' || !endpointCoordinate(currentPoint))) route.cancel();
     // Permission loss must dispose the previous path; GPS updates do not trigger new requests.
-  }, [location.status, !!originCoordinate]);
+  }, [location.status, !!endpointCoordinate(currentPoint), selections]);
 
   const stateKey = !destinationCoordinate ? 'missing-destination'
     : mode !== 'car' ? 'unsupported'
-      : location.status !== 'granted' ? `location-${location.status}` : !originCoordinate ? 'location-failed' : route.state.kind;
+      : !originCoordinate ? location.status !== 'granted' ? `location-${location.status}` : 'location-failed' : route.state.kind;
   const canRequest = mode === 'car' && !!destinationCoordinate && !!originCoordinate;
   async function openExternal() {
     if (externalBusy.current) return;
     externalBusy.current = true; setOpeningExternal(true);
     try {
+      if (!destination) return;
       const outcome = await openNaverRoute(destination, originCoordinate ? origin : null, mode);
       if (!mounted.current || outcome === 'opened') return;
       Alert.alert(t(outcome === 'not-installed' ? 'routes.notInstalled'
@@ -87,6 +101,19 @@ export default function CarRoutePreview({ destination, location, onClose, onRefr
     manualCamera.current = false; fittedPath.current = null; setAnchor(null);
     void route.request(origin, destination);
   }
+  function changeEndpoints(next: [RouteDestination | null, RouteDestination | null]) {
+    route.cancel(); setAnchor(null); fittedPath.current = null;
+    fittedEndpoints.current = false; manualCamera.current = false;
+    setSelections(next); setEndpointRevision(value => value + 1);
+  }
+  function selectEndpoint(point: RouteDestination | null) {
+    const next: typeof selections = [...selections];
+    next[editing === 'origin' ? 0 : 1] = point;
+    changeEndpoints(next); setEditing(null); setMapPicking(false);
+  }
+  function shareDestination() {
+    if (destination && destinationCoordinate) void sharePlace({ ...destination, latitude: destinationCoordinate.lat, longitude: destinationCoordinate.lng });
+  }
   function fit() {
     manualCamera.current = false;
     setCamera(previous => ({
@@ -96,12 +123,13 @@ export default function CarRoutePreview({ destination, location, onClose, onRefr
     }));
   }
   const metrics = ready ? routeMetrics(ready, i18n.resolvedLanguage ?? 'en', t) : null;
-  return <Modal visible animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+  return <Modal visible animationType="slide" onRequestClose={() => { if (mapPicking) setMapPicking(false); else if (editing) setEditing(null); else onClose(); }} statusBarTranslucent navigationBarTranslucent>
     <StatusBar barStyle={theme.colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
     <View style={{ flex: 1, backgroundColor: theme.colors.background }} onLayout={event => setViewport(event.nativeEvent.layout)}>
       <MapGlassBackdrop active>
         <NaverMapAdapter cameraFit={camera.fit} logoTopMargin={insets.top + 16} cameraRevision={camera.revision} center={camera.center} zoomLevel={camera.zoom}
-          userCoordinate={originCoordinate ?? undefined} followUser={false} markers={markers} routeCoordinates={ready?.path}
+          userCoordinate={endpointCoordinate(currentPoint) ?? undefined} followUser={false} markers={markers} routeCoordinates={ready?.path}
+          onCameraIdle={setMapPoint}
           onRouteAnchor={setAnchor} onCameraGesture={() => { manualCamera.current = true; setAnchor(null); }} />
         {ready && metrics && anchor && anchor.y > insets.top + 60 && anchor.y < viewport.height - sheetHeight - 70
           && anchor.x > 16 && anchor.x < viewport.width - 120 && <View pointerEvents="none" accessibilityElementsHidden
@@ -116,15 +144,28 @@ export default function CarRoutePreview({ destination, location, onClose, onRefr
           <Pressable accessibilityRole="button" accessibilityLabel={t(ready ? 'routes.fit' : 'routes.recenter')} onPress={fit}
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MyLocationIcon /></Pressable>
         </GlassSurface>
-        <RoutePlannerSheet destination={destination} mode={mode} stateKey={stateKey} ready={ready}
+        {mapPicking ? <>
+          <View pointerEvents="none" style={{ position: 'absolute', left: '50%', top: '50%', marginLeft: -16, marginTop: -32 }}><DestinationIcon /></View>
+          <GlassSurface style={{ position: 'absolute', left: 8, right: 8, bottom: Math.max(insets.bottom, 8), borderRadius: 24, padding: 16, gap: 12 }}>
+            <Text accessibilityRole="header" style={{ color: theme.colors.textStrong, fontSize: 18, fontWeight: '700' }}>{t('routes.editor.mapHint')}</Text>
+            <Pressable testID="route-map-confirm" accessibilityRole="button" accessibilityLabel={t('routes.editor.confirmMap')}
+              onPress={() => selectEndpoint({ placeId: 0, name: t('routes.editor.mapPoint'), latitude: mapPoint.lat, longitude: mapPoint.lng })}
+              style={{ minHeight: 44, justifyContent: 'center', borderRadius: 16, backgroundColor: theme.colors.primary }}><Text style={{ color: '#FFFFFF', textAlign: 'center' }}>{t('routes.editor.confirmMap')}</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('routes.cancel')} onPress={() => setMapPicking(false)} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: theme.colors.textStrong, textAlign: 'center' }}>{t('routes.cancel')}</Text></Pressable>
+          </GlassSurface>
+        </> : editing ? <RouteEndpointEditor role={editing} origin={origin} destination={destination} recentSearchOwner={recentSearchOwner}
+          bottomInset={insets.bottom} maxHeight={Math.max(240, viewport.height - insets.top - 70)} onRole={setEditing}
+          onClose={() => setEditing(null)} onShare={shareDestination} onSelect={selectEndpoint} onRefreshLocation={onRefreshLocation}
+          onMap={() => setMapPicking(true)} /> : <RoutePlannerSheet origin={origin} destination={destination} mode={mode} stateKey={stateKey} ready={ready}
           bottomInset={insets.bottom} maxHeight={Math.max(240, viewport.height - insets.top - 70)}
           onLayout={event => setSheetHeight(event.nativeEvent.layout.height)} hasOrigin={!!originCoordinate}
           canRequest={canRequest} canOpenExternal={!!destinationCoordinate && !openingExternal}
           deniedPermanently={location.status === 'denied' && !location.canAskAgain}
           onMode={value => { if (mode !== value) { route.cancel(); setAnchor(null); setMode(value); } }}
-          onClose={onClose} onShare={() => { if (destinationCoordinate) void sharePlace({ ...destination, latitude: destinationCoordinate.lat, longitude: destinationCoordinate.lng }); }}
+          onEditEndpoint={setEditing} onSwapEndpoints={() => changeEndpoints([selections[1], selections[0]])}
+          onClose={onClose} onShare={shareDestination}
           onRequest={request} onCancel={route.cancel} onRefreshLocation={onRefreshLocation}
-          onSettings={() => { void Linking.openSettings().catch(() => undefined); }} onExternal={() => { void openExternal(); }} />
+          onSettings={() => { void Linking.openSettings().catch(() => undefined); }} onExternal={() => { void openExternal(); }} />}
       </MapGlassBackdrop>
     </View>
   </Modal>;

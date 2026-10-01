@@ -1,5 +1,6 @@
 export const routeResources = {
   ko: {
+    editor: { editEndpoint: '{{role}} 장소 편집, {{name}}', dragHint: '길게 누른 뒤 위아래로 끌어 출발과 도착을 바꿀 수 있습니다', edit: '장소 편집', swap: '출발·도착 바꾸기', swapped: '출발과 도착을 바꿨습니다', close: '장소 편집 닫기', search: '장소 검색', map: '지도에서 선택', saved: '핑덤 저장 장소', all: '전체 보기', recent: '최근 검색', clear: '지우기', results: '검색 결과', loading: '장소를 검색하고 있습니다', retry: '검색 다시 시도', searchFailed: '장소를 검색하지 못했습니다', emptySearch: '검색 결과가 없습니다', retrySaved: '저장 장소 다시 불러오기', emptySaved: '저장한 장소가 없습니다', emptyRecent: '최근 검색이 없습니다', recentSearch: '{{name}} 검색', more: '더 보기', mapHint: '지도를 움직여 위치를 선택해 주세요', confirmMap: '이 위치 선택', mapPoint: '지도에서 선택한 위치' },
     title: '경로', recenter: '지도 중심 다시 맞추기', arrival: '{{time}} 도착', share: '장소 공유', start: '시작', currentLocation: '현재 위치', setOrigin: '출발지 설정', locationNeeded: '현재 위치를 확인해 주세요', providerEstimate: '네이버 자동차 예상 경로', recommended: '추천 경로', findRoute: '자동차 경로 찾기', cannotFind: '경로를 불러올 수 없어요', externalTitle: '네이버지도에서 길찾기', externalHint: '시작하면 네이버지도 앱으로 이동합니다', preview: '앱에서 자동차 경로 보기', external: '네이버지도 앱에서 길찾기',
     close: '닫기', cancel: '조회 취소', request: '자동차 경로 조회', fit: '전체 경로 보기', location: '현재 위치 다시 확인', settings: '위치 권한 설정 열기',
     origin: '출발', destination: '도착', summary: '{{distance}} · 예상 {{duration}}',
@@ -18,6 +19,7 @@ export const routeResources = {
     openFailed: '네이버지도 앱을 열 수 없습니다.', notInstalled: '네이버지도 앱을 설치해 주세요.',
   },
   en: {
+    editor: { editEndpoint: 'Edit {{role}}, {{name}}', dragHint: 'Hold and drag up or down to swap origin and destination', edit: 'Edit place', swap: 'Swap origin and destination', swapped: 'Origin and destination swapped', close: 'Close place editor', search: 'Search places', map: 'Select on map', saved: 'Saved places', all: 'View all', recent: 'Recent searches', clear: 'Clear', results: 'Search results', loading: 'Searching places', retry: 'Retry search', searchFailed: 'Could not search places', emptySearch: 'No places found', retrySaved: 'Reload saved places', emptySaved: 'No saved places', emptyRecent: 'No recent searches', recentSearch: 'Search {{name}}', more: 'Load more', mapHint: 'Move the map to select a location', confirmMap: 'Select this location', mapPoint: 'Location selected on map' },
     title: 'Route', recenter: 'Recenter map', arrival: 'Arrive at {{time}}', share: 'Share place', start: 'Start', currentLocation: 'Current location', setOrigin: 'Set origin', locationNeeded: 'Check your current location', providerEstimate: 'Estimated NAVER car route', recommended: 'Recommended', findRoute: 'Find a car route', cannotFind: 'Unable to load route', externalTitle: 'Directions in NAVER Map', externalHint: 'Start opens the NAVER Map app', preview: 'Preview car route in app', external: 'Directions in NAVER Map app',
     close: 'Close', cancel: 'Cancel request', request: 'Find car route', fit: 'Show entire route', location: 'Check current location again', settings: 'Open location permission settings',
     origin: 'Origin', destination: 'Destination', summary: '{{distance}} · Estimated {{duration}}',
@@ -36,6 +38,7 @@ export const routeResources = {
     openFailed: 'Could not open the NAVER Map app.', notInstalled: 'Please install the NAVER Map app.',
   },
   ja: {
+    editor: { editEndpoint: '{{role}}を編集、{{name}}', dragHint: '長押しして上下にドラッグすると出発地と目的地を入れ替えられます', edit: '場所を編集', swap: '出発地と目的地を入れ替え', swapped: '出発地と目的地を入れ替えました', close: '場所の編集を閉じる', search: '場所を検索', map: '地図から選択', saved: '保存した場所', all: 'すべて見る', recent: '最近の検索', clear: '消去', results: '検索結果', loading: '場所を検索しています', retry: '再検索', searchFailed: '場所を検索できませんでした', emptySearch: '検索結果がありません', retrySaved: '保存した場所を再読み込み', emptySaved: '保存した場所がありません', emptyRecent: '最近の検索がありません', recentSearch: '{{name}}を検索', more: 'さらに表示', mapHint: '地図を動かして場所を選んでください', confirmMap: 'この場所を選択', mapPoint: '地図から選択した場所' },
     title: 'ルート', recenter: '地図の中心を戻す', arrival: '{{time}}到着', share: '場所を共有', start: '開始', currentLocation: '現在地', setOrigin: '出発地を設定', locationNeeded: '現在地を確認してください', providerEstimate: 'NAVER自動車予想ルート', recommended: 'おすすめ', findRoute: '自動車ルートを検索', cannotFind: 'ルートを読み込めません', externalTitle: 'NAVER地図でルート案内', externalHint: '開始するとNAVER地図アプリが開きます', preview: 'アプリで自動車ルートを見る', external: 'NAVER地図アプリでルート案内',
     close: '閉じる', cancel: '検索をキャンセル', request: '自動車ルートを検索', fit: 'ルート全体を見る', location: '現在地を再確認', settings: '位置情報の権限設定を開く',
     origin: '出発', destination: '到着', summary: '{{distance}} · 予想 {{duration}}',

@@ -977,7 +977,7 @@ export default function MapScreen({
       </View>
       {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
         <CarRoutePreview key={`${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
-          destination={selectedPlaceActionTarget} location={location}
+          destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
           onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
       )}
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
