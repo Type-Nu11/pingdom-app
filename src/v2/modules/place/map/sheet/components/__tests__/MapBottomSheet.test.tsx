@@ -287,6 +287,46 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByText('영업시간 정보 없음')).toBeVisible();
   });
 
+  test('리뷰 탭은 추천 이유가 있는 리뷰에만 전체 태그를 보여주고 없는 리뷰에는 빈 영역을 만들지 않는다', async () => {
+    const selectedPlace = places[0];
+    const result = await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700} mediumTranslateY={300} onBackHome={jest.fn()}
+        onCreateReservation={jest.fn()} onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()} onGoNowPress={jest.fn()} onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()} onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)} panHandlers={{} as GestureResponderHandlers}
+        places={places} previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '',
+            reviewCount: 3, reviewState: 'ready',
+            reviews: [
+              { author: '사용자', createdAt: '2026-09-03', reasons: ['delicious', 'photoSpot', 'kind', 'clean'], text: '태그 있는 리뷰' },
+              { author: '사용자', createdAt: '2026-09-02', reasons: [], text: '태그 없는 리뷰' },
+            ],
+          },
+        }}
+        recommendationPlaces={[]} recommendationsState="ready"
+        selectedPlace={selectedPlace} sheetChromeBottom={new Animated.Value(0)}
+        sheetTranslateY={new Animated.Value(0)} snapPoint="expanded"
+      />,
+      { language: 'ko' },
+    );
+    await fireEvent.press(screen.getByText('리뷰'));
+    expect(screen.getByText('태그 있는 리뷰')).toBeVisible();
+    expect(screen.getByText('맛있어요')).toBeVisible();
+    expect(screen.getByText('사진 찍기 좋아요')).toBeVisible();
+    expect(screen.getByText('친절해요')).toBeVisible();
+    expect(screen.getByText('매장이 깨끗해요')).toBeVisible();
+    expect(screen.queryByText(/^\+\d+$/)).not.toBeOnTheScreen();
+    expect(screen.getAllByTestId('review-feature-tags')).toHaveLength(1);
+    expect(screen.getByText('태그 없는 리뷰')).toBeVisible();
+    result.unmount();
+  });
+
   test('긴 장소명과 실제 추천 이유를 말줄임하고 접근성·즐겨찾기 동작을 일관되게 유지한다', async () => {
     const longName = '이름이 매우 긴 추천 장소 '.repeat(8);
     const longReason = '사용자의 여행 취향과 현재 위치를 반영한 추천 이유 '.repeat(8);

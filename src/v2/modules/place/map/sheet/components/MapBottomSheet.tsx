@@ -1,4 +1,5 @@
-import { ApiErrorState, LoadingState } from '../../../../../shared/components';
+import type { ReviewReasonKey } from '../../../../../shared/api/reviewReasons';
+import { ApiErrorState, LoadingState, ReviewFeatureTags } from '../../../../../shared/components';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -111,9 +112,8 @@ export type MapPreviewFallbackContent = {
     author: string;
     avatarUrl?: string;
     createdAt: string;
-    hiddenTags?: string[];
     imageUrls?: string[];
-    tags: string[];
+    reasons: ReviewReasonKey[];
     text: string;
   }>;
   statusDescription: string;
@@ -1372,38 +1372,6 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
   );
 };
 
-const ReviewTags = ({ hiddenTags = [], tags }: { hiddenTags?: string[]; tags: string[] }) => {
-  const { t } = useTranslation();
-  const styles = useMapSheetStyles();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const visibleTags = isExpanded ? [...tags, ...hiddenTags] : tags;
-
-  return (
-    <View style={styles.detailReviewTagRow}>
-      {visibleTags.map((tag, index) => (
-        <View key={`${tag}-${index}`} style={styles.detailReviewTag}>
-          <ReviewHighlightIcon label={tag} />
-          <AppText style={styles.detailReviewTagText}>{tag}</AppText>
-        </View>
-      ))}
-      {hiddenTags.length > 0 ? (
-        <Pressable
-          accessibilityLabel={isExpanded
-            ? t('map.detail.collapseTags')
-            : t('map.detail.expandTags', { count: hiddenTags.length })}
-          accessibilityRole="button"
-          onPress={() => setIsExpanded((current) => !current)}
-          style={({ pressed }) => [styles.detailReviewTag, pressed && styles.pressed]}
-        >
-          <AppText style={styles.detailReviewTagText}>
-            {isExpanded ? t('map.detail.collapseTags') : `+${hiddenTags.length}`}
-          </AppText>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-};
-
 type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
 const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
@@ -2044,7 +2012,11 @@ const ExpandedPlaceContent = ({
                     ))}
                   </View>
                 ) : null}
-                <ReviewTags hiddenTags={review.hiddenTags} tags={review.tags} />
+                {review.reasons.length > 0 ? (
+                  <View style={styles.detailReviewTags}>
+                    <ReviewFeatureTags reasons={review.reasons} variant="full" />
+                  </View>
+                ) : null}
               </View>
             )) : (
                 <AppText style={styles.detailEmptyText}>{t('map.detail.reviewEmpty')}</AppText>
@@ -2551,23 +2523,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   detailReviewPhoto: { borderRadius: 10, height: 124, overflow: 'hidden', width: 124 },
   detailReviewPhotos: { columnGap: 10, paddingTop: 12 },
   detailReviewSection: { borderBottomColor: colors.border, borderBottomWidth: 1, padding: 16 },
-  detailReviewTag: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 9,
-    flexDirection: 'row',
-    gap: 4,
-    minHeight: 27,
-    paddingHorizontal: 9,
-  },
-  detailReviewTagRow: {
-    columnGap: 6,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingTop: 10,
-    rowGap: 6,
-  },
-  detailReviewTagText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
+  detailReviewTags: { paddingTop: 10 },
   detailReviewText: { color: colors.text, fontSize: 14, lineHeight: 21, marginTop: 10 },
   detailReviewTitle: { color: colors.textStrong, fontSize: 15, fontWeight: '900' },
   detailReviewerAvatar: {

@@ -1,6 +1,5 @@
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
-import { reviewReasonLabelKey } from '../../../../shared/api/reviewReasons';
 import { env } from '../../../../shared/config';
 import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
 import MapAssistantModal from '../assistant/components/MapAssistantModal';
@@ -655,7 +654,7 @@ export default function MapScreen({
             : t(review.authorKey),
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
-          tags: review.reasons.map((reason) => t(reviewReasonLabelKey(reason))),
+          reasons: review.reasons,
           text: review.text,
         })),
         summary: selectedPlacePresentation.touristSummary
