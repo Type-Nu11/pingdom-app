@@ -470,7 +470,7 @@ const TopBar = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 0 ${({ theme }) => theme.spacing.lg}px;
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
 `;
 
 const IconButton = styled.Pressable`
@@ -486,6 +486,7 @@ const TopBarTitle = styled(AppText)`
 
 const AvatarSection = styled.View`
   align-items: center;
+  margin: 0 ${({ theme }) => theme.spacing.lg}px;
   padding: ${({ theme }) => theme.spacing.md}px 0;
   border-bottom-width: 8px;
   border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
@@ -510,16 +511,16 @@ const AvatarUploadingOverlay = styled.View`
 
 const PencilBadge = styled.View`
   position: absolute;
-  right: -4px;
-  bottom: -4px;
+  right: 0;
+  bottom: 0;
   padding: 4px;
   border-radius: 100px;
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
 const InfoSection = styled.View`
-  gap: ${({ theme }) => theme.spacing.md}px;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  gap: 12px;
+  padding: 14px ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.md}px;
 `;
 
 const SectionTitle = styled(AppText)`
@@ -562,7 +563,7 @@ const SaveButton = styled.Pressable<{ disabled: boolean }>`
   align-items: center;
   justify-content: center;
   height: 64px;
-  margin: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  margin: auto ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.md}px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme, disabled }) => disabled ? theme.colors.disabled : theme.colors.primary};
 `;
