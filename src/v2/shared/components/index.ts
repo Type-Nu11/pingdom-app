@@ -10,6 +10,8 @@ export { default as Input } from './Input';
 export type { InputProps } from './Input';
 export { default as LoadingState } from './LoadingState';
 export type { LoadingStateProps } from './LoadingState';
+export { ReviewFeatureTags } from './ReviewFeatureTags';
+export type { ReviewFeatureTagsProps, ReviewFeatureTagsVariant } from './ReviewFeatureTags';
 export { default as StatusBadge } from './StatusBadge';
 export type { StatusBadgeProps, StatusBadgeTone } from './StatusBadge';
 export { default as Surface } from './Surface';

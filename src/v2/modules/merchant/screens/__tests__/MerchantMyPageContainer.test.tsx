@@ -66,7 +66,7 @@ function mockHappyPath() {
         createdAt: '2026-08-18T10:00:00Z',
         imageUrls: [],
         placeId: PLACE_ID,
-        recommendReason: '음식이 맛있어요',
+        recommendReasons: ['GOOD_FOOD', 'PHOTO_SPOT'],
         reviewId: 7,
         userId: 42,
       },
@@ -121,6 +121,8 @@ describe('MerchantMyPageContainer', () => {
     expect(screen.getByText('여름 맞이 냉짬뽕 무료 이벤트')).toBeTruthy();
     expect(screen.getByText('진행중')).toBeTruthy();
     expect(screen.getByText('암소 된장찌개가 맛있어요')).toBeTruthy();
+    expect(screen.getByText('맛있어요')).toBeTruthy();
+    expect(screen.getByText('사진 찍기 좋아요')).toBeTruthy();
   });
 
   test('Merchant 프로필 조회가 실패하면 에러와 재시도를 보여준다', async () => {

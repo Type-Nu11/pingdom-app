@@ -1,4 +1,4 @@
-import { reviewReasonTranslationKey } from '../../../../shared/api/reviewReasons';
+import { reviewReasonsFromResponse, type ReviewReasonKey } from '../../../../shared/api/reviewReasons';
 import type { PlaceReviewPage } from '../../visit-verification';
 import type {
   PlaceCard,
@@ -53,8 +53,7 @@ export type PlaceDetailPresentation = {
     authorKey: 'placeDetail.review.anonymousUser';
     createdAt: string;
     imageUrls: string[];
-    tags: string[];
-    reasonKeys?: string[];
+    reasons: ReviewReasonKey[];
     text: string;
   }>;
   reviewTotal: number | null;
@@ -168,8 +167,7 @@ export function buildPlaceDetailPresentation(
       authorKey: 'placeDetail.review.anonymousUser',
       createdAt: clean(review.createdAt) ?? '',
       imageUrls: (review.reviewMedia !== undefined ? review.reviewMedia.map(media => media.imageUrl) : review.imageUrls ?? []).map(clean).filter((url): url is string => Boolean(url)),
-      ...(review.recommendReasons !== undefined ? { reasonKeys: review.recommendReasons.map(reviewReasonTranslationKey).filter((key): key is string => Boolean(key)) } : {}),
-      tags: [review.recommendReasons !== undefined ? null : clean(review.recommendReason)].filter((tag): tag is string => Boolean(tag)),
+      reasons: reviewReasonsFromResponse(review),
       text: clean(review.content) ?? '',
     })),
     reviewTotal: resources.reviews.isError || resources.reviews.isPending

@@ -45,6 +45,17 @@ test('preserves assembled translations outside reviewed feature copy changes', (
       : 'Network problem. Check your connection and try again.';
     delete baseline[language].translation.visitVerification.uploading;
     delete baseline[language].translation.visitVerification.errors;
+    // #398 adds the accessibility label for the extra review reason count.
+    // #398 adds inline review expansion copy to the place detail info tab.
+    delete baseline[language].translation.map.detail.viewAllReviews;
+    delete baseline[language].translation.map.detail.collapseReviews;
+    delete baseline[language].translation.visitVerification.reasonMoreCount;
+    // #398 aligns the recommendation-reason screen copy with the reviewed Figma design.
+    delete baseline[language].translation.visitVerification.reasonSelectedSuffix;
+    baseline[language].translation.visitVerification.reasonHelp = language === 'ko' ? '최대 5개 선택' : 'Select up to 5';
+    baseline[language].translation.visitVerification.reviewPlaceholder = language === 'ko'
+      ? '다른 사람들에게 이 장소의 좋은 점을 알려주세요.'
+      : 'Tell others what you liked about this place.';
     const voiceAssistant = baseline[language].translation.voiceAssistant;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
