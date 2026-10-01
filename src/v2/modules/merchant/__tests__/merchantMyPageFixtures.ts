@@ -35,8 +35,8 @@ export const merchantReviewsFixture: MerchantReview[] = [
       'https://cdn.pingdom.example/reviews/1/1.jpg',
       'https://cdn.pingdom.example/reviews/1/2.jpg',
     ],
+    reasons: ['delicious'],
     relativeTime: '26.08.18 · 2시간 전',
-    tags: [{ kind: 'delicious', label: '음식이 맛있어요' }],
   },
   {
     authorName: '이용인',
@@ -44,13 +44,8 @@ export const merchantReviewsFixture: MerchantReview[] = [
     content: '먼 옛날, 한 고을에 이용인이라 불리는 자가 있었다.',
     id: 'review-2',
     photoUrls: [],
+    reasons: ['delicious', 'photoSpot', 'kind', 'clean'],
     relativeTime: '26.08.18 · 2시간 전',
-    tags: [
-      { kind: 'delicious', label: '음식이 맛있어요' },
-      { kind: 'photogenic', label: '사진 찍기 좋아요' },
-      { kind: 'kind', label: '친절해요' },
-      { kind: 'clean', label: '매장이 깨끗해요' },
-    ],
   },
 ];
 

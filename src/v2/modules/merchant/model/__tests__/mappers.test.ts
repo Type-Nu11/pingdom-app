@@ -109,46 +109,60 @@ describe('toMerchantReviews', () => {
   const translate = (key: string, values: Record<string, unknown>) => key.endsWith('.time')
     ? `${values.date} · ${values.relative}`
     : `이용인 #${values.id}`;
-  test('recommendReason을 태그 하나로 옮기고 상대 시간을 만든다', () => {
-    const now = new Date('2026-08-18T12:00:00Z');
-    const reviews: PlaceReview[] = [
-      {
+  const review = (overrides: Partial<PlaceReview>): PlaceReview => ({
+    content: 'c',
+    createdAt: '2026-08-18T10:00:00Z',
+    imageUrls: [],
+    placeId: 10,
+    reviewId: 1,
+    userId: 1,
+    ...overrides,
+  });
+  const now = new Date('2026-08-18T12:00:00Z');
+
+  test('recommendReasons를 서버 순서대로 옮기고 상대 시간과 사진을 만든다', () => {
+    const [mapped] = toMerchantReviews(
+      [review({
         content: '맛있어요',
-        createdAt: '2026-08-18T10:00:00Z',
         imageUrls: ['https://cdn/1.jpg'],
-        placeId: 10,
-        recommendReason: '음식이 맛있어요',
+        recommendReasons: ['GOOD_FOOD', 'PHOTO_SPOT', 'FRIENDLY'],
         reviewId: 5,
         userId: 42,
-      },
-    ];
-
-    const [review] = toMerchantReviews(reviews, now, 'ko', translate);
-
-    expect(review.id).toBe('5');
-    expect(review.tags).toEqual([{ label: '음식이 맛있어요' }]);
-    expect(review.relativeTime).toContain('2시간 전');
-    expect(review.photoUrls).toEqual(['https://cdn/1.jpg']);
-  });
-
-  test('recommendReason이 비어 있으면 태그가 없다', () => {
-    const [review] = toMerchantReviews(
-      [
-        {
-          content: 'c',
-          createdAt: '2026-08-18T10:00:00Z',
-          imageUrls: [],
-          placeId: 10,
-          recommendReason: '',
-          reviewId: 1,
-          userId: 1,
-        },
-      ],
-      new Date('2026-08-18T10:30:00Z'),
-      'ko',
-      translate,
+      })],
+      now, 'ko', translate,
     );
 
-    expect(review.tags).toEqual([]);
+    expect(mapped.id).toBe('5');
+    expect(mapped.reasons).toEqual(['delicious', 'photoSpot', 'kind']);
+    expect(mapped.relativeTime).toContain('2시간 전');
+    expect(mapped.photoUrls).toEqual(['https://cdn/1.jpg']);
+  });
+
+  test('필드가 없거나 null이거나 비어 있으면 태그가 없다', () => {
+    const mapped = toMerchantReviews(
+      [
+        review({ reviewId: 1 }),
+        review({ recommendReasons: null, reviewId: 2 }),
+        review({ recommendReasons: [], reviewId: 3 }),
+        review({ recommendReason: '', reviewId: 4 }),
+      ],
+      now, 'ko', translate,
+    );
+
+    expect(mapped.map((item) => item.reasons)).toEqual([[], [], [], []]);
+  });
+
+  test('중복 코드는 하나로 합치고 알 수 없는 코드와 자유 문구는 표시하지 않는다', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const mapped = toMerchantReviews(
+      [
+        review({ recommendReasons: ['CLEAN', 'CLEAN', 'SOMETHING_NEW', 'PARKING'], reviewId: 1 }),
+        review({ recommendReason: '음식이 맛있어요', reviewId: 2 }),
+      ],
+      now, 'ko', translate,
+    );
+    warn.mockRestore();
+
+    expect(mapped.map((item) => item.reasons)).toEqual([['clean', 'parking'], []]);
   });
 });
