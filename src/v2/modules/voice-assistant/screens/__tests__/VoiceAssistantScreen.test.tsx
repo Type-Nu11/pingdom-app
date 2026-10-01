@@ -22,7 +22,7 @@ afterEach(() => { (AppState as { currentState: string }).currentState = original
 
 function speech() {
   let emit!: (event: SpeechEvent) => void;
-  const session = { start: jest.fn(), stop: jest.fn(), cancel: jest.fn() };
+  const session = { start: jest.fn(() => emit({ type: 'activity', speaking: false })), stop: jest.fn(), cancel: jest.fn() };
   const adapter: SpeechInputAdapter = { available: true, getPermission: async () => 'granted', requestPermission: async () => 'granted', createSession: options => { emit = options.onEvent; return session; } };
   return { adapter, session, emit: (event: SpeechEvent) => emit(event) };
 }
@@ -66,7 +66,7 @@ test('focus and blur do not mount the details panel during the keyboard transiti
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
 });
 
-test('partial speech stays on screen and final speech sends once after five seconds of silence', async () => {
+test('partial speech stays on screen and final speech sends once after three seconds of silence', async () => {
   const x = speech();
   const submit = jest.fn(() => 'localOnly' as const);
   const { element } = navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onFinalInput={submit} serverSubmission onClose={jest.fn()} />);
@@ -87,9 +87,27 @@ test('partial speech stays on screen and final speech sends once after five seco
   expect(screen.queryByText(voiceAssistantResources.ko.command.submission)).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 취소' })).toBeNull();
-  await waitFor(() => expect(submit).toHaveBeenCalledTimes(1), { timeout: 6500 });
+  await waitFor(() => expect(submit).toHaveBeenCalledTimes(1), { timeout: 4500 });
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('카페 검색');
 }, 8000);
+
+test.each(['quantity', 'date'] as const)('short answer uses one second only for matching clarification context: %s', async field => {
+  const x = speech();
+  const submit = jest.fn(() => 'localOnly' as const);
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onFinalInput={submit}
+    serverSubmission commandState={{ phase: 'clarification', field }} onClose={jest.fn()} />).element);
+  await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+  await act(() => { x.emit({ type: 'activity', speaking: true }); x.emit({ type: 'partial', text: '두 명' }); });
+  expect(x.session.stop).not.toHaveBeenCalled();
+  await act(() => x.emit({ type: 'activity', speaking: false }));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 1200)); });
+  expect(x.session.stop).toHaveBeenCalledTimes(field === 'quantity' ? 1 : 0);
+  if (field === 'date') await waitFor(() => expect(x.session.stop).toHaveBeenCalledTimes(1), { timeout: 2500 });
+  expect(x.session.stop).toHaveBeenCalledTimes(1);
+  expect(submit).not.toHaveBeenCalled();
+  await act(() => x.emit({ type: 'final', text: '두 명' }));
+  expect(submit).toHaveBeenCalledTimes(1);
+});
 
 test.each([['ko', 'ko-KR'], ['en', 'en-US']] as const)('%s AI entry starts STT once without submitting speech', async (language, locale) => {
   const x = speech();

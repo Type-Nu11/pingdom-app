@@ -37,7 +37,10 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { controller, state } = useVoiceInput(adapter, onFinalInput);
+  const clarificationField = commandState?.phase === 'clarification' ? commandState.field
+    : commandState?.phase === 'result' && commandState.result.outcome.status === 'clarification_required'
+      ? commandState.result.outcome.field : undefined;
+  const { controller, state } = useVoiceInput(adapter, onFinalInput, clarificationField === 'quantity' ? 'quantity' : undefined);
   const [editingInSheet, setEditingInSheet] = useState(false);
   const busy = ['permissionRequesting', 'listening', 'processing'].includes(state.phase);
   const pending = state.delivery === 'pending';

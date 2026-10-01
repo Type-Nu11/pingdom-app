@@ -1,7 +1,7 @@
 export const voiceAssistantResources = {
   en: {
     command: {
-      submission: 'After 5 seconds without speech, recognized voice input is sent to the AI server automatically. Text input is sent when you use Send. Exact coordinates are used only by the existing place lookup.',
+      submission: 'Voice capture stops after 1 second of detected quiet for a clear Korean request, question, or a quantity answer to a quantity clarification; otherwise it waits 3 seconds. Speaking again resets the wait. Finalized input is sent to the AI server automatically. Text input is sent when you use Send. Exact coordinates are used only by the existing place lookup.',
       introTitle: 'Before using AI', introContinue: 'Continue to AI', introClose: 'Close',
       timezone: 'Request timezone: {{timezone}}', processing: 'Checking place information.', canceled: 'Voice session ended.',
       advisory: 'Assistant response received.', bounded: 'Results checked among up to 12 nearby candidates.',
@@ -37,7 +37,7 @@ export const voiceAssistantResources = {
   },
   ko: {
     command: {
-      submission: '음성 입력은 5초 동안 말하지 않으면 인식된 내용을 AI 서버에 자동 전송합니다. 텍스트 입력은 보내기를 누르면 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.',
+      submission: '명확한 한국어 요청·질문이나 인원 질문에 대한 답변은 무음이 감지된 뒤 1초, 그 외에는 3초 후 음성 입력을 종료합니다. 다시 말하면 대기 시간을 초기화합니다. 최종 인식된 내용만 AI 서버에 자동 전송합니다. 텍스트 입력은 보내기를 누르면 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.',
       introTitle: 'AI 사용 안내', introContinue: '확인하고 시작하기', introClose: '닫기',
       timezone: '요청 시간대: {{timezone}}', processing: '장소 정보를 확인하고 있습니다.', canceled: '음성 세션을 종료했습니다.',
       advisory: '어시스턴트 응답을 받았습니다.', bounded: '가까운 후보 최대 12곳에서 조건을 확인한 결과입니다.',
@@ -73,7 +73,7 @@ export const voiceAssistantResources = {
   },
   ja: {
     command: {
-      submission: '音声入力は、5秒間話さないと認識した内容をAIサーバーへ自動で送信します。テキスト入力は「送信」をタップすると送信されます。正確な現在地の座標は、既存の場所検索にのみ使用します。',
+      submission: '明確な韓国語の依頼・質問、または人数の質問への回答は無音を検出してから1秒、それ以外は3秒後に音声入力を終了します。再び話すと待ち時間をリセットします。確定した内容のみAIサーバーへ自動で送信します。テキスト入力は「送信」をタップすると送信されます。正確な現在地の座標は、既存の場所検索にのみ使用します。',
       introTitle: 'AIご利用前のご案内', introContinue: '確認して始める', introClose: '閉じる',
       timezone: 'リクエストのタイムゾーン：{{timezone}}', processing: '場所の情報を確認しています。', canceled: '音声セッションを終了しました。',
       advisory: 'アシスタントの応答を受け取りました。', bounded: '近くの候補最大12か所で条件を確認した結果です。',

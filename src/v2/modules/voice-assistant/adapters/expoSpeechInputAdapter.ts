@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import type { PermissionResponse } from 'expo-modules-core';
 import type { ExpoSpeechRecognitionErrorCode } from 'expo-speech-recognition';
 import type { MicrophonePermission, SpeechEvent, SpeechInputAdapter, SpeechSession } from '../model/voiceInput';
+import { createAudioActivityDetector } from '../speech-endpointing/audioActivity';
 
 type Permission = PermissionResponse & { restricted?: boolean };
 type SpeechModule = typeof import('expo-speech-recognition').ExpoSpeechRecognitionModule;
@@ -55,6 +56,7 @@ export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAda
     createSession({ locale, signal, onEvent }) {
       let closed = false;
       let started = false;
+      const activity = createAudioActivityDetector();
       const subscriptions: Array<{ remove(): void }> = [];
       const removeListeners = () => { for (const subscription of subscriptions.splice(0)) subscription.remove(); };
       const cancel = () => {
@@ -80,8 +82,11 @@ export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAda
             if (event.error !== 'aborted') emit(failure(event.error));
           }));
           subscriptions.push(module.addListener('volumechange', event => {
-            if (Number.isFinite(event.value)) emit({ type: 'activity', speaking: event.value > 0 });
+            const speaking = activity.volume(event.value);
+            if (speaking !== null) emit({ type: 'activity', speaking });
           }));
+          subscriptions.push(module.addListener('speechstart', () => emit({ type: 'activity', speaking: activity.speechStart() })));
+          subscriptions.push(module.addListener('speechend', () => emit({ type: 'activity', speaking: activity.speechEnd() })));
           subscriptions.push(module.addListener('end', () => emit({ type: 'ended' })));
           signal.addEventListener('abort', cancel, { once: true });
           if (signal.aborted || closed) { cancel(); return; }

@@ -130,6 +130,34 @@ test('cancel and background detach listeners before abort; late events cannot pu
   controller.dispose();
 });
 
+test('native audio edges prevent endpointing during speech and reset the quiet clock', async () => {
+  jest.useFakeTimers();
+  const x = setup('android');
+  const delivered = jest.fn(() => 'localOnly' as const);
+  const controller = createVoiceInputController(x.adapter, delivered);
+  await controller.start('ko-KR');
+  x.emit('speechstart');
+  x.emit('result', { isFinal: false, results: [{ transcript: '문 열었나요' }] });
+  await jest.advanceTimersByTimeAsync(4000);
+  expect(x.module.stop).not.toHaveBeenCalled();
+  x.emit('speechend');
+  await jest.advanceTimersByTimeAsync(700);
+  x.emit('speechstart');
+  await jest.advanceTimersByTimeAsync(2000);
+  expect(x.module.stop).not.toHaveBeenCalled();
+  x.emit('volumechange', { value: 0.5 });
+  await jest.advanceTimersByTimeAsync(999);
+  expect(x.module.stop).not.toHaveBeenCalled();
+  x.emit('volumechange', { value: 0.5 });
+  await jest.advanceTimersByTimeAsync(1);
+  expect(x.module.stop).toHaveBeenCalledTimes(1);
+  expect(delivered).not.toHaveBeenCalled();
+  x.emit('result', { isFinal: true, results: [{ transcript: '문 열었나요' }] });
+  expect(delivered).toHaveBeenCalledTimes(1);
+  controller.dispose();
+  jest.useRealTimers();
+});
+
 test('end without final result fails once and unsupported recognizer preserves typing', async () => {
   const x = setup();
   const controller = createVoiceInputController(x.adapter, jest.fn(() => 'localOnly'));
