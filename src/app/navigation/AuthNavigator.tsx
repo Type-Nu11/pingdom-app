@@ -1,13 +1,16 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { OnboardingFlow } from '../../features/onboarding';
 import { LoginFormScreen } from '../../features/auth/screens/login';
 import SignUpDetailsScreen from '../../features/auth/screens/signup/SignUpDetailsScreen';
 import type {
   OnboardingCompletion,
   SignupOnboardingContext,
 } from '../../v2/modules/onboarding';
-import { AuthLandingScreen, getAuthInitialRoute } from '../../v2/modules/onboarding';
+import {
+  AuthLandingScreen,
+  OnboardingFlow,
+  getAuthInitialRoute,
+} from '../../v2/modules/onboarding';
 import { normalizeSupportedLanguage } from '../../v2/shared/i18n';
 import {
   AUTH_ROUTES,

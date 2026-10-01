@@ -4,3 +4,4 @@ export { OnboardingPreferenceFlow, useSyncOnboardingTravelSchedule } from './pre
 export { LanguageSelectionScreen } from './language';
 export type { LanguageSelectionScreenProps } from './language';
 export { default as AuthLandingScreen } from './entry/screens/AuthLandingScreen';
+export { default as OnboardingFlow } from './flow/OnboardingFlow';
