@@ -22,13 +22,11 @@ const SEARCH_ICON_PATH = 'm19 19-4.343-4.343m0 0A8 8 0 1 0 3.343 3.343a8 8 0 0 0
 const listContent = { flexGrow: 1, gap: 26, paddingBottom: 8 } as const;
 
 export type LanguageSelectionScreenProps = Readonly<{
-  languages?: readonly SupportedLanguage[];
   onBack: () => void;
   onNext: (language: SupportedLanguage) => void;
 }>;
 
 export default function LanguageSelectionScreen({
-  languages,
   onBack,
   onNext,
 }: LanguageSelectionScreenProps) {
@@ -40,7 +38,7 @@ export default function LanguageSelectionScreen({
     current: CURRENT_STEP,
     total: TOTAL_STEPS,
   });
-  const options = filterLanguageOptions(getLanguageOptions(languages), query, (key) => t(key));
+  const options = filterLanguageOptions(getLanguageOptions(), query, (key) => t(key));
 
   const handleContinue = () => {
     void setLanguage(selected);
@@ -94,11 +92,12 @@ export default function LanguageSelectionScreen({
               <Option
                 key={option.code}
                 $selected={isSelected}
+                accessibilityLanguage={option.code}
                 accessibilityState={{ selected: isSelected }}
                 onPress={() => setSelected(option.code)}
                 testID={`language-option-${option.code}`}
               >
-                <OptionLabel>{t(option.labelKey)}</OptionLabel>
+                <OptionLabel>{option.endonym}</OptionLabel>
                 {isSelected ? (
                   <CheckCircle testID={`language-option-check-${option.code}`}>
                     <CheckIcon height={10} width={14} />

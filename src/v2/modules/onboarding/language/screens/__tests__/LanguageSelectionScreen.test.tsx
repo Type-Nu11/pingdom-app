@@ -24,11 +24,26 @@ describe('LanguageSelectionScreen', () => {
 
     expect(supportedLanguages.map((code) => screen.getByTestId(`language-option-${code}`)))
       .toHaveLength(supportedLanguages.length);
-    expect(screen.getByText('영어')).toBeVisible();
+    expect(screen.getByText('English')).toBeVisible();
     expect(screen.getByText('한국어')).toBeVisible();
     expect(screen.getByText('日本語')).toBeVisible();
+    expect(screen.queryByText('영어')).toBeNull();
     expect(screen.getByTestId('language-option-en')).toBeSelected();
     expect(screen.getByTestId('language-option-check-en')).toBeVisible();
+  });
+
+  test.each(['en', 'ja'] as const)('UI 언어가 %s여도 각 언어를 자체 표기로 보여 준다', async (language) => {
+    await renderWithProviders(
+      <LanguageSelectionScreen onBack={jest.fn()} onNext={jest.fn()} />,
+      { language },
+    );
+
+    expect(screen.getByText('English')).toBeVisible();
+    expect(screen.getByText('한국어')).toBeVisible();
+    expect(screen.getByText('日本語')).toBeVisible();
+    expect(screen.queryByText('Korean')).toBeNull();
+    expect(screen.queryByText('韓国語')).toBeNull();
+    expect(screen.getByTestId('language-option-ko').props.accessibilityLanguage).toBe('ko');
   });
 
   test('선택한 언어로 i18n을 바꾸고 저장한 뒤 다음 단계로 넘긴다', async () => {
@@ -54,7 +69,7 @@ describe('LanguageSelectionScreen', () => {
     });
   });
 
-  test('검색어로 번역된 언어 이름을 거른다', async () => {
+  test('검색어로 자체 표기와 현재 UI 언어 이름을 모두 거른다', async () => {
     await renderWithProviders(
       <LanguageSelectionScreen onBack={jest.fn()} onNext={jest.fn()} />,
     );
@@ -62,6 +77,15 @@ describe('LanguageSelectionScreen', () => {
     await fireEvent.changeText(screen.getByTestId('language-search-input'), '한');
     expect(screen.getByTestId('language-option-ko')).toBeVisible();
     expect(screen.queryByTestId('language-option-en')).toBeNull();
+    expect(screen.queryByTestId('language-option-ja')).toBeNull();
+
+    await fireEvent.changeText(screen.getByTestId('language-search-input'), 'eng');
+    expect(screen.getByTestId('language-option-en')).toBeVisible();
+    expect(screen.queryByTestId('language-option-ko')).toBeNull();
+
+    // UI 언어(ko) 이름 '영어'로도 English를 찾는다.
+    await fireEvent.changeText(screen.getByTestId('language-search-input'), '영');
+    expect(screen.getByTestId('language-option-en')).toBeVisible();
     expect(screen.queryByTestId('language-option-ja')).toBeNull();
 
     await fireEvent.changeText(screen.getByTestId('language-search-input'), 'zz');

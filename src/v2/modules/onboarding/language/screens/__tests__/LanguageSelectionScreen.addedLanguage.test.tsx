@@ -4,10 +4,16 @@ import React from 'react';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import LanguageSelectionScreen from '../LanguageSelectionScreen';
 
-// Simulates adding a language to the shared i18n list only.
+// Simulates adding a language to the shared i18n list and its own catalog name.
 jest.mock('../../../../../shared/i18n', () => {
   const actual = jest.requireActual('../../../../../shared/i18n');
-  return { ...actual, supportedLanguages: [...actual.supportedLanguages, 'zh'] };
+  return {
+    ...actual,
+    getLanguageEndonym: (language: string) => (
+      language === 'zh' ? '中文' : actual.getLanguageEndonym(language)
+    ),
+    supportedLanguages: [...actual.supportedLanguages, 'zh'],
+  };
 });
 
 describe('LanguageSelectionScreen with an added shared language', () => {
@@ -18,5 +24,6 @@ describe('LanguageSelectionScreen with an added shared language', () => {
 
     expect(['en', 'ko', 'ja', 'zh'].map((code) => screen.getByTestId(`language-option-${code}`)))
       .toHaveLength(4);
+    expect(screen.getByText('中文')).toBeVisible();
   });
 });
