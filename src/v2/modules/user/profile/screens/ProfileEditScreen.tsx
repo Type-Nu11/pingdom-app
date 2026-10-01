@@ -480,8 +480,9 @@ const IconButton = styled.Pressable`
 
 const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: 500;
+  font-size: ${({ theme }) => theme.typography.headline2Medium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline2Medium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.headline2Medium.lineHeight}px;
 `;
 
 const AvatarSection = styled.View`
@@ -525,8 +526,9 @@ const InfoSection = styled.View`
 
 const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: 700;
+  font-size: ${({ theme }) => theme.typography.headline2Bold.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline2Bold.fontWeight};
+  line-height: ${({ theme }) => theme.typography.headline2Bold.lineHeight}px;
 `;
 
 const Field = styled.View`
@@ -534,9 +536,11 @@ const Field = styled.View`
 `;
 
 const FieldLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textAlternative};
+  font-size: ${({ theme }) => theme.typography.labelMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.labelMedium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.labelMedium.lineHeight}px;
+  letter-spacing: -0.28px;
 `;
 
 const FieldRow = styled.View`
@@ -549,8 +553,10 @@ const FieldRow = styled.View`
 
 const FieldInput = styled(AppTextInput)`
   flex: 1;
-  color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.bodyRegular.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyRegular.fontWeight};
+  line-height: ${({ theme }) => theme.typography.bodyRegular.lineHeight}px;
   padding: 0;
 `;
 
@@ -569,7 +575,8 @@ const SaveButton = styled.Pressable<{ disabled: boolean }>`
 `;
 
 const SaveButtonText = styled(AppText)`
-  color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: 20px;
-  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textInverse};
+  font-size: ${({ theme }) => theme.typography.headline1Bold.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline1Bold.fontWeight};
+  line-height: ${({ theme }) => theme.typography.headline1Bold.lineHeight}px;
 `;
