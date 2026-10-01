@@ -26,10 +26,12 @@ export default function WelcomeScreen({ onNext }: WelcomeScreenProps) {
         currentStep={CURRENT_STEP}
         progressLabel={progressText}
         progressValueText={progressText}
+        topGap={10}
         totalSteps={TOTAL_STEPS}
       />
       <Body>
         <OnboardingHero
+          heroTop={176}
           logoAccessibilityLabel={t('selectLanguage.logoAccessibilityLabel')}
           subtitle={t('loginForeign.subtitle')}
           title={t('loginForeign.title')}
@@ -48,5 +50,5 @@ const Screen = styled.View`
 
 const Body = styled.View`
   flex: 1;
-  padding: 0 28px 36px;
+  padding: 0 24px 46px;
 `;
