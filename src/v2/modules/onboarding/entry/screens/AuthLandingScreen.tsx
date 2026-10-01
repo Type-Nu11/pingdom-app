@@ -45,10 +45,12 @@ export default function AuthLandingScreen({
         onBack={onBack}
         progressLabel=""
         progressValueText=""
+        sidePadding={16}
         totalSteps={0}
       />
       <Body>
         <OnboardingHero
+          heroTop={183}
           logoAccessibilityLabel={t('selectLanguage.logoAccessibilityLabel')}
           subtitle={copy.subtitle}
           title={copy.title}
@@ -75,7 +77,7 @@ const Screen = styled.View`
 
 const Body = styled.View`
   flex: 1;
-  padding: 0 28px 36px;
+  padding: 0 16px 52px;
 `;
 
 const BottomGroup = styled.View`
