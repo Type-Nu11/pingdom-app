@@ -3,3 +3,4 @@ export type { OnboardingCompletion, OnboardingEntryState, SignupOnboardingContex
 export { OnboardingPreferenceFlow, useSyncOnboardingTravelSchedule } from './preferences';
 export { LanguageSelectionScreen } from './language';
 export type { LanguageSelectionScreenProps } from './language';
+export { default as AuthLandingScreen } from './entry/screens/AuthLandingScreen';

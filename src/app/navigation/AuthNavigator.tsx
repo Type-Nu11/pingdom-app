@@ -3,13 +3,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { OnboardingFlow } from '../../features/onboarding';
 import { LoginFormScreen } from '../../features/auth/screens/login';
 import SignUpDetailsScreen from '../../features/auth/screens/signup/SignUpDetailsScreen';
-import LogInForeignScreen from '../../features/onboarding/LogInForeignScreen';
-import LogInKrScreen from '../../features/onboarding/LogInKrScreen';
 import type {
   OnboardingCompletion,
   SignupOnboardingContext,
 } from '../../v2/modules/onboarding';
-import { getAuthInitialRoute } from '../../v2/modules/onboarding';
+import { AuthLandingScreen, getAuthInitialRoute } from '../../v2/modules/onboarding';
 import { normalizeSupportedLanguage } from '../../v2/shared/i18n';
 import {
   AUTH_ROUTES,
@@ -70,16 +68,12 @@ const AuthNavigator = ({ completion, onComplete }: AuthNavigatorProps) => {
         {({ navigation }) => {
           if (!completion) return null;
 
-          return completion.signupContext.entryVariant === 'kr' ? (
-            <LogInKrScreen
+          return (
+            <AuthLandingScreen
+              entryVariant={completion.signupContext.entryVariant}
               onBack={() => goBackOrOpenOnboarding(navigation)}
               onLogin={() => navigation.navigate(AUTH_ROUTES.Login)}
               onSignup={() => navigation.navigate(AUTH_ROUTES.Signup)}
-            />
-          ) : (
-            <LogInForeignScreen
-              onBack={() => goBackOrOpenOnboarding(navigation)}
-              onStart={() => navigation.navigate(AUTH_ROUTES.Signup)}
             />
           );
         }}
