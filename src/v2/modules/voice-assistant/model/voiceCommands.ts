@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { createPlaceListQueryOptions, createPlaceDetailQueryOptions, placeQueryKeys } from '../../place';
-import { createAvailabilitiesQueryOptions, isSelectableAvailability, NEARBY_RESERVATION_CANDIDATE_LIMIT, type AvailabilityList } from '../../booking';
+import { createAvailabilitiesQueryOptions, createReservationQuoteQueryOptions, isSelectableAvailability, NEARBY_RESERVATION_CANDIDATE_LIMIT, type AvailabilityList } from '../../booking';
 import { ApiError } from '../../../shared/api';
 import { parseVoiceAssistantEnvelope } from './voiceAssistantCommandParser';
 import { VOICE_COMMAND_POLICIES } from './voiceAssistantCommandPolicy';
@@ -10,8 +10,9 @@ import type { VoiceDeliveryContext, VoiceEnvelopeConsumer } from './voiceSession
 import { observeVoiceQuery, type VoiceQueryOptions } from './voiceCommandQuery';
 import { createVoiceProvenance, VOICE_PROVENANCE_MAX_AGE, type VoicePlaceProvenance, type VoiceProvenanceScope } from './voiceCommandProvenance';
 import { serverInstant, voiceTimeRange, VoiceClarification, VoiceCommandError } from './voiceCommandTime';
+import { prepareVoiceReservationDraft } from './reservationDraft';
 
-export const voiceReadQueries = Object.freeze({ list: createPlaceListQueryOptions, detail: createPlaceDetailQueryOptions, availability: createAvailabilitiesQueryOptions });
+export const voiceReadQueries = Object.freeze({ list: createPlaceListQueryOptions, detail: createPlaceDetailQueryOptions, availability: createAvailabilitiesQueryOptions, quote: createReservationQuoteQueryOptions });
 export type VoiceCommandRuntime = Readonly<{
   accountRevision: string | null; contextRevision: number;
   session: Readonly<{ sessionId: string; epoch: symbol; generation: number }> | undefined;
@@ -25,6 +26,7 @@ type Queries = {
   list: (params: Parameters<typeof createPlaceListQueryOptions>[0]) => ReturnType<typeof createPlaceListQueryOptions>;
   detail: (id: number) => ReturnType<typeof createPlaceDetailQueryOptions>;
   availability: (id: number) => ReturnType<typeof createAvailabilitiesQueryOptions>;
+  quote: (placeId: number, availabilityId: number, quantity: number, accountRevision: string) => ReturnType<typeof createReservationQuoteQueryOptions>;
 };
 type Execution = {
   runtime: VoiceCommandRuntime; scope: VoiceProvenanceScope; signal: AbortSignal;
@@ -34,12 +36,12 @@ type Execution = {
   commit: (() => void)[];
 };
 type Request<N extends VoiceCommandName> = Extract<CommandRequest, { command: N }>;
-/** #349 installs a draft-only handler here; the return contract cannot represent a booking. */
+/** Draft preparation cannot represent a created booking. */
 export type VoiceCommandHandler<N extends VoiceCommandName> = (command: Request<N>, execution: Execution) => Promise<VoiceCommandOutput[N]>;
 type Registry = { readonly [N in VoiceCommandName]: Readonly<{
   name: N; policy: typeof VOICE_COMMAND_POLICIES[N];
   validate: (request: Request<N>, execution: Execution) => void;
-  handler: N extends 'prepareReservation' ? VoiceCommandHandler<N> | null : VoiceCommandHandler<N>;
+  handler: VoiceCommandHandler<N>;
 }> };
 const validId = (id: unknown): id is number => typeof id === 'number' && Number.isSafeInteger(id) && id > 0;
 function invalid(): never { throw new VoiceCommandError('INVALID_SERVER_RESPONSE'); }
@@ -149,11 +151,43 @@ const getAvailability: VoiceCommandHandler<'getAvailabilities'> = async (request
   return Object.freeze({ placeId, date, availabilities });
 };
 const noValidation = () => {};
+function requireAvailability(request: Request<'prepareReservation'>, ex: Execution) {
+  requirePlace(request, ex);
+  const p = ex.provenance.availability();
+  if (!p || !matchingScope(p, ex)) throw new VoiceCommandError('STALE_CONTEXT');
+  if (p.placeId !== request.args.placeId || !p.availabilityIds.includes(request.args.availabilityId)) {
+    throw new VoiceCommandError('ID_NOT_IN_CONTEXT');
+  }
+  if (p.quantity !== request.args.quantity) throw new VoiceCommandError('STALE_CONTEXT');
+  const selected = p.slots.find(s => s.id === request.args.availabilityId)!;
+  if (selected.productType !== 'GENERAL') throw new VoiceCommandError('UNSUPPORTED_PRODUCT');
+}
+const prepareReservation: VoiceCommandHandler<'prepareReservation'> = async (request, ex) => {
+  const p = ex.provenance.availability()!;
+  const { placeId, availabilityId, quantity } = request.args;
+  const selected = p.slots.find(s => s.id === availabilityId)!;
+  // Re-read canonical data; never construct a draft from cached/stale selection alone.
+  ex.force = true;
+  const result = await ex.query(ex.queries.availability(placeId));
+  const range = voiceTimeRange(p.date, ex.runtime.timezone, ex.runtime.now());
+  const fresh = slots(result.data, placeId, quantity, range, ex.runtime.now()).find(s => s.id === availabilityId);
+  if (!fresh || serverInstant(fresh.startsAt) <= ex.runtime.now()) throw new VoiceCommandError('AVAILABILITY_UNAVAILABLE');
+  if (fresh.productType !== selected.productType || fresh.productId !== selected.productId || fresh.productName !== selected.productName
+    || fresh.startsAt !== selected.startsAt || fresh.endsAt !== selected.endsAt) {
+    throw new VoiceCommandError('STALE_CONTEXT');
+  }
+  const place = projectVoicePlace((await ex.query(ex.queries.detail(placeId))).data, placeId);
+  const quote = await ex.query(ex.queries.quote(placeId, availabilityId, quantity, ex.scope.accountRevision));
+  const draft = prepareVoiceReservationDraft(quote.data, { place, availability: fresh, quantity, date: p.date,
+    timezone: ex.runtime.timezone, availabilityDataUpdatedAt: result.dataUpdatedAt }, ex.runtime.now());
+  ex.commit.push(() => ex.provenance.clearAvailability()); // A second preparation needs a fresh displayed selection.
+  return Object.freeze({ draft });
+};
 export const VOICE_COMMAND_REGISTRY = Object.freeze({
   searchNearbyReservablePlaces: Object.freeze({ name: 'searchNearbyReservablePlaces', policy: VOICE_COMMAND_POLICIES.searchNearbyReservablePlaces, validate: validateSearch, handler: searchNearby }),
   getPlaceDetails: Object.freeze({ name: 'getPlaceDetails', policy: VOICE_COMMAND_POLICIES.getPlaceDetails, validate: requirePlace, handler: getDetails }),
   getAvailabilities: Object.freeze({ name: 'getAvailabilities', policy: VOICE_COMMAND_POLICIES.getAvailabilities, validate: requirePlace, handler: getAvailability }),
-  prepareReservation: Object.freeze({ name: 'prepareReservation', policy: VOICE_COMMAND_POLICIES.prepareReservation, validate: noValidation, handler: null as VoiceCommandHandler<'prepareReservation'> | null }),
+  prepareReservation: Object.freeze({ name: 'prepareReservation', policy: VOICE_COMMAND_POLICIES.prepareReservation, validate: requireAvailability, handler: prepareReservation }),
   cancelVoiceSession: Object.freeze({ name: 'cancelVoiceSession', policy: VOICE_COMMAND_POLICIES.cancelVoiceSession, validate: noValidation,
     handler: async () => Object.freeze({ sessionStopped: true as const }) }),
 } satisfies Registry);
@@ -162,6 +196,10 @@ function safeError(error: unknown): CommandFailureCode {
   if (error instanceof VoiceCommandError) return error.code;
   if (error instanceof VoiceSessionError && error.code === 'REPLAY_CONFLICT') return 'REPLAY_CONFLICT';
   if (error instanceof ApiError) {
+    if (error.code === 'QUOTE_TERMS_UNAVAILABLE') return 'QUOTE_TERMS_UNAVAILABLE';
+    if (['QUOTE_EXPIRED', 'QUOTE_CONDITIONS_CHANGED', 'QUOTE_REQUEST_MISMATCH'].includes(error.code ?? '')) return 'STALE_CONTEXT';
+    if (['RESERVATION_SLOT_NOT_FOUND', 'RESERVATION_SLOT_INACTIVE', 'RESERVATION_CAPACITY_EXCEEDED'].includes(error.code ?? '')) return 'AVAILABILITY_UNAVAILABLE';
+    if (error.code === 'RESERVATION_PRODUCT_UNAVAILABLE') return 'UNSUPPORTED_PRODUCT';
     if (error.code === 'ERR_CANCELED') return 'CANCELED';
     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return 'TIMEOUT';
     if (error.status === 401) return 'AUTHENTICATION_REQUIRED';
@@ -239,6 +277,7 @@ export function createVoiceCommandDispatcher(options: {
       options.publish(result);
       if (command.command === 'cancelVoiceSession' && current()) { clear(); void options.stopSession(); }
     } catch (error) {
+      if (command.command === 'prepareReservation' && current()) provenance.clearAvailability();
       if (current()) {
         const outcome = error instanceof VoiceClarification ? Object.freeze({ status: 'clarification_required' as const, field: error.field })
           : Object.freeze({ status: 'rejected' as const, code: timedOut ? 'TIMEOUT' as const : safeError(error) });

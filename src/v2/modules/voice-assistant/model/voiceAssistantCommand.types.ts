@@ -1,6 +1,6 @@
 // 기존 feature의 공개 타입만 참조합니다. 타입 전용 import이므로 화면/API를 런타임에 불러오지 않습니다.
 import type { PlaceDetail } from '../../place';
-import type { AvailabilityList } from '../../booking';
+import type { AvailabilityList, ReservationConfirmation } from '../../booking';
 
 export const VOICE_SCHEMA_VERSION = 1 as const;
 // 서버 계약은 최소 1명만 규정합니다. 최대 12명은 현재 예약 화면의 선택 범위에 맞춘 앱 정책입니다.
@@ -64,6 +64,14 @@ export type ReservationDraft = Readonly<{
   place: VoicePlaceFacts;
   availability: VoiceAvailabilityFacts & Readonly<{ productType: 'GENERAL'; productId: null; productName: null }>;
   quantity: number;
+  date: VoiceLocalDate;
+  timezone: string;
+  confirmation: Readonly<ReservationConfirmation>;
+  /** Original displayed selection linked to the canonical availability read; no bearer/quote token. */
+  source: Readonly<{
+    placeId: number; availabilityId: number; productId: null;
+    availabilityDataUpdatedAt: number;
+  }>;
 }>;
 /** 명령별 성공 데이터. prepareReservation의 성공은 초안 준비이며 예약 생성 성공이 아닙니다. */
 export type VoiceCommandOutput = {
@@ -76,7 +84,8 @@ export type VoiceCommandOutput = {
 export type CommandFailureCode = 'LOCATION_REQUIRED' | 'ID_NOT_IN_CONTEXT' | 'STALE_CONTEXT'
   | 'AVAILABILITY_UNAVAILABLE' | 'UNSUPPORTED_PRODUCT' | 'REPLAY_CONFLICT'
   | 'CANCELED' | 'TIMEOUT' | 'AUTHENTICATION_REQUIRED' | 'FORBIDDEN'
-  | 'RATE_LIMITED' | 'NOT_FOUND' | 'NETWORK_ERROR' | 'SERVER_ERROR' | 'INVALID_SERVER_RESPONSE';
+  | 'RATE_LIMITED' | 'NOT_FOUND' | 'NETWORK_ERROR' | 'SERVER_ERROR' | 'INVALID_SERVER_RESPONSE'
+  | 'QUOTE_TERMS_UNAVAILABLE';
 /**
  * 앱 executor만 생성하는 결과입니다. source 문자열 자체는 인증 수단이 아니며 provider parser는 거부합니다.
  * mapped type으로 각 command와 그 성공 data를 묶어 다른 명령의 결과를 섞지 못하게 합니다.

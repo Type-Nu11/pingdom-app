@@ -9,6 +9,7 @@ import ShareIcon from '../assets/share.svg';
 import StarIcon from '../assets/star.svg';
 import type { VoiceCommandViewState } from '../hooks/useVoiceCommands';
 import type { VoicePlaceFacts } from '../model/voiceAssistantCommand.types';
+import { formatDraftAmount } from '../model/reservationDraft';
 
 const placeCardImage = require('../assets/place-card.png');
 
@@ -68,6 +69,31 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
     </Block>) : <Copy testID="voice-command-empty">{t('voiceAssistant.command.empty')}</Copy>}
   </>;
   if (result.command === 'cancelVoiceSession') return copy('canceled');
+  if (result.command === 'prepareReservation' && result.outcome.status === 'succeeded') {
+    const draft = result.outcome.data.draft;
+    const c = draft.confirmation;
+    const amount = (value: number) => formatDraftAmount(value, c.currency, c.currencyFractionDigits);
+    return <Block testID="voice-reservation-draft" accessibilityLiveRegion="polite">
+      <Copy>{t('voiceAssistant.command.draft.title')}</Copy>
+      <Copy>{draft.place.name}</Copy><Copy>{draft.place.address}</Copy>
+      <Copy>{t('voiceAssistant.command.general')}</Copy>
+      <Copy>{draft.date} ({draft.timezone})</Copy>
+      <Copy>{c.startsAt} – {c.endsAt} ({c.timezone})</Copy>
+      <Copy>{t('voiceAssistant.command.draft.quantity', { count: c.quantity })}</Copy>
+      <Copy>{t('voiceAssistant.command.capacity', { count: draft.availability.remainingCapacity })}</Copy>
+      <Copy>{t('voiceAssistant.command.draft.unit', { amount: amount(c.unitAmountMinor) })}</Copy>
+      <Copy>{t('voiceAssistant.command.draft.additional', { amount: amount(c.additionalAmountMinor) })}</Copy>
+      <Copy testID="voice-reservation-draft-total">{t('voiceAssistant.command.draft.total', { amount: amount(c.totalAmountMinor) })}</Copy>
+      <Copy>{t(`voiceAssistant.command.draft.${c.paymentRequired ? 'paymentRequired' : 'noPayment'}`)}</Copy>
+      {c.cancellable ? <>
+        <Copy>{t('voiceAssistant.command.draft.cancelDeadline', { deadline: c.cancellationDeadline, timezone: c.timezone })}</Copy>
+        <Copy>{t('voiceAssistant.command.draft.cancelFee', { amount: amount(c.cancellationFeeMinor) })}</Copy>
+        <Copy>{t('voiceAssistant.command.draft.refund', { amount: amount(c.refundableAmountMinor) })}</Copy>
+      </> : <Copy>{t('voiceAssistant.command.draft.notCancellable')}</Copy>}
+      <Copy>{t('voiceAssistant.command.draft.expires', { expiresAt: c.expiresAt })}</Copy>
+      <Copy testID="voice-reservation-draft-not-submitted">{t('voiceAssistant.command.draft.notSubmitted')}</Copy>
+    </Block>;
+  }
   return null;
 }
 

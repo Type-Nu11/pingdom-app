@@ -7,6 +7,7 @@ import type { VoiceEnvelopeConsumer, VoiceSessionController } from '../model/voi
 import type { AppCommandResult, ClarificationField } from '../model/voiceAssistantCommand.types';
 import type { OnFinalInput } from '../model/voiceInput';
 import { voiceSessionError, type VoiceSessionErrorCode } from '../model/voiceSessionError';
+import { serverInstant } from '../model/voiceCommandTime';
 
 export type VoiceCommandContext = Omit<VoiceCommandRuntime, 'session' | 'queryClient' | 'now' | 'monotonic' | 'contextRevision'>;
 export type VoiceCommandViewState =
@@ -42,6 +43,24 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   }, [dispatcher]);
   const { controller, state } = useVoiceSession(context.accountRevision, consume);
   sessionRef.current = controller;
+  useLayoutEffect(() => {
+    if (commandState.phase !== 'result' || commandState.result.command !== 'prepareReservation'
+      || commandState.result.outcome.status !== 'succeeded') return;
+    const result = commandState.result;
+    const expiry = serverInstant(commandState.result.outcome.data.draft.confirmation.expiresAt);
+    // Monotonic deadline prevents a wall-clock rollback from extending a displayed draft.
+    const deadline = performance.now() + Math.max(0, expiry - Date.now());
+    let timer: ReturnType<typeof setTimeout>;
+    const expire = () => {
+      const remaining = Math.min(expiry - Date.now(), deadline - performance.now());
+      if (remaining > 0) { timer = setTimeout(expire, remaining); return; }
+      setCommandState(current => current.phase === 'result' && current.result === result
+        ? { phase: 'result', result: { ...result, outcome: { status: 'rejected', code: 'STALE_CONTEXT' } } }
+        : current);
+    };
+    expire();
+    return () => clearTimeout(timer);
+  }, [commandState, dispatcher]);
   useLayoutEffect(() => {
     if (!state.retryAvailable || state.retryAt === null) return;
     const timer = setTimeout(() => setRetryClock(Date.now()), Math.max(0, state.retryAt - Date.now()));

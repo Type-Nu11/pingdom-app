@@ -1,5 +1,9 @@
 # #348 — V2 AI Command Registry와 장소 읽기 도구
 
+후속 상태(2026-10-01): 아래의 handler null·초안 미구현 설명은 #348 완료 당시 기록입니다.
+#349 1단계에서 서버 견적 기반 **초안만** 연결했습니다. 예약 mutation은 여전히 제공하지 않습니다.
+현재 구현과 검증 범위는 [#349 예약 초안 문서](voice-assistant-reservation-draft-349.md)를 참고합니다.
+
 ## 작업 기준과 소유권
 
 - 시작 브랜치: `feat/348-ai-command-registry`.
