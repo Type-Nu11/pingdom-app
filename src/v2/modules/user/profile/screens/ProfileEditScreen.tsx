@@ -7,13 +7,12 @@ import styled, { useTheme } from 'styled-components/native';
 
 import { getUsernameErrorMessage, getPasswordErrorMessage } from '../model/profileErrorPresentation';
 import {
-  pickProfileImage,
   ProfileImagePermissionError,
   SaveProfileError,
-  useChangeProfileImage,
   useProfile,
   useSaveProfile,
 } from '../hooks/useProfile';
+import { useProfileImageChange } from '../hooks/useProfileImageChange';
 import { ApiErrorState, LoadingState, HeaderBackButton } from '../../../../shared/components';
 import CheckmarkIcon from '../../../../shared/assets/icons/checkmark.svg';
 import PencilIcon from '../../../../shared/assets/icons/pencil.svg';
@@ -30,7 +29,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const { colors } = useTheme();
   const { error: profileError, isFetching, refetch, isError: isProfileError, isLoading: isProfileLoading, profile } = useProfile();
 
-  const changeProfileImage = useChangeProfileImage();
+  const changeProfileImage = useProfileImageChange();
   const saveProfile = useSaveProfile();
 
   const [username, setUsername] = useState(profile?.username ?? '');
@@ -41,7 +40,6 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   // the user has already typed is not overwritten by a later refetch.
   const hasSeededUsername = useRef(profile !== null);
   const hasEditedUsername = useRef(false);
-  const avatarActionLock = useRef(false);
   const backActionLock = useRef(false);
   const isMounted = useRef(true);
   const saveActionLock = useRef(false);
@@ -75,13 +73,8 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   };
 
   const handleEditAvatar = async () => {
-    if (avatarActionLock.current || changeProfileImage.isPending) return;
-    avatarActionLock.current = true;
-
     try {
-      const file = await pickProfileImage();
-      if (!file || !isMounted.current) return;
-      await changeProfileImage.mutateAsync(file);
+      await changeProfileImage.change('library');
     } catch (error) {
       if (!isMounted.current) return;
       if (error instanceof ProfileImagePermissionError) {
@@ -89,8 +82,6 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
         return;
       }
       Alert.alert(t('myPage.profileEdit.avatarChangeFailed'));
-    } finally {
-      avatarActionLock.current = false;
     }
   };
 
