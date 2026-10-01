@@ -18,8 +18,9 @@ export const visitVerificationResources = {
     placeError: 'Could not load this place.',
     placeLoading: 'Loading place information...',
     placePhoto: '{{name}} photo {{index}}',
-    reasonHelp: 'Select up to 5',
+    reasonHelp: 'You can select up to 5',
     reasonMoreCount: '{{count}} more reasons',
+    reasonSelectedSuffix: '/{{max}} selected',
     reasonSection: 'Recommendation reasons',
     reasons: {
       clean: 'Clean store',
@@ -106,8 +107,9 @@ export const visitVerificationResources = {
     placeError: '장소 정보를 불러오지 못했어요.',
     placeLoading: '장소 정보를 불러오는 중이에요...',
     placePhoto: '{{name}} 사진 {{index}}',
-    reasonHelp: '최대 5개 선택',
+    reasonHelp: '최대 5개까지 선택할 수 있어요',
     reasonMoreCount: '추천 이유 {{count}}개 더 있음',
+    reasonSelectedSuffix: '/{{max}}개 선택됨',
     reasonSection: '추천 이유',
     reasons: {
       clean: '매장이 깨끗해요',
@@ -194,8 +196,9 @@ export const visitVerificationResources = {
     placeError: 'この場所を読み込めませんでした。',
     placeLoading: '場所の情報を読み込んでいます...',
     placePhoto: '{{name}}の写真{{index}}',
-    reasonHelp: '最大5つまで選択',
+    reasonHelp: '最大5つまで選択できます',
     reasonMoreCount: 'ほか{{count}}件のおすすめ理由',
+    reasonSelectedSuffix: '/{{max}}件選択中',
     reasonSection: 'おすすめの理由',
     reasons: {
       clean: 'お店が清潔',

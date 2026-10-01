@@ -47,6 +47,9 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     delete baseline[language].translation.visitVerification.errors;
     // #398 adds the accessibility label for the extra review reason count.
     delete baseline[language].translation.visitVerification.reasonMoreCount;
+    // #398 aligns the recommendation-reason screen copy with the reviewed Figma design.
+    delete baseline[language].translation.visitVerification.reasonSelectedSuffix;
+    baseline[language].translation.visitVerification.reasonHelp = language === 'ko' ? '최대 5개 선택' : 'Select up to 5';
     const voiceAssistant = baseline[language].translation.voiceAssistant;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
