@@ -1,3 +1,4 @@
+import CarRoutePreview from '../routes/components/CarRoutePreview';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
@@ -182,6 +183,7 @@ export default function MapScreen({
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation();
+  const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
   const center = location.coordinate;
   const userLat = center?.lat;
   const userLng = center?.lng;
@@ -542,24 +544,27 @@ export default function MapScreen({
   }, [selectedPlaceBase, selectedPlacePresentation]);
   const selectedPlaceActionTarget = useMemo(() => selectedPlace ? ({
     address: selectedPlace.address,
+    category: normalizePlaceCategory(selectedPlace.category),
     latitude: selectedPlace.latitude,
     longitude: selectedPlace.longitude,
     name: selectedPlace.name,
     placeId: selectedPlace.id,
     userLocation: center ? { latitude: center.lat, longitude: center.lng } : null,
   }) : null, [center, selectedPlace]);
+  useEffect(() => {
+    setRoutePreviewPlaceId(null);
+  }, [selectedPlaceActionTarget?.placeId, isFocused]);
   const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
     Alert.alert(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
   }, [t]);
   const {
     busyAction: placeActionBusy,
-    directions: openSelectedPlaceDirections,
     share: shareSelectedPlace,
   } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
   const handleDirectionsPress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
-    void openSelectedPlaceDirections(selectedPlaceActionTarget);
-  }, [openSelectedPlaceDirections, selectedPlaceActionTarget]);
+    setRoutePreviewPlaceId(place.id);
+  }, [selectedPlaceActionTarget]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     void shareSelectedPlace(selectedPlaceActionTarget);
@@ -963,6 +968,11 @@ export default function MapScreen({
           zoomLevel={mapZoomLevel}
         />
       </View>
+      {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
+        <CarRoutePreview key={`${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
+          destination={selectedPlaceActionTarget} location={location}
+          onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
+      )}
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
         <MapTopOverlay
           activeCategory={activeCategory}
