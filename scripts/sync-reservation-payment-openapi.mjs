@@ -17,6 +17,7 @@ const TARGET_OPERATIONS = new Map([
   ['/reservations/{reservationId}', [['get', 'get_2', 'getMyReservation']]],
   ['/reservations/{reservationId}/cancel', [['post', 'cancel', 'cancelMyReservation']]],
   ['/places/{placeId}/availabilities', [['get', 'list_3', 'listPlaceAvailabilities']]],
+  ['/places/{placeId}/availabilities/{availabilityId}/quote', [['get', 'quote', 'getReservationQuote']]],
   ['/payments', [['get', 'list_4', 'listMyPayments']]],
   ['/payments/{paymentId}', [['get', 'get_4', 'getMyPayment']]],
 ]);

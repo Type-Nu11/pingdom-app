@@ -28,6 +28,7 @@ describe('reservation mutation cache refresh', () => {
     let finishInvalidation!: () => void;
     let invalidationFinished = false;
     jest.spyOn(reservationApi, 'createReservation').mockResolvedValue({
+      confirmation: null,
       availabilityId: 7,
       bookerName: '홍길동',
       bookerPhone: '010-1234-5678',
@@ -77,6 +78,7 @@ describe('reservation mutation cache refresh', () => {
   test('예약 상태 변경도 완료된 API 결과를 캐시 재검증과 분리한다', async () => {
     let finishInvalidation!: () => void;
     jest.spyOn(reservationApi, 'cancelReservation').mockResolvedValue({
+      confirmation: null,
       availabilityId: 7,
       bookerName: '홍길동',
       bookerPhone: '010-1234-5678',

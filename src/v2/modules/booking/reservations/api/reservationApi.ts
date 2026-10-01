@@ -20,6 +20,8 @@ export type AvailabilityList = ReservationPaymentOperationResponse<'listPlaceAva
 export type ReservationPage = ReservationPaymentOperationResponse<'listMyReservations', 200>;
 export type Reservation = ReservationPaymentOperationResponse<'createReservation', 201>;
 export type ReservationDetail = ReservationPaymentOperationResponse<'getMyReservation', 200>;
+export type ReservationQuote = ReservationPaymentOperationResponse<'getReservationQuote', 200>;
+export type ReservationConfirmation = NonNullable<ReservationQuote['confirmation']>;
 
 // The live server responds with `totalElements`; the merchant-owner list on the
 // older `mvp` contract still says `totalCount`. Normalize so callers can rely on
@@ -66,6 +68,16 @@ export function createReservationApi(client: ApiClient = apiClient) {
       signal?: AbortSignal,
     ): Promise<AvailabilityList> =>
       client.get<AvailabilityList>(`/places/${placeId}/availabilities`, { params, signal }),
+
+    getReservationQuote: (
+      placeId: number,
+      availabilityId: number,
+      quantity: number,
+      signal?: AbortSignal,
+    ): Promise<ReservationQuote> =>
+      client.get<ReservationQuote>(`/places/${placeId}/availabilities/${availabilityId}/quote`, {
+        params: { quantity }, signal,
+      }),
 
     listOwnedReservations: async (
       params: ListOwnedReservationsParams = {},
