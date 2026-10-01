@@ -7,14 +7,8 @@ import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
 import PhotoIcon from '../../../../../assets/v2/icons/edit/image.svg';
-import CameraIcon from '../../../../../assets/v2/icons/place/Camera.svg';
-import CleanIcon from '../../../../../assets/v2/icons/place/Clean.svg';
-import DeliciousIcon from '../../../../../assets/v2/icons/place/Delicious.svg';
-import GroupIcon from '../../../../../assets/v2/icons/place/Group.svg';
-import KindIcon from '../../../../../assets/v2/icons/place/Kind.svg';
-import ParkIcon from '../../../../../assets/v2/icons/place/Park.svg';
-import PinIcon from '../../../../../assets/v2/icons/place/Pin.svg';
 import { ApiErrorState, Button, LoadingState } from '../../../../shared/components';
+import { ReviewReasonIcon } from '../../../../shared/components/ReviewReasonIcon';
 import { usePlaceCard } from '../../exploration';
 import { useSubmitVisitVerification } from '../hooks/useSubmitVisitVerification';
 import {
@@ -60,23 +54,7 @@ function SelectedPlaceImage({ uri }: { uri: string | null }) {
 }
 
 function RecommendReasonIcon({ reason }: { reason: RecommendReason }) {
-  const props = {
-    accessibilityElementsHidden: true,
-    height: 16,
-    importantForAccessibility: 'no-hide-descendants' as const,
-    testID: `visit-reason-icon-${reason}`,
-    width: 16,
-  };
-
-  switch (reason) {
-    case 'kind': return <KindIcon {...props} />;
-    case 'easyToFind': return <PinIcon {...props} />;
-    case 'delicious': return <DeliciousIcon {...props} />;
-    case 'multilingual': return <GroupIcon {...props} />;
-    case 'parking': return <ParkIcon {...props} />;
-    case 'photoSpot': return <CameraIcon {...props} width={19} />;
-    case 'clean': return <CleanIcon {...props} />;
-  }
+  return <ReviewReasonIcon height={16} reason={reason} testID={`visit-reason-icon-${reason}`} width={reason === 'photoSpot' ? 19 : 16} />;
 }
 
 export default function VisitVerificationReviewScreen({
