@@ -313,7 +313,7 @@ export const resources = {
         detail: {
           amenityEnglish: 'English support', amenityParking: 'Parking available', back: 'Back to map',
           collapseTags: 'Collapse additional tags', coupon: 'Coupons', description: 'About this place',
-          events: 'Current events', expandTags: 'Show {{count}} hidden tags', imageDetail: 'View {{name}} photo {{count}}',
+          events: 'Current events', collapseReviews: 'Hide reviews', viewAllReviews: 'View all reviews', expandTags: 'Show {{count}} hidden tags', imageDetail: 'View {{name}} photo {{count}}',
           imageError: 'Could not load photos. Try again', info: 'Info', notice: 'Operating notice',
           imageViewer: {
             close: 'Close photo', counter: '{{current}} / {{total}}', next: 'Next photo',
@@ -1157,7 +1157,7 @@ export const resources = {
         },
         detail: {
           amenityEnglish: '영어응대 가능', amenityParking: '주차가능', back: '지도로 돌아가기', collapseTags: '추가 태그 접기',
-          coupon: '쿠폰', description: '장소 소개', events: '진행 중 이벤트', expandTags: '숨겨진 태그 {{count}}개 펼치기',
+          coupon: '쿠폰', description: '장소 소개', events: '진행 중 이벤트', collapseReviews: '리뷰 접기', viewAllReviews: '리뷰 모두 보기', expandTags: '숨겨진 태그 {{count}}개 펼치기',
           imageDetail: '{{name}} 사진 {{count}} 상세 보기', imageError: '사진을 불러오지 못했습니다. 다시 시도', info: '정보',
           imageViewer: {
             close: '사진 닫기', counter: '{{current}} / {{total}}', next: '다음 사진',
@@ -2032,7 +2032,7 @@ export const resources = {
         detail: {
           amenityEnglish: '英語対応', amenityParking: '駐車場あり', back: '地図に戻る',
           collapseTags: '追加のタグを閉じる', coupon: 'クーポン', description: 'この場所について',
-          events: '開催中のイベント', expandTags: '非表示のタグを{{count}}件表示', imageDetail: '{{name}}の写真{{count}}を表示',
+          events: '開催中のイベント', collapseReviews: 'レビューを閉じる', viewAllReviews: 'レビューをすべて見る', expandTags: '非表示のタグを{{count}}件表示', imageDetail: '{{name}}の写真{{count}}を表示',
           imageError: '写真を読み込めませんでした。もう一度お試しください', info: '情報', notice: '営業のお知らせ',
           imageViewer: {
             close: '写真を閉じる', counter: '{{current}} / {{total}}', next: '次の写真',

@@ -46,6 +46,9 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     delete baseline[language].translation.visitVerification.uploading;
     delete baseline[language].translation.visitVerification.errors;
     // #398 adds the accessibility label for the extra review reason count.
+    // #398 adds inline review expansion copy to the place detail info tab.
+    delete baseline[language].translation.map.detail.viewAllReviews;
+    delete baseline[language].translation.map.detail.collapseReviews;
     delete baseline[language].translation.visitVerification.reasonMoreCount;
     // #398 aligns the recommendation-reason screen copy with the reviewed Figma design.
     delete baseline[language].translation.visitVerification.reasonSelectedSuffix;
