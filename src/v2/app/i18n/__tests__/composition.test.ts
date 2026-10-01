@@ -79,6 +79,26 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     };
     // #389 moves the My Trip weekday header out of the component.
     delete baseline[language].translation.myPage.travel.weekdays;
+    // #399 adds the profile photo picker, retry, and permission copy.
+    for (const key of [
+      'avatarCameraPermissionDenied',
+      'avatarCancel',
+      'avatarFileTooLarge',
+      'avatarFromCamera',
+      'avatarFromLibrary',
+      'avatarOpenSettings',
+      'avatarRetry',
+      'avatarSheetTitle',
+      'avatarTypeUnsupported',
+    ]) {
+      delete baseline[language].translation.myPage.profileEdit[key];
+    }
+    // #399 extends the existing permission message with a Settings hint.
+    baseline[language].translation.myPage.profileEdit.avatarPermissionDenied = ({
+      en: 'Photo library access is required to change your profile image.',
+      ja: 'プロフィール画像を変更するには、写真ライブラリへのアクセスが必要です。',
+      ko: '프로필 이미지를 변경하려면 사진 접근 권한이 필요합니다.',
+    } as Record<string, string>)[language];
   }
   expect(createHash('sha256').update(JSON.stringify(baseline)).digest('hex'))
     .toBe('f2dc1044fdfdba80886ded680f6c6b25b694134c843365c57988f7f1b3f4b478');

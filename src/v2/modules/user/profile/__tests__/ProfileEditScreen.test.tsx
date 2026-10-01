@@ -346,7 +346,7 @@ describe('ProfileEditScreen', () => {
     permission.mockResolvedValueOnce({ granted: false } as never);
     await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
     expect(alertMessages(alertSpy)).toContain(
-      '프로필 이미지를 변경하려면 사진 접근 권한이 필요합니다.',
+      '프로필 이미지를 변경하려면 사진 접근 권한이 필요합니다. 설정에서 허용해주세요.',
     );
 
     permission.mockResolvedValueOnce({ granted: true } as never);
