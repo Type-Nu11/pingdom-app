@@ -36,16 +36,14 @@ export type CountrySelectionScreenProps = Readonly<{
 }>;
 
 export default function CountrySelectionScreen({ onBack, onNext }: CountrySelectionScreenProps) {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<OnboardingCountry>(INITIAL_SELECTED_COUNTRY);
   const [query, setQuery] = useState('');
   const progressText = t('selectLanguage.progress', { current: CURRENT_STEP, total: TOTAL_STEPS });
 
-  const collator = new Intl.Collator(i18n.language);
   const needle = query.trim().toLowerCase();
   const options = COUNTRY_OPTIONS
     .map((option) => ({ ...option, label: t(option.labelKey) }))
-    .sort((a, b) => collator.compare(a.label, b.label))
     .filter((option) => option.label.toLowerCase().includes(needle));
 
   return (
@@ -107,7 +105,7 @@ const Screen = styled.View`
 const Body = styled.View`
   flex: 1;
   padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.xl + theme.spacing.xs}px;
+    51px;
 `;
 
 const List = styled.ScrollView`
@@ -121,7 +119,7 @@ const Option = styled.Pressable<{ $selected: boolean }>`
   justify-content: space-between;
   padding: 0 ${({ theme }) => theme.spacing.md}px;
   border-radius: 16px;
-  background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primarySelected : 'transparent')};
+  background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primaryTint : 'transparent')};
 `;
 
 const OptionLeft = styled.View`
