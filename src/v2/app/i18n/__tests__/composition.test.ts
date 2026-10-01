@@ -58,6 +58,14 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     // #389 adds the Japanese option label to the language pickers.
     delete baseline[language].translation.selectLanguage.options.ja;
     delete baseline[language].translation.settings.language.japanese;
+    // #396 language pickers show each language's own name, so these labels were removed.
+    const { description, ...languageRest } = baseline[language].translation.settings.language;
+    baseline[language].translation.settings.language = {
+      description,
+      english: language === 'ko' ? '영어' : 'English',
+      korean: language === 'ko' ? '한국어' : 'Korean',
+      ...languageRest,
+    };
     // #389 moves the My Trip weekday header out of the component.
     delete baseline[language].translation.myPage.travel.weekdays;
   }

@@ -1995,6 +1995,7 @@
     {"source":"src/v2/modules/user/settings/screens/SettingsScreen.tsx","target":"src/v2/modules/user/profile/index.ts","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/SettingsScreen.tsx","target":"src/v2/modules/user/notifications/index.ts","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/SettingsScreen.tsx","target":"src/v2/shared/components/index.ts","typeOnly":false},
+    {"source":"src/v2/modules/user/settings/screens/SettingsScreen.tsx","target":"src/v2/shared/i18n/index.ts","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/SettingsScreen.tsx","target":"src/v2/shared/assets/icons/chevron-right-24.svg","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/SettingsScreen.tsx","target":"src/v2/modules/user/settings/model/settings.types.ts","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/SettingsScreen.tsx","target":"src/v2/modules/user/settings/model/languageOptions.ts","typeOnly":false},
