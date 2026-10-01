@@ -2,9 +2,10 @@ import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import styled from 'styled-components/native';
+import Svg, { Path } from 'react-native-svg';
+import styled, { useTheme } from 'styled-components/native';
 
-import Button from '../../../../shared/components/Button';
+import OnboardingCtaButton from '../../components/OnboardingCtaButton';
 import OnboardingProgressHeader from '../components/OnboardingProgressHeader';
 import {
   isServerTravelDate,
@@ -25,6 +26,20 @@ import {
 const DEFAULT_CURRENT_STEP = 7;
 const DEFAULT_TOTAL_STEPS = 7;
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+
+function Chevron({ color, direction }: Readonly<{ color: string; direction: 'left' | 'right' }>) {
+  return (
+    <Svg aria-hidden fill="none" height={20} viewBox="0 0 20 20" width={20}>
+      <Path
+        d={direction === 'left' ? 'M12.5 5L7.5 10L12.5 15' : 'M7.5 5L12.5 10L7.5 15'}
+        stroke={color}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+      />
+    </Svg>
+  );
+}
 
 export type TravelScheduleSelectionScreenProps = Readonly<{
   currentStep?: number;
@@ -48,6 +63,7 @@ export default function TravelScheduleSelectionScreen({
   totalSteps = DEFAULT_TOTAL_STEPS,
 }: TravelScheduleSelectionScreenProps) {
   const { i18n, t } = useTranslation();
+  const { colors } = useTheme();
   const [visibleMonth, setVisibleMonth] = useState(() =>
     getInitialCalendarMonth(selectedSchedule));
   const selectionState = getTravelScheduleSelectionState(selectedSchedule);
@@ -93,7 +109,7 @@ export default function TravelScheduleSelectionScreen({
           </Heading>
 
           <DateSummary>
-            <DateCard>
+            <DateCard $active>
               <DateLabel>{t('onboarding.travelScheduleScreen.startDate')}</DateLabel>
               <DateValue $hasValue={isServerTravelDate(selectedSchedule.startDateText)}>
                 {renderDateValue(selectedSchedule.startDateText)}
@@ -131,7 +147,7 @@ export default function TravelScheduleSelectionScreen({
                 hitSlop={8}
                 onPress={() => setVisibleMonth((month) => shiftCalendarMonth(month, -1))}
               >
-                <MonthArrow aria-hidden>‹</MonthArrow>
+                <Chevron color={colors.textAlternative} direction="left" />
               </MonthButton>
               <MonthTitle accessibilityRole="header">
                 {formatCalendarMonth(visibleMonth, i18n.language)}
@@ -142,7 +158,7 @@ export default function TravelScheduleSelectionScreen({
                 hitSlop={8}
                 onPress={() => setVisibleMonth((month) => shiftCalendarMonth(month, 1))}
               >
-                <MonthArrow aria-hidden>›</MonthArrow>
+                <Chevron color={colors.textAlternative} direction="right" />
               </MonthButton>
             </MonthHeader>
 
@@ -204,14 +220,11 @@ export default function TravelScheduleSelectionScreen({
       </ContentScroll>
 
       <Footer>
-        <Button
+        <OnboardingCtaButton
           disabled={!canContinue}
-          fullWidth
           label={t('onboarding.travelScheduleScreen.continue')}
           loading={isContinuing}
           onPress={onContinue}
-          shape="pill"
-          size="onboarding"
         />
       </Footer>
     </Screen>
@@ -228,60 +241,60 @@ const ContentScroll = styled.ScrollView`
 `;
 
 const Content = styled.View`
-  gap: ${({ theme }) => theme.spacing.md}px;
+  gap: 16px;
   padding: ${({ theme }) => theme.spacing.md}px;
 `;
 
 const Heading = styled.View`
-  gap: ${({ theme }) => theme.spacing.xs}px;
+  gap: 0;
 `;
 
 const Title = styled(AppText)`
   flex-shrink: 1;
-  color: ${({ theme }) => theme.colors.textStrong};
+  color: ${({ theme }) => theme.colors.labelStrong};
   font-size: ${({ theme }) => theme.typography.display.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.display.fontWeight};
-  line-height: ${({ theme }) => theme.typography.display.lineHeight}px;
+  line-height: 41.6px;
 `;
 
 const Description = styled(AppText)`
   flex-shrink: 1;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.body.fontWeight};
-  line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
+  color: ${({ theme }) => theme.colors.textAlternative};
+  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyMedium.fontWeight};
+  line-height: 20.8px;
 `;
 
 const DateSummary = styled.View`
   flex-direction: row;
-  gap: ${({ theme }) => theme.spacing.sm}px;
+  gap: 12px;
 `;
 
-const DateCard = styled.View`
+// Figma shades the start box as the active field.
+const DateCard = styled.View<{ $active?: boolean }>`
   min-width: 0px;
-  min-height: ${({ theme }) => theme.spacing.xxl + theme.spacing.md}px;
   flex: 1;
-  justify-content: center;
-  gap: ${({ theme }) => theme.spacing.xs}px;
+  gap: 4px;
   padding: 14px ${({ theme }) => theme.spacing.md}px;
   border-radius: 16px;
-  background-color: ${({ theme }) => theme.colors.backgroundNeutral};
+  background-color: ${({ $active, theme }) =>
+    $active ? theme.colors.lineNeutral : theme.colors.backgroundNeutral};
 `;
 
 const DateLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.labelAssistive};
   font-size: 12px;
   font-weight: 500;
-  line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
+  line-height: 14px;
 `;
 
 const DateValue = styled(AppText)<{ $hasValue: boolean }>`
   flex-shrink: 1;
   color: ${({ $hasValue, theme }) =>
-    $hasValue ? theme.colors.primary : theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+    $hasValue ? theme.colors.primary : theme.colors.labelAssistive};
+  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize}px;
   font-weight: 700;
-  line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
+  line-height: 18px;
 `;
 
 const SelectionMessage = styled(AppText)<{ $error: boolean }>`
@@ -293,61 +306,61 @@ const SelectionMessage = styled(AppText)<{ $error: boolean }>`
 `;
 
 const Calendar = styled.View`
-  padding: ${({ theme }) => theme.spacing.sm}px;
+  min-height: 320px;
   border-radius: 16px;
   background-color: ${({ theme }) => theme.colors.backgroundNeutral};
 `;
 
 const MonthHeader = styled.View`
-  min-height: ${({ theme }) => theme.spacing.xl + theme.spacing.sm}px;
+  height: 40px;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px ${({ theme }) => theme.spacing.md}px;
 `;
 
 const MonthButton = styled.Pressable`
-  width: ${({ theme }) => theme.spacing.xl}px;
-  min-height: ${({ theme }) => theme.spacing.xl + theme.spacing.sm}px;
+  width: 20px;
+  height: 20px;
   align-items: center;
   justify-content: center;
 `;
 
-const MonthArrow = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.title.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.title.lineHeight}px;
-`;
-
 const MonthTitle = styled(AppText)`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.title.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.title.fontWeight};
-  line-height: ${({ theme }) => theme.typography.title.lineHeight}px;
+  color: ${({ theme }) => theme.colors.labelNeutral};
+  font-size: ${({ theme }) => theme.typography.headline2Bold.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline2Bold.fontWeight};
+  line-height: 23px;
 `;
 
 const WeekdayRow = styled.View`
+  height: 20px;
   flex-direction: row;
-  margin-top: ${({ theme }) => theme.spacing.xs}px;
+  align-items: center;
+  margin-top: 6px;
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
 `;
 
 const Weekday = styled(AppText)<{ $weekday: number }>`
   width: 14.2857%;
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme }) => theme.colors.labelNeutral};
   font-size: 14px;
   font-weight: 500;
-  line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
+  line-height: 18px;
   text-align: center;
 `;
 
 const CalendarGrid = styled.View`
   flex-direction: row;
   flex-wrap: wrap;
-  margin-top: ${({ theme }) => theme.spacing.xs}px;
+  row-gap: 2px;
+  margin-top: 6px;
+  padding: 0 ${({ theme }) => theme.spacing.md}px 16px;
 `;
 
 const EmptyDay = styled.View`
   width: 14.2857%;
-  height: ${({ theme }) => theme.spacing.xl + theme.spacing.md}px;
+  height: 48px;
 `;
 
 const DayCell = styled.View<{
@@ -356,7 +369,7 @@ const DayCell = styled.View<{
   $roundedRight: boolean;
 }>`
   width: 14.2857%;
-  height: ${({ theme }) => theme.spacing.xl + theme.spacing.md}px;
+  height: 48px;
   align-items: flex-start;
   justify-content: center;
   border-top-left-radius: ${({ $roundedLeft, theme }) =>
@@ -372,8 +385,8 @@ const DayCell = styled.View<{
 `;
 
 const DayButton = styled.Pressable<{ $selected: boolean }>`
-  width: ${({ theme }) => theme.spacing.xl + theme.spacing.sm}px;
-  height: ${({ theme }) => theme.spacing.xl + theme.spacing.sm}px;
+  width: 48px;
+  height: 48px;
   align-items: center;
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.full}px;
@@ -388,12 +401,12 @@ const DayText = styled(AppText)<{
   $weekday: number;
 }>`
   color: ${({ $disabled, $inRange, $selected, $weekday, theme }) => {
-    if ($selected) return theme.colors.onPrimary;
+    if ($selected) return theme.colors.textInverse;
     if ($disabled) return theme.colors.textDisabled;
     if ($inRange) return theme.colors.primary;
-    if ($weekday === 0) return theme.colors.calendarSunday;
-    if ($weekday === 6) return theme.colors.calendarSaturday;
-    return theme.colors.textMuted;
+    if ($weekday === 0) return theme.colors.danger;
+    if ($weekday === 6) return theme.colors.statusInfo;
+    return theme.colors.textAlternative;
   }};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ $inRange, $selected, theme }) =>
@@ -404,7 +417,6 @@ const DayText = styled(AppText)<{
 `;
 
 const Footer = styled.View`
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.xl + theme.spacing.xs}px;
+  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px 51px;
   background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;

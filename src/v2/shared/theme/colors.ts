@@ -14,6 +14,7 @@ export const lightColors = {
   // Figma variables with no equivalent semantic role above (light values).
   fillAlternative: '#E4E4E5', fillNeutral: '#F2F2F3', fillSupport: '#FFFFFF', labelNeutral: '#3B3B40', labelNormal: '#0C0C0D',
   labelStrong: '#000000', lineAlternative: '#F6F6F7', lineNeutral: '#F2F2F3', secondaryAlternative: '#D1D4D5', secondaryNormal: '#BFC1C1',
+  glassFill: 'rgba(255, 255, 255, 0.8)', statusInfo: '#008BFF', labelAssistive: '#767680', onboardingIconSurface: '#FFFFFF', primaryAlternative: '#FF4A75', primaryAlternativeTint: 'rgba(255, 74, 117, 0.36)', primaryTint: 'rgba(255, 25, 86, 0.08)', fillNormal: '#F2F2F3', glassStroke: 'rgba(255, 255, 255, 0)', primaryGlow: 'rgba(255, 25, 86, 0.21)', shadowFloat: 'rgba(0, 0, 0, 0.16)',
 } as const;
 
 export type ThemeColors = { [Key in keyof typeof lightColors]: string };
@@ -34,6 +35,7 @@ export const darkColors = {
   textSecondary: '#A9A9B2', textStrong: '#FFFFFF', warning: '#FFD43B', warningSoft: '#3A2A16',
   fillAlternative: '#2E2E33', fillNeutral: '#222226', fillSupport: '#26262B', labelNeutral: '#D2D2D6', labelNormal: '#F4F4F5',
   labelStrong: '#FFFFFF', lineAlternative: '#202024', lineNeutral: '#2A2A2F', secondaryAlternative: '#3E4043', secondaryNormal: '#55575A',
+  glassFill: 'rgba(28, 28, 32, 0.56)', statusInfo: '#3FA3FF', labelAssistive: '#85858F', onboardingIconSurface: '#2A2A30', primaryAlternative: '#FF4A75', primaryAlternativeTint: 'rgba(255, 74, 117, 0.28)', primaryTint: 'rgba(255, 25, 86, 0.14)', fillNormal: '#1C1C20', glassStroke: 'rgba(255, 255, 255, 0.10)', primaryGlow: 'rgba(255, 25, 86, 0.18)', shadowFloat: 'rgba(0, 0, 0, 0.40)',
 } as const satisfies ThemeColors;
 
 // Transitional alias while fixed light consumers are migrated to useTheme.

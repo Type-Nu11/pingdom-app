@@ -47,6 +47,7 @@ export function createTypography(fontFamily: string) {
     // Figma text styles (`Headline1/Bold`, `Label/Medium`, ...): the library
     // uses a 1.3 line-height multiplier and lays text boxes out on whole
     // pixels (18px → 23, 14px → 18), so the rounded value is what matches.
+    title1Bold: { fontFamily, fontSize: 28, fontWeight: '700', lineHeight: 36 },
     headline1Bold: { fontFamily, fontSize: 20, fontWeight: '700', lineHeight: 26 },
     headline2Bold: { fontFamily, fontSize: 18, fontWeight: '700', lineHeight: 23 },
     headline2Medium: { fontFamily, fontSize: 18, fontWeight: '500', lineHeight: 23 },
