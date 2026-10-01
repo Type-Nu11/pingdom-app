@@ -48,7 +48,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Photo library access is required to add photos to place reviews."
+          "photosPermission": "Photo library access is required to add photos to place reviews and set your profile image.",
+          "cameraPermission": "Camera access is required to take a photo for your profile image."
         }
       ]
     ]
