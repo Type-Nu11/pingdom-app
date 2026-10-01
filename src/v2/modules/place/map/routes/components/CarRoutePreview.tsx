@@ -22,7 +22,11 @@ import { openNaverRoute } from '../services/openNaverRoute';
 import RouteEndpointEditor from './RouteEndpointEditor';
 import type { EndpointRole } from './RouteEndpointRows';
 import type { RecentSearchOwner } from '../../../search/services/recentSearchStorage';
-import DestinationIcon from '../assets/destination.svg';
+import MapPickerPin from '../assets/map_picker_pin.svg';
+
+// Figma 8892:11154: the plain pin silhouette, displayed at 24 px wide.
+const MAP_PICKER_PIN_WIDTH = 24;
+const MAP_PICKER_PIN_HEIGHT = 45.7139 * (24 / 40);
 
 type Props = { initialEndpointRole?: EndpointRole; destination: RouteDestination; location: LocationState; onClose: () => void; onRefreshLocation: () => void; recentSearchOwner?: RecentSearchOwner };
 export default function CarRoutePreview({ initialEndpointRole = 'destination', destination: initialDestination, location, onClose, onRefreshLocation, recentSearchOwner }: Props) {
@@ -145,7 +149,11 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MyLocationIcon /></Pressable>
         </GlassSurface>
         {mapPicking ? <>
-          <View pointerEvents="none" style={{ position: 'absolute', left: '50%', top: '50%', marginLeft: -16, marginTop: -32 }}><DestinationIcon /></View>
+          <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+            style={{ position: 'absolute', left: '50%', top: '50%', marginLeft: -MAP_PICKER_PIN_WIDTH / 2,
+              marginTop: -MAP_PICKER_PIN_HEIGHT }}>
+            <MapPickerPin width={MAP_PICKER_PIN_WIDTH} height={MAP_PICKER_PIN_HEIGHT} />
+          </View>
           <GlassSurface style={{ position: 'absolute', left: 8, right: 8, bottom: Math.max(insets.bottom, 8), borderRadius: 24, padding: 16, gap: 12 }}>
             <Text accessibilityRole="header" style={{ color: theme.colors.textStrong, fontSize: 18, fontWeight: '700' }}>{t('routes.editor.mapHint')}</Text>
             <Pressable testID="route-map-confirm" accessibilityRole="button" accessibilityLabel={t('routes.editor.confirmMap')}
