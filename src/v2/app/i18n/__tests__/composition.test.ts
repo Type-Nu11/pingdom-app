@@ -50,6 +50,9 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     // #398 aligns the recommendation-reason screen copy with the reviewed Figma design.
     delete baseline[language].translation.visitVerification.reasonSelectedSuffix;
     baseline[language].translation.visitVerification.reasonHelp = language === 'ko' ? '최대 5개 선택' : 'Select up to 5';
+    baseline[language].translation.visitVerification.reviewPlaceholder = language === 'ko'
+      ? '다른 사람들에게 이 장소의 좋은 점을 알려주세요.'
+      : 'Tell others what you liked about this place.';
     const voiceAssistant = baseline[language].translation.voiceAssistant;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;

@@ -1696,6 +1696,7 @@
     {"source":"src/v2/modules/place/visit-verification/screens/VisitVerificationReviewScreen.tsx","target":"src/assets/v2/icons/edit/image-outline.svg","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/screens/VisitVerificationReviewScreen.tsx","target":"src/v2/shared/components/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/screens/VisitVerificationReviewScreen.tsx","target":"src/v2/shared/components/ReviewReasonIcon.tsx","typeOnly":false},
+    {"source":"src/v2/modules/place/visit-verification/screens/VisitVerificationReviewScreen.tsx","target":"src/v2/modules/user/profile/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/screens/VisitVerificationReviewScreen.tsx","target":"src/v2/modules/place/exploration/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/screens/VisitVerificationReviewScreen.tsx","target":"src/v2/modules/place/visit-verification/hooks/useSubmitVisitVerification.ts","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/screens/VisitVerificationReviewScreen.tsx","target":"src/v2/modules/place/visit-verification/model/visitVerification.ts","typeOnly":false},

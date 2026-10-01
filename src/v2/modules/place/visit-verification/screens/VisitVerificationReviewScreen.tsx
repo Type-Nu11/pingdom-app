@@ -11,6 +11,7 @@ import PhotoIcon from '../../../../../assets/v2/icons/edit/image.svg';
 import PhotoOutlineIcon from '../../../../../assets/v2/icons/edit/image-outline.svg';
 import { ApiErrorState, Button, LoadingState } from '../../../../shared/components';
 import { ReviewReasonIcon } from '../../../../shared/components/ReviewReasonIcon';
+import { useProfile } from '../../../user/profile';
 import { usePlaceCard } from '../../exploration';
 import { useSubmitVisitVerification } from '../hooks/useSubmitVisitVerification';
 import {
@@ -69,6 +70,8 @@ export default function VisitVerificationReviewScreen({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const place = usePlaceCard(placeId);
+  const { profile } = useProfile();
+  const username = profile?.username?.trim() || t('placeDetail.review.anonymousUser');
   const mutation = useSubmitVisitVerification();
   const submitLocked = useRef(false);
   const [photos, setPhotos] = useState<SelectedPhoto[]>([]);
@@ -150,8 +153,7 @@ export default function VisitVerificationReviewScreen({
 
             <Section $divider={false}>
               <SectionRow><SectionTitle>{t('visitVerification.reviewSection')}</SectionTitle></SectionRow>
-              <ReviewInput maxLength={MAX_REVIEW_LENGTH} multiline onChangeText={(value) => { setContent(value); setValidation(null); }} placeholder={t('visitVerification.reviewPlaceholder')} placeholderTextColor={theme.colors.textMuted} testID="visit-review-input" textAlignVertical="top" value={content} />
-              <Count>{content.length}/{MAX_REVIEW_LENGTH}</Count>
+              <ReviewInput maxLength={MAX_REVIEW_LENGTH} multiline onChangeText={(value) => { setContent(value); setValidation(null); }} placeholder={t('visitVerification.reviewPlaceholder', { username })} placeholderTextColor={theme.colors.textMuted} testID="visit-review-input" textAlignVertical="top" value={content} />
             </Section>
             {validation ? <InlineMessage accessibilityLiveRegion="assertive">{t(VALIDATION_KEYS[validation])}</InlineMessage> : null}
             {mutation.isError ? <InlineMessage accessibilityLiveRegion="assertive">{t(`visitVerification.errors.${reviewSubmissionErrorKey(mutation.error)}`)}</InlineMessage> : null}
