@@ -5,9 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import { HeaderBackButton } from '../../../../shared/components';
-import { setLanguage, type SupportedLanguage } from '../../../../shared/i18n';
+import { getLanguageEndonym, setLanguage, type SupportedLanguage } from '../../../../shared/i18n';
 import {
-  getLanguageLabelKey,
   LANGUAGE_SETTING_OPTIONS,
   resolveSelectedLanguage,
 } from '../model/languageOptions';
@@ -37,7 +36,7 @@ export default function LanguageSettingsScreen({
         <Options>
           {LANGUAGE_SETTING_OPTIONS.map((language) => {
             const selected = language === selectedLanguage;
-            const label = t(getLanguageLabelKey(language));
+            const label = getLanguageEndonym(language);
 
             return (
               <LanguageOption
@@ -45,6 +44,7 @@ export default function LanguageSettingsScreen({
                 accessibilityLabel={selected
                   ? `${label}, ${t('settings.language.selected')}`
                   : label}
+                accessibilityLanguage={language}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
                 key={language}
