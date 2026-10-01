@@ -13,12 +13,12 @@ import {
   useSaveProfile,
 } from '../hooks/useProfile';
 import { useProfileImageChange } from '../hooks/useProfileImageChange';
-import { ApiErrorState, LoadingState, HeaderBackButton } from '../../../../shared/components';
+import { ApiErrorState, LoadingState, HeaderBackButton, ProfileAvatar } from '../../../../shared/components';
+import { getProfileImageUri } from '../model/profileImageUri';
 import CheckmarkIcon from '../../../../shared/assets/icons/checkmark.svg';
 import PencilIcon from '../../../../shared/assets/icons/pencil.svg';
 import EyeOpenIcon from '../../../../shared/assets/icons/eye-open.svg';
 import EyeCloseIcon from '../../../../shared/assets/icons/eye-close.svg';
-import AvatarPlaceholder from '../../../../shared/assets/icons/avatar-placeholder.svg';
 
 export type ProfileEditScreenProps = {
   onBack: () => void;
@@ -214,14 +214,11 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
             onPress={() => void handleEditAvatar()}
             testID="v2-profile-edit-avatar-action"
           >
-            {profile?.profileImageUrl ? (
-              <AvatarImage
-                source={{ uri: profile.profileImageUrl }}
-                testID="v2-profile-edit-avatar-image"
-              />
-            ) : (
-              <AvatarPlaceholder height={82} width={82} />
-            )}
+            <ProfileAvatar
+              imageTestID="v2-profile-edit-avatar-image"
+              size={82}
+              uri={getProfileImageUri(profile)}
+            />
             {changeProfileImage.isPending ? (
               <AvatarUploadingOverlay>
                 <ActivityIndicator
@@ -418,12 +415,6 @@ const AvatarSection = styled.View`
 const AvatarWrapper = styled.Pressable`
   width: 82px;
   height: 82px;
-`;
-
-const AvatarImage = styled.Image`
-  width: 82px;
-  height: 82px;
-  border-radius: 41px;
 `;
 
 const AvatarUploadingOverlay = styled.View`

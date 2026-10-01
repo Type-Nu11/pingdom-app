@@ -18,4 +18,6 @@ export { default as Surface } from './Surface';
 export type { SurfacePadding, SurfaceProps, SurfaceTone } from './Surface';
 export { default as UnsupportedFeatureScreen } from './UnsupportedFeatureScreen';
 export { default as ApiErrorState } from './ApiErrorState';
+export { default as ProfileAvatar } from './ProfileAvatar';
+export type { ProfileAvatarProps } from './ProfileAvatar';
 export { Text, TextInput } from './Typography';
