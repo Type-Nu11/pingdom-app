@@ -1,6 +1,7 @@
 import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 
 import { clearExpiredSession } from '../../../app/store/authStore';
+import { createApiClient } from '../../../v2/shared/api/apiClient';
 import { api } from '../apiClient';
 import { getCachedAccessToken, persistTokens } from '../authTokens';
 
@@ -63,6 +64,8 @@ test.each([
   '/auth/signup',
   '/auth/password-reset/request',
   '/auth/email/resend',
+  '/auth/password-reset/confirm',
+  '/auth/logout',
 ])('인증 전 요청 %s도 X-Client-Type: App을 보내고 Authorization은 보내지 않는다', async path => {
   await api.post(path, { username: 'example' });
 
@@ -131,4 +134,25 @@ test('외부 절대 URL은 차단되어 X-Client-Type이 전송되지 않는다'
     .rejects.toThrow('허용되지 않은 절대 URL 요청입니다.');
 
   expect(mockAdapter).not.toHaveBeenCalled();
+});
+
+test('운영 조합(V2 클라이언트 → 공용 api transport)에서도 X-Client-Type: App을 한 번만 보낸다', async () => {
+  const client = createApiClient(api);
+  const form = new FormData();
+  form.append('file', 'x');
+
+  await client.get('/users/me', { headers: { 'x-client-type': 'Web' } });
+  await client.post('/users/me/profile-image', form, {
+    headers: { 'Content-Type': 'multipart/form-data', 'X-Client-Type': 'Web' },
+  });
+
+  const [getConfig, postConfig] = sentConfigs();
+  for (const config of [getConfig, postConfig]) {
+    expect(config.headers.get('X-Client-Type')).toBe('App');
+    expect(config.headers.get('Authorization')).toBe('Bearer access-token');
+    const clientTypeKeys = Object.keys(config.headers.toJSON())
+      .filter(key => key.toLowerCase() === 'x-client-type');
+    expect(clientTypeKeys).toHaveLength(1);
+  }
+  expect(String(postConfig.headers.get('Content-Type'))).toContain('multipart/form-data');
 });
