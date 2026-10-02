@@ -1,6 +1,7 @@
 // src/shared/api/apiClient.ts
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { clearExpiredSession } from '../../app/store/authStore';
+import { CLIENT_TYPE_APP, CLIENT_TYPE_HEADER } from '../../v2/shared/api/clientType';
 import {
     getCachedAccessToken,
     getRefreshPromise,
@@ -59,6 +60,7 @@ const BASE_CONFIG = {
     headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json; charset=utf-8',
+        [CLIENT_TYPE_HEADER]: CLIENT_TYPE_APP,
     },
 } as const;
 
@@ -200,12 +202,15 @@ async function refreshAccessToken(): Promise<string | null> {
 
 // 모든 요청이 서버로 나가기 전에 실행
 // 1. 허용되지 않은 외부 도메인 차단
-// 2. Authorization 헤더에 accessToken 주입
+// 2. X-Client-Type 헤더 고정 (호출자 헤더가 덮어쓰지 못하게 매 요청마다 재설정)
+// 3. Authorization 헤더에 accessToken 주입
 api.interceptors.request.use(
     async (config) => {
         if (!isAllowedUrl(config.url)) {
             throw new Error('허용되지 않은 절대 URL 요청입니다.');
         }
+
+        config.headers.set(CLIENT_TYPE_HEADER, CLIENT_TYPE_APP, true);
 
         if (!/^https?:\/\//i.test(config.url ?? '')) {
             config.baseURL = API_BASE_URL;
