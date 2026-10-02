@@ -21,12 +21,12 @@ test('카카오 로컬 API 요청에는 핑덤 전용 X-Client-Type 헤더를 �
   await getAddressFromCoordinate(37.5, 127.0);
   await searchKakaoLocalPlaces('카페', { centerLat: 37.5, centerLng: 127.0 });
 
-  expect(fetchMock.mock.calls.length).toBeGreaterThan(0);
+  // coord2address + keyword + address + keyword retry without center (empty nearby results)
+  expect(fetchMock).toHaveBeenCalledTimes(4);
   for (const [url, init] of fetchMock.mock.calls as unknown as Array<[string, RequestInit | undefined]>) {
     expect(url).toMatch(/^https:\/\/dapi\.kakao\.com\//);
-    const headerNames = Object.keys((init?.headers ?? {}) as Record<string, string>)
-      .map(name => name.toLowerCase());
-    expect(headerNames).toContain('authorization');
-    expect(headerNames).not.toContain('x-client-type');
+    const headers = new Headers(init?.headers);
+    expect(headers.has('authorization')).toBe(true);
+    expect(headers.has('x-client-type')).toBe(false);
   }
 });
