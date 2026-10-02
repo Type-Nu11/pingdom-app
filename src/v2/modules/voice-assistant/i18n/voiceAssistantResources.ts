@@ -1,5 +1,8 @@
+import { voiceSessionErrors } from './voiceSessionErrors';
+
 export const voiceAssistantResources = {
   en: {
+    sessionErrors: voiceSessionErrors.en,
     command: {
       submission: 'Voice capture stops after 1 second of detected quiet for a clear Korean request, question, or a quantity answer to a quantity clarification; otherwise it waits 3 seconds. Speaking again resets the wait. Finalized input is sent to the AI server automatically. Text input is sent when you use Send. Exact coordinates are used only by the existing place lookup.',
       introTitle: 'Before using AI', introContinue: 'Continue to AI', introClose: 'Close',
@@ -36,6 +39,7 @@ export const voiceAssistantResources = {
     errors: { interrupted: 'Audio was interrupted. Try again or type your request.', noSpeech: 'No final speech was recognized. Try again or type your request.', unavailable: 'Speech recognition is unavailable. Please type your request.', network: 'The speech service could not connect. Check your network or type your request.', failed: 'Speech recognition failed. Please type or try again.', empty: 'Enter a request first.', tooLong: 'Use 2,000 characters or fewer.', submitFailed: 'Input could not be handed over. Close the assistant and start a new request.' },
   },
   ko: {
+    sessionErrors: voiceSessionErrors.ko,
     command: {
       submission: '명확한 한국어 요청·질문이나 인원 질문에 대한 답변은 무음이 감지된 뒤 1초, 그 외에는 3초 후 음성 입력을 종료합니다. 다시 말하면 대기 시간을 초기화합니다. 최종 인식된 내용만 AI 서버에 자동 전송합니다. 텍스트 입력은 보내기를 누르면 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.',
       introTitle: 'AI 사용 안내', introContinue: '확인하고 시작하기', introClose: '닫기',
@@ -72,6 +76,7 @@ export const voiceAssistantResources = {
     errors: { interrupted: '다른 오디오 작업으로 중단되었습니다. 다시 시도하거나 텍스트로 입력해 주세요.', noSpeech: '최종 음성을 인식하지 못했습니다. 다시 시도하거나 텍스트로 입력해 주세요.', unavailable: '음성 인식을 사용할 수 없습니다. 텍스트로 입력해 주세요.', network: '음성 인식 서비스에 연결하지 못했습니다. 네트워크를 확인하거나 텍스트로 입력해 주세요.', failed: '음성 인식에 실패했습니다. 다시 시도하거나 텍스트로 입력해 주세요.', empty: '요청을 먼저 입력해 주세요.', tooLong: '2,000자 이내로 입력해 주세요.', submitFailed: '입력을 전달하지 못했습니다. 어시스턴트를 닫고 새 요청을 시작해 주세요.' },
   },
   ja: {
+    sessionErrors: voiceSessionErrors.ja,
     command: {
       submission: '明確な韓国語の依頼・質問、または人数の質問への回答は無音を検出してから1秒、それ以外は3秒後に音声入力を終了します。再び話すと待ち時間をリセットします。確定した内容のみAIサーバーへ自動で送信します。テキスト入力は「送信」をタップすると送信されます。正確な現在地の座標は、既存の場所検索にのみ使用します。',
       introTitle: 'AIご利用前のご案内', introContinue: '確認して始める', introClose: '閉じる',

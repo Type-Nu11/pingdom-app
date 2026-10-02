@@ -15,7 +15,7 @@ const placeCardImage = require('../assets/place-card.png');
 
 type Props = {
   state: VoiceCommandViewState;
-  onRetry: () => void;
+  onRetry?: () => void;
   onShowMap?: () => void;
   retryDisabled?: boolean;
 };
@@ -24,10 +24,10 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   const { t } = useTranslation();
   const copy = (key: string) => <Copy testID="voice-command-state" accessibilityLiveRegion="polite">{t(`voiceAssistant.command.${key}`)}</Copy>;
   const clarification = (field: string) => <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.command.fields.${field}`)}</Copy>;
-  const error = (code: string) => <>
-    <Copy accessibilityRole="alert">{t(`voiceAssistant.command.errors.${code}`, { defaultValue: t('voiceAssistant.command.failed') })}</Copy>
+  const error = (code: string, session = false) => <>
+    <Copy accessibilityRole="alert">{t([session ? `voiceAssistant.sessionErrors.${code}` : `voiceAssistant.command.errors.${code}`, 'voiceAssistant.command.failed'])}</Copy>
     <RetryButton testID="voice-command-retry" accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.retry')}
-      accessibilityState={{ disabled: retryDisabled }} disabled={retryDisabled} onPress={onRetry}>
+      accessibilityState={{ disabled: retryDisabled || !onRetry }} disabled={retryDisabled || !onRetry} onPress={onRetry}>
       <RetryText>{t('voiceAssistant.command.retry')}</RetryText>
     </RetryButton>
   </>;
@@ -51,7 +51,7 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
 
   if (state.phase === 'idle') return null;
   if (state.phase === 'unrecognized') return null;
-  if (state.phase === 'error') return error(state.code);
+  if (state.phase === 'error') return error(state.code, true);
   if (state.phase === 'clarification') return clarification(state.field);
   if (state.phase !== 'result') return copy(state.phase);
   const result = state.result;
