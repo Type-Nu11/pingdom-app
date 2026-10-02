@@ -112,7 +112,7 @@ test('API exact methods, paths, JWT, signal and raw response options', async () 
   const api = createVoiceSessionApi(client); const signal = new AbortController().signal;
   try {
     await api.send('s/id', { requestId: 'i', text: '질문' }, signal);
-    expect(post).toHaveBeenCalledWith('/voice-ai/sessions/s%2Fid/messages', { requestId: 'i', text: '질문' }, expect.objectContaining({ responseType: 'text', headers: { Authorization: 'Bearer test-jwt' }, maxContentLength: 16384 }));
+    expect(post).toHaveBeenCalledWith('/voice-ai/sessions/s%2Fid/messages', { requestId: 'i', text: '질문' }, expect.objectContaining({ responseType: 'text', headers: { Authorization: 'Bearer test-jwt', 'X-Client-Type': 'App' }, maxContentLength: 16384 }));
     const options = post.mock.calls[0][2]; expect(options.transformResponse[0]('{')).toBe('{');
     post.mockResolvedValue({ data: { sessionId: 's', expiresAt: '2030-09-17T12:00:00+09:00' } });
     await api.create(signal); await api.refresh('s', signal); await api.close('s', signal);
