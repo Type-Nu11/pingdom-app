@@ -36,6 +36,7 @@
 | 환율 `https://api.frankfurter.dev` | `src/v2/modules/place/menus/api/menuExchangeRateApi.ts` | 공용 클라이언트를 쓰지 않는 독립 `fetch`, 헤더 없음 |
 | 카카오 로컬 `https://dapi.kakao.com` | `src/v2/modules/place/search/api/kakaoLocalApi.ts` | 독립 `fetch`, `KakaoAK` 헤더만 전송 |
 | 지도 SDK, 카카오맵 링크, Firebase | 네이티브 SDK / `Linking.openURL` | JS 요청 계층을 거치지 않음 |
+| 서버가 내려준 이미지·미디어 URL | RN `Image` 등 네이티브 로더 | API 요청 계층을 거치지 않음. 현재 이미지 URL은 API base URL로 조합하지 않음 |
 
 공용 클라이언트는 외부 URL로 새지 않는다. V2 클라이언트는 상대 경로가 아니면 transport 호출 전에 거부하고,
 공용 axios `api`는 `API_BASE_URL`과 다른 origin의 절대 URL을 요청 인터셉터에서 차단한다.
@@ -49,7 +50,8 @@
    서버 측 호환 기간과 필수화 시점을 정해야 한다. 앱 PR만으로 필수화하지 않는다.
 5. **배포 순서**: 프록시 반영 시점과 앱 스토어 배포 시점의 순서.
 6. **브라우저로 여는 서버 URL**: Google OAuth 인가 URL은 시스템 브라우저로 열리므로 커스텀 헤더를 붙일 수 없다.
-   해당 경로를 헤더 검사 대상에서 제외해야 하는지 확인이 필요하다.
+   해당 경로를 헤더 검사 대상에서 제외해야 하는지 확인이 필요하다. 이미지·미디어가 프록시 뒤 핑덤 호스트에서
+   제공된다면 네이티브 로더 요청도 헤더가 없으므로 같은 확인이 필요하다.
 7. **CORS**: 웹 클라이언트가 같은 헤더를 보내게 된다면 `Access-Control-Allow-Headers`에 `X-Client-Type` 허용이 필요하다
    (앱은 CORS 대상이 아님).
 8. **API 계약 문서 반영**: 공개 API/프록시 계약 문서에 용도, 허용 값, 필수화 시점, 누락 시 처리 방식을 반영 요청.
