@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
+import MapCanvas from '../../native/components/MapCanvas';
 import NaverMapAdapter from '../../native/components/NaverMapAdapter';
 jest.mock('../../../../../shared/native/NaverMapNativeView', () => ({
   __esModule: true, default: require('react-native').View,
@@ -23,4 +24,13 @@ test('native projected route anchor is forwarded as screen points', async () => 
   await renderWithProviders(<NaverMapAdapter center={{ lat: 37, lng: 127 }} markers={[]} onRouteAnchor={onRouteAnchor} />);
   await fireEvent(screen.getByTestId('v2-naver-map'), 'routeAnchor', { nativeEvent: { x: 100, y: 250 } });
   expect(onRouteAnchor).toHaveBeenCalledWith({ x: 100, y: 250 });
+});
+
+
+test('main map forwards manual gestures so GPS tracking can be released', async () => {
+  const onCameraGesture = jest.fn();
+  await renderWithProviders(<MapCanvas centerLat={37} centerLng={127} followUser={true}
+    markers={[]} onMarkerPress={jest.fn()} zoomLevel={17} onCameraGesture={onCameraGesture} />);
+  await fireEvent(screen.getByTestId('v2-naver-map'), 'cameraGesture', { nativeEvent: {} });
+  expect(onCameraGesture).toHaveBeenCalledTimes(1);
 });

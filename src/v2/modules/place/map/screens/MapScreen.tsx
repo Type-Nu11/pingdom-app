@@ -304,6 +304,7 @@ export default function MapScreen({
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [manualCameraCenter, setManualCameraCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
@@ -688,6 +689,7 @@ export default function MapScreen({
     ) return;
 
     setContent({ type: 'home' });
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
     snapTo('medium');
   }, [content, hasSelectedPlace, isSelectedPlaceDetailPending, selectedPlace, selectedPlaceDetailError, snapTo]);
@@ -751,6 +753,7 @@ export default function MapScreen({
 
     setMapSection('map');
     setContent({ type: 'place-preview', placeId: openedBookmarkedPlaceId });
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     snapTo('medium');
     onClearOpenedBookmarkedPlace?.();
@@ -761,6 +764,7 @@ export default function MapScreen({
   const dismissPlaceAt = useCallback((place: DecisionPlace) => {
     setContent({ type: 'home' });
     setDismissedMarkerCenter({ lat: place.latitude, lng: place.longitude });
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_DISMISSED_ZOOM_LEVEL);
     jumpTo('medium');
@@ -782,6 +786,7 @@ export default function MapScreen({
 
     setContent({ type: 'place-preview', placeId: place.id });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     // Keep the close/bookmark targets stationary from the first detail frame.
@@ -802,6 +807,7 @@ export default function MapScreen({
     setMapSection('map');
     setContent({ type: 'place-preview', placeId: place.id });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     snapTo('medium');
@@ -831,6 +837,7 @@ export default function MapScreen({
     setMapSection('map');
     setContent({ type: 'home' });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
 
     try {
@@ -856,6 +863,7 @@ export default function MapScreen({
     }
 
     setContent({ type: 'home' });
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
     setDismissedMarkerCenter(null);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
@@ -869,12 +877,14 @@ export default function MapScreen({
 
     // Native map props only react when followUser changes. Pulse the value so an
     // unchanged current coordinate can still be re-centered on every button press.
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     if (locateFollowFrame.current !== null) {
       cancelAnimationFrame(locateFollowFrame.current);
     }
     locateFollowFrame.current = requestAnimationFrame(() => {
       locateFollowFrame.current = null;
+      setManualCameraCenter(null);
       setIsFollowingUser(true);
     });
 
@@ -946,7 +956,7 @@ export default function MapScreen({
   };
 
   const focusedPlace = mapSelectedPlace;
-  const { lat: mapCenterLat, lng: mapCenterLng } = selectMapCameraCenter({
+  const { lat: mapCenterLat, lng: mapCenterLng } = manualCameraCenter ?? selectMapCameraCenter({
     isFollowingUser, focusedPlace, designScale, dismissedMarkerCenter, center,
   });
   const isExpandedPlaceDetail = mapSection === 'map'
@@ -970,6 +980,14 @@ export default function MapScreen({
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
+          onCameraGesture={() => {
+            if (locateFollowFrame.current !== null) {
+              cancelAnimationFrame(locateFollowFrame.current);
+              locateFollowFrame.current = null;
+            }
+            setIsFollowingUser(false);
+            setManualCameraCenter({ lat: mapCenterLat, lng: mapCenterLng });
+          }}
           markers={visibleMapMarkers}
           onCameraIdle={(coordinate) => {
             if (!Number.isFinite(coordinate.lat) || !Number.isFinite(coordinate.lng)) return;

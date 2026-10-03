@@ -43,6 +43,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private var centerLng: Double? = null
     private var userLat: Double? = null
     private var userLng: Double? = null
+    private var releaseFollowAfterGesture = false
     private var followUser = true
     private var nightMode = false
     private var appliedNightMode: Boolean? = null
@@ -97,7 +98,10 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
                     setLogoMargin(dp(16f), dp(160f), 0, 0)
                 }
                 map.addOnCameraChangeListener { reason, _ ->
-                    if (reason == CameraUpdate.REASON_GESTURE) emit("topCameraGesture", Arguments.createMap())
+                    if (reason == CameraUpdate.REASON_GESTURE) {
+                        if (followUser) releaseFollowAfterGesture = true
+                        emit("topCameraGesture", Arguments.createMap())
+                    }
                 }
                 map.addOnCameraIdleListener {
                     emitRouteAnchor(map)
@@ -277,7 +281,10 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         val lng = if (followUser && validUser) userLng else centerLng
         if (validCoordinate(lat, lng)) {
             val next = Triple(lat!!, lng!!, zoomLevel)
-            if (next != lastCamera || cameraRevision != appliedCameraRevision || (followUser && !lastFollowUser)) {
+            if (releaseFollowAfterGesture && !followUser && cameraRevision == appliedCameraRevision) {
+                releaseFollowAfterGesture = false
+                lastCamera = next
+            } else if (next != lastCamera || cameraRevision != appliedCameraRevision || (followUser && !lastFollowUser)) {
                 val update = if (cameraRevision != appliedCameraRevision) fitUpdate() ?: CameraUpdate.scrollAndZoomTo(LatLng(lat, lng), zoomLevel.toDouble())
                     else CameraUpdate.scrollAndZoomTo(LatLng(lat, lng), zoomLevel.toDouble())
                 if (lastCamera != null) update.animate(CameraAnimation.Easing, 300)

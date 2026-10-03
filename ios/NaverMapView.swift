@@ -28,6 +28,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     private var markersDirty = true
     private var lastCamera: (lat: Double, lng: Double, zoom: Double)?
     private var lastFollowUser = false
+    private var releaseFollowAfterGesture = false
     private var appliedNightMode: Bool?
 
     private var appliedCameraRevision = 0
@@ -81,7 +82,10 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     }
 
     func mapView(_ mapView: NMFMapView, cameraWillChangeByReason reason: Int, animated: Bool) {
-        if reason == NMFMapChangedByGesture { onCameraGesture?([:]) }
+        if reason == NMFMapChangedByGesture {
+            if followUser { releaseFollowAfterGesture = true }
+            onCameraGesture?([:])
+        }
     }
 
     private func fitUpdate() -> NMFCameraUpdate? {
@@ -202,7 +206,10 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         let zoom = min(21, max(0, zoomLevel?.doubleValue ?? 17))
         if validCoordinate(lat, lng), let lat, let lng {
             let changed = lastCamera.map { $0.lat != lat || $0.lng != lng || $0.zoom != zoom } ?? true
-            if changed || cameraRevision != appliedCameraRevision || (followUser && !lastFollowUser) {
+            if releaseFollowAfterGesture && !followUser && cameraRevision == appliedCameraRevision {
+                releaseFollowAfterGesture = false
+                lastCamera = (lat, lng, zoom)
+            } else if changed || cameraRevision != appliedCameraRevision || (followUser && !lastFollowUser) {
                 let update = (cameraRevision != appliedCameraRevision ? fitUpdate() : nil) ?? NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng), zoomTo: zoom)
                 if lastCamera != nil { update.animation = .easeIn; update.animationDuration = 0.3 }
                 mapView.moveCamera(update)
