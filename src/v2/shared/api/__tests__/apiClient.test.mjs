@@ -23,7 +23,11 @@ test('shared client unwraps responses and forwards bodies and abort signals unch
   const signal = new AbortController().signal;
 
   assert.equal(await client.post('/conversion-events/batch', body, { signal }), responseBody);
-  assert.deepEqual(calls, [{ body, options: { signal }, path: '/conversion-events/batch' }]);
+  assert.deepEqual(calls, [{
+    body,
+    options: { headers: { 'X-Client-Type': 'App' }, signal },
+    path: '/conversion-events/batch',
+  }]);
 });
 
 test('shared client preserves request content type for multipart bodies', async () => {
@@ -44,7 +48,10 @@ test('shared client preserves request content type for multipart bodies', async 
   });
 
   assert.equal(calls[0].body, body);
-  assert.deepEqual(calls[0].options.headers, { 'Content-Type': 'multipart/form-data' });
+  assert.deepEqual(calls[0].options.headers, {
+    'Content-Type': 'multipart/form-data',
+    'X-Client-Type': 'App',
+  });
 });
 
 test('shared client converts transport failures to the common contract error', async () => {
@@ -121,5 +128,7 @@ test('only places GET uses the proxy slash workaround; other collection contract
     await client.get(path, options);
   }
   assert.deepEqual(calls.map(call => call.path), ['/places/', '/reservations', '/coupons', '/location-check-ins', '/places/', '/places/trends', '/users/me']);
-  assert.ok(calls.every(call => call.options === options));
+  assert.ok(calls.every(call => call.options.params === options.params
+    && call.options.signal === options.signal
+    && call.options.headers['X-Client-Type'] === 'App'));
 });

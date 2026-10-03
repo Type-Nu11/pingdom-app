@@ -2,6 +2,7 @@ import axios, { type AxiosInstance } from 'axios';
 
 import { env } from '../config';
 import { ApiError, toApiError } from './ApiError';
+import { withClientTypeHeader } from './clientType';
 import { logRequestFailure } from './requestDiagnostics';
 import { mockApiClient } from './mock/mockApiClient';
 
@@ -51,20 +52,15 @@ export function configureApiAccessTokenProvider(provider: ApiAccessTokenProvider
 async function withAuthorization(
   options: GetRequestOptions | MutationRequestOptions,
 ): Promise<(GetRequestOptions | MutationRequestOptions) & {
-  headers?: Record<string, string>;
+  headers: Record<string, string>;
 }> {
   const token = (await accessTokenProvider())?.replace(/^Bearer\s+/i, '').trim();
 
-  if (!token) {
-    return options;
-  }
-
   return {
     ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${token}`,
-    },
+    headers: withClientTypeHeader(token
+      ? { ...options.headers, Authorization: `Bearer ${token}` }
+      : options.headers),
   };
 }
 
