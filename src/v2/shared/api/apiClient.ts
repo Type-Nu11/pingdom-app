@@ -167,10 +167,10 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       const startedAt = Date.now();
 
       try {
-        // Collection routes redirect slashless requests to an insecure upstream
-        // URL on the deployed proxy. Request the canonical HTTPS path directly.
+        // The places collection needs the deployed proxy's slash workaround.
+        // Other collections must keep their slashless OpenAPI routes.
         const canonicalPath = path.replace(
-          /^\/(places|reservations|coupons|location-check-ins)(?=[?#]|$)/,
+          /^\/(places)(?=[?#]|$)/,
           '/$1/',
         );
         const response = await getTransport().get<TResponse>(
