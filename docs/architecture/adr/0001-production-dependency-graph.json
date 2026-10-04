@@ -1346,6 +1346,7 @@
     {"source":"src/v2/modules/place/exploration/model/recommendationPresentation.ts","target":"src/v2/shared/api/index.ts","typeOnly":true},
     {"source":"src/v2/modules/place/home-feeds/api/mapHomeFeedsApi.ts","target":"src/v2/shared/api/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/home-feeds/api/mapHomeFeedsApi.ts","target":"src/v2/modules/place/home-feeds/model/mapHomeFeeds.types.ts","typeOnly":true},
+    {"source":"src/v2/modules/place/home-feeds/api/mapHomeFeedsApi.ts","target":"src/v2/modules/place/home-feeds/model/mapHomeFeeds.ts","typeOnly":false},
     {"source":"src/v2/modules/place/home-feeds/hooks/useMapHomeFeeds.ts","target":"src/v2/modules/place/home-feeds/api/mapHomeFeedsApi.ts","typeOnly":false},
     {"source":"src/v2/modules/place/home-feeds/hooks/useMapHomeFeeds.ts","target":"src/v2/modules/place/home-feeds/model/mapHomeFeeds.ts","typeOnly":false},
     {"source":"src/v2/modules/place/home-feeds/hooks/useMapHomeFeeds.ts","target":"src/v2/modules/place/home-feeds/model/mapHomeFeeds.types.ts","typeOnly":true},
