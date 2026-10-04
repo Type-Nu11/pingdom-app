@@ -2,7 +2,8 @@ import axios, { type AxiosInstance } from 'axios';
 
 import { env } from '../config';
 import { ApiError, toApiError } from './ApiError';
-import { withClientTypeHeader } from './clientType';
+import { withDeviceRequestHeaders, configureApiDeviceIdProvider } from './clientType';
+export { configureApiDeviceIdProvider };
 import { logRequestFailure } from './requestDiagnostics';
 import { mockApiClient } from './mock/mockApiClient';
 
@@ -58,7 +59,7 @@ async function withAuthorization(
 
   return {
     ...options,
-    headers: withClientTypeHeader(token
+    headers: await withDeviceRequestHeaders(token
       ? { ...options.headers, Authorization: `Bearer ${token}` }
       : options.headers),
   };

@@ -19,7 +19,7 @@ test('contract maps all path points in original order without replacing road end
   const signal = new AbortController().signal;
   try {
     await findCarRoute(origin, destination, signal, createApiClient({ post } as never));
-    expect(post).toHaveBeenCalledWith('/routes', { origin, destination, mode: 'car' }, expect.objectContaining({ signal, headers: { Authorization: 'Bearer test-only-token', 'X-Client-Type': 'App' } }));
+    expect(post).toHaveBeenCalledWith('/routes', { origin, destination, mode: 'car' }, expect.objectContaining({ signal, headers: expect.objectContaining({ Authorization: 'Bearer test-only-token', 'X-Client-Type': 'App' }) }));
     expect(post).toHaveBeenCalledTimes(1);
   } finally { token(); }
 });

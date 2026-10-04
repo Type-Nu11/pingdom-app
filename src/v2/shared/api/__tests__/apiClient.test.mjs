@@ -25,7 +25,7 @@ test('shared client unwraps responses and forwards bodies and abort signals unch
   assert.equal(await client.post('/conversion-events/batch', body, { signal }), responseBody);
   assert.deepEqual(calls, [{
     body,
-    options: { headers: { 'X-Client-Type': 'App' }, signal },
+    options: { headers: { 'X-Client-Type': 'App', 'X-App-Version': '1.0.0', 'X-Timestamp': calls[0].options.headers['X-Timestamp'] }, signal },
     path: '/conversion-events/batch',
   }]);
 });
@@ -50,7 +50,8 @@ test('shared client preserves request content type for multipart bodies', async 
   assert.equal(calls[0].body, body);
   assert.deepEqual(calls[0].options.headers, {
     'Content-Type': 'multipart/form-data',
-    'X-Client-Type': 'App',
+    'X-Client-Type': 'App', 'X-App-Version': '1.0.0',
+    'X-Timestamp': calls[0].options.headers['X-Timestamp'],
   });
 });
 
