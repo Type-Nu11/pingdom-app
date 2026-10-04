@@ -1,5 +1,6 @@
 module.exports = ({ config }) => ({
   ...config,
+  version: require('./src/v2/shared/config/appMetadata.json').version,
   extra: {
     ...config.extra,
     kakaoRestApiKey:
