@@ -7,6 +7,11 @@ import { createAudioActivityDetector } from '../speech-endpointing/audioActivity
 
 type Permission = PermissionResponse & { restricted?: boolean };
 type SpeechModule = typeof import('expo-speech-recognition').ExpoSpeechRecognitionModule;
+type VadEvent = { speaking: boolean; quietForMs: number };
+type PcmVadModule = SpeechModule & {
+  isPcmVadAvailable?: () => boolean;
+  addListener(event: 'vadactivity', listener: (event: VadEvent) => void): { remove(): void };
+};
 type Dependencies = {
   platform: 'android' | 'ios';
   androidApiLevel?: number;
@@ -56,6 +61,9 @@ export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAda
     createSession({ locale, signal, onEvent }) {
       let closed = false;
       let started = false;
+      let stopRequested = false;
+      let useVad = false;
+      try { useVad = platform === 'android' && continuous && (module as PcmVadModule).isPcmVadAvailable?.() === true; } catch { /* Older native builds retain legacy endpointing. */ }
       const activity = createAudioActivityDetector();
       const subscriptions: Array<{ remove(): void }> = [];
       const removeListeners = () => { for (const subscription of subscriptions.splice(0)) subscription.remove(); };
@@ -75,30 +83,46 @@ export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAda
           current = session;
           subscriptions.push(module.addListener('result', event => {
             const text = event.results[0]?.transcript ?? '';
+            // Final means this recognition segment is stable, not that acoustic speech stopped.
             if (event.isFinal) emit({ type: 'final', text });
             else if (text) emit({ type: 'partial', text });
           }));
           subscriptions.push(module.addListener('error', event => {
-            if (event.error !== 'aborted') emit(failure(event.error));
+            if (event.error !== 'aborted') {
+              const earlyEnd = useVad && !stopRequested && (event.error === 'no-speech' || event.error === 'speech-timeout');
+              if (earlyEnd) emit({ type: 'ended', premature: true });
+              else emit(failure(event.error));
+            }
           }));
-          subscriptions.push(module.addListener('volumechange', event => {
-            const speaking = activity.volume(event.value);
-            if (speaking !== null) emit({ type: 'activity', speaking });
-          }));
-          subscriptions.push(module.addListener('speechstart', () => emit({ type: 'activity', speaking: activity.speechStart() })));
-          subscriptions.push(module.addListener('speechend', () => emit({ type: 'activity', speaking: activity.speechEnd() })));
-          subscriptions.push(module.addListener('end', () => emit({ type: 'ended' })));
+          if (useVad) {
+            subscriptions.push((module as PcmVadModule).addListener('vadactivity', event => {
+              if (typeof event.speaking === 'boolean' && Number.isFinite(event.quietForMs)
+                && event.quietForMs >= 0 && event.quietForMs <= 200) {
+                emit({ type: 'activity', speaking: event.speaking, quietForMs: event.quietForMs });
+              }
+            }));
+          } else {
+            subscriptions.push(module.addListener('volumechange', event => {
+              const speaking = activity.volume(event.value);
+              if (speaking !== null) emit({ type: 'activity', speaking });
+            }));
+            subscriptions.push(module.addListener('speechstart', () => emit({ type: 'activity', speaking: activity.speechStart() })));
+            subscriptions.push(module.addListener('speechend', () => emit({ type: 'activity', speaking: activity.speechEnd() })));
+          }
+          subscriptions.push(module.addListener('end', () => emit({ type: 'ended', ...(useVad && !stopRequested ? { premature: true } : {}) })));
           signal.addEventListener('abort', cancel, { once: true });
           if (signal.aborted || closed) { cancel(); return; }
           started = true;
           try {
-            module.start({ lang: locale, interimResults: true, maxAlternatives: 1, continuous,
+            const options: Parameters<SpeechModule['start']>[0] & { pingdyVadEnabled: boolean } = { pingdyVadEnabled: useVad, lang: locale, interimResults: true, maxAlternatives: 1, continuous,
               requiresOnDeviceRecognition: false, recordingOptions: { persist: false },
-              volumeChangeEventOptions: { enabled: true, intervalMillis: 250 } });
+              volumeChangeEventOptions: { enabled: !useVad, intervalMillis: 250 } };
+            module.start(options);
           } catch (error) { cancel(); throw error; }
         },
         stop() {
           if (closed || !started || signal.aborted) return;
+          stopRequested = true;
           module.stop();
         },
         cancel,

@@ -5,7 +5,7 @@ export { getVoiceSilenceMs, VOICE_SILENCE_MS, VOICE_COMPLETED_REQUEST_SILENCE_MS
 export type VoiceInputPhase = 'idle' | 'permissionRequesting' | 'listening' | 'processing' | 'final' | 'canceled' | 'permissionDenied' | 'unavailable' | 'error';
 export type MicrophonePermission = 'undetermined' | 'granted' | 'denied' | 'blocked' | 'restricted';
 export type SpeechFailure = 'interrupted' | 'noSpeech' | 'unavailable' | 'network' | 'failed';
-export type SpeechEvent = { type: 'partial' | 'final'; text: string } | { type: 'activity'; speaking: boolean } | { type: 'processing' } | { type: 'ended' } | { type: 'error'; reason: SpeechFailure };
+export type SpeechEvent = { type: 'partial' | 'final'; text: string } | { type: 'activity'; speaking: boolean; quietForMs?: number } | { type: 'processing' } | { type: 'ended'; premature?: boolean } | { type: 'error'; reason: SpeechFailure };
 /** A session owns its listeners and native buffers. cancel must synchronously detach
  * listeners, abort pending startup and stop capture; it is idempotent. No disk/log storage.
  * Implementations must normalize OS microphone AND speech authorization, emit a terminal
@@ -174,6 +174,12 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
             return;
           }
           if (event.type === 'ended') {
+            if (event.premature) {
+              const stableText = finalizedText;
+              release();
+              update({ phase: 'error', error: 'interrupted', draft: stableText, partial: '', speaking: false, delivery: 'none' });
+              return;
+            }
             nativeEnded = true;
             endpoint.activity(false);
             if (awaitingFinal) { if (finalizedText && !pendingPartialAtStop) submitFinalVoice(); else fail('noSpeech'); }
@@ -184,7 +190,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
           if (event.type === 'activity') {
             if (snapshot.phase === 'listening') {
               if (snapshot.speaking !== event.speaking) update({ speaking: event.speaking });
-              endpoint.activity(event.speaking);
+              endpoint.activity(event.speaking, event.quietForMs);
             }
             return;
           }
@@ -207,7 +213,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
           lastFinalSegment = result.text;
           lastPartialSegment = '';
           newPartialSinceFinal = false;
-          update({ draft: finalizedText, partial: '', speaking: false, source: 'voice' });
+          update({ draft: finalizedText, partial: '', source: 'voice' });
           if (awaitingFinal) submitFinalVoice();
           else endpoint.setText(finalizedText); // Recognition latency never resets acoustic quiet.
         } });

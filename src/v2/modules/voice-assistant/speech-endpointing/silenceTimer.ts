@@ -16,9 +16,9 @@ export function createSilenceTimer(onElapsed: () => void) {
   return {
     setText(value: string) { text = value; schedule(); },
     setContext(value: CompletionContext) { context = value; schedule(); },
-    activity(speaking: boolean) {
+    activity(speaking: boolean, quietForMs = 0) {
       if (speaking) { quietSince = null; clear(); }
-      else if (quietSince === null) { quietSince = performance.now(); schedule(); }
+      else if (quietSince === null) { quietSince = performance.now() - (Number.isFinite(quietForMs) ? Math.max(0, Math.min(200, quietForMs)) : 0); schedule(); }
     },
     reset() { clear(); text = ''; context = {}; quietSince = null; },
   };

@@ -5,6 +5,11 @@ import { createAudioActivityDetector } from '../audioActivity';
 afterEach(() => jest.useRealTimers());
 
 test.each([
+  ['안녕', {}, 1000],
+  ['안녕하세요!', {}, 1000],
+  ['Hi', {}, 1000],
+  ['안녕 그리고', {}, 3000],
+  ['안녕…', {}, 3000],
   ['근처 카페 찾아줘', {}, 1000],
   ['여기 문 열었나요?', {}, 1000],
   ['예약할 수 있을까요', {}, 1000],
@@ -101,4 +106,19 @@ test('low positive energy does not count as speech; hysteresis and native edges 
   expect(detector.volume(3)).toBe(true);
   expect(detector.volume(NaN)).toBeNull();
   expect(detector.speechEnd()).toBe(false);
+});
+
+test('confirmed quiet duration includes native debounce and repeated quiet does not extend it', () => {
+  jest.useFakeTimers();
+  const elapsed = jest.fn();
+  const timer = createSilenceTimer(elapsed);
+  timer.setText('안녕');
+  timer.activity(false, 200);
+  jest.advanceTimersByTime(700);
+  timer.activity(false, 200);
+  jest.advanceTimersByTime(99);
+  expect(elapsed).not.toHaveBeenCalled();
+  jest.advanceTimersByTime(1);
+  expect(elapsed).toHaveBeenCalledTimes(1);
+  timer.reset();
 });
