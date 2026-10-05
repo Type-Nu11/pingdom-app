@@ -11,7 +11,8 @@ import { serverInstant } from '../model/voiceCommandTime';
 
 export type VoiceCommandContext = Omit<VoiceCommandRuntime, 'session' | 'queryClient' | 'now' | 'monotonic' | 'contextRevision'>;
 export type VoiceCommandViewState =
-  | { phase: 'idle' | 'processing' | 'canceled' | 'advisory' | 'unrecognized' }
+  | { phase: 'idle' | 'processing' | 'canceled' | 'unrecognized' }
+  | { phase: 'assistant'; text: string }
   | { phase: 'clarification'; field: ClarificationField }
   | { phase: 'result'; result: AppCommandResult }
   | { phase: 'error'; code: VoiceSessionErrorCode };
@@ -39,7 +40,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
       else setCommandState({ phase: 'error',
         code: envelope.code === 'PROVIDER_UNAVAILABLE' ? 'PROVIDER_UNAVAILABLE' : 'INVALID_RESPONSE' });
     }
-    else setCommandState({ phase: 'advisory' }); // Never display provider success claims or speak them.
+    else setCommandState({ phase: 'assistant', text: envelope.text }); // Plain conversation only; never dispatch, confirm, or speak it.
   }, [dispatcher]);
   const { controller, state } = useVoiceSession(context.accountRevision, consume);
   sessionRef.current = controller;
@@ -75,6 +76,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   useLayoutEffect(() => {
     const unsubscribe = controller.subscribe(() => {
       const snapshot = controller.getSnapshot();
+      if (snapshot.phase === 'creating' || snapshot.phase === 'sending') setCommandState({ phase: 'processing' });
       if (snapshot.phase === 'closed') { dispatcher.clear(); setCommandState({ phase: 'canceled' }); }
       if (snapshot.error) setCommandState({ phase: 'error', code: snapshot.error });
     });

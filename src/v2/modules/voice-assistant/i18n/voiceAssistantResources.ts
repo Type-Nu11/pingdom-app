@@ -7,8 +7,8 @@ export const voiceAssistantResources = {
     command: {
       submission: 'Voice capture stops after 1 second of detected quiet for a clear Korean request, question, or a quantity answer to a quantity clarification; otherwise it waits 3 seconds. Speaking again resets the wait. Finalized input is sent to the AI server automatically. Text input is sent when you use Send. Exact coordinates are used only by the existing place lookup.',
       introTitle: 'Before using AI', introContinue: 'Continue to AI', introClose: 'Close',
-      timezone: 'Request timezone: {{timezone}}', processing: 'Checking place information.', canceled: 'Voice session ended.',
-      advisory: 'Assistant response received.', bounded: 'Results checked among up to 12 nearby candidates.',
+      timezone: 'Request timezone: {{timezone}}', processing: 'AI is thinking.', canceled: 'This request has ended. Type a new request or tap the microphone to continue.',
+      advisory: 'I can help you find places and check reservation options. Try: Find a cafe near me for two people tomorrow from 2 to 5 PM.', bounded: 'Results checked among up to 12 nearby candidates.',
       empty: 'No matching results among the checked candidates.', slots: 'Actual server intervals. These do not confirm product bookability or a reservation.',
       general: 'General admission', capacity: 'Remaining capacity: {{count}}', failed: 'The request could not be completed. Check your conditions and try again.', retry: 'Try again',
       resultSummary: 'I found {{count}} place(s). The first result is “{{name}}”.', showOnMap: 'View on map', directions: 'Directions', share: 'Share',
@@ -45,8 +45,8 @@ export const voiceAssistantResources = {
     command: {
       submission: '명확한 한국어 요청·질문이나 인원 질문에 대한 답변은 무음이 감지된 뒤 1초, 그 외에는 3초 후 음성 입력을 종료합니다. 다시 말하면 대기 시간을 초기화합니다. 최종 인식된 내용만 AI 서버에 자동 전송합니다. 텍스트 입력은 보내기를 누르면 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.',
       introTitle: 'AI 사용 안내', introContinue: '확인하고 시작하기', introClose: '닫기',
-      timezone: '요청 시간대: {{timezone}}', processing: '장소 정보를 확인하고 있습니다.', canceled: '음성 세션을 종료했습니다.',
-      advisory: '어시스턴트 응답을 받았습니다.', bounded: '가까운 후보 최대 12곳에서 조건을 확인한 결과입니다.',
+      timezone: '요청 시간대: {{timezone}}', processing: 'AI가 생각 중이에요.', canceled: '요청을 종료했습니다. 새 요청을 입력하거나 마이크를 눌러 다시 말씀해 주세요.',
+      advisory: '장소 검색과 예약 조건 확인을 도와드릴 수 있어요. 예를 들어 “내일 오후 2시부터 5시까지 두 명 예약 가능한 근처 카페 찾아줘”라고 말씀해 주세요.', bounded: '가까운 후보 최대 12곳에서 조건을 확인한 결과입니다.',
       empty: '조회한 후보에 조건과 일치하는 결과가 없습니다.', slots: '서버의 실제 이용 시간입니다. 상품의 예약 가능 여부나 예약 확정을 의미하지 않습니다.',
       general: '일반 이용', capacity: '남은 정원: {{count}}명', failed: '요청을 완료하지 못했습니다. 조건을 확인하고 다시 시도해 주세요.', retry: '다시 시도',
       resultSummary: '{{count}}곳을 찾았어요. 첫 번째 결과는 ‘{{name}}’이에요.', showOnMap: '지도에서 보기', directions: '길찾기', share: '공유',
@@ -83,8 +83,8 @@ export const voiceAssistantResources = {
     command: {
       submission: '明確な韓国語の依頼・質問、または人数の質問への回答は無音を検出してから1秒、それ以外は3秒後に音声入力を終了します。再び話すと待ち時間をリセットします。確定した内容のみAIサーバーへ自動で送信します。テキスト入力は「送信」をタップすると送信されます。正確な現在地の座標は、既存の場所検索にのみ使用します。',
       introTitle: 'AIご利用前のご案内', introContinue: '確認して始める', introClose: '閉じる',
-      timezone: 'リクエストのタイムゾーン：{{timezone}}', processing: '場所の情報を確認しています。', canceled: '音声セッションを終了しました。',
-      advisory: 'アシスタントの応答を受け取りました。', bounded: '近くの候補最大12か所で条件を確認した結果です。',
+      timezone: 'リクエストのタイムゾーン：{{timezone}}', processing: 'AIが考えています。', canceled: 'リクエストを終了しました。新しい内容を入力するか、マイクをタップしてお話しください。',
+      advisory: '場所の検索や予約条件の確認をお手伝いします。例えば「明日の午後2時から5時まで、2人で予約できる近くのカフェを探して」とお話しください。', bounded: '近くの候補最大12か所で条件を確認した結果です。',
       empty: '確認した候補に条件と一致する結果がありません。', slots: 'サーバー上の実際の利用時間です。商品の予約可否や予約の確定を意味するものではありません。',
       general: '一般利用', capacity: '残りの定員：{{count}}名', failed: 'リクエストを完了できませんでした。条件を確認して、もう一度お試しください。', retry: '再試行',
       resultSummary: '{{count}}か所見つかりました。最初の結果は「{{name}}」です。', showOnMap: '地図で見る', directions: '経路案内', share: '共有',

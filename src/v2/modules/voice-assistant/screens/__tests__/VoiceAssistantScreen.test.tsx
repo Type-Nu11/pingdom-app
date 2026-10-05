@@ -343,7 +343,8 @@ test('shows app-owned read results, empty, clarification, processing and safe fa
   const props = { onClose: jest.fn(), onCommandCancel: jest.fn(), onCommandRetry: retry };
   const View = (p: React.ComponentProps<typeof VoiceAssistantScreen>) => navigationWrapper(<VoiceAssistantScreen {...p} />).element;
   const view = await renderWithProviders(<View {...props} commandState={{ phase: 'processing' }} />);
-  expect(screen.getByTestId('voice-command-state')).toBeOnTheScreen();
+  expect(screen.getByTestId('voice-command-state')).toHaveTextContent('AI가 생각 중이에요.');
+  expect(screen.queryByText('요청을 종료했습니다. 새 요청을 입력하거나 마이크를 눌러 다시 말씀해 주세요.')).not.toBeOnTheScreen();
   await view.rerender(<View {...props} commandState={{ phase: 'result', result: { ...base, command: 'searchNearbyReservablePlaces', outcome: { status: 'succeeded', data: { coverage: 'bounded_candidates', places: [] } } } }} />);
   expect(screen.getByTestId('voice-command-empty')).toBeOnTheScreen();
   await view.rerender(<View {...props} commandState={{ phase: 'result', result: { ...base, command: 'getPlaceDetails', outcome: { status: 'succeeded', data: { place: { id: 1, name: 'Actual cafe', address: 'Seoul', touristCategories: ['CAFE'], operatingStatus: 'OPERATING' } } } } }} />);
@@ -472,4 +473,13 @@ test('date and quantity choices preserve the original request and each confirmed
   expect(submit.mock.calls[1][0].text).toContain('오후 2시부터 5시까지 카페 찾아줘');
   expect(submit.mock.calls[1][0].text).toContain(date);
   expect(submit.mock.calls[1][0].text).toContain('몇 분이 방문하시나요? 3');
+});
+
+
+test('a greeting displays the actual assistant reply instead of the fixed place-search tutorial', async () => {
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()}
+    commandState={{ phase: 'assistant', text: '안녕하세요! 반가워요.' }} />).element);
+  expect(screen.getByTestId('voice-assistant-message')).toHaveTextContent('안녕하세요! 반가워요.');
+  expect(screen.queryByText(voiceAssistantResources.ko.command.advisory)).toBeNull();
+  expect(screen.queryByTestId('voice-reservation-draft')).toBeNull();
 });

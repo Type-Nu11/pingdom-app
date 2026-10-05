@@ -52,6 +52,7 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   if (state.phase === 'idle') return null;
   if (state.phase === 'unrecognized') return null;
   if (state.phase === 'error') return error(state.code, true);
+  if (state.phase === 'assistant') return <Copy testID="voice-assistant-message" accessibilityLiveRegion="polite">{state.text}</Copy>;
   if (state.phase === 'clarification') return clarification(state.field);
   if (state.phase !== 'result') return copy(state.phase);
   const result = state.result;

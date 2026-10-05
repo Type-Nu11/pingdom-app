@@ -131,3 +131,45 @@ test.each(['expiry', 'background', 'context', 'cancel'] as const)('a displayed d
   expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
   await view.unmount(); queryClient.clear(); jest.useRealTimers();
 });
+
+
+test('an assistant reply retains actual provider text without running a command or reservation mutation', async () => {
+  const queryClient = new QueryClient();
+  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'assistant_message', text: '안녕하세요! 반가워요.' }) });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: '안녕', source: 'voice', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'assistant', text: '안녕하세요! 반가워요.' });
+  expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
+  await view.unmount(); queryClient.clear();
+});
+
+test('session creation and AI response waiting stay processing until clarification arrives', async () => {
+  const queryClient = new QueryClient();
+  let resolveCreate!: (value: { sessionId: string; expiresAt: string }) => void;
+  let resolveSend!: (value: { schemaVersion: 1; id: string; kind: 'clarification_request'; field: 'date'; text: string }) => void;
+  const create = new Promise<{ sessionId: string; expiresAt: string }>(resolve => { resolveCreate = resolve; });
+  const response = new Promise<{ schemaVersion: 1; id: string; kind: 'clarification_request'; field: 'date'; text: string }>(resolve => { resolveSend = resolve; });
+  factory.mockReturnValue({ create: () => create, refresh: jest.fn(), close: jest.fn(), send: () => response });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  let pending!: ReturnType<typeof view.result.current.onFinalInput>;
+  await act(async () => {
+    pending = view.result.current.onFinalInput({ text: '근처 카페 찾아줘', source: 'voice', signal: new AbortController().signal });
+  });
+  expect(view.result.current.commandState).toEqual({ phase: 'processing' });
+  await act(async () => { resolveCreate({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'processing' });
+  await act(async () => {
+    resolveSend({ schemaVersion: 1, id: 'input-2', kind: 'clarification_request', field: 'date', text: '며칠에 방문하시나요?' });
+    await pending;
+  });
+  expect(view.result.current.commandState).toEqual({ phase: 'clarification', field: 'date' });
+  await act(() => view.result.current.cancel());
+  expect(view.result.current.commandState).toEqual({ phase: 'canceled' });
+  await view.unmount(); queryClient.clear();
+});
