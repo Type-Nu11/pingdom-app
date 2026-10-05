@@ -46,6 +46,7 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     const voiceAssistant = baseline[language].translation.voiceAssistant;
     // AI session error additions are verified by VoiceCommandErrors.test.tsx in all languages.
     delete voiceAssistant.sessionErrors;
+    delete voiceAssistant.picker;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
     delete voiceAssistant.brand;

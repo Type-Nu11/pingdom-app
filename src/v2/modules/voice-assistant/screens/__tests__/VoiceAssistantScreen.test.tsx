@@ -1,3 +1,4 @@
+import { localPickerDate } from '../../components/VoiceClarificationPicker';
 import React from 'react';
 import { AppState, Keyboard } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
@@ -111,7 +112,7 @@ test.each(['quantity', 'date'] as const)('short answer uses one second only for 
 
 test.each([['ko', 'ko-KR'], ['en', 'en-US']] as const)('%s AI entry starts STT once without submitting speech', async (language, locale) => {
   const x = speech();
-  const submit = jest.fn(() => 'accepted' as const);
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
   const create = jest.spyOn(x.adapter, 'createSession');
   const navigation = { isFocused: () => true, addListener: () => () => undefined };
   const element = () => <NavigationContext.Provider value={navigation as never}><VoiceAssistantScreen adapter={x.adapter}
@@ -381,4 +382,94 @@ test('composer uses native keyboard animation instead of waiting for JS keyboard
   expect(screen.getByTestId('voice-assistant-keyboard-layout')).toHaveProp('behavior', 'padding');
   expect(screen.getByTestId('voice-assistant-composer')).toBeOnTheScreen();
   expect(listener.mock.calls.some(([name]) => name === 'keyboardDidShow')).toBe(false);
+});
+
+test('picker confirmation sends original request with conditions once, retains summaries and supports editing', async () => {
+  let release!: () => void;
+  const submit = jest.fn((_input: FinalInput) => new Promise<'accepted'>(resolve => { release = () => resolve('accepted'); }));
+  const dismiss = jest.fn();
+  const view = await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission
+    onFinalInput={submit} onCommandFeedbackDismiss={dismiss} commandState={{ phase: 'clarification', field: 'timeRange' }} />).element);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '내일 두 명 카페 찾아줘');
+  expect(screen.getByTestId('voice-assistant-composer')).toBeVisible();
+  expect(submit).not.toHaveBeenCalled();
+  const confirm = screen.getByRole('button', { name: '선택 확인' });
+  await fireEvent.press(confirm);
+  await fireEvent.press(confirm);
+  expect(submit).toHaveBeenCalledTimes(1);
+  expect(submit.mock.calls[0][0].text).toContain('내일 두 명 카페 찾아줘');
+  expect(submit.mock.calls[0][0].text).toContain('14:00');
+  await act(async () => release());
+  await view.rerender(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission onFinalInput={submit}
+    onCommandFeedbackDismiss={dismiss} commandState={{ phase: 'clarification', field: 'quantity' }} />).element);
+  expect(screen.getByRole('button', { name: '14:00 · 수정' })).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: '14:00 · 수정' }));
+  await fireEvent.press(screen.getByRole('button', { name: '3시' }));
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(submit).toHaveBeenCalledTimes(2);
+  expect(submit.mock.calls[1][0].text).toContain('15:00');
+  expect(submit.mock.calls[1][0].text).not.toContain('17:00');
+  expect(submit.mock.calls[1][0].text).not.toContain('14:00');
+  await act(async () => release());
+});
+
+test('typed clarification answer keeps the original request and the bottom input usable', async () => {
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
+  const view = await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission onFinalInput={submit} />).element);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '2026년 10월 5일 오후 2시부터 5시까지 카페 찾아줘');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  await view.rerender(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission onFinalInput={submit}
+    commandState={{ phase: 'clarification', field: 'quantity' }} />).element);
+  await fireEvent(screen.getByLabelText('요청 내용'), 'focus');
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '세 명');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  expect(submit.mock.calls[1][0].text).toContain('2026년 10월 5일');
+  expect(submit.mock.calls[1][0].text).toContain('세 명');
+  expect(screen.getByTestId('voice-picker-quantity')).toBeVisible();
+});
+
+test('voice clarification keeps the original request while the existing microphone flow stays usable', async () => {
+  const x = speech();
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
+  const view = await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()}
+    serverSubmission onFinalInput={submit} />).element);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '2026년 10월 5일 오후 2시부터 5시까지 카페 찾아줘');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  await view.rerender(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} serverSubmission
+    onFinalInput={submit} commandState={{ phase: 'clarification', field: 'quantity' }} />).element);
+  await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+  expect(screen.getByTestId('voice-picker-quantity')).toBeVisible();
+  expect(screen.getByRole('button', { name: '선택 확인' })).toBeDisabled();
+  await act(() => x.emit({ type: 'final', text: '세 명' }));
+  await fireEvent.press(screen.getByRole('button', { name: '중지하고 보내기' }));
+  await act(() => x.emit({ type: 'ended' }));
+  await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+  expect(submit.mock.calls[1][0]).toMatchObject({ source: 'voice' });
+  expect(submit.mock.calls[1][0].text).toContain('2026년 10월 5일');
+  expect(submit.mock.calls[1][0].text).toContain('세 명');
+});
+
+
+test('date and quantity choices preserve the original request and each confirmed condition', async () => {
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
+  const props = { onClose: jest.fn(), serverSubmission: true as const, onFinalInput: submit };
+  const view = await renderWithProviders(navigationWrapper(<VoiceAssistantScreen {...props}
+    commandState={{ phase: 'clarification', field: 'date' }} />).element);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '오후 2시부터 5시까지 카페 찾아줘');
+  expect(submit).not.toHaveBeenCalled();
+  const date = localPickerDate('Asia/Seoul');
+  await fireEvent.press(screen.getByRole('button', { name: date }));
+  expect(submit).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(submit.mock.calls[0][0].text).toContain(date);
+  await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
+    commandState={{ phase: 'clarification', field: 'quantity' }} />).element);
+  expect(screen.getByRole('button', { name: `${date} · 수정` })).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: '3명' }));
+  expect(submit).toHaveBeenCalledTimes(1);
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(submit).toHaveBeenCalledTimes(2);
+  expect(submit.mock.calls[1][0].text).toContain('오후 2시부터 5시까지 카페 찾아줘');
+  expect(submit.mock.calls[1][0].text).toContain(date);
+  expect(submit.mock.calls[1][0].text).toContain('몇 분이 방문하시나요? 3');
 });
