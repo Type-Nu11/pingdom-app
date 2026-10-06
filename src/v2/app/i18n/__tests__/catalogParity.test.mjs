@@ -242,13 +242,17 @@ for (const language of translatedLanguages) {
     });
     assert.equal(instance.resolvedLanguage, language);
     const translated = catalog(language);
+    const pluralRules = new Intl.PluralRules(language);
     const failures = [];
     for (const base of pluralBases) {
-      const ownForms = [...translated].filter(([key]) => key === base || key.startsWith(`${base}_`)).map(([, value]) => value);
       for (const count of [0, 1, 2, 5, 11, 21, 100, 1000000]) {
         const rendered = instance.t(base, { count });
-        const expected = ownForms.map((form) => form.replace(/{{\s*count\s*}}/g, String(count)));
-        if (!expected.includes(rendered)) failures.push(`${base} count=${count}: ${rendered}`);
+        // The exact form for the count's CLDR category, falling back to the bare key like i18next does.
+        const category = pluralRules.select(count);
+        const form = translated.get(`${base}_${category}`) ?? translated.get(base);
+        if (form === undefined) { failures.push(`${base} has no ${category} form`); continue; }
+        const expected = form.replace(/{{\s*count\s*}}/g, String(count));
+        if (rendered !== expected) failures.push(`${base} count=${count}: ${rendered} != ${expected}`);
         if (!rendered.includes(String(count))) failures.push(`${base} count=${count} lost the number: ${rendered}`);
       }
     }
@@ -270,9 +274,11 @@ test('#413 Simplified and Traditional Chinese are translated independently', () 
 test('language option labels exist for every supported language', () => {
   const endonyms = supportedLanguages.map((language) => resources[language].translation.selectLanguage.options[language]);
   assert.equal(new Set(endonyms).size, supportedLanguages.length, 'each language has a distinct own name');
+  assert.equal(resources.ja.translation.selectLanguage.options.ja, '日本語');
+  // The catalogs that shipped before #413 show Japanese by its own name; later ones localize it for search.
+  for (const language of ['en', 'ko']) assert.equal(resources[language].translation.selectLanguage.options.ja, '日本語', language);
   for (const language of supportedLanguages) {
     const options = resources[language].translation.selectLanguage.options;
     assert.deepEqual(Object.keys(options).sort(), [...supportedLanguages].sort(), language);
-    assert.equal(options.ja, '日本語', language);
   }
 });

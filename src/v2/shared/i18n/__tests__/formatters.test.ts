@@ -140,8 +140,9 @@ describe('#414 Vietnamese formatting', () => {
   test('a place timezone keeps the same calendar date, shown day-first', () => {
     const instant = '2026-09-30T14:30:00Z';
     expect(formatDate(instant, 'vi', 'Asia/Seoul')).toBe('30/09/26');
-    // The same instant read in a timezone a day behind must not leak into the Seoul date.
-    expect(formatDate(instant, 'vi', 'Asia/Seoul')).not.toBe(formatDate('2026-09-29T14:30:00Z', 'vi', 'Asia/Seoul'));
+    // Late evening in Seoul is still the previous day in Los Angeles: only the timezone moves the date.
+    expect(formatDate(instant, 'vi', 'America/Los_Angeles')).toBe('30/09/26');
+    expect(formatDate('2026-09-30T20:30:00Z', 'vi', 'Asia/Seoul')).toBe('01/10/26');
     expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), 'vi'))).toBe('14053092026');
   });
 
@@ -181,14 +182,16 @@ describe('#415 Spanish formatting', () => {
   test('currency, amount, and numbers come from the data, not the UI language', () => {
     expect(digits(formatCurrency(12000, 'KRW', 'es'))).toBe('12000');
     expect(formatCurrency(12000, 'KRW', 'es')).toMatch(/[₩￦]|KRW/);
-    expect(formatCurrency(12000, 'KRW', 'es')).not.toMatch(/€|\\$|MXN|EUR/);
+    expect(formatCurrency(12000, 'KRW', 'es')).not.toMatch(/€|\$|MXN|EUR/);
     expect(formatNumber(1234567, 'es')).toBe('1.234.567');
   });
 
   test('a place timezone keeps the same calendar date, shown day-first', () => {
     const instant = '2026-09-30T14:30:00Z';
     expect(formatDate(instant, 'es', 'Asia/Seoul')).toBe('30/09/26');
-    expect(formatDate(instant, 'es', 'Asia/Seoul')).not.toBe(formatDate('2026-09-29T14:30:00Z', 'es', 'Asia/Seoul'));
+    // Late evening in Seoul is still the previous day in Los Angeles: only the timezone moves the date.
+    expect(formatDate(instant, 'es', 'America/Los_Angeles')).toBe('30/09/26');
+    expect(formatDate('2026-09-30T20:30:00Z', 'es', 'Asia/Seoul')).toBe('01/10/26');
     expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), 'es'))).toBe('3020261405');
   });
 
@@ -230,20 +233,24 @@ describe('#416 Brazilian Portuguese formatting', () => {
   test('currency, amount, and numbers come from the data, not the UI language', () => {
     expect(digits(formatCurrency(12000, 'KRW', 'pt-BR'))).toBe('12000');
     expect(formatCurrency(12000, 'KRW', 'pt-BR')).toMatch(/[₩￦]|KRW/);
-    expect(formatCurrency(12000, 'KRW', 'pt-BR')).not.toMatch(/R\\$|BRL|€/);
+    expect(formatCurrency(12000, 'KRW', 'pt-BR')).not.toMatch(/R\$|BRL|€/);
     expect(formatNumber(1234567, 'pt-BR')).toBe('1.234.567');
   });
 
   test('a place timezone keeps the same calendar date, shown day-first', () => {
     const instant = '2026-09-30T14:30:00Z';
     expect(formatDate(instant, 'pt-BR', 'Asia/Seoul')).toBe('30/09/26');
-    expect(formatDate(instant, 'pt-BR', 'Asia/Seoul')).not.toBe(formatDate('2026-09-29T14:30:00Z', 'pt-BR', 'Asia/Seoul'));
+    // Late evening in Seoul is still the previous day in Los Angeles: only the timezone moves the date.
+    expect(formatDate(instant, 'pt-BR', 'America/Los_Angeles')).toBe('30/09/26');
+    expect(formatDate('2026-09-30T20:30:00Z', 'pt-BR', 'Asia/Seoul')).toBe('01/10/26');
     expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), 'pt-BR'))).toBe('3020261405');
   });
 
   test('distance is metric with the same value as other metric languages, not miles', () => {
     expect(formatDistance(1500, 'pt-BR')).toBe('1,5 km');
     expect(digits(formatDistance(1500, 'pt-BR'))).toBe(digits(formatDistance(1500, 'ko')));
+    // pt-PT is not switched to the Brazilian conventions and keeps its previous output.
+    expect(formatDistance(1500, 'pt-PT')).toBe('0.9 mi');
     expect(formatDistance(1500, 'pt-BR')).toBe('1,5 km');
     expect(formatDistance(1500, 'en')).toBe('0.9 mi');
     expect(formatMinuteRange(5, 10, 'pt-BR')).toBe('5 min–10 min');
