@@ -171,4 +171,25 @@ export const offerStatusResources = {
       statuses: { CLOSED: 'Finalizada', DRAFT: 'Borrador', PUBLISHED: 'Disponible', UNKNOWN: 'Estado por confirmar' },
     },
   },
+  'pt-BR': {
+    offer: {
+      cta: { ended: 'Oferta encerrada', issue: 'Pegar cupom', notStarted: 'Ainda não começou', soldOut: 'Esgotado', unavailable: 'Não pode ser resgatado' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: 'Contas com uma viagem ativa', PUBLIC: 'Qualquer pessoa', UNKNOWN: 'Condições a confirmar' },
+      expiry: {
+        ISSUE_PLUS_DAYS: 'Válido por um número fixo de dias após a emissão',
+        ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: 'Válido por um número fixo de dias após a emissão, até a data de término da oferta',
+        OFFER_END: 'Válido até o fim da oferta',
+        UNKNOWN: 'Validade a confirmar',
+      },
+      inventory: { LIMITED: 'Quantidade limitada', UNKNOWN: 'Quantidade a confirmar', UNLIMITED: 'Sem limite de quantidade' },
+      remaining: {
+        limited_one: 'Resta {{count}}',
+        limited_other: 'Restam {{count}}',
+        limited_many: 'Restam {{count}}',
+        unknown: 'Quantidade restante não informada',
+        unlimited: 'Sem limite de quantidade',
+      },
+      statuses: { CLOSED: 'Encerrada', DRAFT: 'Rascunho', PUBLISHED: 'Disponível', UNKNOWN: 'Status a confirmar' },
+    },
+  },
 } as const;

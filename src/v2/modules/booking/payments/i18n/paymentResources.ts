@@ -63,4 +63,16 @@ export const paymentResources = {
       },
     },
   },
+  'pt-BR': {
+    payment: {
+      statuses: {
+        FAILED: 'Pagamento não concluído',
+        PAID: 'Pago',
+        PROCESSING: 'Pagamento em andamento',
+        REFUNDED: 'Reembolsado',
+        REFUND_PROCESSING: 'Reembolso em andamento',
+        UNKNOWN: 'Status a confirmar',
+      },
+    },
+  },
 } as const;

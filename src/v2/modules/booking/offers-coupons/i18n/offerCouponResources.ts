@@ -445,6 +445,51 @@ export const offerCouponResources = {
       },
     },
   },
+  'pt-BR': {
+    offerCoupon: {
+      error: {
+        actions: { back: 'Voltar', retry: 'Tentar novamente', signIn: 'Entrar novamente', viewWallet: 'Ver meus cupons' },
+        alreadyIssued: { description: 'Você já resgatou este cupom. Confira nos seus cupons.', title: 'Já resgatado' },
+        alreadyRedeemed: { description: 'Este cupom já foi usado e não pode ser usado novamente.', title: 'Já usado' },
+        authentication: { description: 'Sua sessão expirou. Entre novamente para continuar.', title: 'É necessário entrar' },
+        expired: { description: 'O período de uso deste cupom terminou.', title: 'Não está mais disponível' },
+        forbidden: { description: 'Esta conta não tem permissão para esta ação.', title: 'Permissão necessária' },
+        generic: { description: 'Algo deu errado do nosso lado. Tente novamente em instantes.', title: 'Não foi possível concluir a solicitação' },
+        ineligible: {
+          description: 'Esta oferta não está disponível para sua conta no momento. Pode ser necessário ter um roteiro de viagem ativo.',
+          title: 'Não elegível',
+        },
+        network: { description: 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.', title: 'Problema de conexão' },
+        notFound: { description: 'Esta oferta ou cupom não está mais disponível. Volte para a lista mais recente.', title: 'Não encontrado' },
+        redeemInvalidInput: { description: 'Confira o cupom e tente escanear novamente.', title: 'Não foi possível processar' },
+        redeemUsedOrExpired: { description: 'Este cupom já foi usado ou expirou.', title: 'Não pode ser usado' },
+        soldOut: { description: 'Todos os cupons desta oferta já foram resgatados.', title: 'Esgotado' },
+        unconfirmedConflict: {
+          description: 'Não foi possível emitir esta oferta. Ela talvez já esteja nos seus cupons ou a emissão foi encerrada.',
+          title: 'Não foi possível emitir',
+        },
+        updateRequired: { description: 'Instale a versão mais recente para continuar usando cupons.', title: 'Atualização necessária' },
+        validation: { description: 'Não foi possível carregar a lista. Tente novamente.', title: 'Não foi possível carregar os cupons' },
+      },
+      place: {
+        eligibility: { ACTIVE_TRAVEL_SCHEDULE: 'Requer um roteiro de viagem ativo', PUBLIC: 'Disponível para todos os visitantes elegíveis' },
+        emptyDescription: 'No momento não há cupons disponíveis para este lugar.',
+        emptyTitle: 'Nenhuma oferta disponível',
+        inventoryRemaining: 'Restam {{count}}',
+        inventoryUnlimited: 'Sem limite de quantidade',
+        issue: 'Pegar cupom',
+        loading: 'Carregando cupons disponíveis…',
+        period: 'Período de emissão: {{value}}',
+        periodUnknown: 'Período indisponível',
+        successDescription: 'O cupom emitido já está na sua carteira de cupons.',
+        successTitle: 'Cupom emitido',
+        untitled: 'Oferta de cupom',
+        validityDays: 'Válido por {{count}} dia após a emissão',
+        validityDays_other: 'Válido por {{count}} dias após a emissão',
+        validityDays_many: 'Válido por {{count}} dias após a emissão',
+      },
+    },
+  },
 } as const;
 
 export function registerOfferCouponResources(instance: I18nInstance) {
