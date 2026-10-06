@@ -89,6 +89,22 @@ const LANGUAGE_RULES = {
       'settings.account.email',
     ]),
   },
+  es: {
+    // Spanish has a `many` category (1,000,000) besides one/other.
+    extraPluralCategories: ['many'],
+    forbiddenScripts: [HANGUL, KANA, HAN],
+    // Brand names plus words Spanish spells like English (China, Vietnam, Info, Pop-up, Check-ins).
+    untranslatedAllowlist: new Set([
+      ...LATIN_BRAND_AND_UNIT_KEYS,
+      'countries.cn',
+      'countries.vn',
+      'map.categories.popup',
+      'map.detail.info',
+      'map.recommendations.context.purpose.popUp',
+      'onboarding.preferences.travelPurposes.popUp',
+      'settings.support.checkInCount',
+    ]),
+  },
 };
 
 // Language names in the picker are written in other languages' scripts on purpose.
