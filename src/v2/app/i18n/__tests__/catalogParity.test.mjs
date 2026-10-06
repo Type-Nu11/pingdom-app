@@ -105,6 +105,23 @@ const LANGUAGE_RULES = {
       'settings.support.checkInCount',
     ]),
   },
+  'pt-BR': {
+    // Portuguese has a `many` category (1,000,000) besides one/other.
+    extraPluralCategories: ['many'],
+    forbiddenScripts: [HANGUL, KANA, HAN],
+    // Brand names plus words Brazilian Portuguese spells like English (China, Status, Info, OK, Pop-up).
+    untranslatedAllowlist: new Set([
+      ...LATIN_BRAND_AND_UNIT_KEYS,
+      'countries.cn',
+      'map.categories.popup',
+      'map.detail.info',
+      'map.recommendations.context.purpose.popUp',
+      'map.search.confirm',
+      'onboarding.preferences.travelPurposes.popUp',
+      'reservation.detail.status',
+      'settings.support.checkInCount',
+    ]),
+  },
 };
 
 // Language names in the picker are written in other languages' scripts on purpose.
