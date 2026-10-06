@@ -43,7 +43,7 @@
 | 소요 시간 5–10분 | `5 min–10 min` |
 | 상대 시간 | `há 7 minutos`, fallback `há 18 min` · `há 2 h` · `há 2 d` · `agora` |
 
-복수형: 포르투갈어의 CLDR 복수 범주는 `one`·`many`·`other`다. `_other`가 있는 키마다 `_many`를 추가했다
+복수형: 포르투갈어의 CLDR 복수 범주는 `one`·`many`·`other`다. `_other`가 있는 키 13개에 `_many`를 추가했다
 (`catalogParity.test.mjs`가 키 존재와 count 0·1·2·5·11·21·100·1,000,000의 결과를 검사).
 
 ## 서버 계약

@@ -3,7 +3,7 @@
 > 상태: **기계 번역 초안 · 사람 검수 필요**. 이 문서의 모든 es 문구는 검수 전이다.
 > 기준: 중립 국제 스페인어(특정 국가 표현 배제), 2인칭 tú·복수 ustedes(vosotros 미사용). 용어: 검증/verify → verificar, 쿠폰 → cupón, 혜택/Offer → oferta, 예약 → reserva, 체크인 → check-in, 설정 → ajustes, 추천 탭 → Sugerencias, 리뷰 → reseña. 복수형 `_many`(1,000,000 등)는 `_other`와 같은 문구다. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
 > 우선 검수: 「우선」 열이 채워진 키(접근성 label, 오류·복구 안내, 권한·정책·삭제 문구).
-> 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1472개(우선 검수 350개).
+> 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1473개(우선 검수 350개).
 
 | 영역 | 키 수 |
 |---|---:|
@@ -13,7 +13,7 @@
 | `community` | 101 |
 | `visitVerification` | 78 |
 | `voiceAssistant` | 85 |
-| `selectLanguage` | 13 |
+| `selectLanguage` | 14 |
 | `selectCountry` | 4 |
 | `selectAge` | 3 |
 | `selectGender` | 6 |
@@ -561,6 +561,7 @@
 |  | `selectLanguage.options.zh-TW` | Chinese (Traditional) | 중국어(번체) | Chino (tradicional) |
 |  | `selectLanguage.options.vi` | Vietnamese | 베트남어 | Vietnamita |
 |  | `selectLanguage.options.es` | Spanish | 스페인어 | Español |
+|  | `selectLanguage.options.pt-BR` | Portuguese (Brazil) | 포르투갈어(브라질) | Portugués (Brasil) |
 |  | `selectLanguage.progress` | Step {{current}} of {{total}} | 총 {{total}}단계 중 {{current}}단계 | Paso {{current}} de {{total}} |
 
 ## `selectCountry`

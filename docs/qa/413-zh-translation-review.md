@@ -3,7 +3,7 @@
 > 상태: **기계 번역 초안 · 사람 검수 필요**. 이 문서의 모든 zh-CN · zh-TW 문구는 검수 전이다.
 > 문체: 평서형 안내문, 2인칭 你(您 미사용). 용어: 검증/verify → 验证·驗證, 쿠폰 → 优惠券·優惠券, 예약 → 预约·預約, 체크인 → 签到·打卡, 설정 → 设置·設定. 번체는 대만 용어(登入·帳號·搜尋·載入·網路·資訊·使用者) 기준으로 간체와 별도 번역했다. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
 > 우선 검수: 「우선」 열이 채워진 키(접근성 label, 오류·복구 안내, 권한·정책·삭제 문구).
-> 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1457개(우선 검수 349개).
+> 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1460개(우선 검수 349개).
 
 | 영역 | 키 수 |
 |---|---:|
@@ -13,7 +13,7 @@
 | `community` | 99 |
 | `visitVerification` | 77 |
 | `voiceAssistant` | 85 |
-| `selectLanguage` | 11 |
+| `selectLanguage` | 14 |
 | `selectCountry` | 4 |
 | `selectAge` | 3 |
 | `selectGender` | 6 |
@@ -555,6 +555,9 @@
 |  | `selectLanguage.options.ja` | 日本語 | 日本語 | 日本語 | 日本語 |
 |  | `selectLanguage.options.zh-CN` | Chinese (Simplified) | 중국어(간체) | 简体中文 | 簡體中文 |
 |  | `selectLanguage.options.zh-TW` | Chinese (Traditional) | 중국어(번체) | 繁体中文 | 繁體中文 |
+|  | `selectLanguage.options.vi` | Vietnamese | 베트남어 | 越南语 | 越南文 |
+|  | `selectLanguage.options.es` | Spanish | 스페인어 | 西班牙语 | 西班牙文 |
+|  | `selectLanguage.options.pt-BR` | Portuguese (Brazil) | 포르투갈어(브라질) | 葡萄牙语（巴西） | 葡萄牙文（巴西） |
 |  | `selectLanguage.progress` | Step {{current}} of {{total}} | 총 {{total}}단계 중 {{current}}단계 | 第 {{current}} 步，共 {{total}} 步 | 第 {{current}} 步，共 {{total}} 步 |
 
 ## `selectCountry`

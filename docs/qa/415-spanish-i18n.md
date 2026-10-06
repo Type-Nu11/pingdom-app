@@ -52,7 +52,7 @@
 | 소요 시간 5–10분 | `5 min–10 min` |
 | 상대 시간 | `hace 7 minutos`, fallback `hace 18 min` · `hace 2 h` · `hace 2 d` · `ahora` |
 
-복수형: 스페인어의 CLDR 복수 범주는 `one`·`many`·`other`다. `_other`가 있는 키 12개에 `_many`를 추가해
+복수형: 스페인어의 CLDR 복수 범주는 `one`·`many`·`other`다. `_other`가 있는 키 13개에 `_many`를 추가해
 1,000,000 같은 수에서 영어로 떨어지지 않게 했다(`catalogParity.test.mjs`가 키 존재와 count별 결과를 검사).
 
 ## 서버 계약

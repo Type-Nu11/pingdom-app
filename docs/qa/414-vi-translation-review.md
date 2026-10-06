@@ -3,7 +3,7 @@
 > 상태: **기계 번역 초안 · 사람 검수 필요**. 이 문서의 모든 vi 문구는 검수 전이다.
 > 문체: 안내문은 정중한 평서형(Vui lòng/Hãy), 2인칭 bạn, 어시스턴트 1인칭 mình. 용어: 검증/verify → xác minh, 쿠폰 → phiếu ưu đãi, 혜택/Offer → ưu đãi, 예약 → đặt chỗ, 체크인 → check-in, 즐겨찾기 → Yêu thích, 설정 → Cài đặt. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
 > 우선 검수: 「우선」 열이 채워진 키(접근성 label, 오류·복구 안내, 권한·정책·삭제 문구).
-> 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1458개(우선 검수 349개).
+> 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1460개(우선 검수 349개).
 
 | 영역 | 키 수 |
 |---|---:|
@@ -13,7 +13,7 @@
 | `community` | 99 |
 | `visitVerification` | 77 |
 | `voiceAssistant` | 85 |
-| `selectLanguage` | 12 |
+| `selectLanguage` | 14 |
 | `selectCountry` | 4 |
 | `selectAge` | 3 |
 | `selectGender` | 6 |
@@ -556,6 +556,8 @@
 |  | `selectLanguage.options.zh-CN` | Chinese (Simplified) | 중국어(간체) | Tiếng Trung (Giản thể) |
 |  | `selectLanguage.options.zh-TW` | Chinese (Traditional) | 중국어(번체) | Tiếng Trung (Phồn thể) |
 |  | `selectLanguage.options.vi` | Vietnamese | 베트남어 | Tiếng Việt |
+|  | `selectLanguage.options.es` | Spanish | 스페인어 | Tiếng Tây Ban Nha |
+|  | `selectLanguage.options.pt-BR` | Portuguese (Brazil) | 포르투갈어(브라질) | Tiếng Bồ Đào Nha (Brazil) |
 |  | `selectLanguage.progress` | Step {{current}} of {{total}} | 총 {{total}}단계 중 {{current}}단계 | Bước {{current}}/{{total}} |
 
 ## `selectCountry`
