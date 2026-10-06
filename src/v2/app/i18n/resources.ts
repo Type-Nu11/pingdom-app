@@ -54,4 +54,22 @@ export const resources = {
     voiceAssistant: voiceAssistantResources.ja,
     ...withBookingStatuses(withOnboarding(sharedResources.ja.translation, onboardingResources.ja), { ...offerStatusResources.ja, ...paymentResources.ja }),
   } },
+  'zh-CN': { translation: {
+    mapTutorial: mapTutorialResources['zh-CN'],
+    ...offerCouponResources['zh-CN'],
+    ...reservationResources['zh-CN'],
+    community: communityResources['zh-CN'],
+    visitVerification: visitVerificationResources['zh-CN'],
+    voiceAssistant: voiceAssistantResources['zh-CN'],
+    ...withBookingStatuses(withOnboarding(sharedResources['zh-CN'].translation, onboardingResources['zh-CN']), { ...offerStatusResources['zh-CN'], ...paymentResources['zh-CN'] }),
+  } },
+  'zh-TW': { translation: {
+    mapTutorial: mapTutorialResources['zh-TW'],
+    ...offerCouponResources['zh-TW'],
+    ...reservationResources['zh-TW'],
+    community: communityResources['zh-TW'],
+    visitVerification: visitVerificationResources['zh-TW'],
+    voiceAssistant: voiceAssistantResources['zh-TW'],
+    ...withBookingStatuses(withOnboarding(sharedResources['zh-TW'].translation, onboardingResources['zh-TW']), { ...offerStatusResources['zh-TW'], ...paymentResources['zh-TW'] }),
+  } },
 } as const;
