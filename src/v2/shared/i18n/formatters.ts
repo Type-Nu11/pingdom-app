@@ -70,11 +70,11 @@ const RELATIVE_FALLBACKS: Record<string, {
   ja: { format: (value, unit) => `${value}${unit}前`, now: '今', units: { day: '日', hour: '時間', minute: '分' } },
   'zh-CN': { format: (value, unit) => `${value}${unit}前`, now: '现在', units: { day: '天', hour: '小时', minute: '分钟' } },
   'zh-TW': { format: (value, unit) => `${value}${unit}前`, now: '現在', units: { day: '天', hour: '小時', minute: '分鐘' } },
+  vi: { format: (value, unit) => `${value} ${unit} trước`, now: 'bây giờ', units: { day: 'ngày', hour: 'giờ', minute: 'phút' } },
 };
 
 const RELATIVE_NOW_ONLY: Record<string, string> = {
   th: 'ตอนนี้',
-  vi: 'bây giờ',
 };
 
 const formatRelativeMinutesFallback = (minutesAgo: number, language: string) => {

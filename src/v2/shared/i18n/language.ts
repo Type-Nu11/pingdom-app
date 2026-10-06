@@ -37,6 +37,7 @@ const LANGUAGE_DEFINITIONS: Record<SupportedLanguage, LanguageDefinition> = {
     aliases: ['traditional chinese', 'chinese (traditional)', '繁體中文', '중국어(번체)'],
     matchesLocale: isTraditionalChinese,
   },
+  vi: { aliases: ['vietnamese', 'tiếng việt', '베트남어'], matchesLocale: matchesLanguage('vi') },
 };
 
 // Each language is named in its own script (English, 한국어, 日本語), taken from

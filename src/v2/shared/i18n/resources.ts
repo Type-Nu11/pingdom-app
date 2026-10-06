@@ -3,7 +3,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: 'Select Language', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
-        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean', ja: '日本語', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)' }, progress: 'Step {{current}} of {{total}}',
+        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean', ja: '日本語', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)', vi: 'Vietnamese' }, progress: 'Step {{current}} of {{total}}',
       },
       selectCountry: {
         title: 'Select Country', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
@@ -898,7 +898,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: '언어 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기',
-        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어', ja: '日本語', 'zh-CN': '중국어(간체)', 'zh-TW': '중국어(번체)' }, progress: '총 {{total}}단계 중 {{current}}단계',
+        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어', ja: '日本語', 'zh-CN': '중국어(간체)', 'zh-TW': '중국어(번체)', vi: '베트남어' }, progress: '총 {{total}}단계 중 {{current}}단계',
       },
       selectCountry: { title: '국가 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기' },
       selectAge: { title: '생년 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속' },
@@ -1746,7 +1746,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: '言語を選択', subtitle: '最適なルートをご案内します！', button: '次へ', search: '検索...',
-        logoAccessibilityLabel: 'PingDomのロゴ', options: { en: '英語', ko: '韓国語', ja: '日本語', 'zh-CN': '中国語（簡体字）', 'zh-TW': '中国語（繁体字）' }, progress: '全{{total}}ステップ中{{current}}ステップ目',
+        logoAccessibilityLabel: 'PingDomのロゴ', options: { en: '英語', ko: '韓国語', ja: '日本語', 'zh-CN': '中国語（簡体字）', 'zh-TW': '中国語（繁体字）', vi: 'ベトナム語' }, progress: '全{{total}}ステップ中{{current}}ステップ目',
       },
       selectCountry: { title: '国を選択', subtitle: '最適なルートをご案内します！', button: '次へ', search: '検索...' },
       selectAge: { title: '生まれた年を選択', subtitle: '最適なルートをご案内します！', button: '次へ' },
@@ -2639,7 +2639,7 @@ export const resources = {
         button: '继续',
         search: '搜索…',
         logoAccessibilityLabel: 'PingDom 标志',
-        options: { en: '英语', ko: '韩语', ja: '日本語', 'zh-CN': '简体中文', 'zh-TW': '繁体中文' },
+        options: { en: '英语', ko: '韩语', ja: '日本語', 'zh-CN': '简体中文', 'zh-TW': '繁体中文', vi: '越南语' },
         progress: '第 {{current}} 步，共 {{total}} 步',
       },
       selectCountry: { title: '选择国家', subtitle: '我们会为你提供最佳路线！', button: '继续', search: '搜索…' },
@@ -3465,7 +3465,7 @@ export const resources = {
         button: '繼續',
         search: '搜尋…',
         logoAccessibilityLabel: 'PingDom 標誌',
-        options: { en: '英文', ko: '韓文', ja: '日本語', 'zh-CN': '簡體中文', 'zh-TW': '繁體中文' },
+        options: { en: '英文', ko: '韓文', ja: '日本語', 'zh-CN': '簡體中文', 'zh-TW': '繁體中文', vi: '越南文' },
         progress: '第 {{current}} 步，共 {{total}} 步',
       },
       selectCountry: { title: '選擇國家', subtitle: '我們會為你提供最佳路線！', button: '繼續', search: '搜尋…' },
@@ -5222,6 +5222,6 @@ export const resources = {
   },
 } as const;
 
-export const supportedLanguages = ['en', 'ko', 'ja', 'zh-CN', 'zh-TW'] as const;
+export const supportedLanguages = ['en', 'ko', 'ja', 'zh-CN', 'zh-TW', 'vi'] as const;
 
 export type SupportedLanguage = (typeof supportedLanguages)[number];

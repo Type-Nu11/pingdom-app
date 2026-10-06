@@ -11,6 +11,7 @@ export const LANGUAGE_SETTING_OPTIONS = [
   'ja',
   'zh-CN',
   'zh-TW',
+  'vi',
 ] as const satisfies readonly SupportedLanguage[];
 
 /** Resolves the active i18next language to a supported one, keeping the existing default. */
