@@ -90,4 +90,13 @@ export const resources = {
     voiceAssistant: voiceAssistantResources.es,
     ...withBookingStatuses(withOnboarding(sharedResources.es.translation, onboardingResources.es), { ...offerStatusResources.es, ...paymentResources.es }),
   } },
+  'pt-BR': { translation: {
+    mapTutorial: mapTutorialResources['pt-BR'],
+    ...offerCouponResources['pt-BR'],
+    ...reservationResources['pt-BR'],
+    community: communityResources['pt-BR'],
+    visitVerification: visitVerificationResources['pt-BR'],
+    voiceAssistant: voiceAssistantResources['pt-BR'],
+    ...withBookingStatuses(withOnboarding(sharedResources['pt-BR'].translation, onboardingResources['pt-BR']), { ...offerStatusResources['pt-BR'], ...paymentResources['pt-BR'] }),
+  } },
 } as const;
