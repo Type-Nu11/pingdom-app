@@ -1,6 +1,6 @@
 import { isBrazilianPortuguese, isTraditionalChinese, parseLocale } from './locale';
 
-const METRIC_LOCALES = new Set(['ko', 'ja', 'zh', 'vi', 'th', 'es', 'pt']);
+const METRIC_LOCALES = new Set(['ko', 'ja', 'zh', 'vi', 'th', 'es']);
 
 export const resolveLocale = (language: string) => {
   const normalized = language.toLowerCase();
@@ -10,7 +10,8 @@ export const resolveLocale = (language: string) => {
   if (normalized.startsWith('zh')) return isTraditionalChinese(parseLocale(language)) ? 'zh-TW' : 'zh-CN';
   if (normalized.startsWith('vi')) return 'vi-VN';
   if (normalized.startsWith('th')) return 'th-TH';
-  // Region-neutral Spanish: every es-* device locale shares the same number and date conventions.
+  // One Spanish catalog serves every region, so every es-* locale formats with CLDR's base `es`
+  // (1.234.567,5 · 30/09/26). Regional number conventions such as es-MX's 1,234,567.5 are not applied.
   if (parseLocale(language).language === 'es') return 'es';
   // Matches the picker: `pt-PT` is not Brazilian Portuguese and keeps the default below.
   if (isBrazilianPortuguese(parseLocale(language))) return 'pt-BR';
@@ -42,7 +43,8 @@ export const formatPercent = (value: number, language: string) =>
 
 export const formatDistance = (meters: number, language: string) => {
   const baseLanguage = language.toLowerCase().split('-')[0];
-  const metric = METRIC_LOCALES.has(baseLanguage);
+  // `pt` alone is not listed: only the supported Brazilian variant switches, pt-PT keeps its output.
+  const metric = METRIC_LOCALES.has(baseLanguage) || isBrazilianPortuguese(parseLocale(language));
   const value = metric ? meters / 1000 : meters / 1609.344;
   const unit = metric ? 'kilometer' : 'mile';
   return new Intl.NumberFormat(resolveLocale(language), {
