@@ -1,3 +1,4 @@
+import { isTraditionalChinese, parseLocale, type ParsedLocale } from './locale';
 import { resources, supportedLanguages, type SupportedLanguage } from './resources';
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
@@ -11,8 +12,6 @@ export function isSupportedLanguage(value: unknown): value is SupportedLanguage 
   return typeof value === 'string'
     && supportedLanguages.includes(value as SupportedLanguage);
 }
-
-type ParsedLocale = Readonly<{ language: string; region?: string; script?: string }>;
 
 type LanguageDefinition = Readonly<{
   // Language names that stored profiles or legacy selections may carry instead of a code.
@@ -29,17 +28,16 @@ const LANGUAGE_DEFINITIONS: Record<SupportedLanguage, LanguageDefinition> = {
   en: { aliases: ['english', '영어'], matchesLocale: matchesLanguage('en') },
   ko: { aliases: ['korean', '한국어'], matchesLocale: matchesLanguage('ko') },
   ja: { aliases: ['japanese', '日本語', '일본어'], matchesLocale: matchesLanguage('ja') },
+  // Chinese is split by script: see isTraditionalChinese for the script/region mapping.
+  'zh-CN': {
+    aliases: ['chinese', 'simplified chinese', 'chinese (simplified)', '简体中文', '中文', '중국어', '중국어(간체)'],
+    matchesLocale: (locale) => locale.language === 'zh' && !isTraditionalChinese(locale),
+  },
+  'zh-TW': {
+    aliases: ['traditional chinese', 'chinese (traditional)', '繁體中文', '중국어(번체)'],
+    matchesLocale: isTraditionalChinese,
+  },
 };
-
-// Splits `zh_Hant-TW`-style tags into language, script (4 letters), and region (2 letters or 3 digits).
-function parseLocale(value: string): ParsedLocale {
-  const [language = '', ...subtags] = value.split('-');
-  return {
-    language,
-    region: subtags.find((subtag) => /^([a-z]{2}|\d{3})$/.test(subtag))?.toUpperCase(),
-    script: subtags.find((subtag) => /^[a-z]{4}$/.test(subtag)),
-  };
-}
 
 // Each language is named in its own script (English, 한국어, 日本語), taken from
 // that language's own catalog so a new language needs no extra table.
@@ -50,7 +48,7 @@ export function getLanguageEndonym(language: SupportedLanguage): string {
 export function normalizeSupportedLanguage(value: unknown): SupportedLanguage | null {
   if (typeof value !== 'string') return null;
 
-  const normalized = value.trim().toLowerCase().replace(/_/g, '-');
+  const normalized = value.trim().toLowerCase();
   const locale = parseLocale(normalized);
   return supportedLanguages.find((language) => {
     const definition = LANGUAGE_DEFINITIONS[language];

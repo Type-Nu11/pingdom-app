@@ -3,7 +3,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: 'Select Language', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
-        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean', ja: '日本語' }, progress: 'Step {{current}} of {{total}}',
+        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean', ja: '日本語', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)' }, progress: 'Step {{current}} of {{total}}',
       },
       selectCountry: {
         title: 'Select Country', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
@@ -898,7 +898,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: '언어 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기',
-        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어', ja: '日本語' }, progress: '총 {{total}}단계 중 {{current}}단계',
+        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어', ja: '日本語', 'zh-CN': '중국어(간체)', 'zh-TW': '중국어(번체)' }, progress: '총 {{total}}단계 중 {{current}}단계',
       },
       selectCountry: { title: '국가 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기' },
       selectAge: { title: '생년 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속' },
@@ -1746,7 +1746,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: '言語を選択', subtitle: '最適なルートをご案内します！', button: '次へ', search: '検索...',
-        logoAccessibilityLabel: 'PingDomのロゴ', options: { en: '英語', ko: '韓国語', ja: '日本語' }, progress: '全{{total}}ステップ中{{current}}ステップ目',
+        logoAccessibilityLabel: 'PingDomのロゴ', options: { en: '英語', ko: '韓国語', ja: '日本語', 'zh-CN': '中国語（簡体字）', 'zh-TW': '中国語（繁体字）' }, progress: '全{{total}}ステップ中{{current}}ステップ目',
       },
       selectCountry: { title: '国を選択', subtitle: '最適なルートをご案内します！', button: '次へ', search: '検索...' },
       selectAge: { title: '生まれた年を選択', subtitle: '最適なルートをご案内します！', button: '次へ' },
@@ -4285,6 +4285,6 @@ export const resources = {
   },
 } as const;
 
-export const supportedLanguages = ['en', 'ko', 'ja'] as const;
+export const supportedLanguages = ['en', 'ko', 'ja', 'zh-CN', 'zh-TW'] as const;
 
 export type SupportedLanguage = (typeof supportedLanguages)[number];

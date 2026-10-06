@@ -60,7 +60,7 @@ test('normalizes Japanese codes, regional variants, and language names to ja', (
   for (const value of ['ja', 'JA', 'ja-JP', 'ja_JP', ' ja-jp ', 'Japanese', '日本語', '일본어']) {
     assert.equal(normalizeSupportedLanguage(value), 'ja', value);
   }
-  for (const value of ['jp', 'jav', 'zh-CN', '', null, undefined, 81]) {
+  for (const value of ['jp', 'jav', 'fr-FR', '', null, undefined, 81]) {
     assert.equal(normalizeSupportedLanguage(value), null, String(value));
   }
 });

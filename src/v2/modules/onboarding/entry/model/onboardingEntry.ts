@@ -4,6 +4,9 @@ export const SUPPORTED_ONBOARDING_LANGUAGES = [
   'en',
   'ko',
   'ja',
+  'zh-CN',
+  'zh-TW',
+  // Legacy base codes from completions stored before the app offered these languages.
   'zh',
   'vi',
   'th',

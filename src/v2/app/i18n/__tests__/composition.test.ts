@@ -7,6 +7,7 @@ import {
   LANGUAGE_STORAGE_KEY,
   resetI18nForTests,
   setLanguage,
+  supportedLanguages,
   syncProfileLanguage,
 } from '../../../shared/i18n';
 
@@ -27,8 +28,9 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // Preserve the migration baseline with the reviewed #346 voice input, automatic voice submission,
   // recovery feedback, and #338 community list/detail/write copy.
   const baseline = JSON.parse(JSON.stringify(resources));
-  // #389 adds the Japanese catalog; its key parity is checked separately.
-  delete baseline.ja;
+  const addedLanguages = supportedLanguages.filter((language) => language !== 'ko' && language !== 'en');
+  // Catalogs added after ko/en (#389 ja, #413 zh-CN/zh-TW, ...) have their key parity checked separately.
+  for (const added of addedLanguages) delete baseline[added];
   for (const language of ['ko', 'en']) {
     // #392 adds the reviewed menu price conversion copy.
     delete baseline[language].translation.placeMenu.exchange;
@@ -66,8 +68,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     // #389 moves the reservation sheet distance copy out of the component.
     delete baseline[language].translation.reservation.list.distanceFar;
     delete baseline[language].translation.reservation.list.distanceNear;
-    // #389 adds the Japanese option label to the language pickers.
-    delete baseline[language].translation.selectLanguage.options.ja;
+    // Each added language also adds its option label to the language pickers.
+    for (const added of addedLanguages) delete baseline[language].translation.selectLanguage.options[added];
     delete baseline[language].translation.settings.language.japanese;
     // #396 language pickers show each language's own name, so these labels were removed.
     const { description, ...languageRest } = baseline[language].translation.settings.language;

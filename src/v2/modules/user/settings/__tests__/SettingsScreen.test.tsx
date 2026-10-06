@@ -5,6 +5,7 @@ import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { profileApi } from '../../profile/__tests__';
 import type { Profile } from '../../profile';
 import { notificationApi } from '../../notifications/__tests__';
+import { LANGUAGE_SETTING_OPTIONS } from '../model/languageOptions';
 import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
@@ -128,8 +129,9 @@ describe('SettingsScreen', () => {
       <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
     );
 
-    expect(screen.getAllByRole('radio').map((radio) => radio.props.accessibilityLabel))
-      .toEqual(['한국어, 선택됨', 'English', '日本語']);
+    const labels = screen.getAllByRole('radio').map((radio) => radio.props.accessibilityLabel);
+    expect(labels.slice(0, 3)).toEqual(['한국어, 선택됨', 'English', '日本語']);
+    expect(labels).toHaveLength(LANGUAGE_SETTING_OPTIONS.length);
     await view.user.press(screen.getByRole('radio', { name: '日本語' }));
     expect(onSelectLanguage).toHaveBeenCalledWith('ja');
   });
