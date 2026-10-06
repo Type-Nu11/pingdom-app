@@ -181,4 +181,44 @@ export const mapTutorialResources = {
     categories: { prompt: '請點一下任一<accent>類別</accent>。', body: '選擇美食、音樂等類別，\n就能只查看符合的標記點。' },
     profile: { prompt: '請點一下<accent>我的頁面</accent>。', body: '管理你的個人檔案與旅行日期，\n並一次瀏覽你驗證過的地點。' },
   },
+  vi: {
+    name: 'Pingdi',
+    title: 'Làm quen với Pingdi',
+    guest: 'bạn',
+    close: 'Đóng hướng dẫn',
+    previous: 'Mẹo trước',
+    next: 'Mẹo tiếp theo',
+    finish: 'Hoàn tất hướng dẫn',
+    progress: 'Bước {{current}}/{{total}}',
+    welcome: {
+      greeting: 'Xin chào, {{username}}!',
+      introduction: 'Giúp chuyến đi của bạn dễ dàng hơn,',
+      agent: 'mình là <accent>Pingdi</accent>, trợ lý AI của bạn.',
+      help: 'Từ tìm địa điểm đến chuẩn bị đặt chỗ,\nmình hỗ trợ bạn chỉ qua một cuộc trò chuyện.',
+      start: 'Cùng xem nhanh cách sử dụng nhé!',
+    },
+    map: {
+      prompt: 'Hãy chạm vào <accent>nút Bản đồ</accent>.',
+      body: 'Khám phá các ghim quanh bạn,\ncùng những địa điểm nổi bật trong khu vực và cả nước.',
+    },
+    favorites: { prompt: 'Hãy chạm vào <accent>nút Yêu thích</accent>.', body: 'Lưu những địa điểm bạn quan tâm\nvà xem lại bất cứ lúc nào.' },
+    community: {
+      prompt: 'Hãy chạm vào <accent>nút Cộng đồng</accent>.',
+      body: 'Xem trải nghiệm của những du khách khác\nvà gắn thẻ địa điểm để chia sẻ câu chuyện của bạn.',
+    },
+    reservations: { prompt: 'Hãy chạm vào <accent>nút Đặt chỗ</accent>.', body: 'Kiểm tra tình trạng chỗ tại nơi bạn thích\nvà đặt ngày giờ phù hợp với bạn.' },
+    recommendations: {
+      prompt: 'Hãy chạm vào <accent>nút Gợi ý</accent>.',
+      body: '{{username}}, khám phá các địa điểm dành riêng cho bạn\ndựa trên sở thích và hoạt động của bạn.',
+    },
+    verification: {
+      prompt: 'Hãy chạm vào <accent>nút Xác minh</accent>.',
+      body: 'Đánh giá những nơi bạn đã ghé thăm\nvà xác minh trải nghiệm của bạn\nđể du khách khác yên tâm ghé đến.',
+    },
+    categories: { prompt: 'Hãy chạm vào một <accent>danh mục</accent>.', body: 'Chọn ẩm thực, âm nhạc hoặc danh mục khác\nđể chỉ xem các ghim phù hợp.' },
+    profile: {
+      prompt: 'Hãy chạm vào <accent>Trang của tôi</accent>.',
+      body: 'Quản lý hồ sơ và ngày đi của bạn,\nđồng thời xem lại các địa điểm bạn đã xác minh.',
+    },
+  },
 } as const;
