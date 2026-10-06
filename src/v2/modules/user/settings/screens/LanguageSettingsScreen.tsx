@@ -11,6 +11,8 @@ import {
   resolveSelectedLanguage,
 } from '../model/languageOptions';
 
+const contentContainer = { paddingHorizontal: 16, paddingVertical: 24 } as const;
+
 type LanguageSettingsScreenProps = {
   onBack: () => void;
   onSelectLanguage?: (language: SupportedLanguage) => Promise<void> | void;
@@ -31,7 +33,7 @@ export default function LanguageSettingsScreen({
         <HeaderSpacer />
       </Header>
 
-      <Content>
+      <Content contentContainerStyle={contentContainer} showsVerticalScrollIndicator={false}>
         <Description>{t('settings.language.description')}</Description>
         <Options>
           {LANGUAGE_SETTING_OPTIONS.map((language) => {
@@ -89,9 +91,9 @@ const HeaderSpacer = styled.View`
   width: 44px;
 `;
 
-const Content = styled.View`
+// The option list outgrows small screens once more languages are offered, so it scrolls.
+const Content = styled.ScrollView`
   flex: 1;
-  padding: 24px 16px;
 `;
 
 const Description = styled(AppText)`
