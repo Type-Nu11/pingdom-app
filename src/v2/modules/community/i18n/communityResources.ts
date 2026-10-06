@@ -831,7 +831,7 @@ export const communityResources = {
         announceFailure: 'Não foi possível publicar seu comentário.',
       },
       like: {
-        count_one: 'Curtidas {{count}}',
+        count_one: 'Curtida {{count}}',
         count_other: 'Curtidas {{count}}',
         count_many: 'Curtidas {{count}}',
         a11yLabel_one: 'Curtir, {{count}}',

@@ -194,22 +194,22 @@ export const mapTutorialResources = {
       greeting: 'Xin chào, {{username}}!',
       introduction: 'Giúp chuyến đi của bạn dễ dàng hơn,',
       agent: 'mình là <accent>Pingdi</accent>, trợ lý AI của bạn.',
-      help: 'Từ tìm địa điểm đến chuẩn bị đặt chỗ,\nmình hỗ trợ bạn chỉ qua một cuộc trò chuyện.',
+      help: 'Từ tìm địa điểm đến chuẩn bị đặt chỗ,\nmình giúp bạn chỉ qua một cuộc trò chuyện.',
       start: 'Cùng xem nhanh cách sử dụng nhé!',
     },
     map: {
       prompt: 'Hãy chạm vào <accent>nút Bản đồ</accent>.',
-      body: 'Khám phá các ghim quanh bạn,\ncùng những địa điểm nổi bật trong khu vực và cả nước.',
+      body: 'Khám phá các ghim quanh bạn cùng địa điểm\nnổi bật trong khu vực và trên cả nước.',
     },
     favorites: { prompt: 'Hãy chạm vào <accent>nút Yêu thích</accent>.', body: 'Lưu những địa điểm bạn quan tâm\nvà xem lại bất cứ lúc nào.' },
     community: {
       prompt: 'Hãy chạm vào <accent>nút Cộng đồng</accent>.',
-      body: 'Xem trải nghiệm của những du khách khác\nvà gắn thẻ địa điểm để chia sẻ câu chuyện của bạn.',
+      body: 'Xem trải nghiệm của du khách khác, gắn thẻ\nđịa điểm để chia sẻ câu chuyện của bạn.',
     },
     reservations: { prompt: 'Hãy chạm vào <accent>nút Đặt chỗ</accent>.', body: 'Kiểm tra tình trạng chỗ tại nơi bạn thích\nvà đặt ngày giờ phù hợp với bạn.' },
     recommendations: {
       prompt: 'Hãy chạm vào <accent>nút Gợi ý</accent>.',
-      body: '{{username}}, khám phá các địa điểm dành riêng cho bạn\ndựa trên sở thích và hoạt động của bạn.',
+      body: '{{username}}, khám phá địa điểm dành riêng\ncho bạn dựa trên sở thích và hoạt động.',
     },
     verification: {
       prompt: 'Hãy chạm vào <accent>nút Xác minh</accent>.',
@@ -218,7 +218,7 @@ export const mapTutorialResources = {
     categories: { prompt: 'Hãy chạm vào một <accent>danh mục</accent>.', body: 'Chọn ẩm thực, âm nhạc hoặc danh mục khác\nđể chỉ xem các ghim phù hợp.' },
     profile: {
       prompt: 'Hãy chạm vào <accent>Trang của tôi</accent>.',
-      body: 'Quản lý hồ sơ và ngày đi của bạn,\nđồng thời xem lại các địa điểm bạn đã xác minh.',
+      body: 'Quản lý hồ sơ và ngày đi của bạn,\nxem lại các địa điểm bạn đã xác minh.',
     },
   },
   es: {
@@ -234,21 +234,21 @@ export const mapTutorialResources = {
       greeting: '¡Hola, {{username}}!',
       introduction: 'Para que tus viajes sean más fáciles,',
       agent: 'soy <accent>Pingdi</accent>, tu agente de IA.',
-      help: 'Desde encontrar lugares hasta preparar reservas,\nte ayudo con una sola conversación.',
+      help: 'Desde buscar lugares hasta reservar,\nte ayudo con una sola conversación.',
       start: '¡Te muestro rápidamente cómo funciona!',
     },
     map: {
       prompt: 'Toca el <accent>botón Mapa</accent>.',
-      body: 'Descubre los pines que tienes cerca y los lugares\npopulares de tu zona y de todo el país.',
+      body: 'Descubre pines cerca de ti y lugares\npopulares de tu zona y de todo el país.',
     },
     favorites: { prompt: 'Toca el <accent>botón Favoritos</accent>.', body: 'Guarda los lugares que te interesan\ny vuelve a encontrarlos cuando quieras.' },
     community: {
       prompt: 'Toca el <accent>botón Comunidad</accent>.',
-      body: 'Explora las experiencias de otros viajeros\ny etiqueta lugares para compartir tus historias.',
+      body: 'Explora experiencias de otros viajeros\ny etiqueta lugares para contar las tuyas.',
     },
     reservations: {
       prompt: 'Toca el <accent>botón Reservas</accent>.',
-      body: 'Consulta la disponibilidad de los lugares que te gustan\ny reserva la fecha y la hora que prefieras.',
+      body: 'Consulta la disponibilidad de un lugar\ny reserva la fecha y la hora que quieras.',
     },
     recommendations: {
       prompt: 'Toca el <accent>botón Sugerencias</accent>.',
@@ -256,10 +256,10 @@ export const mapTutorialResources = {
     },
     verification: {
       prompt: 'Toca el <accent>botón Verificar</accent>.',
-      body: 'Reseña los lugares que has visitado\ny verifica tu experiencia para que\notros viajeros los visiten con confianza.',
+      body: 'Reseña los lugares que visitaste\ny verifica tu experiencia para que\notros viajeros los visiten con confianza.',
     },
     categories: { prompt: 'Toca una <accent>categoría</accent>.', body: 'Elige comida, música u otra categoría\npara ver solo los pines que coincidan.' },
-    profile: { prompt: 'Toca <accent>Mi página</accent>.', body: 'Administra tu perfil y tus fechas de viaje,\ny consulta los lugares que has verificado.' },
+    profile: { prompt: 'Toca <accent>Mi página</accent>.', body: 'Gestiona tu perfil y tus fechas de viaje\ny consulta los lugares que verificaste.' },
   },
   'pt-BR': {
     name: 'Pingdi',
@@ -279,20 +279,20 @@ export const mapTutorialResources = {
     },
     map: {
       prompt: 'Toque no <accent>botão Mapa</accent>.',
-      body: 'Descubra os pins perto de você e os lugares\npopulares na sua região e em todo o país.',
+      body: 'Descubra pins perto de você e lugares\npopulares na sua região e em todo o país.',
     },
     favorites: { prompt: 'Toque no <accent>botão Favoritos</accent>.', body: 'Salve os lugares que interessam a você\ne encontre-os de novo quando quiser.' },
     community: {
       prompt: 'Toque no <accent>botão Comunidade</accent>.',
-      body: 'Veja as experiências de outros viajantes\ne marque lugares para compartilhar suas histórias.',
+      body: 'Veja experiências de outros viajantes\ne marque lugares para contar as suas.',
     },
     reservations: {
       prompt: 'Toque no <accent>botão Reservas</accent>.',
-      body: 'Confira a disponibilidade dos lugares que você curte\ne reserve a data e o horário que preferir.',
+      body: 'Confira a disponibilidade de um lugar\ne reserve a data e o horário que quiser.',
     },
     recommendations: {
       prompt: 'Toque no <accent>botão Sugestões</accent>.',
-      body: '{{username}}, descubra lugares personalizados\ncom base nos seus interesses e na sua atividade.',
+      body: '{{username}}, descubra lugares sob medida\ncom base nos seus interesses e atividade.',
     },
     verification: {
       prompt: 'Toque no <accent>botão Verificar</accent>.',
