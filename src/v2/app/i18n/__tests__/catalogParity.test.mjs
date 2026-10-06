@@ -26,6 +26,16 @@ const CHINESE_VARIANT_PAIRS = [
 const SIMPLIFIED_ONLY = new RegExp(`[${CHINESE_VARIANT_PAIRS.map(([simplified]) => simplified).join('')}]`, 'u');
 const TRADITIONAL_ONLY = new RegExp(`[${CHINESE_VARIANT_PAIRS.map(([, traditional]) => traditional).join('')}]`, 'u');
 
+// Brand names, units, and formatting-only values that every Latin-script language keeps as in English.
+const LATIN_BRAND_AND_UNIT_KEYS = [
+  'community.author',
+  'map.recommendations.context.purpose.kPop',
+  'mapTutorial.name',
+  'visitVerification.distanceKm',
+  'voiceAssistant.brand',
+  'voiceAssistant.shortLabel',
+];
+
 // Brand names, units, and formatting-only values that stay in Latin script in Chinese.
 const CHINESE_UNTRANSLATED_ALLOWLIST = [
   'community.author',
@@ -67,6 +77,17 @@ const LANGUAGE_RULES = {
     forbiddenScripts: [HANGUL, KANA],
     nativeScript: HAN,
     untranslatedAllowlist: new Set(CHINESE_UNTRANSLATED_ALLOWLIST),
+  },
+  vi: {
+    forbiddenScripts: [HANGUL, KANA, HAN],
+    // Brand names plus loanwords Vietnamese keeps as written (Email, Pop-up, OK).
+    untranslatedAllowlist: new Set([
+      ...LATIN_BRAND_AND_UNIT_KEYS,
+      'auth.signup.email',
+      'map.search.confirm',
+      'onboarding.preferences.travelPurposes.popUp',
+      'settings.account.email',
+    ]),
   },
 };
 
