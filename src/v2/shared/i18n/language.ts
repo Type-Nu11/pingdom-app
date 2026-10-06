@@ -38,6 +38,8 @@ const LANGUAGE_DEFINITIONS: Record<SupportedLanguage, LanguageDefinition> = {
     matchesLocale: isTraditionalChinese,
   },
   vi: { aliases: ['vietnamese', 'tiếng việt', '베트남어'], matchesLocale: matchesLanguage('vi') },
+  // One neutral Spanish catalog serves every region (es-ES, es-419, es-MX, …).
+  es: { aliases: ['spanish', 'español', '스페인어'], matchesLocale: matchesLanguage('es') },
 };
 
 // Each language is named in its own script (English, 한국어, 日本語), taken from
