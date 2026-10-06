@@ -50,7 +50,7 @@ formatter(`formatters.ts`의 `resolveLocale`)가 같은 함수를 쓴다.
 
 - `SignupRequest.language`: `type: string`, `maxLength: 20`, enum 없음, 설명 "언어 코드 또는 언어명"
   (live `https://www.typenull.xyz/v3/api-docs/common`, 2026-10-06 조회). 스키마상 `zh-CN`·`zh-TW`를 허용한다.
-- `UserResponse`/`LoginResponse`/`MyPageResponse.language`: `string`.
+- `UserResponse`/`LoginResponse.language`(common 그룹), `MyPageResponse.language`(app 그룹): `string`.
 - 계정 언어를 바꾸는 API는 명세에 없다. 설정의 언어 변경은 기기에만 저장된다(기존 동작).
 - 가입 시 온보딩에서 고른 코드(`zh-CN`/`zh-TW`)를 그대로 보낸다. `zh`·`en` 등 다른 코드로 바꿔 보내지 않는다.
 - **실서버가 `zh-CN`·`zh-TW`를 저장·반환하는지는 검증하지 않았다(미검증, 확인 필요).**
@@ -65,3 +65,8 @@ formatter(`formatters.ts`의 `resolveLocale`)가 같은 함수를 쓴다.
 모든 zh-CN·zh-TW 문구는 **기계 번역 초안이며 사람 검수가 필요하다.** 번체는 간체를 변환한 것이 아니라
 대만 용어 기준으로 따로 작성했고, `catalogParity.test.mjs`가 번체 카탈로그의 간체 전용 글자(및 반대)를 막는다.
 검수 대상 키 전체는 [413-zh-translation-review.md](413-zh-translation-review.md)에 있다.
+
+## 수동 검증
+
+iOS 시뮬레이터 검증 결과·캡처, Android·실서버 미검증 사유, iOS 기기 언어 fallback 수정은
+[413-416-multilingual-i18n.md](413-416-multilingual-i18n.md)에 4개 언어를 묶어 기록했다.

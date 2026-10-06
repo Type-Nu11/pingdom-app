@@ -1,7 +1,7 @@
 # #415 스페인어 번역 검수 대상 키
 
 > 상태: **기계 번역 초안 · 사람 검수 필요**. 이 문서의 모든 es 문구는 검수 전이다.
-> 기준: 중립 국제 스페인어(특정 국가 표현 배제), 2인칭 tú·복수 ustedes(vosotros 미사용). 용어: 검증/verify → verificar, 쿠폰 → cupón, 혜택/Offer → oferta, 예약 → reserva, 체크인 → check-in, 설정 → ajustes, 추천 탭 → Sugerencias, 리뷰 → reseña. 복수형 `_many`(1,000,000 등)는 `_other`와 같은 문구다. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
+> 기준: 중립 국제 스페인어(특정 국가 표현 배제), 2인칭 tú·복수 ustedes(vosotros 미사용). 용어: 검증/verify → verificar, 쿠폰 → cupón, 혜택/Offer → oferta, 예약 → reserva, 체크인 → check-in, 설정 → ajustes, 추천 탭 → Sugerencias, 리뷰 → reseña, 만료 → vencer/expirar. 복수형 `_many`(1,000,000 등)는 `_other`와 같은 문구다. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
 > 우선 검수: 「우선」 열이 채워진 키(접근성 label, 오류·복구 안내, 권한·정책·삭제 문구).
 > 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1473개(우선 검수 350개).
 
@@ -54,24 +54,24 @@
 |  | `mapTutorial.welcome.greeting` | Hello, {{username}}! | 안녕하세요, {{username}}님 | ¡Hola, {{username}}! |
 |  | `mapTutorial.welcome.introduction` | Here to make your travels easier, | {{username}}님의 여행을 더 쉽게 만들어드리는 | Para que tus viajes sean más fáciles, |
 |  | `mapTutorial.welcome.agent` | I’m <accent>Pingdi</accent>, your AI agent. | AI 에이전트, <accent>핑디</accent>예요. | soy <accent>Pingdi</accent>, tu agente de IA. |
-|  | `mapTutorial.welcome.help` | From finding places to preparing reservations,<br>I can help with a conversation. | 원하는 장소를 찾고, 예약을 준비하는 과정까지<br>대화 한번으로 도와드릴게요. | Desde encontrar lugares hasta preparar reservas,<br>te ayudo con una sola conversación. |
+|  | `mapTutorial.welcome.help` | From finding places to preparing reservations,<br>I can help with a conversation. | 원하는 장소를 찾고, 예약을 준비하는 과정까지<br>대화 한번으로 도와드릴게요. | Desde buscar lugares hasta reservar,<br>te ayudo con una sola conversación. |
 |  | `mapTutorial.welcome.start` | Let me give you a quick tour! | 지금부터 간단히 사용법을 알려드릴게요! | ¡Te muestro rápidamente cómo funciona! |
 |  | `mapTutorial.map.prompt` | Tap the <accent>Map button</accent>. | <accent>지도 버튼</accent>을 눌러보세요. | Toca el <accent>botón Mapa</accent>. |
-|  | `mapTutorial.map.body` | Discover pins around you, plus popular places<br>in your area and across the country. | 내 주변의 핑들을 확인할 수 있어요.<br>또한 우리 지역과 전국 트렌드 장소도 볼 수 있어요. | Descubre los pines que tienes cerca y los lugares<br>populares de tu zona y de todo el país. |
+|  | `mapTutorial.map.body` | Discover pins around you, plus popular places<br>in your area and across the country. | 내 주변의 핑들을 확인할 수 있어요.<br>또한 우리 지역과 전국 트렌드 장소도 볼 수 있어요. | Descubre pines cerca de ti y lugares<br>populares de tu zona y de todo el país. |
 |  | `mapTutorial.favorites.prompt` | Tap the <accent>Favorites button</accent>. | <accent>즐겨찾기 버튼</accent>을 눌러보세요. | Toca el <accent>botón Favoritos</accent>. |
 |  | `mapTutorial.favorites.body` | Save places you’re interested in<br>and find them again whenever you like. | 관심 있는 장소를 즐겨찾기에 저장하고,<br>언제든 다시 찾아볼 수 있어요. | Guarda los lugares que te interesan<br>y vuelve a encontrarlos cuando quieras. |
 |  | `mapTutorial.community.prompt` | Tap the <accent>Community button</accent>. | <accent>커뮤니티 버튼</accent>을 눌러보세요. | Toca el <accent>botón Comunidad</accent>. |
-|  | `mapTutorial.community.body` | Explore other travelers’ experiences,<br>and tag places to share your own stories. | 다른 여행자들의 생생한 장소 경험을 확인하고,<br>장소를 태그해 나만의 이야기도 공유할 수 있어요. | Explora las experiencias de otros viajeros<br>y etiqueta lugares para compartir tus historias. |
+|  | `mapTutorial.community.body` | Explore other travelers’ experiences,<br>and tag places to share your own stories. | 다른 여행자들의 생생한 장소 경험을 확인하고,<br>장소를 태그해 나만의 이야기도 공유할 수 있어요. | Explora experiencias de otros viajeros<br>y etiqueta lugares para contar las tuyas. |
 |  | `mapTutorial.reservations.prompt` | Tap the <accent>Reservations button</accent>. | <accent>예약 버튼</accent>을 눌러보세요. | Toca el <accent>botón Reservas</accent>. |
-|  | `mapTutorial.reservations.body` | Check availability at the places you love<br>and book a date and time that works for you. | 원하는 장소의 예약 가능 여부를 확인하고,<br>날짜와 시간에 맞춰 간편하게 예약할 수 있어요. | Consulta la disponibilidad de los lugares que te gustan<br>y reserva la fecha y la hora que prefieras. |
+|  | `mapTutorial.reservations.body` | Check availability at the places you love<br>and book a date and time that works for you. | 원하는 장소의 예약 가능 여부를 확인하고,<br>날짜와 시간에 맞춰 간편하게 예약할 수 있어요. | Consulta la disponibilidad de un lugar<br>y reserva la fecha y la hora que quieras. |
 |  | `mapTutorial.recommendations.prompt` | Tap the <accent>Recommendations button</accent>. | <accent>장소 추천 버튼</accent>을 눌러보세요. | Toca el <accent>botón Sugerencias</accent>. |
 |  | `mapTutorial.recommendations.body` | {{username}}, discover personalized places<br>based on your interests and activity. | {{username}}님의 관심사와 이용 상황을 바탕으로<br>개인화된 장소 추천을 받을 수 있어요. | {{username}}, descubre lugares personalizados<br>según tus intereses y tu actividad. |
 |  | `mapTutorial.verification.prompt` | Tap the <accent>Verify button</accent>. | <accent>검증하기 버튼</accent>을 눌러보세요. | Toca el <accent>botón Verificar</accent>. |
-|  | `mapTutorial.verification.body` | Review the places you’ve visited<br>and verify your experience to help<br>other travelers visit with confidence. | 직접 방문한 장소의 경험을 리뷰로 남기고,<br>다른 여행자들이 믿고 방문할 수 있도록<br>장소를 검증해주세요. | Reseña los lugares que has visitado<br>y verifica tu experiencia para que<br>otros viajeros los visiten con confianza. |
+|  | `mapTutorial.verification.body` | Review the places you’ve visited<br>and verify your experience to help<br>other travelers visit with confidence. | 직접 방문한 장소의 경험을 리뷰로 남기고,<br>다른 여행자들이 믿고 방문할 수 있도록<br>장소를 검증해주세요. | Reseña los lugares que visitaste<br>y verifica tu experiencia para que<br>otros viajeros los visiten con confianza. |
 |  | `mapTutorial.categories.prompt` | Tap a <accent>category</accent>. | <accent>카테고리</accent>를 눌러보세요. | Toca una <accent>categoría</accent>. |
 |  | `mapTutorial.categories.body` | Choose food, music, or another category<br>to see only the pins that match. | 음식점, 음악 등 원하는 카테고리를 선택하면<br>해당하는 핑들만 골라서 확인할 수 있어요. | Elige comida, música u otra categoría<br>para ver solo los pines que coincidan. |
 |  | `mapTutorial.profile.prompt` | Tap <accent>My Page</accent>. | <accent>마이페이지</accent>를 눌러보세요. | Toca <accent>Mi página</accent>. |
-|  | `mapTutorial.profile.body` | Manage your profile and travel dates,<br>and browse the places you’ve verified. | 내 프로필과 여행 기간을 관리하고,<br>내가 직접 검증한 장소들을 모아 볼 수 있어요. | Administra tu perfil y tus fechas de viaje,<br>y consulta los lugares que has verificado. |
+|  | `mapTutorial.profile.body` | Manage your profile and travel dates,<br>and browse the places you’ve verified. | 내 프로필과 여행 기간을 관리하고,<br>내가 직접 검증한 장소들을 모아 볼 수 있어요. | Gestiona tu perfil y tus fechas de viaje<br>y consulta los lugares que verificaste. |
 
 ## `offerCoupon`
 
@@ -85,7 +85,7 @@
 | ● | `offerCoupon.error.alreadyIssued.title` | Already issued | 이미 발급받았습니다 | Ya obtenido |
 | ● | `offerCoupon.error.alreadyRedeemed.description` | This coupon has already been used and cannot be used again. | 이미 사용한 쿠폰이라 다시 사용할 수 없습니다. | Este cupón ya se usó y no se puede volver a usar. |
 | ● | `offerCoupon.error.alreadyRedeemed.title` | Already used | 이미 사용했습니다 | Ya usado |
-| ● | `offerCoupon.error.authentication.description` | Your session has expired. Sign in again to continue. | 로그인 정보가 만료되었습니다. 다시 로그인해 주세요. | Tu sesión caducó. Inicia sesión de nuevo para continuar. |
+| ● | `offerCoupon.error.authentication.description` | Your session has expired. Sign in again to continue. | 로그인 정보가 만료되었습니다. 다시 로그인해 주세요. | Tu sesión expiró. Inicia sesión de nuevo para continuar. |
 | ● | `offerCoupon.error.authentication.title` | Sign-in required | 로그인이 필요합니다 | Inicio de sesión necesario |
 | ● | `offerCoupon.error.expired.description` | This coupon’s usable period has ended. | 쿠폰의 사용 기간이 종료되었습니다. | El periodo de uso de este cupón terminó. |
 | ● | `offerCoupon.error.expired.title` | No longer available | 더 이상 이용할 수 없습니다 | Ya no está disponible |
@@ -101,7 +101,7 @@
 | ● | `offerCoupon.error.notFound.title` | Not found | 항목을 찾을 수 없습니다 | No encontrado |
 | ● | `offerCoupon.error.redeemInvalidInput.description` | Check the coupon and try scanning it again. | 쿠폰을 확인한 후 다시 스캔해 주세요. | Revisa el cupón e intenta escanearlo de nuevo. |
 | ● | `offerCoupon.error.redeemInvalidInput.title` | Could not process | 처리하지 못했습니다 | No se pudo procesar |
-| ● | `offerCoupon.error.redeemUsedOrExpired.description` | This coupon has already been used or has expired. | 이미 사용되었거나 만료된 쿠폰입니다. | Este cupón ya se usó o caducó. |
+| ● | `offerCoupon.error.redeemUsedOrExpired.description` | This coupon has already been used or has expired. | 이미 사용되었거나 만료된 쿠폰입니다. | Este cupón ya se usó o venció. |
 | ● | `offerCoupon.error.redeemUsedOrExpired.title` | Cannot be used | 사용할 수 없습니다 | No se puede usar |
 | ● | `offerCoupon.error.soldOut.description` | All coupons for this offer have been claimed. | 이 Offer의 쿠폰이 모두 소진되었습니다. | Ya se obtuvieron todos los cupones de esta oferta. |
 | ● | `offerCoupon.error.soldOut.title` | Sold out | 수량이 소진되었습니다 | Agotado |
@@ -441,7 +441,7 @@
 |  | `visitVerification.session.starting` | Starting verification session... | 인증 세션을 시작하는 중이에요... | Iniciando la sesión de verificación... |
 | ● | `visitVerification.session.serverError` | Could not verify the visit because of a server error. Try again. | 서버 오류로 방문을 인증하지 못했어요. 다시 시도해 주세요. | No se pudo verificar la visita por un error del servidor. Inténtalo de nuevo. |
 |  | `visitVerification.session.status.COMPLETED` | Visit verified | 인증 완료 | Visita verificada |
-|  | `visitVerification.session.status.EXPIRED` | Verification session expired | 세션 만료 | La sesión de verificación caducó |
+|  | `visitVerification.session.status.EXPIRED` | Verification session expired | 세션 만료 | La sesión de verificación expiró |
 |  | `visitVerification.session.status.IN_PROGRESS` | Verification in progress | 인증 진행 중 | Verificación en curso |
 |  | `visitVerification.session.status.PROXIMITY_LOST` | You left the allowed radius | 반경 이탈 | Saliste del radio permitido |
 |  | `visitVerification.session.status.REJECTED` | Verification rejected | 인증 거절 | Verificación rechazada |
@@ -556,7 +556,7 @@
 | ● | `selectLanguage.logoAccessibilityLabel` | PingDom logo | 핑덤 로고 | Logotipo de PingDom |
 |  | `selectLanguage.options.en` | English | 영어 | Inglés |
 |  | `selectLanguage.options.ko` | Korean | 한국어 | Coreano |
-|  | `selectLanguage.options.ja` | 日本語 | 日本語 | 日本語 |
+|  | `selectLanguage.options.ja` | 日本語 | 日本語 | Japonés |
 |  | `selectLanguage.options.zh-CN` | Chinese (Simplified) | 중국어(간체) | Chino (simplificado) |
 |  | `selectLanguage.options.zh-TW` | Chinese (Traditional) | 중국어(번체) | Chino (tradicional) |
 |  | `selectLanguage.options.vi` | Vietnamese | 베트남어 | Vietnamita |
@@ -647,7 +647,7 @@
 |  | `experience.checkIn.visitPlace` | Place ID {{placeId}} | 장소 ID {{placeId}} | ID del lugar {{placeId}} |
 |  | `experience.checkIn.visitsEmpty` | No recent visits yet. | 아직 최근 방문 기록이 없습니다. | Aún no hay visitas recientes. |
 |  | `experience.checkIn.visitsLoading` | Loading recent visits… | 최근 방문 기록을 불러오고 있습니다… | Cargando visitas recientes… |
-| ● | `experience.checkIn.errors.authentication` | Your session has expired. Please sign in again. | 로그인이 만료되었습니다. 다시 로그인해 주세요. | Tu sesión caducó. Inicia sesión de nuevo. |
+| ● | `experience.checkIn.errors.authentication` | Your session has expired. Please sign in again. | 로그인이 만료되었습니다. 다시 로그인해 주세요. | Tu sesión expiró. Inicia sesión de nuevo. |
 | ● | `experience.checkIn.errors.duplicate` | You have already checked in at this place under the current server policy. | 현재 서버 정책상 이미 체크인한 장소입니다. | Ya hiciste check-in en este lugar según la política actual del servidor. |
 | ● | `experience.checkIn.errors.generic` | Check-in could not be completed. Please try again. | 체크인을 완료하지 못했습니다. 다시 시도해 주세요. | No se pudo completar el check-in. Inténtalo de nuevo. |
 | ● | `experience.checkIn.errors.network` | You appear to be offline. Check your connection and try again. | 네트워크에 연결되지 않았습니다. 연결을 확인한 뒤 다시 시도해 주세요. | Parece que no tienes conexión. Revisa tu conexión e inténtalo de nuevo. |
@@ -743,7 +743,7 @@
 | ● | `common.apiError.authorization.title` | Permission required | 권한이 필요합니다 | Permiso necesario |
 | ● | `common.apiError.conflict.description` | The request conflicts with the resource’s current state. Refresh its latest state. | 리소스의 현재 상태와 요청이 충돌합니다. 최신 상태를 확인해 주세요. | La solicitud entra en conflicto con el estado actual del recurso. Actualiza para ver su estado más reciente. |
 | ● | `common.apiError.conflict.title` | State has changed | 상태가 변경되었습니다 | El estado cambió |
-| ● | `common.apiError.expired.description` | This coupon or resource has expired. | 쿠폰 또는 리소스의 이용 기간이 만료되었습니다. | Este cupón o recurso caducó. |
+| ● | `common.apiError.expired.description` | This coupon or resource has expired. | 쿠폰 또는 리소스의 이용 기간이 만료되었습니다. | Este cupón o recurso venció. |
 | ● | `common.apiError.expired.title` | No longer available | 더 이상 이용할 수 없습니다 | Ya no está disponible |
 | ● | `common.apiError.generic.description` | Please check your connection and try again. | 네트워크 상태를 확인한 후 다시 시도해 주세요. | Revisa tu conexión e inténtalo de nuevo. |
 | ● | `common.apiError.generic.title` | Could not load data | 데이터를 불러오지 못했습니다 | No se pudieron cargar los datos |
@@ -953,7 +953,7 @@
 |  | `map.favorites.remove` | Remove {{name}} from favorites | {{name}} 즐겨찾기 해제 | Quitar {{name}} de favoritos |
 |  | `map.favorites.retry` | Try again | 다시 시도 | Reintentar |
 |  | `map.favorites.sessionBody` | Sign in again to see your saved places. | 다시 로그인한 뒤 저장한 장소를 확인해 주세요. | Inicia sesión de nuevo para ver tus lugares guardados. |
-|  | `map.favorites.sessionTitle` | Your session has expired | 로그인이 만료됐어요 | Tu sesión caducó |
+|  | `map.favorites.sessionTitle` | Your session has expired | 로그인이 만료됐어요 | Tu sesión expiró |
 |  | `map.favorites.title` | My places | 내 장소 | Mis lugares |
 |  | `map.searchOverlay.categories` | Place categories | 장소 카테고리 | Categorías de lugares |
 |  | `map.searchOverlay.clear` | Clear search | 검색어 지우기 | Borrar búsqueda |
@@ -993,8 +993,8 @@
 |  | `map.sheet.image` | Place image | 장소 이미지 | Imagen del lugar |
 | ● | `map.sheet.imageError` | Could not load image | 이미지를 불러오지 못했어요 | No se pudo cargar la imagen |
 |  | `map.sheet.imageMissing` | No image | 이미지 없음 | Sin imagen |
-|  | `map.sheet.localHotPlaces` | Local hot places | 우리 지역 핫플 | Lugares de moda locales |
-|  | `map.sheet.nationwideTrends` | Nationwide trends | 전국 트렌드 | Tendencias nacionales |
+|  | `map.sheet.localHotPlaces` | Local hot places | 우리 지역 핫플 | Populares cerca |
+|  | `map.sheet.nationwideTrends` | Nationwide trends | 전국 트렌드 | Tendencias |
 |  | `map.sheet.placeMissing` | Unnamed place | 장소명 없음 | Lugar sin nombre |
 |  | `map.sheet.recommendationTitle` | Recommended for you | 나만을 위한 추천 장소 | Sugerencias para ti |
 |  | `map.sheet.resultsFor` | Results for “{{query}}” | “{{query}}” 검색 결과 | Resultados de «{{query}}» |
@@ -1155,7 +1155,7 @@
 |  | `notificationSettings.contract.quietReadOnly` | Read only: time validation and editing policy are not confirmed. No default schedule is saved. | 읽기 전용: 시간 검증과 편집 정책이 확정되지 않았습니다. 기본 시간을 임의로 저장하지 않습니다. | Solo lectura: la validación de horas y la política de edición no están confirmadas. No se guarda ningún horario predeterminado. |
 |  | `notificationSettings.contract.quietIncomplete` | Time or timezone information is missing or invalid. | 시간 또는 시간대 정보가 없거나 올바르지 않습니다. | Falta la información de hora o de zona horaria, o no es válida. |
 |  | `notificationSettings.contract.invalidQuietHours` | Please check the quiet hours settings on the server. | 서버의 방해 금지 시간 설정을 확인해 주세요. | Revisa los ajustes del horario de silencio en el servidor. |
-| ● | `notificationSettings.contract.unauthorized` | Your session has expired. Please sign in again. | 로그인이 만료되었습니다. 다시 로그인해 주세요. | Tu sesión caducó. Inicia sesión de nuevo. |
+| ● | `notificationSettings.contract.unauthorized` | Your session has expired. Please sign in again. | 로그인이 만료되었습니다. 다시 로그인해 주세요. | Tu sesión expiró. Inicia sesión de nuevo. |
 | ● | `notificationSettings.contract.forbidden` | You do not have permission to access notification settings. | 알림 설정에 접근할 권한이 없습니다. | No tienes permiso para acceder a los ajustes de notificaciones. |
 | ● | `notificationSettings.contract.saveFailed` | Could not update notification settings. Please try again. | 알림 설정을 변경하지 못했습니다. 다시 시도해 주세요. | No se pudieron actualizar los ajustes de notificaciones. Inténtalo de nuevo. |
 | ● | `notificationSettings.permission.title` | Device notification permission | 기기 알림 권한 | Permiso de notificaciones del dispositivo |
@@ -1245,14 +1245,14 @@
 |  | `myPage.couponBox.fallbackDescription` | Discount coupon | 할인 쿠폰 | Cupón de descuento |
 |  | `myPage.couponBox.fallbackTitle` | Coupon | 쿠폰 | Cupón |
 |  | `myPage.couponBox.filters.ALL` | All | 전체 | Todos |
-|  | `myPage.couponBox.filters.EXPIRED` | Expired | 만료 | Caducados |
+|  | `myPage.couponBox.filters.EXPIRED` | Expired | 만료 | Vencidos |
 |  | `myPage.couponBox.filters.ISSUED` | Available | 사용 가능 | Disponibles |
 |  | `myPage.couponBox.filters.REDEEMED` | Used | 사용 완료 | Usados |
 |  | `myPage.couponBox.loading` | Loading coupons | 쿠폰을 불러오는 중 | Cargando cupones |
 | ● | `myPage.couponBox.nextPageError` | Could not load more coupons. | 쿠폰을 더 불러오지 못했어요. | No se pudieron cargar más cupones. |
 |  | `myPage.couponBox.nextPageRetry` | Load more | 더 불러오기 | Cargar más |
 |  | `myPage.couponBox.status.CANCELED` | Canceled | 취소됨 | Cancelado |
-|  | `myPage.couponBox.status.EXPIRED` | Expired | 만료 | Caducado |
+|  | `myPage.couponBox.status.EXPIRED` | Expired | 만료 | Vencido |
 |  | `myPage.couponBox.status.ISSUED` | Available | 사용 가능 | Disponible |
 |  | `myPage.couponBox.status.REDEEMED` | Used | 사용 완료 | Usado |
 |  | `myPage.couponBox.status.UNKNOWN` | Unavailable | 사용 불가 | No disponible |
@@ -1265,10 +1265,10 @@
 | ● | `myPage.couponDetail.qrHint` | Show this QR code to a store staff member before paying | 결제 전 매장 직원에게 QR 코드를 보여주세요 | Muestra este código QR al personal del local antes de pagar |
 |  | `myPage.couponDetail.qrUnavailable` | Could not draw the QR code. Please read the code above to the staff. | QR 코드를 표시하지 못했어요. 위 코드를 직원에게 알려주세요. | No se pudo mostrar el código QR. Dile al personal el código de arriba. |
 | ● | `myPage.couponDetail.notices.0` | Each account can use this coupon only once. | 쿠폰은 계정당 1회만 사용할 수 있어요. | Cada cuenta puede usar este cupón una sola vez. |
-| ● | `myPage.couponDetail.notices.1` | The coupon disappears automatically once it expires. | 유효기간이 지나면 쿠폰이 자동으로 사라져요. | El cupón desaparece automáticamente cuando caduca. |
+| ● | `myPage.couponDetail.notices.1` | The coupon disappears automatically once it expires. | 유효기간이 지나면 쿠폰이 자동으로 사라져요. | El cupón desaparece automáticamente cuando vence. |
 | ● | `myPage.couponDetail.notices.2` | It cannot be combined with other coupons or discounts. | 다른 쿠폰 및 할인 혜택과 중복 사용은 불가해요. | No se puede combinar con otros cupones ni descuentos. |
 | ● | `myPage.couponDetail.notices.3` | Cancelling the reservation restores the coupon automatically. | 예약을 취소하면 쿠폰이 자동으로 복구돼요. | Al cancelar la reserva, el cupón se restaura automáticamente. |
-| ● | `myPage.couponDetail.expiredNotice` | This coupon expired on {{date}} | {{date}}에 만료된 쿠폰이에요 | Este cupón caducó el {{date}} |
+| ● | `myPage.couponDetail.expiredNotice` | This coupon expired on {{date}} | {{date}}에 만료된 쿠폰이에요 | Este cupón venció el {{date}} |
 | ● | `myPage.couponDetail.redeemedNotice` | This coupon was used on {{date}} | {{date}}에 사용한 쿠폰이에요 | Este cupón se usó el {{date}} |
 | ● | `myPage.couponDetail.redeemedNoticeUnknown` | This coupon has already been used | 이미 사용한 쿠폰이에요 | Este cupón ya se usó |
 |  | `myPage.couponDetail.reserve` | Make a reservation | 예약하러 가기 | Hacer una reserva |
@@ -1282,7 +1282,7 @@
 |  | `myPage.couponDetail.validityDays_one` | {{count}} day after issue | 발급 후 {{count}}일 | {{count}} día tras la emisión |
 |  | `myPage.couponDetail.validityDays_other` | {{count}} days after issue | 발급 후 {{count}}일 | {{count}} días tras la emisión |
 |  | `myPage.couponDetail.title` | Coupon detail | 쿠폰상세 | Detalle del cupón |
-|  | `myPage.couponDetail.unavailable` | This coupon has been used or has expired | 이미 사용했거나 만료된 쿠폰이에요 | Este cupón ya se usó o caducó |
+|  | `myPage.couponDetail.unavailable` | This coupon has been used or has expired | 이미 사용했거나 만료된 쿠폰이에요 | Este cupón ya se usó o venció |
 | ● | `myPage.profileEdit.avatarCameraPermissionDenied` | Camera access is required to take a profile photo. You can allow it in Settings. | 프로필 사진을 촬영하려면 카메라 접근 권한이 필요합니다. 설정에서 허용해주세요. | Se necesita acceso a la cámara para tomar una foto de perfil. Puedes permitirlo en Ajustes. |
 |  | `myPage.profileEdit.avatarCancel` | Cancel | 취소 | Cancelar |
 | ● | `myPage.profileEdit.avatarChangeFailed` | Could not change the profile image. Please try again. | 프로필 이미지를 변경하지 못했습니다. 다시 시도해주세요. | No se pudo cambiar la imagen de perfil. Inténtalo de nuevo. |
@@ -1384,7 +1384,7 @@
 |  | `settings.appearance.light` | Light mode | 라이트 모드 | Modo claro |
 |  | `settings.appearance.section` | Appearance | 화면 모드 | Apariencia |
 |  | `settings.appearance.selected` | Selected | 선택됨 | Seleccionado |
-|  | `settings.appearance.system` | Use system setting | 시스템 설정 사용 | Usar el ajuste del sistema |
+|  | `settings.appearance.system` | Use system setting | 시스템 설정 사용 | Ajuste del sistema |
 |  | `settings.appearance.title` | Appearance | 화면 모드 | Apariencia |
 |  | `settings.language.description` | Choose the language used throughout PingDom. | 핑덤에서 사용할 언어를 선택해 주세요. | Elige el idioma que se usa en todo PingDom. |
 |  | `settings.language.section` | Language | 언어 | Idioma |
@@ -1634,7 +1634,7 @@
 |  | `placeOffers.success.title` | Coupon issued | 쿠폰이 발급되었습니다 | Cupón emitido |
 |  | `placeOffers.success.description` | Your coupon is ready. | 쿠폰이 준비되었습니다. | Tu cupón está listo. |
 |  | `placeOffers.success.code` | Code | 코드 | Código |
-|  | `placeOffers.success.expiry` | Expires | 만료 | Caduca |
+|  | `placeOffers.success.expiry` | Expires | 만료 | Vence |
 | ● | `placeOffers.success.hint` | Find it later in My coupons. | 내 쿠폰에서 다시 확인할 수 있습니다. | Encuéntralo luego en Mis cupones. |
 |  | `placeOffers.success.viewAction` | View my coupons | 내 쿠폰 보기 | Ver mis cupones |
 |  | `placeOffers.success.issueAnother` | Get another coupon | 다른 쿠폰 받기 | Obtener otro cupón |

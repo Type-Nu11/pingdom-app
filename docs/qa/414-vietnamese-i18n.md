@@ -52,3 +52,8 @@
 
 모든 vi 문구는 **기계 번역 초안이며 사람 검수가 필요하다.** 검수 대상 키 전체는
 [414-vi-translation-review.md](414-vi-translation-review.md)에 있다.
+
+## 수동 검증
+
+iOS 시뮬레이터 검증 결과·캡처, Android·실서버 미검증 사유, iOS 기기 언어 fallback 수정은
+[413-416-multilingual-i18n.md](413-416-multilingual-i18n.md)에 4개 언어를 묶어 기록했다.

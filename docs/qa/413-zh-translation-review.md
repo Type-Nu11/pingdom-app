@@ -1,7 +1,7 @@
 # #413 중국어 간체·번체 번역 검수 대상 키
 
 > 상태: **기계 번역 초안 · 사람 검수 필요**. 이 문서의 모든 zh-CN · zh-TW 문구는 검수 전이다.
-> 문체: 평서형 안내문, 2인칭 你(您 미사용). 용어: 검증/verify → 验证·驗證, 쿠폰 → 优惠券·優惠券, 예약 → 预约·預約, 체크인 → 签到·打卡, 설정 → 设置·設定. 번체는 대만 용어(登入·帳號·搜尋·載入·網路·資訊·使用者) 기준으로 간체와 별도 번역했다. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
+> 문체: 평서형 안내문, 2인칭 你(您 미사용). 용어: 검증/verify → 验证·驗證, 쿠폰 → 优惠券·優惠券, 쿠폰함 → 优惠券包·優惠券匣, 예약 → 预约·預約, 체크인 → 签到·打卡, 설정 → 设置·設定. 번체는 대만 용어(登入·帳號·搜尋·載入·網路·資訊·使用者) 기준으로 간체와 별도 번역했다. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
 > 우선 검수: 「우선」 열이 채워진 키(접근성 label, 오류·복구 안내, 권한·정책·삭제 문구).
 > 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1460개(우선 검수 349개).
 
@@ -81,7 +81,7 @@
 | ● | `offerCoupon.error.actions.retry` | Try again | 다시 시도 | 重试 | 再試一次 |
 | ● | `offerCoupon.error.actions.signIn` | Sign in again | 다시 로그인 | 重新登录 | 重新登入 |
 | ● | `offerCoupon.error.actions.viewWallet` | Check my coupons | 보관함 확인 | 查看我的优惠券 | 查看我的優惠券 |
-| ● | `offerCoupon.error.alreadyIssued.description` | You have already issued this coupon. Check it in your coupons. | 이미 발급받은 쿠폰입니다. 보관함에서 확인해 주세요. | 你已领取过这张优惠券。请在券包中查看。 | 你已領取過這張優惠券。請到票券匣查看。 |
+| ● | `offerCoupon.error.alreadyIssued.description` | You have already issued this coupon. Check it in your coupons. | 이미 발급받은 쿠폰입니다. 보관함에서 확인해 주세요. | 你已领取过这张优惠券。请在优惠券包中查看。 | 你已領取過這張優惠券。請到優惠券匣查看。 |
 | ● | `offerCoupon.error.alreadyIssued.title` | Already issued | 이미 발급받았습니다 | 已领取 | 已領取 |
 | ● | `offerCoupon.error.alreadyRedeemed.description` | This coupon has already been used and cannot be used again. | 이미 사용한 쿠폰이라 다시 사용할 수 없습니다. | 这张优惠券已使用，无法再次使用。 | 這張優惠券已使用，無法再次使用。 |
 | ● | `offerCoupon.error.alreadyRedeemed.title` | Already used | 이미 사용했습니다 | 已使用 | 已使用 |
@@ -105,7 +105,7 @@
 | ● | `offerCoupon.error.redeemUsedOrExpired.title` | Cannot be used | 사용할 수 없습니다 | 无法使用 | 無法使用 |
 | ● | `offerCoupon.error.soldOut.description` | All coupons for this offer have been claimed. | 이 Offer의 쿠폰이 모두 소진되었습니다. | 该优惠的优惠券已全部领完。 | 這項優惠的優惠券已全數領完。 |
 | ● | `offerCoupon.error.soldOut.title` | Sold out | 수량이 소진되었습니다 | 已领完 | 已領完 |
-| ● | `offerCoupon.error.unconfirmedConflict.description` | This offer could not be issued. It may already be in your coupons, or issuing may have closed. | 발급하지 못했습니다. 이미 보관함에 있거나 발급이 마감되었을 수 있습니다. | 无法领取该优惠。可能已在你的券包中，或领取已截止。 | 無法領取這項優惠。可能已在你的票券匣中，或領取已截止。 |
+| ● | `offerCoupon.error.unconfirmedConflict.description` | This offer could not be issued. It may already be in your coupons, or issuing may have closed. | 발급하지 못했습니다. 이미 보관함에 있거나 발급이 마감되었을 수 있습니다. | 无法领取该优惠。可能已在你的优惠券包中，或领取已截止。 | 無法領取這項優惠。可能已在你的優惠券匣中，或領取已截止。 |
 | ● | `offerCoupon.error.unconfirmedConflict.title` | Could not issue | 발급하지 못했습니다 | 领取失败 | 無法領取 |
 | ● | `offerCoupon.error.updateRequired.description` | Install the latest version to keep using coupons. | 쿠폰을 계속 사용하려면 최신 버전을 설치해 주세요. | 请安装最新版本以继续使用优惠券。 | 請安裝最新版本以繼續使用優惠券。 |
 | ● | `offerCoupon.error.updateRequired.title` | Update required | 앱 업데이트가 필요합니다 | 需要更新 | 需要更新 |
@@ -121,7 +121,7 @@
 |  | `offerCoupon.place.loading` | Loading available coupons… | 발급 가능한 쿠폰을 불러오는 중… | 正在加载可领取的优惠券… | 正在載入可領取的優惠券… |
 |  | `offerCoupon.place.period` | Issue period: {{value}} | 발급 기간: {{value}} | 领取期间：{{value}} | 領取期間：{{value}} |
 |  | `offerCoupon.place.periodUnknown` | Schedule unavailable | 기간 정보 없음 | 暂无期间信息 | 無期間資訊 |
-|  | `offerCoupon.place.successDescription` | The issued coupon is ready in your coupon wallet. | 발급된 쿠폰을 보관함에서 바로 확인할 수 있습니다. | 已领取的优惠券可在券包中立即查看。 | 已領取的優惠券可立即在票券匣中查看。 |
+|  | `offerCoupon.place.successDescription` | The issued coupon is ready in your coupon wallet. | 발급된 쿠폰을 보관함에서 바로 확인할 수 있습니다. | 已领取的优惠券可在优惠券包中立即查看。 | 已領取的優惠券可立即在優惠券匣中查看。 |
 |  | `offerCoupon.place.successTitle` | Coupon issued | 쿠폰을 발급했습니다 | 优惠券已领取 | 已領取優惠券 |
 |  | `offerCoupon.place.untitled` | Coupon offer | 쿠폰 Offer | 优惠券优惠 | 優惠券優惠 |
 |  | `offerCoupon.place.validityDays` | Valid for {{count}} day after issue | 발급 후 {{count}}일 동안 사용 가능 | 领取后 {{count}} 天内有效 | 領取後 {{count}} 天內有效 |
@@ -391,7 +391,7 @@
 |  | `visitVerification.placePhoto` | {{name}} photo {{index}} | {{name}} 사진 {{index}} | {{name}} 照片 {{index}} | {{name}} 照片 {{index}} |
 |  | `visitVerification.reasonHelp` | You can select up to 5 | 최대 5개까지 선택할 수 있어요 | 最多可选择 5 项 | 最多可選擇 5 項 |
 |  | `visitVerification.reasonMoreCount` | {{count}} more reasons | 추천 이유 {{count}}개 더 있음 | 还有 {{count}} 个推荐理由 | 還有 {{count}} 個推薦理由 |
-|  | `visitVerification.reasonSelectedSuffix` | /{{max}} selected | /{{max}}개 선택됨 | /已选 {{max}} 项 | /已選 {{max}} 項 |
+|  | `visitVerification.reasonSelectedSuffix` | /{{max}} selected | /{{max}}개 선택됨 | /{{max}} 已选 | /{{max}} 已選 |
 |  | `visitVerification.reasonSection` | Recommendation reasons | 추천 이유 | 推荐理由 | 推薦理由 |
 |  | `visitVerification.reasons.clean` | Clean store | 매장이 깨끗해요 | 店内干净 | 店內乾淨 |
 |  | `visitVerification.reasons.delicious` | Delicious | 맛있어요 | 好吃 | 好吃 |
@@ -552,7 +552,7 @@
 | ● | `selectLanguage.logoAccessibilityLabel` | PingDom logo | 핑덤 로고 | PingDom 标志 | PingDom 標誌 |
 |  | `selectLanguage.options.en` | English | 영어 | 英语 | 英文 |
 |  | `selectLanguage.options.ko` | Korean | 한국어 | 韩语 | 韓文 |
-|  | `selectLanguage.options.ja` | 日本語 | 日本語 | 日本語 | 日本語 |
+|  | `selectLanguage.options.ja` | 日本語 | 日本語 | 日语 | 日文 |
 |  | `selectLanguage.options.zh-CN` | Chinese (Simplified) | 중국어(간체) | 简体中文 | 簡體中文 |
 |  | `selectLanguage.options.zh-TW` | Chinese (Traditional) | 중국어(번체) | 繁体中文 | 繁體中文 |
 |  | `selectLanguage.options.vi` | Vietnamese | 베트남어 | 越南语 | 越南文 |

@@ -10,10 +10,10 @@
 | 2인칭 단수 | **tú** (`Toca`, `Revisa`, `Inténtalo`). usted 미사용 |
 | 2인칭 복수 | ustedes. **vosotros 미사용** |
 | 어휘 | 지역색이 강한 단어를 피한다. `móvil`/`celular` 대신 `dispositivo`, `ordenador`/`computadora` 미사용, 입력 안내는 `Ingresa`/`Introduce` 대신 `Escribe` |
-| 앱 용어 | app, cupón, reserva, lugar, ajustes, iniciar sesión, reseña, verificar |
+| 앱 용어 | app, cupón, reserva, lugar, ajustes, iniciar sesión, reseña, verificar. 만료는 `caducar` 대신 `vencer`/`expirar`, 과거는 단순 과거(`visitaste`, `verificaste`)로 통일 |
 | 요일 약자 | `D L M M J V S` (스페인식 `X` 미사용) |
 | 문장 부호 | 여는 `¿` `¡` 사용, 인용은 `«»` |
-| 숫자·날짜 formatter locale | `es` (국가 없는 CLDR 기본). 예: `30 sept 2026, 14:05`, `1,5 km`, `12.000 KRW` |
+| 숫자·날짜 formatter locale | `es` (국가 없는 CLDR 기본). 예: `30 sept 2026, 14:05`, `1,5 km`, `12.000 KRW`. 모든 `es-*` 기기에 같은 표기를 쓰며, 멕시코·미국식 `1,234,567.5` 같은 지역별 숫자 관례는 적용하지 않는다 |
 | 거리 단위 | 미터법(km) |
 
 ## 기기·프로필·저장값 locale 정규화
@@ -70,3 +70,8 @@
 
 모든 es 문구는 **기계 번역 초안이며 사람 검수가 필요하다.** 검수 대상 키 전체는
 [415-es-translation-review.md](415-es-translation-review.md)에 있다.
+
+## 수동 검증
+
+iOS 시뮬레이터 검증 결과·캡처, Android·실서버 미검증 사유, iOS 기기 언어 fallback 수정은
+[413-416-multilingual-i18n.md](413-416-multilingual-i18n.md)에 4개 언어를 묶어 기록했다.

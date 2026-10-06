@@ -57,15 +57,15 @@
 |  | `mapTutorial.welcome.help` | From finding places to preparing reservations,<br>I can help with a conversation. | 원하는 장소를 찾고, 예약을 준비하는 과정까지<br>대화 한번으로 도와드릴게요. | De encontrar lugares a preparar reservas,<br>eu ajudo você com uma conversa. |
 |  | `mapTutorial.welcome.start` | Let me give you a quick tour! | 지금부터 간단히 사용법을 알려드릴게요! | Vou mostrar rapidinho como funciona! |
 |  | `mapTutorial.map.prompt` | Tap the <accent>Map button</accent>. | <accent>지도 버튼</accent>을 눌러보세요. | Toque no <accent>botão Mapa</accent>. |
-|  | `mapTutorial.map.body` | Discover pins around you, plus popular places<br>in your area and across the country. | 내 주변의 핑들을 확인할 수 있어요.<br>또한 우리 지역과 전국 트렌드 장소도 볼 수 있어요. | Descubra os pins perto de você e os lugares<br>populares na sua região e em todo o país. |
+|  | `mapTutorial.map.body` | Discover pins around you, plus popular places<br>in your area and across the country. | 내 주변의 핑들을 확인할 수 있어요.<br>또한 우리 지역과 전국 트렌드 장소도 볼 수 있어요. | Descubra pins perto de você e lugares<br>populares na sua região e em todo o país. |
 |  | `mapTutorial.favorites.prompt` | Tap the <accent>Favorites button</accent>. | <accent>즐겨찾기 버튼</accent>을 눌러보세요. | Toque no <accent>botão Favoritos</accent>. |
 |  | `mapTutorial.favorites.body` | Save places you’re interested in<br>and find them again whenever you like. | 관심 있는 장소를 즐겨찾기에 저장하고,<br>언제든 다시 찾아볼 수 있어요. | Salve os lugares que interessam a você<br>e encontre-os de novo quando quiser. |
 |  | `mapTutorial.community.prompt` | Tap the <accent>Community button</accent>. | <accent>커뮤니티 버튼</accent>을 눌러보세요. | Toque no <accent>botão Comunidade</accent>. |
-|  | `mapTutorial.community.body` | Explore other travelers’ experiences,<br>and tag places to share your own stories. | 다른 여행자들의 생생한 장소 경험을 확인하고,<br>장소를 태그해 나만의 이야기도 공유할 수 있어요. | Veja as experiências de outros viajantes<br>e marque lugares para compartilhar suas histórias. |
+|  | `mapTutorial.community.body` | Explore other travelers’ experiences,<br>and tag places to share your own stories. | 다른 여행자들의 생생한 장소 경험을 확인하고,<br>장소를 태그해 나만의 이야기도 공유할 수 있어요. | Veja experiências de outros viajantes<br>e marque lugares para contar as suas. |
 |  | `mapTutorial.reservations.prompt` | Tap the <accent>Reservations button</accent>. | <accent>예약 버튼</accent>을 눌러보세요. | Toque no <accent>botão Reservas</accent>. |
-|  | `mapTutorial.reservations.body` | Check availability at the places you love<br>and book a date and time that works for you. | 원하는 장소의 예약 가능 여부를 확인하고,<br>날짜와 시간에 맞춰 간편하게 예약할 수 있어요. | Confira a disponibilidade dos lugares que você curte<br>e reserve a data e o horário que preferir. |
+|  | `mapTutorial.reservations.body` | Check availability at the places you love<br>and book a date and time that works for you. | 원하는 장소의 예약 가능 여부를 확인하고,<br>날짜와 시간에 맞춰 간편하게 예약할 수 있어요. | Confira a disponibilidade de um lugar<br>e reserve a data e o horário que quiser. |
 |  | `mapTutorial.recommendations.prompt` | Tap the <accent>Recommendations button</accent>. | <accent>장소 추천 버튼</accent>을 눌러보세요. | Toque no <accent>botão Sugestões</accent>. |
-|  | `mapTutorial.recommendations.body` | {{username}}, discover personalized places<br>based on your interests and activity. | {{username}}님의 관심사와 이용 상황을 바탕으로<br>개인화된 장소 추천을 받을 수 있어요. | {{username}}, descubra lugares personalizados<br>com base nos seus interesses e na sua atividade. |
+|  | `mapTutorial.recommendations.body` | {{username}}, discover personalized places<br>based on your interests and activity. | {{username}}님의 관심사와 이용 상황을 바탕으로<br>개인화된 장소 추천을 받을 수 있어요. | {{username}}, descubra lugares sob medida<br>com base nos seus interesses e atividade. |
 |  | `mapTutorial.verification.prompt` | Tap the <accent>Verify button</accent>. | <accent>검증하기 버튼</accent>을 눌러보세요. | Toque no <accent>botão Verificar</accent>. |
 |  | `mapTutorial.verification.body` | Review the places you’ve visited<br>and verify your experience to help<br>other travelers visit with confidence. | 직접 방문한 장소의 경험을 리뷰로 남기고,<br>다른 여행자들이 믿고 방문할 수 있도록<br>장소를 검증해주세요. | Avalie os lugares que você visitou<br>e verifique sua experiência para que<br>outros viajantes visitem com confiança. |
 |  | `mapTutorial.categories.prompt` | Tap a <accent>category</accent>. | <accent>카테고리</accent>를 눌러보세요. | Toque em uma <accent>categoria</accent>. |
@@ -308,7 +308,7 @@
 | ● | `community.detail.comments.a11yLabel` | {{author}}, {{time}}, {{content}} | {{author}}, {{time}}, {{content}} | {{author}}, {{time}}, {{content}} |
 |  | `community.detail.comments.announceSuccess` | Your comment was posted. | 댓글이 등록되었어요. | Seu comentário foi publicado. |
 |  | `community.detail.comments.announceFailure` | Your comment failed to post. | 댓글 등록에 실패했어요. | Não foi possível publicar seu comentário. |
-|  | `community.detail.like.count_one` | Like {{count}} | 좋아요 {{count}} | Curtidas {{count}} |
+|  | `community.detail.like.count_one` | Like {{count}} | 좋아요 {{count}} | Curtida {{count}} |
 |  | `community.detail.like.count_other` | Like {{count}} | 좋아요 {{count}} | Curtidas {{count}} |
 | ● | `community.detail.like.a11yLabel_one` | Like, {{count}} | 좋아요, {{count}}개 | Curtir, {{count}} |
 | ● | `community.detail.like.a11yLabel_other` | Like, {{count}} | 좋아요, {{count}}개 | Curtir, {{count}} |
@@ -556,7 +556,7 @@
 | ● | `selectLanguage.logoAccessibilityLabel` | PingDom logo | 핑덤 로고 | Logotipo do PingDom |
 |  | `selectLanguage.options.en` | English | 영어 | Inglês |
 |  | `selectLanguage.options.ko` | Korean | 한국어 | Coreano |
-|  | `selectLanguage.options.ja` | 日本語 | 日本語 | 日本語 |
+|  | `selectLanguage.options.ja` | 日本語 | 日本語 | Japonês |
 |  | `selectLanguage.options.zh-CN` | Chinese (Simplified) | 중국어(간체) | Chinês (simplificado) |
 |  | `selectLanguage.options.zh-TW` | Chinese (Traditional) | 중국어(번체) | Chinês (tradicional) |
 |  | `selectLanguage.options.vi` | Vietnamese | 베트남어 | Vietnamita |
@@ -993,8 +993,8 @@
 |  | `map.sheet.image` | Place image | 장소 이미지 | Imagem do lugar |
 | ● | `map.sheet.imageError` | Could not load image | 이미지를 불러오지 못했어요 | Não foi possível carregar a imagem |
 |  | `map.sheet.imageMissing` | No image | 이미지 없음 | Sem imagem |
-|  | `map.sheet.localHotPlaces` | Local hot places | 우리 지역 핫플 | Lugares em alta na região |
-|  | `map.sheet.nationwideTrends` | Nationwide trends | 전국 트렌드 | Tendências nacionais |
+|  | `map.sheet.localHotPlaces` | Local hot places | 우리 지역 핫플 | Em alta perto |
+|  | `map.sheet.nationwideTrends` | Nationwide trends | 전국 트렌드 | Tendências |
 |  | `map.sheet.placeMissing` | Unnamed place | 장소명 없음 | Lugar sem nome |
 |  | `map.sheet.recommendationTitle` | Recommended for you | 나만을 위한 추천 장소 | Sugestões para você |
 |  | `map.sheet.resultsFor` | Results for “{{query}}” | “{{query}}” 검색 결과 | Resultados para “{{query}}” |
@@ -1008,7 +1008,7 @@
 | ● | `map.sheet.state.forbiddenBody` | Your account cannot access this list. | 현재 계정으로 이 목록에 접근할 수 없어요. | Sua conta não pode acessar esta lista. |
 | ● | `map.sheet.state.forbiddenTitle` | Access is unavailable | 접근할 수 없어요 | Acesso indisponível |
 |  | `map.sheet.state.invalid-locationBody` | Check your location and try again. | 위치 상태를 확인한 후 다시 시도해 주세요. | Confira sua localização e tente novamente. |
-|  | `map.sheet.state.invalid-locationTitle` | Your location could not be used | 현재 위치를 사용할 수 없어요 | Não foi possível usar sua localização |
+|  | `map.sheet.state.invalid-locationTitle` | Your location could not be used | 현재 위치를 사용할 수 없어요 | Localização indisponível |
 |  | `map.sheet.state.invalid-periodBody` | Please try the supported weekly period again. | 지원되는 주간 기간으로 다시 시도해 주세요. | Tente novamente com o período semanal compatível. |
 |  | `map.sheet.state.invalid-periodTitle` | The trend period is unavailable | 트렌드 기간을 사용할 수 없어요 | O período de tendências está indisponível |
 | ● | `map.sheet.state.location-deniedBody` | Nationwide trends remain available without location access. | 위치 권한 없이도 전국 트렌드는 볼 수 있어요. | As tendências nacionais continuam disponíveis sem acesso à localização. |
@@ -1081,7 +1081,7 @@
 | ● | `map.location.deniedDescription` | The map is using a default area. Allow location access to show your position. | 기본 지역을 표시하고 있습니다. 현재 위치를 보려면 위치 권한을 허용해 주세요. | O mapa está usando uma área padrão. Permita o acesso à localização para mostrar sua posição. |
 | ● | `map.location.deniedTitle` | Location access is off | 위치 권한이 꺼져 있습니다 | O acesso à localização está desativado |
 | ● | `map.location.failedDescription` | The map is using a default area. Check location services and try again. | 기본 지역을 표시하고 있습니다. 위치 서비스를 확인한 후 다시 시도해 주세요. | O mapa está usando uma área padrão. Verifique os serviços de localização e tente novamente. |
-| ● | `map.location.failedTitle` | Could not find your location | 현재 위치를 찾지 못했습니다 | Não foi possível encontrar sua localização |
+| ● | `map.location.failedTitle` | Could not find your location | 현재 위치를 찾지 못했습니다 | Localização não encontrada |
 |  | `map.location.loading` | Finding your current location... | 현재 위치를 찾는 중입니다... | Procurando sua localização atual... |
 |  | `map.location.openSettings` | Open settings | 설정 열기 | Abrir configurações |
 |  | `map.location.retry` | Check again | 다시 확인 | Verificar novamente |
@@ -1384,7 +1384,7 @@
 |  | `settings.appearance.light` | Light mode | 라이트 모드 | Modo claro |
 |  | `settings.appearance.section` | Appearance | 화면 모드 | Aparência |
 |  | `settings.appearance.selected` | Selected | 선택됨 | Selecionado |
-|  | `settings.appearance.system` | Use system setting | 시스템 설정 사용 | Usar a configuração do sistema |
+|  | `settings.appearance.system` | Use system setting | 시스템 설정 사용 | Padrão do sistema |
 |  | `settings.appearance.title` | Appearance | 화면 모드 | Aparência |
 |  | `settings.language.description` | Choose the language used throughout PingDom. | 핑덤에서 사용할 언어를 선택해 주세요. | Escolha o idioma usado em todo o PingDom. |
 |  | `settings.language.section` | Language | 언어 | Idioma |

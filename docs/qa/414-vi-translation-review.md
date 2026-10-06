@@ -54,24 +54,24 @@
 |  | `mapTutorial.welcome.greeting` | Hello, {{username}}! | 안녕하세요, {{username}}님 | Xin chào, {{username}}! |
 |  | `mapTutorial.welcome.introduction` | Here to make your travels easier, | {{username}}님의 여행을 더 쉽게 만들어드리는 | Giúp chuyến đi của bạn dễ dàng hơn, |
 |  | `mapTutorial.welcome.agent` | I’m <accent>Pingdi</accent>, your AI agent. | AI 에이전트, <accent>핑디</accent>예요. | mình là <accent>Pingdi</accent>, trợ lý AI của bạn. |
-|  | `mapTutorial.welcome.help` | From finding places to preparing reservations,<br>I can help with a conversation. | 원하는 장소를 찾고, 예약을 준비하는 과정까지<br>대화 한번으로 도와드릴게요. | Từ tìm địa điểm đến chuẩn bị đặt chỗ,<br>mình hỗ trợ bạn chỉ qua một cuộc trò chuyện. |
+|  | `mapTutorial.welcome.help` | From finding places to preparing reservations,<br>I can help with a conversation. | 원하는 장소를 찾고, 예약을 준비하는 과정까지<br>대화 한번으로 도와드릴게요. | Từ tìm địa điểm đến chuẩn bị đặt chỗ,<br>mình giúp bạn chỉ qua một cuộc trò chuyện. |
 |  | `mapTutorial.welcome.start` | Let me give you a quick tour! | 지금부터 간단히 사용법을 알려드릴게요! | Cùng xem nhanh cách sử dụng nhé! |
 |  | `mapTutorial.map.prompt` | Tap the <accent>Map button</accent>. | <accent>지도 버튼</accent>을 눌러보세요. | Hãy chạm vào <accent>nút Bản đồ</accent>. |
-|  | `mapTutorial.map.body` | Discover pins around you, plus popular places<br>in your area and across the country. | 내 주변의 핑들을 확인할 수 있어요.<br>또한 우리 지역과 전국 트렌드 장소도 볼 수 있어요. | Khám phá các ghim quanh bạn,<br>cùng những địa điểm nổi bật trong khu vực và cả nước. |
+|  | `mapTutorial.map.body` | Discover pins around you, plus popular places<br>in your area and across the country. | 내 주변의 핑들을 확인할 수 있어요.<br>또한 우리 지역과 전국 트렌드 장소도 볼 수 있어요. | Khám phá các ghim quanh bạn cùng địa điểm<br>nổi bật trong khu vực và trên cả nước. |
 |  | `mapTutorial.favorites.prompt` | Tap the <accent>Favorites button</accent>. | <accent>즐겨찾기 버튼</accent>을 눌러보세요. | Hãy chạm vào <accent>nút Yêu thích</accent>. |
 |  | `mapTutorial.favorites.body` | Save places you’re interested in<br>and find them again whenever you like. | 관심 있는 장소를 즐겨찾기에 저장하고,<br>언제든 다시 찾아볼 수 있어요. | Lưu những địa điểm bạn quan tâm<br>và xem lại bất cứ lúc nào. |
 |  | `mapTutorial.community.prompt` | Tap the <accent>Community button</accent>. | <accent>커뮤니티 버튼</accent>을 눌러보세요. | Hãy chạm vào <accent>nút Cộng đồng</accent>. |
-|  | `mapTutorial.community.body` | Explore other travelers’ experiences,<br>and tag places to share your own stories. | 다른 여행자들의 생생한 장소 경험을 확인하고,<br>장소를 태그해 나만의 이야기도 공유할 수 있어요. | Xem trải nghiệm của những du khách khác<br>và gắn thẻ địa điểm để chia sẻ câu chuyện của bạn. |
+|  | `mapTutorial.community.body` | Explore other travelers’ experiences,<br>and tag places to share your own stories. | 다른 여행자들의 생생한 장소 경험을 확인하고,<br>장소를 태그해 나만의 이야기도 공유할 수 있어요. | Xem trải nghiệm của du khách khác, gắn thẻ<br>địa điểm để chia sẻ câu chuyện của bạn. |
 |  | `mapTutorial.reservations.prompt` | Tap the <accent>Reservations button</accent>. | <accent>예약 버튼</accent>을 눌러보세요. | Hãy chạm vào <accent>nút Đặt chỗ</accent>. |
 |  | `mapTutorial.reservations.body` | Check availability at the places you love<br>and book a date and time that works for you. | 원하는 장소의 예약 가능 여부를 확인하고,<br>날짜와 시간에 맞춰 간편하게 예약할 수 있어요. | Kiểm tra tình trạng chỗ tại nơi bạn thích<br>và đặt ngày giờ phù hợp với bạn. |
 |  | `mapTutorial.recommendations.prompt` | Tap the <accent>Recommendations button</accent>. | <accent>장소 추천 버튼</accent>을 눌러보세요. | Hãy chạm vào <accent>nút Gợi ý</accent>. |
-|  | `mapTutorial.recommendations.body` | {{username}}, discover personalized places<br>based on your interests and activity. | {{username}}님의 관심사와 이용 상황을 바탕으로<br>개인화된 장소 추천을 받을 수 있어요. | {{username}}, khám phá các địa điểm dành riêng cho bạn<br>dựa trên sở thích và hoạt động của bạn. |
+|  | `mapTutorial.recommendations.body` | {{username}}, discover personalized places<br>based on your interests and activity. | {{username}}님의 관심사와 이용 상황을 바탕으로<br>개인화된 장소 추천을 받을 수 있어요. | {{username}}, khám phá địa điểm dành riêng<br>cho bạn dựa trên sở thích và hoạt động. |
 |  | `mapTutorial.verification.prompt` | Tap the <accent>Verify button</accent>. | <accent>검증하기 버튼</accent>을 눌러보세요. | Hãy chạm vào <accent>nút Xác minh</accent>. |
 |  | `mapTutorial.verification.body` | Review the places you’ve visited<br>and verify your experience to help<br>other travelers visit with confidence. | 직접 방문한 장소의 경험을 리뷰로 남기고,<br>다른 여행자들이 믿고 방문할 수 있도록<br>장소를 검증해주세요. | Đánh giá những nơi bạn đã ghé thăm<br>và xác minh trải nghiệm của bạn<br>để du khách khác yên tâm ghé đến. |
 |  | `mapTutorial.categories.prompt` | Tap a <accent>category</accent>. | <accent>카테고리</accent>를 눌러보세요. | Hãy chạm vào một <accent>danh mục</accent>. |
 |  | `mapTutorial.categories.body` | Choose food, music, or another category<br>to see only the pins that match. | 음식점, 음악 등 원하는 카테고리를 선택하면<br>해당하는 핑들만 골라서 확인할 수 있어요. | Chọn ẩm thực, âm nhạc hoặc danh mục khác<br>để chỉ xem các ghim phù hợp. |
 |  | `mapTutorial.profile.prompt` | Tap <accent>My Page</accent>. | <accent>마이페이지</accent>를 눌러보세요. | Hãy chạm vào <accent>Trang của tôi</accent>. |
-|  | `mapTutorial.profile.body` | Manage your profile and travel dates,<br>and browse the places you’ve verified. | 내 프로필과 여행 기간을 관리하고,<br>내가 직접 검증한 장소들을 모아 볼 수 있어요. | Quản lý hồ sơ và ngày đi của bạn,<br>đồng thời xem lại các địa điểm bạn đã xác minh. |
+|  | `mapTutorial.profile.body` | Manage your profile and travel dates,<br>and browse the places you’ve verified. | 내 프로필과 여행 기간을 관리하고,<br>내가 직접 검증한 장소들을 모아 볼 수 있어요. | Quản lý hồ sơ và ngày đi của bạn,<br>xem lại các địa điểm bạn đã xác minh. |
 
 ## `offerCoupon`
 
@@ -552,7 +552,7 @@
 | ● | `selectLanguage.logoAccessibilityLabel` | PingDom logo | 핑덤 로고 | Logo PingDom |
 |  | `selectLanguage.options.en` | English | 영어 | Tiếng Anh |
 |  | `selectLanguage.options.ko` | Korean | 한국어 | Tiếng Hàn |
-|  | `selectLanguage.options.ja` | 日本語 | 日本語 | 日本語 |
+|  | `selectLanguage.options.ja` | 日本語 | 日本語 | Tiếng Nhật |
 |  | `selectLanguage.options.zh-CN` | Chinese (Simplified) | 중국어(간체) | Tiếng Trung (Giản thể) |
 |  | `selectLanguage.options.zh-TW` | Chinese (Traditional) | 중국어(번체) | Tiếng Trung (Phồn thể) |
 |  | `selectLanguage.options.vi` | Vietnamese | 베트남어 | Tiếng Việt |
@@ -989,8 +989,8 @@
 |  | `map.sheet.image` | Place image | 장소 이미지 | Ảnh địa điểm |
 | ● | `map.sheet.imageError` | Could not load image | 이미지를 불러오지 못했어요 | Không thể tải ảnh |
 |  | `map.sheet.imageMissing` | No image | 이미지 없음 | Không có ảnh |
-|  | `map.sheet.localHotPlaces` | Local hot places | 우리 지역 핫플 | Điểm hot địa phương |
-|  | `map.sheet.nationwideTrends` | Nationwide trends | 전국 트렌드 | Xu hướng toàn quốc |
+|  | `map.sheet.localHotPlaces` | Local hot places | 우리 지역 핫플 | Hot quanh đây |
+|  | `map.sheet.nationwideTrends` | Nationwide trends | 전국 트렌드 | Xu hướng cả nước |
 |  | `map.sheet.placeMissing` | Unnamed place | 장소명 없음 | Địa điểm chưa có tên |
 |  | `map.sheet.recommendationTitle` | Recommended for you | 나만을 위한 추천 장소 | Gợi ý dành riêng cho bạn |
 |  | `map.sheet.resultsFor` | Results for “{{query}}” | “{{query}}” 검색 결과 | Kết quả cho “{{query}}” |
