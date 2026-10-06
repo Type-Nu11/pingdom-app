@@ -28,3 +28,9 @@ describe('#414 베트남어 자체 표기', () => {
     expect(getLanguageEndonym('vi')).toBe('Tiếng Việt');
   });
 });
+
+describe('#415 스페인어 자체 표기', () => {
+  test('Español로 표기한다', () => {
+    expect(getLanguageEndonym('es')).toBe('Español');
+  });
+});

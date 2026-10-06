@@ -205,3 +205,40 @@ test('#414 restores a stored vi or vi-VN preference and applies it before persis
   assert.equal(persisted, false);
   assert.deepEqual(calls, ['change:vi', 'persist:vi']);
 });
+
+test('#415 normalizes Spanish locales and language names to es', () => {
+  for (const value of ["es", "ES", "es-ES", "es_ES", " es-es ", "es-419", "es-MX", "es-US", "es-AR", "es-CO", "es-Latn-ES", "Spanish", "Español", "스페인어"]) {
+    assert.equal(normalizeSupportedLanguage(value), 'es', value);
+  }
+  for (const value of ["esp", "spa", "ca-ES", "gl-ES", "eu-ES", "e"]) {
+    assert.equal(normalizeSupportedLanguage(value), null, value);
+  }
+});
+
+test('#415 a stored explicit choice is never overridden by a Spanish profile or device', () => {
+  assert.equal(resolvePreferredLanguage({ storedLanguage: 'ko', profileLanguage: 'es', deviceLanguage: 'es-MX' }), 'ko');
+  assert.equal(resolvePreferredLanguage({ storedLanguage: 'es', profileLanguage: 'ko', deviceLanguage: 'en-US' }), 'es');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'es', deviceLanguage: 'ko-KR' }), 'es');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'ja', deviceLanguage: 'es-MX' }), 'ja');
+  assert.equal(resolvePreferredLanguage({ deviceLanguage: 'es-MX' }), 'es');
+});
+
+test('#415 restores a stored es preference and applies the choice before persistence', async () => {
+  for (const stored of ["es", "es-ES", "es-419"]) {
+    const result = await restorePreferredLanguage({
+      deviceLanguage: 'en-US',
+      profileLanguage: 'ko',
+      storage: { getItem: async () => stored, setItem: async () => {} },
+      storageKey: 'language',
+    });
+    assert.deepEqual(result, { hasStoredPreference: true, language: 'es' }, stored);
+  }
+  const calls = [];
+  const persisted = await applyLanguagePreference({
+    changeLanguage: async (language) => { calls.push(`change:${language}`); },
+    language: 'es',
+    persist: async (language) => { calls.push(`persist:${language}`); throw new Error('quota'); },
+  });
+  assert.equal(persisted, false);
+  assert.deepEqual(calls, ['change:es', 'persist:es']);
+});

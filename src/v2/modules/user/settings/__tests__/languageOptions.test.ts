@@ -31,3 +31,11 @@ test('#414 the active language resolves vi variants', () => {
   expect(resolveSelectedLanguage('vi')).toBe('vi');
   expect(resolveSelectedLanguage('vi-VN')).toBe('vi');
 });
+
+test('#415 the active language resolves es variants', () => {
+  expect(LANGUAGE_SETTING_OPTIONS).toContain('es');
+  expect(resolveSelectedLanguage('es')).toBe('es');
+  expect(resolveSelectedLanguage('es-ES')).toBe('es');
+  expect(resolveSelectedLanguage('es-419')).toBe('es');
+  expect(resolveSelectedLanguage('es-MX')).toBe('es');
+});

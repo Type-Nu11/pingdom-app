@@ -293,3 +293,27 @@ describe('#414 베트남어 언어 설정', () => {
     expect(screen.queryByText('Tiếng Hàn')).not.toBeOnTheScreen();
   });
 });
+
+describe('#415 스페인어 언어 설정', () => {
+  test('언어 페이지는 Español를 선택지로 제공하고 선택을 전달한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'Español' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('es');
+  });
+
+  test('스페인어 UI에서는 언어 페이지가 스페인어로 표시되고 Español만 선택 상태다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'es' },
+    );
+
+    expect(screen.getByText('Idioma')).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Español, Seleccionado' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.queryByText('Coreano')).not.toBeOnTheScreen();
+  });
+});

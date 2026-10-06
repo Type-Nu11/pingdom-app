@@ -160,4 +160,26 @@ describe('LanguageSelectionScreen', () => {
       expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('vi');
     });
   });
+  test('#415 Español를 선택하면 es로 적용·저장하고 검색으로도 찾는다', async () => {
+    resetI18nForTests();
+    await initializeI18n();
+    await i18n.changeLanguage('en');
+    const onNext = jest.fn();
+    await renderWithProviders(
+      <LanguageSelectionScreen onBack={jest.fn()} onNext={onNext} />,
+      { i18n },
+    );
+
+    await fireEvent.changeText(screen.getByTestId('language-search-input'), 'span');
+    expect(screen.getByText('Español')).toBeVisible();
+    expect(screen.queryByTestId('language-option-en')).toBeNull();
+    await fireEvent.press(screen.getByTestId('language-option-es'));
+    await fireEvent.press(screen.getByTestId('language-continue'));
+
+    expect(onNext).toHaveBeenCalledWith('es');
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe('es'));
+    await waitFor(async () => {
+      expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('es');
+    });
+  });
 });

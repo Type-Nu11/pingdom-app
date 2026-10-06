@@ -314,3 +314,44 @@ describe('#414 Vietnamese language preference', () => {
     expect(i18n.t('map.decision.resultsFor', { query: 'cà phê' })).toBe('Kết quả cho “cà phê”');
   });
 });
+
+describe('#415 Spanish language preference', () => {
+  test('explicit es selection applies immediately, persists, and survives a restart and profile refetch', async () => {
+    await initializeI18n('ko');
+    await setLanguage('es');
+    expect(i18n.resolvedLanguage).toBe('es');
+    expect(i18n.t('settings.title')).toBe('Ajustes');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('es');
+
+    resetI18nForTests();
+    await initializeI18n('ko');
+    expect(i18n.resolvedLanguage).toBe('es');
+    await syncProfileLanguage('en');
+    expect(i18n.resolvedLanguage).toBe('es');
+  });
+
+  test('a Spanish profile applies only while there is no stored choice', async () => {
+    await initializeI18n('en');
+    await syncProfileLanguage('es-419');
+    expect(i18n.resolvedLanguage).toBe('es');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBeNull();
+
+    resetI18nForTests();
+    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, 'ko');
+    await initializeI18n('es');
+    expect(i18n.resolvedLanguage).toBe('ko');
+    await syncProfileLanguage('es-419');
+    expect(i18n.resolvedLanguage).toBe('ko');
+  });
+
+  test('Spanish plural forms cover one, other, and many, and missing keys keep the English fallback', async () => {
+    await initializeI18n('es');
+    expect(i18n.options.fallbackLng).toEqual(['en']);
+    expect(i18n.t('__missing_415__')).toBe(resources.en.translation.common.missingTranslation);
+    expect(i18n.getResourceBundle('es', 'translation')).toEqual(resources.es.translation);
+    expect(i18n.t('map.detail.reviewCount', { count: 1 })).toBe('1 reseña');
+    expect(i18n.t('map.detail.reviewCount', { count: 2 })).toBe('2 reseñas');
+    expect(i18n.t('map.detail.reviewCount', { count: 1000000 })).toBe('1000000 reseñas');
+    expect(i18n.t('map.decision.resultsFor', { query: 'café' })).toBe('Resultados de «café»');
+  });
+});
