@@ -61,6 +61,7 @@ const LANGUAGE_RULES = {
       'map.decision.livePicks',
       'map.recommendations.context.purpose.kPop',
       'map.search.confirm',
+      'mapTutorial.name',
       'visitVerification.distanceKm',
       'voiceAssistant.brand',
       'voiceAssistant.shortLabel',
@@ -269,6 +270,16 @@ test('#413 Simplified and Traditional Chinese are translated independently', () 
   assert.ok(identical.length < comparable.length * 0.2, `${identical.length}/${comparable.length} identical values`);
   assert.equal(simplified.get('selectLanguage.options.zh-CN'), '简体中文');
   assert.equal(traditional.get('selectLanguage.options.zh-TW'), '繁體中文');
+});
+
+test('the assistant brand is written Pingdy in every language', () => {
+  for (const language of supportedLanguages) {
+    const translated = catalog(language);
+    assert.equal(translated.get('mapTutorial.name'), 'Pingdy', language);
+    assert.equal(translated.get('voiceAssistant.brand'), 'Pingdy', language);
+    const variants = [...translated].filter(([, value]) => /Pingdi|핑디|ピンディ/.test(value)).map(([key]) => key);
+    assert.deepEqual(variants, [], language);
+  }
 });
 
 test('language option labels exist for every supported language', () => {

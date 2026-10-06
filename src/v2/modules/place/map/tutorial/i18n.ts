@@ -1,12 +1,12 @@
 export const mapTutorialResources = {
   ko: {
-    name: '핑디', title: '핑디 사용 안내', guest: '여행자',
+    name: 'Pingdy', title: 'Pingdy 사용 안내', guest: '여행자',
     close: '튜토리얼 닫기', previous: '이전 안내', next: '다음 안내',
     finish: '튜토리얼 완료', progress: '{{current}} / {{total}} 단계',
     welcome: {
       greeting: '안녕하세요, {{username}}님',
       introduction: '{{username}}님의 여행을 더 쉽게 만들어드리는',
-      agent: 'AI 에이전트, <accent>핑디</accent>예요.',
+      agent: 'AI 에이전트, <accent>Pingdy</accent>예요.',
       help: '원하는 장소를 찾고, 예약을 준비하는 과정까지\n대화 한번으로 도와드릴게요.',
       start: '지금부터 간단히 사용법을 알려드릴게요!',
     },
@@ -44,13 +44,13 @@ export const mapTutorialResources = {
     },
   },
   en: {
-    name: 'Pingdi', title: 'Meet Pingdi', guest: 'traveler',
+    name: 'Pingdy', title: 'Meet Pingdy', guest: 'traveler',
     close: 'Close tutorial', previous: 'Previous tip', next: 'Next tip',
     finish: 'Finish tutorial', progress: 'Step {{current}} of {{total}}',
     welcome: {
       greeting: 'Hello, {{username}}!',
       introduction: 'Here to make your travels easier,',
-      agent: 'I’m <accent>Pingdi</accent>, your AI agent.',
+      agent: 'I’m <accent>Pingdy</accent>, your AI agent.',
       help: 'From finding places to preparing reservations,\nI can help with a conversation.',
       start: 'Let me give you a quick tour!',
     },
@@ -88,13 +88,13 @@ export const mapTutorialResources = {
     },
   },
   ja: {
-    name: 'ピンディ', title: 'ピンディの使い方', guest: '旅行者',
+    name: 'Pingdy', title: 'Pingdyの使い方', guest: '旅行者',
     close: 'チュートリアルを閉じる', previous: '前の案内', next: '次の案内',
     finish: 'チュートリアルを完了', progress: '{{current}} / {{total}} ステップ',
     welcome: {
       greeting: 'こんにちは、{{username}}さん',
       introduction: '{{username}}さんの旅をもっと気軽にする',
-      agent: 'AIエージェントの<accent>ピンディ</accent>です。',
+      agent: 'AIエージェントの<accent>Pingdy</accent>です。',
       help: '行きたい場所探しから予約の準備まで、\n会話ひとつでお手伝いします。',
       start: 'それでは、簡単に使い方をご紹介します！',
     },
@@ -132,8 +132,8 @@ export const mapTutorialResources = {
     },
   },
   'zh-CN': {
-    name: 'Pingdi',
-    title: 'Pingdi 使用指南',
+    name: 'Pingdy',
+    title: 'Pingdy 使用指南',
     guest: '旅行者',
     close: '关闭教程',
     previous: '上一条提示',
@@ -143,7 +143,7 @@ export const mapTutorialResources = {
     welcome: {
       greeting: '你好，{{username}}！',
       introduction: '让你的旅行更轻松，',
-      agent: '我是 AI 助手 <accent>Pingdi</accent>。',
+      agent: '我是 AI 助手 <accent>Pingdy</accent>。',
       help: '从寻找想去的地方到准备预约，\n只需一次对话我就能帮你。',
       start: '现在带你快速了解一下用法！',
     },
@@ -157,8 +157,8 @@ export const mapTutorialResources = {
     profile: { prompt: '请点按<accent>我的页面</accent>。', body: '管理你的个人资料和旅行日期，\n并集中查看你验证过的地点。' },
   },
   'zh-TW': {
-    name: 'Pingdi',
-    title: 'Pingdi 使用說明',
+    name: 'Pingdy',
+    title: 'Pingdy 使用說明',
     guest: '旅人',
     close: '關閉教學',
     previous: '上一則提示',
@@ -168,7 +168,7 @@ export const mapTutorialResources = {
     welcome: {
       greeting: '{{username}}，你好！',
       introduction: '讓你的旅程更輕鬆，',
-      agent: '我是 AI 助理 <accent>Pingdi</accent>。',
+      agent: '我是 AI 助理 <accent>Pingdy</accent>。',
       help: '從尋找想去的地點到準備預約，\n只要一段對話就能幫你完成。',
       start: '現在就帶你快速認識使用方式！',
     },
@@ -182,8 +182,8 @@ export const mapTutorialResources = {
     profile: { prompt: '請點一下<accent>我的頁面</accent>。', body: '管理你的個人檔案與旅行日期，\n並一次瀏覽你驗證過的地點。' },
   },
   vi: {
-    name: 'Pingdi',
-    title: 'Làm quen với Pingdi',
+    name: 'Pingdy',
+    title: 'Làm quen với Pingdy',
     guest: 'bạn',
     close: 'Đóng hướng dẫn',
     previous: 'Mẹo trước',
@@ -193,7 +193,7 @@ export const mapTutorialResources = {
     welcome: {
       greeting: 'Xin chào, {{username}}!',
       introduction: 'Giúp chuyến đi của bạn dễ dàng hơn,',
-      agent: 'mình là <accent>Pingdi</accent>, trợ lý AI của bạn.',
+      agent: 'mình là <accent>Pingdy</accent>, trợ lý AI của bạn.',
       help: 'Từ tìm địa điểm đến chuẩn bị đặt chỗ,\nmình giúp bạn chỉ qua một cuộc trò chuyện.',
       start: 'Cùng xem nhanh cách sử dụng nhé!',
     },
@@ -222,8 +222,8 @@ export const mapTutorialResources = {
     },
   },
   es: {
-    name: 'Pingdi',
-    title: 'Conoce a Pingdi',
+    name: 'Pingdy',
+    title: 'Conoce a Pingdy',
     guest: 'viajero',
     close: 'Cerrar tutorial',
     previous: 'Consejo anterior',
@@ -233,7 +233,7 @@ export const mapTutorialResources = {
     welcome: {
       greeting: '¡Hola, {{username}}!',
       introduction: 'Para que tus viajes sean más fáciles,',
-      agent: 'soy <accent>Pingdi</accent>, tu agente de IA.',
+      agent: 'soy <accent>Pingdy</accent>, tu agente de IA.',
       help: 'Desde buscar lugares hasta reservar,\nte ayudo con una sola conversación.',
       start: '¡Te muestro rápidamente cómo funciona!',
     },
@@ -262,8 +262,8 @@ export const mapTutorialResources = {
     profile: { prompt: 'Toca <accent>Mi página</accent>.', body: 'Gestiona tu perfil y tus fechas de viaje\ny consulta los lugares que verificaste.' },
   },
   'pt-BR': {
-    name: 'Pingdi',
-    title: 'Conheça o Pingdi',
+    name: 'Pingdy',
+    title: 'Conheça o Pingdy',
     guest: 'viajante',
     close: 'Fechar tutorial',
     previous: 'Dica anterior',
@@ -273,7 +273,7 @@ export const mapTutorialResources = {
     welcome: {
       greeting: 'Olá, {{username}}!',
       introduction: 'Para deixar suas viagens mais fáceis,',
-      agent: 'eu sou o <accent>Pingdi</accent>, seu agente de IA.',
+      agent: 'eu sou o <accent>Pingdy</accent>, seu agente de IA.',
       help: 'De encontrar lugares a preparar reservas,\neu ajudo você com uma conversa.',
       start: 'Vou mostrar rapidinho como funciona!',
     },
