@@ -1,7 +1,7 @@
 # #416 브라질 포르투갈어 번역 검수 대상 키
 
 > 상태: **기계 번역 초안 · 사람 검수 필요**. 이 문서의 모든 pt-BR 문구는 검수 전이다.
-> 기준: 브라질 포르투갈어(pt-BR), 2인칭 você. 용어: 검증/verify → verificar, 쿠폰 → cupom, 혜택/Offer → oferta, 예약 → reserva, 체크인 → check-in, 설정 → configurações, 추천 탭 → Sugestões, 리뷰 → avaliação, 기기 → aparelho, 가입 → cadastro. 복수형 `_many`(1,000,000 등)는 `_other`와 같은 문구다. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
+> 기준: 브라질 포르투갈어(pt-BR), 2인칭 você. 용어: 검증/verify → verificar, 쿠폰 → cupom, 혜택/Offer → oferta, 예약 → reserva, 체크인 → check-in, 설정 → configurações, 추천 탭 → Sugestões, 리뷰 → avaliação, 기기 → aparelho, 가입 → cadastro. 복수형 `_many`(1,000,000 등)는 `_other`와 같은 문구다. 브랜드 PingDom·Pingdy는 모든 언어에서 원문 표기.
 > 우선 검수: 「우선」 열이 채워진 키(접근성 label, 오류·복구 안내, 권한·정책·삭제 문구).
 > 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1473개(우선 검수 350개).
 
@@ -43,8 +43,8 @@
 
 | 우선 | 키 | en | ko | pt-BR |
 |---|---|---|---|---|
-|  | `mapTutorial.name` | Pingdi | 핑디 | Pingdi |
-|  | `mapTutorial.title` | Meet Pingdi | 핑디 사용 안내 | Conheça o Pingdi |
+|  | `mapTutorial.name` | Pingdy | Pingdy | Pingdy |
+|  | `mapTutorial.title` | Meet Pingdy | Pingdy 사용 안내 | Conheça o Pingdy |
 |  | `mapTutorial.guest` | traveler | 여행자 | viajante |
 |  | `mapTutorial.close` | Close tutorial | 튜토리얼 닫기 | Fechar tutorial |
 |  | `mapTutorial.previous` | Previous tip | 이전 안내 | Dica anterior |
@@ -53,7 +53,7 @@
 |  | `mapTutorial.progress` | Step {{current}} of {{total}} | {{current}} / {{total}} 단계 | Etapa {{current}} de {{total}} |
 |  | `mapTutorial.welcome.greeting` | Hello, {{username}}! | 안녕하세요, {{username}}님 | Olá, {{username}}! |
 |  | `mapTutorial.welcome.introduction` | Here to make your travels easier, | {{username}}님의 여행을 더 쉽게 만들어드리는 | Para deixar suas viagens mais fáceis, |
-|  | `mapTutorial.welcome.agent` | I’m <accent>Pingdi</accent>, your AI agent. | AI 에이전트, <accent>핑디</accent>예요. | eu sou o <accent>Pingdi</accent>, seu agente de IA. |
+|  | `mapTutorial.welcome.agent` | I’m <accent>Pingdy</accent>, your AI agent. | AI 에이전트, <accent>Pingdy</accent>예요. | eu sou o <accent>Pingdy</accent>, seu agente de IA. |
 |  | `mapTutorial.welcome.help` | From finding places to preparing reservations,<br>I can help with a conversation. | 원하는 장소를 찾고, 예약을 준비하는 과정까지<br>대화 한번으로 도와드릴게요. | De encontrar lugares a preparar reservas,<br>eu ajudo você com uma conversa. |
 |  | `mapTutorial.welcome.start` | Let me give you a quick tour! | 지금부터 간단히 사용법을 알려드릴게요! | Vou mostrar rapidinho como funciona! |
 |  | `mapTutorial.map.prompt` | Tap the <accent>Map button</accent>. | <accent>지도 버튼</accent>을 눌러보세요. | Toque no <accent>botão Mapa</accent>. |

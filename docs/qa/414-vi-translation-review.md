@@ -1,7 +1,7 @@
 # #414 베트남어 번역 검수 대상 키
 
 > 상태: **기계 번역 초안 · 사람 검수 필요**. 이 문서의 모든 vi 문구는 검수 전이다.
-> 문체: 안내문은 정중한 평서형(Vui lòng/Hãy), 2인칭 bạn, 어시스턴트 1인칭 mình. 용어: 검증/verify → xác minh, 쿠폰 → phiếu ưu đãi, 혜택/Offer → ưu đãi, 예약 → đặt chỗ, 체크인 → check-in, 즐겨찾기 → Yêu thích, 설정 → Cài đặt. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
+> 문체: 안내문은 정중한 평서형(Vui lòng/Hãy), 2인칭 bạn, 어시스턴트 1인칭 mình. 용어: 검증/verify → xác minh, 쿠폰 → phiếu ưu đãi, 혜택/Offer → ưu đãi, 예약 → đặt chỗ, 체크인 → check-in, 즐겨찾기 → Yêu thích, 설정 → Cài đặt. 브랜드 PingDom·Pingdy는 모든 언어에서 원문 표기.
 > 우선 검수: 「우선」 열이 채워진 키(접근성 label, 오류·복구 안내, 권한·정책·삭제 문구).
 > 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1460개(우선 검수 349개).
 
@@ -43,8 +43,8 @@
 
 | 우선 | 키 | en | ko | vi |
 |---|---|---|---|---|
-|  | `mapTutorial.name` | Pingdi | 핑디 | Pingdi |
-|  | `mapTutorial.title` | Meet Pingdi | 핑디 사용 안내 | Làm quen với Pingdi |
+|  | `mapTutorial.name` | Pingdy | Pingdy | Pingdy |
+|  | `mapTutorial.title` | Meet Pingdy | Pingdy 사용 안내 | Làm quen với Pingdy |
 |  | `mapTutorial.guest` | traveler | 여행자 | bạn |
 |  | `mapTutorial.close` | Close tutorial | 튜토리얼 닫기 | Đóng hướng dẫn |
 |  | `mapTutorial.previous` | Previous tip | 이전 안내 | Mẹo trước |
@@ -53,7 +53,7 @@
 |  | `mapTutorial.progress` | Step {{current}} of {{total}} | {{current}} / {{total}} 단계 | Bước {{current}}/{{total}} |
 |  | `mapTutorial.welcome.greeting` | Hello, {{username}}! | 안녕하세요, {{username}}님 | Xin chào, {{username}}! |
 |  | `mapTutorial.welcome.introduction` | Here to make your travels easier, | {{username}}님의 여행을 더 쉽게 만들어드리는 | Giúp chuyến đi của bạn dễ dàng hơn, |
-|  | `mapTutorial.welcome.agent` | I’m <accent>Pingdi</accent>, your AI agent. | AI 에이전트, <accent>핑디</accent>예요. | mình là <accent>Pingdi</accent>, trợ lý AI của bạn. |
+|  | `mapTutorial.welcome.agent` | I’m <accent>Pingdy</accent>, your AI agent. | AI 에이전트, <accent>Pingdy</accent>예요. | mình là <accent>Pingdy</accent>, trợ lý AI của bạn. |
 |  | `mapTutorial.welcome.help` | From finding places to preparing reservations,<br>I can help with a conversation. | 원하는 장소를 찾고, 예약을 준비하는 과정까지<br>대화 한번으로 도와드릴게요. | Từ tìm địa điểm đến chuẩn bị đặt chỗ,<br>mình giúp bạn chỉ qua một cuộc trò chuyện. |
 |  | `mapTutorial.welcome.start` | Let me give you a quick tour! | 지금부터 간단히 사용법을 알려드릴게요! | Cùng xem nhanh cách sử dụng nhé! |
 |  | `mapTutorial.map.prompt` | Tap the <accent>Map button</accent>. | <accent>지도 버튼</accent>을 눌러보세요. | Hãy chạm vào <accent>nút Bản đồ</accent>. |

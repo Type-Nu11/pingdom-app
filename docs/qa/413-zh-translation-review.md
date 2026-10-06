@@ -1,7 +1,7 @@
 # #413 중국어 간체·번체 번역 검수 대상 키
 
 > 상태: **기계 번역 초안 · 사람 검수 필요**. 이 문서의 모든 zh-CN · zh-TW 문구는 검수 전이다.
-> 문체: 평서형 안내문, 2인칭 你(您 미사용). 용어: 검증/verify → 验证·驗證, 쿠폰 → 优惠券·優惠券, 쿠폰함 → 优惠券包·優惠券匣, 예약 → 预约·預約, 체크인 → 签到·打卡, 설정 → 设置·設定. 번체는 대만 용어(登入·帳號·搜尋·載入·網路·資訊·使用者) 기준으로 간체와 별도 번역했다. 브랜드 PingDom·Pingdi·Pingdy는 원문 표기.
+> 문체: 평서형 안내문, 2인칭 你(您 미사용). 용어: 검증/verify → 验证·驗證, 쿠폰 → 优惠券·優惠券, 쿠폰함 → 优惠券包·優惠券匣, 예약 → 预约·預約, 체크인 → 签到·打卡, 설정 → 设置·設定. 번체는 대만 용어(登入·帳號·搜尋·載入·網路·資訊·使用者) 기준으로 간체와 별도 번역했다. 브랜드 PingDom·Pingdy는 모든 언어에서 원문 표기.
 > 우선 검수: 「우선」 열이 채워진 키(접근성 label, 오류·복구 안내, 권한·정책·삭제 문구).
 > 생성 기준: `src/v2/app/i18n/resources.ts`의 조립 카탈로그, 키 1460개(우선 검수 349개).
 
@@ -43,8 +43,8 @@
 
 | 우선 | 키 | en | ko | zh-CN | zh-TW |
 |---|---|---|---|---|---|
-|  | `mapTutorial.name` | Pingdi | 핑디 | Pingdi | Pingdi |
-|  | `mapTutorial.title` | Meet Pingdi | 핑디 사용 안내 | Pingdi 使用指南 | Pingdi 使用說明 |
+|  | `mapTutorial.name` | Pingdy | Pingdy | Pingdy | Pingdy |
+|  | `mapTutorial.title` | Meet Pingdy | Pingdy 사용 안내 | Pingdy 使用指南 | Pingdy 使用說明 |
 |  | `mapTutorial.guest` | traveler | 여행자 | 旅行者 | 旅人 |
 |  | `mapTutorial.close` | Close tutorial | 튜토리얼 닫기 | 关闭教程 | 關閉教學 |
 |  | `mapTutorial.previous` | Previous tip | 이전 안내 | 上一条提示 | 上一則提示 |
@@ -53,7 +53,7 @@
 |  | `mapTutorial.progress` | Step {{current}} of {{total}} | {{current}} / {{total}} 단계 | 第 {{current}} 步，共 {{total}} 步 | 第 {{current}} 步，共 {{total}} 步 |
 |  | `mapTutorial.welcome.greeting` | Hello, {{username}}! | 안녕하세요, {{username}}님 | 你好，{{username}}！ | {{username}}，你好！ |
 |  | `mapTutorial.welcome.introduction` | Here to make your travels easier, | {{username}}님의 여행을 더 쉽게 만들어드리는 | 让你的旅行更轻松， | 讓你的旅程更輕鬆， |
-|  | `mapTutorial.welcome.agent` | I’m <accent>Pingdi</accent>, your AI agent. | AI 에이전트, <accent>핑디</accent>예요. | 我是 AI 助手 <accent>Pingdi</accent>。 | 我是 AI 助理 <accent>Pingdi</accent>。 |
+|  | `mapTutorial.welcome.agent` | I’m <accent>Pingdy</accent>, your AI agent. | AI 에이전트, <accent>Pingdy</accent>예요. | 我是 AI 助手 <accent>Pingdy</accent>。 | 我是 AI 助理 <accent>Pingdy</accent>。 |
 |  | `mapTutorial.welcome.help` | From finding places to preparing reservations,<br>I can help with a conversation. | 원하는 장소를 찾고, 예약을 준비하는 과정까지<br>대화 한번으로 도와드릴게요. | 从寻找想去的地方到准备预约，<br>只需一次对话我就能帮你。 | 從尋找想去的地點到準備預約，<br>只要一段對話就能幫你完成。 |
 |  | `mapTutorial.welcome.start` | Let me give you a quick tour! | 지금부터 간단히 사용법을 알려드릴게요! | 现在带你快速了解一下用法！ | 現在就帶你快速認識使用方式！ |
 |  | `mapTutorial.map.prompt` | Tap the <accent>Map button</accent>. | <accent>지도 버튼</accent>을 눌러보세요. | 请点按<accent>地图按钮</accent>。 | 請點一下<accent>地圖按鈕</accent>。 |

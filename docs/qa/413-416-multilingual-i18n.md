@@ -15,7 +15,7 @@
 |---|---|
 | `npm run check:v2` | PASS: 경계 906 source files, 테스트 76/76 |
 | `npm run typecheck` | PASS |
-| `npm run test:i18n-formatters` | PASS: 88/88 |
+| `npm run test:i18n-formatters` | PASS: 89/89 |
 | `npm run check:a11y-i18n` | PASS: production render graph 549 files |
 | `npm run test:ownership-harness` | PASS |
 | `npm run validate:pr` | PASS: Jest 170 suites / 1,692 tests, 실패 0 |
