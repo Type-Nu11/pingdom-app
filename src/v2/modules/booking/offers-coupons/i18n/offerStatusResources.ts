@@ -130,4 +130,24 @@ export const offerStatusResources = {
       statuses: { CLOSED: '已結束', DRAFT: '草稿', PUBLISHED: '可領取', UNKNOWN: '狀態待確認' },
     },
   },
+  vi: {
+    offer: {
+      cta: { ended: 'Ưu đãi đã kết thúc', issue: 'Nhận phiếu ưu đãi', notStarted: 'Chưa bắt đầu', soldOut: 'Đã hết lượt', unavailable: 'Không thể nhận' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: 'Tài khoản có chuyến đi đang diễn ra', PUBLIC: 'Mọi người', UNKNOWN: 'Cần kiểm tra điều kiện' },
+      expiry: {
+        ISSUE_PLUS_DAYS: 'Có hiệu lực trong số ngày quy định kể từ khi nhận',
+        ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: 'Có hiệu lực trong số ngày quy định kể từ khi nhận, tối đa đến ngày ưu đãi kết thúc',
+        OFFER_END: 'Có hiệu lực đến khi ưu đãi kết thúc',
+        UNKNOWN: 'Cần kiểm tra thời hạn',
+      },
+      inventory: { LIMITED: 'Số lượng có hạn', UNKNOWN: 'Cần kiểm tra số lượng', UNLIMITED: 'Không giới hạn số lượng' },
+      remaining: {
+        limited_one: 'Còn {{count}}',
+        limited_other: 'Còn {{count}}',
+        unknown: 'Chưa có thông tin số lượng còn lại',
+        unlimited: 'Không giới hạn số lượng',
+      },
+      statuses: { CLOSED: 'Đã kết thúc', DRAFT: 'Bản nháp', PUBLISHED: 'Có thể nhận', UNKNOWN: 'Cần kiểm tra trạng thái' },
+    },
+  },
 } as const;

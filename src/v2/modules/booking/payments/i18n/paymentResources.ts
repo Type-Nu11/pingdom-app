@@ -39,4 +39,16 @@ export const paymentResources = {
       statuses: { FAILED: '付款失敗', PAID: '已付款', PROCESSING: '付款處理中', REFUNDED: '已退款', REFUND_PROCESSING: '退款處理中', UNKNOWN: '狀態待確認' },
     },
   },
+  vi: {
+    payment: {
+      statuses: {
+        FAILED: 'Thanh toán thất bại',
+        PAID: 'Đã thanh toán',
+        PROCESSING: 'Đang thanh toán',
+        REFUNDED: 'Đã hoàn tiền',
+        REFUND_PROCESSING: 'Đang hoàn tiền',
+        UNKNOWN: 'Cần kiểm tra trạng thái',
+      },
+    },
+  },
 } as const;
