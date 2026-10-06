@@ -261,4 +261,47 @@ export const mapTutorialResources = {
     categories: { prompt: 'Toca una <accent>categoría</accent>.', body: 'Elige comida, música u otra categoría\npara ver solo los pines que coincidan.' },
     profile: { prompt: 'Toca <accent>Mi página</accent>.', body: 'Administra tu perfil y tus fechas de viaje,\ny consulta los lugares que has verificado.' },
   },
+  'pt-BR': {
+    name: 'Pingdi',
+    title: 'Conheça o Pingdi',
+    guest: 'viajante',
+    close: 'Fechar tutorial',
+    previous: 'Dica anterior',
+    next: 'Próxima dica',
+    finish: 'Concluir tutorial',
+    progress: 'Etapa {{current}} de {{total}}',
+    welcome: {
+      greeting: 'Olá, {{username}}!',
+      introduction: 'Para deixar suas viagens mais fáceis,',
+      agent: 'eu sou o <accent>Pingdi</accent>, seu agente de IA.',
+      help: 'De encontrar lugares a preparar reservas,\neu ajudo você com uma conversa.',
+      start: 'Vou mostrar rapidinho como funciona!',
+    },
+    map: {
+      prompt: 'Toque no <accent>botão Mapa</accent>.',
+      body: 'Descubra os pins perto de você e os lugares\npopulares na sua região e em todo o país.',
+    },
+    favorites: { prompt: 'Toque no <accent>botão Favoritos</accent>.', body: 'Salve os lugares que interessam a você\ne encontre-os de novo quando quiser.' },
+    community: {
+      prompt: 'Toque no <accent>botão Comunidade</accent>.',
+      body: 'Veja as experiências de outros viajantes\ne marque lugares para compartilhar suas histórias.',
+    },
+    reservations: {
+      prompt: 'Toque no <accent>botão Reservas</accent>.',
+      body: 'Confira a disponibilidade dos lugares que você curte\ne reserve a data e o horário que preferir.',
+    },
+    recommendations: {
+      prompt: 'Toque no <accent>botão Sugestões</accent>.',
+      body: '{{username}}, descubra lugares personalizados\ncom base nos seus interesses e na sua atividade.',
+    },
+    verification: {
+      prompt: 'Toque no <accent>botão Verificar</accent>.',
+      body: 'Avalie os lugares que você visitou\ne verifique sua experiência para que\noutros viajantes visitem com confiança.',
+    },
+    categories: {
+      prompt: 'Toque em uma <accent>categoria</accent>.',
+      body: 'Escolha comida, música ou outra categoria\npara ver apenas os pins correspondentes.',
+    },
+    profile: { prompt: 'Toque em <accent>Minha página</accent>.', body: 'Gerencie seu perfil e suas datas de viagem\ne veja os lugares que você verificou.' },
+  },
 } as const;
