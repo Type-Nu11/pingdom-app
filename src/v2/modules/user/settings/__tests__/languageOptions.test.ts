@@ -17,3 +17,11 @@ test('the active language resolves ja variants and keeps the English default', (
   expect(resolveSelectedLanguage(undefined)).toBe('en');
   expect(resolveSelectedLanguage('fr')).toBe('en');
 });
+
+test('#413 the active language keeps the Simplified/Traditional variant apart', () => {
+  expect(LANGUAGE_SETTING_OPTIONS).toEqual(expect.arrayContaining(['zh-CN', 'zh-TW']));
+  expect(resolveSelectedLanguage('zh-CN')).toBe('zh-CN');
+  expect(resolveSelectedLanguage('zh-TW')).toBe('zh-TW');
+  expect(resolveSelectedLanguage('zh-Hant-HK')).toBe('zh-TW');
+  expect(resolveSelectedLanguage('zh')).toBe('zh-CN');
+});

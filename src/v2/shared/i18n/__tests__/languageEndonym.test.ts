@@ -15,3 +15,10 @@ describe('getLanguageEndonym', () => {
     }
   });
 });
+
+describe('#413 중국어 자체 표기', () => {
+  test('간체와 번체를 각각의 문자로 구분해 표기한다', () => {
+    expect(getLanguageEndonym('zh-CN')).toBe('简体中文');
+    expect(getLanguageEndonym('zh-TW')).toBe('繁體中文');
+  });
+});

@@ -63,3 +63,62 @@ describe('#389 Japanese formatting', () => {
     }
   });
 });
+
+describe('#413 Chinese formatting', () => {
+  test('the formatter locale follows the same Simplified/Traditional split as the language picker', () => {
+    for (const language of ['zh', 'zh-CN', 'zh_CN', 'zh-Hans', 'zh-Hans-TW', 'zh-SG']) {
+      expect(resolveLocale(language)).toBe('zh-CN');
+    }
+    for (const language of ['zh-TW', 'zh_TW', 'zh-Hant', 'zh-HK', 'zh-MO', 'zh-Hant-CN']) {
+      expect(resolveLocale(language)).toBe('zh-TW');
+    }
+    expect(resolveLocale('ja')).toBe('ja-JP');
+    expect(resolveLocale('ko')).toBe('ko-KR');
+    expect(resolveLocale('en')).toBe('en-US');
+  });
+
+  test('currency, amount, and numbers come from the data, not the UI language', () => {
+    for (const language of ['zh-CN', 'zh-TW'] as const) {
+      expect(digits(formatCurrency(12000, 'KRW', language))).toBe('12000');
+      expect(formatCurrency(12000, 'KRW', language)).toMatch(/[₩￦]/);
+      expect(formatCurrency(12000, 'KRW', language)).not.toMatch(/[¥元]|CN¥|NT\$/);
+      expect(formatNumber(1234567, language)).toBe('1,234,567');
+    }
+  });
+
+  test('a place timezone keeps the same calendar date and time in Chinese', () => {
+    const instant = '2026-09-30T14:30:00Z';
+    for (const language of ['zh-CN', 'zh-TW'] as const) {
+      expect(formatDate(instant, language, 'Asia/Seoul')).toBe(formatDate(instant, 'ja', 'Asia/Seoul'));
+      expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), language))).toMatch(/^2026930(14|2)05$/);
+    }
+  });
+
+  test('distance stays metric with the same value, and durations use each script', () => {
+    expect(digits(formatDistance(1500, 'zh-CN'))).toBe(digits(formatDistance(1500, 'ko')));
+    expect(digits(formatDistance(1500, 'zh-TW'))).toBe(digits(formatDistance(1500, 'ko')));
+    expect(formatDistance(1500, 'zh-CN')).toMatch(/公里|km/);
+    expect(formatMinuteRange(5, 10, 'zh-CN')).toContain('分钟');
+    expect(formatMinuteRange(5, 10, 'zh-TW')).toContain('分鐘');
+  });
+
+  test('relative time has a per-script fallback without Intl.RelativeTimeFormat', () => {
+    expect(formatRelativeMinutes(7, 'zh-CN')).toContain('分钟前');
+    expect(formatRelativeMinutes(7, 'zh-TW')).toContain('分鐘前');
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+    Object.defineProperty(Intl, 'RelativeTimeFormat', { configurable: true, value: undefined });
+    try {
+      expect(formatRelativeMinutes(0, 'zh-CN')).toBe('现在');
+      expect(formatRelativeMinutes(18, 'zh-CN')).toBe('18分钟前');
+      expect(formatRelativeMinutes(120, 'zh')).toBe('2小时前');
+      expect(formatRelativeMinutes(0, 'zh-TW')).toBe('現在');
+      expect(formatRelativeMinutes(18, 'zh-Hant-HK')).toBe('18分鐘前');
+      expect(formatRelativeMinutes(120, 'zh-TW')).toBe('2小時前');
+      expect(formatRelativeMinutes(2880, 'zh-TW')).toBe('2天前');
+      expect(formatRelativeMinutes(18, 'ko-KR')).toBe('18분 전');
+      expect(formatRelativeMinutes(18, 'ja')).toBe('18分前');
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'RelativeTimeFormat', descriptor);
+    }
+  });
+});

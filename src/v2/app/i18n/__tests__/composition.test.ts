@@ -134,7 +134,7 @@ test('profile hydration, explicit language persistence, and fallback are preserv
   expect(i18n.t('__missing_357__')).toBe(resources.en.translation.common.missingTranslation);
 });
 
-test.each(['en', 'ko', 'ja'] as const)('test and application instances share the complete %s bundle', async (language) => {
+test.each([...supportedLanguages])('test and application instances share the complete %s bundle', async (language) => {
   await initializeI18n(language);
   const instance = await createTestI18n(language);
   expect(instance.getResourceBundle(language, 'translation')).toEqual(i18n.getResourceBundle(language, 'translation'));
@@ -216,5 +216,61 @@ describe('#389 Japanese language preference', () => {
     expect((await createTestI18n('ja')).t('reservation.list.distanceNear', values)).toBe('ここから350m');
     expect((await createTestI18n('ja')).t('reservation.list.distanceFar', { kilometers: '2.5', meters: 2500 }))
       .toBe('ここから2.5km');
+  });
+});
+
+describe('#413 Chinese language preference', () => {
+  test.each([
+    ['zh-CN', '设置', 'zh-TW'],
+    ['zh-TW', '設定', 'zh-CN'],
+  ] as const)('explicit %s selection applies immediately, persists, and survives a restart and profile refetch', async (language, title, other) => {
+    await initializeI18n('ko');
+    await setLanguage(language);
+    expect(i18n.resolvedLanguage).toBe(language);
+    expect(i18n.t('settings.title')).toBe(title);
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe(language);
+
+    // Relaunch with a profile that carries the other variant, then refetch it after login.
+    resetI18nForTests();
+    await initializeI18n(other);
+    expect(i18n.resolvedLanguage).toBe(language);
+    await syncProfileLanguage(other);
+    await syncProfileLanguage('ko');
+    expect(i18n.resolvedLanguage).toBe(language);
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe(language);
+  });
+
+  test('switching between the variants stores the last explicit choice only', async () => {
+    await initializeI18n('en');
+    await setLanguage('zh-CN');
+    await setLanguage('zh-TW');
+    expect(i18n.resolvedLanguage).toBe('zh-TW');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('zh-TW');
+    expect(i18n.t('settings.language.title')).toBe(resources['zh-TW'].translation.settings.language.title);
+  });
+
+  test('a Chinese profile applies only while there is no stored choice', async () => {
+    await initializeI18n('zh-Hant-TW');
+    expect(i18n.resolvedLanguage).toBe('zh-TW');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBeNull();
+    await syncProfileLanguage('zh-Hans');
+    expect(i18n.resolvedLanguage).toBe('zh-CN');
+
+    resetI18nForTests();
+    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, 'ja');
+    await initializeI18n('zh-CN');
+    expect(i18n.resolvedLanguage).toBe('ja');
+    await syncProfileLanguage('zh-TW');
+    expect(i18n.resolvedLanguage).toBe('ja');
+  });
+
+  test('missing Chinese keys keep the English fallback policy and never fall back across variants', async () => {
+    await initializeI18n('zh-TW');
+    expect(i18n.options.fallbackLng).toEqual(['en']);
+    expect(i18n.t('__missing_413__')).toBe(resources.en.translation.common.missingTranslation);
+    expect(i18n.getResourceBundle('zh-TW', 'translation')).toEqual(resources['zh-TW'].translation);
+    expect(i18n.getResourceBundle('zh-CN', 'translation')).toEqual(resources['zh-CN'].translation);
+    expect(i18n.t('map.detail.reviewCount', { count: 1 })).toBe('1 則評論');
+    expect(i18n.t('map.decision.resultsFor', { query: '咖啡' })).toBe('「咖啡」的搜尋結果');
   });
 });
