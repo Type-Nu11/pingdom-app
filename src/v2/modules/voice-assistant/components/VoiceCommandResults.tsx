@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageBackground } from 'react-native';
+import { ImageBackground, Share } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
@@ -10,6 +10,7 @@ import StarIcon from '../assets/star.svg';
 import type { VoiceCommandViewState } from '../hooks/useVoiceCommands';
 import type { VoicePlaceFacts } from '../model/voiceAssistantCommand.types';
 import { formatDraftAmount } from '../model/reservationDraft';
+import { usePlaceExplorationMediaList } from '../../place/exploration';
 
 const placeCardImage = require('../assets/place-card.png');
 
@@ -23,6 +24,11 @@ type Props = {
 
 export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled = false, historical = false }: Props) {
   const { t } = useTranslation();
+  const resultPlaces = state.phase === 'result' && state.result.outcome.status === 'succeeded'
+    ? (state.result.command === 'searchNearbyPlaces' || state.result.command === 'searchNearbyReservablePlaces')
+      ? state.result.outcome.data.places : state.result.command === 'getPlaceDetails' ? [state.result.outcome.data.place] : [] : [];
+  // Existing Place media query, using only IDs that the command executor verified.
+  const media = usePlaceExplorationMediaList(resultPlaces.map(place => place.id), { enabled: !historical });
   const copy = (key: string) => <Copy testID="voice-command-state" accessibilityLiveRegion="polite">{t(`voiceAssistant.command.${key}`)}</Copy>;
   const clarification = (field: string) => <Copy accessibilityLiveRegion="polite">{t(historical && ['date', 'timeRange', 'quantity'].includes(field)
     ? `voiceAssistant.picker.${field}` : `voiceAssistant.command.fields.${field}`)}</Copy>;
@@ -35,18 +41,20 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   </>;
   const places = (items: readonly VoicePlaceFacts[]) => <>
     <Cards horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-      {items.map(item => <PlaceCard place={item} key={item.id} />)}
+      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} key={item.id} />)}
     </Cards>
-    <Summary>{t('voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>
+    <Summary>{t(state.phase === 'result' && state.result.command === 'searchNearbyPlaces'
+      ? 'voiceAssistant.command.nearbySummary' : 'voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>
     <Actions horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
       <PrimaryAction accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.showOnMap')} disabled={historical} accessibilityState={{ disabled: historical }} onPress={onShowMap}>
         <PrimaryActionText>{t('voiceAssistant.command.showOnMap')}</PrimaryActionText>
       </PrimaryAction>
       <ActionChip accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.directions')} disabled>
-        <DirectionsIcon width={13} height={13} /><ActionText>{t('voiceAssistant.command.directions')}</ActionText>
+        <DirectionsIcon /><ActionText>{t('voiceAssistant.command.directions')}</ActionText>
       </ActionChip>
-      <ActionChip accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.share')} disabled>
-        <ShareIcon width={13} height={13} /><ActionText>{t('voiceAssistant.command.share')}</ActionText>
+      <ActionChip accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.share')} disabled={historical}
+        accessibilityState={{ disabled: historical }} onPress={() => { void Share.share({ message: items.map(item => `${item.name}\n${item.address}`).join('\n\n') }).catch(() => {}); }}>
+        <ShareIcon /><ActionText>{t('voiceAssistant.command.share')}</ActionText>
       </ActionChip>
     </Actions>
   </>;
@@ -61,7 +69,7 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   const result = state.result;
   if (result.outcome.status === 'rejected') return error(result.outcome.code);
   if (result.outcome.status === 'clarification_required') return clarification(result.outcome.field);
-  if (result.command === 'searchNearbyReservablePlaces' && result.outcome.status === 'succeeded') {
+  if ((result.command === 'searchNearbyReservablePlaces' || result.command === 'searchNearbyPlaces') && result.outcome.status === 'succeeded') {
     return result.outcome.data.places.length ? places(result.outcome.data.places)
       : <Copy testID="voice-command-empty">{t('voiceAssistant.command.empty')}</Copy>;
   }
@@ -101,10 +109,11 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   return null;
 }
 
-function PlaceCard({ place }: { place: VoicePlaceFacts }) {
+function PlaceCard({ place, imageUrl }: { place: VoicePlaceFacts; imageUrl?: string }) {
   const { t } = useTranslation();
   return <CardWrap>
-    <CardImage source={placeCardImage} resizeMode="cover" accessibilityLabel={place.name}>
+    <CardImage testID={`voice-place-image-${place.id}`} source={imageUrl ? { uri: imageUrl } : placeCardImage} resizeMode="cover" accessibilityLabel={place.name}>
+      {!imageUrl && <ImageNotice>{t('voiceAssistant.command.sampleImage')}</ImageNotice>}
       <CardShade pointerEvents="none">
         <Svg width="100%" height="100%"><Defs><LinearGradient id="assistantCardShade" x1="0" x2="0" y1="0" y2="1">
           <Stop offset="0" stopColor="#000" stopOpacity="0" /><Stop offset="0.5" stopColor="#000" stopOpacity="0.45" /><Stop offset="1" stopColor="#000" stopOpacity="1" />
@@ -115,7 +124,9 @@ function PlaceCard({ place }: { place: VoicePlaceFacts }) {
         <StarIcon width={28} height={28} />
       </CardFooter>
     </CardImage>
-    <Address numberOfLines={1}>{place.address || t(`voiceAssistant.command.operating.${place.operatingStatus}`)}</Address>
+    <Address numberOfLines={1}>{place.distanceMeters !== undefined
+      ? t('voiceAssistant.command.distance', { distance: (place.distanceMeters / 1000).toFixed(2) })
+      : place.address || t(`voiceAssistant.command.operating.${place.operatingStatus}`)}</Address>
   </CardWrap>;
 }
 
@@ -125,6 +136,7 @@ const Cards = styled.ScrollView`
 `;
 const CardWrap = styled.View`width: 164px; gap: 8px;`;
 const CardImage = styled(ImageBackground)`width: 164px; height: 164px; border-radius: 16px; overflow: hidden; justify-content: flex-end;`;
+const ImageNotice = styled(Text)`position: absolute; top: 8px; left: 8px; color: #f8f8f8; background-color: rgba(0, 0, 0, 0.5); font-size: 10px; padding: 2px 4px; border-radius: 4px;`;
 const CardShade = styled.View`position: absolute; left: 0px; right: 0px; bottom: 0px; height: 106px;`;
 const CardFooter = styled.View`min-height: 70px; padding: 16px 12px 12px; flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 8px;`;
 const CardName = styled(Text)`flex: 1; color: #f8f8f8; font-size: 16px; line-height: 21px; font-weight: 700;`;

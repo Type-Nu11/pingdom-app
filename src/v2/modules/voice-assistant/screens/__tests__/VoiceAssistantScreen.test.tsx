@@ -548,3 +548,26 @@ test('changing the session consumer clears in-memory conversation history', asyn
     onFinalInput={jest.fn(() => 'accepted' as const)} />).element);
   expect(screen.queryByText('이전 계정 요청')).toBeNull();
 });
+
+test('place results use the Figma compact sheet while retaining the composer and real user request', async () => {
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
+  const props = { onClose: jest.fn(), serverSubmission: true as const, onFinalInput: submit };
+  const view = await renderWithProviders(navigationWrapper(<VoiceAssistantScreen {...props} />).element);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '근처에 뭐 있는지 알려줘');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props} commandState={{ phase: 'result', result: {
+    schemaVersion: 1, kind: 'command_result', source: 'app', id: 'app-result-figma', commandId: 'general',
+    command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: { coverage: 'nearest_places', places: [
+      { id: 1, name: '조회한 장소', address: '서울', touristCategories: ['CAFE'], operatingStatus: 'OPERATING', distanceMeters: 1230 },
+    ] } },
+  } }} />).element);
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처에 뭐 있는지 알려줘”');
+  expect(screen.getByTestId('voice-assistant-details')).toHaveStyle({ height: 557, borderTopLeftRadius: 36, borderBottomRightRadius: 36, overflow: 'hidden' });
+  expect(screen.queryByTestId('voice-user-message-1')).toBeNull();
+  expect(screen.getByText('여기서 1.23km')).toBeVisible();
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
+  expect(screen.queryByText(/4.8점|지금 영업 중/)).toBeNull();
+  await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props} commandState={{ phase: 'clarification', field: 'date' }} />).element);
+  expect(screen.getByTestId('voice-user-message-1')).toBeVisible();
+  expect(screen.getByText('며칠에 방문하시나요?')).toBeVisible();
+});

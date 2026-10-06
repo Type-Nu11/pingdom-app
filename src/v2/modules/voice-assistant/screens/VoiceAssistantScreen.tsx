@@ -6,7 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import styled, { useTheme } from 'styled-components/native';
 import { Text, TextInput } from '../../../shared/components/Typography';
 import { AssistantEdgeGlow } from '../components/AssistantEdgeGlow';
-import AssistantIcon from '../assets/assistant.svg';
+import PingdyInputIcon from '../assets/pingdy-input.svg';
 import CloseIcon from '../assets/close.svg';
 import MicrophoneIcon from '../assets/microphone.svg';
 import PingdyIcon from '../assets/pingdy.svg';
@@ -150,7 +150,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   );
   const composer = (embedded = false) => <Composer testID="voice-assistant-composer" $embedded={embedded}>
     <InputRow $embedded={embedded}>
-      <AssistantIcon />
+      <PingdyInputIcon />
       {state.phase === 'listening' ? <ListeningText testID={state.partial ? 'voice-partial' : 'voice-listening-prompt'}
         accessibilityLiveRegion="polite" numberOfLines={1}>{state.partial || state.draft || t('voiceAssistant.listeningPrompt')}</ListeningText>
         : <Input accessibilityLabel={t('voiceAssistant.input')} editable={!busy && !pending}
@@ -191,6 +191,9 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const assistantVisible = busy || !!state.error || state.phase === 'permissionDenied' || state.phase === 'unavailable'
     || !!guidance || !!pickerVisible || !!conditionChips || !!selectionError || state.delivery === 'localOnly'
     || (!!commandState && commandState.phase !== 'idle') || (!serverSubmission && state.source === 'text' && !!state.draft);
+  const resultsMode = !!(commandState?.phase === 'result' && commandState.result.outcome.status === 'succeeded'
+    && ((commandState.result.command === 'searchNearbyPlaces' || commandState.result.command === 'searchNearbyReservablePlaces')
+      ? commandState.result.outcome.data.places.length > 0 : commandState.result.command === 'getPlaceDetails'));
   return (
     <KeyboardProvider><Screen testID="voice-assistant-screen" accessibilityViewIsModal onAccessibilityEscape={close}>
       <Backdrop accessibilityRole="button"
@@ -199,18 +202,22 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       <SafeArea edges={['top', 'left', 'right']} pointerEvents="box-none">
         <KeyboardAvoidingView testID="voice-assistant-keyboard-layout" behavior="padding" style={{ flex: 1 }} pointerEvents="box-none">
         <KeyboardLayout pointerEvents="box-none" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
-          {showDetails ? <Sheet $question={pickerVisible} testID="voice-assistant-details">
+          {showDetails ? <Sheet $question={pickerVisible || resultsMode} $results={resultsMode} testID="voice-assistant-details">
             <SheetHeading>
             <Grabber />
-            <Header $question={pickerVisible}>
+            <Header $question={pickerVisible || resultsMode}>
               <Title accessibilityRole="header"><PingdyIcon /><TitleText>{t('voiceAssistant.brand')}</TitleText></Title>
               <CloseButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.close')} onPress={close}>
                 <CloseIcon />
               </CloseButton>
             </Header>
             </SheetHeading>
-            <Content ref={contentRef} onContentSizeChange={() => contentRef.current?.scrollToEnd({ animated: true })} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: pickerVisible ? 0 : 10, gap: pickerVisible ? 16 : 8 }}>
-            {turns.map((turn, index) => <Turn key={turn.id} testID={`voice-turn-${turn.id}`}>
+            <Content $results={resultsMode} ref={contentRef} onContentSizeChange={() => {
+              if (!resultsMode) contentRef.current?.scrollToEnd({ animated: true });
+              else contentRef.current?.scrollTo({ y: 0, animated: false });
+            }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: pickerVisible || resultsMode ? 0 : 10, gap: resultsMode ? 6 : pickerVisible ? 16 : 8 }}>
+            {resultsMode && turns.at(-1) && <ResultRequest testID="voice-result-request">“{turns.at(-1)!.text}”</ResultRequest>}
+            {!resultsMode && turns.map((turn, index) => <Turn key={turn.id} testID={`voice-turn-${turn.id}`}>
               <UserMessage testID={`voice-user-message-${turn.id}`}>
                 <Speaker>{t('voiceAssistant.conversation.you')}</Speaker>
                 <QueryText>{turn.text}</QueryText>
@@ -229,8 +236,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
                 <FeedbackDismiss accessibilityRole="button" accessibilityLabel={t('voiceAssistant.feedback.dismiss')}
                   onPress={dismissFeedback}><FeedbackDismissText>{t('voiceAssistant.feedback.dismiss')}</FeedbackDismissText></FeedbackDismiss>
               </FeedbackActions>
-            </AssistantMessage> : assistantVisible ? <AssistantMessage testID="voice-current-assistant">
-            <Speaker>{t('voiceAssistant.brand')}</Speaker>
+            </AssistantMessage> : assistantVisible ? <AssistantMessage $results={resultsMode} testID="voice-current-assistant">
+            {!resultsMode && <Speaker>{t('voiceAssistant.brand')}</Speaker>}
             {(busy || state.phase === 'permissionDenied' || state.phase === 'unavailable') && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.phases.${state.phase}`)}</Copy>}
             {state.phase === 'permissionDenied' && <Copy accessibilityRole="alert">{t(`voiceAssistant.permissions.${state.permission}`)}</Copy>}
             {state.permission === 'blocked' && settingsButton()}
@@ -273,8 +280,9 @@ const WaveBar = styled.View<{ $height: number; $strong?: boolean }>`
   width: 3px; height: ${({ $height }) => $height}px; border-radius: 2px;
   background-color: ${({ $strong }) => $strong ? '#ff1956' : '#ff4a75'};
 `;
-const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))<{ $question: boolean }>`
+const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))<{ $question: boolean; $results: boolean }>`
   width: 100%; max-width: 386px; max-height: 78%; align-self: center; padding-top: 6px; padding-bottom: 12px;
+  height: ${({ $results }) => $results ? '557px' : 'auto'};
   gap: ${({ $question }) => $question ? 16 : 8}px; border-radius: 36px; overflow: ${({ $question }) => $question ? 'hidden' : 'visible'}; background-color: ${({ theme }) => theme.liquidGlass.sheet.tint};
 `;
 const Grabber = styled.View`width: 56px; height: 5px; border-radius: 3px; align-self: center; background-color: #bfc1c1;`;
@@ -286,8 +294,8 @@ const CloseButton = styled.Pressable.attrs({ style: { boxShadow: '0px 4px 20px r
   width: 32px; height: 32px; border-radius: 16px; align-items: center; justify-content: center;
   background-color: rgba(255, 255, 255, 0.56);
 `;
-const Content = styled(ScrollView)`
-  flex-grow: 0;
+const Content = styled(ScrollView)<{ $results: boolean }>`
+  flex-grow: ${({ $results }) => $results ? 1 : 0};
   flex-shrink: 1;
   min-height: 0px;
 `;
@@ -348,7 +356,8 @@ const ListeningText = styled(Text)`
 const Turn = styled.View`gap: 10px;`;
 const UserMessage = styled.View`align-self: flex-end; max-width: 90%; padding: 10px 14px; gap: 4px; border-radius: 16px;
   background-color: ${({ theme }) => theme.liquidGlass.category.activeTint};`;
-const AssistantMessage = styled.View`align-self: stretch; gap: 8px; padding: 10px 0px;`;
+const AssistantMessage = styled.View<{ $results?: boolean }>`align-self: stretch; gap: ${({ $results }) => $results ? 6 : 8}px; padding: ${({ $results }) => $results ? 0 : 10}px 0px;`;
+const ResultRequest = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const Speaker = styled(Text)`font-size: 12px; line-height: 16px; font-weight: 600; color: ${({ theme }) => theme.colors.textAlternative};`;
 const QueryText = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const FeedbackMessage = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 16px; line-height: 21px; font-weight: 500;`;

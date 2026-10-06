@@ -6,6 +6,7 @@ export const voiceAssistantResources = {
     picker: {"date": "What date would you like to visit?", "timeRange": "What time would you like to visit?", "quantity": "How many people are visiting?", "start": "From", "end": "Until", "am": "AM", "pm": "PM", "hour": "{{count}} hours", "minute": "{{count}} minutes", "people": "{{count}} people", "increase": "Add a person", "decrease": "Remove a person", "confirm": "Confirm selection", "confirmValue": "Confirm {{value}}", "edit": "Edit", "previousMonth": "Previous month", "nextMonth": "Next month", "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat", "voiceOrText": "You can also answer by voice or type below.", "tooLong": "Your combined request is too long. Please start a shorter request."},
     sessionErrors: voiceSessionErrors.en,
     command: {
+      nearbySummary: 'I found {{count}} nearby places using your current location.\n\nCheck the place information and choose somewhere to visit.', distance: '{{distance}} km from here', sampleImage: 'Sample image',
       submission: 'Voice capture stops after 1 second of detected quiet for a clear Korean request, question, or a quantity answer to a quantity clarification; otherwise it waits 3 seconds. Speaking again resets the wait. Finalized input is sent to the AI server automatically. Text input is sent when you use Send. Exact coordinates are used only by the existing place lookup.',
       introTitle: 'Before using AI', introContinue: 'Continue to AI', introClose: 'Close',
       timezone: 'Request timezone: {{timezone}}', processing: 'AI is thinking.', canceled: 'This request has ended. Type a new request or tap the microphone to continue.',
@@ -45,6 +46,7 @@ export const voiceAssistantResources = {
     picker: {"date": "며칠에 방문하시나요?", "timeRange": "몇 시쯤 방문하시나요?", "quantity": "몇 분이 방문하시나요?", "start": "시작", "end": "종료", "am": "오전", "pm": "오후", "hour": "{{count}}시", "minute": "{{count}}분", "people": "{{count}}명", "increase": "인원 늘리기", "decrease": "인원 줄이기", "confirm": "선택 확인", "confirmValue": "{{value}} 확인", "edit": "수정", "previousMonth": "이전 달", "nextMonth": "다음 달", "weekdays": "일,월,화,수,목,금,토", "voiceOrText": "아래 입력창에 말하거나 입력해도 돼요.", "tooLong": "기존 요청과 선택한 조건이 너무 깁니다. 짧은 새 요청을 입력해 주세요."},
     sessionErrors: voiceSessionErrors.ko,
     command: {
+      nearbySummary: '현재 위치를 기준으로 가까운 장소 {{count}}곳을 찾았어요.\n\n각 장소의 정보를 확인하고 원하는 곳을 골라보세요.', distance: '여기서 {{distance}}km', sampleImage: '예시 이미지',
       submission: '명확한 한국어 요청·질문이나 인원 질문에 대한 답변은 무음이 감지된 뒤 1초, 그 외에는 3초 후 음성 입력을 종료합니다. 다시 말하면 대기 시간을 초기화합니다. 최종 인식된 내용만 AI 서버에 자동 전송합니다. 텍스트 입력은 보내기를 누르면 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.',
       introTitle: 'AI 사용 안내', introContinue: '확인하고 시작하기', introClose: '닫기',
       timezone: '요청 시간대: {{timezone}}', processing: 'AI가 생각 중이에요.', canceled: '요청을 종료했습니다. 새 요청을 입력하거나 마이크를 눌러 다시 말씀해 주세요.',
@@ -84,6 +86,7 @@ export const voiceAssistantResources = {
     picker: {"date": "いつ訪問しますか？", "timeRange": "何時頃に訪問しますか？", "quantity": "何名で訪問しますか？", "start": "開始", "end": "終了", "am": "午前", "pm": "午後", "hour": "{{count}}時", "minute": "{{count}}分", "people": "{{count}}名", "increase": "人数を増やす", "decrease": "人数を減らす", "confirm": "選択を確認", "confirmValue": "{{value}}を確認", "edit": "変更", "previousMonth": "前の月", "nextMonth": "次の月", "weekdays": "日,月,火,水,木,金,土", "voiceOrText": "下の入力欄で音声や文字でも回答できます。", "tooLong": "リクエストと選択した条件が長すぎます。短い新しいリクエストを入力してください。"},
     sessionErrors: voiceSessionErrors.ja,
     command: {
+      nearbySummary: '現在地の近くで{{count}}か所見つかりました。\n\n各場所の情報を確認して、訪れたい場所を選んでください。', distance: 'ここから{{distance}}km', sampleImage: '参考画像',
       submission: '明確な韓国語の依頼・質問、または人数の質問への回答は無音を検出してから1秒、それ以外は3秒後に音声入力を終了します。再び話すと待ち時間をリセットします。確定した内容のみAIサーバーへ自動で送信します。テキスト入力は「送信」をタップすると送信されます。正確な現在地の座標は、既存の場所検索にのみ使用します。',
       introTitle: 'AIご利用前のご案内', introContinue: '確認して始める', introClose: '閉じる',
       timezone: 'リクエストのタイムゾーン：{{timezone}}', processing: 'AIが考えています。', canceled: 'リクエストを終了しました。新しい内容を入力するか、マイクをタップしてお話しください。',
