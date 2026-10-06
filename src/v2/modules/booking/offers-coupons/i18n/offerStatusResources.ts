@@ -150,4 +150,25 @@ export const offerStatusResources = {
       statuses: { CLOSED: 'Đã kết thúc', DRAFT: 'Bản nháp', PUBLISHED: 'Có thể nhận', UNKNOWN: 'Cần kiểm tra trạng thái' },
     },
   },
+  es: {
+    offer: {
+      cta: { ended: 'Oferta finalizada', issue: 'Obtener cupón', notStarted: 'Aún no comienza', soldOut: 'Agotado', unavailable: 'No se puede obtener' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: 'Cuentas con un viaje activo', PUBLIC: 'Cualquier persona', UNKNOWN: 'Condiciones por confirmar' },
+      expiry: {
+        ISSUE_PLUS_DAYS: 'Válido durante un número fijo de días tras la emisión',
+        ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: 'Válido durante un número fijo de días tras la emisión, hasta la fecha de fin de la oferta',
+        OFFER_END: 'Válido hasta que termine la oferta',
+        UNKNOWN: 'Vigencia por confirmar',
+      },
+      inventory: { LIMITED: 'Cantidad limitada', UNKNOWN: 'Cantidad por confirmar', UNLIMITED: 'Sin límite de cantidad' },
+      remaining: {
+        limited_one: 'Queda {{count}}',
+        limited_other: 'Quedan {{count}}',
+        limited_many: 'Quedan {{count}}',
+        unknown: 'Cantidad restante no disponible',
+        unlimited: 'Sin límite de cantidad',
+      },
+      statuses: { CLOSED: 'Finalizada', DRAFT: 'Borrador', PUBLISHED: 'Disponible', UNKNOWN: 'Estado por confirmar' },
+    },
+  },
 } as const;

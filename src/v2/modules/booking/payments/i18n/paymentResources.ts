@@ -51,4 +51,16 @@ export const paymentResources = {
       },
     },
   },
+  es: {
+    payment: {
+      statuses: {
+        FAILED: 'Pago fallido',
+        PAID: 'Pagado',
+        PROCESSING: 'Pago en curso',
+        REFUNDED: 'Reembolsado',
+        REFUND_PROCESSING: 'Reembolso en curso',
+        UNKNOWN: 'Estado por confirmar',
+      },
+    },
+  },
 } as const;
