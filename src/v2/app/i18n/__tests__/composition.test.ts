@@ -355,3 +355,57 @@ describe('#415 Spanish language preference', () => {
     expect(i18n.t('map.decision.resultsFor', { query: 'café' })).toBe('Resultados de «café»');
   });
 });
+
+describe('#416 Brazilian Portuguese language preference', () => {
+  test('explicit pt-BR selection applies immediately, persists, and survives a restart and profile refetch', async () => {
+    await initializeI18n('ko');
+    await setLanguage('pt-BR');
+    expect(i18n.resolvedLanguage).toBe('pt-BR');
+    expect(i18n.t('settings.title')).toBe('Configurações');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('pt-BR');
+
+    resetI18nForTests();
+    await initializeI18n('ko');
+    expect(i18n.resolvedLanguage).toBe('pt-BR');
+    await syncProfileLanguage('en');
+    expect(i18n.resolvedLanguage).toBe('pt-BR');
+  });
+
+  test('a Brazilian Portuguese profile applies only while there is no stored choice', async () => {
+    await initializeI18n('en');
+    await syncProfileLanguage('pt');
+    expect(i18n.resolvedLanguage).toBe('pt-BR');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBeNull();
+
+    resetI18nForTests();
+    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, 'ko');
+    await initializeI18n('pt-BR');
+    expect(i18n.resolvedLanguage).toBe('ko');
+    await syncProfileLanguage('pt');
+    expect(i18n.resolvedLanguage).toBe('ko');
+  });
+
+  test('a pt-PT profile or refetch is not applied as pt-BR, while an explicit pt-BR choice is kept', async () => {
+    await initializeI18n('pt-PT');
+    expect(i18n.resolvedLanguage).not.toBe('pt-BR');
+    const before = i18n.resolvedLanguage;
+    await syncProfileLanguage('pt-PT');
+    expect(i18n.resolvedLanguage).toBe(before);
+
+    await setLanguage('pt-BR');
+    await syncProfileLanguage('pt-PT');
+    expect(i18n.resolvedLanguage).toBe('pt-BR');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('pt-BR');
+  });
+
+  test('Brazilian Portuguese plural forms cover one, other, and many, and missing keys keep the English fallback', async () => {
+    await initializeI18n('pt-BR');
+    expect(i18n.options.fallbackLng).toEqual(['en']);
+    expect(i18n.t('__missing_416__')).toBe(resources.en.translation.common.missingTranslation);
+    expect(i18n.getResourceBundle('pt-BR', 'translation')).toEqual(resources['pt-BR'].translation);
+    expect(i18n.t('map.detail.reviewCount', { count: 1 })).toBe('1 avaliação');
+    expect(i18n.t('map.detail.reviewCount', { count: 2 })).toBe('2 avaliações');
+    expect(i18n.t('map.detail.reviewCount', { count: 1000000 })).toBe('1000000 avaliações');
+    expect(i18n.t('map.decision.resultsFor', { query: 'café' })).toBe('Resultados para “café”');
+  });
+});

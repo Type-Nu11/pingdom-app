@@ -215,3 +215,52 @@ describe('#415 Spanish formatting', () => {
     }
   });
 });
+
+describe('#416 Brazilian Portuguese formatting', () => {
+  test('only pt and pt-BR resolve to the pt-BR formatter locale; pt-PT keeps the default', () => {
+    expect(resolveLocale('pt')).toBe('pt-BR');
+    expect(resolveLocale('pt-BR')).toBe('pt-BR');
+    expect(resolveLocale('pt_BR')).toBe('pt-BR');
+    expect(resolveLocale('pt-PT')).toBe('en-US');
+    expect(resolveLocale('pt-AO')).toBe('en-US');
+    expect(resolveLocale('es')).toBe('es');
+    expect(resolveLocale('en')).toBe('en-US');
+  });
+
+  test('currency, amount, and numbers come from the data, not the UI language', () => {
+    expect(digits(formatCurrency(12000, 'KRW', 'pt-BR'))).toBe('12000');
+    expect(formatCurrency(12000, 'KRW', 'pt-BR')).toMatch(/[₩￦]|KRW/);
+    expect(formatCurrency(12000, 'KRW', 'pt-BR')).not.toMatch(/R\\$|BRL|€/);
+    expect(formatNumber(1234567, 'pt-BR')).toBe('1.234.567');
+  });
+
+  test('a place timezone keeps the same calendar date, shown day-first', () => {
+    const instant = '2026-09-30T14:30:00Z';
+    expect(formatDate(instant, 'pt-BR', 'Asia/Seoul')).toBe('30/09/26');
+    expect(formatDate(instant, 'pt-BR', 'Asia/Seoul')).not.toBe(formatDate('2026-09-29T14:30:00Z', 'pt-BR', 'Asia/Seoul'));
+    expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), 'pt-BR'))).toBe('3020261405');
+  });
+
+  test('distance is metric with the same value as other metric languages, not miles', () => {
+    expect(formatDistance(1500, 'pt-BR')).toBe('1,5 km');
+    expect(digits(formatDistance(1500, 'pt-BR'))).toBe(digits(formatDistance(1500, 'ko')));
+    expect(formatDistance(1500, 'pt-BR')).toBe('1,5 km');
+    expect(formatDistance(1500, 'en')).toBe('0.9 mi');
+    expect(formatMinuteRange(5, 10, 'pt-BR')).toBe('5 min–10 min');
+  });
+
+  test('relative time uses Intl and a Brazilian Portuguese fallback without Intl.RelativeTimeFormat', () => {
+    expect(formatRelativeMinutes(7, 'pt-BR')).toBe('há 7 minutos');
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+    Object.defineProperty(Intl, 'RelativeTimeFormat', { configurable: true, value: undefined });
+    try {
+      expect(formatRelativeMinutes(0, 'pt-BR')).toBe('agora');
+      expect(formatRelativeMinutes(18, 'pt-BR')).toBe('há 18 min');
+      expect(formatRelativeMinutes(120, 'pt-BR')).toBe('há 2 h');
+      expect(formatRelativeMinutes(2880, 'pt-BR')).toBe('há 2 d');
+      expect(formatRelativeMinutes(5, 'en-US')).toBe('5 min ago');
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'RelativeTimeFormat', descriptor);
+    }
+  });
+});

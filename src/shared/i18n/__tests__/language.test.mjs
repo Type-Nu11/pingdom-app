@@ -242,3 +242,58 @@ test('#415 restores a stored es preference and applies the choice before persist
   assert.equal(persisted, false);
   assert.deepEqual(calls, ['change:es', 'persist:es']);
 });
+
+test('#416 normalizes Brazilian Portuguese locales and language names to pt-BR', () => {
+  for (const value of ["pt", "PT", "pt-BR", "pt_BR", " pt-br ", "pt-Latn-BR", "pt-Latn", "Brazilian Portuguese", "Português (Brasil)", "포르투갈어(브라질)"]) {
+    assert.equal(normalizeSupportedLanguage(value), 'pt-BR', value);
+  }
+  for (const value of ["pt-PT", "pt_PT", "PT-pt", "pt-Latn-PT", "pt-AO", "pt-MZ", "por", "br", "portuguese", "português"]) {
+    assert.equal(normalizeSupportedLanguage(value), null, value);
+  }
+});
+
+test('#416 a pt-PT device or profile is never mapped to pt-BR and follows the existing fallback', () => {
+  assert.equal(resolvePreferredLanguage({ deviceLanguage: 'pt-PT' }), 'en');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'ko', deviceLanguage: 'pt-PT' }), 'ko');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'pt-PT', deviceLanguage: 'ja-JP' }), 'ja');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'pt-PT', deviceLanguage: 'pt-BR' }), 'pt-BR');
+  // Choosing pt-BR explicitly in settings is allowed and survives a pt-PT device.
+  assert.equal(resolvePreferredLanguage({ storedLanguage: 'pt-BR', profileLanguage: 'pt-PT', deviceLanguage: 'pt-PT' }), 'pt-BR');
+});
+
+test('#416 an unsupported stored pt-PT value is ignored instead of being read as pt-BR', async () => {
+  const result = await restorePreferredLanguage({
+    deviceLanguage: 'pt-PT',
+    storage: { getItem: async () => 'pt-PT', setItem: async () => {} },
+    storageKey: 'language',
+  });
+  assert.deepEqual(result, { hasStoredPreference: false, language: 'en' });
+});
+
+test('#416 a stored explicit choice is never overridden by a Brazilian Portuguese profile or device', () => {
+  assert.equal(resolvePreferredLanguage({ storedLanguage: 'ko', profileLanguage: 'pt-BR', deviceLanguage: 'pt-BR' }), 'ko');
+  assert.equal(resolvePreferredLanguage({ storedLanguage: 'pt-BR', profileLanguage: 'ko', deviceLanguage: 'en-US' }), 'pt-BR');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'pt-BR', deviceLanguage: 'ko-KR' }), 'pt-BR');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'ja', deviceLanguage: 'pt-BR' }), 'ja');
+  assert.equal(resolvePreferredLanguage({ deviceLanguage: 'pt-BR' }), 'pt-BR');
+});
+
+test('#416 restores a stored pt-BR preference and applies the choice before persistence', async () => {
+  for (const stored of ["pt-BR", "pt", "pt_BR"]) {
+    const result = await restorePreferredLanguage({
+      deviceLanguage: 'en-US',
+      profileLanguage: 'ko',
+      storage: { getItem: async () => stored, setItem: async () => {} },
+      storageKey: 'language',
+    });
+    assert.deepEqual(result, { hasStoredPreference: true, language: 'pt-BR' }, stored);
+  }
+  const calls = [];
+  const persisted = await applyLanguagePreference({
+    changeLanguage: async (language) => { calls.push(`change:${language}`); },
+    language: 'pt-BR',
+    persist: async (language) => { calls.push(`persist:${language}`); throw new Error('quota'); },
+  });
+  assert.equal(persisted, false);
+  assert.deepEqual(calls, ['change:pt-BR', 'persist:pt-BR']);
+});

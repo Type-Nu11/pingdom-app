@@ -182,4 +182,26 @@ describe('LanguageSelectionScreen', () => {
       expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('es');
     });
   });
+  test('#416 Português (Brasil)를 선택하면 pt-BR로 적용·저장하고 검색으로도 찾는다', async () => {
+    resetI18nForTests();
+    await initializeI18n();
+    await i18n.changeLanguage('en');
+    const onNext = jest.fn();
+    await renderWithProviders(
+      <LanguageSelectionScreen onBack={jest.fn()} onNext={onNext} />,
+      { i18n },
+    );
+
+    await fireEvent.changeText(screen.getByTestId('language-search-input'), 'portug');
+    expect(screen.getByText('Português (Brasil)')).toBeVisible();
+    expect(screen.queryByTestId('language-option-en')).toBeNull();
+    await fireEvent.press(screen.getByTestId('language-option-pt-BR'));
+    await fireEvent.press(screen.getByTestId('language-continue'));
+
+    expect(onNext).toHaveBeenCalledWith('pt-BR');
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe('pt-BR'));
+    await waitFor(async () => {
+      expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('pt-BR');
+    });
+  });
 });

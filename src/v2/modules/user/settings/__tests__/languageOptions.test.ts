@@ -39,3 +39,10 @@ test('#415 the active language resolves es variants', () => {
   expect(resolveSelectedLanguage('es-419')).toBe('es');
   expect(resolveSelectedLanguage('es-MX')).toBe('es');
 });
+
+test('#416 the active language resolves pt-BR variants', () => {
+  expect(LANGUAGE_SETTING_OPTIONS).toContain('pt-BR');
+  expect(resolveSelectedLanguage('pt-BR')).toBe('pt-BR');
+  expect(resolveSelectedLanguage('pt')).toBe('pt-BR');
+  expect(resolveSelectedLanguage('pt-PT')).toBe('en');
+});

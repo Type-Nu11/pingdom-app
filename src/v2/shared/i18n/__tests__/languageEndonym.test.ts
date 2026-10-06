@@ -34,3 +34,9 @@ describe('#415 스페인어 자체 표기', () => {
     expect(getLanguageEndonym('es')).toBe('Español');
   });
 });
+
+describe('#416 브라질 포르투갈어 자체 표기', () => {
+  test('Português (Brasil)로 표기한다', () => {
+    expect(getLanguageEndonym('pt-BR')).toBe('Português (Brasil)');
+  });
+});

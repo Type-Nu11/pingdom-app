@@ -317,3 +317,27 @@ describe('#415 스페인어 언어 설정', () => {
     expect(screen.queryByText('Coreano')).not.toBeOnTheScreen();
   });
 });
+
+describe('#416 브라질 포르투갈어 언어 설정', () => {
+  test('언어 페이지는 Português (Brasil)를 선택지로 제공하고 선택을 전달한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'Português (Brasil)' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('pt-BR');
+  });
+
+  test('브라질 포르투갈어 UI에서는 언어 페이지가 브라질 포르투갈어로 표시되고 Português (Brasil)만 선택 상태다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'pt-BR' },
+    );
+
+    expect(screen.getByText('Idioma')).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Português (Brasil), Selecionado' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.queryByText('Coreano')).not.toBeOnTheScreen();
+  });
+});
