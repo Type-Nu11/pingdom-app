@@ -11,6 +11,30 @@ const REFERENCE_LANGUAGE = 'en';
 const SOURCE_LANGUAGES = [REFERENCE_LANGUAGE, 'ko'];
 const JAPANESE_SCRIPT = /[぀-ヿ㐀-鿿]/u;
 const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힯]/u;
+const KANA = /[぀-ヿ]/u;
+const HAN = /[㐀-鿿]/u;
+
+// High-frequency characters whose Simplified and Traditional forms differ. A Simplified form in
+// zh-TW (or the reverse) means one catalog was reused for the other instead of being translated.
+const CHINESE_VARIANT_PAIRS = [
+  '这這', '们們', '为為', '时時', '来來', '对對', '说說', '还還', '过過', '发發', '经經', '现現', '点點', '边邊',
+  '开開', '关關', '门門', '问問', '间間', '见見', '让讓', '请請', '选選', '择擇', '录錄', '设設', '应應', '获獲',
+  '网網', '络絡', '确確', '认認', '务務', '码碼', '号號', '东東', '车車', '长長', '图圖', '书書', '页頁', '预預',
+  '约約', '订訂', '单單', '优優', '态態', '验驗', '证證', '览覽', '历歷', '账帳', '语語', '记記', '数數', '据據',
+  '标標', '类類', '试試', '输輸', '载載', '续續', '费費', '馆館', '购購', '厅廳',
+];
+const SIMPLIFIED_ONLY = new RegExp(`[${CHINESE_VARIANT_PAIRS.map(([simplified]) => simplified).join('')}]`, 'u');
+const TRADITIONAL_ONLY = new RegExp(`[${CHINESE_VARIANT_PAIRS.map(([, traditional]) => traditional).join('')}]`, 'u');
+
+// Brand names, units, and formatting-only values that stay in Latin script in Chinese.
+const CHINESE_UNTRANSLATED_ALLOWLIST = [
+  'community.author',
+  'map.recommendations.context.purpose.kPop',
+  'mapTutorial.name',
+  'visitVerification.distanceKm',
+  'voiceAssistant.brand',
+  'voiceAssistant.shortLabel',
+];
 
 // Rules each translated language must satisfy on top of key parity.
 // - nativeScript: a value with Latin words must also contain this script, unless allowlisted.
@@ -32,7 +56,22 @@ const LANGUAGE_RULES = {
       'voiceAssistant.shortLabel',
     ]),
   },
+  'zh-CN': {
+    forbiddenCharacters: TRADITIONAL_ONLY,
+    forbiddenScripts: [HANGUL, KANA],
+    nativeScript: HAN,
+    untranslatedAllowlist: new Set(CHINESE_UNTRANSLATED_ALLOWLIST),
+  },
+  'zh-TW': {
+    forbiddenCharacters: SIMPLIFIED_ONLY,
+    forbiddenScripts: [HANGUL, KANA],
+    nativeScript: HAN,
+    untranslatedAllowlist: new Set(CHINESE_UNTRANSLATED_ALLOWLIST),
+  },
 };
+
+// Language names in the picker are written in other languages' scripts on purpose.
+const isLanguageName = (key) => key.startsWith('selectLanguage.options.');
 
 const flatten = (value, prefix = '') => Object.entries(value).flatMap(([key, child]) => {
   const path = prefix ? `${prefix}.${key}` : key;
@@ -113,13 +152,13 @@ for (const language of translatedLanguages) {
     const translated = catalog(language);
     const allowlist = rules.untranslatedAllowlist ?? new Set();
     const leaked = [...translated]
-      .filter(([, value]) => (rules.forbiddenScripts ?? []).some((script) => script.test(value)))
+      .filter(([key, value]) => !isLanguageName(key) && (rules.forbiddenScripts ?? []).some((script) => script.test(value)))
       .map(([key, value]) => `${key}=${value}`);
     assert.deepEqual(leaked, [], 'other-language script');
 
     const forbidden = rules.forbiddenCharacters;
     const wrongVariant = forbidden
-      ? [...translated].filter(([, value]) => forbidden.test(value)).map(([key, value]) => `${key}=${value}`)
+      ? [...translated].filter(([key, value]) => !isLanguageName(key) && forbidden.test(value)).map(([key, value]) => `${key}=${value}`)
       : [];
     assert.deepEqual(wrongVariant, [], 'wrong script variant');
 
@@ -162,6 +201,17 @@ for (const language of translatedLanguages) {
     assert.deepEqual(failures, []);
   });
 }
+
+test('#413 Simplified and Traditional Chinese are translated independently', () => {
+  const simplified = catalog('zh-CN');
+  const traditional = catalog('zh-TW');
+  const comparable = [...simplified].filter(([key, value]) => !isLanguageName(key) && HAN.test(value));
+  const identical = comparable.filter(([key, value]) => traditional.get(key) === value);
+  // Short labels such as 返回 or 全部 are legitimately the same; whole catalogs must not be.
+  assert.ok(identical.length < comparable.length * 0.2, `${identical.length}/${comparable.length} identical values`);
+  assert.equal(simplified.get('selectLanguage.options.zh-CN'), '简体中文');
+  assert.equal(traditional.get('selectLanguage.options.zh-TW'), '繁體中文');
+});
 
 test('language option labels exist for every supported language', () => {
   const endonyms = supportedLanguages.map((language) => resources[language].translation.selectLanguage.options[language]);
