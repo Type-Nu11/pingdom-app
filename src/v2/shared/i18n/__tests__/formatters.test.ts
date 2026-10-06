@@ -63,3 +63,211 @@ describe('#389 Japanese formatting', () => {
     }
   });
 });
+
+describe('#413 Chinese formatting', () => {
+  test('the formatter locale follows the same Simplified/Traditional split as the language picker', () => {
+    for (const language of ['zh', 'zh-CN', 'zh_CN', 'zh-Hans', 'zh-Hans-TW', 'zh-SG']) {
+      expect(resolveLocale(language)).toBe('zh-CN');
+    }
+    for (const language of ['zh-TW', 'zh_TW', 'zh-Hant', 'zh-HK', 'zh-MO', 'zh-Hant-CN']) {
+      expect(resolveLocale(language)).toBe('zh-TW');
+    }
+    expect(resolveLocale('ja')).toBe('ja-JP');
+    expect(resolveLocale('ko')).toBe('ko-KR');
+    expect(resolveLocale('en')).toBe('en-US');
+  });
+
+  test('currency, amount, and numbers come from the data, not the UI language', () => {
+    for (const language of ['zh-CN', 'zh-TW'] as const) {
+      expect(digits(formatCurrency(12000, 'KRW', language))).toBe('12000');
+      expect(formatCurrency(12000, 'KRW', language)).toMatch(/[₩￦]/);
+      expect(formatCurrency(12000, 'KRW', language)).not.toMatch(/[¥元]|CN¥|NT\$/);
+      expect(formatNumber(1234567, language)).toBe('1,234,567');
+    }
+  });
+
+  test('a place timezone keeps the same calendar date and time in Chinese', () => {
+    const instant = '2026-09-30T14:30:00Z';
+    for (const language of ['zh-CN', 'zh-TW'] as const) {
+      expect(formatDate(instant, language, 'Asia/Seoul')).toBe(formatDate(instant, 'ja', 'Asia/Seoul'));
+      expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), language))).toMatch(/^2026930(14|2)05$/);
+    }
+  });
+
+  test('distance stays metric with the same value, and durations use each script', () => {
+    expect(digits(formatDistance(1500, 'zh-CN'))).toBe(digits(formatDistance(1500, 'ko')));
+    expect(digits(formatDistance(1500, 'zh-TW'))).toBe(digits(formatDistance(1500, 'ko')));
+    expect(formatDistance(1500, 'zh-CN')).toMatch(/公里|km/);
+    expect(formatMinuteRange(5, 10, 'zh-CN')).toContain('分钟');
+    expect(formatMinuteRange(5, 10, 'zh-TW')).toContain('分鐘');
+  });
+
+  test('relative time has a per-script fallback without Intl.RelativeTimeFormat', () => {
+    expect(formatRelativeMinutes(7, 'zh-CN')).toContain('分钟前');
+    expect(formatRelativeMinutes(7, 'zh-TW')).toContain('分鐘前');
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+    Object.defineProperty(Intl, 'RelativeTimeFormat', { configurable: true, value: undefined });
+    try {
+      expect(formatRelativeMinutes(0, 'zh-CN')).toBe('现在');
+      expect(formatRelativeMinutes(18, 'zh-CN')).toBe('18分钟前');
+      expect(formatRelativeMinutes(120, 'zh')).toBe('2小时前');
+      expect(formatRelativeMinutes(0, 'zh-TW')).toBe('現在');
+      expect(formatRelativeMinutes(18, 'zh-Hant-HK')).toBe('18分鐘前');
+      expect(formatRelativeMinutes(120, 'zh-TW')).toBe('2小時前');
+      expect(formatRelativeMinutes(2880, 'zh-TW')).toBe('2天前');
+      expect(formatRelativeMinutes(18, 'ko-KR')).toBe('18분 전');
+      expect(formatRelativeMinutes(18, 'ja')).toBe('18分前');
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'RelativeTimeFormat', descriptor);
+    }
+  });
+});
+
+describe('#414 Vietnamese formatting', () => {
+  test('vi and vi-VN keep the existing vi-VN locale branch', () => {
+    expect(resolveLocale('vi')).toBe('vi-VN');
+    expect(resolveLocale('vi-VN')).toBe('vi-VN');
+    expect(resolveLocale('vi_VN')).toBe('vi-VN');
+  });
+
+  test('currency, amount, and numbers come from the data, not the UI language', () => {
+    expect(digits(formatCurrency(12000, 'KRW', 'vi'))).toBe('12000');
+    expect(formatCurrency(12000, 'KRW', 'vi')).toMatch(/[₩￦]/);
+    expect(formatCurrency(12000, 'KRW', 'vi')).not.toMatch(/₫|VND/);
+    expect(formatNumber(1234567, 'vi')).toBe('1.234.567');
+  });
+
+  test('a place timezone keeps the same calendar date, shown day-first', () => {
+    const instant = '2026-09-30T14:30:00Z';
+    expect(formatDate(instant, 'vi', 'Asia/Seoul')).toBe('30/09/26');
+    // Late evening in Seoul is still the previous day in Los Angeles: only the timezone moves the date.
+    expect(formatDate(instant, 'vi', 'America/Los_Angeles')).toBe('30/09/26');
+    expect(formatDate('2026-09-30T20:30:00Z', 'vi', 'Asia/Seoul')).toBe('01/10/26');
+    expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), 'vi'))).toBe('14053092026');
+  });
+
+  test('distance stays metric with a decimal comma, and durations are Vietnamese', () => {
+    expect(formatDistance(1500, 'vi')).toBe('1,5 km');
+    expect(digits(formatDistance(1500, 'vi'))).toBe(digits(formatDistance(1500, 'ko')));
+    expect(formatMinuteRange(5, 10, 'vi')).toBe('5 phút–10 phút');
+  });
+
+  test('relative time uses Intl and a Vietnamese fallback without Intl.RelativeTimeFormat', () => {
+    expect(formatRelativeMinutes(7, 'vi')).toBe('7 phút trước');
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+    Object.defineProperty(Intl, 'RelativeTimeFormat', { configurable: true, value: undefined });
+    try {
+      expect(formatRelativeMinutes(0, 'vi')).toBe('bây giờ');
+      expect(formatRelativeMinutes(18, 'vi-VN')).toBe('18 phút trước');
+      expect(formatRelativeMinutes(120, 'vi')).toBe('2 giờ trước');
+      expect(formatRelativeMinutes(2880, 'vi')).toBe('2 ngày trước');
+      expect(formatRelativeMinutes(5, 'en-US')).toBe('5 min ago');
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'RelativeTimeFormat', descriptor);
+    }
+  });
+});
+
+describe('#415 Spanish formatting', () => {
+  test('every Spanish device locale resolves to the region-neutral es formatter locale', () => {
+    expect(resolveLocale('es')).toBe('es');
+    expect(resolveLocale('es-ES')).toBe('es');
+    expect(resolveLocale('es-419')).toBe('es');
+    expect(resolveLocale('es-MX')).toBe('es');
+    expect(resolveLocale('es_AR')).toBe('es');
+    expect(resolveLocale('en')).toBe('en-US');
+    expect(resolveLocale('et')).toBe('en-US');
+  });
+
+  test('currency, amount, and numbers come from the data, not the UI language', () => {
+    expect(digits(formatCurrency(12000, 'KRW', 'es'))).toBe('12000');
+    expect(formatCurrency(12000, 'KRW', 'es')).toMatch(/[₩￦]|KRW/);
+    expect(formatCurrency(12000, 'KRW', 'es')).not.toMatch(/€|\$|MXN|EUR/);
+    expect(formatNumber(1234567, 'es')).toBe('1.234.567');
+  });
+
+  test('a place timezone keeps the same calendar date, shown day-first', () => {
+    const instant = '2026-09-30T14:30:00Z';
+    expect(formatDate(instant, 'es', 'Asia/Seoul')).toBe('30/09/26');
+    // Late evening in Seoul is still the previous day in Los Angeles: only the timezone moves the date.
+    expect(formatDate(instant, 'es', 'America/Los_Angeles')).toBe('30/09/26');
+    expect(formatDate('2026-09-30T20:30:00Z', 'es', 'Asia/Seoul')).toBe('01/10/26');
+    expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), 'es'))).toBe('3020261405');
+  });
+
+  test('distance is metric with the same value as other metric languages, not miles', () => {
+    expect(formatDistance(1500, 'es')).toBe('1,5 km');
+    expect(digits(formatDistance(1500, 'es'))).toBe(digits(formatDistance(1500, 'ko')));
+    expect(formatDistance(1500, 'es-MX')).toBe('1,5 km');
+    expect(formatDistance(1500, 'en')).toBe('0.9 mi');
+    expect(formatMinuteRange(5, 10, 'es')).toBe('5 min–10 min');
+  });
+
+  test('relative time uses Intl and a Spanish fallback without Intl.RelativeTimeFormat', () => {
+    expect(formatRelativeMinutes(7, 'es')).toBe('hace 7 minutos');
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+    Object.defineProperty(Intl, 'RelativeTimeFormat', { configurable: true, value: undefined });
+    try {
+      expect(formatRelativeMinutes(0, 'es')).toBe('ahora');
+      expect(formatRelativeMinutes(18, 'es-MX')).toBe('hace 18 min');
+      expect(formatRelativeMinutes(120, 'es')).toBe('hace 2 h');
+      expect(formatRelativeMinutes(2880, 'es')).toBe('hace 2 d');
+      expect(formatRelativeMinutes(5, 'en-US')).toBe('5 min ago');
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'RelativeTimeFormat', descriptor);
+    }
+  });
+});
+
+describe('#416 Brazilian Portuguese formatting', () => {
+  test('only pt and pt-BR resolve to the pt-BR formatter locale; pt-PT keeps the default', () => {
+    expect(resolveLocale('pt')).toBe('pt-BR');
+    expect(resolveLocale('pt-BR')).toBe('pt-BR');
+    expect(resolveLocale('pt_BR')).toBe('pt-BR');
+    expect(resolveLocale('pt-PT')).toBe('en-US');
+    expect(resolveLocale('pt-AO')).toBe('en-US');
+    expect(resolveLocale('es')).toBe('es');
+    expect(resolveLocale('en')).toBe('en-US');
+  });
+
+  test('currency, amount, and numbers come from the data, not the UI language', () => {
+    expect(digits(formatCurrency(12000, 'KRW', 'pt-BR'))).toBe('12000');
+    expect(formatCurrency(12000, 'KRW', 'pt-BR')).toMatch(/[₩￦]|KRW/);
+    expect(formatCurrency(12000, 'KRW', 'pt-BR')).not.toMatch(/R\$|BRL|€/);
+    expect(formatNumber(1234567, 'pt-BR')).toBe('1.234.567');
+  });
+
+  test('a place timezone keeps the same calendar date, shown day-first', () => {
+    const instant = '2026-09-30T14:30:00Z';
+    expect(formatDate(instant, 'pt-BR', 'Asia/Seoul')).toBe('30/09/26');
+    // Late evening in Seoul is still the previous day in Los Angeles: only the timezone moves the date.
+    expect(formatDate(instant, 'pt-BR', 'America/Los_Angeles')).toBe('30/09/26');
+    expect(formatDate('2026-09-30T20:30:00Z', 'pt-BR', 'Asia/Seoul')).toBe('01/10/26');
+    expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), 'pt-BR'))).toBe('3020261405');
+  });
+
+  test('distance is metric with the same value as other metric languages, not miles', () => {
+    expect(formatDistance(1500, 'pt-BR')).toBe('1,5 km');
+    expect(digits(formatDistance(1500, 'pt-BR'))).toBe(digits(formatDistance(1500, 'ko')));
+    // pt-PT is not switched to the Brazilian conventions and keeps its previous output.
+    expect(formatDistance(1500, 'pt-PT')).toBe('0.9 mi');
+    expect(formatDistance(1500, 'pt-BR')).toBe('1,5 km');
+    expect(formatDistance(1500, 'en')).toBe('0.9 mi');
+    expect(formatMinuteRange(5, 10, 'pt-BR')).toBe('5 min–10 min');
+  });
+
+  test('relative time uses Intl and a Brazilian Portuguese fallback without Intl.RelativeTimeFormat', () => {
+    expect(formatRelativeMinutes(7, 'pt-BR')).toBe('há 7 minutos');
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+    Object.defineProperty(Intl, 'RelativeTimeFormat', { configurable: true, value: undefined });
+    try {
+      expect(formatRelativeMinutes(0, 'pt-BR')).toBe('agora');
+      expect(formatRelativeMinutes(18, 'pt-BR')).toBe('há 18 min');
+      expect(formatRelativeMinutes(120, 'pt-BR')).toBe('há 2 h');
+      expect(formatRelativeMinutes(2880, 'pt-BR')).toBe('há 2 d');
+      expect(formatRelativeMinutes(5, 'en-US')).toBe('5 min ago');
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'RelativeTimeFormat', descriptor);
+    }
+  });
+});

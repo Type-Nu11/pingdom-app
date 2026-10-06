@@ -29,4 +29,50 @@ export const paymentResources = {
           UNKNOWN: '状態の確認が必要です',
         },
       } },
+  'zh-CN': {
+    payment: {
+      statuses: { FAILED: '支付失败', PAID: '已支付', PROCESSING: '支付处理中', REFUNDED: '已退款', REFUND_PROCESSING: '退款处理中', UNKNOWN: '状态待确认' },
+    },
+  },
+  'zh-TW': {
+    payment: {
+      statuses: { FAILED: '付款失敗', PAID: '已付款', PROCESSING: '付款處理中', REFUNDED: '已退款', REFUND_PROCESSING: '退款處理中', UNKNOWN: '狀態待確認' },
+    },
+  },
+  vi: {
+    payment: {
+      statuses: {
+        FAILED: 'Thanh toán thất bại',
+        PAID: 'Đã thanh toán',
+        PROCESSING: 'Đang thanh toán',
+        REFUNDED: 'Đã hoàn tiền',
+        REFUND_PROCESSING: 'Đang hoàn tiền',
+        UNKNOWN: 'Cần kiểm tra trạng thái',
+      },
+    },
+  },
+  es: {
+    payment: {
+      statuses: {
+        FAILED: 'Pago fallido',
+        PAID: 'Pagado',
+        PROCESSING: 'Pago en curso',
+        REFUNDED: 'Reembolsado',
+        REFUND_PROCESSING: 'Reembolso en curso',
+        UNKNOWN: 'Estado por confirmar',
+      },
+    },
+  },
+  'pt-BR': {
+    payment: {
+      statuses: {
+        FAILED: 'Pagamento não concluído',
+        PAID: 'Pago',
+        PROCESSING: 'Pagamento em andamento',
+        REFUNDED: 'Reembolsado',
+        REFUND_PROCESSING: 'Reembolso em andamento',
+        UNKNOWN: 'Status a confirmar',
+      },
+    },
+  },
 } as const;

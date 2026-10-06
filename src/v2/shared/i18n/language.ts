@@ -1,3 +1,4 @@
+import { isBrazilianPortuguese, isTraditionalChinese, parseLocale, type ParsedLocale } from './locale';
 import { resources, supportedLanguages, type SupportedLanguage } from './resources';
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
@@ -12,11 +13,39 @@ export function isSupportedLanguage(value: unknown): value is SupportedLanguage 
     && supportedLanguages.includes(value as SupportedLanguage);
 }
 
-// Language names that stored profiles or legacy selections may carry instead of a code.
-const LANGUAGE_NAME_ALIASES: Record<SupportedLanguage, readonly string[]> = {
-  en: ['english', '영어'],
-  ko: ['korean', '한국어'],
-  ja: ['japanese', '日本語', '일본어'],
+type LanguageDefinition = Readonly<{
+  // Language names that stored profiles or legacy selections may carry instead of a code.
+  aliases: readonly string[];
+  // Whether a BCP 47 locale (device, profile, or stored value) selects this language.
+  matchesLocale: (locale: ParsedLocale) => boolean;
+}>;
+
+const matchesLanguage = (language: string) => (locale: ParsedLocale) => locale.language === language;
+
+// Every supported language declares its own locale mapping here, so a locale that no
+// definition claims falls through to the existing profile/device/default order.
+const LANGUAGE_DEFINITIONS: Record<SupportedLanguage, LanguageDefinition> = {
+  en: { aliases: ['english', '영어'], matchesLocale: matchesLanguage('en') },
+  ko: { aliases: ['korean', '한국어'], matchesLocale: matchesLanguage('ko') },
+  ja: { aliases: ['japanese', '日本語', '일본어'], matchesLocale: matchesLanguage('ja') },
+  // Chinese is split by script: see isTraditionalChinese for the script/region mapping.
+  'zh-CN': {
+    aliases: ['chinese', 'simplified chinese', 'chinese (simplified)', '简体中文', '中文', '중국어', '중국어(간체)'],
+    matchesLocale: (locale) => locale.language === 'zh' && !isTraditionalChinese(locale),
+  },
+  'zh-TW': {
+    aliases: ['traditional chinese', 'chinese (traditional)', '繁體中文', '중국어(번체)'],
+    matchesLocale: isTraditionalChinese,
+  },
+  vi: { aliases: ['vietnamese', 'tiếng việt', '베트남어'], matchesLocale: matchesLanguage('vi') },
+  // One neutral Spanish catalog serves every region (es-ES, es-419, es-MX, …).
+  es: { aliases: ['spanish', 'español', '스페인어'], matchesLocale: matchesLanguage('es') },
+  // Only bare `pt` and `pt-BR` select Brazilian Portuguese. `pt-PT` and other regions are left
+  // unmatched on purpose, so they follow the profile/device/default order instead.
+  'pt-BR': {
+    aliases: ['brazilian portuguese', 'portuguese (brazil)', 'português (brasil)', 'português do brasil', '포르투갈어(브라질)'],
+    matchesLocale: isBrazilianPortuguese,
+  },
 };
 
 // Each language is named in its own script (English, 한국어, 日本語), taken from
@@ -28,11 +57,12 @@ export function getLanguageEndonym(language: SupportedLanguage): string {
 export function normalizeSupportedLanguage(value: unknown): SupportedLanguage | null {
   if (typeof value !== 'string') return null;
 
-  const normalized = value.trim().toLowerCase().replace('_', '-');
-  const baseLanguage = normalized.split('-')[0];
-  return supportedLanguages.find((language) => (
-    baseLanguage === language || LANGUAGE_NAME_ALIASES[language].includes(normalized)
-  )) ?? null;
+  const normalized = value.trim().toLowerCase();
+  const locale = parseLocale(normalized);
+  return supportedLanguages.find((language) => {
+    const definition = LANGUAGE_DEFINITIONS[language];
+    return definition.matchesLocale(locale) || definition.aliases.includes(normalized);
+  }) ?? null;
 }
 
 export function detectDeviceLanguage(): SupportedLanguage | null {

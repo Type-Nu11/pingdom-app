@@ -69,11 +69,11 @@ test('keeps the current guide until the next control is measured, then changes s
   expect(screen.getByTestId('map-tutorial-highlight')).toHaveStyle({ left: 93, top: 798 });
 });
 
-test('first visit shows Pingdi, traverses all nine steps, and remembers dismissal on remount', async () => {
+test('first visit shows Pingdy, traverses all nine steps, and remembers dismissal on remount', async () => {
   const view = await renderWithProviders(<MapTutorialProvider enabled username="민지" />);
   await screen.findByTestId('map-tutorial-step-welcome');
   await fireEvent(screen.getByTestId('map-tutorial-card'), 'layout', { nativeEvent: { layout: { height: 340 } } });
-  expect(screen.getAllByText('핑디')).toHaveLength(2);
+  expect(screen.getAllByText('Pingdy')).toHaveLength(2);
   expect(screen.getByText('안녕하세요, 민지님')).toBeVisible();
   expect(screen.queryByTestId('map-tutorial-previous')).toBeNull();
 

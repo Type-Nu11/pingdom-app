@@ -24,15 +24,16 @@ describe('languageSelection', () => {
       'selectLanguage.options.ko': 'Korean',
     };
     const options = getLanguageOptions();
-    expect(filterLanguageOptions(options, 'ENG', (key) => labels[key]).map((o) => o.code))
+    const translate = (key: string) => labels[key] ?? '';
+    expect(filterLanguageOptions(options, 'ENG', translate).map((o) => o.code))
       .toEqual(['en']);
-    expect(filterLanguageOptions(options, 'korean', (key) => labels[key]).map((o) => o.code))
+    expect(filterLanguageOptions(options, 'korean', translate).map((o) => o.code))
       .toEqual(['ko']);
-    expect(filterLanguageOptions(options, '한국', (key) => labels[key]).map((o) => o.code))
+    expect(filterLanguageOptions(options, '한국', translate).map((o) => o.code))
       .toEqual(['ko']);
-    expect(filterLanguageOptions(options, '日本', (key) => labels[key]).map((o) => o.code))
+    expect(filterLanguageOptions(options, '日本', translate).map((o) => o.code))
       .toEqual(['ja']);
-    expect(filterLanguageOptions(options, '', (key) => labels[key])).toHaveLength(options.length);
-    expect(filterLanguageOptions(options, 'xyz', (key) => labels[key])).toEqual([]);
+    expect(filterLanguageOptions(options, '', translate)).toHaveLength(options.length);
+    expect(filterLanguageOptions(options, 'xyz', translate)).toEqual([]);
   });
 });
