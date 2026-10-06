@@ -221,4 +221,44 @@ export const mapTutorialResources = {
       body: 'Quản lý hồ sơ và ngày đi của bạn,\nđồng thời xem lại các địa điểm bạn đã xác minh.',
     },
   },
+  es: {
+    name: 'Pingdi',
+    title: 'Conoce a Pingdi',
+    guest: 'viajero',
+    close: 'Cerrar tutorial',
+    previous: 'Consejo anterior',
+    next: 'Siguiente consejo',
+    finish: 'Finalizar tutorial',
+    progress: 'Paso {{current}} de {{total}}',
+    welcome: {
+      greeting: '¡Hola, {{username}}!',
+      introduction: 'Para que tus viajes sean más fáciles,',
+      agent: 'soy <accent>Pingdi</accent>, tu agente de IA.',
+      help: 'Desde encontrar lugares hasta preparar reservas,\nte ayudo con una sola conversación.',
+      start: '¡Te muestro rápidamente cómo funciona!',
+    },
+    map: {
+      prompt: 'Toca el <accent>botón Mapa</accent>.',
+      body: 'Descubre los pines que tienes cerca y los lugares\npopulares de tu zona y de todo el país.',
+    },
+    favorites: { prompt: 'Toca el <accent>botón Favoritos</accent>.', body: 'Guarda los lugares que te interesan\ny vuelve a encontrarlos cuando quieras.' },
+    community: {
+      prompt: 'Toca el <accent>botón Comunidad</accent>.',
+      body: 'Explora las experiencias de otros viajeros\ny etiqueta lugares para compartir tus historias.',
+    },
+    reservations: {
+      prompt: 'Toca el <accent>botón Reservas</accent>.',
+      body: 'Consulta la disponibilidad de los lugares que te gustan\ny reserva la fecha y la hora que prefieras.',
+    },
+    recommendations: {
+      prompt: 'Toca el <accent>botón Sugerencias</accent>.',
+      body: '{{username}}, descubre lugares personalizados\nsegún tus intereses y tu actividad.',
+    },
+    verification: {
+      prompt: 'Toca el <accent>botón Verificar</accent>.',
+      body: 'Reseña los lugares que has visitado\ny verifica tu experiencia para que\notros viajeros los visiten con confianza.',
+    },
+    categories: { prompt: 'Toca una <accent>categoría</accent>.', body: 'Elige comida, música u otra categoría\npara ver solo los pines que coincidan.' },
+    profile: { prompt: 'Toca <accent>Mi página</accent>.', body: 'Administra tu perfil y tus fechas de viaje,\ny consulta los lugares que has verificado.' },
+  },
 } as const;
