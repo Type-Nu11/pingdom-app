@@ -110,4 +110,24 @@ export const offerStatusResources = {
           UNKNOWN: '状態の確認が必要です',
         },
       } },
+  'zh-CN': {
+    offer: {
+      cta: { ended: '优惠已结束', issue: '领取优惠券', notStarted: '尚未开始', soldOut: '已全部领完', unavailable: '无法领取' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: '有进行中行程的账号', PUBLIC: '所有人', UNKNOWN: '条件待确认' },
+      expiry: { ISSUE_PLUS_DAYS: '自领取之日起在规定天数内有效', ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: '自领取之日起在规定天数内有效，最晚至优惠结束日', OFFER_END: '有效期至优惠结束', UNKNOWN: '有效期待确认' },
+      inventory: { LIMITED: '数量有限', UNKNOWN: '数量待确认', UNLIMITED: '数量不限' },
+      remaining: { limited_one: '剩余 {{count}} 张', limited_other: '剩余 {{count}} 张', unknown: '未提供剩余数量', unlimited: '数量不限' },
+      statuses: { CLOSED: '已结束', DRAFT: '草稿', PUBLISHED: '可领取', UNKNOWN: '状态待确认' },
+    },
+  },
+  'zh-TW': {
+    offer: {
+      cta: { ended: '優惠已結束', issue: '領取優惠券', notStarted: '尚未開始', soldOut: '已全數領完', unavailable: '無法領取' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: '有進行中行程的帳號', PUBLIC: '所有人', UNKNOWN: '條件待確認' },
+      expiry: { ISSUE_PLUS_DAYS: '自領取日起於指定天數內有效', ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: '自領取日起於指定天數內有效，最晚至優惠結束日', OFFER_END: '有效至優惠結束', UNKNOWN: '有效期限待確認' },
+      inventory: { LIMITED: '數量有限', UNKNOWN: '數量待確認', UNLIMITED: '數量不限' },
+      remaining: { limited_one: '剩餘 {{count}} 張', limited_other: '剩餘 {{count}} 張', unknown: '未提供剩餘數量', unlimited: '數量不限' },
+      statuses: { CLOSED: '已結束', DRAFT: '草稿', PUBLISHED: '可領取', UNKNOWN: '狀態待確認' },
+    },
+  },
 } as const;
