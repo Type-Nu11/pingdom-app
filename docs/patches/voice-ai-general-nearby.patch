@@ -1,0 +1,233 @@
+--- a/src/main/java/com/typenull/pingdom/consultation/application/ProviderEnvelopeValidator.java
++++ b/src/main/java/com/typenull/pingdom/consultation/application/ProviderEnvelopeValidator.java
+@@ -17,7 +17,7 @@
+ public class ProviderEnvelopeValidator {
+     private static final Set<String> COMMON = Set.of("schemaVersion", "id", "kind");
+     private static final Set<String> COMMANDS = Set.of(
+-            "searchNearbyReservablePlaces", "getPlaceDetails", "getAvailabilities",
++            "searchNearbyPlaces", "searchNearbyReservablePlaces", "getPlaceDetails", "getAvailabilities",
+             "prepareReservation", "cancelVoiceSession"
+     );
+     private static final Set<String> CLARIFICATION_FIELDS = Set.of(
+@@ -52,6 +52,12 @@
+         JsonNode args = node.path("args");
+         if (!COMMANDS.contains(command) || !args.isObject()) invalid("unsupported_command_or_args");
+         switch (command) {
++            case "searchNearbyPlaces" -> {
++                allowedFields(args, Set.of("touristCategory", "useCurrentLocation"));
++                required(args, "useCurrentLocation");
++                if (args.has("touristCategory") && !CATEGORIES.contains(args.path("touristCategory").asText())) invalid("tourist_category");
++                if (!args.path("useCurrentLocation").isBoolean()) invalid("search_arguments");
++            }
+             case "searchNearbyReservablePlaces" -> {
+                 allowedFields(args, Set.of("touristCategory", "date", "startTime", "endTime", "quantity", "useCurrentLocation"));
+                 required(args, "date", "startTime", "endTime", "quantity", "useCurrentLocation");
+--- a/src/main/java/com/typenull/pingdom/consultation/infrastructure/gemini/GeminiGenerateContentClient.java
++++ b/src/main/java/com/typenull/pingdom/consultation/infrastructure/gemini/GeminiGenerateContentClient.java
+@@ -46,6 +46,12 @@
+             If a request is ambiguous, use clarification_request. If no safe command applies, use assistant_message.
+             The envelope id must equal the supplied request id.
+             Do not invent place or availability ids, dates, times, quantity, or location permission.
++            For general nearby discovery ("근처 뭐 있어?", "근처에 뭐 있는지 알려줘", "아무거나 주변에 있는 거 보여줘"),
++            use searchNearbyPlaces with useCurrentLocation=true to ask the app to check its own location permission.
++            touristCategory is optional. Never ask for date, time, quantity or category for general discovery.
++            Only explicit reservation intent uses searchNearbyReservablePlaces and its required booking arguments.
++            Never label general discovery results as bookable. Never invent a placeId for "여기로 예약해 줘";
++            ask which place if a verified selection is not supplied. Reservation confirmation is always app/user-owned.
+             Ask for missing command arguments with clarification_request. Write user-facing text in Korean.
+             """;
+
+--- a/src/main/resources/openapi/provider-envelope.v1.schema.json
++++ b/src/main/resources/openapi/provider-envelope.v1.schema.json
+@@ -3,6 +3,59 @@
+   "title": "Pingdom provider envelope v1",
+   "$comment": "Provider input only. After structural validation, ALWAYS use parseVoiceAssistantEnvelope: Gregorian calendar validity, same-day startTime < endTime, UTF-16 text length, whitespace-only text rejection, and own-data-property checks are normative runtime constraints. No app result is accepted.",
+   "oneOf": [
++    {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "schemaVersion",
++        "id",
++        "kind",
++        "command",
++        "args"
++      ],
++      "properties": {
++        "schemaVersion": {
++          "const": 1
++        },
++        "id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 128,
++          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
++        },
++        "kind": {
++          "const": "command_request"
++        },
++        "command": {
++          "const": "searchNearbyPlaces"
++        },
++        "args": {
++          "type": "object",
++          "additionalProperties": false,
++          "required": [
++            "useCurrentLocation"
++          ],
++          "properties": {
++            "touristCategory": {
++              "enum": [
++                "K_POP",
++                "BEAUTY",
++                "FASHION",
++                "CAFE",
++                "FOOD",
++                "POP_UP",
++                "EXHIBITION",
++                "NIGHTLIFE",
++                "OTHER"
++              ]
++            },
++            "useCurrentLocation": {
++              "type": "boolean"
++            }
++          }
++        }
++      }
++    },
+     {
+       "type": "object",
+       "additionalProperties": false,
+--- a/src/test/java/com/typenull/pingdom/consultation/api/VoiceAiContractIntegrationTest.java
++++ b/src/test/java/com/typenull/pingdom/consultation/api/VoiceAiContractIntegrationTest.java
+@@ -59,7 +59,7 @@
+     @MockBean GeminiGenerateContentClient provider;
+
+     /**
+-     * 음성 메시지의 ProviderEnvelopeV1 참조·8개 union·추가 필드 금지·버전/ID 조건과 operation별 오류·필수 세션 필드·인증을 검증.
++     * 음성 메시지의 ProviderEnvelopeV1 참조·9개 union·추가 필드 금지·버전/ID 조건과 operation별 오류·필수 세션 필드·인증을 검증.
+      * 만료 오프셋 문자열의 실제 직렬화는 다른 테스트가 담당.
+      */
+     @Test
+@@ -71,7 +71,7 @@
+         assertThat(send.at("/responses/200/content/application~1json/schema/$ref").asText())
+                 .isEqualTo("#/components/schemas/ProviderEnvelopeV1");
+         JsonNode union = api.at("/components/schemas/ProviderEnvelopeV1/oneOf");
+-        assertThat(union.size()).isEqualTo(8);
++        assertThat(union.size()).isEqualTo(9);
+         for (JsonNode variant : union) {
+             assertThat(variant.path("additionalProperties").asBoolean(true)).isFalse();
+             assertThat(variant.at("/properties/schemaVersion/enum/0").asInt()).isEqualTo(1);
+--- /dev/null
++++ b/src/test/java/com/typenull/pingdom/consultation/application/GeneralDiscoveryOpenApiTest.java
+@@ -0,0 +1,37 @@
++package com.typenull.pingdom.consultation.application;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++import com.typenull.pingdom.shared.config.swagger.VoiceAiOpenApiConfig;
++import io.swagger.v3.oas.models.Components;
++import io.swagger.v3.oas.models.OpenAPI;
++import io.swagger.v3.oas.models.Operation;
++import io.swagger.v3.oas.models.PathItem;
++import io.swagger.v3.oas.models.Paths;
++import io.swagger.v3.oas.models.responses.ApiResponses;
++import org.junit.jupiter.api.Test;
++
++class GeneralDiscoveryOpenApiTest {
++    @Test
++    void publishesGeneralDiscoveryWithoutBookingConditions() {
++        var paths = new Paths()
++                .addPathItem("/voice-ai/sessions", new PathItem().post(operation()))
++                .addPathItem("/voice-ai/sessions/{sessionId}/messages", new PathItem().post(operation()))
++                .addPathItem("/voice-ai/sessions/{sessionId}/refresh", new PathItem().post(operation()))
++                .addPathItem("/voice-ai/sessions/{sessionId}", new PathItem().delete(operation()));
++        var api = new OpenAPI().paths(paths).components(new Components());
++        new VoiceAiOpenApiConfig().voiceAiContractCustomizer().customise(api);
++        var envelope = api.getComponents().getSchemas().get("ProviderEnvelopeV1");
++        assertThat(envelope.getOneOf()).hasSize(9);
++        var general = io.swagger.v3.core.util.Json.mapper().valueToTree(envelope).path("oneOf").path(0);
++        assertThat(general.at("/properties/command/enum/0").asText()).isEqualTo("searchNearbyPlaces");
++        var args = general.at("/properties/args");
++        assertThat(args.path("required").toString()).isEqualTo("[\"useCurrentLocation\"]");
++        assertThat(args.path("properties").size()).isEqualTo(2);
++        assertThat(args.path("properties").has("touristCategory")).isTrue();
++        assertThat(args.path("properties").has("useCurrentLocation")).isTrue();
++        assertThat(args.path("additionalProperties").asBoolean(true)).isFalse();
++    }
++
++    private Operation operation() { return new Operation().responses(new ApiResponses()); }
++}
+--- a/src/test/java/com/typenull/pingdom/consultation/application/ProviderEnvelopeValidatorTest.java
++++ b/src/test/java/com/typenull/pingdom/consultation/application/ProviderEnvelopeValidatorTest.java
+@@ -26,6 +26,22 @@
+                 """);
+
+         assertThatCode(() -> validator.validate(envelope, "request-1")).doesNotThrowAnyException();
++    }
++
++    @Test
++    void acceptsGeneralSearchWithoutBookingConditions() throws Exception {
++        var envelope = objectMapper.readTree("""
++                {"schemaVersion":1,"id":"request-1","kind":"command_request","command":"searchNearbyPlaces","args":{"useCurrentLocation":true}}
++                """);
++        assertThatCode(() -> validator.validate(envelope, "request-1")).doesNotThrowAnyException();
++    }
++
++    @Test
++    void rejectsGeneralSearchWithInjectedBookingArguments() throws Exception {
++        var envelope = objectMapper.readTree("""
++                {"schemaVersion":1,"id":"request-1","kind":"command_request","command":"searchNearbyPlaces","args":{"useCurrentLocation":true,"quantity":2}}
++                """);
++        assertThatThrownBy(() -> validator.validate(envelope, "request-1")).isInstanceOf(VoiceAiException.class);
+     }
+
+     /**
+--- a/src/test/java/com/typenull/pingdom/consultation/infrastructure/gemini/GeminiGenerateContentClientTest.java
++++ b/src/test/java/com/typenull/pingdom/consultation/infrastructure/gemini/GeminiGenerateContentClientTest.java
+@@ -90,15 +90,15 @@
+             server.expect(requestTo("https://gemini.test/v1beta/models/gemini-test:generateContent"))
+                     .andExpect(jsonPath("$.generationConfig.responseMimeType").value("application/json"))
+                     .andExpect(jsonPath("$.generationConfig.maxOutputTokens").value(512))
+-                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf.length()").value(8))
+-                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[6].properties.schemaVersion.type").value("integer"))
+-                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[6].properties.schemaVersion.enum[0]").value(1))
+-                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[6].properties.kind.enum[0]").value("assistant_message"))
++                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf.length()").value(9))
++                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[7].properties.schemaVersion.type").value("integer"))
++                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[7].properties.schemaVersion.enum[0]").value(1))
++                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[7].properties.kind.enum[0]").value("assistant_message"))
+                     .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[*].properties.id.enum[0]")
+                             .value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(requestId))))
+-                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[6].required")
++                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[7].required")
+                             .value(org.hamcrest.Matchers.containsInAnyOrder("schemaVersion", "id", "kind", "text")))
+-                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[6].additionalProperties").value(false))
++                    .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[7].additionalProperties").value(false))
+                     .andExpect(jsonPath("$.systemInstruction.parts[0].text")
+                             .value(org.hamcrest.Matchers.containsString("\nrequest id: " + requestId)))
+                     .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+@@ -203,6 +203,22 @@
+         server.verify();
+     }
+
++    @ParameterizedTest
++    @ValueSource(strings = {"근처 뭐 있어?", "근처에 뭐 있는지 알려줘", "아무거나 주변에 있는 거 보여줘"})
++    void suppliesGeneralDiscoveryInstructionsAndSchema(String message) {
++        server.expect(requestTo("https://gemini.test/v1beta/models/gemini-test:generateContent"))
++                .andExpect(jsonPath("$.contents[0].parts[0].text").value(message))
++                .andExpect(jsonPath("$.systemInstruction.parts[0].text").value(org.hamcrest.Matchers.containsString("Never ask for date, time, quantity or category for general discovery")))
++                .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[0].properties.command.enum[0]").value("searchNearbyPlaces"))
++                .andRespond(withSuccess("""
++                        {"candidates":[{"content":{"parts":[{"text":"{\\"schemaVersion\\":1,\\"id\\":\\"request-1\\",\\"kind\\":\\"command_request\\",\\"command\\":\\"searchNearbyPlaces\\",\\"args\\":{\\"useCurrentLocation\\":true}}"}]}}]}
++                        """, MediaType.APPLICATION_JSON));
++        var actual = client.generateEnvelope(message, "request-1");
++        new ProviderEnvelopeValidator().validate(actual, "request-1");
++        assertThat(actual.path("command").asText()).isEqualTo("searchNearbyPlaces");
++        server.verify();
++    }
++
+     private void expectEnvelopeResponse(String envelope) throws Exception {
+         String response = new ObjectMapper().writeValueAsString(java.util.Map.of("candidates", java.util.List.of(
+                 java.util.Map.of("content", java.util.Map.of("parts", java.util.List.of(java.util.Map.of("text", envelope)))))));
