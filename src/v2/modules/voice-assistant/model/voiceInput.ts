@@ -109,6 +109,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
   };
   const submitInput = async () => {
     if (disposed || !foreground || busy()) return;
+    if (!snapshot.draft.trim() && submittedText !== undefined) return;
     const result = validateVoiceInput(snapshot.draft);
     if (result.error) { update({ error: result.error }); return; }
     if (submittedText === result.text) return;
@@ -116,7 +117,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     release();
     const id = epoch;
     abort = new AbortController();
-    update({ delivery: 'pending', error: null });
+    update({ delivery: 'pending', error: null, draft: '' });
     try {
       const delivery = await onFinalInput({ text: result.text!, source: snapshot.source, signal: abort.signal });
       if (live(id)) update({ phase: 'final', delivery });

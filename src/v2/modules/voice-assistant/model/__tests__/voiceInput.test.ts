@@ -404,7 +404,8 @@ test('typing during a pending voice handoff cancels it and allows a fresh text r
   expect(callback).toHaveBeenCalledTimes(2);
   pending.resolve('accepted');
   await Promise.resolve();
-  expect(x.controller.getSnapshot()).toMatchObject({ draft: 'new text request', delivery: 'accepted' });
+  expect(x.controller.getSnapshot()).toMatchObject({ draft: '', delivery: 'accepted' });
+  expect(callback.mock.calls[1][0].text).toBe('new text request');
   x.controller.dispose();
 });
 

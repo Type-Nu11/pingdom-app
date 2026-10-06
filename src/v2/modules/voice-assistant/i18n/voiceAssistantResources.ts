@@ -2,6 +2,7 @@ import { voiceSessionErrors } from './voiceSessionErrors';
 
 export const voiceAssistantResources = {
   en: {
+    conversation: { you: 'You' },
     picker: {"date": "What date would you like to visit?", "timeRange": "What time would you like to visit?", "quantity": "How many people are visiting?", "start": "From", "end": "Until", "am": "AM", "pm": "PM", "hour": "{{count}} hours", "minute": "{{count}} minutes", "people": "{{count}} people", "increase": "Add a person", "decrease": "Remove a person", "confirm": "Confirm selection", "confirmValue": "Confirm {{value}}", "edit": "Edit", "previousMonth": "Previous month", "nextMonth": "Next month", "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat", "voiceOrText": "You can also answer by voice or type below.", "tooLong": "Your combined request is too long. Please start a shorter request."},
     sessionErrors: voiceSessionErrors.en,
     command: {
@@ -40,6 +41,7 @@ export const voiceAssistantResources = {
     errors: { interrupted: 'Audio was interrupted. Try again or type your request.', noSpeech: 'No final speech was recognized. Try again or type your request.', unavailable: 'Speech recognition is unavailable. Please type your request.', network: 'The speech service could not connect. Check your network or type your request.', failed: 'Speech recognition failed. Please type or try again.', empty: 'Enter a request first.', tooLong: 'Use 2,000 characters or fewer.', submitFailed: 'Input could not be handed over. Close the assistant and start a new request.' },
   },
   ko: {
+    conversation: { you: '나' },
     picker: {"date": "며칠에 방문하시나요?", "timeRange": "몇 시쯤 방문하시나요?", "quantity": "몇 분이 방문하시나요?", "start": "시작", "end": "종료", "am": "오전", "pm": "오후", "hour": "{{count}}시", "minute": "{{count}}분", "people": "{{count}}명", "increase": "인원 늘리기", "decrease": "인원 줄이기", "confirm": "선택 확인", "confirmValue": "{{value}} 확인", "edit": "수정", "previousMonth": "이전 달", "nextMonth": "다음 달", "weekdays": "일,월,화,수,목,금,토", "voiceOrText": "아래 입력창에 말하거나 입력해도 돼요.", "tooLong": "기존 요청과 선택한 조건이 너무 깁니다. 짧은 새 요청을 입력해 주세요."},
     sessionErrors: voiceSessionErrors.ko,
     command: {
@@ -78,6 +80,7 @@ export const voiceAssistantResources = {
     errors: { interrupted: '다른 오디오 작업으로 중단되었습니다. 다시 시도하거나 텍스트로 입력해 주세요.', noSpeech: '최종 음성을 인식하지 못했습니다. 다시 시도하거나 텍스트로 입력해 주세요.', unavailable: '음성 인식을 사용할 수 없습니다. 텍스트로 입력해 주세요.', network: '음성 인식 서비스에 연결하지 못했습니다. 네트워크를 확인하거나 텍스트로 입력해 주세요.', failed: '음성 인식에 실패했습니다. 다시 시도하거나 텍스트로 입력해 주세요.', empty: '요청을 먼저 입력해 주세요.', tooLong: '2,000자 이내로 입력해 주세요.', submitFailed: '입력을 전달하지 못했습니다. 어시스턴트를 닫고 새 요청을 시작해 주세요.' },
   },
   ja: {
+    conversation: { you: 'あなた' },
     picker: {"date": "いつ訪問しますか？", "timeRange": "何時頃に訪問しますか？", "quantity": "何名で訪問しますか？", "start": "開始", "end": "終了", "am": "午前", "pm": "午後", "hour": "{{count}}時", "minute": "{{count}}分", "people": "{{count}}名", "increase": "人数を増やす", "decrease": "人数を減らす", "confirm": "選択を確認", "confirmValue": "{{value}}を確認", "edit": "変更", "previousMonth": "前の月", "nextMonth": "次の月", "weekdays": "日,月,火,水,木,金,土", "voiceOrText": "下の入力欄で音声や文字でも回答できます。", "tooLong": "リクエストと選択した条件が長すぎます。短い新しいリクエストを入力してください。"},
     sessionErrors: voiceSessionErrors.ja,
     command: {

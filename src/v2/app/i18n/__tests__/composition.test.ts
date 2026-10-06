@@ -47,6 +47,7 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     // AI session error additions are verified by VoiceCommandErrors.test.tsx in all languages.
     delete voiceAssistant.sessionErrors;
     delete voiceAssistant.picker;
+    delete voiceAssistant.conversation;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
     delete voiceAssistant.brand;

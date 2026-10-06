@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Keyboard, Linking } from 'react-native';
+import { AppState, Keyboard, Linking, ScrollView } from 'react-native';
 import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-controller';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +34,8 @@ export type VoiceAssistantScreenProps = {
   | { serverSubmission?: false; onFinalInput?: OnFinalInput }
   | { serverSubmission: true; onFinalInput: OnFinalInput }
 );
+type ConversationTurn = { id: number; text: string; reply?: VoiceCommandViewState };
+
 export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul' }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -41,10 +43,16 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const clarificationField = commandState?.phase === 'clarification' ? commandState.field
     : commandState?.phase === 'result' && commandState.result.outcome.status === 'clarification_required'
       ? commandState.result.outcome.field : undefined;
+  // Panel/session memory only. Never persisted, logged, or treated as command provenance.
+  const [turns, setTurns] = useState<ConversationTurn[]>([]);
+  const turnSequence = useRef(0);
+  const contentRef = useRef<ScrollView>(null);
+  const activeTurn = useRef<{ id: number; baseline?: VoiceCommandViewState; request: string } | null>(null);
+  const choiceText = useRef<string | null>(null);
   const originalRequest = useRef('');
   const answers = useRef<Record<string, string>>({});
-  const inputContext = useRef({ onFinalInput, clarificationField });
-  inputContext.current = { onFinalInput, clarificationField };
+  const inputContext = useRef({ onFinalInput, clarificationField, commandState });
+  inputContext.current = { onFinalInput, clarificationField, commandState };
   const submitWithQuestionContext = useCallback<OnFinalInput>(input => {
     const context = inputContext.current;
     let text = input.text;
@@ -56,6 +64,11 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     } else if (!context.clarificationField && !text.startsWith(`${originalRequest.current}\n`)) {
       originalRequest.current = text; answers.current = {};
     }
+    const id = ++turnSequence.current;
+    activeTurn.current = { id, baseline: context.commandState, request: text };
+    const displayedText = choiceText.current ?? input.text;
+    choiceText.current = null;
+    setTurns(current => [...current, { id, text: displayedText }].slice(-32));
     return context.onFinalInput({ ...input, text });
   }, []);
   const { controller, state } = useVoiceInput(adapter, submitWithQuestionContext, clarificationField === 'quantity' ? 'quantity' : undefined);
@@ -69,14 +82,21 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     // A new account/session consumer must not inherit the previous user's input conditions.
     controller.cancel(); originalRequest.current = ''; answers.current = {};
     setSelections({}); setEditingPicker(null); setSelectionError(false);
+    setTurns([]); activeTurn.current = null; choiceText.current = null;
   }, [controller, onFinalInput]);
+  useEffect(() => {
+    const active = activeTurn.current;
+    if (!active || !commandState || commandState === active.baseline
+      || ['idle', 'processing'].includes(commandState.phase)) return;
+    setTurns(current => current.map(turn => turn.id === active.id ? { ...turn, reply: commandState } : turn));
+  }, [commandState]);
   const busy = ['permissionRequesting', 'listening', 'processing'].includes(state.phase);
   const pending = state.delivery === 'pending';
   const feedback = commandState?.phase === 'unrecognized' ? 'unrecognized' : state.error === 'noSpeech' ? 'noSpeech' : null;
   const previousTurnVisible = state.delivery !== 'none' || !!feedback || (!!commandState && commandState.phase !== 'idle');
   const showDetails = (state.phase !== 'listening' || !!pickerField) && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
     || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
-    || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
+    || turns.length > 0 || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
   const pickerVisible = !!pickerField && (!selections[pickerField] || !!editingPicker);
   const confirmSelection = async (selection: PickerSelection) => {
     if (confirming.current || busy || pending) return;
@@ -92,6 +112,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     setSelections(next); setEditingPicker(null); setSelectionError(false);
     // A choice is still ordinary input through the existing validated AI command boundary.
     // No Booking mutation, route, or direct domain API is accessible to this picker.
+    choiceText.current = formatPickerSelection(selection.field, selection.value, i18n.language);
     controller.cancel(); controller.edit(request);
     try { await controller.submit(); } finally { confirming.current = false; }
   };
@@ -132,11 +153,11 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       <AssistantIcon />
       {state.phase === 'listening' ? <ListeningText testID={state.partial ? 'voice-partial' : 'voice-listening-prompt'}
         accessibilityLiveRegion="polite" numberOfLines={1}>{state.partial || state.draft || t('voiceAssistant.listeningPrompt')}</ListeningText>
-        : <Input accessibilityLabel={t('voiceAssistant.input')}
+        : <Input accessibilityLabel={t('voiceAssistant.input')} editable={!busy && !pending}
         onFocus={() => {
           clearExpectedSelection();
           if (showDetails) setEditingInSheet(true);
-          if (previousTurnVisible) {
+          if (previousTurnVisible && state.delivery !== 'none') {
             controller.edit('');
             if (!clarificationField && !editingPicker) { setSelections({}); originalRequest.current = ''; onCommandFeedbackDismiss?.(); }
           }
@@ -167,6 +188,9 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       <SelectionLabel>{field === 'quantity' ? t('voiceAssistant.picker.people', { count: Number(value) }) : formatPickerSelection(field as PickerField, value, i18n.language)} · <EditLabel>{t('voiceAssistant.picker.edit')}</EditLabel></SelectionLabel>
     </SelectionChip>)}
   </ConditionRow> : undefined;
+  const assistantVisible = busy || !!state.error || state.phase === 'permissionDenied' || state.phase === 'unavailable'
+    || !!guidance || !!pickerVisible || !!conditionChips || !!selectionError || state.delivery === 'localOnly'
+    || (!!commandState && commandState.phase !== 'idle') || (!serverSubmission && state.source === 'text' && !!state.draft);
   return (
     <KeyboardProvider><Screen testID="voice-assistant-screen" accessibilityViewIsModal onAccessibilityEscape={close}>
       <Backdrop accessibilityRole="button"
@@ -185,9 +209,19 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
               </CloseButton>
             </Header>
             </SheetHeading>
-            <Content keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: pickerVisible ? 0 : 10, gap: pickerVisible ? 16 : 8 }}>
-            {feedback ? <>
-              {feedback === 'unrecognized' && !!state.draft && <QueryText>“{state.draft}”</QueryText>}
+            <Content ref={contentRef} onContentSizeChange={() => contentRef.current?.scrollToEnd({ animated: true })} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: pickerVisible ? 0 : 10, gap: pickerVisible ? 16 : 8 }}>
+            {turns.map((turn, index) => <Turn key={turn.id} testID={`voice-turn-${turn.id}`}>
+              <UserMessage testID={`voice-user-message-${turn.id}`}>
+                <Speaker>{t('voiceAssistant.conversation.you')}</Speaker>
+                <QueryText>{turn.text}</QueryText>
+              </UserMessage>
+              {turn.reply && (index !== turns.length - 1 || !commandState || commandState.phase === 'idle') && <AssistantMessage>
+                <Speaker>{t('voiceAssistant.brand')}</Speaker>
+                <VoiceCommandResults state={turn.reply} historical />
+              </AssistantMessage>}
+            </Turn>)}
+            {feedback ? <AssistantMessage>
+              <Speaker>{t('voiceAssistant.brand')}</Speaker>
               <FeedbackMessage accessibilityRole="alert">{t(`voiceAssistant.feedback.${feedback}`)}</FeedbackMessage>
               <FeedbackActions>
                 <FeedbackRetry accessibilityRole="button" accessibilityLabel={t('voiceAssistant.feedback.retry')}
@@ -195,8 +229,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
                 <FeedbackDismiss accessibilityRole="button" accessibilityLabel={t('voiceAssistant.feedback.dismiss')}
                   onPress={dismissFeedback}><FeedbackDismissText>{t('voiceAssistant.feedback.dismiss')}</FeedbackDismissText></FeedbackDismiss>
               </FeedbackActions>
-            </> : <>
-            {!!state.draft && !pickerVisible && <QueryText>“{state.draft}”</QueryText>}
+            </AssistantMessage> : assistantVisible ? <AssistantMessage testID="voice-current-assistant">
+            <Speaker>{t('voiceAssistant.brand')}</Speaker>
             {(busy || state.phase === 'permissionDenied' || state.phase === 'unavailable') && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.phases.${state.phase}`)}</Copy>}
             {state.phase === 'permissionDenied' && <Copy accessibilityRole="alert">{t(`voiceAssistant.permissions.${state.permission}`)}</Copy>}
             {state.permission === 'blocked' && settingsButton()}
@@ -205,12 +239,12 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
             {!pickerVisible && conditionChips}
             {pickerField && pickerVisible && <VoiceClarificationPicker key={pickerField}
               field={pickerField} timezone={timezone} initialValue={selections[pickerField]} disabled={busy || pending}
-              request={originalRequest.current || state.draft} conditions={conditionChips}
+              conditions={conditionChips}
               onConfirm={selection => { void confirmSelection(selection); }} />}
             {selectionError && <Copy accessibilityRole="alert">{t('voiceAssistant.picker.tooLong')}</Copy>}
             {commandState && !(pickerField && clarificationField) && <VoiceCommandResults state={commandState} retryDisabled={commandRetryDisabled} onShowMap={close} onRetry={() => {
               if (onCommandRetry) onCommandRetry();
-              else { const draft = state.draft; controller.cancel(); controller.edit(draft); void controller.submit(); }
+              else { const request = activeTurn.current?.request ?? state.draft; controller.cancel(); controller.edit(request); void controller.submit(); }
             }} />}
             {state.delivery === 'localOnly' && <Copy accessibilityLiveRegion="polite">{t('voiceAssistant.localOnly')}</Copy>}
             {guidance && <Copy>{t('voiceAssistant.advisory')}</Copy>}
@@ -218,7 +252,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
               {guidance.kind !== 'assistant' && <Label>{t(`voiceAssistant.${guidance.kind}`)}</Label>}
               {guidance.kind !== 'invalidResponse' && guidance.text && <Copy>{guidance.text}</Copy>}
             </>}
-            </>}
+            </AssistantMessage> : null}
             </Content>
             {composer(true)}
           </Sheet> : composer()}
@@ -252,7 +286,7 @@ const CloseButton = styled.Pressable.attrs({ style: { boxShadow: '0px 4px 20px r
   width: 32px; height: 32px; border-radius: 16px; align-items: center; justify-content: center;
   background-color: rgba(255, 255, 255, 0.56);
 `;
-const Content = styled.ScrollView`
+const Content = styled(ScrollView)`
   flex-grow: 0;
   flex-shrink: 1;
   min-height: 0px;
@@ -311,6 +345,11 @@ const ListeningText = styled(Text)`
   line-height: 23px;
   color: ${({ theme }) => theme.colors.textMuted};
 `;
+const Turn = styled.View`gap: 10px;`;
+const UserMessage = styled.View`align-self: flex-end; max-width: 90%; padding: 10px 14px; gap: 4px; border-radius: 16px;
+  background-color: ${({ theme }) => theme.liquidGlass.category.activeTint};`;
+const AssistantMessage = styled.View`align-self: stretch; gap: 8px; padding: 10px 0px;`;
+const Speaker = styled(Text)`font-size: 12px; line-height: 16px; font-weight: 600; color: ${({ theme }) => theme.colors.textAlternative};`;
 const QueryText = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const FeedbackMessage = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 16px; line-height: 21px; font-weight: 500;`;
 const FeedbackActions = styled.View`flex-direction: row; gap: 8px; padding-top: 8px;`;

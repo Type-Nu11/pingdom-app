@@ -18,18 +18,20 @@ type Props = {
   onRetry?: () => void;
   onShowMap?: () => void;
   retryDisabled?: boolean;
+  historical?: boolean;
 };
 
-export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled = false }: Props) {
+export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled = false, historical = false }: Props) {
   const { t } = useTranslation();
   const copy = (key: string) => <Copy testID="voice-command-state" accessibilityLiveRegion="polite">{t(`voiceAssistant.command.${key}`)}</Copy>;
-  const clarification = (field: string) => <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.command.fields.${field}`)}</Copy>;
+  const clarification = (field: string) => <Copy accessibilityLiveRegion="polite">{t(historical && ['date', 'timeRange', 'quantity'].includes(field)
+    ? `voiceAssistant.picker.${field}` : `voiceAssistant.command.fields.${field}`)}</Copy>;
   const error = (code: string, session = false) => <>
     <Copy accessibilityRole="alert">{t([session ? `voiceAssistant.sessionErrors.${code}` : `voiceAssistant.command.errors.${code}`, 'voiceAssistant.command.failed'])}</Copy>
-    <RetryButton testID="voice-command-retry" accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.retry')}
+    {!historical && <RetryButton testID="voice-command-retry" accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.retry')}
       accessibilityState={{ disabled: retryDisabled || !onRetry }} disabled={retryDisabled || !onRetry} onPress={onRetry}>
       <RetryText>{t('voiceAssistant.command.retry')}</RetryText>
-    </RetryButton>
+    </RetryButton>}
   </>;
   const places = (items: readonly VoicePlaceFacts[]) => <>
     <Cards horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
@@ -37,7 +39,7 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
     </Cards>
     <Summary>{t('voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>
     <Actions horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-      <PrimaryAction accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.showOnMap')} onPress={onShowMap}>
+      <PrimaryAction accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.showOnMap')} disabled={historical} accessibilityState={{ disabled: historical }} onPress={onShowMap}>
         <PrimaryActionText>{t('voiceAssistant.command.showOnMap')}</PrimaryActionText>
       </PrimaryAction>
       <ActionChip accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.directions')} disabled>
@@ -50,7 +52,8 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   </>;
 
   if (state.phase === 'idle') return null;
-  if (state.phase === 'unrecognized') return null;
+  if (state.phase === 'unrecognized') return historical
+    ? <Copy>{t('voiceAssistant.feedback.unrecognized')}</Copy> : null;
   if (state.phase === 'error') return error(state.code, true);
   if (state.phase === 'assistant') return <Copy testID="voice-assistant-message" accessibilityLiveRegion="polite">{state.text}</Copy>;
   if (state.phase === 'clarification') return clarification(state.field);

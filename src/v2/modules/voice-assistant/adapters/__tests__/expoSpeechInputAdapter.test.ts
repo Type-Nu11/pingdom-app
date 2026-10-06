@@ -91,7 +91,8 @@ test('explicit start uses selected locale, no file persistence, partial preview,
   expect(x.module.stop).toHaveBeenCalledTimes(1);
   x.emit('result', { isFinal: true, results: [{ transcript: '최종' }] });
   x.emit('result', { isFinal: true, results: [{ transcript: '최종' }] });
-  expect(controller.getSnapshot().draft).toBe('최종');
+  expect(controller.getSnapshot().draft).toBe('');
+  expect(delivered).toHaveBeenCalledWith(expect.objectContaining({ text: '최종' }));
   expect(delivered).toHaveBeenCalledTimes(1);
   expect(x.removed).toEqual(expect.arrayContaining(['result', 'error', 'volumechange', 'end']));
   controller.dispose();
