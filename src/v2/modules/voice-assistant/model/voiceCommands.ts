@@ -104,12 +104,37 @@ function requireLocation(runtime: VoiceCommandRuntime) {
   if (locationPermission !== 'granted' || !location || !Number.isFinite(location.latitude) || Math.abs(location.latitude) > 90
     || !Number.isFinite(location.longitude) || Math.abs(location.longitude) > 180) throw new VoiceCommandError('LOCATION_REQUIRED');
 }
-function validateSearch(request: Request<'searchNearbyReservablePlaces'>, ex: Execution) {
+function validateSearch(request: Request<'searchNearbyReservablePlaces'> | Request<'searchNearbyPlaces'>, ex: Execution) {
   if (!request.args.useCurrentLocation) throw new VoiceClarification('useCurrentLocation');
   const { radiusKm, placeListEnabled } = ex.runtime;
   if (!placeListEnabled) throw new VoiceCommandError('FORBIDDEN');
   if (!Number.isFinite(radiusKm) || radiusKm <= 0) throw new VoiceCommandError('STALE_CONTEXT');
 }
+/** General discovery never reads availability, quotes, or reservation mutations. */
+const searchNearbyPlaces: VoiceCommandHandler<'searchNearbyPlaces'> = async (request, ex) => {
+  const r = ex.runtime;
+  const list = await ex.query(ex.queries.list({ latitude: r.location!.latitude, longitude: r.location!.longitude,
+    radiusKm: r.radiusKm, page: 1, limit: 3, sort: 'NEAREST',
+    ...(request.args.touristCategory ? { touristCategory: request.args.touristCategory } : {}) }));
+  if (!list.data || !Array.isArray(list.data.places)) return invalid();
+  const seen = new Set<number>();
+  const places: VoicePlaceFacts[] = [];
+  for (const candidate of list.data.places.slice(0, 3)) {
+    ex.check();
+    if (!candidate || !validId(candidate.id) || seen.has(candidate.id)) return invalid();
+    seen.add(candidate.id);
+    // List summaries may omit operatingStatus. Only canonical detail may fill it; never infer it.
+    const complete = candidate.name !== undefined && candidate.address !== undefined
+      && candidate.touristCategories !== undefined && candidate.operatingStatus !== undefined;
+    const place = projectVoicePlace(complete ? candidate : (await ex.query(ex.queries.detail(candidate.id))).data, candidate.id);
+    const distance = candidate.distanceMeters;
+    if (distance !== undefined && (typeof distance !== 'number' || !Number.isFinite(distance) || distance < 0)) return invalid();
+    places.push(Object.freeze({ ...place, ...(distance !== undefined ? { distanceMeters: distance } : {}) }));
+  }
+  const provenance = metadata(ex, places.map(p => p.id), { queryKey: list.queryKey, dataUpdatedAt: list.dataUpdatedAt });
+  ex.commit.push(() => ex.provenance.recordPlaces(provenance));
+  return Object.freeze({ places: Object.freeze(places), coverage: 'nearest_places' });
+};
 const searchNearby: VoiceCommandHandler<'searchNearbyReservablePlaces'> = async (request, ex) => {
   const a = request.args, r = ex.runtime;
   const range = voiceTimeRange(a.date, r.timezone, r.now(), a.startTime, a.endTime);
@@ -184,6 +209,7 @@ const prepareReservation: VoiceCommandHandler<'prepareReservation'> = async (req
   return Object.freeze({ draft });
 };
 export const VOICE_COMMAND_REGISTRY = Object.freeze({
+  searchNearbyPlaces: Object.freeze({ name: 'searchNearbyPlaces', policy: VOICE_COMMAND_POLICIES.searchNearbyPlaces, validate: validateSearch, handler: searchNearbyPlaces }),
   searchNearbyReservablePlaces: Object.freeze({ name: 'searchNearbyReservablePlaces', policy: VOICE_COMMAND_POLICIES.searchNearbyReservablePlaces, validate: validateSearch, handler: searchNearby }),
   getPlaceDetails: Object.freeze({ name: 'getPlaceDetails', policy: VOICE_COMMAND_POLICIES.getPlaceDetails, validate: requirePlace, handler: getDetails }),
   getAvailabilities: Object.freeze({ name: 'getAvailabilities', policy: VOICE_COMMAND_POLICIES.getAvailabilities, validate: requirePlace, handler: getAvailability }),
@@ -257,7 +283,7 @@ export function createVoiceCommandDispatcher(options: {
       check();
       if (!delivery.claimExecution(command)) return;
       // A failed replacement search/slot request must not leave the previous selection usable.
-      if (command.command === 'searchNearbyReservablePlaces') {
+      if (command.command === 'searchNearbyReservablePlaces' || command.command === 'searchNearbyPlaces') {
         provenance.clear(); conditionRevision++;
         ex.scope = { ...ex.scope, conditionRevision };
       } else if (command.command === 'getAvailabilities') provenance.clearAvailability();

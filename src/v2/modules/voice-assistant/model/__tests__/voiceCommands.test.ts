@@ -391,3 +391,58 @@ test('user-owned quote tokens are removed from shared cache after preparation', 
   expect(x.queryClient.getQueryData(reservationQueryKeys.quote('account', 1, 10, 2))).toBeUndefined();
   expect(x.queryClient.getQueryData(reservationQueryKeys.availabilities(1, {}))).toEqual([slot()]);
 });
+
+const generalSearch = (args = {}, id = 'general-search') => command('searchNearbyPlaces', { useCurrentLocation: true, ...args }, id);
+
+test('general discovery without category or booking conditions reads actual places, displays at most three and never checks availability', async () => {
+  const x = setup();
+  x.setPlaces({ places: [1, 2, 3, 4].map(id => ({ ...facts, id, name: `Place ${id}` })) });
+  await x.controller.start();
+  const result = await x.send(generalSearch());
+  expect(result).toMatchObject({ command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: {
+    places: [expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 }), expect.objectContaining({ id: 3 })], coverage: 'nearest_places' } } });
+  expect(x.calls).toEqual([expect.objectContaining({ path: '/places/', params: {
+    latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 3, sort: 'NEAREST' } })]);
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+  const count = x.calls.length;
+  await x.send(generalSearch());
+  expect(x.calls).toHaveLength(count); // Existing request ledger still blocks duplicate AI commands.
+});
+
+test('general discovery records verified IDs for the subsequent availability flow without authorizing arbitrary IDs', async () => {
+  const x = setup(); await x.controller.start();
+  await x.send(generalSearch());
+  expect(await x.send(command('getAvailabilities', { placeId: 1, date: '2026-09-20', quantity: 2 }, 'known-slot')))
+    .toMatchObject({ outcome: { status: 'succeeded' } });
+  expect(await x.send(command('getAvailabilities', { placeId: 999, date: '2026-09-20', quantity: 2 }, 'unknown-slot')))
+    .toMatchObject({ outcome: { status: 'rejected', code: 'ID_NOT_IN_CONTEXT' } });
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
+test('general discovery with no location cannot query or ask for booking conditions', async () => {
+  const x = setup(); x.setLocation(null); await x.controller.start();
+  expect(await x.send(generalSearch())).toMatchObject({ outcome: { status: 'rejected', code: 'LOCATION_REQUIRED' } });
+  expect(x.calls).toHaveLength(0);
+});
+
+test('general discovery uses optional category, supports empty results and invalidates old provenance on failed replacement', async () => {
+  const x = setup(); await x.controller.start(); await x.send(generalSearch({ touristCategory: 'CAFE' }));
+  expect(x.calls[0].params).toMatchObject({ touristCategory: 'CAFE' });
+  x.setPlaces({ places: [] });
+  expect(await x.send(generalSearch({}, 'empty-general'))).toMatchObject({ outcome: { status: 'succeeded', data: { places: [] } } });
+  expect(x.dispatcher.provenance.place(1)).toBeUndefined();
+  x.setFailure(new ApiError('lookup failed', { status: 500 }));
+  expect(await x.send(generalSearch({ touristCategory: 'FOOD' }, 'failed-general')))
+    .toMatchObject({ outcome: { status: 'rejected', code: 'SERVER_ERROR' } });
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
+test('general discovery projects server distance while refusing malformed distance metadata', async () => {
+  const x = setup(); await x.controller.start();
+  x.setPlaces({ places: [{ ...facts, distanceMeters: 1230 }] });
+  expect(await x.send(generalSearch())).toMatchObject({ outcome: { status: 'succeeded', data: {
+    places: [expect.objectContaining({ id: 1, distanceMeters: 1230 })] } } });
+  x.setPlaces({ places: [{ ...facts, distanceMeters: -10 }] });
+  expect(await x.send(generalSearch({ touristCategory: 'FOOD' }, 'bad-distance')))
+    .toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
+});

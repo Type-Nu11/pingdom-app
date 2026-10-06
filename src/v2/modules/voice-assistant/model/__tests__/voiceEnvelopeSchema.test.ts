@@ -46,3 +46,17 @@ test('runtime retains semantic constraints beyond structural schema', () => {
   expect(validate(value)).toBe(true);
   expect(parseVoiceAssistantEnvelope(value).ok).toBe(false);
 });
+
+test('general discovery extension matches the prepared server schema, not the deployed snapshot', () => {
+  const fixture = { ...base, kind: 'command_request', command: 'searchNearbyPlaces', args: { useCurrentLocation: true } };
+  expect(validate(fixture)).toBe(true);
+  expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(true);
+  // The saved server contract is deliberately unchanged until this extension is deployed and fetched.
+  expect(validateServer(fixture)).toBe(false);
+});
+
+test.each(['date', 'startTime', 'endTime', 'quantity', 'latitude', 'route', 'confirmed'])('general discovery rejects injected %s', field => {
+  const fixture = { ...base, kind: 'command_request', command: 'searchNearbyPlaces', args: { useCurrentLocation: true, [field]: 1 } };
+  expect(validate(fixture)).toBe(false);
+  expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(false);
+});

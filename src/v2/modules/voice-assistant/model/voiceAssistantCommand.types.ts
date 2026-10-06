@@ -1,5 +1,5 @@
 // 기존 feature의 공개 타입만 참조합니다. 타입 전용 import이므로 화면/API를 런타임에 불러오지 않습니다.
-import type { PlaceDetail } from '../../place';
+import type { PlaceDetail, PlaceList } from '../../place';
 import type { AvailabilityList, ReservationConfirmation } from '../../booking';
 
 export const VOICE_SCHEMA_VERSION = 1 as const;
@@ -18,6 +18,10 @@ export type VoiceLocalTime = string;
  * 좌표·예약자 정보·확인 여부는 AI가 결정할 수 없으므로 입력 필드 자체를 두지 않습니다.
  */
 export type VoiceAssistantCommand =
+  | Readonly<{ command: 'searchNearbyPlaces'; args: Readonly<{
+    touristCategory?: VoiceTouristCategory;
+    useCurrentLocation: boolean;
+  }> }>
   | Readonly<{ command: 'searchNearbyReservablePlaces'; args: Readonly<{
     touristCategory?: VoiceTouristCategory;
     date: VoiceLocalDate;
@@ -52,7 +56,8 @@ export type ProviderEnvelope = CommandRequest
   | (EnvelopeBase & Readonly<{ kind: 'protocol_error'; code: ProtocolErrorCode }>);
 
 /** 서버 DTO 전체 대신 허용한 필드만 투영합니다. 서버 필드 변경은 Pick의 타입 검사로 감지합니다. */
-export type VoicePlaceFacts = Readonly<Pick<PlaceDetail, 'id' | 'name' | 'address' | 'touristCategories' | 'operatingStatus'>>;
+export type VoicePlaceFacts = Readonly<Pick<PlaceDetail, 'id' | 'name' | 'address' | 'touristCategories' | 'operatingStatus'>
+  & Pick<NonNullable<PlaceList['places']>[number], 'distanceMeters'>>;
 export type VoiceAvailabilityFacts = Readonly<Pick<AvailabilityList[number],
   'id' | 'placeId' | 'productId' | 'productType' | 'productName' | 'startsAt' | 'endsAt' | 'remainingCapacity' | 'status'>>;
 /**
@@ -75,6 +80,7 @@ export type ReservationDraft = Readonly<{
 }>;
 /** 명령별 성공 데이터. prepareReservation의 성공은 초안 준비이며 예약 생성 성공이 아닙니다. */
 export type VoiceCommandOutput = {
+  searchNearbyPlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'nearest_places' }>;
   searchNearbyReservablePlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'bounded_candidates' }>;
   getPlaceDetails: Readonly<{ place: VoicePlaceFacts }>;
   getAvailabilities: Readonly<{ placeId: number; date: VoiceLocalDate; availabilities: readonly VoiceAvailabilityFacts[] }>;

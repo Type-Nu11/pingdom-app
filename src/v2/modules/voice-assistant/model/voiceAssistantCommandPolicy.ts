@@ -28,6 +28,7 @@ const common = {
  * 예약 확정은 이 표에 추가하지 않고 앱 확인 화면의 사용자 이벤트로만 수행합니다.
  */
 export const VOICE_COMMAND_POLICIES = Object.freeze({
+  searchNearbyPlaces: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: true, provenance: 'none' } as const),
   searchNearbyReservablePlaces: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: true, provenance: 'none' } as const),
   getPlaceDetails: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: false, provenance: 'recentSearchOrUserSelection' } as const),
   getAvailabilities: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: false, provenance: 'recentSearchOrUserSelection' } as const),
