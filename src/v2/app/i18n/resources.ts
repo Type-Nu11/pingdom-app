@@ -72,4 +72,13 @@ export const resources = {
     voiceAssistant: voiceAssistantResources['zh-TW'],
     ...withBookingStatuses(withOnboarding(sharedResources['zh-TW'].translation, onboardingResources['zh-TW']), { ...offerStatusResources['zh-TW'], ...paymentResources['zh-TW'] }),
   } },
+  vi: { translation: {
+    mapTutorial: mapTutorialResources.vi,
+    ...offerCouponResources.vi,
+    ...reservationResources.vi,
+    community: communityResources.vi,
+    visitVerification: visitVerificationResources.vi,
+    voiceAssistant: voiceAssistantResources.vi,
+    ...withBookingStatuses(withOnboarding(sharedResources.vi.translation, onboardingResources.vi), { ...offerStatusResources.vi, ...paymentResources.vi }),
+  } },
 } as const;
