@@ -3,7 +3,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: 'Select Language', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
-        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean', ja: '日本語', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)', vi: 'Vietnamese', es: 'Spanish' }, progress: 'Step {{current}} of {{total}}',
+        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean', ja: '日本語', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)', vi: 'Vietnamese', es: 'Spanish', 'pt-BR': 'Portuguese (Brazil)' }, progress: 'Step {{current}} of {{total}}',
       },
       selectCountry: {
         title: 'Select Country', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
@@ -898,7 +898,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: '언어 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기',
-        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어', ja: '日本語', 'zh-CN': '중국어(간체)', 'zh-TW': '중국어(번체)', vi: '베트남어', es: '스페인어' }, progress: '총 {{total}}단계 중 {{current}}단계',
+        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어', ja: '日本語', 'zh-CN': '중국어(간체)', 'zh-TW': '중국어(번체)', vi: '베트남어', es: '스페인어', 'pt-BR': '포르투갈어(브라질)' }, progress: '총 {{total}}단계 중 {{current}}단계',
       },
       selectCountry: { title: '국가 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기' },
       selectAge: { title: '생년 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속' },
@@ -1746,7 +1746,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: '言語を選択', subtitle: '最適なルートをご案内します！', button: '次へ', search: '検索...',
-        logoAccessibilityLabel: 'PingDomのロゴ', options: { en: '英語', ko: '韓国語', ja: '日本語', 'zh-CN': '中国語（簡体字）', 'zh-TW': '中国語（繁体字）', vi: 'ベトナム語', es: 'スペイン語' }, progress: '全{{total}}ステップ中{{current}}ステップ目',
+        logoAccessibilityLabel: 'PingDomのロゴ', options: { en: '英語', ko: '韓国語', ja: '日本語', 'zh-CN': '中国語（簡体字）', 'zh-TW': '中国語（繁体字）', vi: 'ベトナム語', es: 'スペイン語', 'pt-BR': 'ポルトガル語（ブラジル）' }, progress: '全{{total}}ステップ中{{current}}ステップ目',
       },
       selectCountry: { title: '国を選択', subtitle: '最適なルートをご案内します！', button: '次へ', search: '検索...' },
       selectAge: { title: '生まれた年を選択', subtitle: '最適なルートをご案内します！', button: '次へ' },
@@ -2639,7 +2639,7 @@ export const resources = {
         button: '继续',
         search: '搜索…',
         logoAccessibilityLabel: 'PingDom 标志',
-        options: { en: '英语', ko: '韩语', ja: '日本語', 'zh-CN': '简体中文', 'zh-TW': '繁体中文', vi: '越南语', es: '西班牙语' },
+        options: { en: '英语', ko: '韩语', ja: '日本語', 'zh-CN': '简体中文', 'zh-TW': '繁体中文', vi: '越南语', es: '西班牙语', 'pt-BR': '葡萄牙语（巴西）' },
         progress: '第 {{current}} 步，共 {{total}} 步',
       },
       selectCountry: { title: '选择国家', subtitle: '我们会为你提供最佳路线！', button: '继续', search: '搜索…' },
@@ -3465,7 +3465,7 @@ export const resources = {
         button: '繼續',
         search: '搜尋…',
         logoAccessibilityLabel: 'PingDom 標誌',
-        options: { en: '英文', ko: '韓文', ja: '日本語', 'zh-CN': '簡體中文', 'zh-TW': '繁體中文', vi: '越南文', es: '西班牙文' },
+        options: { en: '英文', ko: '韓文', ja: '日本語', 'zh-CN': '簡體中文', 'zh-TW': '繁體中文', vi: '越南文', es: '西班牙文', 'pt-BR': '葡萄牙文（巴西）' },
         progress: '第 {{current}} 步，共 {{total}} 步',
       },
       selectCountry: { title: '選擇國家', subtitle: '我們會為你提供最佳路線！', button: '繼續', search: '搜尋…' },
@@ -4291,7 +4291,7 @@ export const resources = {
         button: 'Tiếp tục',
         search: 'Tìm kiếm...',
         logoAccessibilityLabel: 'Logo PingDom',
-        options: { en: 'Tiếng Anh', ko: 'Tiếng Hàn', ja: '日本語', 'zh-CN': 'Tiếng Trung (Giản thể)', 'zh-TW': 'Tiếng Trung (Phồn thể)', vi: 'Tiếng Việt', es: 'Tiếng Tây Ban Nha' },
+        options: { en: 'Tiếng Anh', ko: 'Tiếng Hàn', ja: '日本語', 'zh-CN': 'Tiếng Trung (Giản thể)', 'zh-TW': 'Tiếng Trung (Phồn thể)', vi: 'Tiếng Việt', es: 'Tiếng Tây Ban Nha', 'pt-BR': 'Tiếng Bồ Đào Nha (Brazil)' },
         progress: 'Bước {{current}}/{{total}}',
       },
       selectCountry: { title: 'Chọn quốc gia', subtitle: 'Chúng tôi sẽ chỉ cho bạn lộ trình tốt nhất!', button: 'Tiếp tục', search: 'Tìm kiếm...' },
@@ -5228,7 +5228,7 @@ export const resources = {
         button: 'Continuar',
         search: 'Buscar...',
         logoAccessibilityLabel: 'Logotipo de PingDom',
-        options: { en: 'Inglés', ko: 'Coreano', ja: '日本語', 'zh-CN': 'Chino (simplificado)', 'zh-TW': 'Chino (tradicional)', vi: 'Vietnamita', es: 'Español' },
+        options: { en: 'Inglés', ko: 'Coreano', ja: '日本語', 'zh-CN': 'Chino (simplificado)', 'zh-TW': 'Chino (tradicional)', vi: 'Vietnamita', es: 'Español', 'pt-BR': 'Portugués (Brasil)' },
         progress: 'Paso {{current}} de {{total}}',
       },
       selectCountry: { title: 'Selecciona el país', subtitle: '¡Te mostraremos la mejor ruta!', button: 'Continuar', search: 'Buscar...' },
@@ -6180,16 +6180,7 @@ export const resources = {
         button: 'Continuar',
         search: 'Buscar...',
         logoAccessibilityLabel: 'Logotipo do PingDom',
-        options: {
-          en: 'Inglês',
-          ko: 'Coreano',
-          ja: '日本語',
-          'zh-CN': 'Chinês (simplificado)',
-          'zh-TW': 'Chinês (tradicional)',
-          vi: 'Vietnamita',
-          es: 'Espanhol',
-          'pt-BR': 'Português (Brasil)',
-        },
+        options: { en: 'Inglês', ko: 'Coreano', ja: '日本語', 'zh-CN': 'Chinês (simplificado)', 'zh-TW': 'Chinês (tradicional)', vi: 'Vietnamita', es: 'Espanhol', 'pt-BR': 'Português (Brasil)' },
         progress: 'Etapa {{current}} de {{total}}',
       },
       selectCountry: { title: 'Selecione o país', subtitle: 'Vamos mostrar a melhor rota para você!', button: 'Continuar', search: 'Buscar...' },
@@ -7128,6 +7119,6 @@ export const resources = {
   },
 } as const;
 
-export const supportedLanguages = ['en', 'ko', 'ja', 'zh-CN', 'zh-TW', 'vi', 'es'] as const;
+export const supportedLanguages = ['en', 'ko', 'ja', 'zh-CN', 'zh-TW', 'vi', 'es', 'pt-BR'] as const;
 
 export type SupportedLanguage = (typeof supportedLanguages)[number];

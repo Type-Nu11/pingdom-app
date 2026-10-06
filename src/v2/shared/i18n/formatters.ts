@@ -1,6 +1,6 @@
-import { isTraditionalChinese, parseLocale } from './locale';
+import { isBrazilianPortuguese, isTraditionalChinese, parseLocale } from './locale';
 
-const METRIC_LOCALES = new Set(['ko', 'ja', 'zh', 'vi', 'th', 'es']);
+const METRIC_LOCALES = new Set(['ko', 'ja', 'zh', 'vi', 'th', 'es', 'pt']);
 
 export const resolveLocale = (language: string) => {
   const normalized = language.toLowerCase();
@@ -12,6 +12,8 @@ export const resolveLocale = (language: string) => {
   if (normalized.startsWith('th')) return 'th-TH';
   // Region-neutral Spanish: every es-* device locale shares the same number and date conventions.
   if (parseLocale(language).language === 'es') return 'es';
+  // Matches the picker: `pt-PT` is not Brazilian Portuguese and keeps the default below.
+  if (isBrazilianPortuguese(parseLocale(language))) return 'pt-BR';
   return 'en-US';
 };
 
@@ -74,6 +76,7 @@ const RELATIVE_FALLBACKS: Record<string, {
   'zh-TW': { format: (value, unit) => `${value}${unit}前`, now: '現在', units: { day: '天', hour: '小時', minute: '分鐘' } },
   vi: { format: (value, unit) => `${value} ${unit} trước`, now: 'bây giờ', units: { day: 'ngày', hour: 'giờ', minute: 'phút' } },
   es: { format: (value, unit) => `hace ${value} ${unit}`, now: 'ahora', units: { day: 'd', hour: 'h', minute: 'min' } },
+  'pt-BR': { format: (value, unit) => `há ${value} ${unit}`, now: 'agora', units: { day: 'd', hour: 'h', minute: 'min' } },
 };
 
 const RELATIVE_NOW_ONLY: Record<string, string> = {

@@ -1,4 +1,4 @@
-import { isTraditionalChinese, parseLocale, type ParsedLocale } from './locale';
+import { isBrazilianPortuguese, isTraditionalChinese, parseLocale, type ParsedLocale } from './locale';
 import { resources, supportedLanguages, type SupportedLanguage } from './resources';
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
@@ -40,6 +40,12 @@ const LANGUAGE_DEFINITIONS: Record<SupportedLanguage, LanguageDefinition> = {
   vi: { aliases: ['vietnamese', 'tiếng việt', '베트남어'], matchesLocale: matchesLanguage('vi') },
   // One neutral Spanish catalog serves every region (es-ES, es-419, es-MX, …).
   es: { aliases: ['spanish', 'español', '스페인어'], matchesLocale: matchesLanguage('es') },
+  // Only bare `pt` and `pt-BR` select Brazilian Portuguese. `pt-PT` and other regions are left
+  // unmatched on purpose, so they follow the profile/device/default order instead.
+  'pt-BR': {
+    aliases: ['brazilian portuguese', 'portuguese (brazil)', 'português (brasil)', 'português do brasil', '포르투갈어(브라질)'],
+    matchesLocale: isBrazilianPortuguese,
+  },
 };
 
 // Each language is named in its own script (English, 한국어, 日本語), taken from

@@ -20,3 +20,9 @@ export function isTraditionalChinese(locale: ParsedLocale): boolean {
   if (locale.script) return locale.script === 'hant';
   return locale.region !== undefined && TRADITIONAL_CHINESE_REGIONS.has(locale.region);
 }
+
+// Bare `pt` and `pt-BR` are Brazilian Portuguese. `pt-PT` and the other regions (`AO`, `MZ`, …)
+// follow European conventions and are not served the Brazilian catalog automatically.
+export function isBrazilianPortuguese(locale: ParsedLocale): boolean {
+  return locale.language === 'pt' && (locale.region === undefined || locale.region === 'BR');
+}
