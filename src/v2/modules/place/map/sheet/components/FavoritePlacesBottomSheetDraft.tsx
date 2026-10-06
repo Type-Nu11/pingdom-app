@@ -4,25 +4,27 @@ import {
   GestureResponderHandlers,
   Image,
   Pressable,
+  type PressableProps,
+  type PressableStateCallbackType,
+  type ViewStyle,
   ScrollView,
-  StyleSheet,
   Text,
   View,
-} from 'react-native'; 
+} from 'react-native';
+import styled from 'styled-components/native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ArtAsset from '../../../assets/v2icon/art_svg.svg';
-import BeautyAsset from '../../../assets/v2icon/beati_svg.svg';
-import CheckInAsset from '../../../assets/v2icon/checkin_svg.svg';
-import FashionAsset from '../../../assets/v2icon/fashion_svg.svg';
-import FoodAsset from '../../../assets/v2icon/food_svg.svg';
-import MapAsset from '../../../assets/v2icon/maping_svg.svg';
-import MusicAsset from '../../../assets/v2icon/music_svg.svg';
-import MyPlaceAsset from '../../../assets/v2icon/my_place.svg';
-import PlaceRecommendAsset from '../../../assets/v2icon/placerecommend.svg';
-import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
-import type { DecisionPlace } from './MapBottomSheet';
-import GlassSurface, { supportsNativeLiquidGlass } from './GlassSurface';
+import ArtAsset from '../../../../../../assets/v2/icons/place/art_svg.svg';
+import BeautyAsset from '../../../../../../assets/v2/icons/place/beati_svg.svg';
+import CheckInAsset from '../../../../../../assets/v2/icons/place/checkin_svg.svg';
+import FashionAsset from '../../../../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodAsset from '../../../../../../assets/v2/icons/place/food_svg.svg';
+import MapAsset from '../../../../../../assets/v2/icons/place/maping_svg.svg';
+import MusicAsset from '../../../../../../assets/v2/icons/place/music_svg.svg';
+import MyPlaceAsset from '../../../../../../assets/v2/icons/place/my_place.svg';
+import PlaceRecommendAsset from '../../../../../../assets/v2/icons/place/placerecommend.svg';
+import type { BottomSheetSnapPoint, DecisionPlace } from '../index';
+import { GlassSurface, supportsNativeLiquidGlass } from '../../presentation';
 
 type FavoriteCategory = 'all' | 'music' | 'food' | 'fashion' | 'beauty' | 'art';
 
@@ -96,7 +98,7 @@ const matchesCategory = (place: DecisionPlace, category: FavoriteCategory) => {
 
 const formatDistance = (place: DecisionPlace) => {
   if (place.distanceMeters === undefined) return place.distance;
-  return place.distanceMeters >= 1000
+  return place.distanceMeters>= 1000
     ? `${(place.distanceMeters / 1000).toFixed(1)}km`
     : `${Math.round(place.distanceMeters)}m`;
 };
@@ -119,18 +121,18 @@ const FavoriteImage = ({ uri }: { uri?: string }) => {
 
   if (!uri || hasError) {
     return (
-      <View style={[styles.placeImage, styles.imagePlaceholder]}>
+      <ViewPlaceImage style={[styles.imagePlaceholder]}>
         <MyPlaceAsset height={30} width={30} />
-      </View>
+      </ViewPlaceImage>
     );
   }
 
   return (
-    <Image
+    <ImagePlaceImage
       onError={() => setHasError(true)}
       resizeMode="cover"
       source={{ uri }}
-      style={styles.placeImage}
+
     />
   );
 };
@@ -156,18 +158,18 @@ const FavoritePlaceRow = ({
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.placeRow, pressed && styles.pressed]}
-    >
-      <View style={styles.placeHeading}>
-        <View style={styles.placeText}>
-          <View style={styles.nameRow}>
-            <Text numberOfLines={1} style={styles.placeName}>{place.name}</Text>
-            <Text style={styles.placeCategory}>{getCategoryLabel(place)}</Text>
-          </View>
-          <Text numberOfLines={1} style={styles.placeMeta}>
+   >
+      <ViewPlaceHeading>
+        <ViewPlaceText>
+          <ViewNameRow>
+            <TextPlaceName numberOfLines={1}>{place.name}</TextPlaceName>
+            <TextPlaceCategory>{getCategoryLabel(place)}</TextPlaceCategory>
+          </ViewNameRow>
+          <TextPlaceMeta numberOfLines={1}>
             {formatDistance(place)} · {place.address}
-          </Text>
-        </View>
-        <Pressable
+          </TextPlaceMeta>
+        </ViewPlaceText>
+        <PressableMoreButton
           accessibilityLabel={`${place.name} 즐겨찾기 해제`}
           accessibilityRole="button"
           accessibilityState={{ busy: pending, disabled: pending }}
@@ -177,15 +179,15 @@ const FavoritePlaceRow = ({
             event.stopPropagation();
             onRemove();
           }}
-          style={styles.moreButton}
-        >
-          <Text style={styles.moreButtonText}>⋮</Text>
-        </Pressable>
-      </View>
-      <View style={styles.imageRow}>
+
+       >
+          <TextMoreButtonText>⋮</TextMoreButtonText>
+        </PressableMoreButton>
+      </ViewPlaceHeading>
+      <ViewImageRow>
         <FavoriteImage uri={sources[0]} />
         <FavoriteImage uri={sources[1] ?? sources[0]} />
-      </View>
+      </ViewImageRow>
     </Pressable>
   );
 };
@@ -203,71 +205,71 @@ const BottomNavigation = ({
   onOpenReservations?: () => void;
   sheetTranslateY: Animated.Value;
 }) => (
-  <Animated.View
+  <AnimatedViewNavigationRow
     style={[
-      styles.navigationRow,
+
       {
         bottom: Math.max(20, bottomInset + 8),
         transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
       },
     ]}
-  >
-    <View style={styles.navigationShadow}>
-      {LIQUID_GLASS_AVAILABLE ? <GlassSurface
+ >
+    <ViewNavigationShadow>
+      {LIQUID_GLASS_AVAILABLE ? <GlassSurfaceNavigationBar
         glassEffectStyle="regular"
         intensity={96}
-        style={styles.navigationBar}
+
         tintColor="rgba(238,238,242,0.42)"
-      >
-        <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
+     >
+        <PressableNavItem accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap}>
           <MapAsset color="#3B3B40" height={22} width={19} />
-          <Text style={styles.navLabel}>지도</Text>
-        </Pressable>
-        <View style={[styles.navItem, styles.navItemActive]}>
+          <TextNavLabel>지도</TextNavLabel>
+        </PressableNavItem>
+        <ViewNavItem style={[styles.navItemActive]}>
           <ActiveNavStar />
-          <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
-        </View>
-        <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
+          <TextNavLabel style={[styles.navLabelActive]}>즐겨찾기</TextNavLabel>
+        </ViewNavItem>
+        <PressableNavItem accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations}>
           <CheckInAsset height={22} width={21} />
-          <Text style={styles.navLabel}>예약</Text>
-        </Pressable>
-      </GlassSurface> : <View style={[styles.navigationBar, styles.navigationBarSolid]}>
-        <Pressable accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap} style={styles.navItem}>
+          <TextNavLabel>예약</TextNavLabel>
+        </PressableNavItem>
+      </GlassSurfaceNavigationBar> : <ViewNavigationBar style={[styles.navigationBarSolid]}>
+        <PressableNavItem accessibilityLabel="지도" accessibilityRole="button" onPress={onOpenMap}>
           <MapAsset color="#3B3B40" height={22} width={19} />
-          <Text style={styles.navLabel}>지도</Text>
-        </Pressable>
-        <View style={[styles.navItem, styles.navItemActive]}>
+          <TextNavLabel>지도</TextNavLabel>
+        </PressableNavItem>
+        <ViewNavItem style={[styles.navItemActive]}>
           <ActiveNavStar />
-          <Text style={[styles.navLabel, styles.navLabelActive]}>즐겨찾기</Text>
-        </View>
-        <Pressable accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations} style={styles.navItem}>
+          <TextNavLabel style={[styles.navLabelActive]}>즐겨찾기</TextNavLabel>
+        </ViewNavItem>
+        <PressableNavItem accessibilityLabel="예약" accessibilityRole="button" onPress={onOpenReservations}>
           <CheckInAsset height={22} width={21} />
-          <Text style={styles.navLabel}>예약</Text>
-        </Pressable>
-      </View>}
-    </View>
+          <TextNavLabel>예약</TextNavLabel>
+        </PressableNavItem>
+      </ViewNavigationBar>}
+    </ViewNavigationShadow>
     <Pressable
       accessibilityLabel="장소추천"
       accessibilityRole="button"
       onPress={onOpenRecommendations}
       style={({ pressed }) => [styles.sendButton, pressed && styles.pressed]}
-    >
-      {LIQUID_GLASS_AVAILABLE ? <GlassSurface
+   >
+      {LIQUID_GLASS_AVAILABLE ? <GlassSurfaceSendButtonGlass
         glassEffectStyle="regular"
         intensity={96}
         pointerEvents="none"
-        style={styles.sendButtonGlass}
+
         tintColor="rgba(238,238,242,0.42)"
-      >
+     >
         <PlaceRecommendAsset height={23} width={23} />
-      </GlassSurface> : <View pointerEvents="none" style={[styles.sendButtonGlass, styles.sendButtonSolid]}>
+      </GlassSurfaceSendButtonGlass> : <ViewSendButtonGlass pointerEvents="none" style={[styles.sendButtonSolid]}>
         <PlaceRecommendAsset height={23} width={23} />
-      </View>}
+      </ViewSendButtonGlass>}
     </Pressable>
-  </Animated.View>
+  </AnimatedViewNavigationRow>
 );
 
-export default function FavoritePlacesBottomSheet({
+export default function FavoritePlacesBottomSheetDraft({
   collapsedTranslateY,
   hasNextPage,
   height,
@@ -320,82 +322,82 @@ export default function FavoritePlacesBottomSheet({
   });
 
   return (
-    <Animated.View style={[styles.bottomSheet, { height, transform: [{ translateY: sheetTranslateY }] }]}>
-      <Animated.View
+    <AnimatedViewBottomSheet style={[ { height, transform: [{ translateY: sheetTranslateY }] }]}>
+      <AnimatedViewSheetChromeShadow
         pointerEvents="none"
-        style={[styles.sheetChromeShadow, { bottom: chromeBottomInset, left: chromeGap, right: chromeGap }]}
-      >
-        <Animated.View
+        style={[ { bottom: chromeBottomInset, left: chromeGap, right: chromeGap }]}
+     >
+        <AnimatedViewSheetChrome
           style={[
-            styles.sheetChrome,
+
             { borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius },
           ]}
-        >
-          <GlassSurface
+       >
+          <GlassSurfaceAbsoluteFill
             glassEffectStyle="regular"
             intensity={100}
-            style={StyleSheet.absoluteFill}
+
             tintColor="rgba(248,248,248,0.28)"
           />
-          <View style={styles.sheetTint} />
-        </Animated.View>
-      </Animated.View>
+          <ViewSheetTint  />
+        </AnimatedViewSheetChrome>
+      </AnimatedViewSheetChromeShadow>
 
-      <View style={styles.sheetInner}>
-        <View style={styles.handleArea} {...panHandlers}>
-          <Pressable
+      <ViewSheetInner>
+        <ViewHandleArea  {...panHandlers}>
+          <PressableHandleButton
             accessibilityLabel="즐겨찾기 패널 크기 조절"
             accessibilityRole="adjustable"
             onPress={onHandlePress}
-            style={styles.handleButton}
-          >
-            <View style={styles.handle} />
-          </Pressable>
-        </View>
-        <Animated.View
+
+         >
+            <ViewHandle  />
+          </PressableHandleButton>
+        </ViewHandleArea>
+        <AnimatedViewContent
           pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
-          style={[styles.content, { opacity: contentOpacity }]}
-        >
-          <View style={styles.titleRow}>
+          style={[ { opacity: contentOpacity }]}
+       >
+          <ViewTitleRow>
             <HeaderStar />
-            <Text style={styles.title}>내 장소</Text>
-          </View>
-          <ScrollView
+            <TextTitle>내 장소</TextTitle>
+          </ViewTitleRow>
+          <ScrollViewCategoryScroll
             contentContainerStyle={styles.categoryContent}
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.categoryScroll}
-          >
+
+         >
             {categories.map(({ Icon, id, label }) => {
               const active = activeCategory === id;
               return (
-                <Pressable
+                <PressableCategoryChip
                   accessibilityRole="tab"
                   accessibilityState={{ selected: active }}
                   key={`${id}-${label}`}
                   onPress={() => setActiveCategory(id)}
-                  style={[styles.categoryChip, active && styles.categoryChipActive]}
-                >
+                  style={[ active && styles.categoryChipActive]}
+               >
                   {Icon ? <Icon color={active ? '#FF245B' : '#616169'} height={17} width={20} /> : null}
-                  <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</Text>
-                </Pressable>
+                  <TextCategoryLabel style={[ active && styles.categoryLabelActive]}>{label}</TextCategoryLabel>
+                </PressableCategoryChip>
               );
             })}
-          </ScrollView>
+          </ScrollViewCategoryScroll>
 
-          <View
+          <ViewListViewport
             style={[
-              styles.listViewport,
+
               snapPoint === 'medium' && styles.listViewportMedium,
             ]}
-          >
-            <ScrollView
+         >
+            <ScrollViewList
               contentContainerStyle={styles.listContent}
               nestedScrollEnabled
               showsVerticalScrollIndicator={false}
-              style={styles.list}
-            >
-              {filteredPlaces.length > 0 ? filteredPlaces.map((place) => (
+
+           >
+              {filteredPlaces.length> 0 ? filteredPlaces.map((place) => (
                 <FavoritePlaceRow
                   imageUrls={imageUrlsByPlaceId[String(place.id)] ?? []}
                   key={place.id}
@@ -405,51 +407,51 @@ export default function FavoritePlacesBottomSheet({
                   place={place}
                 />
               )) : isLoading ? (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>저장한 장소를 불러오는 중이에요</Text>
-                </View>
+                <ViewEmptyState>
+                  <TextEmptyTitle>저장한 장소를 불러오는 중이에요</TextEmptyTitle>
+                </ViewEmptyState>
               ) : isUnauthorized ? (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>로그인이 만료됐어요</Text>
-                  <Text style={styles.emptyBody}>다시 로그인한 뒤 저장한 장소를 확인해 주세요.</Text>
-                </View>
+                <ViewEmptyState>
+                  <TextEmptyTitle>로그인이 만료됐어요</TextEmptyTitle>
+                  <TextEmptyBody>다시 로그인한 뒤 저장한 장소를 확인해 주세요.</TextEmptyBody>
+                </ViewEmptyState>
               ) : isError ? (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>장소를 불러오지 못했어요</Text>
-                  <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
-                    <Text style={styles.retryLabel}>다시 시도</Text>
-                  </Pressable>
-                </View>
+                <ViewEmptyState>
+                  <TextEmptyTitle>장소를 불러오지 못했어요</TextEmptyTitle>
+                  <PressableRetryButton accessibilityRole="button" onPress={onRetry}>
+                    <TextRetryLabel>다시 시도</TextRetryLabel>
+                  </PressableRetryButton>
+                </ViewEmptyState>
               ) : (
-                <View style={styles.emptyState}>
+                <ViewEmptyState>
                   <HeaderStar />
-                  <Text style={styles.emptyTitle}>저장한 장소가 없어요</Text>
-                  <Text style={styles.emptyBody}>마음에 드는 장소의 별을 눌러 모아보세요.</Text>
-                </View>
+                  <TextEmptyTitle>저장한 장소가 없어요</TextEmptyTitle>
+                  <TextEmptyBody>마음에 드는 장소의 별을 눌러 모아보세요.</TextEmptyBody>
+                </ViewEmptyState>
               )}
-              {filteredPlaces.length > 0 && hasNextPage ? (
-                <View style={styles.loadMoreState}>
+              {filteredPlaces.length> 0 && hasNextPage ? (
+                <ViewLoadMoreState>
                   {isFetchNextPageError ? (
-                    <Text style={styles.loadMoreError}>다음 장소를 불러오지 못했어요</Text>
+                    <TextLoadMoreError>다음 장소를 불러오지 못했어요</TextLoadMoreError>
                   ) : null}
-                  <Pressable
+                  <PressableLoadMoreButton
                     accessibilityLabel="저장한 장소 더 불러오기"
                     accessibilityRole="button"
                     accessibilityState={{ busy: isFetchingNextPage, disabled: isFetchingNextPage }}
                     disabled={isFetchingNextPage}
                     onPress={onLoadMore}
-                    style={styles.loadMoreButton}
-                  >
-                    <Text style={styles.retryLabel}>
+
+                 >
+                    <TextRetryLabel>
                       {isFetchingNextPage ? '불러오는 중…' : isFetchNextPageError ? '다시 시도' : '더 보기'}
-                    </Text>
-                  </Pressable>
-                </View>
+                    </TextRetryLabel>
+                  </PressableLoadMoreButton>
+                </ViewLoadMoreState>
               ) : null}
-            </ScrollView>
-          </View>
-        </Animated.View>
-      </View>
+            </ScrollViewList>
+          </ViewListViewport>
+        </AnimatedViewContent>
+      </ViewSheetInner>
 
       <BottomNavigation
         bottomInset={insets.bottom}
@@ -458,11 +460,13 @@ export default function FavoritePlacesBottomSheet({
         onOpenReservations={onOpenReservations}
         sheetTranslateY={sheetTranslateY}
       />
-    </Animated.View>
+    </AnimatedViewBottomSheet>
   );
 }
 
-const styles = StyleSheet.create({
+// 보존된 미연결 시안: 네이티브 스타일 속성으로 기존 수치와 동적 애니메이션을 유지합니다.
+const styles = {
+  absoluteFill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
   bottomSheet: { bottom: 0, left: 0, overflow: 'visible', position: 'absolute', right: 0, zIndex: 50 },
   categoryChip: {
     alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(255,255,255,0.92)',
@@ -516,7 +520,57 @@ const styles = StyleSheet.create({
   sheetChrome: { backgroundColor: 'rgba(248,248,248,0.68)', borderColor: 'rgba(255,255,255,0.88)', borderRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, borderWidth: 1, flex: 1, overflow: 'hidden' },
   sheetChromeShadow: { backgroundColor: 'rgba(244,246,248,0.08)', borderRadius: 36, elevation: 22, left: 0, position: 'absolute', right: 0, shadowColor: '#10141A', shadowOffset: { width: 0, height: -7 }, shadowOpacity: 0.17, shadowRadius: 24, top: 0 },
   sheetInner: { flex: 1, overflow: 'hidden', paddingHorizontal: SHEET_RESTING_GAP },
-  sheetTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(250,250,251,0.92)' },
+  sheetTint: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(250,250,251,0.92)' },
   title: { color: '#111217', fontSize: 22, fontWeight: '900', letterSpacing: -0.6 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
-});
+} as const;
+
+function mergePressableStyle(base: ViewStyle, style: PressableProps['style']) {
+  return typeof style === 'function' ? (state: PressableStateCallbackType) => [base, style(state)] : [base, style];
+}
+
+const ViewPlaceImage = styled(View).attrs(props => ({ style: [styles.placeImage, props.style] }))``;
+const ImagePlaceImage = styled(Image).attrs(props => ({ style: [styles.placeImage, props.style] }))``;
+const ViewPlaceHeading = styled(View).attrs(props => ({ style: [styles.placeHeading, props.style] }))``;
+const ViewPlaceText = styled(View).attrs(props => ({ style: [styles.placeText, props.style] }))``;
+const ViewNameRow = styled(View).attrs(props => ({ style: [styles.nameRow, props.style] }))``;
+const TextPlaceName = styled(Text).attrs(props => ({ style: [styles.placeName, props.style] }))``;
+const TextPlaceCategory = styled(Text).attrs(props => ({ style: [styles.placeCategory, props.style] }))``;
+const TextPlaceMeta = styled(Text).attrs(props => ({ style: [styles.placeMeta, props.style] }))``;
+const PressableMoreButton = styled(Pressable).attrs(props => ({ style: mergePressableStyle(styles.moreButton, props.style) }))``;
+const TextMoreButtonText = styled(Text).attrs(props => ({ style: [styles.moreButtonText, props.style] }))``;
+const ViewImageRow = styled(View).attrs(props => ({ style: [styles.imageRow, props.style] }))``;
+const AnimatedViewNavigationRow = styled(Animated.View).attrs(props => ({ style: [styles.navigationRow, props.style] }))``;
+const ViewNavigationShadow = styled(View).attrs(props => ({ style: [styles.navigationShadow, props.style] }))``;
+const GlassSurfaceNavigationBar = styled(GlassSurface).attrs(props => ({ style: [styles.navigationBar, props.style] }))``;
+const PressableNavItem = styled(Pressable).attrs(props => ({ style: mergePressableStyle(styles.navItem, props.style) }))``;
+const TextNavLabel = styled(Text).attrs(props => ({ style: [styles.navLabel, props.style] }))``;
+const ViewNavItem = styled(View).attrs(props => ({ style: [styles.navItem, props.style] }))``;
+const ViewNavigationBar = styled(View).attrs(props => ({ style: [styles.navigationBar, props.style] }))``;
+const GlassSurfaceSendButtonGlass = styled(GlassSurface).attrs(props => ({ style: [styles.sendButtonGlass, props.style] }))``;
+const ViewSendButtonGlass = styled(View).attrs(props => ({ style: [styles.sendButtonGlass, props.style] }))``;
+const AnimatedViewBottomSheet = styled(Animated.View).attrs(props => ({ style: [styles.bottomSheet, props.style] }))``;
+const AnimatedViewSheetChromeShadow = styled(Animated.View).attrs(props => ({ style: [styles.sheetChromeShadow, props.style] }))``;
+const AnimatedViewSheetChrome = styled(Animated.View).attrs(props => ({ style: [styles.sheetChrome, props.style] }))``;
+const GlassSurfaceAbsoluteFill = styled(GlassSurface).attrs(props => ({ style: [styles.absoluteFill, props.style] }))``;
+const ViewSheetTint = styled(View).attrs(props => ({ style: [styles.sheetTint, props.style] }))``;
+const ViewSheetInner = styled(View).attrs(props => ({ style: [styles.sheetInner, props.style] }))``;
+const ViewHandleArea = styled(View).attrs(props => ({ style: [styles.handleArea, props.style] }))``;
+const PressableHandleButton = styled(Pressable).attrs(props => ({ style: mergePressableStyle(styles.handleButton, props.style) }))``;
+const ViewHandle = styled(View).attrs(props => ({ style: [styles.handle, props.style] }))``;
+const AnimatedViewContent = styled(Animated.View).attrs(props => ({ style: [styles.content, props.style] }))``;
+const ViewTitleRow = styled(View).attrs(props => ({ style: [styles.titleRow, props.style] }))``;
+const TextTitle = styled(Text).attrs(props => ({ style: [styles.title, props.style] }))``;
+const ScrollViewCategoryScroll = styled(ScrollView).attrs(props => ({ style: [styles.categoryScroll, props.style] }))``;
+const PressableCategoryChip = styled(Pressable).attrs(props => ({ style: mergePressableStyle(styles.categoryChip, props.style) }))``;
+const TextCategoryLabel = styled(Text).attrs(props => ({ style: [styles.categoryLabel, props.style] }))``;
+const ViewListViewport = styled(View).attrs(props => ({ style: [styles.listViewport, props.style] }))``;
+const ScrollViewList = styled(ScrollView).attrs(props => ({ style: [styles.list, props.style] }))``;
+const ViewEmptyState = styled(View).attrs(props => ({ style: [styles.emptyState, props.style] }))``;
+const TextEmptyTitle = styled(Text).attrs(props => ({ style: [styles.emptyTitle, props.style] }))``;
+const TextEmptyBody = styled(Text).attrs(props => ({ style: [styles.emptyBody, props.style] }))``;
+const PressableRetryButton = styled(Pressable).attrs(props => ({ style: mergePressableStyle(styles.retryButton, props.style) }))``;
+const TextRetryLabel = styled(Text).attrs(props => ({ style: [styles.retryLabel, props.style] }))``;
+const ViewLoadMoreState = styled(View).attrs(props => ({ style: [styles.loadMoreState, props.style] }))``;
+const TextLoadMoreError = styled(Text).attrs(props => ({ style: [styles.loadMoreError, props.style] }))``;
+const PressableLoadMoreButton = styled(Pressable).attrs(props => ({ style: mergePressableStyle(styles.loadMoreButton, props.style) }))``;

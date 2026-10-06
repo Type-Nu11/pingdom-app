@@ -1,1 +1,1 @@
-export { default as GlassSurface } from './components/GlassSurface';
+export { default as GlassSurface, supportsNativeLiquidGlass } from './components/GlassSurface';
