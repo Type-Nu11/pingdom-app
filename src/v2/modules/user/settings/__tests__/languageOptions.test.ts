@@ -25,3 +25,9 @@ test('#413 the active language keeps the Simplified/Traditional variant apart', 
   expect(resolveSelectedLanguage('zh-Hant-HK')).toBe('zh-TW');
   expect(resolveSelectedLanguage('zh')).toBe('zh-CN');
 });
+
+test('#414 the active language resolves vi variants', () => {
+  expect(LANGUAGE_SETTING_OPTIONS).toContain('vi');
+  expect(resolveSelectedLanguage('vi')).toBe('vi');
+  expect(resolveSelectedLanguage('vi-VN')).toBe('vi');
+});

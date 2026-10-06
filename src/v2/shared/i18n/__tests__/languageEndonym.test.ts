@@ -22,3 +22,9 @@ describe('#413 중국어 자체 표기', () => {
     expect(getLanguageEndonym('zh-TW')).toBe('繁體中文');
   });
 });
+
+describe('#414 베트남어 자체 표기', () => {
+  test('성조 부호를 포함한 Tiếng Việt로 표기한다', () => {
+    expect(getLanguageEndonym('vi')).toBe('Tiếng Việt');
+  });
+});

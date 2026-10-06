@@ -138,4 +138,26 @@ describe('LanguageSelectionScreen', () => {
     expect(screen.getByTestId('language-option-zh-TW')).toBeVisible();
     expect(screen.queryByTestId('language-option-zh-CN')).toBeNull();
   });
+  test('#414 Tiếng Việt를 선택하면 vi로 적용·저장하고 검색으로도 찾는다', async () => {
+    resetI18nForTests();
+    await initializeI18n();
+    await i18n.changeLanguage('en');
+    const onNext = jest.fn();
+    await renderWithProviders(
+      <LanguageSelectionScreen onBack={jest.fn()} onNext={onNext} />,
+      { i18n },
+    );
+
+    await fireEvent.changeText(screen.getByTestId('language-search-input'), 'viet');
+    expect(screen.getByText('Tiếng Việt')).toBeVisible();
+    expect(screen.queryByTestId('language-option-en')).toBeNull();
+    await fireEvent.press(screen.getByTestId('language-option-vi'));
+    await fireEvent.press(screen.getByTestId('language-continue'));
+
+    expect(onNext).toHaveBeenCalledWith('vi');
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe('vi'));
+    await waitFor(async () => {
+      expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('vi');
+    });
+  });
 });

@@ -168,3 +168,40 @@ test('#413 selecting a Chinese variant applies and persists that exact code', as
     assert.deepEqual(calls, [`change:${language}`, `persist:${language}`]);
   }
 });
+
+test('#414 normalizes Vietnamese codes, regional variants, and language names to vi', () => {
+  for (const value of ['vi', 'VI', 'vi-VN', 'vi_VN', ' vi-vn ', 'vi-Latn-VN', 'vi-US', 'Vietnamese', 'Tiếng Việt', '베트남어']) {
+    assert.equal(normalizeSupportedLanguage(value), 'vi', value);
+  }
+  for (const value of ['vn', 'vie', 'vietnam', 'v']) {
+    assert.equal(normalizeSupportedLanguage(value), null, value);
+  }
+});
+
+test('#414 a stored explicit choice is never overridden by a Vietnamese profile or device', () => {
+  assert.equal(resolvePreferredLanguage({ storedLanguage: 'ko', profileLanguage: 'vi', deviceLanguage: 'vi-VN' }), 'ko');
+  assert.equal(resolvePreferredLanguage({ storedLanguage: 'vi', profileLanguage: 'ko', deviceLanguage: 'en-US' }), 'vi');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'vi', deviceLanguage: 'ko-KR' }), 'vi');
+  assert.equal(resolvePreferredLanguage({ profileLanguage: 'ja', deviceLanguage: 'vi-VN' }), 'ja');
+  assert.equal(resolvePreferredLanguage({ deviceLanguage: 'vi-VN' }), 'vi');
+});
+
+test('#414 restores a stored vi or vi-VN preference and applies it before persistence', async () => {
+  for (const stored of ['vi', 'vi-VN']) {
+    const result = await restorePreferredLanguage({
+      deviceLanguage: 'en-US',
+      profileLanguage: 'ko',
+      storage: { getItem: async () => stored, setItem: async () => {} },
+      storageKey: 'language',
+    });
+    assert.deepEqual(result, { hasStoredPreference: true, language: 'vi' }, stored);
+  }
+  const calls = [];
+  const persisted = await applyLanguagePreference({
+    changeLanguage: async (language) => { calls.push(`change:${language}`); },
+    language: 'vi',
+    persist: async (language) => { calls.push(`persist:${language}`); throw new Error('quota'); },
+  });
+  assert.equal(persisted, false);
+  assert.deepEqual(calls, ['change:vi', 'persist:vi']);
+});

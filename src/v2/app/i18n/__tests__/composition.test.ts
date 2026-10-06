@@ -274,3 +274,43 @@ describe('#413 Chinese language preference', () => {
     expect(i18n.t('map.decision.resultsFor', { query: '咖啡' })).toBe('「咖啡」的搜尋結果');
   });
 });
+
+describe('#414 Vietnamese language preference', () => {
+  test('explicit vi selection applies immediately, persists, and survives a restart and profile refetch', async () => {
+    await initializeI18n('ko');
+    await setLanguage('vi');
+    expect(i18n.resolvedLanguage).toBe('vi');
+    expect(i18n.t('settings.title')).toBe('Cài đặt');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('vi');
+
+    resetI18nForTests();
+    await initializeI18n('ko');
+    expect(i18n.resolvedLanguage).toBe('vi');
+    await syncProfileLanguage('en');
+    expect(i18n.resolvedLanguage).toBe('vi');
+  });
+
+  test('a Vietnamese profile applies only while there is no stored choice', async () => {
+    await initializeI18n('en');
+    await syncProfileLanguage('vi-VN');
+    expect(i18n.resolvedLanguage).toBe('vi');
+    expect(await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)).toBeNull();
+
+    resetI18nForTests();
+    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, 'ko');
+    await initializeI18n('vi');
+    expect(i18n.resolvedLanguage).toBe('ko');
+    await syncProfileLanguage('vi-VN');
+    expect(i18n.resolvedLanguage).toBe('ko');
+  });
+
+  test('Vietnamese has a single plural category and keeps the English fallback for missing keys', async () => {
+    await initializeI18n('vi');
+    expect(i18n.options.fallbackLng).toEqual(['en']);
+    expect(i18n.t('__missing_414__')).toBe(resources.en.translation.common.missingTranslation);
+    expect(i18n.getResourceBundle('vi', 'translation')).toEqual(resources.vi.translation);
+    expect(i18n.t('map.detail.reviewCount', { count: 1 })).toBe('1 đánh giá');
+    expect(i18n.t('map.detail.reviewCount', { count: 2 })).toBe('2 đánh giá');
+    expect(i18n.t('map.decision.resultsFor', { query: 'cà phê' })).toBe('Kết quả cho “cà phê”');
+  });
+});

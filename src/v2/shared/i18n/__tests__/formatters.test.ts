@@ -122,3 +122,47 @@ describe('#413 Chinese formatting', () => {
     }
   });
 });
+
+describe('#414 Vietnamese formatting', () => {
+  test('vi and vi-VN keep the existing vi-VN locale branch', () => {
+    expect(resolveLocale('vi')).toBe('vi-VN');
+    expect(resolveLocale('vi-VN')).toBe('vi-VN');
+    expect(resolveLocale('vi_VN')).toBe('vi-VN');
+  });
+
+  test('currency, amount, and numbers come from the data, not the UI language', () => {
+    expect(digits(formatCurrency(12000, 'KRW', 'vi'))).toBe('12000');
+    expect(formatCurrency(12000, 'KRW', 'vi')).toMatch(/[₩￦]/);
+    expect(formatCurrency(12000, 'KRW', 'vi')).not.toMatch(/₫|VND/);
+    expect(formatNumber(1234567, 'vi')).toBe('1.234.567');
+  });
+
+  test('a place timezone keeps the same calendar date, shown day-first', () => {
+    const instant = '2026-09-30T14:30:00Z';
+    expect(formatDate(instant, 'vi', 'Asia/Seoul')).toBe('30/09/26');
+    // The same instant read in a timezone a day behind must not leak into the Seoul date.
+    expect(formatDate(instant, 'vi', 'Asia/Seoul')).not.toBe(formatDate('2026-09-29T14:30:00Z', 'vi', 'Asia/Seoul'));
+    expect(digits(formatLocalDateTime(new Date(2026, 8, 30, 14, 5), 'vi'))).toBe('14053092026');
+  });
+
+  test('distance stays metric with a decimal comma, and durations are Vietnamese', () => {
+    expect(formatDistance(1500, 'vi')).toBe('1,5 km');
+    expect(digits(formatDistance(1500, 'vi'))).toBe(digits(formatDistance(1500, 'ko')));
+    expect(formatMinuteRange(5, 10, 'vi')).toBe('5 phút–10 phút');
+  });
+
+  test('relative time uses Intl and a Vietnamese fallback without Intl.RelativeTimeFormat', () => {
+    expect(formatRelativeMinutes(7, 'vi')).toBe('7 phút trước');
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+    Object.defineProperty(Intl, 'RelativeTimeFormat', { configurable: true, value: undefined });
+    try {
+      expect(formatRelativeMinutes(0, 'vi')).toBe('bây giờ');
+      expect(formatRelativeMinutes(18, 'vi-VN')).toBe('18 phút trước');
+      expect(formatRelativeMinutes(120, 'vi')).toBe('2 giờ trước');
+      expect(formatRelativeMinutes(2880, 'vi')).toBe('2 ngày trước');
+      expect(formatRelativeMinutes(5, 'en-US')).toBe('5 min ago');
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'RelativeTimeFormat', descriptor);
+    }
+  });
+});
