@@ -59,6 +59,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.ja.translation, onboardingResources.ja), { ...offerStatusResources.ja, ...paymentResources.ja }),
   } },
   'zh-CN': { translation: {
+    routes: routeResources['zh-CN'],
     mapTutorial: mapTutorialResources['zh-CN'],
     ...offerCouponResources['zh-CN'],
     ...reservationResources['zh-CN'],
@@ -68,6 +69,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources['zh-CN'].translation, onboardingResources['zh-CN']), { ...offerStatusResources['zh-CN'], ...paymentResources['zh-CN'] }),
   } },
   'zh-TW': { translation: {
+    routes: routeResources['zh-TW'],
     mapTutorial: mapTutorialResources['zh-TW'],
     ...offerCouponResources['zh-TW'],
     ...reservationResources['zh-TW'],
@@ -77,6 +79,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources['zh-TW'].translation, onboardingResources['zh-TW']), { ...offerStatusResources['zh-TW'], ...paymentResources['zh-TW'] }),
   } },
   vi: { translation: {
+    routes: routeResources.vi,
     mapTutorial: mapTutorialResources.vi,
     ...offerCouponResources.vi,
     ...reservationResources.vi,
@@ -86,6 +89,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.vi.translation, onboardingResources.vi), { ...offerStatusResources.vi, ...paymentResources.vi }),
   } },
   es: { translation: {
+    routes: routeResources.es,
     mapTutorial: mapTutorialResources.es,
     ...offerCouponResources.es,
     ...reservationResources.es,
@@ -95,6 +99,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.es.translation, onboardingResources.es), { ...offerStatusResources.es, ...paymentResources.es }),
   } },
   'pt-BR': { translation: {
+    routes: routeResources['pt-BR'],
     mapTutorial: mapTutorialResources['pt-BR'],
     ...offerCouponResources['pt-BR'],
     ...reservationResources['pt-BR'],
