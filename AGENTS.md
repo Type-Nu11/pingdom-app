@@ -24,3 +24,13 @@
 - V1 source additions or modifications require the `legacy-exception` PR label. Deleting V1 code
   does not require the label.
 - Include the V1 dependency delta (`none`, `removed`, or `exception`) in the handoff.
+- Do not duplicate version-agnostic logic solely to avoid a V1 import. Move reusable contracts,
+  pure utilities, types, and native interfaces into an approved shared migration boundary.
+- `shared` is not a dumping ground. Code may move to a shared boundary only when it is
+  version-agnostic and has at least one concrete cross-version or infrastructure-level reason
+  to exist there.
+
+## Language
+- 사용자에게 제공하는 모든 설명과 응답은 한국어로 작성한다.
+- 명령 실행 이유(Reason)도 한국어로 작성한다.
+- 코드, 명령어, 식별자 등은 필요한 경우 영어를 유지한다.

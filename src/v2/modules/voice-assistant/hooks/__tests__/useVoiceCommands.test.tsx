@@ -5,6 +5,10 @@ import { AppState, type AppStateStatus } from 'react-native';
 import * as hooks from '../useVoiceCommands';
 import { VoiceSessionError } from '../../model/voiceSessionError';
 import { createVoiceSessionApi } from '../../api/voiceSessionApi';
+import * as commands from '../../model/voiceCommands';
+import { prepareVoiceReservationDraft } from '../../model/reservationDraft';
+import { draftQuote } from '../../model/__tests__/reservationDraft.fixture';
+import type { AppCommandResult, VoiceAvailabilityFacts } from '../../model/voiceAssistantCommand.types';
 
 jest.mock('../../api/voiceSessionApi', () => ({ createVoiceSessionApi: jest.fn() }));
 const factory = jest.mocked(createVoiceSessionApi);
@@ -156,5 +160,95 @@ test('unsupported request shows recoverable feedback without retrying the submit
   await act(() => view.result.current.dismissFeedback());
   expect(view.result.current.commandState).toEqual({ phase: 'idle' });
   expect(send).toHaveBeenCalledTimes(1);
+  await view.unmount(); queryClient.clear();
+});
+
+test.each(['expiry', 'background', 'context', 'cancel'] as const)('a displayed draft is invalidated by %s without any mutation', async reason => {
+  jest.useFakeTimers(); jest.setSystemTime(new Date('2026-09-20T00:00:00Z'));
+  const quote = draftQuote({ expiresAt: '2026-09-20T00:00:03Z' });
+  const c = quote.confirmation!;
+  const draft = prepareVoiceReservationDraft(quote, {
+    place: { id: 1, name: 'Cafe', address: 'Seoul', touristCategories: ['CAFE'], operatingStatus: 'OPERATING' },
+    availability: { id: c.availabilityId, placeId: c.placeId, productId: null, productName: null, productType: 'GENERAL',
+      startsAt: c.startsAt, endsAt: c.endsAt, remainingCapacity: 3, status: 'ACTIVE' } as VoiceAvailabilityFacts,
+    date: '2026-09-20', timezone: 'Asia/Seoul', quantity: 2, availabilityDataUpdatedAt: Date.now(),
+  }, Date.now());
+  const prepared: AppCommandResult = { schemaVersion: 1, source: 'app', kind: 'command_result', id: 'app-result-test',
+    commandId: 'input-2', command: 'prepareReservation', outcome: { status: 'succeeded', data: { draft } } };
+  const realDispatcher = commands.createVoiceCommandDispatcher;
+  // The model integration tests validate the real dispatcher. Here only its publication is controlled to exercise UI lifecycle.
+  jest.spyOn(commands, 'createVoiceCommandDispatcher').mockImplementation(options => ({
+    ...realDispatcher(options), consume: async () => options.publish(prepared),
+  }));
+  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: '2026-09-20T00:05:00Z' }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'command_request',
+      command: 'prepareReservation', args: { placeId: 1, availabilityId: 10, quantity: 2 } }) });
+  const callbacks = new Map<string, (s: AppStateStatus) => void>();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((event, callback) => { callbacks.set(event, callback); return { remove() {} }; });
+  const queryClient = new QueryClient();
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const initialProps = { accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true };
+  const view = await renderHook((props: hooks.VoiceCommandContext) => hooks.useVoiceCommands(props), { wrapper, initialProps });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'prepare', source: 'text', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { outcome: { status: 'succeeded' } } });
+  if (reason === 'expiry') {
+    await act(async () => { await jest.advanceTimersByTimeAsync(2999); });
+    expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { outcome: { status: 'succeeded' } } });
+    jest.setSystemTime(new Date('2026-09-19T00:00:00Z')); // Moving the wall clock back cannot prolong a quote.
+    await act(async () => { await jest.advanceTimersByTimeAsync(1); });
+    expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { outcome: { status: 'rejected', code: 'STALE_CONTEXT' } } });
+  } else if (reason === 'background') {
+    await act(() => callbacks.get('change')?.('background'));
+    expect(view.result.current.commandState.phase).toBe('canceled');
+  } else if (reason === 'context') {
+    await view.rerender({ ...initialProps, radiusKm: 10 });
+    expect(view.result.current.commandState.phase).toBe('idle');
+  } else {
+    await act(() => view.result.current.cancel());
+    expect(view.result.current.commandState.phase).toBe('canceled');
+  }
+  expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
+  await view.unmount(); queryClient.clear(); jest.useRealTimers();
+});
+
+
+test('an assistant reply retains actual provider text without running a command or reservation mutation', async () => {
+  const queryClient = new QueryClient();
+  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'assistant_message', text: '안녕하세요! 반가워요.' }) });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: '안녕', source: 'voice', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'assistant', text: '안녕하세요! 반가워요.' });
+  expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
+  await view.unmount(); queryClient.clear();
+});
+
+test('session creation and AI response waiting stay processing until clarification arrives', async () => {
+  const queryClient = new QueryClient();
+  let resolveCreate!: (value: { sessionId: string; expiresAt: string }) => void;
+  let resolveSend!: (value: { schemaVersion: 1; id: string; kind: 'clarification_request'; field: 'date'; text: string }) => void;
+  const create = new Promise<{ sessionId: string; expiresAt: string }>(resolve => { resolveCreate = resolve; });
+  const response = new Promise<{ schemaVersion: 1; id: string; kind: 'clarification_request'; field: 'date'; text: string }>(resolve => { resolveSend = resolve; });
+  factory.mockReturnValue({ create: () => create, refresh: jest.fn(), close: jest.fn(), send: () => response });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  let pending!: ReturnType<typeof view.result.current.onFinalInput>;
+  await act(async () => {
+    pending = view.result.current.onFinalInput({ text: '근처 카페 찾아줘', source: 'voice', signal: new AbortController().signal });
+  });
+  expect(view.result.current.commandState).toEqual({ phase: 'processing' });
+  await act(async () => { resolveCreate({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'processing' });
+  await act(async () => {
+    resolveSend({ schemaVersion: 1, id: 'input-2', kind: 'clarification_request', field: 'date', text: '며칠에 방문하시나요?' });
+    await pending;
+  });
+  expect(view.result.current.commandState).toEqual({ phase: 'clarification', field: 'date' });
+  await act(() => view.result.current.cancel());
+  expect(view.result.current.commandState).toEqual({ phase: 'canceled' });
   await view.unmount(); queryClient.clear();
 });

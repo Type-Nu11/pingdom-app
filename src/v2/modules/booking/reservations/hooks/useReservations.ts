@@ -23,7 +23,25 @@ export const reservationQueryKeys = {
     [...reservationQueryKeys.all, 'owned', params] as const,
   detail: (reservationId: number) =>
     [...reservationQueryKeys.all, 'detail', reservationId] as const,
+  quote: (accountRevision: string, placeId: number, availabilityId: number, quantity: number) =>
+    [...reservationQueryKeys.all, 'quote', accountRevision, placeId, availabilityId, quantity] as const,
 };
+
+/** Quotes are user-owned preparation records, never reusable background reservation intents. */
+export function createReservationQuoteQueryOptions(
+  placeId: number,
+  availabilityId: number,
+  quantity: number,
+  accountRevision: string,
+  api: Pick<ReservationApi, 'getReservationQuote'> = reservationApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getReservationQuote(placeId, availabilityId, quantity, signal),
+    queryKey: reservationQueryKeys.quote(accountRevision, placeId, availabilityId, quantity),
+    staleTime: 0, gcTime: 0, retry: false,
+  };
+}
 
 export function createReservationDetailQueryOptions(
   reservationId: number,

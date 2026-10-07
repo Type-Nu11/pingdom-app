@@ -6,6 +6,7 @@ import type {
 import type { ReservationDetail } from '../reservations/api/reservationApi';
 
 const reservation: ReservationDetail = {
+  confirmation: null,
   availabilityId: 801,
   bookerName: '김민수',
   bookerPhone: '010-1234-5678',

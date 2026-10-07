@@ -1,10 +1,403 @@
+diff --git a/node_modules/expo-speech-recognition/android/build.gradle b/node_modules/expo-speech-recognition/android/build.gradle
+--- a/node_modules/expo-speech-recognition/android/build.gradle
++++ b/node_modules/expo-speech-recognition/android/build.gradle
+@@ -41,3 +41,9 @@
+     abortOnError false
+   }
+ }
++
++// Existing WebRTC GMM VAD; no second microphone recorder.
++dependencies {
++  implementation 'com.github.gkonovalov.android-vad:webrtc:2.0.10'
++  testImplementation 'junit:junit:4.13.2'
++}
+diff --git a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechRecognitionOptions.kt b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechRecognitionOptions.kt
+--- a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechRecognitionOptions.kt
++++ b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechRecognitionOptions.kt
+@@ -26,6 +26,9 @@
+
+     @Field
+     var addsPunctuation: Boolean? = false
++
++    @Field
++    var pingdyVadEnabled: Boolean = false
+
+     @Field
+     var androidIntentOptions: Map<String, Any>? = null
+diff --git a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechRecognitionModule.kt b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechRecognitionModule.kt
+--- a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechRecognitionModule.kt
++++ b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechRecognitionModule.kt
+@@ -54,6 +54,8 @@
+             // The module will be accessible from `requireNativeModule('ExpoSpeechRecognition')` in
+             // JavaScript.
+             Name("ExpoSpeechRecognition")
++
++            Function("isPcmVadAvailable") { Build.VERSION.SDK_INT >= 33 }
+
+             OnDestroy {
+                 expoSpeechService.destroy()
+@@ -95,6 +97,7 @@
+                 "languagedetection",
+                 // Fired when the input volume changes
+                 "volumechange",
++                "vadactivity",
+             )
+
+             Function("getDefaultRecognitionService") {
 diff --git a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechService.kt b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechService.kt
-index 06ff2e0..9abc566 100644
 --- a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechService.kt
 +++ b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoSpeechService.kt
-@@ -88,3 +88,2 @@ class ExpoSpeechService(
+@@ -85,9 +85,8 @@
+         }
+     }
+
 -    private fun log(message: String) {
 -        Log.d("ExpoSpeechService", message)
 -    }
 +    // Never write recognition results (including partial results) to device logs.
 +    private fun log(@Suppress("UNUSED_PARAMETER") message: String) {}
+
+     private fun createSpeechRecognizer(options: SpeechRecognitionOptions): SpeechRecognizer? {
+         val value =
+@@ -195,6 +194,9 @@
+         mainHandler.post {
+             recognitionState = RecognitionState.STOPPING
+             try {
++                // Close the owned mic/PCM pipe immediately. In segmented mode the
++                // recognizer can wait for EOF before returning its final result.
++                stopRecording()
+                 speech?.stopListening()
+             } catch (e: Exception) {
+                 // do nothing
+@@ -276,7 +278,13 @@
+             } else if (options.continuous == true) {
+                 // Feature: Continuous transcription from microphone using `RecognizerIntent.EXTRA_AUDIO_SOURCE`
+                 // This also has the side effect of not playing the "beep" sound when starting and stopping recognition
+-                audioRecorder = ExpoAudioRecorder(reactContext, null)
++                audioRecorder = ExpoAudioRecorder(reactContext, null,
++                    if (options.pingdyVadEnabled) { speaking, quietForMs ->
++                        sendEvent("vadactivity", mapOf("speaking" to speaking, "quietForMs" to quietForMs))
++                    } else null,
++                    if (options.pingdyVadEnabled) { {
++                        sendEvent("error", mapOf("error" to "audio-capture", "message" to "PCM VAD failed", "code" to -1))
++                    } } else null)
+             }
+
+             // Set common intent extras if audioRecorder is initialized
+diff --git a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoAudioRecorder.kt b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoAudioRecorder.kt
+--- a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoAudioRecorder.kt
++++ b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/ExpoAudioRecorder.kt
+@@ -33,6 +33,8 @@
+     private val context: Context,
+     // Optional output file path
+     private val outputFilePath: String?,
++    private val onVadActivity: ((Boolean, Int) -> Unit)? = null,
++    private val onVadFailure: (() -> Unit)? = null,
+ ) : AudioRecorder {
+     private var audioRecorder: AudioRecord? = null
+
+@@ -63,7 +65,7 @@
+     private val bufferSizeInBytes = AudioRecord.getMinBufferSize(sampleRateInHz, channelConfig, audioFormat)
+
+     private var recordingThread: Thread? = null
+-    private var isRecordingAudio = false
++    @Volatile private var isRecordingAudio = false
+
+     companion object {
+         private const val TAG = "ExpoAudioRecorder"
+@@ -142,22 +144,23 @@
+         )
+
+     override fun start() {
+-        createRecorder().apply {
+-            audioRecorder = this
+-
+-            // First check whether the above object actually initialized
+-            if (this.state != AudioRecord.STATE_INITIALIZED) {
+-                return
+-            }
+-
+-            this.startRecording()
++        val ownedVad = onVadActivity?.let { callback ->
++            PingdyPcmVad { speaking, quietForMs ->
++                if (isRecordingAudio) callback(speaking, quietForMs)
++            }
++        }
++        try {
++            val recorder = createRecorder()
++            audioRecorder = recorder
++            check(recorder.state == AudioRecord.STATE_INITIALIZED) { "Microphone unavailable" }
++            recorder.startRecording()
+             isRecordingAudio = true
+-
+-            // Start thread
+-            recordingThread =
+-                thread {
+-                    streamAudioToPipe()
+-                }
++            recordingThread = thread { streamAudioToPipe(ownedVad) }
++        } catch (error: Exception) {
++            ownedVad?.close()
++            audioRecorder?.release()
++            audioRecorder = null
++            throw error
+         }
+     }
+
+@@ -195,65 +198,75 @@
+         }
+     }
+
+-    private fun streamAudioToPipe() {
+-        val tempFileOutputStream = FileOutputStream(tempPcmFile)
+-        val data = ByteArray(bufferSizeInBytes)
+-
+-        while (isRecordingAudio) {
+-            val recorder = audioRecorder ?: break
+-
+-            val read =
+-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+-                    // avoid empty reads
+-                    recorder.read(data, 0, data.size, AudioRecord.READ_BLOCKING)
+-                } else {
+-                    recorder.read(data, 0, data.size)
+-                }
+-
+-            when {
+-                read > 0 -> {
+-                    try {
+-                        outputStream?.write(data, 0, read)
+-                        outputStream?.flush()
+-
+-                        // Write to the temp PCM file
+-                        if (outputFilePath != null) {
+-                            tempFileOutputStream.write(data, 0, read)
+-                            tempFileOutputStream.flush()
+-                        }
+-                    } catch (e: IOException) {
+-                        Log.e(TAG, "Failed to write to output stream", e)
+-                        e.printStackTrace()
++    private fun streamAudioToPipe(ownedVad: PingdyPcmVad?) {
++        try {
++            FileOutputStream(tempPcmFile).use { tempFileOutputStream ->
++                val data = ByteArray(bufferSizeInBytes)
++                while (isRecordingAudio) {
++                    val recorder = audioRecorder ?: break
++
++                    val read =
++                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
++                            // avoid empty reads
++                            recorder.read(data, 0, data.size, AudioRecord.READ_BLOCKING)
++                        } else {
++                            recorder.read(data, 0, data.size)
++                        }
++
++                    when {
++                        read > 0 -> {
++                            try {
++                                try { if (isRecordingAudio) ownedVad?.accept(data, read) } catch (_: Exception) {
++                                    if (isRecordingAudio) onVadFailure?.invoke()
++                                    break
++                                }
++                                outputStream?.write(data, 0, read)
++                                outputStream?.flush()
++
++                                // Write to the temp PCM file
++                                if (outputFilePath != null) {
++                                    tempFileOutputStream.write(data, 0, read)
++                                    tempFileOutputStream.flush()
++                                }
++                            } catch (e: IOException) {
++                                Log.e(TAG, "Failed to write to output stream", e)
++                                e.printStackTrace()
++                            }
++                        }
++
++                        // (this should only happen on API 22 and below)
++                        read == 0 -> {
++                            try {
++                                Thread.sleep(10)
++                            } catch (_: InterruptedException) {}
++                        }
++
++                        read == AudioRecord.ERROR_DEAD_OBJECT -> {
++                            Log.w(TAG, "AudioRecord returned ERROR_DEAD_OBJECT; breaking out of the loop")
++                            // todo: we should probably emit an error event here
++                            break
++                        }
++
++                        read == AudioRecord.ERROR_INVALID_OPERATION || read == AudioRecord.ERROR_BAD_VALUE -> {
++                            Log.w(TAG, "AudioRecord read error: $read; backing off briefly")
++                            try {
++                                Thread.sleep(10)
++                            } catch (_: InterruptedException) {}
++                        }
++
++                        else -> {
++                            // todo: we should probably emit an error event here
++                            Log.w(TAG, "AudioRecord read returned '$read'; breaking out of the loop")
++                            break
++                        }
+                     }
+                 }
+-
+-                // (this should only happen on API 22 and below)
+-                read == 0 -> {
+-                    try {
+-                        Thread.sleep(10)
+-                    } catch (_: InterruptedException) {}
+-                }
+-
+-                read == AudioRecord.ERROR_DEAD_OBJECT -> {
+-                    Log.w(TAG, "AudioRecord returned ERROR_DEAD_OBJECT; breaking out of the loop")
+-                    // todo: we should probably emit an error event here
+-                    break
+-                }
+-
+-                read == AudioRecord.ERROR_INVALID_OPERATION || read == AudioRecord.ERROR_BAD_VALUE -> {
+-                    Log.w(TAG, "AudioRecord read error: $read; backing off briefly")
+-                    try {
+-                        Thread.sleep(10)
+-                    } catch (_: InterruptedException) {}
+-                }
+-
+-                else -> {
+-                    // todo: we should probably emit an error event here
+-                    Log.w(TAG, "AudioRecord read returned '$read'; breaking out of the loop")
+-                    break
+-                }
+-            }
+-        }
+-        tempFileOutputStream.close()
++            }
++        } catch (_: Exception) {
++            if (isRecordingAudio) onVadFailure?.invoke()
++        } finally {
++            ownedVad?.close()
++            if (outputFilePath == null) tempPcmFile.delete()
++        }
+     }
+ }
+diff --git a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/PingdyPcmVad.kt b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/PingdyPcmVad.kt
+new file mode 100644
+--- /dev/null
++++ b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/PingdyPcmVad.kt
+@@ -0,0 +1,19 @@
++package expo.modules.speechrecognition
++
++import com.konovalov.vad.webrtc.VadWebRTC
++import com.konovalov.vad.webrtc.config.FrameSize
++import com.konovalov.vad.webrtc.config.Mode
++import com.konovalov.vad.webrtc.config.SampleRate
++import java.io.Closeable
++
++/** Existing WebRTC GMM model. Frame hysteresis is owned by PingdyVadFrames. */
++internal class PingdyPcmVad(publish: (Boolean, Int) -> Unit) : Closeable {
++    private val model = try {
++        VadWebRTC(SampleRate.SAMPLE_RATE_16K, FrameSize.FRAME_SIZE_320, Mode.NORMAL)
++    } catch (error: LinkageError) {
++        throw IllegalStateException("PCM VAD unavailable", error)
++    }
++    private val frames = PingdyVadFrames({ model.isSpeech(it) }, publish)
++    fun accept(data: ByteArray, count: Int) = frames.accept(data, count)
++    override fun close() = model.close()
++}
+diff --git a/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/PingdyVadFrames.kt b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/PingdyVadFrames.kt
+new file mode 100644
+--- /dev/null
++++ b/node_modules/expo-speech-recognition/android/src/main/java/expo/modules/speechrecognition/PingdyVadFrames.kt
+@@ -0,0 +1,42 @@
++package expo.modules.speechrecognition
++
++/** 16 kHz mono PCM16: a 20 ms frame is 640 bytes. No audio is retained beyond one frame. */
++internal class PingdyVadFrames(
++    private val classify: (ByteArray) -> Boolean,
++    private val publish: (Boolean, Int) -> Unit,
++) {
++    private val frame = ByteArray(640)
++    private var filled = 0
++    private var speechFrames = 0
++    private var quietFrames = 0
++    private var speaking: Boolean? = null
++
++    fun accept(data: ByteArray, count: Int) {
++        require(count in 0..data.size)
++        var offset = 0
++        while (offset < count) {
++            val copied = minOf(frame.size - filled, count - offset)
++            data.copyInto(frame, filled, offset, offset + copied)
++            filled += copied
++            offset += copied
++            if (filled != frame.size) continue
++            filled = 0
++            if (classify(frame)) {
++                quietFrames = 0
++                speechFrames = minOf(3, speechFrames + 1)
++                if (speechFrames == 3 && speaking != true) {
++                    speaking = true
++                    publish(true, 0)
++                }
++            } else {
++                speechFrames = 0
++                quietFrames = minOf(10, quietFrames + 1)
++                if (quietFrames == 10 && speaking != false) {
++                    speaking = false
++                    // This confirmed quiet already includes 200 ms of debounce.
++                    publish(false, 200)
++                }
++            }
++        }
++    }
++}
+diff --git a/node_modules/expo-speech-recognition/android/src/test/java/expo/modules/speechrecognition/PingdyVadFramesTest.kt b/node_modules/expo-speech-recognition/android/src/test/java/expo/modules/speechrecognition/PingdyVadFramesTest.kt
+new file mode 100644
+--- /dev/null
++++ b/node_modules/expo-speech-recognition/android/src/test/java/expo/modules/speechrecognition/PingdyVadFramesTest.kt
+@@ -0,0 +1,47 @@
++package expo.modules.speechrecognition
++
++import org.junit.Assert.*
++import org.junit.Test
++
++class PingdyVadFramesTest {
++    @Test fun exactFramesAcrossOddChunks() {
++        val seen = mutableListOf<ByteArray>()
++        val frames = PingdyVadFrames({ seen.add(it.copyOf()); false }, { _, _ -> })
++        val pcm = ByteArray(1280) { (it % 97).toByte() }
++        frames.accept(pcm.copyOfRange(0, 319), 319)
++        assertTrue(seen.isEmpty())
++        frames.accept(pcm.copyOfRange(319, 1280), 961)
++        assertEquals(2, seen.size)
++        assertArrayEquals(pcm.copyOfRange(0, 640), seen[0])
++        assertArrayEquals(pcm.copyOfRange(640, 1280), seen[1])
++    }
++    @Test fun shortGapsDoNotPublishQuietAndResumptionCancelsIt() {
++        var voice = true
++        val edges = mutableListOf<Pair<Boolean, Int>>()
++        val frames = PingdyVadFrames({ voice }, { active, quiet -> edges.add(active to quiet) })
++        fun feed(count: Int) = repeat(count) { frames.accept(ByteArray(640), 640) }
++        feed(2)
++        assertTrue(edges.isEmpty())
++        feed(1)
++        assertEquals(listOf(true to 0), edges)
++        voice = false; feed(9)
++        assertEquals(1, edges.size)
++        voice = true; feed(3)
++        voice = false; feed(10)
++        assertEquals(listOf(true to 0, false to 200), edges)
++        feed(100)
++        assertEquals(2, edges.size)
++        voice = true; feed(3)
++        assertEquals(true to 0, edges.last())
++    }
++    @Test fun isolatedNoiseDoesNotBecomeSpeech() {
++        var voice = false
++        val edges = mutableListOf<Boolean>()
++        val frames = PingdyVadFrames({ voice }, { active, _ -> edges.add(active) })
++        repeat(30) {
++            voice = true; frames.accept(ByteArray(640), 640)
++            voice = false; repeat(10) { frames.accept(ByteArray(640), 640) }
++        }
++        assertEquals(listOf(false), edges)
++    }
++}

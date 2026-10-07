@@ -183,8 +183,17 @@ test('checked-in OpenAPI snapshot keeps current response fields, enums, and erro
     assert.equal(schemas.ReservationResponse.properties[field].nullable, true, field);
   }
   assert.deepEqual(Object.keys(document.paths['/reservations'].post.responses), [
-    '201', '400', '401', '403',
+    '201', '400', '401', '403', '404', '409', '410', '422',
   ]);
+  assert.equal(schemas.ReservationCreateRequest.properties.confirmationToken.minLength, 36);
+  assert.equal(schemas.ReservationCreateRequest.properties.confirmationToken.nullable, true);
+  assert.ok(schemas.ReservationResponse.required.includes('confirmation'));
+  assert.equal(schemas.ReservationConfirmation.nullable, true);
+  assert.deepEqual(schemas.ReservationQuoteResponse.required, ['confirmation', 'confirmationToken', 'remainingCapacity']);
+  const quote = document.paths['/places/{placeId}/availabilities/{availabilityId}/quote'].get;
+  assert.equal(quote.operationId, 'getReservationQuote');
+  assert.equal(quote.parameters.find(p => p.name === 'quantity').required, true);
+  assert.deepEqual(Object.keys(quote.responses), ['200', '400', '401', '403', '404', '409', '422', '429']);
   assert.deepEqual(Object.keys(document.paths['/reservations'].get.responses), [
     '200', '400', '401', '403',
   ]);

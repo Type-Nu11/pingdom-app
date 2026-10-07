@@ -81,8 +81,17 @@ function text(value: unknown): string {
   return value;
 }
 function command(name: unknown, input: unknown): VoiceAssistantCommand {
-  // 객체에서 임의 이름으로 함수를 찾지 않습니다. switch의 다섯 분기만 실행 가능한 명령을 만듭니다.
+  // 객체에서 임의 이름으로 함수를 찾지 않습니다. allowlist 분기만 실행 가능한 명령을 만듭니다.
   switch (name) {
+    case 'searchNearbyPlaces': {
+      const args = record(input, '$.args');
+      exact(args, ['useCurrentLocation'], ['touristCategory'], '$.args');
+      if (typeof args.useCurrentLocation !== 'boolean') fail('INVALID_FIELD', '$.args.useCurrentLocation');
+      const touristCategory = Object.hasOwn(args, 'touristCategory')
+        ? member(args.touristCategory, categories, '$.args.touristCategory') : undefined;
+      return { command: name, args: Object.freeze({ useCurrentLocation: args.useCurrentLocation,
+        ...(touristCategory ? { touristCategory } : {}) }) };
+    }
     case 'searchNearbyReservablePlaces': {
       const args = record(input, '$.args');
       exact(args, ['date', 'startTime', 'endTime', 'quantity', 'useCurrentLocation'], ['touristCategory'], '$.args');

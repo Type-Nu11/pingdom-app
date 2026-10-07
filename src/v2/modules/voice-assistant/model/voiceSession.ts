@@ -50,14 +50,14 @@ export function createVoiceSessionController(
   const publish = (phase: VoiceSessionState['phase'], error: VoiceSessionErrorCode | null = null) => {
     state = Object.freeze({ phase, generation, error, retryAvailable: !!retryInput, retryAt: retryInput?.at ?? null }); listeners.forEach(listener => listener());
   };
-  function invalidate(error: VoiceSessionErrorCode | null = null) {
+  function invalidate(error: VoiceSessionErrorCode | null = null, phase: VoiceSessionState['phase'] = 'closed') {
     clearTimeout(expiryTimer); expiryTimer = undefined;
     retryInput = undefined; expiresAt = 0; expiryDeadline = 0;
     epoch = Symbol('voice-session'); generation++;
     turn?.abort(); turn = undefined;
     pending.forEach(controller => controller.abort()); pending.clear();
     dto = undefined; ledger.clear();
-    publish('closed', error);
+    publish(phase, error);
   }
   function allowed() {
     if (!authenticated) throw new VoiceSessionError('AUTHENTICATION_REQUIRED');
@@ -192,9 +192,9 @@ export function createVoiceSessionController(
     getIdentity: () => dto && !expired() && foreground && authenticated
       ? Object.freeze({ sessionId: dto.sessionId, epoch, generation }) : undefined,
     async start(signal?: AbortSignal) {
-      allowed(); invalidate();
+      // Replacing a session is creation, not a user cancellation. Publish atomically.
+      allowed(); invalidate(null, 'creating');
       const captured = epoch; const revision = generation;
-      publish('creating');
       try {
         const created = await request(s => api.create(s), signal);
         if (captured !== epoch || revision !== generation || signal?.aborted) return;

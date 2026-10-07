@@ -7,10 +7,12 @@ import type { VoiceEnvelopeConsumer, VoiceSessionController } from '../model/voi
 import type { AppCommandResult, ClarificationField } from '../model/voiceAssistantCommand.types';
 import type { OnFinalInput } from '../model/voiceInput';
 import { voiceSessionError, type VoiceSessionErrorCode } from '../model/voiceSessionError';
+import { serverInstant } from '../model/voiceCommandTime';
 
 export type VoiceCommandContext = Omit<VoiceCommandRuntime, 'session' | 'queryClient' | 'now' | 'monotonic' | 'contextRevision'>;
 export type VoiceCommandViewState =
-  | { phase: 'idle' | 'processing' | 'canceled' | 'advisory' | 'unrecognized' }
+  | { phase: 'idle' | 'processing' | 'canceled' | 'unrecognized' }
+  | { phase: 'assistant'; text: string }
   | { phase: 'clarification'; field: ClarificationField }
   | { phase: 'result'; result: AppCommandResult }
   | { phase: 'error'; code: VoiceSessionErrorCode };
@@ -39,10 +41,28 @@ export function useVoiceCommands(context: VoiceCommandContext) {
       else setCommandState({ phase: 'error',
         code: envelope.code === 'PROVIDER_UNAVAILABLE' ? 'PROVIDER_UNAVAILABLE' : 'INVALID_RESPONSE' });
     }
-    else setCommandState({ phase: 'advisory' }); // Never display provider success claims or speak them.
+    else setCommandState({ phase: 'assistant', text: envelope.text }); // Plain conversation only; never dispatch, confirm, or speak it.
   }, [dispatcher]);
   const { controller, state } = useVoiceSession(context.accountRevision, consume);
   sessionRef.current = controller;
+  useLayoutEffect(() => {
+    if (commandState.phase !== 'result' || commandState.result.command !== 'prepareReservation'
+      || commandState.result.outcome.status !== 'succeeded') return;
+    const result = commandState.result;
+    const expiry = serverInstant(commandState.result.outcome.data.draft.confirmation.expiresAt);
+    // Monotonic deadline prevents a wall-clock rollback from extending a displayed draft.
+    const deadline = performance.now() + Math.max(0, expiry - Date.now());
+    let timer: ReturnType<typeof setTimeout>;
+    const expire = () => {
+      const remaining = Math.min(expiry - Date.now(), deadline - performance.now());
+      if (remaining > 0) { timer = setTimeout(expire, remaining); return; }
+      setCommandState(current => current.phase === 'result' && current.result === result
+        ? { phase: 'result', result: { ...result, outcome: { status: 'rejected', code: 'STALE_CONTEXT' } } }
+        : current);
+    };
+    expire();
+    return () => clearTimeout(timer);
+  }, [commandState, dispatcher]);
   useLayoutEffect(() => {
     if (!state.retryAvailable || state.retryAt === null) return;
     const timer = setTimeout(() => setRetryClock(Date.now()), Math.max(0, state.retryAt - Date.now()));
@@ -58,6 +78,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   useLayoutEffect(() => {
     const unsubscribe = controller.subscribe(() => {
       const snapshot = controller.getSnapshot();
+      if (snapshot.phase === 'creating' || snapshot.phase === 'sending') setCommandState({ phase: 'processing' });
       if (snapshot.phase === 'closed') { dispatcher.clear(); setCommandState({ phase: 'canceled' }); }
       if (snapshot.error) setCommandState({ phase: 'error', code: snapshot.error });
     });

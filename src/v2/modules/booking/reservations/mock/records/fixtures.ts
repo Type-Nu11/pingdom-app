@@ -1,6 +1,7 @@
 import type { ReservationPaymentSchema } from '../../../../../shared/api/reservationPaymentContract';
 
 export const reservationDetailFixture = {
+  confirmation: null,
   availabilityId: 801,
   bookerName: '김민수',
   bookerPhone: '010-1234-5678',
