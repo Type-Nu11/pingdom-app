@@ -142,11 +142,28 @@ test.each([
   ['forged source on valid command', (id: string) => JSON.stringify({ ...fixtures.detail, id, source: 'app' })],
   ['confirmation bypass', (id: string) => JSON.stringify({ ...fixtures.prepare, id, args: { ...fixtures.prepare.args, confirmed: true } })],
   ['arbitrary API', (id: string) => JSON.stringify({ ...fixtures.search, id, args: { ...fixtures.search.args, api: 'https://attacker.test/reservations' } })],
-  ['unimplemented general search', (id: string) => JSON.stringify({ ...fixtures.search, id, command: 'searchNearbyPlaces', args: { useCurrentLocation: true } })],
+  ['general search confirmation injection', (id: string) => JSON.stringify({ ...fixtures.search, id, command: 'searchNearbyPlaces', args: { useCurrentLocation: true, confirmed: true } })],
+  ['general search coordinate injection', (id: string) => JSON.stringify({ ...fixtures.search, id, command: 'searchNearbyPlaces', args: { useCurrentLocation: true, latitude: 37, longitude: 127 } })],
 ] as const)('%s never reaches the consumer or a domain API', async (_name, raw) => {
   const x = engine(); await x.controller.start(); await x.sendRaw(raw);
   expect(x.controller.getSnapshot().error).toBe('INVALID_RESPONSE');
   expect(x.deliveries).toEqual([]); expect(x.reads).toEqual([]); expect(x.results).toEqual([]); expect(x.writes).toEqual([]);
+});
+
+test('general search uses canonical place reads without availability, quotes or reservation writes', async () => {
+  const x = engine(); await x.controller.start();
+  await x.sendRaw(id => JSON.stringify({ schemaVersion: 1, id, kind: 'command_request',
+    command: 'searchNearbyPlaces', args: { useCurrentLocation: true } }));
+  expect(x.controller.getSnapshot().error).toBeNull();
+  expect(x.results.at(-1)).toMatchObject({ command: 'searchNearbyPlaces',
+    outcome: { status: 'succeeded', data: { places: [place] } } });
+  expect(x.reads.map(read => read.path)).toEqual(['/places/', '/places/1']);
+  expect(x.reads[0].params).toMatchObject({ limit: 3, sort: 'NEAREST' });
+  expect(x.reads[0].params).not.toHaveProperty('date');
+  expect(x.dispatcher.provenance.availability()).toBeUndefined();
+  expect(JSON.stringify(x.results)).not.toMatch(/description|payments|totalAmountMinor|cancellation|reservable|reservationId/);
+  expect(x.writes).toEqual([]);
+  expect(x.queryClient.getMutationCache().getAll()).toEqual([]);
 });
 
 test.each([

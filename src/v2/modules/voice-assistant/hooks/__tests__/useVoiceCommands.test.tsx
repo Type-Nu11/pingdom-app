@@ -72,7 +72,7 @@ test('superseded session creation cannot replace the latest processing state wit
     await latest;
     first.resolve({ sessionId: 'old', expiresAt: new Date(Date.now() + 300000).toISOString() });
   });
-  expect(view.result.current.commandState).toEqual({ phase: 'advisory' });
+  expect(view.result.current.commandState).toEqual({ phase: 'assistant', text: 'advisory' });
   await view.unmount(); queryClient.clear();
 });
 
