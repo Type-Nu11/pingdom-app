@@ -1,7 +1,7 @@
 # Pingdy speech endpointing
 
 Android 13+ native builds use the existing 16 kHz mono PCM16 microphone stream for
-both STT and WebRTC GMM VAD (`android-vad:webrtc:2.0.10`, NORMAL mode). No second
+both STT and WebRTC GMM VAD (`android-vad:webrtc:2.0.10`, VERY_AGGRESSIVE mode). No second
 recorder is opened. The integration lives in the existing Expo speech native
 bridge patch; new application behavior stays in V2. Older native binaries,
 Android <=12, and iOS retain the existing recognition/volume fallback.
@@ -19,6 +19,8 @@ Android <=12, and iOS retain the existing recognition/volume fallback.
   editing and report interruption. They never submit automatically or restart.
 - Capture is bounded to 60 s. After an explicit stop, final-result waiting is
   bounded to 10 s. Cancel/background remove listeners before aborting capture.
+- At the capture limit, finalized text remains editable with an interruption
+  message; uncertain partial text is discarded and no AI request is sent automatically.
 - Audio is not persisted or passed to JavaScript. Native VAD resources are closed
   when the PCM worker exits; late events from stopped recorders are suppressed.
 
@@ -52,3 +54,10 @@ Device/model tuning of the 60/200 ms thresholds remains dependent on these
 acoustic checks. A 3 s or longer intermediate pause can end an uncertain utterance
 by design. 1 s measures capture release, not the latency of STT finalization or an
 AI/server response.
+
+In #350 Android SM-N981N testing, NORMAL and AGGRESSIVE repeatedly published
+speech after the user's completed second utterance during reported quiet, resetting
+the three-second endpoint. VERY_AGGRESSIVE passed a subsequent greeting/second
+utterance trial and the user reported normal recognition/end for a quiet-voice trial.
+This is one device/user observation; controlled background noise, voice level/distance
+and additional devices remain required before treating the tuning as fully validated.

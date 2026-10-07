@@ -294,7 +294,7 @@ new file mode 100644
 +/** Existing WebRTC GMM model. Frame hysteresis is owned by PingdyVadFrames. */
 +internal class PingdyPcmVad(publish: (Boolean, Int) -> Unit) : Closeable {
 +    private val model = try {
-+        VadWebRTC(SampleRate.SAMPLE_RATE_16K, FrameSize.FRAME_SIZE_320, Mode.NORMAL)
++        VadWebRTC(SampleRate.SAMPLE_RATE_16K, FrameSize.FRAME_SIZE_320, Mode.VERY_AGGRESSIVE)
 +    } catch (error: LinkageError) {
 +        throw IllegalStateException("PCM VAD unavailable", error)
 +    }

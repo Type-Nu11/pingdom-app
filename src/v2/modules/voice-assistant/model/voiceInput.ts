@@ -102,6 +102,11 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     release();
     update({ phase: reason === 'unavailable' ? 'unavailable' : 'error', error: reason, partial: '', speaking: false, draft: '' });
   };
+  const interrupt = () => {
+    const stableText = finalizedText;
+    release();
+    update({ phase: 'error', error: 'interrupted', draft: stableText, partial: '', speaking: false, delivery: 'none' });
+  };
   const cancel = () => {
     release();
     submittedText = undefined;
@@ -176,9 +181,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
           }
           if (event.type === 'ended') {
             if (event.premature) {
-              const stableText = finalizedText;
-              release();
-              update({ phase: 'error', error: 'interrupted', draft: stableText, partial: '', speaking: false, delivery: 'none' });
+              interrupt();
               return;
             }
             nativeEnded = true;
@@ -221,7 +224,12 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
         if (!live(id)) { owned.cancel(); return; }
         session = owned;
         update({ phase: 'listening' });
-        deadline = setTimeout(() => { if (live(id)) fail('noSpeech'); }, 60000);
+        deadline = setTimeout(() => {
+          if (!live(id)) return;
+          // A capture limit is an interruption, not proof that recognized speech was absent.
+          if (finalizedText) interrupt();
+          else fail('noSpeech');
+        }, 60000);
         await owned.start();
       } catch { if (live(id)) fail('failed'); }
     },

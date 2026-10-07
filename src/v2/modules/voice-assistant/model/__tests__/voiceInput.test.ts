@@ -334,6 +334,25 @@ test('start/stop native rejection is contained', async () => {
   }
 });
 
+test.each([false, true])('capture limit preserves finalized text for explicit recovery without submitting an uncertain tail (%s)', async partial => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('ko-KR');
+  x.emit({ type: 'activity', speaking: true });
+  x.emit({ type: 'final', text: '내일 오후 두 시에' });
+  if (partial) x.emit({ type: 'partial', text: 'uncertain tail' });
+  await jest.advanceTimersByTimeAsync(60000);
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'error', error: 'interrupted',
+    draft: '내일 오후 두 시에', partial: '', speaking: false, delivery: 'none' });
+  expect(x.session.cancel).toHaveBeenCalledTimes(1);
+  expect(x.signal().aborted).toBe(true);
+  expect(x.callback).not.toHaveBeenCalled();
+  await x.controller.submit();
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: '내일 오후 두 시에' }));
+  x.controller.dispose();
+});
+
 test('recognition has a bounded deadline, including silence after stop', async () => {
   jest.useFakeTimers();
   const x = setup();
