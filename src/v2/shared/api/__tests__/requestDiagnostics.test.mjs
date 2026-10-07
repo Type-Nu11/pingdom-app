@@ -20,13 +20,31 @@ test('failed requests expose diagnostic metadata without credentials or payload 
     assert.equal(entry.method, 'GET');
     assert.equal(entry.status, 503);
     assert.equal(entry.kind, 'http');
-    assert.equal(entry.traceId, 'trace-123');
     assert.equal(entry.host, 'api.example.com');
     assert.ok(entry.elapsedMs >= 0);
     assert.equal(JSON.stringify(logs).includes('secret'), false);
     globalThis.__DEV__ = false;
     await assert.rejects(client.get('/users/me'));
     assert.equal(logs.length, 1);
+  } finally { console.warn = original; globalThis.__DEV__ = previous; }
+});
+
+test('identifier-shaped session IDs and echoed credentials are absent from diagnostics', async () => {
+  const previous = globalThis.__DEV__;
+  globalThis.__DEV__ = true;
+  const logs = [];
+  const original = console.warn;
+  console.warn = (...args) => logs.push(args);
+  try {
+    const client = createApiClient({ post: async () => { throw {
+      isAxiosError: true, code: 'private-transport-token',
+      config: { headers: { Authorization: 'private-auth-token' } },
+      response: { status: 500, headers: { 'x-request-id': 'private-header-token' },
+        data: { code: 'private-server-token', traceId: 'private-trace-token', message: 'private-booker' } },
+    }; } });
+    await assert.rejects(client.post('/voice-ai/sessions/private-session-token/messages', { text: 'private-transcript' }));
+    assert.equal(JSON.parse(logs[0][1]).route, '/voice-ai/sessions/:id/messages');
+    assert.equal(JSON.stringify(logs).includes('private-'), false);
   } finally { console.warn = original; globalThis.__DEV__ = previous; }
 });
 
