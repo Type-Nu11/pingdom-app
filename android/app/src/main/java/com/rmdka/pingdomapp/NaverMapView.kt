@@ -11,23 +11,27 @@ import android.view.Gravity
 import android.widget.FrameLayout
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
+import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.common.LifecycleState
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
+import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraAnimation
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.MapView
 import com.naver.maps.map.NaverMap
 import com.naver.maps.map.NaverMapOptions
+import com.naver.maps.map.overlay.PolylineOverlay
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.OverlayImage
 import kotlin.math.roundToInt
 
-private data class NaverPlaceMarker(val id: String, val category: String, val lat: Double, val lng: Double)
+private data class NaverPlaceMarker(val id: String, val category: String, val lat: Double, val lng: Double, val caption: String = "")
 
 /** Native V2 host. Props are applied together to avoid moving to a half-updated coordinate. */
 class NaverMapView(private val reactContext: ThemedReactContext) :
@@ -39,16 +43,24 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private var centerLng: Double? = null
     private var userLat: Double? = null
     private var userLng: Double? = null
+    private var releaseFollowAfterGesture = false
     private var followUser = true
     private var nightMode = false
     private var appliedNightMode: Boolean? = null
+    private var logoTopMargin = 160f
     private var zoomLevel = 17
     private var placeData = emptyList<NaverPlaceMarker>()
     private var markersDirty = true
     private val placeMarkers = mutableMapOf<String, Marker>()
     private val icons = mutableMapOf<String, OverlayImage>()
     private val userMarker = Marker()
+    private val routeLine = PolylineOverlay()
+    private var routePoints = emptyList<LatLng>()
+    private var routeDirty = false
     private var lastCamera: Triple<Double, Double, Int>? = null
+    private var cameraRevision = 0
+    private var cameraFit: Map<String, Double>? = null
+    private var appliedCameraRevision = 0
     private var lastFollowUser = false
     private var started = false
     private var resumed = false
@@ -85,7 +97,14 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
                     logoGravity = Gravity.TOP or Gravity.LEFT
                     setLogoMargin(dp(16f), dp(160f), 0, 0)
                 }
+                map.addOnCameraChangeListener { reason, _ ->
+                    if (reason == CameraUpdate.REASON_GESTURE) {
+                        if (followUser) releaseFollowAfterGesture = true
+                        emit("topCameraGesture", Arguments.createMap())
+                    }
+                }
                 map.addOnCameraIdleListener {
+                    emitRouteAnchor(map)
                     val target = map.cameraPosition.target
                     emit("topCameraIdle", Arguments.createMap().apply {
                         putDouble("lat", target.latitude)
@@ -113,6 +132,49 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         }
     }
 
+    fun setLogoTopMargin(value: Double) { logoTopMargin = if (value.isFinite()) value.toFloat().coerceAtLeast(0f) else 160f }
+    // Project a real path vertex to dp for the Figma duration bubble. No coordinate logging.
+    private fun emitRouteAnchor(map: NaverMap) {
+        if (routePoints.size < 2) return
+        val point = map.projection.toScreenLocation(routePoints[routePoints.size / 2])
+        val density = resources.displayMetrics.density
+        emit("topRouteAnchor", Arguments.createMap().apply {
+            putDouble("x", (point.x / density).toDouble())
+            putDouble("y", (point.y / density).toDouble())
+        })
+    }
+
+    fun setCameraFit(value: ReadableMap?) {
+        val names = listOf("north", "south", "east", "west", "top", "bottom", "left", "right")
+        cameraFit = if (value != null && names.all { value.hasKey(it) && value.getType(it) == ReadableType.Number && value.getDouble(it).isFinite() }) {
+            names.associateWith { value.getDouble(it) }.takeIf {
+                validCoordinate(it["north"], it["east"]) && validCoordinate(it["south"], it["west"])
+                    && it.getValue("north") >= it.getValue("south") && it.getValue("east") >= it.getValue("west")
+                    && listOf("top", "bottom", "left", "right").all { key -> it.getValue(key) >= 0 }
+            }
+        } else null
+    }
+
+    private fun fitUpdate(): CameraUpdate? {
+        val fit = cameraFit ?: return null
+        val left = dp(fit.getValue("left").toFloat())
+        val top = dp(fit.getValue("top").toFloat())
+        val right = dp(fit.getValue("right").toFloat())
+        val bottom = dp(fit.getValue("bottom").toFloat())
+        if (left + right >= mapView.width || top + bottom >= mapView.height) return null
+        // Avoid zooming to an unhelpful building-level view for very short routes.
+        if (zoomLevel >= 16) {
+            val target = LatLng((fit.getValue("north") + fit.getValue("south")) / 2, (fit.getValue("east") + fit.getValue("west")) / 2)
+            return CameraUpdate.scrollAndZoomTo(target, 16.0).pivot(PointF(
+                (left + (mapView.width - left - right) / 2f) / mapView.width,
+                (top + (mapView.height - top - bottom) / 2f) / mapView.height
+            ))
+        }
+        val bounds = LatLngBounds(LatLng(fit.getValue("south"), fit.getValue("west")), LatLng(fit.getValue("north"), fit.getValue("east")))
+        return CameraUpdate.fitBounds(bounds, left, top, right, bottom)
+    }
+
+    fun setCameraRevision(value: Int) { cameraRevision = value }
     fun setCenterLat(value: Double) { centerLat = value }
     fun setCenterLng(value: Double) { centerLng = value }
     fun setUserLat(value: Double?) { userLat = value }
@@ -121,6 +183,21 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun setFollowUser(value: Boolean) { followUser = value }
     // SDK 준비 전에도 최신 테마를 보관한다. getMapAsync 완료 시 applyProps()가 반영한다.
     fun setNightMode(value: Boolean) { nightMode = value }
+
+    fun setRouteCoordinates(value: ReadableArray?) {
+        val next = buildList {
+            for (index in 0 until (value?.size() ?: 0)) {
+                val item = value?.getMap(index) ?: continue
+                if (!item.hasKey("lat") || item.isNull("lat") || !item.hasKey("lng") || item.isNull("lng")) continue
+                val lat = item.getDouble("lat")
+                val lng = item.getDouble("lng")
+                if (validCoordinate(lat, lng)) add(LatLng(lat, lng))
+            }
+        }
+        // Reject an incomplete path rather than drawing across an invalid segment.
+        val valid = if (next.size == (value?.size() ?: 0) && next.distinct().size >= 2) next else emptyList()
+        if (valid != routePoints) { routePoints = valid; routeDirty = true }
+    }
 
     fun setMarkers(value: ReadableArray?) {
         val next = buildList {
@@ -132,7 +209,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
                 if (!validCoordinate(lat, lng)) continue
                 val id = if (item.hasKey("id")) item.getString("id") else null
                 val category = if (item.hasKey("category")) item.getString("category") else null
-                add(NaverPlaceMarker(id ?: "marker-$index", normalizeCategory(category), lat, lng))
+                add(NaverPlaceMarker(id ?: "marker-$index", normalizeCategory(category), lat, lng, if (item.hasKey("caption")) item.getString("caption") ?: "" else ""))
             }
         }
         if (next != placeData) {
@@ -146,6 +223,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun applyProps() {
         if (disposed) return
         val map = naverMap ?: return
+        map.uiSettings.setLogoMargin(dp(16f), dp(logoTopMargin), 0, 0)
         // 최초 적용(null) 또는 테마 변경 때만 SDK 스타일을 갱신한다.
         if (appliedNightMode != nightMode) {
             // Basic 유형에는 야간 모드가 적용되지 않으므로 다크 테마에서 Navi로 전환한다.
@@ -155,6 +233,17 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
             map.isNightModeEnabled = nightMode
             appliedNightMode = nightMode
         }
+        if (routeDirty) {
+            routeLine.map = null
+            if (routePoints.size >= 2) {
+                routeLine.coords = routePoints
+                routeLine.width = dp(6f)
+                routeLine.color = Color.rgb(255, 25, 86)
+                routeLine.map = map
+            }
+            routeDirty = false
+            emitRouteAnchor(map)
+        }
         if (markersDirty) {
             val ids = placeData.map { it.id }.toSet()
             placeMarkers.keys.filter { it !in ids }.forEach { id ->
@@ -163,6 +252,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
             for (data in placeData) {
                 val marker = placeMarkers.getOrPut(data.id) { Marker() }
                 marker.position = LatLng(data.lat, data.lng)
+                marker.captionText = data.caption
                 marker.icon = placeIcon(data.category)
                 marker.anchor = PointF(0.5f, 0.62f)
                 marker.isHideCollidedMarkers = false
@@ -191,11 +281,16 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         val lng = if (followUser && validUser) userLng else centerLng
         if (validCoordinate(lat, lng)) {
             val next = Triple(lat!!, lng!!, zoomLevel)
-            if (next != lastCamera || (followUser && !lastFollowUser)) {
-                val update = CameraUpdate.scrollAndZoomTo(LatLng(lat, lng), zoomLevel.toDouble())
+            if (releaseFollowAfterGesture && !followUser && cameraRevision == appliedCameraRevision) {
+                releaseFollowAfterGesture = false
+                lastCamera = next
+            } else if (next != lastCamera || cameraRevision != appliedCameraRevision || (followUser && !lastFollowUser)) {
+                val update = if (cameraRevision != appliedCameraRevision) fitUpdate() ?: CameraUpdate.scrollAndZoomTo(LatLng(lat, lng), zoomLevel.toDouble())
+                    else CameraUpdate.scrollAndZoomTo(LatLng(lat, lng), zoomLevel.toDouble())
                 if (lastCamera != null) update.animate(CameraAnimation.Easing, 300)
                 map.moveCamera(update)
                 lastCamera = next
+                appliedCameraRevision = cameraRevision
             }
         }
         lastFollowUser = followUser
@@ -261,6 +356,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun dispose() {
         if (disposed) return
         disposed = true
+        routeLine.map = null
         removeCallbacks(layoutChildren)
         reactContext.removeLifecycleEventListener(this)
         placeMarkers.values.forEach { it.map = null; it.onClickListener = null }

@@ -1,6 +1,7 @@
 // android/app/src/main/java/com/rmdka/pingdomapp/NaverMapViewManager.kt
 package com.rmdka.pingdomapp
 
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.annotations.ReactProp
@@ -28,12 +29,25 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
 
     override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> {
         return MapBuilder.of(
+            "topRouteAnchor",
+            MapBuilder.of("registrationName", "onRouteAnchor"),
+            "topCameraGesture",
+            MapBuilder.of("registrationName", "onCameraGesture"),
             "topCameraIdle",
             MapBuilder.of("registrationName", "onCameraIdle"),
             "topMarkerPress",
             MapBuilder.of("registrationName", "onMarkerPress")
         )
     }
+
+    @ReactProp(name = "logoTopMargin", defaultDouble = 160.0)
+    fun setLogoTopMargin(view: NaverMapView, value: Double) { view.setLogoTopMargin(value) }
+
+    @ReactProp(name = "cameraFit")
+    fun setCameraFit(view: NaverMapView, value: ReadableMap?) { view.setCameraFit(value) }
+
+    @ReactProp(name = "cameraRevision", defaultInt = 0)
+    fun setCameraRevision(view: NaverMapView, value: Int) { view.setCameraRevision(value) }
 
     @ReactProp(name = "centerLat")
     fun setCenterLat(view: NaverMapView, centerLat: Double) {
@@ -71,6 +85,9 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
     fun setNightMode(view: NaverMapView, nightMode: Boolean) {
         view.setNightMode(nightMode)
     }
+
+    @ReactProp(name = "routeCoordinates")
+    fun setRouteCoordinates(view: NaverMapView, points: ReadableArray?) { view.setRouteCoordinates(points) }
 
     @ReactProp(name = "markers")
     fun setMarkers(view: NaverMapView, markers: ReadableArray?) {

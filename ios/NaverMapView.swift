@@ -7,6 +7,7 @@ private struct NaverPlaceMarker: Equatable {
     let category: String
     let lat: Double
     let lng: Double
+    let caption: String
 }
 
 @objc(NaverMapView)
@@ -19,11 +20,21 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     private var placeMarkers: [String: NMFMarker] = [:]
     private var icons: [String: NMFOverlayImage] = [:]
     private let userMarker = NMFMarker()
+    private var routeLine: NMFPolylineOverlay?
+    private var routeDirty = false
+    private var routeAnchor: NMGLatLng?
+    @objc var onRouteAnchor: RCTDirectEventBlock?
+    @objc var routeCoordinates: NSArray? { didSet { routeDirty = true } }
     private var markersDirty = true
     private var lastCamera: (lat: Double, lng: Double, zoom: Double)?
     private var lastFollowUser = false
+    private var releaseFollowAfterGesture = false
     private var appliedNightMode: Bool?
 
+    private var appliedCameraRevision = 0
+    @objc var cameraRevision = 0
+    @objc var cameraFit: NSDictionary?
+    @objc var logoTopMargin: NSNumber?
     @objc var centerLat: NSNumber?
     @objc var centerLng: NSNumber?
     @objc var zoomLevel: NSNumber?
@@ -37,6 +48,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             if next != placeData { placeData = next; markersDirty = true }
         }
     }
+    @objc var onCameraGesture: RCTDirectEventBlock?
     @objc var onCameraIdle: RCTDirectEventBlock?
     @objc var onMarkerPress: RCTDirectEventBlock?
 
@@ -69,7 +81,41 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         applyProps()
     }
 
+    func mapView(_ mapView: NMFMapView, cameraWillChangeByReason reason: Int, animated: Bool) {
+        if reason == NMFMapChangedByGesture {
+            if followUser { releaseFollowAfterGesture = true }
+            onCameraGesture?([:])
+        }
+    }
+
+    private func fitUpdate() -> NMFCameraUpdate? {
+        guard let fit = cameraFit,
+              let north = fit["north"] as? Double, let south = fit["south"] as? Double,
+              let east = fit["east"] as? Double, let west = fit["west"] as? Double,
+              validCoordinate(north, east), validCoordinate(south, west), north >= south, east >= west,
+              let top = fit["top"] as? Double, let bottom = fit["bottom"] as? Double,
+              let left = fit["left"] as? Double, let right = fit["right"] as? Double,
+              [top, bottom, left, right].allSatisfy({ $0.isFinite && $0 >= 0 }),
+              top + bottom < mapView.bounds.height, left + right < mapView.bounds.width else { return nil }
+        if (zoomLevel?.doubleValue ?? 17) >= 16 {
+            let target = NMGLatLng(lat: (north + south) / 2, lng: (east + west) / 2)
+            let update = NMFCameraUpdate(scrollTo: target, zoomTo: 16)
+            update.pivot = CGPoint(x: (left + (mapView.bounds.width - left - right) / 2) / mapView.bounds.width,
+                                   y: (top + (mapView.bounds.height - top - bottom) / 2) / mapView.bounds.height)
+            return update
+        }
+        let bounds = NMGLatLngBounds(southWest: NMGLatLng(lat: south, lng: west), northEast: NMGLatLng(lat: north, lng: east))
+        return NMFCameraUpdate(fit: bounds, paddingInsets: UIEdgeInsets(top: top, left: left, bottom: bottom, right: right))
+    }
+
+    private func emitRouteAnchor() {
+        guard let anchor = routeAnchor else { return }
+        let point = mapView.projection.point(from: anchor)
+        onRouteAnchor?(["x": point.x, "y": point.y])
+    }
+
     func mapViewCameraIdle(_ mapView: NMFMapView) {
+        emitRouteAnchor()
         let target = mapView.cameraPosition.target
         onCameraIdle?(["lat": target.lat, "lng": target.lng])
     }
@@ -86,6 +132,8 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     }
 
     private func applyProps() {
+        let logoTop = logoTopMargin?.doubleValue ?? 160
+        mapView.logoMargin = UIEdgeInsets(top: logoTop.isFinite ? max(0, logoTop) : 160, left: 16, bottom: 0, right: 0)
         // RN이 전달한 nightMode를 최초 적용(nil) 또는 테마 변경 때만 SDK에 반영한다.
         if appliedNightMode != nightMode {
             // 네이버 SDK 야간 모드는 Navi 유형에서 지원한다. 라이트 모드에서는 Basic으로 복원한다.
@@ -94,6 +142,29 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             mapView.mapType = nightMode ? .navi : .basic
             mapView.isNightModeEnabled = nightMode
             appliedNightMode = nightMode
+        }
+        if routeDirty {
+            routeLine?.mapView = nil
+            routeLine = nil
+            routeAnchor = nil
+            let raw = routeCoordinates ?? []
+            let points = raw.compactMap { value -> NMGLatLng? in
+                guard let item = value as? NSDictionary,
+                      let lat = item["lat"] as? Double, let lng = item["lng"] as? Double,
+                      validCoordinate(lat, lng) else { return nil }
+                return NMGLatLng(lat: lat, lng: lng)
+            }
+            if points.count == raw.count, points.count >= 2,
+               points.contains(where: { $0.lat != points[0].lat || $0.lng != points[0].lng }) {
+                let line = NMFPolylineOverlay(points)
+                line?.width = 6
+                line?.color = UIColor(red: 1, green: 0.098, blue: 0.337, alpha: 1)
+                line?.mapView = mapView
+                routeLine = line
+                routeAnchor = points[points.count / 2]
+            }
+            routeDirty = false
+            emitRouteAnchor()
         }
         if markersDirty {
             let ids = Set(placeData.map { $0.id })
@@ -105,6 +176,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             for data in placeData {
                 let marker = placeMarkers[data.id] ?? NMFMarker()
                 marker.position = NMGLatLng(lat: data.lat, lng: data.lng)
+                marker.captionText = data.caption
                 marker.iconImage = placeIcon(data.category)
                 marker.anchor = CGPoint(x: 0.5, y: 0.62)
                 marker.isHideCollidedMarkers = false
@@ -134,11 +206,15 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         let zoom = min(21, max(0, zoomLevel?.doubleValue ?? 17))
         if validCoordinate(lat, lng), let lat, let lng {
             let changed = lastCamera.map { $0.lat != lat || $0.lng != lng || $0.zoom != zoom } ?? true
-            if changed || (followUser && !lastFollowUser) {
-                let update = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng), zoomTo: zoom)
+            if releaseFollowAfterGesture && !followUser && cameraRevision == appliedCameraRevision {
+                releaseFollowAfterGesture = false
+                lastCamera = (lat, lng, zoom)
+            } else if changed || cameraRevision != appliedCameraRevision || (followUser && !lastFollowUser) {
+                let update = (cameraRevision != appliedCameraRevision ? fitUpdate() : nil) ?? NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng), zoomTo: zoom)
                 if lastCamera != nil { update.animation = .easeIn; update.animationDuration = 0.3 }
                 mapView.moveCamera(update)
                 lastCamera = (lat, lng, zoom)
+                appliedCameraRevision = cameraRevision
             }
         }
         lastFollowUser = followUser
@@ -157,7 +233,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             let category = item["category"] as? String ?? "etc"
             let categories = ["art", "beauty", "cafe", "etc", "fashion", "food", "game", "heritage", "music", "popup"]
             return NaverPlaceMarker(id: item["id"] as? String ?? "marker-\(index)",
-                                    category: categories.contains(category) ? category : "etc", lat: lat, lng: lng)
+                                    category: categories.contains(category) ? category : "etc", lat: lat, lng: lng, caption: item["caption"] as? String ?? "")
         }
     }
 
@@ -171,6 +247,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     }
 
     deinit {
+        routeLine?.mapView = nil
         mapView.removeCameraDelegate(delegate: self)
         placeMarkers.values.forEach { $0.touchHandler = nil; $0.mapView = nil }
         userMarker.mapView = nil

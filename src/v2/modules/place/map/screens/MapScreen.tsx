@@ -1,3 +1,4 @@
+import CarRoutePreview from '../routes/components/CarRoutePreview';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
@@ -185,6 +186,8 @@ export default function MapScreen({
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation();
+  const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
+  const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
   const center = location.coordinate;
   const userLat = center?.lat;
   const userLng = center?.lng;
@@ -301,6 +304,7 @@ export default function MapScreen({
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [manualCameraCenter, setManualCameraCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
@@ -549,24 +553,33 @@ export default function MapScreen({
   }, [selectedPlaceBase, selectedPlacePresentation]);
   const selectedPlaceActionTarget = useMemo(() => selectedPlace ? ({
     address: selectedPlace.address,
+    category: normalizePlaceCategory(selectedPlace.category),
     latitude: selectedPlace.latitude,
     longitude: selectedPlace.longitude,
     name: selectedPlace.name,
     placeId: selectedPlace.id,
     userLocation: center ? { latitude: center.lat, longitude: center.lng } : null,
   }) : null, [center, selectedPlace]);
+  useEffect(() => {
+    setRoutePreviewPlaceId(null);
+  }, [selectedPlaceActionTarget?.placeId, isFocused]);
   const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
     Alert.alert(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
   }, [t]);
   const {
     busyAction: placeActionBusy,
-    directions: openSelectedPlaceDirections,
     share: shareSelectedPlace,
   } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
   const handleDirectionsPress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
-    void openSelectedPlaceDirections(selectedPlaceActionTarget);
-  }, [openSelectedPlaceDirections, selectedPlaceActionTarget]);
+    setRouteEndpointRole('destination');
+    setRoutePreviewPlaceId(place.id);
+  }, [selectedPlaceActionTarget]);
+  const handleDeparturePress = useCallback((place: DecisionPlace) => {
+    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    setRouteEndpointRole('origin');
+    setRoutePreviewPlaceId(place.id);
+  }, [selectedPlaceActionTarget]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     void shareSelectedPlace(selectedPlaceActionTarget);
@@ -676,6 +689,7 @@ export default function MapScreen({
     ) return;
 
     setContent({ type: 'home' });
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
     snapTo('medium');
   }, [content, hasSelectedPlace, isSelectedPlaceDetailPending, selectedPlace, selectedPlaceDetailError, snapTo]);
@@ -739,6 +753,7 @@ export default function MapScreen({
 
     setMapSection('map');
     setContent({ type: 'place-preview', placeId: openedBookmarkedPlaceId });
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     snapTo('medium');
     onClearOpenedBookmarkedPlace?.();
@@ -749,6 +764,7 @@ export default function MapScreen({
   const dismissPlaceAt = useCallback((place: DecisionPlace) => {
     setContent({ type: 'home' });
     setDismissedMarkerCenter({ lat: place.latitude, lng: place.longitude });
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_DISMISSED_ZOOM_LEVEL);
     jumpTo('medium');
@@ -770,6 +786,7 @@ export default function MapScreen({
 
     setContent({ type: 'place-preview', placeId: place.id });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     // Keep the close/bookmark targets stationary from the first detail frame.
@@ -790,6 +807,7 @@ export default function MapScreen({
     setMapSection('map');
     setContent({ type: 'place-preview', placeId: place.id });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     snapTo('medium');
@@ -819,6 +837,7 @@ export default function MapScreen({
     setMapSection('map');
     setContent({ type: 'home' });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
 
     try {
@@ -844,6 +863,7 @@ export default function MapScreen({
     }
 
     setContent({ type: 'home' });
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
     setDismissedMarkerCenter(null);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
@@ -857,12 +877,14 @@ export default function MapScreen({
 
     // Native map props only react when followUser changes. Pulse the value so an
     // unchanged current coordinate can still be re-centered on every button press.
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     if (locateFollowFrame.current !== null) {
       cancelAnimationFrame(locateFollowFrame.current);
     }
     locateFollowFrame.current = requestAnimationFrame(() => {
       locateFollowFrame.current = null;
+      setManualCameraCenter(null);
       setIsFollowingUser(true);
     });
 
@@ -934,7 +956,7 @@ export default function MapScreen({
   };
 
   const focusedPlace = mapSelectedPlace;
-  const { lat: mapCenterLat, lng: mapCenterLng } = selectMapCameraCenter({
+  const { lat: mapCenterLat, lng: mapCenterLng } = manualCameraCenter ?? selectMapCameraCenter({
     isFollowingUser, focusedPlace, designScale, dismissedMarkerCenter, center,
   });
   const isExpandedPlaceDetail = mapSection === 'map'
@@ -958,6 +980,14 @@ export default function MapScreen({
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
+          onCameraGesture={() => {
+            if (locateFollowFrame.current !== null) {
+              cancelAnimationFrame(locateFollowFrame.current);
+              locateFollowFrame.current = null;
+            }
+            setIsFollowingUser(false);
+            setManualCameraCenter({ lat: mapCenterLat, lng: mapCenterLng });
+          }}
           markers={visibleMapMarkers}
           onCameraIdle={(coordinate) => {
             if (!Number.isFinite(coordinate.lat) || !Number.isFinite(coordinate.lng)) return;
@@ -970,6 +1000,11 @@ export default function MapScreen({
           zoomLevel={mapZoomLevel}
         />
       </View>
+      {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
+        <CarRoutePreview key={`${routeEndpointRole}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
+          initialEndpointRole={routeEndpointRole} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
+      )}
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
         <MapTopOverlay
           activeCategory={activeCategory}
@@ -1147,6 +1182,7 @@ export default function MapScreen({
               });
             }}
             onDetailPress={() => snapTo('expanded')}
+            onDeparturePress={handleDeparturePress}
             onDirectionsPress={handleDirectionsPress}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}
