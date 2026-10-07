@@ -248,3 +248,58 @@ test('departure entry without current location cannot route to a missing destina
   expect(findCarRoute).not.toHaveBeenCalled();
   expect(mockMapProps.markers.map(marker => marker.id)).toEqual(['route-origin']);
 });
+
+test.each(['origin', 'destination'] as const)('GPS changes clear a completed route when the %s entry uses current location', async initialEndpointRole => {
+  jest.mocked(findCarRoute).mockResolvedValue(route);
+  const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole={initialEndpointRole} />, { language: 'en' });
+  await user.press(screen.getByTestId('route-request'));
+  await screen.findByText('30 min');
+  await rerender(<CarRoutePreview {...props} initialEndpointRole={initialEndpointRole}
+    location={{ ...location, coordinate: { lat: 37.55, lng: 127.05 } }} />);
+  expect(mockMapProps.routeCoordinates).toBeUndefined();
+  expect(screen.queryByText('30 min')).toBeNull();
+  expect(screen.getByTestId('route-request')).toBeEnabled();
+  expect(findCarRoute).toHaveBeenCalledTimes(1);
+  await user.press(screen.getByTestId('route-request'));
+  const [origin, destination] = jest.mocked(findCarRoute).mock.calls[1];
+  expect(initialEndpointRole === 'origin' ? destination : origin).toEqual(expect.objectContaining({ latitude: 37.55, longitude: 127.05 }));
+});
+
+test.each(['origin', 'destination'] as const)('GPS changes discard an in-flight route when the %s entry uses current location', async initialEndpointRole => {
+  let resolve!: (value: typeof route) => void;
+  jest.mocked(findCarRoute).mockImplementationOnce(() => new Promise(yes => { resolve = yes; }));
+  const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole={initialEndpointRole} />, { language: 'en' });
+  await user.press(screen.getByTestId('route-request'));
+  const signal = jest.mocked(findCarRoute).mock.calls[0][2];
+  await rerender(<CarRoutePreview {...props} initialEndpointRole={initialEndpointRole}
+    location={{ ...location, coordinate: { lat: 37.55, lng: 127.05 } }} />);
+  expect(signal.aborted).toBe(true);
+  await act(async () => resolve(route));
+  expect(mockMapProps.routeCoordinates).toBeUndefined();
+  expect(screen.queryByText('30 min')).toBeNull();
+  expect(findCarRoute).toHaveBeenCalledTimes(1);
+});
+
+test('GPS metadata refresh at the same coordinates preserves the completed route', async () => {
+  jest.mocked(findCarRoute).mockResolvedValue(route);
+  const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByTestId('route-request'));
+  await screen.findByText('30 min');
+  await rerender(<CarRoutePreview {...props} location={{ ...location, coordinate: { ...location.coordinate, accuracyMeters: 15 } }} />);
+  expect(mockMapProps.routeCoordinates).toEqual(route.path);
+  expect(screen.getByText('30 min')).toBeVisible();
+  expect(findCarRoute).toHaveBeenCalledTimes(1);
+});
+
+test('GPS changes preserve routes between two selected places', async () => {
+  jest.mocked(findCarRoute).mockResolvedValue(route);
+  const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByTestId('route-origin-row'));
+  await user.press(screen.getByRole('button', { name: 'Saved cafe' }));
+  await user.press(screen.getByTestId('route-request'));
+  await screen.findByText('30 min');
+  await rerender(<CarRoutePreview {...props} location={{ ...location, coordinate: { lat: 37.55, lng: 127.05 } }} />);
+  expect(mockMapProps.routeCoordinates).toEqual(route.path);
+  expect(screen.getByText('30 min')).toBeVisible();
+  expect(findCarRoute).toHaveBeenCalledTimes(1);
+});

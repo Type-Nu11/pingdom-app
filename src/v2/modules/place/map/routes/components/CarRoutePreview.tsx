@@ -41,7 +41,6 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const [endpointRevision, setEndpointRevision] = useState(0);
   const [editing, setEditing] = useState<EndpointRole | null>(null);
   const [mapPicking, setMapPicking] = useState(false);
-  const route = useCarRoute(`${endpointRevision}:${mode}`);
   const [camera, setCamera] = useState<{ center: { lat: number; lng: number }; zoom: number; revision: number; fit?: NaverMapCameraFit }>({ center: endpointCoordinate(initialDestination) ?? DEFAULT_MAP_CENTER, zoom: 14, revision: 0 });
   const [mapPoint, setMapPoint] = useState(camera.center);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
@@ -57,6 +56,9 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const destination = selections[1] ?? currentPoint;
   const destinationCoordinate = endpointCoordinate(destination);
   const originCoordinate = endpointCoordinate(origin);
+  // Live GPS may occupy either endpoint. Discard results for old coordinates
+  // without querying again, while preserving routes between selected places.
+  const route = useCarRoute(`${endpointRevision}:${mode}:${originCoordinate?.lat}:${originCoordinate?.lng}:${destinationCoordinate?.lat}:${destinationCoordinate?.lng}`);
   const ready = mode === 'car' && !!originCoordinate && route.state.kind === 'ready' ? route.state.route : null;
   const markers: NaverMapNativeMarker[] = [];
   if (destinationCoordinate) markers.push({ id: 'route-destination', category: destination?.category ?? 'etc', ...destinationCoordinate, caption: t('routes.destination') });
