@@ -5,6 +5,7 @@ import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { profileApi } from '../../profile/__tests__';
 import type { Profile } from '../../profile';
 import { notificationApi } from '../../notifications/__tests__';
+import { LANGUAGE_SETTING_OPTIONS } from '../model/languageOptions';
 import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
@@ -51,7 +52,7 @@ describe('SettingsScreen', () => {
     await renderSettings();
 
     expect(screen.getByTestId('v2-settings-screen')).toBeVisible();
-    expect(screen.getByText('설정')).toHaveStyle({ fontFamily: 'Pretendard' });
+    expect(screen.getByText('설정')).toHaveStyle({ fontFamily: expect.stringMatching(/^Pretendard/) });
     expect(screen.getByText('계정')).toBeVisible();
     expect(screen.getByText('기록 · 장소')).toBeVisible();
     expect(screen.getByText('개인정보 · 위치')).toBeVisible();
@@ -85,14 +86,14 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('환경설정')).toBeVisible();
     expect(screen.getByText('언어')).toBeVisible();
     expect(screen.getByText('한국어')).toBeVisible();
-    expect(screen.queryByText('영어')).not.toBeOnTheScreen();
+    expect(screen.queryByText('English')).not.toBeOnTheScreen();
 
     await view.user.press(screen.getByText('언어'));
 
     expect(screen.getByTestId('v2-language-settings-screen')).toBeVisible();
     expect(screen.getByText('언어 설정')).toBeVisible();
     expect(screen.getByRole('radio', { name: '한국어, 선택됨' })).toBeSelected();
-    expect(screen.getByRole('radio', { name: '영어' })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: 'English' })).not.toBeSelected();
   });
 
   test('현재 표시 모드를 보여주고 기존 내부 탐색에 appearance 페이지만 연결한다', async () => {
@@ -115,7 +116,7 @@ describe('SettingsScreen', () => {
       />,
     );
 
-    await view.user.press(screen.getByRole('radio', { name: '영어' }));
+    await view.user.press(screen.getByRole('radio', { name: 'English' }));
     expect(onSelectLanguage).toHaveBeenCalledWith('en');
 
     await view.user.press(screen.getByLabelText('뒤로가기'));
@@ -128,8 +129,9 @@ describe('SettingsScreen', () => {
       <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
     );
 
-    expect(screen.getAllByRole('radio').map((radio) => radio.props.accessibilityLabel))
-      .toEqual(['한국어, 선택됨', '영어', '日本語']);
+    const labels = screen.getAllByRole('radio').map((radio) => radio.props.accessibilityLabel);
+    expect(labels.slice(0, 3)).toEqual(['한국어, 선택됨', 'English', '日本語']);
+    expect(labels).toHaveLength(LANGUAGE_SETTING_OPTIONS.length);
     await view.user.press(screen.getByRole('radio', { name: '日本語' }));
     expect(onSelectLanguage).toHaveBeenCalledWith('ja');
   });
@@ -155,7 +157,9 @@ describe('SettingsScreen', () => {
 
     expect(screen.getByText('言語')).toBeVisible();
     expect(screen.getByRole('radio', { name: '日本語, 選択中' })).toBeSelected();
-    expect(screen.getByRole('radio', { name: '韓国語' })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: 'English' })).not.toBeSelected();
+    expect(screen.queryByText('韓国語')).not.toBeOnTheScreen();
   });
 
   test('알림 하위 화면은 서버 설정을 읽고 해당 field만 변경한다', async () => {
@@ -235,4 +239,105 @@ test('password keeps the existing profile callback when no detail navigator is i
   await screen.findByText('woo._sm');
   await view.user.press(screen.getByText('비밀번호 변경'));
   expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
+});
+
+describe('#413 중국어 언어 설정', () => {
+  test('언어 페이지는 간체와 번체를 별도 선택지로 제공하고 각각 선택할 수 있다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: '简体中文' }));
+    await view.user.press(screen.getByRole('radio', { name: '繁體中文' }));
+    expect(onSelectLanguage.mock.calls.map(([language]) => language)).toEqual(['zh-CN', 'zh-TW']);
+    expect(screen.getByRole('radio', { name: '繁體中文' }).props.accessibilityLanguage).toBe('zh-TW');
+  });
+
+  test.each([
+    ['zh-CN', '语言设置', '简体中文, 已选择', '繁體中文'],
+    ['zh-TW', '語言設定', '繁體中文, 已選取', '简体中文'],
+  ] as const)('%s UI에서는 해당 변형만 선택 상태로 표시한다', async (language, title, selected, other) => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language },
+    );
+
+    expect(screen.getByText(title)).toBeVisible();
+    expect(screen.getByRole('radio', { name: selected })).toBeSelected();
+    expect(screen.getByRole('radio', { name: other })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+  });
+});
+
+describe('#414 베트남어 언어 설정', () => {
+  test('언어 페이지는 Tiếng Việt를 선택지로 제공하고 선택을 전달한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'Tiếng Việt' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('vi');
+  });
+
+  test('베트남어 UI에서는 언어 페이지가 베트남어로 표시되고 Tiếng Việt만 선택 상태다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'vi' },
+    );
+
+    expect(screen.getByText('Ngôn ngữ')).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Tiếng Việt, Đã chọn' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.queryByText('Tiếng Hàn')).not.toBeOnTheScreen();
+  });
+});
+
+describe('#415 스페인어 언어 설정', () => {
+  test('언어 페이지는 Español를 선택지로 제공하고 선택을 전달한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'Español' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('es');
+  });
+
+  test('스페인어 UI에서는 언어 페이지가 스페인어로 표시되고 Español만 선택 상태다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'es' },
+    );
+
+    expect(screen.getByText('Idioma')).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Español, Seleccionado' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.queryByText('Coreano')).not.toBeOnTheScreen();
+  });
+});
+
+describe('#416 브라질 포르투갈어 언어 설정', () => {
+  test('언어 페이지는 Português (Brasil)를 선택지로 제공하고 선택을 전달한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'Português (Brasil)' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('pt-BR');
+  });
+
+  test('브라질 포르투갈어 UI에서는 언어 페이지가 브라질 포르투갈어로 표시되고 Português (Brasil)만 선택 상태다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'pt-BR' },
+    );
+
+    expect(screen.getByText('Idioma')).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Português (Brasil), Selecionado' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.queryByText('Coreano')).not.toBeOnTheScreen();
+  });
 });

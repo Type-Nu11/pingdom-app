@@ -1,7 +1,9 @@
 import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
+
+import { textStyleCss } from '../../../shared/theme/typography';
 
 import NotInterestedIcon from '../../../../assets/v2/icons/community/not-interested.svg';
 import ReportIcon from '../../../../assets/v2/icons/community/report.svg';
@@ -23,6 +25,7 @@ export default function PostOverflowMenu({
   visible,
 }: PostOverflowMenuProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
 
   return (
     <AnchoredMenu dismissLabel={t('community.moreOptions')} onClose={onClose} position={position} visible={visible}>
@@ -34,7 +37,9 @@ export default function PostOverflowMenu({
         }}
         testID="v2-community-overflow-not-interested"
       >
-        <NotInterestedIcon height={24} width={24} />
+        <IconBox>
+          <NotInterestedIcon color={theme.colors.labelNeutral} height={18} width={18} />
+        </IconBox>
         <RowLabel>{t('community.notInterested')}</RowLabel>
       </Row>
       <Divider />
@@ -46,7 +51,7 @@ export default function PostOverflowMenu({
         }}
         testID="v2-community-overflow-report"
       >
-        <ReportIcon height={24} width={24} />
+        <ReportIcon color={theme.colors.danger} height={24} width={24} />
         <RowLabelDanger>{t('community.report')}</RowLabelDanger>
       </Row>
     </AnchoredMenu>
@@ -56,24 +61,33 @@ export default function PostOverflowMenu({
 const Row = styled.Pressable`
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   height: 52px;
-  padding: 0 16px;
+  padding: 0 8px;
+`;
+
+// Rows sit 6px apart with the 1px divider centred in the gap.
+// Figma's `Not interested` instance is a 24px slot around an 18px glyph, which
+// is exactly the exported artboard — scaling the artboard to 24 overdraws it.
+const IconBox = styled.View`
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
 `;
 
 const Divider = styled.View`
   height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
+  margin: 2.5px 0;
+  background-color: ${({ theme }) => theme.colors.secondaryAlternative};
 `;
 
 const RowLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
-  font-weight: 500;
+  color: ${({ theme }) => theme.colors.labelNeutral};
+  ${({ theme }) => textStyleCss(theme.typography.bodyMedium)}
 `;
 
 const RowLabelDanger = styled(AppText)`
   color: ${({ theme }) => theme.colors.danger};
-  font-size: 16px;
-  font-weight: 500;
+  ${({ theme }) => textStyleCss(theme.typography.bodyMedium)}
 `;

@@ -146,7 +146,7 @@ test.each(['LIGHT', 'DARK'] as const)('%s FAB uses theme, 48 dp target and separ
   await renderWithProviders(<Harness />, { appearancePreference });
   await layout();
   expect(screen.getByTestId('map-assistant-fab')).toHaveStyle({ height: 48, width: 48, backgroundColor: colors.surfaceElevated, borderColor: colors.borderEmphasis });
-  expect(screen.getByText('AI')).toHaveStyle({ color: colors.textStrong, fontFamily: 'Pretendard' });
+  expect(screen.getByText('AI')).toHaveStyle({ color: colors.textStrong, fontFamily: expect.stringMatching(/^Pretendard/) });
   expect(screen.getByTestId('map-assistant-slot')).toHaveStyle({ marginTop: 8 });
   expect(screen.getByTestId('map-locate-button')).toHaveStyle({ width: 44, height: 44 });
   const text = JSON.stringify(screen.toJSON());

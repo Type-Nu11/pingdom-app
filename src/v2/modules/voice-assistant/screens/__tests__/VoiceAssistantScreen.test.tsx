@@ -53,7 +53,7 @@ test.each(['LIGHT', 'DARK'] as const)('%s theme applies to screen, typography an
   await renderWithProviders(element, { appearancePreference });
   expect(screen.getByTestId('voice-assistant-screen')).toHaveStyle({ backgroundColor: 'transparent' });
   expect(screen.getByTestId('voice-assistant-composer')).toHaveStyle({ backgroundColor: theme.liquidGlass.sheet.tint });
-  expect(screen.getByLabelText('요청 내용')).toHaveStyle({ color: theme.colors.text, fontFamily: 'Pretendard' });
+  expect(screen.getByLabelText('요청 내용')).toHaveStyle({ color: theme.colors.text, fontFamily: expect.stringMatching(/^Pretendard/) });
   await fireEvent(screen.getByLabelText('요청 내용'), 'focus');
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
 });

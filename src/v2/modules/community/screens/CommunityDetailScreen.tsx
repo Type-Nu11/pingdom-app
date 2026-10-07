@@ -6,12 +6,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import BackButtonIcon from '../../../../assets/v2/icons/community/back-button.svg';
+import ChatDotsIcon from '../../../../assets/v2/icons/community/chat-dots.svg';
 import ChevronRightIcon from '../../../../assets/v2/icons/community/chevron-right.svg';
 import MoreButtonIcon from '../../../../assets/v2/icons/community/more-button.svg';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
+import { textStyleCss } from '../../../shared/theme/typography';
+import CategoryTag from '../components/CategoryTag';
 import CommentInputBar from '../components/CommentInputBar';
 import CommentsSection from '../components/CommentsSection';
+import HeaderIconButton from '../components/HeaderIconButton';
 import LikeButton from '../components/LikeButton';
+import PostAuthor from '../components/PostAuthor';
 import { useCreateComment, useInfiniteComments, usePost, type CommunityPostDetail } from '../hooks/useCommunity';
 import { useCommunityPlaceEntry } from '../hooks/useCommunityPlaceEntry';
 import { validateCommentContent } from '../model/commentForm';
@@ -58,6 +63,7 @@ function Places({
   places: CommunityPostDetail['places'];
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
   if (!places || places.length === 0) return null;
 
   return (
@@ -103,12 +109,14 @@ function Places({
               onPress={onOpenPlace ? attempt : undefined}
               testID={`v2-community-place-${placeId}`}
             >
-              <PlaceName numberOfLines={1}>{place.placeName}</PlaceName>
-              {busy ? (
-                <ActivityIndicator size="small" testID={`v2-community-place-busy-${placeId}`} />
-              ) : (
-                <ChevronRightIcon height={20} width={20} />
-              )}
+              <PlaceNameRow>
+                <PlaceName numberOfLines={1}>{place.placeName}</PlaceName>
+                {busy ? (
+                  <ActivityIndicator size="small" testID={`v2-community-place-busy-${placeId}`} />
+                ) : (
+                  <ChevronRightIcon color={theme.colors.textMuted} height={24} width={24} />
+                )}
+              </PlaceNameRow>
             </PlaceRowPressable>
 
             {error ? (
@@ -158,7 +166,7 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
 
   const submitComment = () => {
     if (submissionGuard.current || createComment.isPending) return;
-    const validationErrorKey = validateCommentContent(draft);
+  const validationErrorKey = validateCommentContent(draft);
     if (validationErrorKey) {
       setShowValidation(true);
       return;
@@ -207,6 +215,8 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
     });
   };
 
+  const commentCount = commentsQuery.data?.pages[0]?.totalCount ?? 0;
+  const now = new Date();
   const validationErrorKey = validateCommentContent(draft);
   const clientFieldError = showValidation && validationErrorKey
     ? t(`community.detail.commentInput.validation.${validationErrorKey === 'contentRequired' ? 'required' : 'tooLong'}`)
@@ -239,13 +249,14 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-detail-screen">
       <Header>
-        <BackButton accessibilityLabel={t('community.detail.back')} accessibilityRole="button" onPress={onBack}>
-          <BackButtonIcon height={42} width={40} />
-        </BackButton>
+        <HeaderIconButton
+          Icon={BackButtonIcon}
+          accessibilityLabel={t('community.detail.back')}
+          accessibilityRole="button"
+          onPress={onBack}
+        />
         <HeaderSpacer />
-        <MoreButton accessibilityLabel={t('community.detail.settings')} accessibilityRole="button" hitSlop={8}>
-          <MoreButtonIcon height={42} width={40} />
-        </MoreButton>
+        <HeaderIconButton Icon={MoreButtonIcon} accessibilityLabel={t('community.detail.settings')} accessibilityRole="button" />
       </Header>
 
       {postQuery.isLoading ? (
@@ -276,13 +287,15 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
         <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef}>
             <Post>
+              <PostAuthor author={postQuery.data?.author} createdAt={postQuery.data?.createdAt} now={now} />
+              {postQuery.data?.category?.categoryName ? (
+                <CategoryTag label={postQuery.data.category.categoryName} testID="v2-community-detail-category" />
+              ) : null}
               <Title accessibilityRole="header">{postQuery.data?.title}</Title>
 
-              <Body>
-                {(postQuery.data?.content ?? '').split('\n').filter((line) => line.length > 0).map((paragraph, index) => (
-                  <BodyParagraph key={`${postId}-paragraph-${index}`}>{paragraph}</BodyParagraph>
-                ))}
-              </Body>
+              {/* Figma keeps the author's blank lines between paragraphs, so the
+                  content renders as one text block with its newlines intact. */}
+              <Body testID="v2-community-detail-body">{postQuery.data?.content ?? ''}</Body>
 
               <Places
                 onOpenPlace={onOpenPlace}
@@ -295,11 +308,21 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
 
             <ActionBar>
               <LikeButton onSignIn={onSignIn} postId={postId} />
+              <CommentJump
+                accessibilityLabel={t('community.detail.comments.jumpA11yLabel', { count: commentCount })}
+                accessibilityRole="button"
+                onPress={() => scrollRef.current?.scrollTo({ animated: true, y: commentsSectionY.current })}
+                testID="v2-community-comment-jump"
+              >
+                <ChatDotsIcon color={theme.colors.textAlternative} height={20} width={20} />
+                <CommentJumpLabel>{t('community.detail.comments.count', { count: commentCount })}</CommentJumpLabel>
+              </CommentJump>
             </ActionBar>
 
             <CommentsSection
               commentsQuery={commentsQuery}
-              now={new Date()}
+              now={now}
+              postAuthorId={postQuery.data?.author?.authorId}
               onLayout={(event) => { commentsSectionY.current = event.nativeEvent.layout.y; }}
               onSignIn={onSignIn}
             />
@@ -349,37 +372,42 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const Header = styled.View`height: 44px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
 const HeaderSpacer = styled.View`flex: 1;`;
-const BackButton = styled.Pressable`width: 40px; height: 42px; align-items: center; justify-content: center;`;
-const MoreButton = styled.Pressable`width: 40px; height: 42px; align-items: center; justify-content: center;`;
 const KeyboardArea = styled(KeyboardAvoidingView)`flex: 1;`;
 const Content = styled(ScrollView)`flex: 1;`;
 const CenteredState = styled.View`flex: 1; align-items: center; justify-content: center;`;
 
-const Post = styled.View`gap: ${({ theme }) => theme.spacing.md}px; padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.xl}px;`;
-const ActionBar = styled.View`padding: 0 ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.lg}px;`;
+// Figma `Post`: 12px top / 16px bottom padding, 24px sides, 16px between blocks.
+const Post = styled.View`gap: 16px; padding: 12px 24px 16px;`;
+// Figma `ActionBar` (8241:47080): 12px above and below the 20px reaction row,
+// closed by the 8px `Line/Neutral` band that separates the comments.
+const ActionBar = styled.View`
+  flex-direction: row; align-items: flex-start; gap: 16px;
+  padding: 12px 24px;
+  border-bottom-width: 8px;
+  border-bottom-color: ${({ theme }) => theme.colors.lineNeutral};
+`;
+const CommentJump = styled.Pressable`flex-direction: row; align-items: center; gap: 4px; height: 20px;`;
+const CommentJumpLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.labelMedium)}`;
 
-const Title = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 20px; font-weight: 700; line-height: 26px;`;
-const Body = styled.View`gap: 6px;`;
-const BodyParagraph = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; line-height: ${({ theme }) => theme.typography.body.lineHeight}px;`;
+const Title = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
+const Body = styled(AppText)`color: ${({ theme }) => theme.colors.labelNeutral}; ${({ theme }) => textStyleCss(theme.typography.bodyRegular)}`;
 
 const PlaceList = styled.View`gap: ${({ theme }) => theme.spacing.sm}px;`;
 const PlaceCardColumn = styled.View`gap: ${({ theme }) => theme.spacing.xs}px;`;
+// Figma `PlaceTag`: 12px padding on `Secondary/Assistive`, 12px radius.
 const PlaceRowStatic = styled.Pressable`
-  flex-direction: row; align-items: center; justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  padding: 12px;
   border-radius: ${({ theme }) => theme.radius.md}px;
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
   opacity: 0.6;
 `;
 const PlaceRowPressable = styled.Pressable`
-  flex-direction: row; align-items: center; justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  padding: 12px;
   border-radius: ${({ theme }) => theme.radius.md}px;
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;
-const PlaceName = styled(AppText)<{ $muted?: boolean }>`flex-shrink: 1; color: ${({ $muted, theme }) => ($muted ? theme.colors.textMuted : theme.colors.textStrong)}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: 700;`;
+const PlaceNameRow = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
+const PlaceName = styled(AppText)<{ $muted?: boolean }>`flex-shrink: 1; color: ${({ $muted, theme }) => ($muted ? theme.colors.textMuted : theme.colors.labelStrong)}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
 
 const PlaceErrorRow = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
 const PlaceErrorText = styled(AppText)`flex-shrink: 1; color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;

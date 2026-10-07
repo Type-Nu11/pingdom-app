@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled from 'styled-components/native';
 import { MapScreen } from '../../v2/modules/place/map';
+import { CommunityDetailScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../v2/modules/community';
 import { ReservationDetailScreen } from '../../v2/modules/booking/reservations/routes';
 import { ReservationBoxScreen } from '../../v2/modules/booking/reservations/routes';
 import { CreateReservationScreen } from '../../v2/modules/booking/reservations/routes';
@@ -28,6 +29,7 @@ import {
   MAIN_ROUTES,
   parseCheckInId,
   parsePlaceId,
+  parsePostId,
   parseReservationId,
   type MainScreenProps,
   type MainStackParamList,
@@ -77,6 +79,14 @@ export function createProductionMainNavigator({
             initialSection={initialSection}
             openedBookmarkedPlaceId={focusedPlaceId ?? null}
             onClearOpenedBookmarkedPlace={clearFocusedPlace}
+            onOpenCommunityPost={(value) => {
+              const postId = parsePostId(value);
+              if (postId) navigation.navigate(MAIN_ROUTES.CommunityDetail, { postId });
+            }}
+            onOpenCommunityWrite={(categoryId) => navigation.navigate(
+              MAIN_ROUTES.CommunityWrite,
+              categoryId ? { initialCategoryId: categoryId } : undefined,
+            )}
             onOpenProfile={() => navigation.navigate(MAIN_ROUTES.MyPage)}
             onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
             onCreateReservation={(place) => {
@@ -152,6 +162,41 @@ export function createProductionMainNavigator({
           onOpenReservations={() => navigation.navigate(MAIN_ROUTES.ReservationBox)}
           onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
           onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
+        />
+      </V2ScreenBoundary>
+    );
+  };
+
+  const CommunityDetailRouteScreen = ({ navigation, route }: MainScreenProps<'CommunityDetail'>) => (
+    <V2ScreenBoundary>
+      <CommunityDetailScreen
+        onBack={navigation.goBack}
+        onOpenPlace={(value) => {
+          const placeId = parsePlaceId(value);
+          if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
+        }}
+        onSignIn={() => void clearTokenSession()}
+        postId={route.params.postId}
+      />
+    </V2ScreenBoundary>
+  );
+
+  const CommunityWriteRouteScreen = ({ navigation, route }: MainScreenProps<'CommunityWrite'>) => {
+    const hasUnsavedInput = useDiscardOnLeaveGuard(navigation);
+
+    return (
+      <V2ScreenBoundary>
+        <CommunityWriteScreen
+          initialCategoryId={route.params?.initialCategoryId}
+          onBack={navigation.goBack}
+          onDirtyChange={(dirty) => { hasUnsavedInput.current = dirty; }}
+          onSignIn={() => void clearTokenSession()}
+          onSubmitSuccess={({ postId }) => {
+            const parsedPostId = parsePostId(postId);
+            hasUnsavedInput.current = false;
+            if (parsedPostId) navigation.replace(MAIN_ROUTES.CommunityDetail, { postId: parsedPostId });
+            else navigation.goBack();
+          }}
         />
       </V2ScreenBoundary>
     );
@@ -346,6 +391,8 @@ export function createProductionMainNavigator({
     >
       <Stack.Screen name={MAIN_ROUTES.Map} component={MapRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
+      <Stack.Screen name={MAIN_ROUTES.CommunityDetail} component={CommunityDetailRouteScreen} />
+      <Stack.Screen name={MAIN_ROUTES.CommunityWrite} component={CommunityWriteRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CouponDetail} component={CouponDetailRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />

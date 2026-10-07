@@ -7,7 +7,9 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Location access is required to show nearby places and verify visits.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Photo library access is required to add photos to place reviews.</string>
+	<string>Photo library access is required to add photos to place reviews and set your profile image.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is required to take a photo for your profile image.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Microphone access lets you ask Pingdy with your voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
@@ -28,6 +30,17 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ko</string>
+		<string>ja</string>
+		<string>zh-Hans</string>
+		<string>zh-Hant</string>
+		<string>vi</string>
+		<string>es</string>
+		<string>pt-BR</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>

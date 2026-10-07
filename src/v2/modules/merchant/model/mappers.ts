@@ -14,6 +14,7 @@ import type {
   MerchantStore,
   MerchantStorePhoto,
 } from './types';
+import { reviewReasonsFromResponse } from '../../../shared/api/reviewReasons';
 import { formatDate, formatRelativeMinutes } from '../../../shared/i18n/formatters';
 
 const DAY_ORDER = [
@@ -107,8 +108,8 @@ export function toMerchantReviews(
     content: review.content,
     id: String(review.reviewId),
     photoUrls: review.imageUrls,
+    reasons: reviewReasonsFromResponse(review),
     relativeTime: toRelativeTime(review.createdAt, now, language, translate),
-    tags: review.recommendReason ? [{ label: review.recommendReason }] : [],
   }));
 }
 

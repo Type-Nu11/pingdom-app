@@ -3,6 +3,8 @@
  * renders; wiring them to the real merchant/place/event APIs comes later.
  */
 
+import type { ReviewReasonKey } from '../../../shared/api/reviewReasons';
+
 export type MerchantProfileSummary = Readonly<{
   isVerified: boolean;
   profileImageUrl: string | null;
@@ -27,26 +29,14 @@ export type MerchantStore = Readonly<{
   verifiedCount: number;
 }>;
 
-export type MerchantReviewTagKind =
-  | 'clean'
-  | 'delicious'
-  | 'kind'
-  | 'photogenic';
-
-export type MerchantReviewTag = Readonly<{
-  /** Omitted when the reason has no matching preset icon. */
-  kind?: MerchantReviewTagKind;
-  label: string;
-}>;
-
 export type MerchantReview = Readonly<{
   authorName: string;
   authorProfileImageUrl: string | null;
   content: string;
   id: string;
   photoUrls: readonly string[];
+  reasons: readonly ReviewReasonKey[];
   relativeTime: string;
-  tags: readonly MerchantReviewTag[];
 }>;
 
 export type MerchantEventStatus = 'ended' | 'ongoing' | 'upcoming';

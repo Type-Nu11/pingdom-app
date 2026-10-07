@@ -12,9 +12,10 @@ import styled, { useTheme } from 'styled-components/native';
 import { useProfile } from '../../profile';
 import { NotificationSettingsScreen } from '../../notifications';
 import { HeaderBackButton } from '../../../../shared/components';
+import { getLanguageEndonym } from '../../../../shared/i18n';
 import ChevronIcon from '../../../../shared/assets/icons/chevron-right-24.svg';
 import { SETTINGS_DETAIL_IDS, type SettingsDetailId } from '../model/settings.types';
-import { getLanguageLabelKey, resolveSelectedLanguage } from '../model/languageOptions';
+import { resolveSelectedLanguage } from '../model/languageOptions';
 import LocationPrivacyScreen from './LocationPrivacyScreen';
 import LanguageSettingsScreen from './LanguageSettingsScreen';
 import AppearanceSettingsScreen from './AppearanceSettingsScreen';
@@ -233,7 +234,7 @@ export default function SettingsScreen({
               <SettingsRow
                 label={t('settings.language.section')}
                 onPress={() => setPage('language')}
-                value={t(getLanguageLabelKey(resolveSelectedLanguage(i18n.resolvedLanguage)))}
+                value={getLanguageEndonym(resolveSelectedLanguage(i18n.resolvedLanguage))}
               />
             </SettingsSection>
 

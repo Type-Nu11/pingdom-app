@@ -6,6 +6,7 @@ import type { SvgProps } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
+import CheckIcon from '../../../../../assets/v2/icons/check.svg';
 import ArtIcon from '../../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyIcon from '../../../../../assets/v2/icons/place/beati_svg.svg';
 import CafeIcon from '../../../../../assets/v2/icons/place/cafe_svg.svg';
@@ -16,7 +17,7 @@ import HotPlaceIcon from '../../../../../assets/v2/icons/place/hotplace.svg';
 import MapIcon from '../../../../../assets/v2/icons/place/maping_svg.svg';
 import MusicIcon from '../../../../../assets/v2/icons/place/music_svg.svg';
 import PopupIcon from '../../../../../assets/v2/icons/place/popup_svg.svg';
-import Button from '../../../../shared/components/Button';
+import OnboardingCtaButton from '../../components/OnboardingCtaButton';
 import {
   MOTION_DURATION,
   runTimingMotion,
@@ -94,7 +95,7 @@ function TravelPurposeOption({
     <OptionSurface style={{
       backgroundColor: colorProgress.interpolate({
         inputRange: [0, 1],
-        outputRange: ['transparent', colors.primarySelected],
+        outputRange: ['transparent', colors.primaryTint],
       }),
     }}>
       <Option
@@ -116,18 +117,13 @@ function TravelPurposeOption({
             importantForAccessibility="no-hide-descendants"
             testID={`travel-purpose-icon-${option.value}`}
           >
-            <Icon
-              accessible={false}
-              color={selected ? colors.primary : colors.text}
-              height={24}
-              width={24}
-            />
+            <Icon accessible={false} color={selected ? colors.primary : colors.textAlternative} />
           </OptionIcon>
         </Animated.View>
         <OptionLabel>{label}</OptionLabel>
         {selected ? (
           <CheckCircle aria-hidden>
-            <CheckMark>✓</CheckMark>
+            <CheckIcon height={10} width={14} />
           </CheckCircle>
         ) : null}
       </Option>
@@ -165,14 +161,11 @@ function ContinueButtonTransition({
         scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.99, 1] }),
       }],
     }}>
-      <Button
+      <OnboardingCtaButton
         disabled={!enabled}
-        fullWidth
         label={label}
         loading={isContinuing}
         onPress={onContinue}
-        shape="pill"
-        size="onboarding"
       />
     </Animated.View>
   );
@@ -291,21 +284,21 @@ const Content = styled.View`
 `;
 
 const Heading = styled.View`
-  gap: ${({ theme }) => theme.spacing.xs}px;
+  gap: 0;
 `;
 
 const Title = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textStrong};
+  color: ${({ theme }) => theme.colors.labelStrong};
   font-size: ${({ theme }) => theme.typography.display.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.display.fontWeight};
-  line-height: ${({ theme }) => theme.typography.display.lineHeight}px;
+  line-height: 41.6px;
 `;
 
 const Description = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.body.fontWeight};
-  line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
+  color: ${({ theme }) => theme.colors.textAlternative};
+  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyMedium.fontWeight};
+  line-height: 20.8px;
 `;
 
 const Options = styled.View`
@@ -329,14 +322,13 @@ const Option = styled.Pressable`
   min-height: 56px;
   flex-direction: row;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
   padding: 15px ${({ theme }) => theme.spacing.md}px;
   border-radius: 16px;
 `;
 
+// Figma draws each icon at its own size, so the box wraps the asset.
 const OptionIcon = styled.View`
-  width: ${({ theme }) => theme.spacing.lg}px;
-  height: ${({ theme }) => theme.spacing.lg}px;
   align-items: center;
   justify-content: center;
 `;
@@ -344,7 +336,7 @@ const OptionIcon = styled.View`
 const OptionLabel = styled(AppText)`
   flex: 1;
   flex-shrink: 1;
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme }) => theme.colors.labelNeutral};
   font-size: ${({ theme }) => theme.typography.onboardingAction.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.onboardingAction.fontWeight};
   line-height: ${({ theme }) => theme.typography.onboardingAction.lineHeight}px;
@@ -360,15 +352,7 @@ const CheckCircle = styled.View`
   background-color: ${({ theme }) => theme.colors.primary};
 `;
 
-const CheckMark = styled(AppText)`
-  color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.title.fontWeight};
-  line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
-`;
-
 const Footer = styled.View`
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px
-    ${({ theme }) => theme.spacing.xl + theme.spacing.xs}px;
+  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px 51px;
   background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;

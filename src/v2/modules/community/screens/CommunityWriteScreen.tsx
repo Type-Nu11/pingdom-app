@@ -17,12 +17,13 @@ import {
 import {
   WRITE_CONTENT_MAX_LENGTH,
   WRITE_TITLE_MAX_LENGTH,
-  isPlaceCategory,
   validateWriteForm,
   type WriteFormFieldErrorKey,
   type WritePlaceTag,
 } from '../model/writeForm';
 import CommunityPlacePicker from '../components/CommunityPlacePicker';
+import HeaderIconButton from '../components/HeaderIconButton';
+import { textStyleCss } from '../../../shared/theme/typography';
 
 export type CommunityWriteScreenProps = {
   initialCategoryId?: string;
@@ -70,7 +71,7 @@ export default function CommunityWriteScreen({
     ?? categories.find((category) => category.categoryId === initialCategoryId)?.categoryId
     ?? categories[0]?.categoryId
     ?? null;
-  const placeCategorySelected = isPlaceCategory(selectedCategoryId);
+  const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
 
   const createPost = useCreatePost();
 
@@ -134,16 +135,19 @@ export default function CommunityWriteScreen({
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-write-screen">
       <Header>
-        <BackButton accessibilityLabel={t('community.write_screen.back')} accessibilityRole="button" onPress={onBack}>
-          <BackButtonIcon height={42} width={40} />
-        </BackButton>
+        <HeaderIconButton
+          Icon={BackButtonIcon}
+          accessibilityLabel={t('community.write_screen.back')}
+          accessibilityRole="button"
+          onPress={onBack}
+        />
         <Title accessibilityRole="header">{t('community.write_screen.title')}</Title>
         <HeaderSpacer />
       </Header>
 
       <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
-          <Section>
+          <Section $gap={16}>
             <SectionHead>
               <SectionTitle>{t('community.write_screen.categoryLabel')}</SectionTitle>
               <SectionSubtitle>{t('community.write_screen.categoryHint')}</SectionSubtitle>
@@ -183,7 +187,7 @@ export default function CommunityWriteScreen({
             ) : null}
           </Section>
 
-          <Section>
+          <Section $gap={12}>
             <SectionTitle>{t('community.write_screen.titleLabel')}</SectionTitle>
             <TitleInput
               accessibilityLabel={t('community.write_screen.titleLabel')}
@@ -195,9 +199,6 @@ export default function CommunityWriteScreen({
               testID="v2-community-write-title"
               value={title}
             />
-            <CounterText>
-              {t('community.write_screen.titleCounter', { count: title.length, max: WRITE_TITLE_MAX_LENGTH })}
-            </CounterText>
             {fieldErrorText('title') ? (
               <ValidationText
                 accessibilityLiveRegion="polite"
@@ -220,9 +221,6 @@ export default function CommunityWriteScreen({
               textAlignVertical="top"
               value={content}
             />
-            <CounterText>
-              {t('community.write_screen.contentCounter', { count: content.length, max: WRITE_CONTENT_MAX_LENGTH })}
-            </CounterText>
             {fieldErrorText('content') ? (
               <ValidationText
                 accessibilityLiveRegion="polite"
@@ -240,13 +238,17 @@ export default function CommunityWriteScreen({
           </Section>
 
           <PlaceSection>
-            <PlaceHead>
-              <PlaceHeadTitle>{t('community.write_screen.placeTagTitle')}</PlaceHeadTitle>
-              <PlaceHeadTag>
-                {t(placeCategorySelected ? 'community.write_screen.placeTagRequired' : 'community.write_screen.placeTagOptional')}
-              </PlaceHeadTag>
-            </PlaceHead>
-            <PlaceSubtitle>{t('community.write_screen.placeTagHint')}</PlaceSubtitle>
+            <SectionHead>
+              <PlaceHead>
+                <PlaceHeadTitle>{t('community.write_screen.placeTagTitle')}</PlaceHeadTitle>
+                {/* Figma shows the selected category next to the heading; a category is
+                    always selected, and a missing required place is reported on submit. */}
+                {selectedCategoryName ? (
+                  <PlaceHeadTag testID="v2-community-write-place-category">{selectedCategoryName}</PlaceHeadTag>
+                ) : null}
+              </PlaceHead>
+              <PlaceSubtitle>{t('community.write_screen.placeTagHint')}</PlaceSubtitle>
+            </SectionHead>
 
             {placeTags.map((place) => (
               <PlaceCard key={place.id}>
@@ -260,7 +262,7 @@ export default function CommunityWriteScreen({
                   onPress={() => setPlaceTags((current) => current.filter((tag) => tag.id !== place.id))}
                   testID={`v2-community-write-remove-place-${place.id}`}
                 >
-                  <CloseMediumIcon height={19} width={19} />
+                  <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
                 </RemovePlace>
               </PlaceCard>
             ))}
@@ -285,7 +287,7 @@ export default function CommunityWriteScreen({
           </PlaceSection>
 
           {createPost.isError && bannerKind !== 'canceled' && hasUnmappedServerError ? (
-            <Section>
+            <Section $gap={8}>
               <ErrorBanner testID="v2-community-write-error-banner">
                 <ErrorBannerText accessibilityLiveRegion="assertive" accessibilityRole="alert">
                   {bannerKind === 'notFound'
@@ -350,53 +352,55 @@ export default function CommunityWriteScreen({
 
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const Header = styled.View`height: 44px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
-const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.navigationTitle.fontSize}px; font-weight: ${({ theme }) => theme.typography.navigationTitle.fontWeight};`;
-const BackButton = styled.Pressable`width: 40px; height: 42px; align-items: center; justify-content: center;`;
-const HeaderSpacer = styled.View`width: 40px;`;
+const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Medium)}`;
+const HeaderSpacer = styled.View`width: 44px;`;
 const KeyboardArea = styled(KeyboardAvoidingView)`flex: 1;`;
 const Content = styled(ScrollView)`flex: 1;`;
 
-const Section = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px; border-bottom-width: 8px; border-bottom-color: ${({ theme }) => theme.colors.backgroundAssistive};`;
+// Figma `Section/*`: 16px/24px padding closed by an 8px `Fill/Normal` band.
+// Category heads sit 16px above the chips; the writing and place blocks 12px.
+const Section = styled.View<{ $gap: number }>`gap: ${({ $gap }) => $gap}px; padding: 16px 24px; border-bottom-width: 8px; border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const SectionHead = styled.View`gap: 4px;`;
-const SectionTitle = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 18px; font-weight: 700;`;
-const SectionSubtitle = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: ${({ theme }) => theme.typography.label.fontSize}px;`;
+const SectionTitle = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
+const SectionSubtitle = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
 
 const Chips = styled.View`flex-direction: row; flex-wrap: wrap; gap: ${({ theme }) => theme.spacing.sm}px;`;
 const CategoryChip = styled.Pressable<{ $selected: boolean }>`
-  padding: 8px 16px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
+  height: 34px;
+  justify-content: center;
+  padding: 0 15px;
+  border-radius: ${({ theme }) => theme.radius.full}px;
   border-width: 1px;
-  border-color: ${({ $selected, theme }) => ($selected ? theme.colors.primaryPressed : theme.colors.backgroundAssistive)};
-  background-color: ${({ $selected, theme }) => ($selected ? theme.colors.primaryRange : theme.colors.backgroundAssistive)};
+  border-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeBorder : theme.colors.backgroundAssistive)};
+  background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.colors.backgroundAssistive)};
 `;
 const CategoryChipLabel = styled(AppText)<{ $selected: boolean }>`
   color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.textAlternative)};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: 500;
+  ${({ theme }) => textStyleCss(theme.typography.labelMedium)}
 `;
 
 const InlineErrorRow = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px;`;
 const RetryButton = styled.Pressable`padding: 6px 14px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
-const TitleInput = styled(AppTextInput)`padding: 14px 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
-const BodyInput = styled(AppTextInput)`min-height: 139px; padding: 14px 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const CounterText = styled(AppText)`align-self: flex-end; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const TitleInput = styled(AppTextInput)`padding: 14px 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive}; color: ${({ theme }) => theme.colors.text}; ${({ theme }) => textStyleCss(theme.typography.bodyRegular)}`;
+const BodyInput = styled(AppTextInput)`min-height: 139px; padding: 14px 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive}; color: ${({ theme }) => theme.colors.text}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
 const GuideRow = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
 const GuideDot = styled.View`width: 3px; height: 3px; border-radius: 2px; background-color: ${({ theme }) => theme.colors.textMuted};`;
-const GuideText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const GuideText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;
 const ValidationText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 
-const PlaceSection = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;`;
+const PlaceSection = styled.View`gap: 12px; padding: 16px 24px;`;
 const PlaceHead = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
-const PlaceHeadTitle = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 18px; font-weight: 700;`;
-const PlaceHeadTag = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.label.fontSize}px;`;
-const PlaceSubtitle = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const PlaceCard = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive};`;
+const PlaceHeadTitle = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
+const PlaceHeadTag = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
+const PlaceSubtitle = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;
+// Figma place card: 12px padding on `Secondary/Assistive`, 32px `Fill/Support` remove button.
+const PlaceCard = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive};`;
 const PlaceInfo = styled.View`flex: 1; gap: 4px; min-width: 0;`;
-const PlaceCategory = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
-const PlaceName = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.title.fontSize}px; font-weight: 700;`;
-const RemovePlace = styled.Pressable`width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.surface};`;
+const PlaceCategory = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.bodyRegular)}`;
+const PlaceName = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
+const RemovePlace = styled.Pressable`width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.fillSupport};`;
 const AddPlaceButton = styled.Pressable`align-self: flex-start; padding: 10px 16px; border-radius: ${({ theme }) => theme.radius.full}px; border-width: 1px; border-color: ${({ theme }) => theme.colors.border};`;
 const AddPlaceLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.label.fontSize}px; font-weight: 600;`;
 
@@ -405,6 +409,6 @@ const ErrorBannerText = styled(AppText)`color: ${({ theme }) => theme.colors.dan
 const BannerButton = styled.Pressable`align-self: flex-start; padding: 8px 16px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary};`;
 const BannerButtonLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
-const SubmitBar = styled.View`padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;`;
+const SubmitBar = styled.View`padding: 0 24px 16px;`;
 const SubmitButton = styled.Pressable<{ $enabled: boolean }>`height: 64px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $enabled, theme }) => ($enabled ? theme.colors.primary : theme.colors.disabled)};`;
-const SubmitLabel = styled(AppText)<{ $enabled: boolean }>`color: ${({ $enabled, theme }) => ($enabled ? theme.colors.onPrimary : theme.colors.onDisabled)}; font-size: 20px; font-weight: 700;`;
+const SubmitLabel = styled(AppText)<{ $enabled: boolean }>`color: ${({ $enabled, theme }) => ($enabled ? theme.colors.textInverse : theme.colors.onDisabled)}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;

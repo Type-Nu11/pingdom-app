@@ -7,6 +7,8 @@ import Input from '../Input';
 import StateLayout from '../StateLayout';
 import StatusBadge from '../StatusBadge';
 
+// Jest renders React Native as iOS, where each Pretendard weight resolves to
+// the variable font's named instance (see resolveFontFace).
 describe('V2 shared component typography', () => {
   test('Button과 StatusBadge가 Pretendard family와 semantic weight를 사용한다', async () => {
     await renderWithProviders(
@@ -17,12 +19,10 @@ describe('V2 shared component typography', () => {
     );
 
     expect(screen.getByText('continue')).toHaveStyle({
-      fontFamily: 'Pretendard',
-      fontWeight: '600',
+      fontFamily: 'PretendardStdVariable-SemiBold',
     });
     expect(screen.getByText('available')).toHaveStyle({
-      fontFamily: 'Pretendard',
-      fontWeight: '600',
+      fontFamily: 'PretendardStdVariable-SemiBold',
     });
   });
 
@@ -34,18 +34,15 @@ describe('V2 shared component typography', () => {
       </>,
     );
 
-    expect(screen.getByText('name')).toHaveStyle({ fontFamily: 'Pretendard', fontWeight: '600' });
+    expect(screen.getByText('name')).toHaveStyle({ fontFamily: 'PretendardStdVariable-SemiBold' });
     expect(screen.getByPlaceholderText('enter name')).toHaveStyle({
-      fontFamily: 'Pretendard',
-      fontWeight: '400',
+      fontFamily: 'PretendardStdVariable-Regular',
     });
     expect(screen.getByText('unavailable')).toHaveStyle({
-      fontFamily: 'Pretendard',
-      fontWeight: '700',
+      fontFamily: 'PretendardStdVariable-Bold',
     });
     expect(screen.getByText('try again later')).toHaveStyle({
-      fontFamily: 'Pretendard',
-      fontWeight: '400',
+      fontFamily: 'PretendardStdVariable-Regular',
     });
   });
 });

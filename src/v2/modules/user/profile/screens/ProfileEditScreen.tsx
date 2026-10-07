@@ -1,25 +1,30 @@
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Alert, Linking, type AlertButton } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
-import { getUsernameErrorMessage, getPasswordErrorMessage } from '../model/profileErrorPresentation';
 import {
-  pickProfileImage,
+  getPasswordErrorMessage,
+  getProfileImageApiErrorKind,
+  getUsernameErrorMessage,
+} from '../model/profileErrorPresentation';
+import {
   ProfileImagePermissionError,
+  type ProfileImageSource,
+  ProfileImageTypeError,
   SaveProfileError,
-  useChangeProfileImage,
   useProfile,
   useSaveProfile,
 } from '../hooks/useProfile';
-import { ApiErrorState, LoadingState, HeaderBackButton } from '../../../../shared/components';
+import { useProfileImageChange } from '../hooks/useProfileImageChange';
+import { ApiErrorState, LoadingState, HeaderBackButton, ProfileAvatar } from '../../../../shared/components';
+import { getProfileImageUri } from '../model/profileImageUri';
 import CheckmarkIcon from '../../../../shared/assets/icons/checkmark.svg';
 import PencilIcon from '../../../../shared/assets/icons/pencil.svg';
 import EyeOpenIcon from '../../../../shared/assets/icons/eye-open.svg';
 import EyeCloseIcon from '../../../../shared/assets/icons/eye-close.svg';
-import AvatarPlaceholder from '../../../../shared/assets/icons/avatar-placeholder.svg';
 
 export type ProfileEditScreenProps = {
   onBack: () => void;
@@ -30,7 +35,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const { colors } = useTheme();
   const { error: profileError, isFetching, refetch, isError: isProfileError, isLoading: isProfileLoading, profile } = useProfile();
 
-  const changeProfileImage = useChangeProfileImage();
+  const changeProfileImage = useProfileImageChange();
   const saveProfile = useSaveProfile();
 
   const [username, setUsername] = useState(profile?.username ?? '');
@@ -41,7 +46,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   // the user has already typed is not overwritten by a later refetch.
   const hasSeededUsername = useRef(profile !== null);
   const hasEditedUsername = useRef(false);
-  const avatarActionLock = useRef(false);
+  const avatarSheetOpen = useRef(false);
   const backActionLock = useRef(false);
   const isMounted = useRef(true);
   const saveActionLock = useRef(false);
@@ -63,6 +68,12 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     isMounted.current = false;
   }, []);
 
+  useEffect(() => {
+    if (changeProfileImage.isPending) {
+      AccessibilityInfo.announceForAccessibility(t('myPage.profileEdit.avatarUploading'));
+    }
+  }, [changeProfileImage.isPending, t]);
+
   const handleBack = () => {
     if (backActionLock.current) return;
     backActionLock.current = true;
@@ -74,24 +85,83 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     setUsername(value);
   };
 
-  const handleEditAvatar = async () => {
-    if (avatarActionLock.current || changeProfileImage.isPending) return;
-    avatarActionLock.current = true;
-
-    try {
-      const file = await pickProfileImage();
-      if (!file || !isMounted.current) return;
-      await changeProfileImage.mutateAsync(file);
-    } catch (error) {
-      if (!isMounted.current) return;
-      if (error instanceof ProfileImagePermissionError) {
-        Alert.alert(t('myPage.profileEdit.avatarPermissionDenied'));
-        return;
-      }
-      Alert.alert(t('myPage.profileEdit.avatarChangeFailed'));
-    } finally {
-      avatarActionLock.current = false;
+  const showAvatarError = (error: unknown, source: ProfileImageSource) => {
+    if (error instanceof ProfileImagePermissionError) {
+      Alert.alert(
+        t(source === 'camera'
+          ? 'myPage.profileEdit.avatarCameraPermissionDenied'
+          : 'myPage.profileEdit.avatarPermissionDenied'),
+        undefined,
+        [
+          { style: 'cancel', text: t('myPage.profileEdit.avatarCancel') },
+          {
+            onPress: () => { void Linking.openSettings().catch(() => undefined); },
+            text: t('myPage.profileEdit.avatarOpenSettings'),
+          },
+        ],
+      );
+      return;
     }
+
+    const kind = error instanceof ProfileImageTypeError
+      ? 'typeUnsupported'
+      : getProfileImageApiErrorKind(error);
+    if (kind === 'typeUnsupported') {
+      Alert.alert(t('myPage.profileEdit.avatarTypeUnsupported'));
+      return;
+    }
+    if (kind === 'tooLarge') {
+      Alert.alert(t('myPage.profileEdit.avatarFileTooLarge'));
+      return;
+    }
+
+    const buttons: AlertButton[] = [{ style: 'cancel', text: t('myPage.profileEdit.avatarCancel') }];
+    if (changeProfileImage.canRetry()) {
+      buttons.push({
+        onPress: () => { void retryAvatarChange(source); },
+        text: t('myPage.profileEdit.avatarRetry'),
+      });
+    }
+    Alert.alert(t('myPage.profileEdit.avatarChangeFailed'), undefined, buttons);
+  };
+
+  const startAvatarChange = async (source: ProfileImageSource) => {
+    try {
+      await changeProfileImage.change(source);
+    } catch (error) {
+      if (isMounted.current) showAvatarError(error, source);
+    }
+  };
+
+  const retryAvatarChange = async (source: ProfileImageSource) => {
+    try {
+      await changeProfileImage.retry();
+    } catch (error) {
+      if (isMounted.current) showAvatarError(error, source);
+    }
+  };
+
+  const handleEditAvatar = () => {
+    if (avatarSheetOpen.current || changeProfileImage.isPending) return;
+    avatarSheetOpen.current = true;
+    const closeSheet = () => { avatarSheetOpen.current = false; };
+
+    Alert.alert(
+      t('myPage.profileEdit.avatarSheetTitle'),
+      undefined,
+      [
+        {
+          onPress: () => { closeSheet(); void startAvatarChange('library'); },
+          text: t('myPage.profileEdit.avatarFromLibrary'),
+        },
+        {
+          onPress: () => { closeSheet(); void startAvatarChange('camera'); },
+          text: t('myPage.profileEdit.avatarFromCamera'),
+        },
+        { onPress: closeSheet, style: 'cancel', text: t('myPage.profileEdit.avatarCancel') },
+      ],
+      { cancelable: true, onDismiss: closeSheet },
+    );
   };
 
   const handleSave = async () => {
@@ -187,25 +257,33 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-profile-edit-screen">
       <Content contentContainerStyle={CONTENT_CONTAINER_STYLE} testID="v2-profile-edit-scroll">
         <TopBar>
-          <HeaderBackButton
-            accessibilityLabel={t('myPage.back')}
-            onPress={handleBack}
-            testID="v2-profile-edit-back"
-          />
+          <HeaderSlot>
+            <GlassShadow />
+            <BackButtonOffset>
+              <HeaderBackButton
+                accessibilityLabel={t('myPage.back')}
+                onPress={handleBack}
+                testID="v2-profile-edit-back"
+              />
+            </BackButtonOffset>
+          </HeaderSlot>
           <TopBarTitle>{t('myPage.profileEdit.title')}</TopBarTitle>
-          <IconButton
-            accessibilityLabel={isSaving
-              ? t('myPage.profileEdit.saving')
-              : t('myPage.profileEdit.save')}
-            accessibilityRole="button"
-            accessibilityState={{ busy: isSaving, disabled: isSaveDisabled }}
-            disabled={isSaveDisabled}
-            hitSlop={8}
-            onPress={() => void handleSave()}
-            testID="v2-profile-edit-save-header"
-          >
-            <CheckmarkIcon height={44} width={44} />
-          </IconButton>
+          <HeaderSlot>
+            <GlassShadow />
+            <IconButton
+              accessibilityLabel={isSaving
+                ? t('myPage.profileEdit.saving')
+                : t('myPage.profileEdit.save')}
+              accessibilityRole="button"
+              accessibilityState={{ busy: isSaving, disabled: isSaveDisabled }}
+              disabled={isSaveDisabled}
+              hitSlop={8}
+              onPress={() => void handleSave()}
+              testID="v2-profile-edit-save-header"
+            >
+              <CheckmarkIcon height={84} style={CHECK_ICON_STYLE} width={80} />
+            </IconButton>
+          </HeaderSlot>
         </TopBar>
 
         {isProfileLoading ? <LoadingState description={t('myPage.profileLoading')} /> : null}
@@ -220,19 +298,16 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
               disabled: changeProfileImage.isPending,
             }}
             disabled={changeProfileImage.isPending}
-            onPress={() => void handleEditAvatar()}
+            onPress={handleEditAvatar}
             testID="v2-profile-edit-avatar-action"
           >
-            {profile?.profileImageUrl ? (
-              <AvatarImage
-                source={{ uri: profile.profileImageUrl }}
-                testID="v2-profile-edit-avatar-image"
-              />
-            ) : (
-              <AvatarPlaceholder height={82} width={82} />
-            )}
+            <ProfileAvatar
+              imageTestID="v2-profile-edit-avatar-image"
+              size={82}
+              uri={getProfileImageUri(profile)}
+            />
             {changeProfileImage.isPending ? (
-              <AvatarUploadingOverlay>
+              <AvatarUploadingOverlay accessibilityLiveRegion="polite">
                 <ActivityIndicator
                   accessibilityLabel={t('myPage.profileEdit.avatarUploading')}
                   accessibilityRole="progressbar"
@@ -386,6 +461,9 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
 }
 
 const CONTENT_CONTAINER_STYLE = { flexGrow: 1 } as const;
+// The asset is 80x84 with the 44px glass circle at (20, 16); offset it so the
+// circle fills the 44px button box the way the Figma frame places it.
+const CHECK_ICON_STYLE = { left: -20, position: 'absolute' as const, top: -16 };
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -403,22 +481,53 @@ const TopBar = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 0 ${({ theme }) => theme.spacing.lg}px;
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
+`;
+
+const HeaderSlot = styled.View`
+  width: 44px;
+  height: 44px;
+`;
+
+// The shared back icon is drawn 2px left and 4px above the Figma circle origin;
+// shift it here rather than changing every screen that uses it.
+const BackButtonOffset = styled.View`
+  transform: translate(2px, 4px);
+`;
+
+// react-native-svg ignores the blur filter baked into the header icon assets,
+// so the soft shadow under the glass circle is drawn natively behind them.
+const GlassShadow = styled.View`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 22px;
+  background-color: ${({ theme }) => theme.colors.background};
+  shadow-color: #000000;
+  shadow-offset: 0px 4px;
+  shadow-opacity: 0.06;
+  shadow-radius: 10px;
 `;
 
 const IconButton = styled.Pressable`
-  align-items: center;
-  justify-content: center;
+  width: 44px;
+  height: 44px;
+  overflow: visible;
+  position: relative;
 `;
 
 const TopBarTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: 500;
+  font-size: ${({ theme }) => theme.typography.headline2Medium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline2Medium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.headline2Medium.lineHeight}px;
 `;
 
 const AvatarSection = styled.View`
   align-items: center;
+  margin: 0 ${({ theme }) => theme.spacing.lg}px;
   padding: ${({ theme }) => theme.spacing.md}px 0;
   border-bottom-width: 8px;
   border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
@@ -427,12 +536,6 @@ const AvatarSection = styled.View`
 const AvatarWrapper = styled.Pressable`
   width: 82px;
   height: 82px;
-`;
-
-const AvatarImage = styled.Image`
-  width: 82px;
-  height: 82px;
-  border-radius: 41px;
 `;
 
 const AvatarUploadingOverlay = styled.View`
@@ -449,22 +552,23 @@ const AvatarUploadingOverlay = styled.View`
 
 const PencilBadge = styled.View`
   position: absolute;
-  right: -4px;
-  bottom: -4px;
+  right: 0;
+  bottom: 0;
   padding: 4px;
   border-radius: 100px;
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
 const InfoSection = styled.View`
-  gap: ${({ theme }) => theme.spacing.md}px;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  gap: 12px;
+  padding: 14px ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.md}px;
 `;
 
 const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: 700;
+  font-size: ${({ theme }) => theme.typography.headline2Bold.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline2Bold.fontWeight};
+  line-height: ${({ theme }) => theme.typography.headline2Bold.lineHeight}px;
 `;
 
 const Field = styled.View`
@@ -472,9 +576,11 @@ const Field = styled.View`
 `;
 
 const FieldLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textAlternative};
+  font-size: ${({ theme }) => theme.typography.labelMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.labelMedium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.labelMedium.lineHeight}px;
+  letter-spacing: -0.28px;
 `;
 
 const FieldRow = styled.View`
@@ -487,8 +593,9 @@ const FieldRow = styled.View`
 
 const FieldInput = styled(AppTextInput)`
   flex: 1;
-  color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.bodyRegular.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyRegular.fontWeight};
   padding: 0;
 `;
 
@@ -501,13 +608,14 @@ const SaveButton = styled.Pressable<{ disabled: boolean }>`
   align-items: center;
   justify-content: center;
   height: 64px;
-  margin: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  margin: auto ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.md}px;
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme, disabled }) => disabled ? theme.colors.disabled : theme.colors.primary};
 `;
 
 const SaveButtonText = styled(AppText)`
-  color: ${({ theme }) => theme.colors.onPrimary};
-  font-size: 20px;
-  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textInverse};
+  font-size: ${({ theme }) => theme.typography.headline1Bold.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline1Bold.fontWeight};
+  line-height: ${({ theme }) => theme.typography.headline1Bold.lineHeight}px;
 `;

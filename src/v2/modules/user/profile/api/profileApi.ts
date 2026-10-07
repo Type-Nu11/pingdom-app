@@ -18,11 +18,15 @@ export function createProfileApi(client: ApiClient = apiClient) {
   return {
     changePassword: (body: ChangePasswordInput): Promise<string> =>
       client.post<string, ChangePasswordInput>(CHANGE_PASSWORD_PATH, body),
-    changeProfileImage: (file: ProfileImageFile): Promise<ProfileImageUploadResponse> => {
+    changeProfileImage: (
+      file: ProfileImageFile,
+      signal?: AbortSignal,
+    ): Promise<ProfileImageUploadResponse> => {
       const formData = new FormData();
       formData.append('file', file as unknown as Blob);
       return client.post<ProfileImageUploadResponse, FormData>(PROFILE_IMAGE_PATH, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        signal,
       });
     },
     changeUsername: (newUsername: string): Promise<string> =>

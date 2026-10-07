@@ -110,4 +110,86 @@ export const offerStatusResources = {
           UNKNOWN: '状態の確認が必要です',
         },
       } },
+  'zh-CN': {
+    offer: {
+      cta: { ended: '优惠已结束', issue: '领取优惠券', notStarted: '尚未开始', soldOut: '已全部领完', unavailable: '无法领取' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: '有进行中行程的账号', PUBLIC: '所有人', UNKNOWN: '条件待确认' },
+      expiry: { ISSUE_PLUS_DAYS: '自领取之日起在规定天数内有效', ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: '自领取之日起在规定天数内有效，最晚至优惠结束日', OFFER_END: '有效期至优惠结束', UNKNOWN: '有效期待确认' },
+      inventory: { LIMITED: '数量有限', UNKNOWN: '数量待确认', UNLIMITED: '数量不限' },
+      remaining: { limited_one: '剩余 {{count}} 张', limited_other: '剩余 {{count}} 张', unknown: '未提供剩余数量', unlimited: '数量不限' },
+      statuses: { CLOSED: '已结束', DRAFT: '草稿', PUBLISHED: '可领取', UNKNOWN: '状态待确认' },
+    },
+  },
+  'zh-TW': {
+    offer: {
+      cta: { ended: '優惠已結束', issue: '領取優惠券', notStarted: '尚未開始', soldOut: '已全數領完', unavailable: '無法領取' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: '有進行中行程的帳號', PUBLIC: '所有人', UNKNOWN: '條件待確認' },
+      expiry: { ISSUE_PLUS_DAYS: '自領取日起於指定天數內有效', ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: '自領取日起於指定天數內有效，最晚至優惠結束日', OFFER_END: '有效至優惠結束', UNKNOWN: '有效期限待確認' },
+      inventory: { LIMITED: '數量有限', UNKNOWN: '數量待確認', UNLIMITED: '數量不限' },
+      remaining: { limited_one: '剩餘 {{count}} 張', limited_other: '剩餘 {{count}} 張', unknown: '未提供剩餘數量', unlimited: '數量不限' },
+      statuses: { CLOSED: '已結束', DRAFT: '草稿', PUBLISHED: '可領取', UNKNOWN: '狀態待確認' },
+    },
+  },
+  vi: {
+    offer: {
+      cta: { ended: 'Ưu đãi đã kết thúc', issue: 'Nhận phiếu ưu đãi', notStarted: 'Chưa bắt đầu', soldOut: 'Đã hết lượt', unavailable: 'Không thể nhận' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: 'Tài khoản có chuyến đi đang diễn ra', PUBLIC: 'Mọi người', UNKNOWN: 'Cần kiểm tra điều kiện' },
+      expiry: {
+        ISSUE_PLUS_DAYS: 'Có hiệu lực trong số ngày quy định kể từ khi nhận',
+        ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: 'Có hiệu lực trong số ngày quy định kể từ khi nhận, tối đa đến ngày ưu đãi kết thúc',
+        OFFER_END: 'Có hiệu lực đến khi ưu đãi kết thúc',
+        UNKNOWN: 'Cần kiểm tra thời hạn',
+      },
+      inventory: { LIMITED: 'Số lượng có hạn', UNKNOWN: 'Cần kiểm tra số lượng', UNLIMITED: 'Không giới hạn số lượng' },
+      remaining: {
+        limited_one: 'Còn {{count}}',
+        limited_other: 'Còn {{count}}',
+        unknown: 'Chưa có thông tin số lượng còn lại',
+        unlimited: 'Không giới hạn số lượng',
+      },
+      statuses: { CLOSED: 'Đã kết thúc', DRAFT: 'Bản nháp', PUBLISHED: 'Có thể nhận', UNKNOWN: 'Cần kiểm tra trạng thái' },
+    },
+  },
+  es: {
+    offer: {
+      cta: { ended: 'Oferta finalizada', issue: 'Obtener cupón', notStarted: 'Aún no comienza', soldOut: 'Agotado', unavailable: 'No se puede obtener' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: 'Cuentas con un viaje activo', PUBLIC: 'Cualquier persona', UNKNOWN: 'Condiciones por confirmar' },
+      expiry: {
+        ISSUE_PLUS_DAYS: 'Válido durante un número fijo de días tras la emisión',
+        ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: 'Válido durante un número fijo de días tras la emisión, hasta la fecha de fin de la oferta',
+        OFFER_END: 'Válido hasta que termine la oferta',
+        UNKNOWN: 'Vigencia por confirmar',
+      },
+      inventory: { LIMITED: 'Cantidad limitada', UNKNOWN: 'Cantidad por confirmar', UNLIMITED: 'Sin límite de cantidad' },
+      remaining: {
+        limited_one: 'Queda {{count}}',
+        limited_other: 'Quedan {{count}}',
+        limited_many: 'Quedan {{count}}',
+        unknown: 'Cantidad restante no disponible',
+        unlimited: 'Sin límite de cantidad',
+      },
+      statuses: { CLOSED: 'Finalizada', DRAFT: 'Borrador', PUBLISHED: 'Disponible', UNKNOWN: 'Estado por confirmar' },
+    },
+  },
+  'pt-BR': {
+    offer: {
+      cta: { ended: 'Oferta encerrada', issue: 'Pegar cupom', notStarted: 'Ainda não começou', soldOut: 'Esgotado', unavailable: 'Não pode ser resgatado' },
+      eligibility: { ACTIVE_TRAVEL_SCHEDULE: 'Contas com uma viagem ativa', PUBLIC: 'Qualquer pessoa', UNKNOWN: 'Condições a confirmar' },
+      expiry: {
+        ISSUE_PLUS_DAYS: 'Válido por um número fixo de dias após a emissão',
+        ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END: 'Válido por um número fixo de dias após a emissão, até a data de término da oferta',
+        OFFER_END: 'Válido até o fim da oferta',
+        UNKNOWN: 'Validade a confirmar',
+      },
+      inventory: { LIMITED: 'Quantidade limitada', UNKNOWN: 'Quantidade a confirmar', UNLIMITED: 'Sem limite de quantidade' },
+      remaining: {
+        limited_one: 'Resta {{count}}',
+        limited_other: 'Restam {{count}}',
+        limited_many: 'Restam {{count}}',
+        unknown: 'Quantidade restante não informada',
+        unlimited: 'Sem limite de quantidade',
+      },
+      statuses: { CLOSED: 'Encerrada', DRAFT: 'Rascunho', PUBLISHED: 'Disponível', UNKNOWN: 'Status a confirmar' },
+    },
+  },
 } as const;

@@ -40,7 +40,10 @@ export const emptyPostPageFixture = {
 } satisfies CommunityPostPage;
 
 export const postDetailFixture = {
+  author: { authorId: 7, authorName: 'pingdom', profileImageUrl: undefined },
+  category: { categoryId: 'PLACE', categoryName: '장소' },
   content: '즐거운 경험이었습니다.',
+  createdAt: '2026-09-01T08:48:00Z',
   places: [{ deleted: false, placeId: 17, placeName: '대소고' }],
   postId: 1,
   title: '대소고 다녀왔어요',

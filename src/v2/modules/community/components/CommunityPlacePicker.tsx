@@ -40,7 +40,7 @@ export default function CommunityPlacePicker({ onClose, onSelect }: CommunityPla
           accessibilityRole="button"
           onPress={onClose}
         >
-          <BackButtonIcon height={42} width={40} />
+          <BackButtonIcon color={theme.colors.textAlternative} height={42} width={40} />
         </BackButton>
         <SearchField
           autoFocus
