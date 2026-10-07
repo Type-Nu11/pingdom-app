@@ -2076,6 +2076,7 @@
     {"source":"src/v2/modules/voice-assistant/i18n/index.ts","target":"src/v2/modules/voice-assistant/i18n/voiceAssistantResources.ts","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/i18n/voiceAssistantResources.ts","target":"src/v2/modules/voice-assistant/i18n/voiceSessionErrors.ts","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/i18n/voiceSessionErrors.ts","target":"src/v2/modules/voice-assistant/model/voiceSessionError.ts","typeOnly":true},
+    {"source":"src/v2/modules/voice-assistant/i18n/voiceSessionErrors.ts","target":"src/v2/shared/i18n/resources.ts","typeOnly":true},
     {"source":"src/v2/modules/voice-assistant/index.ts","target":"src/v2/modules/voice-assistant/screens/VoiceCommandScreen.tsx","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/index.ts","target":"src/v2/modules/voice-assistant/screens/VoiceAssistantScreen.tsx","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/index.ts","target":"src/v2/modules/voice-assistant/hooks/useVoiceCommands.ts","typeOnly":true},
