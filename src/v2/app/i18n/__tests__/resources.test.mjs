@@ -47,8 +47,10 @@ function staticTranslationKeys() {
   return [...new Set(keys)].sort();
 }
 
-test('canonical resources support en, ko, and ja with exact key parity', () => {
-  assert.deepEqual([...supportedLanguages], ['en', 'ko', 'ja']);
+test('canonical resources keep en, ko, and ja first with exact key parity', () => {
+  // Languages added later are appended; their parity is covered by catalogParity.test.mjs.
+  assert.deepEqual(supportedLanguages.slice(0, 3), ['en', 'ko', 'ja']);
+  assert.equal(new Set(supportedLanguages).size, supportedLanguages.length);
   const en = flattenKeys(resources.en.translation).sort();
   const ko = flattenKeys(resources.ko.translation).sort();
   assert.deepEqual(ko, en);
@@ -122,4 +124,16 @@ test('#390 shared error keys preserve ko/en interpolation contracts', () => {
     const variables = value => [...value.matchAll(/{{\s*([^}]+)\s*}}/g)].map(match => match[1].trim()).sort();
     assert.deepEqual(variables(en[key]), variables(ko[key]), key);
   }
+});
+
+test('iOS declares every supported language so the device-language fallback can see it', () => {
+  // iOS reports the device locale to the app only for languages the bundle declares; an undeclared
+  // language is reported as English, which silently disables the device-language fallback.
+  const iosLocalization = { 'zh-CN': 'zh-Hans', 'zh-TW': 'zh-Hant' };
+  const expected = supportedLanguages.map((language) => iosLocalization[language] ?? language).sort();
+  const plist = readFileSync(resolve(repositoryRoot, 'ios/Naviapp/Info.plist'), 'utf8');
+  const declared = plist.match(/<key>CFBundleLocalizations<\/key>\s*<array>([\s\S]*?)<\/array>/)?.[1] ?? '';
+  assert.deepEqual([...declared.matchAll(/<string>([^<]+)<\/string>/g)].map((match) => match[1]).sort(), expected);
+  const appConfig = JSON.parse(readFileSync(resolve(repositoryRoot, 'app.json'), 'utf8'));
+  assert.deepEqual([...appConfig.expo.ios.infoPlist.CFBundleLocalizations].sort(), expected);
 });

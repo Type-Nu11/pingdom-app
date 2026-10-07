@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook } from '@testing-library/react-native';
 
+import { supportedLanguages } from '../../../../shared/i18n';
 import { useOnboardingEntry } from '../hooks/useOnboardingEntry';
 import {
   createOnboardingCompletion,
@@ -44,6 +45,15 @@ describe('onboarding completion storage', () => {
       completion,
       kind: 'restored',
     });
+  });
+
+  // A language the picker offers must restore as completed, or onboarding would loop.
+  test.each([...supportedLanguages])('restores a completion stored with the %s language', async (language) => {
+    const completion = createOnboardingCompletion({ ...signupContext, language });
+
+    await persistOnboardingCompletion(completion);
+
+    await expect(restoreOnboardingCompletion()).resolves.toEqual({ completion, kind: 'restored' });
   });
 
   test.each([

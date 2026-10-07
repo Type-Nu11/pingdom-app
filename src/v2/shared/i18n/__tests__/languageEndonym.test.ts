@@ -15,3 +15,28 @@ describe('getLanguageEndonym', () => {
     }
   });
 });
+
+describe('#413 중국어 자체 표기', () => {
+  test('간체와 번체를 각각의 문자로 구분해 표기한다', () => {
+    expect(getLanguageEndonym('zh-CN')).toBe('简体中文');
+    expect(getLanguageEndonym('zh-TW')).toBe('繁體中文');
+  });
+});
+
+describe('#414 베트남어 자체 표기', () => {
+  test('성조 부호를 포함한 Tiếng Việt로 표기한다', () => {
+    expect(getLanguageEndonym('vi')).toBe('Tiếng Việt');
+  });
+});
+
+describe('#415 스페인어 자체 표기', () => {
+  test('Español로 표기한다', () => {
+    expect(getLanguageEndonym('es')).toBe('Español');
+  });
+});
+
+describe('#416 브라질 포르투갈어 자체 표기', () => {
+  test('Português (Brasil)로 표기한다', () => {
+    expect(getLanguageEndonym('pt-BR')).toBe('Português (Brasil)');
+  });
+});

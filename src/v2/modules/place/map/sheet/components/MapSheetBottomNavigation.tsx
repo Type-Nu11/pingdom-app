@@ -146,7 +146,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                   testID={`map-navigation-${id}-surface`}
                 >
                   <View style={styles.navIcon}>{icon}</View>
-                  <AppText style={[styles.navLabel, active && styles.navLabelActive]}>{label}</AppText>
+                  <AppText adjustsFontSizeToFit minimumFontScale={0.7} numberOfLines={1} style={[styles.navLabel, active && styles.navLabelActive]}>{label}</AppText>
                 </View>
               </Pressable>
               </MapTutorialTarget>

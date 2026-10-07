@@ -384,7 +384,7 @@ const FeedSegment = ({
               height={20}
               width={16}
             />
-            <AppText style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+            <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
               {t('map.sheet.localHotPlaces')}
             </AppText>
           </Pressable>
@@ -399,7 +399,7 @@ const FeedSegment = ({
               height={20}
               width={18}
             />
-            <AppText style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+            <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
               {t('map.sheet.nationwideTrends')}
             </AppText>
           </Pressable>
@@ -2995,6 +2995,8 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   },
   segmentLabel: {
     color: colors.textMuted,
+    // Lets a long translated label shrink inside its half instead of running under the other tab.
+    flexShrink: 1,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 21,
