@@ -87,6 +87,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     };
     // #389 moves the My Trip weekday header out of the component.
     delete baseline[language].translation.myPage.travel.weekdays;
+    // #419 adds the card copy for search results that are not PingDom places.
+    delete baseline[language].translation.map.externalPlace;
     // #399 adds the profile photo picker, retry, and permission copy.
     for (const key of [
       'avatarCameraPermissionDenied',

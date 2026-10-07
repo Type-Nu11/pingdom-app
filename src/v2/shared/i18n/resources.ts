@@ -265,6 +265,12 @@ export const resources = {
           loading: 'Loading saved places…', remove: 'Remove {{name}} from favorites', retry: 'Try again',
           sessionBody: 'Sign in again to see your saved places.', sessionTitle: 'Your session has expired', title: 'My places',
         },
+        externalPlace: {
+          badge: 'Not on PingDom',
+          locationUnavailable: 'We couldn\'t confirm this place\'s location, so the map pin and directions are unavailable.',
+          reservationUnknown: 'PingDom reservation support has not been confirmed for this place.',
+          sourceKakao: 'Source: Kakao Map search',
+        },
         searchOverlay: {
           categories: 'Place categories', clear: 'Clear search', clearAll: 'Clear all', close: 'Close search',
           emptyBody: 'Try a different search term.', emptyTitle: 'No search results',
@@ -1121,6 +1127,12 @@ export const resources = {
           loadMoreError: '다음 장소를 불러오지 못했어요', loadMoreLabel: '저장한 장소 더 불러오기',
           loading: '저장한 장소를 불러오는 중이에요', remove: '{{name}} 즐겨찾기 해제', retry: '다시 시도',
           sessionBody: '다시 로그인한 뒤 저장한 장소를 확인해 주세요.', sessionTitle: '로그인이 만료됐어요', title: '내 장소',
+        },
+        externalPlace: {
+          badge: '핑덤 미등록 장소',
+          locationUnavailable: '위치 정보를 확인할 수 없어 지도 표시와 길찾기를 제공하지 않아요.',
+          reservationUnknown: '핑덤 예약 지원 여부가 확인되지 않은 장소예요.',
+          sourceKakao: '출처: 카카오맵 검색',
         },
         searchOverlay: {
           categories: '장소 카테고리', clear: '검색어 지우기', clearAll: '전체 삭제', close: '검색 닫기', emptyBody: '다른 검색어를 입력해 보세요.',
@@ -2001,6 +2013,12 @@ export const resources = {
           loadMoreError: '場所をさらに読み込めませんでした', loadMoreLabel: '保存した場所をさらに読み込む',
           loading: '保存した場所を読み込んでいます…', remove: '{{name}}をお気に入りから削除', retry: '再試行',
           sessionBody: '保存した場所を見るには、再度ログインしてください。', sessionTitle: 'ログインの有効期限が切れました', title: 'マイスポット',
+        },
+        externalPlace: {
+          badge: 'PingDom未登録の場所',
+          locationUnavailable: '位置情報を確認できないため、地図表示と経路案内は利用できません。',
+          reservationUnknown: 'この場所はPingDomでの予約対応が確認されていません。',
+          sourceKakao: '出典: カカオマップ検索',
         },
         searchOverlay: {
           categories: '場所のカテゴリー', clear: '検索語を消去', clearAll: 'すべて消去', close: '検索を閉じる',
@@ -2887,6 +2905,12 @@ export const resources = {
           sessionTitle: '登录已过期',
           title: '我的地点',
         },
+        externalPlace: {
+          badge: '未收录于 PingDom',
+          locationUnavailable: '无法确认位置信息，因此不提供地图标记和路线导航。',
+          reservationUnknown: '尚未确认该地点是否支持 PingDom 预约。',
+          sourceKakao: '来源：Kakao 地图搜索',
+        },
         searchOverlay: {
           categories: '地点分类',
           clear: '清除搜索内容',
@@ -3712,6 +3736,12 @@ export const resources = {
           sessionBody: '請重新登入後查看收藏的地點。',
           sessionTitle: '登入已過期',
           title: '我的地點',
+        },
+        externalPlace: {
+          badge: '未收錄於 PingDom',
+          locationUnavailable: '無法確認位置資訊，因此不提供地圖標記與路線導航。',
+          reservationUnknown: '尚未確認此地點是否支援 PingDom 預約。',
+          sourceKakao: '來源：Kakao 地圖搜尋',
         },
         searchOverlay: {
           categories: '地點類別',
@@ -4577,6 +4607,12 @@ export const resources = {
           sessionBody: 'Hãy đăng nhập lại để xem các địa điểm đã lưu.',
           sessionTitle: 'Phiên đăng nhập đã hết hạn',
           title: 'Địa điểm của tôi',
+        },
+        externalPlace: {
+          badge: 'Chưa có trên PingDom',
+          locationUnavailable: 'Không xác nhận được vị trí nên không thể hiển thị trên bản đồ và chỉ đường.',
+          reservationUnknown: 'Chưa xác nhận địa điểm này có hỗ trợ đặt chỗ qua PingDom hay không.',
+          sourceKakao: 'Nguồn: tìm kiếm Kakao Map',
         },
         searchOverlay: {
           categories: 'Danh mục địa điểm',
@@ -5515,6 +5551,12 @@ export const resources = {
           sessionBody: 'Inicia sesión de nuevo para ver tus lugares guardados.',
           sessionTitle: 'Tu sesión expiró',
           title: 'Mis lugares',
+        },
+        externalPlace: {
+          badge: 'No registrado en PingDom',
+          locationUnavailable: 'No pudimos confirmar la ubicación, así que el mapa y las indicaciones no están disponibles.',
+          reservationUnknown: 'No se ha confirmado si este lugar admite reservas en PingDom.',
+          sourceKakao: 'Fuente: búsqueda de Kakao Map',
         },
         searchOverlay: {
           categories: 'Categorías de lugares',
@@ -6467,6 +6509,12 @@ export const resources = {
           sessionBody: 'Entre novamente para ver seus lugares salvos.',
           sessionTitle: 'Sua sessão expirou',
           title: 'Meus lugares',
+        },
+        externalPlace: {
+          badge: 'Não cadastrado no PingDom',
+          locationUnavailable: 'Não foi possível confirmar a localização, então o mapa e as rotas não estão disponíveis.',
+          reservationUnknown: 'Ainda não foi confirmado se este lugar aceita reservas pelo PingDom.',
+          sourceKakao: 'Fonte: busca do Kakao Map',
         },
         searchOverlay: {
           categories: 'Categorias de lugares',
