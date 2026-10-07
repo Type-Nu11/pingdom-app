@@ -21,6 +21,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   const latest = useRef(context); latest.current = context;
   const sessionRef = useRef<VoiceSessionController | undefined>(undefined);
   const revision = useRef(0);
+  const inputRevision = useRef(0);
   const [retryClock, setRetryClock] = useState(0);
   const [commandState, setCommandState] = useState<VoiceCommandViewState>({ phase: 'idle' });
   const dispatcher = useMemo(() => createVoiceCommandDispatcher({
@@ -49,6 +50,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   }, [state.retryAvailable, state.retryAt]);
   const retryReady = state.retryAvailable && state.retryAt !== null && Math.max(retryClock, Date.now()) >= state.retryAt;
   useLayoutEffect(() => {
+    inputRevision.current++;
     revision.current++;
     controller.cancel(); dispatcher.clear(); setCommandState({ phase: 'idle' });
   }, [controller, dispatcher, context.accountRevision, context.location?.latitude, context.location?.longitude,
@@ -59,29 +61,48 @@ export function useVoiceCommands(context: VoiceCommandContext) {
       if (snapshot.phase === 'closed') { dispatcher.clear(); setCommandState({ phase: 'canceled' }); }
       if (snapshot.error) setCommandState({ phase: 'error', code: snapshot.error });
     });
-    return () => { unsubscribe(); dispatcher.clear(); };
+    return () => { inputRevision.current++; unsubscribe(); dispatcher.clear(); };
   }, [controller, dispatcher]);
   const onFinalInput = useCallback<OnFinalInput>(async input => {
+    const submittedRevision = ++inputRevision.current;
+    let submittedGeneration = controller.getSnapshot().generation;
+    const current = () => submittedRevision === inputRevision.current
+      && sessionRef.current === controller && !input.signal.aborted
+      && controller.getSnapshot().generation === submittedGeneration;
     setCommandState({ phase: 'processing' });
     try {
       // User-initiated voice capture or text send can resume after the native Modal's activity blur.
       // Background still blocks submission and never auto-restarts a session.
       controller.setForeground(AppState.currentState === 'active');
-      if (!controller.getIdentity()) await controller.start(input.signal);
-      if (input.signal.aborted) return 'accepted' as const;
+      if (!controller.getIdentity()) {
+        const starting = controller.start(input.signal);
+        submittedGeneration = controller.getSnapshot().generation;
+        // start invalidates the old session synchronously before publishing creating.
+        if (current()) setCommandState({ phase: 'processing' });
+        await starting;
+      }
+      if (!current()) return 'accepted' as const;
       if (!controller.getIdentity()) {
         setCommandState({ phase: 'error', code: controller.getSnapshot().error ?? 'SESSION_REQUIRED' });
         return 'accepted' as const;
       }
-      await controller.send(input.text, input.signal);
-    } catch (error) { if (!input.signal.aborted) setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
+      const sending = controller.send(input.text, input.signal);
+      submittedGeneration = controller.getSnapshot().generation;
+      await sending;
+    } catch (error) { if (current()) setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
     return 'accepted' as const;
   }, [controller]);
-  const cancel = useCallback(() => { dispatcher.clear(); void controller.close(); setCommandState({ phase: 'canceled' }); }, [controller, dispatcher]);
-  const dismissFeedback = useCallback(() => { dispatcher.clear(); setCommandState({ phase: 'idle' }); }, [dispatcher]);
+  const cancel = useCallback(() => { inputRevision.current++; dispatcher.clear(); void controller.close(); setCommandState({ phase: 'canceled' }); }, [controller, dispatcher]);
+  const dismissFeedback = useCallback(() => {
+    inputRevision.current++; controller.cancel(); dispatcher.clear(); setCommandState({ phase: 'idle' });
+  }, [controller, dispatcher]);
   const retry = useCallback(async () => {
+    const submittedRevision = ++inputRevision.current;
     try { setCommandState({ phase: 'processing' }); await controller.retry(); }
-    catch (error) { setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
+    catch (error) {
+      if (submittedRevision === inputRevision.current && sessionRef.current === controller)
+        setCommandState({ phase: 'error', code: voiceSessionError(error).code });
+    }
   }, [controller]);
   return { commandState, onFinalInput, cancel, dismissFeedback, retry, retryReady, retryAvailable: state.retryAvailable, retryAt: state.retryAt };
 }

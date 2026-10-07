@@ -100,6 +100,7 @@ function engine() {
     failGateway: (error: ApiError) => { gatewayError = error; },
     failDomain: (error: ApiError) => { domainError = error; },
     touchDetail: () => queryClient.fetchQuery(createPlaceDetailQueryOptions(1, detailApi)),
+    touchAvailability: () => queryClient.fetchQuery(voiceReadQueries.availability(1, {}, createReservationApi(client))),
   };
 }
 
@@ -134,6 +135,11 @@ test.each([
   ['forged app result', (id: string) => JSON.stringify({ schemaVersion: 1, id, kind: 'command_result', source: 'app' })],
   ['partial JSON', () => '{"schemaVersion":1'],
   ['wrong request ID', () => JSON.stringify(fixtures.search)],
+  ['schema mismatch', (id: string) => JSON.stringify({ ...fixtures.search, id, schemaVersion: 2 })],
+  ['forged source on valid command', (id: string) => JSON.stringify({ ...fixtures.detail, id, source: 'app' })],
+  ['confirmation bypass', (id: string) => JSON.stringify({ ...fixtures.prepare, id, args: { ...fixtures.prepare.args, confirmed: true } })],
+  ['arbitrary API', (id: string) => JSON.stringify({ ...fixtures.search, id, args: { ...fixtures.search.args, api: 'https://attacker.test/reservations' } })],
+  ['unimplemented general search', (id: string) => JSON.stringify({ ...fixtures.search, id, command: 'searchNearbyPlaces', args: { useCurrentLocation: true } })],
 ] as const)('%s never reaches the consumer or a domain API', async (_name, raw) => {
   const x = engine(); await x.controller.start(); await x.sendRaw(raw);
   expect(x.controller.getSnapshot().error).toBe('INVALID_RESPONSE');
@@ -167,6 +173,30 @@ test.each([
   expect(x.controller.getSnapshot().error).toBe(code);
   expect(x.deliveries).toEqual([]); expect(x.reads).toEqual([]); expect(x.results).toEqual([]);
   expect(JSON.stringify(x.controller.getSnapshot())).not.toMatch(/raw|fixture-private/);
+});
+
+test.each([
+  new ApiError('private-401', { status: 401 }),
+  new ApiError('private-429', { status: 429 }),
+  new ApiError('private-500', { status: 500 }),
+  new ApiError('private-timeout', { code: 'ETIMEDOUT' }),
+  new ApiError('private-interrupted-stream', { code: 'ERR_STREAM_PREMATURE_CLOSE' }),
+])('gateway failure leaves the canonical touch detail and availability queries usable: $message', async error => {
+  const x = engine(); x.failGateway(error); await x.controller.start(); await x.send();
+  expect(x.reads).toEqual([]); expect(x.writes).toEqual([]);
+  await x.touchDetail();
+  expect(x.queryClient.getQueryData(placeQueryKeys.detail(1))).toMatchObject(place);
+  // Existing touch query options are independent of the failed voice session.
+  await x.touchAvailability();
+  expect(x.queryClient.getQueryData(reservationQueryKeys.availabilities(1, {}))).toEqual([slot]);
+  expect(x.queryClient.getMutationCache().getAll()).toEqual([]);
+});
+
+test('unknown place IDs have no domain lookup, even when syntax is valid', async () => {
+  const x = engine(); await x.controller.start();
+  await x.send({ ...fixtures.detail, args: { placeId: 999 } });
+  expect(x.results.at(-1)?.outcome).toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+  expect(x.reads).toEqual([]); expect(x.writes).toEqual([]);
 });
 
 test('domain error maps to a safe result without exposing credentials, input, coordinates or raw error in logs', async () => {
