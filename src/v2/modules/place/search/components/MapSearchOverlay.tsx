@@ -28,6 +28,7 @@ import {
   toAutocompleteResults,
   type MapPlaceResult,
 } from '../../map/selection/model/mapDiscovery';
+import type { MapSearchSelection } from '../../map/selection/model/externalPlace';
 import { env } from '../../../../shared/config';
 import type { KakaoLocalSearchItem } from '../api/kakaoLocalApi';
 import { useKakaoLocalSearch } from '../hooks/useKakaoLocalSearch';
@@ -44,15 +45,7 @@ import {
 import { useRecentSearchStore } from '../store/recentSearchStore';
 import type { AppTheme } from '../../../../shared/theme';
 
-export type MapSearchSelection = {
-  address: string;
-  id: string;
-  isRegisteredPlace: boolean;
-  lat: number;
-  lng: number;
-  name: string;
-  roadAddress: string;
-};
+export type { MapSearchSelection };
 
 type MapSearchOverlayProps = {
   centerLat: number;
