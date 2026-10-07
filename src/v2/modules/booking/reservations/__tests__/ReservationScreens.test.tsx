@@ -496,10 +496,14 @@ describe('V2 reservation screens', () => {
     ).toBeVisible();
   });
 
-  test('실패 후 동일 제출 재시도에는 같은 idempotency key를 쓴다', async () => {
+  test.each([
+    new ApiError('private-network', { isNetworkError: true }),
+    new ApiError('private-timeout', { code: 'ETIMEDOUT' }),
+    new ApiError('private-response-loss', { status: 500 }),
+  ])('결과 미확인 시 자동 재제출 없이 동일 확인에 같은 idempotency key를 쓴다: $message', async error => {
     mockPlace();
     const mutate = jest.fn((_body, options) => {
-      options?.onError?.(new Error('network'), undefined, undefined);
+      options?.onError?.(error, undefined, undefined);
     });
     mockCreateReservation(mutate);
     jest.mocked(useAvailabilities).mockReturnValue({
@@ -514,6 +518,7 @@ describe('V2 reservation screens', () => {
     await fillBooker(user);
     await user.press(screen.getByTestId('v2-reservation-submit'));
     expect(mutate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('v2-reservation-success-screen')).toBeNull();
     const firstKey = mutate.mock.calls[0][0].idempotencyKey;
     await user.press(screen.getByTestId('v2-reservation-submit'));
     expect(mutate).toHaveBeenCalledTimes(2);
