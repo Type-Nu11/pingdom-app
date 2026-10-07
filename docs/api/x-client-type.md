@@ -55,3 +55,31 @@
 7. **CORS**: 웹 클라이언트가 같은 헤더를 보내게 된다면 `Access-Control-Allow-Headers`에 `X-Client-Type` 허용이 필요하다
    (앱은 CORS 대상이 아님).
 8. **API 계약 문서 반영**: 공개 API/프록시 계약 문서에 용도, 허용 값, 필수화 시점, 누락 시 처리 방식을 반영 요청.
+
+
+## 디바이스 시각 헤더
+
+프록시 담당자 요청에 따라 앱 API에는 `X-Timestamp`도 전송한다.
+값은 디바이스의 `Math.floor(Date.now() / 1000)`으로 만든 Unix 시간(UTC 기준 정수 초)의 문자열이다.
+V2 API, PUT fetch 대체 요청, 공용 axios, 토큰 갱신과 401 재시도마다 새로 생성한다.
+호출자가 넣은 과거 timestamp는 덮어쓰며 외부 SDK·환율·카카오 요청에는 추가하지 않는다.
+추가 서명 헤더 정책 및 디바이스 시각 오차 허용 범위는 서버 계약 확인이 필요하다.
+
+앱 버전은 `src/v2/shared/config/appMetadata.json`에서 정의하며 Expo 빌드 설정과 API 헤더가 같은 값을 사용한다.
+`X-App-Version`은 현재 `1.0.0`이며 공통 API·인증·갱신·재시도·PUT fallback에 적용된다.
+
+## 설치 ID와 남은 서명 계약
+
+`X-Device-Id`는 앱 설치 저장소의 UUID v4를 사용한다. 동시 요청은 같은 ID를 사용하고 앱 재실행 후에도 유지된다.
+운영 composition에서 ID 공급자를 주입하며 GET/POST/PUT/PATCH/DELETE, 인증 및 토큰 갱신·재시도에 적용한다.
+2026-10-04 서버 develop 로그인 DTO와 배포 명세에서는 디바이스/세션 서명 키 발급 API 또는 응답 필드를 찾지 못했다.
+로컬 MVP 문서는 HMAC-SHA256 서명과 서버 발급 키를 요구하지만 실제 프록시와의 일치 여부는 확인되지 않았다.
+서명 키 발급/등록·회전/폐기 계약이 확보되기 전에는 제품 키나 가짜 서명을 앱에 넣지 않는다.
+
+## 2026-10-04 실제 연결 확인
+
+- timestamp·앱 버전·설치 UUID를 포함한 토큰 없는 `GET /places/map` 요청은 필수 헤더 400 대신 인증 401을 반환했다. 서명 검사가 없다는 증거는 아니다.
+- 로그인된 Android 앱의 `POST /routes`는 404를 반환했다. 공개 배포 명세에는 POST /routes가 있지만, `/routes`와 `/routes/`의 확인 요청은 모두 HTML 404를 반환했다.
+- 앱 연결 코드와 별개로 프록시 라우팅·실제 API 배포 확인이 필요하다. 실제 경로 성공 응답은 아직 검증하지 못했다.
+- 자동 검증: `npm run check:v2`, `npm run typecheck`, 관련 Jest 115개 및 API/설치 ID node 테스트 21개 통과.
+- V1 dependency delta: `none` (공용 transport·운영 composition 경계 수정, V1 feature 수정 없음).

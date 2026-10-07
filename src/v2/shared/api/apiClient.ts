@@ -2,7 +2,8 @@ import axios, { type AxiosInstance } from 'axios';
 
 import { env } from '../config';
 import { ApiError, toApiError } from './ApiError';
-import { withClientTypeHeader } from './clientType';
+import { withDeviceRequestHeaders, configureApiDeviceIdProvider } from './clientType';
+export { configureApiDeviceIdProvider };
 import { logRequestFailure } from './requestDiagnostics';
 import { mockApiClient } from './mock/mockApiClient';
 
@@ -58,7 +59,7 @@ async function withAuthorization(
 
   return {
     ...options,
-    headers: withClientTypeHeader(token
+    headers: await withDeviceRequestHeaders(token
       ? { ...options.headers, Authorization: `Bearer ${token}` }
       : options.headers),
   };
@@ -167,10 +168,10 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       const startedAt = Date.now();
 
       try {
-        // Collection routes redirect slashless requests to an insecure upstream
-        // URL on the deployed proxy. Request the canonical HTTPS path directly.
+        // The places collection needs the deployed proxy's slash workaround.
+        // Other collections must keep their slashless OpenAPI routes.
         const canonicalPath = path.replace(
-          /^\/(places|reservations|coupons|location-check-ins)(?=[?#]|$)/,
+          /^\/(places)(?=[?#]|$)/,
           '/$1/',
         );
         const response = await getTransport().get<TResponse>(

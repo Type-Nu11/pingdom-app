@@ -55,7 +55,11 @@
     "typecheck": "tsc --noEmit",
     "web": "expo start --web",
     "sync:voice-ai-openapi": "node scripts/sync-voice-ai-openapi.mjs",
-    "generate:voice-ai-api-types": "openapi-typescript docs/api/voice-ai.openapi.json -o src/v2/shared/api/generated/voiceAi.ts"
+    "generate:voice-ai-api-types": "openapi-typescript docs/api/voice-ai.openapi.json -o src/v2/shared/api/generated/voiceAi.ts",
+    "sync:routes-openapi": "node scripts/sync-routes-openapi.mjs",
+    "generate:routes-api-types": "openapi-typescript docs/api/routes.openapi.json -o src/v2/shared/api/generated/routes.ts",
+    "check:routes-api-types": "node scripts/check-generated-routes-api-types.mjs",
+    "test:v2-routes": "jest --runInBand src/v2/modules/place/map/routes/__tests__"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
