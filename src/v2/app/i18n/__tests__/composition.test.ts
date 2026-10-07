@@ -61,6 +61,10 @@ test('preserves assembled translations outside reviewed feature copy changes', (
       ? '다른 사람들에게 이 장소의 좋은 점을 알려주세요.'
       : 'Tell others what you liked about this place.';
     const voiceAssistant = baseline[language].translation.voiceAssistant;
+    // AI session error additions are verified by VoiceCommandErrors.test.tsx in all languages.
+    delete voiceAssistant.sessionErrors;
+    delete voiceAssistant.picker;
+    delete voiceAssistant.conversation;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
     delete voiceAssistant.brand;

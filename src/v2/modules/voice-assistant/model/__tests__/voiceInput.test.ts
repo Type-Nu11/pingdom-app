@@ -1,9 +1,9 @@
-import { createVoiceInputController, unavailableSpeechAdapter, validateVoiceInput, VOICE_SILENCE_MS, type MicrophonePermission, type SpeechEvent, type SpeechInputAdapter, type OnFinalInput } from '../voiceInput';
+import { createVoiceInputController, getVoiceSilenceMs, unavailableSpeechAdapter, validateVoiceInput, VOICE_SILENCE_MS, type MicrophonePermission, type SpeechEvent, type SpeechInputAdapter, type OnFinalInput } from '../voiceInput';
 
 function setup(permission: MicrophonePermission = 'granted', callback: OnFinalInput = jest.fn(() => 'localOnly')) {
   let emit!: (event: SpeechEvent) => void;
   let signal!: AbortSignal;
-  const session = { start: jest.fn(), stop: jest.fn(), cancel: jest.fn() };
+  const session = { start: jest.fn(() => emit({ type: 'activity', speaking: false })), stop: jest.fn(), cancel: jest.fn() };
   const adapter: SpeechInputAdapter = {
     available: true,
     getPermission: jest.fn(async () => permission),
@@ -16,7 +16,92 @@ function setup(permission: MicrophonePermission = 'granted', callback: OnFinalIn
 const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; };
 afterEach(() => jest.useRealTimers());
 
-test('final speech is submitted once after five seconds of silence without a keyboard action', async () => {
+test.each(['근처 카페 찾아줘', '예약해줘', '메뉴 보여 주세요!', '가격 알려줄래요?', '추천해 주시겠어요?', '검색해주세요.'])('completed request uses a one-second wait: %s', text => {
+  expect(getVoiceSilenceMs(text)).toBe(1000);
+});
+
+test.each(['저기요', '예약하려는데요', '내일 오후에', '두 명이', '찾아줘 그리고', '알려줘야', '카페 검색', 'find a cafe', ''])('ambiguous or unfinished expression keeps three seconds: %s', text => {
+  expect(getVoiceSilenceMs(text)).toBe(3000);
+});
+
+test.each(['partial', 'final'] as const)('completed %s stops capture after one second of acoustic quiet despite repeated results', async type => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('ko-KR');
+  x.emit({ type, text: '카페 찾아줘' });
+  await jest.advanceTimersByTimeAsync(999);
+  x.emit({ type: 'activity', speaking: false });
+  x.emit({ type, text: '카페 찾아줘' });
+  expect(x.callback).not.toHaveBeenCalled();
+  expect(x.session.stop).not.toHaveBeenCalled();
+  await jest.advanceTimersByTimeAsync(1);
+  if (type === 'partial') {
+    expect(x.session.stop).toHaveBeenCalledTimes(1);
+    expect(x.callback).not.toHaveBeenCalled();
+    x.emit({ type: 'final', text: '카페 찾아줘' });
+    await Promise.resolve();
+  }
+  expect(x.session.cancel).toHaveBeenCalledTimes(1);
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  x.emit({ type: 'final', text: '카페 찾아줘' });
+  await jest.advanceTimersByTimeAsync(3000);
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  x.controller.dispose();
+});
+
+test('continuing a completed request restores three seconds and a later completion shortens it again', async () => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('ko-KR');
+  x.emit({ type: 'partial', text: '카페 찾아줘' });
+  await jest.advanceTimersByTimeAsync(800);
+  x.emit({ type: 'activity', speaking: true });
+  x.emit({ type: 'activity', speaking: false });
+  x.emit({ type: 'partial', text: '카페 찾아줘 그리고' });
+  await jest.advanceTimersByTimeAsync(2999);
+  expect(x.session.stop).not.toHaveBeenCalled();
+  x.emit({ type: 'activity', speaking: true });
+  x.emit({ type: 'activity', speaking: false });
+  x.emit({ type: 'partial', text: '카페 찾아줘 그리고 메뉴 알려줘' });
+  await jest.advanceTimersByTimeAsync(999);
+  expect(x.session.stop).not.toHaveBeenCalled();
+  await jest.advanceTimersByTimeAsync(1);
+  expect(x.session.stop).toHaveBeenCalledTimes(1);
+  x.emit({ type: 'final', text: '카페 찾아줘 그리고 메뉴 알려줘' });
+  await Promise.resolve();
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: '카페 찾아줘 그리고 메뉴 알려줘' }));
+  x.controller.dispose();
+});
+
+test.each(['partial', 'final'] as const)('repeated acoustic quiet and duplicate %s results cannot prolong capture past three seconds', async type => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('ko-KR');
+  x.emit({ type, text: '근처 카페' });
+  for (let elapsed = 250; elapsed < 3000; elapsed += 250) {
+    await jest.advanceTimersByTimeAsync(250);
+    x.emit({ type: 'activity', speaking: false });
+    x.emit({ type, text: '근처 카페' });
+  }
+  expect(x.controller.getSnapshot().phase).toBe('listening');
+  await jest.advanceTimersByTimeAsync(250);
+  if (type === 'partial') {
+    expect(x.session.stop).toHaveBeenCalledTimes(1);
+    expect(x.controller.getSnapshot().phase).toBe('processing');
+    expect(x.callback).not.toHaveBeenCalled();
+    x.emit({ type: 'final', text: '근처 카페' });
+    await Promise.resolve();
+  }
+  expect(x.session.cancel).toHaveBeenCalledTimes(1);
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  x.emit({ type: 'final', text: '근처 카페' });
+  await jest.advanceTimersByTimeAsync(3000);
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  x.controller.dispose();
+});
+
+test('final speech is submitted once after three seconds of silence without a keyboard action', async () => {
   jest.useFakeTimers();
   const x = setup();
   const phases: string[] = [x.controller.getSnapshot().phase];
@@ -27,6 +112,7 @@ test('final speech is submitted once after five seconds of silence without a key
   x.emit({ type: 'activity', speaking: true });
   expect(x.controller.getSnapshot().speaking).toBe(true);
   x.emit({ type: 'partial', text: 'partial private text' });
+  x.emit({ type: 'activity', speaking: false });
   await x.controller.submit();
   expect(x.callback).not.toHaveBeenCalled();
   expect(x.controller.getSnapshot().partial).toBe('partial private text');
@@ -45,15 +131,16 @@ test('final speech is submitted once after five seconds of silence without a key
   x.controller.dispose();
 });
 
-test('new speech within five seconds restarts the clock and appends a new final segment', async () => {
+test('new speech within three seconds restarts the clock and appends a new final segment', async () => {
   jest.useFakeTimers();
   const x = setup();
   await x.controller.start('ko-KR');
   x.emit({ type: 'final', text: '근처 카페' });
-  await jest.advanceTimersByTimeAsync(4000);
+  await jest.advanceTimersByTimeAsync(2000);
   x.emit({ type: 'partial', text: '조용한 곳' });
   x.emit({ type: 'activity', speaking: true });
-  await jest.advanceTimersByTimeAsync(4000);
+  x.emit({ type: 'activity', speaking: false });
+  await jest.advanceTimersByTimeAsync(2000);
   expect(x.callback).not.toHaveBeenCalled();
   x.emit({ type: 'final', text: '조용한 곳' });
   await jest.advanceTimersByTimeAsync(999);
@@ -61,6 +148,30 @@ test('new speech within five seconds restarts the clock and appends a new final 
   await jest.advanceTimersByTimeAsync(1);
   expect(x.callback).toHaveBeenCalledTimes(1);
   expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: '근처 카페 조용한 곳', source: 'voice' }));
+  x.controller.dispose();
+});
+
+test('a new final-only segment extends capture but a delayed final following a partial does not', async () => {
+  jest.useFakeTimers();
+  const x = setup();
+  await x.controller.start('ko-KR');
+  x.emit({ type: 'final', text: '근처' });
+  await jest.advanceTimersByTimeAsync(2000);
+  x.emit({ type: 'activity', speaking: true });
+  x.emit({ type: 'activity', speaking: false });
+  x.emit({ type: 'final', text: '카페' });
+  await jest.advanceTimersByTimeAsync(2000);
+  expect(x.callback).not.toHaveBeenCalled();
+  x.emit({ type: 'activity', speaking: true });
+  x.emit({ type: 'activity', speaking: false });
+  x.emit({ type: 'partial', text: '찾아줘' });
+  await jest.advanceTimersByTimeAsync(500);
+  x.emit({ type: 'final', text: '찾아줘' });
+  await jest.advanceTimersByTimeAsync(499);
+  expect(x.callback).not.toHaveBeenCalled();
+  await jest.advanceTimersByTimeAsync(1);
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: '근처 카페 찾아줘' }));
   x.controller.dispose();
 });
 
@@ -293,7 +404,8 @@ test('typing during a pending voice handoff cancels it and allows a fresh text r
   expect(callback).toHaveBeenCalledTimes(2);
   pending.resolve('accepted');
   await Promise.resolve();
-  expect(x.controller.getSnapshot()).toMatchObject({ draft: 'new text request', delivery: 'accepted' });
+  expect(x.controller.getSnapshot()).toMatchObject({ draft: '', delivery: 'accepted' });
+  expect(callback.mock.calls[1][0].text).toBe('new text request');
   x.controller.dispose();
 });
 

@@ -3,6 +3,7 @@ import { VOICE_COMMAND_POLICIES } from '../voiceAssistantCommandPolicy';
 import type { VoiceAssistantCommand, ProviderEnvelope, AppCommandResult } from '../voiceAssistantCommand.types';
 
 const commands = {
+  searchNearbyPlaces: { command: 'searchNearbyPlaces', args: { useCurrentLocation: true } },
   searchNearbyReservablePlaces: { command: 'searchNearbyReservablePlaces', args: {
     touristCategory: 'CAFE', date: '2028-02-29', startTime: '09:00', endTime: '18:00', quantity: 2, useCurrentLocation: true,
   } },
@@ -141,7 +142,7 @@ describe('provider trust boundary', () => {
 });
 
 describe('execution policy invariants (no executor in this spike)', () => {
-  it.each(['searchNearbyReservablePlaces', 'getPlaceDetails', 'getAvailabilities'] as const)('%s allows only automatic reads', (name) => {
+  it.each(['searchNearbyPlaces', 'searchNearbyReservablePlaces', 'getPlaceDetails', 'getAvailabilities'] as const)('%s allows only automatic reads', (name) => {
     expect(VOICE_COMMAND_POLICIES[name]).toMatchObject({ classification: 'READ', automaticAction: 'query', allowsMutation: false, requiresActiveSession: true, requiresReplayCheck: true });
   });
   it('preparing a draft never authorizes a mutation and must recheck availability', () => {

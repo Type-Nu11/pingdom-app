@@ -14,7 +14,10 @@ export interface paths {
         /** 내 예약 목록 조회 */
         get: operations["listMyReservations"];
         put?: never;
-        /** 예약 생성 */
+        /**
+         * 예약 생성
+         * @description confirmationToken을 제공하면 확인한 대상·시간·인원·금액·정책을 원자적으로 검증합니다. 토큰 생략은 기존 터치 계약이며 확인 조건 보장은 없습니다. 성공은 예약 생성(PENDING)이며 결제 성공이 아닙니다. 응답 유실에는 동일 키·토큰·본문을 재전송하세요. 사용자별 키는 예약 또는 거절 기록이 보존되는 동안 만료하지 않습니다. 동일 요청의 성공은 견적 만료 후에도 201로 복구하며, 확정 거절은 같은 오류로 복구합니다. timeout/5xx는 결과 불명이므로 실패로 확정하거나 새 키를 만들지 않습니다. 조건 재확인 후 새 의도는 새 토큰·키로 제출합니다.
+         */
         post: operations["createReservation"];
         delete?: never;
         options?: never;
@@ -69,6 +72,26 @@ export interface paths {
         };
         /** 장소 예약 가능 시간 조회 */
         get: operations["listPlaceAvailabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/places/{placeId}/availabilities/{availabilityId}/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 예약 전 견적·취소 조건 조회
+         * @description 활성 일반 사용자 본인의 확인 토큰을 준비합니다. 예약 생성·결제·재고 점유는 수행하지 않습니다. 유효기간은 최대 5분이며 슬롯 시작 전까지입니다. 사용자 확인 직전에 다시 조회하세요.
+         */
+        get: operations["getReservationQuote"];
         put?: never;
         post?: never;
         delete?: never;
@@ -234,6 +257,55 @@ export interface components {
              */
             refundedAt: string | null;
         };
+        /** @description 사용자가 확인할 예약 조건. 금액은 최소 통화 단위 정수이며 반올림 없이 단가×인원+예약당 추가 비용으로 계산 */
+        ReservationConfirmation: {
+            /** Format: int64 */
+            placeId: number;
+            placeName: string;
+            /** Format: int64 */
+            availabilityId: number;
+            /** @enum {string} */
+            productType: "GENERAL" | "TICKET" | "CLASS";
+            /** Format: int64 */
+            productId: number | null;
+            productName: string | null;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** Format: int32 */
+            quantity: number;
+            timezone: string;
+            /** Format: int64 */
+            unitAmountMinor: number;
+            /** Format: int64 */
+            additionalAmountMinor: number;
+            /** Format: int64 */
+            totalAmountMinor: number;
+            currency: string;
+            /** Format: int32 */
+            currencyFractionDigits: number;
+            paymentRequired: boolean;
+            cancellable: boolean;
+            /** Format: date-time */
+            cancellationDeadline: string | null;
+            /**
+             * Format: int64
+             * @description 기한 내 취소 수수료. 현재 지원 정책은 0인 전액 환불
+             */
+            cancellationFeeMinor: number;
+            /**
+             * Format: int64
+             * @description 기한 내 취소 환불액. 취소 불가이면 0
+             */
+            refundableAmountMinor: number;
+            /** Format: int64 */
+            conditionsVersion: number;
+            /** Format: int64 */
+            productVersion: number | null;
+            /** Format: date-time */
+            expiresAt: string;
+        } | null;
         ReservationCreateRequest: {
             /** Format: int64 */
             availabilityId: number;
@@ -243,6 +315,8 @@ export interface components {
             bookerName: string;
             bookerPhone: string;
             requestNote?: string;
+            /** @description 최신 견적의 확인 토큰. 생략하면 기존 터치 예약 계약이며 확인 조건 보장은 적용되지 않음 */
+            confirmationToken?: string | null;
         };
         ReservationPageResponse: {
             reservations?: components["schemas"]["ReservationResponse"][];
@@ -255,6 +329,13 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
             hasNext?: boolean;
+        };
+        ReservationQuoteResponse: {
+            /** @description 본인 예약 생성에만 사용 가능한 불투명 토큰. 같은 토큰은 하나의 예약 의도에만 사용 */
+            confirmationToken: string;
+            confirmation: components["schemas"]["ReservationConfirmation"];
+            /** Format: int32 */
+            remainingCapacity: number;
         };
         /** @description 관광객 예약 응답 */
         ReservationResponse: {
@@ -305,6 +386,7 @@ export interface components {
             canceledBy?: number;
             /** Format: date-time */
             updatedAt: string;
+            confirmation: components["schemas"]["ReservationConfirmation"];
         };
         /** @description 필드 검증 오류 응답 */
         ValidationErrorResponse: {
@@ -423,6 +505,42 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description QUOTE_NOT_FOUND: 본인 견적 부재. RESERVATION_SLOT_NOT_FOUND: 슬롯 부재. AVAILABILITY_NOT_FOUND: 기존 터치 요청의 예약 가능 시간 부재. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED: 같은 키/토큰의 다른 요청. QUOTE_REQUEST_MISMATCH: 대상·인원 불일치. QUOTE_CONDITIONS_CHANGED, RESERVATION_SLOT_INACTIVE, RESERVATION_PRODUCT_UNAVAILABLE, RESERVATION_CAPACITY_EXCEEDED: 최신 조건을 다시 확인해야 합니다. AVAILABILITY_CAPACITY_EXCEEDED: 기존 터치 요청의 정원 부족. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description QUOTE_EXPIRED: 견적 만료. 최신 조건과 새 토큰으로 재확인이 필요합니다. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description QUOTE_TERMS_UNAVAILABLE: 가격/취소 정책 미설정 또는 계산 불가. 무료/취소 불가로 추정하지 않습니다. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getMyReservation: {
@@ -512,6 +630,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description CANCELLATION_NOT_ALLOWED: 취소 불가 또는 기한 경과. RESERVATION_REFUND_REQUIRED: 처리 중 결제/미환불 결제. INVALID_RESERVATION_STATE: 확정되지 않은 예약. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     listPlaceAvailabilities: {
@@ -545,6 +672,94 @@ export interface operations {
             };
             /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getReservationQuote: {
+        parameters: {
+            query: {
+                quantity: number;
+            };
+            header?: never;
+            path: {
+                placeId: number;
+                availabilityId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReservationQuoteResponse"];
+                };
+            };
+            /** @description 요청 값 검증 실패 (VALIDATION_FAILED) 또는 도메인 입력 정책 위반 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description TOURIST_ACCOUNT_REQUIRED: 활성 일반 사용자만 견적을 조회할 수 있습니다. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description RESERVATION_SLOT_NOT_FOUND: 슬롯 부재/장소 불일치. 재확인이 필요합니다. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description QUOTE_CONDITIONS_CHANGED: 조건 변경. RESERVATION_SLOT_INACTIVE: 비활성/시작된 슬롯. RESERVATION_PRODUCT_UNAVAILABLE: 잘못된 상품 연결. RESERVATION_CAPACITY_EXCEEDED: 정원 부족. 재확인이 필요합니다. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description QUOTE_TERMS_UNAVAILABLE: 가격/취소 정책 미설정 또는 계산 불가. 무료/취소 불가로 추정하지 않습니다. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description QUOTE_RATE_LIMITED: 사용자당 시간당 60건 또는 미사용 견적 120건 한도 초과. 잠시 후 다시 조회하세요. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

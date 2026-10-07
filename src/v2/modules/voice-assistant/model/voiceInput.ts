@@ -1,7 +1,11 @@
+import { createSilenceTimer } from '../speech-endpointing/silenceTimer';
+import type { CompletionContext } from '../speech-endpointing/completion';
+export { getVoiceSilenceMs, VOICE_SILENCE_MS, VOICE_COMPLETED_REQUEST_SILENCE_MS } from '../speech-endpointing/completion';
+
 export type VoiceInputPhase = 'idle' | 'permissionRequesting' | 'listening' | 'processing' | 'final' | 'canceled' | 'permissionDenied' | 'unavailable' | 'error';
 export type MicrophonePermission = 'undetermined' | 'granted' | 'denied' | 'blocked' | 'restricted';
 export type SpeechFailure = 'interrupted' | 'noSpeech' | 'unavailable' | 'network' | 'failed';
-export type SpeechEvent = { type: 'partial' | 'final'; text: string } | { type: 'activity'; speaking: boolean } | { type: 'processing' } | { type: 'ended' } | { type: 'error'; reason: SpeechFailure };
+export type SpeechEvent = { type: 'partial' | 'final'; text: string } | { type: 'activity'; speaking: boolean; quietForMs?: number } | { type: 'processing' } | { type: 'ended'; premature?: boolean } | { type: 'error'; reason: SpeechFailure };
 /** A session owns its listeners and native buffers. cancel must synchronously detach
  * listeners, abort pending startup and stop capture; it is idempotent. No disk/log storage.
  * Implementations must normalize OS microphone AND speech authorization, emit a terminal
@@ -32,7 +36,6 @@ export type VoiceInputSnapshot = {
   delivery: 'none' | 'pending' | 'localOnly' | 'accepted';
 };
 export const MAX_VOICE_INPUT_LENGTH = 2000;
-export const VOICE_SILENCE_MS = 5000;
 export function validateVoiceInput(value: string): { text: string; error: null } | { text: null; error: 'empty' | 'tooLong' } {
   const text = value.trim();
   if (!text) return { text: null, error: 'empty' };
@@ -58,8 +61,12 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
   let abort: AbortController | undefined;
   let submittedText: string | undefined;
   let deadline: ReturnType<typeof setTimeout> | undefined;
-  let silenceTimer: ReturnType<typeof setTimeout> | undefined;
-  let lastSpeechAt: number | null = null;
+  let completionContext: CompletionContext = {};
+  const endpoint = createSilenceTimer(() => {
+    if (!live(epoch) || snapshot.phase !== 'listening') return;
+    if (finalizedText && !snapshot.partial) submitFinalVoice();
+    else void stopCapture(epoch);
+  });
   let finalizedText = '';
   let lastFinalSegment = '';
   let lastPartialSegment = '';
@@ -75,14 +82,12 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     epoch += 1;
     if (deadline) clearTimeout(deadline);
     deadline = undefined;
-    if (silenceTimer) clearTimeout(silenceTimer);
-    silenceTimer = undefined;
+    endpoint.reset();
     abort?.abort();
     abort = undefined;
     const owned = session;
     session = undefined;
     try { owned?.cancel(); } catch { /* Native failure stays within this feature. */ }
-    lastSpeechAt = null;
     finalizedText = '';
     lastFinalSegment = '';
     lastPartialSegment = '';
@@ -104,6 +109,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
   };
   const submitInput = async () => {
     if (disposed || !foreground || busy()) return;
+    if (!snapshot.draft.trim() && submittedText !== undefined) return;
     const result = validateVoiceInput(snapshot.draft);
     if (result.error) { update({ error: result.error }); return; }
     if (submittedText === result.text) return;
@@ -111,7 +117,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     release();
     const id = epoch;
     abort = new AbortController();
-    update({ delivery: 'pending', error: null });
+    update({ delivery: 'pending', error: null, draft: '' });
     try {
       const delivery = await onFinalInput({ text: result.text!, source: snapshot.source, signal: abort.signal });
       if (live(id)) update({ phase: 'final', delivery });
@@ -132,29 +138,19 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     if (nativeEnded) { if (finalizedText && !snapshot.partial) submitFinalVoice(); else fail('noSpeech'); return; }
     awaitingFinal = true;
     pendingPartialAtStop = !!snapshot.partial;
-    if (silenceTimer) clearTimeout(silenceTimer);
-    silenceTimer = undefined;
+    endpoint.reset();
     update({ phase: 'processing', partial: '', speaking: false });
     if (deadline) clearTimeout(deadline);
     deadline = setTimeout(() => { if (live(id)) fail('noSpeech'); }, 10000);
     try { await session?.stop(); } catch { if (live(id)) fail('failed'); }
   };
-  const scheduleSilence = (id: number) => {
-    if (silenceTimer) clearTimeout(silenceTimer);
-    silenceTimer = setTimeout(() => {
-      silenceTimer = undefined;
-      if (!live(id) || snapshot.phase !== 'listening') return;
-      if (finalizedText && !snapshot.partial) submitFinalVoice();
-      else void stopCapture(id);
-    }, Math.max(0, VOICE_SILENCE_MS - (Date.now() - (lastSpeechAt ?? Date.now()))));
-  };
-  const markSpeech = (id: number) => { lastSpeechAt = Date.now(); scheduleSilence(id); };
   return {
     getSnapshot: () => snapshot,
     subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     async start(locale: 'ko-KR' | 'en-US') {
       if (disposed || !foreground || busy()) return;
       release();
+      endpoint.setContext(completionContext);
       submittedText = undefined; // a new explicit capture may repeat a previous request
       update({ phase: 'permissionRequesting', partial: '', speaking: false, draft: '', error: null, delivery: 'none', source: 'voice' });
       if (!adapter.available) { update({ phase: 'unavailable' }); return; }
@@ -173,12 +169,20 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
           if (event.type === 'error') {
             if (event.reason === 'noSpeech' && finalizedText && !snapshot.partial && !pendingPartialAtStop) {
               nativeEnded = true;
+              endpoint.activity(false);
               if (awaitingFinal) submitFinalVoice();
             } else fail(event.reason);
             return;
           }
           if (event.type === 'ended') {
+            if (event.premature) {
+              const stableText = finalizedText;
+              release();
+              update({ phase: 'error', error: 'interrupted', draft: stableText, partial: '', speaking: false, delivery: 'none' });
+              return;
+            }
             nativeEnded = true;
+            endpoint.activity(false);
             if (awaitingFinal) { if (finalizedText && !pendingPartialAtStop) submitFinalVoice(); else fail('noSpeech'); }
             else if (!finalizedText) fail('noSpeech');
             return;
@@ -187,7 +191,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
           if (event.type === 'activity') {
             if (snapshot.phase === 'listening') {
               if (snapshot.speaking !== event.speaking) update({ speaking: event.speaking });
-              if (event.speaking && lastSpeechAt !== null) markSpeech(id);
+              endpoint.activity(event.speaking, event.quietForMs);
             }
             return;
           }
@@ -196,7 +200,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
               lastPartialSegment = event.text;
               newPartialSinceFinal = true;
               update({ partial: [finalizedText, event.text].filter(Boolean).join(' ').slice(0, MAX_VOICE_INPUT_LENGTH) });
-              markSpeech(id);
+              endpoint.setText(snapshot.partial);
             }
             return;
           }
@@ -210,10 +214,9 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
           lastFinalSegment = result.text;
           lastPartialSegment = '';
           newPartialSinceFinal = false;
-          update({ draft: finalizedText, partial: '', speaking: false, source: 'voice' });
+          update({ draft: finalizedText, partial: '', source: 'voice' });
           if (awaitingFinal) submitFinalVoice();
-          else if (lastSpeechAt === null) markSpeech(id);
-          else scheduleSilence(id); // a late native final does not restart the five-second silence clock
+          else endpoint.setText(finalizedText); // Recognition latency never resets acoustic quiet.
         } });
         if (!live(id)) { owned.cancel(); return; }
         session = owned;
@@ -234,6 +237,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     },
     submit: submitInput,
     cancel,
+    setCompletionContext(context: CompletionContext) { completionContext = context; },
     setForeground(active: boolean) { foreground = active; if (!active && !disposed) cancel(); },
     dispose() { disposed = true; cancel(); listeners.clear(); },
   };

@@ -76,7 +76,7 @@ test('first AI press shows the liquid intro once, then opens the assistant', asy
   await layout();
   await fireEvent.press(screen.getByRole('button', { name: 'AI 어시스턴트 열기' }));
   expect(await screen.findByTestId('map-assistant-intro')).toBeVisible();
-  expect(screen.getByText('음성 입력은 5초 동안 말하지 않으면 인식된 내용을 AI 서버에 자동 전송합니다. 텍스트 입력은 보내기를 누르면 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.')).toBeVisible();
+  expect(screen.getByText('명확한 한국어 요청·질문이나 인원 질문에 대한 답변은 무음이 감지된 뒤 1초, 그 외에는 3초 후 음성 입력을 종료합니다. 다시 말하면 대기 시간을 초기화합니다. 최종 인식된 내용만 AI 서버에 자동 전송합니다. 텍스트 입력은 보내기를 누르면 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.')).toBeVisible();
   expect(screen.queryByTestId('voice-assistant-screen')).toBeNull();
   expect(await AsyncStorage.getItem(MAP_ASSISTANT_INTRO_SEEN_KEY)).toBe('1');
   await fireEvent.press(screen.getByRole('button', { name: '확인하고 시작하기' }));
