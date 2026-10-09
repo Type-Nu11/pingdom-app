@@ -1,8 +1,6 @@
 export { ApiError, toApiError } from './ApiError';
 export {
   apiClient,
-  configureAppRequestMetadata,
-  getAppRequestHeaders,
   configureApiAccessTokenProvider,
   configureApiTransport,
   createApiClient,

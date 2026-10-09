@@ -1,5 +1,4 @@
-import { useCarDirections } from '../directions/useCarDirections';
-import CarDirectionsOverlay from '../directions/CarDirectionsOverlay';
+import CarRoutePreview from '../routes/components/CarRoutePreview';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
@@ -90,6 +89,13 @@ import {
 import { createFocusedPlaceMarker } from '../markers/utils/recommendationMarkers';
 import { selectRecommendationClickPayload } from '../../exploration';
 import { selectMapExplorationPlaceIds } from '../selection/utils/mapExplorationPlaceIds';
+import {
+  createExternalPlaceMarker,
+  getExternalPlaceKey,
+  resolveMapSearchSelection,
+  toExternalRouteDestination,
+  type ExternalMapPlace,
+} from '../selection/model/externalPlace';
 import { VisitVerificationMapCta } from '../../visit-verification';
 import { PlaceCouponCta } from '../../../booking/offers-coupons';
 import { LocationStatusOverlay } from '../presentation/components/MapStatusOverlays';
@@ -106,6 +112,10 @@ import {
 
 // Matches SHEET_RESTING_GAP in MapBottomSheet.
 const SHEET_RESTING_GAP = 8;
+// The external place card has no gallery or detail page, so its sheet hugs the measured card:
+// the 20 dp handle above it and the card's own height, estimated until the first layout.
+const EXTERNAL_PLACE_SHEET_HANDLE_HEIGHT = 20;
+const EXTERNAL_PLACE_CARD_ESTIMATED_HEIGHT = 218;
 
 const PLACE_ACTION_FEEDBACK_KEYS: Record<PlaceActionFeedback, string> = {
   'directions-failed': 'map.placeActions.directionsFailed',
@@ -187,6 +197,10 @@ export default function MapScreen({
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation();
+  const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
+  const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
+  const [externalRouteRole, setExternalRouteRole] = useState<'origin' | 'destination' | null>(null);
+  const [externalCardHeight, setExternalCardHeight] = useState(EXTERNAL_PLACE_CARD_ESTIMATED_HEIGHT);
   const center = location.coordinate;
   const userLat = center?.lat;
   const userLng = center?.lng;
@@ -303,6 +317,7 @@ export default function MapScreen({
   const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
   const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [manualCameraCenter, setManualCameraCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
@@ -386,17 +401,20 @@ export default function MapScreen({
     ? insets.top + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP
     : MAP_TOP_OVERLAY_METRICS.headerHeight + 2;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
+  const externalPlace = mapSection === 'map' && content.type === 'external-place' ? content.place : null;
+  const externalPlaceKey = externalPlace ? getExternalPlaceKey(externalPlace) : null;
   // All bottom-navigation tabs share the map home resting height.
   // Place previews and search retain their separate detail layout.
   const fullSheetHeight = Math.round(height);
-  const expandedTranslateY = isPlacePreview ? 0 : expandedSheetTop;
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const isBottomNavigationSheet = mapSection !== 'map'
     || content.type === 'home' || content.type === 'recommendations';
   const mediumVisibleHeight = isBottomNavigationSheet
     ? getMapHomeSheetVisibleHeight(fullSheetHeight, expandedSheetTop)
     : Math.min(
-      Math.round(442 * designScale) + SHEET_RESTING_GAP,
+      (externalPlace
+        ? EXTERNAL_PLACE_SHEET_HANDLE_HEIGHT + Math.ceil(externalCardHeight) + insets.bottom
+        : Math.round(442 * designScale)) + SHEET_RESTING_GAP,
       Math.round(height * 0.56),
     );
   const collapsedVisibleHeight = Math.min(
@@ -405,6 +423,8 @@ export default function MapScreen({
   );
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
+  // The external place card has nothing more to reveal, so its sheet never rises above medium.
+  const expandedTranslateY = isPlacePreview ? 0 : externalPlace ? mediumTranslateY : expandedSheetTop;
   const { jumpTo, panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
     collapsedTranslateY,
     expandedTranslateY,
@@ -419,6 +439,14 @@ export default function MapScreen({
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
+  useEffect(() => {
+    if (externalPlaceKey !== null && snapPoint === 'expanded') snapTo('medium');
+  // snapTo is recreated on every render; only the selection and snap point matter here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalPlaceKey, snapPoint]);
+  useEffect(() => {
+    setExternalRouteRole(null);
+  }, [externalPlaceKey, isFocused]);
   useEffect(() => {
     void syncProfileLanguage(profile?.language);
   }, [profile?.language]);
@@ -551,27 +579,33 @@ export default function MapScreen({
   }, [selectedPlaceBase, selectedPlacePresentation]);
   const selectedPlaceActionTarget = useMemo(() => selectedPlace ? ({
     address: selectedPlace.address,
+    category: normalizePlaceCategory(selectedPlace.category),
     latitude: selectedPlace.latitude,
     longitude: selectedPlace.longitude,
     name: selectedPlace.name,
     placeId: selectedPlace.id,
     userLocation: center ? { latitude: center.lat, longitude: center.lng } : null,
   }) : null, [center, selectedPlace]);
+  useEffect(() => {
+    setRoutePreviewPlaceId(null);
+  }, [selectedPlaceActionTarget?.placeId, isFocused]);
   const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
     Alert.alert(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
   }, [t]);
   const {
     busyAction: placeActionBusy,
-    directions: openSelectedPlaceDirections,
     share: shareSelectedPlace,
   } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
-  const carDirections = useCarDirections(selectedPlaceActionTarget, isFocused && mapSection === 'map' && !isSearchOpen);
   const handleDirectionsPress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
-    setIsFollowingUser(false);
-    snapTo('collapsed');
-    void carDirections.load();
-  }, [carDirections.load, selectedPlaceActionTarget, snapTo]);
+    setRouteEndpointRole('destination');
+    setRoutePreviewPlaceId(place.id);
+  }, [selectedPlaceActionTarget]);
+  const handleDeparturePress = useCallback((place: DecisionPlace) => {
+    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    setRouteEndpointRole('origin');
+    setRoutePreviewPlaceId(place.id);
+  }, [selectedPlaceActionTarget]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     void shareSelectedPlace(selectedPlaceActionTarget);
@@ -628,6 +662,11 @@ export default function MapScreen({
     );
   }, [nearbyReservationCandidates, placeIdByAvailabilityId, reservationEntryPlace]);
   const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
+  const mapExternalPlace = shouldPresentMapSelection(snapPoint) ? externalPlace : null;
+  const externalRouteDestination = useMemo(
+    () => toExternalRouteDestination(externalPlace),
+    [externalPlace],
+  );
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;
     const operatingSummary = selectedPlacePresentation.operatingSummary
@@ -677,10 +716,13 @@ export default function MapScreen({
     if (
       content.type !== 'place-preview'
       || selectedPlace
-      || (hasSelectedPlace && isSelectedPlaceDetailPending && !selectedPlaceDetailError)
+      // A place opened by ID alone has no list entry to fall back on, so a failed detail
+      // request stays on the sheet's retry state instead of silently returning home.
+      || (hasSelectedPlace && (isSelectedPlaceDetailPending || Boolean(selectedPlaceDetailError)))
     ) return;
 
     setContent({ type: 'home' });
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
     snapTo('medium');
   }, [content, hasSelectedPlace, isSelectedPlaceDetailPending, selectedPlace, selectedPlaceDetailError, snapTo]);
@@ -735,15 +777,21 @@ export default function MapScreen({
     content.type,
     mapSelectedPlace,
   ]);
-  const visibleMapMarkers = useMemo(() => markersForSelectedPlace(
-    mapMarkers,
-    content.type === 'place-preview' ? mapSelectedPlace?.id ?? null : null,
-  ), [content.type, mapMarkers, mapSelectedPlace?.id]);
+  const visibleMapMarkers = useMemo(() => {
+    const externalPlaceMarker = createExternalPlaceMarker(mapExternalPlace);
+    if (externalPlaceMarker) return [externalPlaceMarker];
+
+    return markersForSelectedPlace(
+      mapMarkers,
+      content.type === 'place-preview' ? mapSelectedPlace?.id ?? null : null,
+    );
+  }, [content.type, mapExternalPlace, mapMarkers, mapSelectedPlace?.id]);
   useEffect(() => {
     if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
 
     setMapSection('map');
     setContent({ type: 'place-preview', placeId: openedBookmarkedPlaceId });
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     snapTo('medium');
     onClearOpenedBookmarkedPlace?.();
@@ -751,9 +799,10 @@ export default function MapScreen({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openedBookmarkedPlaceId]);
 
-  const dismissPlaceAt = useCallback((place: DecisionPlace) => {
+  const dismissPlaceAt = useCallback((place: { latitude: number; longitude: number }) => {
     setContent({ type: 'home' });
     setDismissedMarkerCenter({ lat: place.latitude, lng: place.longitude });
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_DISMISSED_ZOOM_LEVEL);
     jumpTo('medium');
@@ -775,12 +824,13 @@ export default function MapScreen({
 
     setContent({ type: 'place-preview', placeId: place.id });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     // Keep the close/bookmark targets stationary from the first detail frame.
     jumpTo('medium');
   };
-  const handlePlacePress = (place: DecisionPlace) => {
+  const handlePlacePress = (place: Pick<DecisionPlace, 'id'>) => {
     const clickPayload = selectRecommendationClickPayload({
       placeId: place.id,
       recommendationPlaceIds: recommendedPlaces.map((item) => item.id),
@@ -795,8 +845,21 @@ export default function MapScreen({
     setMapSection('map');
     setContent({ type: 'place-preview', placeId: place.id });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    snapTo('medium');
+  };
+  const openExternalPlace = (place: ExternalMapPlace) => {
+    setMapSection('map');
+    setContent({ type: 'external-place', place });
+    setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
+    // Without a usable coordinate the camera has nowhere to go, so it stays where it is.
+    if (place.coordinate) {
+      setIsFollowingUser(false);
+      setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    }
     snapTo('medium');
   };
   const handleRankedPlacePress = (place: RankedPlaceViewModel) => {
@@ -824,6 +887,7 @@ export default function MapScreen({
     setMapSection('map');
     setContent({ type: 'home' });
     setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
 
     try {
@@ -847,33 +911,39 @@ export default function MapScreen({
       dismissPlaceAt(selectedPlace);
       return;
     }
+    if (externalPlace?.coordinate) {
+      dismissPlaceAt(externalPlace.coordinate);
+      return;
+    }
 
     setContent({ type: 'home' });
+    setManualCameraCenter(null);
     setIsFollowingUser(true);
     setDismissedMarkerCenter(null);
     setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
     snapTo('medium');
-  }, [dismissPlaceAt, selectedPlace, snapTo]);
+  }, [dismissPlaceAt, externalPlace, selectedPlace, snapTo]);
 
   const handleLocatePress = useCallback(() => {
-    carDirections.clear();
     setContent({ type: 'home' });
     setDismissedMarkerCenter(null);
     setMapZoomLevel(MAP_LOCATE_ZOOM_LEVEL);
 
     // Native map props only react when followUser changes. Pulse the value so an
     // unchanged current coordinate can still be re-centered on every button press.
+    setManualCameraCenter(null);
     setIsFollowingUser(false);
     if (locateFollowFrame.current !== null) {
       cancelAnimationFrame(locateFollowFrame.current);
     }
     locateFollowFrame.current = requestAnimationFrame(() => {
       locateFollowFrame.current = null;
+      setManualCameraCenter(null);
       setIsFollowingUser(true);
     });
 
     snapTo('medium');
-  }, [carDirections.clear, snapTo]);
+  }, [snapTo]);
 
   useFocusEffect(useCallback(() => {
     reservationNavigationLock.current = false;
@@ -939,8 +1009,8 @@ export default function MapScreen({
     }
   };
 
-  const focusedPlace = mapSelectedPlace;
-  const { lat: mapCenterLat, lng: mapCenterLng } = selectMapCameraCenter({
+  const focusedPlace = mapSelectedPlace ?? mapExternalPlace?.coordinate ?? null;
+  const { lat: mapCenterLat, lng: mapCenterLng } = manualCameraCenter ?? selectMapCameraCenter({
     isFollowingUser, focusedPlace, designScale, dismissedMarkerCenter, center,
   });
   const isExpandedPlaceDetail = mapSection === 'map'
@@ -964,12 +1034,15 @@ export default function MapScreen({
           centerLat={mapCenterLat}
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
+          onCameraGesture={() => {
+            if (locateFollowFrame.current !== null) {
+              cancelAnimationFrame(locateFollowFrame.current);
+              locateFollowFrame.current = null;
+            }
+            setIsFollowingUser(false);
+            setManualCameraCenter({ lat: mapCenterLat, lng: mapCenterLng });
+          }}
           markers={visibleMapMarkers}
-          routePath={carDirections.state.route?.path.map((point) => ({ lat: point.latitude, lng: point.longitude }))}
-          routePaddingTop={insets.top + 180}
-          routePaddingBottom={collapsedVisibleHeight + 220}
-          routeStartLabel={t('map.card.actions.start')}
-          routeEndLabel={t('map.card.actions.arrive')}
           onCameraIdle={(coordinate) => {
             if (!Number.isFinite(coordinate.lat) || !Number.isFinite(coordinate.lng)) return;
             setViewportCenter((previous) => Math.abs(previous.lat - coordinate.lat) < 0.0001 && Math.abs(previous.lng - coordinate.lng) < 0.0001
@@ -981,15 +1054,16 @@ export default function MapScreen({
           zoomLevel={mapZoomLevel}
         />
       </View>
-      <CarDirectionsOverlay
-        {...carDirections.state}
-        top={height - collapsedVisibleHeight - 220}
-        onClose={carDirections.clear}
-        onRetry={() => void carDirections.load()}
-        onExternal={() => {
-          if (selectedPlaceActionTarget) void openSelectedPlaceDirections(selectedPlaceActionTarget);
-        }}
-      />
+      {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
+        <CarRoutePreview key={`${routeEndpointRole}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
+          initialEndpointRole={routeEndpointRole} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
+      )}
+      {isFocused && externalRouteRole !== null && externalRouteDestination && (
+        <CarRoutePreview key={`${externalRouteRole}:${externalPlaceKey}`}
+          initialEndpointRole={externalRouteRole} destination={externalRouteDestination} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={() => setExternalRouteRole(null)} onRefreshLocation={() => { void location.refresh(); }} />
+      )}
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
         <MapTopOverlay
           activeCategory={activeCategory}
@@ -1167,7 +1241,11 @@ export default function MapScreen({
               });
             }}
             onDetailPress={() => snapTo('expanded')}
+            onDeparturePress={handleDeparturePress}
             onDirectionsPress={handleDirectionsPress}
+            onExternalDeparturePress={() => setExternalRouteRole('origin')}
+            onExternalDirectionsPress={() => setExternalRouteRole('destination')}
+            onExternalPlaceLayout={setExternalCardHeight}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}
             onHandlePress={() => {
@@ -1208,7 +1286,7 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             onToggleRankedBookmark={handleToggleRankedBookmark}
             panHandlers={panHandlers}
-            placeActionBusy={carDirections.state.status === 'loading' ? 'directions' : placeActionBusy}
+            placeActionBusy={placeActionBusy}
             places={sheetPlaces}
             previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
             recommendationContext={recommendationPresentation.contextText}
@@ -1232,7 +1310,7 @@ export default function MapScreen({
         </View>
       {/* The community frames (Figma 4698:11054 etc.) keep the map clear of the
           visit-verification CTA; the sheet carries its own write action there. */}
-      {!isSearchOpen && content.type !== 'place-preview' && mapSection !== 'community' && onOpenVisitVerification ? (
+      {!isSearchOpen && content.type !== 'place-preview' && !externalPlace && mapSection !== 'community' && onOpenVisitVerification ? (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
           style={{
@@ -1267,9 +1345,14 @@ export default function MapScreen({
           }}
           onSelectPlace={(place) => {
             setIsSearchOpen(false);
-            const registeredPlace = allPlaces.find((item) => String(item.id) === place.id);
-            if (registeredPlace) {
-              handlePlacePress(registeredPlace);
+            const target = resolveMapSearchSelection(place);
+            if (target.kind === 'registered') {
+              // The server owns the canonical ID; the preview loads it even when it is off the map list.
+              handlePlacePress({ id: target.placeId });
+              return;
+            }
+            if (target.kind === 'external') {
+              openExternalPlace(target.place);
               return;
             }
             setContent({ type: 'results', query: place.name });

@@ -32,12 +32,12 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // Catalogs added after ko/en (#389 ja, #413 zh-CN/zh-TW, ...) have their key parity checked separately.
   for (const added of addedLanguages) delete baseline[added];
   for (const language of ['ko', 'en']) {
+    // #381 adds route preview copy.
+    delete baseline[language].translation.routes;
     // #392 adds the reviewed menu price conversion copy.
     delete baseline[language].translation.placeMenu.exchange;
     // #393 adds the reviewed first-run tutorial catalog.
     delete baseline[language].translation.mapTutorial;
-    // #381 adds the car route preview catalog.
-    delete baseline[language].translation.carDirections;
     // #390 reviews only shared error presentation and uncertain reservation outcomes.
     const apiError = baseline[language].translation.common.apiError;
     for (const key of ['timeout', 'server', 'rateLimited', 'mutationUnknown']) delete apiError[key];
@@ -87,6 +87,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     };
     // #389 moves the My Trip weekday header out of the component.
     delete baseline[language].translation.myPage.travel.weekdays;
+    // #419 adds the card copy for search results that are not PingDom places.
+    delete baseline[language].translation.map.externalPlace;
     // #399 adds the profile photo picker, retry, and permission copy.
     for (const key of [
       'avatarCameraPermissionDenied',

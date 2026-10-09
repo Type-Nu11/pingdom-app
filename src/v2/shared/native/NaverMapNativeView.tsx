@@ -27,23 +27,31 @@ export type NaverMapNativeMarker = {
     | 'music'
     | 'popup';
   id: string;
+  caption?: string;
   lat: number;
   lng: number;
   markerType?: 'default' | 'hot' | 'search';
 };
 
+/** Explicit camera command, applied only when cameraRevision changes. Padding is in dp/pt. */
+export type NaverMapCameraFit = {
+  north: number; south: number; east: number; west: number;
+  top: number; bottom: number; left: number; right: number;
+};
+
 export type NaverMapNativeViewProps = ViewProps & {
-  routePath?: { lat: number; lng: number }[];
-  routePaddingTop?: number;
-  routePaddingBottom?: number;
-  routeStartLabel?: string;
-  routeEndLabel?: string;
+  cameraFit?: NaverMapCameraFit;
+  logoTopMargin?: number;
+  cameraRevision?: number;
   centerLat: number;
   centerLng: number;
   followUser?: boolean;
   /** 앱의 최종 테마가 dark이면 true. 양쪽 네이티브 브리지에서 Navi + 야간 모드로 반영한다. */
   nightMode?: boolean;
   markers?: NaverMapNativeMarker[];
+  routeCoordinates?: { lat: number; lng: number }[];
+  onRouteAnchor?: (event: NativeSyntheticEvent<{ x: number; y: number }>) => void;
+  onCameraGesture?: (event: NativeSyntheticEvent<Record<string, never>>) => void;
   onCameraIdle?: (event: NaverMapCameraIdleEvent) => void;
   onMarkerPress?: (event: NaverMapMarkerPressEvent) => void;
   userLat?: number;

@@ -32,3 +32,8 @@
 
 타입 재생성: `npm run generate:routes-api-types`.
 타입 일치 확인: `npm run check:routes-api-types`.
+# dev 병합 후 구현 위치
+
+기존 `map/directions` 구현은 `map/routes`의 경로 편집·미리보기로 통합했습니다.
+공통 요청 헤더는 `shared/api/clientType.ts`, 설치 UUID는 `shared/native/installationId.ts`에서 관리합니다.
+아래 내용은 최초 구현 당시의 검증 기록이며, 병합 후에도 자동차 경로 요청의 15초 타임아웃과 `ApiError`의 `Retry-After` 정보 처리를 유지합니다.

@@ -1,3 +1,4 @@
+import { configureApiDeviceIdProvider } from '../../../v2/shared/api/clientType';
 import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 
 import { clearExpiredSession } from '../../../app/store/authStore';
@@ -34,7 +35,11 @@ function sentConfigs(): InternalAxiosRequestConfig[] {
   return mockAdapter.mock.calls.map(([config]) => config as InternalAxiosRequestConfig);
 }
 
+let resetDeviceId: (() => void) | undefined;
+afterEach(() => resetDeviceId?.());
 beforeEach(() => {
+  resetDeviceId = configureApiDeviceIdProvider(() => '6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
+  jest.spyOn(Date, 'now').mockReturnValue(1700000000123);
   jest.spyOn(console, 'warn').mockImplementation(() => {});
   jest.mocked(getCachedAccessToken).mockReturnValue('access-token');
   jest.mocked(persistTokens).mockImplementation(async tokens => {
@@ -54,6 +59,9 @@ test.each([
 
   const [config] = sentConfigs();
   expect(config.headers.get('X-Client-Type')).toBe('App');
+  expect(config.headers.get('X-Timestamp')).toBe('1700000000');
+  expect(config.headers.get('X-App-Version')).toBe('1.0.0');
+  expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
   expect(config.headers.get('Authorization')).toBe('Bearer access-token');
   expect(config.timeout).toBe(10000);
   expect(config.withCredentials).toBe(true);
@@ -71,6 +79,9 @@ test.each([
 
   const [config] = sentConfigs();
   expect(config.headers.get('X-Client-Type')).toBe('App');
+  expect(config.headers.get('X-Timestamp')).toBe('1700000000');
+  expect(config.headers.get('X-App-Version')).toBe('1.0.0');
+  expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
   expect(config.headers.has('Authorization')).toBe(false);
 });
 
@@ -107,6 +118,9 @@ test('401 → 토큰 갱신 → 원요청 재시도 모두 X-Client-Type: App을
   expect(configs.map(config => config.url)).toEqual(['/users/me', '/auth/token/refresh', '/users/me']);
   for (const config of configs) {
     expect(config.headers.get('X-Client-Type')).toBe('App');
+    expect(config.headers.get('X-Timestamp')).toBe('1700000000');
+    expect(config.headers.get('X-App-Version')).toBe('1.0.0');
+    expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
   }
   expect(configs[1].headers.has('Authorization')).toBe(false);
   expect(configs[2].headers.get('Authorization')).toBe('Bearer renewed-access-token');
@@ -118,6 +132,9 @@ test('abort signal은 그대로 전달하고 취소된 요청은 갱신·재시�
   mockAdapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
     expect(config.signal).toBe(controller.signal);
     expect(config.headers.get('X-Client-Type')).toBe('App');
+    expect(config.headers.get('X-Timestamp')).toBe('1700000000');
+    expect(config.headers.get('X-App-Version')).toBe('1.0.0');
+    expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
     controller.abort();
     throw new axios.CanceledError(undefined, undefined, config);
   });
@@ -149,10 +166,21 @@ test('운영 조합(V2 클라이언트 → 공용 api transport)에서도 X-Clie
   const [getConfig, postConfig] = sentConfigs();
   for (const config of [getConfig, postConfig]) {
     expect(config.headers.get('X-Client-Type')).toBe('App');
+    expect(config.headers.get('X-Timestamp')).toBe('1700000000');
+    expect(config.headers.get('X-App-Version')).toBe('1.0.0');
+    expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
     expect(config.headers.get('Authorization')).toBe('Bearer access-token');
     const clientTypeKeys = Object.keys(config.headers.toJSON())
       .filter(key => key.toLowerCase() === 'x-client-type');
     expect(clientTypeKeys).toHaveLength(1);
   }
   expect(String(postConfig.headers.get('Content-Type'))).toContain('multipart/form-data');
+});
+
+
+test('each request replaces stale device timestamps, including differently cased caller headers', async () => {
+  await api.get('/users/me', { headers: { 'x-timestamp': 'old' } });
+  jest.mocked(Date.now).mockReturnValue(1700000002999);
+  await api.get('/users/me', { headers: { 'X-Timestamp': 'old' } });
+  expect(sentConfigs().map(config => config.headers.get('X-Timestamp'))).toEqual(['1700000000', '1700000002']);
 });

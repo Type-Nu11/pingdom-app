@@ -8,12 +8,8 @@ type MapCanvasProps = {
   centerLat: number;
   centerLng: number;
   followUser: boolean;
-  routePath?: Coordinate[];
-  routePaddingTop?: number;
-  routePaddingBottom?: number;
-  routeStartLabel?: string;
-  routeEndLabel?: string;
   markers: MapMarker[];
+  onCameraGesture?: () => void;
   onCameraIdle?: (coordinate: Coordinate) => void;
   onMarkerPress: (markerId: string) => void;
   style?: StyleProp<ViewStyle>;
@@ -29,11 +25,7 @@ const MapCanvas = ({
   centerLng,
   followUser,
   markers,
-  routePath,
-  routePaddingTop,
-  routePaddingBottom,
-  routeStartLabel,
-  routeEndLabel,
+  onCameraGesture,
   onCameraIdle,
   onMarkerPress,
   style,
@@ -45,11 +37,7 @@ const MapCanvas = ({
     center={{ lat: centerLat, lng: centerLng }}
     followUser={followUser}
     markers={markers}
-    routePath={routePath}
-    routePaddingTop={routePaddingTop}
-    routePaddingBottom={routePaddingBottom}
-    routeStartLabel={routeStartLabel}
-    routeEndLabel={routeEndLabel}
+    onCameraGesture={onCameraGesture}
     onCameraIdle={onCameraIdle}
     onMarkerSelect={onMarkerPress}
     style={[styles.map, style]}

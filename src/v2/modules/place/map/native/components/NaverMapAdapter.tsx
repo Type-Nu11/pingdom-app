@@ -4,18 +4,20 @@ import styled, { useTheme } from 'styled-components/native';
 
 import NaverMapNativeView, {
   type NaverMapNativeMarker,
+  type NaverMapCameraFit,
 } from '../../../../../shared/native/NaverMapNativeView';
 import type { Coordinate } from '../../camera/model/map.types';
 
 export type NaverMapAdapterProps = {
+  cameraFit?: NaverMapCameraFit;
+  logoTopMargin?: number;
+  cameraRevision?: number;
   center: Coordinate;
   followUser?: boolean;
-  routePath?: Coordinate[];
-  routePaddingTop?: number;
-  routePaddingBottom?: number;
-  routeStartLabel?: string;
-  routeEndLabel?: string;
   markers: NaverMapNativeMarker[];
+  routeCoordinates?: Coordinate[];
+  onRouteAnchor?: (point: { x: number; y: number }) => void;
+  onCameraGesture?: () => void;
   onCameraIdle?: (coordinate: Coordinate) => void;
   onMarkerSelect?: (markerId: string) => void;
   style?: StyleProp<ViewStyle>;
@@ -34,13 +36,14 @@ const MapView = styled(NaverMapNativeView)`
  */
 export default function NaverMapAdapter({
   center,
+  cameraFit,
+  cameraRevision,
+  logoTopMargin,
   followUser = false,
   markers,
-  routePath,
-  routePaddingTop,
-  routePaddingBottom,
-  routeStartLabel,
-  routeEndLabel,
+  routeCoordinates,
+  onCameraGesture,
+  onRouteAnchor,
   onCameraIdle,
   onMarkerSelect,
   style,
@@ -54,15 +57,16 @@ export default function NaverMapAdapter({
   const theme = useTheme();
   return (
     <MapView
+      cameraFit={cameraFit}
+      logoTopMargin={logoTopMargin}
+      cameraRevision={cameraRevision}
       centerLat={center.lat}
       centerLng={center.lng}
       followUser={followUser}
       markers={markers}
-      routePath={routePath}
-      routePaddingTop={routePaddingTop}
-      routePaddingBottom={routePaddingBottom}
-      routeStartLabel={routeStartLabel}
-      routeEndLabel={routeEndLabel}
+      routeCoordinates={routeCoordinates}
+      onCameraGesture={onCameraGesture}
+      onRouteAnchor={(event) => onRouteAnchor?.(event.nativeEvent)}
       nightMode={theme.colorScheme === 'dark'}
       onCameraIdle={(event) => onCameraIdle?.(event.nativeEvent)}
       onMarkerPress={(event) => onMarkerSelect?.(event.nativeEvent.markerId)}

@@ -1,3 +1,5 @@
+import { configureApiDeviceIdProvider } from '../../v2/shared/api/clientType';
+import { getInstallationId } from '../../v2/shared/native/installationId';
 import {
   configureApiAccessTokenProvider,
   configureApiTransport,
@@ -15,6 +17,7 @@ export interface ProductionRuntime {
 }
 
 export function installProductionRuntime(runtime: ProductionRuntime): void {
+  configureApiDeviceIdProvider(getInstallationId);
   configureApiTransport(runtime.transport);
   // Read the live cache: login and refresh both update it, unlike an auth-store snapshot.
   configureApiAccessTokenProvider(runtime.getAccessToken);

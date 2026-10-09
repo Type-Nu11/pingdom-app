@@ -4,11 +4,12 @@ import axios from 'axios';
 
 import {
   apiClient,
+  configureApiDeviceIdProvider,
   configureApiAccessTokenProvider,
   configureApiTransport,
   createApiClient,
 } from '../apiClient.ts';
-import { CLIENT_TYPE_APP, CLIENT_TYPE_HEADER, withClientTypeHeader } from '../clientType.ts';
+import { CLIENT_TYPE_APP, CLIENT_TYPE_HEADER, withClientTypeHeader, withAppRequestHeaders } from '../clientType.ts';
 
 function clientTypeOf(headers) {
   const entries = Object.entries(headers ?? {})
@@ -73,6 +74,8 @@ for (const withToken of [true, false]) {
       assert.deepEqual(calls.map(({ method }) => method), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
       for (const call of calls) {
         assert.equal(clientTypeOf(call.options.headers), 'App', call.method);
+        assert.match(call.options.headers['X-Timestamp'], /^\d+$/);
+        assert.equal(call.options.headers['X-App-Version'], '1.0.0');
         assert.equal(call.options.signal, signal, `${call.method} keeps abort signal`);
         assert.equal(
           call.options.headers.Authorization,
@@ -103,6 +106,8 @@ test('caller headers are merged but cannot override X-Client-Type', async () => 
 
     for (const call of calls) {
       assert.equal(clientTypeOf(call.options.headers), 'App', call.method);
+        assert.match(call.options.headers['X-Timestamp'], /^\d+$/);
+        assert.equal(call.options.headers['X-App-Version'], '1.0.0');
       assert.equal(call.options.headers['X-Trace'], 'trace-1', call.method);
       assert.equal(call.options.headers.Authorization, 'Bearer access-token', call.method);
     }
@@ -173,6 +178,8 @@ test('PUT fetch fallback sends X-Client-Type: App and keeps headers', async () =
     assert.equal(fetchCalls.length, 1);
     assert.equal(fetchCalls[0].url, 'http://127.0.0.1/api/v1/users/me/travel-purposes');
     assert.equal(clientTypeOf(fetchCalls[0].options.headers), 'App');
+    assert.match(fetchCalls[0].options.headers['X-Timestamp'], /^\d+$/);
+    assert.equal(fetchCalls[0].options.headers['X-App-Version'], '1.0.0');
     assert.equal(fetchCalls[0].options.headers.Authorization, 'Bearer access-token');
     assert.equal(fetchCalls[0].options.headers['Content-Type'], 'application/json; charset=utf-8');
   } finally {
@@ -264,4 +271,39 @@ test('absolute URLs are rejected before any transport sees Pingdom headers', asy
   await assert.rejects(client.get('https://api.frankfurter.dev/v2/rate/KRW/USD'));
   await assert.rejects(client.get('//dapi.kakao.com/v2/local'));
   assert.equal(calls.length, 0);
+});
+
+
+test('device Unix seconds are regenerated and stale timestamp casing is replaced without mutating callers', async t => {
+  const clock = mock.method(Date, 'now', () => 1700000000123);
+  t.after(() => clock.mock.restore());
+  const headers = { 'x-timestamp': 'old', 'X-Timestamp': 'older', 'X-Trace': 'trace' };
+  assert.deepEqual(withAppRequestHeaders(headers), { 'X-Trace': 'trace', 'X-Client-Type': 'App', 'X-Timestamp': '1700000000', 'X-App-Version': '1.0.0' });
+  const { calls, transport } = recordingTransport();
+  const client = createApiClient(transport);
+  await client.get('/users/me', { headers });
+  clock.mock.mockImplementation(() => 1700000001999);
+  await client.post('/reviews', {});
+  assert.equal(calls[0].options.headers['X-Timestamp'], '1700000000');
+  assert.equal(calls[1].options.headers['X-Timestamp'], '1700000001');
+  assert.equal(headers['x-timestamp'], 'old');
+  assert.equal(headers['X-Timestamp'], 'older');
+});
+
+
+test('installation ID is enforced across verbs and transport fallback without accepting caller IDs', async t => {
+  const id = '6f1a0f58-34b3-4f7a-81e0-9959c76283cb';
+  t.after(configureApiDeviceIdProvider(() => id));
+  const { calls, transport } = recordingTransport();
+  const client = createApiClient(transport);
+  const options = { headers: { 'x-device-id': 'wrong' } };
+  await client.get('/users/me', options);
+  await client.post('/reviews', {}, options);
+  await client.put('/users/me', {}, options);
+  await client.patch('/users/me', {}, options);
+  await client.delete('/reviews/1', undefined, options);
+  for (const call of calls) {
+    assert.equal(call.options.headers['X-Device-Id'], id);
+    assert.equal(call.options.headers['x-device-id'], undefined);
+  }
 });

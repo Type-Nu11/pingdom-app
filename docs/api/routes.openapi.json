@@ -1,8 +1,12 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "PingDom route API",
+    "title": "OpenAPI definition - routes contract",
     "version": "v0"
+  },
+  "x-source": {
+    "location": "https://www.typenull.xyz/v3/api-docs/app",
+    "sha256": "b675a7582c15bf84d9a0d1fdfff61875eef0beec3de4a91dbd94090c95f1d85d"
   },
   "paths": {
     "/routes": {
@@ -35,6 +39,36 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "실제 도로 형상 경로",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_ROUTE_REQUEST: 누락·문자열·비유한 좌표, 범위 오류, 동일 좌표, 알 수 없는 mode",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "기존 JWT 인증 오류",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "기존 접근 권한 오류",
             "content": {
@@ -90,26 +124,6 @@
               }
             }
           },
-          "504": {
-            "description": "ROUTE_PROVIDER_TIMEOUT",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "INVALID_ROUTE_REQUEST: 누락·문자열·비유한 좌표, 범위 오류, 동일 좌표, 알 수 없는 mode",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "503": {
             "description": "ROUTE_PROVIDER_UNAVAILABLE: 비활성·미설정·공급자 인증/쿼터/장애/비정상 응답. 호출 제한 저장소 장애는 기존 RATE_LIMIT_UNAVAILABLE",
             "content": {
@@ -120,18 +134,8 @@
               }
             }
           },
-          "200": {
-            "description": "실제 도로 형상 경로",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RouteResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "기존 JWT 인증 오류",
+          "504": {
+            "description": "ROUTE_PROVIDER_TIMEOUT",
             "content": {
               "*/*": {
                 "schema": {

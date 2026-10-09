@@ -3,7 +3,6 @@
     "name": "PingDom",
     "slug": "pingdom-app",
     "scheme": "pingdom",
-    "version": "1.0.0",
     "icon": "./src/assets/v2/icons/pingdomlogo-ios.png",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",

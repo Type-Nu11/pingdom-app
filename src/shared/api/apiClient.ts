@@ -1,8 +1,7 @@
-import { getAppRequestHeaders } from '../../v2/shared/api/appRequestHeaders';
 // src/shared/api/apiClient.ts
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { clearExpiredSession } from '../../app/store/authStore';
-import { CLIENT_TYPE_APP, CLIENT_TYPE_HEADER } from '../../v2/shared/api/clientType';
+import { CLIENT_TYPE_APP, CLIENT_TYPE_HEADER, APP_VERSION_HEADER, APP_VERSION, withDeviceRequestHeaders } from '../../v2/shared/api/clientType';
 import {
     getCachedAccessToken,
     getRefreshPromise,
@@ -62,6 +61,7 @@ const BASE_CONFIG = {
         Accept: 'application/json',
         'Content-Type': 'application/json; charset=utf-8',
         [CLIENT_TYPE_HEADER]: CLIENT_TYPE_APP,
+        [APP_VERSION_HEADER]: APP_VERSION,
     },
 } as const;
 
@@ -76,11 +76,9 @@ export const api: AxiosInstance = axios.create({
 // 갱신 전용 인스턴스 - 모듈 레벨로 고정
 // 메인 인스턴스(api)로 보내면 응답 인터셉터가 또 걸려 무한루프가 발생하기 때문
 const refreshClient: AxiosInstance = axios.create(BASE_CONFIG);
-// Token refresh passes through the same app metadata gate as ordinary requests.
-refreshClient.interceptors.request.use(async (config) => {
-    for (const [key, value] of Object.entries(await getAppRequestHeaders())) {
-        config.headers.set(key, value, true);
-    }
+refreshClient.interceptors.request.use(async config => {
+    const headers = await withDeviceRequestHeaders();
+    for (const [name, value] of Object.entries(headers)) config.headers.set(name, value, true);
     return config;
 });
 
@@ -218,10 +216,9 @@ api.interceptors.request.use(
             throw new Error('허용되지 않은 절대 URL 요청입니다.');
         }
 
-        config.headers.set(CLIENT_TYPE_HEADER, CLIENT_TYPE_APP, true);
-        for (const [key, value] of Object.entries(await getAppRequestHeaders())) {
-            config.headers.set(key, value, true);
-        }
+        const appHeaders = await withDeviceRequestHeaders();
+        config.headers.delete('X-Device-Id');
+        for (const [name, value] of Object.entries(appHeaders)) config.headers.set(name, value, true);
 
         if (!/^https?:\/\//i.test(config.url ?? '')) {
             config.baseURL = API_BASE_URL;
