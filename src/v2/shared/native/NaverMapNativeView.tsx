@@ -33,6 +33,11 @@ export type NaverMapNativeMarker = {
 };
 
 export type NaverMapNativeViewProps = ViewProps & {
+  routePath?: { lat: number; lng: number }[];
+  routePaddingTop?: number;
+  routePaddingBottom?: number;
+  routeStartLabel?: string;
+  routeEndLabel?: string;
   centerLat: number;
   centerLng: number;
   followUser?: boolean;

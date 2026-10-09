@@ -1,3 +1,5 @@
+import { useCarDirections } from '../directions/useCarDirections';
+import CarDirectionsOverlay from '../directions/CarDirectionsOverlay';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
@@ -563,10 +565,13 @@ export default function MapScreen({
     directions: openSelectedPlaceDirections,
     share: shareSelectedPlace,
   } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
+  const carDirections = useCarDirections(selectedPlaceActionTarget, isFocused && mapSection === 'map' && !isSearchOpen);
   const handleDirectionsPress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
-    void openSelectedPlaceDirections(selectedPlaceActionTarget);
-  }, [openSelectedPlaceDirections, selectedPlaceActionTarget]);
+    setIsFollowingUser(false);
+    snapTo('collapsed');
+    void carDirections.load();
+  }, [carDirections.load, selectedPlaceActionTarget, snapTo]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     void shareSelectedPlace(selectedPlaceActionTarget);
@@ -851,6 +856,7 @@ export default function MapScreen({
   }, [dismissPlaceAt, selectedPlace, snapTo]);
 
   const handleLocatePress = useCallback(() => {
+    carDirections.clear();
     setContent({ type: 'home' });
     setDismissedMarkerCenter(null);
     setMapZoomLevel(MAP_LOCATE_ZOOM_LEVEL);
@@ -867,7 +873,7 @@ export default function MapScreen({
     });
 
     snapTo('medium');
-  }, [snapTo]);
+  }, [carDirections.clear, snapTo]);
 
   useFocusEffect(useCallback(() => {
     reservationNavigationLock.current = false;
@@ -959,6 +965,11 @@ export default function MapScreen({
           centerLng={mapCenterLng}
           followUser={isFollowingUser}
           markers={visibleMapMarkers}
+          routePath={carDirections.state.route?.path.map((point) => ({ lat: point.latitude, lng: point.longitude }))}
+          routePaddingTop={insets.top + 180}
+          routePaddingBottom={collapsedVisibleHeight + 220}
+          routeStartLabel={t('map.card.actions.start')}
+          routeEndLabel={t('map.card.actions.arrive')}
           onCameraIdle={(coordinate) => {
             if (!Number.isFinite(coordinate.lat) || !Number.isFinite(coordinate.lng)) return;
             setViewportCenter((previous) => Math.abs(previous.lat - coordinate.lat) < 0.0001 && Math.abs(previous.lng - coordinate.lng) < 0.0001
@@ -970,6 +981,15 @@ export default function MapScreen({
           zoomLevel={mapZoomLevel}
         />
       </View>
+      <CarDirectionsOverlay
+        {...carDirections.state}
+        top={height - collapsedVisibleHeight - 220}
+        onClose={carDirections.clear}
+        onRetry={() => void carDirections.load()}
+        onExternal={() => {
+          if (selectedPlaceActionTarget) void openSelectedPlaceDirections(selectedPlaceActionTarget);
+        }}
+      />
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
         <MapTopOverlay
           activeCategory={activeCategory}
@@ -1188,7 +1208,7 @@ export default function MapScreen({
             onToggleBookmark={handleToggleBookmark}
             onToggleRankedBookmark={handleToggleRankedBookmark}
             panHandlers={panHandlers}
-            placeActionBusy={placeActionBusy}
+            placeActionBusy={carDirections.state.status === 'loading' ? 'directions' : placeActionBusy}
             places={sheetPlaces}
             previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
             recommendationContext={recommendationPresentation.contextText}

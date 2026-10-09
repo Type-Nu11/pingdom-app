@@ -19,6 +19,27 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     private var placeMarkers: [String: NMFMarker] = [:]
     private var icons: [String: NMFOverlayImage] = [:]
     private let userMarker = NMFMarker()
+    private var routeLine: NMFPolylineOverlay?
+    private let routeStart = NMFMarker()
+    private let routeEnd = NMFMarker()
+    private var routePoints: [NMGLatLng] = []
+    private var routeDirty = false
+    @objc var routePaddingTop: NSNumber?
+    @objc var routePaddingBottom: NSNumber?
+    @objc var routeStartLabel: String?
+    @objc var routeEndLabel: String?
+    @objc var routePath: NSArray? {
+        didSet {
+            let parsed = (routePath ?? []).compactMap { raw -> NMGLatLng? in
+                guard let point = raw as? NSDictionary, let lat = point["lat"] as? Double,
+                      let lng = point["lng"] as? Double, validCoordinate(lat, lng) else { return nil }
+                return NMGLatLng(lat: lat, lng: lng)
+            }
+            let next = parsed.count == routePath?.count && parsed.count >= 2 ? parsed : []
+            let same = next.count == routePoints.count && zip(next, routePoints).allSatisfy { $0.lat == $1.lat && $0.lng == $1.lng }
+            if !same { routePoints = next; routeDirty = true }
+        }
+    }
     private var markersDirty = true
     private var lastCamera: (lat: Double, lng: Double, zoom: Double)?
     private var lastFollowUser = false
@@ -129,10 +150,39 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         } else {
             userMarker.mapView = nil
         }
+        if routeDirty {
+            routeLine?.mapView = nil
+            routeLine = nil
+            routeStart.mapView = nil
+            routeEnd.mapView = nil
+            if routePoints.count >= 2 {
+                routeLine = NMFPolylineOverlay(points: routePoints)
+                routeLine?.width = 6
+                routeLine?.color = UIColor(red: 37/255, green: 99/255, blue: 235/255, alpha: 1)
+                routeLine?.mapView = mapView
+                routeStart.position = routePoints.first!
+                routeStart.iconTintColor = UIColor(red: 37/255, green: 99/255, blue: 235/255, alpha: 1)
+                routeStart.zIndex = 30
+                routeStart.mapView = mapView
+                routeEnd.position = routePoints.last!
+                routeEnd.iconTintColor = UIColor(red: 1, green: 25/255, blue: 86/255, alpha: 1)
+                routeEnd.zIndex = 30
+                routeEnd.mapView = mapView
+                let bounds = NMGLatLngBounds(latLngs: routePoints)
+                mapView.moveCamera(NMFCameraUpdate(fit: bounds, paddingInsets: UIEdgeInsets(top: CGFloat(routePaddingTop?.doubleValue ?? 180), left: 32, bottom: CGFloat(routePaddingBottom?.doubleValue ?? 320), right: 32)))
+            }
+            routeDirty = false
+        }
+        routeStart.captionText = routeStartLabel ?? ""
+        routeEnd.captionText = routeEndLabel ?? ""
+        routeStart.captionColor = nightMode ? .white : .black
+        routeEnd.captionColor = nightMode ? .white : .black
+        routeStart.captionHaloColor = nightMode ? .black : .white
+        routeEnd.captionHaloColor = nightMode ? .black : .white
         let lat = followUser && validUser ? userLat : centerLat?.doubleValue
         let lng = followUser && validUser ? userLng : centerLng?.doubleValue
         let zoom = min(21, max(0, zoomLevel?.doubleValue ?? 17))
-        if validCoordinate(lat, lng), let lat, let lng {
+        if routePoints.isEmpty, validCoordinate(lat, lng), let lat, let lng {
             let changed = lastCamera.map { $0.lat != lat || $0.lng != lng || $0.zoom != zoom } ?? true
             if changed || (followUser && !lastFollowUser) {
                 let update = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng), zoomTo: zoom)
@@ -174,6 +224,9 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         mapView.removeCameraDelegate(delegate: self)
         placeMarkers.values.forEach { $0.touchHandler = nil; $0.mapView = nil }
         userMarker.mapView = nil
+        routeLine?.mapView = nil
+        routeStart.mapView = nil
+        routeEnd.mapView = nil
     }
     private func makeUserLocationImage() -> UIImage {
         let size = CGSize(width: 30, height: 40)

@@ -10,6 +10,11 @@ import type { Coordinate } from '../../camera/model/map.types';
 export type NaverMapAdapterProps = {
   center: Coordinate;
   followUser?: boolean;
+  routePath?: Coordinate[];
+  routePaddingTop?: number;
+  routePaddingBottom?: number;
+  routeStartLabel?: string;
+  routeEndLabel?: string;
   markers: NaverMapNativeMarker[];
   onCameraIdle?: (coordinate: Coordinate) => void;
   onMarkerSelect?: (markerId: string) => void;
@@ -31,6 +36,11 @@ export default function NaverMapAdapter({
   center,
   followUser = false,
   markers,
+  routePath,
+  routePaddingTop,
+  routePaddingBottom,
+  routeStartLabel,
+  routeEndLabel,
   onCameraIdle,
   onMarkerSelect,
   style,
@@ -48,6 +58,11 @@ export default function NaverMapAdapter({
       centerLng={center.lng}
       followUser={followUser}
       markers={markers}
+      routePath={routePath}
+      routePaddingTop={routePaddingTop}
+      routePaddingBottom={routePaddingBottom}
+      routeStartLabel={routeStartLabel}
+      routeEndLabel={routeEndLabel}
       nightMode={theme.colorScheme === 'dark'}
       onCameraIdle={(event) => onCameraIdle?.(event.nativeEvent)}
       onMarkerPress={(event) => onMarkerSelect?.(event.nativeEvent.markerId)}

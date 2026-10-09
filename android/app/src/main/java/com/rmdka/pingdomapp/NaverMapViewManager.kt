@@ -76,4 +76,15 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
     fun setMarkers(view: NaverMapView, markers: ReadableArray?) {
         view.setMarkers(markers)
     }
+    @ReactProp(name = "routePath")
+    fun setRoutePath(view: NaverMapView, value: ReadableArray?) { view.setRoutePath(value) }
+    @ReactProp(name = "routePaddingTop", defaultDouble = 180.0)
+    fun setRoutePaddingTop(view: NaverMapView, value: Double) { view.setRoutePaddingTop(value) }
+    @ReactProp(name = "routePaddingBottom", defaultDouble = 320.0)
+    fun setRoutePaddingBottom(view: NaverMapView, value: Double) { view.setRoutePaddingBottom(value) }
+    @ReactProp(name = "routeStartLabel")
+    fun setRouteStartLabel(view: NaverMapView, value: String?) { view.setRouteStartLabel(value) }
+    @ReactProp(name = "routeEndLabel")
+    fun setRouteEndLabel(view: NaverMapView, value: String?) { view.setRouteEndLabel(value) }
+
 }

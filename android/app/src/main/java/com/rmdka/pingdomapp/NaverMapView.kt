@@ -17,12 +17,14 @@ import com.facebook.react.common.LifecycleState
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
+import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraAnimation
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.MapView
 import com.naver.maps.map.NaverMap
 import com.naver.maps.map.NaverMapOptions
+import com.naver.maps.map.overlay.PolylineOverlay
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.OverlayImage
 import kotlin.math.roundToInt
@@ -48,6 +50,15 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private val placeMarkers = mutableMapOf<String, Marker>()
     private val icons = mutableMapOf<String, OverlayImage>()
     private val userMarker = Marker()
+    private val routeLine = PolylineOverlay()
+    private val routeStart = Marker()
+    private val routeEnd = Marker()
+    private var routeData = emptyList<LatLng>()
+    private var routeDirty = false
+    private var routePaddingTop = 180.0
+    private var routePaddingBottom = 320.0
+    private var routeStartLabel = ""
+    private var routeEndLabel = ""
     private var lastCamera: Triple<Double, Double, Int>? = null
     private var lastFollowUser = false
     private var started = false
@@ -122,6 +133,24 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     // SDK 준비 전에도 최신 테마를 보관한다. getMapAsync 완료 시 applyProps()가 반영한다.
     fun setNightMode(value: Boolean) { nightMode = value }
 
+    fun setRoutePath(value: ReadableArray?) {
+        val next = buildList {
+            for (index in 0 until (value?.size() ?: 0)) {
+                val item = value?.getMap(index) ?: continue
+                if (!item.hasKey("lat") || item.isNull("lat") || !item.hasKey("lng") || item.isNull("lng")) continue
+                val lat = item.getDouble("lat")
+                val lng = item.getDouble("lng")
+                if (validCoordinate(lat, lng)) add(LatLng(lat, lng))
+            }
+        }
+        val valid = if (next.size == value?.size() && next.size >= 2) next else emptyList()
+        if (valid != routeData) { routeData = valid; routeDirty = true }
+    }
+    fun setRoutePaddingTop(value: Double) { routePaddingTop = value }
+    fun setRoutePaddingBottom(value: Double) { routePaddingBottom = value }
+    fun setRouteStartLabel(value: String?) { routeStartLabel = value ?: "" }
+    fun setRouteEndLabel(value: String?) { routeEndLabel = value ?: "" }
+
     fun setMarkers(value: ReadableArray?) {
         val next = buildList {
             for (index in 0 until (value?.size() ?: 0)) {
@@ -187,9 +216,36 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         } else {
             userMarker.map = null
         }
+        if (routeDirty) {
+            routeLine.map = null
+            routeStart.map = null
+            routeEnd.map = null
+            if (routeData.size >= 2) {
+                routeLine.coords = routeData
+                routeLine.width = dp(6f)
+                routeLine.color = Color.rgb(37, 99, 235)
+                routeLine.map = map
+                routeStart.position = routeData.first()
+                routeStart.iconTintColor = Color.rgb(37, 99, 235)
+                routeStart.zIndex = 30
+                routeStart.map = map
+                routeEnd.position = routeData.last()
+                routeEnd.iconTintColor = Color.rgb(255, 25, 86)
+                routeEnd.zIndex = 30
+                routeEnd.map = map
+                map.moveCamera(CameraUpdate.fitBounds(LatLngBounds.from(routeData), dp(32f), dp(routePaddingTop.toFloat()), dp(32f), dp(routePaddingBottom.toFloat())))
+            }
+            routeDirty = false
+        }
+        routeStart.captionText = routeStartLabel
+        routeEnd.captionText = routeEndLabel
+        routeStart.captionColor = if (nightMode) Color.WHITE else Color.BLACK
+        routeEnd.captionColor = if (nightMode) Color.WHITE else Color.BLACK
+        routeStart.captionHaloColor = if (nightMode) Color.BLACK else Color.WHITE
+        routeEnd.captionHaloColor = if (nightMode) Color.BLACK else Color.WHITE
         val lat = if (followUser && validUser) userLat else centerLat
         val lng = if (followUser && validUser) userLng else centerLng
-        if (validCoordinate(lat, lng)) {
+        if (routeData.isEmpty() && validCoordinate(lat, lng)) {
             val next = Triple(lat!!, lng!!, zoomLevel)
             if (next != lastCamera || (followUser && !lastFollowUser)) {
                 val update = CameraUpdate.scrollAndZoomTo(LatLng(lat, lng), zoomLevel.toDouble())
@@ -266,6 +322,9 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         placeMarkers.values.forEach { it.map = null; it.onClickListener = null }
         placeMarkers.clear()
         userMarker.map = null
+        routeLine.map = null
+        routeStart.map = null
+        routeEnd.map = null
         pauseMap()
         mapView.onDestroy()
         naverMap = null
