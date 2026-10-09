@@ -192,6 +192,13 @@ export interface components {
              * @enum {string}
              */
             status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: int64
+             * @description 가격·취소 조건 변경 버전. 조건이 미설정이어도 반환합니다.
+             * @example 1
+             */
+            conditionsVersion: number;
+            reservationTerms: components["schemas"]["ReservationTermsResponse"];
         };
         /** @description 에러 응답 */
         ErrorResponse: {
@@ -388,6 +395,36 @@ export interface components {
             updatedAt: string;
             confirmation: components["schemas"]["ReservationConfirmation"];
         };
+        /** @description 저장된 예약 가격·취소 조건 */
+        ReservationTermsResponse: {
+            /**
+             * Format: int64
+             * @description 통화 최소 단위의 1인당 금액
+             * @example 1000
+             */
+            unitAmountMinor: number;
+            /**
+             * Format: int64
+             * @description 예약당 한 번 적용하는 통화 최소 단위의 추가 금액
+             * @example 50
+             */
+            additionalAmountMinor: number;
+            /** @example KRW */
+            currency: string;
+            /**
+             * @description IANA 시간대
+             * @example Asia/Seoul
+             */
+            timezone: string;
+            /** @example true */
+            cancellable: boolean;
+            /**
+             * Format: int32
+             * @description 취소 가능할 때만 제공하는 시작 전 취소 기한(분)
+             * @example 60
+             */
+            cancellationCutoffMinutes: number | null;
+        } | null;
         /** @description 필드 검증 오류 응답 */
         ValidationErrorResponse: {
             message: string;

@@ -1,7 +1,9 @@
+import { voiceReservationResources } from './voiceReservationResources';
 import { voiceSessionErrors } from './voiceSessionErrors';
 
 export const voiceAssistantResources = {
   en: {
+    reservation: voiceReservationResources["en"],
     conversation: { you: 'You' },
     picker: {"date": "What date would you like to visit?", "timeRange": "What time would you like to visit?", "quantity": "How many people are visiting?", "start": "From", "end": "Until", "am": "AM", "pm": "PM", "hour": "{{count}} hours", "minute": "{{count}} minutes", "people": "{{count}} people", "increase": "Add a person", "decrease": "Remove a person", "confirm": "Confirm selection", "confirmValue": "Confirm {{value}}", "edit": "Edit", "previousMonth": "Previous month", "nextMonth": "Next month", "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat", "voiceOrText": "You can also answer by voice or type below.", "tooLong": "Your combined request is too long. Please start a shorter request."},
     sessionErrors: voiceSessionErrors.en,
@@ -22,7 +24,7 @@ export const voiceAssistantResources = {
         cancelDeadline: 'Cancellation is allowed only before {{deadline}} ({{timezone}}); unavailable at or after the deadline.', cancelFee: 'Cancellation fee within deadline: {{amount}}',
         refund: 'Refund within deadline: {{amount}}', notCancellable: 'The server specifies that cancellation is not allowed.',
         expires: 'Quote expires: {{expiresAt}}',
-        notSubmitted: 'No reservation has been submitted. Reservation submission from the assistant is not available yet.',
+        notSubmitted: 'No reservation has been submitted. Review the actual schedule and confirm your reservation request.',
       },
       operating: { OPERATING: 'Operating', TEMPORARILY_CLOSED: 'Temporarily closed', PERMANENTLY_CLOSED: 'Permanently closed' },
       fields: { touristCategory: 'Specify a place category.', date: 'Confirm the requested date.', timeRange: 'Confirm the timezone and start/end times.', quantity: 'Specify the number of people.', useCurrentLocation: 'Confirm current location use and permission.', placeId: 'Choose a place from the retrieved results.', availabilityId: 'Choose a retrieved time slot.' },
@@ -42,6 +44,7 @@ export const voiceAssistantResources = {
     errors: { interrupted: 'Audio was interrupted. Try again or type your request.', noSpeech: 'No final speech was recognized. Try again or type your request.', unavailable: 'Speech recognition is unavailable. Please type your request.', network: 'The speech service could not connect. Check your network or type your request.', failed: 'Speech recognition failed. Please type or try again.', empty: 'Enter a request first.', tooLong: 'Use 2,000 characters or fewer.', submitFailed: 'Input could not be handed over. Close the assistant and start a new request.' },
   },
   ko: {
+    reservation: voiceReservationResources["ko"],
     conversation: { you: '나' },
     picker: {"date": "며칠에 방문하시나요?", "timeRange": "몇 시쯤 방문하시나요?", "quantity": "몇 분이 방문하시나요?", "start": "시작", "end": "종료", "am": "오전", "pm": "오후", "hour": "{{count}}시", "minute": "{{count}}분", "people": "{{count}}명", "increase": "인원 늘리기", "decrease": "인원 줄이기", "confirm": "선택 확인", "confirmValue": "{{value}} 확인", "edit": "수정", "previousMonth": "이전 달", "nextMonth": "다음 달", "weekdays": "일,월,화,수,목,금,토", "voiceOrText": "아래 입력창에 말하거나 입력해도 돼요.", "tooLong": "기존 요청과 선택한 조건이 너무 깁니다. 짧은 새 요청을 입력해 주세요."},
     sessionErrors: voiceSessionErrors.ko,
@@ -62,7 +65,7 @@ export const voiceAssistantResources = {
         cancelDeadline: '취소 조건: {{deadline}} 이전에만 취소 가능하며, 기한 이후에는 취소할 수 없습니다. ({{timezone}})', cancelFee: '기한 내 취소 수수료: {{amount}}',
         refund: '기한 내 환불액: {{amount}}', notCancellable: '서버 조건에 따라 취소할 수 없습니다.',
         expires: '견적 만료: {{expiresAt}}',
-        notSubmitted: '예약은 제출되지 않았습니다. 어시스턴트에서 예약을 제출하는 기능은 아직 제공하지 않습니다.',
+        notSubmitted: '예약을 제출하지 않았습니다. 실제 일정과 조건을 확인한 뒤 예약 요청을 확정해 주세요.',
       },
       operating: { OPERATING: '운영 중', TEMPORARILY_CLOSED: '임시 휴업', PERMANENTLY_CLOSED: '폐업' },
       fields: { touristCategory: '장소 카테고리를 알려 주세요.', date: '조회할 날짜를 확인해 주세요.', timeRange: '시간대와 시작·종료 시간을 확인해 주세요.', quantity: '인원을 알려 주세요.', useCurrentLocation: '현재 위치 사용 여부와 위치 권한을 확인해 주세요.', placeId: '조회 결과에서 장소를 선택해 주세요.', availabilityId: '조회한 이용 시간을 선택해 주세요.' },
@@ -82,6 +85,7 @@ export const voiceAssistantResources = {
     errors: { interrupted: '다른 오디오 작업으로 중단되었습니다. 다시 시도하거나 텍스트로 입력해 주세요.', noSpeech: '최종 음성을 인식하지 못했습니다. 다시 시도하거나 텍스트로 입력해 주세요.', unavailable: '음성 인식을 사용할 수 없습니다. 텍스트로 입력해 주세요.', network: '음성 인식 서비스에 연결하지 못했습니다. 네트워크를 확인하거나 텍스트로 입력해 주세요.', failed: '음성 인식에 실패했습니다. 다시 시도하거나 텍스트로 입력해 주세요.', empty: '요청을 먼저 입력해 주세요.', tooLong: '2,000자 이내로 입력해 주세요.', submitFailed: '입력을 전달하지 못했습니다. 어시스턴트를 닫고 새 요청을 시작해 주세요.' },
   },
   ja: {
+    reservation: voiceReservationResources["ja"],
     conversation: { you: 'あなた' },
     picker: {"date": "いつ訪問しますか？", "timeRange": "何時頃に訪問しますか？", "quantity": "何名で訪問しますか？", "start": "開始", "end": "終了", "am": "午前", "pm": "午後", "hour": "{{count}}時", "minute": "{{count}}分", "people": "{{count}}名", "increase": "人数を増やす", "decrease": "人数を減らす", "confirm": "選択を確認", "confirmValue": "{{value}}を確認", "edit": "変更", "previousMonth": "前の月", "nextMonth": "次の月", "weekdays": "日,月,火,水,木,金,土", "voiceOrText": "下の入力欄で音声や文字でも回答できます。", "tooLong": "リクエストと選択した条件が長すぎます。短い新しいリクエストを入力してください。"},
     sessionErrors: voiceSessionErrors.ja,
@@ -101,7 +105,7 @@ export const voiceAssistantResources = {
         cancelDeadline: '{{deadline}}より前のみキャンセルできます。期限以降はキャンセルできません。（{{timezone}}）', cancelFee: '期限内のキャンセル料：{{amount}}',
         refund: '期限内の返金額：{{amount}}', notCancellable: 'サーバーの条件ではキャンセルできません。',
         expires: '見積もりの有効期限：{{expiresAt}}',
-        notSubmitted: '予約は送信されていません。アシスタントからの予約送信はまだ利用できません。',
+        notSubmitted: '予約はまだ送信されていません。実際の日程と条件を確認して予約リクエストを確定してください。',
       },
       operating: { OPERATING: '営業中', TEMPORARILY_CLOSED: '臨時休業', PERMANENTLY_CLOSED: '閉業' },
       fields: { touristCategory: '場所のカテゴリーを教えてください。', date: '検索する日付を確認してください。', timeRange: 'タイムゾーンと開始・終了時刻を確認してください。', quantity: '人数を教えてください。', useCurrentLocation: '現在地を使用するかどうかと位置情報の権限を確認してください。', placeId: '検索結果から場所を選択してください。', availabilityId: '検索した利用時間を選択してください。' },
@@ -121,6 +125,7 @@ export const voiceAssistantResources = {
     errors: { interrupted: 'ほかの音声処理により中断されました。もう一度お試しいただくか、テキストで入力してください。', noSpeech: '最終的な音声を認識できませんでした。もう一度お試しいただくか、テキストで入力してください。', unavailable: '音声認識を利用できません。テキストで入力してください。', network: '音声認識サービスに接続できませんでした。ネットワークを確認するか、テキストで入力してください。', failed: '音声認識に失敗しました。もう一度お試しいただくか、テキストで入力してください。', empty: '先にリクエストを入力してください。', tooLong: '2,000文字以内で入力してください。', submitFailed: '入力を渡せませんでした。アシスタントを閉じて、新しいリクエストを始めてください。' },
   },
   'zh-CN': {
+    reservation: voiceReservationResources["zh-CN"],
     conversation: { you: '你' },
     picker: {
       date: '您想哪天到访？', timeRange: '您想几点到访？', quantity: '几位到访？',
@@ -137,7 +142,7 @@ export const voiceAssistantResources = {
         paymentRequired: '确认预约后，需要另行操作付款。', noPayment: '服务器条件说明无需付款。',
         cancelDeadline: '仅可在{{deadline}}之前取消（{{timezone}}），到期及之后不可取消。', cancelFee: '期限内取消费用：{{amount}}',
         refund: '期限内退款金额：{{amount}}', notCancellable: '服务器条件说明不可取消。', expires: '报价到期时间：{{expiresAt}}',
-        notSubmitted: '预约尚未提交，目前暂不支持通过助手提交预约。',
+        notSubmitted: '预约尚未提交。请核对实际时段和条件后确认预约请求。',
       },
       submission: "对于明确的韩语请求、问题或人数问题的回答，检测到安静后1秒结束语音输入；其他情况等待3秒。再次说话会重置等待时间。仅将最终识别内容自动发送到AI服务器。文字输入在点按“发送”后发送。精确坐标仅用于现有的地点查询。",
       introTitle: 'AI 使用说明',
@@ -233,6 +238,7 @@ export const voiceAssistantResources = {
     },
   },
   'zh-TW': {
+    reservation: voiceReservationResources["zh-TW"],
     conversation: { you: '你' },
     picker: {
       date: '您想哪天到訪？', timeRange: '您想幾點到訪？', quantity: '幾位到訪？',
@@ -249,7 +255,7 @@ export const voiceAssistantResources = {
         paymentRequired: '確認預約後，需要另行操作付款。', noPayment: '伺服器條件說明無需付款。',
         cancelDeadline: '僅可在{{deadline}}之前取消（{{timezone}}），到期及之後不可取消。', cancelFee: '期限內取消費用：{{amount}}',
         refund: '期限內退款金額：{{amount}}', notCancellable: '伺服器條件說明不可取消。', expires: '報價到期時間：{{expiresAt}}',
-        notSubmitted: '預約尚未提交，目前暫不支援透過助理提交預約。',
+        notSubmitted: '預約尚未提交。請核對實際時段和條件後確認預約請求。',
       },
       submission: "對於明確的韓語請求、問題或人數問題的回答，偵測到安靜後1秒結束語音輸入；其他情況等待3秒。再次說話會重設等待時間。僅將最終辨識內容自動傳送至AI伺服器。文字輸入在點選「傳送」後傳送。精確座標僅用於現有的地點查詢。",
       introTitle: 'AI 使用說明',
@@ -345,6 +351,7 @@ export const voiceAssistantResources = {
     },
   },
   vi: {
+    reservation: voiceReservationResources["vi"],
     conversation: { you: 'Bạn' },
     picker: {
       date: 'Bạn muốn đến vào ngày nào?', timeRange: 'Bạn muốn đến lúc mấy giờ?', quantity: 'Có bao nhiêu người đến?',
@@ -361,7 +368,7 @@ export const voiceAssistantResources = {
         paymentRequired: 'Sau khi xác nhận đặt chỗ, bạn cần thực hiện thanh toán riêng.', noPayment: 'Theo điều kiện của máy chủ, không cần thanh toán.',
         cancelDeadline: 'Chỉ được hủy trước {{deadline}} ({{timezone}}); không thể hủy từ thời hạn này trở đi.', cancelFee: 'Phí hủy trong thời hạn: {{amount}}',
         refund: 'Tiền hoàn trong thời hạn: {{amount}}', notCancellable: 'Theo điều kiện của máy chủ, không được hủy.', expires: 'Báo giá hết hạn: {{expiresAt}}',
-        notSubmitted: 'Chưa gửi yêu cầu đặt chỗ. Hiện chưa hỗ trợ gửi yêu cầu đặt chỗ qua trợ lý.',
+        notSubmitted: 'Chưa gửi yêu cầu đặt chỗ. Hãy kiểm tra lịch và điều kiện thực tế rồi xác nhận yêu cầu.',
       },
       submission: "Với yêu cầu, câu hỏi rõ ràng bằng tiếng Hàn hoặc câu trả lời cho câu hỏi về số người, ghi âm dừng sau 1 giây kể từ khi phát hiện yên lặng; các trường hợp khác chờ 3 giây. Nói tiếp sẽ đặt lại thời gian chờ. Chỉ nội dung nhận dạng cuối cùng được tự động gửi đến máy chủ AI. Văn bản được gửi khi bạn nhấn Gửi. Tọa độ chính xác chỉ dùng cho việc tra cứu địa điểm hiện có.",
       introTitle: 'Trước khi dùng AI',
@@ -462,6 +469,7 @@ export const voiceAssistantResources = {
     },
   },
   es: {
+    reservation: voiceReservationResources["es"],
     conversation: { you: 'Tú' },
     picker: {
       date: '¿Qué día quieres visitar?', timeRange: '¿A qué hora quieres visitar?', quantity: '¿Cuántas personas van a visitar?',
@@ -478,7 +486,7 @@ export const voiceAssistantResources = {
         paymentRequired: 'Después de confirmar la reserva, debes realizar el pago por separado.', noPayment: 'Las condiciones del servidor indican que no es necesario pagar.',
         cancelDeadline: 'Solo se puede cancelar antes de {{deadline}} ({{timezone}}); no se permite a partir de ese momento.', cancelFee: 'Cargo de cancelación dentro del plazo: {{amount}}',
         refund: 'Reembolso dentro del plazo: {{amount}}', notCancellable: 'Las condiciones del servidor indican que no se permite cancelar.', expires: 'La cotización caduca: {{expiresAt}}',
-        notSubmitted: 'No se ha enviado ninguna reserva. Todavía no se pueden enviar reservas desde el asistente.',
+        notSubmitted: 'No se ha enviado ninguna reserva. Revisa los horarios y condiciones reales y confirma la solicitud.',
       },
       submission: "La captura de voz se detiene tras 1 segundo de silencio detectado para una solicitud o pregunta clara en coreano, o una respuesta a una pregunta sobre el número de personas; en otros casos espera 3 segundos. Hablar de nuevo reinicia la espera. Solo la entrada final se envía automáticamente al servidor de IA. El texto se envía cuando tocas Enviar. Las coordenadas exactas solo se usan en la búsqueda de lugares existente.",
       introTitle: 'Antes de usar la IA',
@@ -579,6 +587,7 @@ export const voiceAssistantResources = {
     },
   },
   'pt-BR': {
+    reservation: voiceReservationResources["pt-BR"],
     conversation: { you: 'Você' },
     picker: {
       date: 'Em que dia você quer visitar?', timeRange: 'A que horas você quer visitar?', quantity: 'Quantas pessoas vão visitar?',
@@ -595,7 +604,7 @@ export const voiceAssistantResources = {
         paymentRequired: 'Após confirmar a reserva, é necessário realizar o pagamento separadamente.', noPayment: 'As condições do servidor indicam que não é necessário pagar.',
         cancelDeadline: 'Só é possível cancelar antes de {{deadline}} ({{timezone}}); a partir desse horário, o cancelamento não é permitido.', cancelFee: 'Taxa de cancelamento dentro do prazo: {{amount}}',
         refund: 'Reembolso dentro do prazo: {{amount}}', notCancellable: 'As condições do servidor indicam que o cancelamento não é permitido.', expires: 'A cotação expira: {{expiresAt}}',
-        notSubmitted: 'Nenhuma reserva foi enviada. O envio de reservas pelo assistente ainda não está disponível.',
+        notSubmitted: 'Nenhuma reserva foi enviada. Revise os horários e condições reais e confirme a solicitação.',
       },
       submission: "A captura de voz para após 1 segundo de silêncio detectado para uma solicitação ou pergunta clara em coreano, ou uma resposta a uma pergunta sobre o número de pessoas; nos outros casos, aguarda 3 segundos. Voltar a falar reinicia a espera. Apenas a entrada final é enviada automaticamente ao servidor de IA. O texto é enviado quando você toca em Enviar. As coordenadas exatas são usadas apenas na busca de lugares existente.",
       introTitle: 'Antes de usar a IA',

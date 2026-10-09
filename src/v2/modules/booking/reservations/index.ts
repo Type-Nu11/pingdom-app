@@ -7,3 +7,10 @@ export { isSelectableAvailability } from './model/reservationProduct';
 export type { PlaceAvailabilities } from './api/placeAvailabilityApi';
 export { usePlaceAvailabilities } from './hooks/usePlaceAvailabilities';
 export { selectReservationCta, type ReservationCtaState } from './model/placeAvailabilityPresentation';
+
+export { validateReservationQuote, ReservationConfirmationError } from './model/reservationConfirmation';
+
+export { isSelectableConfirmedSlot } from './model/confirmedReservation';
+export type { ConfirmedReservationState, ReservationSelection } from './model/confirmedReservation';
+export { validateBookerInput, BOOKER_NAME_MAX_LENGTH, BOOKER_PHONE_MAX_LENGTH, REQUEST_NOTE_MAX_LENGTH } from './model/reservationBooker';
+export type { BookerInput } from './model/reservationBooker';

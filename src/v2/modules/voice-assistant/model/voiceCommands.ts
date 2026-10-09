@@ -173,7 +173,7 @@ const getAvailability: VoiceCommandHandler<'getAvailabilities'> = async (request
   const provenance = Object.freeze({ ...metadata(ex, [placeId], { queryKey: result.queryKey, dataUpdatedAt: result.dataUpdatedAt }),
     placeId, date, quantity, availabilityIds: Object.freeze(availabilities.map(s => s.id)), slots: availabilities });
   ex.commit.push(() => ex.provenance.recordAvailability(provenance));
-  return Object.freeze({ placeId, date, availabilities });
+  return Object.freeze({ placeId, date, quantity, availabilities });
 };
 const noValidation = () => {};
 function requireAvailability(request: Request<'prepareReservation'>, ex: Execution) {

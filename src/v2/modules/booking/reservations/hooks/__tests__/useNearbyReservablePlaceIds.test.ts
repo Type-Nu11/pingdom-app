@@ -4,6 +4,7 @@ const now = Date.parse('2026-09-03T08:00:00Z');
 
 const availability = (overrides: Record<string, unknown> = {}) => ({
   endsAt: '2026-09-03T09:00:00Z',
+  conditionsVersion: 1, reservationTerms: null,
   id: 801,
   placeId: 17,
   productId: null,
