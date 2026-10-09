@@ -11,6 +11,7 @@ type ApiErrorResponse = {
 };
 
 type ApiErrorDetails = {
+  retryAfterSeconds?: number;
   code?: string;
   details?: Record<string, unknown> | null;
   fieldErrors?: FieldError[] | null;
@@ -23,6 +24,7 @@ type ApiErrorDetails = {
 };
 
 export class ApiError extends Error {
+  readonly retryAfterSeconds?: number;
   readonly code?: string;
   readonly details: Record<string, unknown> | null;
   readonly fieldErrors: FieldError[] | null;
@@ -35,6 +37,7 @@ export class ApiError extends Error {
   constructor(message: string, details: ApiErrorDetails = {}) {
     super(message);
     this.name = 'ApiError';
+    this.retryAfterSeconds = details.retryAfterSeconds;
     this.code = details.response?.code ?? details.code;
     this.details = details.response?.details ?? details.details ?? null;
     this.fieldErrors = details.response?.fieldErrors ?? details.fieldErrors ?? null;
@@ -125,6 +128,7 @@ export function toApiError(error: unknown): ApiError {
       response: response.response,
       responseBody: error.response?.data,
       responseData: error.response?.data,
+      retryAfterSeconds: parseRetryAfter(error.response?.headers?.['retry-after']),
       status: error.response?.status,
       traceId: response.traceId,
     });
@@ -133,4 +137,12 @@ export function toApiError(error: unknown): ApiError {
   return new ApiError(error instanceof Error ? error.message : 'Unknown API error', {
     code: error instanceof Error && error.name === 'AbortError' ? 'ERR_CANCELED' : undefined,
   });
+}
+
+function parseRetryAfter(value: unknown): number | undefined {
+  if (typeof value !== 'string' && typeof value !== 'number') return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds);
+  const time = Date.parse(String(value));
+  return Number.isFinite(time) ? Math.max(0, Math.ceil((time - Date.now()) / 1000)) : undefined;
 }

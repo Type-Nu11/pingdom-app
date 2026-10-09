@@ -22,12 +22,14 @@ export function routeFailure(error: unknown): RouteFailure {
 /** In-memory, latest-request-wins session. No cache, persistence or automatic retry. */
 export function createRouteSession(publish: (state: RouteState) => void) {
   let generation = 0;
+  let retryAt = 0;
   let controller: AbortController | undefined;
   function invalidate() { generation += 1; controller?.abort(); controller = undefined; }
   return {
     cancel() { invalidate(); publish({ kind: 'canceled' }); },
     dispose: invalidate,
     async request(load: (signal: AbortSignal) => Promise<CarRoute>) {
+      if (Date.now() < retryAt) { publish({ kind: 'rate-limited' }); return; }
       invalidate();
       const current = generation;
       controller = new AbortController();
@@ -37,7 +39,11 @@ export function createRouteSession(publish: (state: RouteState) => void) {
         const route = await load(signal);
         if (!signal.aborted && current === generation) publish({ kind: 'ready', route });
       } catch (error) {
-        if (!signal.aborted && current === generation) publish({ kind: routeFailure(error) });
+        if (!signal.aborted && current === generation) {
+          const failure = toApiError(error);
+          if (failure.status === 429) retryAt = Date.now() + (failure.retryAfterSeconds ?? 60) * 1000;
+          publish({ kind: routeFailure(failure) });
+        }
       } finally {
         if (current === generation) controller = undefined;
       }

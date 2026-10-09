@@ -15,6 +15,7 @@ jest.mock('../../hooks/useCommunity', () => ({
 
 const navigation = {
   onOpenMap: jest.fn(),
+  onOpenFavorites: jest.fn(),
   onOpenPost: jest.fn(),
   onOpenRecommendations: jest.fn(),
   onOpenReservations: jest.fn(),
@@ -102,6 +103,14 @@ describe('CommunityBottomSheet loading/empty/error states', () => {
     await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
 
     expect(await screen.findByTestId('v2-community-list-empty')).toBeVisible();
+  });
+
+  test('커뮤니티에서 즐겨찾기 탭을 누르면 이동 콜백을 호출한다', async () => {
+    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult());
+    const onOpenFavorites = jest.fn();
+    const { user } = await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} onOpenFavorites={onOpenFavorites} />);
+    await user.press(screen.getByRole('tab', { name: '즐겨찾기' }));
+    expect(onOpenFavorites).toHaveBeenCalledTimes(1);
   });
 
   test('최초 조회 오류는 재시도로 표시하고 재시도를 누르면 다시 조회한다', async () => {

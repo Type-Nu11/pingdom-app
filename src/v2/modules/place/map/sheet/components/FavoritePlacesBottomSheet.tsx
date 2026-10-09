@@ -1,4 +1,5 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
+import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import ApiErrorState from '../../../../../shared/components/ApiErrorState';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -340,7 +341,7 @@ export default function FavoritePlacesBottomSheet({
                 <ApiErrorState error={error} busy={isFetching} onRetry={onRetry} />
               ) : (
                 <View style={styles.emptyState}>
-                  <HeaderStar />
+                  <UnavailableStateIcon size={64} />
                   <AppText style={styles.emptyTitle}>{t('map.favorites.emptyTitle')}</AppText>
                   <AppText style={styles.emptyBody}>{t('map.favorites.emptyBody')}</AppText>
                 </View>

@@ -1,9 +1,10 @@
-import React from 'react';
-import { Animated, processColor } from 'react-native';
-import { fireEvent, screen } from '@testing-library/react-native';
+import React, { useState } from 'react';
+import { Animated, PanResponder, processColor, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import MapSheetBottomNavigation, {
+  MapSheetNavigationHiddenProvider,
   getMapSheetNavigationBottom,
   getMapSheetTabSurfaceColor,
 } from '../MapSheetBottomNavigation';
@@ -68,4 +69,49 @@ test('Android elevation 대신 Figma의 6% 확산 그림자를 사용한다', as
     boxShadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.06)',
   });
   expect(screen.getByTestId('map-navigation-recommendations')).not.toHaveStyle({ elevation: 4 });
+});
+
+test('누른 채 오른쪽으로 움직이면 즐겨찾기·커뮤니티·예약을 연속 선택하고 되돌아갈 수 있다', async () => {
+  const create = jest.spyOn(PanResponder, 'create');
+  const selected = jest.fn();
+  const sheetTranslateY = new Animated.Value(0);
+  function Navigation() {
+    const [tab, setTab] = useState<'map' | 'favorites' | 'community' | 'reservations'>('map');
+    const open = (next: typeof tab) => { selected(next); setTab(next); };
+    return <MapSheetBottomNavigation activeTab={tab} sheetTranslateY={sheetTranslateY}
+      onOpenMap={() => open('map')} onOpenFavorites={() => open('favorites')}
+      onOpenCommunity={() => open('community')} onOpenReservations={() => open('reservations')} />;
+  }
+  try {
+    await renderWithProviders(<Navigation />);
+    await act(() => screen.getByTestId('map-navigation-swipe').props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 328, height: 64 } } }));
+    const handler = create.mock.calls.at(-1)![0];
+    const event = {} as GestureResponderEvent;
+    const gesture = (moveX: number, dx = 0, dy = 0) => ({ moveX, dx, dy } as PanResponderGestureState);
+    expect(handler.onMoveShouldSetPanResponderCapture?.(event, gesture(68, 2))).toBe(false);
+    expect(handler.onMoveShouldSetPanResponderCapture?.(event, gesture(68, 3, 40))).toBe(false);
+    expect(handler.onMoveShouldSetPanResponderCapture?.(event, gesture(68, 40, 40))).toBe(false);
+    expect(handler.onMoveShouldSetPanResponderCapture?.(event, gesture(148, 80, 3))).toBe(true);
+    await act(() => handler.onPanResponderGrant?.(event, gesture(68)));
+    for (const [x, label] of [[148, '즐겨찾기'], [228, '커뮤니티'], [308, '예약'], [228, '커뮤니티'], [148, '즐겨찾기'], [68, '지도']] as const) {
+      await act(() => handler.onPanResponderMove?.(event, gesture(x)));
+      expect(screen.getByRole('tab', { name: label, selected: true })).toBeVisible();
+      // Moving inside the same tab must not navigate or restart requests again.
+      await act(() => handler.onPanResponderMove?.(event, gesture(x + 1)));
+    }
+    await act(() => handler.onPanResponderRelease?.(event, gesture(68)));
+    expect(selected.mock.calls.map(([tab]) => tab)).toEqual(['favorites', 'community', 'reservations', 'community', 'favorites', 'map']);
+    expect(create).toHaveBeenCalledTimes(1);
+  } finally { create.mockRestore(); }
+});
+
+test('시트 내부 하단바를 숨겨도 화면이 소유한 하단바는 유지한다', async () => {
+  await renderWithProviders(<>
+    <MapSheetNavigationHiddenProvider value={true}>
+      <MapSheetBottomNavigation activeTab="community" sheetTranslateY={new Animated.Value(0)} />
+    </MapSheetNavigationHiddenProvider>
+    <MapSheetBottomNavigation activeTab="community" sheetTranslateY={new Animated.Value(0)} />
+  </>);
+  expect(screen.getAllByTestId('map-navigation-swipe')).toHaveLength(1);
+  expect(screen.getAllByRole('tab')).toHaveLength(5);
 });

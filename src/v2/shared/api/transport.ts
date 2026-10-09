@@ -7,6 +7,7 @@ export type GetRequestOptions = {
 };
 
 export type MutationRequestOptions = {
+  timeout?: number;
   /** Opt-in raw final response; existing JSON callers are unchanged. */
   responseType?: 'text';
   maxContentLength?: number;

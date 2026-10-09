@@ -44,5 +44,5 @@ export function mapRouteResponse(raw: unknown): CarRoute {
 
 export async function findCarRoute(origin: unknown, destination: unknown, signal: AbortSignal, client: ApiClient = apiClient): Promise<CarRoute> {
   const request = routeRequest(origin, destination);
-  return mapRouteResponse(await client.post<RouteResponse, RouteRequest>('/routes', request, { signal }));
+  return mapRouteResponse(await client.post<RouteResponse, RouteRequest>('/routes', request, { signal, timeout: 15_000 }));
 }

@@ -19,7 +19,7 @@ test('contract maps all path points in original order without replacing road end
   const signal = new AbortController().signal;
   try {
     await findCarRoute(origin, destination, signal, createApiClient({ post } as never));
-    expect(post).toHaveBeenCalledWith('/routes', { origin, destination, mode: 'car' }, expect.objectContaining({ signal, headers: expect.objectContaining({ Authorization: 'Bearer test-only-token', 'X-Client-Type': 'App' }) }));
+    expect(post).toHaveBeenCalledWith('/routes', { origin, destination, mode: 'car' }, expect.objectContaining({ signal, timeout: 15_000, headers: expect.objectContaining({ Authorization: 'Bearer test-only-token', 'X-Client-Type': 'App' }) }));
     expect(post).toHaveBeenCalledTimes(1);
   } finally { token(); }
 });
@@ -76,6 +76,25 @@ test('cancel and selection disposal discard late errors and successes without re
     expect(publish.mock.calls.map(([s]) => s.kind)).toEqual(dispose ? ['loading'] : ['loading', 'canceled']);
   }
 });
+test.each([2, undefined])('rate limiting honors Retry-After or the default cooldown (%s)', async retryAfterSeconds => {
+  let now = 1_000_000;
+  const clock = jest.spyOn(Date, 'now').mockImplementation(() => now);
+  const publish = jest.fn();
+  const session = createRouteSession(publish);
+  const load = jest.fn().mockRejectedValueOnce(new ApiError('limited', { status: 429, retryAfterSeconds }))
+    .mockResolvedValue(mapRouteResponse(response));
+  try {
+    await session.request(load);
+    await session.request(load);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(publish).toHaveBeenLastCalledWith({ kind: 'rate-limited' });
+    now += (retryAfterSeconds ?? 60) * 1000;
+    await session.request(load);
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(publish).toHaveBeenLastCalledWith({ kind: 'ready', route: mapRouteResponse(response) });
+  } finally { session.dispose(); clock.mockRestore(); }
+});
+
 test('camera covers intermediate excursions and large paths without spread argument limits', () => {
   const points = mapRouteResponse(response).path;
   const camera = fitRouteCamera(points, 390, 400);
