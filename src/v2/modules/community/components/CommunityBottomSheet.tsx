@@ -75,6 +75,7 @@ export type CommunityBottomSheetProps = {
   mediumTranslateY: number;
   onHandlePress: () => void;
   onOpenMap: () => void;
+  onOpenFavorites?: () => void;
   onOpenPost: (postId: number) => void;
   onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;
@@ -91,6 +92,7 @@ export default function CommunityBottomSheet({
   mediumTranslateY,
   onHandlePress,
   onOpenMap,
+  onOpenFavorites,
   onOpenPost,
   onOpenRecommendations,
   onOpenReservations,
@@ -321,6 +323,7 @@ export default function CommunityBottomSheet({
 
       <MapSheetBottomNavigation
         activeTab="community"
+        onOpenFavorites={onOpenFavorites}
         onOpenMap={onOpenMap}
         onOpenRecommendations={onOpenRecommendations}
         onOpenReservations={onOpenReservations}

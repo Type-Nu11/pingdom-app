@@ -8,6 +8,7 @@ export type MapCommunitySheetProps = {
   mediumTranslateY: number;
   onHandlePress: () => void;
   onOpenMap: () => void;
+  onOpenFavorites?: () => void;
   onOpenPost: (postId: number) => void;
   onOpenRecommendations?: () => void;
   onOpenReservations?: () => void;

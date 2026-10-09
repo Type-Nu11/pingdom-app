@@ -17,7 +17,7 @@ import CarIcon from '../assets/mode_car.svg';
 import CarSelectedIcon from '../assets/mode_car_selected.svg';
 import BikeIcon from '../assets/mode_bike.svg';
 import RouteEndpointRows, { type EndpointRole } from './RouteEndpointRows';
-import ErrorIcon from '../assets/error.svg';
+import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import StartIcon from '../assets/start.svg';
 
 type Props = {
@@ -97,7 +97,7 @@ export default function RoutePlannerSheet(props: Props) {
           <Text testID="route-status" accessibilityLiveRegion="polite" style={{ color: muted, fontSize: 14, textAlign: 'center' }}>{t(`routes.states.${props.stateKey}`)}</Text>
           {props.stateKey === 'loading' && action(t('routes.cancel'), props.onCancel)}
         </StateCard> : <StateCard style={{ backgroundColor: raised }}>
-          {!idle && <ErrorIcon />}
+          {!idle && <UnavailableStateIcon size={44} />}
           <Text style={{ color: ink, fontSize: 18, fontWeight: '700', textAlign: 'center' }}>{t(idle ? 'routes.findRoute' : props.stateKey === 'unsupported' ? 'routes.externalTitle' : 'routes.cannotFind')}</Text>
           <Text testID="route-status" accessibilityLiveRegion="polite" style={{ color: muted, fontSize: 14, lineHeight: 20, textAlign: 'center' }}>{t(`routes.states.${props.stateKey}`)}</Text>
           {props.mode === 'car' && action(t('routes.request'), props.onRequest, 'route-request', !props.canRequest, true)}

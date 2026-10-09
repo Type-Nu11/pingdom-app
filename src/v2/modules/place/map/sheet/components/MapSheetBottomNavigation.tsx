@@ -1,6 +1,6 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
-import React, { memo, useState } from 'react';
-import { Animated, Platform, Pressable, Text, View, type PlatformOSType } from 'react-native';
+import React, { createContext, memo, useContext, useMemo, useRef, useState } from 'react';
+import { Animated, PanResponder, Platform, Pressable, Text, View, type PlatformOSType } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -15,6 +15,12 @@ import { FavoriteIcon } from '../../../../../shared/components';
 import { lightLiquidGlass, type AppTheme } from '../../../../../shared/theme';
 import FrostedSurface from '../../presentation/components/FrostedSurface';
 import { MapTutorialTarget, useMapTutorial } from '../../tutorial/context';
+
+// App-owned navigation stays mounted while the section sheets change.
+const NavigationHiddenContext = createContext(false);
+export const MapSheetNavigationHiddenProvider = NavigationHiddenContext.Provider;
+
+const NAVIGATION_SIDE_INSET = 24;
 
 export type MapSheetNavigationTab = 'community' | 'favorites' | 'map' | 'recommendations' | 'reservations';
 
@@ -88,6 +94,53 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
     { id: 'community' as const, label: t('map.navigation.community'), onPress: onOpenCommunity },
     { id: 'reservations' as const, label: t('map.navigation.reservations'), onPress: onOpenReservations },
   ];
+  const hidden = useContext(NavigationHiddenContext);
+  const bar = useRef<View>(null);
+  const bounds = useRef({ left: NAVIGATION_SIDE_INSET, width: 0 });
+  const dragging = useRef(false);
+  const lastDragTab = useRef<MapSheetNavigationTab | null>(null);
+  const navigation = useRef({ activeTab, tabs });
+  navigation.current = { activeTab, tabs };
+  const measureBar = () => bar.current?.measureInWindow((left, _top, width) => {
+    if (width > 8) bounds.current = { left, width };
+  });
+  const swipe = useMemo(() => {
+    const selectAt = (pageX: number) => {
+      const { left, width } = bounds.current;
+      if (width <= 8 || !Number.isFinite(pageX)) return;
+      const current = navigation.current;
+      const index = Math.max(0, Math.min(current.tabs.length - 1,
+        Math.floor((pageX - left - 4) / ((width - 8) / current.tabs.length))));
+      const tab = current.tabs[index];
+      if (tab.id === lastDragTab.current) return;
+      lastDragTab.current = tab.id;
+      setPressedTab(tab.id);
+      if (tab.id !== current.activeTab) tab.onPress?.();
+    };
+    const claim = (_: unknown, gesture: { dx: number; dy: number }) => (
+      Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5
+    );
+    const finish = () => {
+      dragging.current = false;
+      lastDragTab.current = null;
+      setPressedTab(null);
+    };
+    return PanResponder.create({
+      onMoveShouldSetPanResponder: claim,
+      onMoveShouldSetPanResponderCapture: claim,
+      onPanResponderGrant: (_, gesture) => {
+        dragging.current = true;
+        lastDragTab.current = navigation.current.activeTab;
+        selectAt(gesture.moveX);
+      },
+      onPanResponderMove: (_, gesture) => selectAt(gesture.moveX),
+      onPanResponderRelease: finish,
+      onPanResponderTerminate: finish,
+      onPanResponderTerminationRequest: () => false,
+    });
+  }, []);
+
+  if (hidden) return null;
 
   return (
     <Animated.View
@@ -99,7 +152,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
         },
       ]}
     >
-      <View style={styles.navigationShadow}>
+      <View {...swipe.panHandlers} ref={bar} onLayout={event => { bounds.current.width = event.nativeEvent.layout.width; measureBar(); }} collapsable={false} style={styles.navigationShadow} testID="map-navigation-swipe">
         <FrostedSurface
           bottomShade={false}
           cornerRadius={32}
@@ -132,9 +185,9 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
                 key={id}
-                onPress={onPress}
+                onPress={() => { if (!dragging.current) onPress?.(); }}
                 onPressIn={() => setPressedTab(id)}
-                onPressOut={() => setPressedTab(null)}
+                onPressOut={() => { if (!dragging.current) setPressedTab(null); }}
                 style={styles.navItem}
                 testID={`map-navigation-${id}`}
               >
@@ -204,7 +257,7 @@ const createStyles = (
   navLabel: { color: colors.text, fontSize: 10, fontWeight: '500', lineHeight: 13 },
   navLabelActive: { color: colors.primary, fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 4 },
-  navigationRow: { flexDirection: 'row', gap: 12, left: 24, position: 'absolute', right: 24 },
+  navigationRow: { flexDirection: 'row', gap: 12, left: NAVIGATION_SIDE_INSET, position: 'absolute', right: NAVIGATION_SIDE_INSET },
   navigationShadow: {
     backgroundColor: liquidGlass.shadowFill,
     borderRadius: 32,

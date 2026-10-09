@@ -1,3 +1,4 @@
+import { MapSheetBottomNavigation, MapSheetNavigationHiddenProvider } from '../sheet';
 import CarRoutePreview from '../routes/components/CarRoutePreview';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
@@ -1009,6 +1010,7 @@ export default function MapScreen({
     }
   };
 
+  const navigationOffset = useRef(new Animated.Value(0)).current;
   const focusedPlace = mapSelectedPlace ?? mapExternalPlace?.coordinate ?? null;
   const { lat: mapCenterLat, lng: mapCenterLng } = manualCameraCenter ?? selectMapCameraCenter({
     isFollowingUser, focusedPlace, designScale, dismissedMarkerCenter, center,
@@ -1085,6 +1087,7 @@ export default function MapScreen({
           query={query}
           showCategories={snapPoint !== 'expanded'}
         />
+        <MapSheetNavigationHiddenProvider value={true}>
         <View
           pointerEvents="box-none"
           style={styles.sectionTransition}
@@ -1104,6 +1107,7 @@ export default function MapScreen({
               openMapSection('map');
             }}
             onOpenPost={(postId) => onOpenCommunityPost?.(postId)}
+            onOpenFavorites={() => openMapSection('favorites')}
             onOpenRecommendations={() => {
               setMapSection('map');
               setContent({ type: 'recommendations' });
@@ -1308,6 +1312,22 @@ export default function MapScreen({
           />
         )}
         </View>
+        </MapSheetNavigationHiddenProvider>
+        {(mapSection !== 'map' || (content.type !== 'place-preview' && content.type !== 'external-place')) && (
+          <View pointerEvents="box-none" style={styles.navigationOverlay}>
+            <MapSheetBottomNavigation
+              activeTab={mapSection === 'map' && content.type === 'recommendations' ? 'recommendations' : mapSection}
+              onOpenMap={() => openMapSection('map')}
+              onOpenFavorites={() => openMapSection('favorites')}
+              onOpenCommunity={() => openMapSection('community')}
+              onOpenReservations={() => openMapSection('reservations')}
+              onOpenRecommendations={() => {
+                setMapSection('map'); setContent({ type: 'recommendations' }); snapTo('expanded');
+              }}
+              sheetTranslateY={navigationOffset}
+            />
+          </View>
+        )}
       {/* The community frames (Figma 4698:11054 etc.) keep the map clear of the
           visit-verification CTA; the sheet carries its own write action there. */}
       {!isSearchOpen && content.type !== 'place-preview' && !externalPlace && mapSection !== 'community' && onOpenVisitVerification ? (
@@ -1383,4 +1403,5 @@ const styles: Record<string, object> = {
   container: { flex: 1 },
   mapBackground: absoluteFill,
   sectionTransition: { ...absoluteFill, zIndex: 50 },
+  navigationOverlay: { ...absoluteFill, zIndex: 60 },
 };

@@ -1,3 +1,4 @@
+export { default as UnavailableStateIcon } from './UnavailableStateIcon';
 export { default as Button } from './Button';
 export type { ButtonProps, ButtonShape, ButtonSize, ButtonVariant } from './Button';
 export { default as EmptyState } from './EmptyState';

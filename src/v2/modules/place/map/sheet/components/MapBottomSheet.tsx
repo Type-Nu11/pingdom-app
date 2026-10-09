@@ -1,5 +1,5 @@
 import type { ReviewReasonKey } from '../../../../../shared/api/reviewReasons';
-import { ApiErrorState, LoadingState, ReviewFeatureTags } from '../../../../../shared/components';
+import { ApiErrorState, LoadingState, ReviewFeatureTags, UnavailableStateIcon } from '../../../../../shared/components';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -1103,7 +1103,8 @@ const EmptyCard = ({
       style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
       testID={`map-home-feed-state-${copyState}`}
     >
-      <View style={styles.emptyCardIcon}><MapPinIcon active size={24} /></View>
+      <View style={styles.emptyCardIcon}>{copyState === 'loading' || copyState === 'location-pending'
+        ? <MapPinIcon active size={24} /> : <UnavailableStateIcon size={64} />}</View>
       <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
       {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
       {retryable && onRetry ? (
@@ -1135,6 +1136,7 @@ const RecommendationState = ({
     style={styles.recommendationState}
     testID={`recommendation-state-${state}`}
   >
+    {state !== 'loading' ? <UnavailableStateIcon size={64} /> : null}
     <AppText style={styles.emptyCardTitle}>
       {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Title`)}
     </AppText>
@@ -2815,12 +2817,10 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   feedStateContainer: { paddingHorizontal: 16, paddingTop: 29, paddingBottom: 18 },
   emptyCardIcon: {
     alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderRadius: 20,
-    height: 44,
+    height: 64,
     justifyContent: 'center',
     marginBottom: 8,
-    width: 44,
+    width: 64,
   },
   emptyCardTitle: { color: colors.textStrong, fontSize: 14, fontWeight: '800' },
   expandedContent: { paddingBottom: 116 },
