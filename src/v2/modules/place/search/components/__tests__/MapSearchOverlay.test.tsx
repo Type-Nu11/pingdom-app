@@ -73,6 +73,57 @@ describe('MapSearchOverlay registered-place search', () => {
     expect(screen.getByTestId('registered-place-status-empty')).toBeVisible();
   });
 
+  test('같은 ID·이름의 등록 장소와 외부 결과를 출처로 구분해 선택 정보를 전달한다', async () => {
+    jest.mocked(usePlaceAutocomplete).mockReturnValue(autocompleteQuery({
+      data: {
+        places: [{
+          category: 'CAFE', id: 17, latitude: 37.5, longitude: 127.01, name: '성수 카페',
+          roadAddress: '서울 성동구 연무장길 1',
+        }],
+      },
+    }));
+    jest.mocked(useKakaoLocalSearch).mockReturnValue({
+      clearSearchResults: jest.fn(),
+      isSearchingAddress: false,
+      resolveAddressFromCoordinate: jest.fn(),
+      searchPlaces,
+      searchResults: [{
+        address: '서울 성동구 성수동2가 1', id: '17', kakaoPlaceId: '17', lat: 37.6, lng: 127.02,
+        name: '성수 카페', roadAddress: '서울 성동구 연무장길 99',
+      }],
+      searchStatusMessage: '',
+    });
+    const onClose = jest.fn();
+    const onSelectPlace = jest.fn();
+    const { user } = await renderWithProviders(
+      <MapSearchOverlay
+        centerLat={37.5}
+        centerLng={127}
+        onClose={onClose}
+        onSelectPlace={onSelectPlace}
+        recentSearchOwner={recentSearchOwner}
+      />,
+    );
+
+    await user.type(screen.getByPlaceholderText('검색하기'), '성수 카페');
+    fireEvent(screen.getByPlaceholderText('검색하기'), 'submitEditing');
+    await user.press(await screen.findByText('서울 성동구 연무장길 99'));
+
+    expect(onSelectPlace).toHaveBeenLastCalledWith({
+      address: '서울 성동구 성수동2가 1', id: '17', isRegisteredPlace: false, lat: 37.6, lng: 127.02,
+      name: '성수 카페', roadAddress: '서울 성동구 연무장길 99',
+    });
+
+    await user.press(screen.getByText('서울 성동구 연무장길 1'));
+
+    expect(onSelectPlace).toHaveBeenLastCalledWith({
+      address: '서울 성동구 연무장길 1', id: '17', isRegisteredPlace: true, lat: 37.5, lng: 127.01,
+      name: '성수 카페', roadAddress: '서울 성동구 연무장길 1',
+    });
+    expect(onSelectPlace).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
   test('등록 장소 요청 오류를 외부 검색 결과와 별도 상태로 표시한다', async () => {
     jest.mocked(usePlaceAutocomplete).mockReturnValue(autocompleteQuery({ isError: true }));
     const { user } = await renderOverlay();

@@ -67,6 +67,7 @@ import { useTheme } from 'styled-components/native';
 import type { AppTheme } from '../../../../../shared/theme';
 import { normalizePlaceCategory } from '../../../core/placeCategory';
 import { hasValidCoordinates } from '../../actions/services/placeActions';
+import { getExternalPlaceKey, type ExternalMapPlace } from '../../selection/model/externalPlace';
 import {
   selectMapHomeCategoryResult,
   type MapHomeCategory,
@@ -86,7 +87,8 @@ export type BottomSheetContent =
   | { type: 'recommendations' }
   | { type: 'search'; query: string }
   | { type: 'results'; query: string }
-  | { type: 'place-preview'; placeId: number };
+  | { type: 'place-preview'; placeId: number }
+  | { type: 'external-place'; place: ExternalMapPlace };
 
 export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
 
@@ -169,6 +171,9 @@ type MapBottomSheetProps = {
   onDetailPress: (place: DecisionPlace) => void;
   onDeparturePress?: (place: DecisionPlace) => void;
   onDirectionsPress?: (place: DecisionPlace) => void;
+  onExternalDeparturePress?: (place: ExternalMapPlace) => void;
+  onExternalDirectionsPress?: (place: ExternalMapPlace) => void;
+  onExternalPlaceLayout?: (height: number) => void;
   onFilterPress: (filter: VisitFilter) => void;
   onGoNowPress: (place: DecisionPlace) => void;
   onHandlePress: () => void;
@@ -1624,6 +1629,99 @@ const PreviewContent = ({
   );
 };
 
+// An external search result has no PingDom record, so it offers location actions only:
+// no reservation, bookmark, share, or detail entry.
+const ExternalPlaceContent = ({
+  activeAction,
+  onBack,
+  onDeparture,
+  onDirections,
+  onLayout,
+  onSelectAction,
+  place,
+}: {
+  activeAction: PreviewActionKind | null;
+  onBack: () => void;
+  onDeparture?: () => void;
+  onDirections?: () => void;
+  onLayout?: (height: number) => void;
+  onSelectAction: (action: PreviewActionKind) => void;
+  place: ExternalMapPlace;
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const selectAction = (action: PreviewActionKind, callback?: () => void) => {
+    onSelectAction(action);
+    callback?.();
+  };
+
+  return (
+    <View
+      onLayout={onLayout ? (event) => onLayout(event.nativeEvent.layout.height) : undefined}
+      style={styles.previewContent}
+      testID="external-place-card"
+    >
+      <View style={styles.externalHeader}>
+        <View style={styles.previewSummary}>
+          <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</AppText>
+          <View style={styles.externalBadge}>
+            <AppText numberOfLines={1} style={styles.externalBadgeText}>{t('map.externalPlace.badge')}</AppText>
+          </View>
+          {place.address ? (
+            <AppText accessibilityLabel={place.address} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
+              {place.address}
+            </AppText>
+          ) : null}
+          <AppText numberOfLines={1} style={styles.externalSource}>{t('map.externalPlace.sourceKakao')}</AppText>
+        </View>
+        <Pressable
+          accessibilityLabel={t('map.card.dismiss')}
+          accessibilityRole="button"
+          onPress={onBack}
+          style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
+          testID="external-place-close"
+        >
+          <AppText style={styles.previewCloseText}>×</AppText>
+        </Pressable>
+      </View>
+      <View style={styles.externalNotice}>
+        <AppText style={styles.externalNoticeText}>{t('map.externalPlace.reservationUnknown')}</AppText>
+        {!place.coordinate ? (
+          <AppText accessibilityRole="alert" style={styles.externalNoticeText} testID="external-place-location-unavailable">
+            {t('map.externalPlace.locationUnavailable')}
+          </AppText>
+        ) : null}
+      </View>
+      <ScrollView
+        contentContainerStyle={styles.previewActionRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        <PreviewActionChip
+          active={activeAction === 'departure'}
+          disabled={!onDeparture}
+          kind="departure"
+          label={t('map.card.actions.start')}
+          onPress={() => selectAction('departure', onDeparture)}
+        />
+        <PreviewActionChip
+          active={activeAction === 'arrival'}
+          disabled={!onDirections}
+          kind="arrival"
+          label={t('map.card.actions.arrive')}
+          onPress={() => selectAction('arrival', onDirections)}
+        />
+        <PreviewActionChip
+          disabled={!onDirections}
+          kind="directions"
+          label={t('map.card.actions.directions')}
+          onPress={onDirections}
+        />
+      </ScrollView>
+    </View>
+  );
+};
+
 type DetailReview = NonNullable<MapPreviewFallbackContent['reviews']>[number];
 
 const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
@@ -2129,6 +2227,9 @@ export default function MapBottomSheet({
   onDetailPress,
   onDeparturePress,
   onDirectionsPress,
+  onExternalDeparturePress,
+  onExternalDirectionsPress,
+  onExternalPlaceLayout,
   onHandlePress,
   onOpenCommunity,
   onOpenLikedPlaces,
@@ -2177,6 +2278,8 @@ export default function MapBottomSheet({
   } | null>(null);
   const reservationNavigationLock = useRef(false);
   const reservationUnlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const externalPlace = content.type === 'external-place' ? content.place : null;
+  const externalPlaceKey = externalPlace ? getExternalPlaceKey(externalPlace) : null;
   useEffect(() => {
     setActivePlaceDetailTab('info');
     setActivePreviewAction(null);
@@ -2188,7 +2291,7 @@ export default function MapBottomSheet({
     return () => {
       if (reservationUnlockTimer.current) clearTimeout(reservationUnlockTimer.current);
     };
-  }, [selectedPlace?.id]);
+  }, [externalPlaceKey, selectedPlace?.id]);
   const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
   const isSearchMode = content.type === 'search' || content.type === 'results';
   const selectedFeed = feed === 'local' ? localFeed : nationalFeed;
@@ -2409,6 +2512,20 @@ export default function MapBottomSheet({
             place={selectedPlace}
           />
         )
+      ) : externalPlace ? (
+        <ExternalPlaceContent
+          activeAction={activePreviewAction}
+          onBack={onBackHome}
+          onDeparture={onExternalDeparturePress && externalPlace.coordinate
+            ? () => onExternalDeparturePress(externalPlace)
+            : undefined}
+          onDirections={onExternalDirectionsPress && externalPlace.coordinate
+            ? () => onExternalDirectionsPress(externalPlace)
+            : undefined}
+          onLayout={onExternalPlaceLayout}
+          onSelectAction={setActivePreviewAction}
+          place={externalPlace}
+        />
       ) : isSearchMode ? (
         <ScrollView
           contentContainerStyle={styles.resultsContent}
@@ -2462,7 +2579,7 @@ export default function MapBottomSheet({
       </Animated.View>
       </GlassStyles.SheetInner>
 
-      {content.type !== 'place-preview' ? (
+      {content.type !== 'place-preview' && content.type !== 'external-place' ? (
         <MapSheetBottomNavigation
           activeTab={content.type === 'recommendations' ? 'recommendations' : 'map'}
           onOpenCommunity={onOpenCommunity}
@@ -2871,6 +2988,27 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   retryButton: { backgroundColor: colors.primary, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
   retryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
+  externalBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 10,
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  externalBadgeText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', includeFontPadding: false, lineHeight: 16 },
+  externalHeader: { alignItems: 'flex-start', flexDirection: 'row' },
+  externalNotice: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 10,
+    marginBottom: 12,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    rowGap: 4,
+  },
+  externalNoticeText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  externalSource: { color: colors.textMuted, fontSize: 12, fontWeight: '600', includeFontPadding: false, lineHeight: 16, marginTop: 4 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   previewActionChip: {
     alignItems: 'center',
