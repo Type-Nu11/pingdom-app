@@ -6,7 +6,7 @@
   },
   "x-source": {
     "location": "https://www.typenull.xyz/v3/api-docs/app",
-    "sha256": "9691124889cabf79f441f33dc08e8095d051b8a5d0fc8aea814e65977803d7ad"
+    "sha256": "14e421f7f836105fca466bf9264e1189d2445c3df0a8e05c5ceb476ca91a0765"
   },
   "paths": {
     "/reservations": {
@@ -805,6 +805,7 @@
     "schemas": {
       "AvailabilityResponse": {
         "required": [
+          "conditionsVersion",
           "endsAt",
           "id",
           "placeId",
@@ -812,6 +813,7 @@
           "productName",
           "productType",
           "remainingCapacity",
+          "reservationTerms",
           "startsAt",
           "status",
           "totalCapacity"
@@ -876,6 +878,16 @@
               "ACTIVE",
               "INACTIVE"
             ]
+          },
+          "conditionsVersion": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "가격·취소 조건 변경 버전. 조건이 미설정이어도 반환합니다.",
+            "format": "int64",
+            "example": 1
+          },
+          "reservationTerms": {
+            "$ref": "#/components/schemas/ReservationTermsResponse"
           }
         },
         "description": "예약 가능 시간 응답"
@@ -1377,6 +1389,55 @@
           }
         },
         "description": "관광객 예약 응답"
+      },
+      "ReservationTermsResponse": {
+        "required": [
+          "additionalAmountMinor",
+          "cancellable",
+          "cancellationCutoffMinutes",
+          "currency",
+          "timezone",
+          "unitAmountMinor"
+        ],
+        "type": "object",
+        "properties": {
+          "unitAmountMinor": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "통화 최소 단위의 1인당 금액",
+            "format": "int64",
+            "example": 1000
+          },
+          "additionalAmountMinor": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "예약당 한 번 적용하는 통화 최소 단위의 추가 금액",
+            "format": "int64",
+            "example": 50
+          },
+          "currency": {
+            "type": "string",
+            "example": "KRW"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA 시간대",
+            "example": "Asia/Seoul"
+          },
+          "cancellable": {
+            "type": "boolean",
+            "example": true
+          },
+          "cancellationCutoffMinutes": {
+            "type": "integer",
+            "description": "취소 가능할 때만 제공하는 시작 전 취소 기한(분)",
+            "format": "int32",
+            "nullable": true,
+            "example": 60
+          }
+        },
+        "description": "저장된 예약 가격·취소 조건",
+        "nullable": true
       },
       "ValidationErrorResponse": {
         "required": [

@@ -65,6 +65,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     delete voiceAssistant.sessionErrors;
     delete voiceAssistant.picker;
     delete voiceAssistant.conversation;
+    // #349 adds app-owned reservation selection, confirmation and recovery copy.
+    delete voiceAssistant.reservation;
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
     delete voiceAssistant.brand;

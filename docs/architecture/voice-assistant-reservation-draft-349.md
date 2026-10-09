@@ -124,3 +124,9 @@ quote 캐시 정리, 초안 UI·만료·background·context 변경·취소를 �
   `components/__tests__/VoiceReservationDraft.test.tsx` — 모델·transport·화면·lifecycle 검증.
 - `docs/architecture/adr/0001-production-dependency-graph.json` — 새 V2 모델의 실제 연결 그래프.
 - 이 문서 및 #348 문서의 후속 상태 안내.
+
+## 2026-10-09 후속: AI 패널 예약 제출·복구 구현
+
+위의 미제출 기록은 1단계 당시의 상태입니다. 후속 `feat/349-ai-reservation-submit`에서는 AI 패널 안의 실제 일정 선택·예약자 입력·최종 확인·예약 생성 및 같은 요청 복구를 구현했습니다. 조회/초안 명령은 계속 mutation을 실행하지 않으며 사용자 버튼만 제출합니다. 최신 availability의 가격·취소 조건 필드도 동기화했습니다.
+
+구현·검증과 테스트 데이터 준비 절차는 [후속 검증 기록](../qa/349-ai-reservation-submit.md)에 있습니다. 자동 검증은 통과했지만 인증된 실제 서버·기기 E2E는 아직 완료하지 않았으므로 #349 전체 완료로 표시하지 않습니다. 기존 네비게이션·아이콘 PR #422와 커뮤니티 #421은 별도 범위입니다.

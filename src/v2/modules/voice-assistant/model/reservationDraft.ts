@@ -1,10 +1,7 @@
+import { validateReservationQuote, ReservationConfirmationError } from '../../booking';
 import type { ReservationConfirmation, ReservationQuote } from '../../booking';
 import type { ReservationDraft, VoiceAvailabilityFacts, VoicePlaceFacts } from './voiceAssistantCommand.types';
-import { serverInstant, VoiceCommandError } from './voiceCommandTime';
-
-function invalid(): never { throw new VoiceCommandError('INVALID_SERVER_RESPONSE'); }
-const nonnegativeInteger = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+import { VoiceCommandError } from './voiceCommandTime';
 
 /** Runtime projection: generated types alone cannot certify an actual server response. */
 export function prepareVoiceReservationDraft(
@@ -13,55 +10,21 @@ export function prepareVoiceReservationDraft(
     date: string; timezone: string; availabilityDataUpdatedAt: number },
   now: number,
 ): ReservationDraft {
-  if (!value || typeof value !== 'object') return invalid();
+  let confirmation: Readonly<ReservationConfirmation>;
+  try { confirmation = validateReservationQuote(value, {
+    placeId: selection.place.id, placeName: selection.place.name,
+    quantity: selection.quantity, availability: selection.availability,
+  }, now); } catch (error) {
+    if (error instanceof ReservationConfirmationError) throw new VoiceCommandError(error.code);
+    throw error;
+  }
   const quote = value as ReservationQuote;
-  const c = quote.confirmation;
   const a = selection.availability;
-  // Tokens are validated here but intentionally excluded from provider results and draft UI.
-  if (typeof quote.confirmationToken !== 'string'
-    || quote.confirmationToken.length !== 36
-    || !c || typeof c !== 'object'
-    || !nonnegativeInteger(quote.remainingCapacity) || quote.remainingCapacity < selection.quantity) return invalid();
-  if (a.productType !== 'GENERAL' || a.productId !== null || a.productName !== null) {
-    throw new VoiceCommandError('UNSUPPORTED_PRODUCT');
-  }
-  if (c.placeId !== selection.place.id || c.placeName !== selection.place.name || c.availabilityId !== a.id
-    || c.productType !== a.productType || c.productId !== a.productId || c.productName !== a.productName
-    || c.startsAt !== a.startsAt || c.endsAt !== a.endsAt || c.quantity !== selection.quantity) {
-    throw new VoiceCommandError('STALE_CONTEXT');
-  }
-  const start = serverInstant(c.startsAt), end = serverInstant(c.endsAt), expires = serverInstant(c.expiresAt);
-  if (!(now < start && start < end && now < expires && expires <= start && expires <= now + 300000)) return invalid();
-  if (typeof c.timezone !== 'string' || !c.timezone) return invalid();
-  try { new Intl.DateTimeFormat('en', { timeZone: c.timezone }).format(now); } catch { return invalid(); }
-  if (![c.unitAmountMinor, c.additionalAmountMinor, c.totalAmountMinor, c.cancellationFeeMinor, c.refundableAmountMinor].every(nonnegativeInteger)
-    || !Number.isSafeInteger(c.unitAmountMinor * c.quantity + c.additionalAmountMinor)
-    || c.totalAmountMinor !== c.unitAmountMinor * c.quantity + c.additionalAmountMinor
-    || typeof c.currency !== 'string' || !/^[A-Z]{3}$/.test(c.currency)
-    || !nonnegativeInteger(c.currencyFractionDigits) || c.currencyFractionDigits > 4
-    || c.paymentRequired !== (c.totalAmountMinor > 0)
-    || typeof c.cancellable !== 'boolean' || c.cancellationFeeMinor !== 0
-    || !nonnegativeInteger(c.conditionsVersion)
-    || c.productVersion !== null) return invalid();
-  if (c.cancellable) {
-    if (serverInstant(c.cancellationDeadline) > start || c.refundableAmountMinor !== c.totalAmountMinor) return invalid();
-  } else if (c.cancellationDeadline !== null || c.refundableAmountMinor !== 0) return invalid();
-  // Only explicit, validated server facts survive. No inferred free price or cancellation policy.
-  const confirmation: Readonly<ReservationConfirmation> = Object.freeze({
-    placeId: c.placeId, placeName: c.placeName, availabilityId: c.availabilityId,
-    productType: c.productType, productId: c.productId, productName: c.productName,
-    startsAt: c.startsAt, endsAt: c.endsAt, quantity: c.quantity, timezone: c.timezone,
-    unitAmountMinor: c.unitAmountMinor, additionalAmountMinor: c.additionalAmountMinor,
-    totalAmountMinor: c.totalAmountMinor, currency: c.currency, currencyFractionDigits: c.currencyFractionDigits,
-    paymentRequired: c.paymentRequired, cancellable: c.cancellable, cancellationDeadline: c.cancellationDeadline,
-    cancellationFeeMinor: c.cancellationFeeMinor, refundableAmountMinor: c.refundableAmountMinor,
-    conditionsVersion: c.conditionsVersion, productVersion: c.productVersion, expiresAt: c.expiresAt,
-  });
   return Object.freeze({ status: 'awaiting_user_confirmation', place: selection.place,
     availability: Object.freeze({ ...a, productType: 'GENERAL', productId: null, productName: null,
       remainingCapacity: quote.remainingCapacity }),
     quantity: selection.quantity, date: selection.date, timezone: selection.timezone, confirmation,
-    source: Object.freeze({ placeId: c.placeId, availabilityId: c.availabilityId, productId: null,
+    source: Object.freeze({ placeId: confirmation.placeId, availabilityId: confirmation.availabilityId, productId: null,
       availabilityDataUpdatedAt: selection.availabilityDataUpdatedAt }),
   });
 }
