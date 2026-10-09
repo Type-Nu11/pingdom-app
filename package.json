@@ -39,7 +39,7 @@
     "generate:notification-api": "node scripts/generate-notification-api-contract.mjs",
     "sync:reservation-payment-openapi": "node scripts/sync-reservation-payment-openapi.mjs",
     "generate:reservation-payment-api-types": "openapi-typescript docs/api/reservation-payment.openapi.json -o src/v2/shared/api/generated/reservationPayment.ts",
-    "check:api-types": "node scripts/check-generated-api-types.mjs && node scripts/check-generated-place-exploration-api-types.mjs && node scripts/check-generated-map-home-feeds-api-types.mjs && node scripts/check-generated-place-menus-api-types.mjs && node scripts/check-generated-visit-verification-api-types.mjs && node scripts/check-generated-offers-coupons-api-types.mjs && node scripts/check-generated-community-api-types.mjs",
+    "check:api-types": "node scripts/check-generated-api-types.mjs && node scripts/check-generated-place-exploration-api-types.mjs && node scripts/check-generated-map-home-feeds-api-types.mjs && node scripts/check-generated-place-menus-api-types.mjs && node scripts/check-generated-visit-verification-api-types.mjs && node scripts/check-generated-offers-coupons-api-types.mjs && node scripts/check-generated-community-api-types.mjs && node scripts/check-generated-routes-api-types.mjs",
     "check:notification-api-types": "node scripts/check-notification-api-types.mjs",
     "check:mock-contract": "tsc --noEmit",
     "test": "jest",
@@ -55,7 +55,9 @@
     "typecheck": "tsc --noEmit",
     "web": "expo start --web",
     "sync:voice-ai-openapi": "node scripts/sync-voice-ai-openapi.mjs",
-    "generate:voice-ai-api-types": "openapi-typescript docs/api/voice-ai.openapi.json -o src/v2/shared/api/generated/voiceAi.ts"
+    "generate:voice-ai-api-types": "openapi-typescript docs/api/voice-ai.openapi.json -o src/v2/shared/api/generated/voiceAi.ts",
+    "generate:routes-api-types": "openapi-typescript docs/api/routes.openapi.json -o src/v2/shared/api/generated/routes.ts",
+    "check:routes-api-types": "node scripts/check-generated-routes-api-types.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
