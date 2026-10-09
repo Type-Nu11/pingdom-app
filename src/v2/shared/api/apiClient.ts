@@ -1,3 +1,5 @@
+export { configureAppRequestMetadata, getAppRequestHeaders } from './appRequestHeaders';
+import { getAppRequestHeaders } from './appRequestHeaders';
 import axios, { type AxiosInstance } from 'axios';
 
 import { env } from '../config';
@@ -54,13 +56,14 @@ async function withAuthorization(
 ): Promise<(GetRequestOptions | MutationRequestOptions) & {
   headers: Record<string, string>;
 }> {
+  const appHeaders = await getAppRequestHeaders();
   const token = (await accessTokenProvider())?.replace(/^Bearer\s+/i, '').trim();
 
   return {
     ...options,
     headers: withClientTypeHeader(token
-      ? { ...options.headers, Authorization: `Bearer ${token}` }
-      : options.headers),
+      ? { ...options.headers, ...appHeaders, Authorization: `Bearer ${token}` }
+      : { ...options.headers, ...appHeaders }),
   };
 }
 

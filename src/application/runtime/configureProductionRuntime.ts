@@ -1,3 +1,6 @@
+import appConfig from '../../../app.json';
+import { configureAppRequestMetadata } from '../../v2/shared/api/apiClient';
+import { getNativeAppRequestMetadata } from '../../v2/shared/native/appRequestMetadata';
 import '../../v2/app/configureDomainMocks';
 import { configureBeforeLogout, logout } from '../../app/store/authStore';
 import { api } from '../../shared/api/apiClient';
@@ -15,6 +18,7 @@ let isConfigured = false;
 export function configureProductionRuntime(): void {
   if (isConfigured) return;
 
+  configureAppRequestMetadata(() => getNativeAppRequestMetadata(appConfig.expo.version));
   installProductionRuntime({
     transport: api,
     getAccessToken: getCachedAccessToken,
