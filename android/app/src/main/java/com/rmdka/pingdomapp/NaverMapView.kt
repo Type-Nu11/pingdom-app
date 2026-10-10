@@ -54,6 +54,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private val placeMarkers = mutableMapOf<String, Marker>()
     private val icons = mutableMapOf<String, OverlayImage>()
     private val userMarker = Marker()
+    private val routeCasing = PolylineOverlay()
     private val routeLine = PolylineOverlay()
     private var routePoints = emptyList<LatLng>()
     private var routeDirty = false
@@ -235,10 +236,22 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         }
         if (routeDirty) {
             routeLine.map = null
+            routeCasing.map = null
             if (routePoints.size >= 2) {
                 routeLine.coords = routePoints
-                routeLine.width = dp(6f)
-                routeLine.color = Color.rgb(255, 25, 86)
+                // Figma 8548:35330: 7 dp pink line over 11 dp white casing.
+                routeCasing.coords = routePoints
+                routeCasing.width = dp(11f)
+                routeCasing.color = Color.WHITE
+                routeCasing.capType = PolylineOverlay.LineCap.Round
+                routeCasing.joinType = PolylineOverlay.LineJoin.Round
+                routeCasing.zIndex = 0
+                routeCasing.map = map
+                routeLine.width = dp(7f)
+                routeLine.color = Color.rgb(255, 74, 117)
+                routeLine.capType = PolylineOverlay.LineCap.Round
+                routeLine.joinType = PolylineOverlay.LineJoin.Round
+                routeLine.zIndex = 1
                 routeLine.map = map
             }
             routeDirty = false
@@ -357,6 +370,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         if (disposed) return
         disposed = true
         routeLine.map = null
+        routeCasing.map = null
         removeCallbacks(layoutChildren)
         reactContext.removeLifecycleEventListener(this)
         placeMarkers.values.forEach { it.map = null; it.onClickListener = null }
