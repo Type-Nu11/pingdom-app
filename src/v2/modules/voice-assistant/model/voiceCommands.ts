@@ -113,13 +113,15 @@ function validateSearch(request: Request<'searchNearbyReservablePlaces'> | Reque
 /** General discovery never reads availability, quotes, or reservation mutations. */
 const searchNearbyPlaces: VoiceCommandHandler<'searchNearbyPlaces'> = async (request, ex) => {
   const r = ex.runtime;
+  const limit = request.args.limit ?? 3;
   const list = await ex.query(ex.queries.list({ latitude: r.location!.latitude, longitude: r.location!.longitude,
-    radiusKm: r.radiusKm, page: 1, limit: 3, sort: 'NEAREST',
+    radiusKm: r.radiusKm, page: 1, limit, sort: 'NEAREST',
+    ...(request.args.keyword ? { keyword: request.args.keyword.trim() } : {}),
     ...(request.args.touristCategory ? { touristCategory: request.args.touristCategory } : {}) }));
   if (!list.data || !Array.isArray(list.data.places)) return invalid();
   const seen = new Set<number>();
   const places: VoicePlaceFacts[] = [];
-  for (const candidate of list.data.places.slice(0, 3)) {
+  for (const candidate of list.data.places.slice(0, limit)) {
     ex.check();
     if (!candidate || !validId(candidate.id) || seen.has(candidate.id)) return invalid();
     seen.add(candidate.id);

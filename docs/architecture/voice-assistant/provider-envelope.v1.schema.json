@@ -36,6 +36,17 @@
             "useCurrentLocation"
           ],
           "properties": {
+            "keyword": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
             "touristCategory": {
               "enum": [
                 "K_POP",

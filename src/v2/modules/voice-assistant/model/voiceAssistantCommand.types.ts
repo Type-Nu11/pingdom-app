@@ -19,6 +19,8 @@ export type VoiceLocalTime = string;
  */
 export type VoiceAssistantCommand =
   | Readonly<{ command: 'searchNearbyPlaces'; args: Readonly<{
+    keyword?: string;
+    limit?: number;
     touristCategory?: VoiceTouristCategory;
     useCurrentLocation: boolean;
   }> }>

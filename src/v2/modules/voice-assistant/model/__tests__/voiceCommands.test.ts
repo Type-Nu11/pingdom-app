@@ -394,6 +394,19 @@ test('user-owned quote tokens are removed from shared cache after preparation', 
 
 const generalSearch = (args = {}, id = 'general-search') => command('searchNearbyPlaces', { useCurrentLocation: true, ...args }, id);
 
+test('keyword discovery passes the keyword and app coordinates without any reservation reads', async () => {
+  const x = setup();
+  x.setPlaces({ places: [1, 2, 3].map(id => ({ ...facts, id, name: `갈비탕 ${id}` })) });
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: ' 갈비탕 ', limit: 2 }))).toMatchObject({ outcome: {
+    status: 'succeeded', data: { places: [expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 })] },
+  } });
+  expect(x.calls).toEqual([expect.objectContaining({ path: '/places/', params: {
+    keyword: '갈비탕', latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 2, sort: 'NEAREST',
+  } })]);
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
 test('general discovery without category or booking conditions reads actual places, displays at most three and never checks availability', async () => {
   const x = setup();
   x.setPlaces({ places: [1, 2, 3, 4].map(id => ({ ...facts, id, name: `Place ${id}` })) });

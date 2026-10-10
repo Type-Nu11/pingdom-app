@@ -60,3 +60,20 @@ test.each(['date', 'startTime', 'endTime', 'quantity', 'latitude', 'route', 'con
   expect(validate(fixture)).toBe(false);
   expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(false);
 });
+
+test.each([
+  { keyword: '갈비탕', limit: 3 }, { keyword: ' 갈비탕 ', limit: 1 },
+])('general keyword discovery accepts bounded arguments %p', args => {
+  const fixture = { ...base, kind: 'command_request', command: 'searchNearbyPlaces', args: { useCurrentLocation: true, ...args } };
+  expect(validate(fixture)).toBe(true);
+  expect(parseVoiceAssistantEnvelope(fixture)).toMatchObject({ ok: true, value: { args } });
+});
+
+test.each([
+  { keyword: '' }, { keyword: '   ' }, { keyword: null }, { keyword: '가'.repeat(101) },
+  { limit: 0 }, { limit: 4 }, { limit: 1.5 }, { limit: '3' }, { limit: null },
+])('general keyword discovery rejects invalid arguments %p', args => {
+  const fixture = { ...base, kind: 'command_request', command: 'searchNearbyPlaces', args: { useCurrentLocation: true, ...args } };
+  expect(validate(fixture)).toBe(false);
+  expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(false);
+});

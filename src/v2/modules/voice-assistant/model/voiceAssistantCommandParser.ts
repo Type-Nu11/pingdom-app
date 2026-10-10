@@ -85,11 +85,23 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
   switch (name) {
     case 'searchNearbyPlaces': {
       const args = record(input, '$.args');
-      exact(args, ['useCurrentLocation'], ['touristCategory'], '$.args');
+      exact(args, ['useCurrentLocation'], ['touristCategory', 'keyword', 'limit'], '$.args');
       if (typeof args.useCurrentLocation !== 'boolean') fail('INVALID_FIELD', '$.args.useCurrentLocation');
+      let keyword: string | undefined;
+      if (Object.hasOwn(args, 'keyword')) {
+        if (typeof args.keyword !== 'string' || args.keyword.length > 100 || !args.keyword.trim()) fail('INVALID_FIELD', '$.args.keyword');
+        // Preserve the provider payload for the session replay fingerprint; trim only at the API boundary.
+        keyword = args.keyword;
+      }
+      let limit: number | undefined;
+      if (Object.hasOwn(args, 'limit')) {
+        if (typeof args.limit !== 'number' || !Number.isInteger(args.limit) || args.limit < 1 || args.limit > 3) fail('INVALID_FIELD', '$.args.limit');
+        limit = args.limit;
+      }
       const touristCategory = Object.hasOwn(args, 'touristCategory')
         ? member(args.touristCategory, categories, '$.args.touristCategory') : undefined;
       return { command: name, args: Object.freeze({ useCurrentLocation: args.useCurrentLocation,
+        ...(keyword !== undefined ? { keyword } : {}), ...(limit !== undefined ? { limit } : {}),
         ...(touristCategory ? { touristCategory } : {}) }) };
     }
     case 'searchNearbyReservablePlaces': {
