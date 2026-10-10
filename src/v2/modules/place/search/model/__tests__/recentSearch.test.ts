@@ -5,6 +5,15 @@ import {
 } from '../recentSearch';
 
 describe('recent search policy', () => {
+  test('선택 장소 주소는 저장·복원하고 과거 기록 및 잘못된 선택 필드는 생략한다', () => {
+    const base = { category: 'food' as const, query: '장소', searchedAt: '2026-09-12T03:00:00.000Z' };
+    const selected = addRecentSearch([], { ...base, address: '  실제 주소  ' });
+    expect(sanitizeRecentSearches(selected)[0].address).toBe('실제 주소');
+    const legacy = addRecentSearch([], base);
+    expect(sanitizeRecentSearches(legacy)[0]).not.toHaveProperty('address');
+    expect(sanitizeRecentSearches([{ ...legacy[0], address: 123, extra: 'unknown' }])[0]).toEqual(legacy[0]);
+    expect(addRecentSearch(selected, base)[0]).not.toHaveProperty('address');
+  });
   test('검색어 앞뒤 공백을 제거하고 공백 검색어는 저장하지 않는다', () => {
     const searchedAt = '2026-09-12T03:00:00.000Z';
     const added = addRecentSearch([], { category: 'cafe', query: '  성수 카페  ', searchedAt });

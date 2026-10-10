@@ -10,7 +10,7 @@ import DestinationIcon from '../assets/destination.svg';
 
 export type EndpointRole = 'origin' | 'destination';
 type Props = {
-  origin: RouteDestination | null; destination: RouteDestination | null;
+  origin: RouteDestination | null; destination: RouteDestination | null; originDenied?: boolean;
   onEdit: (role: EndpointRole) => void; onSwap: () => void;
   onDragging?: (dragging: boolean) => void;
 };
@@ -19,8 +19,8 @@ export function endpointDragCrossesRow(role: EndpointRole, dy: number, height: n
   return Number.isFinite(dy) && (role === 'origin' ? dy > height / 2 : dy < -height / 2);
 }
 
-function EndpointRow({ role, point, onEdit, onSwap, onDragging, onPreview, displaced }: {
-  role: EndpointRole; point: RouteDestination | null;
+function EndpointRow({ role, point, onEdit, onSwap, onDragging, onPreview, displaced, originDenied }: {
+  role: EndpointRole; point: RouteDestination | null; originDenied?: boolean;
   displaced: boolean; onPreview: (role: EndpointRole, crossed: boolean, active: boolean) => void;
   onEdit: Props['onEdit']; onSwap: Props['onSwap']; onDragging?: Props['onDragging'];
 }) {
@@ -70,7 +70,7 @@ function EndpointRow({ role, point, onEdit, onSwap, onDragging, onPreview, displ
     onPanResponderTerminate: stop,
   }), [role, t, translateY]);
   const label = point?.isCurrentLocation ? t('routes.currentLocation') : point?.name ?? t('routes.setOrigin');
-  const subtitle = point?.address || t(point ? `routes.${role}` : 'routes.locationNeeded');
+  const subtitle = point?.address || t(point ? `routes.${role}` : originDenied ? 'routes.permissionOriginHint' : 'routes.locationNeeded');
   return <View {...pan.panHandlers} onTouchEnd={() => { if (active.current) setTimeout(stop, 0); }}
     onLayout={e => { height.current = e.nativeEvent.layout.height; }}
     style={{ zIndex: dragging ? 2 : 0 }}>
@@ -89,12 +89,12 @@ function EndpointRow({ role, point, onEdit, onSwap, onDragging, onPreview, displ
       onPress={() => { if (!suppressPress.current) onEdit(role); }}
       style={{ minHeight: 56, paddingVertical: 8, paddingHorizontal: 12, gap: 12, flexDirection: 'row', alignItems: 'center',
         backgroundColor: dragging ? theme.colors.surface : 'transparent', borderRadius: dragging ? 16 : 0 }}>
-      {role === 'origin' ? <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+      {role === 'origin' ? <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: originDenied ? theme.colors.warningSoft : theme.colors.primaryTint, alignItems: 'center', justifyContent: 'center' }}>
         {point ? <OriginIcon /> : <OriginDeniedIcon />}
       </View> : <DestinationIcon />}
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <Text numberOfLines={1} style={{ color: theme.colors.textStrong, fontSize: 16, fontWeight: '500' }}>{label}</Text>
-        <Text numberOfLines={1} style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{subtitle}</Text>
+        <Text numberOfLines={1} style={{ color: theme.colors.labelAssistive, fontSize: 12, lineHeight: 15.6 }}>{subtitle}</Text>
       </View>
     </Pressable>
     </Animated.View>
@@ -110,7 +110,7 @@ export default function RouteEndpointRows(props: Props) {
       ...(preview.role === 'origin' !== preview.crossed ? { top: 4 } : { bottom: 4 }), height: '46%', borderRadius: 16,
       backgroundColor: theme.colors.primarySoft, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.colors.border }} />}
     <EndpointRow {...props} role="origin" point={props.origin} onPreview={onPreview} displaced={preview?.role === 'destination' && preview.crossed} />
-    <View style={{ marginLeft: 56, height: 0.5, opacity: preview ? 0 : 1, backgroundColor: theme.colors.border }} />
+    <View style={{ marginLeft: 56, height: 1, opacity: preview ? 0 : 1, backgroundColor: theme.colors.border }} />
     <EndpointRow {...props} role="destination" point={props.destination} onPreview={onPreview} displaced={preview?.role === 'origin' && preview.crossed} />
   </View>;
 }

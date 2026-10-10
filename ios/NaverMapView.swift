@@ -20,6 +20,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     private var placeMarkers: [String: NMFMarker] = [:]
     private var icons: [String: NMFOverlayImage] = [:]
     private let userMarker = NMFMarker()
+    private var routeCasing: NMFPolylineOverlay?
     private var routeLine: NMFPolylineOverlay?
     private var routeDirty = false
     private var routeAnchor: NMGLatLng?
@@ -145,6 +146,8 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         }
         if routeDirty {
             routeLine?.mapView = nil
+            routeCasing?.mapView = nil
+            routeCasing = nil
             routeLine = nil
             routeAnchor = nil
             let raw = routeCoordinates ?? []
@@ -156,9 +159,21 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             }
             if points.count == raw.count, points.count >= 2,
                points.contains(where: { $0.lat != points[0].lat || $0.lng != points[0].lng }) {
+                // Figma 8548:35330: 7 pt pink line over 11 pt white casing.
+                let casing = NMFPolylineOverlay(points)
+                casing?.width = 11
+                casing?.color = .white
+                casing?.capType = .round
+                casing?.joinType = .round
+                casing?.zIndex = 0
+                casing?.mapView = mapView
+                routeCasing = casing
                 let line = NMFPolylineOverlay(points)
-                line?.width = 6
-                line?.color = UIColor(red: 1, green: 0.098, blue: 0.337, alpha: 1)
+                line?.width = 7
+                line?.color = UIColor(red: 1, green: 74.0 / 255, blue: 117.0 / 255, alpha: 1)
+                line?.capType = .round
+                line?.joinType = .round
+                line?.zIndex = 1
                 line?.mapView = mapView
                 routeLine = line
                 routeAnchor = points[points.count / 2]
@@ -248,6 +263,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
 
     deinit {
         routeLine?.mapView = nil
+        routeCasing?.mapView = nil
         mapView.removeCameraDelegate(delegate: self)
         placeMarkers.values.forEach { $0.touchHandler = nil; $0.mapView = nil }
         userMarker.mapView = nil
