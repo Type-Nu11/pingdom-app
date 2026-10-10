@@ -1,5 +1,7 @@
 export const routeResources = {
   ko: {
+    tracking: {"start": "앱에서 경로 따라가기", "active": "경로를 따라가는 중", "arrived": "목적지에 도착했어요", "loading": "현재 위치에서 경로를 찾고 있어요", "failed": "경로를 불러오지 못했어요", "paused": "현재 위치를 다시 확인해 주세요", "distance": "목적지까지 직선 거리 {{distance}}", "hint": "화면이 열려 있는 동안 위치를 따라갑니다. 회전·음성 안내는 제공하지 않습니다.", "stop": "경로 따라가기 종료", "done": "완료", "follow": "현재 위치 따라가기", "refresh": "위치 다시 확인", "startUnavailable": "현재 위치를 확인하고 도착 장소를 선택해 주세요.", "distanceLabel": "목적지까지 직선 거리", "estimate": "조회 당시 예상 시간 · 전체 경로 거리"},
+    permissionTitle: '위치 권한이 꺼져 있어요', noRouteTitle: '자동차 경로가 없어요', directInput: '직접 입력', editPlaces: '장소 변경', permissionOriginHint: '출발지를 입력하거나 위치 권한을 켜 주세요', optimalRoute: '최적 경로',
     editor: { editEndpoint: '{{role}} 장소 편집, {{name}}', dragHint: '길게 누른 뒤 위아래로 끌어 출발과 도착을 바꿀 수 있습니다', edit: '장소 편집', swap: '출발·도착 바꾸기', swapped: '출발과 도착을 바꿨습니다', close: '장소 편집 닫기', search: '장소 검색', map: '지도에서 선택', saved: '핑덤 저장 장소', all: '전체 보기', recent: '최근 검색', clear: '지우기', results: '검색 결과', loading: '장소를 검색하고 있습니다', retry: '검색 다시 시도', searchFailed: '장소를 검색하지 못했습니다', emptySearch: '검색 결과가 없습니다', retrySaved: '저장 장소 다시 불러오기', emptySaved: '저장한 장소가 없습니다', emptyRecent: '최근 검색이 없습니다', recentSearch: '{{name}} 검색', more: '더 보기', mapHint: '지도를 움직여 위치를 선택해 주세요', confirmMap: '이 위치 선택', mapPoint: '지도에서 선택한 위치' },
     title: '경로', recenter: '지도 중심 다시 맞추기', arrival: '{{time}} 도착', share: '장소 공유', start: '시작', currentLocation: '현재 위치', setOrigin: '출발지 설정', locationNeeded: '현재 위치를 확인해 주세요', providerEstimate: '네이버 자동차 예상 경로', recommended: '추천 경로', findRoute: '자동차 경로 찾기', cannotFind: '경로를 불러올 수 없어요', externalTitle: '네이버지도에서 길찾기', externalHint: '시작하면 네이버지도 앱으로 이동합니다', preview: '앱에서 자동차 경로 보기', external: '네이버지도 앱에서 길찾기',
     close: '닫기', cancel: '조회 취소', request: '자동차 경로 조회', fit: '전체 경로 보기', location: '현재 위치 다시 확인', settings: '위치 권한 설정 열기',
@@ -8,7 +10,7 @@ export const routeResources = {
     modes: { car: '자동차', walk: '도보', transit: '대중교통', bike: '자전거' },
     states: {
       idle: '현재 위치에서 선택 장소까지 자동차 경로를 조회하세요.', loading: '자동차 경로를 조회하고 있습니다.',
-      'location-loading': '현재 위치를 확인하고 있습니다.', 'location-denied': '위치 권한을 허용하거나 네이버지도 앱에서 출발지를 선택해 주세요.',
+      'location-loading': '현재 위치를 확인하고 있습니다.', 'location-denied': '현재 위치에서 길을 찾으려면 위치 접근을 허용해 주세요. 출발지를 직접 입력해도 돼요.',
       'location-failed': '현재 위치를 확인할 수 없습니다. 다시 확인해 주세요.', 'missing-destination': '목적지 좌표가 없습니다.',
       authentication: '로그인이 필요합니다. 다시 로그인해 주세요.', forbidden: '경로를 조회할 권한이 없습니다.',
       'rate-limited': '조회가 너무 많습니다. 잠시 후 직접 다시 시도해 주세요.', unavailable: '경로 서비스가 현재 제공되지 않습니다. 네이버지도 앱을 이용해 주세요.',
@@ -19,6 +21,8 @@ export const routeResources = {
     openFailed: '네이버지도 앱을 열 수 없습니다.', notInstalled: '네이버지도 앱을 설치해 주세요.',
   },
   en: {
+    tracking: {"start": "Follow route in app", "active": "Following route", "arrived": "You have arrived", "loading": "Finding a route from your location", "failed": "Unable to load route", "paused": "Check your current location again", "distance": "Straight-line distance to destination: {{distance}}", "hint": "Follows your location while this screen is open. Turn and voice guidance are unavailable.", "stop": "Stop following route", "done": "Done", "follow": "Follow current location", "refresh": "Check location again", "startUnavailable": "Check your current location and select a destination.", "distanceLabel": "Straight-line distance to destination", "estimate": "Estimate at lookup · Total route distance"},
+    permissionTitle: 'Location access is off', noRouteTitle: 'No car route found', directInput: 'Enter manually', editPlaces: 'Change places', permissionOriginHint: 'Enter an origin or allow location access', optimalRoute: 'Optimal route',
     editor: { editEndpoint: 'Edit {{role}}, {{name}}', dragHint: 'Hold and drag up or down to swap origin and destination', edit: 'Edit place', swap: 'Swap origin and destination', swapped: 'Origin and destination swapped', close: 'Close place editor', search: 'Search places', map: 'Select on map', saved: 'Saved places', all: 'View all', recent: 'Recent searches', clear: 'Clear', results: 'Search results', loading: 'Searching places', retry: 'Retry search', searchFailed: 'Could not search places', emptySearch: 'No places found', retrySaved: 'Reload saved places', emptySaved: 'No saved places', emptyRecent: 'No recent searches', recentSearch: 'Search {{name}}', more: 'Load more', mapHint: 'Move the map to select a location', confirmMap: 'Select this location', mapPoint: 'Location selected on map' },
     title: 'Route', recenter: 'Recenter map', arrival: 'Arrive at {{time}}', share: 'Share place', start: 'Start', currentLocation: 'Current location', setOrigin: 'Set origin', locationNeeded: 'Check your current location', providerEstimate: 'Estimated NAVER car route', recommended: 'Recommended', findRoute: 'Find a car route', cannotFind: 'Unable to load route', externalTitle: 'Directions in NAVER Map', externalHint: 'Start opens the NAVER Map app', preview: 'Preview car route in app', external: 'Directions in NAVER Map app',
     close: 'Close', cancel: 'Cancel request', request: 'Find car route', fit: 'Show entire route', location: 'Check current location again', settings: 'Open location permission settings',
@@ -27,7 +31,7 @@ export const routeResources = {
     modes: { car: 'Car', walk: 'Walk', transit: 'Transit', bike: 'Bicycle' },
     states: {
       idle: 'Find a car route from your current location to this place.', loading: 'Finding a car route…',
-      'location-loading': 'Checking your current location…', 'location-denied': 'Allow location access or select an origin in the NAVER Map app.',
+      'location-loading': 'Checking your current location…', 'location-denied': 'Allow location access to route from your current location, or enter an origin manually.',
       'location-failed': 'Could not get your current location. Try again.', 'missing-destination': 'Destination coordinates are missing.',
       authentication: 'Please sign in again to find a route.', forbidden: 'You do not have permission to find a route.',
       'rate-limited': 'Too many requests. Wait before trying again manually.', unavailable: 'Route service is currently unavailable. Use the NAVER Map app.',
@@ -38,6 +42,8 @@ export const routeResources = {
     openFailed: 'Could not open the NAVER Map app.', notInstalled: 'Please install the NAVER Map app.',
   },
   ja: {
+    tracking: {"start": "アプリでルートを追跡", "active": "ルートを追跡中", "arrived": "目的地に到着しました", "loading": "現在地からルートを検索中", "failed": "ルートを読み込めません", "paused": "現在地を再確認してください", "distance": "目的地までの直線距離 {{distance}}", "hint": "画面を開いている間、現在地を追跡します。曲がり角・音声の案内はありません。", "stop": "追跡を終了", "done": "完了", "follow": "現在地を追跡", "refresh": "現在地を再確認", "startUnavailable": "現在地を確認して目的地を選択してください。", "distanceLabel": "目的地までの直線距離", "estimate": "検索時の予想時間・ルート全体の距離"},
+    permissionTitle: '位置情報がオフです', noRouteTitle: '自動車ルートがありません', directInput: '直接入力', editPlaces: '場所を変更', permissionOriginHint: '出発地を入力するか位置情報を許可してください', optimalRoute: '最適ルート',
     editor: { editEndpoint: '{{role}}を編集、{{name}}', dragHint: '長押しして上下にドラッグすると出発地と目的地を入れ替えられます', edit: '場所を編集', swap: '出発地と目的地を入れ替え', swapped: '出発地と目的地を入れ替えました', close: '場所の編集を閉じる', search: '場所を検索', map: '地図から選択', saved: '保存した場所', all: 'すべて見る', recent: '最近の検索', clear: '消去', results: '検索結果', loading: '場所を検索しています', retry: '再検索', searchFailed: '場所を検索できませんでした', emptySearch: '検索結果がありません', retrySaved: '保存した場所を再読み込み', emptySaved: '保存した場所がありません', emptyRecent: '最近の検索がありません', recentSearch: '{{name}}を検索', more: 'さらに表示', mapHint: '地図を動かして場所を選んでください', confirmMap: 'この場所を選択', mapPoint: '地図から選択した場所' },
     title: 'ルート', recenter: '地図の中心を戻す', arrival: '{{time}}到着', share: '場所を共有', start: '開始', currentLocation: '現在地', setOrigin: '出発地を設定', locationNeeded: '現在地を確認してください', providerEstimate: 'NAVER自動車予想ルート', recommended: 'おすすめ', findRoute: '自動車ルートを検索', cannotFind: 'ルートを読み込めません', externalTitle: 'NAVER地図でルート案内', externalHint: '開始するとNAVER地図アプリが開きます', preview: 'アプリで自動車ルートを見る', external: 'NAVER地図アプリでルート案内',
     close: '閉じる', cancel: '検索をキャンセル', request: '自動車ルートを検索', fit: 'ルート全体を見る', location: '現在地を再確認', settings: '位置情報の権限設定を開く',
@@ -46,7 +52,7 @@ export const routeResources = {
     modes: { car: '自動車', walk: '徒歩', transit: '公共交通', bike: '自転車' },
     states: {
       idle: '現在地からこの場所までの自動車ルートを検索してください。', loading: '自動車ルートを検索しています。',
-      'location-loading': '現在地を確認しています。', 'location-denied': '位置情報を許可するか、NAVER地図で出発地を選択してください。',
+      'location-loading': '現在地を確認しています。', 'location-denied': '現在地から検索するには位置情報を許可してください。出発地を直接入力することもできます。',
       'location-failed': '現在地を取得できませんでした。再確認してください。', 'missing-destination': '目的地の座標がありません。',
       authentication: '再度ログインしてください。', forbidden: 'ルートを検索する権限がありません。',
       'rate-limited': 'リクエストが多すぎます。しばらく待ってから再度お試しください。', unavailable: 'ルートサービスを利用できません。NAVER地図アプリをご利用ください。',
@@ -57,6 +63,8 @@ export const routeResources = {
     openFailed: 'NAVER地図アプリを開けません。', notInstalled: 'NAVER地図アプリをインストールしてください。',
   },
   'zh-CN': {
+    tracking: {"start": "在应用内跟随路线", "active": "正在跟随路线", "arrived": "已到达目的地", "loading": "正在从当前位置查找路线", "failed": "无法加载路线", "paused": "请重新确认当前位置", "distance": "到目的地的直线距离 {{distance}}", "hint": "在此页面打开期间跟随当前位置。不提供转弯或语音引导。", "stop": "停止跟随路线", "done": "完成", "follow": "跟随当前位置", "refresh": "重新确认位置", "startUnavailable": "请确认当前位置并选择目的地。", "distanceLabel": "到目的地的直线距离", "estimate": "查询时预计时间 · 路线总距离"},
+    permissionTitle: '位置权限已关闭', noRouteTitle: '未找到驾车路线', directInput: '手动输入', editPlaces: '更改地点', permissionOriginHint: '请输入起点或允许访问位置', optimalRoute: '最佳路线',
     editor: { editEndpoint: '编辑{{role}}，{{name}}', dragHint: '长按并上下拖动可交换起点和终点', edit: '编辑地点', swap: '交换起点和终点', swapped: '已交换起点和终点', close: '关闭地点编辑', search: '搜索地点', map: '在地图上选择', saved: '已保存的地点', all: '查看全部', recent: '最近搜索', clear: '清除', results: '搜索结果', loading: '正在搜索地点', retry: '重新搜索', searchFailed: '无法搜索地点', emptySearch: '没有搜索结果', retrySaved: '重新加载已保存的地点', emptySaved: '没有已保存的地点', emptyRecent: '没有最近搜索', recentSearch: '搜索{{name}}', more: '加载更多', mapHint: '移动地图以选择位置', confirmMap: '选择此位置', mapPoint: '在地图上选择的位置' },
     title: '路线', recenter: '重新居中地图', arrival: '{{time}}到达', share: '分享地点', start: '开始', currentLocation: '当前位置', setOrigin: '设置起点', locationNeeded: '请确认当前位置', providerEstimate: 'NAVER预计驾车路线', recommended: '推荐路线', findRoute: '查找驾车路线', cannotFind: '无法加载路线', externalTitle: '在NAVER地图中导航', externalHint: '开始后将打开NAVER地图应用', preview: '在应用中预览驾车路线', external: '在NAVER地图应用中导航',
     close: '关闭', cancel: '取消请求', request: '查询驾车路线', fit: '显示完整路线', location: '重新确认当前位置', settings: '打开位置权限设置',
@@ -65,7 +73,7 @@ export const routeResources = {
     modes: { car: '驾车', walk: '步行', transit: '公共交通', bike: '自行车' },
     states: {
       idle: '查询从当前位置到此地点的驾车路线。', loading: '正在查询驾车路线…',
-      'location-loading': '正在确认当前位置…', 'location-denied': '请允许访问位置，或在NAVER地图应用中选择起点。',
+      'location-loading': '正在确认当前位置…', 'location-denied': '请允许访问位置以从当前位置导航，也可以手动输入起点。',
       'location-failed': '无法获取当前位置，请重试。', 'missing-destination': '缺少目的地坐标。',
       authentication: '请重新登录以查询路线。', forbidden: '您没有查询路线的权限。',
       'rate-limited': '请求过多，请稍后手动重试。', unavailable: '路线服务暂不可用，请使用NAVER地图应用。',
@@ -76,6 +84,8 @@ export const routeResources = {
     openFailed: '无法打开NAVER地图应用。', notInstalled: '请安装NAVER地图应用。',
   },
   'zh-TW': {
+    tracking: {"start": "在應用程式內跟隨路線", "active": "正在跟隨路線", "arrived": "已抵達目的地", "loading": "正在從目前位置尋找路線", "failed": "無法載入路線", "paused": "請重新確認目前位置", "distance": "到目的地的直線距離 {{distance}}", "hint": "此頁面開啟期間會跟隨目前位置。不提供轉彎或語音引導。", "stop": "停止跟隨路線", "done": "完成", "follow": "跟隨目前位置", "refresh": "重新確認位置", "startUnavailable": "請確認目前位置並選擇目的地。", "distanceLabel": "到目的地的直線距離", "estimate": "查詢時預估時間 · 路線總距離"},
+    permissionTitle: '位置權限已關閉', noRouteTitle: '找不到開車路線', directInput: '手動輸入', editPlaces: '變更地點', permissionOriginHint: '請輸入起點或允許存取位置', optimalRoute: '最佳路線',
     editor: { editEndpoint: '編輯{{role}}，{{name}}', dragHint: '長按並上下拖曳可交換起點與終點', edit: '編輯地點', swap: '交換起點與終點', swapped: '已交換起點與終點', close: '關閉地點編輯', search: '搜尋地點', map: '在地圖上選擇', saved: '已儲存的地點', all: '查看全部', recent: '最近搜尋', clear: '清除', results: '搜尋結果', loading: '正在搜尋地點', retry: '重新搜尋', searchFailed: '無法搜尋地點', emptySearch: '沒有搜尋結果', retrySaved: '重新載入已儲存的地點', emptySaved: '沒有已儲存的地點', emptyRecent: '沒有最近搜尋', recentSearch: '搜尋{{name}}', more: '載入更多', mapHint: '移動地圖以選擇位置', confirmMap: '選擇此位置', mapPoint: '在地圖上選擇的位置' },
     title: '路線', recenter: '重新置中地圖', arrival: '{{time}}抵達', share: '分享地點', start: '開始', currentLocation: '目前位置', setOrigin: '設定起點', locationNeeded: '請確認目前位置', providerEstimate: 'NAVER預估開車路線', recommended: '推薦路線', findRoute: '尋找開車路線', cannotFind: '無法載入路線', externalTitle: '在NAVER地圖中導航', externalHint: '開始後將開啟NAVER地圖應用程式', preview: '在應用程式中預覽開車路線', external: '在NAVER地圖應用程式中導航',
     close: '關閉', cancel: '取消請求', request: '查詢開車路線', fit: '顯示完整路線', location: '重新確認目前位置', settings: '開啟位置權限設定',
@@ -84,7 +94,7 @@ export const routeResources = {
     modes: { car: '開車', walk: '步行', transit: '大眾運輸', bike: '自行車' },
     states: {
       idle: '查詢從目前位置到此地點的開車路線。', loading: '正在查詢開車路線…',
-      'location-loading': '正在確認目前位置…', 'location-denied': '請允許存取位置，或在NAVER地圖應用程式中選擇起點。',
+      'location-loading': '正在確認目前位置…', 'location-denied': '請允許存取位置以從目前位置導航，也可以手動輸入起點。',
       'location-failed': '無法取得目前位置，請重試。', 'missing-destination': '缺少目的地座標。',
       authentication: '請重新登入以查詢路線。', forbidden: '您沒有查詢路線的權限。',
       'rate-limited': '請求過多，請稍後手動重試。', unavailable: '路線服務暫時無法使用，請使用NAVER地圖應用程式。',
@@ -95,6 +105,8 @@ export const routeResources = {
     openFailed: '無法開啟NAVER地圖應用程式。', notInstalled: '請安裝NAVER地圖應用程式。',
   },
   vi: {
+    tracking: {"start": "Theo dõi tuyến đường trong ứng dụng", "active": "Đang theo dõi tuyến đường", "arrived": "Bạn đã đến nơi", "loading": "Đang tìm tuyến đường từ vị trí hiện tại", "failed": "Không thể tải tuyến đường", "paused": "Vui lòng kiểm tra lại vị trí", "distance": "Khoảng cách đường thẳng đến đích: {{distance}}", "hint": "Theo dõi vị trí khi màn hình này mở. Không có hướng dẫn rẽ hoặc giọng nói.", "stop": "Dừng theo dõi tuyến đường", "done": "Hoàn tất", "follow": "Theo dõi vị trí hiện tại", "refresh": "Kiểm tra lại vị trí", "startUnavailable": "Kiểm tra vị trí hiện tại và chọn điểm đến.", "distanceLabel": "Khoảng cách đường thẳng đến đích", "estimate": "Ước tính lúc tra cứu · Tổng chiều dài tuyến đường"},
+    permissionTitle: 'Quyền vị trí đang tắt', noRouteTitle: 'Không có lộ trình ô tô', directInput: 'Nhập thủ công', editPlaces: 'Đổi địa điểm', permissionOriginHint: 'Nhập điểm đi hoặc cho phép truy cập vị trí', optimalRoute: 'Lộ trình tối ưu',
     editor: { editEndpoint: 'Chỉnh sửa {{role}}, {{name}}', dragHint: 'Nhấn giữ và kéo lên hoặc xuống để đổi điểm đi và điểm đến', edit: 'Chỉnh sửa địa điểm', swap: 'Đổi điểm đi và điểm đến', swapped: 'Đã đổi điểm đi và điểm đến', close: 'Đóng trình chỉnh sửa địa điểm', search: 'Tìm địa điểm', map: 'Chọn trên bản đồ', saved: 'Địa điểm đã lưu', all: 'Xem tất cả', recent: 'Tìm kiếm gần đây', clear: 'Xóa', results: 'Kết quả tìm kiếm', loading: 'Đang tìm địa điểm', retry: 'Tìm lại', searchFailed: 'Không thể tìm địa điểm', emptySearch: 'Không tìm thấy địa điểm', retrySaved: 'Tải lại địa điểm đã lưu', emptySaved: 'Chưa có địa điểm đã lưu', emptyRecent: 'Chưa có tìm kiếm gần đây', recentSearch: 'Tìm {{name}}', more: 'Tải thêm', mapHint: 'Di chuyển bản đồ để chọn vị trí', confirmMap: 'Chọn vị trí này', mapPoint: 'Vị trí đã chọn trên bản đồ' },
     title: 'Lộ trình', recenter: 'Đưa bản đồ về giữa', arrival: 'Đến lúc {{time}}', share: 'Chia sẻ địa điểm', start: 'Bắt đầu', currentLocation: 'Vị trí hiện tại', setOrigin: 'Đặt điểm đi', locationNeeded: 'Kiểm tra vị trí hiện tại', providerEstimate: 'Lộ trình ô tô dự kiến của NAVER', recommended: 'Đề xuất', findRoute: 'Tìm lộ trình ô tô', cannotFind: 'Không thể tải lộ trình', externalTitle: 'Chỉ đường trong NAVER Map', externalHint: 'Bắt đầu sẽ mở ứng dụng NAVER Map', preview: 'Xem trước lộ trình ô tô trong ứng dụng', external: 'Chỉ đường trong ứng dụng NAVER Map',
     close: 'Đóng', cancel: 'Hủy yêu cầu', request: 'Tra cứu lộ trình ô tô', fit: 'Xem toàn bộ lộ trình', location: 'Kiểm tra lại vị trí hiện tại', settings: 'Mở cài đặt quyền vị trí',
@@ -103,7 +115,7 @@ export const routeResources = {
     modes: { car: 'Ô tô', walk: 'Đi bộ', transit: 'Giao thông công cộng', bike: 'Xe đạp' },
     states: {
       idle: 'Tìm lộ trình ô tô từ vị trí hiện tại đến địa điểm này.', loading: 'Đang tìm lộ trình ô tô…',
-      'location-loading': 'Đang kiểm tra vị trí hiện tại…', 'location-denied': 'Cho phép truy cập vị trí hoặc chọn điểm đi trong ứng dụng NAVER Map.',
+      'location-loading': 'Đang kiểm tra vị trí hiện tại…', 'location-denied': 'Cho phép truy cập vị trí để tìm đường từ vị trí hiện tại, hoặc nhập điểm đi thủ công.',
       'location-failed': 'Không thể lấy vị trí hiện tại. Vui lòng thử lại.', 'missing-destination': 'Thiếu tọa độ điểm đến.',
       authentication: 'Vui lòng đăng nhập lại để tìm lộ trình.', forbidden: 'Bạn không có quyền tìm lộ trình.',
       'rate-limited': 'Quá nhiều yêu cầu. Vui lòng đợi rồi tự thử lại.', unavailable: 'Dịch vụ lộ trình hiện không khả dụng. Vui lòng dùng ứng dụng NAVER Map.',
@@ -114,6 +126,8 @@ export const routeResources = {
     openFailed: 'Không thể mở ứng dụng NAVER Map.', notInstalled: 'Vui lòng cài đặt ứng dụng NAVER Map.',
   },
   es: {
+    tracking: {"start": "Seguir ruta en la app", "active": "Siguiendo la ruta", "arrived": "Has llegado", "loading": "Buscando una ruta desde tu ubicación", "failed": "No se pudo cargar la ruta", "paused": "Comprueba tu ubicación actual", "distance": "Distancia en línea recta al destino: {{distance}}", "hint": "Sigue tu ubicación mientras esta pantalla está abierta. Sin indicaciones de giro ni voz.", "stop": "Dejar de seguir la ruta", "done": "Listo", "follow": "Seguir ubicación actual", "refresh": "Comprobar ubicación", "startUnavailable": "Comprueba tu ubicación actual y elige un destino.", "distanceLabel": "Distancia en línea recta al destino", "estimate": "Estimación al consultar · Distancia total de la ruta"},
+    permissionTitle: 'El acceso a la ubicación está desactivado', noRouteTitle: 'No se encontró una ruta en coche', directInput: 'Introducir origen', editPlaces: 'Cambiar lugares', permissionOriginHint: 'Introduce un origen o permite el acceso a la ubicación', optimalRoute: 'Ruta óptima',
     editor: { editEndpoint: 'Editar {{role}}, {{name}}', dragHint: 'Mantén pulsado y arrastra hacia arriba o abajo para intercambiar origen y destino', edit: 'Editar lugar', swap: 'Intercambiar origen y destino', swapped: 'Origen y destino intercambiados', close: 'Cerrar editor de lugares', search: 'Buscar lugares', map: 'Seleccionar en el mapa', saved: 'Lugares guardados', all: 'Ver todos', recent: 'Búsquedas recientes', clear: 'Borrar', results: 'Resultados de búsqueda', loading: 'Buscando lugares', retry: 'Reintentar búsqueda', searchFailed: 'No se pudieron buscar lugares', emptySearch: 'No se encontraron lugares', retrySaved: 'Recargar lugares guardados', emptySaved: 'No hay lugares guardados', emptyRecent: 'No hay búsquedas recientes', recentSearch: 'Buscar {{name}}', more: 'Cargar más', mapHint: 'Mueve el mapa para seleccionar una ubicación', confirmMap: 'Seleccionar esta ubicación', mapPoint: 'Ubicación seleccionada en el mapa' },
     title: 'Ruta', recenter: 'Centrar el mapa', arrival: 'Llegada a las {{time}}', share: 'Compartir lugar', start: 'Iniciar', currentLocation: 'Ubicación actual', setOrigin: 'Establecer origen', locationNeeded: 'Comprueba tu ubicación actual', providerEstimate: 'Ruta estimada en coche de NAVER', recommended: 'Recomendada', findRoute: 'Buscar ruta en coche', cannotFind: 'No se puede cargar la ruta', externalTitle: 'Indicaciones en NAVER Map', externalHint: 'Al iniciar se abre la aplicación NAVER Map', preview: 'Ver ruta en coche en la aplicación', external: 'Indicaciones en la aplicación NAVER Map',
     close: 'Cerrar', cancel: 'Cancelar solicitud', request: 'Consultar ruta en coche', fit: 'Mostrar toda la ruta', location: 'Comprobar de nuevo la ubicación actual', settings: 'Abrir ajustes de permisos de ubicación',
@@ -122,7 +136,7 @@ export const routeResources = {
     modes: { car: 'Coche', walk: 'A pie', transit: 'Transporte público', bike: 'Bicicleta' },
     states: {
       idle: 'Busca una ruta en coche desde tu ubicación actual hasta este lugar.', loading: 'Buscando ruta en coche…',
-      'location-loading': 'Comprobando tu ubicación actual…', 'location-denied': 'Permite el acceso a la ubicación o selecciona un origen en la aplicación NAVER Map.',
+      'location-loading': 'Comprobando tu ubicación actual…', 'location-denied': 'Permite el acceso a tu ubicación para buscar una ruta o introduce el origen manualmente.',
       'location-failed': 'No se pudo obtener tu ubicación actual. Inténtalo de nuevo.', 'missing-destination': 'Faltan las coordenadas del destino.',
       authentication: 'Inicia sesión de nuevo para buscar una ruta.', forbidden: 'No tienes permiso para buscar una ruta.',
       'rate-limited': 'Demasiadas solicitudes. Espera antes de volver a intentarlo manualmente.', unavailable: 'El servicio de rutas no está disponible. Usa la aplicación NAVER Map.',
@@ -133,6 +147,8 @@ export const routeResources = {
     openFailed: 'No se pudo abrir la aplicación NAVER Map.', notInstalled: 'Instala la aplicación NAVER Map.',
   },
   'pt-BR': {
+    tracking: {"start": "Seguir rota no aplicativo", "active": "Seguindo a rota", "arrived": "Você chegou", "loading": "Buscando rota da sua localização", "failed": "Não foi possível carregar a rota", "paused": "Confira sua localização atual", "distance": "Distância em linha reta ao destino: {{distance}}", "hint": "Acompanha sua localização enquanto esta tela está aberta. Sem instruções de conversão ou voz.", "stop": "Parar de seguir rota", "done": "Concluir", "follow": "Seguir localização atual", "refresh": "Verificar localização", "startUnavailable": "Confira sua localização atual e escolha um destino.", "distanceLabel": "Distância em linha reta ao destino", "estimate": "Estimativa da consulta · Distância total da rota"},
+    permissionTitle: 'O acesso à localização está desativado', noRouteTitle: 'Nenhuma rota de carro encontrada', directInput: 'Inserir origem', editPlaces: 'Alterar locais', permissionOriginHint: 'Insira a origem ou permita o acesso à localização', optimalRoute: 'Rota ideal',
     editor: { editEndpoint: 'Editar {{role}}, {{name}}', dragHint: 'Toque e segure, depois arraste para cima ou para baixo para trocar origem e destino', edit: 'Editar lugar', swap: 'Trocar origem e destino', swapped: 'Origem e destino trocados', close: 'Fechar editor de lugares', search: 'Buscar lugares', map: 'Selecionar no mapa', saved: 'Lugares salvos', all: 'Ver todos', recent: 'Buscas recentes', clear: 'Limpar', results: 'Resultados da busca', loading: 'Buscando lugares', retry: 'Tentar buscar novamente', searchFailed: 'Não foi possível buscar lugares', emptySearch: 'Nenhum lugar encontrado', retrySaved: 'Recarregar lugares salvos', emptySaved: 'Nenhum lugar salvo', emptyRecent: 'Nenhuma busca recente', recentSearch: 'Buscar {{name}}', more: 'Carregar mais', mapHint: 'Mova o mapa para selecionar um local', confirmMap: 'Selecionar este local', mapPoint: 'Local selecionado no mapa' },
     title: 'Rota', recenter: 'Centralizar mapa', arrival: 'Chegada às {{time}}', share: 'Compartilhar lugar', start: 'Iniciar', currentLocation: 'Localização atual', setOrigin: 'Definir origem', locationNeeded: 'Confira sua localização atual', providerEstimate: 'Rota estimada de carro da NAVER', recommended: 'Recomendada', findRoute: 'Buscar rota de carro', cannotFind: 'Não foi possível carregar a rota', externalTitle: 'Direções no NAVER Map', externalHint: 'Ao iniciar, o aplicativo NAVER Map será aberto', preview: 'Ver rota de carro no aplicativo', external: 'Direções no aplicativo NAVER Map',
     close: 'Fechar', cancel: 'Cancelar solicitação', request: 'Consultar rota de carro', fit: 'Mostrar rota completa', location: 'Verificar a localização atual novamente', settings: 'Abrir configurações de permissão de localização',
@@ -141,7 +157,7 @@ export const routeResources = {
     modes: { car: 'Carro', walk: 'A pé', transit: 'Transporte público', bike: 'Bicicleta' },
     states: {
       idle: 'Busque uma rota de carro da sua localização atual até este lugar.', loading: 'Buscando rota de carro…',
-      'location-loading': 'Verificando sua localização atual…', 'location-denied': 'Permita o acesso à localização ou selecione uma origem no aplicativo NAVER Map.',
+      'location-loading': 'Verificando sua localização atual…', 'location-denied': 'Permita o acesso à localização para buscar uma rota ou insira a origem manualmente.',
       'location-failed': 'Não foi possível obter sua localização atual. Tente novamente.', 'missing-destination': 'As coordenadas do destino estão ausentes.',
       authentication: 'Entre novamente para buscar uma rota.', forbidden: 'Você não tem permissão para buscar uma rota.',
       'rate-limited': 'Muitas solicitações. Aguarde antes de tentar novamente manualmente.', unavailable: 'O serviço de rotas está indisponível no momento. Use o aplicativo NAVER Map.',

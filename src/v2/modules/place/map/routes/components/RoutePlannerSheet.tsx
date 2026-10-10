@@ -7,8 +7,7 @@ import GlassSurface from '../../presentation/components/GlassSurface';
 import type { CarRoute } from '../api/routesApi';
 import type { RouteDestination, RouteMode } from '../model/routeUi';
 import { routeMetrics, routeSummary } from '../model/routePresentation';
-import CloseIcon from '../assets/close.svg';
-import ShareIcon from '../assets/share.svg';
+import RouteHeader from './RouteHeader';
 import TransitIcon from '../assets/mode_transit.svg';
 import TransitInactiveIcon from '../assets/mode_transit_unselected.svg';
 import WalkIcon from '../assets/mode_walk.svg';
@@ -19,11 +18,12 @@ import BikeIcon from '../assets/mode_bike.svg';
 import RouteEndpointRows, { type EndpointRole } from './RouteEndpointRows';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import StartIcon from '../assets/start.svg';
+import RouteWarningIcon from '../assets/route_warning.svg';
 
 type Props = {
   origin: RouteDestination | null; destination: RouteDestination | null; mode: RouteMode; stateKey: string; ready: CarRoute | null;
   canRequest: boolean; canOpenExternal: boolean; bottomInset: number; maxHeight: number;
-  hasOrigin: boolean; deniedPermanently: boolean;
+  hasOrigin: boolean; deniedPermanently: boolean; canStart: boolean; onStart: () => void;
   onLayout: (event: LayoutChangeEvent) => void; onMode: (mode: RouteMode) => void;
   onClose: () => void; onShare: () => void; onRequest: () => void; onCancel: () => void;
   onExternal: () => void; onRefreshLocation: () => void; onSettings: () => void;
@@ -44,8 +44,11 @@ export default function RoutePlannerSheet(props: Props) {
   const ink = theme.colors.textStrong;
   const muted = theme.colors.textSecondary;
   const raised = theme.colorScheme === 'dark' ? 'rgba(52,52,58,0.70)' : 'rgba(255,255,255,0.56)';
+  const skeletonColor = theme.colorScheme === 'dark' ? theme.colors.secondaryNormal : theme.colors.fillAlternative;
   const loading = props.stateKey === 'loading' || props.stateKey === 'location-loading';
   const idle = props.stateKey === 'idle' || props.stateKey === 'canceled';
+  const denied = props.stateKey === 'location-denied';
+  const noRoute = props.stateKey === 'no-route';
   function action(label: string, onPress: () => void, testID?: string, disabled = false, primary = false) {
     return <Action testID={testID} accessibilityRole="button" accessibilityLabel={label}
       accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
@@ -54,62 +57,64 @@ export default function RoutePlannerSheet(props: Props) {
     </Action>;
   }
   return <SheetPosition testID="route-planner-sheet" onLayout={props.onLayout}
-    style={{ bottom: Math.max(8, props.bottomInset), maxHeight: props.maxHeight }}>
+    style={{ bottom: Math.max(8, props.bottomInset), maxHeight: props.maxHeight, boxShadow: theme.liquidGlass.sheet.shadow }}>
     <SheetGlass tintColor={theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
       style={{ borderColor: theme.liquidGlass.sheet.rim }}>
       <SheetContent bounces={false} scrollEnabled={!dragging} showsVerticalScrollIndicator={false}>
-        <Grabber accessible={false} style={{ backgroundColor: theme.colors.border }} />
-        <Header>
-          <IconButton accessibilityRole="button" accessibilityLabel={t('routes.share')} onPress={props.onShare}><ShareIcon /></IconButton>
-          <Title accessibilityRole="header" style={{ color: ink }}>{t('routes.title')}</Title>
-          <IconButton accessibilityRole="button" accessibilityLabel={t('routes.close')} onPress={props.onClose}><CloseIcon /></IconButton>
-        </Header>
-        <ModeTrack accessibilityRole="tablist" style={{ backgroundColor: theme.liquidGlass.navigation.selectedTint }}>
+        <Grabber accessible={false} style={{ backgroundColor: theme.colors.secondaryNormal }} />
+        <RouteHeader onShare={props.onShare} onClose={props.onClose} />
+        <ModeTrack accessibilityRole="tablist" style={{ backgroundColor: theme.liquidGlass.navigation.selectedTint, boxShadow: theme.liquidGlass.category.shadow }}>
           {modes.map(mode => {
             const selected = props.mode === mode;
             const Icon = selected ? selectedIcons[mode] : icons[mode];
-            return <ModeTab $selected={selected} key={mode} accessibilityRole="tab" accessibilityLabel={t(`routes.modes.${mode}`)}
+            return <ModeTab key={mode} accessibilityRole="tab" accessibilityLabel={t(`routes.modes.${mode}`)}
               accessibilityState={{ selected }} onPress={() => props.onMode(mode)}
-              style={selected ? { shadowColor: '#000000', shadowOpacity: 0.08, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 2 } : undefined}><Icon /></ModeTab>;
+              style={{ backgroundColor: selected ? raised : 'transparent' }}><Icon /></ModeTab>;
           })}
         </ModeTrack>
-        <RouteEndpointRows origin={props.origin} destination={props.destination} onDragging={setDragging}
+        <RouteEndpointRows originDenied={denied} origin={props.origin} destination={props.destination} onDragging={setDragging}
           onEdit={props.onEditEndpoint} onSwap={props.onSwapEndpoints} />
-        {metrics && props.ready ? <Result accessible accessibilityLabel={routeSummary(props.ready, language, t)} testID="route-status"
+        {metrics && props.ready ? <Result testID="route-status"
           style={{ backgroundColor: raised }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={{ color: ink, fontSize: 28, fontWeight: '700' }}>{metrics.duration}</Text>
-            <Text style={{ color: ink, fontSize: 14, fontWeight: '500' }}>{arrivalTime ? t('routes.arrival', { time: new Intl.DateTimeFormat(language, { hour: 'numeric', minute: '2-digit' }).format(arrivalTime) }) + ' · ' : ''}{metrics.distance}</Text>
-            <Text style={{ color: muted, fontSize: 12 }}>{t('routes.providerEstimate')}</Text>
+          <View accessible accessibilityLabel={routeSummary(props.ready, language, t)} style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <Text style={{ color: ink, fontSize: 28, lineHeight: 36.4, fontWeight: '700' }}>{metrics.duration}</Text>
+            <Text style={{ color: muted, fontSize: 14, lineHeight: 18.2, fontWeight: '500' }}>{arrivalTime ? t('routes.arrival', { time: new Intl.DateTimeFormat(language, { hour: 'numeric', minute: '2-digit' }).format(arrivalTime) }) + ' · ' : ''}{metrics.distance}</Text>
+            <Text style={{ color: theme.colors.labelAssistive, fontSize: 12, lineHeight: 15.6 }}>{t('routes.providerEstimate')}</Text>
           </View>
-          <Start testID="route-external" accessibilityRole="button" accessibilityLabel={t('routes.external')}
-            disabled={!props.canOpenExternal} accessibilityState={{ disabled: !props.canOpenExternal }} onPress={props.onExternal}
-            style={{ backgroundColor: theme.colors.primary, opacity: props.canOpenExternal ? 1 : 0.45 }}>
+          <Start testID="route-start" accessibilityRole="button" accessibilityLabel={t('routes.tracking.start')} accessibilityHint={t('routes.tracking.hint')}
+            disabled={!props.canStart} accessibilityState={{ disabled: !props.canStart }} onPress={props.onStart}
+            style={{ backgroundColor: theme.colors.primary, opacity: props.canStart ? 1 : 0.45 }}>
             <StartIcon /><StartText>{t('routes.start')}</StartText>
           </Start>
-        </Result> : loading ? <StateCard style={{ backgroundColor: raised }}>
-          <SkeletonRow>
-            <View style={{ gap: 8, flex: 1 }}>
-              {[{ width: 96, height: 28 }, { width: 160, height: 14 }, { width: 200, height: 12 }].map((size, index) => <Skeleton key={index} style={{ ...size, backgroundColor: theme.colors.border }} />)}
+        </Result> : loading ? <StateCard style={{ backgroundColor: raised, padding: 16, gap: 10 }}>
+          <SkeletonRow accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <View style={{ gap: 8, flex: 1, minWidth: 0 }}>
+              {[{ width: 96, height: 28 }, { width: 160, height: 14 }, { width: 200, height: 12 }].map((size, index) => <Skeleton key={index} style={{ ...size, maxWidth: '100%', borderRadius: size.height / 2, backgroundColor: skeletonColor }} />)}
             </View>
-            <ActivityIndicator color={theme.colors.primary} />
+            <Skeleton testID="route-loading-cta" style={{ width: 88, height: 48, borderRadius: 24, backgroundColor: skeletonColor }} />
           </SkeletonRow>
-          <Text testID="route-status" accessibilityLiveRegion="polite" style={{ color: muted, fontSize: 14, textAlign: 'center' }}>{t(`routes.states.${props.stateKey}`)}</Text>
+          <Skeleton testID="route-loading-bar" style={{ alignSelf: 'stretch', height: 22, borderRadius: 11, backgroundColor: theme.colors.fillNeutral }} />
+          <View style={{ flexDirection: 'row', alignSelf: 'stretch', alignItems: 'center', gap: 6 }}><ActivityIndicator size="small" color={theme.colors.primary} />
+            <Text testID="route-status" accessibilityLiveRegion="polite" style={{ flex: 1, color: theme.colors.primary, fontSize: 12, fontWeight: '500' }}>{t(`routes.states.${props.stateKey}`)}</Text></View>
           {props.stateKey === 'loading' && action(t('routes.cancel'), props.onCancel)}
         </StateCard> : <StateCard style={{ backgroundColor: raised }}>
-          {!idle && <UnavailableStateIcon size={44} />}
-          <Text style={{ color: ink, fontSize: 18, fontWeight: '700', textAlign: 'center' }}>{t(idle ? 'routes.findRoute' : props.stateKey === 'unsupported' ? 'routes.externalTitle' : 'routes.cannotFind')}</Text>
+          {(denied || noRoute) ? <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><RouteWarningIcon /></View> : !idle && <UnavailableStateIcon size={44} />}
+          <Text style={{ color: ink, fontSize: 18, lineHeight: 23.4, fontWeight: '700', textAlign: 'center' }}>{t(denied ? 'routes.permissionTitle' : noRoute ? 'routes.noRouteTitle' : idle ? 'routes.findRoute' : props.stateKey === 'unsupported' ? 'routes.externalTitle' : 'routes.cannotFind')}</Text>
           <Text testID="route-status" accessibilityLiveRegion="polite" style={{ color: muted, fontSize: 14, lineHeight: 20, textAlign: 'center' }}>{t(`routes.states.${props.stateKey}`)}</Text>
-          {props.mode === 'car' && action(t('routes.request'), props.onRequest, 'route-request', !props.canRequest, true)}
-          {!props.hasOrigin && <ActionRow>
+          {denied ? <ActionRow>
+            {action(t('routes.directInput'), () => props.onEditEndpoint('origin'), 'route-direct-input')}
+            {action(t(props.deniedPermanently ? 'routes.settings' : 'routes.location'), props.deniedPermanently ? props.onSettings : props.onRefreshLocation, 'route-permission-recovery', false, true)}
+          </ActionRow> : noRoute ? <ActionRow>
+            {action(t('routes.editPlaces'), () => props.onEditEndpoint('destination'))}
+            {action(t('routes.request'), props.onRequest, 'route-request', !props.canRequest, true)}
+          </ActionRow> : props.mode === 'car' && action(t('routes.request'), props.onRequest, 'route-request', !props.canRequest, true)}
+          {!props.hasOrigin && !denied && <ActionRow>
             {action(t('routes.location'), props.onRefreshLocation)}
             {props.deniedPermanently && action(t('routes.settings'), props.onSettings, undefined, false, true)}
           </ActionRow>}
         </StateCard>}
-        <Footer>
-          {!props.ready && action(t('routes.external'), props.onExternal, 'route-external', !props.canOpenExternal)}
-          {props.ready && <Text style={{ color: muted, fontSize: 12, textAlign: 'center' }}>{t('routes.externalHint')}</Text>}
-        </Footer>
+        {props.ready && !props.canStart && <Footer><Text style={{ color: muted }}>{t('routes.tracking.startUnavailable')}</Text>{action(t(props.deniedPermanently ? 'routes.settings' : 'routes.location'), props.deniedPermanently ? props.onSettings : props.onRefreshLocation)}</Footer>}
+        {!props.ready && !loading && <Footer>{action(t('routes.external'), props.onExternal, 'route-external', !props.canOpenExternal)}</Footer>}
       </SheetContent>
     </SheetGlass>
   </SheetPosition>;
@@ -134,23 +139,6 @@ const Grabber = styled.View`
   height: 5px;
   border-radius: 4px;
   align-self: center;
-  margin-bottom: -9px;
-`;
-const Header = styled.View`
-  height: 44px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-`;
-const Title = styled(Text)`
-  font-size: 20px;
-  font-weight: 700;
-`;
-const IconButton = styled.Pressable`
-  height: 44px;
-  width: 44px;
-  align-items: center;
-  justify-content: center;
 `;
 const ModeTrack = styled.View`
   height: 48px;
@@ -158,13 +146,12 @@ const ModeTrack = styled.View`
   border-radius: 24px;
   flex-direction: row;
 `;
-const ModeTab = styled.Pressable<{ $selected: boolean }>`
+const ModeTab = styled.Pressable`
   flex: 1;
   border-radius: 20px;
   align-items: center;
   justify-content: center;
   min-height: 40px;
-  background-color: ${({ $selected }) => $selected ? '#FFFFFF' : 'transparent'};
 `;
 const Result = styled.View`
   padding: 16px;
@@ -176,7 +163,7 @@ const Result = styled.View`
 `;
 const Start = styled.Pressable`
   height: 48px;
-  padding: 0px 16px;
+  padding: 0px 20px;
   border-radius: 24px;
   flex-direction: row;
   align-items: center;
@@ -200,6 +187,7 @@ const Action = styled.Pressable`
   justify-content: center;
   align-self: stretch;
   flex-shrink: 1;
+  flex-grow: 1;
 `;
 const ActionRow = styled.View`
   flex-direction: row;
@@ -209,12 +197,10 @@ const ActionRow = styled.View`
 const Footer = styled.View`
   gap: 8px;
 `;
-const Skeleton = styled.View`
-  border-radius: 6px;
-`;
+const Skeleton = View;
 const SkeletonRow = styled.View`
   flex-direction: row;
   align-self: stretch;
   align-items: center;
-  padding-bottom: 8px;
+  gap: 12px;
 `;
