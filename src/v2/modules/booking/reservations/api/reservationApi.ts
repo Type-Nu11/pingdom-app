@@ -6,6 +6,7 @@ import {
   type ReservationPaymentOperationRequestBody,
   type ReservationPaymentOperationResponse,
 } from '../../../../shared/api';
+import { normalizeAvailabilityTimeResponses, normalizeReservationTimeResponse } from './reservationTimeResponse';
 
 // The tourist reservation surface (list, create, cancel, availabilities, detail)
 // is typed by the live `app` group snapshot in `reservation-payment.openapi.json`.
@@ -67,7 +68,8 @@ export function createReservationApi(client: ApiClient = apiClient) {
       params: ListAvailabilitiesParams = {},
       signal?: AbortSignal,
     ): Promise<AvailabilityList> =>
-      client.get<AvailabilityList>(`/places/${placeId}/availabilities`, { params, signal }),
+      client.get<AvailabilityList>(`/places/${placeId}/availabilities`, { params, signal })
+        .then(normalizeAvailabilityTimeResponses),
 
     getReservationQuote: (
       placeId: number,
@@ -77,7 +79,9 @@ export function createReservationApi(client: ApiClient = apiClient) {
     ): Promise<ReservationQuote> =>
       client.get<ReservationQuote>(`/places/${placeId}/availabilities/${availabilityId}/quote`, {
         params: { quantity }, signal,
-      }),
+      }).then(quote => ({
+        ...quote, confirmation: normalizeReservationTimeResponse(quote.confirmation),
+      })),
 
     listOwnedReservations: async (
       params: ListOwnedReservationsParams = {},

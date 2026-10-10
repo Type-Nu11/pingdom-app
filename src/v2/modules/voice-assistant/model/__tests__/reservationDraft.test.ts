@@ -1,6 +1,8 @@
 import { prepareVoiceReservationDraft, formatDraftAmount } from '../reservationDraft';
 import { draftQuote } from './reservationDraft.fixture';
 import type { VoiceAvailabilityFacts } from '../voiceAssistantCommand.types';
+import { createAvailabilitiesQueryOptions, createReservationQuoteQueryOptions } from '../../../booking';
+import { configureApiTransport, type ApiTransport } from '../../../../shared/api';
 
 const now = Date.parse('2026-09-20T00:00:00Z');
 export const draftSelection = {
@@ -9,6 +11,25 @@ export const draftSelection = {
     startsAt: '2026-09-20T05:00:00Z', endsAt: '2026-09-20T06:00:00Z', remainingCapacity: 3, status: 'ACTIVE' } as VoiceAvailabilityFacts,
   date: '2026-09-20', timezone: 'Asia/Seoul', quantity: 2, availabilityDataUpdatedAt: now,
 };
+
+test('deployed offsetless UTC survives API normalization and strict draft validation', async () => {
+  const rawSlot = { ...draftSelection.availability, totalCapacity: 3,
+    startsAt: '2026-09-20T05:00:00', endsAt: '2026-09-20T06:00:00' };
+  const quote = draftQuote({ startsAt: rawSlot.startsAt, endsAt: rawSlot.endsAt,
+    cancellationDeadline: '2026-09-20T04:00:00', expiresAt: '2026-09-20T00:05:00' });
+  const get = jest.fn(async (path: string) => ({ data: path.endsWith('/quote') ? quote : [rawSlot] }));
+  const restore = configureApiTransport({ get } as unknown as ApiTransport);
+  try {
+    const [availability] = await createAvailabilitiesQueryOptions(1).queryFn({});
+    const result = await createReservationQuoteQueryOptions(1, 10, 2, 'test-account').queryFn({});
+    const draft = prepareVoiceReservationDraft(result, { ...draftSelection, availability }, now);
+    expect(draft.confirmation.startsAt).toBe('2026-09-20T05:00:00Z');
+    expect(draft.confirmation.cancellationDeadline).toBe('2026-09-20T04:00:00Z');
+    expect(draft.confirmation.totalAmountMinor).toBe(2050);
+    expect(draft).not.toHaveProperty('confirmationToken');
+    expect(get).toHaveBeenCalledTimes(2);
+  } finally { restore(); }
+});
 
 test('free and non-cancellable are accepted only as explicit complete server conditions', () => {
   const quote = draftQuote({ unitAmountMinor: 0, additionalAmountMinor: 0, totalAmountMinor: 0, paymentRequired: false,
