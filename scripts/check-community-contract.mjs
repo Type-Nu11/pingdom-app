@@ -9,6 +9,13 @@ const failures = [];
 const expected = [
   ['get', '/community/categories', 'listCategories', 200],
   ['get', '/community/categories/{categoryId}/posts', 'listPostsByCategory', 200],
+  ['get', '/community/countries', 'listCountries', 200],
+  ['post', '/community/images', 'uploadImage', 201],
+  ['delete', '/community/images/{imageId}', 'deleteImage', 204],
+  // Upstream documents the all-posts list under 400 only (no 200 entry). The
+  // operation is still asserted, and the block below pins that defect so the
+  // check fails once upstream declares the 200 and this can be tightened.
+  ['get', '/community/posts', 'listPosts', 400],
   ['post', '/community/posts', 'createPost', 201],
   ['get', '/community/posts/{postId}', 'getPost', 200],
   ['get', '/community/posts/{postId}/comments', 'listComments', 200],
@@ -16,6 +23,9 @@ const expected = [
   ['get', '/community/posts/{postId}/likes', 'getLikeStatus', 200],
   ['post', '/community/posts/{postId}/likes', 'likePost', 200],
   ['delete', '/community/posts/{postId}/likes', 'unlikePost', 200],
+  ['get', '/community/comments/{commentId}/likes', 'getCommentLikeStatus', 200],
+  ['post', '/community/comments/{commentId}/likes', 'likeComment', 200],
+  ['delete', '/community/comments/{commentId}/likes', 'unlikeComment', 200],
   ['post', '/community/posts/{postId}/places/{placeId}/view', 'recordPlaceView', 200],
   ['post', '/community/posts/{postId}/reports', 'reportPost', 201],
   ['post', '/community/posts/{postId}/comments/{commentId}/reports', 'reportComment', 201],
@@ -33,8 +43,19 @@ for (const [method, path, operationId, success] of expected) {
   if (!operation?.security?.some((entry) => 'bearerAuth' in entry)) failures.push(`${method.toUpperCase()} ${path} bearerAuth missing`);
 }
 
+const listPostsResponses = document.paths?.['/community/posts']?.get?.responses ?? {};
+if (listPostsResponses[200]) {
+  failures.push('GET /community/posts now declares 200: type listPosts from it and drop the 400 workaround');
+}
+if (listPostsResponses[400]?.content?.['*/*']?.schema?.$ref !== '#/components/schemas/CommunityPostListResponse') {
+  failures.push('GET /community/posts no longer exposes CommunityPostListResponse');
+}
+
 for (const schema of [
   'CommunityCategoryItem',
+  'CommunityCommentLikeResponse',
+  'CommunityImageUploadResponse',
+  'CommunityPostImageItem',
   'CommunityCommentSummary',
   'CommunityPostCategoryListResponse',
   'CommunityPostCommentCreateRequest',
@@ -62,6 +83,7 @@ const listItemSchemas = [
   ['CommunityPostCategoryListResponse', 'categories', 'CommunityCategoryItem'],
   ['CommunityPostListResponse', 'posts', 'CommunityPostSummary'],
   ['CommunityPostCommentListResponse', 'comments', 'CommunityCommentSummary'],
+  ['CommunityPostDetailResponse', 'images', 'CommunityPostImageItem'],
 ];
 for (const [schemaName, property, expectedItemSchema] of listItemSchemas) {
   const itemsRef = document.components?.schemas?.[schemaName]?.properties?.[property]?.items?.$ref;

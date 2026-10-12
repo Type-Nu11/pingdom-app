@@ -33,12 +33,66 @@ export interface paths {
         };
         /**
          * 카테고리별 커뮤니티 게시글 목록 조회
-         * @description 최신 등록순으로 게시글 ID와 제목만 조회합니다.
+         * @description 미리보기·사진·지역·생성 시각·조회/좋아요/댓글 수와 단일 카테고리를 최신순으로 조회합니다.
          */
         get: operations["listPostsByCategory"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/community/countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 커뮤니티 국가 필터 허용 코드 */
+        get: operations["listCountries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/community/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 게시글 이미지 업로드
+         * @description JPEG/PNG 10MiB 이하. 검증 후 메타데이터를 제거해 저장하며 최대 10개의 본인 imageId를 게시글에 입력 순서대로 연결합니다. 미사용 이미지는 24시간 후 삭제 Outbox로 정리합니다.
+         */
+        post: operations["uploadImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/community/images/{imageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 본인 게시글 이미지 또는 미사용 이미지 삭제 */
+        delete: operations["deleteImage"];
         options?: never;
         head?: never;
         patch?: never;
@@ -51,7 +105,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * 전체 커뮤니티 게시글 목록
+         * @description 최신순. 국가 미설정 게시글은 전체 조회에만 포함되며 국가 필터로 추론하지 않습니다. 단일 카테고리를 유지합니다.
+         */
+        get: operations["listPosts"];
         put?: never;
         /**
          * 커뮤니티 게시글 등록
@@ -93,7 +151,7 @@ export interface paths {
         };
         /**
          * 커뮤니티 게시글 댓글 목록 조회
-         * @description 게시글 본문 아래에 표시할 댓글을 최신 댓글순으로 조회합니다.
+         * @description 댓글·답글을 최신순 평탄 목록으로 조회합니다. parentCommentId 지정 시 해당 부모의 답글만 페이지 조회하며 숨김 부모의 답글은 제외합니다.
          */
         get: operations["listComments"];
         put?: never;
@@ -103,6 +161,25 @@ export interface paths {
          */
         post: operations["createComment"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/community/comments/{commentId}/likes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 커뮤니티 댓글 좋아요 상태 조회 */
+        get: operations["getCommentLikeStatus"];
+        put?: never;
+        /** 커뮤니티 댓글 좋아요 등록 */
+        post: operations["likeComment"];
+        /** 커뮤니티 댓글 좋아요 취소 */
+        delete: operations["unlikeComment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -229,6 +306,13 @@ export interface components {
              */
             categoryName?: string;
         };
+        CommunityCommentLikeResponse: {
+            /** Format: int64 */
+            commentId?: number;
+            /** Format: int64 */
+            likeCount?: number;
+            liked?: boolean;
+        };
         /** @description 댓글 목록 항목 */
         CommunityCommentSummary: {
             /**
@@ -258,6 +342,23 @@ export interface components {
              * @description 댓글 작성 시각
              */
             createdAt?: string;
+            /**
+             * Format: int64
+             * @description 최상위 댓글이면 null, 대댓글이면 부모 ID
+             */
+            parentCommentId?: number;
+            /** Format: int64 */
+            likeCount?: number;
+            /** @description 현재 인증 사용자 좋아요 여부 */
+            liked?: boolean;
+        };
+        /** @description 게시글에 연결할 이미지. 본인 미사용 이미지만 만료 전 1회 연결 가능 */
+        CommunityImageUploadResponse: {
+            /** Format: int64 */
+            imageId?: number;
+            imageUrl?: string;
+            /** Format: date-time */
+            expiresAt?: string;
         };
         /** @description 커뮤니티 게시글 카테고리 목록 응답 */
         CommunityPostCategoryListResponse: {
@@ -271,6 +372,11 @@ export interface components {
              * @example 저도 가보고 싶네요!
              */
             content: string;
+            /**
+             * Format: int64
+             * @description 대댓글의 부모 댓글 ID. null은 최상위 댓글, 답글은 1단계만 지원
+             */
+            parentCommentId?: number;
         };
         /** @description 커뮤니티 게시글 댓글 등록 응답 */
         CommunityPostCommentCreateResponse: {
@@ -291,6 +397,11 @@ export interface components {
              * @example 저도 가보고 싶네요!
              */
             content?: string;
+            /**
+             * Format: int64
+             * @description 대댓글 부모 ID. 최상위 댓글이면 null
+             */
+            parentCommentId?: number;
         };
         /** @description 커뮤니티 게시글 댓글 목록 조회 응답 */
         CommunityPostCommentListResponse: {
@@ -351,6 +462,18 @@ export interface components {
              *     ]
              */
             placeIds?: number[];
+            /** @description 업로드한 본인 이미지 ID. 입력 순서대로 표시하며 최대 10장 */
+            imageIds?: number[];
+            /**
+             * @description ISO 3166-1 alpha-2 국가 코드. 미설정은 null
+             * @example KR
+             */
+            countryCode?: string;
+            /**
+             * @description 작성자가 지정한 표시 지역. 미설정은 null
+             * @example 서울
+             */
+            region?: string;
         };
         /** @description 커뮤니티 게시글 등록 응답 */
         CommunityPostCreateResponse: {
@@ -396,6 +519,25 @@ export interface components {
              * @description 게시글 작성 시각
              */
             createdAt?: string;
+            /** @description 표시 순서대로 정렬된 게시글 사진. position은 0부터 시작 */
+            images?: components["schemas"]["CommunityPostImageItem"][];
+            /** @description ISO alpha-2 국가 코드. 기존 미설정 글은 null */
+            countryCode?: string;
+            /** @description 작성자가 지정한 표시 지역. 미설정은 null */
+            region?: string;
+            /**
+             * Format: int64
+             * @description 정상 상세 요청 횟수. 사용자별 고유 조회가 아님
+             */
+            viewCount?: number;
+        };
+        /** @description 표시 순서대로 정렬된 게시글 사진. position은 0부터 시작 */
+        CommunityPostImageItem: {
+            /** Format: int64 */
+            imageId?: number;
+            imageUrl?: string;
+            /** Format: int32 */
+            position?: number;
         };
         /** @description 커뮤니티 게시글 좋아요 상태 응답 */
         CommunityPostLikeResponse: {
@@ -464,6 +606,34 @@ export interface components {
              * @example 대소고 다녀왔어요
              */
             title?: string;
+            /** @description 본문 앞 150자 */
+            contentPreview?: string;
+            /** @description 첫 게시글 사진 URL. 사진 없으면 null */
+            imageUrl?: string;
+            /**
+             * Format: int64
+             * @description 게시글 전체 사진 수
+             */
+            imageCount?: number;
+            /** @description ISO alpha-2 국가 코드. 미설정은 null */
+            countryCode?: string;
+            /** @description 작성자가 지정한 표시 지역 */
+            region?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /**
+             * Format: int64
+             * @description 정상 상세 조회 횟수
+             */
+            viewCount?: number;
+            /** Format: int64 */
+            likeCount?: number;
+            /**
+             * Format: int64
+             * @description 숨김 댓글·숨김 부모의 답글을 제외한 댓글 수
+             */
+            commentCount?: number;
+            category?: components["schemas"]["Category"];
         };
         /** @description 커뮤니티 신고 요청 */
         CommunityReportCreateRequest: {
@@ -535,6 +705,16 @@ export interface components {
              * @example false
              */
             deleted?: boolean;
+            /** @description 장소 대표 이미지. 미설정 또는 삭제 시 null */
+            imageUrl?: string;
+            /** @description 기존 장소 분류. 미설정 또는 삭제 시 null */
+            category?: string;
+            /** @description 기존 장소 지역 코드 */
+            regionCode?: string;
+            /** @description 장소 표시 주소 */
+            address?: string;
+            /** @description 기존 지역 사전의 표시 이름. 미해석 또는 삭제 시 null */
+            region?: string;
         };
         /** @description 장소 상세 조회 응답 */
         PlaceDetailResponse: {
@@ -736,6 +916,8 @@ export interface operations {
     listPostsByCategory: {
         parameters: {
             query?: {
+                /** @description ISO alpha-2 국가 코드. 허용 값은 GET /community/countries */
+                countryCode?: string;
                 /**
                  * @description 페이지 번호
                  * @example 1
@@ -771,6 +953,203 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listCountries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string[];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    uploadImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 이미지 ID·URL 및 만료 시각 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityImageUploadResponse"];
+                };
+            };
+            /** @description IMAGE_FILE_INVALID: 빈 파일·크기·실제 형식 오류. INVALID_REQUEST_PARAMETER: file 누락 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityImageUploadResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description UPLOAD_TOO_LARGE: multipart 파일·요청 크기 제한 초과 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description IMAGE_UPLOAD_UNAVAILABLE: 저장소 사용 불가 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityImageUploadResponse"];
+                };
+            };
+        };
+    };
+    deleteImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                imageId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description IMAGE_NOT_FOUND: 없는 이미지·타인 이미지·숨김 게시글 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listPosts: {
+        parameters: {
+            query?: {
+                countryCode?: string;
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description INVALID_COUNTRY 또는 페이지 범위 오류 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityPostListResponse"];
                 };
             };
             /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
@@ -907,6 +1286,7 @@ export interface operations {
             query?: {
                 page?: number;
                 limit?: number;
+                parentCommentId?: number;
             };
             header?: never;
             path: {
@@ -1015,6 +1395,153 @@ export interface operations {
                 };
             };
             /** @description 게시글을 찾을 수 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCommentLikeStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 댓글 좋아요 수·본인 상태 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityCommentLikeResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description COMMENT_NOT_FOUND: 없는 댓글·숨김 댓글/부모/게시글 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    likeComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 댓글 좋아요 수·본인 상태 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityCommentLikeResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description COMMENT_NOT_FOUND: 없는 댓글·숨김 댓글/부모/게시글 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlikeComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 댓글 좋아요 수·본인 상태 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityCommentLikeResponse"];
+                };
+            };
+            /** @description 유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description COMMENT_NOT_FOUND: 없는 댓글·숨김 댓글/부모/게시글 */
             404: {
                 headers: {
                     [name: string]: unknown;
