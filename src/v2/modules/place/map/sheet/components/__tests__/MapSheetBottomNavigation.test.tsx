@@ -9,7 +9,7 @@ import MapSheetBottomNavigation, {
   getMapSheetTabSurfaceColor,
 } from '../MapSheetBottomNavigation';
 
-test('선택, 기본, pressed 상태를 공통 탭 표현으로 제공한다', async () => {
+test('다른 탭을 누르는 동안에도 실제 선택된 탭만 강조한다', async () => {
   const onOpenFavorites = jest.fn();
   await renderWithProviders(
     <MapSheetBottomNavigation
@@ -23,11 +23,16 @@ test('선택, 기본, pressed 상태를 공통 탭 표현으로 제공한다', a
   expect(screen.getByTestId('map-navigation-map-surface')).toHaveStyle({
     backgroundColor: 'rgba(228, 228, 229, 0.64)',
     height: 56,
-    width: 78,
+    width: '100%',
+    maxWidth: 78,
   });
 
   const favorites = screen.getByRole('tab', { name: '즐겨찾기', selected: false });
-  expect(getMapSheetTabSurfaceColor(false, true)).toBe('rgba(228, 228, 229, 0.82)');
+  expect(getMapSheetTabSurfaceColor(false)).toBe('transparent');
+  await fireEvent(favorites, 'pressIn');
+  expect(screen.getByTestId('map-navigation-favorites-surface')).toHaveStyle({ backgroundColor: 'transparent' });
+  expect(screen.getByTestId('map-navigation-map-surface')).toHaveStyle({ backgroundColor: 'rgba(228, 228, 229, 0.64)' });
+  await fireEvent(favorites, 'pressOut');
   fireEvent.press(favorites);
   expect(onOpenFavorites).toHaveBeenCalledTimes(1);
 });
@@ -114,4 +119,10 @@ test('시트 내부 하단바를 숨겨도 화면이 소유한 하단바는 유�
   </>);
   expect(screen.getAllByTestId('map-navigation-swipe')).toHaveLength(1);
   expect(screen.getAllByRole('tab')).toHaveLength(5);
+});
+
+test('예약 선택 아이콘의 체크는 밝은 전경색으로 표시한다', async () => {
+  await renderWithProviders(<MapSheetBottomNavigation activeTab="reservations" sheetTranslateY={new Animated.Value(0)} />);
+  expect(screen.getByTestId('map-navigation-reservation-check')).toHaveProp('stroke', { type: 0, payload: processColor('#F6F6F7') });
+  expect(screen.getByTestId('map-navigation-reservations-surface')).toHaveStyle({ width: '100%', maxWidth: 78 });
 });
