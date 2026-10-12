@@ -13,7 +13,7 @@
     "check:v1-changes": "node scripts/check-v1-change-policy.mjs",
     "test:ownership-harness": "node --test scripts/__tests__/v1ChangePolicy.test.mjs",
     "check:a11y-i18n": "node scripts/check-accessibility-i18n.mjs",
-    "check:api-contract": "node scripts/check-api-contract.mjs && node scripts/check-account-api-contract.mjs && node scripts/check-place-exploration-contract.mjs && node scripts/check-place-menus-contract.mjs && node scripts/check-visit-verification-contract.mjs && node scripts/check-offers-coupons-contract.mjs && node scripts/check-voice-ai-contract.mjs && node scripts/check-community-contract.mjs",
+    "check:api-contract": "node scripts/check-api-contract.mjs && node scripts/check-account-api-contract.mjs && node scripts/check-place-exploration-contract.mjs && node scripts/check-place-menus-contract.mjs && node scripts/check-visit-verification-contract.mjs && node scripts/check-offers-coupons-contract.mjs && node scripts/check-voice-ai-contract.mjs && node scripts/check-community-contract.mjs && node scripts/check-ai-chat-contract.mjs",
     "generate:api-types": "openapi-typescript docs/api/mvp.openapi.json -o src/v2/shared/api/generated/mvp.ts && openapi-typescript docs/api/account.openapi.json -o src/v2/shared/api/generated/account.ts",
     "generate:current-activity-intent-api-types": "openapi-typescript docs/api/current-activity-intent.openapi.json -o src/v2/shared/api/generated/currentActivityIntent.ts",
     "sync:scout-profile-openapi": "node scripts/sync-scout-profile-openapi.mjs",
@@ -39,7 +39,7 @@
     "generate:notification-api": "node scripts/generate-notification-api-contract.mjs",
     "sync:reservation-payment-openapi": "node scripts/sync-reservation-payment-openapi.mjs",
     "generate:reservation-payment-api-types": "openapi-typescript docs/api/reservation-payment.openapi.json -o src/v2/shared/api/generated/reservationPayment.ts",
-    "check:api-types": "node scripts/check-generated-api-types.mjs && node scripts/check-generated-place-exploration-api-types.mjs && node scripts/check-generated-map-home-feeds-api-types.mjs && node scripts/check-generated-place-menus-api-types.mjs && node scripts/check-generated-visit-verification-api-types.mjs && node scripts/check-generated-offers-coupons-api-types.mjs && node scripts/check-generated-community-api-types.mjs",
+    "check:api-types": "node scripts/check-generated-api-types.mjs && node scripts/check-generated-place-exploration-api-types.mjs && node scripts/check-generated-map-home-feeds-api-types.mjs && node scripts/check-generated-place-menus-api-types.mjs && node scripts/check-generated-visit-verification-api-types.mjs && node scripts/check-generated-offers-coupons-api-types.mjs && node scripts/check-generated-community-api-types.mjs && node scripts/check-generated-ai-chat-api-types.mjs",
     "check:notification-api-types": "node scripts/check-notification-api-types.mjs",
     "check:mock-contract": "tsc --noEmit",
     "test": "jest",
@@ -59,7 +59,10 @@
     "sync:routes-openapi": "node scripts/sync-routes-openapi.mjs",
     "generate:routes-api-types": "openapi-typescript docs/api/routes.openapi.json -o src/v2/shared/api/generated/routes.ts",
     "check:routes-api-types": "node scripts/check-generated-routes-api-types.mjs",
-    "test:v2-routes": "jest --runInBand src/v2/modules/place/map/routes/__tests__"
+    "test:v2-routes": "jest --runInBand src/v2/modules/place/map/routes/__tests__",
+    "sync:ai-chat-openapi": "node scripts/sync-ai-chat-openapi.mjs",
+    "generate:ai-chat-api-types": "openapi-typescript docs/api/ai-chat.openapi.json --empty-objects-unknown -o src/v2/shared/api/generated/aiChat.ts",
+    "check:ai-chat-api-types": "node scripts/check-generated-ai-chat-api-types.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
