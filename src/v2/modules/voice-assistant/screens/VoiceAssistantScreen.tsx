@@ -163,7 +163,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
           }
         }}
         onBlur={() => setEditingInSheet(false)}
-        placeholder={t('voiceAssistant.placeholder')} placeholderTextColor={pickerVisible ? theme.colors.textAlternative : theme.colors.textMuted}
+        placeholder={t('voiceAssistant.placeholder')} placeholderTextColor={theme.colors.textAlternative}
         value={feedback ? '' : state.draft} onChangeText={text => { if (previousTurnVisible && !clarificationField && !editingPicker) onCommandFeedbackDismiss?.(); controller.edit(text); }} returnKeyType="send"
         onSubmitEditing={() => { if (!submitDisabled) void controller.submit(); }}
         autoCorrect={false} spellCheck={false} autoComplete="off" />}
@@ -282,7 +282,7 @@ const WaveBar = styled.View<{ $height: number; $strong?: boolean }>`
 `;
 const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))<{ $question: boolean; $results: boolean }>`
   width: 100%; max-width: 386px; max-height: 78%; align-self: center; padding-top: 6px; padding-bottom: 12px;
-  height: ${({ $results }) => $results ? '557px' : 'auto'};
+  height: auto;
   gap: ${({ $question }) => $question ? 16 : 8}px; border-radius: 36px; overflow: ${({ $question }) => $question ? 'hidden' : 'visible'}; background-color: ${({ theme }) => theme.liquidGlass.sheet.tint};
 `;
 const Grabber = styled.View`width: 56px; height: 5px; border-radius: 3px; align-self: center; background-color: #bfc1c1;`;
@@ -295,7 +295,7 @@ const CloseButton = styled.Pressable.attrs({ style: { boxShadow: '0px 4px 20px r
   background-color: rgba(255, 255, 255, 0.56);
 `;
 const Content = styled(ScrollView)<{ $results: boolean }>`
-  flex-grow: ${({ $results }) => $results ? 1 : 0};
+  flex-grow: 0;
   flex-shrink: 1;
   min-height: 0px;
 `;

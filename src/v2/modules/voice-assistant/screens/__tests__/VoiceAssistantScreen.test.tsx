@@ -562,7 +562,7 @@ test('place results use the Figma compact sheet while retaining the composer and
     ] } },
   } }} />).element);
   expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처에 뭐 있는지 알려줘”');
-  expect(screen.getByTestId('voice-assistant-details')).toHaveStyle({ height: 557, borderTopLeftRadius: 36, borderBottomRightRadius: 36, overflow: 'hidden' });
+  expect(screen.getByTestId('voice-assistant-details')).toHaveStyle({ height: 'auto', borderTopLeftRadius: 36, borderBottomRightRadius: 36, overflow: 'hidden' });
   expect(screen.queryByTestId('voice-user-message-1')).toBeNull();
   expect(screen.getByText('여기서 1.23km')).toBeVisible();
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');

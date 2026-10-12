@@ -25,10 +25,17 @@ type Props = {
 export function VoiceCommandResults(props: Props) {
   const { t } = useTranslation();
   return <>
-    {props.state.phase === 'result' && props.state.text && <Copy testID="voice-assistant-message" accessibilityLiveRegion="polite">{props.state.text}</Copy>}
+    {props.state.phase === 'result' && props.state.text && !hasPlaceCards(props.state) && <AssistantCopy testID="voice-assistant-message" accessibilityLiveRegion="polite">{props.state.text}</AssistantCopy>}
     {props.state.phase === 'result' && props.state.followUpError && <Copy accessibilityRole="alert">{t(`voiceAssistant.sessionErrors.${props.state.followUpError}`)}</Copy>}
     <VoiceCommandResultBody {...props} />
   </>;
+}
+
+function hasPlaceCards(state: VoiceCommandViewState): boolean {
+  if (state.phase !== 'result' || state.result.outcome.status !== 'succeeded') return false;
+  return state.result.command === 'getPlaceDetails'
+    || ((state.result.command === 'searchNearbyPlaces' || state.result.command === 'searchNearbyReservablePlaces')
+      && state.result.outcome.data.places.length > 0);
 }
 
 function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = false, historical = false }: Props) {
@@ -52,8 +59,8 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
     <Cards horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
       {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} key={item.id} />)}
     </Cards>
-    <Summary>{t(state.phase === 'result' && state.result.command === 'searchNearbyPlaces'
-      ? 'voiceAssistant.command.nearbySummary' : 'voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>
+    {state.phase === 'result' && state.text ? <AssistantCopy testID="voice-assistant-message" accessibilityLiveRegion="polite">{state.text}</AssistantCopy> : <Summary>{t(state.phase === 'result' && state.result.command === 'searchNearbyPlaces'
+      ? 'voiceAssistant.command.nearbySummary' : 'voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>}
     <Actions horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
       <PrimaryAction accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.showOnMap')} disabled={historical} accessibilityState={{ disabled: historical }} onPress={onShowMap}>
         <PrimaryActionText>{t('voiceAssistant.command.showOnMap')}</PrimaryActionText>
@@ -72,7 +79,7 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
   if (state.phase === 'unrecognized') return historical
     ? <Copy>{t('voiceAssistant.feedback.unrecognized')}</Copy> : null;
   if (state.phase === 'error') return error(state.code, true);
-  if (state.phase === 'assistant') return <Copy testID="voice-assistant-message" accessibilityLiveRegion="polite">{state.text}</Copy>;
+  if (state.phase === 'assistant') return <AssistantCopy testID="voice-assistant-message" accessibilityLiveRegion="polite">{state.text}</AssistantCopy>;
   if (state.phase === 'clarification') return clarification(state.field);
   if (state.phase !== 'result') return copy(state.phase);
   const result = state.result;
@@ -130,7 +137,7 @@ function PlaceCard({ place, imageUrl }: { place: VoicePlaceFacts; imageUrl?: str
       </CardShade>
       <CardFooter>
         <CardName numberOfLines={2}>{place.name}</CardName>
-        <StarIcon width={28} height={28} />
+        <StarIcon />
       </CardFooter>
     </CardImage>
     <Address numberOfLines={1}>{place.distanceMeters !== undefined
@@ -150,8 +157,9 @@ const CardShade = styled.View`position: absolute; left: 0px; right: 0px; bottom:
 const CardFooter = styled.View`min-height: 70px; padding: 16px 12px 12px; flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 8px;`;
 const CardName = styled(Text)`flex: 1; color: #f8f8f8; font-size: 16px; line-height: 21px; font-weight: 700;`;
 const Address = styled(Text)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: 14px; line-height: 18px;`;
-const Summary = styled(Text)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 16px; line-height: 21px; font-weight: 500;`;
-const Actions = styled.ScrollView`margin-horizontal: -16px; padding-horizontal: 16px;`;
+const AssistantCopy = styled(Text)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 16px; line-height: 21px; font-weight: 700;`;
+const Summary = styled(AssistantCopy)``;
+const Actions = styled.ScrollView`margin-top: 10px; margin-horizontal: -16px; padding-horizontal: 16px;`;
 const ActionBase = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.category.shadow } }))`
   height: 34px; padding: 8px 16px; border-radius: 17px; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
 `;

@@ -28,7 +28,9 @@ test('Figma cards use server media and distance, and sharing is an explicit user
   const result: AppCommandResult = { schemaVersion: 1, kind: 'command_result', source: 'app', id: 'media-result',
     commandId: 'media', command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: { coverage: 'nearest_places',
       places: [{ id: 1, name: '조회한 카페', address: '서울 실제 주소', touristCategories: ['CAFE'], operatingStatus: 'OPERATING', distanceMeters: 1230 }] } } };
-  await renderWithProviders(<VoiceCommandResults state={{ phase: 'result', result }} />);
+  await renderWithProviders(<VoiceCommandResults state={{ phase: 'result', result, text: '조회된 카페를 지도에서 확인해 보세요.' }} />);
+  expect(screen.getAllByText('조회된 카페를 지도에서 확인해 보세요.')).toHaveLength(1);
+  expect(screen.getByTestId('voice-assistant-message')).toHaveStyle({ color: '#0C0C0D', fontFamily: 'PretendardStdVariable-Bold' });
   expect(JSON.stringify(screen.toJSON())).toContain('https://cdn.example.com/place-1.jpg');
   expect(screen.getByText('여기서 1.23km')).toBeVisible();
   expect(screen.queryByText('예시 이미지')).toBeNull();
