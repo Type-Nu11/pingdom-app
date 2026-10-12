@@ -54,7 +54,6 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private val placeMarkers = mutableMapOf<String, Marker>()
     private val icons = mutableMapOf<String, OverlayImage>()
     private val userMarker = Marker()
-    private val routeCasing = PolylineOverlay()
     private val routeLine = PolylineOverlay()
     private var routePoints = emptyList<LatLng>()
     private var routeDirty = false
@@ -99,12 +98,14 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
                     setLogoMargin(dp(16f), dp(160f), 0, 0)
                 }
                 map.addOnCameraChangeListener { reason, _ ->
+                    updateRouteStyle(map)
                     if (reason == CameraUpdate.REASON_GESTURE) {
                         if (followUser) releaseFollowAfterGesture = true
                         emit("topCameraGesture", Arguments.createMap())
                     }
                 }
                 map.addOnCameraIdleListener {
+                    updateRouteStyle(map)
                     emitRouteAnchor(map)
                     val target = map.cameraPosition.target
                     emit("topCameraIdle", Arguments.createMap().apply {
@@ -236,27 +237,21 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         }
         if (routeDirty) {
             routeLine.map = null
-            routeCasing.map = null
             if (routePoints.size >= 2) {
                 routeLine.coords = routePoints
-                // Figma 8548:35330: 7 dp pink line over 11 dp white casing.
-                routeCasing.coords = routePoints
-                routeCasing.width = dp(11f)
-                routeCasing.color = Color.WHITE
-                routeCasing.capType = PolylineOverlay.LineCap.Round
-                routeCasing.joinType = PolylineOverlay.LineJoin.Round
-                routeCasing.zIndex = 0
-                routeCasing.map = map
-                routeLine.width = dp(7f)
-                routeLine.color = Color.rgb(255, 74, 117)
+                // The adapter supplies bounded curves; round joins avoid faceting thick segments.
+                routeLine.color = Color.rgb(255, 25, 86)
                 routeLine.capType = PolylineOverlay.LineCap.Round
                 routeLine.joinType = PolylineOverlay.LineJoin.Round
+                routeLine.globalZIndex = -100000
                 routeLine.zIndex = 1
+                updateRouteStyle(map)
                 routeLine.map = map
             }
             routeDirty = false
             emitRouteAnchor(map)
         }
+        updateRouteStyle(map)
         if (markersDirty) {
             val ids = placeData.map { it.id }.toSet()
             placeMarkers.keys.filter { it !in ids }.forEach { id ->
@@ -327,6 +322,14 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private fun validCoordinate(lat: Double?, lng: Double?): Boolean =
         lat != null && lng != null && lat.isFinite() && lng.isFinite() && lat in -90.0..90.0 && lng in -180.0..180.0
 
+    private fun updateRouteStyle(map: NaverMap) {
+        if (routePoints.size < 2) return
+        val zoom = map.cameraPosition.zoom
+        val detail = ((zoom - 14.0) / 3.0).coerceIn(0.0, 1.0).toFloat()
+        val lineWidth = dp(8f + detail)
+        if (routeLine.width != lineWidth) routeLine.width = lineWidth
+    }
+
     private fun dp(value: Float) = (value * resources.displayMetrics.density).roundToInt()
 
     private fun emitMarkerPress(markerId: String) = emit("topMarkerPress", Arguments.createMap().apply {
@@ -370,7 +373,6 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         if (disposed) return
         disposed = true
         routeLine.map = null
-        routeCasing.map = null
         removeCallbacks(layoutChildren)
         reactContext.removeLifecycleEventListener(this)
         placeMarkers.values.forEach { it.map = null; it.onClickListener = null }
