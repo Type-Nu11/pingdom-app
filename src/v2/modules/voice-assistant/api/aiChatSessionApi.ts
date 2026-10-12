@@ -8,9 +8,19 @@ import { utf8Length, VOICE_RESPONSE_LIMIT, type VoiceSessionApi } from './voiceS
 
 // Upstream Message.content references object-only JsonNode, but its published examples use text/null.
 // Keep that compatibility correction local to this transport boundary; generated types stay untouched.
-type Message = Omit<components['schemas']['Message'], 'content'> & { content?: string | null | Record<string, unknown> };
-type ToolCall = components['schemas']['ToolCall'];
-type Request = Omit<components['schemas']['AiChatRequest'], 'messages'> & { messages: Message[] };
+type ToolCall = Omit<components['schemas']['ToolCall'], 'function'> & {
+  function: { name: string; arguments: Record<string, unknown> };
+};
+type Message = Omit<components['schemas']['Message'], 'content' | 'tool_calls'> & {
+  content?: string | null | Record<string, unknown>; tool_calls?: ToolCall[];
+};
+type WireMessage = Omit<Message, 'tool_calls'> & { tool_calls?: Array<Omit<ToolCall, 'function'> & {
+  function: { name: string; arguments: Record<string, unknown> | string };
+}> };
+// The server team confirmed the production proxy requires an app-selected model;
+// the published AiChatRequest snapshot does not describe this field yet.
+const AI_CHAT_MODEL = 'openai/gpt-oss-20b' as const;
+type Request = Omit<components['schemas']['AiChatRequest'], 'messages'> & { messages: WireMessage[]; model: typeof AI_CHAT_MODEL };
 type Delivery = { envelope: ProviderEnvelope; callId?: string };
 const invalid = (): never => { throw new VoiceSessionError('INVALID_RESPONSE'); };
 const object = (value: unknown): Record<string, unknown> => {
@@ -20,6 +30,20 @@ const object = (value: unknown): Record<string, unknown> => {
 const exact = (value: Record<string, unknown>, fields: readonly string[]) => {
   if (Object.keys(value).some(key => !fields.includes(key))) invalid();
 };
+function chatResponse(decoded: unknown): { response: Record<string, unknown>; provider: boolean } {
+  const outer = object(decoded);
+  if (!Object.hasOwn(outer, 'choices')) {
+    exact(outer, ['content', 'tool_calls']);
+    return { response: outer, provider: false };
+  }
+  exact(outer, ['id', 'object', 'created', 'model', 'choices', 'usage', 'usage_breakdown', 'system_fingerprint', 'service_tier', 'x_groq']);
+  if (outer.object !== 'chat.completion' || !Array.isArray(outer.choices) || outer.choices.length !== 1) return invalid();
+  const choice = object(outer.choices[0]); exact(choice, ['index', 'message', 'finish_reason', 'logprobs']);
+  if (choice.index !== 0 || !['stop', 'tool_calls'].includes(String(choice.finish_reason))) return invalid();
+  const message = object(choice.message); exact(message, ['role', 'content', 'tool_calls', 'reasoning', 'refusal', 'annotations']);
+  if (message.role !== 'assistant' || (message.refusal !== undefined && message.refusal !== null)) return invalid();
+  return { response: { content: message.content, tool_calls: message.tool_calls }, provider: true };
+}
 let sessionSequence = 0;
 
 /** Stateless server chat; this adapter owns only bounded, account-scoped in-memory history. */
@@ -35,7 +59,8 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
   let sequence = 0;
   let rounds = 0;
   let needsFollowUp = false;
-  const reset = () => { revision++; history = []; queue = []; waiting = undefined; completed = undefined; needsFollowUp = false; };
+  let providerWire = false;
+  const reset = () => { revision++; history = []; queue = []; waiting = undefined; completed = undefined; needsFollowUp = false; providerWire = false; };
   const requireCurrent = (id: string, signal: AbortSignal, captured: number) => {
     if (signal.aborted || id !== sessionId || captured !== revision) throw new VoiceSessionError('CANCELED');
   };
@@ -50,7 +75,14 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
     const aborter = new AbortController(); let oversized = false;
     const abort = () => aborter.abort(); signal.addEventListener('abort', abort, { once: true });
     try {
-      const raw = await client.post<unknown, Request>('/ai/chat', { messages, tools: AI_CHAT_TOOLS }, {
+      // Keep canonical history internally; the live OpenAI-compatible proxy needs JSON strings.
+      const wireMessages: WireMessage[] = providerWire ? messages.map(message => ({ ...message,
+        ...(message.role === 'tool' ? { content: JSON.stringify(message.content) } : {}),
+        ...(message.tool_calls?.length ? { tool_calls: message.tool_calls.map(call => ({ ...call,
+          function: { ...call.function, arguments: JSON.stringify(call.function.arguments) },
+        })) } : {}),
+      })) : messages;
+      const raw = await client.post<unknown, Request>('/ai/chat', { model: AI_CHAT_MODEL, messages: wireMessages, tools: AI_CHAT_TOOLS }, {
         signal: aborter.signal, responseType: 'text', maxContentLength: VOICE_RESPONSE_LIMIT,
         onDownloadProgress: event => { if (event.loaded > VOICE_RESPONSE_LIMIT) { oversized = true; aborter.abort(); } },
       });
@@ -59,8 +91,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
       if (typeof raw !== 'string') return invalid();
       let decoded: unknown;
       try { decoded = JSON.parse(raw); } catch { return invalid(); }
-      const response = object(decoded);
-      exact(response, ['content', 'tool_calls']);
+      const { response, provider } = chatResponse(decoded);
       const content = response.content;
       if (content !== undefined && content !== null && (typeof content !== 'string' || content.length > 2000)) return invalid();
       const calls = response.tool_calls ?? [];
@@ -79,7 +110,12 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         const fn = object(call.function); exact(fn, ['name', 'arguments']);
         const tool = AI_CHAT_TOOLS.find(item => item.function.name === fn.name);
         if (!tool) return invalid();
-        const args = object(fn.arguments);
+        let argumentsValue = fn.arguments;
+        if (provider) {
+          if (typeof argumentsValue !== 'string') return invalid();
+          try { argumentsValue = JSON.parse(argumentsValue); } catch { return invalid(); }
+        }
+        const args = object(argumentsValue);
         if (Object.keys(args).some(key => !Object.hasOwn(tool.function.parameters.properties, key))) return invalid();
         const parsed = parseVoiceAssistantEnvelope({ schemaVersion: 1, id: `chat-${++sequence}`, kind: 'command_request', command: fn.name,
           args: fn.name === 'searchNearbyPlaces' ? { ...args, useCurrentLocation: true } : args });
@@ -88,6 +124,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         wireCalls.push({ id: call.id, type: 'function', function: { name: tool.function.name, arguments: args } });
       }
       if (!deliveries.length) return invalid();
+      providerWire = provider;
       history = [...messages, { role: 'assistant', content: content ?? null, tool_calls: wireCalls }];
       queue = deliveries; needsFollowUp = wireCalls.length > 0;
       return dequeue()!;

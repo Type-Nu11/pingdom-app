@@ -6,6 +6,9 @@ import { voiceSessionErrors } from '../../i18n/voiceSessionErrors';
 import type { AppCommandResult } from '../../model/voiceAssistantCommand.types';
 
 const call = (name = 'searchNearbyPlaces', args: unknown = { keyword: '갈비탕', limit: 3 }, id = 'call_1') => ({ id, type: 'function', function: { name, arguments: args } });
+const completion = (message: unknown, finishReason = 'stop') => ({ id: 'completion-1', object: 'chat.completion', model: 'openai/gpt-oss-20b',
+  usage: {}, usage_breakdown: null, system_fingerprint: 'provider-fingerprint', x_groq: {}, service_tier: 'on_demand',
+  choices: [{ index: 0, message, finish_reason: finishReason }] });
 const replies = (responses: unknown[]) => {
   const requests: { path: string; body: any }[] = [];
   const post = async (path: string, body: unknown) => { requests.push({ path, body }); return { data: JSON.stringify(responses.shift()) }; };
@@ -13,6 +16,50 @@ const replies = (responses: unknown[]) => {
 };
 const result = (commandId: string): AppCommandResult => ({ schemaVersion: 1, id: 'result-1', source: 'app', kind: 'command_result', commandId,
   command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
+
+test('live completion replies show only assistant content and serialize tool history for the provider', async () => {
+  const x = replies([
+    completion({ role: 'assistant', content: '안녕하세요.', reasoning: 'private reasoning' }),
+    completion({ role: 'assistant', content: null, tool_calls: [call('searchNearbyPlaces', '{"keyword":"갈비탕","limit":3}')] }, 'tool_calls'),
+    completion({ role: 'assistant', content: '검색 결과가 없습니다.' }),
+  ]);
+  const answers: string[] = []; const commands: string[] = [];
+  const c = createVoiceSessionController(e => {
+    if (e.kind === 'assistant_message') answers.push(e.text);
+    if (e.kind === 'command_request') { commands.push(e.command); x.api.recordResult(result(e.id)); }
+  }, x.api);
+  try {
+    await c.start(); await c.send('Hello'); await c.send('갈비탕집 있어?');
+    expect(c.getSnapshot().error).toBeNull();
+    expect(answers).toEqual(['안녕하세요.', '검색 결과가 없습니다.']);
+    expect(commands).toEqual(['searchNearbyPlaces']);
+    expect(x.requests).toHaveLength(3);
+    const history = x.requests[2].body.messages;
+    const assistant = history.find((m: any) => m.tool_calls?.length);
+    expect(assistant.tool_calls[0].function.arguments).toBe('{"keyword":"갈비탕","limit":3}');
+    const tool = history.find((m: any) => m.role === 'tool');
+    expect(tool.tool_call_id).toBe('call_1');
+    expect(JSON.parse(tool.content)).toEqual(result('unused').outcome);
+    expect(JSON.stringify(history)).not.toContain('private reasoning');
+    for (const request of x.requests) expect(request.body.model).toBe('openai/gpt-oss-20b');
+  } finally { c.dispose(); }
+});
+
+test.each([
+  completion({ role: 'assistant', content: 'truncated' }, 'length'),
+  completion({ role: 'user', content: 'wrong role' }),
+  completion({ role: 'assistant', content: null, tool_calls: [call('searchNearbyPlaces', '{invalid JSON')] }, 'tool_calls'),
+  completion({ role: 'assistant', content: null, tool_calls: [call('createReservation', '{}')] }, 'tool_calls'),
+  { ...completion({ role: 'assistant', content: 'ambiguous' }), choices: [
+    { index: 0, message: { role: 'assistant', content: 'first' }, finish_reason: 'stop' },
+    { index: 1, message: { role: 'assistant', content: 'second' }, finish_reason: 'stop' },
+  ] },
+])('invalid provider completions never publish or execute %#', async response => {
+  const x = replies([response]); const handle = jest.fn();
+  const c = createVoiceSessionController(handle, x.api);
+  try { await c.start(); await c.send('검색'); expect(c.getSnapshot().error).toBe('INVALID_RESPONSE'); expect(handle).not.toHaveBeenCalled(); }
+  finally { c.dispose(); }
+});
 
 test.each(['searchNearbyPlaces', 'searchNearbyReservablePlaces'])('%s category schema supports the server typed-value validator', name => {
   const tool = AI_CHAT_TOOLS.find(item => item.function.name === name)!;
@@ -59,6 +106,7 @@ test('keyword search and its app result return through /ai/chat with matching ID
     expect(x.requests[1].body.messages[2]).toEqual({ role: 'tool', tool_call_id: 'call_1', content: { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
     await controller.send('다른 음식은?');
     expect(x.requests[2].body.messages.slice(-2)).toEqual([{ role: 'assistant', content: '검색 결과가 없습니다.', tool_calls: [] }, { role: 'user', content: '다른 음식은?' }]);
+    for (const request of x.requests) expect(request.body.model).toBe('openai/gpt-oss-20b');
   } finally { controller.dispose(); }
 });
 

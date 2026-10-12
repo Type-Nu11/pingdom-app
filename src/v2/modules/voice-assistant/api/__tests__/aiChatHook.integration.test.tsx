@@ -9,16 +9,18 @@ const original = AppState.currentState;
 beforeEach(() => { (AppState as { currentState: string }).currentState = 'active'; });
 afterEach(() => { (AppState as { currentState: string }).currentState = original; });
 
-test.each([false, true])('real chat tool execution retains place cards when follow-up fails=%s', async fails => {
+test.each([[false, false], [false, true], [true, false], [true, true]])('real chat tool execution retains place cards when follow-up fails=%s provider=%s', async (fails, provider) => {
   let posts = 0;
   const requests: { path: string; body: unknown }[] = [];
   const restore = configureApiTransport({
     post: async (path: string, body: unknown) => {
       requests.push({ path, body }); posts++;
       if (posts === 2 && fails) throw new Error('network offline');
-      return { data: JSON.stringify(posts === 1
-        ? { content: null, tool_calls: [{ id: 'call-1', type: 'function', function: { name: 'searchNearbyPlaces', arguments: { keyword: '갈비탕', limit: 3 } } }] }
-        : { content: '갈비탕 식당을 찾았습니다.', tool_calls: [] }) };
+      const answer = posts === 1
+        ? { content: null, tool_calls: [{ id: 'call-1', type: 'function', function: { name: 'searchNearbyPlaces', arguments: provider ? '{"keyword":"갈비탕","limit":3}' : { keyword: '갈비탕', limit: 3 } } }] }
+        : { content: '갈비탕 식당을 찾았습니다.', tool_calls: [] };
+      return { data: JSON.stringify(provider ? { object: 'chat.completion', choices: [{ index: 0,
+        message: { role: 'assistant', ...answer }, finish_reason: posts === 1 ? 'tool_calls' : 'stop' }] } : answer) };
     },
     get: async () => ({ data: { places: [{ id: 1, name: '갈비탕 식당', address: '대구', touristCategories: ['FOOD'], operatingStatus: 'OPERATING' }] } }),
   } as unknown as ApiTransport);
