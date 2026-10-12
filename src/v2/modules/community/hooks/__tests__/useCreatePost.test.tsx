@@ -24,7 +24,7 @@ describe('useCreatePost', () => {
     jest.restoreAllMocks();
   });
 
-  test('생성한 카테고리의 목록 캐시만 무효화한다', async () => {
+  test('생성한 카테고리와 전체 목록 캐시만 무효화한다', async () => {
     jest.spyOn(communityApi, 'createPost').mockResolvedValue({ placeIds: [], postId: 9001 });
     const { queryClient, wrapper } = createWrapper();
     const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
@@ -36,9 +36,12 @@ describe('useCreatePost', () => {
       title: '제목',
     }));
 
-    expect(invalidateQueries).toHaveBeenCalledTimes(1);
+    expect(invalidateQueries).toHaveBeenCalledTimes(2);
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: communityQueryKeys.postsRoot('PLACE'),
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: communityQueryKeys.allPostsRoot,
     });
   });
 

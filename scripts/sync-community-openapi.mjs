@@ -5,7 +5,8 @@ const UPSTREAM_URL = 'https://www.typenull.xyz/v3/api-docs/app';
 const outputPath = new URL('../docs/api/community.openapi.json', import.meta.url);
 
 // The upstream document auto-generates opaque operationIds for several of these
-// (`create_1`, `create_2`, `find`, `like`, `cancel_1`, `record_1`) because the
+// (`create_1`, `create_2`, `find`, `like`, `cancel_1`, `record_1`, `findAll_1`,
+// `upload_1`, `find_1`, `like_1`, `cancel_2`) because the
 // method names collide with other controllers. They are remapped to stable
 // names here so the generated contract and communityApi stay readable; the raw
 // ids are still asserted so an upstream renumber fails loudly instead of
@@ -13,11 +14,22 @@ const outputPath = new URL('../docs/api/community.openapi.json', import.meta.url
 const TARGET_OPERATIONS = new Map([
   ['/community/categories', [['get', 'findCategories', 'listCategories']]],
   ['/community/categories/{categoryId}/posts', [['get', 'findByCategory', 'listPostsByCategory']]],
-  ['/community/posts', [['post', 'create_1', 'createPost']]],
+  ['/community/countries', [['get', 'countries', 'listCountries']]],
+  ['/community/images', [['post', 'upload_1', 'uploadImage']]],
+  ['/community/images/{imageId}', [['delete', 'delete', 'deleteImage']]],
+  ['/community/posts', [
+    ['get', 'findAll', 'listPosts'],
+    ['post', 'create_1', 'createPost'],
+  ]],
   ['/community/posts/{postId}', [['get', 'findDetail', 'getPost']]],
   ['/community/posts/{postId}/comments', [
-    ['get', 'findAll', 'listComments'],
+    ['get', 'findAll_1', 'listComments'],
     ['post', 'create_2', 'createComment'],
+  ]],
+  ['/community/comments/{commentId}/likes', [
+    ['get', 'find_1', 'getCommentLikeStatus'],
+    ['post', 'like_1', 'likeComment'],
+    ['delete', 'cancel_2', 'unlikeComment'],
   ]],
   ['/community/posts/{postId}/likes', [
     ['get', 'find', 'getLikeStatus'],

@@ -8,6 +8,7 @@ import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.s
 import { formatRelativeMinutes } from '../../../shared/i18n/formatters';
 import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityPostDetail } from '../api/communityApi';
+import { joinMeta } from '../model/photoCount';
 
 const AVATAR_SIZE = 37;
 
@@ -15,17 +16,27 @@ export type PostAuthorProps = {
   author: CommunityPostDetail['author'];
   createdAt?: string;
   now: Date;
+  /** Display region the author set; omitted when the post has none. */
+  region?: string | null;
+  viewCount?: number | null;
 };
 
 // Figma `Author`: 37px User_Circle avatar, 10px gap, Label/Bold name over the
-// Caption meta line. The contract gives the author and creation time only, so
-// the meta line shows the relative time (region and views aren't provided).
-export default function PostAuthor({ author, createdAt, now }: PostAuthorProps) {
-  const { i18n } = useTranslation();
+// Caption meta line ("구지면 · 12분 전 · 조회 128"). Each part of the meta line is
+// shown only when the response carries it.
+export default function PostAuthor({ author, createdAt, now, region, viewCount }: PostAuthorProps) {
+  const { i18n, t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const imageUrl = author?.profileImageUrl;
   const minutesAgo = createdAt ? Math.floor((now.getTime() - new Date(createdAt).getTime()) / 60_000) : 0;
   const relativeTime = createdAt ? formatRelativeMinutes(minutesAgo, i18n.language) : '';
+  const meta = joinMeta([
+    region,
+    relativeTime,
+    typeof viewCount === 'number' && Number.isFinite(viewCount)
+      ? t('community.list.views', { count: viewCount })
+      : undefined,
+  ]);
 
   if (!author?.authorName) return null;
 
@@ -43,7 +54,7 @@ export default function PostAuthor({ author, createdAt, now }: PostAuthorProps) 
       )}
       <Info>
         <Name numberOfLines={1}>{author.authorName}</Name>
-        {relativeTime ? <Meta numberOfLines={1}>{relativeTime}</Meta> : null}
+        {meta ? <Meta numberOfLines={1} testID="v2-community-detail-author-meta">{meta}</Meta> : null}
       </Info>
     </Row>
   );
@@ -58,4 +69,4 @@ const Avatar = styled(Image)`
 `;
 const Info = styled.View`flex: 1; gap: 2px; min-width: 0;`;
 const Name = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.labelBold)}`;
-const Meta = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;
+const Meta = styled(AppText)`color: ${({ theme }) => theme.colors.labelAssistive}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;

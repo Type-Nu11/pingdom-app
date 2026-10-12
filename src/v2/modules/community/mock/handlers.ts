@@ -2,11 +2,15 @@ import { ApiError } from '../../../shared/api/ApiError';
 import type { MockHandler } from '../../../shared/api/mock/handlers';
 import {
   categoriesFixture,
+  commentLikeStatusFixture,
+  commentLikedStatusFixture,
   commentPageFixture,
+  countriesFixture,
   createCommentResponseFixture,
   createPostResponseFixture,
   emptyCommentPageFixture,
   emptyPostPageFixture,
+  imageUploadFixture,
   likeStatusFixture,
   likedStatusFixture,
   placeViewFixture,
@@ -31,7 +35,15 @@ export const communityMockHandlers = [
     path: /^\/community\/categories\/[^/]+\/posts$/,
     resolve: ({ scenario }) => (scenario === 'empty' ? emptyPostPageFixture : postPageFixture),
   },
+  { method: 'GET', path: '/community/countries', resolve: () => countriesFixture },
+  {
+    method: 'GET',
+    path: '/community/posts',
+    resolve: ({ scenario }) => (scenario === 'empty' ? emptyPostPageFixture : postPageFixture),
+  },
   { method: 'POST', path: '/community/posts', resolve: () => createPostResponseFixture },
+  { method: 'POST', path: '/community/images', resolve: () => imageUploadFixture },
+  { method: 'DELETE', path: /^\/community\/images\/\d+$/, resolve: () => undefined },
   {
     method: 'GET',
     path: /^\/community\/posts\/\d+$/,
@@ -53,6 +65,9 @@ export const communityMockHandlers = [
   { method: 'GET', path: /^\/community\/posts\/\d+\/likes$/, resolve: () => likeStatusFixture },
   { method: 'POST', path: /^\/community\/posts\/\d+\/likes$/, resolve: () => likedStatusFixture },
   { method: 'DELETE', path: /^\/community\/posts\/\d+\/likes$/, resolve: () => likeStatusFixture },
+  { method: 'GET', path: /^\/community\/comments\/\d+\/likes$/, resolve: () => commentLikeStatusFixture },
+  { method: 'POST', path: /^\/community\/comments\/\d+\/likes$/, resolve: () => commentLikedStatusFixture },
+  { method: 'DELETE', path: /^\/community\/comments\/\d+\/likes$/, resolve: () => commentLikeStatusFixture },
   {
     method: 'POST',
     path: /^\/community\/posts\/\d+\/places\/\d+\/view$/,

@@ -18,6 +18,8 @@ export { useForegroundVisitVerification } from './hooks/useForegroundVisitVerifi
 export { useLocationPermissionStatus } from './hooks/useLocationPermissionStatus';
 export { MAX_PHOTOS, MAX_REASONS, MAX_REVIEW_LENGTH, RECOMMEND_REASONS, serializeRecommendReasons, reviewPhotoPart, reviewSubmissionErrorKey, uniquePlaceIdsInServerOrder, selectCandidateImageUrls, toggleReason, appendPhotos, validateReviewDraft, assertReviewSubmissionDraft, requireReviewMediaId } from './model/visitVerification';
 export type { RecommendReason, SelectedPhoto, ReviewValidation } from './model/visitVerification';
+export { visitVerificationMediaPicker } from './services/mediaPicker';
+export type { MediaPickerResult, VisitVerificationMediaPicker } from './services/mediaPicker';
 export { default as VisitVerificationPlacesScreen } from './screens/VisitVerificationPlacesScreen';
 export { default as VisitVerificationReviewScreen } from './screens/VisitVerificationReviewScreen';
 export { default as VisitVerificationSessionScreen } from './screens/VisitVerificationSessionScreen';

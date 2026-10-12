@@ -97,6 +97,8 @@ const LANGUAGE_RULES = {
     // Brand names plus words Spanish spells like English (China, Vietnam, Info, Pop-up, Check-ins).
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
+      'community.countries.CN',
+      'community.countries.VN',
       'countries.cn',
       'countries.vn',
       'map.categories.popup',
@@ -113,6 +115,7 @@ const LANGUAGE_RULES = {
     // Brand names plus words Brazilian Portuguese spells like English (China, Status, Info, OK, Pop-up).
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
+      'community.countries.CN',
       'countries.cn',
       'map.categories.popup',
       'map.detail.info',
