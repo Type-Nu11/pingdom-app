@@ -77,12 +77,12 @@ describe('FavoritePlacesBottomSheet categories', () => {
       .forEach((name) => expect(screen.getByRole('tab', { name })).toBeVisible());
 
     expect(screen.getByRole('tab', { name: '전체', selected: true })).toHaveStyle({
-      backgroundColor: '#FAEDF0',
-      borderColor: '#FE5E84',
+      backgroundColor: 'rgba(255, 201, 211, 0.24)',
+      borderColor: 'rgba(255, 74, 117, 0.88)',
     });
     expect(screen.getByRole('tab', { name: '음악', selected: false })).toHaveStyle({
-      backgroundColor: '#FFFFFF',
-      borderColor: '#F2F2F3',
+      backgroundColor: 'rgba(255, 255, 255, 0.36)',
+      borderColor: 'rgba(255, 255, 255, 0.60)',
     });
   });
 
