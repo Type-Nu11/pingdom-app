@@ -1166,6 +1166,7 @@
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/hooks/usePostPhotoUploads.ts","typeOnly":false},
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/model/writeSubmitError.ts","typeOnly":false},
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/model/writeForm.ts","typeOnly":false},
+    {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/components/CommunityPlaceCard.tsx","typeOnly":false},
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/components/CommunityPlacePicker.tsx","typeOnly":false},
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/components/HeaderIconButton.tsx","typeOnly":false},
     {"source":"src/v2/modules/community/screens/CommunityWriteScreen.tsx","target":"src/v2/modules/community/components/WritePhotoSection.tsx","typeOnly":false},

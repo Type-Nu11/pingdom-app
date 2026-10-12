@@ -306,6 +306,31 @@ describe('CommunityWriteScreen', () => {
       .toHaveProp('accessibilityState', { selected: true }));
   });
 
+  test('선택한 장소를 공통 장소 카드로 보여주고 X로 삭제한다', async () => {
+    jest.mocked(usePlaceAutocomplete).mockReturnValue({
+      data: { places: [{ address: '서울', category: '카페', id: 17, name: '대소고' }] },
+      isError: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    } as never);
+    const { user } = await renderScreen();
+
+    await waitFor(() => expect(screen.getByTestId('v2-community-write-category-TRAVEL')).toBeVisible());
+    await user.press(screen.getByTestId('v2-community-write-add-place'));
+    await user.type(screen.getByTestId('v2-community-place-picker-input'), '대소고');
+    await waitFor(() => expect(screen.getByTestId('v2-community-place-picker-result-17')).toBeVisible());
+    await user.press(screen.getByTestId('v2-community-place-picker-result-17'));
+
+    // The search contract has a category but no thumbnail or region.
+    await waitFor(() => expect(screen.getByTestId('v2-community-write-place-17-meta')).toHaveTextContent('카페'));
+    expect(screen.queryByTestId('v2-community-write-place-17-thumbnail')).toBeNull();
+    expect(screen.getByLabelText('대소고 삭제')).toHaveStyle({ height: 32, width: 32 });
+
+    await user.press(screen.getByTestId('v2-community-write-remove-place-17'));
+
+    await waitFor(() => expect(screen.queryByTestId('v2-community-write-place-17')).toBeNull());
+  });
+
   describe('사진 첨부', () => {
     const picked = (count: number): SelectedPhoto[] => Array.from({ length: count }, (_value, index) => ({
       fileName: `photo-${index}.jpg`,

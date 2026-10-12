@@ -25,6 +25,7 @@ import {
   type WriteFormFieldErrorKey,
   type WritePlaceTag,
 } from '../model/writeForm';
+import CommunityPlaceCard from '../components/CommunityPlaceCard';
 import CommunityPlacePicker from '../components/CommunityPlacePicker';
 import HeaderIconButton from '../components/HeaderIconButton';
 import WritePhotoSection from '../components/WritePhotoSection';
@@ -303,20 +304,24 @@ export default function CommunityWriteScreen({
             </SectionHead>
 
             {placeTags.map((place) => (
-              <PlaceCard key={place.id}>
-                <PlaceInfo>
-                  <PlaceCategory numberOfLines={1}>{place.category}</PlaceCategory>
-                  <PlaceName numberOfLines={1}>{place.name}</PlaceName>
-                </PlaceInfo>
-                <RemovePlace
-                  accessibilityLabel={t('community.write_screen.removePlace', { name: place.name })}
-                  accessibilityRole="button"
-                  onPress={() => setPlaceTags((current) => current.filter((tag) => tag.id !== place.id))}
-                  testID={`v2-community-write-remove-place-${place.id}`}
-                >
-                  <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
-                </RemovePlace>
-              </PlaceCard>
+              // The place search result carries a category but no thumbnail or
+              // region, so the shared card shows only what was returned.
+              <CommunityPlaceCard
+                category={place.category}
+                key={place.id}
+                name={place.name}
+                testID={`v2-community-write-place-${place.id}`}
+                trailing={(
+                  <RemovePlace
+                    accessibilityLabel={t('community.write_screen.removePlace', { name: place.name })}
+                    accessibilityRole="button"
+                    onPress={() => setPlaceTags((current) => current.filter((tag) => tag.id !== place.id))}
+                    testID={`v2-community-write-remove-place-${place.id}`}
+                  >
+                    <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
+                  </RemovePlace>
+                )}
+              />
             ))}
 
             <AddPlaceButton
@@ -445,13 +450,9 @@ const ValidationText = styled(AppText)`color: ${({ theme }) => theme.colors.dang
 const PlaceSection = styled.View`gap: 12px; padding: 16px 24px;`;
 const PlaceHead = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
 const PlaceHeadTitle = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
-const PlaceHeadTag = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
+const PlaceHeadTag = styled(AppText)`color: ${({ theme }) => theme.colors.labelAssistive}; ${({ theme }) => textStyleCss(theme.typography.labelMedium)}`;
 const PlaceSubtitle = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;
-// Figma place card: 12px padding on `Secondary/Assistive`, 32px `Fill/Support` remove button.
-const PlaceCard = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive};`;
-const PlaceInfo = styled.View`flex: 1; gap: 4px; min-width: 0;`;
-const PlaceCategory = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.bodyRegular)}`;
-const PlaceName = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
+// Figma place card (8168:10664): the shared card with a 32px `Fill/Support` remove button.
 const RemovePlace = styled.Pressable`width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.fillSupport};`;
 const AddPlaceButton = styled.Pressable`align-self: flex-start; padding: 10px 16px; border-radius: ${({ theme }) => theme.radius.full}px; border-width: 1px; border-color: ${({ theme }) => theme.colors.border};`;
 const AddPlaceLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.label.fontSize}px; font-weight: 600;`;
