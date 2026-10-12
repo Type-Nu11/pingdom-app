@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../app/testing/testProviders';
 import { ApiError } from '../../../shared/api';
@@ -377,5 +377,147 @@ describe('CommunityDetailScreen 댓글', () => {
     fireEvent.changeText(input, 'a'.repeat(900));
 
     await waitFor(() => expect(screen.getByTestId('v2-community-comment-counter')).toHaveTextContent('900/1000'));
+  });
+
+  describe('답글과 댓글 좋아요', () => {
+    const now = () => new Date().toISOString();
+    // Newest-first flat list: 3 is a reply to 1.
+    const threaded = () => commentPage({
+      comments: [
+        { authorId: 9, authorName: 'replier', commentId: 3, content: '답글이에요', createdAt: now(), likeCount: 0, liked: false, parentCommentId: 1 },
+        { authorId: 8, authorName: 'guest', commentId: 2, content: '두 번째 댓글', createdAt: now(), likeCount: 4, liked: true },
+        { authorId: 7, authorName: 'pingdom', commentId: 1, content: '첫 댓글', createdAt: now(), likeCount: 1, liked: false },
+      ],
+      totalCount: 3,
+    });
+
+    test('대댓글을 부모 댓글 아래에 42px 들여쓰기로 보여준다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(threaded());
+
+      await renderDetail();
+
+      await waitFor(() => expect(screen.getByTestId('v2-community-comment-3')).toHaveStyle({ paddingLeft: 42 }));
+      expect(screen.getByTestId('v2-community-comment-1')).toHaveStyle({ paddingLeft: 0 });
+      const order = screen.getAllByTestId(/^v2-community-comment-\d+$/).map((node) => node.props.testID);
+      expect(order).toEqual(['v2-community-comment-2', 'v2-community-comment-1', 'v2-community-comment-3']);
+    });
+
+    test('답글 달기를 누르면 대상 안내를 보여주고 부모 댓글 ID로 등록한다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(threaded());
+      const createComment = jest.spyOn(communityApi, 'createComment')
+        .mockResolvedValue({ commentId: 9, content: '답글 내용', parentCommentId: 1, postId: 1 });
+
+      const { user } = await renderDetail();
+      await user.press(await screen.findByTestId('v2-community-comment-1-reply'));
+
+      expect(screen.getByTestId('v2-community-comment-reply-banner')).toHaveTextContent('pingdom님에게 답글 남기는 중');
+      await user.type(screen.getByTestId('v2-community-comment-input'), '답글 내용');
+      await user.press(screen.getByTestId('v2-community-comment-send'));
+
+      await waitFor(() => expect(createComment).toHaveBeenCalledWith(1, { content: '답글 내용', parentCommentId: 1 }));
+      await waitFor(() => expect(screen.queryByTestId('v2-community-comment-reply-banner')).toBeNull());
+    });
+
+    test('대댓글에 답글을 달면 같은 최상위 댓글을 부모로 보낸다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(threaded());
+      const createComment = jest.spyOn(communityApi, 'createComment')
+        .mockResolvedValue({ commentId: 10, content: '또 답글', parentCommentId: 1, postId: 1 });
+
+      const { user } = await renderDetail();
+      await user.press(await screen.findByTestId('v2-community-comment-3-reply'));
+      await user.type(screen.getByTestId('v2-community-comment-input'), '또 답글');
+      await user.press(screen.getByTestId('v2-community-comment-send'));
+
+      await waitFor(() => expect(createComment).toHaveBeenCalledWith(1, { content: '또 답글', parentCommentId: 1 }));
+    });
+
+    test('답글을 취소하면 일반 댓글로 등록한다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(threaded());
+      const createComment = jest.spyOn(communityApi, 'createComment')
+        .mockResolvedValue({ commentId: 11, content: '일반 댓글', postId: 1 });
+
+      const { user } = await renderDetail();
+      await user.press(await screen.findByTestId('v2-community-comment-1-reply'));
+      await user.press(screen.getByTestId('v2-community-comment-reply-cancel'));
+      await user.type(screen.getByTestId('v2-community-comment-input'), '일반 댓글');
+      await user.press(screen.getByTestId('v2-community-comment-send'));
+
+      await waitFor(() => expect(createComment).toHaveBeenCalledWith(1, { content: '일반 댓글' }));
+    });
+
+    test('답글 등록이 실패하면 입력과 답글 대상을 유지한다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(threaded());
+      jest.spyOn(communityApi, 'createComment').mockRejectedValue(new ApiError('실패', { status: 500 }));
+
+      const { user } = await renderDetail();
+      await user.press(await screen.findByTestId('v2-community-comment-1-reply'));
+      await user.type(screen.getByTestId('v2-community-comment-input'), '답글 내용');
+      await user.press(screen.getByTestId('v2-community-comment-send'));
+
+      await waitFor(() => expect(screen.getByTestId('v2-community-comment-error-banner')).toBeVisible());
+      expect(screen.getByTestId('v2-community-comment-input').props.value).toBe('답글 내용');
+      expect(screen.getByTestId('v2-community-comment-reply-banner')).toBeVisible();
+    });
+
+    test('댓글 좋아요는 응답 전에 수와 상태를 바꾸고 중복 탭을 무시한다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(threaded());
+      let resolveLike: (value: { commentId: number; likeCount: number; liked: boolean }) => void = () => {};
+      const likeComment = jest.spyOn(communityApi, 'likeComment').mockImplementation(
+        () => new Promise((resolve) => { resolveLike = resolve; }),
+      );
+
+      const { user } = await renderDetail();
+      const like = await screen.findByTestId('v2-community-comment-1-like');
+      expect(like).toHaveTextContent('1');
+
+      await user.press(like);
+      await user.press(screen.getByTestId('v2-community-comment-1-like'));
+      await user.press(screen.getByTestId('v2-community-comment-1-like'));
+
+      await waitFor(() => expect(screen.getByTestId('v2-community-comment-1-like')).toHaveTextContent('2'));
+      expect(screen.getByTestId('v2-community-comment-1-like')).toBeSelected();
+      expect(likeComment).toHaveBeenCalledTimes(1);
+      expect(likeComment).toHaveBeenCalledWith(1);
+
+      await act(async () => { resolveLike({ commentId: 1, likeCount: 2, liked: true }); });
+      await waitFor(() => expect(screen.getByTestId('v2-community-comment-1-like')).not.toBeDisabled());
+      expect(screen.getByTestId('v2-community-comment-1-like')).toHaveTextContent('2');
+    });
+
+    test('이미 좋아요한 댓글을 누르면 취소 요청을 보낸다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(threaded());
+      const unlikeComment = jest.spyOn(communityApi, 'unlikeComment')
+        .mockResolvedValue({ commentId: 2, likeCount: 3, liked: false });
+
+      const { user } = await renderDetail();
+      await user.press(await screen.findByTestId('v2-community-comment-2-like'));
+
+      await waitFor(() => expect(unlikeComment).toHaveBeenCalledWith(2));
+      await waitFor(() => expect(screen.getByTestId('v2-community-comment-2-like')).toHaveTextContent('3'));
+    });
+
+    test('댓글 좋아요가 실패하면 이전 수와 상태로 되돌린다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(threaded());
+      jest.spyOn(communityApi, 'likeComment').mockRejectedValue(new ApiError('Network error', { isNetworkError: true }));
+
+      const { user } = await renderDetail();
+      await user.press(await screen.findByTestId('v2-community-comment-1-like'));
+
+      await waitFor(() => expect(screen.getByTestId('v2-community-comment-1-like')).not.toBeDisabled());
+      expect(screen.getByTestId('v2-community-comment-1-like')).toHaveTextContent('1');
+      expect(screen.getByTestId('v2-community-comment-1-like')).not.toBeSelected();
+    });
+
+    test('좋아요 필드가 없는 응답에서는 수를 0으로 채우지 않는다', async () => {
+      jest.spyOn(communityApi, 'listComments').mockResolvedValue(commentPage({
+        comments: [{ authorId: 7, authorName: 'pingdom', commentId: 1, content: '첫 댓글', createdAt: now() }],
+        totalCount: 1,
+      }));
+
+      await renderDetail();
+
+      const like = await screen.findByTestId('v2-community-comment-1-like');
+      expect(like).not.toHaveTextContent('0');
+    });
   });
 });

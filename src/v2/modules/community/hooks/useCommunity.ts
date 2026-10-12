@@ -1,4 +1,5 @@
 import {
+  type InfiniteData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -7,6 +8,8 @@ import {
 
 import {
   communityApi,
+  type CommunityComment,
+  type CommunityCommentLikeStatus,
   type CommunityCommentPage,
   type CommunityLikeStatus,
   type CommunityPostDetail,
@@ -19,6 +22,8 @@ import {
   type ListPostsParams,
   type ReportBody,
 } from '../api/communityApi';
+
+import { applyOptimisticCommentLike } from '../model/commentThread';
 
 export type { CommunityPostDetail, CommunityPostSummary };
 
@@ -245,6 +250,68 @@ export function useCreateComment(
     onSuccess: async () => queryClient.invalidateQueries({
       queryKey: communityQueryKeys.commentsRoot(postId),
     }),
+  });
+}
+
+type CachedComments = CommunityCommentPage | InfiniteData<CommunityCommentPage> | undefined;
+
+function mapCachedComments(
+  data: CachedComments,
+  update: (comment: CommunityComment) => CommunityComment,
+): CachedComments {
+  if (!data) return data;
+  const mapPage = (page: CommunityCommentPage): CommunityCommentPage => (
+    page.comments ? { ...page, comments: page.comments.map(update) } : page
+  );
+  return 'pages' in data ? { ...data, pages: data.pages.map(mapPage) } : mapPage(data);
+}
+
+/**
+ * Toggles the current user's like on one comment with an optimistic update.
+ * `onMutate` flips that comment in every cached comment page of this post,
+ * `onError` puts back only that comment's previous `{ liked, likeCount }`
+ * (other comments liked in the meantime are left alone), and a successful
+ * response overwrites the optimistic value with the server's numbers. The
+ * list is never refetched, so pagination and scroll position are untouched.
+ */
+export function useToggleCommentLike(
+  postId: number,
+  api: Pick<CommunityApi, 'likeComment' | 'unlikeComment'> = communityApi,
+) {
+  const queryClient = useQueryClient();
+  const queryKey = communityQueryKeys.commentsRoot(postId);
+  const patch = (commentId: number, update: (comment: CommunityComment) => CommunityComment) => {
+    queryClient.setQueriesData<CachedComments>({ queryKey }, (data) => mapCachedComments(
+      data,
+      (comment) => (comment.commentId === commentId ? update(comment) : comment),
+    ));
+  };
+
+  return useMutation({
+    mutationFn: ({ commentId, nextLiked }: { commentId: number; nextLiked: boolean }): Promise<CommunityCommentLikeStatus> => (
+      nextLiked ? api.likeComment(commentId) : api.unlikeComment(commentId)
+    ),
+    // Non-idempotent toggle: see useToggleLike.
+    retry: false,
+    onMutate: ({ commentId, nextLiked }) => {
+      let previous: Pick<CommunityComment, 'likeCount' | 'liked'> | undefined;
+      patch(commentId, (comment) => {
+        previous ??= { likeCount: comment.likeCount, liked: comment.liked };
+        return applyOptimisticCommentLike(comment, nextLiked);
+      });
+      return { previous };
+    },
+    onError: (_error, { commentId }, context) => {
+      const previous = context?.previous;
+      if (previous) patch(commentId, (comment) => ({ ...comment, ...previous }));
+    },
+    onSuccess: (status, { commentId }) => {
+      patch(commentId, (comment) => ({
+        ...comment,
+        likeCount: status.likeCount ?? comment.likeCount,
+        liked: status.liked ?? comment.liked,
+      }));
+    },
   });
 }
 

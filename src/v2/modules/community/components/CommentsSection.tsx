@@ -1,23 +1,29 @@
 import { Text as AppText } from '../../../shared/components/Typography';
-import React from 'react';
-import { ActivityIndicator, Animated, type LayoutChangeEvent } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { AccessibilityInfo, ActivityIndicator, Animated, type LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
 import ChevronRightIcon from '../../../../assets/v2/icons/community/chevron-right.svg';
+import { getApiErrorUx } from '../../../shared/api';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
 import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
 import { textStyleCss } from '../../../shared/theme/typography';
-import type { useInfiniteComments } from '../hooks/useCommunity';
+import type { CommunityComment } from '../api/communityApi';
+import { useToggleCommentLike, type useInfiniteComments } from '../hooks/useCommunity';
+import { buildCommentThreads } from '../model/commentThread';
 import CommentItem from './CommentItem';
 
 export type CommentsSectionProps = {
   commentsQuery: ReturnType<typeof useInfiniteComments>;
   now: Date;
   onLayout?: (event: LayoutChangeEvent) => void;
+  /** Starts a reply to this comment in the input bar. */
+  onReply?: (comment: CommunityComment) => void;
   onSignIn?: () => void;
   /** Author of the post; their comments get the Figma 작성자 badge. */
   postAuthorId?: number;
+  postId: number;
 };
 
 const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2'] as const;
@@ -39,9 +45,40 @@ function CommentsSkeleton() {
   );
 }
 
-export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn, postAuthorId }: CommentsSectionProps) {
+export default function CommentsSection({
+  commentsQuery,
+  now,
+  onLayout,
+  onReply,
+  onSignIn,
+  postAuthorId,
+  postId,
+}: CommentsSectionProps) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const toggleCommentLike = useToggleCommentLike(postId);
+  // One in-flight toggle per comment: a second tap on the same comment is
+  // ignored (not queued) until its request settles. The ref closes the gap
+  // before React re-renders with the busy state.
+  const pendingLikes = useRef(new Set<number>());
+  const [busyLikeIds, setBusyLikeIds] = useState<number[]>([]);
+
+  const toggleLike = (comment: CommunityComment) => {
+    const commentId = comment.commentId;
+    if (commentId === undefined || pendingLikes.current.has(commentId)) return;
+    pendingLikes.current.add(commentId);
+    setBusyLikeIds((current) => [...current, commentId]);
+    toggleCommentLike.mutate({ commentId, nextLiked: !(comment.liked ?? false) }, {
+      onError: (likeError) => {
+        AccessibilityInfo.announceForAccessibility(t('community.detail.comments.announceLikeFailure'));
+        if (getApiErrorUx(likeError).kind === 'authentication') onSignIn?.();
+      },
+      onSettled: () => {
+        pendingLikes.current.delete(commentId);
+        setBusyLikeIds((current) => current.filter((id) => id !== commentId));
+      },
+    });
+  };
 
   // Read every derived field once up front via `let`: TanStack Query's
   // infinite-query result is a discriminated union, and TS correlates `const`
@@ -61,6 +98,7 @@ export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn
   } = commentsQuery;
 
   const comments = data?.pages.flatMap((page) => page.comments ?? []) ?? [];
+  const threads = buildCommentThreads(comments, { complete: !hasNextPage });
   const totalCount = data?.pages[0]?.totalCount ?? 0;
   const remainingCount = Math.max(totalCount - comments.length, 0);
 
@@ -95,13 +133,21 @@ export default function CommentsSection({ commentsQuery, now, onLayout, onSignIn
       ) : (
         <>
           <List>
-            {comments.map((comment, index) => (
-              <CommentItem
-                comment={comment}
-                isPostAuthor={postAuthorId !== undefined && comment.authorId === postAuthorId}
-                key={comment.commentId ?? `comment-${index}`}
-                now={now}
-              />
+            {threads.map((thread, index) => (
+              <React.Fragment key={thread.comment.commentId ?? `comment-${index}`}>
+                {[thread.comment, ...thread.replies].map((comment, position) => (
+                  <CommentItem
+                    comment={comment}
+                    isPostAuthor={postAuthorId !== undefined && comment.authorId === postAuthorId}
+                    key={comment.commentId ?? `comment-${index}-${position}`}
+                    likeBusy={comment.commentId !== undefined && busyLikeIds.includes(comment.commentId)}
+                    now={now}
+                    onReply={onReply}
+                    onToggleLike={toggleLike}
+                    variant={typeof comment.parentCommentId === 'number' ? 'reply' : 'comment'}
+                  />
+                ))}
+              </React.Fragment>
             ))}
           </List>
 

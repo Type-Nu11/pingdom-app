@@ -42,6 +42,7 @@ export {
   useRecordPlaceView,
   useReportComment,
   useReportPost,
+  useToggleCommentLike,
   useToggleLike,
 } from './hooks/useCommunity';
 export { useDiscardOnLeaveGuard } from './hooks/useDiscardOnLeaveGuard';

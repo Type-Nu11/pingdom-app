@@ -1,6 +1,6 @@
 import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, type TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
@@ -20,6 +20,7 @@ import LikeButton from '../components/LikeButton';
 import PostAuthor from '../components/PostAuthor';
 import PostPhotoGallery from '../components/PostPhotoGallery';
 import { useCreateComment, useInfiniteComments, usePost, type CommunityPostDetail } from '../hooks/useCommunity';
+import { replyParentId } from '../model/commentThread';
 import { useCommunityPlaceEntry } from '../hooks/useCommunityPlaceEntry';
 import { validateCommentContent } from '../model/commentForm';
 import {
@@ -165,8 +166,11 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
   const scrollRef = useRef<ScrollView>(null);
   const commentsSectionY = useRef(0);
   const submissionGuard = useRef(false);
+  const inputRef = useRef<TextInput>(null);
   const [draft, setDraft] = useState('');
   const [showValidation, setShowValidation] = useState(false);
+  // Replies are one level deep: replying to a reply targets its parent.
+  const [replyTarget, setReplyTarget] = useState<{ authorName: string; parentCommentId: number } | null>(null);
 
   const submitComment = () => {
     if (submissionGuard.current || createComment.isPending) return;
@@ -177,7 +181,11 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
     }
 
     submissionGuard.current = true;
-    createComment.mutate({ content: draft.trim() }, {
+    const replying = replyTarget !== null;
+    createComment.mutate({
+      content: draft.trim(),
+      ...(replyTarget ? { parentCommentId: replyTarget.parentCommentId } : {}),
+    }, {
       onError: () => {
         submissionGuard.current = false;
         AccessibilityInfo.announceForAccessibility(t('community.detail.comments.announceFailure'));
@@ -186,10 +194,17 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
         submissionGuard.current = false;
         setDraft('');
         setShowValidation(false);
-        AccessibilityInfo.announceForAccessibility(t('community.detail.comments.announceSuccess'));
-        requestAnimationFrame(() => {
-          scrollRef.current?.scrollTo({ animated: true, y: commentsSectionY.current });
-        });
+        setReplyTarget(null);
+        AccessibilityInfo.announceForAccessibility(
+          t(replying ? 'community.detail.comments.announceReplySuccess' : 'community.detail.comments.announceSuccess'),
+        );
+        // A new top-level comment lands at the top of the newest-first list;
+        // a reply appears under its parent, so the scroll stays where it is.
+        if (!replying) {
+          requestAnimationFrame(() => {
+            scrollRef.current?.scrollTo({ animated: true, y: commentsSectionY.current });
+          });
+        }
       },
     });
   };
@@ -205,11 +220,15 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
 
     void commentsQuery.refetch().then((result) => {
       const firstPage = result.data?.pages[0];
-      const alreadyPosted = (firstPage?.comments ?? []).some((comment) => comment.content === pendingContent);
+      const pendingParentId = replyTarget?.parentCommentId;
+      const alreadyPosted = (firstPage?.comments ?? []).some((comment) => (
+        comment.content === pendingContent && (comment.parentCommentId ?? undefined) === pendingParentId
+      ));
       if (alreadyPosted) {
         submissionGuard.current = false;
         setDraft('');
         setShowValidation(false);
+        setReplyTarget(null);
         createComment.reset();
         AccessibilityInfo.announceForAccessibility(t('community.detail.comments.announceSuccess'));
         return;
@@ -336,7 +355,15 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
               now={now}
               postAuthorId={postQuery.data?.author?.authorId}
               onLayout={(event) => { commentsSectionY.current = event.nativeEvent.layout.y; }}
+              onReply={(comment) => {
+                const parentCommentId = replyParentId(comment);
+                if (parentCommentId === undefined) return;
+                setReplyTarget({ authorName: comment.authorName ?? '', parentCommentId });
+                if (createComment.isError) createComment.reset();
+                inputRef.current?.focus();
+              }}
               onSignIn={onSignIn}
+              postId={postId}
             />
 
             {showBanner ? (
@@ -368,11 +395,14 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
             busy={createComment.isPending}
             disabled={createComment.isPending}
             errorText={fieldErrorText}
+            inputRef={inputRef}
+            onCancelReply={() => setReplyTarget(null)}
             onChangeText={(text) => {
               setDraft(text);
               if (createComment.isError) createComment.reset();
             }}
             onSubmit={submitComment}
+            replyToAuthorName={replyTarget?.authorName}
             value={draft}
           />
         </KeyboardArea>
