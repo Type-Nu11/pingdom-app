@@ -156,13 +156,15 @@ export default function CommunityBottomSheet({
     outputRange: [0, themedGlass.sheet.bottomRadius],
   });
 
-  // Posts are listed per category, so the selected category is the only
-  // category tag the list contract can back for each card.
+  // Each item carries its own category; the selected category only backs the
+  // tag for an item the server returned without one.
+  const now = new Date();
   const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
 
   const renderPost: ListRenderItem<CommunityPostSummary & { postId: number }> = ({ item }) => (
     <PostCard
       categoryName={selectedCategoryName}
+      now={now}
       onOpenOverflow={(anchor) => setOverflowMenu({
         // Figma: the menu's right edge lines up with the card, 8px below the icon.
         position: { right: 16, top: anchor.bottom + 8 },

@@ -12,6 +12,10 @@ export const communityResources = {
     like: 'Like',
     comment: 'Comment',
     list: {
+      views: 'Views {{count}}',
+      likesA11y: 'Likes {{count}}',
+      commentsA11y: 'Comments {{count}}',
+      photosA11y: 'Photos {{count}}',
       loading: 'Loading posts…',
       nextPageError: "Couldn't load more posts.",
       nextPageRetry: 'Retry',
@@ -138,6 +142,10 @@ export const communityResources = {
     like: '좋아요',
     comment: '댓글',
     list: {
+      views: '조회 {{count}}',
+      likesA11y: '좋아요 {{count}}개',
+      commentsA11y: '댓글 {{count}}개',
+      photosA11y: '사진 {{count}}장',
       loading: '게시글을 불러오는 중…',
       nextPageError: '게시글을 더 불러오지 못했어요.',
       nextPageRetry: '다시 시도',
@@ -264,6 +272,10 @@ export const communityResources = {
     like: 'いいね',
     comment: 'コメント',
     list: {
+      views: '閲覧 {{count}}',
+      likesA11y: 'いいね {{count}}件',
+      commentsA11y: 'コメント {{count}}件',
+      photosA11y: '写真 {{count}}枚',
       loading: '投稿を読み込んでいます…',
       nextPageError: '投稿をさらに読み込めませんでした。',
       nextPageRetry: '再試行',
@@ -389,7 +401,7 @@ export const communityResources = {
     author: 'woo_sm',
     like: '点赞',
     comment: '评论',
-    list: { loading: '正在加载帖子…', nextPageError: '无法加载更多帖子。', nextPageRetry: '重试' },
+    list: { views: '浏览 {{count}}', likesA11y: '点赞 {{count}} 个', commentsA11y: '评论 {{count}} 条', photosA11y: '照片 {{count}} 张', loading: '正在加载帖子…', nextPageError: '无法加载更多帖子。', nextPageRetry: '重试' },
     detail: {
       back: '返回',
       settings: '帖子选项',
@@ -483,7 +495,7 @@ export const communityResources = {
     author: 'woo_sm',
     like: '按讚',
     comment: '留言',
-    list: { loading: '正在載入貼文…', nextPageError: '無法載入更多貼文。', nextPageRetry: '再試一次' },
+    list: { views: '瀏覽 {{count}}', likesA11y: '按讚 {{count}} 個', commentsA11y: '留言 {{count}} 則', photosA11y: '照片 {{count}} 張', loading: '正在載入貼文…', nextPageError: '無法載入更多貼文。', nextPageRetry: '再試一次' },
     detail: {
       back: '返回',
       settings: '貼文選項',
@@ -577,7 +589,7 @@ export const communityResources = {
     author: 'woo_sm',
     like: 'Thích',
     comment: 'Bình luận',
-    list: { loading: 'Đang tải bài viết…', nextPageError: 'Không thể tải thêm bài viết.', nextPageRetry: 'Thử lại' },
+    list: { views: 'Lượt xem {{count}}', likesA11y: '{{count}} lượt thích', commentsA11y: '{{count}} bình luận', photosA11y: '{{count}} ảnh', loading: 'Đang tải bài viết…', nextPageError: 'Không thể tải thêm bài viết.', nextPageRetry: 'Thử lại' },
     detail: {
       back: 'Quay lại',
       settings: 'Tùy chọn bài viết',
@@ -689,7 +701,7 @@ export const communityResources = {
     author: 'woo_sm',
     like: 'Me gusta',
     comment: 'Comentar',
-    list: { loading: 'Cargando publicaciones…', nextPageError: 'No se pudieron cargar más publicaciones.', nextPageRetry: 'Reintentar' },
+    list: { views: 'Vistas {{count}}', likesA11y: '{{count}} me gusta', commentsA11y: '{{count}} comentarios', photosA11y: '{{count}} fotos', loading: 'Cargando publicaciones…', nextPageError: 'No se pudieron cargar más publicaciones.', nextPageRetry: 'Reintentar' },
     detail: {
       back: 'Atrás',
       settings: 'Opciones de la publicación',
@@ -803,7 +815,7 @@ export const communityResources = {
     author: 'woo_sm',
     like: 'Curtir',
     comment: 'Comentar',
-    list: { loading: 'Carregando publicações…', nextPageError: 'Não foi possível carregar mais publicações.', nextPageRetry: 'Tentar novamente' },
+    list: { views: 'Visualizações {{count}}', likesA11y: '{{count}} curtidas', commentsA11y: '{{count}} comentários', photosA11y: '{{count}} fotos', loading: 'Carregando publicações…', nextPageError: 'Não foi possível carregar mais publicações.', nextPageRetry: 'Tentar novamente' },
     detail: {
       back: 'Voltar',
       settings: 'Opções da publicação',
