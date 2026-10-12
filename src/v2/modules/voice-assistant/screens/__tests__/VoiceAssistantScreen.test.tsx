@@ -254,7 +254,7 @@ test('unsupported AI request shows Figma feedback, then speak again starts a fre
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '응애 나 아기 용인용인용인');
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   await view.rerender(View({ phase: 'unrecognized' }));
-  expect(screen.getByText('응애 나 아기 용인용인용인')).toBeVisible();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“응애 나 아기 용인용인용인”');
   expect(screen.getByText(voiceAssistantResources.ko.feedback.unrecognized)).toBeVisible();
   expect(screen.queryByText('Translation unavailable')).toBeNull();
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
@@ -319,7 +319,7 @@ test('unrelated accepted request does not show reservation or delivery boilerpla
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   await waitFor(() => expect(onFinalInput).toHaveBeenCalledTimes(1));
   expect(screen.queryByText(/예약이 확정|예약 확정 여부|입력을 어시스턴트에 전달/)).toBeNull();
-  expect(screen.getByText('오늘 날씨 어때?')).toBeVisible();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“오늘 날씨 어때?”');
 });
 
 test('settings has no assistant input entry and retains appearance preferences', async () => {
@@ -485,7 +485,7 @@ test('a greeting displays the actual assistant reply instead of the fixed place-
   expect(screen.queryByTestId('voice-reservation-draft')).toBeNull();
 });
 
-test('sent drafts clear immediately while user and assistant turns remain distinct across follow-up messages', async () => {
+test('single Figma panel replaces the previous question and answer on each submission', async () => {
   let resolve!: (value: 'accepted') => void;
   const submit = jest.fn((_input: FinalInput) => new Promise<'accepted'>(done => { resolve = done; }));
   const props = { onClose: jest.fn(), serverSubmission: true as const, onFinalInput: submit };
@@ -493,9 +493,9 @@ test('sent drafts clear immediately while user and assistant turns remain distin
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '근처에 뭐 있어?');
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
-  expect(screen.getByTestId('voice-turn-1')).toHaveTextContent(/나/);
-  expect(screen.getByTestId('voice-user-message-1')).toHaveStyle({ alignSelf: 'flex-end' });
-  expect(screen.getByTestId('voice-turn-1')).toHaveTextContent(/근처에 뭐 있어/);
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처에 뭐 있어?”');
+  expect(screen.queryByTestId('voice-user-message-1')).toBeNull();
+  expect(screen.queryByText('나')).toBeNull();
   expect(submit.mock.calls[0][0].text).toBe('근처에 뭐 있어?');
   await act(async () => resolve('accepted'));
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
@@ -505,18 +505,18 @@ test('sent drafts clear immediately while user and assistant turns remain distin
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '카페를 보여줘');
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props} commandState={{ phase: 'processing' }} />).element);
-  expect(screen.getByText('근처에 뭐 있어?')).toBeVisible();
-  expect(screen.getByText('어떤 장소를 찾으시나요?')).toBeVisible();
-  expect(screen.getByTestId('voice-turn-2')).toHaveTextContent(/카페를 보여줘/);
+  expect(screen.queryByText(/근처에 뭐 있어/)).toBeNull();
+  expect(screen.queryByText('어떤 장소를 찾으시나요?')).toBeNull();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“카페를 보여줘”');
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
   await act(async () => resolve('accepted'));
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
     commandState={{ phase: 'assistant', text: '카페 정보를 확인했어요.' }} />).element);
-  expect(screen.getByText('어떤 장소를 찾으시나요?')).toBeVisible();
+  expect(screen.queryByText('어떤 장소를 찾으시나요?')).toBeNull();
   expect(screen.getByText('카페 정보를 확인했어요.')).toBeVisible();
 });
 
-test('failed request remains in the conversation and retries through the existing transport retry', async () => {
+test('failed request remains in the single panel and retries through the existing transport retry', async () => {
   const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
   const retry = jest.fn();
   const props = { onClose: jest.fn(), serverSubmission: true as const, onFinalInput: submit, onCommandRetry: retry };
@@ -526,7 +526,7 @@ test('failed request remains in the conversation and retries through the existin
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
     commandState={{ phase: 'error', code: 'NETWORK_ERROR' }} />).element);
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
-  expect(screen.getByText('근처 카페 찾아줘')).toBeVisible();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처 카페 찾아줘”');
   await fireEvent.press(screen.getByTestId('voice-command-retry'));
   expect(retry).toHaveBeenCalledTimes(1);
   expect(submit).toHaveBeenCalledTimes(1);
@@ -534,7 +534,7 @@ test('failed request remains in the conversation and retries through the existin
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
     commandState={{ phase: 'assistant', text: '새 답변' }} />).element);
-  expect(screen.getByText('근처 카페 찾아줘')).toBeVisible();
+  expect(screen.queryByText(/근처 카페 찾아줘/)).toBeNull();
   expect(screen.queryByTestId('voice-command-retry')).toBeNull();
 });
 
@@ -543,10 +543,10 @@ test('changing the session consumer clears in-memory conversation history', asyn
   const view = await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission onFinalInput={submit} />).element);
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '이전 계정 요청');
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
-  expect(screen.getByText('이전 계정 요청')).toBeVisible();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“이전 계정 요청”');
   await view.rerender(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission
     onFinalInput={jest.fn(() => 'accepted' as const)} />).element);
-  expect(screen.queryByText('이전 계정 요청')).toBeNull();
+  expect(screen.queryByText(/이전 계정 요청/)).toBeNull();
 });
 
 test('place results use the Figma compact sheet while retaining the composer and real user request', async () => {
@@ -568,6 +568,7 @@ test('place results use the Figma compact sheet while retaining the composer and
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
   expect(screen.queryByText(/4.8점|지금 영업 중/)).toBeNull();
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props} commandState={{ phase: 'clarification', field: 'date' }} />).element);
-  expect(screen.getByTestId('voice-user-message-1')).toBeVisible();
+  expect(screen.queryByTestId('voice-user-message-1')).toBeNull();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처에 뭐 있는지 알려줘”');
   expect(screen.getByText('며칠에 방문하시나요?')).toBeVisible();
 });

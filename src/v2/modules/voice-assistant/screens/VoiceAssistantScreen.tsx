@@ -34,7 +34,6 @@ export type VoiceAssistantScreenProps = {
   | { serverSubmission?: false; onFinalInput?: OnFinalInput }
   | { serverSubmission: true; onFinalInput: OnFinalInput }
 );
-type ConversationTurn = { id: number; text: string; reply?: VoiceCommandViewState };
 
 export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul' }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
@@ -44,11 +43,9 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     : commandState?.phase === 'result' && commandState.result.outcome.status === 'clarification_required'
       ? commandState.result.outcome.field : undefined;
   // Panel/session memory only. Never persisted, logged, or treated as command provenance.
-  const [turns, setTurns] = useState<ConversationTurn[]>([]);
-  const turnSequence = useRef(0);
+  const [currentRequest, setCurrentRequest] = useState('');
   const contentRef = useRef<ScrollView>(null);
-  const activeTurn = useRef<{ id: number; baseline?: VoiceCommandViewState; request: string } | null>(null);
-  const choiceText = useRef<string | null>(null);
+  const activeTurn = useRef<{ request: string } | null>(null);
   const originalRequest = useRef('');
   const answers = useRef<Record<string, string>>({});
   const inputContext = useRef({ onFinalInput, clarificationField, commandState });
@@ -64,11 +61,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     } else if (!context.clarificationField && !text.startsWith(`${originalRequest.current}\n`)) {
       originalRequest.current = text; answers.current = {};
     }
-    const id = ++turnSequence.current;
-    activeTurn.current = { id, baseline: context.commandState, request: text };
-    const displayedText = choiceText.current ?? input.text;
-    choiceText.current = null;
-    setTurns(current => [...current, { id, text: displayedText }].slice(-32));
+    activeTurn.current = { request: text };
+    setCurrentRequest(originalRequest.current || input.text);
     return context.onFinalInput({ ...input, text });
   }, []);
   const { controller, state } = useVoiceInput(adapter, submitWithQuestionContext, clarificationField === 'quantity' ? 'quantity' : undefined);
@@ -82,21 +76,15 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     // A new account/session consumer must not inherit the previous user's input conditions.
     controller.cancel(); originalRequest.current = ''; answers.current = {};
     setSelections({}); setEditingPicker(null); setSelectionError(false);
-    setTurns([]); activeTurn.current = null; choiceText.current = null;
+    setCurrentRequest(''); activeTurn.current = null;
   }, [controller, onFinalInput]);
-  useEffect(() => {
-    const active = activeTurn.current;
-    if (!active || !commandState || commandState === active.baseline
-      || ['idle', 'processing'].includes(commandState.phase)) return;
-    setTurns(current => current.map(turn => turn.id === active.id ? { ...turn, reply: commandState } : turn));
-  }, [commandState]);
   const busy = ['permissionRequesting', 'listening', 'processing'].includes(state.phase);
   const pending = state.delivery === 'pending';
   const feedback = commandState?.phase === 'unrecognized' ? 'unrecognized' : state.error === 'noSpeech' ? 'noSpeech' : null;
   const previousTurnVisible = state.delivery !== 'none' || !!feedback || (!!commandState && commandState.phase !== 'idle');
   const showDetails = (state.phase !== 'listening' || !!pickerField) && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
     || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
-    || turns.length > 0 || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
+    || !!currentRequest || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
   const pickerVisible = !!pickerField && (!selections[pickerField] || !!editingPicker);
   const confirmSelection = async (selection: PickerSelection) => {
     if (confirming.current || busy || pending) return;
@@ -112,7 +100,6 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     setSelections(next); setEditingPicker(null); setSelectionError(false);
     // A choice is still ordinary input through the existing validated AI command boundary.
     // No Booking mutation, route, or direct domain API is accessible to this picker.
-    choiceText.current = formatPickerSelection(selection.field, selection.value, i18n.language);
     controller.cancel(); controller.edit(request);
     try { await controller.submit(); } finally { confirming.current = false; }
   };
@@ -202,10 +189,10 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       <SafeArea edges={['top', 'left', 'right']} pointerEvents="box-none">
         <KeyboardAvoidingView testID="voice-assistant-keyboard-layout" behavior="padding" style={{ flex: 1 }} pointerEvents="box-none">
         <KeyboardLayout pointerEvents="box-none" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
-          {showDetails ? <Sheet $question={pickerVisible || resultsMode} $results={resultsMode} testID="voice-assistant-details">
+          {showDetails ? <Sheet $question={true} $results={resultsMode} testID="voice-assistant-details">
             <SheetHeading>
             <Grabber />
-            <Header $question={pickerVisible || resultsMode}>
+            <Header $question={true}>
               <Title accessibilityRole="header"><PingdyIcon /><TitleText>{t('voiceAssistant.brand')}</TitleText></Title>
               <CloseButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.close')} onPress={close}>
                 <CloseIcon />
@@ -213,22 +200,10 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
             </Header>
             </SheetHeading>
             <Content $results={resultsMode} ref={contentRef} onContentSizeChange={() => {
-              if (!resultsMode) contentRef.current?.scrollToEnd({ animated: true });
-              else contentRef.current?.scrollTo({ y: 0, animated: false });
-            }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: pickerVisible || resultsMode ? 0 : 10, gap: resultsMode ? 6 : pickerVisible ? 16 : 8 }}>
-            {resultsMode && turns.at(-1) && <ResultRequest testID="voice-result-request">“{turns.at(-1)!.text}”</ResultRequest>}
-            {!resultsMode && turns.map((turn, index) => <Turn key={turn.id} testID={`voice-turn-${turn.id}`}>
-              <UserMessage testID={`voice-user-message-${turn.id}`}>
-                <Speaker>{t('voiceAssistant.conversation.you')}</Speaker>
-                <QueryText>{turn.text}</QueryText>
-              </UserMessage>
-              {turn.reply && (index !== turns.length - 1 || !commandState || commandState.phase === 'idle') && <AssistantMessage>
-                <Speaker>{t('voiceAssistant.brand')}</Speaker>
-                <VoiceCommandResults state={turn.reply} historical />
-              </AssistantMessage>}
-            </Turn>)}
+              contentRef.current?.scrollTo({ y: 0, animated: false });
+            }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 0, gap: pickerVisible ? 16 : 6 }}>
+            {!!currentRequest && <ResultRequest testID="voice-result-request">“{currentRequest}”</ResultRequest>}
             {feedback ? <AssistantMessage>
-              <Speaker>{t('voiceAssistant.brand')}</Speaker>
               <FeedbackMessage accessibilityRole="alert">{t(`voiceAssistant.feedback.${feedback}`)}</FeedbackMessage>
               <FeedbackActions>
                 <FeedbackRetry accessibilityRole="button" accessibilityLabel={t('voiceAssistant.feedback.retry')}
@@ -237,7 +212,6 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
                   onPress={dismissFeedback}><FeedbackDismissText>{t('voiceAssistant.feedback.dismiss')}</FeedbackDismissText></FeedbackDismiss>
               </FeedbackActions>
             </AssistantMessage> : assistantVisible ? <AssistantMessage $results={resultsMode} testID="voice-current-assistant">
-            {!resultsMode && <Speaker>{t('voiceAssistant.brand')}</Speaker>}
             {(busy || state.phase === 'permissionDenied' || state.phase === 'unavailable') && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.phases.${state.phase}`)}</Copy>}
             {state.phase === 'permissionDenied' && <Copy accessibilityRole="alert">{t(`voiceAssistant.permissions.${state.permission}`)}</Copy>}
             {state.permission === 'blocked' && settingsButton()}
@@ -353,13 +327,8 @@ const ListeningText = styled(Text)`
   line-height: 23px;
   color: ${({ theme }) => theme.colors.textMuted};
 `;
-const Turn = styled.View`gap: 10px;`;
-const UserMessage = styled.View`align-self: flex-end; max-width: 90%; padding: 10px 14px; gap: 4px; border-radius: 16px;
-  background-color: ${({ theme }) => theme.liquidGlass.category.activeTint};`;
-const AssistantMessage = styled.View<{ $results?: boolean }>`align-self: stretch; gap: ${({ $results }) => $results ? 6 : 8}px; padding: ${({ $results }) => $results ? 0 : 10}px 0px;`;
+const AssistantMessage = styled.View<{ $results?: boolean }>`align-self: stretch; gap: 6px;`;
 const ResultRequest = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px; font-weight: 500;`;
-const Speaker = styled(Text)`font-size: 12px; line-height: 16px; font-weight: 600; color: ${({ theme }) => theme.colors.textAlternative};`;
-const QueryText = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const FeedbackMessage = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 16px; line-height: 21px; font-weight: 500;`;
 const FeedbackActions = styled.View`flex-direction: row; gap: 8px; padding-top: 8px;`;
 const FeedbackButton = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.category.shadow } }))`
