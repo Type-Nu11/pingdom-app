@@ -1,4 +1,4 @@
-import { destinationDistance, freshTrackingCoordinate, isTrackingArrival } from '../model/routeTracking';
+import { destinationDistance, freshTrackingCoordinate, isTrackingArrival, trackingStartIssue } from '../model/routeTracking';
 import type { LocationState } from '../../camera/model/map.types';
 
 const now = Date.parse('2026-10-10T12:00:00Z');
@@ -28,4 +28,16 @@ test('old, missing, future and invalid location fixes cannot drive tracking', ()
   expect(freshTrackingCoordinate({ ...location, coordinate: { ...point, observedAt: undefined } }, now)).toBeNull();
   expect(freshTrackingCoordinate({ ...location, coordinate: { ...point, lat: NaN } }, now)).toBeNull();
   expect(freshTrackingCoordinate({ status: 'denied', coordinate: null, canAskAgain: false }, now)).toBeNull();
+});
+
+test('start validates freshness, accuracy and proximity to the selected origin', () => {
+  expect(trackingStartIssue(location, destination, now)).toBeNull();
+  expect(trackingStartIssue(location, { ...destination, lat: 37.601 }, now)).toBe('away');
+  expect(trackingStartIssue(location, destination, now + 15_001)).toBe('stale');
+  for (const accuracyMeters of [undefined, -1, NaN, Infinity, 101]) {
+    expect(trackingStartIssue({ ...location, coordinate: { ...point, accuracyMeters } }, destination, now)).toBe('accuracy');
+  }
+  // 89 m plus 10 m GPS uncertainty is inside; 91 m plus 10 m is outside.
+  expect(trackingStartIssue(location, { ...destination, lat: 37.6008 }, now)).toBeNull();
+  expect(trackingStartIssue(location, { ...destination, lat: 37.60082 }, now)).toBe('away');
 });

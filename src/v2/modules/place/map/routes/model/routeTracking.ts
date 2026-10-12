@@ -18,6 +18,22 @@ export function freshTrackingCoordinate(location: LocationState, now: number): C
     && Number.isFinite(age) && age >= -5_000 && age <= 15_000 ? point : null;
 }
 
+export type TrackingStartIssue = 'permission' | 'unavailable' | 'stale' | 'accuracy' | 'away';
+
+/** Starting follows the selected route; it must never silently replace its origin. */
+export function trackingStartIssue(location: LocationState, origin: Coordinate, now: number): TrackingStartIssue | null {
+  if (location.status === 'denied') return 'permission';
+  if (location.status !== 'granted') return 'unavailable';
+  const raw = location.coordinate;
+  if (!Number.isFinite(raw.lat) || Math.abs(raw.lat) > 90 || !Number.isFinite(raw.lng) || Math.abs(raw.lng) > 180) return 'unavailable';
+  const point = freshTrackingCoordinate(location, now);
+  if (!point) return 'stale';
+  const accuracy = point.accuracyMeters;
+  if (typeof accuracy !== 'number' || !Number.isFinite(accuracy) || accuracy < 0 || accuracy > 100) return 'accuracy';
+  // Require the GPS uncertainty circle to fit within 100 m of the selected origin.
+  return destinationDistance(point, origin) + accuracy <= 100 ? null : 'away';
+}
+
 /** Include the reported uncertainty in a conservative 30 m arrival radius. */
 export function isTrackingArrival(point: Coordinate, destination: Coordinate): boolean {
   const accuracy = point.accuracyMeters;

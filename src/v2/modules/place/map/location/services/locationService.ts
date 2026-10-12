@@ -19,11 +19,11 @@ const toCoordinate = (location: Location.LocationObject): Coordinate => {
   };
 };
 
-export function getCurrentLocation(requestIfNeeded = true) {
+export function getCurrentLocation(requestIfNeeded = true, navigation = false) {
   return resolveCurrentLocation({
     requestIfNeeded,
     getCoordinate: async () => toCoordinate(await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
+      accuracy: navigation ? Location.Accuracy.High : Location.Accuracy.Balanced,
     })),
     getPermission: async () => {
       const permission = await foregroundPermission.get();
@@ -44,12 +44,13 @@ export function getCurrentLocation(requestIfNeeded = true) {
 
 export async function watchCurrentLocation(
   onCoordinate: (coordinate: Coordinate) => void,
+  navigation = false,
 ): Promise<Location.LocationSubscription> {
   return Location.watchPositionAsync(
     {
-      accuracy: Location.Accuracy.Balanced,
-      distanceInterval: 10,
-      timeInterval: 5_000,
+      accuracy: navigation ? Location.Accuracy.High : Location.Accuracy.Balanced,
+      distanceInterval: navigation ? 0 : 10,
+      timeInterval: navigation ? 1_000 : 5_000,
     },
     (location) => onCoordinate(toCoordinate(location)),
   );

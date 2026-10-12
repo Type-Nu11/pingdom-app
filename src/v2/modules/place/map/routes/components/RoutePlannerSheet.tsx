@@ -23,7 +23,7 @@ import RouteWarningIcon from '../assets/route_warning.svg';
 type Props = {
   origin: RouteDestination | null; destination: RouteDestination | null; mode: RouteMode; stateKey: string; ready: CarRoute | null;
   canRequest: boolean; canOpenExternal: boolean; bottomInset: number; maxHeight: number;
-  hasOrigin: boolean; deniedPermanently: boolean; canStart: boolean; onStart: () => void;
+  hasOrigin: boolean; deniedPermanently: boolean; onStart: () => void;
   onLayout: (event: LayoutChangeEvent) => void; onMode: (mode: RouteMode) => void;
   onClose: () => void; onShare: () => void; onRequest: () => void; onCancel: () => void;
   onExternal: () => void; onRefreshLocation: () => void; onSettings: () => void;
@@ -82,8 +82,7 @@ export default function RoutePlannerSheet(props: Props) {
             <Text style={{ color: theme.colors.labelAssistive, fontSize: 12, lineHeight: 15.6 }}>{t('routes.providerEstimate')}</Text>
           </View>
           <Start testID="route-start" accessibilityRole="button" accessibilityLabel={t('routes.tracking.start')} accessibilityHint={t('routes.tracking.hint')}
-            disabled={!props.canStart} accessibilityState={{ disabled: !props.canStart }} onPress={props.onStart}
-            style={{ backgroundColor: theme.colors.primary, opacity: props.canStart ? 1 : 0.45 }}>
+            onPress={props.onStart} style={{ backgroundColor: theme.colors.primary }}>
             <StartIcon /><StartText>{t('routes.start')}</StartText>
           </Start>
         </Result> : loading ? <StateCard style={{ backgroundColor: raised, padding: 16, gap: 10 }}>
@@ -113,7 +112,6 @@ export default function RoutePlannerSheet(props: Props) {
             {props.deniedPermanently && action(t('routes.settings'), props.onSettings, undefined, false, true)}
           </ActionRow>}
         </StateCard>}
-        {props.ready && !props.canStart && <Footer><Text style={{ color: muted }}>{t('routes.tracking.startUnavailable')}</Text>{action(t(props.deniedPermanently ? 'routes.settings' : 'routes.location'), props.deniedPermanently ? props.onSettings : props.onRefreshLocation)}</Footer>}
         {!props.ready && !loading && <Footer>{action(t('routes.external'), props.onExternal, 'route-external', !props.canOpenExternal)}</Footer>}
       </SheetContent>
     </SheetGlass>

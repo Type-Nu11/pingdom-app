@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, StatusBar, View } from 'react-native';
+import { Linking, Modal, Pressable, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
@@ -10,6 +10,7 @@ import type { NaverMapNativeMarker, NaverMapCameraFit } from '../../../../../sha
 import { useCarRoute } from '../hooks/useCarRoute';
 import { endpointCoordinate, fitRoutePreviewCamera } from '../model/routePreparation';
 import { routeMetrics } from '../model/routePresentation';
+import { trackingStartIssue } from '../model/routeTracking';
 import { Text } from '../../../../../shared/components/Typography';
 import { sharePlace } from '../../actions/services/placeActions';
 import MapGlassBackdrop from '../../presentation/components/MapGlassBackdrop';
@@ -24,6 +25,8 @@ import RouteTrackingSheet from './RouteTrackingSheet';
 import { useRouteTracking } from '../hooks/useRouteTracking';
 import type { EndpointRole } from './RouteEndpointRows';
 import type { RecentSearchOwner } from '../../../search/services/recentSearchStorage';
+import RouteNotice from './RouteNotice';
+import { getCurrentLocation } from '../../location/services/locationService';
 import MapPickerPin from '../assets/map_picker_pin.svg';
 
 // Figma 8892:11154: the plain pin silhouette, displayed at 24 px wide.
@@ -39,10 +42,19 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const [bubbleSize, setBubbleSize] = useState({ width: 120, height: 64 });
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const tracking = useRouteTracking(location);
+  const [notice, setNotice] = useState<{ message: string; detail?: string; busy?: boolean; recovery?: 'retry' | 'permission' | 'settings' } | null>(null);
+  const startGeneration = useRef(0);
+  const starting = useRef(false);
+  function closeNotice() { startGeneration.current += 1; starting.current = false; setNotice(null); }
   const [following, setFollowing] = useState(true);
   const [mode, setMode] = useState<RouteMode>('car');
-  // A null selection means live current location, in either endpoint slot.
-  const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>(() => initialEndpointRole === 'origin' ? [initialDestination, null] : [null, initialDestination]);
+  const currentPoint: RouteDestination | null = location.status === 'granted' ? { placeId: 0, name: t('routes.currentLocation'), isCurrentLocation: true, latitude: location.coordinate.lat, longitude: location.coordinate.lng } : null;
+  function snapshotCurrentLocation(): RouteDestination | null {
+    return endpointCoordinate(currentPoint) ? { ...currentPoint!, isCurrentLocation: false, name: t('routes.selectedLocation') } : null;
+  }
+  // Only a null origin follows live GPS. A destination uses the selection-time fix.
+  // A null destination waits for the first available fix, then stays fixed.
+  const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>(() => initialEndpointRole === 'origin' ? [initialDestination, snapshotCurrentLocation()] : [null, initialDestination]);
   const [endpointRevision, setEndpointRevision] = useState(0);
   const [editing, setEditing] = useState<EndpointRole | null>(null);
   const [mapPicking, setMapPicking] = useState(false);
@@ -56,14 +68,15 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const mounted = useRef(true);
   const externalBusy = useRef(false);
   const [openingExternal, setOpeningExternal] = useState(false);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const currentPoint: RouteDestination | null = location.status === 'granted' ? { placeId: 0, name: t('routes.currentLocation'), isCurrentLocation: true, latitude: location.coordinate.lat, longitude: location.coordinate.lng } : null;
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; startGeneration.current += 1; }; }, []);
   const origin = selections[0] ?? currentPoint;
-  const destination = selections[1] ?? currentPoint;
+  const destination = selections[1] ?? snapshotCurrentLocation();
+  useEffect(() => {
+    if (!selections[1] && destination) setSelections(previous => previous[1] ? previous : [previous[0], destination]);
+  }, [selections, destination]);
   const destinationCoordinate = endpointCoordinate(destination);
   const originCoordinate = endpointCoordinate(origin);
-  // Live GPS may occupy either endpoint. Discard results for old coordinates
-  // without querying again, while preserving routes between selected places.
+  // GPS changes invalidate only a live origin; fixed endpoints retain their route.
   const route = useCarRoute(`${endpointRevision}:${mode}:${originCoordinate?.lat}:${originCoordinate?.lng}:${destinationCoordinate?.lat}:${destinationCoordinate?.lng}`);
   const ready = mode === 'car' && !!originCoordinate && route.state.kind === 'ready' ? route.state.route : null;
   const markers: NaverMapNativeMarker[] = [];
@@ -102,8 +115,8 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
       if (!destination) return;
       const outcome = await openNaverRoute(destination, originCoordinate ? origin : null, mode);
       if (!mounted.current || outcome === 'opened') return;
-      Alert.alert(t(outcome === 'not-installed' ? 'routes.notInstalled'
-        : outcome === 'invalid' ? 'routes.states.missing-destination' : 'routes.openFailed'));
+      setNotice({ message: t(outcome === 'not-installed' ? 'routes.notInstalled'
+        : outcome === 'invalid' ? 'routes.states.missing-destination' : 'routes.openFailed') });
     } finally {
       externalBusy.current = false;
       if (mounted.current) setOpeningExternal(false);
@@ -119,21 +132,68 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
     // available. GPS updates alone discard stale results without repeated requests.
     // A result, error or cancellation must not restart this effect.
   }, [mode, endpointRevision, canRequest, !!tracking.tracking]);
-  const canStart = !!currentPoint && !!endpointCoordinate(currentPoint) && !!destinationCoordinate && !destination?.isCurrentLocation;
-  function startTracking() {
-    if (!canStart || !currentPoint || !destination) return;
+  async function startTracking(forceRefresh = false) {
+    if (starting.current || !ready || !origin || !originCoordinate || !destination || !destinationCoordinate) return;
+    const generation = ++startGeneration.current;
+    let currentLocation = location;
+    let refreshed = false;
+    let issue = trackingStartIssue(currentLocation, originCoordinate, Date.now());
+    function startFromOrigin() {
+      closeNotice();
+      setFollowing(true); setAnchor(null);
+      setCamera(previous => ({ center: originCoordinate!, zoom: 16, revision: previous.revision + 1 }));
+      tracking.start(origin!, destination!, ready!, undefined, originCoordinate!);
+    }
+    // A selected origin is a valid assumed starting point, even without live GPS.
+    if (!origin.isCurrentLocation && issue) {
+      startFromOrigin();
+      return;
+    }
+    if (location.status === 'granted' && (forceRefresh || (issue && issue !== 'away'))) {
+      starting.current = true;
+      setNotice({ busy: true, message: t('routes.tracking.startChecking') });
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        refreshed = true;
+        currentLocation = await Promise.race([
+          getCurrentLocation(false, true),
+          new Promise<LocationState>(resolve => {
+            timer = setTimeout(() => resolve({ status: 'failed', coordinate: null, canAskAgain: true }), 12_000);
+          }),
+        ]);
+      } catch { currentLocation = { status: 'failed', coordinate: null, canAskAgain: true }; } finally { if (timer) clearTimeout(timer); }
+      if (!mounted.current || generation !== startGeneration.current) return;
+      starting.current = false;
+      issue = trackingStartIssue(currentLocation, originCoordinate, Date.now());
+    }
+    if (issue === 'away') { startFromOrigin(); return; }
+    if (issue) {
+      const point = currentLocation.status === 'granted' ? currentLocation.coordinate : null;
+      const ageSeconds = point ? Math.max(0, Math.round((Date.now() - Date.parse(point.observedAt ?? '')) / 1000)) : NaN;
+      const accuracy = point?.accuracyMeters;
+      const detail = issue === 'stale' && Number.isFinite(ageSeconds)
+        ? t('routes.tracking.locationAge', { seconds: ageSeconds })
+        : issue === 'accuracy' && typeof accuracy === 'number' && Number.isFinite(accuracy) && accuracy >= 0
+          ? t('routes.tracking.locationAccuracy', { meters: Math.ceil(accuracy) }) : undefined;
+      setNotice({ message: t(`routes.tracking.startProblems.${issue}`),
+        detail, recovery: currentLocation.status === 'denied' ? currentLocation.canAskAgain ? 'permission' : 'settings' : 'retry' });
+      return;
+    }
+    setNotice(null);
     setFollowing(true); setAnchor(null);
-    setCamera(previous => ({ center: endpointCoordinate(currentPoint)!, zoom: 16, revision: previous.revision + 1 }));
-    tracking.start(currentPoint, destination, origin?.isCurrentLocation ? ready ?? undefined : undefined);
+    const coordinate = currentLocation.status === 'granted' ? currentLocation.coordinate : undefined;
+    setCamera(previous => ({ center: coordinate!, zoom: 16, revision: previous.revision + 1 }));
+    tracking.start(origin, destination, ready, refreshed ? coordinate : undefined);
   }
   function resumeFollowing() {
     setFollowing(true);
     if (tracking.coordinate) setCamera(previous => ({ center: tracking.coordinate!, zoom: 16, revision: previous.revision + 1 }));
   }
   function changeEndpoints(next: [RouteDestination | null, RouteDestination | null]) {
+    closeNotice();
     route.cancel(); setAnchor(null); fittedPath.current = null;
     fittedEndpoints.current = false; manualCamera.current = false;
-    setSelections(next); setEndpointRevision(value => value + 1);
+    setSelections([next[0], next[1] ?? snapshotCurrentLocation()]); setEndpointRevision(value => value + 1);
   }
   function selectEndpoint(point: RouteDestination | null) {
     const next: typeof selections = [...selections];
@@ -162,13 +222,15 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const metrics = ready ? routeMetrics(ready, i18n.resolvedLanguage ?? 'en', t) : null;
   const visibleSheetHeight = editing ? Math.min(558, Math.max(240, viewport.height - insets.top - 70)) : sheetHeight;
   const bubbleLeft = anchor ? Math.max(16, Math.min(anchor.x - 19, viewport.width - bubbleSize.width - 16)) : 16;
-  return <Modal visible animationType="slide" onRequestClose={() => { if (mapPicking) setMapPicking(false); else if (editing) setEditing(null); else onClose(); }} statusBarTranslucent navigationBarTranslucent>
+  return <Modal visible animationType="slide" onRequestClose={() => { if (notice) closeNotice(); else if (mapPicking) setMapPicking(false); else if (editing) setEditing(null); else onClose(); }} statusBarTranslucent navigationBarTranslucent>
     <StatusBar barStyle={theme.colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
     <View style={{ flex: 1, backgroundColor: theme.colors.background }} onLayout={event => setViewport(event.nativeEvent.layout)}>
+      <View style={{ flex: 1 }} pointerEvents={notice ? 'none' : 'auto'} accessibilityElementsHidden={!!notice}
+        importantForAccessibility={notice ? 'no-hide-descendants' : 'auto'}>
       <MapGlassBackdrop active>
         <NaverMapAdapter cameraFit={camera.fit} logoTopMargin={insets.top + 16} cameraRevision={camera.revision} center={tracked && following ? trackingCenter.current ?? camera.center : camera.center} zoomLevel={camera.zoom}
           userCoordinate={tracked ? tracking.coordinate ?? undefined : endpointCoordinate(currentPoint) ?? undefined}
-          followUser={!!tracked && tracked.state.kind === 'ready' && !tracked.arrived && following && !!tracking.coordinate}
+          followUser={!!tracked && !tracked.previewOrigin && tracked.state.kind === 'ready' && !tracked.arrived && following && !!tracking.coordinate}
           markers={displayedMarkers} routeCoordinates={displayedPath}
           onCameraIdle={setMapPoint}
           onRouteAnchor={setAnchor} onCameraGesture={() => { manualCamera.current = true; setFollowing(false); setAnchor(null); }} />
@@ -182,12 +244,12 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
             </View>
             <View style={{ width: 10, height: 10, backgroundColor: theme.colors.primaryAlternative, transform: [{ rotate: '45deg' }], marginLeft: Math.max(14, Math.min(anchor.x - bubbleLeft - 5, bubbleSize.width - 20)), marginTop: -5 }} />
           </View>}
-        <GlassSurface style={{ position: 'absolute', right: 12, top: insets.top + 8, borderRadius: 22 }}>
+        {!tracked && <GlassSurface style={{ position: 'absolute', right: 12, top: insets.top + 8, borderRadius: 22 }}>
           <Pressable accessibilityRole="button" accessibilityLabel={t(tracked ? 'routes.tracking.follow' : ready ? 'routes.fit' : 'routes.recenter')} onPress={fit}
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MyLocationIcon /></Pressable>
-        </GlassSurface>
+        </GlassSurface>}
         {tracked && trackingDestination ? <RouteTrackingSheet name={tracked.destination.name} destination={trackingDestination}
-          coordinate={tracking.coordinate} state={tracked.state} arrived={tracked.arrived} following={following}
+          coordinate={tracking.coordinate} state={tracked.state} arrived={tracked.arrived} following={following} preview={!!tracked.previewOrigin}
           topInset={insets.top} bottomInset={insets.bottom} maxHeight={Math.max(240, viewport.height - insets.top - insets.bottom - 24)}
           deniedPermanently={location.status === 'denied' && !location.canAskAgain}
           onStop={tracking.stop} onFollow={resumeFollowing}
@@ -213,15 +275,25 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
           canRequest={canRequest} canOpenExternal={!!destinationCoordinate && !openingExternal}
           deniedPermanently={location.status === 'denied' && !location.canAskAgain}
           onMode={value => {
-            if (mode !== value) { route.cancel(); setAnchor(null); setMode(value); }
+            if (mode !== value) { closeNotice(); route.cancel(); setAnchor(null); setMode(value); }
             else if (value === 'car' && canRequest && route.state.kind !== 'loading' && route.state.kind !== 'ready') request();
           }}
           onEditEndpoint={setEditing} onSwapEndpoints={() => changeEndpoints([selections[1], selections[0]])}
           onClose={onClose} onShare={shareDestination}
-          canStart={canStart} onStart={startTracking}
+          onStart={() => { void startTracking(); }}
           onRequest={request} onCancel={route.cancel} onRefreshLocation={onRefreshLocation}
           onSettings={() => { void Linking.openSettings().catch(() => undefined); }} onExternal={() => { void openExternal(); }} />}
       </MapGlassBackdrop>
+      </View>
+      {notice && <RouteNotice title={t('routes.tracking.start')} {...notice} onClose={closeNotice}
+        retryLabel={t(notice.recovery === 'settings' ? 'routes.settings' : notice.recovery === 'permission' ? 'routes.location' : 'routes.tracking.retryStart')}
+        onRetry={notice.recovery ? () => {
+          if (notice.recovery === 'permission' || notice.recovery === 'settings') {
+            closeNotice();
+            if (notice.recovery === 'settings') void Linking.openSettings().catch(() => undefined);
+            else onRefreshLocation();
+          } else { void startTracking(true); }
+        } : undefined} />}
     </View>
   </Modal>;
 }
