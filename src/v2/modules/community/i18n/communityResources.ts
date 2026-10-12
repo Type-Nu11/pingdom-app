@@ -93,6 +93,7 @@ export const communityResources = {
       },
     },
     write_screen: {
+      photos: { counter: '{{count}}/{{max}}', addA11y: 'Add photos, {{count}} of {{max}} attached', limitReached: "You've attached the maximum of {{max}} photos.", photoA11y: 'Attached photo {{index}}', remove: 'Remove photo {{index}}', uploading: 'Uploading photo {{index}}', retry: 'Retry', retryA11y: 'Retry uploading photo {{index}}', uploadFailed: "Some photos didn't upload. Retry or remove them.", unsupported: 'Only JPEG and PNG photos can be attached. Remove the unsupported photo.', tooLarge: 'Photos must be 10 MB or smaller. Remove the oversized photo.', uploadInProgress: 'Wait for the photos to finish uploading.', permissionDenied: 'Allow photo access in Settings to attach photos.', openSettings: 'Open Settings' },
       title: 'Write a post',
       back: 'Cancel',
       categoryLabel: 'Category',
@@ -237,6 +238,7 @@ export const communityResources = {
       },
     },
     write_screen: {
+      photos: { counter: '{{count}}/{{max}}', addA11y: '사진 추가, {{max}}장 중 {{count}}장 첨부됨', limitReached: '사진은 최대 {{max}}장까지 첨부할 수 있어요.', photoA11y: '첨부한 사진 {{index}}', remove: '사진 {{index}} 삭제', uploading: '사진 {{index}} 올리는 중', retry: '재시도', retryA11y: '사진 {{index}} 다시 올리기', uploadFailed: '올리지 못한 사진이 있어요. 다시 시도하거나 삭제해 주세요.', unsupported: 'JPEG, PNG 사진만 첨부할 수 있어요. 지원하지 않는 사진을 삭제해 주세요.', tooLarge: '사진은 10MB 이하만 첨부할 수 있어요. 용량이 큰 사진을 삭제해 주세요.', uploadInProgress: '사진을 올리는 중이에요. 잠시만 기다려 주세요.', permissionDenied: '사진을 첨부하려면 설정에서 사진 접근을 허용해 주세요.', openSettings: '설정 열기' },
       title: '글 작성하기',
       back: '취소',
       categoryLabel: '카테고리',
@@ -381,6 +383,7 @@ export const communityResources = {
       },
     },
     write_screen: {
+      photos: { counter: '{{count}}/{{max}}', addA11y: '写真を追加、{{max}}枚中{{count}}枚添付済み', limitReached: '写真は最大{{max}}枚まで添付できます。', photoA11y: '添付した写真 {{index}}', remove: '写真 {{index}} を削除', uploading: '写真 {{index}} をアップロード中', retry: '再試行', retryA11y: '写真 {{index}} を再アップロード', uploadFailed: 'アップロードできなかった写真があります。再試行するか削除してください。', unsupported: '添付できるのはJPEGとPNGの写真のみです。対応していない写真を削除してください。', tooLarge: '写真は10MB以下のみ添付できます。容量の大きい写真を削除してください。', uploadInProgress: '写真をアップロード中です。しばらくお待ちください。', permissionDenied: '写真を添付するには、設定で写真へのアクセスを許可してください。', openSettings: '設定を開く' },
       title: '投稿を作成',
       back: 'キャンセル',
       categoryLabel: 'カテゴリー',
@@ -506,6 +509,7 @@ export const communityResources = {
       },
     },
     write_screen: {
+      photos: { counter: '{{count}}/{{max}}', addA11y: '添加照片，已添加 {{count}} 张，最多 {{max}} 张', limitReached: '最多可添加 {{max}} 张照片。', photoA11y: '已添加的照片 {{index}}', remove: '删除照片 {{index}}', uploading: '正在上传照片 {{index}}', retry: '重试', retryA11y: '重新上传照片 {{index}}', uploadFailed: '有照片未能上传。请重试或将其删除。', unsupported: '只能添加 JPEG 和 PNG 照片。请删除不支持的照片。', tooLarge: '照片不能超过 10MB。请删除过大的照片。', uploadInProgress: '照片正在上传，请稍候。', permissionDenied: '要添加照片，请在设置中允许访问照片。', openSettings: '打开设置' },
       title: '发帖',
       back: '取消',
       categoryLabel: '分类',
@@ -613,6 +617,7 @@ export const communityResources = {
       },
     },
     write_screen: {
+      photos: { counter: '{{count}}/{{max}}', addA11y: '新增照片，已新增 {{count}} 張，最多 {{max}} 張', limitReached: '最多可新增 {{max}} 張照片。', photoA11y: '已新增的照片 {{index}}', remove: '刪除照片 {{index}}', uploading: '正在上傳照片 {{index}}', retry: '再試一次', retryA11y: '重新上傳照片 {{index}}', uploadFailed: '有照片未能上傳。請再試一次或將其刪除。', unsupported: '只能新增 JPEG 和 PNG 照片。請刪除不支援的照片。', tooLarge: '照片不能超過 10MB。請刪除過大的照片。', uploadInProgress: '照片正在上傳，請稍候。', permissionDenied: '若要新增照片，請在設定中允許存取照片。', openSettings: '開啟設定' },
       title: '撰寫貼文',
       back: '取消',
       categoryLabel: '類別',
@@ -726,6 +731,7 @@ export const communityResources = {
       },
     },
     write_screen: {
+      photos: { counter: '{{count}}/{{max}}', addA11y: 'Thêm ảnh, đã đính kèm {{count}} trên {{max}}', limitReached: 'Bạn có thể đính kèm tối đa {{max}} ảnh.', photoA11y: 'Ảnh đã đính kèm {{index}}', remove: 'Xóa ảnh {{index}}', uploading: 'Đang tải ảnh {{index}} lên', retry: 'Thử lại', retryA11y: 'Tải lại ảnh {{index}}', uploadFailed: 'Một số ảnh chưa tải lên được. Hãy thử lại hoặc xóa chúng.', unsupported: 'Chỉ có thể đính kèm ảnh JPEG và PNG. Hãy xóa ảnh không được hỗ trợ.', tooLarge: 'Ảnh phải có dung lượng từ 10MB trở xuống. Hãy xóa ảnh quá lớn.', uploadInProgress: 'Ảnh đang được tải lên. Vui lòng chờ.', permissionDenied: 'Hãy cho phép truy cập ảnh trong Cài đặt để đính kèm ảnh.', openSettings: 'Mở Cài đặt' },
       title: 'Viết bài',
       back: 'Hủy',
       categoryLabel: 'Danh mục',
@@ -854,6 +860,7 @@ export const communityResources = {
       },
     },
     write_screen: {
+      photos: { counter: '{{count}}/{{max}}', addA11y: 'Añadir fotos, {{count}} de {{max}} adjuntas', limitReached: 'Puedes adjuntar un máximo de {{max}} fotos.', photoA11y: 'Foto adjunta {{index}}', remove: 'Quitar foto {{index}}', uploading: 'Subiendo foto {{index}}', retry: 'Reintentar', retryA11y: 'Volver a subir la foto {{index}}', uploadFailed: 'Algunas fotos no se subieron. Reinténtalo o quítalas.', unsupported: 'Solo se pueden adjuntar fotos JPEG y PNG. Quita la foto no compatible.', tooLarge: 'Las fotos deben pesar 10 MB o menos. Quita la foto demasiado grande.', uploadInProgress: 'Espera a que terminen de subirse las fotos.', permissionDenied: 'Permite el acceso a las fotos en Ajustes para adjuntar fotos.', openSettings: 'Abrir Ajustes' },
       title: 'Escribir una publicación',
       back: 'Cancelar',
       categoryLabel: 'Categoría',
@@ -982,6 +989,7 @@ export const communityResources = {
       },
     },
     write_screen: {
+      photos: { counter: '{{count}}/{{max}}', addA11y: 'Adicionar fotos, {{count}} de {{max}} anexadas', limitReached: 'Você pode anexar no máximo {{max}} fotos.', photoA11y: 'Foto anexada {{index}}', remove: 'Remover foto {{index}}', uploading: 'Enviando foto {{index}}', retry: 'Tentar novamente', retryA11y: 'Enviar a foto {{index}} novamente', uploadFailed: 'Algumas fotos não foram enviadas. Tente novamente ou remova-as.', unsupported: 'Só é possível anexar fotos JPEG e PNG. Remova a foto não compatível.', tooLarge: 'As fotos devem ter 10 MB ou menos. Remova a foto grande demais.', uploadInProgress: 'Aguarde o envio das fotos terminar.', permissionDenied: 'Permita o acesso às fotos nos Ajustes para anexar fotos.', openSettings: 'Abrir Ajustes' },
       title: 'Escrever uma publicação',
       back: 'Cancelar',
       categoryLabel: 'Categoria',
