@@ -31,6 +31,8 @@ export type {
 export {
   communityQueryKeys,
   useCategories,
+  useCommunityFeed,
+  useCountries,
   useCreateComment,
   useCreatePost,
   useInfiniteComments,

@@ -16,6 +16,7 @@ import {
   type CreatePostBody,
   type ListCommentsParams,
   type ListPostsByCategoryParams,
+  type ListPostsParams,
   type ReportBody,
 } from '../api/communityApi';
 
@@ -24,7 +25,10 @@ export type { CommunityPostDetail, CommunityPostSummary };
 type CommunityApi = typeof communityApi;
 
 export const communityQueryKeys = {
+  allPostsInfinite: (params: ListPostsParams) => ['v2', 'community', 'posts', 'all', 'infinite', params] as const,
+  allPostsRoot: ['v2', 'community', 'posts', 'all'] as const,
   categories: ['v2', 'community', 'categories'] as const,
+  countries: ['v2', 'community', 'countries'] as const,
   comments: (postId: number, params: ListCommentsParams) => ['v2', 'community', 'posts', postId, 'comments', params] as const,
   commentsInfinite: (postId: number, params: ListCommentsParams) => ['v2', 'community', 'posts', postId, 'comments', 'infinite', params] as const,
   commentsRoot: (postId: number) => ['v2', 'community', 'posts', postId, 'comments'] as const,
@@ -46,6 +50,20 @@ export function createCategoriesQueryOptions(
 
 export function useCategories() {
   return useQuery(createCategoriesQueryOptions());
+}
+
+export function createCountriesQueryOptions(
+  api: Pick<CommunityApi, 'listCountries'> = communityApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) => api.listCountries(signal),
+    queryKey: communityQueryKeys.countries,
+  };
+}
+
+/** Country codes the feed's `countryCode` filter accepts. */
+export function useCountries(options: { enabled?: boolean } = {}) {
+  return useQuery({ ...createCountriesQueryOptions(), ...options });
 }
 
 export function createPostQueryOptions(
@@ -95,6 +113,56 @@ export function useInfinitePostsByCategory(
     ...createInfinitePostsByCategoryQueryOptions(categoryId, params),
     enabled: options.enabled ?? Boolean(categoryId),
   });
+}
+
+/** Same paging rules as the category feed, over every category. */
+export function createInfiniteAllPostsQueryOptions(
+  params: ListPostsParams = {},
+  api: Pick<CommunityApi, 'listPosts'> = communityApi,
+) {
+  const { page: _page, ...filters } = params;
+
+  return {
+    getNextPageParam: (lastPage: CommunityPostPage) => (
+      lastPage.hasNext && (lastPage.page ?? 0) < (lastPage.totalPages ?? 0)
+        ? (lastPage.page ?? 0) + 1
+        : undefined
+    ),
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }: { pageParam: number; signal?: AbortSignal }) =>
+      api.listPosts({ ...filters, page: pageParam }, signal),
+    queryKey: communityQueryKeys.allPostsInfinite(filters),
+  };
+}
+
+export type CommunityFeedFilters = {
+  /** `null` is the "All" tab: every category. */
+  categoryId: string | null;
+  /** ISO alpha-2 code from `useCountries`; omitted when no country is picked. */
+  countryCode?: string;
+  limit?: number;
+};
+
+/**
+ * The feed behind the sheet's category tabs and country filter. The filters
+ * are part of the query key, so changing either one starts a fresh query at
+ * page 1 instead of appending to the previous filter's pages.
+ */
+export function createCommunityFeedQueryOptions(
+  { categoryId, countryCode, limit }: CommunityFeedFilters,
+  api: Pick<CommunityApi, 'listPosts' | 'listPostsByCategory'> = communityApi,
+) {
+  const params = { ...(countryCode ? { countryCode } : {}), ...(limit ? { limit } : {}) };
+  const options = categoryId === null
+    ? createInfiniteAllPostsQueryOptions(params, api)
+    : createInfinitePostsByCategoryQueryOptions(categoryId, params, api);
+  // The two feeds differ only in key shape; widening it lets one
+  // `useInfiniteQuery` call serve both.
+  return { ...options, queryKey: options.queryKey as readonly unknown[] };
+}
+
+export function useCommunityFeed(filters: CommunityFeedFilters, options: { enabled?: boolean } = {}) {
+  return useInfiniteQuery({ ...createCommunityFeedQueryOptions(filters), ...options });
 }
 
 export function createInfiniteCommentsQueryOptions(
@@ -147,11 +215,15 @@ export function useCreatePost(api: Pick<CommunityApi, 'createPost'> = communityA
   return useMutation({
     mutationFn: (body: CreatePostBody) => api.createPost(body),
     retry: false,
-    // Only the category the post was created in is invalidated — other
-    // categories' cached pages, and the category list itself, are untouched.
-    onSuccess: async (_data, variables) => queryClient.invalidateQueries({
-      queryKey: communityQueryKeys.postsRoot(variables.categoryId),
-    }),
+    // Only the feeds the new post appears in are invalidated — its category
+    // and the "All" tab. Other categories' cached pages, and the category
+    // list itself, are untouched.
+    onSuccess: async (_data, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: communityQueryKeys.postsRoot(variables.categoryId) }),
+        queryClient.invalidateQueries({ queryKey: communityQueryKeys.allPostsRoot }),
+      ]);
+    },
   });
 }
 

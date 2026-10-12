@@ -1,5 +1,5 @@
 import { Text as AppText } from '../../../shared/components/Typography';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import AddPlusIcon from '../../../../assets/v2/icons/community/add-plus.svg';
+import SliderIcon from '../../../../assets/v2/icons/community/slider.svg';
 import * as GlassStyles from '../../place/map/sheet';
 import { getMapSheetNavigationBottom, MapSheetBottomNavigation } from '../../place/map/sheet';
 import { GlassSurface } from '../../place/map/presentation';
@@ -21,9 +22,10 @@ import type { BottomSheetSnapPoint } from '../../place/map/sheet';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
 import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
 import { textStyleCss } from '../../../shared/theme/typography';
-import { useCategories, useInfinitePostsByCategory } from '../hooks/useCommunity';
+import { useCategories, useCommunityFeed, useCountries } from '../hooks/useCommunity';
 import type { CommunityPostSummary } from '../api/communityApi';
 import type { AnchoredMenuPosition } from './AnchoredMenu';
+import CountryFilterMenu from './CountryFilterMenu';
 import PostCard from './PostCard';
 import PostOverflowMenu from './PostOverflowMenu';
 
@@ -65,9 +67,11 @@ function PostListSkeleton() {
 
 // The sheet unmounts when the map switches to another tab (see MapScreen), so
 // FlatList's own scroll state doesn't survive a round trip. Keeping the last
-// offset per category outside the component lets re-entry restore it instead
-// of snapping back to the top.
-const scrollOffsetByCategory: Record<string, number> = {};
+// offset per feed (category tab + country filter) outside the component lets
+// re-entry restore it instead of snapping back to the top.
+const scrollOffsetByFeed: Record<string, number> = {};
+// Figma: the country menu's right edge lines up with the button, 8px below it.
+const FILTER_MENU_GAP = 8;
 
 export type CommunityBottomSheetProps = {
   collapsedTranslateY: number;
@@ -106,22 +110,26 @@ export default function CommunityBottomSheet({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { colors, liquidGlass: themedGlass } = theme;
-  const [manualCategoryId, setManualCategoryId] = useState<string | null>(null);
+  // `null` is the Figma "전체" tab — every category.
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
+  const [countryMenu, setCountryMenu] = useState<AnchoredMenuPosition | null>(null);
+  const filterButtonRef = useRef<View>(null);
   const [hiddenPostIds, setHiddenPostIds] = useState<number[]>([]);
   const [overflowMenu, setOverflowMenu] = useState<{ position: AnchoredMenuPosition; postId: number } | null>(null);
 
   const categoriesQuery = useCategories();
   const categories = categoriesQuery.data?.categories ?? [];
-  // Derived synchronously from the loaded categories instead of an effect that
-  // sets state after the fact — the category list is picked as soon as it's
-  // available, with no extra render hop for the post query to wait through.
-  const selectedCategoryId = manualCategoryId ?? categories[0]?.categoryId ?? null;
+  const countriesQuery = useCountries();
+  const feedKey = `${selectedCategoryId ?? ''}|${selectedCountryCode ?? ''}`;
 
-  const postsQuery = useInfinitePostsByCategory(
-    selectedCategoryId ?? '',
-    { limit: PAGE_LIMIT },
-    { enabled: Boolean(selectedCategoryId) },
-  );
+  // Both filters are real query parameters and part of the query key, so
+  // switching either one restarts the feed at page 1.
+  const postsQuery = useCommunityFeed({
+    categoryId: selectedCategoryId,
+    countryCode: selectedCountryCode ?? undefined,
+    limit: PAGE_LIMIT,
+  });
   const posts = useMemo(
     () => (postsQuery.data?.pages ?? [])
       .flatMap((page) => page.posts ?? [])
@@ -160,6 +168,16 @@ export default function CommunityBottomSheet({
   // tag for an item the server returned without one.
   const now = new Date();
   const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
+
+  const openCountryMenu = () => {
+    const fallbackTop = insets.top + 160;
+    setCountryMenu({ right: 16, top: fallbackTop });
+    filterButtonRef.current?.measureInWindow?.((_x, y, _width, measuredHeight) => {
+      if (Number.isFinite(y) && measuredHeight > 0) {
+        setCountryMenu({ right: 16, top: y + measuredHeight + FILTER_MENU_GAP });
+      }
+    });
+  };
 
   const renderPost: ListRenderItem<CommunityPostSummary & { postId: number }> = ({ item }) => (
     <PostCard
@@ -232,12 +250,33 @@ export default function CommunityBottomSheet({
         <Animated.View pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={{ flex: 1, opacity }}>
           <TitleRow>
             <Title accessibilityRole="header">{t('community.title')}</Title>
+            <FilterButton
+              accessibilityLabel={t('community.filter.open')}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: countryMenu !== null, selected: selectedCountryCode !== null }}
+              onPress={openCountryMenu}
+              ref={filterButtonRef}
+              style={{ boxShadow: themedGlass.navigation.shadow }}
+              testID="v2-community-sheet-filter"
+            >
+              <SliderIcon color={colors.textAlternative} height={24} width={24} />
+            </FilterButton>
           </TitleRow>
 
           {categoriesQuery.isLoading ? (
             <CategorySkeleton />
           ) : categoriesQuery.isError ? null : (
             <CategoryScroll contentContainerStyle={CATEGORY_CONTENT_STYLE} horizontal showsHorizontalScrollIndicator={false}>
+              <CategoryChip
+                $selected={selectedCategoryId === null}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: selectedCategoryId === null }}
+                onPress={() => setSelectedCategoryId(null)}
+                style={{ boxShadow: themedGlass.category.shadow }}
+                testID="v2-community-sheet-category-all"
+              >
+                <CategoryLabel $selected={selectedCategoryId === null}>{t('community.categories.all')}</CategoryLabel>
+              </CategoryChip>
               {categories.map((category) => {
                 const selected = category.categoryId === selectedCategoryId;
                 return (
@@ -248,7 +287,7 @@ export default function CommunityBottomSheet({
                     accessibilityState={{ selected }}
                     key={category.categoryId}
                     onPress={() => {
-                      if (category.categoryId) setManualCategoryId(category.categoryId);
+                      if (category.categoryId) setSelectedCategoryId(category.categoryId);
                     }}
                     testID={`v2-community-sheet-category-${category.categoryId}`}
                   >
@@ -275,9 +314,9 @@ export default function CommunityBottomSheet({
             ) : (
               <FlatList
                 contentContainerStyle={LIST_CONTENT_STYLE}
-                contentOffset={{ x: 0, y: selectedCategoryId ? scrollOffsetByCategory[selectedCategoryId] ?? 0 : 0 }}
+                contentOffset={{ x: 0, y: scrollOffsetByFeed[feedKey] ?? 0 }}
                 data={posts}
-                key={selectedCategoryId}
+                key={feedKey}
                 keyExtractor={(post) => String(post.postId)}
                 ListEmptyComponent={<EmptyText testID="v2-community-list-empty">{t('community.empty')}</EmptyText>}
                 ListFooterComponent={renderFooter()}
@@ -285,9 +324,7 @@ export default function CommunityBottomSheet({
                 onEndReached={loadNextPage}
                 onEndReachedThreshold={0.5}
                 onScroll={(event) => {
-                  if (selectedCategoryId) {
-                    scrollOffsetByCategory[selectedCategoryId] = event.nativeEvent.contentOffset.y;
-                  }
+                  scrollOffsetByFeed[feedKey] = event.nativeEvent.contentOffset.y;
                 }}
                 renderItem={renderPost}
                 scrollEventThrottle={32}
@@ -332,6 +369,18 @@ export default function CommunityBottomSheet({
         sheetTranslateY={sheetTranslateY}
       />
 
+      <CountryFilterMenu
+        countries={countriesQuery.data ?? []}
+        isError={countriesQuery.isError}
+        isLoading={countriesQuery.isLoading}
+        onClose={() => setCountryMenu(null)}
+        onRetry={() => void countriesQuery.refetch()}
+        onSelect={setSelectedCountryCode}
+        position={countryMenu ?? { top: 0 }}
+        selectedCountryCode={selectedCountryCode}
+        visible={countryMenu !== null}
+      />
+
       <PostOverflowMenu
         onClose={() => setOverflowMenu(null)}
         onNotInterested={() => {
@@ -356,6 +405,16 @@ const HandleButton = styled(Pressable)`align-items: center; height: 19px; paddin
 const Handle = styled.View`background-color: ${({ theme }) => theme.colors.secondaryNormal}; border-radius: 3px; height: 5px; width: 56px;`;
 
 const TitleRow = styled.View`height: 44px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 16px;`;
+// Figma filter button (8241:45578): 44px `Glass/FillRaised` circle with the
+// 24px `Interface / Slider_03` glyph and the shared 0/4/20 6% drop shadow.
+const FilterButton = styled(Pressable)`
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  background-color: ${({ theme }) => theme.colors.glassFillRaised};
+`;
 const Title = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
 
 const CategoryScroll = styled.ScrollView`flex-grow: 0; height: 34px; overflow: visible;`;
