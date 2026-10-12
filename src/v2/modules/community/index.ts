@@ -9,16 +9,23 @@ export { ApiError, communityApi } from './api/communityApi';
 export type {
   CommunityCategory,
   CommunityComment,
+  CommunityCommentLikeStatus,
   CommunityCommentPage,
+  CommunityImageFile,
+  CommunityImageUpload,
   CommunityLikeStatus,
+  CommunityPlace,
   CommunityPostDetail,
+  CommunityPostImage,
   CommunityPostPage,
   CommunityPostSummary,
   CreateCommentBody,
   CreatePostBody,
   ListCategoriesResponse,
   ListCommentsParams,
+  ListCountriesResponse,
   ListPostsByCategoryParams,
+  ListPostsParams,
   ReportBody,
 } from './api/communityApi';
 export {

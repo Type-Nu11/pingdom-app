@@ -4,7 +4,7 @@ import test from 'node:test';
 
 import { configureDomainMockHandlers, mockApiClient, setMockScenario } from '../../../shared/api/index.ts';
 
-test('Community mock handlers cover the full category → post → comment → like → view → report surface', async () => {
+test('Community mock handlers cover the full category → country → post → image → comment → like → view → report surface', async () => {
   configureDomainMockHandlers(communityMockHandlers);
   setMockScenario('success');
 
@@ -85,6 +85,23 @@ test('Community mock handlers cover the full category → post → comment → l
     reason: 'SPAM',
   });
   assert.equal(postReport.status, 'PENDING');
+
+  assert.deepEqual(await mockApiClient.get('/community/countries'), ['KR', 'US', 'JP', 'VN', 'CN', 'TH']);
+
+  const allPosts = await mockApiClient.get('/community/posts');
+  assert.equal(allPosts.posts[0].postId, 1);
+  assert.equal(allPosts.posts[0].category.categoryId, 'PLACE');
+  assert.equal(allPosts.posts[0].imageCount, 0);
+
+  const uploaded = await mockApiClient.post('/community/images', {});
+  assert.equal(uploaded.imageId, 501);
+  await mockApiClient.delete('/community/images/501');
+
+  const commentLiked = await mockApiClient.post('/community/comments/101/likes');
+  assert.equal(commentLiked.liked, true);
+  assert.equal(commentLiked.likeCount, 3);
+  const commentUnliked = await mockApiClient.delete('/community/comments/101/likes');
+  assert.equal(commentUnliked.liked, false);
 
   const commentReport = await mockApiClient.post('/community/posts/1/comments/101/reports', {
     description: '같은 광고를 반복 게시합니다.',
