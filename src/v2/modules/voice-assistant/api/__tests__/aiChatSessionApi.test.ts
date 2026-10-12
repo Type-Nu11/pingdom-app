@@ -1,7 +1,8 @@
 import { createAiChatSessionApi } from '../aiChatSessionApi';
 import { createVoiceSessionController } from '../../model/voiceSession';
-import { createApiClient, type ApiTransport } from '../../../../shared/api';
+import { ApiError, createApiClient, type ApiTransport } from '../../../../shared/api';
 import { AI_CHAT_TOOLS } from '../../model/aiChatTools';
+import { voiceSessionErrors } from '../../i18n/voiceSessionErrors';
 import type { AppCommandResult } from '../../model/voiceAssistantCommand.types';
 
 const call = (name = 'searchNearbyPlaces', args: unknown = { keyword: '갈비탕', limit: 3 }, id = 'call_1') => ({ id, type: 'function', function: { name, arguments: args } });
@@ -19,6 +20,26 @@ test.each(['searchNearbyPlaces', 'searchNearbyReservablePlaces'])('%s category s
   // AiChatService.validValue rejects an enum-only schema because it branches on type.
   expect(category.type).toBe('string');
   expect(category.enum).toContain('FOOD');
+});
+
+test.each([400, 422])('HTTP %s rejection is distinct from malformed AI output and never leaks its body', async status => {
+  const post = jest.fn(async () => { throw new ApiError('model : property model is missing', {
+    status, responseBody: { error: { message: 'private-provider-body' } },
+  }); });
+  const api = createAiChatSessionApi(createApiClient({ post } as unknown as ApiTransport));
+  const handle = jest.fn(); const c = createVoiceSessionController(handle, api);
+  try {
+    await c.start(); await c.send('Hello');
+    expect(c.getSnapshot().error).toBe('REQUEST_REJECTED');
+    expect(handle).not.toHaveBeenCalled();
+    await expect(c.retry()).rejects.toThrow('RETRY_UNAVAILABLE');
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(c.getSnapshot())).not.toMatch(/model|private-provider-body/);
+    for (const messages of Object.values(voiceSessionErrors)) {
+      expect((messages as Record<string, string>).REQUEST_REJECTED).toEqual(expect.any(String));
+      expect((messages as Record<string, string>).REQUEST_REJECTED).not.toBe(messages.INVALID_RESPONSE);
+    }
+  } finally { c.dispose(); }
 });
 
 test('keyword search and its app result return through /ai/chat with matching IDs and conversation history', async () => {

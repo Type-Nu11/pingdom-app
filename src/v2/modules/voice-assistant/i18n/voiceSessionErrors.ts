@@ -24,6 +24,7 @@ export const voiceSessionErrors = {
     SESSION_REQUIRED: 'An AI session is required. Close the assistant and start again.',
     LEDGER_FULL: 'This AI session has reached its request limit. Close the assistant and start again.',
     INVALID_INPUT: 'Enter an AI request of 2,000 characters or fewer.',
+    REQUEST_REJECTED: 'The AI server could not accept the request. Try again later.',
   },
   ko: {
     CANCELED: 'AI 요청이 취소되었습니다.', TIMEOUT: 'AI 응답 시간이 초과되었습니다. 다시 시도해 주세요.',
@@ -46,6 +47,7 @@ export const voiceSessionErrors = {
     SESSION_REQUIRED: 'AI 세션이 필요합니다. 어시스턴트를 닫고 다시 시작해 주세요.',
     LEDGER_FULL: 'AI 세션의 요청 한도에 도달했습니다. 어시스턴트를 닫고 다시 시작해 주세요.',
     INVALID_INPUT: 'AI 요청을 2,000자 이내로 입력해 주세요.',
+    REQUEST_REJECTED: 'AI 서버가 요청을 받아들이지 못했습니다. 잠시 후 다시 시도해 주세요.',
   },
   ja: {
     CANCELED: 'AIリクエストがキャンセルされました。', TIMEOUT: 'AIの応答がタイムアウトしました。もう一度お試しください。',
@@ -68,6 +70,7 @@ export const voiceSessionErrors = {
     SESSION_REQUIRED: 'AIセッションが必要です。アシスタントを閉じて再度開始してください。',
     LEDGER_FULL: 'AIセッションのリクエスト上限に達しました。アシスタントを閉じて再度開始してください。',
     INVALID_INPUT: 'AIリクエストを2,000文字以内で入力してください。',
+    REQUEST_REJECTED: 'AIサーバーがリクエストを受け付けられませんでした。しばらくしてからお試しください。',
   },
   'zh-CN': {
     CANCELED: 'AI请求已取消。', TIMEOUT: 'AI响应超时，请重试。',
@@ -90,6 +93,7 @@ export const voiceSessionErrors = {
     SESSION_REQUIRED: '需要AI会话，请关闭助手后重新开始。',
     LEDGER_FULL: '此AI会话已达到请求上限，请关闭助手后重新开始。',
     INVALID_INPUT: '请输入不超过2,000个字符的AI请求。',
+    REQUEST_REJECTED: 'AI服务器无法接受此请求，请稍后重试。',
   },
   'zh-TW': {
     CANCELED: 'AI請求已取消。', TIMEOUT: 'AI回應逾時，請重試。',
@@ -112,6 +116,7 @@ export const voiceSessionErrors = {
     SESSION_REQUIRED: '需要AI工作階段，請關閉助理後重新開始。',
     LEDGER_FULL: '此AI工作階段已達到請求上限，請關閉助理後重新開始。',
     INVALID_INPUT: '請輸入不超過2,000個字元的AI請求。',
+    REQUEST_REJECTED: 'AI伺服器無法接受此請求，請稍後重試。',
   },
   vi: {
     CANCELED: 'Yêu cầu AI đã bị hủy.', TIMEOUT: 'Phản hồi AI đã hết thời gian chờ. Hãy thử lại.',
@@ -134,6 +139,7 @@ export const voiceSessionErrors = {
     SESSION_REQUIRED: 'Cần có phiên AI. Hãy đóng trợ lý rồi bắt đầu lại.',
     LEDGER_FULL: 'Phiên AI này đã đạt giới hạn yêu cầu. Hãy đóng trợ lý rồi bắt đầu lại.',
     INVALID_INPUT: 'Hãy nhập yêu cầu AI tối đa 2.000 ký tự.',
+    REQUEST_REJECTED: 'Máy chủ AI không thể chấp nhận yêu cầu. Hãy thử lại sau.',
   },
   es: {
     CANCELED: 'La solicitud de IA se canceló.', TIMEOUT: 'La respuesta de IA agotó el tiempo de espera. Inténtalo de nuevo.',
@@ -156,6 +162,7 @@ export const voiceSessionErrors = {
     SESSION_REQUIRED: 'Se necesita una sesión de IA. Cierra el asistente y vuelve a empezar.',
     LEDGER_FULL: 'Esta sesión de IA alcanzó su límite de solicitudes. Cierra el asistente y vuelve a empezar.',
     INVALID_INPUT: 'Introduce una solicitud de IA de 2000 caracteres o menos.',
+    REQUEST_REJECTED: 'El servidor de IA no pudo aceptar la solicitud. Inténtalo más tarde.',
   },
   'pt-BR': {
     CANCELED: 'A solicitação de IA foi cancelada.', TIMEOUT: 'A resposta de IA excedeu o tempo limite. Tente novamente.',
@@ -178,5 +185,6 @@ export const voiceSessionErrors = {
     SESSION_REQUIRED: 'É necessária uma sessão de IA. Feche o assistente e comece novamente.',
     LEDGER_FULL: 'Esta sessão de IA atingiu o limite de solicitações. Feche o assistente e comece novamente.',
     INVALID_INPUT: 'Digite uma solicitação de IA com até 2.000 caracteres.',
+    REQUEST_REJECTED: 'O servidor de IA não conseguiu aceitar a solicitação. Tente mais tarde.',
   },
 } satisfies Record<SupportedLanguage, Record<VoiceSessionErrorCode, string>>;
