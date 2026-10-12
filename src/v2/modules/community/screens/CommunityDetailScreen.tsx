@@ -14,6 +14,7 @@ import { textStyleCss } from '../../../shared/theme/typography';
 import CategoryTag from '../components/CategoryTag';
 import CommentInputBar from '../components/CommentInputBar';
 import CommentsSection from '../components/CommentsSection';
+import CommunityPlaceCard from '../components/CommunityPlaceCard';
 import HeaderIconButton from '../components/HeaderIconButton';
 import LikeButton from '../components/LikeButton';
 import PostAuthor from '../components/PostAuthor';
@@ -44,12 +45,10 @@ function placeEntryErrorMessageKey(kind: PlaceEntryError['kind']): string {
 
 type PlaceEntry = ReturnType<typeof useCommunityPlaceEntry>;
 
-// getPost only returns { postId, title, content, places } (see communityApi.ts) —
-// author, tags, and photos aren't part of the real contract yet. Like status
-// comes from a separate `GET .../likes` call (see LikeButton), not this response.
-// Thumbnail/category display (the Figma PlaceTag design) is deliberately
-// skipped: the contract only gives `placeName`, and prefetching a place GET
-// to fill them in would bypass the view-count endpoint this card exists for.
+// Figma `PlaceTag` (8241:47062). The thumbnail and "category · region" line
+// come straight from the post's `places[]` — no place GET is prefetched to
+// fill them in, which would bypass the view-count endpoint this card exists
+// for. Like status comes from a separate `GET .../likes` call (see LikeButton).
 function Places({
   onOpenPlace,
   onPlaceUnavailable,
@@ -80,7 +79,7 @@ function Places({
               disabled
               key={key}
             >
-              <PlaceName $muted numberOfLines={1}>{place.placeName ?? t('community.detail.placeDeleted')}</PlaceName>
+              <CommunityPlaceCard muted name={place.placeName ?? t('community.detail.placeDeleted')} />
             </PlaceRowStatic>
           );
         }
@@ -110,14 +109,18 @@ function Places({
               onPress={onOpenPlace ? attempt : undefined}
               testID={`v2-community-place-${placeId}`}
             >
-              <PlaceNameRow>
-                <PlaceName numberOfLines={1}>{place.placeName}</PlaceName>
-                {busy ? (
+              <CommunityPlaceCard
+                category={place.category}
+                imageUrl={place.imageUrl}
+                name={place.placeName ?? ''}
+                nameAccessory={busy ? (
                   <ActivityIndicator size="small" testID={`v2-community-place-busy-${placeId}`} />
                 ) : (
                   <ChevronRightIcon color={theme.colors.textMuted} height={24} width={24} />
                 )}
-              </PlaceNameRow>
+                region={place.region}
+                testID={`v2-community-place-card-${placeId}`}
+              />
             </PlaceRowPressable>
 
             {error ? (
@@ -288,7 +291,13 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
         <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef}>
             <Post>
-              <PostAuthor author={postQuery.data?.author} createdAt={postQuery.data?.createdAt} now={now} />
+              <PostAuthor
+                author={postQuery.data?.author}
+                createdAt={postQuery.data?.createdAt}
+                now={now}
+                region={postQuery.data?.region}
+                viewCount={postQuery.data?.viewCount}
+              />
               {postQuery.data?.category?.categoryName ? (
                 <CategoryTag label={postQuery.data.category.categoryName} testID="v2-community-detail-category" />
               ) : null}
@@ -397,20 +406,9 @@ const Body = styled(AppText)`color: ${({ theme }) => theme.colors.labelNeutral};
 
 const PlaceList = styled.View`gap: ${({ theme }) => theme.spacing.sm}px;`;
 const PlaceCardColumn = styled.View`gap: ${({ theme }) => theme.spacing.xs}px;`;
-// Figma `PlaceTag`: 12px padding on `Secondary/Assistive`, 12px radius.
-const PlaceRowStatic = styled.Pressable`
-  padding: 12px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
-  opacity: 0.6;
-`;
-const PlaceRowPressable = styled.Pressable`
-  padding: 12px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
-`;
-const PlaceNameRow = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
-const PlaceName = styled(AppText)<{ $muted?: boolean }>`flex-shrink: 1; color: ${({ $muted, theme }) => ($muted ? theme.colors.textMuted : theme.colors.labelStrong)}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
+// The shared `CommunityPlaceCard` draws the card; these only make it tappable.
+const PlaceRowStatic = styled.Pressable``;
+const PlaceRowPressable = styled.Pressable``;
 
 const PlaceErrorRow = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
 const PlaceErrorText = styled(AppText)`flex-shrink: 1; color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;

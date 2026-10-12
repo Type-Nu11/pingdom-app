@@ -62,6 +62,75 @@ describe('CommunityDetailScreen', () => {
     expect(screen.queryByTestId('v2-community-detail-category')).toBeNull();
   });
 
+  test('작성자 메타에 지역·작성 시각·조회수를 응답에 있는 것만 보여준다', async () => {
+    jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({
+      author: { authorId: 3, authorName: 'woo_sm' },
+      createdAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+      region: '구지면',
+      viewCount: 128,
+    }));
+
+    await renderWithProviders(<CommunityDetailScreen onBack={jest.fn()} postId={1} />, { language: 'ko' });
+
+    expect(await screen.findByTestId('v2-community-detail-author-meta')).toHaveTextContent('구지면 · 12분 전 · 조회 128');
+  });
+
+  test('지역과 조회수가 없으면 작성 시각만 보여주고 0으로 채우지 않는다', async () => {
+    jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({
+      author: { authorId: 3, authorName: 'woo_sm' },
+      createdAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+    }));
+
+    await renderWithProviders(<CommunityDetailScreen onBack={jest.fn()} postId={1} />, { language: 'ko' });
+
+    expect(await screen.findByTestId('v2-community-detail-author-meta')).toHaveTextContent('12분 전');
+  });
+
+  test('연결 장소 카드에 썸네일·분류·지역을 응답 값으로 보여준다', async () => {
+    jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({
+      places: [
+        {
+          category: '카페',
+          deleted: false,
+          imageUrl: 'https://cdn.test/place.jpg',
+          placeId: 17,
+          placeName: '오아시스 팝업 스토어',
+          region: '구지면',
+        },
+        { deleted: false, placeId: 18, placeName: '정보 없는 장소' },
+        { deleted: true, placeName: '삭제된 장소예요' },
+      ],
+    }));
+
+    await renderWithProviders(<CommunityDetailScreen onBack={jest.fn()} onOpenPlace={jest.fn()} postId={1} />, { language: 'ko' });
+
+    expect(await screen.findByTestId('v2-community-place-card-17-meta')).toHaveTextContent('카페 · 구지면');
+    expect(screen.getByTestId('v2-community-place-card-17-thumbnail')).toHaveStyle({ height: 50, width: 50 });
+    expect(screen.queryByTestId('v2-community-place-card-18-meta')).toBeNull();
+    expect(screen.queryByTestId('v2-community-place-card-18-thumbnail')).toBeNull();
+    expect(screen.getByText('삭제된 장소예요')).toBeTruthy();
+  });
+
+  test('게시글 사진이 있으면 본문 아래에 갤러리를 보여주고 없으면 숨긴다', async () => {
+    jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({
+      images: [
+        { imageId: 1, imageUrl: 'https://cdn.test/1.jpg', position: 0 },
+        { imageId: 2, imageUrl: 'https://cdn.test/2.jpg', position: 1 },
+      ],
+    }));
+
+    const view = await renderWithProviders(<CommunityDetailScreen onBack={jest.fn()} postId={1} />, { language: 'ko' });
+
+    expect(await screen.findByTestId('v2-community-detail-photo-1-count')).toHaveTextContent('2/2');
+    view.unmount();
+
+    jest.spyOn(communityApi, 'getPost').mockResolvedValue(detail({ images: [] }));
+    await renderWithProviders(<CommunityDetailScreen onBack={jest.fn()} postId={1} />, { language: 'ko' });
+
+    await waitFor(() => expect(screen.getByText('대소고 다녀왔어요')).toBeVisible());
+    expect(screen.queryByTestId('v2-community-detail-photos')).toBeNull();
+  });
+
   test('불러오는 동안 로딩 상태를 보여준다', async () => {
     jest.spyOn(communityApi, 'getPost').mockImplementation(() => new Promise(() => {}));
 
