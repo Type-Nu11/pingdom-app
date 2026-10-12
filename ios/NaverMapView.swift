@@ -114,7 +114,12 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         onRouteAnchor?(["x": point.x, "y": point.y])
     }
 
+    func mapView(_ mapView: NMFMapView, cameraIsChangingByReason reason: Int) {
+        updateRouteStyle()
+    }
+
     func mapViewCameraIdle(_ mapView: NMFMapView) {
+        updateRouteStyle()
         emitRouteAnchor()
         let target = mapView.cameraPosition.target
         onCameraIdle?(["lat": target.lat, "lng": target.lng])
@@ -156,16 +161,23 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
             }
             if points.count == raw.count, points.count >= 2,
                points.contains(where: { $0.lat != points[0].lat || $0.lng != points[0].lng }) {
-                let line = NMFPolylineOverlay(points)
-                line?.width = 6
-                line?.color = UIColor(red: 1, green: 0.098, blue: 0.337, alpha: 1)
-                line?.mapView = mapView
+                // The adapter supplies bounded curves; round joins avoid faceting thick segments.
+                let line = NMFPolylineOverlay()
+                line.line = NMGLineString(points: points)
+                line.color = UIColor(red: 1, green: 25.0 / 255, blue: 86.0 / 255, alpha: 1)
+                line.capType = .round
+                line.joinType = .round
+                line.globalZIndex = -100000
+                line.zIndex = 1
                 routeLine = line
+                updateRouteStyle()
+                line.mapView = mapView
                 routeAnchor = points[points.count / 2]
             }
             routeDirty = false
             emitRouteAnchor()
         }
+        updateRouteStyle()
         if markersDirty {
             let ids = Set(placeData.map { $0.id })
             for id in Array(placeMarkers.keys) where !ids.contains(id) {
@@ -252,6 +264,14 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         placeMarkers.values.forEach { $0.touchHandler = nil; $0.mapView = nil }
         userMarker.mapView = nil
     }
+    private func updateRouteStyle() {
+        guard let line = routeLine else { return }
+        let zoom = mapView.cameraPosition.zoom
+        let detail = min(1, max(0, (zoom - 14) / 3))
+        let lineWidth = CGFloat(8 + detail)
+        if line.width != lineWidth { line.width = lineWidth }
+    }
+
     private func makeUserLocationImage() -> UIImage {
         let size = CGSize(width: 30, height: 40)
         let renderer = UIGraphicsImageRenderer(size: size)

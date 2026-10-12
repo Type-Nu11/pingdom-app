@@ -1175,7 +1175,8 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getAllByText('추천 장소 1').length).toBeGreaterThan(0);
     expect(screen.getByTestId('map-navigation-map-surface')).toHaveStyle({
       borderRadius: 28,
-      width: 78,
+      width: '100%',
+      maxWidth: 78,
     });
     const handleTarget = screen.getByTestId('map-sheet-handle-target');
     expect(handleTarget).toHaveStyle({

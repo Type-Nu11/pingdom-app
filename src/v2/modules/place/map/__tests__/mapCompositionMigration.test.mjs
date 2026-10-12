@@ -53,12 +53,12 @@ test('the V2 production map preserves route callbacks and duplicate reservation 
   assert.match(screen, /pointerEvents=\{snapPoint === 'expanded' \? 'none' : 'auto'\}/);
 });
 
-test('map buttons expose immediate pressed-state feedback without delaying onPress', () => {
+test('navigation omits touch highlighting while place buttons retain pressed feedback', () => {
   const sheet = read('../sheet/components/MapBottomSheet.tsx');
   const navigation = read('../sheet/components/MapSheetBottomNavigation.tsx');
 
-  assert.match(navigation, /onPressIn=\{\(\) => setPressedTab\(id\)\}/);
-  assert.match(navigation, /getMapSheetTabSurfaceColor\(active, pressedTab === id, liquidGlass\)/);
+  assert.doesNotMatch(navigation, /setPressedTab|navigation\.pressedTint/);
+  assert.match(navigation, /getMapSheetTabSurfaceColor\(active, liquidGlass\)/);
   assert.match(sheet, /style=\{\(\{ pressed \}\) => \[styles\.previewBookmarkButton, pressed && styles\.pressed\]\}/);
   assert.match(sheet, /onPress=\{onPress\}/);
 });

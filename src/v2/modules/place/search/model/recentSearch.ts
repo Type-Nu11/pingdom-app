@@ -17,12 +17,14 @@ export type RecentSearch = Readonly<{
   category: RecentSearchCategory;
   id: string;
   query: string;
+  address?: string;
   searchedAt: string;
 }>;
 
 export type AddRecentSearchInput = Readonly<{
   category: RecentSearchCategory;
   query: string;
+  address?: string;
   searchedAt?: string;
 }>;
 
@@ -52,6 +54,7 @@ export function addRecentSearch(
     category: input.category,
     id: getRecentSearchId(query),
     query,
+    ...(typeof input.address === 'string' && input.address.trim() ? { address: input.address.trim() } : {}),
     searchedAt,
   };
 
@@ -70,7 +73,8 @@ export function sanitizeRecentSearches(value: unknown): readonly RecentSearch[] 
 
     const query = normalizeRecentSearchQuery(candidate.query);
     const id = getRecentSearchId(query);
-    const item = { ...candidate, id, query };
+    const item: RecentSearch = { category: candidate.category, searchedAt: candidate.searchedAt, id, query,
+      ...(typeof candidate.address === 'string' && candidate.address.trim() ? { address: candidate.address.trim() } : {}) };
     const current = uniqueItems.get(id);
     if (!current || Date.parse(item.searchedAt) > Date.parse(current.searchedAt)) {
       uniqueItems.set(id, item);

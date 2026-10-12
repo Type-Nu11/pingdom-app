@@ -1,5 +1,5 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
-import React, { createContext, memo, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, memo, useContext, useMemo, useRef } from 'react';
 import { Animated, PanResponder, Platform, Pressable, Text, View, type PlatformOSType } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,10 +26,8 @@ export type MapSheetNavigationTab = 'community' | 'favorites' | 'map' | 'recomme
 
 export const getMapSheetTabSurfaceColor = (
   active: boolean,
-  pressed: boolean,
   liquidGlass: AppTheme['liquidGlass'] = lightLiquidGlass,
 ) => {
-  if (pressed) return liquidGlass.navigation.pressedTint;
   return active ? liquidGlass.navigation.selectedTint : 'transparent';
 };
 
@@ -65,10 +63,10 @@ const InactiveMapIcon = ({ color }: { color: string }) => (
   </Svg>
 );
 
-const ActiveReservationIcon = ({ colors }: { colors: AppTheme['colors'] }) => (
+const ActiveReservationIcon = ({ colors, foreground }: { colors: AppTheme['colors']; foreground: string }) => (
   <Svg height={24} viewBox="0 0 24 24" width={24}>
     <Path d="M3 10.2 12 2l9 8.2v8.3A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5Z" fill={colors.primary} />
-    <Path d="m8.2 12.4 2.4 2.4 5.2-5.2" fill="none" stroke={colors.onPrimary} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
+    <Path d="m8.2 12.4 2.4 2.4 5.2-5.2" fill="none" stroke={foreground} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" testID="map-navigation-reservation-check" />
   </Svg>
 );
 
@@ -83,11 +81,10 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
 }: Props) {
   const { t } = useTranslation();
   const { colors, liquidGlass } = useTheme();
-  const { activeTarget } = useMapTutorial();
-  const selectedTab = activeTarget ?? activeTab;
   const styles = React.useMemo(() => createStyles(colors, liquidGlass), [colors, liquidGlass]);
   const insets = useSafeAreaInsets();
-  const [pressedTab, setPressedTab] = useState<MapSheetNavigationTab | null>(null);
+  const { activeTarget } = useMapTutorial();
+  const selectedTab = activeTarget ?? activeTab;
   const tabs = [
     { id: 'map' as const, label: t('map.navigation.map'), onPress: onOpenMap },
     { id: 'favorites' as const, label: t('map.navigation.favorites'), onPress: onOpenFavorites },
@@ -114,7 +111,6 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
       const tab = current.tabs[index];
       if (tab.id === lastDragTab.current) return;
       lastDragTab.current = tab.id;
-      setPressedTab(tab.id);
       if (tab.id !== current.activeTab) tab.onPress?.();
     };
     const claim = (_: unknown, gesture: { dx: number; dy: number }) => (
@@ -123,7 +119,6 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
     const finish = () => {
       dragging.current = false;
       lastDragTab.current = null;
-      setPressedTab(null);
     };
     return PanResponder.create({
       onMoveShouldSetPanResponder: claim,
@@ -175,7 +170,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                     ? <CommunityActiveAsset height={24} width={24} />
                     : <CommunityInactiveAsset color={colors.text} height={24} width={24} />
                   : active
-                    ? <ActiveReservationIcon colors={colors} />
+                    ? <ActiveReservationIcon colors={colors} foreground={liquidGlass.primaryCta.foreground} />
                     : <CheckInAsset color={colors.text} height={24} width={23} />;
 
             return (
@@ -186,15 +181,13 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 accessibilityState={{ selected: active }}
                 key={id}
                 onPress={() => { if (!dragging.current) onPress?.(); }}
-                onPressIn={() => setPressedTab(id)}
-                onPressOut={() => { if (!dragging.current) setPressedTab(null); }}
                 style={styles.navItem}
                 testID={`map-navigation-${id}`}
               >
                 <View
                   style={[
                     styles.navItemSurface,
-                    { backgroundColor: getMapSheetTabSurfaceColor(active, pressedTab === id, liquidGlass) },
+                    { backgroundColor: getMapSheetTabSurfaceColor(active, liquidGlass) },
                   ]}
                   testID={`map-navigation-${id}-surface`}
                 >
@@ -213,8 +206,6 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
         accessibilityRole="tab"
         accessibilityState={{ selected: selectedTab === 'recommendations' }}
         onPress={onOpenRecommendations}
-        onPressIn={() => setPressedTab('recommendations')}
-        onPressOut={() => setPressedTab(null)}
         style={styles.sendButton}
         testID="map-navigation-recommendations"
       >
@@ -227,9 +218,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
             rimColor={liquidGlass.navigation.rim}
             style={styles.sendButtonGlass}
             testID="map-navigation-recommendations-surface"
-            tintColor={pressedTab === 'recommendations'
-              ? liquidGlass.navigation.pressedTint
-              : selectedTab === 'recommendations'
+            tintColor={selectedTab === 'recommendations'
                 ? liquidGlass.navigation.selectedTint
                 : liquidGlass.navigation.tint}
           >
@@ -253,7 +242,7 @@ const createStyles = (
 ): Record<string, object> => ({
   navIcon: { alignItems: 'center', height: 28, justifyContent: 'center', width: 28 },
   navItem: { alignItems: 'center', flex: 1, justifyContent: 'center' },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 2, height: 56, justifyContent: 'center', width: 78 },
+  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 2, height: 56, justifyContent: 'center', width: '100%', maxWidth: 78 },
   navLabel: { color: colors.text, fontSize: 10, fontWeight: '500', lineHeight: 13 },
   navLabelActive: { color: colors.primary, fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 4 },
