@@ -1,5 +1,6 @@
 import {
   type InfiniteData,
+  type QueryClient,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -43,6 +44,35 @@ export const communityQueryKeys = {
   postsInfinite: (categoryId: string, params: ListPostsByCategoryParams) => ['v2', 'community', 'categories', categoryId, 'posts', 'infinite', params] as const,
   postsRoot: (categoryId: string) => ['v2', 'community', 'categories', categoryId, 'posts'] as const,
 };
+
+/**
+ * Patches one post's summary in every cached feed page (the "All" tab and the
+ * category tabs). The feed cards show like and comment counts, and the sheet
+ * stays mounted under the detail screen, so a change made there would
+ * otherwise keep showing the old number until the feed is refetched.
+ */
+function patchCachedFeedPost(
+  queryClient: QueryClient,
+  postId: number,
+  update: (post: CommunityPostSummary) => CommunityPostSummary,
+) {
+  const patch = (data: InfiniteData<CommunityPostPage> | undefined) => {
+    if (!data?.pages) return data;
+    return {
+      ...data,
+      pages: data.pages.map((page) => (
+        page.posts ? { ...page, posts: page.posts.map((post) => (post.postId === postId ? update(post) : post)) } : page
+      )),
+    };
+  };
+  queryClient.setQueriesData<InfiniteData<CommunityPostPage>>({ queryKey: communityQueryKeys.allPostsRoot }, patch);
+  queryClient.setQueriesData<InfiniteData<CommunityPostPage>>({
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key[0] === 'v2' && key[1] === 'community' && key[2] === 'categories' && key[4] === 'posts' && key[5] === 'infinite';
+    },
+  }, patch);
+}
 
 export function createCategoriesQueryOptions(
   api: Pick<CommunityApi, 'listCategories'> = communityApi,
@@ -247,9 +277,14 @@ export function useCreateComment(
   return useMutation({
     mutationFn: (body: CreateCommentBody) => api.createComment(postId, body),
     retry: false,
-    onSuccess: async () => queryClient.invalidateQueries({
-      queryKey: communityQueryKeys.commentsRoot(postId),
-    }),
+    onSuccess: async () => {
+      // A count the list response never carried stays absent rather than
+      // becoming a made-up 1.
+      patchCachedFeedPost(queryClient, postId, (post) => (
+        typeof post.commentCount === 'number' ? { ...post, commentCount: post.commentCount + 1 } : post
+      ));
+      await queryClient.invalidateQueries({ queryKey: communityQueryKeys.commentsRoot(postId) });
+    },
   });
 }
 
@@ -339,7 +374,8 @@ export function applyOptimisticLike(
  * rolls back to the pre-mutation snapshot, and a successful response
  * overwrites the optimistic value with the server's `{ likeCount, liked }`
  * (the source of truth) instead of refetching. Only this post's like cache
- * is touched — no other postId and no list query is invalidated.
+ * is touched — no other postId and no list query is invalidated. The settled
+ * count is also written into the cached feed cards for this post.
  */
 export function useToggleLike(
   postId: number,
@@ -369,6 +405,10 @@ export function useToggleLike(
     },
     onSuccess: (status) => {
       queryClient.setQueryData(queryKey, status);
+      const likeCount = status.likeCount;
+      if (typeof likeCount === 'number') {
+        patchCachedFeedPost(queryClient, postId, (post) => ({ ...post, likeCount }));
+      }
     },
   });
 }
