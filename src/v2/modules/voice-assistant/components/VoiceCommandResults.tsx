@@ -22,7 +22,16 @@ type Props = {
   historical?: boolean;
 };
 
-export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled = false, historical = false }: Props) {
+export function VoiceCommandResults(props: Props) {
+  const { t } = useTranslation();
+  return <>
+    {props.state.phase === 'result' && props.state.text && <Copy testID="voice-assistant-message" accessibilityLiveRegion="polite">{props.state.text}</Copy>}
+    {props.state.phase === 'result' && props.state.followUpError && <Copy accessibilityRole="alert">{t(`voiceAssistant.sessionErrors.${props.state.followUpError}`)}</Copy>}
+    <VoiceCommandResultBody {...props} />
+  </>;
+}
+
+function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = false, historical = false }: Props) {
   const { t } = useTranslation();
   const resultPlaces = state.phase === 'result' && state.result.outcome.status === 'succeeded'
     ? (state.result.command === 'searchNearbyPlaces' || state.result.command === 'searchNearbyReservablePlaces')

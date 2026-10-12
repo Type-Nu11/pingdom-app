@@ -1,3 +1,4 @@
+import type { AppCommandResult, ProviderEnvelope } from '../model/voiceAssistantCommand.types';
 import { apiClient, type ApiClient } from '../../../shared/api';
 import type { components } from '../../../shared/api/generated/voiceAi';
 import { voiceSessionExpiresAt } from '../model/voiceSessionExpiry';
@@ -81,4 +82,9 @@ export function createVoiceSessionApi(client: ApiClient = apiClient) {
     },
   };
 }
-export type VoiceSessionApi = ReturnType<typeof createVoiceSessionApi>;
+export type VoiceSessionApi = ReturnType<typeof createVoiceSessionApi> & {
+  /** Chat-only continuation; legacy session transport remains a single-envelope exchange. */
+  next?: (id: string, signal: AbortSignal) => Promise<ProviderEnvelope | undefined>;
+  recordResult?: (result: AppCommandResult) => void;
+  reset?: () => void;
+};

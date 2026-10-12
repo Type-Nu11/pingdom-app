@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { createVoiceCommandDispatcher, type VoiceCommandRuntime } from '../model/voiceCommands';
+import { createAiChatSessionApi } from '../api/aiChatSessionApi';
 import { useVoiceSession } from './useVoiceSession';
 import type { VoiceEnvelopeConsumer, VoiceSessionController } from '../model/voiceSession';
 import type { AppCommandResult, ClarificationField } from '../model/voiceAssistantCommand.types';
@@ -14,12 +15,13 @@ export type VoiceCommandViewState =
   | { phase: 'idle' | 'processing' | 'canceled' | 'unrecognized' }
   | { phase: 'assistant'; text: string }
   | { phase: 'clarification'; field: ClarificationField }
-  | { phase: 'result'; result: AppCommandResult }
+  | { phase: 'result'; result: AppCommandResult; text?: string; followUpError?: VoiceSessionErrorCode }
   | { phase: 'error'; code: VoiceSessionErrorCode };
 
-/** App-owned context never enters the gateway body. Only final text enters the gateway. */
+/** Location/account identifiers remain app-owned. Chat receives final text and projected tool results. */
 export function useVoiceCommands(context: VoiceCommandContext) {
   const queryClient = useQueryClient();
+  const api = useMemo(() => createAiChatSessionApi(), [context.accountRevision]);
   const latest = useRef(context); latest.current = context;
   const sessionRef = useRef<VoiceSessionController | undefined>(undefined);
   const revision = useRef(0);
@@ -28,9 +30,9 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   const dispatcher = useMemo(() => createVoiceCommandDispatcher({
     runtime: () => ({ ...latest.current, queryClient, contextRevision: revision.current,
       now: Date.now, monotonic: () => performance.now(), session: sessionRef.current?.getIdentity() }),
-    publish: result => setCommandState({ phase: 'result', result }),
+    publish: result => { api.recordResult(result); setCommandState({ phase: 'result', result }); },
     stopSession: () => sessionRef.current?.close(),
-  }), [queryClient]);
+  }), [queryClient, api]);
   const consume = useCallback<VoiceEnvelopeConsumer>(async (envelope, delivery) => {
     if (!delivery.isCurrent() || delivery.signal.aborted) return;
     if (envelope.kind === 'command_request') await dispatcher.consume(envelope, delivery);
@@ -40,9 +42,9 @@ export function useVoiceCommands(context: VoiceCommandContext) {
       else setCommandState({ phase: 'error',
         code: envelope.code === 'PROVIDER_UNAVAILABLE' ? 'PROVIDER_UNAVAILABLE' : 'INVALID_RESPONSE' });
     }
-    else setCommandState({ phase: 'assistant', text: envelope.text }); // Plain conversation only; never dispatch, confirm, or speak it.
+    else setCommandState(current => current.phase === 'result' ? { ...current, text: envelope.text } : { phase: 'assistant', text: envelope.text }); // Plain conversation only; never dispatch, confirm, or speak it.
   }, [dispatcher]);
-  const { controller, state } = useVoiceSession(context.accountRevision, consume);
+  const { controller, state } = useVoiceSession(context.accountRevision, consume, api);
   sessionRef.current = controller;
   useLayoutEffect(() => {
     if (commandState.phase !== 'result' || commandState.result.command !== 'prepareReservation'
@@ -78,7 +80,8 @@ export function useVoiceCommands(context: VoiceCommandContext) {
       const snapshot = controller.getSnapshot();
       if (snapshot.phase === 'creating' || snapshot.phase === 'sending') setCommandState({ phase: 'processing' });
       if (snapshot.phase === 'closed') { dispatcher.clear(); setCommandState({ phase: 'canceled' }); }
-      if (snapshot.error) setCommandState({ phase: 'error', code: snapshot.error });
+      if (snapshot.error) setCommandState(current => current.phase === 'result'
+        ? { ...current, followUpError: snapshot.error! } : { phase: 'error', code: snapshot.error! });
     });
     return () => { unsubscribe(); dispatcher.clear(); };
   }, [controller, dispatcher]);

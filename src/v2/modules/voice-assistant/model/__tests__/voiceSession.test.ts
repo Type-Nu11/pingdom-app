@@ -305,3 +305,17 @@ test('provider schema violation has no retry affordance', async () => {
   api.send.mockRejectedValueOnce(new ApiError('private', { status: 502, code: 'PROVIDER_RESPONSE_INVALID' }));
   await controller.send('input'); expect(controller.getSnapshot()).toMatchObject({ error: 'PROVIDER_RESPONSE_INVALID', retryAvailable: false });
 });
+
+
+test('chat continuation delivers tool calls and the follow-up answer within the same owned turn', async () => {
+  const consumer = jest.fn();
+  const api = {
+    create: async () => ({ sessionId: 'chat', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => envelope('tool-1'),
+    next: jest.fn().mockResolvedValueOnce(envelope('follow-up')).mockResolvedValueOnce(undefined),
+  };
+  const controller = tracked(createVoiceSessionController(consumer, api));
+  await controller.start(); await controller.send('갈비탕집 있어?');
+  expect(consumer.mock.calls.map(call => call[0].id)).toEqual(['tool-1', 'follow-up']);
+  expect(controller.getSnapshot().phase).toBe('ready');
+});
