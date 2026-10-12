@@ -17,6 +17,7 @@ import CommentsSection from '../components/CommentsSection';
 import HeaderIconButton from '../components/HeaderIconButton';
 import LikeButton from '../components/LikeButton';
 import PostAuthor from '../components/PostAuthor';
+import PostPhotoGallery from '../components/PostPhotoGallery';
 import { useCreateComment, useInfiniteComments, usePost, type CommunityPostDetail } from '../hooks/useCommunity';
 import { useCommunityPlaceEntry } from '../hooks/useCommunityPlaceEntry';
 import { validateCommentContent } from '../model/commentForm';
@@ -296,6 +297,8 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
               {/* Figma keeps the author's blank lines between paragraphs, so the
                   content renders as one text block with its newlines intact. */}
               <Body testID="v2-community-detail-body">{postQuery.data?.content ?? ''}</Body>
+
+              <PostPhotoGallery images={postQuery.data?.images} />
 
               <Places
                 onOpenPlace={onOpenPlace}

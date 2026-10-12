@@ -23,6 +23,7 @@ export const communityResources = {
       nextPageRetry: 'Retry',
     },
     detail: {
+      photos: { galleryA11y: 'Post photos, {{count}}', photoA11y: 'Post photo {{index}} of {{total}}' },
       back: 'Back',
       settings: 'Post options',
       placeTagPrefix: 'View place',
@@ -155,6 +156,7 @@ export const communityResources = {
       nextPageRetry: '다시 시도',
     },
     detail: {
+      photos: { galleryA11y: '게시글 사진 {{count}}장', photoA11y: '게시글 사진 {{total}}장 중 {{index}}번째' },
       back: '뒤로',
       settings: '게시글 옵션',
       placeTagPrefix: '장소 보기',
@@ -287,6 +289,7 @@ export const communityResources = {
       nextPageRetry: '再試行',
     },
     detail: {
+      photos: { galleryA11y: '投稿の写真 {{count}}枚', photoA11y: '投稿の写真 {{total}}枚中 {{index}}枚目' },
       back: '戻る',
       settings: '投稿のオプション',
       placeTagPrefix: '場所を見る',
@@ -411,6 +414,7 @@ export const communityResources = {
     comment: '评论',
     list: { views: '浏览 {{count}}', likesA11y: '点赞 {{count}} 个', commentsA11y: '评论 {{count}} 条', photosA11y: '照片 {{count}} 张', loading: '正在加载帖子…', nextPageError: '无法加载更多帖子。', nextPageRetry: '重试' },
     detail: {
+      photos: { galleryA11y: '帖子照片 {{count}} 张', photoA11y: '帖子照片，第 {{index}} 张，共 {{total}} 张' },
       back: '返回',
       settings: '帖子选项',
       placeTagPrefix: '查看地点',
@@ -507,6 +511,7 @@ export const communityResources = {
     comment: '留言',
     list: { views: '瀏覽 {{count}}', likesA11y: '按讚 {{count}} 個', commentsA11y: '留言 {{count}} 則', photosA11y: '照片 {{count}} 張', loading: '正在載入貼文…', nextPageError: '無法載入更多貼文。', nextPageRetry: '再試一次' },
     detail: {
+      photos: { galleryA11y: '貼文照片 {{count}} 張', photoA11y: '貼文照片，第 {{index}} 張，共 {{total}} 張' },
       back: '返回',
       settings: '貼文選項',
       placeTagPrefix: '查看地點',
@@ -603,6 +608,7 @@ export const communityResources = {
     comment: 'Bình luận',
     list: { views: 'Lượt xem {{count}}', likesA11y: '{{count}} lượt thích', commentsA11y: '{{count}} bình luận', photosA11y: '{{count}} ảnh', loading: 'Đang tải bài viết…', nextPageError: 'Không thể tải thêm bài viết.', nextPageRetry: 'Thử lại' },
     detail: {
+      photos: { galleryA11y: '{{count}} ảnh của bài viết', photoA11y: 'Ảnh bài viết {{index}} trên {{total}}' },
       back: 'Quay lại',
       settings: 'Tùy chọn bài viết',
       placeTagPrefix: 'Xem địa điểm',
@@ -717,6 +723,7 @@ export const communityResources = {
     comment: 'Comentar',
     list: { views: 'Vistas {{count}}', likesA11y: '{{count}} me gusta', commentsA11y: '{{count}} comentarios', photosA11y: '{{count}} fotos', loading: 'Cargando publicaciones…', nextPageError: 'No se pudieron cargar más publicaciones.', nextPageRetry: 'Reintentar' },
     detail: {
+      photos: { galleryA11y: 'Fotos de la publicación: {{count}}', photoA11y: 'Foto {{index}} de {{total}} de la publicación' },
       back: 'Atrás',
       settings: 'Opciones de la publicación',
       placeTagPrefix: 'Ver lugar',
@@ -833,6 +840,7 @@ export const communityResources = {
     comment: 'Comentar',
     list: { views: 'Visualizações {{count}}', likesA11y: '{{count}} curtidas', commentsA11y: '{{count}} comentários', photosA11y: '{{count}} fotos', loading: 'Carregando publicações…', nextPageError: 'Não foi possível carregar mais publicações.', nextPageRetry: 'Tentar novamente' },
     detail: {
+      photos: { galleryA11y: 'Fotos da publicação: {{count}}', photoA11y: 'Foto {{index}} de {{total}} da publicação' },
       back: 'Voltar',
       settings: 'Opções da publicação',
       placeTagPrefix: 'Ver lugar',
