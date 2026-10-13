@@ -31,7 +31,7 @@ function setup() {
     if (path.endsWith('/quote') && quoteFailure) throw quoteFailure;
     if (failure) throw failure;
     if (delay) return { data: await delay };
-    return { data: path === '/places/' ? places : path.endsWith('/availabilities') ? slots : path.endsWith('/quote') ? quote : detail };
+    return { data: path === '/places' ? places : path.endsWith('/availabilities') ? slots : path.endsWith('/quote') ? quote : detail };
   } } as unknown as ApiTransport;
   const client = createApiClient(transport);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
@@ -85,7 +85,7 @@ test('search reuses canonical keys, category and bounded list params; projects o
   const x = setup(); await x.controller.start();
   const result = await x.send(search({ touristCategory: 'CAFE' }));
   expect(result?.outcome).toEqual({ status: 'succeeded', data: { places: [facts], coverage: 'bounded_candidates' } });
-  expect(x.calls[0]).toMatchObject({ path: '/places/', params: { page: 1, limit: 12, latitude: 37.5, longitude: 127, radiusKm: 5, sort: 'NEAREST', touristCategory: 'CAFE' } });
+  expect(x.calls[0]).toMatchObject({ path: '/places', params: { page: 1, limit: 12, latitude: 37.5, longitude: 127, radiusKm: 5, sort: 'NEAREST', touristCategory: 'CAFE' } });
   expect(x.calls[0].params).not.toHaveProperty('date');
   expect(x.queryClient.getQueryData(reservationQueryKeys.availabilities(1, {}))).toEqual([slot()]);
   expect(JSON.stringify(result)).not.toMatch(/latitude|longitude|price|cancellation/);
@@ -401,7 +401,7 @@ test('keyword discovery passes the keyword and app coordinates without any reser
   expect(await x.send(generalSearch({ keyword: ' 갈비탕 ', limit: 2 }))).toMatchObject({ outcome: {
     status: 'succeeded', data: { places: [expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 })] },
   } });
-  expect(x.calls).toEqual([expect.objectContaining({ path: '/places/', params: {
+  expect(x.calls).toEqual([expect.objectContaining({ path: '/places', params: {
     keyword: '갈비탕', latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 2, sort: 'NEAREST',
   } })]);
   expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
@@ -414,7 +414,7 @@ test('general discovery without category or booking conditions reads actual plac
   const result = await x.send(generalSearch());
   expect(result).toMatchObject({ command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: {
     places: [expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 }), expect.objectContaining({ id: 3 })], coverage: 'nearest_places' } } });
-  expect(x.calls).toEqual([expect.objectContaining({ path: '/places/', params: {
+  expect(x.calls).toEqual([expect.objectContaining({ path: '/places', params: {
     latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 3, sort: 'NEAREST' } })]);
   expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
   const count = x.calls.length;

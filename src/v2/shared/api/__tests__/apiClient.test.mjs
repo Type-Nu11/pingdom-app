@@ -119,16 +119,16 @@ test('app composition can inject the authenticated transport after the shared cl
   }
 });
 
-test('only places GET uses the proxy slash workaround; other collection contracts and options stay intact', async () => {
+test('GET preserves the declared route for places and all other endpoints', async () => {
   const calls = [];
   const client = createApiClient({ get: async (path, options) => {
     calls.push({ path, options }); return { data: {} };
   } });
   const options = { params: { page: 1, limit: 20 }, signal: new AbortController().signal };
-  for (const path of ['/places', '/reservations', '/coupons', '/location-check-ins', '/places/', '/places/trends', '/users/me']) {
+  for (const path of ['/places', '/reservations', '/coupons', '/location-check-ins', '/places/', '/places/trends', '/places/map', '/places/70095', '/places?keyword=test', '/users/me']) {
     await client.get(path, options);
   }
-  assert.deepEqual(calls.map(call => call.path), ['/places/', '/reservations', '/coupons', '/location-check-ins', '/places/', '/places/trends', '/users/me']);
+  assert.deepEqual(calls.map(call => call.path), ['/places', '/reservations', '/coupons', '/location-check-ins', '/places/', '/places/trends', '/places/map', '/places/70095', '/places?keyword=test', '/users/me']);
   assert.ok(calls.every(call => call.options.params === options.params
     && call.options.signal === options.signal
     && call.options.headers['X-Client-Type'] === 'App'));
