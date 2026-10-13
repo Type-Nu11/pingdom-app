@@ -74,17 +74,17 @@ test('partial speech stays on screen and final speech sends once after three sec
   await renderWithProviders(element);
   await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
   expect(x.session.start).toHaveBeenCalledTimes(1);
-  expect(screen.getByTestId('voice-listening-prompt')).toHaveTextContent('듣고있어요!');
+  expect(screen.getByTestId('voice-listening-prompt')).toHaveProp('placeholder', '듣고있어요!');
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 취소' })).toBeNull();
   await act(() => x.emit({ type: 'partial', text: '카페' }));
   expect(screen.getByTestId('voice-partial')).toBeVisible();
-  expect(screen.getByTestId('voice-partial')).toHaveTextContent('카페');
+  expect(screen.getByTestId('voice-partial')).toHaveDisplayValue('카페');
   expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
   await act(() => { x.emit({ type: 'final', text: '카페 검색' }); x.emit({ type: 'final', text: '카페 검색' }); });
   expect(submit).not.toHaveBeenCalled();
-  expect(screen.getByTestId('voice-listening-prompt')).toHaveTextContent('카페 검색');
+  expect(screen.getByTestId('voice-listening-prompt')).toHaveDisplayValue('카페 검색');
   expect(screen.queryByText(voiceAssistantResources.ko.command.submission)).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 취소' })).toBeNull();
@@ -127,6 +127,41 @@ test.each([['ko', 'ko-KR'], ['en', 'en-US']] as const)('%s AI entry starts STT o
   await fireEvent.press(screen.getByRole('button', { name: voiceAssistantResources[language].stop }));
   await act(() => x.emit({ type: 'final', text: 'hello' }));
   expect(submit).toHaveBeenCalledTimes(1);
+});
+
+test.each(['', '용짬뽕'] as const)('tapping the listening composer switches directly to typing and preserves %s', async partial => {
+  const x = speech();
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} autoStart serverSubmission onFinalInput={submit} onClose={jest.fn()} />).element);
+  await waitFor(() => expect(x.session.start).toHaveBeenCalledTimes(1));
+  if (partial) await act(() => x.emit({ type: 'partial', text: partial }));
+  const input = screen.getByLabelText('요청 내용');
+  expect(input).toHaveProp('editable', true);
+  await fireEvent(input, 'focus');
+  expect(screen.getByLabelText('요청 내용')).toBe(input);
+  expect(input).toHaveDisplayValue(partial);
+  expect(x.session.cancel).toHaveBeenCalledTimes(1);
+  expect(x.session.stop).not.toHaveBeenCalled();
+  expect(screen.queryByRole('button', { name: '중지하고 보내기' })).toBeNull();
+  await act(() => x.emit({ type: 'final', text: '늦게 도착한 음성' }));
+  expect(submit).not.toHaveBeenCalled();
+  expect(input).toHaveDisplayValue(partial);
+  await fireEvent.changeText(input, '용짬뽕 찾아');
+  await fireEvent(input, 'submitEditing');
+  expect(submit).toHaveBeenCalledTimes(1);
+  expect(submit.mock.calls[0][0]).toMatchObject({ text: '용짬뽕 찾아', source: 'text' });
+});
+
+test('typing during automatic permission lookup prevents late native capture', async () => {
+  const x = speech();
+  let finish!: (permission: 'granted') => void;
+  x.adapter.getPermission = () => new Promise(resolve => { finish = resolve; });
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} autoStart onClose={jest.fn()} />).element);
+  await fireEvent(screen.getByLabelText('요청 내용'), 'focus');
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '텍스트 요청');
+  await act(async () => finish('granted'));
+  expect(x.session.start).not.toHaveBeenCalled();
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('텍스트 요청');
 });
 
 test('automatic STT permission rejection keeps the text alternative available', async () => {

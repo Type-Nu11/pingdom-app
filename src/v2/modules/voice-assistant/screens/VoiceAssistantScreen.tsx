@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Keyboard, Linking, ScrollView } from 'react-native';
+import { AppState, Keyboard, Linking, ScrollView, type TextInput as NativeTextInput } from 'react-native';
 import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-controller';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,6 +46,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   // Panel/session memory only. Never persisted, logged, or treated as command provenance.
   const [currentRequest, setCurrentRequest] = useState('');
   const contentRef = useRef<ScrollView>(null);
+  const textInputRef = useRef<NativeTextInput>(null);
+  const focusAfterCapture = useRef(false);
   const activeTurn = useRef<{ request: string } | null>(null);
   const originalRequest = useRef('');
   const answers = useRef<Record<string, string>>({});
@@ -86,6 +88,12 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const showDetails = (state.phase !== 'listening' || !!pickerField) && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
     || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
     || !!currentRequest || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
+  useEffect(() => {
+    if (!focusAfterCapture.current) return;
+    focusAfterCapture.current = false;
+    // The composer may move into the existing result panel when capture ends.
+    textInputRef.current?.focus();
+  }, [state.phase, showDetails]);
   const pickerVisible = !!pickerField && (!selections[pickerField] || !!editingPicker);
   const confirmSelection = async (selection: PickerSelection) => {
     if (confirming.current || busy || pending) return;
@@ -139,22 +147,25 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const composer = (embedded = false) => <Composer testID="voice-assistant-composer" $embedded={embedded}>
     <InputRow $embedded={embedded}>
       <PingdyInputIcon />
-      {state.phase === 'listening' ? <ListeningText testID={state.partial ? 'voice-partial' : 'voice-listening-prompt'}
-        accessibilityLiveRegion="polite" numberOfLines={1}>{state.partial || state.draft || t('voiceAssistant.listeningPrompt')}</ListeningText>
-        : <Input accessibilityLabel={t('voiceAssistant.input')} editable={!busy && !pending}
+      <Input ref={textInputRef} accessibilityLabel={t('voiceAssistant.input')} editable={!pending}
+        testID={state.phase === 'listening' ? (state.partial ? 'voice-partial' : 'voice-listening-prompt') : undefined}
         onFocus={() => {
           clearExpectedSelection();
           if (showDetails) setEditingInSheet(true);
-          if (previousTurnVisible && state.delivery !== 'none') {
+          if (busy) {
+            // Editing cancels capture synchronously; stop() would submit the voice result.
+            focusAfterCapture.current = true;
+            controller.edit(state.partial || state.draft);
+          } else if (previousTurnVisible && state.delivery !== 'none') {
             controller.edit('');
             if (!clarificationField && !editingPicker) { setSelections({}); originalRequest.current = ''; onCommandFeedbackDismiss?.(); }
           }
         }}
         onBlur={() => setEditingInSheet(false)}
-        placeholder={t('voiceAssistant.placeholder')} placeholderTextColor={theme.colors.textAlternative}
-        value={feedback ? '' : state.draft} onChangeText={text => { if (previousTurnVisible && !clarificationField && !editingPicker) onCommandFeedbackDismiss?.(); controller.edit(text); }} returnKeyType="send"
+        placeholder={t(state.phase === 'listening' ? 'voiceAssistant.listeningPrompt' : 'voiceAssistant.placeholder')} placeholderTextColor={theme.colors.textAlternative}
+        value={feedback ? '' : state.partial || state.draft} onChangeText={text => { if (previousTurnVisible && !clarificationField && !editingPicker) onCommandFeedbackDismiss?.(); controller.edit(text); }} returnKeyType="send"
         onSubmitEditing={() => { if (!submitDisabled) void controller.submit(); }}
-        autoCorrect={false} spellCheck={false} autoComplete="off" />}
+        autoCorrect={false} spellCheck={false} autoComplete="off" />
       {state.phase === 'listening' ? <RecordingButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.stop')}
         onPress={() => { void controller.stop(); }}>
         <StopIcon />
@@ -319,15 +330,6 @@ const Input = styled(TextInput)`
   font-size: 18px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.text};
-`;
-const ListeningText = styled(Text)`
-  flex: 1;
-  min-width: 0px;
-  font-family: ${({ theme }) => theme.typography.body.fontFamily};
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 23px;
-  color: ${({ theme }) => theme.colors.textMuted};
 `;
 const AssistantMessage = styled.View<{ $results?: boolean }>`align-self: stretch; gap: 6px;`;
 const ResultRequest = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px; font-weight: 500;`;
