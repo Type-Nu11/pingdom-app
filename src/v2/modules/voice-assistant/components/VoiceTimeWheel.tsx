@@ -8,14 +8,16 @@ const ROW_HEIGHT = 34;
 type Item = { value: number; label: string; accessibilityLabel?: string };
 
 /** Native snapping keeps the visible center row aligned with the chosen time. */
-function WheelColumn({ items, value, column, cyclic = true, disabled, onChange, onMoving }: {
+function WheelColumn({ items, value, column, cyclic: repeat = true, disabled, onChange, onMoving }: {
   items: Item[]; value: number; column: string; cyclic?: boolean; disabled: boolean;
   onChange: (value: number) => void; onMoving: (moving: boolean) => void;
 }) {
   const ref = useRef<ScrollView>(null);
+  const cyclic = repeat && items.length > 1;
   const values = cyclic ? [...items, ...items, ...items] : items;
   const initial = (cyclic ? items.length : 0) + Math.max(0, items.findIndex(item => item.value === value));
   const settle = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!values.length) { onMoving(false); return; }
     const index = Math.max(0, Math.min(values.length - 1, Math.round(event.nativeEvent.contentOffset.y / ROW_HEIGHT)));
     onChange(values[index].value); onMoving(false);
     if (cyclic && (index < items.length || index >= items.length * 2)) {
@@ -30,27 +32,37 @@ function WheelColumn({ items, value, column, cyclic = true, disabled, onChange, 
     {values.map((item, index) => <WheelRow key={index} accessible={!cyclic || (index >= items.length && index < items.length * 2)} accessibilityRole="button" accessibilityLabel={item.accessibilityLabel ?? item.label}
       accessibilityState={{ selected: item.value === value, disabled }} disabled={disabled}
       onPress={() => { onChange(item.value); onMoving(false); ref.current?.scrollTo({ y: index * ROW_HEIGHT, animated: true }); }}>
-      <WheelLabel $selected={item.value === value} $distance={Math.min(2, Math.abs(index - initial))}>{item.label}</WheelLabel>
+      <WheelLabel $selected={index === initial} $distance={Math.min(2, Math.abs(index - initial))}>{item.label}</WheelLabel>
     </WheelRow>)}
   </Column>;
 }
 
-export function VoiceTimeWheel({ value, disabled, onChange, onMoving }: {
+export function VoiceTimeWheel({ value, disabled, availableTimes, onChange, onMoving }: {
   value: string; disabled: boolean; onChange: (time: string) => void; onMoving: (moving: boolean) => void;
+  availableTimes?: readonly string[];
 }) {
   const { t } = useTranslation();
   const [hour, minute] = value.split(':').map(Number);
-  const set = (h: number, m: number) => onChange(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+  const published = availableTimes?.map(time => { const [h, m] = time.split(':').map(Number); return { time, hour: h, minute: m }; });
+  const set = (h: number, m: number) => {
+    const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    if (!published) { onChange(time); return; }
+    const choice = published.find(item => item.time === time) ?? published.find(item => item.hour === h)
+      ?? published.find(item => Math.floor(item.hour / 12) === Math.floor(h / 12));
+    if (choice) onChange(choice.time);
+  };
   // Preserve any existing exact minute; new wheel choices follow the Figma 10-minute cadence.
-  const minutes = [...new Set([0, 10, 20, 30, 40, 50, minute])].sort((a, b) => a - b);
+  const minutes = [...new Set(published ? published.filter(item => item.hour === hour).map(item => item.minute) : [0, 10, 20, 30, 40, 50, minute])].sort((a, b) => a - b);
+  const periods = published ? [...new Set(published.map(item => Math.floor(item.hour / 12)))].sort() : [0, 1];
+  const hours = published ? [...new Set(published.filter(item => Math.floor(item.hour / 12) === Math.floor(hour / 12)).map(item => item.hour % 12))].sort((a, b) => a - b) : Array.from({ length: 12 }, (_, index) => index);
   return <WheelFrame testID="voice-time-wheel">
     <SelectedRow pointerEvents="none" />
-    <WheelColumn column="period" items={[0, 1].map(period => ({ value: period, label: t(`voiceAssistant.picker.${period ? 'pm' : 'am'}`) }))}
+    <WheelColumn column="period" items={periods.map(period => ({ value: period, label: t(`voiceAssistant.picker.${period ? 'pm' : 'am'}`) }))}
       value={Math.floor(hour / 12)} cyclic={false} disabled={disabled} onMoving={onMoving}
       onChange={period => set(hour % 12 + period * 12, minute)} />
-    <WheelColumn column="hour" items={Array.from({ length: 12 }, (_, index) => ({ value: index, label: t('voiceAssistant.picker.hour', { count: index || 12 }) }))}
+    <WheelColumn key={`hour-${periods.length ? Math.floor(hour / 12) : 'empty'}`} column="hour" items={hours.map(index => ({ value: index, label: t('voiceAssistant.picker.hour', { count: index || 12 }) }))}
       value={hour % 12} disabled={disabled} onMoving={onMoving} onChange={h => set(h + Math.floor(hour / 12) * 12, minute)} />
-    <WheelColumn column="minute" items={minutes.map(m => ({ value: m, label: t('voiceAssistant.picker.minute', { count: m }).replace(String(m), String(m).padStart(2, '0')), accessibilityLabel: t('voiceAssistant.picker.minute', { count: m }) }))}
+    <WheelColumn key={published ? `minute-${hour}` : 'minute'} column="minute" items={minutes.map(m => ({ value: m, label: t('voiceAssistant.picker.minute', { count: m }).replace(String(m), String(m).padStart(2, '0')), accessibilityLabel: t('voiceAssistant.picker.minute', { count: m }) }))}
       value={minute} disabled={disabled} onMoving={onMoving} onChange={m => set(hour, m)} />
   </WheelFrame>;
 }

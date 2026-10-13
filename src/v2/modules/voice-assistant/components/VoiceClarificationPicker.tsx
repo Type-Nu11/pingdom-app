@@ -28,9 +28,10 @@ export function formatPickerSelection(field: PickerField, value: string, languag
   return value.split('–').map(time => new Intl.DateTimeFormat(language, { hour: 'numeric', ...(time.endsWith(':00') ? {} : { minute: '2-digit' as const }), hour12: true, timeZone: 'UTC' }).format(new Date(`2000-01-01T${time}:00Z`))).join(' – ');
 }
 
-/** User selections only. These are search conditions, never availability or a reservation. */
-export function VoiceClarificationPicker({ field, timezone, initialValue, disabled = false, request, conditions, onConfirm }: {
+/** Selection UI only; the caller owns search or verified reservation actions. */
+export function VoiceClarificationPicker({ field, timezone, initialValue, disabled = false, request, conditions, availableDates, availableTimes, onConfirm }: {
   field: PickerField; timezone: string; initialValue?: string; disabled?: boolean; request?: string; conditions?: ReactNode;
+  availableDates?: readonly string[]; availableTimes?: readonly string[];
   onConfirm: (selection: PickerSelection) => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -38,13 +39,15 @@ export function VoiceClarificationPicker({ field, timezone, initialValue, disabl
   const today = localPickerDate(timezone);
   const [date, setDate] = useState(initialValue && field === 'date' ? initialValue : '');
   const [month, setMonth] = useState(() => {
-    const [year, number] = (date || today).split('-').map(Number);
+    const [year, number] = (date || availableDates?.[0] || today).split('-').map(Number);
     return { year, month: number };
   });
   const [quantity, setQuantity] = useState(field === 'quantity' && initialValue ? Number(initialValue) : 2);
-  const [time, setTime] = useState(() => field === 'timeRange' && initialValue ? initialValue.split('–')[0] : '14:00');
+  const [time, setTime] = useState(() => field === 'timeRange' && initialValue ? initialValue.split('–')[0] : availableTimes?.[0] ?? '14:00');
   const [moving, setMoving] = useState(false);
-  const valid = field === 'date' ? !!date && date >= today : field === 'timeRange' ? /^([01]\d|2[0-3]):[0-5]\d$/.test(time)
+  const dateDisabled = (value: string) => disabled || value < today || (availableDates !== undefined && !availableDates.includes(value));
+  const monthKey = `${month.year}-${String(month.month).padStart(2, '0')}`;
+  const valid = field === 'date' ? !!date && !dateDisabled(date) : field === 'timeRange' ? /^([01]\d|2[0-3]):[0-5]\d$/.test(time) && (availableTimes === undefined || availableTimes.includes(time))
     : quantity >= VOICE_QUANTITY_LIMITS.min && quantity <= VOICE_QUANTITY_LIMITS.max;
   const days = buildCalendarDays(month);
   const selectedValue = field === 'date' ? date : field === 'timeRange' ? time : String(quantity);
@@ -52,26 +55,26 @@ export function VoiceClarificationPicker({ field, timezone, initialValue, disabl
     : selectedValue ? formatPickerSelection(field, selectedValue, i18n.language) : '';
   return <Panel testID={`voice-picker-${field}`}>
     <QuestionGroup>
-      {!!request && <Query>“{request}”</Query>}
+      {!!request && <Query testID="voice-result-request">“{request}”</Query>}
       <Question accessibilityRole="header" accessibilityLiveRegion="polite">{copy(field)}</Question>
     </QuestionGroup>
     {conditions}
     {field === 'date' && <Calendar>
       <MonthRow>
-        <MonthArrow accessibilityRole="button" accessibilityLabel={copy('previousMonth')} disabled={disabled || `${month.year}-${String(month.month).padStart(2, '0')}` <= today.slice(0, 7)}
+        <MonthArrow accessibilityRole="button" accessibilityLabel={copy('previousMonth')} disabled={disabled || monthKey <= (availableDates?.[0] ?? today).slice(0, 7)}
           onPress={() => setMonth(current => shiftCalendarMonth(current, -1))}><PreviousIcon /></MonthArrow>
         <MonthLabel>{formatCalendarMonth(month, i18n.language)}</MonthLabel>
-        <MonthArrow accessibilityRole="button" accessibilityLabel={copy('nextMonth')} disabled={disabled}
+        <MonthArrow accessibilityRole="button" accessibilityLabel={copy('nextMonth')} disabled={disabled || (availableDates !== undefined && (!availableDates.length || monthKey >= availableDates[availableDates.length - 1].slice(0, 7)))}
           onPress={() => setMonth(current => shiftCalendarMonth(current, 1))}><NextIcon /></MonthArrow>
       </MonthRow>
       <Grid>{copy('weekdays').split(',').map(day => <DayLabel key={day}>{day}</DayLabel>)}</Grid>
       <Grid>{days.map((day, index) => day ? <Day key={day.date} $last={index >= days.length - 7}
-        accessibilityRole="button" accessibilityLabel={day.date} accessibilityState={{ selected: date === day.date, disabled: disabled || day.date < today }}
-        disabled={disabled || day.date < today} onPress={() => setDate(day.date)}>
-        <DayCircle collapsable={false}>{date === day.date && <DaySelection testID={`voice-date-selection-${day.date}`} pointerEvents="none" />}<DayText $selected={date === day.date} $today={today === day.date}>{day.day}</DayText></DayCircle>
+        accessibilityRole="button" accessibilityLabel={day.date} accessibilityState={{ selected: date === day.date, disabled: dateDisabled(day.date) }}
+        disabled={dateDisabled(day.date)} onPress={() => setDate(day.date)}>
+        <DayCircle collapsable={false}>{date === day.date && <DaySelection testID={`voice-date-selection-${day.date}`} pointerEvents="none" />}<DayText $selected={date === day.date} $today={today === day.date} $disabled={dateDisabled(day.date)}>{day.day}</DayText></DayCircle>
       </Day> : <DayGap key={index} $last={index >= days.length - 7} />)}</Grid>
     </Calendar>}
-    {field === 'timeRange' && <VoiceTimeWheel value={time} disabled={disabled} onMoving={setMoving} onChange={setTime} />}
+    {field === 'timeRange' && <VoiceTimeWheel value={time} disabled={disabled} availableTimes={availableTimes} onMoving={setMoving} onChange={setTime} />}
     {field === 'quantity' && <Quantities horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
       {Array.from({ length: VOICE_QUANTITY_LIMITS.max - VOICE_QUANTITY_LIMITS.min + 1 }, (_, index) => index + VOICE_QUANTITY_LIMITS.min).map(count => <Quantity key={count} $selected={quantity === count}
         accessibilityRole="button" accessibilityLabel={t('voiceAssistant.picker.people', { count })} accessibilityState={{ selected: quantity === count, disabled }}
@@ -98,14 +101,14 @@ const MonthArrow = styled.Pressable`width: 36px; height: 36px; align-items: cent
 const MonthLabel = styled(Text)`font-size: 16px; line-height: 21px; font-weight: 700; color: ${({ theme }) => theme.colors.textStrong};`;
 const Grid = styled.View`flex-direction: row; flex-wrap: wrap;`;
 const DayLabel = styled(Text)`width: 14.2857%; height: 28px; text-align: center; font-size: 12px; line-height: 28px; font-weight: 500; color: ${({ theme }) => theme.colors.textAlternative};`;
-const Day = styled.Pressable<{ $last: boolean }>`width: 14.2857%; height: 38px; margin-bottom: ${({ $last }) => $last ? 0 : 4}px; align-items: center; justify-content: center; opacity: ${({ disabled }) => disabled ? 0.2 : 1};`;
+const Day = styled.Pressable<{ $last: boolean }>`width: 14.2857%; height: 38px; margin-bottom: ${({ $last }) => $last ? 0 : 4}px; align-items: center; justify-content: center;`;
 // Keep the native clipping view mounted even before selection. A selected fill is
 // created with its own fixed radius instead of turning a flattened transparent view opaque.
 const DayCircle = styled.View`width: 36px; height: 36px; border-radius: 18px; overflow: hidden; align-items: center; justify-content: center;`;
 const DaySelection = styled.View`position: absolute; width: 36px; height: 36px; border-radius: 18px;
   background-color: ${({ theme }) => theme.colors.primary};`;
-const DayText = styled(Text)<{ $selected: boolean; $today: boolean }>`font-size: 16px; line-height: 21px; font-weight: ${({ $selected }) => $selected ? 700 : 500};
-  color: ${({ theme, $selected, $today }) => $selected ? '#ffffff' : $today ? theme.colors.primary : theme.colors.textStrong};`;
+const DayText = styled(Text)<{ $selected: boolean; $today: boolean; $disabled: boolean }>`font-size: 16px; line-height: 21px; font-weight: ${({ $selected, $today }) => $selected || $today ? 700 : 500};
+  color: ${({ theme, $selected, $today, $disabled }) => $selected ? '#ffffff' : $disabled ? theme.colors.labelDisabled : $today ? theme.colors.primary : theme.colors.textStrong};`;
 const DayGap = styled.View<{ $last: boolean }>`width: 14.2857%; height: 38px; margin-bottom: ${({ $last }) => $last ? 0 : 4}px;`;
 const Quantities = styled.ScrollView`flex-grow: 0; overflow: visible;`;
 const Quantity = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.category.shadow } }))<{ $selected: boolean }>`height: 34px; padding-horizontal: 15px; border-radius: 16px;

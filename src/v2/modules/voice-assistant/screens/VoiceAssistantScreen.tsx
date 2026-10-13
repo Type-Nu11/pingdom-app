@@ -186,8 +186,9 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       </MicrophoneButton>}
     </InputRow>
   </Composer>;
-  const conditionChips = Object.keys(selections).length > 0 ? <ConditionRow horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-    {Object.entries(selections).map(([field, value]) => <SelectionChip key={field} accessibilityRole="button"
+  const visibleConditions = Object.entries(selections).filter(([field]) => !pickerVisible || field !== pickerField);
+  const conditionChips = visibleConditions.length > 0 ? <ConditionRow horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+    {visibleConditions.map(([field, value]) => <SelectionChip key={field} accessibilityRole="button"
       accessibilityLabel={`${value} · ${t('voiceAssistant.picker.edit')}`} disabled={reservationVisible || reservationLocked || busy || pending}
       onPress={() => { controller.cancel(); setEditingPicker(field as PickerField); onCommandFeedbackDismiss?.(); }}>
       <SelectionLabel>{field === 'quantity' ? t('voiceAssistant.picker.people', { count: Number(value) }) : formatPickerSelection(field as PickerField, value, i18n.language)} · <EditLabel>{t('voiceAssistant.picker.edit')}</EditLabel></SelectionLabel>
@@ -207,7 +208,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       <SafeArea edges={['top', 'left', 'right']} pointerEvents="box-none">
         <KeyboardAvoidingView testID="voice-assistant-keyboard-layout" behavior="padding" style={{ flex: 1 }} pointerEvents="box-none">
         <KeyboardLayout pointerEvents="box-none" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
-          {showDetails ? <Sheet $question={true} $results={resultsMode} testID="voice-assistant-details">
+          {showDetails ? <Sheet $question={true} $results={resultsMode} $picker={pickerVisible} testID="voice-assistant-details">
             <SheetHeading>
             <Grabber />
             <Header $question={true}>
@@ -220,7 +221,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
             <Content $results={resultsMode} ref={contentRef} onContentSizeChange={() => {
               contentRef.current?.scrollTo({ y: 0, animated: false });
             }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 0, gap: pickerVisible ? 16 : 6 }}>
-            {!!currentRequest && <ResultRequest testID="voice-result-request">“{currentRequest}”</ResultRequest>}
+            {!!currentRequest && !pickerVisible && <ResultRequest testID="voice-result-request">“{currentRequest}”</ResultRequest>}
             {feedback ? <AssistantMessage>
               <FeedbackMessage accessibilityRole="alert">{t(`voiceAssistant.feedback.${feedback}`)}</FeedbackMessage>
               <FeedbackActions>
@@ -238,6 +239,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
             {!pickerVisible && conditionChips}
             {pickerField && pickerVisible && <VoiceClarificationPicker key={pickerField}
               field={pickerField} timezone={timezone} initialValue={selections[pickerField]} disabled={busy || pending}
+              request={currentRequest}
               conditions={conditionChips}
               onConfirm={selection => { void confirmSelection(selection); }} />}
             {selectionError && <Copy accessibilityRole="alert">{t('voiceAssistant.picker.tooLong')}</Copy>}
@@ -274,8 +276,8 @@ const WaveBar = styled.View<{ $height: number; $strong?: boolean }>`
   width: 3px; height: ${({ $height }) => $height}px; border-radius: 2px;
   background-color: ${({ $strong }) => $strong ? '#ff1956' : '#ff4a75'};
 `;
-const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))<{ $question: boolean; $results: boolean }>`
-  width: 100%; max-width: 386px; max-height: 78%; align-self: center; padding-top: 6px; padding-bottom: 12px;
+const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))<{ $question: boolean; $results: boolean; $picker: boolean }>`
+  width: 100%; max-width: 386px; max-height: ${({ $picker }) => $picker ? 85 : 78}%; align-self: center; padding-top: 6px; padding-bottom: 12px;
   height: auto;
   gap: ${({ $question }) => $question ? 16 : 8}px; border-radius: 36px; overflow: ${({ $question }) => $question ? 'hidden' : 'visible'}; background-color: ${({ theme }) => theme.liquidGlass.sheet.tint};
 `;
