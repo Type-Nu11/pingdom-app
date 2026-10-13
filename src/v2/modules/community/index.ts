@@ -9,21 +9,30 @@ export { ApiError, communityApi } from './api/communityApi';
 export type {
   CommunityCategory,
   CommunityComment,
+  CommunityCommentLikeStatus,
   CommunityCommentPage,
+  CommunityImageFile,
+  CommunityImageUpload,
   CommunityLikeStatus,
+  CommunityPlace,
   CommunityPostDetail,
+  CommunityPostImage,
   CommunityPostPage,
   CommunityPostSummary,
   CreateCommentBody,
   CreatePostBody,
   ListCategoriesResponse,
   ListCommentsParams,
+  ListCountriesResponse,
   ListPostsByCategoryParams,
+  ListPostsParams,
   ReportBody,
 } from './api/communityApi';
 export {
   communityQueryKeys,
   useCategories,
+  useCommunityFeed,
+  useCountries,
   useCreateComment,
   useCreatePost,
   useInfiniteComments,
@@ -33,6 +42,7 @@ export {
   useRecordPlaceView,
   useReportComment,
   useReportPost,
+  useToggleCommentLike,
   useToggleLike,
 } from './hooks/useCommunity';
 export { useDiscardOnLeaveGuard } from './hooks/useDiscardOnLeaveGuard';

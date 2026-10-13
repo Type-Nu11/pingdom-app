@@ -1,13 +1,17 @@
 import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import BackButtonIcon from '../../../../assets/v2/icons/community/back-button.svg';
 import CloseMediumIcon from '../../../../assets/v2/icons/community/close-medium.svg';
+// The shared V2 library picker (permission prompt + multi-select) that
+// visit-verification reviews already use.
+import { visitVerificationMediaPicker, type VisitVerificationMediaPicker } from '../../place/visit-verification';
 import { useCategories, useCreatePost } from '../hooks/useCommunity';
+import { usePostPhotoUploads } from '../hooks/usePostPhotoUploads';
 import {
   communityWriteBannerAction,
   communityWriteErrorKind,
@@ -21,12 +25,16 @@ import {
   type WriteFormFieldErrorKey,
   type WritePlaceTag,
 } from '../model/writeForm';
+import CommunityPlaceCard from '../components/CommunityPlaceCard';
 import CommunityPlacePicker from '../components/CommunityPlacePicker';
 import HeaderIconButton from '../components/HeaderIconButton';
+import WritePhotoSection from '../components/WritePhotoSection';
 import { textStyleCss } from '../../../shared/theme/typography';
 
 export type CommunityWriteScreenProps = {
   initialCategoryId?: string;
+  /** Photo library picker; injectable so tests don't open the native one. */
+  mediaPicker?: VisitVerificationMediaPicker;
   onBack: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   onSignIn?: () => void;
@@ -44,6 +52,7 @@ const VALIDATION_KEY_TO_I18N: Record<WriteFormFieldErrorKey, string> = {
 
 export default function CommunityWriteScreen({
   initialCategoryId,
+  mediaPicker = visitVerificationMediaPicker,
   onBack,
   onDirtyChange,
   onSignIn,
@@ -52,12 +61,18 @@ export default function CommunityWriteScreen({
   const { t } = useTranslation();
   const theme = useTheme();
   const submissionGuard = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
   const [manualCategoryId, setManualCategoryId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [placeTags, setPlaceTags] = useState<WritePlaceTag[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const uploads = usePostPhotoUploads();
+  const pickingPhotos = useRef(false);
+  const [isPickingPhotos, setIsPickingPhotos] = useState(false);
+  const [photoPermissionDenied, setPhotoPermissionDenied] = useState(false);
+  const [showUploadInProgress, setShowUploadInProgress] = useState(false);
 
   const categoriesQuery = useCategories();
   const categories = useMemo(
@@ -90,7 +105,26 @@ export default function CommunityWriteScreen({
   };
 
   const isValid = Object.keys(fieldErrors).length === 0;
-  const isDirty = title.length > 0 || content.length > 0 || placeTags.length > 0;
+  const isDirty = title.length > 0 || content.length > 0 || placeTags.length > 0 || uploads.photos.length > 0;
+  // Photos must all be uploaded before the post can reference them.
+  const photosReady = !uploads.isUploading && !uploads.hasFailed;
+
+  const pickPhotos = async () => {
+    if (pickingPhotos.current || uploads.remaining <= 0) return;
+    pickingPhotos.current = true;
+    setIsPickingPhotos(true);
+    try {
+      const result = await mediaPicker.pickPhotos(uploads.remaining);
+      setPhotoPermissionDenied(result.status === 'denied');
+      // A cancelled picker returns no photos and leaves the attachments as-is.
+      if (result.status === 'selected') uploads.add(result.photos);
+    } catch {
+      // The native picker failing to open is the same to the user as cancelling.
+    } finally {
+      pickingPhotos.current = false;
+      setIsPickingPhotos(false);
+    }
+  };
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
@@ -98,7 +132,8 @@ export default function CommunityWriteScreen({
   const submit = () => {
     if (submissionGuard.current || createPost.isPending || !selectedCategoryId || isBlockedByAuthorization) return;
     setShowErrors(true);
-    if (Object.keys(fieldErrors).length > 0) return;
+    setShowUploadInProgress(uploads.isUploading);
+    if (Object.keys(fieldErrors).length > 0 || !photosReady) return;
 
     submissionGuard.current = true;
     createPost.mutate(
@@ -107,16 +142,21 @@ export default function CommunityWriteScreen({
         content: content.trim(),
         title: title.trim(),
         ...(placeTags.length > 0 ? { placeIds: placeTags.map((tag) => tag.id) } : {}),
+        ...(uploads.imageIds.length > 0 ? { imageIds: uploads.imageIds } : {}),
       },
       {
         onError: () => {
           submissionGuard.current = false;
+          // The error banner sits below the place section, off-screen on a
+          // filled-in form; bring it into view.
+          requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
         },
         onSuccess: (data) => {
           if (typeof data.postId !== 'number') {
             submissionGuard.current = false;
             return;
           }
+          uploads.markAttached();
           onDirtyChange?.(false);
           onSubmitSuccess({ placeIds: data.placeIds ?? [], postId: data.postId });
         },
@@ -146,7 +186,7 @@ export default function CommunityWriteScreen({
       </Header>
 
       <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+        <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef}>
           <Section $gap={16}>
             <SectionHead>
               <SectionTitle>{t('community.write_screen.categoryLabel')}</SectionTitle>
@@ -237,6 +277,19 @@ export default function CommunityWriteScreen({
             </GuideRow>
           </Section>
 
+          <Section $gap={16}>
+            <WritePhotoSection
+              disabled={isPickingPhotos || createPost.isPending}
+              onOpenSettings={() => void Linking.openSettings()}
+              onPick={() => void pickPhotos()}
+              onRemove={uploads.remove}
+              onRetry={uploads.retry}
+              permissionDenied={photoPermissionDenied}
+              photos={uploads.photos}
+              showUploadInProgress={showUploadInProgress && uploads.isUploading}
+            />
+          </Section>
+
           <PlaceSection>
             <SectionHead>
               <PlaceHead>
@@ -251,20 +304,24 @@ export default function CommunityWriteScreen({
             </SectionHead>
 
             {placeTags.map((place) => (
-              <PlaceCard key={place.id}>
-                <PlaceInfo>
-                  <PlaceCategory numberOfLines={1}>{place.category}</PlaceCategory>
-                  <PlaceName numberOfLines={1}>{place.name}</PlaceName>
-                </PlaceInfo>
-                <RemovePlace
-                  accessibilityLabel={t('community.write_screen.removePlace', { name: place.name })}
-                  accessibilityRole="button"
-                  onPress={() => setPlaceTags((current) => current.filter((tag) => tag.id !== place.id))}
-                  testID={`v2-community-write-remove-place-${place.id}`}
-                >
-                  <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
-                </RemovePlace>
-              </PlaceCard>
+              // The place search result carries a category but no thumbnail or
+              // region, so the shared card shows only what was returned.
+              <CommunityPlaceCard
+                category={place.category}
+                key={place.id}
+                name={place.name}
+                testID={`v2-community-write-place-${place.id}`}
+                trailing={(
+                  <RemovePlace
+                    accessibilityLabel={t('community.write_screen.removePlace', { name: place.name })}
+                    accessibilityRole="button"
+                    onPress={() => setPlaceTags((current) => current.filter((tag) => tag.id !== place.id))}
+                    testID={`v2-community-write-remove-place-${place.id}`}
+                  >
+                    <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
+                  </RemovePlace>
+                )}
+              />
             ))}
 
             <AddPlaceButton
@@ -313,7 +370,7 @@ export default function CommunityWriteScreen({
 
         <SubmitBar>
           <SubmitButton
-            $enabled={isValid && !isBlockedByAuthorization}
+            $enabled={isValid && photosReady && !isBlockedByAuthorization}
             accessibilityRole="button"
             accessibilityState={{
               busy: createPost.isPending,
@@ -329,7 +386,7 @@ export default function CommunityWriteScreen({
                 color={theme.colors.onPrimary}
               />
             ) : (
-              <SubmitLabel $enabled={isValid && !isBlockedByAuthorization}>{t('community.write_screen.submit')}</SubmitLabel>
+              <SubmitLabel $enabled={isValid && photosReady && !isBlockedByAuthorization}>{t('community.write_screen.submit')}</SubmitLabel>
             )}
           </SubmitButton>
         </SubmitBar>
@@ -393,13 +450,9 @@ const ValidationText = styled(AppText)`color: ${({ theme }) => theme.colors.dang
 const PlaceSection = styled.View`gap: 12px; padding: 16px 24px;`;
 const PlaceHead = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
 const PlaceHeadTitle = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
-const PlaceHeadTag = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
+const PlaceHeadTag = styled(AppText)`color: ${({ theme }) => theme.colors.labelAssistive}; ${({ theme }) => textStyleCss(theme.typography.labelMedium)}`;
 const PlaceSubtitle = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;
-// Figma place card: 12px padding on `Secondary/Assistive`, 32px `Fill/Support` remove button.
-const PlaceCard = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive};`;
-const PlaceInfo = styled.View`flex: 1; gap: 4px; min-width: 0;`;
-const PlaceCategory = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.bodyRegular)}`;
-const PlaceName = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
+// Figma place card (8168:10664): the shared card with a 32px `Fill/Support` remove button.
 const RemovePlace = styled.Pressable`width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.fillSupport};`;
 const AddPlaceButton = styled.Pressable`align-self: flex-start; padding: 10px 16px; border-radius: ${({ theme }) => theme.radius.full}px; border-width: 1px; border-color: ${({ theme }) => theme.colors.border};`;
 const AddPlaceLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.label.fontSize}px; font-weight: 600;`;

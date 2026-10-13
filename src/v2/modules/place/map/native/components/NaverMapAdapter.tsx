@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 
@@ -7,6 +7,7 @@ import NaverMapNativeView, {
   type NaverMapCameraFit,
 } from '../../../../../shared/native/NaverMapNativeView';
 import type { Coordinate } from '../../camera/model/map.types';
+import { smoothRouteCorners } from '../model/smoothRouteCorners';
 
 export type NaverMapAdapterProps = {
   cameraFit?: NaverMapCameraFit;
@@ -55,6 +56,7 @@ export default function NaverMapAdapter({
   // 전달 경로: NaverMapNativeView → Android @ReactProp / iOS RCT_EXPORT_VIEW_PROPERTY
   // → 각 플랫폼 NaverMapView.applyProps() → 네이버 SDK 야간 모드.
   const theme = useTheme();
+  const displayRoute = useMemo(() => smoothRouteCorners(routeCoordinates), [routeCoordinates]);
   return (
     <MapView
       cameraFit={cameraFit}
@@ -64,7 +66,7 @@ export default function NaverMapAdapter({
       centerLng={center.lng}
       followUser={followUser}
       markers={markers}
-      routeCoordinates={routeCoordinates}
+      routeCoordinates={displayRoute}
       onCameraGesture={onCameraGesture}
       onRouteAnchor={(event) => onRouteAnchor?.(event.nativeEvent)}
       nightMode={theme.colorScheme === 'dark'}

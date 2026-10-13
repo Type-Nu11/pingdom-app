@@ -9,10 +9,10 @@ import {
   Image,
   Pressable,
   ScrollView,
-  Text as NativeText,
-  type TextProps,
   View,
 } from 'react-native';
+import MoreAsset from '../../../../../../assets/v2/icons/place/favorites-more.svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ArtAsset from '../../../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyAsset from '../../../../../../assets/v2/icons/place/beati_svg.svg';
 import CafeAsset from '../../../../../../assets/v2/icons/place/cafe_svg.svg';
@@ -25,7 +25,7 @@ import MyPlaceAsset from '../../../../../../assets/v2/icons/place/my_place.svg';
 import PopupAsset from '../../../../../../assets/v2/icons/place/popup_svg.svg';
 import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
 import type { DecisionPlace } from './MapBottomSheet';
-import MapSheetBottomNavigation from './MapSheetBottomNavigation';
+import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapSheetBottomNavigation';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { normalizePlaceCategory } from '../../../core/placeCategory';
 import { formatDistance as formatLocalizedDistance } from '../../../../../shared/i18n/formatters';
@@ -67,15 +67,15 @@ type FavoritePlacesBottomSheetProps = {
 
 const SHEET_RESTING_GAP = 8;
 const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
-const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: FavoriteCategory;
+  iconWidth?: number;
 }> = [
-  { id: 'all' }, { Icon: MusicAsset, id: 'music' }, { Icon: FoodAsset, id: 'food' },
-  { Icon: PopupAsset, id: 'popup' }, { Icon: FashionAsset, id: 'fashion' },
-  { Icon: BeautyAsset, id: 'beauty' }, { Icon: ArtAsset, id: 'art' },
-  { Icon: CafeAsset, id: 'cafe' }, { Icon: HeritageAsset, id: 'heritage' }, { Icon: EtcAsset, id: 'etc' },
+  { id: 'all' }, { Icon: FoodAsset, id: 'food', iconWidth: 15 }, { Icon: MusicAsset, id: 'music' },
+  { Icon: PopupAsset, id: 'popup' }, { Icon: FashionAsset, id: 'fashion', iconWidth: 24 },
+  { Icon: BeautyAsset, id: 'beauty', iconWidth: 7 }, { Icon: ArtAsset, id: 'art', iconWidth: 18 },
+  { Icon: CafeAsset, id: 'cafe' }, { Icon: HeritageAsset, id: 'heritage' }, { Icon: EtcAsset, id: 'etc', iconWidth: 16 },
 ];
 
 const getFavoriteCategory = (place: DecisionPlace): Exclude<FavoriteCategory, 'all'> => {
@@ -93,11 +93,9 @@ const formatDistance = (place: DecisionPlace, language: string) => {
   return formatLocalizedDistance(place.distanceMeters, language);
 };
 
-const HeaderStar = () => <MyPlaceAsset height={42} width={42} />;
-
 const useFavoriteStyles = () => {
-  const { colors } = useTheme();
-  return useMemo(() => createStyles(colors), [colors]);
+  const theme = useTheme();
+  return useMemo(() => createStyles(theme), [theme]);
 };
 
 const FavoriteImage = ({ uri }: { uri?: string }) => {
@@ -139,6 +137,7 @@ const FavoritePlaceRow = ({
 }) => {
   const { i18n, t } = useTranslation();
   const styles = useFavoriteStyles();
+  const { colors } = useTheme();
   const sources = imageUrls.slice(0, 2);
 
   return (
@@ -163,14 +162,14 @@ const FavoritePlaceRow = ({
           accessibilityRole="button"
           accessibilityState={{ busy: pending, disabled: pending }}
           disabled={pending}
-          hitSlop={10}
+          hitSlop={20}
           onPress={(event) => {
             event.stopPropagation();
             onRemove();
           }}
           style={styles.moreButton}
         >
-          <AppText style={styles.moreButtonText}>⋮</AppText>
+          <MoreAsset color={colors.text} height={24} width={3} />
         </Pressable>
       </View>
       <View style={styles.imageRow}>
@@ -213,7 +212,16 @@ export default function FavoritePlacesBottomSheet({
   const { t } = useTranslation();
   const theme = useTheme();
   const { colors, liquidGlass: themedGlass } = theme;
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
+  const footerSpace = getMapSheetNavigationBottom(insets.bottom) + 64 + 16;
+  // Keep the scroll viewport above the fixed footer at every snap point and while dragging.
+  const availableListHeight = Math.max(0, height - 107 - footerSpace);
+  const listHeight = sheetChromeBottom.interpolate({
+    inputRange: [0, Math.max(1, availableListHeight)],
+    outputRange: [availableListHeight, 0],
+    extrapolate: 'clamp',
+  });
   const [activeCategory, setActiveCategory] = useState<FavoriteCategory>('all');
   const filteredPlaces = useMemo(
     () => places.filter((place) => matchesCategory(place, activeCategory)),
@@ -279,8 +287,7 @@ export default function FavoritePlacesBottomSheet({
           style={[styles.content, { opacity: contentOpacity }]}
         >
           <View style={styles.titleRow}>
-            <HeaderStar />
-            <AppText style={styles.title}>{t('map.favorites.title')}</AppText>
+            <AppText style={styles.title}>{t('map.navigation.favorites')}</AppText>
           </View>
           <ScrollView
             contentContainerStyle={styles.categoryContent}
@@ -288,7 +295,7 @@ export default function FavoritePlacesBottomSheet({
             showsHorizontalScrollIndicator={false}
             style={styles.categoryScroll}
           >
-            {categories.map(({ Icon, id }) => {
+            {categories.map(({ Icon, id, iconWidth = 21 }) => {
               const active = activeCategory === id;
               const label = t(`map.categories.${id}`);
               return (
@@ -299,19 +306,14 @@ export default function FavoritePlacesBottomSheet({
                   onPress={() => setActiveCategory(id)}
                   style={[styles.categoryChip, active && styles.categoryChipActive]}
                 >
-                  {Icon ? <Icon color={active ? colors.primary : colors.textAlternative} height={18} width={21} /> : null}
+                  {Icon ? <Icon color={active ? colors.primary : colors.textAlternative} height={18} width={iconWidth} /> : null}
                   <AppText style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</AppText>
                 </Pressable>
               );
             })}
           </ScrollView>
 
-          <View
-            style={[
-              styles.listViewport,
-              snapPoint === 'medium' && styles.listViewportMedium,
-            ]}
-          >
+          <Animated.View style={[styles.listViewport, { height: listHeight }]}>
             <ScrollView
               contentContainerStyle={styles.listContent}
               nestedScrollEnabled
@@ -366,7 +368,7 @@ export default function FavoritePlacesBottomSheet({
                 </View>
               ) : null}
             </ScrollView>
-          </View>
+          </Animated.View>
         </Animated.View>
       </GlassStyles.SheetInner>
 
@@ -382,45 +384,42 @@ export default function FavoritePlacesBottomSheet({
   );
 }
 
-const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
+const createStyles = ({ colors, liquidGlass: glass }: AppTheme): Record<string, object> => ({
   categoryChip: {
-    alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.backgroundNeutral,
-    borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 13,
+    alignItems: 'center', backgroundColor: glass.category.tint, borderColor: glass.sheet.rim,
+    boxShadow: glass.category.shadow, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 12,
   },
-  categoryChipActive: { backgroundColor: colors.selectedSurface, borderColor: colors.selectedBorder },
-  categoryContent: { gap: 8, paddingBottom: 12, paddingHorizontal: 16, paddingTop: 10 },
-  categoryLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '700' },
+  categoryChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
+  categoryContent: { gap: 8, paddingBottom: 10, paddingHorizontal: 16, paddingTop: 16 },
+  categoryLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18, includeFontPadding: false },
   categoryLabelActive: { color: colors.primary },
-  categoryScroll: { flexGrow: 0, height: 58, overflow: 'hidden' },
+  categoryScroll: { flexGrow: 0, height: 62, overflow: 'hidden' },
   content: { flex: 1 },
   emptyBody: { color: colors.textMuted, fontSize: 13, marginTop: 5 },
-  emptyState: { alignItems: 'center', paddingTop: 42 },
+  emptyState: { alignItems: 'center', paddingTop: 12 },
   emptyTitle: { color: colors.textStrong, fontSize: 17, fontWeight: '800', marginTop: 12 },
-  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
-  handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
+  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 7, height: 5, width: 56 },
+  handleArea: { alignItems: 'center', height: 19, justifyContent: 'flex-start' },
+  handleButton: { alignItems: 'center', height: 19, paddingTop: 6, width: 96 },
   imagePlaceholder: { alignItems: 'center', backgroundColor: colors.surfaceMuted, justifyContent: 'center' },
-  imageRow: { borderRadius: 15, flexDirection: 'row', height: 120, overflow: 'hidden' },
+  imageRow: { borderRadius: 12, flexDirection: 'row', gap: 2, height: 114, overflow: 'hidden' },
   list: { flex: 1 },
-  listContent: { paddingBottom: 116, paddingHorizontal: 16 },
-  listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
-  listViewportMedium: { flex: 0, height: 182, marginBottom: 0 },
+  listContent: { paddingBottom: 12, paddingHorizontal: 16 },
+  listViewport: { overflow: 'hidden' },
   loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primary, borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
   loadMoreError: { color: colors.textMuted, fontSize: 13 },
   loadMoreState: { alignItems: 'center', gap: 8 },
-  moreButton: { alignItems: 'center', height: 30, justifyContent: 'center', width: 24 },
-  moreButtonText: { color: colors.text, fontSize: 22, lineHeight: 24 },
-  nameRow: { alignItems: 'baseline', flexDirection: 'row', gap: 5, minWidth: 0 },
-  placeCategory: { color: colors.textAlternative, flexShrink: 1, fontSize: 12, includeFontPadding: false, lineHeight: 16, minWidth: 0 },
-  placeHeading: { alignItems: 'center', flexDirection: 'row', marginBottom: 9 },
-  placeImage: { borderRightColor: colors.borderEmphasis, borderRightWidth: 1, flex: 1, height: '100%' },
-  placeMeta: { color: colors.textAlternative, flexShrink: 1, fontSize: 13, includeFontPadding: false, lineHeight: 18, marginTop: 3, minWidth: 0 },
-  placeName: { color: colors.text, flexShrink: 1, fontSize: 16, fontWeight: '800', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
-  placeRow: { marginBottom: 14 },
+  moreButton: { alignItems: 'center', height: 24, justifyContent: 'center', width: 3 },
+  nameRow: { alignItems: 'center', flexDirection: 'row', gap: 4, minWidth: 0 },
+  placeCategory: { color: colors.textAlternative, flexShrink: 1, fontSize: 14, fontWeight: '500', includeFontPadding: false, lineHeight: 18, minWidth: 0 },
+  placeHeading: { alignItems: 'flex-start', flexDirection: 'row', gap: 8, marginBottom: 8 },
+  placeImage: { flex: 1, height: '100%' },
+  placeMeta: { color: colors.textAlternative, flexShrink: 1, fontSize: 16, includeFontPadding: false, lineHeight: 21, marginTop: 4, minWidth: 0 },
+  placeName: { color: colors.text, flexShrink: 1, fontSize: 18, fontWeight: '700', includeFontPadding: false, lineHeight: 24, minWidth: 0 },
+  placeRow: { paddingVertical: 6, marginBottom: 12 },
   placeText: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.72 },
-  retryButton: { backgroundColor: colors.primary, borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: colors.onPrimary, fontSize: 13, fontWeight: '800' },
-  title: { color: colors.textStrong, fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
+  title: { color: colors.textStrong, fontSize: 20, fontWeight: '700', lineHeight: 26, includeFontPadding: false },
+  titleRow: { alignItems: 'center', flexDirection: 'row', paddingHorizontal: 16 },
 });

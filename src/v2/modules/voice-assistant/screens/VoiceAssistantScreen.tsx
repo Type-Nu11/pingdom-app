@@ -1,3 +1,5 @@
+import { VoiceReservationPanel } from '../components/VoiceReservationPanel';
+import type { VoiceReservationFlow } from '../hooks/useVoiceReservation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Keyboard, Linking, ScrollView, type TextInput as NativeTextInput } from 'react-native';
 import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-controller';
@@ -29,6 +31,7 @@ export type VoiceAssistantScreenProps = {
   onCommandRetry?: () => void;
   commandRetryDisabled?: boolean;
   timezone?: string;
+  reservationFlow?: VoiceReservationFlow;
   // Only informational text; never maps to success UI, execution or TTS.
   guidance?: { kind: 'assistant' | 'clarification' | 'invalidResponse'; text?: string };
 } & (
@@ -36,8 +39,10 @@ export type VoiceAssistantScreenProps = {
   | { serverSubmission: true; onFinalInput: OnFinalInput }
 );
 
-export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul' }: VoiceAssistantScreenProps) {
+export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul', reservationFlow }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
+  const reservationVisible = !!reservationFlow && (!!reservationFlow.place || ['unknown', 'submitting', 'checking', 'success'].includes(reservationFlow.state.phase) || (reservationFlow.state.phase === 'error' && reservationFlow.state.code === 'storage'));
+  const reservationLocked = !!reservationFlow && (reservationFlow.loading || ['loading', 'checking', 'submitting', 'unknown'].includes(reservationFlow.state.phase));
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const clarificationField = commandState?.phase === 'clarification' ? commandState.field
@@ -69,6 +74,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     return context.onFinalInput({ ...input, text });
   }, []);
   const { controller, state } = useVoiceInput(adapter, submitWithQuestionContext, clarificationField === 'quantity' ? 'quantity' : undefined);
+  useEffect(() => { if (reservationVisible) controller.cancel(); }, [controller, reservationVisible]);
   const [editingInSheet, setEditingInSheet] = useState(false);
   const [selections, setSelections] = useState<Partial<Record<PickerField, string>>>({});
   const [editingPicker, setEditingPicker] = useState<PickerField | null>(null);
@@ -87,7 +93,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const previousTurnVisible = state.delivery !== 'none' || !!feedback || (!!commandState && commandState.phase !== 'idle');
   const showDetails = (state.phase !== 'listening' || !!pickerField) && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
     || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
-    || !!currentRequest || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
+    || reservationVisible || !!currentRequest || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
   useEffect(() => {
     if (!focusAfterCapture.current) return;
     focusAfterCapture.current = false;
@@ -112,7 +118,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     controller.cancel(); controller.edit(request);
     try { await controller.submit(); } finally { confirming.current = false; }
   };
-  const close = () => { controller.cancel(); onCommandCancel?.(); onClose(); };
+  const close = () => { reservationFlow?.clearSelection(); controller.cancel(); onCommandCancel?.(); onClose(); };
   const clearExpectedSelection = () => {
     if (clarificationField === 'date' || clarificationField === 'timeRange' || clarificationField === 'quantity') {
       setSelections(current => { const next = { ...current }; delete next[clarificationField]; return next; });
@@ -131,14 +137,14 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const retrySpeech = () => { dismissFeedback(); start(); };
   const startedOnEntry = useRef(false);
   useEffect(() => {
-    if (!autoStart || startedOnEntry.current) return;
+    if (!autoStart || startedOnEntry.current || reservationLocked) return;
     startedOnEntry.current = true;
-    if (AppState.currentState !== 'active') return;
+    if (reservationVisible || AppState.currentState !== 'active') return;
     Keyboard.dismiss();
     controller.setForeground(true);
     void controller.start(i18n.resolvedLanguage === 'ko' ? 'ko-KR' : 'en-US');
-  }, [autoStart, controller, i18n.resolvedLanguage]);
-  const submitDisabled = busy || pending || validateVoiceInput(state.draft).error !== null || state.delivery !== 'none';
+  }, [autoStart, controller, i18n.resolvedLanguage, reservationLocked, reservationVisible]);
+  const submitDisabled = reservationVisible || reservationLocked || busy || pending || validateVoiceInput(state.draft).error !== null || state.delivery !== 'none';
   const settingsButton = () => (
     <Action accessibilityRole="button" accessibilityLabel={t('voiceAssistant.settings')} onPress={() => { controller.cancel(); void Linking.openSettings().catch(() => undefined); }}>
       <Label>{t('voiceAssistant.settings')}</Label>
@@ -147,7 +153,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const composer = (embedded = false) => <Composer testID="voice-assistant-composer" $embedded={embedded}>
     <InputRow $embedded={embedded}>
       <PingdyInputIcon />
-      <Input ref={textInputRef} accessibilityLabel={t('voiceAssistant.input')} editable={!pending}
+      <Input ref={textInputRef} accessibilityLabel={t('voiceAssistant.input')} editable={!reservationVisible && !reservationLocked && !pending}
         testID={state.phase === 'listening' ? (state.partial ? 'voice-partial' : 'voice-listening-prompt') : undefined}
         onFocus={() => {
           clearExpectedSelection();
@@ -174,15 +180,15 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
         </Waveform>
       </RecordingButton> : <MicrophoneButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.microphone')}
         accessibilityHint={!adapter.available ? t('voiceAssistant.voiceUnavailable') : undefined}
-        accessibilityState={{ disabled: busy || pending || !adapter.available, busy }}
-        disabled={busy || pending || !adapter.available} onPress={start}>
+        accessibilityState={{ disabled: reservationVisible || reservationLocked || busy || pending || !adapter.available, busy }}
+        disabled={reservationVisible || reservationLocked || busy || pending || !adapter.available} onPress={start}>
         <MicrophoneIcon width={24} height={24} />
       </MicrophoneButton>}
     </InputRow>
   </Composer>;
   const conditionChips = Object.keys(selections).length > 0 ? <ConditionRow horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
     {Object.entries(selections).map(([field, value]) => <SelectionChip key={field} accessibilityRole="button"
-      accessibilityLabel={`${value} · ${t('voiceAssistant.picker.edit')}`} disabled={busy || pending}
+      accessibilityLabel={`${value} · ${t('voiceAssistant.picker.edit')}`} disabled={reservationVisible || reservationLocked || busy || pending}
       onPress={() => { controller.cancel(); setEditingPicker(field as PickerField); onCommandFeedbackDismiss?.(); }}>
       <SelectionLabel>{field === 'quantity' ? t('voiceAssistant.picker.people', { count: Number(value) }) : formatPickerSelection(field as PickerField, value, i18n.language)} · <EditLabel>{t('voiceAssistant.picker.edit')}</EditLabel></SelectionLabel>
     </SelectionChip>)}
@@ -190,7 +196,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const assistantVisible = busy || !!state.error || state.phase === 'permissionDenied' || state.phase === 'unavailable'
     || !!guidance || !!pickerVisible || !!conditionChips || !!selectionError || state.delivery === 'localOnly'
     || (!!commandState && commandState.phase !== 'idle') || (!serverSubmission && state.source === 'text' && !!state.draft);
-  const resultsMode = !!(commandState?.phase === 'result' && commandState.result.outcome.status === 'succeeded'
+  const resultsMode = !reservationVisible && !!(commandState?.phase === 'result' && commandState.result.outcome.status === 'succeeded'
     && ((commandState.result.command === 'searchNearbyPlaces' || commandState.result.command === 'searchNearbyReservablePlaces')
       ? commandState.result.outcome.data.places.length > 0 : commandState.result.command === 'getPlaceDetails'));
   return (
@@ -235,7 +241,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
               conditions={conditionChips}
               onConfirm={selection => { void confirmSelection(selection); }} />}
             {selectionError && <Copy accessibilityRole="alert">{t('voiceAssistant.picker.tooLong')}</Copy>}
-            {commandState && !(pickerField && clarificationField) && <VoiceCommandResults state={commandState} retryDisabled={commandRetryDisabled} onShowMap={close} onRetry={() => {
+            {commandState && !reservationVisible && !(pickerField && clarificationField) && <VoiceCommandResults state={commandState} onSelectReservationPlace={reservationFlow && !reservationVisible && !reservationLocked ? place => { controller.cancel(); void reservationFlow.selectPlace(place); } : undefined} retryDisabled={commandRetryDisabled} onShowMap={close} onRetry={() => {
               if (onCommandRetry) onCommandRetry();
               else { const request = activeTurn.current?.request ?? state.draft; controller.cancel(); controller.edit(request); void controller.submit(); }
             }} />}
@@ -247,6 +253,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
                 ? <AssistantMarkdown>{guidance.text}</AssistantMarkdown> : <Copy>{guidance.text}</Copy>)}
             </>}
             </AssistantMessage> : null}
+            {reservationVisible && reservationFlow && <VoiceReservationPanel flow={reservationFlow} />}
             </Content>
             {composer(true)}
           </Sheet> : composer()}

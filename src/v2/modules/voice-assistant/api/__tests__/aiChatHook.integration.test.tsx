@@ -9,6 +9,38 @@ const original = AppState.currentState;
 beforeEach(() => { (AppState as { currentState: string }).currentState = 'active'; });
 afterEach(() => { (AppState as { currentState: string }).currentState = original; });
 
+test('editing a follow-up preserves verified places referenced by the existing chat', async () => {
+  let posts = 0;
+  const gets: string[] = [];
+  const place = { id: 70095, name: '용짬뽕', address: '대구 실제 주소', touristCategories: [], operatingStatus: 'OPERATING' };
+  const restore = configureApiTransport({
+    get: async (path: string) => { gets.push(path); return { data: path === '/places' ? { places: [place] } : place }; },
+    post: async () => {
+      posts++;
+      const call = posts === 1 ? { name: 'searchNearbyPlaces', arguments: '{"keyword":"용짬뽕"}' }
+        : posts === 3 ? { name: 'getPlaceDetails', arguments: '{"placeId":70095}' } : null;
+      return { data: JSON.stringify({ object: 'chat.completion', choices: [{ index: 0,
+        message: { role: 'assistant', content: call ? null : '확인했습니다.', ...(call ? { tool_calls: [{ id: `follow-up-${posts}`, type: 'function', function: call }] } : {}) },
+        finish_reason: call ? 'tool_calls' : 'stop' }] }) };
+    },
+  } as unknown as ApiTransport);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: { latitude: 35.8, longitude: 128.6 },
+    locationPermission: 'granted', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  try {
+    await act(async () => { await view.result.current.onFinalInput({ text: '용짬뽕 찾아', source: 'text', signal: new AbortController().signal }); });
+    await act(() => view.result.current.dismissFeedback());
+    expect(view.result.current.commandState.phase).toBe('idle');
+    await act(async () => { await view.result.current.onFinalInput({ text: '그곳 상세정보 보여줘', source: 'text', signal: new AbortController().signal }); });
+    expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: {
+      command: 'getPlaceDetails', outcome: { status: 'succeeded', data: { place: { id: 70095 } } },
+    } });
+    expect(gets).toEqual(['/places', '/places/70095']);
+    expect(client.getMutationCache().getAll()).toHaveLength(0);
+  } finally { await view.unmount(); client.clear(); restore(); }
+});
+
 test.each([0, 1, 3])('provider tool flow retains exactly %s place API results for cards and sends the outcome back', async count => {
   let posts = 0;
   const rows = Array.from({ length: count }, (_, index) => ({ id: 70095 + index, name: `API 장소 ${index + 1}`,

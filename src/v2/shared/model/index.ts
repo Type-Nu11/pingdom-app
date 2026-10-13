@@ -9,3 +9,5 @@ export type {
   StatusTone,
   StatusView,
 } from './statusPresentation';
+
+export { parseServerInstant } from './serverInstant';

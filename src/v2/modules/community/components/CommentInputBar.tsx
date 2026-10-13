@@ -1,9 +1,10 @@
 import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, type TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
+import CloseMediumIcon from '../../../../assets/v2/icons/community/close-medium.svg';
 import SendIcon from '../../../../assets/v2/icons/community/send.svg';
 import { textStyleCss } from '../../../shared/theme/typography';
 import { COMMENT_CONTENT_MAX_LENGTH, COMMENT_COUNTER_WARNING_THRESHOLD } from '../model/commentForm';
@@ -12,8 +13,12 @@ export type CommentInputBarProps = {
   busy: boolean;
   disabled: boolean;
   errorText?: string;
+  inputRef?: React.Ref<TextInput>;
+  onCancelReply?: () => void;
   onChangeText: (text: string) => void;
   onSubmit: () => void;
+  /** Author being replied to; the bar posts a top-level comment without it. */
+  replyToAuthorName?: string;
   value: string;
 };
 
@@ -21,16 +26,36 @@ export default function CommentInputBar({
   busy,
   disabled,
   errorText,
+  inputRef,
+  onCancelReply,
   onChangeText,
   onSubmit,
+  replyToAuthorName,
   value,
 }: CommentInputBarProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const canSubmit = !disabled && value.trim().length > 0;
+  const replying = replyToAuthorName !== undefined;
 
   return (
     <Bar testID="v2-community-comment-input-bar">
+      {replying ? (
+        <ReplyBanner testID="v2-community-comment-reply-banner">
+          <ReplyText accessibilityLiveRegion="polite" numberOfLines={1}>
+            {t('community.detail.commentInput.replyingTo', { author: replyToAuthorName })}
+          </ReplyText>
+          <ReplyCancel
+            accessibilityLabel={t('community.detail.commentInput.cancelReply')}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onCancelReply}
+            testID="v2-community-comment-reply-cancel"
+          >
+            <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
+          </ReplyCancel>
+        </ReplyBanner>
+      ) : null}
       {value.length >= COMMENT_COUNTER_WARNING_THRESHOLD ? (
         <CounterText testID="v2-community-comment-counter">
           {t('community.detail.commentInput.counter', { count: value.length, max: COMMENT_CONTENT_MAX_LENGTH })}
@@ -47,7 +72,8 @@ export default function CommentInputBar({
           maxLength={COMMENT_CONTENT_MAX_LENGTH}
           multiline
           onChangeText={onChangeText}
-          placeholder={t('community.detail.commentInput.placeholder')}
+          placeholder={t(replying ? 'community.detail.commentInput.replyPlaceholder' : 'community.detail.commentInput.placeholder')}
+          ref={inputRef}
           placeholderTextColor={theme.colors.textMuted}
           testID="v2-community-comment-input"
           value={value}
@@ -102,5 +128,8 @@ const SendButton = styled.Pressable`
   border-radius: ${({ theme }) => theme.radius.full}px;
   background-color: ${({ theme }) => theme.colors.primary};
 `;
+const ReplyBanner = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 8px;`;
+const ReplyText = styled(AppText)`flex: 1; color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.captionMedium)}`;
+const ReplyCancel = styled.Pressable`width: 19px; height: 19px; align-items: center; justify-content: center;`;
 const CounterText = styled(AppText)`align-self: flex-end; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const ErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;

@@ -98,12 +98,14 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
                     setLogoMargin(dp(16f), dp(160f), 0, 0)
                 }
                 map.addOnCameraChangeListener { reason, _ ->
+                    updateRouteStyle(map)
                     if (reason == CameraUpdate.REASON_GESTURE) {
                         if (followUser) releaseFollowAfterGesture = true
                         emit("topCameraGesture", Arguments.createMap())
                     }
                 }
                 map.addOnCameraIdleListener {
+                    updateRouteStyle(map)
                     emitRouteAnchor(map)
                     val target = map.cameraPosition.target
                     emit("topCameraIdle", Arguments.createMap().apply {
@@ -237,13 +239,19 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
             routeLine.map = null
             if (routePoints.size >= 2) {
                 routeLine.coords = routePoints
-                routeLine.width = dp(6f)
+                // The adapter supplies bounded curves; round joins avoid faceting thick segments.
                 routeLine.color = Color.rgb(255, 25, 86)
+                routeLine.capType = PolylineOverlay.LineCap.Round
+                routeLine.joinType = PolylineOverlay.LineJoin.Round
+                routeLine.globalZIndex = -100000
+                routeLine.zIndex = 1
+                updateRouteStyle(map)
                 routeLine.map = map
             }
             routeDirty = false
             emitRouteAnchor(map)
         }
+        updateRouteStyle(map)
         if (markersDirty) {
             val ids = placeData.map { it.id }.toSet()
             placeMarkers.keys.filter { it !in ids }.forEach { id ->
@@ -313,6 +321,14 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
 
     private fun validCoordinate(lat: Double?, lng: Double?): Boolean =
         lat != null && lng != null && lat.isFinite() && lng.isFinite() && lat in -90.0..90.0 && lng in -180.0..180.0
+
+    private fun updateRouteStyle(map: NaverMap) {
+        if (routePoints.size < 2) return
+        val zoom = map.cameraPosition.zoom
+        val detail = ((zoom - 14.0) / 3.0).coerceIn(0.0, 1.0).toFloat()
+        val lineWidth = dp(8f + detail)
+        if (routeLine.width != lineWidth) routeLine.width = lineWidth
+    }
 
     private fun dp(value: Float) = (value * resources.displayMetrics.density).roundToInt()
 

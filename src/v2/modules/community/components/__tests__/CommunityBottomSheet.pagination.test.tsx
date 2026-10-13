@@ -3,13 +3,14 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
-import { useCategories, useInfinitePostsByCategory } from '../../hooks/useCommunity';
+import { useCategories, useCommunityFeed, useCountries } from '../../hooks/useCommunity';
 import type { CommunityPostPage, ListCategoriesResponse } from '../../api/communityApi';
 import CommunityBottomSheet from '../CommunityBottomSheet';
 
 jest.mock('../../hooks/useCommunity', () => ({
   useCategories: jest.fn(),
-  useInfinitePostsByCategory: jest.fn(),
+  useCommunityFeed: jest.fn(),
+  useCountries: jest.fn(),
 }));
 
 const navigation = {
@@ -51,6 +52,16 @@ function categoriesResult(overrides: Record<string, unknown> = {}) {
   } as unknown as ReturnType<typeof useCategories>);
 }
 
+function countriesResult(overrides: Record<string, unknown> = {}) {
+  return ({
+    data: ['KR', 'US', 'JP'],
+    isError: false,
+    isLoading: false,
+    refetch: jest.fn(),
+    ...overrides,
+  } as unknown as ReturnType<typeof useCountries>);
+}
+
 function postPage(overrides: Partial<CommunityPostPage> = {}): CommunityPostPage {
   return {
     hasNext: false,
@@ -75,7 +86,7 @@ function postsResult(overrides: Record<string, unknown> = {}) {
     isLoading: false,
     refetch: jest.fn(),
     ...overrides,
-  } as unknown as ReturnType<typeof useInfinitePostsByCategory>);
+  } as unknown as ReturnType<typeof useCommunityFeed>);
 }
 
 async function renderSheet(ui: React.ReactElement) {
@@ -85,11 +96,12 @@ async function renderSheet(ui: React.ReactElement) {
 describe('CommunityBottomSheet pagination', () => {
   beforeEach(() => {
     jest.mocked(useCategories).mockReturnValue(categoriesResult());
+    jest.mocked(useCountries).mockReturnValue(countriesResult());
   });
 
   test('hasNext가 false면 목록 끝에 닿아도 다음 페이지를 요청하지 않는다', async () => {
     const fetchNextPage = jest.fn();
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult({
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult({
       data: { pages: [postPage({ hasNext: false, posts: [{ postId: 1, title: '글 1' }] })], pageParams: [1] },
       fetchNextPage,
       hasNextPage: false,
@@ -103,7 +115,7 @@ describe('CommunityBottomSheet pagination', () => {
 
   test('hasNext가 true면 목록 끝에 닿았을 때 다음 페이지를 조회한다', async () => {
     const fetchNextPage = jest.fn();
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult({
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult({
       data: { pages: [postPage({ hasNext: true, posts: [{ postId: 1, title: '첫 페이지 글' }], totalPages: 2 })], pageParams: [1] },
       fetchNextPage,
       hasNextPage: true,
@@ -119,7 +131,7 @@ describe('CommunityBottomSheet pagination', () => {
 
   test('다음 페이지 조회가 실패하면 재시도 버튼을 보여주고 자동 재요청하지 않는다', async () => {
     const fetchNextPage = jest.fn();
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult({
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult({
       data: { pages: [postPage({ hasNext: true, posts: [{ postId: 1, title: '첫 페이지 글' }], totalPages: 2 })], pageParams: [1] },
       fetchNextPage,
       hasNextPage: true,

@@ -24,7 +24,7 @@ const Tag = styled.View`
   height: 24px;
   justify-content: center;
   padding: 0 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: ${({ theme }) => theme.colors.fillNeutral};
 `;
 

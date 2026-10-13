@@ -1,11 +1,14 @@
 import type {
+  CommunityCommentLikeStatus,
   CommunityCommentPage,
+  CommunityImageUpload,
   CommunityLikeStatus,
   CommunityPostDetail,
   CommunityPostPage,
   CreateCommentResponse,
   CreatePostResponse,
   ListCategoriesResponse,
+  ListCountriesResponse,
   RecordPlaceViewResponse,
   ReportResponse,
 } from '../api/communityApi';
@@ -23,8 +26,30 @@ export const postPageFixture = {
   limit: 20,
   page: 1,
   posts: [
-    { postId: 1, title: '대소고 다녀왔어요' },
-    { postId: 2, title: '오늘 오아시스 영화 봤어요' },
+    {
+      category: { categoryId: 'PLACE', categoryName: '장소' },
+      commentCount: 1,
+      contentPreview: '즐거운 경험이었습니다.',
+      countryCode: 'KR',
+      createdAt: '2026-09-01T08:48:00Z',
+      imageCount: 0,
+      likeCount: 12,
+      postId: 1,
+      region: '다사읍',
+      title: '대소고 다녀왔어요',
+      viewCount: 128,
+    },
+    {
+      category: { categoryId: 'TRAVEL', categoryName: '여행' },
+      commentCount: 0,
+      contentPreview: '오늘 하루 여러 곳을 다녀왔어요.',
+      createdAt: '2026-09-01T07:30:00Z',
+      imageCount: 0,
+      likeCount: 0,
+      postId: 2,
+      title: '오늘 오아시스 영화 봤어요',
+      viewCount: 0,
+    },
   ],
   totalCount: 2,
   totalPages: 1,
@@ -39,14 +64,27 @@ export const emptyPostPageFixture = {
   totalPages: 0,
 } satisfies CommunityPostPage;
 
+export const countriesFixture = ['KR', 'US', 'JP', 'VN', 'CN', 'TH'] satisfies ListCountriesResponse;
+
 export const postDetailFixture = {
   author: { authorId: 7, authorName: 'pingdom', profileImageUrl: undefined },
   category: { categoryId: 'PLACE', categoryName: '장소' },
   content: '즐거운 경험이었습니다.',
+  countryCode: 'KR',
   createdAt: '2026-09-01T08:48:00Z',
-  places: [{ deleted: false, placeId: 17, placeName: '대소고' }],
+  images: [],
+  places: [{
+    address: '대구광역시 달성군 다사읍 대실로 33',
+    category: '학교',
+    deleted: false,
+    placeId: 17,
+    placeName: '대소고',
+    region: '다사읍',
+  }],
   postId: 1,
+  region: '다사읍',
   title: '대소고 다녀왔어요',
+  viewCount: 128,
 } satisfies CommunityPostDetail;
 
 export const postDetailMultiplePlacesFixture = {
@@ -78,6 +116,8 @@ export const commentPageFixture = {
       commentId: 101,
       content: '저도 가보고 싶네요!',
       createdAt: '2026-09-01T09:00:00Z',
+      likeCount: 2,
+      liked: false,
     },
   ],
   hasNext: false,
@@ -118,6 +158,24 @@ export const likedStatusFixture = {
   likeCount: 13,
   liked: true,
 } satisfies CommunityLikeStatus;
+
+export const imageUploadFixture = {
+  expiresAt: '2026-09-02T09:00:00Z',
+  imageId: 501,
+  imageUrl: 'https://mock.invalid/community/images/501.jpg',
+} satisfies CommunityImageUpload;
+
+export const commentLikeStatusFixture = {
+  commentId: 101,
+  likeCount: 2,
+  liked: false,
+} satisfies CommunityCommentLikeStatus;
+
+export const commentLikedStatusFixture = {
+  ...commentLikeStatusFixture,
+  likeCount: 3,
+  liked: true,
+} satisfies CommunityCommentLikeStatus;
 
 export const reportResponseFixture = {
   reportId: 1,

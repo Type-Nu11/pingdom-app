@@ -4,13 +4,14 @@ import { Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { ApiError } from '../../../../shared/api';
-import { useCategories, useInfinitePostsByCategory } from '../../hooks/useCommunity';
+import { useCategories, useCommunityFeed, useCountries } from '../../hooks/useCommunity';
 import type { CommunityPostPage, ListCategoriesResponse } from '../../api/communityApi';
 import CommunityBottomSheet from '../CommunityBottomSheet';
 
 jest.mock('../../hooks/useCommunity', () => ({
   useCategories: jest.fn(),
-  useInfinitePostsByCategory: jest.fn(),
+  useCommunityFeed: jest.fn(),
+  useCountries: jest.fn(),
 }));
 
 const navigation = {
@@ -53,6 +54,16 @@ function categoriesResult(overrides: Record<string, unknown> = {}) {
   } as unknown as ReturnType<typeof useCategories>);
 }
 
+function countriesResult(overrides: Record<string, unknown> = {}) {
+  return ({
+    data: ['KR', 'US', 'JP'],
+    isError: false,
+    isLoading: false,
+    refetch: jest.fn(),
+    ...overrides,
+  } as unknown as ReturnType<typeof useCountries>);
+}
+
 function postPage(overrides: Partial<CommunityPostPage> = {}): CommunityPostPage {
   return {
     hasNext: false,
@@ -77,7 +88,7 @@ function postsResult(overrides: Record<string, unknown> = {}) {
     isLoading: false,
     refetch: jest.fn(),
     ...overrides,
-  } as unknown as ReturnType<typeof useInfinitePostsByCategory>);
+  } as unknown as ReturnType<typeof useCommunityFeed>);
 }
 
 async function renderSheet(ui: React.ReactElement) {
@@ -87,10 +98,11 @@ async function renderSheet(ui: React.ReactElement) {
 describe('CommunityBottomSheet loading/empty/error states', () => {
   beforeEach(() => {
     jest.mocked(useCategories).mockReturnValue(categoriesResult());
+    jest.mocked(useCountries).mockReturnValue(countriesResult());
   });
 
   test('카테고리와 게시글을 불러오는 동안 스켈레톤을 보여준다', async () => {
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult({ data: undefined, isLoading: true }));
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult({ data: undefined, isLoading: true }));
 
     await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
 
@@ -98,7 +110,7 @@ describe('CommunityBottomSheet loading/empty/error states', () => {
   });
 
   test('게시글이 없으면 빈 상태를 보여준다', async () => {
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult());
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult());
 
     await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
 
@@ -106,7 +118,7 @@ describe('CommunityBottomSheet loading/empty/error states', () => {
   });
 
   test('커뮤니티에서 즐겨찾기 탭을 누르면 이동 콜백을 호출한다', async () => {
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult());
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult());
     const onOpenFavorites = jest.fn();
     const { user } = await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} onOpenFavorites={onOpenFavorites} />);
     await user.press(screen.getByRole('tab', { name: '즐겨찾기' }));
@@ -115,7 +127,7 @@ describe('CommunityBottomSheet loading/empty/error states', () => {
 
   test('최초 조회 오류는 재시도로 표시하고 재시도를 누르면 다시 조회한다', async () => {
     const refetch = jest.fn();
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(
+    jest.mocked(useCommunityFeed).mockReturnValue(
       postsResult({ data: undefined, error: new ApiError('실패', { status: 500 }), isError: true, refetch }),
     );
 
@@ -131,15 +143,52 @@ describe('CommunityBottomSheet loading/empty/error states', () => {
 describe('CommunityBottomSheet Figma layout', () => {
   beforeEach(() => {
     jest.mocked(useCategories).mockReturnValue(categoriesResult());
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult({
+    jest.mocked(useCountries).mockReturnValue(countriesResult());
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult({
       data: { pages: [postPage({ posts: [{ postId: 7, title: '성수 팝업 후기' }], totalCount: 1, totalPages: 1 })], pageParams: [1] },
     }));
   });
 
-  test('tags each card with the category the list was fetched for', async () => {
+  test('opens on the "전체" tab and tags a card only with the category its item carries', async () => {
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult({
+      data: {
+        pages: [postPage({
+          posts: [
+            { category: { categoryId: 'TRAVEL', categoryName: '여행' }, postId: 7, title: '성수 팝업 후기' },
+            { postId: 8, title: '카테고리 없는 글' },
+          ],
+          totalCount: 2,
+          totalPages: 1,
+        })],
+        pageParams: [1],
+      },
+    }));
+
     await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
 
+    expect(screen.getByTestId('v2-community-sheet-category-all')).toBeSelected();
+    expect(screen.getByTestId('v2-community-post-7-tag')).toHaveTextContent('여행');
+    expect(screen.queryByTestId('v2-community-post-8-tag')).toBeNull();
+  });
+
+  test('falls back to the selected category for an item returned without one', async () => {
+    const { user } = await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
+
+    await user.press(screen.getByTestId('v2-community-sheet-category-PLACE'));
+
     expect(screen.getByTestId('v2-community-post-7-tag')).toHaveTextContent('장소');
+  });
+
+  test('shows the 44px country filter button in the title row', async () => {
+    await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
+
+    expect(screen.getByTestId('v2-community-sheet-filter')).toHaveStyle({
+      backgroundColor: 'rgba(255, 255, 255, 0.56)',
+      borderTopLeftRadius: 22,
+      height: 44,
+      width: 44,
+    });
+    expect(screen.getByLabelText('국가 필터')).toBeTruthy();
   });
 
   test('shows the write button only on the expanded sheet, like the Figma frames', async () => {
@@ -160,7 +209,8 @@ describe('CommunityBottomSheet category failure', () => {
       error: new ApiError('Network error', { isNetworkError: true }),
       isError: true,
     }));
-    jest.mocked(useInfinitePostsByCategory).mockReturnValue(postsResult());
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult());
+    jest.mocked(useCountries).mockReturnValue(countriesResult());
 
     await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
 

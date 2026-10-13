@@ -21,6 +21,7 @@ type Props = {
   onShowMap?: () => void;
   retryDisabled?: boolean;
   historical?: boolean;
+  onSelectReservationPlace?: (place: VoicePlaceFacts) => void;
 };
 
 export function VoiceCommandResults(props: Props) {
@@ -46,7 +47,7 @@ function hasPlaceCards(state: VoiceCommandViewState): boolean {
       && state.result.outcome.data.places.length > 0);
 }
 
-function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = false, historical = false }: Props) {
+function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = false, historical = false, onSelectReservationPlace }: Props) {
   const { t } = useTranslation();
   const resultPlaces = state.phase === 'result' && state.result.outcome.status === 'succeeded'
     ? (state.result.command === 'searchNearbyPlaces' || state.result.command === 'searchNearbyReservablePlaces')
@@ -65,7 +66,7 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
   </>;
   const places = (items: readonly VoicePlaceFacts[]) => <>
     <Cards horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} key={item.id} />)}
+      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} onReserve={!historical && onSelectReservationPlace ? () => onSelectReservationPlace(item) : undefined} key={item.id} />)}
     </Cards>
     {state.phase === 'result' && state.text ? <AssistantMarkdown>{state.text}</AssistantMarkdown> : <Summary>{t(state.phase === 'result' && state.result.command === 'searchNearbyPlaces'
       ? 'voiceAssistant.command.nearbySummary' : 'voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>}
@@ -133,7 +134,7 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
   return null;
 }
 
-function PlaceCard({ place, imageUrl }: { place: VoicePlaceFacts; imageUrl?: string }) {
+function PlaceCard({ place, imageUrl, onReserve }: { place: VoicePlaceFacts; imageUrl?: string; onReserve?: () => void }) {
   const { t } = useTranslation();
   return <CardWrap>
     <CardImage testID={`voice-place-image-${place.id}`} source={imageUrl ? { uri: imageUrl } : placeCardImage} resizeMode="cover" accessibilityLabel={place.name}>
@@ -152,6 +153,7 @@ function PlaceCard({ place, imageUrl }: { place: VoicePlaceFacts; imageUrl?: str
       <Address numberOfLines={1}>{place.address || t(`voiceAssistant.command.operating.${place.operatingStatus}`)}</Address>
       {place.distanceMeters !== undefined && <Distance>{t('voiceAssistant.command.distance', { distance: (place.distanceMeters / 1000).toFixed(2) })}</Distance>}
     </CardDetails>
+    {onReserve && <RetryButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.reservation.choosePlace')} onPress={onReserve} testID={`voice-reserve-place-${place.id}`}><RetryText>{t('voiceAssistant.reservation.choosePlace')}</RetryText></RetryButton>}
   </CardWrap>;
 }
 

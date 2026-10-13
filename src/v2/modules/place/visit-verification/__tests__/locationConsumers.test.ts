@@ -1,12 +1,13 @@
 import * as Location from 'expo-location';
 import { getCurrentCoordinate } from '../../../../shared/location/currentLocation';
+import { watchCurrentLocation } from '../../map/location/services/locationService';
 import { getCurrentLocation } from '../../map/location';
 import { locationPermissionService } from '../services/locationPermission';
 
 jest.mock('expo-location', () => ({
   Accuracy: { High: 4, Balanced: 3 },
   getForegroundPermissionsAsync: jest.fn(), requestForegroundPermissionsAsync: jest.fn(),
-  getCurrentPositionAsync: jest.fn(),
+  getCurrentPositionAsync: jest.fn(), watchPositionAsync: jest.fn(),
 }));
 const permission = (status: 'denied' | 'granted' | 'undetermined', canAskAgain = true): Location.LocationPermissionResponse => ({
   status: status as Location.PermissionStatus, canAskAgain, granted: status === 'granted', expires: 'never',
@@ -45,4 +46,20 @@ test('visit verification status lookup retains undetermined without requesting o
   expect(await locationPermissionService.getStatus()).toBe('undetermined');
   expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
   expect(Location.getCurrentPositionAsync).not.toHaveBeenCalled();
+});
+
+test('route start requests high accuracy while ordinary map requests retain balanced accuracy', async () => {
+  jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue(permission('granted'));
+  await getCurrentLocation(false, true);
+  expect(Location.getCurrentPositionAsync).toHaveBeenLastCalledWith({ accuracy: Location.Accuracy.High });
+  await getCurrentLocation(false);
+  expect(Location.getCurrentPositionAsync).toHaveBeenLastCalledWith({ accuracy: Location.Accuracy.Balanced });
+});
+
+test('route tracking requests updates even while stationary without changing ordinary map watching', async () => {
+  const listener = jest.fn();
+  await watchCurrentLocation(listener, true);
+  expect(Location.watchPositionAsync).toHaveBeenLastCalledWith({ accuracy: Location.Accuracy.High, distanceInterval: 0, timeInterval: 1000 }, expect.any(Function));
+  await watchCurrentLocation(listener);
+  expect(Location.watchPositionAsync).toHaveBeenLastCalledWith({ accuracy: Location.Accuracy.Balanced, distanceInterval: 10, timeInterval: 5000 }, expect.any(Function));
 });

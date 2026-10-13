@@ -11,8 +11,8 @@ import GlassSurface from '../../presentation/components/GlassSurface';
 import type { RouteDestination } from '../model/routeUi';
 import { hasRouteDestinationCoordinates } from '../model/routeUi';
 import type { EndpointRole } from './RouteEndpointRows';
-import CloseIcon from '../assets/close.svg';
-import ShareIcon from '../assets/share.svg';
+import RouteHeader from './RouteHeader';
+import { formatDistance } from '../../../../../shared/i18n/formatters';
 import OriginIcon from '../assets/origin.svg';
 import DestinationIcon from '../assets/edit_destination.svg';
 import StarIcon from '../assets/saved_star.svg';
@@ -27,7 +27,7 @@ type Props = {
 
 /** Figma 8892:11110. Saved places and searches are account-owned live data. */
 export default function RouteEndpointEditor(props: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -50,7 +50,7 @@ export default function RouteEndpointEditor(props: Props) {
   const raised = theme.colorScheme === 'dark' ? 'rgba(52,52,58,0.70)' : 'rgba(255,255,255,0.56)';
   const select = (point: RouteDestination | null) => {
     if (point && !hasRouteDestinationCoordinates(point)) return;
-    if (point && props.recentSearchOwner) void recent.recordSearch({ query: point.name, category: point.category === 'game' ? 'etc' : point.category ?? 'etc' }, props.recentSearchOwner);
+    if (point && props.recentSearchOwner) void recent.recordSearch({ query: point.name, address: point.address ?? undefined, category: point.category === 'game' ? 'etc' : point.category ?? 'etc' }, props.recentSearchOwner);
     Keyboard.dismiss(); props.onSelect(point);
   };
   function button(label: string, onPress: () => void) {
@@ -59,21 +59,17 @@ export default function RouteEndpointEditor(props: Props) {
     </Pressable>;
   }
   const savedPlaces = saved.places.filter(hasRouteDestinationCoordinates);
-  return <View testID="route-endpoint-editor" style={{ position: 'absolute', left: 8, right: 8, bottom: Math.max(8, props.bottomInset), height: Math.min(558, props.maxHeight) }}>
+  return <View testID="route-endpoint-editor" style={{ position: 'absolute', left: 8, right: 8, bottom: Math.max(8, props.bottomInset), height: Math.min(558, props.maxHeight), boxShadow: theme.liquidGlass.sheet.shadow }}>
     <GlassSurface tintColor={theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
       style={{ flex: 1, borderTopLeftRadius: 36, borderTopRightRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, overflow: 'hidden', borderWidth: 1, borderColor: theme.liquidGlass.sheet.rim }}>
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" bounces={false}
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 16, paddingHorizontal: 16, gap: 12 }}>
-        <View accessible={false} style={{ width: 56, height: 5, borderRadius: 7, backgroundColor: theme.colors.border, alignSelf: 'center', marginBottom: -9 }} />
-        <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('routes.share')} onPress={props.onShare} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ShareIcon /></Pressable>
-          <Text accessibilityRole="header" style={{ fontSize: 20, fontWeight: '700', color: ink }}>{t('routes.title')}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('routes.editor.close')} onPress={() => { Keyboard.dismiss(); props.onClose(); }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><CloseIcon /></Pressable>
-        </View>
+        <View accessible={false} style={{ width: 56, height: 5, borderRadius: 7, backgroundColor: theme.colors.secondaryNormal, alignSelf: 'center' }} />
+        <RouteHeader editing onShare={props.onShare} onClose={() => { Keyboard.dismiss(); props.onClose(); }} />
         <View style={{ borderRadius: 20, backgroundColor: raised }}>
           {(['origin', 'destination'] as const).map(role => {
             const point = role === 'origin' ? props.origin : props.destination;
-            return role === props.role ? <View key={role} style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 10, backgroundColor: theme.colors.background, borderColor: theme.colors.primaryPressed, borderWidth: 1.5, borderRadius: 16 }}>
+            return role === props.role ? <View key={role} style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 10, backgroundColor: theme.colors.background, borderColor: theme.colors.selectedBorder, borderWidth: 1.5, borderRadius: 16 }}>
               {role === 'origin' ? <View style={{ width: 28, alignItems: 'center' }}><OriginIcon /></View> : <DestinationIcon />}
               <View style={{ flex: 1, paddingVertical: 5 }}>
                 <Text style={{ color: muted, fontSize: 12, fontWeight: '500' }}>{t(`routes.${role}`)}</Text>
@@ -85,7 +81,7 @@ export default function RouteEndpointEditor(props: Props) {
             </View> : <Pressable key={role} accessibilityRole="button" accessibilityLabel={t('routes.editor.editEndpoint', { role: t(`routes.${role}`), name: point?.name ?? t('routes.currentLocation') })}
               onPress={() => props.onRole(role)} style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 12 }}>
               <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>{role === 'origin' ? <OriginIcon /> : <DestinationIcon />}</View>
-              <View style={{ flex: 1, gap: 2 }}><Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{point?.name ?? t('routes.currentLocation')}</Text>
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{point?.name ?? t('routes.currentLocation')}</Text>
                 <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{point?.address || t(`routes.${role}`)}</Text></View>
             </Pressable>;
           })}
@@ -100,7 +96,7 @@ export default function RouteEndpointEditor(props: Props) {
             : search.isError ? <View>{button(t('routes.editor.retry'), () => { void search.refetch(); })}<Text style={{ color: muted }}>{t('routes.editor.searchFailed')}</Text></View>
               : !results.length ? <Text style={{ color: muted }}>{t('routes.editor.emptySearch')}</Text>
                 : results.map(p => <Pressable key={p.id} accessibilityRole="button" onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.coordinate.lat, longitude: p.coordinate.lng, category: toMarkerCategory(p.category) })}
-                  style={{ minHeight: 60, paddingVertical: 12, borderBottomWidth: 0.5, borderColor: theme.colors.border }}>
+                  style={{ minHeight: 60, paddingVertical: 12, borderBottomWidth: 1, borderColor: theme.colors.border }}>
                   <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{p.name}</Text><Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.address}</Text>
                 </Pressable>)}
         </View> : <>
@@ -113,9 +109,12 @@ export default function RouteEndpointEditor(props: Props) {
               {savedPlaces.map(p => <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={p.name}
                 onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude, category: toMarkerCategory(p.category) })}
                 style={{ width: showAll ? undefined : 150, padding: 12, borderRadius: 12, gap: 6, backgroundColor: theme.colors.surfaceMuted }}>
-                <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}><StarIcon /></View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primaryTint, alignItems: 'center', justifyContent: 'center' }}><StarIcon /></View>
+                  {typeof p.distanceMeters === 'number' && Number.isFinite(p.distanceMeters) && p.distanceMeters >= 0 && <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.colors.labelAssistive, fontSize: 12 }}>{formatDistance(p.distanceMeters, i18n.resolvedLanguage ?? 'en')}</Text>}
+                </View>
                 <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{p.name}</Text>
-                <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.address}</Text>
+                <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.category ? t(`map.categories.${toMarkerCategory(p.category)}`) : p.address}</Text>
               </Pressable>)}
               {showAll && saved.hasNextPage && button(t('routes.editor.more'), () => { if (!saved.isFetchingNextPage) void saved.fetchNextPage(); })}
             </ScrollView>}
@@ -125,9 +124,10 @@ export default function RouteEndpointEditor(props: Props) {
               onPress={() => { if (props.recentSearchOwner) void recent.clearSearches(props.recentSearchOwner); }} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: muted, fontSize: 12 }}>{t('routes.editor.clear')}</Text></Pressable>
           </View>
           {history.length ? history.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={t('routes.editor.recentSearch', { name: item.query })}
-            onPress={() => setQuery(item.query)} style={{ minHeight: 64, paddingVertical: 16, gap: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, borderColor: theme.colors.border }}>
+            onPress={() => setQuery(item.query)} style={{ minHeight: 64, paddingVertical: 16, gap: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: theme.colors.border }}>
             <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' }}><ClockIcon /></View>
-            <Text numberOfLines={1} style={{ flex: 1, color: ink, fontSize: 16, fontWeight: '500' }}>{item.query}</Text>
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{item.query}</Text>
+              {!!item.address && <Text numberOfLines={1} style={{ color: theme.colors.labelAssistive, fontSize: 12, lineHeight: 15.6 }}>{item.address}</Text>}</View>
           </Pressable>) : <Text style={{ color: muted }}>{t('routes.editor.emptyRecent')}</Text>}
         </>}
       </ScrollView>

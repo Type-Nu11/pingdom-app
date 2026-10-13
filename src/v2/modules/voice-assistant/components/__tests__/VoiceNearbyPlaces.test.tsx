@@ -32,10 +32,11 @@ test.each([0, 1, 3])('general discovery renders %s API result cards without rese
 test('Figma cards use server media and distance, and sharing is an explicit user action', async () => {
   jest.mocked(usePlaceExplorationMediaList).mockReturnValue({ '1': ['https://cdn.example.com/place-1.jpg'] });
   const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
+  const selectReservationPlace = jest.fn();
   const result: AppCommandResult = { schemaVersion: 1, kind: 'command_result', source: 'app', id: 'media-result',
     commandId: 'media', command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: { coverage: 'nearest_places',
       places: [{ id: 1, name: '조회한 카페', address: '서울 실제 주소', touristCategories: ['CAFE'], operatingStatus: 'OPERATING', distanceMeters: 1230 }] } } };
-  await renderWithProviders(<VoiceCommandResults state={{ phase: 'result', result, text: '조회된 카페를 지도에서 확인해 보세요.' }} />);
+  await renderWithProviders(<VoiceCommandResults state={{ phase: 'result', result, text: '조회된 카페를 지도에서 확인해 보세요.' }} onSelectReservationPlace={selectReservationPlace} />);
   expect(screen.getAllByText('조회된 카페를 지도에서 확인해 보세요.')).toHaveLength(1);
   expect(screen.getByText('조회된 카페를 지도에서 확인해 보세요.')).toHaveStyle({ color: '#0C0C0D', fontFamily: 'PretendardStdVariable-Bold' });
   expect(JSON.stringify(screen.toJSON())).toContain('https://cdn.example.com/place-1.jpg');
@@ -43,6 +44,9 @@ test('Figma cards use server media and distance, and sharing is an explicit user
   expect(screen.getByText('서울 실제 주소')).toBeVisible();
   expect(screen.queryByText('예시 이미지')).toBeNull();
   expect(share).not.toHaveBeenCalled();
+  expect(selectReservationPlace).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByTestId('voice-reserve-place-1'));
+  expect(selectReservationPlace).toHaveBeenCalledWith(result.outcome.status === 'succeeded' ? result.outcome.data.places[0] : undefined);
   await fireEvent.press(screen.getByRole('button', { name: '공유' }));
   expect(share).toHaveBeenCalledWith({ message: '조회한 카페\n서울 실제 주소' });
   share.mockRestore();

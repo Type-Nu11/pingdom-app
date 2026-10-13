@@ -33,8 +33,18 @@ export const categorySample: CommunityCategory = {
 };
 
 export const postSummarySample: CommunityPostSummary = {
+  category: { categoryId: 'PLACE', categoryName: '장소' },
+  commentCount: 5,
+  contentPreview: '주말에 가족이랑 갈 만한 곳 찾다가 발견했는데',
+  countryCode: 'KR',
+  createdAt: '2026-09-01T09:00:00Z',
+  imageCount: 4,
+  imageUrl: 'https://cdn.test/community/1.jpg',
+  likeCount: 8,
   postId: 1,
+  region: '구지면',
   title: '대소고 다녀왔어요',
+  viewCount: 128,
 };
 
 export const commentSample: CommunityComment = {
@@ -43,4 +53,7 @@ export const commentSample: CommunityComment = {
   commentId: 1,
   content: '저도 가보고 싶네요!',
   createdAt: '2026-09-01T09:00:00Z',
+  likeCount: 3,
+  liked: false,
+  parentCommentId: 7,
 };

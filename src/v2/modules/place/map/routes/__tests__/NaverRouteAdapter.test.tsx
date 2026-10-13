@@ -26,6 +26,18 @@ test('native projected route anchor is forwarded as screen points', async () => 
   expect(onRouteAnchor).toHaveBeenCalledWith({ x: 100, y: 250 });
 });
 
+test('renders curved corners without altering provider endpoints or regenerating geometry on GPS updates', async () => {
+  const path = [{ lat: 37, lng: 127 }, { lat: 37, lng: 127.001 }, { lat: 37.001, lng: 127.001 }];
+  const { rerender } = await renderWithProviders(<NaverMapAdapter center={path[0]} markers={[]} routeCoordinates={path} />);
+  const geometry = screen.getByTestId('v2-naver-map').props.routeCoordinates;
+  expect(geometry.length).toBeGreaterThan(path.length);
+  expect(geometry[0]).toBe(path[0]);
+  expect(geometry.at(-1)).toBe(path.at(-1));
+  await rerender(<NaverMapAdapter center={path[0]} markers={[]} routeCoordinates={path} userCoordinate={{ lat: 37, lng: 127.0001 }} />);
+  expect(screen.getByTestId('v2-naver-map').props.routeCoordinates).toBe(geometry);
+  expect(path).toHaveLength(3);
+});
+
 
 test('main map forwards manual gestures so GPS tracking can be released', async () => {
   const onCameraGesture = jest.fn();

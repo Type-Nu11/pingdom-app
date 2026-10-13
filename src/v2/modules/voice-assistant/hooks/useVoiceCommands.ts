@@ -110,7 +110,9 @@ export function useVoiceCommands(context: VoiceCommandContext) {
     return 'accepted' as const;
   }, [controller]);
   const cancel = useCallback(() => { dispatcher.clear(); void controller.close(); setCommandState({ phase: 'canceled' }); }, [controller, dispatcher]);
-  const dismissFeedback = useCallback(() => { dispatcher.clear(); setCommandState({ phase: 'idle' }); }, [dispatcher]);
+  // Dismiss presentation only. The chat still contains verified place IDs, so
+  // preserve their provenance until a replacement search or context/session change.
+  const dismissFeedback = useCallback(() => { setCommandState({ phase: 'idle' }); }, []);
   const retry = useCallback(async () => {
     try { setCommandState({ phase: 'processing' }); await controller.retry(); }
     catch (error) { setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
