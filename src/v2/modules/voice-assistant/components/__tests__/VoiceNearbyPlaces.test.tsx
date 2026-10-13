@@ -39,3 +39,19 @@ test('Figma cards use server media and distance, and sharing is an explicit user
   expect(share).toHaveBeenCalledWith({ message: '조회한 카페\n서울 실제 주소' });
   share.mockRestore();
 });
+
+test.each(['empty', 'failed'] as const)('the %s result shows app-owned copy instead of an unsupported AI database claim', async kind => {
+  const result: AppCommandResult = { schemaVersion: 1, kind: 'command_result', source: 'app', id: 'safe-result',
+    commandId: 'safe', command: 'searchNearbyPlaces', outcome: kind === 'empty'
+      ? { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } }
+      : { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } };
+  await renderWithProviders(<VoiceCommandResults state={{ phase: 'result', result, text: '데이터베이스에 없습니다.' }} />);
+  expect(screen.queryByText('데이터베이스에 없습니다.')).toBeNull();
+  if (kind === 'empty') {
+    expect(screen.getByTestId('voice-command-empty')).toBeVisible();
+    expect(screen.queryByTestId('voice-command-retry')).toBeNull();
+  } else {
+    expect(screen.getByText('서버 정보를 확인할 수 없습니다.')).toBeVisible();
+    expect(screen.queryByTestId('voice-command-empty')).toBeNull();
+  }
+});

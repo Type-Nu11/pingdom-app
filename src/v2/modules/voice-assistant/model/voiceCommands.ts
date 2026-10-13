@@ -117,7 +117,10 @@ const searchNearbyPlaces: VoiceCommandHandler<'searchNearbyPlaces'> = async (req
   const list = await ex.query(ex.queries.list({ latitude: r.location!.latitude, longitude: r.location!.longitude,
     radiusKm: r.radiusKm, page: 1, limit, sort: 'NEAREST',
     ...(request.args.keyword ? { keyword: request.args.keyword.trim() } : {}),
-    ...(request.args.touristCategory ? { touristCategory: request.args.touristCategory } : {}) }));
+    ...(request.args.category ? { category: request.args.category } : {}),
+    // Name/menu keywords take priority over inferred tourism tags. Legacy restaurant
+    // category does not imply that its touristCategories contains FOOD.
+    ...(!request.args.keyword?.trim() && request.args.touristCategory ? { touristCategory: request.args.touristCategory } : {}) }));
   if (!list.data || !Array.isArray(list.data.places)) return invalid();
   const seen = new Set<number>();
   const places: VoicePlaceFacts[] = [];
@@ -220,7 +223,7 @@ export const VOICE_COMMAND_REGISTRY = Object.freeze({
     handler: async () => Object.freeze({ sessionStopped: true as const }) }),
 } satisfies Registry);
 
-function safeError(error: unknown): CommandFailureCode {
+function safeError(error: unknown, command?: VoiceCommandName): CommandFailureCode {
   if (error instanceof VoiceCommandError) return error.code;
   if (error instanceof VoiceSessionError && error.code === 'REPLAY_CONFLICT') return 'REPLAY_CONFLICT';
   if (error instanceof ApiError) {
@@ -232,7 +235,9 @@ function safeError(error: unknown): CommandFailureCode {
     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return 'TIMEOUT';
     if (error.status === 401) return 'AUTHENTICATION_REQUIRED';
     if (error.status === 403) return 'FORBIDDEN';
-    if (error.status === 404) return 'NOT_FOUND';
+    // A failed collection route is not proof that a searched place does not exist.
+    if (error.status === 404) return command === 'searchNearbyPlaces' || command === 'searchNearbyReservablePlaces'
+      ? 'INVALID_SERVER_RESPONSE' : 'NOT_FOUND';
     if (error.status === 429) return 'RATE_LIMITED';
     if (error.status && error.status >= 500) return 'SERVER_ERROR';
     if (error.isNetworkError) return 'NETWORK_ERROR';
@@ -308,7 +313,7 @@ export function createVoiceCommandDispatcher(options: {
       if (command.command === 'prepareReservation' && current()) provenance.clearAvailability();
       if (current()) {
         const outcome = error instanceof VoiceClarification ? Object.freeze({ status: 'clarification_required' as const, field: error.field })
-          : Object.freeze({ status: 'rejected' as const, code: timedOut ? 'TIMEOUT' as const : safeError(error) });
+          : Object.freeze({ status: 'rejected' as const, code: timedOut ? 'TIMEOUT' as const : safeError(error, command.command) });
         options.publish(Object.freeze({ schemaVersion: 1, kind: 'command_result', source: 'app', id: `app-result-${++resultSequence}`,
           commandId: command.id, command: command.command, outcome }) as AppCommandResult);
       }

@@ -161,7 +161,7 @@ test('a newer generation suppresses late read publication and provenance', async
   resolve({ places: [{ id: 1 }] }); await first;
   expect(x.results).toHaveLength(0); expect(x.dispatcher.provenance.places()).toBeUndefined();
 });
-test.each([[401, 'AUTHENTICATION_REQUIRED'], [403, 'FORBIDDEN'], [404, 'NOT_FOUND'], [429, 'RATE_LIMITED'], [503, 'SERVER_ERROR']] as const)('sanitizes HTTP %s', async (status, code) => {
+test.each([[401, 'AUTHENTICATION_REQUIRED'], [403, 'FORBIDDEN'], [404, 'INVALID_SERVER_RESPONSE'], [429, 'RATE_LIMITED'], [503, 'SERVER_ERROR']] as const)('sanitizes HTTP %s', async (status, code) => {
   const x = setup(); x.setFailure(new ApiError('JWT prompt coordinates secret', { status, responseBody: 'secret' })); await x.controller.start();
   expect((await x.send())?.outcome).toEqual({ status: 'rejected', code }); expect(JSON.stringify(x.results)).not.toContain('secret');
 });
@@ -394,6 +394,22 @@ test('user-owned quote tokens are removed from shared cache after preparation', 
 
 const generalSearch = (args = {}, id = 'general-search') => command('searchNearbyPlaces', { useCurrentLocation: true, ...args }, id);
 
+test('restaurant discovery uses the general category without requiring a tourism FOOD tag', async () => {
+  const x = setup();
+  x.setPlaces({ places: [{ ...facts, id: 70095, name: '용짬뽕', category: 'RESTAURANT', touristCategories: [] }] });
+  await x.controller.start();
+  expect(await x.send(generalSearch({ category: 'RESTAURANT' }))).toMatchObject({ outcome: { status: 'succeeded',
+    data: { places: [expect.objectContaining({ id: 70095, touristCategories: [] })] } } });
+  expect(x.calls[0].params).toEqual({ category: 'RESTAURANT', latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 3, sort: 'NEAREST' });
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
+test('explicit general category and tourism tag are passed separately without conversion', async () => {
+  const x = setup(); await x.controller.start();
+  await x.send(generalSearch({ category: 'RESTAURANT', touristCategory: 'FOOD' }));
+  expect(x.calls[0].params).toMatchObject({ category: 'RESTAURANT', touristCategory: 'FOOD' });
+});
+
 test('keyword discovery passes the keyword and app coordinates without any reservation reads', async () => {
   const x = setup();
   x.setPlaces({ places: [1, 2, 3].map(id => ({ ...facts, id, name: `갈비탕 ${id}` })) });
@@ -458,4 +474,21 @@ test('general discovery projects server distance while refusing malformed distan
   x.setPlaces({ places: [{ ...facts, distanceMeters: -10 }] });
   expect(await x.send(generalSearch({ touristCategory: 'FOOD' }, 'bad-distance')))
     .toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
+});
+
+test('name or menu searches do not exclude untagged restaurants with inferred tourism categories', async () => {
+  const x = setup();
+  x.setPlaces({ places: [{ ...facts, id: 70095, name: '용짬뽕', category: 'RESTAURANT', touristCategories: [] }] });
+  await x.controller.start();
+  const result = await x.send(generalSearch({ keyword: ' 용짬뽕 ', touristCategory: 'FOOD' }));
+  expect(result).toMatchObject({ outcome: { status: 'succeeded', data: { places: [{ id: 70095, name: '용짬뽕', touristCategories: [] }] } } });
+  expect(x.calls[0]).toMatchObject({ path: '/places', params: { keyword: '용짬뽕', limit: 3, latitude: 37.5, longitude: 127, radiusKm: 5 } });
+  expect(x.calls[0].params).not.toHaveProperty('touristCategory');
+});
+
+test('a failed search route remains a request failure instead of implying a missing place', async () => {
+  const x = setup();
+  x.setFailure(new ApiError('route unavailable', { status: 404, code: 'RESOURCE_NOT_FOUND' }));
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: '용짬뽕' }))).toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
 });

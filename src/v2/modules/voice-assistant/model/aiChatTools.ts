@@ -1,4 +1,5 @@
 import type { components } from '../../../shared/api/generated/aiChat';
+import { VOICE_PLACE_CATEGORIES } from './voiceAssistantCommand.types';
 
 // Mirrors the app command schema; execution still passes the normative command parser.
 // General search uses app-owned location permission, never provider-supplied coordinates.
@@ -7,22 +8,22 @@ export const AI_CHAT_TOOLS = [
     "type": "function",
     "function": {
       "name": "searchNearbyPlaces",
-      "description": "현재 위치 주변 장소를 검색합니다. keyword와 카테고리는 선택이며 날짜, 시간, 인원은 필요하지 않습니다.",
+      "description": "현재 위치 주변 장소를 검색합니다. 일반 음식점·식당 검색은 category=RESTAURANT만 사용하고 keyword나 touristCategory=FOOD를 추가하지 않습니다. 장소명·메뉴명은 keyword로 검색하며, 주변 아무거나 검색은 keyword·category·touristCategory를 모두 생략합니다. category는 일반 장소 분류, touristCategory는 별개 관광 태그이며 서로 치환하지 않습니다. 앱이 좌표와 최대 3개 제한을 붙이므로 위치나 개수를 묻지 않습니다. 날짜, 시간, 인원은 필요하지 않습니다.",
       "parameters": {
         "type": "object",
         "additionalProperties": false,
         "required": [],
         "properties": {
+          "category": {
+            "type": "string",
+            "enum": [...VOICE_PLACE_CATEGORIES],
+            "description": "일반 장소 분류. 현재 운영 API에서 검증된 음식점 값은 RESTAURANT입니다. 관광 FOOD 태그와 다릅니다."
+          },
           "keyword": {
             "type": "string",
             "minLength": 1,
             "maxLength": 100,
             "pattern": "\\S"
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 3
           },
           "touristCategory": {
             "type": "string",

@@ -19,6 +19,14 @@ const reject = (value: unknown, code?: string) => {
 };
 
 describe('provider trust boundary', () => {
+  it('keeps general category and tourism tag as independent command fields', () => {
+    expect(parseVoiceAssistantEnvelope(envelope({ command: 'searchNearbyPlaces', args: {
+      useCurrentLocation: true, category: 'RESTAURANT', touristCategory: 'FOOD',
+    } }))).toMatchObject({ ok: true, value: { args: { category: 'RESTAURANT', touristCategory: 'FOOD' } } });
+  });
+  it.each(['FOOD', 'CAFE', 'UNKNOWN', '', null, undefined])('rejects unverified general category %p', category => {
+    reject(envelope({ command: 'searchNearbyPlaces', args: { useCurrentLocation: true, category } }));
+  });
   it.each(Object.values(commands))('accepts the $command contract', (command) => {
     expect(parseVoiceAssistantEnvelope(envelope(command))).toEqual({ ok: true, value: envelope(command) });
   });

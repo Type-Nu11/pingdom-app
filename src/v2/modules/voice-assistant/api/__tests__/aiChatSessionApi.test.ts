@@ -5,7 +5,7 @@ import { AI_CHAT_TOOLS } from '../../model/aiChatTools';
 import { voiceSessionErrors } from '../../i18n/voiceSessionErrors';
 import type { AppCommandResult } from '../../model/voiceAssistantCommand.types';
 
-const call = (name = 'searchNearbyPlaces', args: unknown = { keyword: '갈비탕', limit: 3 }, id = 'call_1') => ({ id, type: 'function', function: { name, arguments: args } });
+const call = (name = 'searchNearbyPlaces', args: unknown = { keyword: '갈비탕' }, id = 'call_1') => ({ id, type: 'function', function: { name, arguments: args } });
 const completion = (message: unknown, finishReason = 'stop') => ({ id: 'completion-1', object: 'chat.completion', model: 'openai/gpt-oss-20b',
   usage: {}, usage_breakdown: null, system_fingerprint: 'provider-fingerprint', x_groq: {}, service_tier: 'on_demand',
   choices: [{ index: 0, message, finish_reason: finishReason }] });
@@ -20,7 +20,7 @@ const result = (commandId: string): AppCommandResult => ({ schemaVersion: 1, id:
 test('live completion replies show only assistant content and serialize tool history for the provider', async () => {
   const x = replies([
     completion({ role: 'assistant', content: '안녕하세요.', reasoning: 'private reasoning' }),
-    completion({ role: 'assistant', content: null, tool_calls: [call('searchNearbyPlaces', '{"keyword":"갈비탕","limit":3}')] }, 'tool_calls'),
+    completion({ role: 'assistant', content: null, tool_calls: [call('searchNearbyPlaces', '{"keyword":"갈비탕"}')] }, 'tool_calls'),
     completion({ role: 'assistant', content: '검색 결과가 없습니다.' }),
   ]);
   const answers: string[] = []; const commands: string[] = [];
@@ -36,7 +36,7 @@ test('live completion replies show only assistant content and serialize tool his
     expect(x.requests).toHaveLength(3);
     const history = x.requests[2].body.messages;
     const assistant = history.find((m: any) => m.tool_calls?.length);
-    expect(assistant.tool_calls[0].function.arguments).toBe('{"keyword":"갈비탕","limit":3}');
+    expect(assistant.tool_calls[0].function.arguments).toBe('{"keyword":"갈비탕"}');
     const tool = history.find((m: any) => m.role === 'tool');
     expect(tool.tool_call_id).toBe('call_1');
     expect(JSON.parse(tool.content)).toEqual(result('unused').outcome);

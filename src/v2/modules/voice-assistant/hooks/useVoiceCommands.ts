@@ -42,7 +42,15 @@ export function useVoiceCommands(context: VoiceCommandContext) {
       else setCommandState({ phase: 'error',
         code: envelope.code === 'PROVIDER_UNAVAILABLE' ? 'PROVIDER_UNAVAILABLE' : 'INVALID_RESPONSE' });
     }
-    else setCommandState(current => current.phase === 'result' ? { ...current, text: envelope.text } : { phase: 'assistant', text: envelope.text }); // Plain conversation only; never dispatch, confirm, or speak it.
+    else setCommandState(current => {
+      if (current.phase !== 'result') return { phase: 'assistant', text: envelope.text };
+      const result = current.result;
+      // Use app-owned failure/empty copy: a bounded query cannot establish DB-wide absence.
+      if (result.outcome.status !== 'succeeded') return current;
+      if ((result.command === 'searchNearbyPlaces' || result.command === 'searchNearbyReservablePlaces')
+        && result.outcome.data.places.length === 0) return current;
+      return { ...current, text: envelope.text };
+    }); // Plain conversation only; never dispatch, confirm, or speak it.
   }, [dispatcher]);
   const { controller, state } = useVoiceSession(context.accountRevision, consume, api);
   sessionRef.current = controller;

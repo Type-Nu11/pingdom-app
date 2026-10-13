@@ -7,6 +7,10 @@ export const VOICE_SCHEMA_VERSION = 1 as const;
 export const VOICE_QUANTITY_LIMITS = Object.freeze({ min: 1, max: 12 });
 
 export type VoiceTouristCategory = PlaceDetail['touristCategories'][number];
+// /places category is an open string in OpenAPI. Expose only values verified
+// against actual production place data, independently of tourism tags.
+export const VOICE_PLACE_CATEGORIES = ['RESTAURANT'] as const;
+export type VoicePlaceCategory = typeof VOICE_PLACE_CATEGORIES[number];
 /** YYYY-MM-DD(0001~9999년). string 타입만으로는 날짜를 보장하지 않으므로 parser 검증이 필요합니다. */
 export type VoiceLocalDate = string;
 /** 앱 세션 timezone 기준 HH:mm. 같은 날의 시작 < 종료 조건은 parser가 검사합니다. */
@@ -19,6 +23,7 @@ export type VoiceLocalTime = string;
  */
 export type VoiceAssistantCommand =
   | Readonly<{ command: 'searchNearbyPlaces'; args: Readonly<{
+    category?: VoicePlaceCategory;
     keyword?: string;
     limit?: number;
     touristCategory?: VoiceTouristCategory;

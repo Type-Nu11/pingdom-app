@@ -2223,6 +2223,7 @@
     {"source":"src/v2/modules/voice-assistant/index.ts","target":"src/v2/modules/voice-assistant/screens/VoiceAssistantScreen.tsx","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/index.ts","target":"src/v2/modules/voice-assistant/hooks/useVoiceCommands.ts","typeOnly":true},
     {"source":"src/v2/modules/voice-assistant/model/aiChatTools.ts","target":"src/v2/shared/api/generated/aiChat.ts","typeOnly":true},
+    {"source":"src/v2/modules/voice-assistant/model/aiChatTools.ts","target":"src/v2/modules/voice-assistant/model/voiceAssistantCommand.types.ts","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/model/reservationDraft.ts","target":"src/v2/modules/booking/index.ts","typeOnly":true},
     {"source":"src/v2/modules/voice-assistant/model/reservationDraft.ts","target":"src/v2/modules/voice-assistant/model/voiceAssistantCommand.types.ts","typeOnly":true},
     {"source":"src/v2/modules/voice-assistant/model/reservationDraft.ts","target":"src/v2/modules/voice-assistant/model/voiceCommandTime.ts","typeOnly":false},

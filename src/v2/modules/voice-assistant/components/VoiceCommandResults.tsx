@@ -25,10 +25,17 @@ type Props = {
 export function VoiceCommandResults(props: Props) {
   const { t } = useTranslation();
   return <>
-    {props.state.phase === 'result' && props.state.text && !hasPlaceCards(props.state) && <AssistantCopy testID="voice-assistant-message" accessibilityLiveRegion="polite">{props.state.text}</AssistantCopy>}
+    {props.state.phase === 'result' && props.state.text && canPresentResultText(props.state) && !hasPlaceCards(props.state) && <AssistantCopy testID="voice-assistant-message" accessibilityLiveRegion="polite">{props.state.text}</AssistantCopy>}
     {props.state.phase === 'result' && props.state.followUpError && <Copy accessibilityRole="alert">{t(`voiceAssistant.sessionErrors.${props.state.followUpError}`)}</Copy>}
     <VoiceCommandResultBody {...props} />
   </>;
+}
+
+function canPresentResultText(state: Extract<VoiceCommandViewState, { phase: 'result' }>): boolean {
+  const result = state.result;
+  return result.outcome.status === 'succeeded'
+    && (!((result.command === 'searchNearbyPlaces' || result.command === 'searchNearbyReservablePlaces'))
+      || result.outcome.data.places.length > 0);
 }
 
 function hasPlaceCards(state: VoiceCommandViewState): boolean {

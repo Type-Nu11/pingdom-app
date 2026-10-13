@@ -118,7 +118,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         const args = object(argumentsValue);
         if (Object.keys(args).some(key => !Object.hasOwn(tool.function.parameters.properties, key))) return invalid();
         const parsed = parseVoiceAssistantEnvelope({ schemaVersion: 1, id: `chat-${++sequence}`, kind: 'command_request', command: fn.name,
-          args: fn.name === 'searchNearbyPlaces' ? { ...args, useCurrentLocation: true } : args });
+          args: fn.name === 'searchNearbyPlaces' ? { ...args, limit: 3, useCurrentLocation: true } : args });
         if (!parsed.ok || parsed.value.kind !== 'command_request') return invalid();
         deliveries.push({ envelope: parsed.value, callId: call.id });
         wireCalls.push({ id: call.id, type: 'function', function: { name: tool.function.name, arguments: args } });

@@ -1,4 +1,4 @@
-import { VOICE_QUANTITY_LIMITS, VOICE_SCHEMA_VERSION } from './voiceAssistantCommand.types';
+import { VOICE_PLACE_CATEGORIES, VOICE_QUANTITY_LIMITS, VOICE_SCHEMA_VERSION } from './voiceAssistantCommand.types';
 import type {
   ClarificationField, ProtocolErrorCode, ProviderEnvelope, VoiceAssistantCommand,
   VoiceEnvelopeParseResult, VoiceParserRejectionCode, VoiceTouristCategory,
@@ -85,7 +85,7 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
   switch (name) {
     case 'searchNearbyPlaces': {
       const args = record(input, '$.args');
-      exact(args, ['useCurrentLocation'], ['touristCategory', 'keyword', 'limit'], '$.args');
+      exact(args, ['useCurrentLocation'], ['category', 'touristCategory', 'keyword', 'limit'], '$.args');
       if (typeof args.useCurrentLocation !== 'boolean') fail('INVALID_FIELD', '$.args.useCurrentLocation');
       let keyword: string | undefined;
       if (Object.hasOwn(args, 'keyword')) {
@@ -100,7 +100,10 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
       }
       const touristCategory = Object.hasOwn(args, 'touristCategory')
         ? member(args.touristCategory, categories, '$.args.touristCategory') : undefined;
+      const category = Object.hasOwn(args, 'category')
+        ? member(args.category, VOICE_PLACE_CATEGORIES, '$.args.category') : undefined;
       return { command: name, args: Object.freeze({ useCurrentLocation: args.useCurrentLocation,
+        ...(category ? { category } : {}),
         ...(keyword !== undefined ? { keyword } : {}), ...(limit !== undefined ? { limit } : {}),
         ...(touristCategory ? { touristCategory } : {}) }) };
     }
