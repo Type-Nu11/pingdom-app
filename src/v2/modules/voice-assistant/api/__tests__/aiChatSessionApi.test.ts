@@ -17,6 +17,34 @@ const replies = (responses: unknown[]) => {
 const result = (commandId: string): AppCommandResult => ({ schemaVersion: 1, id: 'result-1', source: 'app', kind: 'command_result', commandId,
   command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
 
+test.each(['date', 'quantity'])('structured reservation question opens the %s picker and waits for the user', async field => {
+  const x = replies([
+    completion({ role: 'assistant', content: '날짜, 인원, 시작·종료 시간을 모두 알려주세요.', tool_calls: [call('requestReservationDetails', JSON.stringify({ field }))] }, 'tool_calls'),
+    completion({ role: 'assistant', content: '선택을 받았습니다.' }),
+  ]);
+  const consume = jest.fn(); const c = createVoiceSessionController(consume, x.api);
+  try {
+    await c.start(); await c.send('용짬뽕 예약하려고 하는데');
+    expect(c.getSnapshot().error).toBeNull();
+    expect(consume).toHaveBeenCalledTimes(1);
+    expect(consume.mock.calls[0][0]).toMatchObject({ kind: 'clarification_request', field });
+    expect(x.requests).toHaveLength(1);
+    await c.send('2026-10-15');
+    const history = x.requests[1].body.messages;
+    const tool = history.find((m: any) => m.role === 'tool');
+    expect(tool.tool_call_id).toBe('call_1');
+    expect(JSON.parse(tool.content)).toEqual({ status: 'awaiting_user', field });
+    expect(c.getSnapshot().error).toBeNull();
+  } finally { c.dispose(); }
+});
+
+test.each([{ field: 'timeRange' }, { field: 'payment' }, { field: 'date', placeId: 70095 }, {}])('invalid UI tool arguments cannot open a picker %#', async args => {
+  const x = replies([completion({ role: 'assistant', content: null, tool_calls: [call('requestReservationDetails', JSON.stringify(args))] }, 'tool_calls')]);
+  const consume = jest.fn(); const c = createVoiceSessionController(consume, x.api);
+  try { await c.start(); await c.send('예약'); expect(c.getSnapshot().error).toBe('INVALID_RESPONSE'); expect(consume).not.toHaveBeenCalled(); }
+  finally { c.dispose(); }
+});
+
 test('live completion replies show only assistant content and serialize tool history for the provider', async () => {
   const x = replies([
     completion({ role: 'assistant', content: '안녕하세요.', reasoning: 'private reasoning' }),

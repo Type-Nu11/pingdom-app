@@ -190,7 +190,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
       } });
       // Validate the entire batch before exposing any executable command.
       stage = 'tool_validation';
-      for (const rawCall of calls) {
+      for (const [index, rawCall] of calls.entries()) {
         const call = object(rawCall); exact(call, ['id', 'type', 'function']);
         if (typeof call.id !== 'string' || !call.id.trim() || call.id.length > 128 || used.has(call.id) || call.type !== 'function') return invalid();
         used.add(call.id);
@@ -204,6 +204,17 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         }
         const args = object(argumentsValue);
         if (Object.keys(args).some(key => !Object.hasOwn(tool.function.parameters.properties, key))) return invalid();
+        if (fn.name === 'requestReservationDetails') {
+          if (index !== calls.length - 1 || Object.keys(args).length !== 1 || !['date', 'quantity'].includes(String(args.field))) return invalid();
+          const parsed = parseVoiceAssistantEnvelope({ schemaVersion: 1, id: `chat-${++sequence}`, kind: 'clarification_request',
+            field: args.field, text: '예약 조건을 선택해 주세요.' });
+          if (!parsed.ok || parsed.value.kind !== 'clarification_request') return invalid();
+          // The app owns the question and picker. Provider prose must not duplicate that question.
+          for (let i = deliveries.length - 1; i >= 0; i--) if (deliveries[i].envelope.kind === 'assistant_message') deliveries.splice(i, 1);
+          deliveries.push({ envelope: parsed.value, callId: call.id });
+          wireCalls.push({ id: call.id, type: 'function', function: { name: tool.function.name, arguments: args } });
+          continue;
+        }
         const parsed = parseVoiceAssistantEnvelope({ schemaVersion: 1, id: `chat-${++sequence}`, kind: 'command_request', command: fn.name,
           args: fn.name === 'searchNearbyPlaces' ? { ...args, limit: 3, useCurrentLocation: true } : args });
         if (!parsed.ok || parsed.value.kind !== 'command_request') return invalid();
@@ -246,6 +257,13 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
     async next(id, signal) {
       requireCurrent(id, signal, revision);
       if (waiting?.callId) {
+        if (waiting.envelope.kind === 'clarification_request') {
+          // Complete the wire pair without another model round: this tool waits for human input.
+          history = [...history, { role: 'tool', tool_call_id: waiting.callId,
+            content: { status: 'awaiting_user', field: waiting.envelope.field } }];
+          waiting = undefined; needsFollowUp = false;
+          return undefined;
+        }
         if (!completed) throw new VoiceSessionError('DELIVERY_FAILED');
         // Only executor-projected public facts go to the model; no bearer, quote token, or reservation body.
         history = [...history, { role: 'tool', tool_call_id: waiting.callId, content: completed.outcome }];
