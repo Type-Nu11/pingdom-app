@@ -1,6 +1,6 @@
 import { apiClient, toApiError, type ApiClient } from '../../../shared/api';
 import type { components } from '../../../shared/api/generated/aiChat';
-import { AI_CHAT_TOOLS } from '../model/aiChatTools';
+import { AI_CHAT_SYSTEM_PROMPT, AI_CHAT_TOOLS } from '../model/aiChatTools';
 import { parseVoiceAssistantEnvelope } from '../model/voiceAssistantCommandParser';
 import type { AppCommandResult, ProviderEnvelope } from '../model/voiceAssistantCommand.types';
 import { VoiceSessionError, voiceSessionError } from '../model/voiceSessionError';
@@ -14,7 +14,9 @@ type ToolCall = Omit<components['schemas']['ToolCall'], 'function'> & {
 type Message = Omit<components['schemas']['Message'], 'content' | 'tool_calls'> & {
   content?: string | null | Record<string, unknown>; tool_calls?: ToolCall[];
 };
-type WireMessage = Omit<Message, 'tool_calls'> & { tool_calls?: Array<Omit<ToolCall, 'function'> & {
+// OpenAI-compatible wire messages also support app-owned system instructions;
+// keep that role outside the provider/user conversation ledger.
+type WireMessage = Omit<Message, 'tool_calls' | 'role'> & { role: Message['role'] | 'system'; tool_calls?: Array<Omit<ToolCall, 'function'> & {
   function: { name: string; arguments: Record<string, unknown> | string };
 }> };
 // The server team confirmed the production proxy requires an app-selected model;
@@ -145,12 +147,14 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
     const abort = () => aborter.abort(); signal.addEventListener('abort', abort, { once: true });
     try {
       // Keep canonical history internally; the live OpenAI-compatible proxy needs JSON strings.
-      const wireMessages: WireMessage[] = providerWire ? messages.map(message => ({ ...message,
+      const conversation: WireMessage[] = providerWire ? messages.map(message => ({ ...message,
         ...(message.role === 'tool' ? { content: JSON.stringify(message.content) } : {}),
         ...(message.tool_calls?.length ? { tool_calls: message.tool_calls.map(call => ({ ...call,
           function: { ...call.function, arguments: JSON.stringify(call.function.arguments) },
         })) } : {}),
       })) : messages;
+      // Attach once per request, outside conversation history, including tool follow-ups.
+      const wireMessages: WireMessage[] = [{ role: 'system', content: AI_CHAT_SYSTEM_PROMPT }, ...conversation];
       chatLog('request', () => ({ requestId, route: '/ai/chat', model: AI_CHAT_MODEL, round: rounds,
         wireFormat: providerWire ? 'provider' : 'canonical',
         messages: wireMessages.map(message => ({ role: message.role, contentType: diagnosticType(message.content),

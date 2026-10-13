@@ -1,7 +1,7 @@
 import { createAiChatSessionApi } from '../aiChatSessionApi';
 import { createVoiceSessionController } from '../../model/voiceSession';
 import { ApiError, createApiClient, type ApiTransport } from '../../../../shared/api';
-import { AI_CHAT_TOOLS } from '../../model/aiChatTools';
+import { AI_CHAT_SYSTEM_PROMPT, AI_CHAT_TOOLS } from '../../model/aiChatTools';
 import { voiceSessionErrors } from '../../i18n/voiceSessionErrors';
 import type { AppCommandResult } from '../../model/voiceAssistantCommand.types';
 
@@ -41,7 +41,17 @@ test('live completion replies show only assistant content and serialize tool his
     expect(tool.tool_call_id).toBe('call_1');
     expect(JSON.parse(tool.content)).toEqual(result('unused').outcome);
     expect(JSON.stringify(history)).not.toContain('private reasoning');
-    for (const request of x.requests) expect(request.body.model).toBe('openai/gpt-oss-20b');
+    for (const request of x.requests) {
+      expect(request.body.model).toBe('openai/gpt-oss-20b');
+      expect(request.body.messages[0]).toEqual({ role: 'system', content: AI_CHAT_SYSTEM_PROMPT });
+      expect(request.body.messages.filter((message: any) => message.role === 'system')).toHaveLength(1);
+    }
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Respond in Korean');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Do not generate Markdown tables or HTML tables');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('1 to 3 short sentences');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Never mention internal tool names');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Do not repeat place information');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Do not claim a search succeeded if the tool returned an error');
   } finally { c.dispose(); }
 });
 
@@ -101,9 +111,9 @@ test('keyword search and its app result return through /ai/chat with matching ID
     expect(controller.getSnapshot().error).toBeNull();
     expect(seen).toEqual(['command_request', 'assistant_message']);
     expect(x.requests.map(r => r.path)).toEqual(['/ai/chat', '/ai/chat']);
-    expect(x.requests[0].body.messages).toEqual([{ role: 'user', content: '갈비탕집 있어?' }]);
-    expect(x.requests[1].body.messages[1]).toMatchObject({ role: 'assistant', tool_calls: [{ id: 'call_1' }] });
-    expect(x.requests[1].body.messages[2]).toEqual({ role: 'tool', tool_call_id: 'call_1', content: { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
+    expect(x.requests[0].body.messages.slice(1)).toEqual([{ role: 'user', content: '갈비탕집 있어?' }]);
+    expect(x.requests[1].body.messages[2]).toMatchObject({ role: 'assistant', tool_calls: [{ id: 'call_1' }] });
+    expect(x.requests[1].body.messages[3]).toEqual({ role: 'tool', tool_call_id: 'call_1', content: { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
     await controller.send('다른 음식은?');
     expect(x.requests[2].body.messages.slice(-2)).toEqual([{ role: 'assistant', content: '검색 결과가 없습니다.', tool_calls: [] }, { role: 'user', content: '다른 음식은?' }]);
     for (const request of x.requests) expect(request.body.model).toBe('openai/gpt-oss-20b');
@@ -178,7 +188,7 @@ test('closing chat drops old dialogue before the next session', async () => {
   const c = createVoiceSessionController(() => {}, x.api);
   try {
     await c.start(); await c.send('첫 질문'); await c.close(); await c.start(); await c.send('새 질문');
-    expect(x.requests[1].body.messages).toEqual([{ role: 'user', content: '새 질문' }]);
+    expect(x.requests[1].body.messages).toEqual([{ role: 'system', content: AI_CHAT_SYSTEM_PROMPT }, { role: 'user', content: '새 질문' }]);
   } finally { c.dispose(); }
 });
 
