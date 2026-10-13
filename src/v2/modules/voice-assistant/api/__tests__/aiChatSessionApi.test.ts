@@ -181,3 +181,44 @@ test('closing chat drops old dialogue before the next session', async () => {
     expect(x.requests[1].body.messages).toEqual([{ role: 'user', content: '새 질문' }]);
   } finally { c.dispose(); }
 });
+
+test('chat diagnostics identify failed tool fields without leaking prompts, reasoning or argument values', async () => {
+  const log = jest.spyOn(console, 'debug').mockImplementation(() => {});
+  const api = createAiChatSessionApi(createApiClient({ post: async () => { throw new ApiError('PRIVATE_ERROR', {
+    status: 400, traceId: 'qa-trace-1', responseData: { error: {
+      code: 'tool_use_failed', type: 'invalid_request_error', message: 'PRIVATE_REASONING',
+      failed_generation: JSON.stringify({ name: 'searchNearbyPlaces', arguments: {
+        keyword: 'PRIVATE_KEYWORD', limit: 'PRIVATE_TOKEN', touristCategory: 'PRIVATE_CATEGORY',
+        useCurrentLocation: true, PRIVATE_FIELD: 'PRIVATE_VALUE',
+      } }),
+    } },
+  }); } } as unknown as ApiTransport));
+  const signal = new AbortController().signal;
+  try {
+    const session = await api.create(signal);
+    await expect(api.send(session.sessionId, { text: 'PRIVATE_PROMPT', requestId: 'qa-request-1' }, signal)).rejects.toMatchObject({ code: 'REQUEST_REJECTED' });
+    const logs = log.mock.calls;
+    const request = JSON.parse(String(logs.find(call => call[0] === '[AI chat request]')![1]));
+    const failure = JSON.parse(String(logs.find(call => call[0] === '[AI chat failure]')![1]));
+    expect(failure.requestId).toBe(request.requestId);
+    expect(failure).toMatchObject({ status: 400, code: 'tool_use_failed', stage: 'transport', traceId: 'qa-trace-1', generationParsed: true });
+    expect(failure.calls[0].issues).toEqual(expect.arrayContaining([
+      'limit:additional_property', 'touristCategory:enum', 'useCurrentLocation:additional_property', '<unknown>:additional_property',
+    ]));
+    expect(JSON.stringify(logs)).not.toContain('PRIVATE_');
+  } finally { log.mockRestore(); }
+});
+
+test('production chat never emits diagnostic logs', async () => {
+  const runtime = globalThis as typeof globalThis & { __DEV__: boolean };
+  const previous = runtime.__DEV__;
+  const log = jest.spyOn(console, 'debug').mockImplementation(() => {});
+  runtime.__DEV__ = false;
+  const x = replies([completion({ role: 'assistant', content: 'PRIVATE_ANSWER', reasoning: 'PRIVATE_REASONING' })]);
+  const signal = new AbortController().signal;
+  try {
+    const session = await x.api.create(signal);
+    await x.api.send(session.sessionId, { text: 'PRIVATE_PROMPT', requestId: 'qa-request-1' }, signal);
+    expect(log).not.toHaveBeenCalled();
+  } finally { runtime.__DEV__ = previous; log.mockRestore(); }
+});
