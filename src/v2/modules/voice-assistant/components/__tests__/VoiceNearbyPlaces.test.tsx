@@ -45,11 +45,20 @@ test('Figma cards use server media and distance, and sharing is an explicit user
   expect(screen.queryByText('예시 이미지')).toBeNull();
   expect(share).not.toHaveBeenCalled();
   expect(selectReservationPlace).not.toHaveBeenCalled();
-  await fireEvent.press(screen.getByTestId('voice-reserve-place-1'));
-  expect(selectReservationPlace).toHaveBeenCalledWith(result.outcome.status === 'succeeded' ? result.outcome.data.places[0] : undefined);
+  expect(screen.queryByTestId('voice-reserve-place-1')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: '공유' }));
   expect(share).toHaveBeenCalledWith({ message: '조회한 카페\n서울 실제 주소' });
   share.mockRestore();
+});
+
+test('only reservation search cards offer the explicit reservation action', async () => {
+  const onReserve = jest.fn();
+  const place = { id: 1, name: '예약 가능한 카페', address: '서울', touristCategories: ['CAFE' as const], operatingStatus: 'OPERATING' as const };
+  const result: AppCommandResult = { schemaVersion: 1, kind: 'command_result', source: 'app', id: 'booking-result', commandId: 'booking',
+    command: 'searchNearbyReservablePlaces', outcome: { status: 'succeeded', data: { coverage: 'bounded_candidates', places: [place] } } };
+  await renderWithProviders(<VoiceCommandResults state={{ phase: 'result', result }} onSelectReservationPlace={onReserve} />);
+  await fireEvent.press(screen.getByTestId('voice-reserve-place-1'));
+  expect(onReserve).toHaveBeenCalledWith(place);
 });
 
 test.each(['empty', 'failed'] as const)('the %s result shows app-owned copy instead of an unsupported AI database claim', async kind => {

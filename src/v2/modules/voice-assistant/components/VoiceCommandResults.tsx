@@ -66,7 +66,7 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
   </>;
   const places = (items: readonly VoicePlaceFacts[]) => <>
     <Cards horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} onReserve={!historical && onSelectReservationPlace ? () => onSelectReservationPlace(item) : undefined} key={item.id} />)}
+      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} onReserve={!historical && state.phase === 'result' && state.result.command === 'searchNearbyReservablePlaces' && onSelectReservationPlace ? () => onSelectReservationPlace(item) : undefined} key={item.id} />)}
     </Cards>
     {state.phase === 'result' && state.text ? <AssistantMarkdown>{state.text}</AssistantMarkdown> : <Summary>{t(state.phase === 'result' && state.result.command === 'searchNearbyPlaces'
       ? 'voiceAssistant.command.nearbySummary' : 'voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>}
