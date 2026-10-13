@@ -83,7 +83,7 @@ export type VoiceCommandOutput = {
   searchNearbyPlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'nearest_places' }>;
   searchNearbyReservablePlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'bounded_candidates' }>;
   getPlaceDetails: Readonly<{ place: VoicePlaceFacts }>;
-  getAvailabilities: Readonly<{ placeId: number; date: VoiceLocalDate; availabilities: readonly VoiceAvailabilityFacts[] }>;
+  getAvailabilities: Readonly<{ placeId: number; date: VoiceLocalDate; quantity: number; availabilities: readonly VoiceAvailabilityFacts[] }>;
   prepareReservation: Readonly<{ draft: ReservationDraft }>;
   cancelVoiceSession: Readonly<{ sessionStopped: true }>;
 };

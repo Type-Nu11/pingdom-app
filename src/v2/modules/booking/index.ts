@@ -5,3 +5,8 @@ export { createAvailabilitiesQueryOptions, isSelectableAvailability, NEARBY_RESE
 export type { PlaceAvailabilities } from './reservations';
 export { usePlaceAvailabilities } from './reservations';
 export { selectReservationCta, type ReservationCtaState } from './reservations';
+
+export { validateReservationQuote, ReservationConfirmationError } from './reservations';
+
+export { isSelectableConfirmedSlot, validateBookerInput, BOOKER_NAME_MAX_LENGTH, BOOKER_PHONE_MAX_LENGTH, REQUEST_NOTE_MAX_LENGTH } from './reservations';
+export type { ConfirmedReservationState, ReservationSelection, BookerInput } from './reservations';

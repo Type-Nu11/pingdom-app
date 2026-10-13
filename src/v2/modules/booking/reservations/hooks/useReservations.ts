@@ -89,7 +89,7 @@ export function createOwnedReservationsQueryOptions(
 export function createReservationMutationOptions(
   api: Pick<ReservationApi, 'createReservation'> = reservationApi,
 ) {
-  return { mutationFn: (body: CreateReservationBody) => api.createReservation(body) };
+  return { mutationFn: (body: CreateReservationBody) => api.createReservation(body), retry: false as const };
 }
 
 type ReservationTransition =

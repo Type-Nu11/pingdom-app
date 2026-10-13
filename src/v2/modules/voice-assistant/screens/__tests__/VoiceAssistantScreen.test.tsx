@@ -369,7 +369,7 @@ test('app focus resumes input after Android focus loss, while background still c
 
 test('nullable TICKET names are not labeled as general admission and never imply booking success', async () => {
   const result = { schemaVersion: 1, id: 'app-slot', kind: 'command_result', source: 'app', commandId: 'slot', command: 'getAvailabilities',
-    outcome: { status: 'succeeded', data: { placeId: 1, date: '2026-09-20', availabilities: [{ id: 5, placeId: 1, productId: 6, productName: null,
+    outcome: { status: 'succeeded', data: { placeId: 1, date: '2026-09-20', quantity: 2, availabilities: [{ id: 5, placeId: 1, productId: 6, productName: null,
       productType: 'TICKET', startsAt: '2026-09-20T05:00:00Z', endsAt: '2026-09-20T06:00:00Z', remainingCapacity: 3, status: 'ACTIVE' }] } } } as const;
   await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} commandState={{ phase: 'result', result }} />).element);
   expect(screen.getByText('TICKET')).toBeOnTheScreen();
