@@ -16,7 +16,7 @@ const slot: AvailabilityList[number] = { id: 10, placeId: 1, productType: 'GENER
   startsAt: '2026-11-11T05:00:00Z', endsAt: '2026-11-11T06:00:00Z', remainingCapacity: 3, totalCapacity: 3, status: 'ACTIVE', conditionsVersion: 1,
   reservationTerms: { timezone: 'Asia/Seoul', unitAmountMinor: 1000, additionalAmountMinor: 50, currency: 'KRW', cancellable: true, cancellationCutoffMinutes: 60 } };
 const place = { id: 1, name: 'Cafe', address: 'Seoul', touristCategories: ['CAFE' as const], operatingStatus: 'OPERATING' as const };
-const command: VoiceCommandViewState = { phase: 'result', result: { schemaVersion: 1, id: 'result', commandId: 'search', source: 'app', kind: 'command_result', command: 'getPlaceDetails', outcome: { status: 'succeeded', data: { place } } } };
+const command: VoiceCommandViewState = { phase: 'result', result: { schemaVersion: 1, id: 'result', commandId: 'search', source: 'app', kind: 'command_result', command: 'searchNearbyReservablePlaces', outcome: { status: 'succeeded', data: { places: [place], coverage: 'bounded_candidates' } } } };
 function Harness({ account = '101', commandState = command }: { account?: string | null; commandState?: VoiceCommandViewState }) {
   const flow = useVoiceReservation(account, 'America/Los_Angeles', commandState);
   return <><VoiceCommandResults state={commandState} onSelectReservationPlace={value => { void flow.selectPlace(value); }} /><VoiceReservationPanel flow={flow} /></>;
@@ -60,10 +60,20 @@ afterAll(() => { AppState.currentState = originalState; });
 async function chooseSchedule() {
   await waitFor(() => expect(screen.getByTestId('voice-reserve-place-1')).toBeTruthy());
   await fireEvent.press(screen.getByTestId('voice-reserve-place-1'));
-  await waitFor(() => expect(screen.getByTestId('voice-reservation-date-2026-11-11')).toBeTruthy());
-  expect(screen.queryByTestId('voice-reservation-date-2026-11-12')).toBeNull();
-  await fireEvent.press(screen.getByTestId('voice-reservation-date-2026-11-11'));
+  await waitFor(() => expect(screen.getByTestId('voice-picker-quantity')).toBeTruthy());
+  await waitFor(() => expect(screen.getByRole('button', { name: '선택 확인' })).toBeEnabled());
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(screen.getByRole('button', { name: '2026-11-12' })).toBeDisabled();
+  await fireEvent.press(screen.getByRole('button', { name: '2026-11-11' }));
+  expect(quoteCalls).toBe(0);
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(screen.queryByTestId('voice-time-wheel')).toBeNull();
+  expect(screen.getByTestId('voice-reservation-slot-10')).toHaveTextContent(/남은 정원: 3명/);
+  expect(screen.getByRole('button', { name: '선택 확인' })).toBeDisabled();
   await fireEvent.press(screen.getByTestId('voice-reservation-slot-10'));
+  expect(screen.getByRole('button', { name: '선택 확인' })).toHaveTextContent('오후 2시 확인');
+  expect(quoteCalls).toBe(0);
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
   await waitFor(() => expect(screen.getByTestId('voice-reservation-confirm')).toBeTruthy());
 }
 async function fillBooker() {
@@ -94,18 +104,44 @@ test('response loss → panel remount → explicit recovery returns one server r
   await waitFor(() => expect(screen.getByTestId('voice-reservation-success')).toBeTruthy());
   expect(requests[1]).toEqual(first); expect(rows).toHaveLength(1); expect(quoteCalls).toBe(count);
 });
-test('cancel discards unsubmitted selection; lowering quantity reveals lower-capacity published dates', async () => {
+test('editing quantity discards the previous quote and reveals lower-capacity published dates', async () => {
   await renderWithProviders(<Harness />); await chooseSchedule();
-  await fireEvent.press(screen.getByRole('button', { name: '인원 줄이기' }));
-  expect(screen.getByTestId('voice-reservation-date-2026-11-12')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: '2명 · 수정' }));
+  await fireEvent.press(screen.getByRole('button', { name: '1명' }));
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(screen.getByRole('button', { name: '2026-11-12' })).toBeEnabled();
   expect(screen.queryByTestId('voice-reservation-confirm')).toBeNull();
-  await fireEvent.press(screen.getByRole('button', { name: '선택 취소' })); expect(requests).toHaveLength(0);
+  expect(requests).toHaveLength(0);
+});
+
+test('same starting time requires choosing the actual server slot instead of silently selecting the first one', async () => {
+  jest.mocked(apiClient.get).mockImplementation(async path => {
+    if (path === '/places/1/availabilities') return [slot, { ...slot, id: 12, endsAt: '2026-11-11T07:00:00Z' }] as never;
+    return [] as never;
+  });
+  await renderWithProviders(<Harness />);
+  await fireEvent.press(screen.getByTestId('voice-reserve-place-1'));
+  await waitFor(() => expect(screen.getByRole('button', { name: '선택 확인' })).toBeEnabled());
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  await fireEvent.press(screen.getByRole('button', { name: '2026-11-11' }));
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(screen.getByTestId('voice-reservation-slot-10')).toHaveTextContent(/오후 2:00 – 오후 3:00/);
+  expect(screen.getByTestId('voice-reservation-slot-12')).toHaveTextContent(/오후 2:00 – 오후 4:00/);
+  expect(screen.getByRole('button', { name: '선택 확인' })).toBeDisabled();
+  await fireEvent.press(screen.getByTestId('voice-reservation-slot-12'));
+  expect(screen.getByTestId('voice-reservation-slot-12').props.accessibilityState.selected).toBe(true);
+  expect(screen.getByTestId('voice-reservation-slot-10').props.accessibilityState.selected).toBe(false);
+  expect(screen.queryByTestId('voice-reservation-confirm')).toBeNull();
+  expect(requests).toHaveLength(0);
 });
 
 test('AI availability result preserves requested group size and preselects only a real published date', async () => {
   const commandState: VoiceCommandViewState = { phase: 'result', result: { schemaVersion: 1, id: 'slots-result', commandId: 'slots', source: 'app', kind: 'command_result', command: 'getAvailabilities', outcome: { status: 'succeeded', data: { placeId: 1, date: '2026-11-12', quantity: 1, availabilities: [] } } } };
   await renderWithProviders(<Harness commandState={commandState} />);
-  await waitFor(() => expect(screen.getByTestId('voice-reservation-date-2026-11-12')).toBeTruthy());
-  expect(screen.getByTestId('voice-reservation-date-2026-11-12').props.accessibilityState.selected).toBe(true);
-  expect(screen.getByTestId('voice-reservation-slot-11')).toBeTruthy(); expect(requests).toHaveLength(0);
+  await waitFor(() => expect(screen.getByTestId('voice-reservation-times')).toBeTruthy());
+  expect(screen.getByRole('button', { name: '11월 12일 (목) · 수정' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '1명 · 수정' })).toBeTruthy();
+  expect(screen.getByTestId('voice-reservation-slot-11')).toBeTruthy();
+  expect(screen.getByRole('button', { name: '선택 확인' })).toBeDisabled();
+  expect(requests).toHaveLength(0);
 });

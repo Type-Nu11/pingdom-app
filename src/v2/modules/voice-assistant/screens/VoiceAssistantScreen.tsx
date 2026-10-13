@@ -208,7 +208,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       <SafeArea edges={['top', 'left', 'right']} pointerEvents="box-none">
         <KeyboardAvoidingView testID="voice-assistant-keyboard-layout" behavior="padding" style={{ flex: 1 }} pointerEvents="box-none">
         <KeyboardLayout pointerEvents="box-none" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
-          {showDetails ? <Sheet $question={true} $results={resultsMode} $picker={pickerVisible} testID="voice-assistant-details">
+          {showDetails ? <Sheet $question={true} $results={resultsMode} $picker={pickerVisible || reservationVisible} testID="voice-assistant-details">
             <SheetHeading>
             <Grabber />
             <Header $question={true}>
@@ -221,8 +221,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
             <Content $results={resultsMode} ref={contentRef} onContentSizeChange={() => {
               contentRef.current?.scrollTo({ y: 0, animated: false });
             }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 0, gap: pickerVisible ? 16 : 6 }}>
-            {!!currentRequest && !pickerVisible && <ResultRequest testID="voice-result-request">“{currentRequest}”</ResultRequest>}
-            {feedback ? <AssistantMessage>
+            {!!currentRequest && !pickerVisible && !reservationVisible && <ResultRequest testID="voice-result-request">“{currentRequest}”</ResultRequest>}
+            {feedback && !reservationVisible ? <AssistantMessage>
               <FeedbackMessage accessibilityRole="alert">{t(`voiceAssistant.feedback.${feedback}`)}</FeedbackMessage>
               <FeedbackActions>
                 <FeedbackRetry accessibilityRole="button" accessibilityLabel={t('voiceAssistant.feedback.retry')}
@@ -230,7 +230,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
                 <FeedbackDismiss accessibilityRole="button" accessibilityLabel={t('voiceAssistant.feedback.dismiss')}
                   onPress={dismissFeedback}><FeedbackDismissText>{t('voiceAssistant.feedback.dismiss')}</FeedbackDismissText></FeedbackDismiss>
               </FeedbackActions>
-            </AssistantMessage> : assistantVisible ? <AssistantMessage $results={resultsMode} testID="voice-current-assistant">
+            </AssistantMessage> : assistantVisible && !reservationVisible ? <AssistantMessage $results={resultsMode} testID="voice-current-assistant">
             {(busy || state.phase === 'permissionDenied' || state.phase === 'unavailable') && <Copy accessibilityLiveRegion="polite">{t(`voiceAssistant.phases.${state.phase}`)}</Copy>}
             {state.phase === 'permissionDenied' && <Copy accessibilityRole="alert">{t(`voiceAssistant.permissions.${state.permission}`)}</Copy>}
             {state.permission === 'blocked' && settingsButton()}
@@ -255,7 +255,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
                 ? <AssistantMarkdown>{guidance.text}</AssistantMarkdown> : <Copy>{guidance.text}</Copy>)}
             </>}
             </AssistantMessage> : null}
-            {reservationVisible && reservationFlow && <VoiceReservationPanel flow={reservationFlow} />}
+            {reservationVisible && reservationFlow && <VoiceReservationPanel flow={reservationFlow} request={currentRequest} timezone={timezone} />}
             </Content>
             {composer(true)}
           </Sheet> : composer()}
