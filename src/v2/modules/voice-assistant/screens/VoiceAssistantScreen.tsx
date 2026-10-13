@@ -12,6 +12,7 @@ import MicrophoneIcon from '../assets/microphone.svg';
 import PingdyIcon from '../assets/pingdy.svg';
 import StopIcon from '../assets/stop.svg';
 import { VoiceCommandResults } from '../components/VoiceCommandResults';
+import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { VoiceClarificationPicker, formatPickerSelection, type PickerField, type PickerSelection } from '../components/VoiceClarificationPicker';
 import type { VoiceCommandViewState } from '../hooks/useVoiceCommands';
 import { useVoiceInput } from '../hooks/useVoiceInput';
@@ -231,7 +232,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
             {guidance && <Copy>{t('voiceAssistant.advisory')}</Copy>}
             {guidance && <>
               {guidance.kind !== 'assistant' && <Label>{t(`voiceAssistant.${guidance.kind}`)}</Label>}
-              {guidance.kind !== 'invalidResponse' && guidance.text && <Copy>{guidance.text}</Copy>}
+              {guidance.kind !== 'invalidResponse' && guidance.text && (guidance.kind === 'assistant'
+                ? <AssistantMarkdown>{guidance.text}</AssistantMarkdown> : <Copy>{guidance.text}</Copy>)}
             </>}
             </AssistantMessage> : null}
             </Content>

@@ -307,7 +307,9 @@ test.each(['assistant', 'clarification', 'invalidResponse'] as const)('%s remain
   await renderWithProviders(element);
   expect(screen.getByText(voiceAssistantResources.ko.advisory)).toBeVisible();
   if (kind !== 'assistant') expect(screen.getByText(voiceAssistantResources.ko[kind])).toBeVisible();
-  if (kind !== 'invalidResponse') expect(screen.getByText('예약 성공')).toHaveStyle({ color: lightTheme.colors.text });
+  if (kind !== 'invalidResponse') expect(screen.getByText('예약 성공')).toHaveStyle({
+    color: kind === 'assistant' ? lightTheme.colors.textStrong : lightTheme.colors.text,
+  });
   expect(screen.queryByText(/예약 확정 여부/)).toBeNull();
 });
 
