@@ -17,7 +17,5 @@ export default function AccountInformation() {
       {profile.email ? <SettingsRow label={t('settings.account.email')} value={profile.email} /> : null}
       {!profile.username && !profile.email ? <SettingsRow label={t('settings.support.empty')} /> : null}
     </>}
-    <SettingsRow disabled label={t('settings.support.emailEdit')} subtitle={t('settings.support.emailReason')} />
-    <SettingsRow disabled label={t('settings.support.oauth')} subtitle={t('settings.support.oauthReason')} />
   </SettingsSection>;
 }

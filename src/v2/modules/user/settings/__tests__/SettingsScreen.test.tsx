@@ -54,7 +54,7 @@ describe('SettingsScreen', () => {
     expect(screen.getByTestId('v2-settings-screen')).toBeVisible();
     expect(screen.getByText('설정')).toHaveStyle({ fontFamily: expect.stringMatching(/^Pretendard/) });
     expect(screen.getByText('계정')).toBeVisible();
-    expect(screen.getByText('기록 · 장소')).toBeVisible();
+    expect(screen.queryByText('기록 · 장소')).toBeNull();
     expect(screen.getByText('개인정보 · 위치')).toBeVisible();
     expect(screen.getByText('앱 정보')).toBeVisible();
     await waitFor(() => expect(screen.getByText('woo._sm')).toBeVisible());
@@ -64,6 +64,7 @@ describe('SettingsScreen', () => {
     const onOpenProfileEdit = jest.fn();
     const view = await renderSettings({ onOpenProfileEdit });
 
+    await view.user.press(screen.getByText('계정 관리'));
     await view.user.press(await screen.findByText('프로필 편집'));
     expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
   });
@@ -181,7 +182,7 @@ describe('SettingsScreen', () => {
     const onBack = jest.fn();
     const view = await renderSettings({ onBack });
 
-    await view.user.press(screen.getByText('아이디 · 이메일'));
+    await view.user.press(screen.getByText('계정 관리'));
     expect(screen.getByText('계정 관리')).toBeVisible();
     await view.user.press(screen.getByLabelText('뒤로가기'));
     expect(screen.getByText('설정')).toBeVisible();
@@ -206,7 +207,7 @@ describe('SettingsScreen', () => {
     const onLogout = jest.fn(() => new Promise<void>((resolve) => {
       resolveLogout = resolve;
     }));
-    await renderSettings({ onLogout });
+    const view = await renderSettings({ onLogout });
 
     const logout = screen.getByLabelText('로그아웃');
     await fireEvent.press(logout);
@@ -232,12 +233,14 @@ test('Android back closes a local language page before delegating to the stack',
   expect(onBack).toHaveBeenCalledTimes(1);
 });
 
-test('password keeps the existing profile callback when no detail navigator is injected', async () => {
+test('account profile entry keeps the existing callback without a duplicate password entry', async () => {
   jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
   const onOpenProfileEdit = jest.fn();
   const view = await renderSettings({ onOpenProfileEdit });
   await screen.findByText('woo._sm');
-  await view.user.press(screen.getByText('비밀번호 변경'));
+  await view.user.press(screen.getByText('계정 관리'));
+  await view.user.press(await screen.findByText('프로필 편집'));
+  expect(screen.queryByText('비밀번호 변경')).toBeNull();
   expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
 });
 
