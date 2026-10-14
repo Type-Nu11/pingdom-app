@@ -335,7 +335,7 @@ describe('V2 reservation screens', () => {
     expect(screen.getByTestId('v2-reservation-submit').props.accessibilityState.disabled).toBe(true);
   });
 
-  test('여러 날에 걸친 availability를 겹치는 날짜에 펼치고 오늘을 먼저 선택한다', async () => {
+  test('이미 시작된 여러 날 일정은 종료 전이어도 예약할 수 없다', async () => {
     mockPlace();
     mockCreateReservation();
     const startsAt = new Date(2026, 8, 2, 17, 28, 0);
@@ -359,15 +359,16 @@ describe('V2 reservation screens', () => {
     );
 
     expect(screen.getByRole('button', { name: '2026-09-02, 예약 불가' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '2026-09-03, 잔여 8명' })
+    expect(screen.getByRole('button', { name: '2026-09-03, 일정 있음' })
       .props.accessibilityState).toEqual(expect.objectContaining({ selected: true }));
-    expect(screen.getByRole('button', { name: '2026-09-04, 잔여 8명' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '2026-09-04, 일정 있음' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '2026-09-05, 예약 불가' })).toBeDisabled();
     expect(screen.getByText('17:28')).toBeVisible();
     expect(screen.getByTestId('v2-availability-77').props.accessibilityLabel)
       .toMatch(/9월 2일 17:28.9월 5일 00:00/);
-    expect(screen.getByTestId('v2-availability-77')).toBeEnabled();
-    expect(screen.queryByText('예약 불가 · 지난 시간')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('v2-availability-77')).toBeDisabled();
+    expect(screen.getByText('예약 불가 · 지난 시간')).toBeVisible();
+    expect(screen.getByTestId('v2-reservation-submit')).toBeDisabled();
   });
 
   test('인원 증가로 수용 인원이 부족해지면 기존 선택을 해제한다', async () => {

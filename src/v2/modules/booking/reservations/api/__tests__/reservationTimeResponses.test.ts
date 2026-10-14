@@ -9,6 +9,22 @@ const slot = {
 };
 const clientFor = (value: unknown) => ({ get: jest.fn().mockResolvedValue(value) }) as unknown as ApiClient;
 
+test('created, detailed, listed and canceled reservations normalize UTC windows and nested confirmation without mutating facts', async () => {
+  const raw = { id: 10, status: 'PENDING', reservationStartsAt: '2026-10-24T14:00:00', reservationEndsAt: '2026-10-24T15:00:00',
+    confirmation: { startsAt: '2026-10-24T23:00:00+09:00', endsAt: '2026-10-25T00:00:00+09:00', totalAmountMinor: 0 } };
+  const client = { get: jest.fn().mockResolvedValue(raw), post: jest.fn().mockResolvedValue(raw) } as unknown as ApiClient;
+  const api = createReservationApi(client);
+  for (const result of [await api.createReservation({} as never), await api.getReservation(10), await api.cancelReservation(10)]) {
+    expect(result.reservationStartsAt).toBe('2026-10-24T14:00:00Z');
+    expect(result.reservationEndsAt).toBe('2026-10-24T15:00:00Z');
+    expect(result.confirmation!.startsAt).toBe(raw.confirmation.startsAt);
+    expect(Date.parse(result.reservationStartsAt!)).toBe(Date.parse(result.confirmation!.startsAt));
+  }
+  jest.mocked(client.get).mockResolvedValue({ reservations: [raw], totalElements: 1 });
+  expect((await api.listReservations()).reservations?.[0]?.reservationStartsAt).toBe('2026-10-24T14:00:00Z');
+  expect(raw.reservationStartsAt).toBe('2026-10-24T14:00:00');
+});
+
 test('both availability APIs interpret deployed offsetless UTC as 14:00 KST and keep strict AI validation', async () => {
   for (const load of [
     () => createReservationApi(clientFor([slot])).listAvailabilities(1),

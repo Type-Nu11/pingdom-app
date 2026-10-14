@@ -15,10 +15,18 @@ function utcInstant(value: unknown): unknown {
 export function normalizeReservationTimeResponse<T>(value: T): T {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const normalized = { ...value } as Record<string, unknown>;
-  for (const key of ['startsAt', 'endsAt', 'cancellationDeadline', 'expiresAt']) {
-    if (Object.prototype.hasOwnProperty.call(normalized, key)) normalized[key] = utcInstant(normalized[key]);
+  let changed = false;
+  for (const key of ['startsAt', 'endsAt', 'reservationStartsAt', 'reservationEndsAt', 'cancellationDeadline', 'expiresAt']) {
+    if (Object.prototype.hasOwnProperty.call(normalized, key)) {
+      const instant = utcInstant(normalized[key]);
+      if (instant !== normalized[key]) { normalized[key] = instant; changed = true; }
+    }
   }
-  return normalized as T;
+  if (Object.prototype.hasOwnProperty.call(normalized, 'confirmation')) {
+    const confirmation = normalizeReservationTimeResponse(normalized.confirmation);
+    if (confirmation !== normalized.confirmation) { normalized.confirmation = confirmation; changed = true; }
+  }
+  return changed ? normalized as T : value;
 }
 
 export function normalizeAvailabilityTimeResponses<T>(value: T): T {

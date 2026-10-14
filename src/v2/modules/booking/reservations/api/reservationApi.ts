@@ -30,6 +30,7 @@ export type ReservationConfirmation = NonNullable<ReservationQuote['confirmation
 function normalizeReservationPage(raw: Record<string, unknown>): ReservationPage {
   return {
     ...raw,
+    ...(Array.isArray(raw.reservations) ? { reservations: raw.reservations.map(normalizeReservationTimeResponse) } : {}),
     totalElements: (raw.totalElements ?? raw.totalCount ?? 0) as number,
   } as ReservationPage;
 }
@@ -45,7 +46,7 @@ export function createReservationApi(client: ApiClient = apiClient) {
       `${scope}/reservations/${reservationId}/${transition}`,
       undefined,
       { signal },
-    );
+    ).then(normalizeReservationTimeResponse);
 
   return {
     cancelOwnedReservation: (reservationId: number, signal?: AbortSignal) =>
@@ -61,7 +62,7 @@ export function createReservationApi(client: ApiClient = apiClient) {
       body: CreateReservationBody,
       signal?: AbortSignal,
     ): Promise<Reservation> =>
-      client.post<Reservation, CreateReservationBody>('/reservations', body, { signal }),
+      client.post<Reservation, CreateReservationBody>('/reservations', body, { signal }).then(normalizeReservationTimeResponse),
 
     listAvailabilities: (
       placeId: number,
@@ -95,7 +96,7 @@ export function createReservationApi(client: ApiClient = apiClient) {
       reservationId: number,
       signal?: AbortSignal,
     ): Promise<ReservationDetail> =>
-      client.get<ReservationDetail>(`/reservations/${reservationId}`, { signal }),
+      client.get<ReservationDetail>(`/reservations/${reservationId}`, { signal }).then(normalizeReservationTimeResponse),
 
     listReservations: async (
       params: ListReservationsParams = {},
