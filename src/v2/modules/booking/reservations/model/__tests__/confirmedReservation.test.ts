@@ -48,6 +48,51 @@ test('prepare and cancel never create; explicit confirmation sends exact display
   expect(h.controller.getSnapshot().phase).toBe('success'); expect(h.record()).toBeNull();
 });
 test('cancel before confirmation produces zero requests', async () => { const h = harness(); await h.controller.prepare(selection); h.controller.cancel(); await h.controller.confirm(booker); expect(h.create).not.toHaveBeenCalled(); });
+test('equivalent offset formatting across recheck, quote and created response preserves confirmation', async () => {
+  const h = harness();
+  await h.controller.prepare(selection);
+  h.list.mockResolvedValue([{ ...slot, startsAt: '2026-10-10T14:00:00+09:00', endsAt: '2026-10-10T15:00:00.000+09:00' }]);
+  h.getQuote.mockImplementation(async () => {
+    const q = quote();
+    Object.assign(q.confirmation!, { startsAt: '2026-10-10T14:00:00+09:00', endsAt: '2026-10-10T15:00:00+09:00', cancellationDeadline: '2026-10-10T13:00:00+09:00' });
+    return q;
+  });
+  h.create.mockImplementation(async () => {
+    const r = created(h.record()!);
+    return { ...r, reservationStartsAt: '2026-10-10T05:00:00.000Z', reservationEndsAt: '2026-10-10T06:00:00Z',
+      confirmation: { ...r.confirmation!, startsAt: slot.startsAt, endsAt: slot.endsAt, cancellationDeadline: '2026-10-10T04:00:00.000Z' } };
+  });
+  await h.controller.confirm(booker);
+  expect(h.create).toHaveBeenCalledTimes(1);
+  expect(h.controller.getSnapshot().phase).toBe('success');
+  expect(h.record()).toBeNull();
+});
+test('a real cancellation deadline change still needs another confirmation', async () => {
+  const h = harness(); await h.controller.prepare(selection);
+  h.getQuote.mockImplementation(async () => { const q = quote(); q.confirmation!.cancellationDeadline = '2026-10-10T13:01:00+09:00'; return q; });
+  await h.controller.confirm(booker);
+  expect(h.create).not.toHaveBeenCalled();
+  expect(h.controller.getSnapshot()).toMatchObject({ phase: 'review', changed: true });
+});
+test('created reservation with an actually changed end time stays recoverable', async () => {
+  const h = harness(); await h.controller.prepare(selection);
+  h.create.mockImplementation(async () => ({ ...created(h.record()!), reservationEndsAt: '2026-10-10T15:00:00.001+09:00' }));
+  await h.controller.confirm(booker);
+  expect(h.controller.getSnapshot().phase).toBe('unknown');
+  expect(h.record()).not.toBeNull();
+});
+test('a malformed numeric deadline cannot verify a successful response', async () => {
+  const h = harness();
+  h.getQuote.mockImplementation(async () => { const q = quote(); q.confirmation!.cancellationDeadline = '1970-01-01T00:00:00Z'; return q; });
+  await h.controller.prepare(selection);
+  h.create.mockImplementation(async () => {
+    const r = created(h.record()!);
+    return { ...r, confirmation: { ...r.confirmation!, cancellationDeadline: 0 as unknown as string } };
+  });
+  await h.controller.confirm(booker);
+  expect(h.controller.getSnapshot().phase).toBe('unknown');
+  expect(h.record()).not.toBeNull();
+});
 test('invalid booker input produces zero requests', async () => { const h = harness(); await h.controller.prepare(selection); await h.controller.confirm({ ...booker, bookerPhone: '' }); expect(h.create).not.toHaveBeenCalled(); });
 test('continuous confirmation submits only once and persists before sending', async () => {
   const h = harness(); await h.controller.prepare(selection);
@@ -64,7 +109,8 @@ test.each(['price', 'policy', 'version'] as const)('%s change requires another e
   expect(h.controller.getSnapshot()).toMatchObject({ phase: 'review', changed: true });
   await h.controller.confirm(booker); expect(h.create).toHaveBeenCalledTimes(1);
 });
-test.each([{ remainingCapacity: 1 }, { status: 'INACTIVE' as const }, { startsAt: '2026-10-10T05:30:00Z' }])('changed availability blocks write: %p', async overrides => {
+test.each([{ remainingCapacity: 1 }, { status: 'INACTIVE' as const }, { startsAt: '2026-10-10T05:30:00Z' },
+  { endsAt: '2026-10-10T15:00:00.001+09:00' }])('changed availability blocks write: %p', async overrides => {
   const h = harness(); await h.controller.prepare(selection); h.list.mockResolvedValue([{ ...slot, ...overrides }]); await h.controller.confirm(booker);
   expect(h.create).not.toHaveBeenCalled(); expect(h.controller.getSnapshot().phase).toBe('error');
 });

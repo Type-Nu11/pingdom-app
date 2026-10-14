@@ -12,6 +12,19 @@ export const draftSelection = {
   date: '2026-09-20', timezone: 'Asia/Seoul', quantity: 2, availabilityDataUpdatedAt: now,
 };
 
+test('quote times with equivalent offsets and millisecond formatting match the selected slot', () => {
+  const quote = draftQuote({ startsAt: '2026-09-20T14:00:00+09:00', endsAt: '2026-09-20T15:00:00.000+09:00' });
+  const draft = prepareVoiceReservationDraft(quote, draftSelection, now);
+  expect(draft.confirmation.startsAt).toBe(quote.confirmation!.startsAt);
+  expect(draft.confirmation.endsAt).toBe(quote.confirmation!.endsAt);
+});
+
+test('identical invalid timestamps cannot validate a draft', () => {
+  const selection = { ...draftSelection, availability: { ...draftSelection.availability, startsAt: 'invalid' } };
+  expect(() => prepareVoiceReservationDraft(draftQuote({ startsAt: 'invalid' }), selection, now))
+    .toThrow('INVALID_SERVER_RESPONSE');
+});
+
 test('deployed offsetless UTC survives API normalization and strict draft validation', async () => {
   const rawSlot = { ...draftSelection.availability, totalCapacity: 3,
     startsAt: '2026-09-20T05:00:00', endsAt: '2026-09-20T06:00:00' };

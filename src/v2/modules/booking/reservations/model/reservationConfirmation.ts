@@ -30,10 +30,14 @@ export function validateReservationQuote(value: unknown, selection: {
   }
   if (c.placeId !== selection.placeId || c.placeName !== selection.placeName || c.availabilityId !== a.id
     || c.productType !== a.productType || c.productId !== a.productId || c.productName !== a.productName
-    || c.startsAt !== a.startsAt || c.endsAt !== a.endsAt || c.quantity !== selection.quantity) {
+    || c.quantity !== selection.quantity) {
     throw new ReservationConfirmationError('STALE_CONTEXT');
   }
-  const start = serverInstant(c.startsAt), end = serverInstant(c.endsAt), expires = serverInstant(c.expiresAt);
+  const start = serverInstant(c.startsAt), end = serverInstant(c.endsAt);
+  if (start !== serverInstant(a.startsAt) || end !== serverInstant(a.endsAt)) {
+    throw new ReservationConfirmationError('STALE_CONTEXT');
+  }
+  const expires = serverInstant(c.expiresAt);
   if (!(now < start && start < end && now < expires && expires <= start && expires <= now + 300000)) return invalid();
   if (typeof c.timezone !== 'string' || !c.timezone) return invalid();
   try { new Intl.DateTimeFormat('en', { timeZone: c.timezone }).format(now); } catch { return invalid(); }
