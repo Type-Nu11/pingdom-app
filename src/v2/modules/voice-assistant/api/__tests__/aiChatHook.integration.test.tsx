@@ -19,9 +19,9 @@ test('editing a follow-up preserves verified places referenced by the existing c
       posts++;
       const call = posts === 1 ? { name: 'searchNearbyPlaces', arguments: '{"keyword":"용짬뽕"}' }
         : posts === 3 ? { name: 'getPlaceDetails', arguments: '{"placeId":70095}' } : null;
-      return { data: JSON.stringify({ object: 'chat.completion', choices: [{ index: 0,
-        message: { role: 'assistant', content: call ? null : '확인했습니다.', ...(call ? { tool_calls: [{ id: `follow-up-${posts}`, type: 'function', function: call }] } : {}) },
-        finish_reason: call ? 'tool_calls' : 'stop' }] }) };
+      return { data: JSON.stringify({ type: 'message', role: 'assistant', content: call
+        ? [{ type: 'tool_use', id: `follow-up-${posts}`, name: call.name, input: JSON.parse(call.arguments) }]
+        : [{ type: 'text', text: '확인했습니다.' }], stop_reason: call ? 'tool_use' : 'end_turn' }) };
     },
   } as unknown as ApiTransport);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -51,10 +51,10 @@ test.each([0, 1, 3])('provider tool flow retains exactly %s place API results fo
     get: search,
     post: async (_path: string, body: any) => {
       requests.push(body); posts++;
-      return { data: JSON.stringify({ object: 'chat.completion', choices: [{ index: 0, message: posts === 1
-        ? { role: 'assistant', content: null, tool_calls: [{ id: 'search-count', type: 'function', function: { name: 'searchNearbyPlaces', arguments: '{"category":"RESTAURANT"}' } }] }
-        : { role: 'assistant', content: count ? '주변에서 찾았어요. 카드에서 확인해 보세요.' : '이번 검색에서는 결과를 찾지 못했어요.' },
-      finish_reason: posts === 1 ? 'tool_calls' : 'stop' }] }) };
+      return { data: JSON.stringify({ type: 'message', role: 'assistant', content: posts === 1
+        ? [{ type: 'tool_use', id: 'search-count', name: 'searchNearbyPlaces', input: { category: 'RESTAURANT' } }]
+        : [{ type: 'text', text: count ? '주변에서 찾았어요. 카드에서 확인해 보세요.' : '이번 검색에서는 결과를 찾지 못했어요.' }],
+        stop_reason: posts === 1 ? 'tool_use' : 'end_turn' }) };
     },
   } as unknown as ApiTransport);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -70,7 +70,7 @@ test.each([0, 1, 3])('provider tool flow retains exactly %s place API results fo
     expect(state.result.outcome.data.places.map(place => ({ id: place.id, name: place.name, address: place.address, distanceMeters: place.distanceMeters })))
       .toEqual(rows.map(({ id, name, address, distanceMeters }) => ({ id, name, address, distanceMeters })));
     expect(requests).toHaveLength(2);
-    const outcome = JSON.parse(requests[1].messages.find((message: any) => message.role === 'tool').content);
+    const outcome = JSON.parse(requests[1].messages[2].content[0].content);
     expect(outcome.status).toBe('succeeded');
     expect(outcome.data.places).toHaveLength(count);
     if (count) expect(state.text).toBe('주변에서 찾았어요. 카드에서 확인해 보세요.');
@@ -114,8 +114,8 @@ test.each(['empty', 'failed'] as const)('a %s search never presents an AI claim 
   const restore = configureApiTransport({
     post: async (_path: string, body: any) => {
       posts++;
-      const toolMessage = body.messages.find((m: any) => m.role === 'tool');
-      if (toolMessage) outcomes.push(toolMessage.content);
+      const toolMessage = body.messages.flatMap((m: any) => Array.isArray(m.content) ? m.content : []).find((b: any) => b.type === 'tool_result');
+      if (toolMessage) outcomes.push(JSON.parse(toolMessage.content));
       return { data: JSON.stringify(posts === 1
         ? { content: null, tool_calls: [{ id: 'safe-1', type: 'function', function: { name: 'searchNearbyPlaces', arguments: { keyword: '용짬뽕', touristCategory: 'FOOD' } } }] }
         : { content: '용짬뽕은 데이터베이스에 없습니다.', tool_calls: [] }) };

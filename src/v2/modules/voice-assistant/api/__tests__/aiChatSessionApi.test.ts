@@ -46,8 +46,8 @@ test.each(['date', 'quantity'])('structured reservation question opens the %s pi
     expect(x.requests).toHaveLength(1);
     await c.send('2026-10-15');
     const history = x.requests[1].body.messages;
-    const tool = history.find((m: any) => m.role === 'tool');
-    expect(tool.tool_call_id).toBe('call_1');
+    const tool = history.flatMap((m: any) => Array.isArray(m.content) ? m.content : []).find((b: any) => b.type === 'tool_result');
+    expect(tool.tool_use_id).toBe('call_1');
     expect(JSON.parse(tool.content)).toEqual({ status: 'awaiting_user', field });
     expect(c.getSnapshot().error).toBeNull();
   } finally { c.dispose(); }
@@ -78,16 +78,16 @@ test('live completion replies show only assistant content and serialize tool his
     expect(commands).toEqual(['searchNearbyPlaces']);
     expect(x.requests).toHaveLength(3);
     const history = x.requests[2].body.messages;
-    const assistant = history.find((m: any) => m.tool_calls?.length);
-    expect(assistant.tool_calls[0].function.arguments).toBe('{"keyword":"갈비탕"}');
-    const tool = history.find((m: any) => m.role === 'tool');
-    expect(tool.tool_call_id).toBe('call_1');
+    const assistant = history.flatMap((m: any) => Array.isArray(m.content) ? m.content : []).find((b: any) => b.type === 'tool_use');
+    expect(assistant.input).toEqual({ keyword: '갈비탕' });
+    const tool = history.flatMap((m: any) => Array.isArray(m.content) ? m.content : []).find((b: any) => b.type === 'tool_result');
+    expect(tool.tool_use_id).toBe('call_1');
     expect(JSON.parse(tool.content)).toEqual(result('unused').outcome);
     expect(JSON.stringify(history)).not.toContain('private reasoning');
     for (const request of x.requests) {
       expect(request.body.model).toBe('claude-haiku-5-5');
-      expect(request.body.messages[0]).toEqual({ role: 'system', content: AI_CHAT_SYSTEM_PROMPT });
-      expect(request.body.messages.filter((message: any) => message.role === 'system')).toHaveLength(1);
+      expect(request.body.system).toBe(AI_CHAT_SYSTEM_PROMPT);
+      expect(request.body.messages.every((message: any) => ['user', 'assistant'].includes(message.role))).toBe(true);
     }
     expect(AI_CHAT_SYSTEM_PROMPT).toContain('Respond in Korean');
     expect(AI_CHAT_SYSTEM_PROMPT).toContain('Do not generate Markdown tables or HTML tables');
@@ -154,11 +154,12 @@ test('keyword search and its app result return through /ai/chat with matching ID
     expect(controller.getSnapshot().error).toBeNull();
     expect(seen).toEqual(['command_request', 'assistant_message']);
     expect(x.requests.map(r => r.path)).toEqual(['/ai/chat', '/ai/chat']);
-    expect(x.requests[0].body.messages.slice(1)).toEqual([{ role: 'user', content: '갈비탕집 있어?' }]);
-    expect(x.requests[1].body.messages[2]).toMatchObject({ role: 'assistant', tool_calls: [{ id: 'call_1' }] });
-    expect(x.requests[1].body.messages[3]).toEqual({ role: 'tool', tool_call_id: 'call_1', content: { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
+    expect(x.requests[0].body.messages).toEqual([{ role: 'user', content: '갈비탕집 있어?' }]);
+    expect(x.requests[1].body.messages[1]).toMatchObject({ role: 'assistant', content: [{ type: 'tool_use', id: 'call_1' }] });
+    expect(x.requests[1].body.messages[2]).toEqual({ role: 'user', content: [{ type: 'tool_result', tool_use_id: 'call_1',
+      content: JSON.stringify({ status: 'succeeded', data: { coverage: 'nearest_places', places: [] } }), is_error: false }] });
     await controller.send('다른 음식은?');
-    expect(x.requests[2].body.messages.slice(-2)).toEqual([{ role: 'assistant', content: '검색 결과가 없습니다.', tool_calls: [] }, { role: 'user', content: '다른 음식은?' }]);
+    expect(x.requests[2].body.messages.slice(-2)).toEqual([{ role: 'assistant', content: [{ type: 'text', text: '검색 결과가 없습니다.' }] }, { role: 'user', content: '다른 음식은?' }]);
     for (const request of x.requests) expect(request.body.model).toBe('claude-haiku-5-5');
   } finally { controller.dispose(); }
 });
@@ -183,7 +184,7 @@ test('multiple calls send all app results before one follow-up model request', a
   try {
     await c.start(); await c.send('주변 검색'); expect(c.getSnapshot().error).toBeNull();
     expect(x.requests).toHaveLength(2);
-    expect(x.requests[1].body.messages.filter((m: any) => m.role === 'tool').map((m: any) => m.tool_call_id)).toEqual(['call_1', 'call_2']);
+    expect(x.requests[1].body.messages[2].content.map((b: any) => b.tool_use_id)).toEqual(['call_1', 'call_2']);
   } finally { c.dispose(); }
 });
 
@@ -231,7 +232,8 @@ test('closing chat drops old dialogue before the next session', async () => {
   const c = createVoiceSessionController(() => {}, x.api);
   try {
     await c.start(); await c.send('첫 질문'); await c.close(); await c.start(); await c.send('새 질문');
-    expect(x.requests[1].body.messages).toEqual([{ role: 'system', content: AI_CHAT_SYSTEM_PROMPT }, { role: 'user', content: '새 질문' }]);
+    expect(x.requests[1].body.system).toBe(AI_CHAT_SYSTEM_PROMPT);
+    expect(x.requests[1].body.messages).toEqual([{ role: 'user', content: '새 질문' }]);
   } finally { c.dispose(); }
 });
 
