@@ -2,6 +2,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { clearExpiredSession } from '../../app/store/authStore';
 import { CLIENT_TYPE_APP, CLIENT_TYPE_HEADER, APP_VERSION_HEADER, APP_VERSION, withDeviceRequestHeaders } from '../../v2/shared/api/clientType';
+import { isProviderCredentialFailure } from '../../v2/shared/api/providerAuthentication';
 import {
     getCachedAccessToken,
     getRefreshPromise,
@@ -255,6 +256,10 @@ api.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as RetryableRequestConfig | undefined;
         const status = error.response?.status;
+        // The AI proxy can forward a provider's 401. Refreshing the app token cannot
+        // repair its API key, and must not discard a valid user session.
+        if (status === 401 && getRequestPath(originalRequest?.url) === '/ai/chat'
+            && isProviderCredentialFailure(error.response?.data)) return Promise.reject(error);
         // Signing/proxy failures cannot be repaired by refreshing a user token.
         // Preserve the diagnostic response without logging out a valid session.
         if (status === 401 && typeof error.response?.data === 'string'

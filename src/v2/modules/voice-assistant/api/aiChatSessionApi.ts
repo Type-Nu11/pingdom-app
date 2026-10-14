@@ -1,4 +1,5 @@
 import { apiClient, toApiError, type ApiClient } from '../../../shared/api';
+import { isProviderCredentialFailure } from '../../../shared/api/providerAuthentication';
 import type { components } from '../../../shared/api/generated/aiChat';
 import { AI_CHAT_SYSTEM_PROMPT, AI_CHAT_TOOLS } from '../model/aiChatTools';
 import { parseVoiceAssistantEnvelope } from '../model/voiceAssistantCommandParser';
@@ -234,7 +235,11 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
       if (signal.aborted || captured !== revision) throw new VoiceSessionError('CANCELED');
       // A rejected HTTP request is distinct from a successful response failing our parser.
       // Keep the classification local to chat and discard provider bodies entirely.
-      const status = toApiError(error).status;
+      const failure = toApiError(error);
+      const status = failure.status;
+      if (status === 401 && isProviderCredentialFailure(failure.responseData)) {
+        throw new VoiceSessionError('PROVIDER_UNAVAILABLE');
+      }
       if (status === 400 || status === 422) throw new VoiceSessionError('REQUEST_REJECTED');
       throw voiceSessionError(error);
     } finally { signal.removeEventListener('abort', abort); }

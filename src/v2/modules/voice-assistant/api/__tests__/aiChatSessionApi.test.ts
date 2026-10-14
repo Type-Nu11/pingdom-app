@@ -17,6 +17,21 @@ const replies = (responses: unknown[]) => {
 const result = (commandId: string): AppCommandResult => ({ schemaVersion: 1, id: 'result-1', source: 'app', kind: 'command_result', commandId,
   command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
 
+test.each([
+  [{ error: { code: 'invalid_api_key', type: 'invalid_request_error', message: 'Invalid API Key' } }, 'PROVIDER_UNAVAILABLE'],
+  [{ error: { type: 'invalid_request_error', message: 'Invalid API Key' } }, 'PROVIDER_UNAVAILABLE'],
+  [{ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }, 'PROVIDER_UNAVAILABLE'],
+  [{ code: 'TOKEN_EXPIRED' }, 'AUTHENTICATION_REQUIRED'],
+])('AI 401 distinguishes provider credentials from app authentication %#', async (body, expected) => {
+  const post = jest.fn().mockRejectedValue(new ApiError('PRIVATE_ERROR', { status: 401, responseBody: body }));
+  const api = createAiChatSessionApi(createApiClient({ post } as unknown as ApiTransport));
+  const signal = new AbortController().signal;
+  const session = await api.create(signal);
+  await expect(api.send(session.sessionId, { text: 'Hello', requestId: 'auth-test' }, signal))
+    .rejects.toMatchObject({ code: expected, message: expected });
+  expect(post).toHaveBeenCalledTimes(1);
+});
+
 test.each(['date', 'quantity'])('structured reservation question opens the %s picker and waits for the user', async field => {
   const x = replies([
     completion({ role: 'assistant', content: '날짜, 인원, 시작·종료 시간을 모두 알려주세요.', tool_calls: [call('requestReservationDetails', JSON.stringify({ field }))] }, 'tool_calls'),
