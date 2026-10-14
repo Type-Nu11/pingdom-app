@@ -30,6 +30,8 @@ export type {
 } from './api/communityApi';
 export {
   communityQueryKeys,
+  createPostQueryOptions,
+  createPostsQueryOptions,
   useCategories,
   useCommunityFeed,
   useCountries,

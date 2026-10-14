@@ -139,3 +139,38 @@ test.each(['empty', 'failed'] as const)('a %s search never presents an AI claim 
     expect(view.result.current.commandState).not.toHaveProperty('text');
   } finally { await view.unmount(); client.clear(); restore(); }
 });
+
+
+test('named booking-page request searches real IDs then navigates without reservation-condition tools or mutations', async () => {
+  const getPaths: string[] = []; const bodies: any[] = [];
+  const place = { id: 70095, name: '용짬뽕', address: '대구', touristCategories: [], operatingStatus: 'OPERATING' };
+  const navigateToPage = jest.fn(() => true);
+  const restore = configureApiTransport({
+    get: async (path: string) => { getPaths.push(path); return { data: path === '/places' ? { places: [place] } : place }; },
+    post: async (path: string, body: any) => {
+      if (path !== '/ai/chat') throw new Error('Unexpected business mutation');
+      bodies.push(body);
+      const first = bodies.length === 1;
+      return { data: JSON.stringify({ type: 'message', role: 'assistant', content: [{
+        type: 'tool_use', id: first ? 'find-restaurant' : 'open-booking',
+        name: first ? 'searchNearbyPlaces' : 'navigateToPage',
+        input: first ? { keyword: '용짬뽕' } : { page: 'createReservation', placeId: 70095 },
+      }], stop_reason: 'tool_use' }) };
+    },
+  } as unknown as ApiTransport);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: { latitude: 35.8, longitude: 128.6 },
+    locationPermission: 'granted', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true, navigateToPage }), { wrapper });
+  try {
+    await act(async () => { await view.result.current.onFinalInput({ text: '용짬뽕 예약페이지로 보내줘', source: 'text', signal: new AbortController().signal }); });
+    expect(navigateToPage).toHaveBeenCalledTimes(1);
+    expect(navigateToPage).toHaveBeenCalledWith({ page: 'createReservation', placeId: 70095 });
+    expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: {
+      command: 'navigateToPage', outcome: { status: 'succeeded', data: { target: { page: 'createReservation', placeId: 70095 } } },
+    } });
+    expect(getPaths).toEqual(['/places', '/places/70095']);
+    expect(bodies).toHaveLength(2);
+    expect(client.getMutationCache().getAll()).toHaveLength(0);
+  } finally { await view.unmount(); client.clear(); restore(); }
+});

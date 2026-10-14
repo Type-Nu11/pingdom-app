@@ -59,6 +59,7 @@ export function createProductionMainNavigator({
   const MapRouteScreen = ({ navigation, route }: MainScreenProps<'Map'>) => {
     const isAuthHydrating = useAuthStore((state) => state.isHydrating);
     const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+    const { profile } = useProfile();
     const focusedPlaceId = route.params?.focusedPlaceId;
     const initialSection = route.params?.initialSection;
     const notificationContext = route.params?.notificationContext;
@@ -74,6 +75,36 @@ export function createProductionMainNavigator({
       <MapRouteContainer>
         <V2ScreenBoundary>
           <MapScreen
+            onNavigateAssistantPage={(target) => {
+              if (!isLoggedIn || isAuthHydrating) return false;
+              if (target.page === 'reservations') navigation.navigate(MAIN_ROUTES.ReservationBox);
+              else if (target.page === 'myPage') navigation.navigate(MAIN_ROUTES.MyPage);
+              else if (target.page === 'settings') navigation.navigate(MAIN_ROUTES.Settings);
+              else if (target.page === 'coupons') navigation.navigate(MAIN_ROUTES.CouponBox);
+              else if (target.page === 'verifiedPlaces') {
+                if (!profile || profile.role === 'MERCHANT_OWNER') return false;
+                navigation.navigate(MAIN_ROUTES.VerifiedPlaces);
+              } else if (target.page === 'accountManagement') navigation.navigate(MAIN_ROUTES.AccountManagement);
+              else if (target.page === 'notificationSettings') navigation.navigate(MAIN_ROUTES.NotificationSettings);
+              else if (target.page === 'loginInformation' || target.page === 'locationSettings'
+                || target.page === 'privacySettings' || target.page === 'dataManagement') {
+                navigation.navigate(MAIN_ROUTES.SettingsDetail, { detail: target.page });
+              } else if (target.page === 'communityPost') {
+                const postId = parsePostId(target.postId);
+                if (!postId) return false;
+                navigation.navigate(MAIN_ROUTES.CommunityDetail, { postId });
+              }
+              else if (target.page === 'createReservation') {
+                const placeId = parsePlaceId(target.placeId);
+                if (!placeId) return false;
+                navigation.navigate(MAIN_ROUTES.CreateReservation, { placeId });
+              } else if (target.page === 'placeDetail') {
+                const placeId = parsePlaceId(target.placeId);
+                if (!placeId) return false;
+                navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
+              } else return false;
+              return true;
+            }}
             canQueryBookmarks={isLoggedIn && !isAuthHydrating}
             canQueryRankedFeeds={isLoggedIn && !isAuthHydrating}
             initialSection={initialSection}

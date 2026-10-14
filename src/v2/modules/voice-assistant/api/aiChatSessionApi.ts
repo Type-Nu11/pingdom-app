@@ -169,7 +169,7 @@ function diagnosticFailure(error: unknown) {
 }
 
 /** Stateless server chat; this adapter owns only bounded, account-scoped in-memory history. */
-export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSessionApi & {
+export function createAiChatSessionApi(client: ApiClient = apiClient, context?: () => { language: string; selectedPlaceId?: number }): VoiceSessionApi & {
   recordResult: (result: AppCommandResult) => void;
 } {
   let history: Message[] = [];
@@ -200,7 +200,9 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
     const abort = () => aborter.abort(); signal.addEventListener('abort', abort, { once: true });
     try {
       const wireMessages = nativeMessages(messages);
-      const request: Request = { model: AI_CHAT_MODEL, max_tokens: 2048, system: AI_CHAT_SYSTEM_PROMPT,
+      const appContext = context?.();
+      const system = appContext ? `${AI_CHAT_SYSTEM_PROMPT}\nApp-selected language: ${appContext.language}. Respond in this language.\nVerified currently selected place ID: ${appContext.selectedPlaceId ?? 'none'}.` : AI_CHAT_SYSTEM_PROMPT;
+      const request: Request = { model: AI_CHAT_MODEL, max_tokens: 2048, system,
         messages: wireMessages, tools: AI_CHAT_TOOLS.map(({ function: f }) => ({
           name: f.name, description: f.description, input_schema: f.parameters,
         })) };
@@ -253,6 +255,11 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         }
         const args = object(argumentsValue);
         if (Object.keys(args).some(key => !Object.hasOwn(tool.function.parameters.properties, key))) return invalid();
+        if (fn.name === 'navigateToPage') {
+          // Navigation ends this presentation: only one final navigation per tool batch.
+          if (index !== calls.length - 1) return invalid();
+          for (let i = deliveries.length - 1; i >= 0; i--) if (deliveries[i].envelope.kind === 'assistant_message') deliveries.splice(i, 1);
+        }
         if (fn.name === 'requestReservationDetails') {
           if (index !== calls.length - 1 || Object.keys(args).length !== 1 || !['date', 'quantity'].includes(String(args.field))) return invalid();
           const parsed = parseVoiceAssistantEnvelope({ schemaVersion: 1, id: `chat-${++sequence}`, kind: 'clarification_request',
@@ -320,6 +327,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         if (!completed) throw new VoiceSessionError('DELIVERY_FAILED');
         // Only executor-projected public facts go to the model; no bearer, quote token, or reservation body.
         history = [...history, { role: 'tool', tool_call_id: waiting.callId, content: completed.outcome }];
+        if (completed.command === 'navigateToPage' && completed.outcome.status === 'succeeded') needsFollowUp = false;
       }
       waiting = undefined; completed = undefined;
       if (queue.length) return dequeue();

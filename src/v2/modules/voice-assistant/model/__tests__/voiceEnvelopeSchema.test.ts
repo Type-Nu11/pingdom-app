@@ -77,3 +77,28 @@ test.each([
   expect(validate(fixture)).toBe(false);
   expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(false);
 });
+
+
+test.each([
+  { page: 'map' }, { page: 'search' }, { page: 'favorites' }, { page: 'reservations' }, { page: 'myPage' }, { page: 'settings' },
+  { page: 'community' }, { page: 'communityPost' }, { page: 'recommendations' }, { page: 'coupons' }, { page: 'verifiedPlaces' },
+  { page: 'accountManagement' }, { page: 'notificationSettings' }, { page: 'loginInformation' },
+  { page: 'locationSettings' }, { page: 'privacySettings' }, { page: 'dataManagement' },
+  { page: 'placeDetail' }, { page: 'placeDetail', placeId: 42 }, { page: 'createReservation' }, { page: 'createReservation', placeId: 42 },
+])('navigation app schema and parser accept %p without altering the server snapshot', args => {
+  const fixture = { ...base, kind: 'command_request', command: 'navigateToPage', args };
+  expect(validate(fixture)).toBe(true); expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(true);
+  expect(validateServer(fixture)).toBe(false);
+});
+
+test.each([
+  { page: 'https://example.com' }, { page: 'Settings' }, { page: 'delete' }, { page: 'map', route: 'Settings' },
+  { page: 'communityPost', postId: 71 }, { page: 'communityPost', placeId: 71 },
+  { page: 'verifiedPlaces', role: 'USER' }, { page: 'dataManagement', confirmed: true },
+  { page: 'map', placeId: 1 }, { page: 'createReservation', placeId: 0 }, { page: 'createReservation', date: '2026-10-15' }, { page: 'createReservation', quantity: 2 }, { page: 'createReservation', confirmed: true },
+  { page: 'placeDetail', placeId: 0 }, { page: 'placeDetail', placeId: '42' },
+  { page: 'placeDetail', placeId: Number.MAX_SAFE_INTEGER + 1 }, { page: 'settings', confirmed: true }, {},
+])('navigation schema and parser reject %p', args => {
+  const fixture = { ...base, kind: 'command_request', command: 'navigateToPage', args };
+  expect(validate(fixture)).toBe(false); expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(false);
+});

@@ -89,7 +89,7 @@ test('live completion replies show only assistant content and serialize tool his
       expect(request.body.system).toBe(AI_CHAT_SYSTEM_PROMPT);
       expect(request.body.messages.every((message: any) => ['user', 'assistant'].includes(message.role))).toBe(true);
     }
-    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Respond in Korean');
+    expect(AI_CHAT_SYSTEM_PROMPT).toContain('Respond in the language of the latest user request');
     expect(AI_CHAT_SYSTEM_PROMPT).toContain('Do not generate Markdown tables or HTML tables');
     expect(AI_CHAT_SYSTEM_PROMPT).toContain('1 to 3 short sentences');
     expect(AI_CHAT_SYSTEM_PROMPT).toContain('Never mention internal tool names');
@@ -276,4 +276,28 @@ test('production chat never emits diagnostic logs', async () => {
     await x.api.send(session.sessionId, { text: 'PRIVATE_PROMPT', requestId: 'qa-request-1' }, signal);
     expect(log).not.toHaveBeenCalled();
   } finally { runtime.__DEV__ = previous; log.mockRestore(); }
+});
+
+
+test('navigation suppresses premature provider completion prose and needs no follow-up round', async () => {
+  const x = replies([completion({ role: 'assistant', content: '이동을 완료했습니다.', tool_calls: [call('navigateToPage', JSON.stringify({ page: 'favorites' }))] }, 'tool_calls')]);
+  const seen: string[] = [];
+  const c = createVoiceSessionController(e => {
+    seen.push(e.kind);
+    if (e.kind === 'command_request' && e.command === 'navigateToPage') x.api.recordResult({
+      schemaVersion: 1, id: 'app-navigation', kind: 'command_result', source: 'app', commandId: e.id,
+      command: 'navigateToPage', outcome: { status: 'succeeded', data: { target: { page: 'favorites' }, navigationRequested: true } },
+    });
+  }, x.api);
+  try { await c.start(); await c.send('즐겨찾기 보여줘'); expect(seen).toEqual(['command_request']); expect(x.requests).toHaveLength(1); }
+  finally { c.dispose(); }
+});
+
+test('a navigation followed by another tool is rejected before any command executes', async () => {
+  const x = replies([completion({ role: 'assistant', content: null, tool_calls: [
+    call('navigateToPage', JSON.stringify({ page: 'settings' }), 'nav'), call('getPlaceDetails', JSON.stringify({ placeId: 1 }), 'detail'),
+  ] }, 'tool_calls')]);
+  const consume = jest.fn(); const c = createVoiceSessionController(consume, x.api);
+  try { await c.start(); await c.send('설정 열어줘'); expect(c.getSnapshot().error).toBe('INVALID_RESPONSE'); expect(consume).not.toHaveBeenCalled(); }
+  finally { c.dispose(); }
 });
