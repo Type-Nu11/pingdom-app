@@ -25,9 +25,8 @@ test('production notification page never interprets allow-all as two category co
   });
   const patch = jest.spyOn(notificationApi, 'updateNotificationSettings');
   const view = await renderWithProviders(<SettingsScreen initialPage="notifications" onBack={jest.fn()} />);
-  const toggle = await screen.findByRole('switch', { name: '푸시 알림 전체 허용' });
-  expect(toggle).toBeDisabled();
-  await view.user.press(toggle);
+  await screen.findByRole('switch', { name: '핫플레이스 알림' });
+  expect(screen.queryByRole('switch', { name: '푸시 알림 전체 허용' })).toBeNull();
   expect(patch).not.toHaveBeenCalled();
   expect(screen.getByRole('switch', { name: '핫플레이스 알림' })).toBeChecked();
   expect(screen.getByRole('switch', { name: '좋아요 알림' })).not.toBeChecked();
