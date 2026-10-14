@@ -2399,6 +2399,7 @@
     {"source":"src/v2/modules/voice-assistant/model/voiceCommands.ts","target":"src/v2/modules/place/index.ts","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/model/voiceCommands.ts","target":"src/v2/modules/booking/index.ts","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/model/voiceCommands.ts","target":"src/v2/shared/api/index.ts","typeOnly":false},
+    {"source":"src/v2/modules/voice-assistant/model/voiceCommands.ts","target":"src/v2/shared/model/index.ts","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/model/voiceCommands.ts","target":"src/v2/modules/voice-assistant/model/voiceAssistantCommandParser.ts","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/model/voiceCommands.ts","target":"src/v2/modules/voice-assistant/model/voiceAssistantCommandPolicy.ts","typeOnly":false},
     {"source":"src/v2/modules/voice-assistant/model/voiceCommands.ts","target":"src/v2/modules/voice-assistant/model/voiceAssistantCommand.types.ts","typeOnly":true},

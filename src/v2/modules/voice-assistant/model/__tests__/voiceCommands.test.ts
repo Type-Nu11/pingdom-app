@@ -335,12 +335,22 @@ test.each([
   [[slot({ remainingCapacity: 1 })], 'AVAILABILITY_UNAVAILABLE'],
   [[slot({ status: 'INACTIVE' })], 'AVAILABILITY_UNAVAILABLE'],
   [[slot({ startsAt: '2026-09-20T04:30:00Z' })], 'STALE_CONTEXT'],
+  [[slot({ endsAt: '2026-09-20T15:00:00.001+09:00' })], 'STALE_CONTEXT'],
   [[slot({ productType: 'TICKET', productId: 9, productName: 'Ticket' })], 'STALE_CONTEXT'],
 ] as const)('changed/unavailable displayed slot invalidates draft without quoting', async (fresh, code) => {
   const x = await selected(); x.setSlots(fresh);
   expect((await x.send(prepare()))?.outcome).toEqual({ status: 'rejected', code });
   expect(x.calls.some(c => c.path.endsWith('/quote'))).toBe(false);
   expect(x.dispatcher.provenance.availability()).toBeUndefined();
+});
+
+test('equivalent UTC and KST slot times survive the AI draft freshness recheck', async () => {
+  const x = await selected();
+  x.setSlots([slot({ startsAt: '2026-09-20T14:00:00+09:00', endsAt: '2026-09-20T15:00:00.000+09:00' })]);
+  const result = await x.send(prepare());
+  expect(result?.outcome.status).toBe('succeeded');
+  expect(x.calls.some(c => c.path.endsWith('/quote'))).toBe(true);
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
 });
 
 test.each(['TICKET', 'CLASS'])('identified but unsupported %s never gets a reservation quote', async productType => {

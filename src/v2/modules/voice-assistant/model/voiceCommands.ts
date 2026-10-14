@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createPlaceListQueryOptions, createPlaceDetailQueryOptions, placeQueryKeys } from '../../place';
 import { createAvailabilitiesQueryOptions, createReservationQuoteQueryOptions, isSelectableAvailability, NEARBY_RESERVATION_CANDIDATE_LIMIT, type AvailabilityList } from '../../booking';
 import { ApiError } from '../../../shared/api';
+import { areServerInstantsEqual } from '../../../shared/model';
 import { parseVoiceAssistantEnvelope } from './voiceAssistantCommandParser';
 import { VOICE_COMMAND_POLICIES } from './voiceAssistantCommandPolicy';
 import type { AppCommandResult, CommandFailureCode, CommandRequest, VoiceAvailabilityFacts, VoiceCommandName, VoiceCommandOutput, VoicePlaceFacts } from './voiceAssistantCommand.types';
@@ -203,7 +204,7 @@ const prepareReservation: VoiceCommandHandler<'prepareReservation'> = async (req
   const fresh = slots(result.data, placeId, quantity, range, ex.runtime.now()).find(s => s.id === availabilityId);
   if (!fresh || serverInstant(fresh.startsAt) <= ex.runtime.now()) throw new VoiceCommandError('AVAILABILITY_UNAVAILABLE');
   if (fresh.productType !== selected.productType || fresh.productId !== selected.productId || fresh.productName !== selected.productName
-    || fresh.startsAt !== selected.startsAt || fresh.endsAt !== selected.endsAt) {
+    || !areServerInstantsEqual(fresh.startsAt, selected.startsAt) || !areServerInstantsEqual(fresh.endsAt, selected.endsAt)) {
     throw new VoiceCommandError('STALE_CONTEXT');
   }
   const place = projectVoicePlace((await ex.query(ex.queries.detail(placeId))).data, placeId);
