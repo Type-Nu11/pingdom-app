@@ -22,7 +22,7 @@ type WireMessage = Omit<Message, 'tool_calls' | 'role'> & { role: Message['role'
 }> };
 // The server team confirmed the production proxy requires an app-selected model;
 // the published AiChatRequest snapshot does not describe this field yet.
-const AI_CHAT_MODEL = 'openai/gpt-oss-20b' as const;
+const AI_CHAT_MODEL = 'claude-haiku-5-5' as const;
 type Request = Omit<components['schemas']['AiChatRequest'], 'messages'> & { messages: WireMessage[]; model: typeof AI_CHAT_MODEL };
 type Delivery = { envelope: ProviderEnvelope; callId?: string };
 const invalid = (): never => { throw new VoiceSessionError('INVALID_RESPONSE'); };

@@ -6,7 +6,7 @@ import { voiceSessionErrors } from '../../i18n/voiceSessionErrors';
 import type { AppCommandResult } from '../../model/voiceAssistantCommand.types';
 
 const call = (name = 'searchNearbyPlaces', args: unknown = { keyword: '갈비탕' }, id = 'call_1') => ({ id, type: 'function', function: { name, arguments: args } });
-const completion = (message: unknown, finishReason = 'stop') => ({ id: 'completion-1', object: 'chat.completion', model: 'openai/gpt-oss-20b',
+const completion = (message: unknown, finishReason = 'stop') => ({ id: 'completion-1', object: 'chat.completion', model: 'claude-haiku-5-5',
   usage: {}, usage_breakdown: null, system_fingerprint: 'provider-fingerprint', x_groq: {}, service_tier: 'on_demand',
   choices: [{ index: 0, message, finish_reason: finishReason }] });
 const replies = (responses: unknown[]) => {
@@ -85,7 +85,7 @@ test('live completion replies show only assistant content and serialize tool his
     expect(JSON.parse(tool.content)).toEqual(result('unused').outcome);
     expect(JSON.stringify(history)).not.toContain('private reasoning');
     for (const request of x.requests) {
-      expect(request.body.model).toBe('openai/gpt-oss-20b');
+      expect(request.body.model).toBe('claude-haiku-5-5');
       expect(request.body.messages[0]).toEqual({ role: 'system', content: AI_CHAT_SYSTEM_PROMPT });
       expect(request.body.messages.filter((message: any) => message.role === 'system')).toHaveLength(1);
     }
@@ -159,7 +159,7 @@ test('keyword search and its app result return through /ai/chat with matching ID
     expect(x.requests[1].body.messages[3]).toEqual({ role: 'tool', tool_call_id: 'call_1', content: { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
     await controller.send('다른 음식은?');
     expect(x.requests[2].body.messages.slice(-2)).toEqual([{ role: 'assistant', content: '검색 결과가 없습니다.', tool_calls: [] }, { role: 'user', content: '다른 음식은?' }]);
-    for (const request of x.requests) expect(request.body.model).toBe('openai/gpt-oss-20b');
+    for (const request of x.requests) expect(request.body.model).toBe('claude-haiku-5-5');
   } finally { controller.dispose(); }
 });
 
