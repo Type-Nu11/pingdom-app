@@ -37,6 +37,7 @@ import {
 import { claimDeepLinkEvent, type DeepLinkEventReceipt } from './deepLinkDedupe';
 import { useAppNavigationTheme } from '../../v2/shared/theme';
 import { useStartupPermissions } from '../../v2/app/permissions';
+import { AppLoadingScreen } from '../../v2/shared/components';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -142,7 +143,7 @@ export default function RootNavigator() {
     previousIsLoggedIn.current = isLoggedIn;
   }, [isLoggedIn, queryClient]);
 
-  if (rootState === 'loading' || !startupPermissions.ready) return null;
+  if (rootState === 'loading' || !startupPermissions.ready) return <AppLoadingScreen />;
 
   const rootRouteName = getRootRouteName(rootState === 'main');
   const completion = onboardingState.kind === 'completed'
