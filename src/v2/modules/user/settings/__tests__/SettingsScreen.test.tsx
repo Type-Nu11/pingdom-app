@@ -192,14 +192,14 @@ describe('SettingsScreen', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  test('위치 설정 진입은 실제 권한 화면과 미지원 항목을 표시한다', async () => {
+  test('위치 설정 진입은 실제 권한과 인증 상태만 표시한다', async () => {
     const view = await renderSettings();
     await view.user.press(screen.getByText('위치 정보 설정'));
     expect(screen.getByTestId('v2-location-privacy-screen')).toBeVisible();
     expect(screen.getByText('GPS 현장 인증')).toBeVisible();
-    expect(screen.getByText('공개 범위')).toBeVisible();
+    expect(screen.queryByText('공개 범위')).toBeNull();
     expect(screen.queryAllByRole('switch')).toHaveLength(0);
-    expect(screen.getByRole('button', { name: '내 데이터 내보내기' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: '내 데이터 내보내기' })).toBeNull();
   });
 
   test('로그아웃 연속 탭을 한 번만 처리한다', async () => {

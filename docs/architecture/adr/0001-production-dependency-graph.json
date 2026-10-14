@@ -2288,7 +2288,6 @@
     {"source":"src/v2/modules/user/settings/screens/LocationPrivacyScreen.tsx","target":"src/v2/shared/components/index.ts","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/LocationPrivacyScreen.tsx","target":"src/v2/shared/location/useForegroundPermission.ts","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/LocationPrivacyScreen.tsx","target":"src/v2/shared/location/foregroundPermission.ts","typeOnly":true},
-    {"source":"src/v2/modules/user/settings/screens/LocationPrivacyScreen.tsx","target":"src/v2/modules/user/settings/screens/DataExportScreen.tsx","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/SettingsDetailPendingScreen.tsx","target":"src/v2/shared/components/index.ts","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/SettingsDetailPendingScreen.tsx","target":"src/v2/modules/user/settings/components/SettingsLayout.tsx","typeOnly":false},
     {"source":"src/v2/modules/user/settings/screens/SettingsDetailPendingScreen.tsx","target":"src/v2/modules/user/settings/model/settingsNavigation.ts","typeOnly":true},

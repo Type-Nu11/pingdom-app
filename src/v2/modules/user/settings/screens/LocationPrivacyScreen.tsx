@@ -1,12 +1,10 @@
 import { Text as AppText } from '../../../../shared/components/Typography';
-import React, { useEffect, useState } from 'react';
-import { BackHandler } from 'react-native';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 import { HeaderBackButton } from '../../../../shared/components';
 import { useForegroundPermission } from '../../../../shared/location/useForegroundPermission';
 import type { ForegroundPermissionState } from '../../../../shared/location/foregroundPermission';
-import DataExportScreen from './DataExportScreen';
 
 type Props = { onBack: () => void };
 
@@ -24,20 +22,6 @@ function StatusRow({ label, description, state = 'unsupported' }: {
 }
 
 export default function LocationPrivacyScreen({ onBack }: Props) {
-  const [exporting, setExporting] = useState(false);
-  useEffect(() => {
-    if (!exporting) return;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      setExporting(false);
-      return true;
-    });
-    return () => subscription.remove();
-  }, [exporting]);
-  if (exporting) return <DataExportScreen onBack={() => setExporting(false)} />;
-  return <LocationPrivacyContent onBack={onBack} onExport={() => setExporting(true)} />;
-}
-
-function LocationPrivacyContent({ onBack, onExport }: Props & { onExport: () => void }) {
   const { t } = useTranslation();
   const { state, refresh, openSettings, settingsError, openingSettings } = useForegroundPermission();
   const permissionDescription = t(`settings.location.permissionStates.${state}`);
@@ -67,25 +51,8 @@ function LocationPrivacyContent({ onBack, onExport }: Props & { onExport: () => 
             {t('settings.location.settingsError')}
           </StatusDescription> : null}
           <RowDescription>{t('settings.location.permissionNotice')}</RowDescription>
-          <StatusRow label={t('settings.location.foreground')} description={t('settings.location.foregroundDescription')} />
           <StatusRow label={t('settings.location.verification')} state={state}
             description={t(`settings.location.capability.${state}`)} />
-        </SectionInner></Section>
-        <Section><SectionInner>
-          <SectionTitle>{t('settings.location.visibilitySection')}</SectionTitle>
-          <StatusRow label={t('settings.rows.footprintMap')} description={t('settings.location.footprintDescription')} />
-          <StatusRow label={t('settings.location.profileVisibility')} description={t('settings.location.visibilityDescription')} />
-          <StatusRow label={t('settings.location.nickname')} description={t('settings.location.nicknameDescription')} />
-        </SectionInner></Section>
-        <Section><SectionInner>
-          <SectionTitle>{t('settings.location.dataSection')}</SectionTitle>
-          <Row accessibilityRole="button" accessibilityLabel={t('settings.location.download')}
-            accessibilityState={{ disabled: false }} onPress={onExport}>
-            <ToggleCopy><ActionLabel>{t('settings.location.download')}</ActionLabel>
-              <RowDescription>{t('settings.location.downloadDescription')}</RowDescription></ToggleCopy>
-          </Row>
-          <StatusRow label={t('settings.rows.privacyPolicy')} description={t('settings.location.policyDescription')} />
-          <StatusRow label={t('settings.location.deleteHistory')} description={t('settings.location.deleteDescription')} />
         </SectionInner></Section>
       </Content>
     </Container>
