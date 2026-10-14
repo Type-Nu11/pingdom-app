@@ -89,7 +89,8 @@ test('actual published date/time → booker → explicit confirmation → server
   await fillBooker(); await fireEvent.press(screen.getByTestId('voice-reservation-confirm'));
   await waitFor(() => expect(screen.getByTestId('voice-reservation-success')).toBeTruthy());
   expect(screen.getByText('예약 요청이 접수되었습니다')).toBeTruthy(); expect(screen.getByText('예약번호: 901')).toBeTruthy();
-  expect(screen.getByText('서버 처리 상태: 확정 대기')).toBeTruthy();
+  expect(screen.getByText('상태: 대기')).toBeTruthy();
+  expect(screen.getByText('가게 승인 후 예약이 확정됩니다. 예약함에서 상태를 확인해 주세요.')).toBeTruthy();
   expect(requests).toHaveLength(1); expect(rows).toHaveLength(1); expect(stored).toBeNull();
 });
 test('response loss → panel remount → explicit recovery returns one server reservation with identical key/token/body', async () => {

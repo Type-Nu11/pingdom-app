@@ -292,7 +292,7 @@ export const reservationResources = {
         statuses: {
           canceled: '취소됨',
           confirmed: '예약 확정',
-          pending: '확정 대기',
+          pending: '대기',
           rejected: '거절됨',
           unknown: '상태 확인 필요',
         },

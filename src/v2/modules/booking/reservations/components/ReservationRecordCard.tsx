@@ -40,10 +40,6 @@ export default function ReservationRecordCard({ onPress, reservation }: Props) {
         <ReservationNumber>{t('reservation.list.card.number', { id: reservation.id })}</ReservationNumber>
         <Status $tone={status.tone}>{`${status.symbol} ${statusLabel}`}</Status>
       </TopRow>
-      <ProductRow>
-        <ProductIcon><ProductIconText>{t('reservation.box.productIcon')}</ProductIconText></ProductIcon>
-        <ProductType>{reservation.productType}</ProductType>
-      </ProductRow>
       <Quantity>{t('reservation.list.card.quantityValue', { count: reservation.quantity })}</Quantity>
       <ReservationWindow testID={`reservation-card-window-${reservation.id}`}>
         {reservationWindow
@@ -84,33 +80,6 @@ const Status = styled(AppText)<{ $tone: StatusTone }>`
     return theme.colors.textMuted;
   }};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  font-weight: 700;
-`;
-
-const ProductRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-`;
-
-const ProductIcon = styled.View`
-  width: 40px;
-  height: 40px;
-  align-items: center;
-  justify-content: center;
-  border-radius: ${({ theme }) => theme.radius.sm}px;
-  background-color: ${({ theme }) => theme.colors.primarySoft};
-`;
-
-const ProductIconText = styled(AppText)`
-  color: ${({ theme }) => theme.colors.primary};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: 800;
-`;
-
-const ProductType = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: 700;
 `;
 

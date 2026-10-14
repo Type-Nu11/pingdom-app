@@ -67,6 +67,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     delete voiceAssistant.conversation;
     // #349 adds app-owned reservation selection, confirmation and recovery copy.
     delete voiceAssistant.reservation;
+    // #349 simplifies the reviewed Korean pending label; other reservation copy stays protected.
+    if (language === 'ko') baseline[language].translation.reservation.list.statuses.pending = '확정 대기';
     delete voiceAssistant.command;
     delete voiceAssistant.shortLabel;
     delete voiceAssistant.brand;

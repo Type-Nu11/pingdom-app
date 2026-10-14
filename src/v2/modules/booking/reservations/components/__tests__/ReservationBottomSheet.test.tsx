@@ -118,7 +118,7 @@ describe('ReservationBottomSheet', () => {
 
     expect(screen.getByTestId('reservation-place-card-901')).toBeVisible();
     expect(screen.queryByText('예약 번호 901')).toBeNull();
-    expect(screen.queryByText('! 확정 대기')).toBeNull();
+    expect(screen.queryByText('! 대기')).toBeNull();
   });
 
   test('장소를 확인할 수 없는 availabilityId를 임의 장소에 연결하지 않는다', async () => {

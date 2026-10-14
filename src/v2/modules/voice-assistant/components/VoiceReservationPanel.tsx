@@ -33,7 +33,7 @@ export function VoiceReservationPanel({ flow, request, timezone = 'Asia/Seoul' }
     <Heading>{t(s.reservation.status === 'PENDING' ? 'reservation.create.successTitle' : 'reservation.detail.title')}</Heading>
     <Copy>{t('voiceAssistant.reservation.number', { id: s.reservation.id })}</Copy>
     <Copy>{t('voiceAssistant.reservation.status', { status: t(`reservation.list.statuses.${s.reservation.status.toLowerCase()}`) })}</Copy>
-    <Copy>{t('reservation.create.successDescription')}</Copy>
+    <Copy>{t(s.reservation.status === 'PENDING' ? 'voiceAssistant.reservation.pendingDescription' : 'reservation.create.successDescription')}</Copy>
     {s.reservation.confirmation?.paymentRequired && <Copy>{t('voiceAssistant.command.draft.paymentRequired')}</Copy>}
     {action('done', flow.clearSelection)}
   </Panel>;

@@ -87,10 +87,6 @@ export default function ReservationDetailScreen({
             </Value>
           </Field>
           <Field>
-            <Eyebrow>{t('reservation.detail.productType')}</Eyebrow>
-            <Value>{reservation.productType}</Value>
-          </Field>
-          <Field>
             <Eyebrow>{t('reservation.detail.quantity')}</Eyebrow>
             <Value>{reservation.quantity}</Value>
           </Field>
