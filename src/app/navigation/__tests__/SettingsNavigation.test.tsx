@@ -34,10 +34,7 @@ beforeEach(() => {
 });
 
 test.each([
-  ['프로필 편집', 'ProfileEdit'],
-  ['아이디 · 이메일', 'AccountManagement'],
-  ['비밀번호 변경', 'ProfileEdit'],
-  ['쿠폰', 'CouponBox'],
+  ['계정 관리', 'AccountManagement'],
   ['알림 설정', 'NotificationSettings'],
 ])('%s opens %s once even for consecutive taps', async (label, destination) => {
   await renderWithProviders(<SettingsRouteScreen navigation={navigation} route={{ key: 'settings', name: 'Settings' }} />);
@@ -49,16 +46,17 @@ test.each([
   expect(navigation.navigate).toHaveBeenCalledWith(destination);
 });
 
-test('unsupported records preserve the detail parameter without opening a different product', async () => {
+test('removed placeholder entries are hidden while data management opens its real page', async () => {
   const view = await renderWithProviders(<SettingsRouteScreen navigation={navigation} route={{ key: 'settings', name: 'Settings' }} />);
-  await view.user.press(screen.getByText('내 기록 관리'));
-  expect(navigation.navigate).toHaveBeenCalledWith('SettingsDetail', { detail: 'myRecords' });
+  expect(screen.queryByText('내 기록 관리')).toBeNull();
+  await view.user.press(screen.getByText('데이터 관리'));
+  expect(navigation.navigate).toHaveBeenCalledWith('SettingsDetail', { detail: 'dataManagement' });
 });
 
 
 test.each([
-  ['프로필 편집', 'ProfileEdit'], ['비밀번호 변경', 'ProfileEdit'], ['쿠폰', 'CouponBox'],
-])('account %s shares the root destination %s', async (label, destination) => {
+  ['프로필 편집', 'ProfileEdit'], ['쿠폰', 'CouponBox'],
+])('account %s opens the supported destination %s', async (label, destination) => {
   await renderWithProviders(<AccountManagementRouteScreen navigation={navigation as never} route={{ key: 'account', name: 'AccountManagement' }} />);
   await screen.findByText('actual_user');
   await fireEvent.press(screen.getByText(label));
@@ -70,22 +68,20 @@ test.each([
 test('focus return releases navigation lock', async () => {
   const view = await renderWithProviders(<SettingsRouteScreen navigation={navigation} route={{ key: 'settings', name: 'Settings' }} />);
   await screen.findByText('actual_user');
-  await view.user.press(screen.getByText('쿠폰'));
+  await view.user.press(screen.getByText('계정 관리'));
   const focus = jest.mocked(navigation.addListener).mock.calls.find(([event]) => event === 'focus')?.[1];
   await act(async () => (focus as () => void)());
-  await view.user.press(screen.getByText('쿠폰'));
+  await view.user.press(screen.getByText('계정 관리'));
   expect(navigation.navigate).toHaveBeenCalledTimes(2);
 });
 
-test.each(['root', 'account'])('%s logout calls production session once and never navigates to a placeholder', async (source) => {
+test('settings footer logout calls production session once and never navigates to a placeholder', async () => {
   let complete!: () => void;
   const logout = jest.fn(() => new Promise<void>((resolve) => { complete = resolve; }));
   const original = useAuthStore.getState().logout;
   useAuthStore.setState({ logout });
   try {
-    await renderWithProviders(source === 'root'
-      ? <SettingsRouteScreen navigation={navigation} route={{ key: 'settings', name: 'Settings' }} />
-      : <AccountManagementRouteScreen navigation={navigation as never} route={{ key: 'account', name: 'AccountManagement' }} />);
+    await renderWithProviders(<SettingsRouteScreen navigation={navigation} route={{ key: 'settings', name: 'Settings' }} />);
     await screen.findByText('actual_user');
     const row = screen.getByRole('button', { name: '로그아웃' });
     await fireEvent.press(row);
@@ -119,7 +115,7 @@ test('legacy SettingsDetail coupon params resolve to the actual route without a 
 
 
 test.each([
-  ['쿠폰', 'CouponBox'], ['비밀번호 변경', 'ProfileEdit'], ['알림 설정', 'NotificationSettings'],
+  ['계정 관리', 'AccountManagement'], ['알림 설정', 'NotificationSettings'],
 ])('standalone root %s uses the production destination %s', async (label, destination) => {
   await renderWithProviders(<StandaloneSettingsRouteScreen navigation={navigation as never} route={{ key: 'settings', name: 'Settings' }} />);
   await screen.findByText('actual_user');

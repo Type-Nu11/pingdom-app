@@ -8,6 +8,7 @@ export const voiceAssistantResources = {
     picker: {"date": "What date would you like to visit?", "timeRange": "What time would you like to visit?", "quantity": "How many people are visiting?", "start": "From", "end": "Until", "am": "AM", "pm": "PM", "hour": "{{count}} hours", "minute": "{{count}} minutes", "people": "{{count}} people", "increase": "Add a person", "decrease": "Remove a person", "confirm": "Confirm selection", "confirmValue": "Confirm {{value}}", "edit": "Edit", "previousMonth": "Previous month", "nextMonth": "Next month", "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat", "voiceOrText": "You can also answer by voice or type below.", "tooLong": "Your combined request is too long. Please start a shorter request."},
     sessionErrors: voiceSessionErrors.en,
     command: {
+      navigationRequested: 'Opening the requested page.',
       nearbySummary: 'I found {{count}} nearby places using your current location.\n\nCheck the place information and choose somewhere to visit.', distance: '{{distance}} km from here', sampleImage: 'Sample image',
       submission: 'Voice capture stops after 1 second of detected quiet for a clear Korean request, question, or a quantity answer to a quantity clarification; otherwise it waits 3 seconds. Speaking again resets the wait. Finalized input is sent to the AI server automatically. Text input is sent when you use Send. Exact coordinates are used only by the existing place lookup.',
       introTitle: 'Before using AI', introContinue: 'Continue to AI', introClose: 'Close',
@@ -27,7 +28,7 @@ export const voiceAssistantResources = {
         notSubmitted: 'No reservation has been submitted. Review the actual schedule and confirm your reservation request.',
       },
       operating: { OPERATING: 'Operating', TEMPORARILY_CLOSED: 'Temporarily closed', PERMANENTLY_CLOSED: 'Permanently closed' },
-      fields: { touristCategory: 'Specify a place category.', date: 'Confirm the requested date.', timeRange: 'Confirm the timezone and start/end times.', quantity: 'Specify the number of people.', useCurrentLocation: 'Confirm current location use and permission.', placeId: 'Choose a place from the retrieved results.', availabilityId: 'Choose a retrieved time slot.' },
+      fields: { touristCategory: 'Specify a place category.', date: 'Confirm the requested date.', timeRange: 'Confirm the timezone and start/end times.', quantity: 'Specify the number of people.', useCurrentLocation: 'Confirm current location use and permission.', placeId: 'Which place would you like to open? Enter its name or choose it from the search results.', availabilityId: 'Choose a retrieved time slot.' },
       errors: { QUOTE_TERMS_UNAVAILABLE: 'The server has not provided price and cancellation terms for this slot.', UNSUPPORTED_PRODUCT: 'This reservation product is not supported.', AVAILABILITY_UNAVAILABLE: 'This slot is no longer available for your group.', LOCATION_REQUIRED: 'Current location and location permission are required.', ID_NOT_IN_CONTEXT: 'Search again or select a verified place.', STALE_CONTEXT: 'Your context changed. Submit a new request.', CANCELED: 'Request canceled.', TIMEOUT: 'The lookup timed out.', AUTHENTICATION_REQUIRED: 'Sign in to continue.', FORBIDDEN: 'This request is not currently supported or allowed.', NOT_FOUND: 'Information was not found.', RATE_LIMITED: 'Too many requests. Try again later.', NETWORK_ERROR: 'Check your network connection.', SERVER_ERROR: 'The server is unavailable. Try again.', INVALID_SERVER_RESPONSE: 'The server information could not be verified.', REPLAY_CONFLICT: 'Duplicate requests differ. Enter a new request.' },
     },
     open: 'Open AI assistant', shortLabel: 'AI', brand: 'Pingdy', title: 'AI assistant', close: 'Close assistant', microphone: 'Start microphone', stop: 'Stop and send',
@@ -49,6 +50,7 @@ export const voiceAssistantResources = {
     picker: {"date": "며칠에 방문하시나요?", "timeRange": "몇 시쯤 방문하시나요?", "quantity": "몇 분이 방문하시나요?", "start": "시작", "end": "종료", "am": "오전", "pm": "오후", "hour": "{{count}}시", "minute": "{{count}}분", "people": "{{count}}명", "increase": "인원 늘리기", "decrease": "인원 줄이기", "confirm": "선택 확인", "confirmValue": "{{value}} 확인", "edit": "수정", "previousMonth": "이전 달", "nextMonth": "다음 달", "weekdays": "일,월,화,수,목,금,토", "voiceOrText": "아래 입력창에 말하거나 입력해도 돼요.", "tooLong": "기존 요청과 선택한 조건이 너무 깁니다. 짧은 새 요청을 입력해 주세요."},
     sessionErrors: voiceSessionErrors.ko,
     command: {
+      navigationRequested: '요청하신 화면을 여는 중입니다.',
       nearbySummary: '현재 위치를 기준으로 가까운 장소 {{count}}곳을 찾았어요.\n\n각 장소의 정보를 확인하고 원하는 곳을 골라보세요.', distance: '여기서 {{distance}}km', sampleImage: '예시 이미지',
       submission: '명확한 한국어 요청·질문이나 인원 질문에 대한 답변은 무음이 감지된 뒤 1초, 그 외에는 3초 후 음성 입력을 종료합니다. 다시 말하면 대기 시간을 초기화합니다. 최종 인식된 내용만 AI 서버에 자동 전송합니다. 텍스트 입력은 보내기를 누르면 전송합니다. 정확한 현재 좌표는 기존 장소 조회에만 사용합니다.',
       introTitle: 'AI 사용 안내', introContinue: '확인하고 시작하기', introClose: '닫기',
@@ -68,7 +70,7 @@ export const voiceAssistantResources = {
         notSubmitted: '예약을 제출하지 않았습니다. 실제 일정과 조건을 확인한 뒤 예약 요청을 확정해 주세요.',
       },
       operating: { OPERATING: '운영 중', TEMPORARILY_CLOSED: '임시 휴업', PERMANENTLY_CLOSED: '폐업' },
-      fields: { touristCategory: '장소 카테고리를 알려 주세요.', date: '조회할 날짜를 확인해 주세요.', timeRange: '시간대와 시작·종료 시간을 확인해 주세요.', quantity: '인원을 알려 주세요.', useCurrentLocation: '현재 위치 사용 여부와 위치 권한을 확인해 주세요.', placeId: '조회 결과에서 장소를 선택해 주세요.', availabilityId: '조회한 이용 시간을 선택해 주세요.' },
+      fields: { touristCategory: '장소 카테고리를 알려 주세요.', date: '조회할 날짜를 확인해 주세요.', timeRange: '시간대와 시작·종료 시간을 확인해 주세요.', quantity: '인원을 알려 주세요.', useCurrentLocation: '현재 위치 사용 여부와 위치 권한을 확인해 주세요.', placeId: '어느 장소로 이동할까요? 장소 이름을 입력하거나 조회 결과에서 선택해 주세요.', availabilityId: '조회한 이용 시간을 선택해 주세요.' },
       errors: { QUOTE_TERMS_UNAVAILABLE: '이 시간의 가격과 취소 조건이 서버에 설정되지 않았습니다.', UNSUPPORTED_PRODUCT: '지원하지 않는 예약 상품입니다.', AVAILABILITY_UNAVAILABLE: '이 시간에 요청한 인원으로 예약할 수 없습니다.', LOCATION_REQUIRED: '현재 위치와 위치 권한이 필요합니다.', ID_NOT_IN_CONTEXT: '장소를 다시 검색하거나 선택해 주세요.', STALE_CONTEXT: '조건이 변경되었습니다. 다시 요청해 주세요.', CANCELED: '요청이 취소되었습니다.', TIMEOUT: '조회 시간이 초과되었습니다.', AUTHENTICATION_REQUIRED: '로그인이 필요합니다.', FORBIDDEN: '현재 지원하지 않거나 허용되지 않는 요청입니다.', NOT_FOUND: '정보를 찾을 수 없습니다.', RATE_LIMITED: '요청이 많습니다. 잠시 후 다시 시도해 주세요.', NETWORK_ERROR: '네트워크 연결을 확인해 주세요.', SERVER_ERROR: '서버에 연결할 수 없습니다. 다시 시도해 주세요.', INVALID_SERVER_RESPONSE: '서버 정보를 확인할 수 없습니다.', REPLAY_CONFLICT: '중복 요청의 내용이 다릅니다. 새 요청을 입력해 주세요.' },
     },
     open: 'AI 어시스턴트 열기', shortLabel: 'AI', brand: 'Pingdy', title: 'AI 어시스턴트', close: '어시스턴트 닫기', microphone: '마이크 시작', stop: '중지하고 보내기',
@@ -90,6 +92,7 @@ export const voiceAssistantResources = {
     picker: {"date": "いつ訪問しますか？", "timeRange": "何時頃に訪問しますか？", "quantity": "何名で訪問しますか？", "start": "開始", "end": "終了", "am": "午前", "pm": "午後", "hour": "{{count}}時", "minute": "{{count}}分", "people": "{{count}}名", "increase": "人数を増やす", "decrease": "人数を減らす", "confirm": "選択を確認", "confirmValue": "{{value}}を確認", "edit": "変更", "previousMonth": "前の月", "nextMonth": "次の月", "weekdays": "日,月,火,水,木,金,土", "voiceOrText": "下の入力欄で音声や文字でも回答できます。", "tooLong": "リクエストと選択した条件が長すぎます。短い新しいリクエストを入力してください。"},
     sessionErrors: voiceSessionErrors.ja,
     command: {
+      navigationRequested: 'ご指定の画面を開いています。',
       nearbySummary: '現在地の近くで{{count}}か所見つかりました。\n\n各場所の情報を確認して、訪れたい場所を選んでください。', distance: 'ここから{{distance}}km', sampleImage: '参考画像',
       submission: '明確な韓国語の依頼・質問、または人数の質問への回答は無音を検出してから1秒、それ以外は3秒後に音声入力を終了します。再び話すと待ち時間をリセットします。確定した内容のみAIサーバーへ自動で送信します。テキスト入力は「送信」をタップすると送信されます。正確な現在地の座標は、既存の場所検索にのみ使用します。',
       introTitle: 'AIご利用前のご案内', introContinue: '確認して始める', introClose: '閉じる',
@@ -108,7 +111,7 @@ export const voiceAssistantResources = {
         notSubmitted: '予約はまだ送信されていません。実際の日程と条件を確認して予約リクエストを確定してください。',
       },
       operating: { OPERATING: '営業中', TEMPORARILY_CLOSED: '臨時休業', PERMANENTLY_CLOSED: '閉業' },
-      fields: { touristCategory: '場所のカテゴリーを教えてください。', date: '検索する日付を確認してください。', timeRange: 'タイムゾーンと開始・終了時刻を確認してください。', quantity: '人数を教えてください。', useCurrentLocation: '現在地を使用するかどうかと位置情報の権限を確認してください。', placeId: '検索結果から場所を選択してください。', availabilityId: '検索した利用時間を選択してください。' },
+      fields: { touristCategory: '場所のカテゴリーを教えてください。', date: '検索する日付を確認してください。', timeRange: 'タイムゾーンと開始・終了時刻を確認してください。', quantity: '人数を教えてください。', useCurrentLocation: '現在地を使用するかどうかと位置情報の権限を確認してください。', placeId: 'どの場所を開きますか？場所の名前を入力するか、検索結果から選んでください。', availabilityId: '検索した利用時間を選択してください。' },
       errors: { QUOTE_TERMS_UNAVAILABLE: 'この時間帯の価格とキャンセル条件が設定されていません。', UNSUPPORTED_PRODUCT: 'この予約商品には対応していません。', AVAILABILITY_UNAVAILABLE: 'この時間帯は指定した人数で予約できません。', LOCATION_REQUIRED: '現在地と位置情報の権限が必要です。', ID_NOT_IN_CONTEXT: '場所をもう一度検索するか、選択してください。', STALE_CONTEXT: '条件が変更されました。もう一度リクエストしてください。', CANCELED: 'リクエストはキャンセルされました。', TIMEOUT: '検索がタイムアウトしました。', AUTHENTICATION_REQUIRED: 'ログインが必要です。', FORBIDDEN: '現在サポートされていない、または許可されていないリクエストです。', NOT_FOUND: '情報が見つかりません。', RATE_LIMITED: 'リクエストが集中しています。しばらくしてからもう一度お試しください。', NETWORK_ERROR: 'ネットワーク接続を確認してください。', SERVER_ERROR: 'サーバーに接続できません。もう一度お試しください。', INVALID_SERVER_RESPONSE: 'サーバーの情報を確認できません。', REPLAY_CONFLICT: '重複したリクエストの内容が異なります。新しいリクエストを入力してください。' },
     },
     open: 'AIアシスタントを開く', shortLabel: 'AI', brand: 'Pingdy', title: 'AIアシスタント', close: 'アシスタントを閉じる', microphone: 'マイクを開始', stop: '停止して送信',
@@ -136,6 +139,7 @@ export const voiceAssistantResources = {
     },
     sessionErrors: voiceSessionErrors['zh-CN'],
     command: {
+      navigationRequested: '正在打开请求的页面。',
       nearbySummary: '根据您的当前位置，找到了{{count}}个附近地点。\n\n请查看各地点的信息，选择想去的地方。', distance: '距这里{{distance}}公里', sampleImage: '示例图片',
       draft: {
         title: '预约草稿', quantity: '人数：{{count}}人', unit: '每人费用：{{amount}}', additional: '额外费用：{{amount}}', total: '总额：{{amount}}',
@@ -170,7 +174,7 @@ export const voiceAssistantResources = {
         timeRange: '请确认时区以及开始和结束时间。',
         quantity: '请告诉我人数。',
         useCurrentLocation: '请确认是否使用当前位置以及定位权限。',
-        placeId: '请从查询结果中选择一个地点。',
+        placeId: '您想打开哪个地点？请输入地点名称或从搜索结果中选择。',
         availabilityId: '请选择已查询到的时间段。',
       },
       errors: {
@@ -249,6 +253,7 @@ export const voiceAssistantResources = {
     },
     sessionErrors: voiceSessionErrors['zh-TW'],
     command: {
+      navigationRequested: '正在開啟要求的頁面。',
       nearbySummary: '根據您的目前位置，找到了{{count}}個附近地點。\n\n請查看各地點的資訊，選擇想去的地方。', distance: '距這裡{{distance}}公里', sampleImage: '範例圖片',
       draft: {
         title: '預約草稿', quantity: '人數：{{count}}人', unit: '每人費用：{{amount}}', additional: '額外費用：{{amount}}', total: '總額：{{amount}}',
@@ -283,7 +288,7 @@ export const voiceAssistantResources = {
         timeRange: '請確認時區以及開始與結束時間。',
         quantity: '請告訴我人數。',
         useCurrentLocation: '請確認是否使用目前位置以及定位權限。',
-        placeId: '請從查詢結果中選擇一個地點。',
+        placeId: '您想開啟哪個地點？請輸入地點名稱或從搜尋結果中選擇。',
         availabilityId: '請選擇已查詢到的時段。',
       },
       errors: {
@@ -362,6 +367,7 @@ export const voiceAssistantResources = {
     },
     sessionErrors: voiceSessionErrors.vi,
     command: {
+      navigationRequested: 'Đang mở trang bạn yêu cầu.',
       nearbySummary: 'Tôi tìm thấy {{count}} địa điểm gần vị trí hiện tại của bạn.\n\nHãy xem thông tin từng địa điểm và chọn nơi bạn muốn đến.', distance: 'Cách đây {{distance}} km', sampleImage: 'Ảnh minh họa',
       draft: {
         title: 'Bản nháp đặt chỗ', quantity: 'Số người: {{count}}', unit: 'Giá mỗi người: {{amount}}', additional: 'Chi phí bổ sung: {{amount}}', total: 'Tổng cộng: {{amount}}',
@@ -396,7 +402,7 @@ export const voiceAssistantResources = {
         timeRange: 'Hãy xác nhận múi giờ và giờ bắt đầu/kết thúc.',
         quantity: 'Hãy cho biết số người.',
         useCurrentLocation: 'Hãy xác nhận việc dùng vị trí hiện tại và quyền vị trí.',
-        placeId: 'Hãy chọn một địa điểm trong kết quả đã tra cứu.',
+        placeId: 'Bạn muốn mở địa điểm nào? Nhập tên hoặc chọn từ kết quả tìm kiếm.',
         availabilityId: 'Hãy chọn một khung giờ đã tra cứu.',
       },
       errors: {
@@ -480,6 +486,7 @@ export const voiceAssistantResources = {
     },
     sessionErrors: voiceSessionErrors.es,
     command: {
+      navigationRequested: 'Abriendo la página solicitada.',
       nearbySummary: 'Encontré {{count}} lugares cercanos usando tu ubicación actual.\n\nConsulta la información de cada lugar y elige dónde quieres ir.', distance: 'A {{distance}} km de aquí', sampleImage: 'Imagen de ejemplo',
       draft: {
         title: 'Borrador de reserva', quantity: 'Personas: {{count}}', unit: 'Precio por persona: {{amount}}', additional: 'Coste adicional: {{amount}}', total: 'Importe total: {{amount}}',
@@ -514,7 +521,7 @@ export const voiceAssistantResources = {
         timeRange: 'Confirma la zona horaria y las horas de inicio y fin.',
         quantity: 'Indica el número de personas.',
         useCurrentLocation: 'Confirma el uso de la ubicación actual y el permiso.',
-        placeId: 'Elige un lugar entre los resultados obtenidos.',
+        placeId: '¿Qué lugar quieres abrir? Escribe su nombre o elígelo entre los resultados.',
         availabilityId: 'Elige un horario de los obtenidos.',
       },
       errors: {
@@ -598,6 +605,7 @@ export const voiceAssistantResources = {
     },
     sessionErrors: voiceSessionErrors['pt-BR'],
     command: {
+      navigationRequested: 'Abrindo a página solicitada.',
       nearbySummary: 'Encontrei {{count}} lugares próximos usando sua localização atual.\n\nConfira as informações de cada lugar e escolha aonde quer ir.', distance: 'A {{distance}} km daqui', sampleImage: 'Imagem de exemplo',
       draft: {
         title: 'Rascunho de reserva', quantity: 'Pessoas: {{count}}', unit: 'Preço por pessoa: {{amount}}', additional: 'Custo adicional: {{amount}}', total: 'Valor total: {{amount}}',
@@ -632,7 +640,7 @@ export const voiceAssistantResources = {
         timeRange: 'Confirme o fuso horário e os horários de início e término.',
         quantity: 'Informe o número de pessoas.',
         useCurrentLocation: 'Confirme o uso da localização atual e a permissão.',
-        placeId: 'Escolha um lugar entre os resultados obtidos.',
+        placeId: 'Qual lugar você quer abrir? Digite o nome ou escolha nos resultados da busca.',
         availabilityId: 'Escolha um horário entre os obtidos.',
       },
       errors: {

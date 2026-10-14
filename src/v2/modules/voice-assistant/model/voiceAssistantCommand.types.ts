@@ -21,7 +21,16 @@ export type VoiceLocalTime = string;
  * 외부 입력을 이 타입으로 단언하지 말고 반드시 parseVoiceAssistantEnvelope를 통과시킵니다.
  * 좌표·예약자 정보·확인 여부는 AI가 결정할 수 없으므로 입력 필드 자체를 두지 않습니다.
  */
+export const VOICE_PAGE_IDS = ['map', 'search', 'favorites', 'reservations', 'myPage', 'settings', 'placeDetail', 'createReservation',
+  'community', 'communityPost', 'recommendations', 'coupons', 'verifiedPlaces', 'accountManagement',
+  'notificationSettings', 'loginInformation', 'locationSettings', 'privacySettings', 'dataManagement'] as const;
+export type VoicePageId = typeof VOICE_PAGE_IDS[number];
+export type VoiceNavigationTarget = Readonly<{ page: Exclude<VoicePageId, 'placeDetail' | 'createReservation' | 'communityPost'> }>
+  | Readonly<{ page: 'placeDetail' | 'createReservation'; placeId: number }>
+  | Readonly<{ page: 'communityPost'; postId: number }>;
+
 export type VoiceAssistantCommand =
+  | Readonly<{ command: 'navigateToPage'; args: Readonly<{ page: VoicePageId; placeId?: number }> }>
   | Readonly<{ command: 'searchNearbyPlaces'; args: Readonly<{
     category?: VoicePlaceCategory;
     keyword?: string;
@@ -92,6 +101,7 @@ export type VoiceCommandOutput = {
   getPlaceDetails: Readonly<{ place: VoicePlaceFacts }>;
   getAvailabilities: Readonly<{ placeId: number; date: VoiceLocalDate; quantity: number; availabilities: readonly VoiceAvailabilityFacts[] }>;
   prepareReservation: Readonly<{ draft: ReservationDraft }>;
+  navigateToPage: Readonly<{ target: VoiceNavigationTarget; navigationRequested: true }>;
   cancelVoiceSession: Readonly<{ sessionStopped: true }>;
 };
 export type CommandFailureCode = 'LOCATION_REQUIRED' | 'ID_NOT_IN_CONTEXT' | 'STALE_CONTEXT'

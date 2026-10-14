@@ -2,3 +2,5 @@
 export { default as VoiceCommandScreen } from './screens/VoiceCommandScreen';
 export { default as VoiceAssistantScreen } from './screens/VoiceAssistantScreen';
 export type { VoiceCommandContext } from './hooks/useVoiceCommands';
+
+export type { VoiceNavigationTarget } from './model/voiceAssistantCommand.types';

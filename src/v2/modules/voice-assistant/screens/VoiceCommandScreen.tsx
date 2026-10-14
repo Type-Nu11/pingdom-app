@@ -1,11 +1,15 @@
 import { useVoiceReservation } from '../hooks/useVoiceReservation';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useVoiceCommands, type VoiceCommandContext } from '../hooks/useVoiceCommands';
 import VoiceAssistantScreen from './VoiceAssistantScreen';
 
 /** Composition for the existing input UI, #347 transport and #348 read consumer. */
 export default function VoiceCommandScreen({ context, onClose }: { context: VoiceCommandContext; onClose: () => void }) {
   const commands = useVoiceCommands(context);
+  useEffect(() => {
+    if (commands.commandState.phase === 'result' && commands.commandState.result.command === 'navigateToPage'
+      && commands.commandState.result.outcome.status === 'succeeded') onClose();
+  }, [commands.commandState, onClose]);
   const reservation = useVoiceReservation(context.accountRevision, context.timezone, commands.commandState, JSON.stringify([context.selectedPlaceId, context.location?.latitude, context.location?.longitude, context.locationPermission, context.radiusKm, context.timezone, context.placeListEnabled]));
   return <VoiceAssistantScreen onClose={onClose} autoStart onFinalInput={commands.onFinalInput}
     reservationFlow={reservation} serverSubmission commandState={commands.commandState}

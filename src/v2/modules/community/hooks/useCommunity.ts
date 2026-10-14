@@ -115,6 +115,17 @@ export function usePost(postId: number, options: { enabled?: boolean } = {}) {
   return useQuery({ ...createPostQueryOptions(postId), ...options });
 }
 
+/** A single fresh feed page for app-owned selection; reuses the existing list API. */
+export function createPostsQueryOptions(
+  params: ListPostsParams,
+  api: Pick<CommunityApi, 'listPosts'> = communityApi,
+) {
+  return {
+    queryKey: ['v2', 'community', 'posts', 'all', 'page', params] as const,
+    queryFn: ({ signal }: { signal?: AbortSignal }) => api.listPosts(params, signal),
+  };
+}
+
 /**
  * Server-backed pagination for a category feed. `page` is owned by the query,
  * so it is stripped from `params` and only `limit` takes part in the cache key.

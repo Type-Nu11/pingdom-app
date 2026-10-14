@@ -8,7 +8,7 @@ import { Text as AppText } from '../../../../shared/components/Typography';
 import { HeaderBackButton, ErrorState, LoadingState } from '../../../../shared/components';
 import NotificationSettingToggle from '../components/NotificationSettingToggle';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../hooks/useNotificationSettings';
-import { notificationSettingsErrorKey, quietHoursPresentation } from '../model/settingsPresentation';
+import { notificationSettingsErrorKey } from '../model/settingsPresentation';
 import {
   isNotificationPermissionGranted, notificationPermissionAdapter,
   type NotificationPermissionAdapter, type NotificationPermissionStatus,
@@ -16,13 +16,6 @@ import {
 
 const CATEGORY_FIELDS = ['newHotplaceEnabled', 'newLikeEnabled'] as const;
 type CategoryField = typeof CATEGORY_FIELDS[number];
-const DESIGN_SECTIONS = [
-  { title: 'records', keys: ['firstRecordTrending', 'recordNewTags'] },
-  { title: 'interests', keys: ['favoriteMoodChange', 'frequentAreaHotPlace', 'todayMissionArea'] },
-  { title: 'reports', keys: ['weeklyReport'] },
-  { title: 'other', keys: ['nightNotifications', 'marketingEvents'] },
-] as const;
-
 export type NotificationSettingsScreenProps = {
   onBack: () => void;
   permissionAdapter?: NotificationPermissionAdapter;
@@ -30,7 +23,7 @@ export type NotificationSettingsScreenProps = {
 
 /** Single server-backed screen, composed by SettingsScreen's production detail page. */
 export default function NotificationSettingsScreen({ onBack, permissionAdapter = notificationPermissionAdapter }: NotificationSettingsScreenProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const query = useNotificationSettings();
   const mutation = useUpdateNotificationSettings();
   const [permission, setPermission] = useState<NotificationPermissionStatus | 'loading'>('loading');
@@ -89,10 +82,6 @@ export default function NotificationSettingsScreen({ onBack, permissionAdapter =
     }
   };
 
-  const quiet = quietHoursPresentation(query.data, i18n.resolvedLanguage ?? i18n.language);
-  const unsupported = (key: string) => key === 'pushAll' ? t('notificationSettings.contract.allUnsupported')
-    : key === 'nightNotifications' ? t('notificationSettings.contract.nightUnsupported')
-      : t('notificationSettings.contract.unsupported');
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-notification-settings-screen">
@@ -109,8 +98,7 @@ export default function NotificationSettingsScreen({ onBack, permissionAdapter =
             onPress={() => { void permissionAdapter.openSettings().catch(() => { if (mounted.current) setPermission('error'); }); }}>
             <ActionLabel>{t('notificationSettings.permission.openSettings')}</ActionLabel>
           </Action>
-          <NotificationSettingToggle disabled label={t('notificationSettings.settings.pushAll.label')}
-            description={unsupported('pushAll')} testID="notification-setting-pushAll" />
+
         </Section>
         {query.isPending ? <LoadingState description={t('notificationSettings.loading')} /> : query.isError ? (
           <ErrorState description={t(notificationSettingsErrorKey(query.error, 'notificationSettings.error'))}
@@ -126,22 +114,9 @@ export default function NotificationSettingsScreen({ onBack, permissionAdapter =
                 value={typeof query.data?.[field] === 'boolean' ? query.data[field] : undefined}
                 onValueChange={(value) => { void change(field, value); }} testID={`notification-setting-${field}`} />
             ))}
-            <NotificationSettingToggle disabled label={t('notificationSettings.contract.quietHours')}
-              description={t('notificationSettings.contract.quietReadOnly')}
-              value={typeof query.data?.quietHoursEnabled === 'boolean' ? query.data.quietHoursEnabled : undefined}
-              testID="notification-setting-quietHoursEnabled" />
-            <Description>{quiet ?? t('notificationSettings.contract.quietIncomplete')}</Description>
-            {typeof query.data?.quietHoursEnabled !== 'boolean' ? <Description>{t('notificationSettings.contract.unknown')}</Description> : null}
+
           </Section>
         )}
-        {DESIGN_SECTIONS.map((section) => (
-          <Section key={section.title}>
-            <Title>{t(`notificationSettings.sections.${section.title}`)}</Title>
-            {section.keys.map((key) => <NotificationSettingToggle key={key} disabled
-              label={t(`notificationSettings.settings.${key}.label`)} description={unsupported(key)}
-              testID={`notification-setting-${key}`} />)}
-          </Section>
-        ))}
       </Content>
     </Screen>
   );

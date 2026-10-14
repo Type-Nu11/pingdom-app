@@ -1,4 +1,4 @@
-import { VOICE_PLACE_CATEGORIES, VOICE_QUANTITY_LIMITS, VOICE_SCHEMA_VERSION } from './voiceAssistantCommand.types';
+import { VOICE_PAGE_IDS, VOICE_PLACE_CATEGORIES, VOICE_QUANTITY_LIMITS, VOICE_SCHEMA_VERSION } from './voiceAssistantCommand.types';
 import type {
   ClarificationField, ProtocolErrorCode, ProviderEnvelope, VoiceAssistantCommand,
   VoiceEnvelopeParseResult, VoiceParserRejectionCode, VoiceTouristCategory,
@@ -120,6 +120,13 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
       const touristCategory = Object.hasOwn(args, 'touristCategory')
         ? member(args.touristCategory, categories, '$.args.touristCategory') : undefined;
       return { command: name, args: Object.freeze({ date, startTime, endTime, quantity: quantity(args.quantity), useCurrentLocation: args.useCurrentLocation, ...(touristCategory ? { touristCategory } : {}) }) };
+    }
+    case 'navigateToPage': {
+      const args = record(input, '$.args'); exact(args, ['page'], ['placeId'], '$.args');
+      const page = member(args.page, VOICE_PAGE_IDS, '$.args.page');
+      if (page !== 'placeDetail' && page !== 'createReservation' && Object.hasOwn(args, 'placeId')) fail('UNEXPECTED_FIELD', '$.args.placeId');
+      return { command: name, args: Object.freeze({ page,
+        ...(Object.hasOwn(args, 'placeId') ? { placeId: integerId(args.placeId, '$.args.placeId') } : {}) }) };
     }
     case 'getPlaceDetails': {
       const args = record(input, '$.args'); exact(args, ['placeId'], [], '$.args');

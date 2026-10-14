@@ -3,6 +3,7 @@ import CarRoutePreview from '../routes/components/CarRoutePreview';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
+import type { VoiceNavigationTarget } from '../../../voice-assistant';
 import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
 import MapAssistantModal from '../assistant/components/MapAssistantModal';
 import MapAssistantIntro from '../assistant/components/MapAssistantIntro';
@@ -11,6 +12,7 @@ import { MapTutorialTarget } from '../tutorial/context';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Keyboard,
   Alert,
   Platform,
   StatusBar,
@@ -157,6 +159,7 @@ type MapScreenProps = {
   onOpenCommunityPost?: (postId: number) => void;
   onOpenCommunityWrite?: (categoryId?: string) => void;
   onOpenCoupons?: () => void;
+  onNavigateAssistantPage?: (target: VoiceNavigationTarget) => boolean;
   onOpenProfile?: () => void;
   onOpenReservation?: (reservationId: number) => void;
   onStartVisitVerification?: (placeId: number) => void;
@@ -175,6 +178,7 @@ export default function MapScreen({
   onOpenCommunityWrite,
   onOpenCoupons,
   onOpenProfile,
+  onNavigateAssistantPage,
   onOpenReservation,
   onStartVisitVerification,
   onSignIn,
@@ -873,14 +877,33 @@ export default function MapScreen({
     setContent({ type: 'search', query: nextQuery });
     snapTo('expanded');
   };
-  const handleSearchFocus = () => {
+  const handleSearchFocus = useCallback(() => {
     setIsSearchOpen(true);
-  };
+  }, []);
   const openMapSection = useCallback((nextSection: 'community' | 'favorites' | 'map' | 'reservations') => {
     setContent({ type: 'home' });
     setMapSection(nextSection);
     jumpTo('medium');
   }, [jumpTo]);
+  const assistantNavigationLock = useRef<string | null>(null);
+  useEffect(() => { if (!assistant.isOpen) assistantNavigationLock.current = null; }, [assistant.isOpen]);
+  const navigateAssistantPage = useCallback((target: VoiceNavigationTarget) => {
+    const key = JSON.stringify(target);
+    if (assistantNavigationLock.current === key) return true;
+    Keyboard.dismiss();
+    if (target.page === 'search') {
+      // Reuse the touch entry; opening search does not require a GPS fix.
+      handleSearchFocus();
+      assistant.close();
+    } else if (target.page === 'recommendations') {
+      setContent({ type: 'recommendations' });
+      snapTo('expanded');
+      assistant.close();
+    } else if (target.page === 'map' || target.page === 'favorites' || target.page === 'community') openMapSection(target.page);
+    else if (!onNavigateAssistantPage?.(target)) return false;
+    assistantNavigationLock.current = key;
+    return true;
+  }, [assistant.close, handleSearchFocus, openMapSection, onNavigateAssistantPage, snapTo]);
   const handleMapRefresh = useCallback(async () => {
     if (mapRefreshLock.current) return;
 
@@ -1351,10 +1374,10 @@ export default function MapScreen({
           </MapTutorialTarget>
         </Animated.View>
       ) : null}
-      {isSearchOpen && center ? (
+      {isSearchOpen ? (
         <MapSearchOverlay
-          centerLat={center.lat}
-          centerLng={center.lng}
+          centerLat={center?.lat}
+          centerLng={center?.lng}
           isRecommendationsError={isRecommendationsError}
           isRecommendationsLoading={isRecommendationsLoading}
           onClose={() => setIsSearchOpen(false)}
@@ -1389,6 +1412,7 @@ export default function MapScreen({
         locationPermission: location.status, radiusKm: recommendationRadiusKm,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         placeListEnabled: env.featureFlags.placeList,
+        navigateToPage: navigateAssistantPage,
         selectedPlaceId: hasSelectedPlace ? selectedPlaceId : undefined,
       }} />
       <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}

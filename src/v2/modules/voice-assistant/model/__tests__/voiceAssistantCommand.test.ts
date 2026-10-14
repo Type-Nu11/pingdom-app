@@ -3,6 +3,7 @@ import { VOICE_COMMAND_POLICIES } from '../voiceAssistantCommandPolicy';
 import type { VoiceAssistantCommand, ProviderEnvelope, AppCommandResult } from '../voiceAssistantCommand.types';
 
 const commands = {
+  navigateToPage: { command: 'navigateToPage', args: { page: 'map' } },
   searchNearbyPlaces: { command: 'searchNearbyPlaces', args: { useCurrentLocation: true } },
   searchNearbyReservablePlaces: { command: 'searchNearbyReservablePlaces', args: {
     touristCategory: 'CAFE', date: '2028-02-29', startTime: '09:00', endTime: '18:00', quantity: 2, useCurrentLocation: true,

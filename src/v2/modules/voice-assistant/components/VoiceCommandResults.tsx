@@ -105,6 +105,7 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
       <Copy>{slot.startsAt} – {slot.endsAt}</Copy><Copy>{t('voiceAssistant.command.capacity', { count: slot.remainingCapacity })}</Copy>
     </Block>) : <Copy testID="voice-command-empty">{t('voiceAssistant.command.empty')}</Copy>}
   </>;
+  if (result.command === 'navigateToPage') return copy('navigationRequested');
   if (result.command === 'cancelVoiceSession') return copy('canceled');
   if (result.command === 'prepareReservation' && result.outcome.status === 'succeeded') {
     const draft = result.outcome.data.draft;

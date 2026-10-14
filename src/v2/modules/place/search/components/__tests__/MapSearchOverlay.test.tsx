@@ -58,6 +58,15 @@ describe('MapSearchOverlay registered-place search', () => {
     );
   }
 
+  test('위치가 없어도 검색 화면을 열고 좌표 없이 검색한다', async () => {
+    const view = await renderWithProviders(<MapSearchOverlay onClose={jest.fn()} onSelectPlace={jest.fn()} />);
+    await view.user.type(screen.getByPlaceholderText('검색하기'), '카페');
+    await fireEvent(screen.getByPlaceholderText('검색하기'), 'submitEditing');
+    await waitFor(() => expect(usePlaceAutocomplete).toHaveBeenLastCalledWith({ keyword: '카페' }, { enabled: true }));
+    expect(searchPlaces).toHaveBeenCalledWith('카페', {});
+    expect(screen.getByPlaceholderText('검색하기')).toBeVisible();
+  });
+
   test('검색 제출 시 V2 autocomplete Hook을 실제 좌표와 검색어로 활성화한다', async () => {
     const { user } = await renderOverlay();
 

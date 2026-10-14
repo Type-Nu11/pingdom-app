@@ -14,16 +14,14 @@ type ToolCall = Omit<components['schemas']['ToolCall'], 'function'> & {
 };
 type Message = Omit<components['schemas']['Message'], 'content' | 'tool_calls'> & {
   content?: string | null | Record<string, unknown>; tool_calls?: ToolCall[];
+  nativeContent?: Record<string, unknown>[];
 };
-// OpenAI-compatible wire messages also support app-owned system instructions;
-// keep that role outside the provider/user conversation ledger.
-type WireMessage = Omit<Message, 'tool_calls' | 'role'> & { role: Message['role'] | 'system'; tool_calls?: Array<Omit<ToolCall, 'function'> & {
-  function: { name: string; arguments: Record<string, unknown> | string };
-}> };
-// The server team confirmed the production proxy requires an app-selected model;
-// the published AiChatRequest snapshot does not describe this field yet.
+// The proxy now forwards Anthropic Messages. Keep provider wire types local;
+// the published OpenAI-shaped snapshot still describes the previous contract.
 const AI_CHAT_MODEL = 'claude-haiku-5-5' as const;
-type Request = Omit<components['schemas']['AiChatRequest'], 'messages'> & { messages: WireMessage[]; model: typeof AI_CHAT_MODEL };
+type NativeMessage = { role: 'user' | 'assistant'; content: string | Record<string, unknown>[] };
+type Request = { model: typeof AI_CHAT_MODEL; max_tokens: number; system: string; messages: NativeMessage[];
+  tools: { name: string; description: string; input_schema: Record<string, unknown> }[] };
 type Delivery = { envelope: ProviderEnvelope; callId?: string };
 const invalid = (): never => { throw new VoiceSessionError('INVALID_RESPONSE'); };
 const object = (value: unknown): Record<string, unknown> => {
@@ -33,8 +31,63 @@ const object = (value: unknown): Record<string, unknown> => {
 const exact = (value: Record<string, unknown>, fields: readonly string[]) => {
   if (Object.keys(value).some(key => !fields.includes(key))) invalid();
 };
-function chatResponse(decoded: unknown): { response: Record<string, unknown>; provider: boolean } {
+function nativeMessages(messages: Message[]): NativeMessage[] {
+  const result: NativeMessage[] = [];
+  const blocks = (content: NativeMessage['content']) => typeof content === 'string' ? [{ type: 'text', text: content }] : content;
+  for (const message of messages) {
+    let next: NativeMessage;
+    if (message.role === 'tool') {
+      next = { role: 'user', content: [{ type: 'tool_result', tool_use_id: message.tool_call_id,
+        content: JSON.stringify(message.content), is_error: (message.content as { status?: string } | undefined)?.status === 'rejected' }] };
+    } else if (message.role === 'assistant') {
+      next = { role: 'assistant', content: message.nativeContent ?? [
+        ...(typeof message.content === 'string' && message.content ? [{ type: 'text', text: message.content }] : []),
+        ...(message.tool_calls ?? []).map(call => ({ type: 'tool_use', id: call.id, name: call.function.name, input: call.function.arguments })),
+      ] };
+    } else {
+      if (message.role !== 'user' || typeof message.content !== 'string') return invalid();
+      next = { role: 'user', content: message.content };
+    }
+    const previous = result.at(-1);
+    // All results in a batch precede the next user text in one user message.
+    if (previous?.role === next.role) previous.content = [...blocks(previous.content), ...blocks(next.content)];
+    else result.push(next);
+  }
+  return result;
+}
+function chatResponse(decoded: unknown): { response: Record<string, unknown>; provider: boolean; nativeContent?: Record<string, unknown>[] } {
   const outer = object(decoded);
+  if (outer.type === 'message') {
+    if (outer.role !== 'assistant' || !Array.isArray(outer.content) || outer.content.length > 32
+      || !['end_turn', 'tool_use'].includes(String(outer.stop_reason))) return invalid();
+    const text: string[] = [], calls: Record<string, unknown>[] = [], nativeContent: Record<string, unknown>[] = [];
+    for (const raw of outer.content) {
+      const block = object(raw);
+      if (block.type === 'text') {
+        exact(block, ['type', 'text', 'citations']);
+        if (typeof block.text !== 'string') return invalid();
+        text.push(block.text);
+      } else if (block.type === 'tool_use') {
+        exact(block, ['type', 'id', 'name', 'input', 'caller']);
+        if (block.caller !== undefined) {
+          const caller = object(block.caller); exact(caller, ['type']);
+          if (caller.type !== 'direct') return invalid();
+        }
+        const input = object(block.input);
+        calls.push({ id: block.id, type: 'function', function: { name: block.name, arguments: JSON.stringify(input) } });
+      } else if (block.type === 'thinking') {
+        exact(block, ['type', 'thinking', 'signature']);
+        if (typeof block.thinking !== 'string' || typeof block.signature !== 'string' || !block.signature) return invalid();
+      } else if (block.type === 'redacted_thinking') {
+        exact(block, ['type', 'data']);
+        if (typeof block.data !== 'string') return invalid();
+      } else return invalid();
+      // Preserve signed blocks in memory for follow-ups, never in public deliveries or logs.
+      nativeContent.push(block);
+    }
+    if ((outer.stop_reason === 'tool_use') !== (calls.length > 0)) return invalid();
+    return { response: { content: text.join('\n') || null, tool_calls: calls }, provider: true, nativeContent };
+  }
   if (!Object.hasOwn(outer, 'choices')) {
     exact(outer, ['content', 'tool_calls']);
     return { response: outer, provider: false };
@@ -116,7 +169,7 @@ function diagnosticFailure(error: unknown) {
 }
 
 /** Stateless server chat; this adapter owns only bounded, account-scoped in-memory history. */
-export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSessionApi & {
+export function createAiChatSessionApi(client: ApiClient = apiClient, context?: () => { language: string; selectedPlaceId?: number }): VoiceSessionApi & {
   recordResult: (result: AppCommandResult) => void;
 } {
   let history: Message[] = [];
@@ -128,8 +181,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
   let sequence = 0;
   let rounds = 0;
   let needsFollowUp = false;
-  let providerWire = false;
-  const reset = () => { revision++; history = []; queue = []; waiting = undefined; completed = undefined; needsFollowUp = false; providerWire = false; };
+  const reset = () => { revision++; history = []; queue = []; waiting = undefined; completed = undefined; needsFollowUp = false; };
   const requireCurrent = (id: string, signal: AbortSignal, captured: number) => {
     if (signal.aborted || id !== sessionId || captured !== revision) throw new VoiceSessionError('CANCELED');
   };
@@ -147,22 +199,20 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
     let stage = 'transport';
     const abort = () => aborter.abort(); signal.addEventListener('abort', abort, { once: true });
     try {
-      // Keep canonical history internally; the live OpenAI-compatible proxy needs JSON strings.
-      const conversation: WireMessage[] = providerWire ? messages.map(message => ({ ...message,
-        ...(message.role === 'tool' ? { content: JSON.stringify(message.content) } : {}),
-        ...(message.tool_calls?.length ? { tool_calls: message.tool_calls.map(call => ({ ...call,
-          function: { ...call.function, arguments: JSON.stringify(call.function.arguments) },
-        })) } : {}),
-      })) : messages;
-      // Attach once per request, outside conversation history, including tool follow-ups.
-      const wireMessages: WireMessage[] = [{ role: 'system', content: AI_CHAT_SYSTEM_PROMPT }, ...conversation];
+      const wireMessages = nativeMessages(messages);
+      const appContext = context?.();
+      const system = appContext ? `${AI_CHAT_SYSTEM_PROMPT}\nApp-selected language: ${appContext.language}. Respond in this language.\nVerified currently selected place ID: ${appContext.selectedPlaceId ?? 'none'}.` : AI_CHAT_SYSTEM_PROMPT;
+      const request: Request = { model: AI_CHAT_MODEL, max_tokens: 2048, system,
+        messages: wireMessages, tools: AI_CHAT_TOOLS.map(({ function: f }) => ({
+          name: f.name, description: f.description, input_schema: f.parameters,
+        })) };
       chatLog('request', () => ({ requestId, route: '/ai/chat', model: AI_CHAT_MODEL, round: rounds,
-        wireFormat: providerWire ? 'provider' : 'canonical',
+        wireFormat: 'anthropic', maxTokens: request.max_tokens,
         messages: wireMessages.map(message => ({ role: message.role, contentType: diagnosticType(message.content),
-          toolCalls: message.tool_calls?.map(diagnosticCall) })),
+          blockTypes: Array.isArray(message.content) ? message.content.map(block => block.type) : undefined })),
         tools: AI_CHAT_TOOLS.map(tool => ({ name: tool.function.name, required: tool.function.parameters.required })),
       }));
-      const raw = await client.post<unknown, Request>('/ai/chat', { model: AI_CHAT_MODEL, messages: wireMessages, tools: AI_CHAT_TOOLS }, {
+      const raw = await client.post<unknown, Request>('/ai/chat', request, {
         signal: aborter.signal, responseType: 'text', maxContentLength: VOICE_RESPONSE_LIMIT,
         onDownloadProgress: event => { if (event.loaded > VOICE_RESPONSE_LIMIT) { oversized = true; aborter.abort(); } },
       });
@@ -174,7 +224,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
       let decoded: unknown;
       try { decoded = JSON.parse(raw); } catch { return invalid(); }
       stage = 'response_envelope';
-      const { response, provider } = chatResponse(decoded);
+      const { response, provider, nativeContent } = chatResponse(decoded);
       chatLog('response', () => ({ requestId, elapsedMs: Date.now() - startedAt, format: provider ? 'provider' : 'canonical',
         contentType: diagnosticType(response.content), toolCalls: Array.isArray(response.tool_calls) ? response.tool_calls.slice(0, 8).map(diagnosticCall) : [],
       }));
@@ -205,6 +255,11 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         }
         const args = object(argumentsValue);
         if (Object.keys(args).some(key => !Object.hasOwn(tool.function.parameters.properties, key))) return invalid();
+        if (fn.name === 'navigateToPage') {
+          // Navigation ends this presentation: only one final navigation per tool batch.
+          if (index !== calls.length - 1) return invalid();
+          for (let i = deliveries.length - 1; i >= 0; i--) if (deliveries[i].envelope.kind === 'assistant_message') deliveries.splice(i, 1);
+        }
         if (fn.name === 'requestReservationDetails') {
           if (index !== calls.length - 1 || Object.keys(args).length !== 1 || !['date', 'quantity'].includes(String(args.field))) return invalid();
           const parsed = parseVoiceAssistantEnvelope({ schemaVersion: 1, id: `chat-${++sequence}`, kind: 'clarification_request',
@@ -223,8 +278,8 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         wireCalls.push({ id: call.id, type: 'function', function: { name: tool.function.name, arguments: args } });
       }
       if (!deliveries.length) return invalid();
-      providerWire = provider;
-      history = [...messages, { role: 'assistant', content: content ?? null, tool_calls: wireCalls }];
+      history = [...messages, { role: 'assistant', content: content ?? null, tool_calls: wireCalls,
+        ...(nativeContent ? { nativeContent } : {}) }];
       queue = deliveries; needsFollowUp = wireCalls.length > 0;
       return dequeue()!;
     } catch (error) {
@@ -272,6 +327,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient): VoiceSess
         if (!completed) throw new VoiceSessionError('DELIVERY_FAILED');
         // Only executor-projected public facts go to the model; no bearer, quote token, or reservation body.
         history = [...history, { role: 'tool', tool_call_id: waiting.callId, content: completed.outcome }];
+        if (completed.command === 'navigateToPage' && completed.outcome.status === 'succeeded') needsFollowUp = false;
       }
       waiting = undefined; completed = undefined;
       if (queue.length) return dequeue();

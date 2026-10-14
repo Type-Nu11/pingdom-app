@@ -35,6 +35,7 @@ function setup() {
   } } as unknown as ApiTransport;
   const client = createApiClient(transport);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+  const navigation = jest.fn(() => true);
   const results: AppCommandResult[] = [];
   let contextRevision = 1, accountRevision: string | null = 'account', monotonic = 0;
   let location: { latitude: number; longitude: number } | null = { latitude: 37.5, longitude: 127 };
@@ -44,7 +45,7 @@ function setup() {
   let transportDelay: Promise<void> | undefined;
   const dispatcher = commands.createVoiceCommandDispatcher({
     runtime: () => ({ queryClient, accountRevision, contextRevision, location, locationPermission, radiusKm: 5,
-      timezone, now: () => now, monotonic: () => monotonic, session: controller.getIdentity(), placeListEnabled: true }),
+      navigateToPage: navigation, timezone, now: () => now, monotonic: () => monotonic, session: controller.getIdentity(), placeListEnabled: true }),
     publish: result => results.push(result), stopSession: () => controller.close(),
     queries: { list: params => commands.voiceReadQueries.list(params, createPlaceExplorationApi(client)),
       detail: id => commands.voiceReadQueries.detail(id, createPlaceDetailApi(client)),
@@ -59,7 +60,7 @@ function setup() {
   });
   const unsubscribe = controller.subscribe(() => { if (controller.getSnapshot().phase === 'closed') dispatcher.clear(); });
   cleanups.push(() => { unsubscribe(); controller.dispose(); dispatcher.clear(); queryClient.clear(); });
-  return { calls, queryClient, controller, dispatcher, results, deliveries,
+  return { navigation, calls, queryClient, controller, dispatcher, results, deliveries,
     async send(value = search()) { next = value; await controller.send('input'); return results.at(-1); },
     setTransportDelay: (v: Promise<void>) => { transportDelay = v; },
     setPlaces: (v: unknown) => { places = v; }, setDetail: (v: unknown) => { detail = v; }, setSlots: (v: unknown) => { slots = v; },
@@ -501,4 +502,95 @@ test('a failed search route remains a request failure instead of implying a miss
   x.setFailure(new ApiError('route unavailable', { status: 404, code: 'RESOURCE_NOT_FOUND' }));
   await x.controller.start();
   expect(await x.send(generalSearch({ keyword: '용짬뽕' }))).toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
+});
+
+
+test.each(['map', 'search', 'favorites', 'reservations', 'myPage', 'settings'])('navigation to %s needs no location and performs no domain request', async page => {
+  const x = setup(); x.setLocation(null); x.setPermission('denied'); await x.controller.start();
+  const result = await x.send(command('navigateToPage', { page }, 'navigate'));
+  expect(result?.outcome).toEqual({ status: 'succeeded', data: { target: { page }, navigationRequested: true } });
+  expect(x.navigation).toHaveBeenCalledTimes(1); expect(x.navigation).toHaveBeenCalledWith({ page });
+  expect(x.calls).toEqual([]);
+  await x.dispatcher.consume(command('navigateToPage', { page }, 'navigate'), x.deliveries[0]);
+  expect(x.navigation).toHaveBeenCalledTimes(1);
+});
+
+test('detail navigation asks for an ambiguous target and rejects untrusted IDs', async () => {
+  const x = setup(); await x.controller.start();
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail' })))?.outcome)
+    .toEqual({ status: 'clarification_required', field: 'placeId' });
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: 99 }, 'bad-id')))?.outcome)
+    .toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+  expect(x.navigation).not.toHaveBeenCalled(); expect(x.calls).toEqual([]);
+});
+
+test('detail navigation rereads verified search facts before opening the existing surface', async () => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  x.calls.length = 0; x.queryClient.invalidateQueries({ queryKey: placeQueryKeys.detail(1) });
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: 1 })))?.outcome.status).toBe('succeeded');
+  expect(x.navigation).toHaveBeenCalledWith({ page: 'placeDetail', placeId: 1 });
+  expect(x.calls.map(c => c.path)).toEqual(['/places/1']);
+});
+
+test('router refusal returns an app rejection rather than success', async () => {
+  const x = setup(); x.navigation.mockReturnValue(false); await x.controller.start();
+  expect((await x.send(command('navigateToPage', { page: 'settings' })))?.outcome)
+    .toEqual({ status: 'rejected', code: 'FORBIDDEN' });
+});
+
+test('logout during detail verification prevents late navigation', async () => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  x.queryClient.invalidateQueries({ queryKey: placeQueryKeys.detail(1) });
+  let resolve!: (value: unknown) => void;
+  x.setDelay(new Promise(r => { resolve = r; }));
+  const pending = x.send(command('navigateToPage', { page: 'placeDetail', placeId: 1 }));
+  await Promise.resolve(); x.logout(); resolve(facts); await pending;
+  expect(x.navigation).not.toHaveBeenCalled();
+});
+
+
+test.each([[404, 'NOT_FOUND'], [403, 'FORBIDDEN']] as const)('detail navigation never opens a %s response', async (status, code) => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  x.setFailure(new ApiError('unavailable', { status }));
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: 1 })))?.outcome)
+    .toEqual({ status: 'rejected', code });
+  expect(x.navigation).not.toHaveBeenCalled();
+});
+
+
+test('booking page requires a verified place but no date, quantity, availability or quote', async () => {
+  const x = setup(); await x.controller.start();
+  expect((await x.send(command('navigateToPage', { page: 'createReservation' }, 'missing')))?.outcome)
+    .toEqual({ status: 'clarification_required', field: 'placeId' });
+  expect((await x.send(command('navigateToPage', { page: 'createReservation', placeId: 99 }, 'untrusted')))?.outcome)
+    .toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+  expect(x.navigation).not.toHaveBeenCalled();
+  await x.send(search()); x.calls.length = 0;
+  expect((await x.send(command('navigateToPage', { page: 'createReservation', placeId: 1 }, 'booking')))?.outcome.status).toBe('succeeded');
+  expect(x.navigation).toHaveBeenCalledWith({ page: 'createReservation', placeId: 1 });
+  expect(x.calls.map(c => c.path)).toEqual(['/places/1']);
+});
+
+
+test.each(['placeDetail', 'createReservation'] as const)('%s refuses a re-read response for a different place', async page => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  x.setDetail({ ...facts, id: 99 });
+  expect((await x.send(command('navigateToPage', { page, placeId: 1 })))?.outcome)
+    .toEqual({ status: 'rejected', code: 'INVALID_SERVER_RESPONSE' });
+  expect(x.navigation).not.toHaveBeenCalled();
+});
+
+test.each(['close', 'background', 'context', 'replacement'] as const)('%s while verifying a booking place prevents late navigation', async reason => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  let complete!: (value: unknown) => void;
+  x.setDelay(new Promise(resolve => { complete = resolve; })); x.calls.length = 0;
+  const pending = x.send(command('navigateToPage', { page: 'createReservation', placeId: 1 }, 'old-booking'));
+  await new Promise<void>(resolve => setImmediate(resolve));
+  expect(x.calls.map(c => c.path)).toContain('/places/1');
+  if (reason === 'close') await x.controller.close();
+  else if (reason === 'background') x.controller.setForeground(false);
+  else if (reason === 'context') x.changeContext();
+  else await x.send(command('navigateToPage', { page: 'settings' }, 'new-settings'));
+  complete(facts); await pending;
+  expect(x.navigation.mock.calls).toEqual(reason === 'replacement' ? [[{ page: 'settings' }]] : []);
 });

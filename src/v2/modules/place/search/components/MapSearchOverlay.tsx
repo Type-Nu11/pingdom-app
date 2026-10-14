@@ -48,8 +48,8 @@ import type { AppTheme } from '../../../../shared/theme';
 export type { MapSearchSelection };
 
 type MapSearchOverlayProps = {
-  centerLat: number;
-  centerLng: number;
+  centerLat?: number;
+  centerLng?: number;
   isRecommendationsError?: boolean;
   isRecommendationsLoading?: boolean;
   onClose: () => void;
@@ -154,10 +154,10 @@ const MapSearchOverlay = ({
   useEffect(() => {
     if (recentSearchOwner) void activateRecentSearchOwner(recentSearchOwner);
   }, [activateRecentSearchOwner, recentSearchOwner, recentSearchOwnerKey]);
+  const searchCoordinates = centerLat !== undefined && centerLng !== undefined ? { centerLat, centerLng } : {};
   const registeredSearch = usePlaceAutocomplete({
     keyword: registeredQuery,
-    latitude: centerLat,
-    longitude: centerLng,
+    ...(centerLat !== undefined && centerLng !== undefined ? { latitude: centerLat, longitude: centerLng } : {}),
   }, {
     enabled: env.featureFlags.placeList && registeredQuery.length > 0,
   });
@@ -208,7 +208,7 @@ const MapSearchOverlay = ({
       setRegisteredQuery('');
       searchRequestInFlight.current = true;
       try {
-        await searchPlaces(normalizedQuery, { centerLat, centerLng });
+        await searchPlaces(normalizedQuery, searchCoordinates);
       } finally {
         searchRequestInFlight.current = false;
       }
@@ -228,7 +228,7 @@ const MapSearchOverlay = ({
     setRegisteredQuery(normalizedQuery);
     searchRequestInFlight.current = true;
     try {
-      await searchPlaces(normalizedQuery, { centerLat, centerLng });
+      await searchPlaces(normalizedQuery, searchCoordinates);
     } finally {
       searchRequestInFlight.current = false;
     }

@@ -14,6 +14,8 @@ import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
 import { MyPageScreen } from '../../modules/user/profile/my-page';
+import { useProfile } from '../../modules/user/profile';
+import { VerifiedPlacesScreen } from '../../modules/user/profile/my-page';
 import { ProfileEditScreen } from '../../modules/user/profile';
 import { PlaceListExampleScreen } from '../../modules/place/search';
 import { PlaceDetailScreen } from '../../modules/place/detail';
@@ -51,8 +53,37 @@ function HomeRouteScreen() {
 }
 
 function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
+  const { profile } = useProfile();
   return (
     <MapScreen
+      onNavigateAssistantPage={(target) => {
+        if (target.page === 'reservations') navigation.navigate(V2_ROUTES.ReservationBox);
+        else if (target.page === 'myPage') navigation.navigate(V2_ROUTES.MyPage);
+        else if (target.page === 'settings') navigation.navigate(V2_ROUTES.Settings);
+        else if (target.page === 'coupons') navigation.navigate(V2_ROUTES.CouponBox);
+        else if (target.page === 'verifiedPlaces') {
+          if (!profile || profile.role === 'MERCHANT_OWNER') return false;
+          navigation.navigate(V2_ROUTES.VerifiedPlaces);
+        } else if (target.page === 'accountManagement') navigation.navigate(V2_ROUTES.AccountManagement);
+        else if (target.page === 'notificationSettings') navigation.navigate(V2_ROUTES.NotificationSettings);
+        else if (target.page === 'loginInformation' || target.page === 'locationSettings'
+          || target.page === 'privacySettings' || target.page === 'dataManagement') {
+          navigation.navigate(V2_ROUTES.SettingsDetail, { detail: target.page });
+        } else if (target.page === 'communityPost') {
+          if (!Number.isSafeInteger(target.postId) || target.postId <= 0) return false;
+          navigation.navigate(V2_ROUTES.CommunityDetail, { postId: target.postId });
+        }
+        else if (target.page === 'createReservation') {
+          const placeId = parsePlaceId(target.placeId);
+          if (!placeId) return false;
+          navigation.navigate(V2_ROUTES.CreateReservation, { placeId });
+        } else if (target.page === 'placeDetail') {
+          const placeId = parsePlaceId(target.placeId);
+          if (!placeId) return false;
+          navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
+        } else return false;
+        return true;
+      }}
       onOpenCommunityPost={(postId) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })}
       onOpenCommunityWrite={(categoryId) => navigation.navigate(
         V2_ROUTES.CommunityWrite,
@@ -117,6 +148,15 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
       onOpenVerifiedPlaces={() => {}}
     />
   );
+}
+
+function VerifiedPlacesRouteScreen({ navigation }: V2ScreenProps<'VerifiedPlaces'>) {
+  const { profile } = useProfile();
+  if (!profile || profile.role === 'MERCHANT_OWNER') return null;
+  return <VerifiedPlacesScreen onBack={navigation.goBack} onOpenPlace={(value) => {
+    const placeId = parsePlaceId(value);
+    if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
+  }} />;
 }
 
 function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
@@ -286,6 +326,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.CouponDetail} component={CouponDetailRoute} />
         <Stack.Screen name={V2_ROUTES.ReservationBox} component={ReservationBoxRoute} />
         <Stack.Screen name={V2_ROUTES.ReservationDetail} component={ReservationDetailRoute} />
+        <Stack.Screen name={V2_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
         <Stack.Screen name={V2_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Settings} component={SettingsRouteScreen} />
         <Stack.Screen name={V2_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />

@@ -173,3 +173,32 @@ test('session creation and AI response waiting stay processing until clarificati
   expect(view.result.current.commandState).toEqual({ phase: 'canceled' });
   await view.unmount(); queryClient.clear();
 });
+
+
+test.each(['text', 'voice'] as const)('%s navigation runs through the existing session, preserves app result and disposes on exit', async source => {
+  const queryClient = new QueryClient(); const navigateToPage = jest.fn(() => true); const reset = jest.fn();
+  const recordResult = jest.fn();
+  let followed = false;
+  factory.mockReturnValue({ recordResult, reset,
+    create: async () => ({ sessionId: 'nav-session', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(),
+    send: async () => { return {
+      schemaVersion: 1, id: 'nav-request', kind: 'command_request', command: 'navigateToPage', args: { page: 'settings' },
+    }; },
+    next: async () => { if (followed) return undefined; followed = true; return {
+      schemaVersion: 1, id: 'unsafe-completion', kind: 'assistant_message', text: '완료했습니다.',
+    }; },
+  });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true, navigateToPage }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: '설정으로 가줘', source, signal: new AbortController().signal }); });
+  expect(navigateToPage).toHaveBeenCalledTimes(1); expect(navigateToPage).toHaveBeenCalledWith({ page: 'settings' });
+  expect(recordResult).toHaveBeenCalledWith(expect.objectContaining({ command: 'navigateToPage', outcome: {
+    status: 'succeeded', data: { target: { page: 'settings' }, navigationRequested: true },
+  } }));
+  expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { command: 'navigateToPage' } });
+  expect(view.result.current.commandState).not.toHaveProperty('text');
+  expect(queryClient.getMutationCache().getAll()).toEqual([]); expect(queryClient.getQueryCache().getAll()).toEqual([]);
+  await view.unmount(); expect(reset).toHaveBeenCalled(); queryClient.clear();
+});

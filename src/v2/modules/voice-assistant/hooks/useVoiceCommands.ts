@@ -1,7 +1,9 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { placeQueryKeys } from '../../place';
 import { AppState } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
-import { createVoiceCommandDispatcher, type VoiceCommandRuntime } from '../model/voiceCommands';
+import { createVoiceCommandDispatcher, projectVoicePlace, type VoiceCommandRuntime } from '../model/voiceCommands';
 import { createAiChatSessionApi } from '../api/aiChatSessionApi';
 import { useVoiceSession } from './useVoiceSession';
 import type { VoiceEnvelopeConsumer, VoiceSessionController } from '../model/voiceSession';
@@ -21,8 +23,18 @@ export type VoiceCommandViewState =
 /** Location/account identifiers remain app-owned. Chat receives final text and projected tool results. */
 export function useVoiceCommands(context: VoiceCommandContext) {
   const queryClient = useQueryClient();
-  const api = useMemo(() => createAiChatSessionApi(), [context.accountRevision]);
+  const { i18n } = useTranslation();
   const latest = useRef(context); latest.current = context;
+  const language = useRef(i18n.resolvedLanguage ?? i18n.language); language.current = i18n.resolvedLanguage ?? i18n.language;
+  const api = useMemo(() => createAiChatSessionApi(undefined, () => {
+    const id = latest.current.selectedPlaceId;
+    const state = id ? queryClient.getQueryState(placeQueryKeys.detail(id)) : undefined;
+    let selectedPlaceId: number | undefined;
+    if (id && state?.status === 'success') {
+      try { selectedPlaceId = projectVoicePlace(state.data, id).id; } catch { /* Unverified context is never supplied to AI. */ }
+    }
+    return { language: language.current, ...(selectedPlaceId ? { selectedPlaceId } : {}) };
+  }), [context.accountRevision, queryClient]);
   const sessionRef = useRef<VoiceSessionController | undefined>(undefined);
   const revision = useRef(0);
   const [retryClock, setRetryClock] = useState(0);
@@ -46,6 +58,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
       if (current.phase !== 'result') return { phase: 'assistant', text: envelope.text };
       const result = current.result;
       // Use app-owned failure/empty copy: a bounded query cannot establish DB-wide absence.
+      if (result.command === 'navigateToPage') return current;
       if (result.outcome.status !== 'succeeded') return current;
       if ((result.command === 'searchNearbyPlaces' || result.command === 'searchNearbyReservablePlaces')
         && result.outcome.data.places.length === 0) return current;
