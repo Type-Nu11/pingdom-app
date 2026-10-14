@@ -254,6 +254,11 @@ export const VOICE_COMMAND_REGISTRY = Object.freeze({
   searchNearbyReservablePlaces: Object.freeze({ name: 'searchNearbyReservablePlaces', policy: VOICE_COMMAND_POLICIES.searchNearbyReservablePlaces, validate: validateSearch, handler: searchNearby }),
   getPlaceDetails: Object.freeze({ name: 'getPlaceDetails', policy: VOICE_COMMAND_POLICIES.getPlaceDetails, validate: requirePlace, handler: getDetails }),
   getAvailabilities: Object.freeze({ name: 'getAvailabilities', policy: VOICE_COMMAND_POLICIES.getAvailabilities, validate: requirePlace, handler: getAvailability }),
+  updateReservationBooker: Object.freeze({ name: 'updateReservationBooker', policy: VOICE_COMMAND_POLICIES.updateReservationBooker, validate: requirePlace,
+    handler: async (request: Request<'updateReservationBooker'>) => {
+      const { placeId, ...fields } = request.args;
+      return Object.freeze({ placeId, fields: Object.freeze(fields) });
+    } }),
   prepareReservation: Object.freeze({ name: 'prepareReservation', policy: VOICE_COMMAND_POLICIES.prepareReservation, validate: requireAvailability, handler: prepareReservation }),
   navigateToPage: Object.freeze({ name: 'navigateToPage', policy: VOICE_COMMAND_POLICIES.navigateToPage, validate: noValidation, handler: navigateToPage }),
   cancelVoiceSession: Object.freeze({ name: 'cancelVoiceSession', policy: VOICE_COMMAND_POLICIES.cancelVoiceSession, validate: noValidation,

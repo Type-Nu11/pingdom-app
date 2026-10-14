@@ -21,7 +21,8 @@ test.each(['ko', 'en', 'ja'] as const)('%s draft displays exact server facts and
     command: 'prepareReservation', outcome: { status: 'succeeded', data: { draft } },
   } }} />, { language });
   expect(screen.getByTestId('voice-reservation-draft')).toBeTruthy();
-  expect(screen.getByTestId('voice-reservation-draft-total')).toHaveTextContent(/USD 20\.50/);
+  expect(screen.queryByTestId('voice-reservation-draft-total')).toBeNull();
+  expect(screen.queryByText(/USD|20\.50/)).toBeNull();
   expect(screen.getByText('Cafe')).toBeTruthy();
   expect(screen.getByText('2026-09-20T05:00:00Z – 2026-09-20T06:00:00Z (Asia/Seoul)')).toBeTruthy();
   expect(screen.getByTestId('voice-reservation-draft-not-submitted')).toBeTruthy();

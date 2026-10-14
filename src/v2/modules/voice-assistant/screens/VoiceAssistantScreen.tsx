@@ -1,3 +1,4 @@
+import { isReservationSubmissionRequest } from '../model/reservationSubmission';
 import { VoiceReservationPanel } from '../components/VoiceReservationPanel';
 import type { VoiceReservationFlow } from '../hooks/useVoiceReservation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -32,6 +33,8 @@ export type VoiceAssistantScreenProps = {
   commandRetryDisabled?: boolean;
   timezone?: string;
   reservationFlow?: VoiceReservationFlow;
+  sheetBackdrop?: React.ReactNode;
+  onShowReservationPlace?: (placeId: number) => void;
   // Only informational text; never maps to success UI, execution or TTS.
   guidance?: { kind: 'assistant' | 'clarification' | 'invalidResponse'; text?: string };
 } & (
@@ -39,7 +42,7 @@ export type VoiceAssistantScreenProps = {
   | { serverSubmission: true; onFinalInput: OnFinalInput }
 );
 
-export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul', reservationFlow }: VoiceAssistantScreenProps) {
+export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul', reservationFlow, sheetBackdrop, onShowReservationPlace }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
   const reservationVisible = !!reservationFlow && (!!reservationFlow.place || ['unknown', 'submitting', 'checking', 'success'].includes(reservationFlow.state.phase) || (reservationFlow.state.phase === 'error' && reservationFlow.state.code === 'storage'));
   const reservationLocked = !!reservationFlow && (reservationFlow.loading || ['loading', 'checking', 'submitting', 'unknown'].includes(reservationFlow.state.phase));
@@ -56,10 +59,18 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const activeTurn = useRef<{ request: string } | null>(null);
   const originalRequest = useRef('');
   const answers = useRef<Record<string, string>>({});
-  const inputContext = useRef({ onFinalInput, clarificationField, commandState });
-  inputContext.current = { onFinalInput, clarificationField, commandState };
-  const submitWithQuestionContext = useCallback<OnFinalInput>(input => {
+  const inputContext = useRef({ onFinalInput, clarificationField, commandState, reservationFlow });
+  inputContext.current = { onFinalInput, clarificationField, commandState, reservationFlow };
+  const submitWithQuestionContext = useCallback<OnFinalInput>(async input => {
     const context = inputContext.current;
+    const reservation = context.reservationFlow;
+    if (!input.signal.aborted && reservation?.place && reservation.state.phase === 'review'
+      && !reservation.loading && isReservationSubmissionRequest(input.text)) {
+      activeTurn.current = { request: input.text };
+      setCurrentRequest(input.text);
+      await reservation.confirm();
+      return 'accepted';
+    }
     let text = input.text;
     if (context.clarificationField && originalRequest.current && !text.startsWith(`${originalRequest.current}\n`)) {
       const next = { ...answers.current, [context.clarificationField]: text };
@@ -71,6 +82,11 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     }
     activeTurn.current = { request: text };
     setCurrentRequest(originalRequest.current || input.text);
+    if (reservation?.place && !['success', 'unknown', 'submitting', 'checking'].includes(reservation.state.phase)) {
+      const slot = reservation.dateSlots.find(item => item.id === reservation.selectedId);
+      text = `현재 예약 선택: ${reservation.place.name} (placeId=${reservation.place.id}), ${reservation.quantity}명${reservation.date ? `, 날짜 ${reservation.date}` : ''}${slot ? `, 일정 ${slot.id}: ${slot.startsAt}–${slot.endsAt}` : ''}.\n날짜·시간·인원 변경이면 가능한 일정을 다시 조회해 주세요. 이름·연락처·요청 사항 전달이면 updateReservationBooker로 입력란만 갱신하고 일정을 다시 조회하지 마세요. 예약 생성은 최종 확인 버튼 또는 최종 확인 화면에서 사용자의 명시적인 예약 신청 요청으로만 합니다.\n사용자 요청: ${text}`;
+      if (validateVoiceInput(text).error) throw new Error('VOICE_INPUT_TOO_LONG');
+    }
     return context.onFinalInput({ ...input, text });
   }, []);
   const { controller, state } = useVoiceInput(adapter, submitWithQuestionContext, clarificationField === 'quantity' ? 'quantity' : undefined);
@@ -91,7 +107,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const pending = state.delivery === 'pending';
   const feedback = commandState?.phase === 'unrecognized' ? 'unrecognized' : state.error === 'noSpeech' ? 'noSpeech' : null;
   const previousTurnVisible = state.delivery !== 'none' || !!feedback || (!!commandState && commandState.phase !== 'idle');
-  const showDetails = (state.phase !== 'listening' || !!pickerField) && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
+  const showDetails = (state.phase !== 'listening' || !!pickerField || reservationVisible) && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
     || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
     || reservationVisible || !!currentRequest || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
   useEffect(() => {
@@ -126,7 +142,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   };
   const start = () => {
     clearExpectedSelection();
-    if (!clarificationField && !editingPicker) {
+    if (!clarificationField && !editingPicker && !reservationVisible) {
       setSelections({}); originalRequest.current = ''; answers.current = {};
     }
     Keyboard.dismiss();
@@ -144,7 +160,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     controller.setForeground(true);
     void controller.start(i18n.resolvedLanguage === 'ko' ? 'ko-KR' : 'en-US');
   }, [autoStart, controller, i18n.resolvedLanguage, reservationLocked, reservationVisible]);
-  const submitDisabled = reservationVisible || reservationLocked || busy || pending || validateVoiceInput(state.draft).error !== null || state.delivery !== 'none';
+  const submitDisabled = reservationLocked || busy || pending || validateVoiceInput(state.draft).error !== null || state.delivery !== 'none';
   const settingsButton = () => (
     <Action accessibilityRole="button" accessibilityLabel={t('voiceAssistant.settings')} onPress={() => { controller.cancel(); void Linking.openSettings().catch(() => undefined); }}>
       <Label>{t('voiceAssistant.settings')}</Label>
@@ -153,7 +169,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   const composer = (embedded = false) => <Composer testID="voice-assistant-composer" $embedded={embedded}>
     <InputRow $embedded={embedded}>
       <PingdyInputIcon />
-      <Input ref={textInputRef} accessibilityLabel={t('voiceAssistant.input')} editable={!reservationVisible && !reservationLocked && !pending}
+      <Input ref={textInputRef} accessibilityLabel={t('voiceAssistant.input')} editable={!reservationLocked}
         testID={state.phase === 'listening' ? (state.partial ? 'voice-partial' : 'voice-listening-prompt') : undefined}
         onFocus={() => {
           clearExpectedSelection();
@@ -164,12 +180,12 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
             controller.edit(state.partial || state.draft);
           } else if (previousTurnVisible && state.delivery !== 'none') {
             controller.edit('');
-            if (!clarificationField && !editingPicker) { setSelections({}); originalRequest.current = ''; onCommandFeedbackDismiss?.(); }
+            if (!clarificationField && !editingPicker && !reservationVisible) { setSelections({}); originalRequest.current = ''; onCommandFeedbackDismiss?.(); }
           }
         }}
         onBlur={() => setEditingInSheet(false)}
         placeholder={t(state.phase === 'listening' ? 'voiceAssistant.listeningPrompt' : 'voiceAssistant.placeholder')} placeholderTextColor={theme.colors.textAlternative}
-        value={feedback ? '' : state.partial || state.draft} onChangeText={text => { if (previousTurnVisible && !clarificationField && !editingPicker) onCommandFeedbackDismiss?.(); controller.edit(text); }} returnKeyType="send"
+        value={feedback ? '' : state.partial || state.draft} onChangeText={text => { if (previousTurnVisible && !clarificationField && !editingPicker && !reservationVisible) onCommandFeedbackDismiss?.(); controller.edit(text); }} returnKeyType="send"
         onSubmitEditing={() => { if (!submitDisabled) void controller.submit(); }}
         autoCorrect={false} spellCheck={false} autoComplete="off" />
       {state.phase === 'listening' ? <RecordingButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.stop')}
@@ -180,8 +196,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
         </Waveform>
       </RecordingButton> : <MicrophoneButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.microphone')}
         accessibilityHint={!adapter.available ? t('voiceAssistant.voiceUnavailable') : undefined}
-        accessibilityState={{ disabled: reservationVisible || reservationLocked || busy || pending || !adapter.available, busy }}
-        disabled={reservationVisible || reservationLocked || busy || pending || !adapter.available} onPress={start}>
+        accessibilityState={{ disabled: reservationLocked || busy || pending || !adapter.available, busy }}
+        disabled={reservationLocked || busy || pending || !adapter.available} onPress={start}>
         <MicrophoneIcon width={24} height={24} />
       </MicrophoneButton>}
     </InputRow>
@@ -208,7 +224,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       <SafeArea edges={['top', 'left', 'right']} pointerEvents="box-none">
         <KeyboardAvoidingView testID="voice-assistant-keyboard-layout" behavior="padding" style={{ flex: 1 }} pointerEvents="box-none">
         <KeyboardLayout pointerEvents="box-none" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
-          {showDetails ? <Sheet $question={true} $results={resultsMode} $picker={pickerVisible || reservationVisible} testID="voice-assistant-details">
+          {showDetails ? <Sheet $glass={!!sheetBackdrop} $question={true} $results={resultsMode} $picker={pickerVisible || reservationVisible} testID="voice-assistant-details">
+            {sheetBackdrop}
             <SheetHeading>
             <Grabber />
             <Header $question={true}>
@@ -255,7 +272,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
                 ? <AssistantMarkdown>{guidance.text}</AssistantMarkdown> : <Copy>{guidance.text}</Copy>)}
             </>}
             </AssistantMessage> : null}
-            {reservationVisible && reservationFlow && <VoiceReservationPanel flow={reservationFlow} request={currentRequest} timezone={timezone} />}
+            {reservationVisible && state.error && <Copy accessibilityRole="alert">{t(`voiceAssistant.errors.${state.error}`)}</Copy>}
+            {reservationVisible && reservationFlow && <VoiceReservationPanel flow={reservationFlow} request={currentRequest} timezone={timezone} onInteraction={() => controller.cancel()} onShowPlace={onShowReservationPlace} />}
             </Content>
             {composer(true)}
           </Sheet> : composer()}
@@ -276,10 +294,10 @@ const WaveBar = styled.View<{ $height: number; $strong?: boolean }>`
   width: 3px; height: ${({ $height }) => $height}px; border-radius: 2px;
   background-color: ${({ $strong }) => $strong ? '#ff1956' : '#ff4a75'};
 `;
-const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))<{ $question: boolean; $results: boolean; $picker: boolean }>`
+const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))<{ $glass: boolean; $question: boolean; $results: boolean; $picker: boolean }>`
   width: 100%; max-width: 386px; max-height: ${({ $picker }) => $picker ? 85 : 78}%; align-self: center; padding-top: 6px; padding-bottom: 12px;
   height: auto;
-  gap: ${({ $question }) => $question ? 16 : 8}px; border-radius: 36px; overflow: ${({ $question }) => $question ? 'hidden' : 'visible'}; background-color: ${({ theme }) => theme.liquidGlass.sheet.tint};
+  gap: ${({ $question }) => $question ? 16 : 8}px; border-radius: 36px; overflow: ${({ $question }) => $question ? 'hidden' : 'visible'}; background-color: ${({ theme, $glass }) => $glass ? 'transparent' : theme.liquidGlass.sheet.tint};
 `;
 const Grabber = styled.View`width: 56px; height: 5px; border-radius: 3px; align-self: center; background-color: #bfc1c1;`;
 const SheetHeading = styled.View`gap: 8px;`;

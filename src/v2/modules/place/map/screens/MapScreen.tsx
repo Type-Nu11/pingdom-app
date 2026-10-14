@@ -1405,7 +1405,6 @@ export default function MapScreen({
           recommendedPlaces={recommendedPlaces}
         />
       ) : null}
-      </MapGlassBackdrop>
       <MapAssistantModal visible={assistant.isOpen} onClose={assistant.close} context={{
         accountRevision: canQueryBookmarks && profile?.id ? String(profile.id) : null,
         location: center ? { latitude: center.lat, longitude: center.lng } : null,
@@ -1415,6 +1414,7 @@ export default function MapScreen({
         navigateToPage: navigateAssistantPage,
         selectedPlaceId: hasSelectedPlace ? selectedPlaceId : undefined,
       }} />
+      </MapGlassBackdrop>
       <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}
         onContinue={assistant.continueToAssistant} />
     </View>

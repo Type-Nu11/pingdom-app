@@ -11,6 +11,7 @@ const commands = {
   getPlaceDetails: { command: 'getPlaceDetails', args: { placeId: 42 } },
   getAvailabilities: { command: 'getAvailabilities', args: { placeId: 42, date: '2028-02-29', quantity: 2 } },
   prepareReservation: { command: 'prepareReservation', args: { placeId: 42, availabilityId: 77, quantity: 2 } },
+  updateReservationBooker: { command: 'updateReservationBooker', args: { placeId: 42, bookerName: 'Test' } },
   cancelVoiceSession: { command: 'cancelVoiceSession', args: {} },
 } as const satisfies Record<VoiceAssistantCommand['command'], VoiceAssistantCommand>;
 const envelope = (command: unknown = commands.getPlaceDetails) => ({ schemaVersion: 1, id: 'cmd-1', kind: 'command_request', ...command as object });
@@ -90,7 +91,7 @@ describe('provider trust boundary', () => {
   it.each(['latitude', 'longitude', 'url', 'method', 'headers', 'route', 'jwt', 'idempotencyKey', 'bookerName', 'bookerPhone', 'productId', 'place', 'callback', 'code', 'confirmed', 'skipConfirmation', 'result', '__proto__', 'constructor', 'prototype'])('rejects injected %s in all command arguments and envelope', (key) => {
     for (const command of Object.values(commands)) {
       const inject = (target: object) => Object.defineProperty(target, key, { value: 'sensitive-value', enumerable: true });
-      reject(envelope({ ...command, args: inject({ ...command.args }) }));
+      if (command.command !== 'updateReservationBooker' || !['bookerName', 'bookerPhone'].includes(key)) reject(envelope({ ...command, args: inject({ ...command.args }) }));
       reject(inject(envelope(command)));
     }
   });
@@ -168,3 +169,7 @@ describe('execution policy invariants (no executor in this spike)', () => {
     Object.values(VOICE_COMMAND_POLICIES).forEach((policy) => expect(Object.isFrozen(policy)).toBe(true));
   });
 });
+
+ test.each([{ placeId: 42 }, { placeId: 42, bookerPhone: 'invalid' }, { placeId: 42, bookerName: ' ' }, { placeId: 42, requestNote: 'a'.repeat(501) }, { placeId: 42, bookerName: 'Test', confirmed: true }])('booker form rejects invalid or mutation-injecting args %p', args => {
+  expect(parseVoiceAssistantEnvelope(envelope({ command: 'updateReservationBooker', args })).ok).toBe(false);
+ });

@@ -38,11 +38,23 @@ export const AI_CHAT_SYSTEM_PROMPT = `You are Pingdy, a mobile place discovery a
 - "추천 장소 목록"/"추천 장소 페이지" opens recommendations (the existing list), without running a nearby search. "쿠폰함"/"내 쿠폰" opens coupons; "방문 인증한 장소"/"인증한 장소 목록" opens verifiedPlaces. These open existing screens without issuing, using, or creating coupons or visit verification.
 - "계정 관리" opens accountManagement; "알림 설정" opens notificationSettings; "로그인 정보" opens loginInformation; "위치 설정" opens locationSettings; "개인정보 설정" opens privacySettings; "데이터 관리" opens dataManagement. Opening these pages never changes settings, logs out, deletes the account, grants permissions, or exports data. User role and account authorization are enforced by the app.
 - A navigationRequested result confirms dispatch only, not rendered completion. Do not claim that navigation completed. Navigation never confirms, cancels or pays for a reservation, and never deletes data.
+- Do not mention reservation prices, payment requirements, prepayment, cancellation fees, or refund amounts. The app currently presents reservation scheduling only; never infer a payment method from paymentRequired.
+- When the user supplies or corrects their reservation name, phone number or special requests, call updateReservationBooker for the current verified reservation place. Combine all supplied booker fields into one call. Extract only explicitly provided values; if a name or phone number is ambiguous, ask the user instead of guessing. Do not invent identity details, change dates or party size, or re-fetch schedules for identity-only changes. Omit unchanged fields; an empty requestNote explicitly clears it. Never submit the reservation. The user reviews the filled fields and confirms in the app.
+- The app handles explicit user requests such as "예약 신청해줘" or "확정해줘" as final submission ONLY when a reservation review is already displayed. Do not ask the user to press a button as the only supported method. Missing booker information must be collected first. Submission success means a reservation request was received; PENDING still requires merchant approval. Never claim merchant approval or payment success.
 - Reservation preparation is a draft only; never claim a reservation or payment has been completed.`;
 
 // Mirrors the app command schema; execution still passes the normative command parser.
 // General search uses app-owned location permission, never provider-supplied coordinates.
 export const AI_CHAT_TOOLS = [
+  { type: 'function', function: {
+    name: 'updateReservationBooker', description: '현재 예약 초안에 사용자가 알려준 이름·연락처·요청 사항을 반영합니다. 제공된 값만 전달하며 생략한 필드는 유지합니다. 일정·인원은 변경하지 않고 예약을 생성하지 않습니다.',
+    parameters: { type: 'object', additionalProperties: false, required: ['placeId'], properties: {
+      placeId: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
+      bookerName: { type: 'string', minLength: 1, maxLength: 100 },
+      bookerPhone: { type: 'string', minLength: 1, maxLength: 30, pattern: '^[0-9+()\\- ]+$' },
+      requestNote: { type: 'string', maxLength: 500 },
+    } },
+  } },
   { type: 'function', function: {
     name: 'navigateToPage', description: '앱 화면을 엽니다. 커뮤니티 목록은 community, 아무 커뮤니티 글은 communityPost(앱이 조회 가능한 글을 고르므로 ID를 넣지 않음), 추천 장소 목록은 recommendations, 쿠폰함은 coupons, 방문 인증한 장소는 verifiedPlaces, 계정 관리는 accountManagement, 알림 설정은 notificationSettings, 로그인 정보는 loginInformation, 위치 설정은 locationSettings, 개인정보 설정은 privacySettings, 데이터 관리는 dataManagement입니다. 화면만 열며 설정 변경·데이터 내보내기·방문 인증·쿠폰 사용은 실행하지 않습니다. 검색 페이지·화면·검색창으로 이동은 search이며 검색어나 장소를 묻지 않고 검색 화면을 엽니다. 내 예약 목록은 reservations, 특정 식당 예약 작성 화면은 createReservation입니다. 예약페이지로 보내줘는 createReservation 이동이며 날짜·시간·인원을 묻거나 예약 가능 여부를 조회하지 않습니다. 장소 상세와 예약 작성은 검증된 실제 장소 ID만 사용하며 대상이 모호하면 placeId를 생략하여 선택을 요청합니다. 예약 확정·취소·결제·삭제는 하지 않습니다.',
     parameters: { type: 'object', additionalProperties: false, required: ['page'], properties: {

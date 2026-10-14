@@ -38,11 +38,12 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   const sessionRef = useRef<VoiceSessionController | undefined>(undefined);
   const revision = useRef(0);
   const [retryClock, setRetryClock] = useState(0);
+  const [bookerUpdate, setBookerUpdate] = useState<AppCommandResult | null>(null);
   const [commandState, setCommandState] = useState<VoiceCommandViewState>({ phase: 'idle' });
   const dispatcher = useMemo(() => createVoiceCommandDispatcher({
     runtime: () => ({ ...latest.current, queryClient, contextRevision: revision.current,
       now: Date.now, monotonic: () => performance.now(), session: sessionRef.current?.getIdentity() }),
-    publish: result => { api.recordResult(result); setCommandState({ phase: 'result', result }); },
+    publish: result => { if (result.command === 'updateReservationBooker' && result.outcome.status === 'succeeded') setBookerUpdate(result); api.recordResult(result); setCommandState({ phase: 'result', result }); },
     stopSession: () => sessionRef.current?.close(),
   }), [queryClient, api]);
   const consume = useCallback<VoiceEnvelopeConsumer>(async (envelope, delivery) => {
@@ -93,7 +94,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   const retryReady = state.retryAvailable && state.retryAt !== null && Math.max(retryClock, Date.now()) >= state.retryAt;
   useLayoutEffect(() => {
     revision.current++;
-    controller.cancel(); dispatcher.clear(); setCommandState({ phase: 'idle' });
+    controller.cancel(); dispatcher.clear(); setBookerUpdate(null); setCommandState({ phase: 'idle' });
   }, [controller, dispatcher, context.accountRevision, context.location?.latitude, context.location?.longitude,
     context.locationPermission, context.radiusKm, context.timezone, context.selectedPlaceId, context.placeListEnabled]);
   useLayoutEffect(() => {
@@ -130,5 +131,5 @@ export function useVoiceCommands(context: VoiceCommandContext) {
     try { setCommandState({ phase: 'processing' }); await controller.retry(); }
     catch (error) { setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
   }, [controller]);
-  return { commandState, onFinalInput, cancel, dismissFeedback, retry, retryReady, retryAvailable: state.retryAvailable, retryAt: state.retryAt };
+  return { bookerUpdate, commandState, onFinalInput, cancel, dismissFeedback, retry, retryReady, retryAvailable: state.retryAvailable, retryAt: state.retryAt };
 }

@@ -16,6 +16,7 @@ type CommonPolicy = Readonly<{
 export type VoiceCommandPolicy = CommonPolicy & (
   | Readonly<{ classification: 'READ'; automaticAction: 'query'; requiresUserConfirmation: false; requiresRuntimeLocation: boolean }>
   | Readonly<{ classification: 'PREPARE_WRITE'; automaticAction: 'draft'; requiresUserConfirmation: true; requiresFreshAvailability: true; allowedProductType: 'GENERAL' }>
+  | Readonly<{ classification: 'LOCAL_FORM'; automaticAction: 'fillForm'; requiresUserConfirmation: true }>
   | Readonly<{ classification: 'NAVIGATION'; automaticAction: 'navigate'; requiresUserConfirmation: false }>
   | Readonly<{ classification: 'SESSION_CONTROL'; automaticAction: 'stopSession'; requiresUserConfirmation: false }>
 );
@@ -33,6 +34,7 @@ export const VOICE_COMMAND_POLICIES = Object.freeze({
   searchNearbyReservablePlaces: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: true, provenance: 'none' } as const),
   getPlaceDetails: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: false, provenance: 'recentSearchOrUserSelection' } as const),
   getAvailabilities: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: false, provenance: 'recentSearchOrUserSelection' } as const),
+  updateReservationBooker: Object.freeze({ ...common, classification: 'LOCAL_FORM', automaticAction: 'fillForm', requiresUserConfirmation: true, provenance: 'recentSearchOrUserSelection' } as const),
   prepareReservation: Object.freeze({ ...common, classification: 'PREPARE_WRITE', automaticAction: 'draft', requiresUserConfirmation: true, requiresFreshAvailability: true, allowedProductType: 'GENERAL', provenance: 'recentAvailabilityForPlace' } as const),
   navigateToPage: Object.freeze({ ...common, classification: 'NAVIGATION', automaticAction: 'navigate', requiresUserConfirmation: false, provenance: 'recentSearchOrUserSelection' } as const),
   cancelVoiceSession: Object.freeze({ ...common, classification: 'SESSION_CONTROL', automaticAction: 'stopSession', requiresUserConfirmation: false, provenance: 'none' } as const),

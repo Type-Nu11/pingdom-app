@@ -1,3 +1,4 @@
+import { BOOKER_NAME_MAX_LENGTH, BOOKER_PHONE_MAX_LENGTH, REQUEST_NOTE_MAX_LENGTH, BOOKER_PHONE_PATTERN } from '../../booking';
 import { VOICE_PAGE_IDS, VOICE_PLACE_CATEGORIES, VOICE_QUANTITY_LIMITS, VOICE_SCHEMA_VERSION } from './voiceAssistantCommand.types';
 import type {
   ClarificationField, ProtocolErrorCode, ProviderEnvelope, VoiceAssistantCommand,
@@ -141,6 +142,20 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
       // 양수 ID만으로 실행할 수 없습니다. executor가 최근 조회 결과의 소속·상태·정원을 재검증해야 합니다.
       const args = record(input, '$.args'); exact(args, ['placeId', 'availabilityId', 'quantity'], [], '$.args');
       return { command: name, args: Object.freeze({ placeId: integerId(args.placeId, '$.args.placeId'), availabilityId: integerId(args.availabilityId, '$.args.availabilityId'), quantity: quantity(args.quantity) }) };
+    }
+    case 'updateReservationBooker': {
+      const args = record(input, '$.args');
+      exact(args, ['placeId'], ['bookerName', 'bookerPhone', 'requestNote'], '$.args');
+      const fields: { bookerName?: string; bookerPhone?: string; requestNote?: string } = {};
+      for (const [key, max] of [['bookerName', BOOKER_NAME_MAX_LENGTH], ['bookerPhone', BOOKER_PHONE_MAX_LENGTH], ['requestNote', REQUEST_NOTE_MAX_LENGTH]] as const) {
+        if (!Object.hasOwn(args, key)) continue;
+        const value = args[key];
+        if (typeof value !== 'string' || value.length > max || (key !== 'requestNote' && !value.trim())) fail('INVALID_FIELD', `$.args.${key}`);
+        if (key === 'bookerPhone' && !BOOKER_PHONE_PATTERN.test(value as string)) fail('INVALID_FIELD', '$.args.bookerPhone');
+        fields[key] = (value as string).trim();
+      }
+      if (!Object.keys(fields).length) fail('MISSING_FIELD', '$.args');
+      return { command: name, args: Object.freeze({ placeId: integerId(args.placeId, '$.args.placeId'), ...fields }) };
     }
     case 'cancelVoiceSession': {
       const args = record(input, '$.args'); exact(args, [], [], '$.args');

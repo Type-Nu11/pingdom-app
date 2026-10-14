@@ -81,3 +81,17 @@ test.each([
   try { await c.start(); await c.send('검색'); expect(c.getSnapshot().error).toBe('INVALID_RESPONSE'); expect(consume).not.toHaveBeenCalled(); }
   finally { c.dispose(); }
 });
+
+test('native booker tool carries explicit user fields and returns a tool result without reservation POST', async () => {
+  const fields = { bookerName: '김테스트', bookerPhone: '01012345678', requestNote: '창가 자리' };
+  const x = setup([message([{ type: 'tool_use', id: 'booker1', name: 'updateReservationBooker', input: { placeId: 1, ...fields } }], 'tool_use'), message([{ type: 'text', text: '입력 내용을 확인해 주세요.' }])]);
+  const consume = jest.fn(e => { if (e.kind === 'command_request') x.api.recordResult({ schemaVersion: 1, id: 'booker-result', source: 'app', kind: 'command_result', commandId: e.id, command: 'updateReservationBooker', outcome: { status: 'succeeded', data: { placeId: 1, fields } } }); });
+  const c = createVoiceSessionController(consume, x.api);
+  try {
+    await c.start(); await c.send('이름 김테스트 연락처 01012345678 요청사항 창가 자리');
+    expect(c.getSnapshot().error).toBeNull();
+    expect(consume.mock.calls[0][0]).toMatchObject({ command: 'updateReservationBooker', args: { placeId: 1, ...fields } });
+    expect(x.requests).toHaveLength(2);
+    expect(x.requests[1].messages.at(-1).content[0]).toMatchObject({ type: 'tool_result', tool_use_id: 'booker1' });
+  } finally { c.dispose(); }
+});

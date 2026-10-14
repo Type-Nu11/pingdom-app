@@ -19,7 +19,7 @@ export type VoiceLocalTime = string;
 /**
  * command 값을 좁히면 TypeScript가 해당 args도 함께 좁히는 discriminated union입니다.
  * 외부 입력을 이 타입으로 단언하지 말고 반드시 parseVoiceAssistantEnvelope를 통과시킵니다.
- * 좌표·예약자 정보·확인 여부는 AI가 결정할 수 없으므로 입력 필드 자체를 두지 않습니다.
+ * 좌표·확인 여부는 앱이 결정합니다. 예약자 정보는 사용자가 제공한 값만 초안에 반영합니다.
  */
 export const VOICE_PAGE_IDS = ['map', 'search', 'favorites', 'reservations', 'myPage', 'settings', 'placeDetail', 'createReservation',
   'community', 'communityPost', 'recommendations', 'coupons', 'verifiedPlaces', 'accountManagement',
@@ -54,6 +54,7 @@ export type VoiceAssistantCommand =
   | Readonly<{ command: 'prepareReservation'; args: Readonly<{
     placeId: number; availabilityId: number; quantity: number;
   }> }>
+  | Readonly<{ command: 'updateReservationBooker'; args: Readonly<{ placeId: number; bookerName?: string; bookerPhone?: string; requestNote?: string }> }>
   | Readonly<{ command: 'cancelVoiceSession'; args: Readonly<Record<string, never>> }>;
 
 export type VoiceCommandName = VoiceAssistantCommand['command'];
@@ -101,6 +102,7 @@ export type VoiceCommandOutput = {
   getPlaceDetails: Readonly<{ place: VoicePlaceFacts }>;
   getAvailabilities: Readonly<{ placeId: number; date: VoiceLocalDate; quantity: number; availabilities: readonly VoiceAvailabilityFacts[] }>;
   prepareReservation: Readonly<{ draft: ReservationDraft }>;
+  updateReservationBooker: Readonly<{ placeId: number; fields: Readonly<Partial<import('../../booking').BookerInput>> }>;
   navigateToPage: Readonly<{ target: VoiceNavigationTarget; navigationRequested: true }>;
   cancelVoiceSession: Readonly<{ sessionStopped: true }>;
 };

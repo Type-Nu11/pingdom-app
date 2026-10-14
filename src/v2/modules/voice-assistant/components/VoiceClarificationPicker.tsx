@@ -108,7 +108,7 @@ const DayCircle = styled.View`width: 36px; height: 36px; border-radius: 18px; ov
 const DaySelection = styled.View`position: absolute; width: 36px; height: 36px; border-radius: 18px;
   background-color: ${({ theme }) => theme.colors.primary};`;
 const DayText = styled(Text)<{ $selected: boolean; $today: boolean; $disabled: boolean }>`font-size: 16px; line-height: 21px; font-weight: ${({ $selected, $today }) => $selected || $today ? 700 : 500};
-  color: ${({ theme, $selected, $today, $disabled }) => $selected ? '#ffffff' : $disabled ? theme.colors.labelDisabled : $today ? theme.colors.primary : theme.colors.textStrong};`;
+  color: ${({ theme, $selected, $disabled }) => $selected ? theme.colors.textInverse : $disabled ? theme.colors.textMuted : theme.colors.textStrong};`;
 const DayGap = styled.View<{ $last: boolean }>`width: 14.2857%; height: 38px; margin-bottom: ${({ $last }) => $last ? 0 : 4}px;`;
 const Quantities = styled.ScrollView`flex-grow: 0; overflow: visible;`;
 const Quantity = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.category.shadow } }))<{ $selected: boolean }>`height: 34px; padding-horizontal: 15px; border-radius: 16px;
