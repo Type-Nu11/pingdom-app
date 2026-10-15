@@ -4,7 +4,10 @@ import { Alert, AppState, Linking, type AppStateStatus } from 'react-native';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { ApiError } from '../../../../../shared/api/ApiError';
 import CarRoutePreview from '../components/CarRoutePreview';
+import { findWalkingRoute } from '../api/walkingRoutesApi';
 import { findCarRoute } from '../api/routesApi';
+import { findTransitRoute, type TransitRoute } from '../api/transitRoutesApi';
+import { transitResponse } from './transitFixture';
 import { getCurrentLocation, watchCurrentLocation } from '../../location/services/locationService';
 import { openNaverRoute } from '../services/openNaverRoute';
 import type { NaverMapAdapterProps } from '../../native/components/NaverMapAdapter';
@@ -27,12 +30,118 @@ jest.mock('../../native/components/NaverMapAdapter', () => ({ __esModule: true, 
   const { View } = require('react-native');
   return <View testID="route-map" />;
 } }));
+jest.mock('../api/walkingRoutesApi', () => ({ findWalkingRoute: jest.fn() }));
 jest.mock('../api/routesApi', () => ({ findCarRoute: jest.fn() }));
+jest.mock('../api/transitRoutesApi', () => ({ ...jest.requireActual('../api/transitRoutesApi'), findTransitRoute: jest.fn() }));
 jest.mock('../services/openNaverRoute', () => ({ openNaverRoute: jest.fn(async () => 'opened') }));
 const destination = { placeId: 1, name: '목적지', latitude: 37.6, longitude: 127.1 };
 const location = { status: 'granted' as const, canAskAgain: true as const, coordinate: { lat: 37.5, lng: 127, accuracyMeters: 10, observedAt: new Date().toISOString() } };
 const route = { path: [{ lat: 37.501, lng: 127.001 }, { lat: 37.8, lng: 127.3 }, { lat: 37.601, lng: 127.101 }], distanceMeters: 12500, durationSeconds: 1800 };
 const props = { destination, location, onClose: jest.fn(), onRefreshLocation: jest.fn() };
+
+const transit: TransitRoute = jest.requireActual('../api/transitRoutesApi').mapTransitRouteResponse(transitResponse);
+const walking = { path: [{ lat: 37.5, lng: 127 }, { lat: 37.52, lng: 127.02 }, { lat: 37.6, lng: 127.1 }], distanceMeters: 800, durationSeconds: 600, steps: [{ instruction: 'Cross the bridge', path: [] }] };
+beforeEach(() => { jest.mocked(findWalkingRoute).mockReset().mockResolvedValue(walking); });
+beforeEach(() => { jest.mocked(findTransitRoute).mockReset().mockResolvedValue(transit); });
+
+test('transit alternatives change summary, leg markers, separate map paths and details together', async () => {
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  expect(await screen.findByText('20 min')).toBeVisible();
+  expect(mockMapProps.routeCoordinates).toBeUndefined();
+  expect(mockMapProps.routeSegments).toEqual([
+    { path: [{ lat: 37.5, lng: 127 }, { lat: 37.501, lng: 127.001 }], color: '#767680' },
+    { path: [{ lat: 37.502, lng: 127.002 }, { lat: 37.6, lng: 127.1 }], color: '#00A84D' },
+  ]);
+  expect(mockMapProps.markers.some(marker => marker.caption === 'Central')).toBe(true);
+  await user.press(screen.getByRole('button', { name: 'Route 2 of 2' }));
+  expect(screen.getByTestId('transit-summary')).toHaveTextContent(/30 min/);
+  expect(mockMapProps.routeSegments).toEqual([{ path: [{ lat: 37.5, lng: 127 }, { lat: 37.55, lng: 127.2 }, { lat: 37.6, lng: 127.1 }], color: '#008BFF' }]);
+  await user.press(screen.getByRole('button', { name: 'Route details' }));
+  expect(screen.getByTestId('transit-details')).toHaveTextContent(/Bus 7/);
+  expect(screen.queryByText(/after arrival|last train|live arrival/i)).toBeNull();
+  expect(screen.queryByTestId('route-start')).toBeNull();
+  await user.press(screen.getByRole('button', { name: 'Back to map' }));
+  await user.press(screen.getByRole('tab', { name: 'Car' }));
+  expect(mockMapProps.routeSegments).toBeUndefined();
+  expect(mockMapProps.routeCoordinates).toEqual(route.path);
+});
+
+test('transit late response cannot replace car and pending I/O is canceled on mode change and unmount', async () => {
+  let resolve!: (value: typeof transit) => void;
+  jest.mocked(findTransitRoute).mockImplementation(() => new Promise(yes => { resolve = yes; }));
+  const { user, unmount } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  const signal = jest.mocked(findTransitRoute).mock.calls[0][2];
+  await user.press(screen.getByRole('tab', { name: 'Car' }));
+  expect(signal.aborted).toBe(true);
+  await act(async () => resolve(transit));
+  expect(mockMapProps.routeCoordinates).toEqual(route.path);
+  expect(screen.queryByTestId('transit-summary')).toBeNull();
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  const secondSignal = jest.mocked(findTransitRoute).mock.calls[1][2];
+  await unmount();
+  expect(secondSignal.aborted).toBe(true);
+});
+
+test('429 cooldown survives endpoint and mode changes and applies to both route providers', async () => {
+  jest.mocked(findTransitRoute).mockRejectedValue(new ApiError('limited', { status: 429, retryAfterSeconds: 120 }));
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  expect(await screen.findByText(/Too many requests/)).toBeVisible();
+  await user.press(screen.getByRole('tab', { name: 'Car' }));
+  expect(screen.getByText(/Too many requests/)).toBeVisible();
+  expect(findCarRoute).toHaveBeenCalledTimes(1);
+  await fireEvent(screen.getByTestId('route-destination-row'), 'accessibilityAction', { nativeEvent: { actionName: 'swap' } });
+  expect(findCarRoute).toHaveBeenCalledTimes(1);
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  expect(findTransitRoute).toHaveBeenCalledTimes(1);
+});
+
+test.each([
+  [401, 'INVALID_TOKEN', /sign in again/i], [403, 'FORBIDDEN', /permission/],
+  [422, 'ROUTE_NOT_FOUND', /No transit route found\./], [504, 'ROUTE_PROVIDER_TIMEOUT', /timed out/],
+  [503, 'ROUTE_PROVIDER_UNAVAILABLE', /unavailable/],
+] as const)('transit failure %s keeps recovery available without inventing geometry or retrying', async (status, code, message) => {
+  jest.mocked(findTransitRoute).mockRejectedValue(new ApiError('server detail', { status, code }));
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  expect(await screen.findByText(message)).toBeVisible();
+  expect(mockMapProps.routeSegments).toBeUndefined();
+  expect(screen.getByTestId('route-request')).toBeVisible();
+  expect(screen.getByTestId('route-external')).toBeVisible();
+  expect(findTransitRoute).toHaveBeenCalledTimes(1);
+});
+
+test('transit endpoint changes abort previous geometry and selecting the same pending tab cannot duplicate calls', async () => {
+  let resolve!: (value: TransitRoute) => void;
+  jest.mocked(findTransitRoute).mockImplementationOnce(() => new Promise(yes => { resolve = yes; }));
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  const signal = jest.mocked(findTransitRoute).mock.calls[0][2];
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  expect(findTransitRoute).toHaveBeenCalledTimes(1);
+  await fireEvent(screen.getByTestId('route-destination-row'), 'accessibilityAction', { nativeEvent: { actionName: 'swap' } });
+  expect(signal.aborted).toBe(true);
+  expect(findTransitRoute).toHaveBeenCalledTimes(2);
+  const secondGeometry = mockMapProps.routeSegments;
+  await act(async () => resolve({ itineraries: [transit.itineraries[1]] }));
+  expect(mockMapProps.routeSegments).toEqual(secondGeometry);
+  expect(screen.getByText('20 min')).toBeVisible();
+});
+
+test.each(['ko', 'en', 'ja', 'zh-CN', 'zh-TW', 'vi', 'es', 'pt-BR'] as const)('transit details retain localized controls in %s dark mode without fabricating missing fields', async language => {
+  jest.mocked(findTransitRoute).mockResolvedValue({ itineraries: [{ distanceMeters: 100, durationSeconds: 60,
+    legs: [{ mode: 'UNKNOWN', path: [], stations: [] }] }] });
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language, colorScheme: 'dark', appearancePreference: 'DARK' });
+  await user.press(screen.getAllByRole('tab')[0]);
+  const summary = screen.getByTestId('transit-summary');
+  expect(summary).not.toHaveTextContent(/routes\.|transit\.|undefined|NaN|fare|요금/);
+  expect(mockMapProps.routeSegments).toEqual([]);
+  expect(screen.queryByRole('button', { name: /Route 1 of 1/ })).toBeNull();
+  await user.press(screen.getByTestId('transit-details-button'));
+  expect(screen.getByTestId('transit-details')).not.toHaveTextContent(/routes\.|transit\.|undefined|NaN/);
+});
 
 beforeEach(() => { jest.mocked(getCurrentLocation).mockReset().mockResolvedValue({ status: 'failed', coordinate: null, canAskAgain: true }); jest.mocked(watchCurrentLocation).mockReset().mockResolvedValue({ remove: mockRemoveLocationWatch }); mockRemoveLocationWatch.mockClear(); location.coordinate.observedAt = new Date().toISOString(); jest.mocked(findCarRoute).mockReset().mockResolvedValue(route); jest.mocked(openNaverRoute).mockClear(); });
 
@@ -73,16 +182,55 @@ test('gesture during a pending request prevents camera jump and cancellation cle
   expect(screen.getByText('Route request canceled.')).toBeVisible();
 });
 
-test('walk/transit use external navigation without additional car requests', async () => {
-  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
-  for (const [label, mode] of [['Walk', 'walk'], ['Transit', 'transit']]) {
-    await user.press(screen.getByRole('tab', { name: label }));
-    expect(screen.getByText('Use the NAVER Map app for this travel mode.')).toBeVisible();
-    expect(screen.queryByTestId('route-request')).toBeNull();
-    await user.press(screen.getByTestId('route-external'));
-    expect(openNaverRoute).toHaveBeenLastCalledWith(destination, expect.objectContaining({ latitude: 37.5, longitude: 127 }), mode);
-  }
+test('walking opens provider details and starts following its own route without a car lookup', async () => {
+  const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} location={liveLocation()} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Walk' }));
+  expect(screen.getByTestId('walk-summary')).toHaveTextContent(/10 min.*800 m/);
+  expect(mockMapProps.routeCoordinates).toEqual(walking.path);
+  expect(mockMapProps.routeSegments).toBeUndefined();
+  expect(screen.queryByText(/steps|slope|stairs/i)).toBeNull();
+  await user.press(screen.getByRole('button', { name: 'Route details' }));
+  expect(screen.getByTestId('walk-details')).toHaveTextContent(/Cross the bridge/);
+  expect(screen.queryByTestId('route-tracking-sheet')).toBeNull();
+  await user.press(screen.getByRole('button', { name: 'Back to map' }));
+  expect(mockMapProps.routeCoordinates).toEqual(walking.path);
+  await user.press(screen.getByRole('button', { name: 'Follow route in app' }));
+  expect(screen.getByTestId('route-tracking-sheet')).toBeVisible();
+  expect(mockMapProps.followUser).toBe(true);
+  expect(mockMapProps.routeCoordinates).toEqual(walking.path);
+  await rerender(<CarRoutePreview {...props} location={liveLocation(37.52, 127.02)} />);
+  expect(mockMapProps.routeCoordinates).toEqual(walking.path);
+  expect(findWalkingRoute).toHaveBeenCalledTimes(1);
   expect(findCarRoute).toHaveBeenCalledTimes(1);
+});
+
+test('late walking responses are discarded when switching to transit', async () => {
+  let resolve!: (value: typeof walking) => void;
+  jest.mocked(findWalkingRoute).mockImplementation(() => new Promise(yes => { resolve = yes; }));
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Walk' }));
+  const signal = jest.mocked(findWalkingRoute).mock.calls[0][2];
+  expect(screen.getByRole('button', { name: 'Cancel request' })).toBeVisible();
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  expect(signal.aborted).toBe(true);
+  await act(async () => resolve(walking));
+  expect(screen.queryByTestId('walk-summary')).toBeNull();
+  expect(screen.getByTestId('transit-summary')).toBeVisible();
+  expect(mockMapProps.routeCoordinates).toBeUndefined();
+});
+
+test('failed walking route offers retry and external navigation; bicycle stays external', async () => {
+  jest.mocked(findWalkingRoute).mockRejectedValueOnce(new ApiError('private', { code: 'ROUTE_NOT_FOUND', status: 422 }));
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Walk' }));
+  expect(screen.getByTestId('route-request')).toBeVisible();
+  expect(mockMapProps.routeCoordinates).toBeUndefined();
+  await user.press(screen.getByTestId('route-request'));
+  expect(screen.getByTestId('walk-summary')).toHaveTextContent(/10 min/);
+  await user.press(screen.getByRole('tab', { name: 'Bicycle' }));
+  expect(screen.getByText('Use the NAVER Map app for this travel mode.')).toBeVisible();
+  await user.press(screen.getByTestId('route-external'));
+  expect(openNaverRoute).toHaveBeenLastCalledWith(destination, expect.objectContaining({ latitude: 37.5, longitude: 127 }), 'bike');
 });
 
 test('permission denial allows external origin omission and settings recovery', async () => {
@@ -170,6 +318,7 @@ test('503 is an unavailable state with no geometry or automatic retry; external 
 });
 
 test('external app absence is separate from route lookup error', async () => {
+  jest.mocked(findWalkingRoute).mockRejectedValueOnce(new ApiError('no route', { code: 'ROUTE_NOT_FOUND' }));
   jest.mocked(openNaverRoute).mockResolvedValueOnce('not-installed');
   const alert = jest.spyOn(Alert, 'alert');
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
@@ -669,4 +818,38 @@ test('empty planner searches editable endpoints and queries only after both are 
   await waitFor(() => expect(findCarRoute).toHaveBeenCalledWith(
     expect.objectContaining({ name: 'New place', latitude: 37.9 }),
     expect.objectContaining({ name: 'Saved cafe', latitude: 37.7 }), expect.any(AbortSignal)));
+});
+
+test('transit rate limit also blocks walking without invoking its provider', async () => {
+  jest.mocked(findTransitRoute).mockRejectedValue(new ApiError('limited', { status: 429, retryAfterSeconds: 120 }));
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  await user.press(screen.getByRole('tab', { name: 'Walk' }));
+  expect(screen.getByText(/Too many requests/)).toBeVisible();
+  expect(findWalkingRoute).not.toHaveBeenCalled();
+  expect(mockMapProps.routeCoordinates).toBeUndefined();
+});
+
+
+test('swiping transit alternatives updates the map and starts guidance with the selected separate segments', async () => {
+  const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} location={liveLocation()} />, { language: 'en' });
+  await user.press(screen.getByRole('tab', { name: 'Transit' }));
+  await fireEvent(screen.getByTestId('transit-pager-frame'), 'layout', { nativeEvent: { layout: { width: 350, height: 200 } } });
+  await fireEvent(screen.getByTestId('transit-route-pager'), 'momentumScrollEnd', { nativeEvent: { contentOffset: { x: 350, y: 0 } } });
+  expect(screen.getByRole('button', { name: 'Route 2 of 2' }).props.accessibilityState).toEqual({ selected: true });
+  expect(screen.getByTestId('transit-summary')).toHaveTextContent(/30 min/);
+  const segments = mockMapProps.routeSegments;
+  const markers = mockMapProps.markers;
+  await user.press(screen.getByRole('button', { name: 'Route details' }));
+  await user.press(screen.getByRole('button', { name: 'Follow route in app' }));
+  expect(screen.queryByTestId('transit-details')).toBeNull();
+  expect(screen.getByTestId('route-tracking-sheet')).toBeVisible();
+  expect(mockMapProps.routeCoordinates).toBeUndefined();
+  expect(mockMapProps.routeSegments).toEqual(segments);
+  expect(mockMapProps.markers).toEqual(markers);
+  expect(mockMapProps.followUser).toBe(true);
+  await rerender(<CarRoutePreview {...props} location={liveLocation(37.52, 127.02)} />);
+  expect(mockMapProps.routeSegments).toEqual(segments);
+  expect(findTransitRoute).toHaveBeenCalledTimes(1);
+  expect(findCarRoute).toHaveBeenCalledTimes(1);
 });

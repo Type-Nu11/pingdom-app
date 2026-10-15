@@ -38,6 +38,8 @@ export type NaverMapCameraFit = {
   north: number; south: number; east: number; west: number;
   top: number; bottom: number; left: number; right: number;
 };
+/** Separate provider geometry; the native SDK must never draw a connector between legs. */
+export type NaverMapRouteSegment = { path: { lat: number; lng: number }[]; color: string };
 
 export type NaverMapNativeViewProps = ViewProps & {
   cameraFit?: NaverMapCameraFit;
@@ -50,6 +52,7 @@ export type NaverMapNativeViewProps = ViewProps & {
   nightMode?: boolean;
   markers?: NaverMapNativeMarker[];
   routeCoordinates?: { lat: number; lng: number }[];
+  routeSegments?: NaverMapRouteSegment[];
   onRouteAnchor?: (event: NativeSyntheticEvent<{ x: number; y: number }>) => void;
   onCameraGesture?: (event: NativeSyntheticEvent<Record<string, never>>) => void;
   onCameraIdle?: (event: NaverMapCameraIdleEvent) => void;

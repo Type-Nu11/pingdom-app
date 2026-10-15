@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Modal, Pressable, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,12 @@ import { DEFAULT_MAP_CENTER } from '../../camera/model/mapCamera';
 import type { Coordinate, LocationState } from '../../camera/model/map.types';
 import type { NaverMapNativeMarker, NaverMapCameraFit } from '../../../../../shared/native/NaverMapNativeView';
 import { useCarRoute } from '../hooks/useCarRoute';
+import { useWalkingRoute } from '../hooks/useWalkingRoute';
+import { WalkingRouteDetails } from './WalkingRouteDetails';
+import { useTransitRoute } from '../hooks/useTransitRoute';
+import type { TransitRoute } from '../api/transitRoutesApi';
+import { transitMapSegments } from '../model/transitPresentation';
+import { TransitRouteDetails } from './TransitRouteResult';
 import { endpointCoordinate, fitRoutePreviewCamera } from '../model/routePreparation';
 import { routeMetrics } from '../model/routePresentation';
 import { trackingStartIssue } from '../model/routeTracking';
@@ -17,7 +23,7 @@ import MapGlassBackdrop from '../../presentation/components/MapGlassBackdrop';
 import GlassSurface from '../../presentation/components/GlassSurface';
 import RoutePlannerSheet from './RoutePlannerSheet';
 import MyLocationIcon from '../assets/my_location.svg';
-import BubbleCarIcon from '../assets/bubble_car.svg';
+import { RouteTimeBubble } from './RouteTimeBubble';
 import type { RouteDestination, RouteMode } from '../model/routeUi';
 import { openNaverRoute } from '../services/openNaverRoute';
 import RouteEndpointEditor from './RouteEndpointEditor';
@@ -79,11 +85,33 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const destinationCoordinate = endpointCoordinate(destination);
   const originCoordinate = endpointCoordinate(origin);
   // GPS changes invalidate only a live origin; fixed endpoints retain their route.
-  const route = useCarRoute(`${endpointRevision}:${mode}:${originCoordinate?.lat}:${originCoordinate?.lng}:${destinationCoordinate?.lat}:${destinationCoordinate?.lng}`);
+  const selectionKey = `${endpointRevision}:${mode}:${originCoordinate?.lat}:${originCoordinate?.lng}:${destinationCoordinate?.lat}:${destinationCoordinate?.lng}`;
+  const cooldown = useRef({ retryAt: 0 });
+  const route = useCarRoute(selectionKey, cooldown.current);
+  const transit = useTransitRoute(selectionKey, cooldown.current);
+  const walking = useWalkingRoute(selectionKey, cooldown.current);
+  const walkResult = mode === 'walk' && originCoordinate && walking.state.kind === 'ready' ? walking.state.route : null;
+  const walkEstimateAt = useMemo(() => walkResult ? Date.now() : undefined, [walkResult]);
+  const [transitSelection, setTransitSelection] = useState<{ source: TransitRoute; index: number } | null>(null);
+  const [details, setDetails] = useState(false);
+  const transitResult = mode === 'transit' && originCoordinate && transit.state.kind === 'ready' ? transit.state.route : null;
+  const transitEstimateAt = useMemo(() => transitResult ? Date.now() : undefined, [transitResult]);
+  const transitIndex = transitResult && transitSelection?.source === transitResult ? transitSelection.index : 0;
+  const itinerary = transitResult?.itineraries[transitIndex];
+  const transitSegments = useMemo(() => itinerary ? transitMapSegments(itinerary) : undefined, [itinerary]);
   const ready = mode === 'car' && !!originCoordinate && route.state.kind === 'ready' ? route.state.route : null;
+  const preview = useMemo(() => ready ?? walkResult ?? (itinerary ? { distanceMeters: itinerary.distanceMeters,
+    durationSeconds: itinerary.durationSeconds, path: transitSegments!.flatMap(segment => segment.path) } : null), [ready, walkResult, itinerary, transitSegments]);
+  const activeState = mode === 'transit' ? transit.state : mode === 'walk' ? walking.state : route.state;
+  function cancelRequests() { route.cancel(); transit.cancel(); walking.cancel(); }
   const markers: NaverMapNativeMarker[] = [];
   if (destinationCoordinate) markers.push({ id: 'route-destination', category: destination?.category ?? 'etc', ...destinationCoordinate, caption: t('routes.destination') });
   if (originCoordinate && !origin?.isCurrentLocation) markers.push({ id: 'route-origin', category: origin?.category ?? 'etc', ...originCoordinate, caption: t('routes.origin') });
+  itinerary?.legs.forEach((leg, index) => {
+    for (const [role, stop] of [['start', leg.start], ['end', leg.end]] as const) {
+      if (stop?.coordinate) markers.push({ id: `transit-${index}-${role}`, category: 'etc', ...stop.coordinate, caption: stop.name });
+    }
+  });
 
   // Frame the real endpoints without drawing a route before a provider response exists.
   useEffect(() => {
@@ -97,19 +125,19 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
 
   // One fit per result. A gesture during loading suppresses the asynchronous fit.
   useEffect(() => {
-    if (tracking.tracking || !ready || !viewport.width || !viewport.height || fittedPath.current === ready.path) return;
-    fittedPath.current = ready.path;
-    if (!manualCamera.current) setCamera(previous => ({ ...fitRoutePreviewCamera(ready.path, viewport.width, viewport.height, sheetHeight + Math.max(8, insets.bottom), insets.top), revision: previous.revision + 1 }));
-  }, [ready, viewport, sheetHeight, insets, tracking.tracking]);
+    if (tracking.tracking || !preview?.path.length || !viewport.width || !viewport.height || fittedPath.current === preview.path) return;
+    fittedPath.current = preview.path;
+    if (!manualCamera.current) setCamera(previous => ({ ...fitRoutePreviewCamera(preview.path, viewport.width, viewport.height, sheetHeight + Math.max(8, insets.bottom), insets.top), revision: previous.revision + 1 }));
+  }, [preview, viewport, sheetHeight, insets, tracking.tracking]);
   useEffect(() => {
-    if (selections.some(point => point?.isCurrentLocation) && (location.status !== 'granted' || !endpointCoordinate(currentPoint))) route.cancel();
+    if (selections.some(point => point?.isCurrentLocation) && (location.status !== 'granted' || !endpointCoordinate(currentPoint))) cancelRequests();
     // Permission loss must dispose the previous path; GPS updates do not trigger new requests.
   }, [location.status, !!endpointCoordinate(currentPoint), selections]);
 
   const stateKey = !selections[0] || !selections[1] ? 'empty' : !destinationCoordinate ? 'missing-destination'
-    : mode !== 'car' ? 'unsupported'
-      : !originCoordinate ? location.status !== 'granted' ? `location-${location.status}` : 'location-failed' : route.state.kind;
-  const canRequest = mode === 'car' && !!destinationCoordinate && !!originCoordinate;
+    : mode === 'bike' ? 'unsupported'
+      : !originCoordinate ? location.status !== 'granted' ? `location-${location.status}` : 'location-failed' : activeState.kind;
+  const canRequest = (mode !== 'bike') && !!destinationCoordinate && !!originCoordinate;
   async function openExternal() {
     if (externalBusy.current) return;
     externalBusy.current = true; setOpeningExternal(true);
@@ -126,7 +154,10 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   }
   function request() {
     manualCamera.current = false; fittedPath.current = null; setAnchor(null);
-    void route.request(origin, destination);
+    setDetails(false);
+    if (mode === 'transit') void transit.request(origin, destination);
+    else if (mode === 'walk') void walking.request(origin, destination);
+    else if (mode === 'car') void route.request(origin, destination);
   }
   useEffect(() => {
     if (canRequest && !tracking.tracking) request();
@@ -135,7 +166,8 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
     // A result, error or cancellation must not restart this effect.
   }, [mode, endpointRevision, canRequest, !!tracking.tracking]);
   async function startTracking(forceRefresh = false) {
-    if (starting.current || !ready || !origin || !originCoordinate || !destination || !destinationCoordinate) return;
+    if (starting.current || !preview?.path.length || mode === 'bike' || !origin || !originCoordinate || !destination || !destinationCoordinate) return;
+    const presentation = { mode, routeSegments: mode === 'transit' ? transitSegments : undefined, markers };
     const generation = ++startGeneration.current;
     let currentLocation = location;
     let refreshed = false;
@@ -144,7 +176,8 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
       closeNotice();
       setFollowing(true); setAnchor(null);
       setCamera(previous => ({ center: originCoordinate!, zoom: 16, revision: previous.revision + 1 }));
-      tracking.start(origin!, destination!, ready!, undefined, originCoordinate!);
+      setDetails(false);
+      tracking.start(origin!, destination!, preview!, undefined, originCoordinate!, presentation);
     }
     // A selected origin is a valid assumed starting point, even without live GPS.
     if (!origin.isCurrentLocation && issue) {
@@ -185,7 +218,8 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
     setFollowing(true); setAnchor(null);
     const coordinate = currentLocation.status === 'granted' ? currentLocation.coordinate : undefined;
     setCamera(previous => ({ center: coordinate!, zoom: 16, revision: previous.revision + 1 }));
-    tracking.start(origin, destination, ready, refreshed ? coordinate : undefined);
+    setDetails(false);
+    tracking.start(origin, destination, preview, refreshed ? coordinate : undefined, undefined, presentation);
   }
   function resumeFollowing() {
     setFollowing(true);
@@ -193,7 +227,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   }
   function changeEndpoints(next: [RouteDestination | null, RouteDestination | null]) {
     closeNotice();
-    route.cancel(); setAnchor(null); fittedPath.current = null;
+    cancelRequests(); setDetails(false); setAnchor(null); fittedPath.current = null;
     fittedEndpoints.current = false; manualCamera.current = false;
     setSelections([next[0], next[1]?.isCurrentLocation ? snapshotCurrentLocation() ?? next[1] : next[1]]); setEndpointRevision(value => value + 1);
   }
@@ -209,7 +243,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
     if (tracking.tracking) { resumeFollowing(); return; }
     manualCamera.current = false;
     setCamera(previous => ({
-      ...(ready ? fitRoutePreviewCamera(ready.path, viewport.width, viewport.height, sheetHeight + Math.max(8, insets.bottom), insets.top)
+      ...(preview?.path.length ? fitRoutePreviewCamera(preview.path, viewport.width, viewport.height, sheetHeight + Math.max(8, insets.bottom), insets.top)
         : { center: originCoordinate ?? destinationCoordinate ?? DEFAULT_MAP_CENTER, zoom: 16 }),
       revision: previous.revision + 1,
     }));
@@ -218,39 +252,39 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   if (!tracked) trackingCenter.current = null;
   else if (following && tracking.coordinate) trackingCenter.current = tracking.coordinate;
   const trackingDestination = endpointCoordinate(tracked?.destination ?? null);
-  const displayedPath = tracked ? tracked.state.kind === 'ready' ? tracked.state.route.path : undefined : ready?.path;
-  const displayedMarkers = tracked && trackingDestination
-    ? [{ id: 'route-destination', category: tracked.destination.category ?? 'etc', ...trackingDestination, caption: t('routes.destination') }] : markers;
-  const metrics = ready ? routeMetrics(ready, i18n.resolvedLanguage ?? 'en', t) : null;
+  const displayedPath = tracked ? tracked.state.kind === 'ready' && tracked.presentation?.mode !== 'transit' ? tracked.state.route.path : undefined : (ready ?? walkResult)?.path;
+  const displayedMarkers = tracked?.presentation?.markers ?? (tracked && trackingDestination
+    ? [{ id: 'route-destination', category: tracked.destination.category ?? 'etc', ...trackingDestination, caption: t('routes.destination') }] : markers);
+  const metrics = preview ? routeMetrics(preview, i18n.resolvedLanguage ?? 'en', t) : null;
+  const showingDetails = details && (!!itinerary || !!walkResult);
+  const walkMetrics = walkResult ? routeMetrics(walkResult, i18n.resolvedLanguage ?? 'en', t) : null;
   const visibleSheetHeight = editing ? Math.min(558, Math.max(240, viewport.height - insets.top - 70)) : sheetHeight;
   const bubbleLeft = anchor ? Math.max(16, Math.min(anchor.x - 19, viewport.width - bubbleSize.width - 16)) : 16;
-  return <Modal visible animationType="slide" onRequestClose={() => { if (notice) closeNotice(); else if (mapPicking) setMapPicking(false); else if (editing) setEditing(null); else onClose(); }} statusBarTranslucent navigationBarTranslucent>
+  return <Modal visible animationType="slide" onRequestClose={() => { if (showingDetails) setDetails(false); else if (notice) closeNotice(); else if (mapPicking) setMapPicking(false); else if (editing) setEditing(null); else onClose(); }} statusBarTranslucent navigationBarTranslucent>
     <StatusBar barStyle={theme.colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
     <View style={{ flex: 1, backgroundColor: theme.colors.background }} onLayout={event => setViewport(event.nativeEvent.layout)}>
-      <View style={{ flex: 1 }} pointerEvents={notice ? 'none' : 'auto'} accessibilityElementsHidden={!!notice}
-        importantForAccessibility={notice ? 'no-hide-descendants' : 'auto'}>
+      <View style={{ flex: 1 }} pointerEvents={notice || showingDetails ? 'none' : 'auto'} accessibilityElementsHidden={!!notice || showingDetails}
+        importantForAccessibility={notice || showingDetails ? 'no-hide-descendants' : 'auto'}>
       <MapGlassBackdrop active>
         <NaverMapAdapter cameraFit={camera.fit} logoTopMargin={insets.top + 16} cameraRevision={camera.revision} center={tracked && following ? trackingCenter.current ?? camera.center : camera.center} zoomLevel={camera.zoom}
           userCoordinate={tracked ? tracking.coordinate ?? undefined : endpointCoordinate(currentPoint) ?? undefined}
           followUser={!!tracked && !tracked.previewOrigin && tracked.state.kind === 'ready' && !tracked.arrived && following && !!tracking.coordinate}
-          markers={displayedMarkers} routeCoordinates={displayedPath}
+          markers={displayedMarkers} routeCoordinates={displayedPath} routeSegments={tracked ? tracked.presentation?.routeSegments : transitSegments}
           onCameraIdle={setMapPoint}
           onRouteAnchor={setAnchor} onCameraGesture={() => { manualCamera.current = true; setFollowing(false); setAnchor(null); }} />
-        {!tracked && !mapPicking && ready && metrics && anchor && anchor.y > insets.top + bubbleSize.height + 8 && anchor.y < viewport.height - visibleSheetHeight - Math.max(8, insets.bottom) - 12
+        {!tracked && !mapPicking && !!preview?.path.length && metrics && anchor && anchor.y > insets.top + bubbleSize.height + 8 && anchor.y < viewport.height - visibleSheetHeight - Math.max(8, insets.bottom) - 12
           && anchor.x > 16 && anchor.x < viewport.width - 16 && <View pointerEvents="none" accessibilityElementsHidden
             onLayout={event => { const { width, height } = event.nativeEvent.layout; setBubbleSize(previous => previous.width === width && previous.height === height ? previous : { width, height }); }}
             style={{ position: 'absolute', left: bubbleLeft, top: anchor.y - bubbleSize.height, maxWidth: viewport.width - 32 }}>
-            <View style={{ backgroundColor: theme.colors.primaryAlternative, borderRadius: 16, paddingLeft: 10, paddingRight: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6, boxShadow: '0px 8px 10px rgba(255,25,86,0.08), 0px 2px 3px rgba(255,25,86,0.08)' }}>
-              <BubbleCarIcon /><View><Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{metrics.duration}</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: 12 }}>{t('routes.optimalRoute')}</Text></View>
-            </View>
-            <View style={{ width: 10, height: 10, backgroundColor: theme.colors.primaryAlternative, transform: [{ rotate: '45deg' }], marginLeft: Math.max(14, Math.min(anchor.x - bubbleLeft - 5, bubbleSize.width - 20)), marginTop: -5 }} />
+            <RouteTimeBubble mode={mode === 'walk' ? 'walk' : mode === 'transit' ? 'transit' : 'car'} duration={metrics.duration}
+              label={mode === 'walk' ? t('routes.recommended') : mode === 'transit' ? t(transitIndex === 0 ? 'routes.recommended' : 'routes.design.alternative') : t('routes.optimalRoute')}
+              tailOffset={Math.max(14, Math.min(anchor.x - bubbleLeft - 5, bubbleSize.width - 20))} />
           </View>}
         {!tracked && <GlassSurface style={{ position: 'absolute', right: 12, top: insets.top + 8, borderRadius: 22 }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t(tracked ? 'routes.tracking.follow' : ready ? 'routes.fit' : 'routes.recenter')} onPress={fit}
+          <Pressable accessibilityRole="button" accessibilityLabel={t(tracked ? 'routes.tracking.follow' : preview?.path.length ? 'routes.fit' : 'routes.recenter')} onPress={fit}
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MyLocationIcon /></Pressable>
         </GlassSurface>}
-        {tracked && trackingDestination ? <RouteTrackingSheet name={tracked.destination.name} destination={trackingDestination}
+        {tracked && trackingDestination ? <RouteTrackingSheet mode={tracked.presentation?.mode} name={tracked.destination.name} destination={trackingDestination}
           coordinate={tracking.coordinate} state={tracked.state} arrived={tracked.arrived} following={following} preview={!!tracked.previewOrigin}
           topInset={insets.top} bottomInset={insets.bottom} maxHeight={Math.max(240, viewport.height - insets.top - insets.bottom - 24)}
           deniedPermanently={location.status === 'denied' && !location.canAskAgain}
@@ -277,16 +311,27 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
           canRequest={canRequest} canOpenExternal={!!destinationCoordinate && !openingExternal}
           deniedPermanently={location.status === 'denied' && !location.canAskAgain}
           onMode={value => {
-            if (mode !== value) { closeNotice(); route.cancel(); setAnchor(null); setMode(value); }
-            else if (value === 'car' && canRequest && route.state.kind !== 'loading' && route.state.kind !== 'ready') request();
+            if (mode !== value) { closeNotice(); cancelRequests(); setDetails(false); setAnchor(null); setMode(value); }
+            else if ((value !== 'bike') && canRequest && activeState.kind !== 'loading' && activeState.kind !== 'ready') request();
           }}
           onEditEndpoint={setEditing} onSwapEndpoints={() => changeEndpoints([destination, origin ?? selections[0]])}
           onClose={onClose} onShare={shareDestination}
           onStart={() => { void startTracking(); }}
-          onRequest={request} onCancel={route.cancel} onRefreshLocation={onRefreshLocation}
+          walk={walkResult && walkMetrics ? { summary: { ...walkMetrics,
+            arrival: t('routes.arrival', { time: new Intl.DateTimeFormat(i18n.resolvedLanguage ?? 'en', { hour: 'numeric', minute: '2-digit' }).format(new Date(walkEstimateAt! + walkResult.durationSeconds * 1000)) }) },
+            onStart: () => { void startTracking(); }, onDetails: () => setDetails(true) } : undefined}
+          transit={itinerary && transitResult ? { itinerary, alternatives: transitResult.itineraries, index: transitIndex, count: transitResult.itineraries.length, estimateAt: transitEstimateAt,
+            onSelect: index => { manualCamera.current = false; setAnchor(null); setTransitSelection({ source: transitResult, index }); },
+            onDetails: () => setDetails(true) } : undefined}
+          onRequest={request} onCancel={cancelRequests} onRefreshLocation={onRefreshLocation}
           onSettings={() => { void Linking.openSettings().catch(() => undefined); }} onExternal={() => { void openExternal(); }} />}
       </MapGlassBackdrop>
       </View>
+      {showingDetails && walkResult && <WalkingRouteDetails route={walkResult} originName={origin?.name} destinationName={destination?.name}
+        topInset={insets.top} bottomInset={insets.bottom} onBack={() => setDetails(false)} />}
+      {showingDetails && itinerary && <TransitRouteDetails itinerary={itinerary} originName={origin?.name} destinationName={destination?.name}
+        originAddress={origin?.address} destinationAddress={destination?.address} estimateAt={transitEstimateAt} recommended={transitIndex === 0}
+        topInset={insets.top} bottomInset={insets.bottom} onBack={() => setDetails(false)} onClose={onClose} onShare={shareDestination} onStart={() => { void startTracking(); }} />}
       {notice && <RouteNotice title={t('routes.tracking.start')} {...notice} onClose={closeNotice}
         retryLabel={t(notice.recovery === 'settings' ? 'routes.settings' : notice.recovery === 'permission' ? 'routes.location' : 'routes.tracking.retryStart')}
         onRetry={notice.recovery ? () => {

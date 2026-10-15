@@ -55,6 +55,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private val icons = mutableMapOf<String, OverlayImage>()
     private val userMarker = Marker()
     private val routeLine = PolylineOverlay()
+    private val segmentLines = mutableListOf<PolylineOverlay>()
+    private var routeSegments = emptyList<Pair<List<LatLng>, Int>>()
     private var routePoints = emptyList<LatLng>()
     private var routeDirty = false
     private var lastCamera: Triple<Double, Double, Int>? = null
@@ -137,8 +139,9 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun setLogoTopMargin(value: Double) { logoTopMargin = if (value.isFinite()) value.toFloat().coerceAtLeast(0f) else 160f }
     // Project a real path vertex to dp for the Figma duration bubble. No coordinate logging.
     private fun emitRouteAnchor(map: NaverMap) {
-        if (routePoints.size < 2) return
-        val point = map.projection.toScreenLocation(routePoints[routePoints.size / 2])
+        val points = routeSegments.maxByOrNull { it.first.size }?.first ?: routePoints
+        if (points.size < 2) return
+        val point = map.projection.toScreenLocation(points[points.size / 2])
         val density = resources.displayMetrics.density
         emit("topRouteAnchor", Arguments.createMap().apply {
             putDouble("x", (point.x / density).toDouble())
@@ -186,19 +189,41 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     // SDK 준비 전에도 최신 테마를 보관한다. getMapAsync 완료 시 applyProps()가 반영한다.
     fun setNightMode(value: Boolean) { nightMode = value }
 
-    fun setRouteCoordinates(value: ReadableArray?) {
+    private fun parseRouteCoordinates(value: ReadableArray?): List<LatLng> {
         val next = buildList {
             for (index in 0 until (value?.size() ?: 0)) {
+                if (value?.getType(index) != ReadableType.Map) continue
                 val item = value?.getMap(index) ?: continue
                 if (!item.hasKey("lat") || item.isNull("lat") || !item.hasKey("lng") || item.isNull("lng")) continue
+                if (item.getType("lat") != ReadableType.Number || item.getType("lng") != ReadableType.Number) continue
                 val lat = item.getDouble("lat")
                 val lng = item.getDouble("lng")
                 if (validCoordinate(lat, lng)) add(LatLng(lat, lng))
             }
         }
         // Reject an incomplete path rather than drawing across an invalid segment.
-        val valid = if (next.size == (value?.size() ?: 0) && next.distinct().size >= 2) next else emptyList()
+        return if (next.size == (value?.size() ?: 0) && next.distinct().size >= 2) next else emptyList()
+    }
+
+    fun setRouteCoordinates(value: ReadableArray?) {
+        val valid = parseRouteCoordinates(value)
         if (valid != routePoints) { routePoints = valid; routeDirty = true }
+    }
+
+    fun setRouteSegments(value: ReadableArray?) {
+        val next = buildList {
+            for (index in 0 until (value?.size() ?: 0)) {
+                if (value?.getType(index) != ReadableType.Map) continue
+                val item = value.getMap(index) ?: continue
+                if (!item.hasKey("path") || item.getType("path") != ReadableType.Array) continue
+                val points = parseRouteCoordinates(item.getArray("path"))
+                if (points.size < 2) continue
+                val color = if (item.hasKey("color") && item.getType("color") == ReadableType.String) item.getString("color") else null
+                val parsedColor = if (color != null && Regex("#[0-9a-fA-F]{6}").matches(color)) Color.parseColor(color) else Color.rgb(255, 25, 86)
+                add(Pair(points, parsedColor))
+            }
+        }
+        if (next != routeSegments) { routeSegments = next; routeDirty = true }
     }
 
     fun setMarkers(value: ReadableArray?) {
@@ -237,7 +262,21 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         }
         if (routeDirty) {
             routeLine.map = null
-            if (routePoints.size >= 2) {
+            segmentLines.forEach { it.map = null }
+            segmentLines.clear()
+            if (routeSegments.isNotEmpty()) {
+                for ((points, color) in routeSegments) {
+                    val line = PolylineOverlay()
+                    line.coords = points
+                    line.color = color
+                    line.capType = PolylineOverlay.LineCap.Round
+                    line.joinType = PolylineOverlay.LineJoin.Round
+                    line.globalZIndex = -100000
+                    line.zIndex = 1
+                    segmentLines.add(line)
+                    line.map = map
+                }
+            } else if (routePoints.size >= 2) {
                 routeLine.coords = routePoints
                 // The adapter supplies bounded curves; round joins avoid faceting thick segments.
                 routeLine.color = Color.rgb(255, 25, 86)
@@ -323,11 +362,11 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         lat != null && lng != null && lat.isFinite() && lng.isFinite() && lat in -90.0..90.0 && lng in -180.0..180.0
 
     private fun updateRouteStyle(map: NaverMap) {
-        if (routePoints.size < 2) return
         val zoom = map.cameraPosition.zoom
         val detail = ((zoom - 14.0) / 3.0).coerceIn(0.0, 1.0).toFloat()
         val lineWidth = dp(8f + detail)
         if (routeLine.width != lineWidth) routeLine.width = lineWidth
+        segmentLines.forEach { if (it.width != lineWidth) it.width = lineWidth }
     }
 
     private fun dp(value: Float) = (value * resources.displayMetrics.density).roundToInt()
@@ -373,6 +412,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         if (disposed) return
         disposed = true
         routeLine.map = null
+        segmentLines.forEach { it.map = null }
+        segmentLines.clear()
         removeCallbacks(layoutChildren)
         reactContext.removeLifecycleEventListener(this)
         placeMarkers.values.forEach { it.map = null; it.onClickListener = null }

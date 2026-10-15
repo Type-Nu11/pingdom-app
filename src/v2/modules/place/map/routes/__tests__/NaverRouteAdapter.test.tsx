@@ -6,6 +6,13 @@ import NaverMapAdapter from '../../native/components/NaverMapAdapter';
 jest.mock('../../../../../shared/native/NaverMapNativeView', () => ({
   __esModule: true, default: require('react-native').View,
 }));
+test('transit legs reach the native map separately without synthesizing a connector', async () => {
+  const segments = [{ path: [{ lat: 37, lng: 127 }, { lat: 37, lng: 127.001 }], color: '#767680' },
+    { path: [{ lat: 37.01, lng: 127.01 }, { lat: 37.02, lng: 127.02 }], color: '#00A84D' }];
+  await renderWithProviders(<NaverMapAdapter center={segments[0].path[0]} markers={[]} routeSegments={segments} />);
+  expect(screen.getByTestId('v2-naver-map').props.routeSegments).toEqual(segments);
+  expect(screen.getByTestId('v2-naver-map').props.routeCoordinates).toBeUndefined();
+});
 test.each(['light', 'dark'] as const)('preserves %s SDK theme and forwards full geometry and camera commands', async colorScheme => {
   const path = [{ lat: 37.5, lng: 127 }, { lat: 37.8, lng: 127.3 }, { lat: 37.6, lng: 127.1 }];
   await renderWithProviders(<NaverMapAdapter center={path[0]} markers={[]} routeCoordinates={path}
