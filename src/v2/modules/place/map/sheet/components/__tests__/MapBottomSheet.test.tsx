@@ -21,6 +21,7 @@ import MapBottomSheet, {
   type MapPreviewFallbackContent,
 } from '../MapBottomSheet';
 import type { ExternalMapPlace } from '../../../selection/model/externalPlace';
+import { MapTutorialContext } from '../../../tutorial/context';
 
 jest.mock('../../../../detail', () => ({
   ...jest.requireActual('../../../../detail'),
@@ -1606,6 +1607,23 @@ describe('MapBottomSheet recommendations', () => {
       await view.user.press(screen.getByRole('button', { name: '다시 시도' }));
       expect(retry).toHaveBeenCalledTimes(1);
     }
+  });
+
+  test('튜토리얼 중 지역 권한 안내만 숨기고 전국 트렌드는 유지하며 종료 후 안내를 복원한다', async () => {
+    const props = categoryProps([], {
+      localFeed: rankedFeed([], 'location-denied'),
+      nationalFeed: rankedFeed(rankedPlaces),
+    });
+    const tree = (suppressLocationStatus: boolean) => <MapTutorialContext.Provider value={{
+      suppressLocationStatus, activeTarget: null, register: jest.fn(), refresh: jest.fn(),
+    }}><MapBottomSheet {...props} /></MapTutorialContext.Provider>;
+    const view = await renderWithProviders(tree(true));
+    expect(screen.queryByTestId('map-home-feed-state-location-denied')).toBeNull();
+    await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+    expect(screen.getAllByText(rankedPlaces[0].name).length).toBeGreaterThan(0);
+    await view.rerender(tree(false));
+    await view.user.press(screen.getByRole('tab', { name: '우리 지역 핫플' }));
+    expect(screen.getByTestId('map-home-feed-state-location-denied')).toBeOnTheScreen();
   });
 
   test('지역 오류와 전국 오류·retry가 서로 덮어쓰지 않고 영어 문구도 독립적으로 표시된다', async () => {

@@ -6,6 +6,7 @@ import styled, { useTheme } from 'styled-components/native';
 
 import Button from '../../../../../shared/components/Button';
 import type { LocationState } from '../../camera/model/map.types';
+import { useMapTutorial } from '../../tutorial/context';
 
 type LocationStatusOverlayProps = {
   location: LocationState;
@@ -15,7 +16,9 @@ type LocationStatusOverlayProps = {
 export function LocationStatusOverlay({ location, onRefresh }: LocationStatusOverlayProps) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { suppressLocationStatus } = useMapTutorial();
 
+  if (suppressLocationStatus) return null;
   if (location.status === 'granted') return null;
   if (location.status === 'loading') {
     return (
@@ -29,9 +32,9 @@ export function LocationStatusOverlay({ location, onRefresh }: LocationStatusOve
   const denied = location.status === 'denied';
   return (
     <TopCard accessibilityLiveRegion="polite" testID={denied ? 'v2-location-denied' : 'v2-location-failed'}>
-      <Title>{t(denied ? 'map.location.deniedTitle' : 'map.location.failedTitle')}</Title>
+      <Title>{t(denied ? 'map.sheet.state.location-deniedTitle' : 'map.location.failedTitle')}</Title>
       <BodyText>
-        {t(denied ? 'map.location.deniedDescription' : 'map.location.failedDescription')}
+        {t(denied ? 'map.sheet.state.location-deniedBody' : 'map.location.failedDescription')}
       </BodyText>
       {denied && !location.canAskAgain ? (
         <Button label={t('map.location.openSettings')} onPress={() => void Linking.openSettings()} />

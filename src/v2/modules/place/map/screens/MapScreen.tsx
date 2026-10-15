@@ -1047,6 +1047,7 @@ export default function MapScreen({
     && snapPoint === 'expanded';
   return (
     <MapTutorialProvider
+      onFinish={() => { void location.refresh(false); }}
       enabled={isFocused && mapSection === 'map' && content.type === 'home' && !isSearchOpen
         && !assistant.isBusy && snapPoint === 'medium' && !openedBookmarkedPlaceId}
       username={profile?.username}

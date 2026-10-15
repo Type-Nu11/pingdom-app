@@ -4,6 +4,8 @@ import { Animated, View, type MeasureInWindowOnSuccessCallback } from 'react-nat
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { MapTutorialProvider } from '../MapTutorialProvider';
+import { MapTutorialOverlay } from '../MapTutorialOverlay';
+import { LocationStatusOverlay } from '../../presentation/components/MapStatusOverlays';
 import { useMapTutorial } from '../context';
 import { MAP_TUTORIAL_SEEN_KEY, MAP_TUTORIAL_STEPS, getTutorialCardPlacement } from '../model';
 
@@ -13,6 +15,42 @@ beforeEach(() => {
   }));
 });
 
+test('contains the welcome card inside the iPhone SE safe area without measured-height translation', async () => {
+  await renderWithProviders(<MapTutorialOverlay index={0} width={375} height={667}
+    target={null} username="김우성민" busy={false} onTransitionEnd={jest.fn()}
+    onClose={jest.fn()} onNext={jest.fn()} onPrevious={jest.fn()} />);
+  const positioner = screen.getByTestId('map-tutorial-card-position');
+  expect(positioner).toHaveStyle({ top: 12, bottom: 12, justifyContent: 'center' });
+  const card = screen.getByTestId('map-tutorial-card');
+  expect(card).toHaveStyle({ maxHeight: 643 });
+  expect(card).not.toHaveStyle({ opacity: 0 });
+});
+
+test('places verification guidance below a high button on SE and allows skipping without pressing that button', async () => {
+  const target = { x: 240, y: 225, width: 120, height: 48 };
+  const placement = getTutorialCardPlacement({ step: 'verification', target, height: 667, topInset: 20, bottomInset: 0 });
+  expect(placement.top).toBe(297);
+  expect(placement.maxHeight).toBe(358);
+  const onNext = jest.fn();
+  await renderWithProviders(<MapTutorialOverlay index={6} width={375} height={667}
+    target={target} busy={false} onTransitionEnd={jest.fn()} onClose={jest.fn()}
+    onNext={onNext} onPrevious={jest.fn()} />);
+  expect(screen.getByTestId('map-tutorial-pointer')).toHaveStyle({ top: -10 });
+  expect(screen.getByText('위의 검증하기 버튼에서 시작할 수 있어요.')).toBeVisible();
+  await fireEvent.press(screen.getByTestId('map-tutorial-next'));
+  expect(onNext).toHaveBeenCalledTimes(1);
+});
+
+test('a lower verification button keeps the card above it and points down', async () => {
+  const target = { x: 240, y: 520, width: 120, height: 48 };
+  await renderWithProviders(<MapTutorialOverlay index={6} width={375} height={667}
+    target={target} busy={false} onTransitionEnd={jest.fn()} onClose={jest.fn()}
+    onNext={jest.fn()} onPrevious={jest.fn()} />);
+  expect(screen.getByTestId('map-tutorial-pointer')).toHaveStyle({ bottom: -10 });
+  expect(screen.getByText('아래의 검증하기 버튼에서 시작할 수 있어요.')).toBeVisible();
+  expect(screen.getByTestId('map-tutorial-highlight').props.accessibilityLabel).toBe('검증하기');
+});
+
 test('blocks next, previous, and close until the transition finishes', async () => {
   let complete: ((result: { finished: boolean }) => void) | undefined;
   jest.spyOn(Animated, 'timing').mockImplementation(() => ({
@@ -20,7 +58,6 @@ test('blocks next, previous, and close until the transition finishes', async () 
   }));
   await renderWithProviders(<MapTutorialProvider enabled />);
   await screen.findByTestId('map-tutorial-step-welcome');
-  await fireEvent(screen.getByTestId('map-tutorial-card'), 'layout', { nativeEvent: { layout: { height: 340 } } });
   await fireEvent.press(screen.getByTestId('map-tutorial-next'));
   expect(screen.getByTestId('map-tutorial-step-map')).toBeVisible();
   await fireEvent.press(screen.getByTestId('map-tutorial-next'));
@@ -54,7 +91,6 @@ test('keeps the current guide until the next control is measured, then changes s
   }
   await renderWithProviders(<MapTutorialProvider enabled><Targets /></MapTutorialProvider>);
   await screen.findByTestId('map-tutorial-step-welcome');
-  await fireEvent(screen.getByTestId('map-tutorial-card'), 'layout', { nativeEvent: { layout: { height: 340 } } });
   await fireEvent.press(screen.getByTestId('map-tutorial-next'));
   expect(screen.getByTestId('map-tutorial-step-welcome')).toBeVisible();
   await act(() => resolveMap?.(28, 798, 75, 56));
@@ -72,7 +108,6 @@ test('keeps the current guide until the next control is measured, then changes s
 test('first visit shows Pingdy, traverses all nine steps, and remembers dismissal on remount', async () => {
   const view = await renderWithProviders(<MapTutorialProvider enabled username="민지" />);
   await screen.findByTestId('map-tutorial-step-welcome');
-  await fireEvent(screen.getByTestId('map-tutorial-card'), 'layout', { nativeEvent: { layout: { height: 340 } } });
   expect(screen.getAllByText('Pingdy')).toHaveLength(2);
   expect(screen.getByText('안녕하세요, 민지님')).toBeVisible();
   expect(screen.queryByTestId('map-tutorial-previous')).toBeNull();
@@ -99,14 +134,12 @@ test('waits for the map home, pauses off-screen, and uses the English catalog', 
   expect(screen.queryByTestId('map-tutorial')).toBeNull();
   await view.rerender(<MapTutorialProvider enabled />);
   await screen.findByTestId('map-tutorial-step-welcome');
-  await fireEvent(screen.getByTestId('map-tutorial-card'), 'layout', { nativeEvent: { layout: { height: 340 } } });
   expect(screen.getByText('Hello, traveler!')).toBeVisible();
   await fireEvent.press(screen.getByTestId('map-tutorial-next'));
   await view.rerender(<MapTutorialProvider enabled={false} />);
   expect(screen.queryByTestId('map-tutorial')).toBeNull();
   expect(await AsyncStorage.getItem(MAP_TUTORIAL_SEEN_KEY)).toBeNull();
   await view.rerender(<MapTutorialProvider enabled />);
-  await fireEvent(screen.getByTestId('map-tutorial-card'), 'layout', { nativeEvent: { layout: { height: 232 } } });
   expect(screen.getByTestId('map-tutorial-step-map')).toBeVisible();
 });
 
@@ -115,6 +148,45 @@ test('storage failure still allows closing the guide', async () => {
   await renderWithProviders(<MapTutorialProvider enabled />);
   await screen.findByTestId('map-tutorial');
   await fireEvent.press(screen.getByTestId('map-tutorial-close'));
+  expect(screen.queryByTestId('map-tutorial')).toBeNull();
+});
+
+test('hides location recovery during the tutorial and rechecks once on dismissal', async () => {
+  const onFinish = jest.fn();
+  await renderWithProviders(<MapTutorialProvider enabled onFinish={onFinish}>
+    <LocationStatusOverlay location={{ status: 'denied', coordinate: null, canAskAgain: true }}
+      onRefresh={jest.fn()} />
+  </MapTutorialProvider>);
+  await screen.findByTestId('map-tutorial-step-welcome');
+  expect(screen.queryByTestId('v2-location-denied', { includeHiddenElements: true })).toBeNull();
+  expect(onFinish).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByTestId('map-tutorial-close'));
+  expect(onFinish).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId('v2-location-denied')).toBeVisible();
+});
+
+test('finishing the last tutorial step rechecks but a previously dismissed guide does not', async () => {
+  const onFinish = jest.fn();
+  jest.spyOn(View.prototype, 'measureInWindow').mockImplementation(callback => callback(0, 0, 375, 667));
+  function ProfileTarget() {
+    const { register } = useMapTutorial();
+    useEffect(() => {
+      register('profile', { measureInWindow: (callback: MeasureInWindowOnSuccessCallback) => callback(320, 40, 40, 40) } as View);
+      return () => register('profile', null);
+    }, [register]);
+    return null;
+  }
+  const view = await renderWithProviders(<MapTutorialProvider enabled onFinish={onFinish}><ProfileTarget /></MapTutorialProvider>);
+  await screen.findByTestId('map-tutorial-step-welcome');
+  for (const _step of MAP_TUTORIAL_STEPS.slice(1)) {
+    await fireEvent.press(screen.getByTestId('map-tutorial-next'));
+  }
+  await fireEvent.press(screen.getByTestId('map-tutorial-highlight'));
+  expect(onFinish).toHaveBeenCalledTimes(1);
+  await view.unmount();
+  await renderWithProviders(<MapTutorialProvider enabled onFinish={onFinish} />);
+  await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalledWith(MAP_TUTORIAL_SEEN_KEY));
+  expect(onFinish).toHaveBeenCalledTimes(1);
   expect(screen.queryByTestId('map-tutorial')).toBeNull();
 });
 
@@ -130,7 +202,7 @@ test('anchors the card edge without waiting for content-height measurements', ()
   expect(getTutorialCardPlacement({ ...common, step: 'categories', target: { x: 8, y: 130, width: 386, height: 34 } }))
     .toEqual({ top: 188, bottom: undefined, maxHeight: 674 });
   expect(getTutorialCardPlacement({ ...common, height: 500, step: 'verification', target: { x: 270, y: 200, width: 120, height: 48 } }))
-    .toEqual({ top: undefined, bottom: 266, maxHeight: 160 });
+    .toEqual({ top: 272, bottom: undefined, maxHeight: 216 });
 });
 
 test('keeps the card at the same height across differently sized bottom navigation buttons', () => {

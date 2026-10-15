@@ -3,13 +3,14 @@ import { View, type ViewProps } from 'react-native';
 import type { MapTutorialTargetId } from './model';
 
 type TutorialContext = {
+  suppressLocationStatus: boolean;
   activeTarget: MapTutorialTargetId | null;
   register: (id: MapTutorialTargetId, view: View | null) => void;
   refresh: () => void;
 };
 
 export const MapTutorialContext = createContext<TutorialContext>({
-  activeTarget: null, register: () => {}, refresh: () => {},
+  suppressLocationStatus: false, activeTarget: null, register: () => {}, refresh: () => {},
 });
 export const useMapTutorial = () => useContext(MapTutorialContext);
 

@@ -43,6 +43,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMapTutorial } from '../../tutorial/context';
 import GroupAsset from '../../../../../../assets/v2/icons/place/Group.svg';
 import ParkAsset from '../../../../../../assets/v2/icons/place/Park.svg';
 import ArtAsset from '../../../../../../assets/v2/icons/place/art_svg.svg';
@@ -1085,6 +1086,8 @@ const EmptyCard = ({
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
+  const { suppressLocationStatus } = useMapTutorial();
+  if (suppressLocationStatus && ['location-denied', 'location-pending', 'invalid-location'].includes(state)) return null;
   const copyState = state === 'ready' ? 'empty' : state;
   const isCategoryEmpty = copyState === 'category-empty';
   const nationalCopy = feed === 'national' && ['empty', 'error', 'loading'].includes(copyState);

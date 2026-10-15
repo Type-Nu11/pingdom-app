@@ -6,13 +6,15 @@ import { MapTutorialContext } from './context';
 import { MapTutorialOverlay } from './MapTutorialOverlay';
 import { MAP_TUTORIAL_SEEN_KEY, MAP_TUTORIAL_STEPS, type MapTutorialTargetId, type TutorialRect } from './model';
 
-export function MapTutorialProvider({ children, enabled, username }: PropsWithChildren<{
+export function MapTutorialProvider({ children, enabled, username, onFinish }: PropsWithChildren<{
   enabled: boolean;
   username?: string;
+  onFinish?: () => void;
 }>) {
   const window = useWindowDimensions();
   const [size, setSize] = useState({ width: window.width, height: window.height });
   const [unseen, setUnseen] = useState(false);
+  const [checked, setChecked] = useState(false);
   const [{ index, target }, setPresentation] = useState<{ index: number; target: TutorialRect | null }>({
     index: 0, target: null,
   });
@@ -32,8 +34,8 @@ export function MapTutorialProvider({ children, enabled, username }: PropsWithCh
   useEffect(() => {
     let mounted = true;
     void AsyncStorage.getItem(MAP_TUTORIAL_SEEN_KEY)
-      .then(value => { if (mounted) setUnseen(value !== '1'); })
-      .catch(() => { if (mounted) setUnseen(true); });
+      .then(value => { if (mounted) { setUnseen(value !== '1'); setChecked(true); } })
+      .catch(() => { if (mounted) { setUnseen(true); setChecked(true); } });
     return () => { mounted = false; };
   }, []);
 
@@ -41,10 +43,11 @@ export function MapTutorialProvider({ children, enabled, username }: PropsWithCh
     if (transitioning.current) return;
     measurement.current++;
     setUnseen(false);
+    onFinish?.();
     void AsyncStorage.setItem(MAP_TUTORIAL_SEEN_KEY, '1').catch(() => {
       if (__DEV__) console.warn('[map-tutorial] Could not save completion.');
     });
-  }, []);
+  }, [onFinish]);
   const measureTarget = useCallback((
     id: MapTutorialTargetId | null,
     onMeasured: (rect: TutorialRect | null) => void,
@@ -111,7 +114,9 @@ export function MapTutorialProvider({ children, enabled, username }: PropsWithCh
   useEffect(() => {
     if (!active) completeTransition();
   }, [active, completeTransition]);
-  const context = useMemo(() => ({ activeTarget, register, refresh }), [activeTarget, register, refresh]);
+  const context = useMemo(() => ({ activeTarget, register, refresh,
+    suppressLocationStatus: !checked || active,
+  }), [activeTarget, register, refresh, checked, active]);
 
   return <MapTutorialContext.Provider value={context}>
     <View collapsable={false} ref={root} style={{ flex: 1 }} onLayout={event => {

@@ -31,6 +31,8 @@ export const mapTutorialResources = {
       body: '{{username}}님의 관심사와 이용 상황을 바탕으로\n개인화된 장소 추천을 받을 수 있어요.',
     },
     verification: {
+      promptAbove: '위의 <accent>검증하기 버튼</accent>에서 시작할 수 있어요.',
+      promptBelow: '아래의 <accent>검증하기 버튼</accent>에서 시작할 수 있어요.',
       prompt: '<accent>검증하기 버튼</accent>을 눌러보세요.',
       body: '직접 방문한 장소의 경험을 리뷰로 남기고,\n다른 여행자들이 믿고 방문할 수 있도록\n장소를 검증해주세요.',
     },
@@ -75,6 +77,8 @@ export const mapTutorialResources = {
       body: '{{username}}, discover personalized places\nbased on your interests and activity.',
     },
     verification: {
+      promptAbove: 'Start with the <accent>Verify button</accent> above.',
+      promptBelow: 'Start with the <accent>Verify button</accent> below.',
       prompt: 'Tap the <accent>Verify button</accent>.',
       body: 'Review the places you’ve visited\nand verify your experience to help\nother travelers visit with confidence.',
     },
@@ -119,6 +123,8 @@ export const mapTutorialResources = {
       body: '{{username}}さんの興味や行動に合わせた\nおすすめスポットを見つけられます。',
     },
     verification: {
+      promptAbove: '上の<accent>認証ボタン</accent>から始められます。',
+      promptBelow: '下の<accent>認証ボタン</accent>から始められます。',
       prompt: '<accent>認証ボタン</accent>をタップしてください。',
       body: '訪れた場所を振り返って体験を認証し、\nほかの旅行者が安心して\n訪れられるようにしましょう。',
     },
@@ -152,7 +158,10 @@ export const mapTutorialResources = {
     community: { prompt: '请点按<accent>社区按钮</accent>。', body: '看看其他旅行者的真实体验，\n也可以标记地点分享你的故事。' },
     reservations: { prompt: '请点按<accent>预约按钮</accent>。', body: '确认想去的地点是否可预约，\n并按合适的日期和时间轻松预约。' },
     recommendations: { prompt: '请点按<accent>地点推荐按钮</accent>。', body: '{{username}}，根据你的兴趣和使用情况，\n为你推荐个性化的地点。' },
-    verification: { prompt: '请点按<accent>验证按钮</accent>。', body: '为你去过的地点写下评价，\n验证你的体验，\n让其他旅行者放心前往。' },
+    verification: {
+      promptAbove: '可以从上方的<accent>验证按钮</accent>开始。',
+      promptBelow: '可以从下方的<accent>验证按钮</accent>开始。',
+      prompt: '请点按<accent>验证按钮</accent>。', body: '为你去过的地点写下评价，\n验证你的体验，\n让其他旅行者放心前往。' },
     categories: { prompt: '请点按一个<accent>分类</accent>。', body: '选择美食、音乐等分类，\n即可只查看对应的标记点。' },
     profile: { prompt: '请点按<accent>我的页面</accent>。', body: '管理你的个人资料和旅行日期，\n并集中查看你验证过的地点。' },
   },
@@ -177,7 +186,10 @@ export const mapTutorialResources = {
     community: { prompt: '請點一下<accent>社群按鈕</accent>。', body: '看看其他旅人的真實體驗，\n也可以標記地點分享自己的故事。' },
     reservations: { prompt: '請點一下<accent>預約按鈕</accent>。', body: '確認想去的地點是否可預約，\n並依合適的日期與時間輕鬆預約。' },
     recommendations: { prompt: '請點一下<accent>地點推薦按鈕</accent>。', body: '{{username}}，依據你的興趣與使用情況，\n為你推薦個人化的地點。' },
-    verification: { prompt: '請點一下<accent>驗證按鈕</accent>。', body: '為你去過的地點留下評論，\n驗證你的體驗，\n讓其他旅人安心前往。' },
+    verification: {
+      promptAbove: '可以從上方的<accent>驗證按鈕</accent>開始。',
+      promptBelow: '可以從下方的<accent>驗證按鈕</accent>開始。',
+      prompt: '請點一下<accent>驗證按鈕</accent>。', body: '為你去過的地點留下評論，\n驗證你的體驗，\n讓其他旅人安心前往。' },
     categories: { prompt: '請點一下任一<accent>類別</accent>。', body: '選擇美食、音樂等類別，\n就能只查看符合的標記點。' },
     profile: { prompt: '請點一下<accent>我的頁面</accent>。', body: '管理你的個人檔案與旅行日期，\n並一次瀏覽你驗證過的地點。' },
   },
@@ -212,6 +224,8 @@ export const mapTutorialResources = {
       body: '{{username}}, khám phá địa điểm dành riêng\ncho bạn dựa trên sở thích và hoạt động.',
     },
     verification: {
+      promptAbove: 'Bạn có thể bắt đầu bằng <accent>nút Xác minh</accent> phía trên.',
+      promptBelow: 'Bạn có thể bắt đầu bằng <accent>nút Xác minh</accent> phía dưới.',
       prompt: 'Hãy chạm vào <accent>nút Xác minh</accent>.',
       body: 'Đánh giá những nơi bạn đã ghé thăm\nvà xác minh trải nghiệm của bạn\nđể du khách khác yên tâm ghé đến.',
     },
@@ -255,6 +269,8 @@ export const mapTutorialResources = {
       body: '{{username}}, descubre lugares personalizados\nsegún tus intereses y tu actividad.',
     },
     verification: {
+      promptAbove: 'Puedes empezar con el <accent>botón Verificar</accent> de arriba.',
+      promptBelow: 'Puedes empezar con el <accent>botón Verificar</accent> de abajo.',
       prompt: 'Toca el <accent>botón Verificar</accent>.',
       body: 'Reseña los lugares que visitaste\ny verifica tu experiencia para que\notros viajeros los visiten con confianza.',
     },
@@ -295,6 +311,8 @@ export const mapTutorialResources = {
       body: '{{username}}, descubra lugares sob medida\ncom base nos seus interesses e atividade.',
     },
     verification: {
+      promptAbove: 'Você pode começar pelo <accent>botão Verificar</accent> acima.',
+      promptBelow: 'Você pode começar pelo <accent>botão Verificar</accent> abaixo.',
       prompt: 'Toque no <accent>botão Verificar</accent>.',
       body: 'Avalie os lugares que você visitou\ne verifique sua experiência para que\noutros viajantes visitem com confiança.',
     },
