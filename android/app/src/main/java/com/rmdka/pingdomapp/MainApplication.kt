@@ -30,6 +30,7 @@ class MainApplication : Application(), ReactApplication {
             PackageList(this).packages.apply {
               add(KakaoMapPackage())
               add(MLKitTranslationPackage())
+              add(PingdomWakeWordPackage())
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())
             }
