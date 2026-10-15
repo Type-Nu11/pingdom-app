@@ -15,6 +15,31 @@ const factory = jest.mocked(createAiChatSessionApi);
 const original = AppState.currentState;
 beforeEach(() => { (AppState as { currentState: string }).currentState = 'active'; });
 afterEach(() => { (AppState as { currentState: string }).currentState = original; });
+test.each(['cancel', 'background', 'context', 'input'] as const)('session creation interrupted by %s cannot overwrite the current presentation or submit old text', async action => {
+  const queryClient = new QueryClient();
+  const send = jest.fn(async () => ({ schemaVersion: 1 as const, id: 'new-answer', kind: 'assistant_message' as const, text: '최신 답변' }));
+  factory.mockReturnValue({ recordResult: jest.fn(), create: jest.fn()
+    .mockImplementationOnce(() => new Promise(() => {}))
+    .mockResolvedValue({ sessionId: 'new', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send });
+  const callbacks = new Map<string, (s: AppStateStatus) => void>();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((event, callback) => { callbacks.set(event, callback); return { remove() {} }; });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const initialProps = { accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true };
+  const view = await renderHook((props: hooks.VoiceCommandContext) => hooks.useVoiceCommands(props), { wrapper, initialProps });
+  let pending!: ReturnType<typeof view.result.current.onFinalInput>;
+  await act(async () => { pending = view.result.current.onFinalInput({ text: 'old private text', source: 'text', signal: new AbortController().signal }); });
+  if (action === 'input') {
+    await act(async () => { await view.result.current.onFinalInput({ text: 'new text', source: 'text', signal: new AbortController().signal }); });
+  } else if (action === 'context') await view.rerender({ ...initialProps, radiusKm: 10 });
+  else if (action === 'background') await act(() => callbacks.get('change')?.('background'));
+  else await act(() => view.result.current.cancel());
+  await act(async () => { await pending; });
+  expect(view.result.current.commandState).toEqual(action === 'input' ? { phase: 'assistant', text: '최신 답변' }
+    : { phase: action === 'context' ? 'idle' : 'canceled' });
+  expect(send.mock.calls).toHaveLength(action === 'input' ? 1 : 0);
+  await view.unmount(); queryClient.clear();
+});
 test('composes input, transport and command consumer; clears state on context/account change and background', async () => {
   const send = jest.fn(async () => ({ schemaVersion: 1 as const, id: 'input-2', kind: 'command_request' as const,
     command: 'searchNearbyReservablePlaces' as const, args: { date: '2026-09-20', startTime: '14:00', endTime: '17:00', quantity: 2, useCurrentLocation: true } }));
