@@ -66,8 +66,8 @@ const AnimatedEdgeGlow = memo(function AnimatedEdgeGlow({ speaking = false }: { 
 });
 // Android repaints the full-screen SVG for each colour update. Keep the
 // existing glow image without a continuous drawing loop on this platform.
-export const AssistantEdgeGlow = memo(function AssistantEdgeGlow({ speaking = false }: { speaking?: boolean }) {
-  if (Platform.OS === 'android') {
+export const AssistantEdgeGlow = memo(function AssistantEdgeGlow({ speaking = false, reducedMotion = false }: { speaking?: boolean; reducedMotion?: boolean }) {
+  if (Platform.OS === 'android' || reducedMotion) {
     return <GlowContainer pointerEvents="none">
       <Glow source={EDGE_GLOW} resizeMode="stretch" accessible={false} />
     </GlowContainer>;
