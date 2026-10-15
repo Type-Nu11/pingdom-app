@@ -7,6 +7,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.os.SystemClock
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.*
@@ -82,7 +84,7 @@ class PingdomWakeWordModule(private val context: ReactApplicationContext) :
             modelConfig = OnlineModelConfig(transducer = OnlineTransducerModelConfig(
                 encoder = "$ASSETS/encoder.onnx", decoder = "$ASSETS/decoder.onnx", joiner = "$ASSETS/joiner.onnx"),
                 tokens = "$ASSETS/tokens.txt", numThreads = 1, provider = "cpu", modelType = "zipformer2"),
-            keywordsFile = "$ASSETS/keywords.txt", keywordsScore = 1.5f, keywordsThreshold = 0.25f,
+            keywordsFile = "$ASSETS/keywords.txt", keywordsScore = 2.0f, keywordsThreshold = 0.15f,
             numTrailingBlanks = 2, maxActivePaths = 4))
     }
 
@@ -104,7 +106,10 @@ class PingdomWakeWordModule(private val context: ReactApplicationContext) :
                 putBoolean("ready", !invalidated); putString("phrase", PHRASE)
                 putString("modelId", MODEL); putString("engineVersion", "1.13.8")
             })
-        } catch (_: Throwable) { promise.resolve(Arguments.createMap().apply { putBoolean("ready", false) }) }
+        } catch (error: Throwable) {
+            if (BuildConfig.DEBUG) Log.w("PingdomKWS", "readiness_failed kind=${error.javaClass.simpleName}")
+            promise.resolve(Arguments.createMap().apply { putBoolean("ready", false) })
+        }
     }
 
     private fun audioAvailable(): Boolean {
@@ -168,26 +173,52 @@ class PingdomWakeWordModule(private val context: ReactApplicationContext) :
             owned.startRecording()
             check(owned.recordingState == AudioRecord.RECORDSTATE_RECORDING && foreground && !interrupted)
             running = true
+            if (BuildConfig.DEBUG) Log.i("PingdomKWS", "capture_started sampleRate=${owned.sampleRate} silenced=false")
             val kws = checkNotNull(spotter); val input = checkNotNull(stream)
             capture = Thread({
                 Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
                 val pcm = ShortArray(1024)
+                var sampleCount = 0L
+                var decodeCount = 0L
+                var peak = 0
+                var energy = 0.0
+                var loggedAt = SystemClock.elapsedRealtime()
                 try {
                     while (running && !interrupted) {
                         val count = owned.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING)
                         if (!running || interrupted) break
                         check(count > 0)
+                        if (BuildConfig.DEBUG) {
+                            sampleCount += count
+                            for (i in 0 until count) {
+                                val value = pcm[i].toInt()
+                                peak = maxOf(peak, kotlin.math.abs(value))
+                                energy += value.toDouble() * value
+                            }
+                        }
                         input.acceptWaveform(FloatArray(count) { pcm[it] / 32768f }, 16000)
                         while (running && kws.isReady(input)) {
                             kws.decode(input)
-                            if (kws.getResult(input).keyword == "Hey_Pingdy") {
+                            decodeCount++
+                            val keyword = kws.getResult(input).keyword
+                            if (BuildConfig.DEBUG && keyword.isNotEmpty()) Log.i("PingdomKWS", "keyword_result expected=${keyword == "Hey_Pingdy"} length=${keyword.length}")
+                            if (keyword == "Hey_Pingdy") {
                                 running = false
                                 if (foreground && !interrupted) emit("detected", id)
                                 break
                             }
                         }
+                        val now = SystemClock.elapsedRealtime()
+                        if (BuildConfig.DEBUG && now - loggedAt >= 2000) {
+                            val rms = if (sampleCount > 0) kotlin.math.sqrt(energy / sampleCount).toInt() else 0
+                            Log.i("PingdomKWS", "capture_progress samples=$sampleCount decodes=$decodeCount peak=$peak rms=$rms elapsedMs=${now - loggedAt}")
+                            sampleCount = 0; decodeCount = 0; peak = 0; energy = 0.0; loggedAt = now
+                        }
                     }
-                } catch (_: Throwable) { if (running) interrupt("engine") }
+                } catch (error: Throwable) {
+                    if (BuildConfig.DEBUG) Log.w("PingdomKWS", "capture_failed kind=${error.javaClass.simpleName}")
+                    if (running) interrupt("engine")
+                }
             }, "PingdomWakeWordPCM").also { it.start() }
             promise.resolve(null)
         } catch (_: Throwable) {

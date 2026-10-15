@@ -93,7 +93,7 @@ RCT_EXPORT_MODULE(PingdomWakeWord)
   config.model_config.model_type = "zipformer2";
   config.keywords_file = [self path:@"keywords.txt"].UTF8String;
   config.max_active_paths = 4; config.num_trailing_blanks = 2;
-  config.keywords_score = 1.5f; config.keywords_threshold = 0.25f;
+  config.keywords_score = 2.0f; config.keywords_threshold = 0.15f;
   return SherpaOnnxCreateKeywordSpotter(&config);
 }
 

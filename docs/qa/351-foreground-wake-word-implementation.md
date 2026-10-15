@@ -86,3 +86,14 @@ iOS는 pod install 후 Pods.xcodeproj의 PingdomWakeWordEngine target을 iphoneo
 Android SM-F966N에 검증 APK를 설치하고 전용 Metro 서버에 연결했다. 실제 진입점은 `ProductionApp → ProductionProviders`이므로 V2 `AppProviders` 연결만으로는 호출어 어댑터가 주입되지 않았다. `ProductionProviders`에도 실제 sherpa 어댑터와 `WakeWordProvider`를 연결하고, 실제 실행 경계 하위에서 어댑터가 사용 가능한지를 확인하는 회귀 테스트를 추가했다.
 
 수정 적용 후 실기기 지도 상단에 “호출어 듣기 켜기”가 표시되는 것을 확인했다. 따라서 이 기기의 엔진·모델 준비 검사는 통과했다. 사용자가 직접 발화 테스트를 진행하도록 청취는 꺼 둔 상태다. 실제 감지 성공이나 인식률 측정 결과로 확대하지 않는다.
+
+## 실제 호출어 미감지 진단·조정
+
+- 사용자가 청취를 켜고 발화했으나 반응이 없다고 보고했다. Android 녹음 상태는 16kHz mono, 활성 상태 및 `silenced:false`였고, 진단 로그에서도 약 2초마다 31,744~33,792개 입력 샘플과 5~7회 decode가 관찰됐다. 음량 변화가 있었지만 키워드 결과는 없었다.
+- 동일한 모델·기존 설정(score 1.5, threshold 0.25)을 사용한 로컬 합성 음성 대조에서 영어 전체 문구는 감지됐지만 Yuna의 한국어 “헤이 핑디”는 감지되지 않았다. 마이크 권한 문제와 구분해 감지 설정을 조정했다.
+- Android와 iOS의 score를 2.0, threshold를 0.15로 맞췄다. 전체 호출어·음소·모델은 변경하지 않았다. 조정된 설정에서 Samantha 영어와 Yuna 한국어 전체 문구는 감지됐다. Hey/Pingdy 단독, 다른 호출어 및 일반 요청 등 합성 음성 9개에서는 감지되지 않았다. 다른 합성 음성 1개는 여전히 미감지됐으므로 다양한 발음 지원을 보장하지 않는다.
+- 수정 APK를 SM-F966N에 설치한 뒤 `keyword_result expected=true length=10` 로그가 발생했고, 사용자가 영어 “Hey Pingdy”로 AI 화면이 열렸다고 확인했다. 이는 실제 감지와 AI 진입 1회 확인이며, 통계적 인식률·오탐률·한국식 발음 검증 완료를 의미하지 않는다.
+- Android APK 빌드 및 iOS Simulator arm64 `PingdomWakeWordEngine` target 빌드 통과. iOS 앱 전체와 iOS 실발화는 재검증하지 않았다.
+- 조정 버전 APK: `android/app/build/outputs/qa-351/pingdom-wake-word-arm64-tuned-debug.apk`. SHA-256: `86e21a7f768a4c72fb21c927024a24cc94d2ea8a2f8d190d9f964befd6d0b14f`. 앞선 APK와 구분한다.
+- 진단 로그는 Android debug 빌드에서만 입력 샘플 수·decode 횟수·peak/RMS·오류 종류·기대 키워드 일치 여부를 기록한다. PCM·전사문·사용자 발화 내용은 기록하지 않는다.
+- 중간 설치 후 USB 포트 연결이 사라져 `Unable to load script` 화면이 발생했다. 살아 있는 전용 Metro(8082)에 휴대폰 8081/8082 포트를 다시 연결해 복구했다. 호출어 미감지와 별개 실행 환경 문제였다.
