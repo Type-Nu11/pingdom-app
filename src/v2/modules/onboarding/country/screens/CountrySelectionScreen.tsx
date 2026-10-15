@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
+import FlagAR from '../../../../../assets/v2/flags/ar.svg';
+import FlagBR from '../../../../../assets/v2/flags/br.svg';
+import FlagCA from '../../../../../assets/v2/flags/ca.svg';
+import FlagES from '../../../../../assets/v2/flags/es.svg';
+import FlagGB from '../../../../../assets/v2/flags/gb.svg';
+import FlagPT from '../../../../../assets/v2/flags/pt.svg';
+import FlagSG from '../../../../../assets/v2/flags/sg.svg';
 import FlagCN from '../../../../../assets/v2/flags/cn.svg';
 import FlagJP from '../../../../../assets/v2/flags/jp.svg';
 import FlagKR from '../../../../../assets/v2/flags/kr.svg';
@@ -19,7 +26,14 @@ import { COUNTRY_OPTIONS, INITIAL_SELECTED_COUNTRY } from '../model/countries';
 const CURRENT_STEP = 3;
 const TOTAL_STEPS = 7;
 
-const FLAGS: Record<OnboardingCountry, React.FC<{ height?: number; width?: number }>> = {
+const FLAGS: Record<OnboardingCountry, React.FC<{ height?: number; width?: number; accessible?: boolean }>> = {
+  AR: FlagAR,
+  BR: FlagBR,
+  CA: FlagCA,
+  ES: FlagES,
+  GB: FlagGB,
+  PT: FlagPT,
+  SG: FlagSG,
   CN: FlagCN,
   JP: FlagJP,
   KR: FlagKR,
@@ -72,12 +86,14 @@ export default function CountrySelectionScreen({ onBack, onNext }: CountrySelect
               <Option
                 key={code}
                 $selected={isSelected}
+                accessibilityRole="radio"
+                accessibilityLabel={label}
                 accessibilityState={{ selected: isSelected }}
                 onPress={() => setSelected(code)}
                 testID={`country-option-${code}`}
               >
                 <OptionLeft>
-                  <Flag height={32} width={32} />
+                  <Flag height={32} width={32} accessible={false} />
                   <OptionLabel>{label}</OptionLabel>
                 </OptionLeft>
                 {isSelected ? (

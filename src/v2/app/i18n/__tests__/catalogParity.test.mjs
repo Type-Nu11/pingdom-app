@@ -89,6 +89,7 @@ const LANGUAGE_RULES = {
     // Brand names plus loanwords Vietnamese keeps as written (Email, Pop-up, OK).
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
+      'countries.ar', 'countries.br', 'countries.ca', 'countries.sg',
       'auth.signup.email',
       'map.search.confirm',
       'onboarding.preferences.travelPurposes.popUp',
@@ -102,6 +103,7 @@ const LANGUAGE_RULES = {
     // Brand names plus words Spanish spells like English (China, Vietnam, Info, Pop-up, Check-ins).
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
+      'countries.ar', 'countries.pt',
       'community.countries.CN',
       'community.countries.VN',
       'countries.cn',
@@ -120,6 +122,7 @@ const LANGUAGE_RULES = {
     // Brand names plus words Brazilian Portuguese spells like English (China, Status, Info, OK, Pop-up).
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
+      'countries.ar', 'countries.pt',
       'community.countries.CN',
       'countries.cn',
       'map.categories.popup',

@@ -32,6 +32,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // Catalogs added after ko/en (#389 ja, #413 zh-CN/zh-TW, ...) have their key parity checked separately.
   for (const added of addedLanguages) delete baseline[added];
   for (const language of ['ko', 'en']) {
+    // Reviewed additional onboarding nationality options.
+    for (const country of ['ar', 'br', 'ca', 'es', 'gb', 'pt', 'sg']) delete baseline[language].translation.countries[country];
     // #381 adds route preview copy.
     delete baseline[language].translation.routes;
     // #392 adds the reviewed menu price conversion copy.

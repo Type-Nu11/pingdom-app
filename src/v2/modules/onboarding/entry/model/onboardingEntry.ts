@@ -21,6 +21,13 @@ export const SUPPORTED_ONBOARDING_COUNTRIES = [
   'TH',
   'VN',
   'KR',
+  'AR',
+  'BR',
+  'CA',
+  'ES',
+  'GB',
+  'PT',
+  'SG',
 ] as const;
 
 export type OnboardingLanguage = typeof SUPPORTED_ONBOARDING_LANGUAGES[number];

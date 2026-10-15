@@ -44,6 +44,13 @@ export const thaiSharedResources = {
     "th": "ไทย",
     "vn": "เวียดนาม",
     "kr": "เกาหลีใต้",
+    ar: "อาร์เจนตินา",
+    br: "บราซิล",
+    ca: "แคนาดา",
+    es: "สเปน",
+    gb: "สหราชอาณาจักร",
+    pt: "โปรตุเกส",
+    sg: "สิงคโปร์",
   },
   "loginForeign": {
     "title": "มีที่ Pingdom เท่านั้น",
