@@ -223,21 +223,14 @@ export const LocateGlass = styled(FrostedSurface)`
   overflow: hidden;
 `;
 
-// Separate action below locate; 48 dp target, centered on the existing 44 dp button.
-export const AssistantButton = styled.Pressable`
-  width: 48px;
-  height: 48px;
-  margin-right: -2px;
+// Figma 8725:39154: 44 dp glass circle, 24 dp original navigation asset.
+export const DirectionsButton = styled(LocateButton)``;
+
+// Optical centering of the asymmetric Figma arrow; preserve its 24×24 viewport.
+export const DirectionsIconFrame = styled.View`
+  width: 24px;
+  height: 24px;
   align-items: center;
   justify-content: center;
-  border-radius: 24px;
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.colors.borderEmphasis};
-  background-color: ${({ theme }) => theme.colors.surfaceElevated};
-`;
-export const AssistantLabel = styled(Text)`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-family: ${({ theme }) => theme.typography.label.fontFamily};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  transform: translateX(2px) translateY(2px);
 `;

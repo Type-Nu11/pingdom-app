@@ -78,10 +78,10 @@ export default function RouteEndpointEditor(props: Props) {
                   autoCorrect={false} returnKeyType="search" onSubmitEditing={() => setKeyword(query.trim())}
                   style={{ color: ink, fontSize: 16, fontWeight: '500', padding: 0, minHeight: 24 }} />
               </View>
-            </View> : <Pressable key={role} accessibilityRole="button" accessibilityLabel={t('routes.editor.editEndpoint', { role: t(`routes.${role}`), name: point?.name ?? t('routes.currentLocation') })}
+            </View> : <Pressable key={role} accessibilityRole="button" accessibilityLabel={t('routes.editor.editEndpoint', { role: t(`routes.${role}`), name: point?.name ?? t(role === 'origin' ? 'routes.setOrigin' : 'routes.setDestination') })}
               onPress={() => props.onRole(role)} style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 12 }}>
               <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>{role === 'origin' ? <OriginIcon /> : <DestinationIcon />}</View>
-              <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{point?.name ?? t('routes.currentLocation')}</Text>
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{point?.name ?? t(role === 'origin' ? 'routes.setOrigin' : 'routes.setDestination')}</Text>
                 <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{point?.address || t(`routes.${role}`)}</Text></View>
             </Pressable>;
           })}

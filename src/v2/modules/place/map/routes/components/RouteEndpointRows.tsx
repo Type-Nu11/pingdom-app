@@ -69,8 +69,8 @@ function EndpointRow({ role, point, onEdit, onSwap, onDragging, onPreview, displ
     onPanResponderTerminationRequest: () => !active.current,
     onPanResponderTerminate: stop,
   }), [role, t, translateY]);
-  const label = point?.isCurrentLocation ? t('routes.currentLocation') : point?.name ?? t('routes.setOrigin');
-  const subtitle = point?.address || t(point ? `routes.${role}` : originDenied ? 'routes.permissionOriginHint' : 'routes.locationNeeded');
+  const label = point?.isCurrentLocation ? t('routes.currentLocation') : point?.name ?? t(role === 'origin' ? 'routes.setOrigin' : 'routes.setDestination');
+  const subtitle = point?.address || t(point ? `routes.${role}` : originDenied ? 'routes.permissionOriginHint' : `routes.${role}`);
   return <View {...pan.panHandlers} onTouchEnd={() => { if (active.current) setTimeout(stop, 0); }}
     onLayout={e => { height.current = e.nativeEvent.layout.height; }}
     style={{ zIndex: dragging ? 2 : 0 }}>
@@ -90,7 +90,7 @@ function EndpointRow({ role, point, onEdit, onSwap, onDragging, onPreview, displ
       style={{ minHeight: 56, paddingVertical: 8, paddingHorizontal: 12, gap: 12, flexDirection: 'row', alignItems: 'center',
         backgroundColor: dragging ? theme.colors.surface : 'transparent', borderRadius: dragging ? 16 : 0 }}>
       {role === 'origin' ? <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: originDenied ? theme.colors.warningSoft : theme.colors.primaryTint, alignItems: 'center', justifyContent: 'center' }}>
-        {point ? <OriginIcon /> : <OriginDeniedIcon />}
+        {point ? <OriginIcon /> : <OriginDeniedIcon color={theme.colors.text} />}
       </View> : <DestinationIcon />}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <Text numberOfLines={1} style={{ color: theme.colors.textStrong, fontSize: 16, fontWeight: '500' }}>{label}</Text>

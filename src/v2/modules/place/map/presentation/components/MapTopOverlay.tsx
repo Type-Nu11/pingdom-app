@@ -11,6 +11,7 @@ import FashionIcon from '../../../../../../assets/v2/icons/place/fashion_svg.svg
 import FoodIcon from '../../../../../../assets/v2/icons/place/food_svg.svg';
 import HeritageIcon from '../../../../../../assets/v2/icons/place/heritage.svg';
 import MusicIcon from '../../../../../../assets/v2/icons/place/music_svg.svg';
+import DirectionsIcon from '../../routes/assets/map_directions.svg';
 import FinderIcon from '../../../../../../assets/v2/icons/finder.svg';
 import PopupIcon from '../../../../../../assets/v2/icons/place/popup_svg.svg';
 import AvatarPlaceholder from '../../../../../shared/assets/icons/avatar-placeholder.svg';
@@ -39,10 +40,10 @@ type MapTopOverlayProps = {
   activeCategory: MapCategoryId;
   onCategoryChange: (category: MapCategoryId) => void;
   onLocatePress?: () => void;
-  onAssistantPress?: () => void;
-  assistantDisabled?: boolean;
-  assistantSheetTop?: Animated.Value;
-  assistantRestingTop?: number;
+  onDirectionsPress?: () => void;
+  directionsDisabled?: boolean;
+  directionsSheetTop?: Animated.Value;
+  directionsRestingTop?: number;
   onProfilePress?: () => void;
   onQueryChange: (query: string) => void;
   onRefreshMap?: () => Promise<void> | void;
@@ -74,10 +75,10 @@ export default function MapTopOverlay({
   activeCategory,
   onCategoryChange,
   onLocatePress,
-  onAssistantPress,
-  assistantDisabled = false,
-  assistantSheetTop,
-  assistantRestingTop = 0,
+  onDirectionsPress,
+  directionsDisabled = false,
+  directionsSheetTop,
+  directionsRestingTop = 0,
   onProfilePress,
   onRefreshMap,
   onSearchFocus,
@@ -92,22 +93,23 @@ export default function MapTopOverlay({
   // Measure the entire overlay (including Safe Area and a reserved FAB slot).
   // Keep the slot while hidden to avoid a layout/visibility feedback loop.
   const [overlayHeight, setOverlayHeight] = React.useState(0);
-  const [assistantFits, setAssistantFits] = React.useState(false);
+  const [directionsFits, setDirectionsFits] = React.useState(false);
   React.useEffect(() => {
-    if (!onAssistantPress) {
-      setAssistantFits(false);
+    if (!onDirectionsPress) {
+      setDirectionsFits(false);
       return;
     }
-    const update = (top: number) => setAssistantFits(
+    const update = (top: number) => setDirectionsFits(
       overlayHeight > 0 && overlayHeight + 8 <= Math.min(top, windowHeight - insets.bottom),
     );
-    update(assistantRestingTop);
-    const listener = assistantSheetTop?.addListener(({ value }) => update(value));
-    return () => { if (listener) assistantSheetTop?.removeListener(listener); };
-  }, [assistantRestingTop, assistantSheetTop, insets.bottom, onAssistantPress, overlayHeight, windowHeight]);
+    update(directionsRestingTop);
+    const listener = directionsSheetTop?.addListener(({ value }) => update(value));
+    return () => { if (listener) directionsSheetTop?.removeListener(listener); };
+  }, [directionsRestingTop, directionsSheetTop, insets.bottom, onDirectionsPress, overlayHeight, windowHeight]);
   const pullDistance = React.useRef(new Animated.Value(0)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [isLocatePressed, setIsLocatePressed] = React.useState(false);
+  const [isDirectionsPressed, setIsDirectionsPressed] = React.useState(false);
   const resetPullIndicator = React.useCallback(() => {
     Animated.spring(pullDistance, {
       damping: 18,
@@ -354,25 +356,31 @@ export default function MapTopOverlay({
                   width={20}
                 />
               </S.LocateButton>
-              {onAssistantPress ? (
+              {onDirectionsPress ? (
                 <View
-                  testID="map-assistant-slot"
-                  pointerEvents={assistantFits ? 'auto' : 'none'}
-                  accessibilityElementsHidden={!assistantFits}
-                  importantForAccessibility={assistantFits ? 'auto' : 'no-hide-descendants'}
-                  style={{ marginTop: 8, opacity: assistantFits ? 1 : 0 }}
+                  testID="map-directions-slot"
+                  pointerEvents={directionsFits ? 'auto' : 'none'}
+                  accessibilityElementsHidden={!directionsFits}
+                  importantForAccessibility={directionsFits ? 'auto' : 'no-hide-descendants'}
+                  style={{ marginTop: 12, opacity: directionsFits ? 1 : 0 }}
                 >
-                  <S.AssistantButton
-                    testID="map-assistant-fab"
+                  <S.DirectionsButton
+                    testID="map-directions-button"
                     accessibilityRole="button"
-                    accessibilityLabel={t('voiceAssistant.open')}
-                    accessibilityState={{ disabled: assistantDisabled || !assistantFits, expanded: assistantDisabled }}
-                    disabled={assistantDisabled || !assistantFits}
-                    onPress={onAssistantPress}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.72 : 1 })}
+                    accessibilityLabel={t('routes.openPlanner')}
+                    accessibilityState={{ disabled: directionsDisabled || !directionsFits, expanded: directionsDisabled }}
+                    disabled={directionsDisabled || !directionsFits}
+                    onPress={onDirectionsPress}
+                    onPressIn={() => setIsDirectionsPressed(true)}
+                    onPressOut={() => setIsDirectionsPressed(false)}
                   >
-                    <S.AssistantLabel accessible={false}>{t('voiceAssistant.shortLabel')}</S.AssistantLabel>
-                  </S.AssistantButton>
+                    <S.LocateGlass bottomShade={false} cornerRadius={22} glassEffectStyle="regular"
+                      highlightOpacity={liquidGlass.navigation.highlightOpacity} pointerEvents="none"
+                      testID="map-directions-glass" rimColor={liquidGlass.navigation.rim} tintColor={liquidGlass.navigation.softTint} />
+                    <S.DirectionsIconFrame testID="map-directions-icon-frame">
+                      <DirectionsIcon testID="map-directions-icon" color={isDirectionsPressed && !directionsDisabled ? colors.primary : colors.text} />
+                    </S.DirectionsIconFrame>
+                  </S.DirectionsButton>
                 </View>
               ) : null}
             </S.LocateButtonRow>

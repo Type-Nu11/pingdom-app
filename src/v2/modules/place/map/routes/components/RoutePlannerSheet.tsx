@@ -46,7 +46,7 @@ export default function RoutePlannerSheet(props: Props) {
   const raised = theme.colorScheme === 'dark' ? 'rgba(52,52,58,0.70)' : 'rgba(255,255,255,0.56)';
   const skeletonColor = theme.colorScheme === 'dark' ? theme.colors.secondaryNormal : theme.colors.fillAlternative;
   const loading = props.stateKey === 'loading' || props.stateKey === 'location-loading';
-  const idle = props.stateKey === 'idle' || props.stateKey === 'canceled';
+  const idle = props.stateKey === 'idle' || props.stateKey === 'canceled' || props.stateKey === 'empty';
   const denied = props.stateKey === 'location-denied';
   const noRoute = props.stateKey === 'no-route';
   function action(label: string, onPress: () => void, testID?: string, disabled = false, primary = false) {
