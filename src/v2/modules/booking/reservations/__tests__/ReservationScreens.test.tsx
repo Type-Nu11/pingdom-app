@@ -685,58 +685,24 @@ describe('V2 reservation screens', () => {
     );
 
     expect(screen.getByText('901')).toBeVisible();
-    expect(screen.getByText('결제 내역이 없어요')).toBeVisible();
+    expect(screen.queryByText('결제 내역이 없어요')).not.toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: '뒤로 가기' }));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  test('모든 페이지에서 합쳐진 결제 중 예약에 연결된 내역만 표시한다', async () => {
+  test('예약 상세는 결제 API가 없어도 결제를 조회하지 않고 예약 정보만 표시한다', async () => {
+    jest.mocked(useAllPayments).mockClear();
     jest.mocked(useAllPayments).mockReturnValue({
-      data: [
-        {
-          amountMinor: 10000,
-          createdAt: '2026-08-25T03:02:00Z',
-          currency: 'KRW',
-          failedAt: null,
-          failureCode: null,
-          id: 1001,
-          paidAt: '2026-08-25T03:03:00Z',
-          provider: 'TOSS_PAYMENTS',
-          providerPaymentId: 'pay_1001',
-          refundedAt: null,
-          reservationId: 999,
-          status: 'PAID',
-        },
-        {
-          amountMinor: 25000,
-          createdAt: '2026-08-25T04:02:00Z',
-          currency: 'KRW',
-          failedAt: null,
-          failureCode: null,
-          id: 1002,
-          paidAt: '2026-08-25T04:03:00Z',
-          provider: 'TOSS_PAYMENTS',
-          providerPaymentId: 'pay_1002',
-          refundedAt: null,
-          reservationId: 901,
-          status: 'REFUND_PROCESSING',
-        },
-      ],
-      isError: false,
-      isPending: false,
+      data: undefined, isError: true, isPending: false,
+      error: new ApiError('not found', { code: 'NOT_FOUND', status: 404 }),
     } as unknown as ReturnType<typeof useAllPayments>);
-
-    await renderReservationScreen(
-      <ReservationDetailScreen onBack={jest.fn()} reservationId={901} />,
-    );
-
-    // Server states reach the screen through the shared status selector, so the
-    // raw enum is never shown.
-    expect(screen.getByTestId('v2-payment-status-1002')).toHaveTextContent('! 환불 진행 중');
-    expect(screen.queryByText('REFUND_PROCESSING')).not.toBeOnTheScreen();
-    expect(screen.getByText('최소 화폐 단위 금액·통화: 25000 KRW')).toBeVisible();
-    expect(screen.queryByText('결제 번호 1001')).not.toBeOnTheScreen();
-    expect(screen.queryByText('결제 내역이 없어요')).not.toBeOnTheScreen();
+    await renderReservationScreen(<ReservationDetailScreen onBack={jest.fn()} reservationId={901} />);
+    expect(useAllPayments).not.toHaveBeenCalled();
+    expect(useReservationDetail).toHaveBeenCalledWith(901);
+    expect(screen.getByText('901')).toBeVisible();
+    expect(screen.getByTestId('v2-reservation-detail-status')).toHaveTextContent(/대기/);
+    expect(screen.queryByText('결제 내역')).not.toBeOnTheScreen();
+    expect(screen.queryByRole('alert')).not.toBeOnTheScreen();
   });
 
   test('영어에서는 예약 상세 문구를 영어로 표시한다', async () => {

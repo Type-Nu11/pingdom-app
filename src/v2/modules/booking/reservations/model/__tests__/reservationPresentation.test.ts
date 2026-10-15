@@ -65,8 +65,8 @@ describe('getReservationStatusView', () => {
 });
 
 describe('canRequestReservationCancel', () => {
-  it('offers cancel only while the reservation is still live', () => {
-    expect(canRequestReservationCancel('PENDING')).toBe(true);
+  it('offers cancel only after merchant confirmation', () => {
+    expect(canRequestReservationCancel('PENDING')).toBe(false);
     expect(canRequestReservationCancel('CONFIRMED')).toBe(true);
   });
 

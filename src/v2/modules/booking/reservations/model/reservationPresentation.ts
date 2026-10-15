@@ -68,5 +68,7 @@ export const getReservationStatusView: (
 export function canRequestReservationCancel(
   status: ReservationStatus | string | null | undefined,
 ): boolean {
-  return status === 'PENDING' || status === 'CONFIRMED';
+  // The server rejects cancellation of PENDING requests with INVALID_RESERVATION_STATE.
+  // Time and accepted cancellation-policy checks still belong to the server.
+  return status === 'CONFIRMED';
 }
