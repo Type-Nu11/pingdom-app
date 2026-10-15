@@ -1,36 +1,8 @@
-import axios from 'axios';
+import { getAuthErrorKey } from '../../../v2/modules/user/account/auth';
 import { useState } from 'react';
-import { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/authApi';
 import type { PasswordResetConfirmRequest } from '../model/auth.types';
-
-type PasswordResetErrorResponse = {
-  message?: string;
-  errors?: Record<string, string>;
-  code?: string;
-};
-
-function toPasswordResetErrorMessage(error: unknown, t: TFunction): string {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as PasswordResetErrorResponse | undefined;
-
-    if (data?.code === 'INVALID_PASSWORD_RESET_TOKEN') {
-      return t('auth.passwordReset.invalidToken');
-    }
-
-    const fieldErrors = data?.errors ? Object.values(data.errors).filter(Boolean) : [];
-    if (fieldErrors.length > 0) {
-      return fieldErrors.join('\n');
-    }
-
-    if (typeof data?.message === 'string' && data.message.trim()) {
-      return data.message;
-    }
-  }
-
-  return error instanceof Error ? error.message : t('auth.passwordReset.unknownError');
-}
 
 export const usePasswordReset = () => {
   const { t } = useTranslation();
@@ -45,7 +17,7 @@ export const usePasswordReset = () => {
       await operation();
       return true;
     } catch (error) {
-      setErrorMessage(toPasswordResetErrorMessage(error, t));
+      setErrorMessage(t(getAuthErrorKey(error, 'passwordReset')));
       return false;
     } finally {
       setIsSubmitting(false);
