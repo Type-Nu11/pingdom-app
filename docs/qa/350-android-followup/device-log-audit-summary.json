@@ -1,0 +1,11 @@
+{
+  "scope": "current Android app process ReactNativeJS log buffer only",
+  "linesScanned": 7,
+  "matches": {
+    "jwt": 0,
+    "bearer_value": 0,
+    "test_prompt": 0,
+    "provided_password": 0
+  },
+  "serverAndAnalyticsAudit": false
+}

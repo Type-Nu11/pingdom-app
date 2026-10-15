@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "count": 1,
+  "slots": [
+    {
+      "id": 5,
+      "startsAt": "2026-10-13T13:35:00",
+      "endsAt": "2027-08-14T23:59:00",
+      "status": "ACTIVE",
+      "remainingCapacity": 100,
+      "productType": "GENERAL"
+    }
+  ]
+}
