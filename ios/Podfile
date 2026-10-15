@@ -2,6 +2,9 @@ require File.join(File.dirname(`node --print "require.resolve('expo/package.json
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
 require 'json'
+unless system('python3', File.expand_path('../scripts/prepare-wake-word.py', __dir__), '--platform', 'ios', '--check')
+  raise 'Wake-word assets unavailable. Run npm run prepare:wake-word before pod install.'
+end
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
 def ccache_enabled?(podfile_properties)
@@ -36,6 +39,7 @@ target 'Naviapp' do
   pod 'GoogleMLKit/LanguageID', '8.0.0'
   pod 'GoogleMLKit/Translate', '8.0.0'
   pod 'GoogleUtilities', :modular_headers => true
+  pod 'PingdomWakeWordEngine', :path => '../native/wake-word'
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
