@@ -55,6 +55,7 @@ import FoodAsset from '../../../../../../assets/v2/icons/place/food_svg.svg';
 import HeritageAsset from '../../../../../../assets/v2/icons/place/heritage.svg';
 import HotPlaceAsset from '../../../../../../assets/v2/icons/place/hotplace.svg';
 import MapAsset from '../../../../../../assets/v2/icons/place/maping_svg.svg';
+import MapNavigationIcon from './MapNavigationIcon';
 import MusicAsset from '../../../../../../assets/v2/icons/place/music_svg.svg';
 import PopupAsset from '../../../../../../assets/v2/icons/place/popup_svg.svg';
 import RecommendationTitleAsset from '../../../../../../assets/v2/icons/place/Subtract.svg';
@@ -314,7 +315,7 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
 
   switch (category) {
     case 'all':
-      return <MapPinIcon active={active} size={18} />;
+      return <MapNavigationIcon selected={active} color={color} size={18} testID="map-category-all" />;
     case 'popup':
       return <PopupAsset color={color} height={19} width={20} />;
     case 'music':
