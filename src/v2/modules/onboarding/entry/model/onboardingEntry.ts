@@ -60,14 +60,16 @@ export function getInitialAppRoute(
 
 export function getAuthInitialRoute(
   completion?: OnboardingCompletion,
+  returningUser = false,
 ): AuthInitialRoute {
-  return completion ? 'AuthLanding' : 'Onboarding';
+  return completion || returningUser ? 'AuthLanding' : 'Onboarding';
 }
 
 export function getUnauthenticatedNavigationKey(
   completion?: OnboardingCompletion,
+  returningUser = false,
 ): 'unauthenticated-completed' | 'unauthenticated-incomplete' {
-  return completion ? 'unauthenticated-completed' : 'unauthenticated-incomplete';
+  return completion || returningUser ? 'unauthenticated-completed' : 'unauthenticated-incomplete';
 }
 
 export function createOnboardingCompletion(

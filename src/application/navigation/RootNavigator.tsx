@@ -49,6 +49,7 @@ export default function RootNavigator() {
   const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
   const isHydrating = useAuthStore((state) => state.isHydrating);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const hasAuthenticated = useAuthStore((state) => state.hasAuthenticated);
   const { complete: completeOnboarding, hydrate: hydrateOnboarding, state: onboardingState } =
     useOnboardingEntry();
   const hydrateMapSettings = useMapSettingsStore((state) => state.hydrateMapSettings);
@@ -58,7 +59,7 @@ export default function RootNavigator() {
   const handledNotificationIds = useRef(new Set<string>());
   const lastDeepLinkEvent = useRef<DeepLinkEventReceipt | null>(null);
   const previousIsLoggedIn = useRef(isLoggedIn);
-  const rootState = resolveProductionRootState(isHydrating, isLoggedIn, onboardingState);
+  const rootState = resolveProductionRootState(isHydrating, isLoggedIn, onboardingState, hasAuthenticated);
 
   useAndroidBackHandler(navigationRef);
   useFcmTokenSync(isLoggedIn && startupPermissions.ready && startupPermissions.notificationsGranted);
@@ -161,11 +162,11 @@ export default function RootNavigator() {
           />
         ) : (
           <Stack.Screen
-            navigationKey={getUnauthenticatedNavigationKey(completion)}
+            navigationKey={getUnauthenticatedNavigationKey(completion, hasAuthenticated)}
             name={ROOT_ROUTES.Auth}
           >
             {() => (
-              <AuthNavigator completion={completion} onComplete={completeOnboarding} />
+              <AuthNavigator completion={completion} returningUser={hasAuthenticated} onComplete={completeOnboarding} />
             )}
           </Stack.Screen>
         )}

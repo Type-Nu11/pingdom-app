@@ -20,6 +20,7 @@ describe('auth store session bootstrap', () => {
   beforeEach(() => {
     useAuthStore.setState({
       accessToken: null,
+      hasAuthenticated: false,
       isHydrating: true,
       isLoggedIn: false,
     });
@@ -90,4 +91,23 @@ describe('auth store session bootstrap', () => {
     );
     expect(useAuthStore.getState().isLoggedIn).toBe(true);
   });
+});
+
+
+test('a restored pre-onboarding session retains returning-user entry after logout and app restart', async () => {
+  getGenericPassword.mockResolvedValueOnce({ password: JSON.stringify({ accessToken: 'legacy-access' }), username: 'tokens' } as never);
+  await useAuthStore.getState().bootstrapAuth();
+  await useAuthStore.getState().logout();
+  expect(useAuthStore.getState()).toMatchObject({ isLoggedIn: false, hasAuthenticated: true });
+  useAuthStore.setState({ hasAuthenticated: false, isHydrating: true });
+  getGenericPassword.mockResolvedValueOnce(false);
+  await useAuthStore.getState().bootstrapAuth();
+  expect(useAuthStore.getState()).toMatchObject({ isLoggedIn: false, hasAuthenticated: true, isHydrating: false });
+});
+
+test('a first installation without a session remains eligible for onboarding', async () => {
+  useAuthStore.setState({ hasAuthenticated: false });
+  getGenericPassword.mockResolvedValueOnce(false);
+  await useAuthStore.getState().bootstrapAuth();
+  expect(useAuthStore.getState()).toMatchObject({ isLoggedIn: false, hasAuthenticated: false });
 });
