@@ -80,3 +80,9 @@ iOS는 pod install 후 Pods.xcodeproj의 PingdomWakeWordEngine target을 iphoneo
 - 분할 커밋 준비 중 `npm run validate:pr`를 실행했다. 전체 Jest 214개 suite / 2,554개와 V2·타입·ownership·navigation·다국어·notification 검사는 통과했다. 지도 회귀 검사에서 변경 전 2개 인자 호출을 기대하던 소스 단언 1개가 실패해 계정·검색 상태 인자까지 검사하도록 수정했다. 이후 `npm run test:v2-map` 50개와 `npm run test:v2-api` 206개가 통과했다.
 - `npm run check:wake-word`, Python 자산 검사 4개 및 `npm run check:v1-changes -- --base origin/dev`: 통과.
 - 실제 발화·실기기 측정: 미수행. 커밋·푸시·PR 전달 상태는 해당 Git 이력과 PR을 기준으로 확인한다.
+
+## 실기기 실행 준비 중 발견한 연결 누락 수정
+
+Android SM-F966N에 검증 APK를 설치하고 전용 Metro 서버에 연결했다. 실제 진입점은 `ProductionApp → ProductionProviders`이므로 V2 `AppProviders` 연결만으로는 호출어 어댑터가 주입되지 않았다. `ProductionProviders`에도 실제 sherpa 어댑터와 `WakeWordProvider`를 연결하고, 실제 실행 경계 하위에서 어댑터가 사용 가능한지를 확인하는 회귀 테스트를 추가했다.
+
+수정 적용 후 실기기 지도 상단에 “호출어 듣기 켜기”가 표시되는 것을 확인했다. 따라서 이 기기의 엔진·모델 준비 검사는 통과했다. 사용자가 직접 발화 테스트를 진행하도록 청취는 꺼 둔 상태다. 실제 감지 성공이나 인식률 측정 결과로 확대하지 않는다.

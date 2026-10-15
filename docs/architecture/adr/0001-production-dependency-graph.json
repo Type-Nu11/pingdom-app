@@ -837,6 +837,7 @@
     {"source":"src/application/ProductionProviders.tsx","target":"src/v2/app/i18n/index.ts","typeOnly":false},
     {"source":"src/application/ProductionProviders.tsx","target":"src/v2/shared/fonts/index.ts","typeOnly":false},
     {"source":"src/application/ProductionProviders.tsx","target":"src/v2/shared/theme/index.ts","typeOnly":false},
+    {"source":"src/application/ProductionProviders.tsx","target":"src/v2/modules/voice-assistant/index.ts","typeOnly":false},
     {"source":"src/application/runtime/configureProductionRuntime.ts","target":"src/v2/app/configureDomainMocks.ts","typeOnly":false},
     {"source":"src/application/runtime/configureProductionRuntime.ts","target":"src/app/store/authStore.ts","typeOnly":false},
     {"source":"src/application/runtime/configureProductionRuntime.ts","target":"src/shared/api/apiClient.ts","typeOnly":false},

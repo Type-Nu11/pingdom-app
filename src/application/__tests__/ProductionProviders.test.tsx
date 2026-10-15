@@ -6,8 +6,18 @@ import { Text } from '../../v2/shared/components';
 import { initializeI18n } from '../../v2/shared/i18n';
 import { theme } from '../../v2/shared/theme';
 import ProductionProviders from '../ProductionProviders';
+import { useForegroundWakeWord, type WakeWordAdapter } from '../../v2/modules/voice-assistant';
 
 const mockUseFonts = jest.fn();
+const mockWakeWordAdapter: WakeWordAdapter = {
+  available: true,
+  requestPermission: async () => 'undetermined',
+  createSession: () => { throw new Error('Listening must stay disabled in this test'); },
+};
+
+jest.mock('../../v2/modules/voice-assistant/wake-word/useSherpaWakeWordAdapter', () => ({
+  useSherpaWakeWordAdapter: () => mockWakeWordAdapter,
+}));
 
 jest.mock('expo-font', () => ({
   useFonts: (...args: unknown[]) => mockUseFonts(...args),
@@ -32,6 +42,15 @@ describe('ProductionProviders font initialization', () => {
   beforeEach(() => {
     mockUseFonts.mockReturnValue([true, null]);
     mockedInitializeI18n.mockResolvedValue(undefined);
+  });
+
+  test('실제 앱 실행 경로에서 네이티브 호출어 어댑터를 하위 화면에 주입한다', async () => {
+    function WakeWordProbe() {
+      const wakeWord = useForegroundWakeWord({ enabled: true, focused: true, accountId: 'test', assistantBusy: false }, () => {});
+      return <Text>{wakeWord.available ? 'wake-word-ready' : 'wake-word-missing'}</Text>;
+    }
+    await render(<ProductionProviders><WakeWordProbe /></ProductionProviders>);
+    await waitFor(() => expect(screen.getByText('wake-word-ready')).toBeVisible());
   });
 
   test('폰트가 준비될 때까지 기다린 뒤 Pretendard theme으로 앱을 렌더링한다', async () => {
