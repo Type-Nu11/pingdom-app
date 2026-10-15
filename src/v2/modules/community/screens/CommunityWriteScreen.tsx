@@ -1,3 +1,4 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView } from 'react-native';
@@ -193,7 +194,7 @@ export default function CommunityWriteScreen({
               <SectionSubtitle>{t('community.write_screen.categoryHint')}</SectionSubtitle>
             </SectionHead>
             {categoriesQuery.isLoading ? (
-              <ActivityIndicator color={theme.colors.primary} testID="v2-community-write-categories-loading" />
+              <Skeleton variant="chips" accessibilityLabel={t('experience.common.loading')} testID="v2-community-write-categories-loading" />
             ) : categoriesQuery.isError ? (
               <InlineErrorRow testID="v2-community-write-categories-error">
                 <ValidationText>{t('common.apiError.generic.description')}</ValidationText>

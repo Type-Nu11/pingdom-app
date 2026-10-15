@@ -286,9 +286,9 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
           </HeaderSlot>
         </TopBar>
 
-        {isProfileLoading ? <LoadingState description={t('myPage.profileLoading')} /> : null}
         {isProfileError ? <ApiErrorState error={profileError} busy={isFetching} onRetry={() => refetch({ cancelRefetch: false })} /> : null}
 
+        {isProfileLoading ? <LoadingState variant="profile-form" description={t('myPage.profileLoading')} /> : <>
         <AvatarSection>
           <AvatarWrapper
             accessibilityLabel={t('myPage.profileEdit.changeAvatar')}
@@ -455,6 +455,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
             {isSaving ? t('myPage.profileEdit.saving') : t('myPage.profileEdit.save')}
           </SaveButtonText>
         </SaveButton>
+        </>}
       </Content>
     </Screen>
   );

@@ -1,3 +1,4 @@
+import Skeleton, { SkeletonGroup, SkeletonBlock } from '../../../../../shared/components/Skeleton';
 import DetailBackAsset from '../../../../../../assets/v2/icons/place/detail-back.svg';
 import DetailBookmarkAsset from '../../../../../../assets/v2/icons/place/detail-bookmark.svg';
 import DetailShareAsset from '../../../../../../assets/v2/icons/place/detail-share.svg';
@@ -1096,6 +1097,8 @@ const EmptyCard = ({
     ? null
     : nationalCopy ? `map.sheet.state.national${nationalState}Body` : `map.sheet.state.${copyState}Body`;
   const accessibilityLabel = t(titleKey);
+  if (copyState === 'loading') return <Skeleton variant="list" count={variant === 'row' ? 1 : 3}
+    accessibilityLabel={accessibilityLabel} testID="map-home-feed-state-loading" style={{ width: '100%', padding: 16 }} />;
   const retryable = ![
     'category-empty',
     'disabled',
@@ -1114,7 +1117,7 @@ const EmptyCard = ({
       style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
       testID={`map-home-feed-state-${copyState}`}
     >
-      <View style={styles.emptyCardIcon}>{copyState === 'loading' || copyState === 'location-pending'
+      <View style={styles.emptyCardIcon}>{copyState === 'location-pending'
         ? <MapPinIcon active size={24} /> : <UnavailableStateIcon size={64} />}</View>
       <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
       {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
@@ -1141,13 +1144,15 @@ const RecommendationState = ({
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
+  if (state === 'loading') return <Skeleton accessibilityLabel={t('map.sheet.state.recommendationLoadingTitle')}
+    testID="recommendation-state-loading" style={{ padding: 16 }} />;
   return (
   <View
     accessibilityLiveRegion="polite"
     style={styles.recommendationState}
     testID={`recommendation-state-${state}`}
   >
-    {state !== 'loading' ? <UnavailableStateIcon size={64} /> : null}
+    <UnavailableStateIcon size={64} />
     <AppText style={styles.emptyCardTitle}>
       {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Title`)}
     </AppText>
@@ -1620,7 +1625,14 @@ const PreviewContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        {imageUrls.map((url, index) => (
+        {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
+          <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <SkeletonBlock width={242} height={182} radius={16} />
+              <SkeletonBlock width={184} height={182} radius={16} />
+            </View>
+          </SkeletonGroup>
+        ) : imageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={t('map.detail.imageDetail', { count: index + 1, name: place.name })}
             accessibilityRole="button"
@@ -1997,7 +2009,14 @@ const ExpandedPlaceContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        {imageUrls.map((url, index) => (
+        {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
+          <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <SkeletonBlock width={242} height={182} radius={16} />
+              <SkeletonBlock width={184} height={182} radius={16} />
+            </View>
+          </SkeletonGroup>
+        ) : imageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={url
               ? t('map.detail.imageDetail', { count: index + 1, name: place.name })
@@ -2206,7 +2225,7 @@ const ExpandedPlaceContent = ({
                 <AppText style={styles.detailEmptyText}>{t('map.detail.reviewError')}</AppText>
               </Pressable>
             ) : fallbackContent?.reviewState === 'loading' ? (
-              <AppText accessibilityLiveRegion="polite" style={styles.detailEmptyText}>{t('map.detail.reviewLoading')}</AppText>
+              <Skeleton variant="comments" accessibilityLabel={t('map.detail.reviewLoading')} />
             ) : fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
               <DetailReviewItem
                 key={`${review.author}-${review.createdAt}-${index}`}
@@ -2455,7 +2474,7 @@ export default function MapBottomSheet({
         testID="map-sheet-content"
       >
       {content.type === 'place-preview' && detailError ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
-      {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
+      {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState variant="place" description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
           <ExpandedPlaceContent
             activeAction={activePreviewAction}
@@ -2559,7 +2578,7 @@ export default function MapBottomSheet({
           {resultsError ? <ApiErrorState error={resultsError} busy={resultsBusy} onRetry={onRetryResults} /> : null}
           {places.length > 0 ? places.map((place) => (
             <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
-          )) : resultsLoading ? <LoadingState description={t('placeDetail.loading')} /> : resultsError ? null : <EmptyCard />}
+          )) : resultsLoading ? <LoadingState variant="place" description={t('placeDetail.loading')} /> : resultsError ? null : <EmptyCard />}
         </ScrollView>
       ) : content.type === 'recommendations' ? (
         <RecommendationContent

@@ -38,7 +38,7 @@ export default function PlaceDetailScreen({ navigation, route }: PlaceDetailScre
   if (placeQuery.isPending) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
-        <LoadingState description={t('placeDetail.loading')} fill />
+        <LoadingState variant="detail" description={t('placeDetail.loading')} fill />
       </Screen>
     );
   }

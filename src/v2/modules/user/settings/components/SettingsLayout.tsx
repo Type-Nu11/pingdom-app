@@ -1,3 +1,4 @@
+import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { type PropsWithChildren } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -57,6 +58,7 @@ export function SettingsRow({
   onPress,
   subtitle,
   value,
+  valueLoading = false,
 }: {
   danger?: boolean;
   disabled?: boolean;
@@ -66,6 +68,7 @@ export function SettingsRow({
   onPress?: () => void;
   subtitle?: string;
   value?: string;
+  valueLoading?: boolean;
 }) {
   const content = (
     <>
@@ -73,7 +76,7 @@ export function SettingsRow({
         <RowLabel $danger={danger}>{label}</RowLabel>
         {subtitle ? <RowSubtitle>{subtitle}</RowSubtitle> : null}
       </RowCopy>
-      {value ? <RowValue>{value}</RowValue> : null}
+      {valueLoading ? <Skeleton variant="stat" accessibilityLabel={label} /> : value ? <RowValue>{value}</RowValue> : null}
       {onPress ? <ChevronIcon height={20} width={20} /> : null}
     </>
   );
@@ -82,7 +85,7 @@ export function SettingsRow({
 
   return (
     <Row accessibilityRole="button" accessibilityLabel={[label, value, subtitle].filter(Boolean).join(', ')}
-      accessibilityHint={accessibilityHint} accessibilityState={{ disabled, busy }} disabled={disabled} onPress={onPress}>
+      accessibilityHint={accessibilityHint} accessibilityState={{ disabled, busy: busy || valueLoading }} disabled={disabled} onPress={onPress}>
       {content}
     </Row>
   );

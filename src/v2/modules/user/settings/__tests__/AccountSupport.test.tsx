@@ -39,7 +39,7 @@ test('distinguishes query failure from loading and missing data', async () => {
   jest.mocked(offerCouponApi.listCoupons).mockImplementation(() => new Promise(() => {}));
   await renderWithProviders(<AccountManagementScreen onBack={jest.fn()} onOpenDetail={jest.fn()} />);
   expect(await screen.findByText('불러오지 못했습니다')).toBeVisible();
-  expect(screen.getByText('불러오는 중')).toBeVisible();
+  expect(screen.getByRole('button', { name: /쿠폰/ })).toBeBusy();
   expect(screen.queryByText('0')).toBeNull();
 });
 

@@ -1,3 +1,4 @@
+import Skeleton from '../../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import ApiErrorState from '../../../../../shared/components/ApiErrorState';
@@ -331,9 +332,7 @@ export default function FavoritePlacesBottomSheet({
                   place={place}
                 />
               )) : isLoading ? (
-                <View style={styles.emptyState}>
-                  <AppText style={styles.emptyTitle}>{t('map.favorites.loading')}</AppText>
-                </View>
+                <Skeleton accessibilityLabel={t('map.favorites.loading')} />
               ) : isUnauthorized ? (
                 <View style={styles.emptyState}>
                   <AppText style={styles.emptyTitle}>{t('map.favorites.sessionTitle')}</AppText>

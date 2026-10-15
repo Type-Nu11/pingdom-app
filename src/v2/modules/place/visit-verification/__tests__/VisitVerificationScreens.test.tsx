@@ -497,7 +497,7 @@ test.each(['loading', 'error'] as const)('review place %s does not allow submiss
   const view = await renderFeature(<VisitVerificationReviewScreen placeId={17} onBack={jest.fn()} onComplete={jest.fn()} />);
   expect(view.queryByTestId('visit-submit')).toBeNull();
   if (state === 'error') { await fireEvent.press(view.getByText('다시 시도')); expect(refetch).toHaveBeenCalledTimes(1); }
-  else expect(view.getByText('장소 정보를 불러오는 중이에요...')).toBeVisible();
+  else expect(view.getByRole('progressbar', { name: '장소 정보를 불러오는 중이에요...' })).toBeVisible();
 });
 
 test('review creation failure keeps the draft and announces the error', async () => {
@@ -521,7 +521,7 @@ test.each([false, true])('list loading state nextPage=%s stays distinct from emp
   const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={jest.fn()} />);
   expect(view.queryByTestId('visit-verification-empty')).toBeNull();
   if (nextPage) expect(view.getByTestId('visit-verification-next-loading')).toBeVisible();
-  else expect(view.getByText('장소 정보를 불러오는 중이에요...')).toBeVisible();
+  else expect(view.getByRole('progressbar', { name: '장소 정보를 불러오는 중이에요...' })).toBeVisible();
 });
 
 test('iOS keyboard events reserve space below the scrollable draft and CTA', async () => {

@@ -29,7 +29,7 @@ export default function ReservationDetailScreen({
   if (reservationQuery.isPending) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
-        <LoadingState description={t('reservation.detail.loading')} fill />
+        <LoadingState variant="reservation-detail" description={t('reservation.detail.loading')} fill />
       </Screen>
     );
   }

@@ -112,7 +112,7 @@ export default function MerchantMyPageContainer({
   if (isInitialLoading) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
-        <LoadingState description={t('merchantMyPage.loading')} fill />
+        <LoadingState variant="detail" description={t('merchantMyPage.loading')} fill />
       </Screen>
     );
   }

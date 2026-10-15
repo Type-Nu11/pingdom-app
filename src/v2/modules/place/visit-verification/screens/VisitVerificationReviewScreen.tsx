@@ -110,7 +110,7 @@ export default function VisitVerificationReviewScreen({
         <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackIcon color={theme.colors.textAlternative} height={44} width={44} /></BackButton>
         <Title accessibilityRole="header">{t('visitVerification.title')}</Title><HeaderSpacer />
       </Header>
-      {place.isLoading ? <LoadingState description={t('visitVerification.placeLoading')} fill /> : place.isError ? (
+      {place.isLoading ? <LoadingState variant="place" description={t('visitVerification.placeLoading')} fill /> : place.isError ? (
         <ApiErrorState error={place.error} fill onBack={onBack} onRetry={() => void place.refetch()} />
       ) : place.data ? (
         <KeyboardArea testID="visit-review-keyboard" keyboardVerticalOffset={insets.top} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

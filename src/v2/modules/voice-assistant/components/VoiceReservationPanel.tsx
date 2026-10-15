@@ -1,3 +1,4 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -126,7 +127,7 @@ export function VoiceReservationPanel({ flow, request, timezone = 'Asia/Seoul', 
       </Terms>
       {action('confirm', () => { void flow.confirm(booker); }, locked, 'voice-reservation-confirm')}
     </>}
-    {busy && <Row accessibilityLiveRegion="polite"><ActivityIndicator /><Copy>{label('checking')}</Copy></Row>}
+    {busy && (s.phase === 'submitting' ? <Row accessibilityLiveRegion="polite"><ActivityIndicator /><Copy>{label('checking')}</Copy></Row> : <Skeleton variant="slots" accessibilityLabel={label('checking')} />)}
     {confirmation && action('cancel', flow.clearSelection, s.phase === 'submitting')}
   </Panel>;
 }

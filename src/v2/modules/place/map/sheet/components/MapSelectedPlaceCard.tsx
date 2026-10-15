@@ -1,6 +1,7 @@
+import Skeleton from '../../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image } from 'react-native';
+import { Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
@@ -34,7 +35,7 @@ export default function MapSelectedPlaceCard(props: Props) {
     <Sheet accessibilityLiveRegion="polite" testID="v2-selected-place">
       <Handle />
       {props.loading || (!props.error && !matchingPlace) ? (
-        <CardState><ActivityIndicator color={theme.colors.primary} /><BodyText>{t('map.card.loading')}</BodyText></CardState>
+        <Skeleton variant="place" accessibilityLabel={t('map.card.loading')} style={{ padding: 16 }} />
       ) : props.error ? (
         <CardState>
           <BodyText>{t('map.card.error')}</BodyText>

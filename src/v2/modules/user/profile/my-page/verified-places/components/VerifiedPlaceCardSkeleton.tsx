@@ -1,9 +1,8 @@
+import { SkeletonGroup } from '../../../../../../shared/components/Skeleton';
 import React from 'react';
-import { Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import { useSharedPulse } from '../../../../../../shared/hooks/useSharedPulse';
 
 import { VERIFIED_PLACE_CARD_WIDTH, VERIFIED_PLACE_CARD_HEIGHT } from '../model/verifiedPlaceLayout';
 
@@ -14,21 +13,18 @@ import { VERIFIED_PLACE_CARD_WIDTH, VERIFIED_PLACE_CARD_HEIGHT } from '../model/
  */
 export default function VerifiedPlaceCardSkeleton({ width = VERIFIED_PLACE_CARD_WIDTH }: { width?: number }) {
   const { t } = useTranslation();
-  const opacity = useSharedPulse();
 
   return (
     <Card
       style={{ width }}
-      accessibilityLabel={t('myPage.verifiedPlaces.loading')}
-      accessibilityRole="progressbar"
       testID="v2-verified-place-card-skeleton"
     >
-      <Animated.View style={{ opacity }}>
+      <SkeletonGroup accessibilityLabel={t('myPage.verifiedPlaces.loading')}>
         <Overlay>
           <NameBar />
           <AddressBar />
         </Overlay>
-      </Animated.View>
+      </SkeletonGroup>
     </Card>
   );
 }

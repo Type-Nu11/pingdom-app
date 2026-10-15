@@ -54,7 +54,7 @@ test('GET loading, error and retry never expose editable false defaults', async 
   const get = deferred<typeof initial>();
   jest.mocked(notificationApi.getNotificationSettings).mockReturnValueOnce(get.promise);
   const view = await renderWithProviders(<NotificationSettingsScreen onBack={jest.fn()} permissionAdapter={permission()} />);
-  expect(screen.getByText('알림 설정을 불러오는 중')).toBeVisible();
+  expect(screen.getByRole('progressbar', { name: '알림 설정을 불러오는 중' })).toBeVisible();
   expect(screen.queryByRole('switch', { name: '핫플레이스 알림' })).toBeNull();
   await act(async () => { get.reject(new ApiError('denied', { status: 403, code: 'ACCESS_DENIED' })); });
   expect(await screen.findByText('알림 설정에 접근할 권한이 없습니다.')).toBeVisible();

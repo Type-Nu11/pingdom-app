@@ -204,7 +204,7 @@ export default function MyPageScreen({
           <SectionContent>
             {isProfileLoading ? (
               <Slot $minHeight={PROFILE_ROW_HEIGHT}>
-                <LoadingState description={t('myPage.profileLoading')} />
+                <LoadingState variant="profile" description={t('myPage.profileLoading')} />
               </Slot>
             ) : isProfileError && !profile ? (
               <ApiErrorState error={profileError} busy={isProfileFetching} onRetry={() => refetchProfile({ cancelRefetch: false })} />
@@ -288,7 +288,7 @@ export default function MyPageScreen({
             </TravelTitleRow>
             {travelSchedulesQuery.isLoading ? (
               <Slot $minHeight={TRAVEL_CALENDAR_HEIGHT}>
-                <LoadingState description={t('myPage.travel.loading')} />
+                <LoadingState variant="reservation" description={t('myPage.travel.loading')} />
               </Slot>
             ) : travelSchedulesQuery.isError ? (
               <Slot $minHeight={TRAVEL_CALENDAR_HEIGHT}>

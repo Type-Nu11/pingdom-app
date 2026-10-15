@@ -1,8 +1,8 @@
+import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Keyboard,
   Pressable,
   ScrollView,
@@ -354,12 +354,7 @@ const MapSearchOverlay = ({
               ) : null}
             </View>
             {isRecentSearchHydrating ? (
-              <ActivityIndicator
-                accessibilityLabel={t('map.searchOverlay.recentLoading')}
-                color={colors.textMuted}
-                size="small"
-                style={styles.recentLoading}
-              />
+              <Skeleton variant="chips" accessibilityLabel={t('map.searchOverlay.recentLoading')} style={styles.recentLoading} />
             ) : null}
             {recentQueries.map((item) => (
               <View key={item.id} style={styles.recentRow}>
@@ -392,12 +387,7 @@ const MapSearchOverlay = ({
           </>
         ) : null}
 
-        {isSearching ? (
-          <View style={styles.statusRow}>
-            <ActivityIndicator color={colors.primary} size="small" />
-            <AppText style={styles.statusInlineText}>{t('map.searchOverlay.loading')}</AppText>
-          </View>
-        ) : null}
+        {isSearching && !hasResults ? <Skeleton accessibilityLabel={t('map.searchOverlay.loading')} style={{ padding: 16 }} /> : null}
 
         {hasSearched && !isSearching && (
           registeredStatus !== 'ready' || env.apiMode === 'mock'

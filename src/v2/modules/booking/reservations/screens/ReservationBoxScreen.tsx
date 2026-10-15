@@ -1,6 +1,7 @@
+import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React from 'react';
-import { ActivityIndicator, FlatList, RefreshControl } from 'react-native';
+import { FlatList, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
@@ -38,10 +39,7 @@ export default function ReservationBoxScreen({ onBack, onOpenReservation, onOpen
       </TopBar>
 
       {reservations.isLoading ? (
-        <State accessibilityLiveRegion="polite">
-          <ActivityIndicator color={theme.colors.primary} />
-          <StateText>{t('reservation.box.loading')}</StateText>
-        </State>
+        <Skeleton variant="reservation" accessibilityLabel={t('reservation.box.loading')} style={{ padding: 16 }} />
       ) : reservations.isError && !reservations.data ? (
         <ApiErrorState error={reservations.error} busy={reservations.isFetching}
           onBack={onBack} onRetry={() => reservations.refetch({ cancelRefetch: false })} />

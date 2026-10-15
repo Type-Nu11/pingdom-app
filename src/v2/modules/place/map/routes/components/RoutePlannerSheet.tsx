@@ -1,3 +1,4 @@
+import { SkeletonGroup } from '../../../../../shared/components/Skeleton';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, View, type LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -100,12 +101,12 @@ export default function RoutePlannerSheet(props: Props) {
             <StartIcon /><StartText>{t('routes.start')}</StartText>
           </Start>
         </Result> : loading ? <StateCard style={{ backgroundColor: raised, padding: 16, gap: 10 }}>
-          <SkeletonRow accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <SkeletonGroup accessibilityLabel={statusLabel} style={{ alignSelf: 'stretch' }}><SkeletonRow>
             <View style={{ gap: 8, flex: 1, minWidth: 0 }}>
               {[{ width: 96, height: 28 }, { width: 160, height: 14 }, { width: 200, height: 12 }].map((size, index) => <Skeleton key={index} style={{ ...size, maxWidth: '100%', borderRadius: size.height / 2, backgroundColor: skeletonColor }} />)}
             </View>
             <Skeleton testID="route-loading-cta" style={{ width: 88, height: 48, borderRadius: 24, backgroundColor: skeletonColor }} />
-          </SkeletonRow>
+          </SkeletonRow></SkeletonGroup>
           <Skeleton testID="route-loading-bar" style={{ alignSelf: 'stretch', height: 22, borderRadius: 11, backgroundColor: theme.colors.fillNeutral }} />
           <View style={{ flexDirection: 'row', alignSelf: 'stretch', alignItems: 'center', gap: 6 }}><ActivityIndicator size="small" color={theme.colors.primary} />
             <Text testID="route-status" accessibilityLiveRegion="polite" style={{ flex: 1, color: theme.colors.primary, fontSize: 12, fontWeight: '500' }}>{statusLabel}</Text></View>

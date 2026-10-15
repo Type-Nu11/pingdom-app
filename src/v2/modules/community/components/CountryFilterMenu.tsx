@@ -1,6 +1,6 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
@@ -41,9 +41,7 @@ export default function CountryFilterMenu({
   return (
     <AnchoredMenu dismissLabel={t('community.filter.dismiss')} onClose={onClose} position={position} visible={visible}>
       {isLoading ? (
-        <StateRow accessibilityLabel={t('community.filter.loading')} accessible testID="v2-community-country-loading">
-          <ActivityIndicator color={theme.colors.primary} />
-        </StateRow>
+        <Skeleton variant="text" accessibilityLabel={t('community.filter.loading')} testID="v2-community-country-loading" style={{ padding: 12 }} />
       ) : isError ? (
         <StateColumn testID="v2-community-country-error">
           <StateText accessibilityRole="alert">{t('community.filter.loadError')}</StateText>

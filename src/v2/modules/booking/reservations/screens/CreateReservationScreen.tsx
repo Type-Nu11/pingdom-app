@@ -1,3 +1,4 @@
+import Skeleton from '../../../../shared/components/Skeleton';
 import { ApiErrorState, Button } from '../../../../shared/components';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -465,7 +466,7 @@ type AvailabilityStateProps = {
 
 function renderAvailabilityState(props: AvailabilityStateProps) {
   const { t } = props;
-  if (props.isPending) return <StateBox><ActivityIndicator color={props.themeColor} /><Helper>{t('reservation.create.availabilityLoading')}</Helper></StateBox>;
+  if (props.isPending) return <Skeleton variant="slots" accessibilityLabel={t('reservation.create.availabilityLoading')} style={{ paddingVertical: 16 }} />;
   if (props.isError) return null;
   if (props.availabilityData.length === 0) return <StateBox><Helper>{t('reservation.create.availabilityEmpty')}</Helper></StateBox>;
   // Availabilities exist, but none is a GENERAL place reservation. Say so

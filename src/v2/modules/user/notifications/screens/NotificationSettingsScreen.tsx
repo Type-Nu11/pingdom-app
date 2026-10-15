@@ -100,7 +100,7 @@ export default function NotificationSettingsScreen({ onBack, permissionAdapter =
           </Action>
 
         </Section>
-        {query.isPending ? <LoadingState description={t('notificationSettings.loading')} /> : query.isError ? (
+        {query.isPending ? <LoadingState variant="settings" description={t('notificationSettings.loading')} /> : query.isError ? (
           <ErrorState description={t(notificationSettingsErrorKey(query.error, 'notificationSettings.error'))}
             actionLabel={t('notificationSettings.retry')} onAction={() => { void query.refetch(); }} />
         ) : (

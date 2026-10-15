@@ -95,7 +95,7 @@ describe('ProfileEditScreen', () => {
     expect(screen.getByDisplayValue('new_name')).toBeTruthy();
   });
 
-  test('첫 프로필 응답 전 입력을 시작해도 응답이 사용자 값을 덮어쓰지 않는다', async () => {
+  test('첫 프로필 응답 전에는 입력 폼 대신 스켈레톤을 표시한다', async () => {
     let resolveProfile: (profile: Profile) => void = () => {};
     jest.spyOn(profileApi, 'getProfile').mockImplementation(
       () => new Promise<Profile>((resolve) => { resolveProfile = resolve; }),
@@ -103,11 +103,13 @@ describe('ProfileEditScreen', () => {
 
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
-    await user.type(screen.getByLabelText('아이디'), 'typed_first');
+    expect(screen.getByRole('progressbar', { name: '프로필을 불러오는 중' })).toBeVisible();
+    expect(screen.queryByLabelText('아이디')).toBeNull();
     await act(async () => { resolveProfile(PROFILE); });
-
-    await waitFor(() => expect(screen.getByDisplayValue('typed_first')).toBeTruthy());
-    expect(screen.queryByDisplayValue('pingdom_user')).toBeNull();
+    await screen.findByDisplayValue('pingdom_user');
+    await user.clear(screen.getByLabelText('아이디'));
+    await user.type(screen.getByLabelText('아이디'), 'typed_after');
+    expect(screen.getByDisplayValue('typed_after')).toBeVisible();
   });
 
   test('프로필 조회 실패 상태에서는 저장을 비활성화하고 요청하지 않는다', async () => {
@@ -116,8 +118,11 @@ describe('ProfileEditScreen', () => {
 
     await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
-    const saveButtons = await screen.findAllByRole('button', { name: '변경 사항 저장하기' });
-    expect(saveButtons).toHaveLength(2);
+    const saveButtons = await waitFor(() => {
+      const buttons = screen.getAllByRole('button', { name: '변경 사항 저장하기' });
+      expect(buttons).toHaveLength(2);
+      return buttons;
+    });
     for (const button of saveButtons) {
       expect(button.props.accessibilityState.disabled).toBe(true);
       fireEvent.press(button);

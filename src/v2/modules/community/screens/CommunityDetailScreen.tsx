@@ -1,3 +1,4 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, type TextInput } from 'react-native';
@@ -283,9 +284,7 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
       </Header>
 
       {postQuery.isLoading ? (
-        <CenteredState testID="v2-community-detail-loading">
-          <ActivityIndicator color={theme.colors.primary} />
-        </CenteredState>
+        <Skeleton variant="post" accessibilityLabel={t('experience.common.loading')} testID="v2-community-detail-loading" style={{ padding: 16 }} />
       ) : postQuery.isError ? (
         <ApiErrorState
           error={postQuery.error}

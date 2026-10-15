@@ -1,7 +1,7 @@
+import Skeleton from '../../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
-import styled, { useTheme } from 'styled-components/native';
+import styled from 'styled-components/native';
 
 const UNAVAILABLE_VALUE = '-';
 
@@ -14,7 +14,7 @@ export type MyPageStatValueProps = {
 
 /**
  * A stat that is still loading must not read as a real count, so the number is
- * withheld until it is known: a spinner while loading, a dash when the request
+ * withheld until it is known: a skeleton while loading, a dash when the request
  * failed.
  */
 export default function MyPageStatValue({
@@ -23,12 +23,11 @@ export default function MyPageStatValue({
   testID,
   value,
 }: MyPageStatValueProps) {
-  const theme = useTheme();
 
   if (isLoading) {
     return (
       <Slot testID={testID}>
-        <ActivityIndicator color={theme.colors.primary} size="small" />
+        <Skeleton variant="stat" />
       </Slot>
     );
   }

@@ -1129,7 +1129,7 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
-    expect(screen.getByText('나만을 위한 추천 장소를 불러오고 있어요')).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: '나만을 위한 추천 장소를 불러오고 있어요' })).toBeVisible();
     expect(screen.queryByText('현재 위치와 가까운 장소입니다')).not.toBeOnTheScreen();
     await loading.unmount();
 
@@ -1600,7 +1600,7 @@ describe('MapBottomSheet recommendations', () => {
       <MapBottomSheet {...categoryProps([], { localFeed: rankedFeed([], placesState, retry) })} />,
     );
 
-    expect(screen.getByText(message)).toBeVisible();
+    expect(placesState === 'loading' ? screen.getByRole('progressbar', { name: message }) : screen.getByText(message)).toBeVisible();
     expect(screen.queryByText('이 카테고리에 해당하는 장소가 없어요')).not.toBeOnTheScreen();
     if (placesState === 'error') {
       await view.user.press(screen.getByRole('button', { name: '다시 시도' }));
