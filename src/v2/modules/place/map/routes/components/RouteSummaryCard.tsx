@@ -24,7 +24,7 @@ export function RouteSummaryCard({ duration, subtitle, meta, recommended, onStar
         {!!subtitle && <Text style={{ color: theme.colors.textSecondary, fontSize: 14, lineHeight: 18.2, fontWeight: '500' }}>{subtitle}</Text>}
         {!!meta && <Text style={{ color: theme.colors.labelAssistive, fontSize: 12, lineHeight: 15.6 }}>{meta}</Text>}
       </Info>
-      <Start testID={testID === 'transit-summary' ? 'transit-details-button' : undefined} accessibilityRole="button"
+      <Start testID={testID === 'transit-summary' ? 'transit-start-button' : undefined} accessibilityRole="button"
         accessibilityLabel={actionLabel ?? t('routes.start')} accessibilityHint={actionHint}
         disabled={disabled || !onStart} accessibilityState={{ disabled: disabled || !onStart }} onPress={onStart}
         style={{ backgroundColor: theme.colors.primary, opacity: disabled || !onStart ? 0.45 : 1 }}>

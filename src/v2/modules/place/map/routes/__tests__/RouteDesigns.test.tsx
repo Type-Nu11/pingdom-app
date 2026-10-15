@@ -2,7 +2,7 @@ import React from 'react';
 import { screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { WalkRouteResult } from '../components/WalkRouteResult';
-import { TransitRouteDetails } from '../components/TransitRouteResult';
+import { TransitRouteResult } from '../components/TransitRouteResult';
 import { mapTransitRouteResponse } from '../api/transitRoutesApi';
 import { transitResponse } from './transitFixture';
 
@@ -25,16 +25,11 @@ test('walk UI with no route data does not fabricate steps, stairs, timing or a w
   expect(screen.getByText('도보 경로를 조회하세요.')).toBeVisible();
 });
 
-test('transit detail fixed footer shares or returns to the selected map route without requesting a new route', async () => {
-  const onShare = jest.fn(); const onBack = jest.fn();
-  const { user } = await renderWithProviders(<TransitRouteDetails itinerary={mapTransitRouteResponse(transitResponse).itineraries[0]}
-    originName="출발" destinationName="도착" originAddress="출발 주소" destinationAddress="도착 주소"
-    topInset={62} bottomInset={34} onBack={onBack} onClose={jest.fn()} onShare={onShare} />, { language: 'ko' });
-  expect(screen.getByText('대중교통 · 추천 경로')).toBeVisible();
-  expect(screen.getByText('출발 주소')).toBeVisible();
-  expect(screen.getByText('도착 주소')).toBeVisible();
-  await user.press(screen.getByRole('button', { name: '장소 공유' }));
-  expect(onShare).toHaveBeenCalledTimes(1);
-  await user.press(screen.getByRole('button', { name: '지도에서 경로 보기' }));
-  expect(onBack).toHaveBeenCalledTimes(1);
+test('transit starts the selected route directly without a details action', async () => {
+  const onStart = jest.fn();
+  const { user } = await renderWithProviders(<TransitRouteResult itinerary={mapTransitRouteResponse(transitResponse).itineraries[0]}
+    index={0} count={1} onSelect={jest.fn()} onStart={onStart} />, { language: 'en' });
+  expect(screen.queryByRole('button', { name: 'Route details' })).toBeNull();
+  await user.press(screen.getByRole('button', { name: 'Follow route in app' }));
+  expect(onStart).toHaveBeenCalledTimes(1);
 });

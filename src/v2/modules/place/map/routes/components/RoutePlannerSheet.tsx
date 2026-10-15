@@ -32,8 +32,8 @@ type Props = {
   onClose: () => void; onShare: () => void; onRequest: () => void; onCancel: () => void;
   onExternal: () => void; onRefreshLocation: () => void; onSettings: () => void;
   onEditEndpoint: (role: EndpointRole) => void; onSwapEndpoints: () => void;
-  transit?: { itinerary: TransitItinerary; alternatives?: TransitItinerary[]; index: number; count: number; estimateAt?: number; onSelect: (index: number) => void; onDetails: () => void };
-  walk?: { summary: WalkRouteSummary; onStart: () => void; onDetails?: () => void; pages?: RoutePages };
+  transit?: { itinerary: TransitItinerary; alternatives?: TransitItinerary[]; index: number; count: number; estimateAt?: number; onSelect: (index: number) => void; onStart: () => void };
+  walk?: { summary: WalkRouteSummary; onStart: () => void; pages?: RoutePages };
 };
 const modes = ['transit', 'walk', 'car', 'bike'] as const;
 const icons = { transit: TransitInactiveIcon, walk: WalkIcon, car: CarIcon, bike: BikeIcon };

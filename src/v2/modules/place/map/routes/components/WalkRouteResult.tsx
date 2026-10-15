@@ -11,7 +11,7 @@ export type WalkRouteSummary = {
   tags?: { label: string; warning?: boolean }[];
 };
 
-export function WalkRouteResult({ summary, onStart, onDetails, pages }: { summary?: WalkRouteSummary; onStart?: () => void; onDetails?: () => void; pages?: RoutePages }) {
+export function WalkRouteResult({ summary, onStart, pages }: { summary?: WalkRouteSummary; onStart?: () => void; pages?: RoutePages }) {
   const { t } = useTranslation();
   const theme = useTheme();
   return <Results><RouteSummaryCard testID="walk-summary" duration={summary?.duration ?? '—'}
@@ -23,12 +23,9 @@ export function WalkRouteResult({ summary, onStart, onDetails, pages }: { summar
       style={{ backgroundColor: tag.warning ? theme.colors.warningSoft : theme.colors.fillNeutral }}>
       {tag.warning && <WarningIcon />}<Text style={{ color: theme.colors.textStrong, fontSize: 12, lineHeight: 15.6, fontWeight: '500' }}>{tag.label}</Text>
     </Tag>)}</Tags>}
-  </RouteSummaryCard>{summary && onDetails && <DetailsButton accessibilityRole="button" accessibilityLabel={t('routes.transit.details')} onPress={onDetails}>
-    <Text style={{ color: theme.colors.primary, fontSize: 14 }}>{t('routes.transit.details')}</Text>
-  </DetailsButton>}{summary && pages && <RoutePageIndicator {...pages} />}</Results>;
+  </RouteSummaryCard>{summary && pages && <RoutePageIndicator {...pages} />}</Results>;
 }
 
 const Tags = styled.View`flex-direction: row; flex-wrap: wrap; gap: 6px;`;
-const DetailsButton = styled.Pressable`min-height: 44px; align-items: center; justify-content: center;`;
 const Results = styled.View`gap: 12px;`;
 const Tag = styled.View`flex-direction: row; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px;`;

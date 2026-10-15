@@ -44,7 +44,7 @@ const walking = { path: [{ lat: 37.5, lng: 127 }, { lat: 37.52, lng: 127.02 }, {
 beforeEach(() => { jest.mocked(findWalkingRoute).mockReset().mockResolvedValue(walking); });
 beforeEach(() => { jest.mocked(findTransitRoute).mockReset().mockResolvedValue(transit); });
 
-test('transit alternatives change summary, leg markers, separate map paths and details together', async () => {
+test('transit alternatives change summary, leg markers, separate map paths together without a details screen', async () => {
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
   await user.press(screen.getByRole('tab', { name: 'Transit' }));
   expect(await screen.findByText('20 min')).toBeVisible();
@@ -57,11 +57,7 @@ test('transit alternatives change summary, leg markers, separate map paths and d
   await user.press(screen.getByRole('button', { name: 'Route 2 of 2' }));
   expect(screen.getByTestId('transit-summary')).toHaveTextContent(/30 min/);
   expect(mockMapProps.routeSegments).toEqual([{ path: [{ lat: 37.5, lng: 127 }, { lat: 37.55, lng: 127.2 }, { lat: 37.6, lng: 127.1 }], color: '#008BFF' }]);
-  await user.press(screen.getByRole('button', { name: 'Route details' }));
-  expect(screen.getByTestId('transit-details')).toHaveTextContent(/Bus 7/);
-  expect(screen.queryByText(/after arrival|last train|live arrival/i)).toBeNull();
-  expect(screen.queryByTestId('route-start')).toBeNull();
-  await user.press(screen.getByRole('button', { name: 'Back to map' }));
+  expect(screen.queryByRole('button', { name: 'Route details' })).toBeNull();
   await user.press(screen.getByRole('tab', { name: 'Car' }));
   expect(mockMapProps.routeSegments).toBeUndefined();
   expect(mockMapProps.routeCoordinates).toEqual(route.path);
@@ -130,7 +126,7 @@ test('transit endpoint changes abort previous geometry and selecting the same pe
   expect(screen.getByText('20 min')).toBeVisible();
 });
 
-test.each(['ko', 'en', 'ja', 'zh-CN', 'zh-TW', 'vi', 'es', 'pt-BR'] as const)('transit details retain localized controls in %s dark mode without fabricating missing fields', async language => {
+test.each(['ko', 'en', 'ja', 'zh-CN', 'zh-TW', 'vi', 'es', 'pt-BR'] as const)('transit summary retains localized controls in %s dark mode without fabricating missing fields', async language => {
   jest.mocked(findTransitRoute).mockResolvedValue({ itineraries: [{ distanceMeters: 100, durationSeconds: 60,
     legs: [{ mode: 'UNKNOWN', path: [], stations: [] }] }] });
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language, colorScheme: 'dark', appearancePreference: 'DARK' });
@@ -139,8 +135,8 @@ test.each(['ko', 'en', 'ja', 'zh-CN', 'zh-TW', 'vi', 'es', 'pt-BR'] as const)('t
   expect(summary).not.toHaveTextContent(/routes\.|transit\.|undefined|NaN|fare|요금/);
   expect(mockMapProps.routeSegments).toEqual([]);
   expect(screen.queryByRole('button', { name: /Route 1 of 1/ })).toBeNull();
-  await user.press(screen.getByTestId('transit-details-button'));
-  expect(screen.getByTestId('transit-details')).not.toHaveTextContent(/routes\.|transit\.|undefined|NaN/);
+  expect(screen.queryByTestId('transit-details')).toBeNull();
+  expect(screen.getByTestId('transit-start-button')).toBeDisabled();
 });
 
 beforeEach(() => { jest.mocked(getCurrentLocation).mockReset().mockResolvedValue({ status: 'failed', coordinate: null, canAskAgain: true }); jest.mocked(watchCurrentLocation).mockReset().mockResolvedValue({ remove: mockRemoveLocationWatch }); mockRemoveLocationWatch.mockClear(); location.coordinate.observedAt = new Date().toISOString(); jest.mocked(findCarRoute).mockReset().mockResolvedValue(route); jest.mocked(openNaverRoute).mockClear(); });
@@ -182,18 +178,14 @@ test('gesture during a pending request prevents camera jump and cancellation cle
   expect(screen.getByText('Route request canceled.')).toBeVisible();
 });
 
-test('walking opens provider details and starts following its own route without a car lookup', async () => {
+test('walking starts following its own route without a details screen or car lookup', async () => {
   const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} location={liveLocation()} />, { language: 'en' });
   await user.press(screen.getByRole('tab', { name: 'Walk' }));
   expect(screen.getByTestId('walk-summary')).toHaveTextContent(/10 min.*800 m/);
   expect(mockMapProps.routeCoordinates).toEqual(walking.path);
   expect(mockMapProps.routeSegments).toBeUndefined();
   expect(screen.queryByText(/steps|slope|stairs/i)).toBeNull();
-  await user.press(screen.getByRole('button', { name: 'Route details' }));
-  expect(screen.getByTestId('walk-details')).toHaveTextContent(/Cross the bridge/);
-  expect(screen.queryByTestId('route-tracking-sheet')).toBeNull();
-  await user.press(screen.getByRole('button', { name: 'Back to map' }));
-  expect(mockMapProps.routeCoordinates).toEqual(walking.path);
+  expect(screen.queryByRole('button', { name: 'Route details' })).toBeNull();
   await user.press(screen.getByRole('button', { name: 'Follow route in app' }));
   expect(screen.getByTestId('route-tracking-sheet')).toBeVisible();
   expect(mockMapProps.followUser).toBe(true);
@@ -840,7 +832,7 @@ test('swiping transit alternatives updates the map and starts guidance with the 
   expect(screen.getByTestId('transit-summary')).toHaveTextContent(/30 min/);
   const segments = mockMapProps.routeSegments;
   const markers = mockMapProps.markers;
-  await user.press(screen.getByRole('button', { name: 'Route details' }));
+  expect(screen.queryByRole('button', { name: 'Route details' })).toBeNull();
   await user.press(screen.getByRole('button', { name: 'Follow route in app' }));
   expect(screen.queryByTestId('transit-details')).toBeNull();
   expect(screen.getByTestId('route-tracking-sheet')).toBeVisible();
