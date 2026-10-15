@@ -1,15 +1,14 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useLayoutEffect, useRef } from 'react';
 import { AppState } from 'react-native';
-import { createWakeWordController } from './wakeWord';
-import { useWakeWordAdapter } from './WakeWordProvider';
+import { useWakeWordRuntime, useWakeWordSettings } from './WakeWordProvider';
 
 export function useForegroundWakeWord(options: { enabled: boolean; focused: boolean; accountId: string | null; assistantBusy: boolean }, onDetected: () => void) {
-  const adapter = useWakeWordAdapter();
+  const { controller, registerDetection } = useWakeWordRuntime();
+  const settings = useWakeWordSettings();
   const callback = useRef(onDetected);
   const latest = useRef(options);
   callback.current = onDetected; latest.current = options;
-  const controller = useMemo(() => createWakeWordController(adapter, () => callback.current()), [adapter]);
-  const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
+  useLayoutEffect(() => registerDetection(() => callback.current()), [registerDetection]);
   const foreground = useRef(AppState.currentState === 'active');
   const sync = useCallback(() => {
     const current = latest.current;
@@ -29,9 +28,9 @@ export function useForegroundWakeWord(options: { enabled: boolean; focused: bool
     return () => {
       change.remove(); blur.remove(); focus.remove();
       // Also supports React StrictMode's cleanup/setup replay on the same controller.
-      foreground.current = false; sync(); void controller.disable();
+      foreground.current = false; sync();
     };
   }, [controller, sync]);
-  return { state, available: adapter.available, enable: controller.enable, disable: controller.disable,
+  return { ...settings,
     prepareAssistant: controller.prepareAssistant };
 }

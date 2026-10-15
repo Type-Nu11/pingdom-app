@@ -10,7 +10,7 @@ test.each(['ko', 'en'] as const)('%s requires the privacy notice confirmation be
   await renderWithProviders(<WakeWordControl state={{ phase: 'disabled', enabled: false, error: null }}
     onEnable={enable} onDisable={async () => {}} />, { language });
   const toggle = screen.getByRole('switch', { checked: false });
-  await fireEvent.press(toggle);
+  await fireEvent(toggle, 'valueChange', !toggle.props.value);
   expect(enable).not.toHaveBeenCalled();
   const actions = alert.mock.calls[0][2]!;
   expect(actions[0].style).toBe('cancel');
@@ -24,7 +24,7 @@ test.each(['ko', 'en'] as const)('%s stops active listening without another conf
   await renderWithProviders(<WakeWordControl state={{ phase: 'listening', enabled: true, error: null }}
     onEnable={async () => {}} onDisable={disable} />, { language });
   const toggle = screen.getByRole('switch', { checked: true });
-  await fireEvent.press(toggle);
+  await fireEvent(toggle, 'valueChange', !toggle.props.value);
   expect(disable).toHaveBeenCalledTimes(1);
   expect(alert).not.toHaveBeenCalled();
 });

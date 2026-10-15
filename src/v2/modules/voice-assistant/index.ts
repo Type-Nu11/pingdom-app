@@ -5,7 +5,7 @@ export type { VoiceCommandContext } from './hooks/useVoiceCommands';
 
 export type { VoiceNavigationTarget } from './model/voiceAssistantCommand.types';
 export { WakeWordProvider } from './wake-word/WakeWordProvider';
-export { WakeWordControl } from './wake-word/WakeWordControl';
+export { WakeWordControl, WakeWordSettingsControl } from './wake-word/WakeWordControl';
 export { useForegroundWakeWord } from './wake-word/useForegroundWakeWord';
 export { createLocalWakeWordAdapter } from './wake-word/localWakeWordAdapter';
 export type { LocalWakeWordRuntime, LocalKeywordDetector } from './wake-word/localWakeWordAdapter';

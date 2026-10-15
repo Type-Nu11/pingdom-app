@@ -8,7 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
-import { appVersion } from '../../../../shared/config';
+import { appVersion, env } from '../../../../shared/config';
+import { WakeWordSettingsControl } from '../../../voice-assistant';
 import { useProfile } from '../../profile';
 import { NotificationSettingsScreen } from '../../notifications';
 import { HeaderBackButton } from '../../../../shared/components';
@@ -189,6 +190,7 @@ export default function SettingsScreen({
                 onPress={() => setPage('language')}
                 value={getLanguageEndonym(resolveSelectedLanguage(i18n.resolvedLanguage))}
               />
+              {env.featureFlags.voiceAssistant ? <WakeWordSettingsControl /> : null}
             </SettingsSection>
 
             <SettingsSection title={t('settings.sections.privacy')}>

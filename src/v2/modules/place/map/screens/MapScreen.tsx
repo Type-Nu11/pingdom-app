@@ -4,7 +4,6 @@ import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MA
 import { createViewport } from '../selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
 import type { VoiceNavigationTarget } from '../../../voice-assistant';
-import { WakeWordControl } from '../../../voice-assistant';
 import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
 import MapAssistantModal from '../assistant/components/MapAssistantModal';
 import MapAssistantIntro from '../assistant/components/MapAssistantIntro';
@@ -1419,11 +1418,7 @@ export default function MapScreen({
       </MapGlassBackdrop>
       <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}
         onContinue={assistant.continueToAssistant} />
-      {assistant.enabled && assistant.wakeWord.available && !assistant.isBusy && !isSearchOpen ? (
-        <View style={{ position: 'absolute', top: insets.top + 64, left: 16, right: 16, zIndex: 70 }}>
-          <WakeWordControl state={assistant.wakeWord.state} onEnable={assistant.wakeWord.enable} onDisable={assistant.wakeWord.disable} />
-        </View>
-      ) : null}
+
     </View>
     </MapTutorialProvider>
   );
