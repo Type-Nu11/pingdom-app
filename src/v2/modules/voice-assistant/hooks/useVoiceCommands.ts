@@ -37,6 +37,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
   }), [context.accountRevision, queryClient]);
   const sessionRef = useRef<VoiceSessionController | undefined>(undefined);
   const revision = useRef(0);
+  const inputRevision = useRef(0);
   const [retryClock, setRetryClock] = useState(0);
   const [bookerUpdate, setBookerUpdate] = useState<AppCommandResult | null>(null);
   const [commandState, setCommandState] = useState<VoiceCommandViewState>({ phase: 'idle' });
@@ -108,19 +109,33 @@ export function useVoiceCommands(context: VoiceCommandContext) {
     return () => { unsubscribe(); dispatcher.clear(); };
   }, [controller, dispatcher]);
   const onFinalInput = useCallback<OnFinalInput>(async input => {
+    if (input.signal.aborted) return 'accepted' as const;
+    const capturedInput = ++inputRevision.current;
+    const capturedContext = revision.current;
+    let generation = controller.getSnapshot().generation;
+    const isCurrent = () => !input.signal.aborted && capturedInput === inputRevision.current
+      && capturedContext === revision.current && generation === controller.getSnapshot().generation;
     setCommandState({ phase: 'processing' });
     try {
       // User-initiated voice capture or text send can resume after the native Modal's activity blur.
       // Background still blocks submission and never auto-restarts a session.
       controller.setForeground(AppState.currentState === 'active');
-      if (!controller.getIdentity()) await controller.start(input.signal);
-      if (input.signal.aborted) return 'accepted' as const;
+      if (!controller.getIdentity()) {
+        const creation = controller.start(input.signal);
+        generation = controller.getSnapshot().generation;
+        await creation;
+      }
+      // Creation can settle after cancellation or after a newer input installed its session.
+      // That old input must neither publish feedback nor send into the new session.
+      if (!isCurrent()) return 'accepted' as const;
       if (!controller.getIdentity()) {
         setCommandState({ phase: 'error', code: controller.getSnapshot().error ?? 'SESSION_REQUIRED' });
         return 'accepted' as const;
       }
-      await controller.send(input.text, input.signal);
-    } catch (error) { if (!input.signal.aborted) setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
+      const sending = controller.send(input.text, input.signal);
+      generation = controller.getSnapshot().generation;
+      await sending;
+    } catch (error) { if (isCurrent()) setCommandState({ phase: 'error', code: voiceSessionError(error).code }); }
     return 'accepted' as const;
   }, [controller]);
   const cancel = useCallback(() => { dispatcher.clear(); void controller.close(); setCommandState({ phase: 'canceled' }); }, [controller, dispatcher]);

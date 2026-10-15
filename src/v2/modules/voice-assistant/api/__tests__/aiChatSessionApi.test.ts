@@ -256,11 +256,26 @@ test('chat diagnostics identify failed tool fields without leaking prompts, reas
     const request = JSON.parse(String(logs.find(call => call[0] === '[AI chat request]')![1]));
     const failure = JSON.parse(String(logs.find(call => call[0] === '[AI chat failure]')![1]));
     expect(failure.requestId).toBe(request.requestId);
-    expect(failure).toMatchObject({ status: 400, code: 'tool_use_failed', stage: 'transport', traceId: 'qa-trace-1', generationParsed: true });
+    expect(failure).toMatchObject({ status: 400, code: 'tool_use_failed', stage: 'transport', generationParsed: true });
+    expect(failure).not.toHaveProperty('traceId');
     expect(failure.calls[0].issues).toEqual(expect.arrayContaining([
       'limit:additional_property', 'touristCategory:enum', 'useCurrentLocation:additional_property', '<unknown>:additional_property',
     ]));
     expect(JSON.stringify(logs)).not.toContain('PRIVATE_');
+  } finally { log.mockRestore(); }
+});
+
+test('server-controlled diagnostic code, type and trace cannot smuggle sensitive strings', async () => {
+  const log = jest.spyOn(console, 'debug').mockImplementation(() => {});
+  const secret = 'eyJhbGciOiJIUzI1NiJ9.PRIVATE_TOKEN.signature';
+  const api = createAiChatSessionApi(createApiClient({ post: async () => { throw new ApiError(secret, {
+    status: 503, traceId: secret, responseData: { error: { code: secret, type: secret } },
+  }); } } as unknown as ApiTransport));
+  const signal = new AbortController().signal;
+  try {
+    const session = await api.create(signal);
+    await expect(api.send(session.sessionId, { text: secret, requestId: 'private' }, signal)).rejects.toMatchObject({ code: 'SERVER_ERROR' });
+    expect(JSON.stringify(log.mock.calls)).not.toContain(secret);
   } finally { log.mockRestore(); }
 });
 
