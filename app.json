@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PingDom",
+    "name": "Pingdom",
     "slug": "pingdom-app",
     "scheme": "pingdom",
     "icon": "./src/assets/v2/icons/pingdomlogo-ios.png",
