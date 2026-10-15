@@ -9,8 +9,8 @@ import ShareIcon from '../assets/share.svg';
 import StarIcon from '../assets/star.svg';
 import type { VoiceCommandViewState } from '../hooks/useVoiceCommands';
 import type { VoicePlaceFacts } from '../model/voiceAssistantCommand.types';
-import { formatDraftAmount } from '../model/reservationDraft';
 import { usePlaceExplorationMediaList } from '../../place/exploration';
+import { AssistantMarkdown } from './AssistantMarkdown';
 
 const placeCardImage = require('../assets/place-card.png');
 
@@ -23,7 +23,30 @@ type Props = {
   onSelectReservationPlace?: (place: VoicePlaceFacts) => void;
 };
 
-export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled = false, historical = false, onSelectReservationPlace }: Props) {
+export function VoiceCommandResults(props: Props) {
+  const { t } = useTranslation();
+  return <>
+    {props.state.phase === 'result' && props.state.text && canPresentResultText(props.state) && !hasPlaceCards(props.state) && <AssistantMarkdown>{props.state.text}</AssistantMarkdown>}
+    {props.state.phase === 'result' && props.state.followUpError && <Copy accessibilityRole="alert">{t(`voiceAssistant.sessionErrors.${props.state.followUpError}`)}</Copy>}
+    <VoiceCommandResultBody {...props} />
+  </>;
+}
+
+function canPresentResultText(state: Extract<VoiceCommandViewState, { phase: 'result' }>): boolean {
+  const result = state.result;
+  return result.outcome.status === 'succeeded'
+    && (!((result.command === 'searchNearbyPlaces' || result.command === 'searchNearbyReservablePlaces'))
+      || result.outcome.data.places.length > 0);
+}
+
+function hasPlaceCards(state: VoiceCommandViewState): boolean {
+  if (state.phase !== 'result' || state.result.outcome.status !== 'succeeded') return false;
+  return state.result.command === 'getPlaceDetails'
+    || ((state.result.command === 'searchNearbyPlaces' || state.result.command === 'searchNearbyReservablePlaces')
+      && state.result.outcome.data.places.length > 0);
+}
+
+function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = false, historical = false, onSelectReservationPlace }: Props) {
   const { t } = useTranslation();
   const resultPlaces = state.phase === 'result' && state.result.outcome.status === 'succeeded'
     ? (state.result.command === 'searchNearbyPlaces' || state.result.command === 'searchNearbyReservablePlaces')
@@ -42,10 +65,10 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   </>;
   const places = (items: readonly VoicePlaceFacts[]) => <>
     <Cards horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} onReserve={!historical && onSelectReservationPlace ? () => onSelectReservationPlace(item) : undefined} key={item.id} />)}
+      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} onReserve={!historical && state.phase === 'result' && state.result.command === 'searchNearbyReservablePlaces' && onSelectReservationPlace ? () => onSelectReservationPlace(item) : undefined} key={item.id} />)}
     </Cards>
-    <Summary>{t(state.phase === 'result' && state.result.command === 'searchNearbyPlaces'
-      ? 'voiceAssistant.command.nearbySummary' : 'voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>
+    {state.phase === 'result' && state.text ? <AssistantMarkdown>{state.text}</AssistantMarkdown> : <Summary>{t(state.phase === 'result' && state.result.command === 'searchNearbyPlaces'
+      ? 'voiceAssistant.command.nearbySummary' : 'voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>}
     <Actions horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
       <PrimaryAction accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.showOnMap')} disabled={historical} accessibilityState={{ disabled: historical }} onPress={onShowMap}>
         <PrimaryActionText>{t('voiceAssistant.command.showOnMap')}</PrimaryActionText>
@@ -64,7 +87,7 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   if (state.phase === 'unrecognized') return historical
     ? <Copy>{t('voiceAssistant.feedback.unrecognized')}</Copy> : null;
   if (state.phase === 'error') return error(state.code, true);
-  if (state.phase === 'assistant') return <Copy testID="voice-assistant-message" accessibilityLiveRegion="polite">{state.text}</Copy>;
+  if (state.phase === 'assistant') return <AssistantMarkdown>{state.text}</AssistantMarkdown>;
   if (state.phase === 'clarification') return clarification(state.field);
   if (state.phase !== 'result') return copy(state.phase);
   const result = state.result;
@@ -77,15 +100,14 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
   if (result.command === 'getPlaceDetails' && result.outcome.status === 'succeeded') return places([result.outcome.data.place]);
   if (result.command === 'getAvailabilities' && result.outcome.status === 'succeeded') return <>
     {copy('slots')}{result.outcome.data.availabilities.length ? result.outcome.data.availabilities.map(slot => <Block key={slot.id}>
-      {slot.productName !== null && <Copy>{slot.productName}</Copy>}<Copy>{slot.productType}</Copy>
       <Copy>{slot.startsAt} – {slot.endsAt}</Copy><Copy>{t('voiceAssistant.command.capacity', { count: slot.remainingCapacity })}</Copy>
     </Block>) : <Copy testID="voice-command-empty">{t('voiceAssistant.command.empty')}</Copy>}
   </>;
+  if (result.command === 'navigateToPage') return copy('navigationRequested');
   if (result.command === 'cancelVoiceSession') return copy('canceled');
   if (result.command === 'prepareReservation' && result.outcome.status === 'succeeded') {
     const draft = result.outcome.data.draft;
     const c = draft.confirmation;
-    const amount = (value: number) => formatDraftAmount(value, c.currency, c.currencyFractionDigits);
     return <Block testID="voice-reservation-draft" accessibilityLiveRegion="polite">
       <Copy>{t('voiceAssistant.command.draft.title')}</Copy>
       <Copy>{draft.place.name}</Copy><Copy>{draft.place.address}</Copy>
@@ -94,14 +116,8 @@ export function VoiceCommandResults({ state, onRetry, onShowMap, retryDisabled =
       <Copy>{c.startsAt} – {c.endsAt} ({c.timezone})</Copy>
       <Copy>{t('voiceAssistant.command.draft.quantity', { count: c.quantity })}</Copy>
       <Copy>{t('voiceAssistant.command.capacity', { count: draft.availability.remainingCapacity })}</Copy>
-      <Copy>{t('voiceAssistant.command.draft.unit', { amount: amount(c.unitAmountMinor) })}</Copy>
-      <Copy>{t('voiceAssistant.command.draft.additional', { amount: amount(c.additionalAmountMinor) })}</Copy>
-      <Copy testID="voice-reservation-draft-total">{t('voiceAssistant.command.draft.total', { amount: amount(c.totalAmountMinor) })}</Copy>
-      <Copy>{t(`voiceAssistant.command.draft.${c.paymentRequired ? 'paymentRequired' : 'noPayment'}`)}</Copy>
       {c.cancellable ? <>
         <Copy>{t('voiceAssistant.command.draft.cancelDeadline', { deadline: c.cancellationDeadline, timezone: c.timezone })}</Copy>
-        <Copy>{t('voiceAssistant.command.draft.cancelFee', { amount: amount(c.cancellationFeeMinor) })}</Copy>
-        <Copy>{t('voiceAssistant.command.draft.refund', { amount: amount(c.refundableAmountMinor) })}</Copy>
       </> : <Copy>{t('voiceAssistant.command.draft.notCancellable')}</Copy>}
       <Copy>{t('voiceAssistant.command.draft.expires', { expiresAt: c.expiresAt })}</Copy>
       <Copy testID="voice-reservation-draft-not-submitted">{t('voiceAssistant.command.draft.notSubmitted')}</Copy>
@@ -122,12 +138,13 @@ function PlaceCard({ place, imageUrl, onReserve }: { place: VoicePlaceFacts; ima
       </CardShade>
       <CardFooter>
         <CardName numberOfLines={2}>{place.name}</CardName>
-        <StarIcon width={28} height={28} />
+        <StarIcon />
       </CardFooter>
     </CardImage>
-    <Address numberOfLines={1}>{place.distanceMeters !== undefined
-      ? t('voiceAssistant.command.distance', { distance: (place.distanceMeters / 1000).toFixed(2) })
-      : place.address || t(`voiceAssistant.command.operating.${place.operatingStatus}`)}</Address>
+    <CardDetails>
+      <Address numberOfLines={1}>{place.address || t(`voiceAssistant.command.operating.${place.operatingStatus}`)}</Address>
+      {place.distanceMeters !== undefined && <Distance>{t('voiceAssistant.command.distance', { distance: (place.distanceMeters / 1000).toFixed(2) })}</Distance>}
+    </CardDetails>
     {onReserve && <RetryButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.reservation.choosePlace')} onPress={onReserve} testID={`voice-reserve-place-${place.id}`}><RetryText>{t('voiceAssistant.reservation.choosePlace')}</RetryText></RetryButton>}
   </CardWrap>;
 }
@@ -142,9 +159,12 @@ const ImageNotice = styled(Text)`position: absolute; top: 8px; left: 8px; color:
 const CardShade = styled.View`position: absolute; left: 0px; right: 0px; bottom: 0px; height: 106px;`;
 const CardFooter = styled.View`min-height: 70px; padding: 16px 12px 12px; flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 8px;`;
 const CardName = styled(Text)`flex: 1; color: #f8f8f8; font-size: 16px; line-height: 21px; font-weight: 700;`;
-const Address = styled(Text)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: 14px; line-height: 18px;`;
-const Summary = styled(Text)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 16px; line-height: 21px; font-weight: 500;`;
-const Actions = styled.ScrollView`margin-horizontal: -16px; padding-horizontal: 16px;`;
+const CardDetails = styled.View`align-self: stretch;`;
+const Address = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 14px; line-height: 18px; font-weight: 500;`;
+const Distance = styled(Text)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: 14px; line-height: 18px; font-weight: 400;`;
+const AssistantCopy = styled(Text)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 16px; line-height: 21px; font-weight: 700;`;
+const Summary = styled(AssistantCopy)``;
+const Actions = styled.ScrollView`margin-top: 10px; margin-horizontal: -16px; padding-horizontal: 16px;`;
 const ActionBase = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.category.shadow } }))`
   height: 34px; padding: 8px 16px; border-radius: 17px; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
 `;

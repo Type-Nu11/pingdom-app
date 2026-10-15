@@ -97,3 +97,11 @@ describe('RESERVATION_PRODUCT_TYPES', () => {
     expect([...RESERVATION_PRODUCT_TYPES].sort()).toEqual(['CLASS', 'GENERAL', 'TICKET']);
   });
 });
+
+test('#1793 slot without product fields is selectable without synthesizing GENERAL', () => {
+  const { productType: _type, productId: _id, ...newSlot } = BASE;
+  const presentation = selectAvailabilityPresentation(newSlot as Availability);
+  expect(presentation.kind).toBe('place');
+  expect(presentation).not.toHaveProperty('productType');
+  expect(isSelectableAvailability(newSlot as Availability)).toBe(true);
+});

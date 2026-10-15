@@ -12,5 +12,5 @@ export { validateReservationQuote, ReservationConfirmationError } from './model/
 
 export { isSelectableConfirmedSlot } from './model/confirmedReservation';
 export type { ConfirmedReservationState, ReservationSelection } from './model/confirmedReservation';
-export { validateBookerInput, BOOKER_NAME_MAX_LENGTH, BOOKER_PHONE_MAX_LENGTH, REQUEST_NOTE_MAX_LENGTH } from './model/reservationBooker';
+export { validateBookerInput, BOOKER_NAME_MAX_LENGTH, BOOKER_PHONE_MAX_LENGTH, BOOKER_PHONE_PATTERN, REQUEST_NOTE_MAX_LENGTH } from './model/reservationBooker';
 export type { BookerInput } from './model/reservationBooker';

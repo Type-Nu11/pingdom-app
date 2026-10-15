@@ -77,19 +77,21 @@ export function isAvailabilityBookable(
   quantity: number,
   now: Date,
 ): boolean {
+  const startsAt = new Date(availability.startsAt);
   const endsAt = new Date(availability.endsAt);
   return availability.status === 'ACTIVE'
     && availability.remainingCapacity >= quantity
-    && !Number.isNaN(endsAt.getTime())
-    && endsAt.getTime() > now.getTime();
+    && Number.isSafeInteger(quantity) && quantity >= 1
+    && startsAt.getTime() > now.getTime()
+    && endsAt.getTime() > startsAt.getTime();
 }
 
 export function isAvailabilityUpcoming(
   availability: Availability,
   now: Date,
 ): boolean {
-  const endsAt = new Date(availability.endsAt);
-  return !Number.isNaN(endsAt.getTime()) && endsAt.getTime() > now.getTime();
+  const startsAt = new Date(availability.startsAt), endsAt = new Date(availability.endsAt);
+  return startsAt.getTime() > now.getTime() && endsAt.getTime() > startsAt.getTime();
 }
 
 export function nearestBookableAvailability(

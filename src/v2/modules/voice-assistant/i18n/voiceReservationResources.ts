@@ -14,8 +14,9 @@ export const voiceReservationResources = {
     "error": "Could not prepare or accept this reservation. Reload the schedule and choose again.",
     "cancel": "Cancel selection",
     "number": "Reservation number: {{id}}",
-    "status": "Server status: {{status}}",
-    "refresh": "Reload schedule"
+    "status": "Status: {{status}}",
+    "refresh": "Reload schedule",
+    "pendingDescription": "Your reservation will be confirmed after the venue approves it. Check its status in Reservations."
   },
   "ko": {
     "done": "대화로 돌아가기",
@@ -32,8 +33,9 @@ export const voiceReservationResources = {
     "error": "예약을 준비하거나 접수하지 못했습니다. 일정을 다시 불러와 선택해 주세요.",
     "cancel": "선택 취소",
     "number": "예약번호: {{id}}",
-    "status": "서버 처리 상태: {{status}}",
-    "refresh": "일정 다시 불러오기"
+    "status": "상태: {{status}}",
+    "refresh": "일정 다시 불러오기",
+    "pendingDescription": "가게 승인 후 예약이 확정됩니다. 예약함에서 상태를 확인해 주세요."
   },
   "ja": {
     "done": "会話に戻る",
@@ -50,8 +52,9 @@ export const voiceReservationResources = {
     "error": "予約の準備または受付ができませんでした。日程を再読み込みして選んでください。",
     "cancel": "選択を取り消す",
     "number": "予約番号：{{id}}",
-    "status": "サーバーの処理状態：{{status}}",
-    "refresh": "日程を再読み込み"
+    "status": "状態：{{status}}",
+    "refresh": "日程を再読み込み",
+    "pendingDescription": "お店の承認後に予約が確定します。予約一覧で状況をご確認ください。"
   },
   "zh-CN": {
     "done": "返回对话",
@@ -68,8 +71,9 @@ export const voiceReservationResources = {
     "error": "无法准备或受理预约。请重新加载并选择时段。",
     "cancel": "取消选择",
     "number": "预约编号：{{id}}",
-    "status": "服务器处理状态：{{status}}",
-    "refresh": "重新加载时段"
+    "status": "状态：{{status}}",
+    "refresh": "重新加载时段",
+    "pendingDescription": "商家批准后预约才会确认。请在预约列表中查看状态。"
   },
   "zh-TW": {
     "done": "返回對話",
@@ -86,8 +90,9 @@ export const voiceReservationResources = {
     "error": "無法準備或受理預約。請重新載入並選擇時段。",
     "cancel": "取消選擇",
     "number": "預約編號：{{id}}",
-    "status": "伺服器處理狀態：{{status}}",
-    "refresh": "重新載入時段"
+    "status": "狀態：{{status}}",
+    "refresh": "重新載入時段",
+    "pendingDescription": "店家核准後預約才會確認。請在預約列表中查看狀態。"
   },
   "vi": {
     "done": "Quay lại trò chuyện",
@@ -104,8 +109,9 @@ export const voiceReservationResources = {
     "error": "Không thể chuẩn bị hoặc tiếp nhận đặt chỗ. Hãy tải lại lịch và chọn lại.",
     "cancel": "Hủy lựa chọn",
     "number": "Mã đặt chỗ: {{id}}",
-    "status": "Trạng thái máy chủ: {{status}}",
-    "refresh": "Tải lại lịch"
+    "status": "Trạng thái: {{status}}",
+    "refresh": "Tải lại lịch",
+    "pendingDescription": "Đặt chỗ sẽ được xác nhận sau khi cơ sở chấp thuận. Bạn có thể xem trạng thái trong mục Đặt chỗ."
   },
   "es": {
     "done": "Volver a la conversación",
@@ -122,8 +128,9 @@ export const voiceReservationResources = {
     "error": "No se pudo preparar o aceptar la reserva. Vuelve a cargar los horarios y elige de nuevo.",
     "cancel": "Cancelar selección",
     "number": "Número de reserva: {{id}}",
-    "status": "Estado del servidor: {{status}}",
-    "refresh": "Volver a cargar horarios"
+    "status": "Estado: {{status}}",
+    "refresh": "Volver a cargar horarios",
+    "pendingDescription": "La reserva se confirmará cuando el establecimiento la apruebe. Consulta su estado en Reservas."
   },
   "pt-BR": {
     "done": "Voltar à conversa",
@@ -140,7 +147,8 @@ export const voiceReservationResources = {
     "error": "Não foi possível preparar ou aceitar a reserva. Recarregue os horários e escolha novamente.",
     "cancel": "Cancelar seleção",
     "number": "Número da reserva: {{id}}",
-    "status": "Status do servidor: {{status}}",
-    "refresh": "Recarregar horários"
+    "status": "Situação: {{status}}",
+    "refresh": "Recarregar horários",
+    "pendingDescription": "A reserva será confirmada após a aprovação do estabelecimento. Consulte a situação em Reservas."
   }
 } as const;

@@ -27,7 +27,7 @@ describe('SettingsScreen', () => {
     });
   });
 
-  test('디자인의 다섯 섹션과 계정 작업 진입점을 보여준다', async () => {
+  test('설정 루트에서 지원하는 메뉴만 보여준다', async () => {
     await renderWithProviders(
       <SettingsScreen
         onBack={jest.fn()}
@@ -38,28 +38,20 @@ describe('SettingsScreen', () => {
     );
 
     expect(screen.getByText('계정')).toBeTruthy();
-    expect(screen.getByText('기록 · 장소')).toBeTruthy();
     expect(screen.getByText('알림')).toBeTruthy();
     expect(screen.getByText('개인정보 · 위치')).toBeTruthy();
-    expect(screen.getByText('앱 정보')).toBeTruthy();
-    expect(await screen.findByText('프로필 편집')).toBeTruthy();
-    expect(screen.getByText('아이디 · 이메일')).toBeTruthy();
-    expect(screen.getByText('비밀번호 변경')).toBeTruthy();
-    expect(screen.getByText('내 발자국 지도')).toBeTruthy();
-    expect(screen.getByText('관심 장소 관리')).toBeTruthy();
-    expect(screen.getByText('내 기록 관리')).toBeTruthy();
+    expect(await screen.findByText('계정 관리')).toBeTruthy();
     expect(screen.getByText('위치 정보 설정')).toBeTruthy();
-    expect(screen.getByText('데이터 다운로드 · 삭제')).toBeTruthy();
-    expect(screen.getByText('공지사항')).toBeTruthy();
-    expect(screen.getByText('이용약관')).toBeTruthy();
-    expect(screen.getByText('개인정보 처리방침')).toBeTruthy();
-    expect(screen.getByText('버전 정보')).toBeTruthy();
-    expect(screen.getByText('3.0.0')).toBeTruthy();
+    expect(screen.getByText('데이터 관리')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '회원 탈퇴' })).toBeTruthy();
     expect(screen.getByText('로그아웃')).toBeTruthy();
-    expect(screen.getByText('회원 탈퇴')).toBeTruthy();
+    expect(screen.getByText('버전 정보')).toBeTruthy();
+    for (const label of ['프로필 편집', '비밀번호 변경', '내 발자국 지도', '관심 장소 관리', '내 기록 관리', '공지사항', '이용약관', '개인정보 처리방침', '쿠폰']) {
+      expect(screen.queryByText(label)).toBeNull();
+    }
   });
 
-  test('구현된 화면과 준비 중 상세 화면으로 진입을 위임한다', async () => {
+  test('계정 관리와 데이터 관리의 실제 진입점에 위임한다', async () => {
     const onOpenAccountManagement = jest.fn();
     const onOpenDetail = jest.fn();
     const onOpenProfileEdit = jest.fn();
@@ -72,38 +64,29 @@ describe('SettingsScreen', () => {
       />,
     );
 
-    await user.press(await screen.findByText('프로필 편집'));
-    await user.press(screen.getByText('아이디 · 이메일'));
-    await user.press(screen.getByText('내 기록 관리'));
-    await user.press(screen.getByText('로그아웃'));
-    await user.press(screen.getByText('회원 탈퇴'));
-
-    expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
+    await user.press(screen.getByText('계정 관리'));
+    await user.press(screen.getByText('데이터 관리'));
+    expect(onOpenProfileEdit).not.toHaveBeenCalled();
     expect(onOpenAccountManagement).toHaveBeenCalledTimes(1);
-    expect(onOpenDetail).toHaveBeenNthCalledWith(1, SETTINGS_DETAIL_IDS.MyRecords);
-    expect(onOpenDetail).toHaveBeenNthCalledWith(2, SETTINGS_DETAIL_IDS.Logout);
-    expect(onOpenDetail).toHaveBeenNthCalledWith(3, SETTINGS_DETAIL_IDS.DeleteAccount);
+    await user.press(screen.getByRole('button', { name: '회원 탈퇴' }));
+    expect(onOpenDetail.mock.calls).toEqual([[SETTINGS_DETAIL_IDS.DataManagement], [SETTINGS_DETAIL_IDS.DeleteAccount]]);
   });
 });
 
 describe('AccountManagementScreen', () => {
-  test('로그인 정보·내 기록·쿠폰·로그아웃·회원 탈퇴 진입 UI를 제공한다', async () => {
+  test('로그인 정보와 쿠폰을 유지하고 미지원 계정 메뉴를 숨긴다', async () => {
     const onOpenDetail = jest.fn();
     const { user } = await renderWithProviders(
-      <AccountManagementScreen onBack={jest.fn()} onOpenDetail={onOpenDetail} />,
+      <AccountManagementScreen onBack={jest.fn()} onOpenDetail={onOpenDetail} onLogout={jest.fn(async () => undefined)} />,
     );
 
     expect(screen.getByText('로그인 정보')).toBeTruthy();
-    await user.press(screen.getByText('내 기록'));
     await user.press(screen.getByText('쿠폰'));
-    await user.press(screen.getByText('로그아웃'));
-    await user.press(screen.getByText('회원 탈퇴'));
-
-    expect(onOpenDetail.mock.calls.map(([detail]) => detail)).toEqual([
-      SETTINGS_DETAIL_IDS.MyRecords,
-      SETTINGS_DETAIL_IDS.Coupons,
-      SETTINGS_DETAIL_IDS.DeleteAccount,
-    ]);
+    expect(screen.queryByText('내 기록')).toBeNull();
+    expect(screen.queryByText('회원 탈퇴')).toBeNull();
+    expect(screen.queryByText('비밀번호 변경')).toBeNull();
+    expect(screen.queryByText('로그아웃')).toBeNull();
+    expect(onOpenDetail.mock.calls).toEqual([[SETTINGS_DETAIL_IDS.Coupons]]);
   });
 });
 

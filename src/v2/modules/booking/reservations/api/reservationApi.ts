@@ -6,6 +6,7 @@ import {
   type ReservationPaymentOperationRequestBody,
   type ReservationPaymentOperationResponse,
 } from '../../../../shared/api';
+import { normalizeAvailabilityTimeResponses, normalizeReservationTimeResponse } from './reservationTimeResponse';
 
 // The tourist reservation surface (list, create, cancel, availabilities, detail)
 // is typed by the live `app` group snapshot in `reservation-payment.openapi.json`.
@@ -16,12 +17,29 @@ export type ListOwnedReservationsParams = OperationQuery<'listOwnedPlaceReservat
 // The live `/places/{placeId}/availabilities` operation takes no query params.
 export type ListAvailabilitiesParams = Record<string, never>;
 export type CreateReservationBody = ReservationPaymentOperationRequestBody<'createReservation'>;
-export type AvailabilityList = ReservationPaymentOperationResponse<'listPlaceAvailabilities', 200>;
-export type ReservationPage = ReservationPaymentOperationResponse<'listMyReservations', 200>;
-export type Reservation = ReservationPaymentOperationResponse<'createReservation', 201>;
-export type ReservationDetail = ReservationPaymentOperationResponse<'getMyReservation', 200>;
-export type ReservationQuote = ReservationPaymentOperationResponse<'getReservationQuote', 200>;
-export type ReservationConfirmation = NonNullable<ReservationQuote['confirmation']>;
+type PublishedAvailability = ReservationPaymentOperationResponse<'listPlaceAvailabilities', 200>[number];
+type LegacyProductFields = 'productType' | 'productId' | 'productName';
+// #1793 is merged but the published app OpenAPI still describes the old contract.
+// Keep that snapshot truthful and explicitly bridge the removed response fields
+// until deployment. Legacy fields are input compatibility only, never inferred.
+export type AvailabilityList = Array<Omit<PublishedAvailability, LegacyProductFields | 'reservationTerms'>
+  & Partial<Pick<PublishedAvailability, LegacyProductFields>> & {
+    reservationTerms?: Omit<NonNullable<PublishedAvailability['reservationTerms']>, 'unitAmountMinor' | 'additionalAmountMinor' | 'currency'>
+      & Partial<Pick<NonNullable<PublishedAvailability['reservationTerms']>, 'unitAmountMinor' | 'additionalAmountMinor' | 'currency'>> | null;
+  }>;
+type PublishedReservationPage = ReservationPaymentOperationResponse<'listMyReservations', 200>;
+export type ReservationPage = Omit<PublishedReservationPage, 'reservations'> & { reservations: Reservation[] };
+type PublishedReservation = ReservationPaymentOperationResponse<'createReservation', 201>;
+export type Reservation = Omit<PublishedReservation, 'productType' | 'productId' | 'confirmation'>
+  & Partial<Pick<PublishedReservation, 'productType' | 'productId'>> & { confirmation?: ReservationConfirmation | null };
+export type ReservationDetail = Reservation;
+type PublishedQuote = ReservationPaymentOperationResponse<'getReservationQuote', 200>;
+type PublishedConfirmation = NonNullable<PublishedQuote['confirmation']>;
+type SchedulingFields = 'placeId' | 'placeName' | 'availabilityId' | 'startsAt' | 'endsAt' | 'quantity' | 'timezone'
+  | 'cancellable' | 'cancellationDeadline' | 'conditionsVersion' | 'expiresAt';
+export type ReservationConfirmation = Pick<PublishedConfirmation, SchedulingFields>
+  & Partial<Omit<PublishedConfirmation, SchedulingFields>>;
+export type ReservationQuote = Omit<PublishedQuote, 'confirmation'> & { confirmation?: ReservationConfirmation | null };
 
 // The live server responds with `totalElements`; the merchant-owner list on the
 // older `mvp` contract still says `totalCount`. Normalize so callers can rely on
@@ -29,6 +47,7 @@ export type ReservationConfirmation = NonNullable<ReservationQuote['confirmation
 function normalizeReservationPage(raw: Record<string, unknown>): ReservationPage {
   return {
     ...raw,
+    ...(Array.isArray(raw.reservations) ? { reservations: raw.reservations.map(normalizeReservationTimeResponse) } : {}),
     totalElements: (raw.totalElements ?? raw.totalCount ?? 0) as number,
   } as ReservationPage;
 }
@@ -44,7 +63,7 @@ export function createReservationApi(client: ApiClient = apiClient) {
       `${scope}/reservations/${reservationId}/${transition}`,
       undefined,
       { signal },
-    );
+    ).then(normalizeReservationTimeResponse);
 
   return {
     cancelOwnedReservation: (reservationId: number, signal?: AbortSignal) =>
@@ -60,14 +79,15 @@ export function createReservationApi(client: ApiClient = apiClient) {
       body: CreateReservationBody,
       signal?: AbortSignal,
     ): Promise<Reservation> =>
-      client.post<Reservation, CreateReservationBody>('/reservations', body, { signal }),
+      client.post<Reservation, CreateReservationBody>('/reservations', body, { signal }).then(normalizeReservationTimeResponse),
 
     listAvailabilities: (
       placeId: number,
       params: ListAvailabilitiesParams = {},
       signal?: AbortSignal,
     ): Promise<AvailabilityList> =>
-      client.get<AvailabilityList>(`/places/${placeId}/availabilities`, { params, signal }),
+      client.get<AvailabilityList>(`/places/${placeId}/availabilities`, { params, signal })
+        .then(normalizeAvailabilityTimeResponses),
 
     getReservationQuote: (
       placeId: number,
@@ -77,7 +97,9 @@ export function createReservationApi(client: ApiClient = apiClient) {
     ): Promise<ReservationQuote> =>
       client.get<ReservationQuote>(`/places/${placeId}/availabilities/${availabilityId}/quote`, {
         params: { quantity }, signal,
-      }),
+      }).then(quote => ({
+        ...quote, confirmation: normalizeReservationTimeResponse(quote.confirmation),
+      })),
 
     listOwnedReservations: async (
       params: ListOwnedReservationsParams = {},
@@ -91,7 +113,7 @@ export function createReservationApi(client: ApiClient = apiClient) {
       reservationId: number,
       signal?: AbortSignal,
     ): Promise<ReservationDetail> =>
-      client.get<ReservationDetail>(`/reservations/${reservationId}`, { signal }),
+      client.get<ReservationDetail>(`/reservations/${reservationId}`, { signal }).then(normalizeReservationTimeResponse),
 
     listReservations: async (
       params: ListReservationsParams = {},

@@ -1,4 +1,23 @@
-import type { ReviewReasonKey } from '../../../../../shared/api/reviewReasons';
+import DetailBackAsset from '../../../../../../assets/v2/icons/place/detail-back.svg';
+import DetailBookmarkAsset from '../../../../../../assets/v2/icons/place/detail-bookmark.svg';
+import DetailShareAsset from '../../../../../../assets/v2/icons/place/detail-share.svg';
+import DetailReservationAsset from '../../../../../../assets/v2/icons/place/detail-reservation.svg';
+import DetailDirectionsAsset from '../../../../../../assets/v2/icons/place/detail-directions.svg';
+import DetailPinAsset from '../../../../../../assets/v2/icons/place/detail-pin.svg';
+import DetailClockAsset from '../../../../../../assets/v2/icons/place/detail-clock.svg';
+import DetailCallAsset from '../../../../../../assets/v2/icons/place/detail-call.svg';
+import DetailGlobeBaseAsset from '../../../../../../assets/v2/icons/place/detail-globe-base.svg';
+import DetailGlobeLinesAsset from '../../../../../../assets/v2/icons/place/detail-globe-lines.svg';
+import DetailParkingAsset from '../../../../../../assets/v2/icons/place/detail-parking.svg';
+import DetailTicketAsset from '../../../../../../assets/v2/icons/place/detail-ticket.svg';
+import DetailDownloadAsset from '../../../../../../assets/v2/icons/place/detail-download.svg';
+import DetailReviewPhotoAsset from '../../../../../../assets/v2/icons/place/detail-review-photo.svg';
+import DetailReviewCleanAsset from '../../../../../../assets/v2/icons/place/detail-review-clean.svg';
+import DetailReviewMultilingualBaseAsset from '../../../../../../assets/v2/icons/place/detail-review-multilingual-base.svg';
+import DetailReviewMultilingualLinesAsset from '../../../../../../assets/v2/icons/place/detail-review-multilingual-lines.svg';
+import DetailReviewKindAsset from '../../../../../../assets/v2/icons/place/detail-review-kind.svg';
+import DetailReviewDeliciousAsset from '../../../../../../assets/v2/icons/place/detail-review-delicious.svg';
+import { REASON_CODES, reviewReasonLabelKey, type ReviewReasonKey } from '../../../../../shared/api/reviewReasons';
 import { ApiErrorState, LoadingState, ReviewFeatureTags, UnavailableStateIcon } from '../../../../../shared/components';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -9,6 +28,7 @@ import {
   Image,
   Pressable,
   ScrollView,
+  StatusBar,
   Text as NativeText,
   type TextProps,
   useWindowDimensions,
@@ -23,17 +43,8 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BackIcon from '../../../../../../assets/v2/icons/header/back.svg';
-import CallAsset from '../../../../../../assets/v2/icons/ion_call.svg';
-import CameraAsset from '../../../../../../assets/v2/icons/place/Camera.svg';
-import CleanAsset from '../../../../../../assets/v2/icons/place/Clean.svg';
-import DeliciousAsset from '../../../../../../assets/v2/icons/place/Delicious.svg';
-import DownAsset from '../../../../../../assets/v2/icons/place/Down.svg';
 import GroupAsset from '../../../../../../assets/v2/icons/place/Group.svg';
-import KindAsset from '../../../../../../assets/v2/icons/place/Kind.svg';
 import ParkAsset from '../../../../../../assets/v2/icons/place/Park.svg';
-import PinAsset from '../../../../../../assets/v2/icons/place/Pin.svg';
-import TicketAsset from '../../../../../../assets/v2/icons/place/Tiket.svg';
 import ArtAsset from '../../../../../../assets/v2/icons/place/art_svg.svg';
 import BeautyAsset from '../../../../../../assets/v2/icons/place/beati_svg.svg';
 import CafeAsset from '../../../../../../assets/v2/icons/place/cafe_svg.svg';
@@ -1329,33 +1340,30 @@ const ResultRow = ({
   );
 };
 
-const PreviewAmenity = ({ type }: { type: 'english' | 'parking' }) => {
+const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking'; expanded?: boolean }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   return (
-  <View style={styles.previewAmenityChip}>
-    {type === 'english'
+  <View style={expanded ? styles.detailAmenity : styles.previewAmenityChip}>
+    {expanded ? <View style={styles.detailAmenityIcon} testID={`map-detail-amenity-${type}`}>
+      {type === 'english' ? <View style={styles.detailGlobeLayers}><DetailGlobeBaseAsset /><DetailGlobeLinesAsset style={styles.detailGlobeLines} /></View> : <DetailParkingAsset />}
+    </View> : type === 'english'
       ? <GroupAsset height={20} width={20} />
       : <ParkAsset height={20} width={20} />}
-    <AppText style={styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</AppText>
+    <AppText style={expanded ? styles.detailAmenityText : styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</AppText>
   </View>
   );
 };
 
 const ReviewHighlightIcon = ({ label }: { label: string }) => {
-  if (label.includes('사진')) return <CameraAsset height={16} width={19} />;
-  if (label.includes('깨끗')) return <CleanAsset height={16} width={16} />;
-  if (label.includes('다국어')) return <GroupAsset height={16} width={16} />;
-  if (label.includes('친절')) return <KindAsset height={16} width={15} />;
-  return <DeliciousAsset height={16} width={16} />;
-};
-
-const InfoClockIcon = () => {
-  const color = (useTheme().colors ?? lightColors).textMuted;
-  return <Svg height={16} viewBox="0 0 16 16" width={16}>
-    <Circle cx={8} cy={8} fill="none" r={6.5} stroke={color} strokeWidth={1.5} />
-    <Path d="M8 4.5V8L10.5 9.5" fill="none" stroke={color} strokeLinecap="round" strokeWidth={1.5} />
-  </Svg>
+  const { t } = useTranslation();
+  const reason = (Object.keys(REASON_CODES) as ReviewReasonKey[]).find(key => t(reviewReasonLabelKey(key)) === label);
+  if (reason === 'photoSpot') return <DetailReviewPhotoAsset />;
+  if (reason === 'clean') return <DetailReviewCleanAsset />;
+  if (reason === 'multilingual') return <View style={{ width: 18, height: 18 }}><DetailReviewMultilingualBaseAsset /><DetailReviewMultilingualLinesAsset style={{ position: 'absolute', left: 0.35, top: 0 }} /></View>;
+  if (reason === 'kind') return <DetailReviewKindAsset />;
+  if (reason === 'delicious') return <DetailReviewDeliciousAsset />;
+  return null;
 };
 
 const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
@@ -1382,8 +1390,14 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
 
 type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
-const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
+const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind; expanded?: boolean }) => {
   const color = (useTheme().colors ?? lightColors).textSecondary;
+  if (expanded) {
+    if (kind === 'share') return <DetailShareAsset />;
+    if (kind === 'reservation') return <DetailReservationAsset />;
+    if (kind === 'directions') return <DetailDirectionsAsset />;
+    return null;
+  }
   if (kind === 'share') {
     return (
       <Svg height={13} viewBox="0 0 16 16" width={13}>
@@ -1409,7 +1423,7 @@ const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind }) => {
   return null;
 };
 
-const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, kind, label, onPress }: { accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => {
+const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, expanded = false, kind, label, onPress }: { expanded?: boolean; accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => {
   const styles = useMapSheetStyles();
   return <Pressable
     accessibilityHint={accessibilityHint}
@@ -1419,14 +1433,14 @@ const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, di
     disabled={disabled}
     onPress={onPress}
     style={({ pressed }) => [
-      styles.previewActionChip,
+      expanded ? styles.detailActionChip : styles.previewActionChip,
       active && styles.previewActionChipActive,
       pressed && styles.pressed,
       disabled && { opacity: 0.45 },
     ]}
   >
-    <PreviewActionIcon kind={kind} />
-    <AppText style={[styles.previewActionText, active && styles.previewActionTextActive]}>{label}</AppText>
+    <PreviewActionIcon kind={kind} expanded={expanded} />
+    <AppText style={[expanded ? styles.detailActionText : styles.previewActionText, active && styles.previewActionTextActive]}>{label}</AppText>
   </Pressable>;
 };
 
@@ -1752,7 +1766,7 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
         {review.text}
       </AppText>
       {review.imageUrls?.length ? (
-        <View style={styles.detailReviewImageGrid}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.detailReviewImageStrip} contentContainerStyle={styles.detailReviewImageGrid}>
           {review.imageUrls.map((url, photoIndex) => (
             <Pressable
               accessibilityLabel={t('map.detail.imageDetail', { count: photoIndex + 1, name: placeName })}
@@ -1766,11 +1780,11 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
               <PreviewArtwork imageUrl={url} />
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
       ) : null}
       {review.reasons.length > 0 ? (
         <View style={styles.detailReviewTags}>
-          <ReviewFeatureTags reasons={review.reasons} variant={variant} />
+          <ReviewFeatureTags reasons={review.reasons} variant={variant} appearance="placeDetail" />
         </View>
       ) : null}
     </View>
@@ -1867,7 +1881,7 @@ const ExpandedPlaceContent = ({
   place: DecisionPlace;
 }) => {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
   const styles = useMapSheetStyles();
   const insets = useSafeAreaInsets();
   const imageUrls = fallbackContent?.imageUrls.length
@@ -1890,19 +1904,23 @@ const ExpandedPlaceContent = ({
     : fallbackContent?.statusDescription || fallbackContent?.englishName;
 
   return (
+    <>
+    <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
     <ScrollView
       contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
+      testID="map-expanded-place-scroll"
     >
-      <View style={styles.detailTopBar}>
+      <View style={styles.detailTopBar} testID="map-detail-top-bar">
         <Pressable
           accessibilityLabel={t('map.detail.back')}
           accessibilityRole="button"
           hitSlop={12}
           onPress={onBack}
           style={styles.detailRoundButton}
+          testID="map-detail-back"
         >
-          <BackIcon width={44} height={44} />
+          <DetailBackAsset style={styles.detailRoundArtwork} />
         </Pressable>
         <Pressable
           accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -1911,9 +1929,9 @@ const ExpandedPlaceContent = ({
           disabled={pending}
           hitSlop={12}
           onPress={onToggleBookmark}
-          style={styles.detailRoundButton}
+          style={[styles.detailRoundButton, !bookmarked && styles.detailRoundUnselected]}
         >
-          <BookmarkStar selected={bookmarked} size={22} />
+          <>{bookmarked ? <DetailBookmarkAsset style={styles.detailRoundArtwork} /> : <BookmarkStar selected={false} size={22} />}</>
         </Pressable>
       </View>
 
@@ -1932,35 +1950,35 @@ const ExpandedPlaceContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        <PreviewActionChip
+        <PreviewActionChip expanded
           active={activeAction === 'departure'}
           disabled={!onDeparture || placeActionBusy != null}
           kind="departure"
           label={t('map.card.actions.start')}
           onPress={() => selectAction('departure', onDeparture)}
         />
-        <PreviewActionChip
+        <PreviewActionChip expanded
           active={activeAction === 'arrival'}
           disabled={!onDirections || placeActionBusy != null}
           kind="arrival"
           label={t('map.card.actions.arrive')}
           onPress={() => selectAction('arrival', onDirections)}
         />
-        <PreviewActionChip
+        <PreviewActionChip expanded
           busy={placeActionBusy === 'share'}
           disabled={!onShare || placeActionBusy != null}
           kind="share"
           label={t('map.card.actions.share')}
           onPress={onShare}
         />
-        <PreviewActionChip
+        <PreviewActionChip expanded
           active={activeAction === 'reservation'}
           disabled={reservation.disabled && reservation.kind !== 'error'}
           kind="reservation"
           label={t(reservation.kind === 'error' ? 'map.detail.reservation.retry' : 'map.card.actions.reserve')}
           onPress={() => selectAction('reservation', reservationPress)}
         />
-        <PreviewActionChip
+        <PreviewActionChip expanded
           busy={placeActionBusy === 'directions'}
           disabled={!onDirections || placeActionBusy != null}
           kind="directions"
@@ -2019,13 +2037,13 @@ const ExpandedPlaceContent = ({
         <View>
           <View style={styles.detailInfoBlock}>
             <View style={styles.detailInfoRow}>
-              <PinAsset height={16} width={14} />
+              <DetailPinAsset />
               <AppText style={styles.detailInfoText}>{detailAddress}</AppText>
             </View>
             {fallbackContent ? (
               <>
                 <View style={styles.detailInfoRow}>
-                  <InfoClockIcon />
+                  <DetailClockAsset />
                   <AppText numberOfLines={2} style={styles.detailInfoText}>
                     <AppText style={[
                       styles.detailOperatingStatus,
@@ -2044,7 +2062,7 @@ const ExpandedPlaceContent = ({
                 </View>
                 {fallbackContent.phone ? (
                   <View style={styles.detailInfoRow}>
-                    <CallAsset height={16} width={16} />
+                    <DetailCallAsset />
                     <AppText style={styles.detailInfoText}>{fallbackContent.phone}</AppText>
                   </View>
                 ) : null}
@@ -2053,7 +2071,7 @@ const ExpandedPlaceContent = ({
             {fallbackContent?.amenities.length ? (
               <View style={styles.detailAmenityRow}>
                 {fallbackContent.amenities.map((amenity) => (
-                  <PreviewAmenity key={amenity} type={amenity} />
+                  <PreviewAmenity key={amenity} type={amenity} expanded />
                 ))}
               </View>
             ) : null}
@@ -2078,18 +2096,18 @@ const ExpandedPlaceContent = ({
               <AppText style={styles.detailSectionTitle}>{t('map.detail.coupon')}</AppText>
               {fallbackContent.coupons.map((coupon, index) => (
                 <View key={`${coupon.title}-${index}`} style={styles.detailCouponRow}>
-                  <View style={styles.detailCouponIcon}><TicketAsset height={24} width={24} /></View>
+                  <View style={styles.detailCouponIcon}><DetailTicketAsset /></View>
                   <View style={styles.detailCouponBody}>
                     <AppText style={styles.detailCouponTitle}>{coupon.title}</AppText>
                     <AppText style={styles.detailCouponPeriod}>{coupon.period}</AppText>
                   </View>
-                  <DownAsset height={17} width={14} />
+                  <DetailDownloadAsset />
                 </View>
               ))}
             </View>
           ) : null)}
 
-          <PlaceMenuSection placeId={place.id} />
+          <PlaceMenuSection placeId={place.id} presentation="mapDetail" onOpenImages={onOpenImages} />
 
           {fallbackContent?.events?.length ? (
             <View style={styles.detailSection}>
@@ -2127,27 +2145,26 @@ const ExpandedPlaceContent = ({
             {fallbackContent.reviewHighlights.map((highlight, index, items) => {
               const maxCount = Math.max(...items.map((item) => item.count), 1);
               const scoreRatio = Math.min(1, Math.max(0, highlight.count / maxCount));
-              const fillOpacity = 0.16 + (scoreRatio * 0.62);
+              const strongest = index === 0;
               return (
                 <View key={highlight.label} style={styles.detailHighlightRow}>
                   <View
                     style={[
                       styles.detailHighlightFill,
                       {
-                        backgroundColor: colors.primary,
-                        opacity: fillOpacity,
+                        backgroundColor: strongest ? colors.primaryAlternative : index === 1 ? colors.primaryAssistive : colors.primaryAssistiveSoft,
                         width: `${Math.max(24, scoreRatio * 100)}%`,
                       },
                     ]}
                   />
                   <View style={styles.detailHighlightLabelRow}>
                     <ReviewHighlightIcon label={highlight.label} />
-                    <AppText style={styles.detailHighlightLabel}>{highlight.label}</AppText>
+                    <AppText style={[styles.detailHighlightLabel, strongest && styles.detailHighlightCountOnStrong]}>{highlight.label}</AppText>
                   </View>
                   <AppText
                     style={[
                       styles.detailHighlightCount,
-                      scoreRatio >= 0.88 && styles.detailHighlightCountOnStrong,
+                      strongest && styles.detailHighlightCountOnStrong,
                     ]}
                   >
                     {highlight.count}
@@ -2205,6 +2222,7 @@ const ExpandedPlaceContent = ({
         </View>
       )}
     </ScrollView>
+    </>
   );
 };
 
@@ -2408,7 +2426,7 @@ export default function MapBottomSheet({
           />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
-      <GlassStyles.SheetInner $inset={SHEET_RESTING_GAP}>
+      <GlassStyles.SheetInner $inset={isExpandedPlaceDetail ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -2632,10 +2650,19 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   },
   artworkFallback: { alignItems: 'center', justifyContent: 'center' },
   artworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
-  detailActionRow: { columnGap: 8, paddingBottom: 12, paddingHorizontal: 16 },
-  detailAmenityRow: { columnGap: 10, flexDirection: 'row', paddingTop: 16 },
+  detailRoundUnselected: { backgroundColor: colors.surfaceElevated, shadowColor: colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  detailRoundArtwork: { position: 'absolute', left: -20, top: -16 },
+  detailActionChip: { alignItems: 'center', backgroundColor: colors.backgroundAssistive, borderColor: 'transparent', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 6, minHeight: 34, justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 8 },
+  detailActionText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500', lineHeight: 18 },
+  detailAmenity: { alignItems: 'center', gap: 4 },
+  detailAmenityIcon: { width: 56, height: 56, borderRadius: 20, backgroundColor: colors.backgroundNeutral, alignItems: 'center', justifyContent: 'center' },
+  detailAmenityText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500', lineHeight: 18 },
+  detailGlobeLayers: { width: 28.0001, height: 28 },
+  detailGlobeLines: { position: 'absolute', left: 0.5432, top: 0 },
+  detailActionRow: { columnGap: 8, paddingBottom: 14, paddingHorizontal: 16 },
+  detailAmenityRow: { columnGap: 16, flexDirection: 'row' },
   detailBackText: { color: colors.textMuted, fontSize: 34, fontWeight: '300', lineHeight: 36, marginTop: -4 },
-  detailCategory: { color: colors.textSecondary, flexShrink: 0, fontSize: 13, fontWeight: '600', includeFontPadding: false, lineHeight: 18, marginLeft: 4, paddingTop: 4 },
+  detailCategory: { color: colors.text, flexShrink: 0, fontSize: 18, fontWeight: '500', includeFontPadding: false, lineHeight: 24, marginLeft: 4 },
   detailContent: { backgroundColor: colors.background, paddingBottom: 48 },
   detailCouponBody: { flex: 1 },
   detailCouponIcon: {
@@ -2647,21 +2674,12 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     width: 34,
   },
   detailCouponIconText: { color: colors.primary, fontSize: 18, fontWeight: '900' },
-  detailCouponPeriod: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
-  detailCouponRow: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 10,
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-    minHeight: 58,
-    paddingHorizontal: 10,
-  },
-  detailCouponTitle: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  detailCouponPeriod: { color: colors.textSecondary, fontSize: 12, marginTop: 4, lineHeight: 16 },
+  detailCouponRow: { alignItems: 'center', backgroundColor: colors.backgroundAssistive, borderRadius: 12, flexDirection: 'row', gap: 10, marginTop: 16, minHeight: 64, padding: 12 },
+  detailCouponTitle: { color: colors.textStrong, fontSize: 16, fontWeight: '500', lineHeight: 21 },
   detailEmptyText: { color: colors.textMuted, fontSize: 12, paddingVertical: 24, textAlign: 'center' },
-  detailHeading: { paddingBottom: 12, paddingHorizontal: 16 },
-  detailHighlightCount: { color: colors.primary, fontSize: 11, fontWeight: '700', position: 'absolute', right: 14 },
+  detailHeading: { paddingBottom: 14, paddingHorizontal: 16 },
+  detailHighlightCount: { color: colors.primary, fontSize: 14, fontWeight: '700', position: 'absolute', right: 16 },
   detailHighlightCountOnStrong: { color: colors.textInverse },
   detailHighlightFill: {
     backgroundColor: colors.primaryAssistive,
@@ -2672,19 +2690,12 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     position: 'absolute',
     top: 0,
   },
-  detailHighlightLabel: { color: colors.text, fontSize: 12, fontWeight: '700' },
-  detailHighlightLabelRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingLeft: 14 },
-  detailHighlightRow: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 9,
-    height: 39,
-    justifyContent: 'center',
-    marginTop: 9,
-    overflow: 'hidden',
-  },
-  detailInfoBlock: { padding: 16 },
-  detailInfoRow: { alignItems: 'center', flexDirection: 'row', gap: 11, minHeight: 31 },
-  detailInfoText: { color: colors.textSecondary, flex: 1, fontSize: 14, lineHeight: 21 },
+  detailHighlightLabel: { color: colors.textStrong, fontSize: 14, fontWeight: '700', lineHeight: 19, flexShrink: 1 },
+  detailHighlightLabelRow: { alignItems: 'center', flexDirection: 'row', gap: 6, paddingLeft: 16, paddingRight: 54 },
+  detailHighlightRow: { backgroundColor: colors.surfaceMuted, borderRadius: 16, height: 56, justifyContent: 'center', marginTop: 16, overflow: 'hidden' },
+  detailInfoBlock: { paddingVertical: 16, paddingHorizontal: 24, gap: 16 },
+  detailInfoRow: { alignItems: 'center', flexDirection: 'row', gap: 12, minHeight: 21 },
+  detailInfoText: { color: colors.textSecondary, flex: 1, fontSize: 16, lineHeight: 21 },
   detailMenuBody: { flex: 1 },
   detailMenuDescription: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
   detailMenuImage: { borderRadius: 10, height: 64, overflow: 'hidden', width: 72 },
@@ -2700,31 +2711,22 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   },
   detailOperatingNeutral: { color: colors.textSecondary },
   detailOperatingPositive: { color: colors.success },
-  detailOperatingStatus: { fontWeight: '800' },
+  detailOperatingStatus: { fontWeight: '500' },
   detailOperatingWarning: { color: colors.warning },
-  detailPhoto: { borderRadius: 16, height: 180, overflow: 'hidden', width: 180 },
+  detailPhoto: { borderRadius: 16, height: 182, overflow: 'hidden', width: 242 },
   detailPhotoPrimary: { width: 242 },
-  detailPhotoRow: { columnGap: 10, paddingBottom: 12, paddingHorizontal: 16 },
+  detailPhotoRow: { columnGap: 16, paddingBottom: 12, paddingHorizontal: 16 },
   detailReviewBody: { flex: 1 },
-  detailReviewCount: { color: colors.textMuted, fontSize: 11, fontWeight: '500' },
-  detailReviewItem: {
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    paddingVertical: 13,
-  },
-  detailReviewImageCell: { aspectRatio: 1.15, flex: 1, overflow: 'hidden' },
-  detailReviewImageGrid: {
-    borderRadius: 12,
-    flexDirection: 'row',
-    gap: 2,
-    marginTop: 10,
-    overflow: 'hidden',
-  },
-  detailReviewMeta: { color: colors.textMuted, fontSize: 9, marginTop: 2 },
-  detailReviewPhoto: { borderRadius: 10, height: 124, overflow: 'hidden', width: 124 },
-  detailReviewPhotos: { columnGap: 10, paddingTop: 12 },
-  detailReviewSection: { borderBottomColor: colors.border, borderBottomWidth: 1, padding: 16 },
-  detailReviewTags: { paddingTop: 10 },
+  detailReviewCount: { color: colors.textSecondary, fontSize: 14, fontWeight: '500' },
+  detailReviewItem: { borderBottomColor: colors.border, borderBottomWidth: 1, paddingVertical: 16 },
+  detailReviewImageCell: { height: 182, width: 242, overflow: 'hidden' },
+  detailReviewImageStrip: { borderRadius: 16, marginTop: 8, overflow: 'hidden' },
+  detailReviewImageGrid: { flexDirection: 'row', gap: 2 },
+  detailReviewMeta: { color: colors.textSecondary, fontSize: 14, lineHeight: 18, marginTop: 1 },
+  detailReviewPhoto: { borderRadius: 16, height: 164, overflow: 'hidden', width: 164 },
+  detailReviewPhotos: { columnGap: 16, paddingTop: 16 },
+  detailReviewSection: { borderBottomColor: colors.surfaceMuted, borderBottomWidth: 8, paddingVertical: 16, paddingHorizontal: 24 },
+  detailReviewTags: { paddingTop: 8 },
   detailReviewMore: {
     alignItems: 'center',
     backgroundColor: colors.surfaceMuted,
@@ -2734,42 +2736,17 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     marginTop: 16,
   },
   detailReviewMoreText: { color: colors.textStrong, fontSize: 14, fontWeight: '600' },
-  detailReviewText: { color: colors.text, fontSize: 14, lineHeight: 21, marginTop: 10 },
-  detailReviewTitle: { color: colors.textStrong, fontSize: 15, fontWeight: '900' },
-  detailReviewerAvatar: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 18,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
+  detailReviewText: { color: colors.textStrong, fontSize: 16, lineHeight: 21, marginTop: 8 },
+  detailReviewTitle: { color: colors.textStrong, fontSize: 18, fontWeight: '700', lineHeight: 24 },
+  detailReviewerAvatar: { alignItems: 'center', backgroundColor: colors.backgroundNeutral, borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
   detailReviewerAvatarImage: { borderRadius: 22, height: 44, width: 44 },
   detailReviewerInitial: { color: colors.textMuted, fontSize: 13, fontWeight: '800' },
-  detailReviewerName: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  detailReviewerRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
-  detailRoundButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: 22,
-    elevation: 2,
-    height: 42,
-    justifyContent: 'center',
-    shadowColor: colors.shadow,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    width: 42,
-  },
-  detailSection: { padding: 16 },
-  detailSectionTitle: { color: colors.textStrong, fontSize: 14, fontWeight: '900' },
-  detailTab: {
-    alignItems: 'center',
-    flex: 1,
-    height: 44,
-    justifyContent: 'center',
-    position: 'relative',
-  },
+  detailReviewerName: { color: colors.textStrong, fontSize: 18, fontWeight: '500', lineHeight: 24 },
+  detailReviewerRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  detailRoundButton: { alignItems: 'center', borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
+  detailSection: { borderTopColor: colors.surfaceMuted, borderTopWidth: 8, paddingVertical: 16, paddingHorizontal: 24 },
+  detailSectionTitle: { color: colors.textStrong, fontSize: 18, fontWeight: '700', lineHeight: 24 },
+  detailTab: { alignItems: 'center', flex: 1, height: 56, justifyContent: 'center', position: 'relative' },
   detailTabIndicator: {
     backgroundColor: colors.primary,
     bottom: -1,
@@ -2777,11 +2754,11 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     position: 'absolute',
     width: 40,
   },
-  detailTabText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
-  detailTabTextActive: { color: colors.primary },
+  detailTabText: { color: colors.textSecondary, fontSize: 18, fontWeight: '400', lineHeight: 24 },
+  detailTabTextActive: { color: colors.primary, fontWeight: '500' },
   detailTabs: { borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row' },
-  detailTitle: { color: colors.textStrong, flexShrink: 1, fontSize: 22, fontWeight: '900', includeFontPadding: false, lineHeight: 28, minWidth: 0 },
-  detailTitleRow: { alignItems: 'flex-start', flexDirection: 'row', minWidth: 0 },
+  detailTitle: { color: colors.textStrong, flexShrink: 1, fontSize: 24, fontWeight: '700', includeFontPadding: false, lineHeight: 31, letterSpacing: -0.48, minWidth: 0 },
+  detailTitleRow: { alignItems: 'baseline', flexDirection: 'row', minWidth: 0 },
   detailTopBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2789,7 +2766,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     paddingHorizontal: 16,
     paddingTop: 2,
   },
-  detailVerified: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+  detailVerified: { color: colors.text, fontSize: 16, lineHeight: 21, marginTop: 4 },
   cardRow: {
     gap: 12,
     paddingBottom: 10,

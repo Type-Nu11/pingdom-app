@@ -9,13 +9,17 @@
              "prepareReservation", "cancelVoiceSession"
      );
      private static final Set<String> CLARIFICATION_FIELDS = Set.of(
-@@ -52,6 +52,12 @@
+@@ -52,6 +52,16 @@
          JsonNode args = node.path("args");
          if (!COMMANDS.contains(command) || !args.isObject()) invalid("unsupported_command_or_args");
          switch (command) {
 +            case "searchNearbyPlaces" -> {
-+                allowedFields(args, Set.of("touristCategory", "useCurrentLocation"));
++                allowedFields(args, Set.of("touristCategory", "useCurrentLocation", "keyword", "limit"));
 +                required(args, "useCurrentLocation");
++                if (args.has("keyword") && (!args.path("keyword").isTextual() || args.path("keyword").asText().isBlank()
++                        || args.path("keyword").asText().length() > 100)) invalid("search_keyword");
++                if (args.has("limit") && (!args.path("limit").isIntegralNumber() || !args.path("limit").canConvertToInt()
++                        || args.path("limit").asInt() < 1 || args.path("limit").asInt() > 3)) invalid("search_limit");
 +                if (args.has("touristCategory") && !CATEGORIES.contains(args.path("touristCategory").asText())) invalid("tourist_category");
 +                if (!args.path("useCurrentLocation").isBoolean()) invalid("search_arguments");
 +            }
@@ -24,12 +28,17 @@
                  required(args, "date", "startTime", "endTime", "quantity", "useCurrentLocation");
 --- a/src/main/java/com/typenull/pingdom/consultation/infrastructure/gemini/GeminiGenerateContentClient.java
 +++ b/src/main/java/com/typenull/pingdom/consultation/infrastructure/gemini/GeminiGenerateContentClient.java
-@@ -46,6 +46,12 @@
+@@ -46,6 +46,17 @@
              If a request is ambiguous, use clarification_request. If no safe command applies, use assistant_message.
              The envelope id must equal the supplied request id.
              Do not invent place or availability ids, dates, times, quantity, or location permission.
 +            For general nearby discovery ("근처 뭐 있어?", "근처에 뭐 있는지 알려줘", "아무거나 주변에 있는 거 보여줘"),
 +            use searchNearbyPlaces with useCurrentLocation=true to ask the app to check its own location permission.
++            For keyword discovery ("갈비탕집 있어?", "갈비탕집 찾아줘"), use searchNearbyPlaces with
++            args={"keyword":"갈비탕","limit":3,"useCurrentLocation":true}. Extract the search term, not the full question.
++            keyword is optional, nonblank and at most 100 characters. limit is optional and an integer from 1 to 3.
++            The app supplies coordinates and radius; never put coordinates in args or silently restrict to a district.
++            Do not discard an explicitly requested region or invent regional support; clarify if it cannot be represented.
 +            touristCategory is optional. Never ask for date, time, quantity or category for general discovery.
 +            Only explicit reservation intent uses searchNearbyReservablePlaces and its required booking arguments.
 +            Never label general discovery results as bookable. Never invent a placeId for "여기로 예약해 줘";
@@ -39,7 +48,7 @@
 
 --- a/src/main/resources/openapi/provider-envelope.v1.schema.json
 +++ b/src/main/resources/openapi/provider-envelope.v1.schema.json
-@@ -3,6 +3,59 @@
+@@ -3,6 +3,70 @@
    "title": "Pingdom provider envelope v1",
    "$comment": "Provider input only. After structural validation, ALWAYS use parseVoiceAssistantEnvelope: Gregorian calendar validity, same-day startTime < endTime, UTF-16 text length, whitespace-only text rejection, and own-data-property checks are normative runtime constraints. No app result is accepted.",
    "oneOf": [
@@ -76,6 +85,17 @@
 +            "useCurrentLocation"
 +          ],
 +          "properties": {
++            "keyword": {
++              "type": "string",
++              "minLength": 1,
++              "maxLength": 100,
++              "pattern": "\\S"
++            },
++            "limit": {
++              "type": "integer",
++              "minimum": 1,
++              "maximum": 3
++            },
 +            "touristCategory": {
 +              "enum": [
 +                "K_POP",
@@ -121,7 +141,7 @@
              assertThat(variant.at("/properties/schemaVersion/enum/0").asInt()).isEqualTo(1);
 --- /dev/null
 +++ b/src/test/java/com/typenull/pingdom/consultation/application/GeneralDiscoveryOpenApiTest.java
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,39 @@
 +package com.typenull.pingdom.consultation.application;
 +
 +import static org.assertj.core.api.Assertions.assertThat;
@@ -151,9 +171,11 @@
 +        assertThat(general.at("/properties/command/enum/0").asText()).isEqualTo("searchNearbyPlaces");
 +        var args = general.at("/properties/args");
 +        assertThat(args.path("required").toString()).isEqualTo("[\"useCurrentLocation\"]");
-+        assertThat(args.path("properties").size()).isEqualTo(2);
++        assertThat(args.path("properties").size()).isEqualTo(4);
 +        assertThat(args.path("properties").has("touristCategory")).isTrue();
 +        assertThat(args.path("properties").has("useCurrentLocation")).isTrue();
++        assertThat(args.at("/properties/keyword/maxLength").asInt()).isEqualTo(100);
++        assertThat(args.at("/properties/limit/maximum").asInt()).isEqualTo(3);
 +        assertThat(args.path("additionalProperties").asBoolean(true)).isFalse();
 +    }
 +
@@ -161,7 +183,7 @@
 +}
 --- a/src/test/java/com/typenull/pingdom/consultation/application/ProviderEnvelopeValidatorTest.java
 +++ b/src/test/java/com/typenull/pingdom/consultation/application/ProviderEnvelopeValidatorTest.java
-@@ -26,6 +26,22 @@
+@@ -26,6 +26,40 @@
                  """);
 
          assertThatCode(() -> validator.validate(envelope, "request-1")).doesNotThrowAnyException();
@@ -173,6 +195,24 @@
 +                {"schemaVersion":1,"id":"request-1","kind":"command_request","command":"searchNearbyPlaces","args":{"useCurrentLocation":true}}
 +                """);
 +        assertThatCode(() -> validator.validate(envelope, "request-1")).doesNotThrowAnyException();
++    }
++
++    @Test
++    void acceptsKeywordDiscoveryAndRejectsInvalidBounds() throws Exception {
++        var envelope = objectMapper.readTree("""
++                {"schemaVersion":1,"id":"request-1","kind":"command_request","command":"searchNearbyPlaces","args":{"useCurrentLocation":true,"keyword":"갈비탕","limit":3}}
++                """);
++        assertThatCode(() -> validator.validate(envelope, "request-1")).doesNotThrowAnyException();
++        var args = (com.fasterxml.jackson.databind.node.ObjectNode) envelope.path("args");
++        args.put("keyword", "   ");
++        assertThatThrownBy(() -> validator.validate(envelope, "request-1")).isInstanceOf(VoiceAiException.class);
++        args.put("keyword", "갈비탕");
++        for (int limit : new int[] {0, 4, Integer.MAX_VALUE}) {
++            args.put("limit", limit);
++            assertThatThrownBy(() -> validator.validate(envelope, "request-1")).isInstanceOf(VoiceAiException.class);
++        }
++        args.put("limit", 1.5);
++        assertThatThrownBy(() -> validator.validate(envelope, "request-1")).isInstanceOf(VoiceAiException.class);
 +    }
 +
 +    @Test
@@ -208,16 +248,17 @@
                      .andExpect(jsonPath("$.systemInstruction.parts[0].text")
                              .value(org.hamcrest.Matchers.containsString("\nrequest id: " + requestId)))
                      .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
-@@ -203,6 +203,22 @@
+@@ -203,6 +203,23 @@
          server.verify();
      }
 
 +    @ParameterizedTest
-+    @ValueSource(strings = {"근처 뭐 있어?", "근처에 뭐 있는지 알려줘", "아무거나 주변에 있는 거 보여줘"})
++    @ValueSource(strings = {"근처 뭐 있어?", "근처에 뭐 있는지 알려줘", "아무거나 주변에 있는 거 보여줘", "갈비탕집 있어?"})
 +    void suppliesGeneralDiscoveryInstructionsAndSchema(String message) {
 +        server.expect(requestTo("https://gemini.test/v1beta/models/gemini-test:generateContent"))
 +                .andExpect(jsonPath("$.contents[0].parts[0].text").value(message))
 +                .andExpect(jsonPath("$.systemInstruction.parts[0].text").value(org.hamcrest.Matchers.containsString("Never ask for date, time, quantity or category for general discovery")))
++                .andExpect(jsonPath("$.systemInstruction.parts[0].text").value(org.hamcrest.Matchers.containsString("\"keyword\":\"갈비탕\"")))
 +                .andExpect(jsonPath("$.generationConfig.responseJsonSchema.anyOf[0].properties.command.enum[0]").value("searchNearbyPlaces"))
 +                .andRespond(withSuccess("""
 +                        {"candidates":[{"content":{"parts":[{"text":"{\\"schemaVersion\\":1,\\"id\\":\\"request-1\\",\\"kind\\":\\"command_request\\",\\"command\\":\\"searchNearbyPlaces\\",\\"args\\":{\\"useCurrentLocation\\":true}}"}]}}]}

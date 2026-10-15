@@ -57,7 +57,9 @@ describe('ReservationBoxScreen', () => {
     expect(screen.getByTestId('v2-reservation-box-screen')).toBeVisible();
     expect(screen.getByText('보유 예약 1건')).toBeVisible();
     expect(screen.getByText('예약 번호 901')).toBeVisible();
-    expect(screen.getByText('GENERAL')).toBeVisible();
+    expect(screen.getByText('! 대기')).toBeVisible();
+    expect(screen.queryByText('GENERAL')).toBeNull();
+    expect(screen.queryByText('R')).toBeNull();
     expect(screen.getByText('2명 예약')).toBeVisible();
     await user.press(screen.getByTestId('reservation-card-901'));
     expect(onOpenReservation).toHaveBeenCalledWith(901);

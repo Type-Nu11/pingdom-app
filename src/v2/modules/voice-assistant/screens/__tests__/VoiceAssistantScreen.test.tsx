@@ -1,3 +1,4 @@
+import { draftQuote } from '../../model/__tests__/reservationDraft.fixture';
 import { localPickerDate } from '../../components/VoiceClarificationPicker';
 import React from 'react';
 import { AppState, Keyboard } from 'react-native';
@@ -11,6 +12,48 @@ import { SettingsScreen } from '../../../user/settings';
 import { profileApi } from '../../../user/profile/__tests__';
 import { notificationApi } from '../../../user/notifications/__tests__';
 import type { FinalInput, SpeechEvent, SpeechInputAdapter } from '../../model/voiceInput';
+import type { VoiceReservationFlow } from '../../hooks/useVoiceReservation';
+
+function reservationFlow(phase = 'idle'): VoiceReservationFlow {
+  return { booker: { bookerName: '', bookerPhone: '', requestNote: '' }, setBooker: jest.fn(), place: { id: 1, name: 'Cafe' }, quantity: 2, date: null, dates: ['2060-10-24'], dateSlots: [], selectedId: null,
+    loading: false, confirm: jest.fn(async () => {}), bookerErrorsVisible: false, state: { phase, confirmation: draftQuote().confirmation }, controller: { cancel: jest.fn(), restore: jest.fn(), retry: jest.fn() },
+    setPeople: jest.fn(), selectDate: jest.fn(), selectSlot: jest.fn(), clearSelection: jest.fn() } as unknown as VoiceReservationFlow;
+}
+
+test('reservation picker accepts typing and forwards existing place and new quantity without executing a booking', async () => {
+  const x = speech(), submit = jest.fn((_input: FinalInput) => 'accepted' as const), flow = reservationFlow();
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} serverSubmission onFinalInput={submit} reservationFlow={flow} />).element);
+  expect(screen.getByLabelText('요청 내용')).toHaveProp('editable', true);
+  expect(screen.getByRole('button', { name: '마이크 시작' })).toBeEnabled();
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '3명으로 바꿔줘');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  expect(submit).toHaveBeenCalledTimes(1);
+  expect(submit.mock.calls[0][0].text).toContain('Cafe (placeId=1)');
+  expect(submit.mock.calls[0][0].text).toContain('3명으로 바꿔줘');
+  expect(flow.selectSlot).not.toHaveBeenCalled();
+});
+
+test('reservation picker remains touchable during voice capture and voice sends the current place context', async () => {
+  const x = speech(), submit = jest.fn((_input: FinalInput) => 'accepted' as const), flow = reservationFlow();
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} serverSubmission onFinalInput={submit} reservationFlow={flow} />).element);
+  await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+  expect(screen.getByTestId('voice-picker-quantity')).toBeVisible();
+  expect(screen.getByRole('button', { name: '3명' })).toBeEnabled();
+  await act(() => x.emit({ type: 'final', text: '세 명으로 바꿔줘' }));
+  await fireEvent.press(screen.getByRole('button', { name: '중지하고 보내기' }));
+  await act(() => x.emit({ type: 'ended' }));
+  await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+  expect(submit.mock.calls[0][0]).toMatchObject({ source: 'voice' });
+  expect(submit.mock.calls[0][0].text).toContain('Cafe (placeId=1)');
+  expect(submit.mock.calls[0][0].text).toContain('세 명으로 바꿔줘');
+});
+
+test.each(['submitting', 'unknown'])('reservation %s keeps duplicate input disabled', async phase => {
+  const x = speech();
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} reservationFlow={reservationFlow(phase)} />).element);
+  expect(screen.getByLabelText('요청 내용')).toHaveProp('editable', false);
+  expect(screen.getByRole('button', { name: '마이크 시작' })).toBeDisabled();
+});
 
 function navigationWrapper(children: React.ReactNode) {
   const listeners = new Map<string, () => void>();
@@ -74,17 +117,17 @@ test('partial speech stays on screen and final speech sends once after three sec
   await renderWithProviders(element);
   await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
   expect(x.session.start).toHaveBeenCalledTimes(1);
-  expect(screen.getByTestId('voice-listening-prompt')).toHaveTextContent('듣고있어요!');
+  expect(screen.getByTestId('voice-listening-prompt')).toHaveProp('placeholder', '듣고있어요!');
   expect(screen.queryByTestId('voice-assistant-details')).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 취소' })).toBeNull();
   await act(() => x.emit({ type: 'partial', text: '카페' }));
   expect(screen.getByTestId('voice-partial')).toBeVisible();
-  expect(screen.getByTestId('voice-partial')).toHaveTextContent('카페');
+  expect(screen.getByTestId('voice-partial')).toHaveDisplayValue('카페');
   expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
   await act(() => { x.emit({ type: 'final', text: '카페 검색' }); x.emit({ type: 'final', text: '카페 검색' }); });
   expect(submit).not.toHaveBeenCalled();
-  expect(screen.getByTestId('voice-listening-prompt')).toHaveTextContent('카페 검색');
+  expect(screen.getByTestId('voice-listening-prompt')).toHaveDisplayValue('카페 검색');
   expect(screen.queryByText(voiceAssistantResources.ko.command.submission)).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 확인' })).toBeNull();
   expect(screen.queryByRole('button', { name: '입력 취소' })).toBeNull();
@@ -127,6 +170,41 @@ test.each([['ko', 'ko-KR'], ['en', 'en-US']] as const)('%s AI entry starts STT o
   await fireEvent.press(screen.getByRole('button', { name: voiceAssistantResources[language].stop }));
   await act(() => x.emit({ type: 'final', text: 'hello' }));
   expect(submit).toHaveBeenCalledTimes(1);
+});
+
+test.each(['', '용짬뽕'] as const)('tapping the listening composer switches directly to typing and preserves %s', async partial => {
+  const x = speech();
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} autoStart serverSubmission onFinalInput={submit} onClose={jest.fn()} />).element);
+  await waitFor(() => expect(x.session.start).toHaveBeenCalledTimes(1));
+  if (partial) await act(() => x.emit({ type: 'partial', text: partial }));
+  const input = screen.getByLabelText('요청 내용');
+  expect(input).toHaveProp('editable', true);
+  await fireEvent(input, 'focus');
+  expect(screen.getByLabelText('요청 내용')).toBe(input);
+  expect(input).toHaveDisplayValue(partial);
+  expect(x.session.cancel).toHaveBeenCalledTimes(1);
+  expect(x.session.stop).not.toHaveBeenCalled();
+  expect(screen.queryByRole('button', { name: '중지하고 보내기' })).toBeNull();
+  await act(() => x.emit({ type: 'final', text: '늦게 도착한 음성' }));
+  expect(submit).not.toHaveBeenCalled();
+  expect(input).toHaveDisplayValue(partial);
+  await fireEvent.changeText(input, '용짬뽕 찾아');
+  await fireEvent(input, 'submitEditing');
+  expect(submit).toHaveBeenCalledTimes(1);
+  expect(submit.mock.calls[0][0]).toMatchObject({ text: '용짬뽕 찾아', source: 'text' });
+});
+
+test('typing during automatic permission lookup prevents late native capture', async () => {
+  const x = speech();
+  let finish!: (permission: 'granted') => void;
+  x.adapter.getPermission = () => new Promise(resolve => { finish = resolve; });
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} autoStart onClose={jest.fn()} />).element);
+  await fireEvent(screen.getByLabelText('요청 내용'), 'focus');
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '텍스트 요청');
+  await act(async () => finish('granted'));
+  expect(x.session.start).not.toHaveBeenCalled();
+  expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('텍스트 요청');
 });
 
 test('automatic STT permission rejection keeps the text alternative available', async () => {
@@ -254,7 +332,7 @@ test('unsupported AI request shows Figma feedback, then speak again starts a fre
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '응애 나 아기 용인용인용인');
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   await view.rerender(View({ phase: 'unrecognized' }));
-  expect(screen.getByText('응애 나 아기 용인용인용인')).toBeVisible();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“응애 나 아기 용인용인용인”');
   expect(screen.getByText(voiceAssistantResources.ko.feedback.unrecognized)).toBeVisible();
   expect(screen.queryByText('Translation unavailable')).toBeNull();
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
@@ -307,7 +385,9 @@ test.each(['assistant', 'clarification', 'invalidResponse'] as const)('%s remain
   await renderWithProviders(element);
   expect(screen.getByText(voiceAssistantResources.ko.advisory)).toBeVisible();
   if (kind !== 'assistant') expect(screen.getByText(voiceAssistantResources.ko[kind])).toBeVisible();
-  if (kind !== 'invalidResponse') expect(screen.getByText('예약 성공')).toHaveStyle({ color: lightTheme.colors.text });
+  if (kind !== 'invalidResponse') expect(screen.getByText('예약 성공')).toHaveStyle({
+    color: kind === 'assistant' ? lightTheme.colors.textStrong : lightTheme.colors.text,
+  });
   expect(screen.queryByText(/예약 확정 여부/)).toBeNull();
 });
 
@@ -319,7 +399,7 @@ test('unrelated accepted request does not show reservation or delivery boilerpla
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   await waitFor(() => expect(onFinalInput).toHaveBeenCalledTimes(1));
   expect(screen.queryByText(/예약이 확정|예약 확정 여부|입력을 어시스턴트에 전달/)).toBeNull();
-  expect(screen.getByText('오늘 날씨 어때?')).toBeVisible();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“오늘 날씨 어때?”');
 });
 
 test('settings has no assistant input entry and retains appearance preferences', async () => {
@@ -367,12 +447,14 @@ test('app focus resumes input after Android focus loss, while background still c
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
 });
 
-test('nullable TICKET names are not labeled as general admission and never imply booking success', async () => {
+test('place-only availability displays time without internal product types or booking success', async () => {
   const result = { schemaVersion: 1, id: 'app-slot', kind: 'command_result', source: 'app', commandId: 'slot', command: 'getAvailabilities',
-    outcome: { status: 'succeeded', data: { placeId: 1, date: '2026-09-20', quantity: 2, availabilities: [{ id: 5, placeId: 1, productId: 6, productName: null,
-      productType: 'TICKET', startsAt: '2026-09-20T05:00:00Z', endsAt: '2026-09-20T06:00:00Z', remainingCapacity: 3, status: 'ACTIVE' }] } } } as const;
+    outcome: { status: 'succeeded', data: { placeId: 1, date: '2026-09-20', quantity: 2, availabilities: [{ id: 5, placeId: 1,
+      startsAt: '2026-09-20T05:00:00Z', endsAt: '2026-09-20T06:00:00Z', remainingCapacity: 3, status: 'ACTIVE' }] } } } as const;
   await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} commandState={{ phase: 'result', result }} />).element);
-  expect(screen.getByText('TICKET')).toBeOnTheScreen();
+  expect(screen.getByText(/2026-09-20T05:00:00Z/)).toBeOnTheScreen();
+  expect(screen.queryByText('TICKET')).toBeNull();
+  expect(screen.queryByText('GENERAL')).toBeNull();
   expect(screen.queryByText('일반 이용')).toBeNull();
   expect(screen.queryByText('예약 성공')).toBeNull();
 });
@@ -485,7 +567,7 @@ test('a greeting displays the actual assistant reply instead of the fixed place-
   expect(screen.queryByTestId('voice-reservation-draft')).toBeNull();
 });
 
-test('sent drafts clear immediately while user and assistant turns remain distinct across follow-up messages', async () => {
+test('single Figma panel replaces the previous question and answer on each submission', async () => {
   let resolve!: (value: 'accepted') => void;
   const submit = jest.fn((_input: FinalInput) => new Promise<'accepted'>(done => { resolve = done; }));
   const props = { onClose: jest.fn(), serverSubmission: true as const, onFinalInput: submit };
@@ -493,9 +575,9 @@ test('sent drafts clear immediately while user and assistant turns remain distin
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '근처에 뭐 있어?');
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
-  expect(screen.getByTestId('voice-turn-1')).toHaveTextContent(/나/);
-  expect(screen.getByTestId('voice-user-message-1')).toHaveStyle({ alignSelf: 'flex-end' });
-  expect(screen.getByTestId('voice-turn-1')).toHaveTextContent(/근처에 뭐 있어/);
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처에 뭐 있어?”');
+  expect(screen.queryByTestId('voice-user-message-1')).toBeNull();
+  expect(screen.queryByText('나')).toBeNull();
   expect(submit.mock.calls[0][0].text).toBe('근처에 뭐 있어?');
   await act(async () => resolve('accepted'));
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
@@ -505,18 +587,18 @@ test('sent drafts clear immediately while user and assistant turns remain distin
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '카페를 보여줘');
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props} commandState={{ phase: 'processing' }} />).element);
-  expect(screen.getByText('근처에 뭐 있어?')).toBeVisible();
-  expect(screen.getByText('어떤 장소를 찾으시나요?')).toBeVisible();
-  expect(screen.getByTestId('voice-turn-2')).toHaveTextContent(/카페를 보여줘/);
+  expect(screen.queryByText(/근처에 뭐 있어/)).toBeNull();
+  expect(screen.queryByText('어떤 장소를 찾으시나요?')).toBeNull();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“카페를 보여줘”');
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
   await act(async () => resolve('accepted'));
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
     commandState={{ phase: 'assistant', text: '카페 정보를 확인했어요.' }} />).element);
-  expect(screen.getByText('어떤 장소를 찾으시나요?')).toBeVisible();
+  expect(screen.queryByText('어떤 장소를 찾으시나요?')).toBeNull();
   expect(screen.getByText('카페 정보를 확인했어요.')).toBeVisible();
 });
 
-test('failed request remains in the conversation and retries through the existing transport retry', async () => {
+test('failed request remains in the single panel and retries through the existing transport retry', async () => {
   const submit = jest.fn((_input: FinalInput) => 'accepted' as const);
   const retry = jest.fn();
   const props = { onClose: jest.fn(), serverSubmission: true as const, onFinalInput: submit, onCommandRetry: retry };
@@ -526,7 +608,7 @@ test('failed request remains in the conversation and retries through the existin
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
     commandState={{ phase: 'error', code: 'NETWORK_ERROR' }} />).element);
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
-  expect(screen.getByText('근처 카페 찾아줘')).toBeVisible();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처 카페 찾아줘”');
   await fireEvent.press(screen.getByTestId('voice-command-retry'));
   expect(retry).toHaveBeenCalledTimes(1);
   expect(submit).toHaveBeenCalledTimes(1);
@@ -534,7 +616,7 @@ test('failed request remains in the conversation and retries through the existin
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props}
     commandState={{ phase: 'assistant', text: '새 답변' }} />).element);
-  expect(screen.getByText('근처 카페 찾아줘')).toBeVisible();
+  expect(screen.queryByText(/근처 카페 찾아줘/)).toBeNull();
   expect(screen.queryByTestId('voice-command-retry')).toBeNull();
 });
 
@@ -543,10 +625,10 @@ test('changing the session consumer clears in-memory conversation history', asyn
   const view = await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission onFinalInput={submit} />).element);
   await fireEvent.changeText(screen.getByLabelText('요청 내용'), '이전 계정 요청');
   await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
-  expect(screen.getByText('이전 계정 요청')).toBeVisible();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“이전 계정 요청”');
   await view.rerender(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission
     onFinalInput={jest.fn(() => 'accepted' as const)} />).element);
-  expect(screen.queryByText('이전 계정 요청')).toBeNull();
+  expect(screen.queryByText(/이전 계정 요청/)).toBeNull();
 });
 
 test('place results use the Figma compact sheet while retaining the composer and real user request', async () => {
@@ -562,12 +644,63 @@ test('place results use the Figma compact sheet while retaining the composer and
     ] } },
   } }} />).element);
   expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처에 뭐 있는지 알려줘”');
-  expect(screen.getByTestId('voice-assistant-details')).toHaveStyle({ height: 557, borderTopLeftRadius: 36, borderBottomRightRadius: 36, overflow: 'hidden' });
+  expect(screen.getByTestId('voice-assistant-details')).toHaveStyle({ height: 'auto', borderTopLeftRadius: 36, borderBottomRightRadius: 36, overflow: 'hidden' });
   expect(screen.queryByTestId('voice-user-message-1')).toBeNull();
   expect(screen.getByText('여기서 1.23km')).toBeVisible();
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
   expect(screen.queryByText(/4.8점|지금 영업 중/)).toBeNull();
   await view.rerender(navigationWrapper(<VoiceAssistantScreen {...props} commandState={{ phase: 'clarification', field: 'date' }} />).element);
-  expect(screen.getByTestId('voice-user-message-1')).toBeVisible();
+  expect(screen.queryByTestId('voice-user-message-1')).toBeNull();
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“근처에 뭐 있는지 알려줘”');
   expect(screen.getByText('며칠에 방문하시나요?')).toBeVisible();
+});
+
+test.each(['text', 'voice'] as const)('%s booker request reaches the same reservation tool flow with current place context', async source => {
+  const x = speech(), submit = jest.fn((_input: FinalInput) => 'accepted' as const), flow = reservationFlow();
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} serverSubmission onFinalInput={submit} reservationFlow={flow} />).element);
+  const text = '이름 김테스트 연락처 01012345678 요청사항 창가 자리';
+  if (source === 'text') {
+    await fireEvent.changeText(screen.getByLabelText('요청 내용'), text);
+    await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  } else {
+    await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+    await act(() => x.emit({ type: 'final', text }));
+    await fireEvent.press(screen.getByRole('button', { name: '중지하고 보내기' }));
+    await act(() => x.emit({ type: 'ended' }));
+  }
+  await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+  expect(submit.mock.calls[0][0].text).toContain(text);
+  expect(submit.mock.calls[0][0].text).toContain('updateReservationBooker');
+  expect(submit.mock.calls[0][0].text).toContain('placeId=1');
+  expect(flow.selectSlot).not.toHaveBeenCalled();
+});
+
+test.each(['text', 'voice'] as const)('%s explicit confirmation calls the existing reservation controller instead of the LLM', async source => {
+  const x = speech(), submit = jest.fn((_input: FinalInput) => 'accepted' as const), flow = reservationFlow('review');
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onClose={jest.fn()} serverSubmission onFinalInput={submit} reservationFlow={flow} />).element);
+  if (source === 'text') {
+    await fireEvent.changeText(screen.getByLabelText('요청 내용'), '확정해줘');
+    await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  } else {
+    await fireEvent.press(screen.getByRole('button', { name: '마이크 시작' }));
+    await act(() => x.emit({ type: 'final', text: '예약 신청해줘' }));
+    await fireEvent.press(screen.getByRole('button', { name: '중지하고 보내기' }));
+    await act(() => x.emit({ type: 'ended' }));
+  }
+  await waitFor(() => expect(flow.confirm).toHaveBeenCalledTimes(1));
+  expect(submit).not.toHaveBeenCalled();
+});
+test('confirmation before a displayed review stays in the normal AI flow', async () => {
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const), flow = reservationFlow();
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission onFinalInput={submit} reservationFlow={flow} />).element);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '확정해줘');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  expect(flow.confirm).not.toHaveBeenCalled(); expect(submit).toHaveBeenCalledTimes(1);
+});
+test('negated confirmation in a review cannot generate a reservation', async () => {
+  const submit = jest.fn((_input: FinalInput) => 'accepted' as const), flow = reservationFlow('review');
+  await renderWithProviders(navigationWrapper(<VoiceAssistantScreen onClose={jest.fn()} serverSubmission onFinalInput={submit} reservationFlow={flow} />).element);
+  await fireEvent.changeText(screen.getByLabelText('요청 내용'), '확정하지 마');
+  await fireEvent(screen.getByLabelText('요청 내용'), 'submitEditing');
+  expect(flow.confirm).not.toHaveBeenCalled(); expect(submit).toHaveBeenCalledTimes(1);
 });

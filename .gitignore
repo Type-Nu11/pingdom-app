@@ -38,6 +38,9 @@ yarn-error.*
 .claude
 .agents
 
+# Local task drafts
+/work/
+
 # typescript
 *.tsbuildinfo
 

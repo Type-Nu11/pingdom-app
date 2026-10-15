@@ -1,4 +1,5 @@
 import { getApiErrorUx, toApiError } from '../../../../shared/api';
+import type { Availability } from './reservationAvailability';
 
 const SUBMIT_ERROR_KEYS: Partial<Record<ReturnType<typeof getApiErrorUx>['kind'], string>> = {
   authentication: 'common.apiError.authentication.description',
@@ -12,13 +13,16 @@ const SUBMIT_ERROR_KEYS: Partial<Record<ReturnType<typeof getApiErrorUx>['kind']
   validation: 'reservation.create.submitValidationError',
 };
 
-export function reservationSubmitErrorKey(error: unknown): string {
+export function reservationSubmitErrorKey(error: unknown, slot?: Availability, now = new Date()): string {
   const apiError = toApiError(error);
   if (apiError.code === 'CAPACITY_EXCEEDED') return 'reservation.create.submitConflict';
   if (apiError.code === 'AVAILABILITY_CAPACITY_EXCEEDED') {
+    if (slot && new Date(slot.startsAt).getTime() <= now.getTime()) return 'reservation.create.submitAvailabilityError';
     return 'reservation.create.submitCapacityError';
   }
-  if (apiError.code === 'AVAILABILITY_NOT_FOUND' || apiError.code === 'RESOURCE_EXPIRED') {
+  if (apiError.code === 'RESERVATION_CAPACITY_EXCEEDED') return 'reservation.create.submitCapacityError';
+  if (apiError.code === 'AVAILABILITY_NOT_FOUND' || apiError.code === 'RESOURCE_EXPIRED'
+    || apiError.code === 'RESERVATION_SLOT_INACTIVE' || apiError.code === 'RESERVATION_PRODUCT_UNAVAILABLE') {
     return 'reservation.create.submitAvailabilityError';
   }
   if (apiError.code === 'INVALID_RESERVATION_INPUT'
@@ -34,5 +38,6 @@ export function reservationSubmitErrorKey(error: unknown): string {
 
 export function shouldRefreshReservationAvailability(error: unknown): boolean {
   const code = toApiError(error).code;
-  return code === 'AVAILABILITY_CAPACITY_EXCEEDED' || code === 'AVAILABILITY_NOT_FOUND';
+  return ['AVAILABILITY_CAPACITY_EXCEEDED', 'AVAILABILITY_NOT_FOUND', 'RESERVATION_CAPACITY_EXCEEDED',
+    'RESERVATION_SLOT_INACTIVE', 'RESERVATION_PRODUCT_UNAVAILABLE', 'QUOTE_CONDITIONS_CHANGED'].includes(code ?? '');
 }

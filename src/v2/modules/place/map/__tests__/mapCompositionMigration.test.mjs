@@ -76,7 +76,7 @@ test('bookmark state changes do not recreate native marker payloads', () => {
 
 test('the production place detail composes one V2 menu section with the selected numeric place id', () => {
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
-  const occurrences = bottomSheet.match(/<PlaceMenuSection placeId=\{place\.id\} \/>/g) ?? [];
+  const occurrences = bottomSheet.match(/<PlaceMenuSection\b[^>]*placeId=\{place\.id\}[^>]*\/>/g) ?? [];
 
   assert.match(bottomSheet, /from ['"]\.\.\/\.\.\/\.\.\/menus['"]/);
   assert.equal(occurrences.length, 1);
@@ -178,14 +178,14 @@ test('expanded place detail keeps the design photo ratio, short tab accent, and 
   const coupon = read('../../../booking/offers-coupons/components/PlaceCouponCta.tsx');
   const menu = read('../../menus/components/PlaceMenuSection.tsx');
 
-  assert.match(bottomSheet, /detailPhoto: \{[^}]*height: 180[^}]*width: 180/);
+  assert.match(bottomSheet, /detailPhoto: \{[^}]*height: 182[^}]*width: 242/);
   assert.match(bottomSheet, /detailPhotoPrimary: \{[^}]*width: 242/);
   assert.match(bottomSheet, /detailTabIndicator: \{[^}]*height: 2[^}]*width: 40/);
   assert.doesNotMatch(bottomSheet, /detailInfoBlock: \{[^}]*borderBottom/);
   assert.match(coupon, /const CompactSection = styled\.View`[^`]*border-top-width: 8px/);
   assert.doesNotMatch(coupon, /const CompactSection = styled\.View`[^`]*border-bottom-width/);
-  assert.match(menu, /const Section = styled\.View`[^`]*border-top-width: 8px/);
-  assert.doesNotMatch(menu, /const Section = styled\.View`[^`]*border-bottom-width/);
+  assert.match(menu, /const Section = styled\.View(?:<[^`]+>)?`[^`]*border-top-width: 8px/);
+  assert.doesNotMatch(menu, /const Section = styled\.View(?:<[^`]+>)?`[^`]*border-bottom-width/);
 });
 
 test('production V2 map owns opt-in assistant FAB and modal; settings has no input session entry', () => {

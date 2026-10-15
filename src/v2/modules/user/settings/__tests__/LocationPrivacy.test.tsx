@@ -2,7 +2,7 @@ import React from 'react';
 import { AppState, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { apiClient } from '../../../../shared/api';
 import { darkTheme } from '../../../../shared/theme';
@@ -106,25 +106,13 @@ test.each(['ko', 'en'] as const)('%s dark UI offers no unsupported preferences o
   await screen.findByRole('button', { name: language === 'ko' ? '위치 권한 요청' : 'Request location permission' });
   expect(screen.queryAllByRole('switch')).toHaveLength(0);
   expect(screen.queryByRole('button', { name: /위치 기록 전체 삭제|Delete all location history/ })).toBeNull();
-  await fireEvent.press(screen.getByText(language === 'ko' ? '위치 기록 전체 삭제' : 'Delete all location history'));
+  expect(screen.queryByText(language === 'ko' ? '위치 기록 전체 삭제' : 'Delete all location history')).toBeNull();
   expect(AsyncStorage.setItem).not.toHaveBeenCalled();
-  expect(screen.getByText(language === 'ko' ? '내 데이터 내보내기' : 'Export my data')).toBeVisible();
+  expect(screen.queryByText(language === 'ko' ? '내 데이터 내보내기' : 'Export my data')).toBeNull();
   expect(deleteRequest).not.toHaveBeenCalled();
   expect(screen.getByTestId('v2-location-privacy-screen')).toHaveStyle({ backgroundColor: darkTheme.colors.background });
 });
 
-
-test('export navigation describes user data and back returns to permission screen without downloading', async () => {
-  const exportData = jest.spyOn(accountApi, 'getUserDataExport');
-  const onBack = jest.fn();
-  const view = await renderWithProviders(<LocationPrivacyScreen onBack={onBack} />);
-  await view.user.press(screen.getByRole('button', { name: '내 데이터 내보내기' }));
-  expect(screen.getByTestId('v2-data-export-screen')).toBeVisible();
-  expect(exportData).not.toHaveBeenCalled();
-  await view.user.press(screen.getByLabelText('뒤로가기'));
-  expect(await screen.findByText('권한 필요')).toBeVisible();
-  expect(onBack).not.toHaveBeenCalled();
-});
 
 test('foreground while permission prompt resolves cannot overwrite the granted result', async () => {
   let resolve!: (value: Location.LocationPermissionResponse) => void;

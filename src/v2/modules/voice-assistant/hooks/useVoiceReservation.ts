@@ -3,10 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import type { QueryClient } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
-import { createAvailabilitiesQueryOptions, isSelectableConfirmedSlot, type AvailabilityList, type BookerInput } from '../../booking';
+import { createAvailabilitiesQueryOptions, isSelectableConfirmedSlot, type AvailabilityList, validateBookerInput, type BookerInput } from '../../booking';
 import { createPlaceDetailQueryOptions } from '../../place';
 import { projectVoicePlace } from '../model/voiceCommands';
-import type { VoicePlaceFacts } from '../model/voiceAssistantCommand.types';
+import type { AppCommandResult, VoicePlaceFacts } from '../model/voiceAssistantCommand.types';
 import type { VoiceCommandViewState } from './useVoiceCommands';
 
 export function reservationSlotDate(slot: AvailabilityList[number], timezone: string): string {
@@ -18,9 +18,12 @@ function slotTimezone(slot: AvailabilityList[number], fallback: string): string 
 async function loadSlots(queryClient: QueryClient, placeId: number): Promise<AvailabilityList> {
   return queryClient.fetchQuery({ ...createAvailabilitiesQueryOptions(placeId), staleTime: 0, retry: false });
 }
-export function useVoiceReservation(accountId: string | null, timezone: string, commandState: VoiceCommandViewState, contextKey = '') {
+export function useVoiceReservation(accountId: string | null, timezone: string, commandState: VoiceCommandViewState, contextKey = '', bookerUpdate?: AppCommandResult | null) {
   const queryClient = useQueryClient();
   const booking = useConfirmedReservation(accountId);
+  const [booker, setBooker] = useState<BookerInput>({ bookerName: '', bookerPhone: '', requestNote: '' });
+  const [bookerErrorsVisible, setBookerErrorsVisible] = useState(false);
+  const resetBooker = () => { setBooker({ bookerName: '', bookerPhone: '', requestNote: '' }); setBookerErrorsVisible(false); };
   const [place, setPlace] = useState<VoicePlaceFacts | null>(null);
   const [slots, setSlots] = useState<AvailabilityList>([]);
   const [quantity, setQuantity] = useState(2);
@@ -32,17 +35,18 @@ export function useVoiceReservation(accountId: string | null, timezone: string, 
   const latestAccount = useRef(accountId); latestAccount.current = accountId;
   const active = useRef(true);
   const previousContext = useRef({ accountId, contextKey });
-  const clearSelection = () => { revision.current++; setPlace(null); setSlots([]); setDate(null); setSelectedId(null); setLoading(false); booking.controller.cancel(); };
+  const clearSelection = () => { revision.current++; resetBooker(); setPlace(null); setSlots([]); setDate(null); setSelectedId(null); setLoading(false); booking.controller.cancel(); };
   useEffect(() => {
     if (previousContext.current.accountId === accountId && previousContext.current.contextKey !== contextKey) booking.controller.cancel();
     previousContext.current = { accountId, contextKey };
-    active.current = true; revision.current++; setPlace(null); setSlots([]); setDate(null); setSelectedId(null); setLoading(false);
+    active.current = true; revision.current++; resetBooker(); setPlace(null); setSlots([]); setDate(null); setSelectedId(null); setLoading(false);
     const sub = AppState.addEventListener('change', state => { if (state !== 'active') clearSelection(); });
     return () => { active.current = false; revision.current++; sub.remove(); };
   }, [accountId, contextKey]); // Account-owned selection; submitted recovery is managed by Booking.
   const selectPlace = async (next: VoicePlaceFacts, preferredId?: number, requestedQuantity?: number, requestedDate?: string) => {
     if (booking.state.phase === 'loading' || booking.state.phase === 'unknown' || booking.state.phase === 'submitting' || booking.state.phase === 'checking' || !accountId) return;
     const nextRevision = ++revision.current, capturedAccount = accountId;
+    if (next.id !== place?.id) resetBooker();
     booking.controller.cancel(); setPlace(next); setSlots([]); setDate(null); setSelectedId(null); setLoadError(false); setLoading(true);
     const people = requestedQuantity ?? quantity; setQuantity(people);
     try {
@@ -60,7 +64,7 @@ export function useVoiceReservation(accountId: string | null, timezone: string, 
   };
   useEffect(() => {
     if (commandState.phase !== 'canceled' && !(commandState.phase === 'error' && ['SESSION_EXPIRED', 'AUTHENTICATION_REQUIRED'].includes(commandState.code))) return;
-    revision.current++; setPlace(null); setSlots([]); setDate(null); setSelectedId(null); setLoading(false);
+    revision.current++; resetBooker(); setPlace(null); setSlots([]); setDate(null); setSelectedId(null); setLoading(false);
     // Do not interrupt the initial secure-storage read; submitted recovery belongs to Booking.
     if (booking.state.phase !== 'loading' || place) booking.controller.cancel();
   }, [commandState]);
@@ -69,7 +73,7 @@ export function useVoiceReservation(accountId: string | null, timezone: string, 
     if (commandState.phase !== 'result' || commandState.result.command !== 'getAvailabilities' || commandState.result.outcome.status !== 'succeeded') return;
     if (['loading', 'checking', 'submitting', 'unknown', 'success'].includes(booking.state.phase)) return;
     const result = commandState.result;
-    if (result === lastAvailabilityResult.current || place) return;
+    if (result === lastAvailabilityResult.current) return;
     lastAvailabilityResult.current = result;
     const { placeId: id, quantity: requestedQuantity, date: requestedDate } = commandState.result.outcome.data;
     const account = accountId, revisionAtStart = revision.current;
@@ -83,10 +87,20 @@ export function useVoiceReservation(accountId: string | null, timezone: string, 
     if (commandState.phase !== 'result' || commandState.result.command !== 'prepareReservation' || commandState.result.outcome.status !== 'succeeded') return;
     if (['loading', 'checking', 'submitting', 'unknown', 'success'].includes(booking.state.phase)) return;
     const draft = commandState.result.outcome.data.draft;
-    if (draft === lastDraft.current || place) return;
+    if (draft === lastDraft.current) return;
     lastDraft.current = draft;
     void selectPlace(draft.place, draft.availability.id, draft.quantity);
   }, [commandState, booking.state.phase]);
+  const lastBookerUpdate = useRef<object | null>(null);
+  useEffect(() => {
+    const result = bookerUpdate ?? (commandState.phase === 'result' ? commandState.result : null);
+    if (!result || result === lastBookerUpdate.current || result.command !== 'updateReservationBooker' || result.outcome.status !== 'succeeded') return;
+    if (loading || ['loading', 'checking'].includes(booking.state.phase)) return;
+    lastBookerUpdate.current = result;
+    if (!accountId || !place || place.id !== result.outcome.data.placeId || ['submitting', 'unknown', 'success'].includes(booking.state.phase)) return;
+    const fields = result.outcome.data.fields;
+    setBooker(current => ({ ...current, ...fields }));
+  }, [bookerUpdate, commandState, accountId, place?.id, loading, booking.state.phase]);
   const selectable = slots.filter(slot => isSelectableConfirmedSlot(slot, quantity, Date.now()));
   const dates = [...new Set(selectable.map(slot => reservationSlotDate(slot, slotTimezone(slot, timezone))))].sort();
   const dateSlots = selectable.filter(slot => reservationSlotDate(slot, slotTimezone(slot, timezone)) === date);
@@ -98,9 +112,14 @@ export function useVoiceReservation(accountId: string | null, timezone: string, 
     setSelectedId(id);
     await booking.controller.prepare({ placeId: place.id, placeName: place.name, availability: slot, quantity });
   };
-  return { ...booking, place, quantity, date, dates, dateSlots, selectedId, loading, loadError,
+  return { ...booking, booker, setBooker, bookerErrorsVisible, place, quantity, date, dates, dateSlots, selectedId, loading, loadError,
     selectPlace, selectDate, selectSlot, setPeople, clearSelection,
-    confirm: (booker: BookerInput) => booking.controller.confirm(booker),
+    confirm: async (input: BookerInput = booker) => {
+      if (booking.state.phase !== 'review' || loading || !accountId || AppState.currentState !== 'active') return;
+      setBookerErrorsVisible(true);
+      if (!validateBookerInput(input).isValid) return;
+      await booking.controller.confirm(input);
+    },
     slotTimezone: (slot: AvailabilityList[number]) => slotTimezone(slot, timezone),
   };
 }

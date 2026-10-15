@@ -27,6 +27,103 @@
           "const": "command_request"
         },
         "command": {
+          "const": "navigateToPage"
+        },
+        "args": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "page"
+              ],
+              "properties": {
+                "page": {
+                  "type": "string",
+                  "enum": [
+                    "map",
+                    "favorites",
+                    "reservations",
+                    "myPage",
+                    "settings",
+                    "search",
+                    "community",
+                    "communityPost",
+                    "recommendations",
+                    "coupons",
+                    "verifiedPlaces",
+                    "accountManagement",
+                    "notificationSettings",
+                    "loginInformation",
+                    "locationSettings",
+                    "privacySettings",
+                    "dataManagement"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "page"
+              ],
+              "properties": {
+                "page": {
+                  "const": "placeDetail"
+                },
+                "placeId": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "page"
+              ],
+              "properties": {
+                "page": {
+                  "const": "createReservation"
+                },
+                "placeId": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "kind",
+        "command",
+        "args"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "const": "command_request"
+        },
+        "command": {
           "const": "searchNearbyPlaces"
         },
         "args": {
@@ -36,6 +133,17 @@
             "useCurrentLocation"
           ],
           "properties": {
+            "keyword": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
             "touristCategory": {
               "enum": [
                 "K_POP",
@@ -389,6 +497,89 @@
             "PROVIDER_UNAVAILABLE",
             "INVALID_RESPONSE"
           ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "kind",
+        "command",
+        "args"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "const": "command_request"
+        },
+        "command": {
+          "const": "updateReservationBooker"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "placeId"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "bookerName"
+              ],
+              "properties": {
+                "bookerName": {}
+              }
+            },
+            {
+              "required": [
+                "bookerPhone"
+              ],
+              "properties": {
+                "bookerPhone": {}
+              }
+            },
+            {
+              "required": [
+                "requestNote"
+              ],
+              "properties": {
+                "requestNote": {}
+              }
+            }
+          ],
+          "properties": {
+            "placeId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "bookerName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "bookerPhone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 30,
+              "pattern": "^[0-9+()\\- ]+$"
+            },
+            "requestNote": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
         }
       }
     }

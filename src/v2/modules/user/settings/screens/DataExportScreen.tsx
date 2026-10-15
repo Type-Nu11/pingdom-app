@@ -31,7 +31,6 @@ export default function DataExportScreen({ onBack }: { onBack: () => void }) {
         <SettingsRow label={t('settings.export.download')} subtitle={t('settings.export.description')}
           disabled={state === 'loading'} busy={state === 'loading'} onPress={confirm} />
         {state !== 'idle' ? <SettingsRow label={t(`settings.export.${state}`)} /> : null}
-        <SettingsRow disabled label={t('settings.deleteAccount')} subtitle={t('settings.details.deleteAccount.description')} />
       </SettingsSection>
     </SettingsList>
   </SettingsScreenLayout>;

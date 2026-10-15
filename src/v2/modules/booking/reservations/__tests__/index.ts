@@ -51,7 +51,6 @@ export {
 export type {
   AvailabilityPresentation,
   AvailabilityPresentationSummary,
-  ReservationProductContractAssertions,
   ReservationProductType,
 } from '../model/reservationProduct';
 export { createPlaceAvailabilityApi } from '../api/placeAvailabilityApi';

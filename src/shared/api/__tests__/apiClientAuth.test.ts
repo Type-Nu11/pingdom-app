@@ -25,6 +25,42 @@ jest.mock('../authTokens', () => ({
 
 const mockAdapter = axios.defaults.adapter as jest.Mock;
 
+test.each([
+  { error: { code: 'invalid_api_key', type: 'invalid_request_error', message: 'Invalid API Key' } },
+  { error: { code: 'missing_api_key' } },
+  { error: { type: 'invalid_request_error', message: 'Invalid API Key' } },
+  { type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } },
+])('AI provider credentials failure preserves the user session %#', async data => {
+  mockAdapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
+    throw new AxiosError('Unauthorized', 'ERR_BAD_REQUEST', config, undefined, response(config, 401, data));
+  });
+  await expect(api.post('/ai/chat', { messages: [] })).rejects.toMatchObject({ response: { status: 401, data } });
+  expect(mockAdapter).toHaveBeenCalledTimes(1);
+  expect(persistTokens).not.toHaveBeenCalled();
+  expect(clearExpiredSession).not.toHaveBeenCalled();
+});
+
+test('an unknown AI 401 still refreshes and clears a genuinely expired session', async () => {
+  mockAdapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
+    if (config.url === '/auth/token/refresh') return response(config, 200, { accessToken: 'renewed-access-token' });
+    throw unauthorized(config);
+  });
+  await expect(api.post('/ai/chat', { messages: [] })).rejects.toMatchObject({ response: { status: 401 } });
+  expect(mockAdapter).toHaveBeenCalledTimes(3);
+  expect(clearExpiredSession).toHaveBeenCalledTimes(1);
+});
+
+test('provider-shaped errors on business APIs still use normal session validation', async () => {
+  mockAdapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
+    if (config.url === '/auth/token/refresh') return response(config, 200, { accessToken: 'renewed-access-token' });
+    throw new AxiosError('Unauthorized', 'ERR_BAD_REQUEST', config, undefined,
+      response(config, 401, { error: { code: 'invalid_api_key' } }));
+  });
+  await expect(api.get('/users/me')).rejects.toMatchObject({ response: { status: 401 } });
+  expect(mockAdapter).toHaveBeenCalledTimes(3);
+  expect(clearExpiredSession).toHaveBeenCalledTimes(1);
+});
+
 function response(config: InternalAxiosRequestConfig, status: number, data: unknown): AxiosResponse {
   return { config, data, headers: {}, status, statusText: String(status) };
 }

@@ -56,8 +56,7 @@ test('shows an actual zero and keeps the existing cache identity', async () => {
 test.each(['ko', 'en'] as const)('%s explains unavailable mutations with disabled accessibility state in dark mode', async (language) => {
   await renderWithProviders(<AccountManagementScreen onBack={jest.fn()} onOpenDetail={jest.fn()} />, { language, appearancePreference: 'DARK' });
   await screen.findByText('server_user');
-  const email = screen.getByRole('button', { name: language === 'ko' ? /이메일 수정, 이메일 직접 수정 계약/ : /Edit email, Direct email editing/ });
-  expect(email).toBeDisabled();
-  expect(screen.getByRole('button', { name: language === 'ko' ? /연결된 계정, 서버에서/ : /Connected accounts, The server/ })).toBeDisabled();
+  expect(screen.queryByText(language === 'ko' ? '이메일 수정' : 'Edit email')).toBeNull();
+  expect(screen.queryByText(language === 'ko' ? '연결된 계정' : 'Connected accounts')).toBeNull();
   expect(screen.getByTestId('v2-account-management-screen')).toHaveStyle({ backgroundColor: '#0F0F11' });
 });

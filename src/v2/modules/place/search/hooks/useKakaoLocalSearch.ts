@@ -7,8 +7,8 @@ import {
 } from '../api/kakaoLocalApi';
 
 type SearchPlacesOptions = {
-  centerLat: number;
-  centerLng: number;
+  centerLat?: number;
+  centerLng?: number;
 };
 
 const formatCoordinateAddress = (lat: number, lng: number) => `${lat.toFixed(6)}, ${lng.toFixed(6)}`;

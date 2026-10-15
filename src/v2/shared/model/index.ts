@@ -10,4 +10,4 @@ export type {
   StatusView,
 } from './statusPresentation';
 
-export { parseServerInstant } from './serverInstant';
+export { parseServerInstant, areServerInstantsEqual } from './serverInstant';

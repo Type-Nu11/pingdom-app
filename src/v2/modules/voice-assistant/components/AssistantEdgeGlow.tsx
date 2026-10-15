@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import Animated, {
   cancelAnimation, interpolateColor, ReduceMotion, useAnimatedProps,
   useFrameCallback, useSharedValue, withTiming, type SharedValue,
@@ -7,6 +7,7 @@ import Animated, {
 import Svg, { G, Rect } from 'react-native-svg';
 import styled from 'styled-components/native';
 
+const EDGE_GLOW = require('../assets/edge-glow-transparent.png');
 const FLOW_SEGMENTS = 24;
 const FLOW_DURATION_MS = 5000;
 const SPEAKING_SPEED = 1.6;
@@ -35,7 +36,7 @@ const FlowSegment = memo(function FlowSegment({ progress, segment, width, height
 });
 
 // Input focus and text changes do not rebuild the glow or occupy the JS thread.
-export const AssistantEdgeGlow = memo(function AssistantEdgeGlow({ speaking = false }: { speaking?: boolean }) {
+const AnimatedEdgeGlow = memo(function AnimatedEdgeGlow({ speaking = false }: { speaking?: boolean }) {
   const progress = useSharedValue(0);
   const speed = useSharedValue(1);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -56,12 +57,22 @@ export const AssistantEdgeGlow = memo(function AssistantEdgeGlow({ speaking = fa
     return () => { frame.setActive(false); cancelAnimation(speed); subscription.remove(); };
   }, [frame, speed]);
   return <GlowContainer pointerEvents="none" onLayout={({ nativeEvent: { layout } }) => setSize({ width: layout.width, height: layout.height })}>
-    <Glow source={require('../assets/edge-glow-transparent.png')} resizeMode="stretch" accessible={false} />
+    <Glow source={EDGE_GLOW} resizeMode="stretch" accessible={false} />
     {size.width > 0 && size.height > 0 && <Svg width="100%" height="100%" accessible={false}>
       {Array.from({ length: FLOW_SEGMENTS }, (_, segment) => <FlowSegment key={segment}
         segment={segment} progress={progress} width={size.width} height={size.height} perimeter={perimeter} />)}
     </Svg>}
   </GlowContainer>;
+});
+// Android repaints the full-screen SVG for each colour update. Keep the
+// existing glow image without a continuous drawing loop on this platform.
+export const AssistantEdgeGlow = memo(function AssistantEdgeGlow({ speaking = false }: { speaking?: boolean }) {
+  if (Platform.OS === 'android') {
+    return <GlowContainer pointerEvents="none">
+      <Glow source={EDGE_GLOW} resizeMode="stretch" accessible={false} />
+    </GlowContainer>;
+  }
+  return <AnimatedEdgeGlow speaking={speaking} />;
 });
 const GlowContainer = styled.View`overflow: hidden; position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;`;
 const Glow = styled.Image`position: absolute; width: 100%; height: 100%; opacity: 0.8;`;

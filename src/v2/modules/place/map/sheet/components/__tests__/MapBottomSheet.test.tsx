@@ -218,10 +218,15 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
     expect(screen.queryByText('실서버 쿠폰 발급 영역')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 8, paddingRight: 8 });
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
     expect(screen.getByText('23명이 검증했어요!')).toBeVisible();
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ width: '100%', paddingLeft: 0, paddingRight: 0 });
+    expect(screen.getByLabelText(selectedPlace.name)).toHaveStyle({ fontSize: 24, lineHeight: 31 });
+    expect(screen.getByRole('tab', { name: '정보' })).toHaveStyle({ height: 56 });
+    expect(screen.getByTestId('map-detail-back')).toHaveStyle({ width: 44, height: 44 });
     expect(screen.getByTestId('map-detail-active-tab-indicator')).toHaveStyle({
       height: 2,
       width: 40,
@@ -378,6 +383,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByText('매장이 깨끗해요')).toBeVisible();
     expect(screen.queryByText(/^\+\d+$/)).not.toBeOnTheScreen();
     expect(screen.getAllByTestId('review-feature-tags')).toHaveLength(1);
+    expect(screen.getAllByText('사용자')[0]).toHaveStyle({ fontSize: 18 });
     expect(screen.getByText('태그 없는 리뷰')).toBeVisible();
     result.unmount();
   });

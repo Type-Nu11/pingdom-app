@@ -1,6 +1,6 @@
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
@@ -32,7 +32,7 @@ const API_ERROR_DESCRIPTION_KEYS = {
   validation: 'common.apiError.validation.description',
 } as const;
 
-function MenuImage({ imageUrl, name }: { imageUrl: string | null; name: string }) {
+function MenuImage({ imageUrl, name, expanded = false, onOpen }: { imageUrl: string | null; name: string; expanded?: boolean; onOpen?: () => void }) {
   const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
 
@@ -40,7 +40,7 @@ function MenuImage({ imageUrl, name }: { imageUrl: string | null; name: string }
 
   if (!imageUrl || failed) {
     return (
-      <ImageFallback
+      <ImageFallback style={expanded ? { width: 104, height: 104 } : undefined}
         accessibilityLabel={t('placeMenu.accessibility.imageUnavailable', { name })}
         accessibilityRole="image"
       >
@@ -49,8 +49,8 @@ function MenuImage({ imageUrl, name }: { imageUrl: string | null; name: string }
     );
   }
 
-  return (
-    <MenuArtwork
+  const image = (
+    <MenuArtwork style={expanded ? { width: 104, height: 104 } : undefined}
       accessibilityLabel={t('placeMenu.accessibility.image', { name })}
       accessibilityRole="image"
       onError={() => setFailed(true)}
@@ -58,9 +58,12 @@ function MenuImage({ imageUrl, name }: { imageUrl: string | null; name: string }
       source={{ uri: imageUrl }}
     />
   );
+  return onOpen ? <Pressable accessibilityRole="button" accessibilityLabel={t('placeProduct.imageDetail', { name })} onPress={onOpen} testID="place-product-photo">{image}</Pressable> : image;
 }
 
-function MenuRow({ item, exchange, loading, failed, onRetry }: {
+function MenuRow({ item, exchange, loading, failed, onRetry, expanded = false, onOpenImage }: {
+  expanded?: boolean;
+  onOpenImage?: () => void;
   item: PlaceMenuPresentation;
   exchange?: MenuExchangeRate;
   loading: boolean;
@@ -76,13 +79,13 @@ function MenuRow({ item, exchange, loading, failed, onRetry }: {
     ? formatCurrency(item.priceAmount! * exchange.rate, exchange.quote, i18n.language) : null;
 
   return (
-    <Row testID={`place-menu-${item.id}`}>
+    <Row $expanded={expanded} testID={`place-menu-${item.id}`}>
       <MenuBody>
-        <MenuName numberOfLines={2}>{item.name}</MenuName>
+        <MenuName $expanded={expanded} numberOfLines={2}>{item.name}</MenuName>
         {item.description ? (
-          <MenuDescription numberOfLines={3}>{item.description}</MenuDescription>
+          <MenuDescription $expanded={expanded} numberOfLines={3}>{item.description}</MenuDescription>
         ) : null}
-        <MenuPrice
+        <MenuPrice $expanded={expanded}
           accessibilityLabel={t('placeMenu.accessibility.price', { price: priceText })}
           adjustsFontSizeToFit
           minimumFontScale={0.8}
@@ -113,15 +116,17 @@ function MenuRow({ item, exchange, loading, failed, onRetry }: {
           </SoldOut>
         ) : null}
       </MenuBody>
-      <MenuImage imageUrl={item.imageUrl} name={item.name} />
+      <MenuImage imageUrl={item.imageUrl} name={item.name} expanded={expanded} onOpen={onOpenImage} />
     </Row>
   );
 }
 
-export default function PlaceMenuSection({ placeId }: { placeId: number }) {
+export default function PlaceMenuSection({ placeId, presentation = 'default', onOpenImages }: { placeId: number; presentation?: 'default' | 'mapDetail'; onOpenImages?: (imageUrls: string[], initialIndex: number) => void }) {
   const { t } = useTranslation();
+  const expanded = presentation === 'mapDetail';
   const query = usePlaceMenus(placeId);
   const menus = useMemo(() => selectPlaceMenus(query.data), [query.data]);
+  const images = [...new Set(menus.flatMap(menu => menu.imageUrl ? [menu.imageUrl] : []))];
   const { profile } = useProfile({ enabled: isValidPlaceMenuId(placeId) && menus.length > 0 });
   const currency = getMenuExchangeCurrency(profile?.country);
   const hasConversion = currency !== null && menus.some((menu) => menu.currency === 'KRW' && menu.priceAmount !== null);
@@ -131,8 +136,8 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
 
   if (query.isPending) {
     return (
-      <Section accessibilityRole="summary" testID="place-menu-loading">
-        <SectionTitle>{t('placeMenu.title')}</SectionTitle>
+      <Section $expanded={expanded} accessibilityRole="summary" testID="place-menu-loading">
+        <SectionTitle $expanded={expanded}>{t(expanded ? 'placeProduct.title' : 'placeMenu.title')}</SectionTitle>
         <StateRow accessibilityLiveRegion="polite">
           <ActivityIndicator accessibilityLabel={t('placeMenu.loading')} />
           <StateText>{t('placeMenu.loading')}</StateText>
@@ -145,8 +150,8 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
     const ux = getApiErrorUx(query.error);
     if (ux.kind === 'canceled') return null;
     return (
-      <Section accessibilityRole="summary" testID="place-menu-error">
-        <SectionTitle>{t('placeMenu.title')}</SectionTitle>
+      <Section $expanded={expanded} accessibilityRole="summary" testID="place-menu-error">
+        <SectionTitle $expanded={expanded}>{t(expanded ? 'placeProduct.title' : 'placeMenu.title')}</SectionTitle>
         <StateText accessibilityLiveRegion="polite">{t('placeMenu.error.title')}</StateText>
         <ErrorDescription>{t(API_ERROR_DESCRIPTION_KEYS[ux.kind])}</ErrorDescription>
         {ux.action === 'retry' || ux.kind === 'notFound' ? <RetryButton
@@ -164,18 +169,19 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
 
   if (!menus.length) {
     return (
-      <Section accessibilityRole="summary" testID="place-menu-empty">
-        <SectionTitle>{t('placeMenu.title')}</SectionTitle>
+      <Section $expanded={expanded} accessibilityRole="summary" testID="place-menu-empty">
+        <SectionTitle $expanded={expanded}>{t(expanded ? 'placeProduct.title' : 'placeMenu.title')}</SectionTitle>
         <EmptyText accessibilityLiveRegion="polite">{t('placeMenu.empty')}</EmptyText>
       </Section>
     );
   }
 
   return (
-    <Section accessibilityRole="summary" testID="place-menu-section">
-      <SectionTitle>{t('placeMenu.title')}</SectionTitle>
+    <Section $expanded={expanded} accessibilityRole="summary" testID="place-menu-section">
+      <SectionTitle $expanded={expanded}>{t(expanded ? 'placeProduct.title' : 'placeMenu.title')}</SectionTitle>
       {query.isError ? <ApiErrorState error={query.error} busy={query.isFetching} onRetry={() => query.refetch({ cancelRefetch: false })} /> : null}
-      {menus.map((menu) => <MenuRow item={menu} key={menu.id}
+      {menus.map((menu) => <MenuRow expanded={expanded} item={menu} key={menu.id}
+        onOpenImage={menu.imageUrl && onOpenImages ? () => onOpenImages(images, images.indexOf(menu.imageUrl!)) : undefined}
         exchange={hasConversion ? exchange.data : undefined}
         loading={hasConversion && exchange.isPending}
         failed={hasConversion && exchange.isError}
@@ -185,16 +191,16 @@ export default function PlaceMenuSection({ placeId }: { placeId: number }) {
   );
 }
 
-const Section = styled.View`
+const Section = styled.View<{ $expanded: boolean }>`
   border-top-color: ${({ theme }) => theme.colors.backgroundNeutral};
   border-top-width: 8px;
-  padding: 20px 24px;
+  padding: ${({ $expanded }) => $expanded ? 16 : 20}px 24px;
 `;
 
-const SectionTitle = styled(AppText)`
+const SectionTitle = styled(AppText)<{ $expanded: boolean }>`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  font-size: ${({ theme, $expanded }) => $expanded ? 18 : theme.typography.label.fontSize}px;
+  font-weight: ${({ theme, $expanded }) => $expanded ? 700 : theme.typography.label.fontWeight};
 `;
 
 const StateRow = styled.View`
@@ -243,14 +249,14 @@ const RetryText = styled(AppText)`
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
-const Row = styled.View`
+const Row = styled.View<{ $expanded: boolean }>`
   align-items: center;
   border-bottom-color: ${({ theme }) => theme.colors.border};
   border-bottom-width: 1px;
   flex-direction: row;
   gap: ${({ theme }) => theme.spacing.md}px;
-  min-height: 128px;
-  padding-vertical: 14px;
+  min-height: ${({ $expanded }) => $expanded ? 136 : 128}px;
+  padding-vertical: ${({ $expanded }) => $expanded ? 16 : 14}px;
 `;
 
 const MenuBody = styled.View`
@@ -258,24 +264,24 @@ const MenuBody = styled.View`
   min-width: 0;
 `;
 
-const MenuName = styled(AppText)`
+const MenuName = styled(AppText)<{ $expanded: boolean }>`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: 14px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
+  font-size: ${({ $expanded }) => $expanded ? 18 : 14}px;
+  font-weight: ${({ theme, $expanded }) => $expanded ? 700 : theme.typography.label.fontWeight};
+  line-height: ${({ theme, $expanded }) => $expanded ? 24 : theme.typography.label.lineHeight}px;
 `;
 
-const MenuDescription = styled(AppText)`
+const MenuDescription = styled(AppText)<{ $expanded: boolean }>`
   color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 13px;
-  line-height: 18px;
-  margin-top: ${({ theme }) => theme.spacing.xs}px;
+  font-size: ${({ $expanded }) => $expanded ? 16 : 13}px;
+  line-height: ${({ $expanded }) => $expanded ? 21 : 18}px;
+  margin-top: ${({ theme, $expanded }) => $expanded ? 8 : theme.spacing.xs}px;
 `;
 
-const MenuPrice = styled(AppText)`
+const MenuPrice = styled(AppText)<{ $expanded: boolean }>`
   color: ${({ theme }) => theme.colors.textStrong};
   flex-shrink: 1;
-  font-size: 14px;
+  font-size: ${({ $expanded }) => $expanded ? 16 : 14}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   margin-top: ${({ theme }) => theme.spacing.sm}px;
 `;

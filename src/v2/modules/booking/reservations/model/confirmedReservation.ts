@@ -1,7 +1,8 @@
-import { parseServerInstant } from '../../../../shared/model';
+import { parseServerInstant, areServerInstantsEqual } from '../../../../shared/model';
 import { ApiError } from '../../../../shared/api';
 import type { CreateReservationBody, Reservation, ReservationConfirmation, ReservationQuote } from '../api/reservationApi';
 import { type Availability, createReservationIdempotencyKey } from './reservationAvailability';
+import { isSelectableAvailability } from './reservationProduct';
 import { validateReservationQuote } from './reservationConfirmation';
 import { type BookerInput, validateBookerInput, toBookerRequestFields } from './reservationBooker';
 
@@ -35,11 +36,17 @@ type Dependencies = {
 const accountLocks = new Set<string>();
 const comparable = (c: Readonly<ReservationConfirmation>) => {
   const { expiresAt: _expiresAt, ...terms } = c;
-  return JSON.stringify(Object.fromEntries(Object.entries(terms).sort(([a], [b]) => a.localeCompare(b))));
+  // Normalize only for comparison; keep server facts and persisted retry bodies intact.
+  // Invalid values stay distinct from valid/null timestamps and cannot verify a result.
+  const timeFields = new Set(['startsAt', 'endsAt', 'cancellationDeadline']);
+  return JSON.stringify(Object.fromEntries(Object.entries(terms).filter(([key]) => ['placeId', 'placeName', 'availabilityId', 'startsAt', 'endsAt', 'quantity', 'timezone', 'cancellable', 'cancellationDeadline', 'conditionsVersion'].includes(key)).map(([key, value]) => {
+    const instant = timeFields.has(key) ? parseServerInstant(value) : null;
+    return [key, instant === null ? value : new Date(instant).toISOString()] as const;
+  }).sort(([a], [b]) => a.localeCompare(b))));
 };
 export function isSelectableConfirmedSlot(slot: Availability, quantity: number, now: number): boolean {
   const start = parseServerInstant(slot.startsAt), end = parseServerInstant(slot.endsAt);
-  return slot.productType === 'GENERAL' && slot.productId === null && slot.productName === null
+  return isSelectableAvailability(slot)
     && slot.status === 'ACTIVE' && Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= 12
     && Number.isSafeInteger(slot.remainingCapacity) && slot.remainingCapacity >= quantity
     && start !== null && end !== null && start > now && end > start;
@@ -49,10 +56,10 @@ function matchesCreated(r: Reservation, intent: ReservationIntent): boolean {
     && String(r.touristUserId) === intent.accountId
     && r.bookerName === intent.body.bookerName && r.bookerPhone === intent.body.bookerPhone
     && (r.requestNote ?? '') === (intent.body.requestNote ?? '')
-    && r.quantity === intent.body.quantity && r.productType === intent.confirmation.productType
-    && r.productId === intent.confirmation.productId && !!r.confirmation
+    && r.quantity === intent.body.quantity && !!r.confirmation
     && comparable(r.confirmation) === comparable(intent.confirmation)
-    && r.reservationStartsAt === intent.confirmation.startsAt && r.reservationEndsAt === intent.confirmation.endsAt
+    && areServerInstantsEqual(r.reservationStartsAt, intent.confirmation.startsAt)
+    && areServerInstantsEqual(r.reservationEndsAt, intent.confirmation.endsAt)
     && ['PENDING', 'CONFIRMED', 'REJECTED', 'CANCELED'].includes(r.status);
 }
 /** Only an explicit app action calls confirm/retry. Provider commands never receive this object. */
@@ -74,7 +81,8 @@ export function createConfirmedReservation(deps: Dependencies) {
     const slots = await deps.list(s.placeId);
     const fresh = slots.find(slot => slot.id === s.availability.id && slot.placeId === s.placeId);
     if (!fresh || !isSelectableConfirmedSlot(fresh, s.quantity, now())
-      || fresh.startsAt !== s.availability.startsAt || fresh.endsAt !== s.availability.endsAt) throw new Error('UNAVAILABLE');
+      || !areServerInstantsEqual(fresh.startsAt, s.availability.startsAt)
+      || !areServerInstantsEqual(fresh.endsAt, s.availability.endsAt)) throw new Error('UNAVAILABLE');
     const quote = await deps.quote(s.placeId, fresh.id, s.quantity);
     const confirmation = validateReservationQuote(quote, { ...s, availability: fresh }, now());
     return { quote, confirmation, deadline: monotonic() + Math.max(0, Date.parse(confirmation.expiresAt) - now()) };

@@ -4,21 +4,21 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as hooks from '../useVoiceCommands';
 import { VoiceSessionError } from '../../model/voiceSessionError';
-import { createVoiceSessionApi } from '../../api/voiceSessionApi';
+import { createAiChatSessionApi } from '../../api/aiChatSessionApi';
 import * as commands from '../../model/voiceCommands';
 import { prepareVoiceReservationDraft } from '../../model/reservationDraft';
 import { draftQuote } from '../../model/__tests__/reservationDraft.fixture';
 import type { AppCommandResult, VoiceAvailabilityFacts } from '../../model/voiceAssistantCommand.types';
 
-jest.mock('../../api/voiceSessionApi', () => ({ createVoiceSessionApi: jest.fn() }));
-const factory = jest.mocked(createVoiceSessionApi);
+jest.mock('../../api/aiChatSessionApi', () => ({ createAiChatSessionApi: jest.fn() }));
+const factory = jest.mocked(createAiChatSessionApi);
 const original = AppState.currentState;
 beforeEach(() => { (AppState as { currentState: string }).currentState = 'active'; });
 afterEach(() => { (AppState as { currentState: string }).currentState = original; });
 test('composes input, transport and command consumer; clears state on context/account change and background', async () => {
   const send = jest.fn(async () => ({ schemaVersion: 1 as const, id: 'input-2', kind: 'command_request' as const,
     command: 'searchNearbyReservablePlaces' as const, args: { date: '2026-09-20', startTime: '14:00', endTime: '17:00', quantity: 2, useCurrentLocation: true } }));
-  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
     refresh: jest.fn(), close: jest.fn(), send });
   const queryClient = new QueryClient();
   const callbacks = new Map<string, (s: AppStateStatus) => void>();
@@ -43,7 +43,7 @@ test('composes input, transport and command consumer; clears state on context/ac
 test('explicit transport retry becomes enabled after backoff without another user edit', async () => {
   jest.useFakeTimers();
   const queryClient = new QueryClient();
-  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
     refresh: jest.fn(), close: jest.fn(), send: async () => { throw new VoiceSessionError('NETWORK_ERROR'); } });
   const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
@@ -56,7 +56,7 @@ test('explicit transport retry becomes enabled after backoff without another use
 
 test('provider unavailable is a safe error rather than a successful command or generic response error', async () => {
   const queryClient = new QueryClient();
-  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
     refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'protocol_error', code: 'PROVIDER_UNAVAILABLE' }) });
   const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
@@ -70,7 +70,7 @@ test('provider unavailable is a safe error rather than a successful command or g
 test('unsupported request shows recoverable feedback without retrying the submitted turn', async () => {
   const queryClient = new QueryClient();
   const send = jest.fn(async () => ({ schemaVersion: 1 as const, id: 'input-2', kind: 'protocol_error' as const, code: 'UNSUPPORTED_REQUEST' as const }));
-  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
     refresh: jest.fn(), close: jest.fn(), send });
   const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
@@ -101,7 +101,7 @@ test.each(['expiry', 'background', 'context', 'cancel'] as const)('a displayed d
   jest.spyOn(commands, 'createVoiceCommandDispatcher').mockImplementation(options => ({
     ...realDispatcher(options), consume: async () => options.publish(prepared),
   }));
-  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: '2026-09-20T00:05:00Z' }),
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: '2026-09-20T00:05:00Z' }),
     refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'command_request',
       command: 'prepareReservation', args: { placeId: 1, availabilityId: 10, quantity: 2 } }) });
   const callbacks = new Map<string, (s: AppStateStatus) => void>();
@@ -135,7 +135,7 @@ test.each(['expiry', 'background', 'context', 'cancel'] as const)('a displayed d
 
 test('an assistant reply retains actual provider text without running a command or reservation mutation', async () => {
   const queryClient = new QueryClient();
-  factory.mockReturnValue({ create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
     refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'assistant_message', text: '안녕하세요! 반가워요.' }) });
   const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
@@ -153,7 +153,7 @@ test('session creation and AI response waiting stay processing until clarificati
   let resolveSend!: (value: { schemaVersion: 1; id: string; kind: 'clarification_request'; field: 'date'; text: string }) => void;
   const create = new Promise<{ sessionId: string; expiresAt: string }>(resolve => { resolveCreate = resolve; });
   const response = new Promise<{ schemaVersion: 1; id: string; kind: 'clarification_request'; field: 'date'; text: string }>(resolve => { resolveSend = resolve; });
-  factory.mockReturnValue({ create: () => create, refresh: jest.fn(), close: jest.fn(), send: () => response });
+  factory.mockReturnValue({ recordResult: jest.fn(), create: () => create, refresh: jest.fn(), close: jest.fn(), send: () => response });
   const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
     locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
@@ -172,4 +172,33 @@ test('session creation and AI response waiting stay processing until clarificati
   await act(() => view.result.current.cancel());
   expect(view.result.current.commandState).toEqual({ phase: 'canceled' });
   await view.unmount(); queryClient.clear();
+});
+
+
+test.each(['text', 'voice'] as const)('%s navigation runs through the existing session, preserves app result and disposes on exit', async source => {
+  const queryClient = new QueryClient(); const navigateToPage = jest.fn(() => true); const reset = jest.fn();
+  const recordResult = jest.fn();
+  let followed = false;
+  factory.mockReturnValue({ recordResult, reset,
+    create: async () => ({ sessionId: 'nav-session', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(),
+    send: async () => { return {
+      schemaVersion: 1, id: 'nav-request', kind: 'command_request', command: 'navigateToPage', args: { page: 'settings' },
+    }; },
+    next: async () => { if (followed) return undefined; followed = true; return {
+      schemaVersion: 1, id: 'unsafe-completion', kind: 'assistant_message', text: '완료했습니다.',
+    }; },
+  });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true, navigateToPage }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: '설정으로 가줘', source, signal: new AbortController().signal }); });
+  expect(navigateToPage).toHaveBeenCalledTimes(1); expect(navigateToPage).toHaveBeenCalledWith({ page: 'settings' });
+  expect(recordResult).toHaveBeenCalledWith(expect.objectContaining({ command: 'navigateToPage', outcome: {
+    status: 'succeeded', data: { target: { page: 'settings' }, navigationRequested: true },
+  } }));
+  expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { command: 'navigateToPage' } });
+  expect(view.result.current.commandState).not.toHaveProperty('text');
+  expect(queryClient.getMutationCache().getAll()).toEqual([]); expect(queryClient.getQueryCache().getAll()).toEqual([]);
+  await view.unmount(); expect(reset).toHaveBeenCalled(); queryClient.clear();
 });

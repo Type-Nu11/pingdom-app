@@ -75,3 +75,41 @@ test('calendar selection keeps the same fixed circular fill when selecting and r
   expect(selection()).toHaveStyle({ width: 36, height: 36, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 });
   expect(screen.getByRole('button', { name: today })).toHaveProp('accessibilityState', { selected: true, disabled: false });
 });
+
+test('Figma time wheel displays hour/minute units and preserves exact server minutes', async () => {
+  const confirm = jest.fn();
+  await renderWithProviders(<VoiceClarificationPicker field="timeRange" timezone="Asia/Seoul" initialValue="14:25" request="내일 두 명 예약 가능한 카페 찾아줘" onConfirm={confirm} />);
+  expect(screen.getByTestId('voice-result-request')).toHaveTextContent('“내일 두 명 예약 가능한 카페 찾아줘”');
+  expect(screen.getByRole('button', { name: '2시' })).toHaveTextContent(/^2시$/);
+  expect(screen.getByRole('button', { name: '25분' })).toHaveTextContent(/^25분$/);
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(confirm).toHaveBeenCalledWith({ field: 'timeRange', value: '14:25' });
+});
+
+test('reservation calendar and wheel refuse dates and times absent from the published API choices', async () => {
+  const confirm = jest.fn();
+  const today = localPickerDate('Asia/Seoul');
+  const view = await renderWithProviders(<VoiceClarificationPicker key="date" field="date" timezone="Asia/Seoul" availableDates={[today]} onConfirm={confirm} />);
+  expect(screen.getByRole('button', { name: '다음 달' })).toBeDisabled();
+  await fireEvent.press(screen.getByRole('button', { name: today }));
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(confirm).toHaveBeenLastCalledWith({ field: 'date', value: today });
+  await view.rerender(<VoiceClarificationPicker key="time" field="timeRange" timezone="Asia/Seoul" availableTimes={['14:25']} onConfirm={confirm} />);
+  expect(screen.getByRole('button', { name: '선택 확인' })).toBeEnabled();
+  expect(screen.queryByRole('button', { name: '30분' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '3시' })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(confirm).toHaveBeenLastCalledWith({ field: 'timeRange', value: '14:25' });
+});
+
+test('all three Figma pickers show the selected condition in their confirmation button', async () => {
+  const date = localPickerDate('Asia/Seoul');
+  const confirm = jest.fn();
+  const view = await renderWithProviders(<VoiceClarificationPicker key="date" field="date" timezone="Asia/Seoul" initialValue={date} onConfirm={confirm} />);
+  expect(screen.getByRole('button', { name: '선택 확인' })).toHaveTextContent(/\(.*\) 확인/);
+  await view.rerender(<VoiceClarificationPicker key="time" field="timeRange" timezone="Asia/Seoul" initialValue="14:00" onConfirm={confirm} />);
+  expect(screen.getByRole('button', { name: '선택 확인' })).toHaveTextContent('오후 2시 확인');
+  await view.rerender(<VoiceClarificationPicker key="quantity" field="quantity" timezone="Asia/Seoul" initialValue="2" onConfirm={confirm} />);
+  expect(screen.getByRole('button', { name: '선택 확인' })).toHaveTextContent('2명 확인');
+  expect(confirm).not.toHaveBeenCalled();
+});

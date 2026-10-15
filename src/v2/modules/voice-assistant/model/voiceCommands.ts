@@ -1,10 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { createPostsQueryOptions, createPostQueryOptions } from '../../community';
 import { createPlaceListQueryOptions, createPlaceDetailQueryOptions, placeQueryKeys } from '../../place';
 import { createAvailabilitiesQueryOptions, createReservationQuoteQueryOptions, isSelectableAvailability, NEARBY_RESERVATION_CANDIDATE_LIMIT, type AvailabilityList } from '../../booking';
 import { ApiError } from '../../../shared/api';
+import { areServerInstantsEqual } from '../../../shared/model';
 import { parseVoiceAssistantEnvelope } from './voiceAssistantCommandParser';
 import { VOICE_COMMAND_POLICIES } from './voiceAssistantCommandPolicy';
-import type { AppCommandResult, CommandFailureCode, CommandRequest, VoiceAvailabilityFacts, VoiceCommandName, VoiceCommandOutput, VoicePlaceFacts } from './voiceAssistantCommand.types';
+import type { AppCommandResult, CommandFailureCode, CommandRequest, VoiceAvailabilityFacts, VoiceCommandName, VoiceCommandOutput, VoicePlaceFacts, VoiceNavigationTarget } from './voiceAssistantCommand.types';
 import { VoiceSessionError } from './voiceSessionError';
 import type { VoiceDeliveryContext, VoiceEnvelopeConsumer } from './voiceSession';
 import { observeVoiceQuery, type VoiceQueryOptions } from './voiceCommandQuery';
@@ -12,7 +14,8 @@ import { createVoiceProvenance, VOICE_PROVENANCE_MAX_AGE, type VoicePlaceProvena
 import { serverInstant, voiceTimeRange, VoiceClarification, VoiceCommandError } from './voiceCommandTime';
 import { prepareVoiceReservationDraft } from './reservationDraft';
 
-export const voiceReadQueries = Object.freeze({ list: createPlaceListQueryOptions, detail: createPlaceDetailQueryOptions, availability: createAvailabilitiesQueryOptions, quote: createReservationQuoteQueryOptions });
+export const voiceReadQueries = Object.freeze({ list: createPlaceListQueryOptions, detail: createPlaceDetailQueryOptions, availability: createAvailabilitiesQueryOptions, quote: createReservationQuoteQueryOptions,
+  posts: createPostsQueryOptions, post: createPostQueryOptions });
 export type VoiceCommandRuntime = Readonly<{
   accountRevision: string | null; contextRevision: number;
   session: Readonly<{ sessionId: string; epoch: symbol; generation: number }> | undefined;
@@ -21,8 +24,12 @@ export type VoiceCommandRuntime = Readonly<{
   now: () => number; monotonic: () => number; queryClient: QueryClient;
   /** User-selected ID only. Authorization still requires an existing successful detail Query. */
   selectedPlaceId?: number;
+  /** App-owned allowlisted router/sheet entry. true means dispatch accepted, not rendered completion. */
+  navigateToPage?: (target: VoiceNavigationTarget) => boolean;
 }>;
 type Queries = {
+  posts: typeof createPostsQueryOptions;
+  post: typeof createPostQueryOptions;
   list: (params: Parameters<typeof createPlaceListQueryOptions>[0]) => ReturnType<typeof createPlaceListQueryOptions>;
   detail: (id: number) => ReturnType<typeof createPlaceDetailQueryOptions>;
   availability: (id: number) => ReturnType<typeof createAvailabilitiesQueryOptions>;
@@ -61,18 +68,18 @@ function slots(value: unknown, placeId: number, quantity: number, range: { start
   const seen = new Set<number>();
   return value.flatMap((s: AvailabilityList[number]) => {
     if (!s || !validId(s.id) || seen.has(s.id) || s.placeId !== placeId || !validId(s.placeId)
-      || !['GENERAL', 'TICKET', 'CLASS'].includes(s.productType) || !['ACTIVE', 'INACTIVE'].includes(s.status)
+      || !['ACTIVE', 'INACTIVE'].includes(s.status)
       || !Number.isSafeInteger(s.remainingCapacity) || s.remainingCapacity < 0
       || !Number.isSafeInteger(s.totalCapacity) || s.totalCapacity < s.remainingCapacity
-      || (s.productType === 'GENERAL' ? s.productId !== null || s.productName !== null
-        : !validId(s.productId) || (s.productName !== null && typeof s.productName !== 'string'))) return invalid();
+      || (s.productType !== undefined && !['GENERAL', 'TICKET', 'CLASS'].includes(s.productType))) return invalid();
+    if (!isSelectableAvailability(s)) return [];
     seen.add(s.id);
     const start = serverInstant(s.startsAt), end = serverInstant(s.endsAt);
     if (start >= end) return invalid();
     if (s.status !== 'ACTIVE' || end <= now || s.remainingCapacity < quantity || start >= range.end || end <= range.start) return [];
-    return [Object.freeze({ id: s.id, placeId: s.placeId, productType: s.productType, productId: s.productId, productName: s.productName,
+    return [Object.freeze({ id: s.id, placeId: s.placeId,
       startsAt: s.startsAt, endsAt: s.endsAt, remainingCapacity: s.remainingCapacity, status: s.status })];
-  }); // Server order is preserved, including TICKET/CLASS. No reservation capability is implied.
+  }); // Preserve server order among place-only reservation slots.
 }
 function metadata(ex: Execution, ids: readonly number[], query: { queryKey: VoiceQueryOptions<unknown>['queryKey']; dataUpdatedAt: number }): VoicePlaceProvenance {
   return Object.freeze({ ...ex.scope, placeIds: Object.freeze([...ids]), ...query,
@@ -113,13 +120,18 @@ function validateSearch(request: Request<'searchNearbyReservablePlaces'> | Reque
 /** General discovery never reads availability, quotes, or reservation mutations. */
 const searchNearbyPlaces: VoiceCommandHandler<'searchNearbyPlaces'> = async (request, ex) => {
   const r = ex.runtime;
+  const limit = request.args.limit ?? 3;
   const list = await ex.query(ex.queries.list({ latitude: r.location!.latitude, longitude: r.location!.longitude,
-    radiusKm: r.radiusKm, page: 1, limit: 3, sort: 'NEAREST',
-    ...(request.args.touristCategory ? { touristCategory: request.args.touristCategory } : {}) }));
+    radiusKm: r.radiusKm, page: 1, limit, sort: 'NEAREST',
+    ...(request.args.keyword ? { keyword: request.args.keyword.trim() } : {}),
+    ...(request.args.category ? { category: request.args.category } : {}),
+    // Name/menu keywords take priority over inferred tourism tags. Legacy restaurant
+    // category does not imply that its touristCategories contains FOOD.
+    ...(!request.args.keyword?.trim() && request.args.touristCategory ? { touristCategory: request.args.touristCategory } : {}) }));
   if (!list.data || !Array.isArray(list.data.places)) return invalid();
   const seen = new Set<number>();
   const places: VoicePlaceFacts[] = [];
-  for (const candidate of list.data.places.slice(0, 3)) {
+  for (const candidate of list.data.places.slice(0, limit)) {
     ex.check();
     if (!candidate || !validId(candidate.id) || seen.has(candidate.id)) return invalid();
     seen.add(candidate.id);
@@ -184,8 +196,6 @@ function requireAvailability(request: Request<'prepareReservation'>, ex: Executi
     throw new VoiceCommandError('ID_NOT_IN_CONTEXT');
   }
   if (p.quantity !== request.args.quantity) throw new VoiceCommandError('STALE_CONTEXT');
-  const selected = p.slots.find(s => s.id === request.args.availabilityId)!;
-  if (selected.productType !== 'GENERAL') throw new VoiceCommandError('UNSUPPORTED_PRODUCT');
 }
 const prepareReservation: VoiceCommandHandler<'prepareReservation'> = async (request, ex) => {
   const p = ex.provenance.availability()!;
@@ -197,8 +207,7 @@ const prepareReservation: VoiceCommandHandler<'prepareReservation'> = async (req
   const range = voiceTimeRange(p.date, ex.runtime.timezone, ex.runtime.now());
   const fresh = slots(result.data, placeId, quantity, range, ex.runtime.now()).find(s => s.id === availabilityId);
   if (!fresh || serverInstant(fresh.startsAt) <= ex.runtime.now()) throw new VoiceCommandError('AVAILABILITY_UNAVAILABLE');
-  if (fresh.productType !== selected.productType || fresh.productId !== selected.productId || fresh.productName !== selected.productName
-    || fresh.startsAt !== selected.startsAt || fresh.endsAt !== selected.endsAt) {
+  if (!areServerInstantsEqual(fresh.startsAt, selected.startsAt) || !areServerInstantsEqual(fresh.endsAt, selected.endsAt)) {
     throw new VoiceCommandError('STALE_CONTEXT');
   }
   const place = projectVoicePlace((await ex.query(ex.queries.detail(placeId))).data, placeId);
@@ -208,17 +217,52 @@ const prepareReservation: VoiceCommandHandler<'prepareReservation'> = async (req
   ex.commit.push(() => ex.provenance.clearAvailability()); // A second preparation needs a fresh displayed selection.
   return Object.freeze({ draft });
 };
+const navigateToPage: VoiceCommandHandler<'navigateToPage'> = async (request, ex) => {
+  const { page, placeId } = request.args;
+  if (!ex.runtime.navigateToPage) throw new VoiceCommandError('FORBIDDEN');
+  let target: VoiceNavigationTarget;
+  if (page === 'placeDetail' || page === 'createReservation') {
+    if (placeId === undefined) throw new VoiceClarification('placeId');
+    requirePlace({ args: { placeId } }, ex);
+    ex.force = true;
+    // Re-read canonical detail before dispatch, including stale selected/search context.
+    projectVoicePlace((await ex.query(ex.queries.detail(placeId))).data, placeId);
+    target = Object.freeze({ page, placeId });
+  } else if (page === 'communityPost') {
+    ex.force = true;
+    const feed = (await ex.query(ex.queries.posts({ page: 1, limit: 1 }))).data;
+    if (!feed || !Array.isArray(feed.posts)) return invalid();
+    if (feed.posts.length === 0) throw new VoiceCommandError('NOT_FOUND');
+    const postId = feed.posts[0]?.postId;
+    if (!validId(postId)) return invalid();
+    const post = (await ex.query(ex.queries.post(postId))).data;
+    if (!post || post.postId !== postId) return invalid();
+    target = Object.freeze({ page, postId });
+  } else target = Object.freeze({ page });
+  ex.check();
+  // Dispatch only at the final synchronous commit, after all generation/account checks.
+  ex.commit.push(() => {
+    if (!ex.runtime.navigateToPage!(target)) throw new VoiceCommandError('FORBIDDEN');
+  });
+  return Object.freeze({ target, navigationRequested: true });
+};
 export const VOICE_COMMAND_REGISTRY = Object.freeze({
   searchNearbyPlaces: Object.freeze({ name: 'searchNearbyPlaces', policy: VOICE_COMMAND_POLICIES.searchNearbyPlaces, validate: validateSearch, handler: searchNearbyPlaces }),
   searchNearbyReservablePlaces: Object.freeze({ name: 'searchNearbyReservablePlaces', policy: VOICE_COMMAND_POLICIES.searchNearbyReservablePlaces, validate: validateSearch, handler: searchNearby }),
   getPlaceDetails: Object.freeze({ name: 'getPlaceDetails', policy: VOICE_COMMAND_POLICIES.getPlaceDetails, validate: requirePlace, handler: getDetails }),
   getAvailabilities: Object.freeze({ name: 'getAvailabilities', policy: VOICE_COMMAND_POLICIES.getAvailabilities, validate: requirePlace, handler: getAvailability }),
+  updateReservationBooker: Object.freeze({ name: 'updateReservationBooker', policy: VOICE_COMMAND_POLICIES.updateReservationBooker, validate: requirePlace,
+    handler: async (request: Request<'updateReservationBooker'>) => {
+      const { placeId, ...fields } = request.args;
+      return Object.freeze({ placeId, fields: Object.freeze(fields) });
+    } }),
   prepareReservation: Object.freeze({ name: 'prepareReservation', policy: VOICE_COMMAND_POLICIES.prepareReservation, validate: requireAvailability, handler: prepareReservation }),
+  navigateToPage: Object.freeze({ name: 'navigateToPage', policy: VOICE_COMMAND_POLICIES.navigateToPage, validate: noValidation, handler: navigateToPage }),
   cancelVoiceSession: Object.freeze({ name: 'cancelVoiceSession', policy: VOICE_COMMAND_POLICIES.cancelVoiceSession, validate: noValidation,
     handler: async () => Object.freeze({ sessionStopped: true as const }) }),
 } satisfies Registry);
 
-function safeError(error: unknown): CommandFailureCode {
+function safeError(error: unknown, command?: VoiceCommandName): CommandFailureCode {
   if (error instanceof VoiceCommandError) return error.code;
   if (error instanceof VoiceSessionError && error.code === 'REPLAY_CONFLICT') return 'REPLAY_CONFLICT';
   if (error instanceof ApiError) {
@@ -230,7 +274,9 @@ function safeError(error: unknown): CommandFailureCode {
     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return 'TIMEOUT';
     if (error.status === 401) return 'AUTHENTICATION_REQUIRED';
     if (error.status === 403) return 'FORBIDDEN';
-    if (error.status === 404) return 'NOT_FOUND';
+    // A failed collection route is not proof that a searched place does not exist.
+    if (error.status === 404) return command === 'searchNearbyPlaces' || command === 'searchNearbyReservablePlaces'
+      ? 'INVALID_SERVER_RESPONSE' : 'NOT_FOUND';
     if (error.status === 429) return 'RATE_LIMITED';
     if (error.status && error.status >= 500) return 'SERVER_ERROR';
     if (error.isNetworkError) return 'NETWORK_ERROR';
@@ -241,7 +287,7 @@ let resultSequence = 0; // Module-lifetime IDs: no provider-controlled component
 /** Install ONLY as #347's consumer: its atomic ledger owns delivery and replay, including retries. */
 export function createVoiceCommandDispatcher(options: {
   runtime: () => VoiceCommandRuntime; publish: (result: AppCommandResult) => void;
-  stopSession: () => void | Promise<void>; queries?: Queries;
+  stopSession: () => void | Promise<void>; queries?: Partial<Queries>;
 }) {
   const provenance = createVoiceProvenance(() => options.runtime().monotonic());
   const pending = new Set<AbortController>();
@@ -276,7 +322,7 @@ export function createVoiceCommandDispatcher(options: {
     const ex: Execution = {
       runtime: initial, scope: { sessionId: delivery.sessionId, epoch: delivery.epoch, generation: delivery.generation,
         accountRevision: initial.accountRevision ?? '', contextRevision: initial.contextRevision, conditionRevision },
-      signal: controller.signal, provenance, queries: options.queries ?? voiceReadQueries, force: false, check, commit: [],
+      signal: controller.signal, provenance, queries: { ...voiceReadQueries, ...options.queries }, force: false, check, commit: [],
       query: async query => { check(); const result = await observeVoiceQuery(initial.queryClient, query, controller.signal, ex.force); check(); return result; },
     };
     try {
@@ -292,8 +338,8 @@ export function createVoiceCommandDispatcher(options: {
       const invoke = entry as { policy: { allowsMutation: false }; validate: (c: CommandRequest, e: Execution) => void;
         handler: ((c: CommandRequest, e: Execution) => Promise<VoiceCommandOutput[VoiceCommandName]>) | null };
       if (invoke.policy.allowsMutation !== false || !invoke.handler) throw new VoiceCommandError('FORBIDDEN');
-      // Provider commands require approved location. The app's own close button remains unconditional.
-      requireLocation(initial);
+      // Navigation uses app-owned destinations and does not need GPS. Preserve other commands' location policy.
+      if (command.command !== 'navigateToPage') requireLocation(initial);
       invoke.validate(command, ex);
       const data = await invoke.handler(command, ex);
       check();
@@ -306,7 +352,7 @@ export function createVoiceCommandDispatcher(options: {
       if (command.command === 'prepareReservation' && current()) provenance.clearAvailability();
       if (current()) {
         const outcome = error instanceof VoiceClarification ? Object.freeze({ status: 'clarification_required' as const, field: error.field })
-          : Object.freeze({ status: 'rejected' as const, code: timedOut ? 'TIMEOUT' as const : safeError(error) });
+          : Object.freeze({ status: 'rejected' as const, code: timedOut ? 'TIMEOUT' as const : safeError(error, command.command) });
         options.publish(Object.freeze({ schemaVersion: 1, kind: 'command_result', source: 'app', id: `app-result-${++resultSequence}`,
           commandId: command.id, command: command.command, outcome }) as AppCommandResult);
       }

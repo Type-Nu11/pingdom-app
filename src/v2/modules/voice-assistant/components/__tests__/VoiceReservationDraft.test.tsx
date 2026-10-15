@@ -21,7 +21,8 @@ test.each(['ko', 'en', 'ja'] as const)('%s draft displays exact server facts and
     command: 'prepareReservation', outcome: { status: 'succeeded', data: { draft } },
   } }} />, { language });
   expect(screen.getByTestId('voice-reservation-draft')).toBeTruthy();
-  expect(screen.getByTestId('voice-reservation-draft-total')).toHaveTextContent(/USD 20\.50/);
+  expect(screen.queryByTestId('voice-reservation-draft-total')).toBeNull();
+  expect(screen.queryByText(/USD|20\.50/)).toBeNull();
   expect(screen.getByText('Cafe')).toBeTruthy();
   expect(screen.getByText('2026-09-20T05:00:00Z – 2026-09-20T06:00:00Z (Asia/Seoul)')).toBeTruthy();
   expect(screen.getByTestId('voice-reservation-draft-not-submitted')).toBeTruthy();
@@ -34,6 +35,6 @@ test('missing policy is a recoverable failure and does not display a default fre
     schemaVersion: 1, kind: 'command_result', source: 'app', id: 'app-result-test', commandId: 'prepare',
     command: 'prepareReservation', outcome: { status: 'rejected', code: 'QUOTE_TERMS_UNAVAILABLE' },
   } }} />, { language: 'ko' });
-  expect(screen.getByRole('alert')).toHaveTextContent(/가격과 취소 조건이 서버에 설정되지 않았습니다/);
+  expect(screen.getByRole('alert')).toHaveTextContent(/이 시간의 취소 조건이 아직 설정되지 않았습니다/);
   expect(screen.queryByTestId('voice-reservation-draft')).toBeNull();
 });

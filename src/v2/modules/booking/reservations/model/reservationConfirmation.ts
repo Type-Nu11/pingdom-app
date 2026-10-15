@@ -14,7 +14,7 @@ function serverInstant(value: unknown): number {
 }
 export function validateReservationQuote(value: unknown, selection: {
   placeId: number; placeName: string; quantity: number;
-  availability: Pick<Availability, 'id' | 'productType' | 'productId' | 'productName' | 'startsAt' | 'endsAt'>;
+  availability: Pick<Availability, 'id' | 'startsAt' | 'endsAt'>;
 }, now: number): Readonly<ReservationConfirmation> {
   if (!value || typeof value !== 'object') return invalid();
   const quote = value as ReservationQuote;
@@ -25,40 +25,34 @@ export function validateReservationQuote(value: unknown, selection: {
     || quote.confirmationToken.length !== 36
     || !c || typeof c !== 'object'
     || !nonnegativeInteger(quote.remainingCapacity) || quote.remainingCapacity < selection.quantity) return invalid();
-  if (a.productType !== 'GENERAL' || a.productId !== null || a.productName !== null) {
-    throw new ReservationConfirmationError('UNSUPPORTED_PRODUCT');
-  }
   if (c.placeId !== selection.placeId || c.placeName !== selection.placeName || c.availabilityId !== a.id
-    || c.productType !== a.productType || c.productId !== a.productId || c.productName !== a.productName
-    || c.startsAt !== a.startsAt || c.endsAt !== a.endsAt || c.quantity !== selection.quantity) {
+    || c.quantity !== selection.quantity) {
     throw new ReservationConfirmationError('STALE_CONTEXT');
   }
-  const start = serverInstant(c.startsAt), end = serverInstant(c.endsAt), expires = serverInstant(c.expiresAt);
+  // Explicit legacy product snapshots cannot be treated as the new place-only contract.
+  if ((c.productType !== undefined && c.productType !== 'GENERAL')
+    || (c.productId !== undefined && c.productId !== null)
+    || (c.productName !== undefined && c.productName !== null)) {
+    throw new ReservationConfirmationError('STALE_CONTEXT');
+  }
+  const start = serverInstant(c.startsAt), end = serverInstant(c.endsAt);
+  if (start !== serverInstant(a.startsAt) || end !== serverInstant(a.endsAt)) {
+    throw new ReservationConfirmationError('STALE_CONTEXT');
+  }
+  const expires = serverInstant(c.expiresAt);
   if (!(now < start && start < end && now < expires && expires <= start && expires <= now + 300000)) return invalid();
   if (typeof c.timezone !== 'string' || !c.timezone) return invalid();
   try { new Intl.DateTimeFormat('en', { timeZone: c.timezone }).format(now); } catch { return invalid(); }
-  if (![c.unitAmountMinor, c.additionalAmountMinor, c.totalAmountMinor, c.cancellationFeeMinor, c.refundableAmountMinor].every(nonnegativeInteger)
-    || !Number.isSafeInteger(c.unitAmountMinor * c.quantity + c.additionalAmountMinor)
-    || c.totalAmountMinor !== c.unitAmountMinor * c.quantity + c.additionalAmountMinor
-    || typeof c.currency !== 'string' || !/^[A-Z]{3}$/.test(c.currency)
-    || !nonnegativeInteger(c.currencyFractionDigits) || c.currencyFractionDigits > 4
-    || c.paymentRequired !== (c.totalAmountMinor > 0)
-    || typeof c.cancellable !== 'boolean' || c.cancellationFeeMinor !== 0
-    || !nonnegativeInteger(c.conditionsVersion)
-    || c.productVersion !== null) return invalid();
+  if (typeof c.cancellable !== 'boolean' || !nonnegativeInteger(c.conditionsVersion)) return invalid();
   if (c.cancellable) {
-    if (serverInstant(c.cancellationDeadline) > start || c.refundableAmountMinor !== c.totalAmountMinor) return invalid();
-  } else if (c.cancellationDeadline !== null || c.refundableAmountMinor !== 0) return invalid();
+    if (serverInstant(c.cancellationDeadline) > start) return invalid();
+  } else if (c.cancellationDeadline !== null) return invalid();
   // Only explicit, validated server facts survive. No inferred free price or cancellation policy.
   const confirmation: Readonly<ReservationConfirmation> = Object.freeze({
     placeId: c.placeId, placeName: c.placeName, availabilityId: c.availabilityId,
-    productType: c.productType, productId: c.productId, productName: c.productName,
     startsAt: c.startsAt, endsAt: c.endsAt, quantity: c.quantity, timezone: c.timezone,
-    unitAmountMinor: c.unitAmountMinor, additionalAmountMinor: c.additionalAmountMinor,
-    totalAmountMinor: c.totalAmountMinor, currency: c.currency, currencyFractionDigits: c.currencyFractionDigits,
-    paymentRequired: c.paymentRequired, cancellable: c.cancellable, cancellationDeadline: c.cancellationDeadline,
-    cancellationFeeMinor: c.cancellationFeeMinor, refundableAmountMinor: c.refundableAmountMinor,
-    conditionsVersion: c.conditionsVersion, productVersion: c.productVersion, expiresAt: c.expiresAt,
+    cancellable: c.cancellable, cancellationDeadline: c.cancellationDeadline,
+    conditionsVersion: c.conditionsVersion, expiresAt: c.expiresAt,
   });
   return confirmation;
 }

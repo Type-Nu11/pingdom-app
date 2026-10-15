@@ -1,3 +1,4 @@
+import { placeProductResources } from '../../modules/place/menus/i18n';
 import { routeResources } from '../../modules/place/map/routes';
 import { onboardingResources } from '../../modules/onboarding/i18n';
 import { mapTutorialResources } from '../../modules/place/map/tutorial';
@@ -36,6 +37,7 @@ export const resources = {
     community: communityResources.en,
     visitVerification: visitVerificationResources.en,
     voiceAssistant: voiceAssistantResources.en,
+    placeProduct: placeProductResources.en,
     ...withBookingStatuses(withOnboarding(sharedResources.en.translation, onboardingResources.en), { ...offerStatusResources.en, ...paymentResources.en }),
   } },
   ko: { translation: {
@@ -46,6 +48,7 @@ export const resources = {
     community: communityResources.ko,
     visitVerification: visitVerificationResources.ko,
     voiceAssistant: voiceAssistantResources.ko,
+    placeProduct: placeProductResources.ko,
     ...withBookingStatuses(withOnboarding(sharedResources.ko.translation, onboardingResources.ko), { ...offerStatusResources.ko, ...paymentResources.ko }),
   } },
   ja: { translation: {
@@ -56,6 +59,7 @@ export const resources = {
     community: communityResources.ja,
     visitVerification: visitVerificationResources.ja,
     voiceAssistant: voiceAssistantResources.ja,
+    placeProduct: placeProductResources.ja,
     ...withBookingStatuses(withOnboarding(sharedResources.ja.translation, onboardingResources.ja), { ...offerStatusResources.ja, ...paymentResources.ja }),
   } },
   'zh-CN': { translation: {
@@ -66,6 +70,7 @@ export const resources = {
     community: communityResources['zh-CN'],
     visitVerification: visitVerificationResources['zh-CN'],
     voiceAssistant: voiceAssistantResources['zh-CN'],
+    placeProduct: placeProductResources['zh-CN'],
     ...withBookingStatuses(withOnboarding(sharedResources['zh-CN'].translation, onboardingResources['zh-CN']), { ...offerStatusResources['zh-CN'], ...paymentResources['zh-CN'] }),
   } },
   'zh-TW': { translation: {
@@ -76,6 +81,7 @@ export const resources = {
     community: communityResources['zh-TW'],
     visitVerification: visitVerificationResources['zh-TW'],
     voiceAssistant: voiceAssistantResources['zh-TW'],
+    placeProduct: placeProductResources['zh-TW'],
     ...withBookingStatuses(withOnboarding(sharedResources['zh-TW'].translation, onboardingResources['zh-TW']), { ...offerStatusResources['zh-TW'], ...paymentResources['zh-TW'] }),
   } },
   vi: { translation: {
@@ -86,6 +92,7 @@ export const resources = {
     community: communityResources.vi,
     visitVerification: visitVerificationResources.vi,
     voiceAssistant: voiceAssistantResources.vi,
+    placeProduct: placeProductResources.vi,
     ...withBookingStatuses(withOnboarding(sharedResources.vi.translation, onboardingResources.vi), { ...offerStatusResources.vi, ...paymentResources.vi }),
   } },
   es: { translation: {
@@ -96,6 +103,7 @@ export const resources = {
     community: communityResources.es,
     visitVerification: visitVerificationResources.es,
     voiceAssistant: voiceAssistantResources.es,
+    placeProduct: placeProductResources.es,
     ...withBookingStatuses(withOnboarding(sharedResources.es.translation, onboardingResources.es), { ...offerStatusResources.es, ...paymentResources.es }),
   } },
   'pt-BR': { translation: {
@@ -106,6 +114,7 @@ export const resources = {
     community: communityResources['pt-BR'],
     visitVerification: visitVerificationResources['pt-BR'],
     voiceAssistant: voiceAssistantResources['pt-BR'],
+    placeProduct: placeProductResources['pt-BR'],
     ...withBookingStatuses(withOnboarding(sharedResources['pt-BR'].translation, onboardingResources['pt-BR']), { ...offerStatusResources['pt-BR'], ...paymentResources['pt-BR'] }),
   } },
 } as const;

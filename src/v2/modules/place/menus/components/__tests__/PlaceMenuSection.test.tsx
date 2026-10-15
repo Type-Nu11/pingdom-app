@@ -37,6 +37,30 @@ describe('PlaceMenuSection', () => {
     });
   });
 
+  test('map detail presentation uses Figma menu geometry with server-provided content', async () => {
+    jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([menu()]);
+    await renderWithProviders(<PlaceMenuSection placeId={17} presentation="mapDetail" />);
+    await waitFor(() => expect(screen.getByText('시그니처 라테')).toBeTruthy());
+    expect(screen.getByText('시그니처 라테')).toHaveStyle({ fontSize: 18, lineHeight: 24 });
+    expect(screen.getByText('고소한 원두와 우유')).toHaveStyle({ fontSize: 16 });
+    expect(screen.getByLabelText('시그니처 라테 메뉴 이미지')).toHaveStyle({ width: 104, height: 104 });
+  });
+
+  test('map products open the existing gallery at the tapped server image and missing images stay inert', async () => {
+    jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([
+      menu(), menu({ id: 2, name: '차', imageUrl: 'https://cdn.example.test/tea.jpg' }), menu({ id: 3, name: '이미지 없는 상품', imageUrl: null }),
+    ]);
+    const onOpenImages = jest.fn();
+    await renderWithProviders(<PlaceMenuSection placeId={17} presentation="mapDetail" onOpenImages={onOpenImages} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: '차 상품 사진 확대' })).toBeTruthy());
+    expect(screen.getByText('상품')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: '차 상품 사진 확대' }));
+    expect(onOpenImages).toHaveBeenCalledWith(['https://cdn.example.test/menu.jpg', 'https://cdn.example.test/tea.jpg'], 1);
+    expect(screen.queryByRole('button', { name: '이미지 없는 상품 상품 사진 확대' })).toBeNull();
+    await fireEvent(screen.getByLabelText('시그니처 라테 메뉴 이미지'), 'error');
+    expect(screen.queryByRole('button', { name: '시그니처 라테 상품 사진 확대' })).toBeNull();
+  });
+
   test.each([
     ['US', 'USD', 0.00074], ['JP', 'JPY', 0.1], ['CN', 'CNY', 0.005],
     ['TH', 'THB', 0.025], ['VN', 'VND', 18],

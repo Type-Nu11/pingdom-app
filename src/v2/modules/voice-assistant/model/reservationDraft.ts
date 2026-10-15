@@ -21,10 +21,10 @@ export function prepareVoiceReservationDraft(
   const quote = value as ReservationQuote;
   const a = selection.availability;
   return Object.freeze({ status: 'awaiting_user_confirmation', place: selection.place,
-    availability: Object.freeze({ ...a, productType: 'GENERAL', productId: null, productName: null,
+    availability: Object.freeze({ id: a.id, placeId: a.placeId, startsAt: a.startsAt, endsAt: a.endsAt, status: a.status,
       remainingCapacity: quote.remainingCapacity }),
     quantity: selection.quantity, date: selection.date, timezone: selection.timezone, confirmation,
-    source: Object.freeze({ placeId: confirmation.placeId, availabilityId: confirmation.availabilityId, productId: null,
+    source: Object.freeze({ placeId: confirmation.placeId, availabilityId: confirmation.availabilityId,
       availabilityDataUpdatedAt: selection.availabilityDataUpdatedAt }),
   });
 }

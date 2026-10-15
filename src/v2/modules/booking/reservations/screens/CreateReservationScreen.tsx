@@ -18,6 +18,7 @@ import {
   buildLocalCalendar,
   createReservationIdempotencyKey,
   isAvailabilityBookable,
+  isAvailabilityUpcoming,
   localDateFromKey,
   localDateKey,
   startOfLocalDay,
@@ -113,7 +114,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     availabilityData.forEach((item) => {
       if (!isSelectableAvailability(item)
         || item.status !== 'ACTIVE'
-        || new Date(item.endsAt).getTime() <= now.getTime()) return;
+        || !isAvailabilityUpcoming(item, now)) return;
 
       const remainingCapacity = Number.isFinite(item.remainingCapacity)
         ? Math.max(0, item.remainingCapacity)
@@ -197,6 +198,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     if (!slotReady
       || !selectedAvailability
       || !isSelectableAvailability(selectedAvailability)
+      || !isAvailabilityBookable(selectedAvailability, quantity, providedNow ?? new Date())
       || submissionGuard.current) return;
     if (!bookerValidation.isValid) {
       setShowBookerErrors(true);
@@ -227,7 +229,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   };
 
   const submitErrorKey = createReservation.isError
-    ? reservationSubmitErrorKey(createReservation.error)
+    ? reservationSubmitErrorKey(createReservation.error, availabilityData.find(item => item.id === createReservation.variables?.availabilityId), providedNow ?? new Date())
     : null;
 
   if (createReservation.isSuccess) {
@@ -564,7 +566,7 @@ function formatSlotLabel(availability: Availability, language: string): string {
 
 function availabilityReason(availability: Availability, quantity: number, now: Date, t: AvailabilityStateProps['t']): string {
   if (availability.status !== 'ACTIVE') return t('reservation.create.slotInactive');
-  if (new Date(availability.endsAt).getTime() <= now.getTime()) return t('reservation.create.slotPast');
+  if (!isAvailabilityUpcoming(availability, now)) return t('reservation.create.slotPast');
   if (availability.remainingCapacity < quantity) return t('reservation.create.slotInsufficient', { count: availability.remainingCapacity });
   return t('reservation.create.slotAvailable', { count: availability.remainingCapacity });
 }

@@ -13,3 +13,9 @@ export function parseServerInstant(value: unknown): number | null {
   }
   return instant;
 }
+
+/** Invalid values never compare equal, even when both strings are identical. */
+export function areServerInstantsEqual(left: unknown, right: unknown): boolean {
+  const instant = parseServerInstant(left);
+  return instant !== null && instant === parseServerInstant(right);
+}

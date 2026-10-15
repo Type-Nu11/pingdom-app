@@ -7,6 +7,10 @@ export const VOICE_SCHEMA_VERSION = 1 as const;
 export const VOICE_QUANTITY_LIMITS = Object.freeze({ min: 1, max: 12 });
 
 export type VoiceTouristCategory = PlaceDetail['touristCategories'][number];
+// /places category is an open string in OpenAPI. Expose only values verified
+// against actual production place data, independently of tourism tags.
+export const VOICE_PLACE_CATEGORIES = ['RESTAURANT'] as const;
+export type VoicePlaceCategory = typeof VOICE_PLACE_CATEGORIES[number];
 /** YYYY-MM-DD(0001~9999년). string 타입만으로는 날짜를 보장하지 않으므로 parser 검증이 필요합니다. */
 export type VoiceLocalDate = string;
 /** 앱 세션 timezone 기준 HH:mm. 같은 날의 시작 < 종료 조건은 parser가 검사합니다. */
@@ -15,10 +19,22 @@ export type VoiceLocalTime = string;
 /**
  * command 값을 좁히면 TypeScript가 해당 args도 함께 좁히는 discriminated union입니다.
  * 외부 입력을 이 타입으로 단언하지 말고 반드시 parseVoiceAssistantEnvelope를 통과시킵니다.
- * 좌표·예약자 정보·확인 여부는 AI가 결정할 수 없으므로 입력 필드 자체를 두지 않습니다.
+ * 좌표·확인 여부는 앱이 결정합니다. 예약자 정보는 사용자가 제공한 값만 초안에 반영합니다.
  */
+export const VOICE_PAGE_IDS = ['map', 'search', 'favorites', 'reservations', 'myPage', 'settings', 'placeDetail', 'createReservation',
+  'community', 'communityPost', 'recommendations', 'coupons', 'verifiedPlaces', 'accountManagement',
+  'notificationSettings', 'loginInformation', 'locationSettings', 'privacySettings', 'dataManagement'] as const;
+export type VoicePageId = typeof VOICE_PAGE_IDS[number];
+export type VoiceNavigationTarget = Readonly<{ page: Exclude<VoicePageId, 'placeDetail' | 'createReservation' | 'communityPost'> }>
+  | Readonly<{ page: 'placeDetail' | 'createReservation'; placeId: number }>
+  | Readonly<{ page: 'communityPost'; postId: number }>;
+
 export type VoiceAssistantCommand =
+  | Readonly<{ command: 'navigateToPage'; args: Readonly<{ page: VoicePageId; placeId?: number }> }>
   | Readonly<{ command: 'searchNearbyPlaces'; args: Readonly<{
+    category?: VoicePlaceCategory;
+    keyword?: string;
+    limit?: number;
     touristCategory?: VoiceTouristCategory;
     useCurrentLocation: boolean;
   }> }>
@@ -38,6 +54,7 @@ export type VoiceAssistantCommand =
   | Readonly<{ command: 'prepareReservation'; args: Readonly<{
     placeId: number; availabilityId: number; quantity: number;
   }> }>
+  | Readonly<{ command: 'updateReservationBooker'; args: Readonly<{ placeId: number; bookerName?: string; bookerPhone?: string; requestNote?: string }> }>
   | Readonly<{ command: 'cancelVoiceSession'; args: Readonly<Record<string, never>> }>;
 
 export type VoiceCommandName = VoiceAssistantCommand['command'];
@@ -59,22 +76,22 @@ export type ProviderEnvelope = CommandRequest
 export type VoicePlaceFacts = Readonly<Pick<PlaceDetail, 'id' | 'name' | 'address' | 'touristCategories' | 'operatingStatus'>
   & Pick<NonNullable<PlaceList['places']>[number], 'distanceMeters'>>;
 export type VoiceAvailabilityFacts = Readonly<Pick<AvailabilityList[number],
-  'id' | 'placeId' | 'productId' | 'productType' | 'productName' | 'startsAt' | 'endsAt' | 'remainingCapacity' | 'status'>>;
+  'id' | 'placeId' | 'startsAt' | 'endsAt' | 'remainingCapacity' | 'status'>>;
 /**
- * 예약 요청 body가 아닌 확인 대기용 정보입니다. 기존 앱 정책에 맞춰 GENERAL만 허용합니다.
+ * 예약 요청 body가 아닌 확인 대기용 정보입니다. 장소·시간·인원과 취소 조건을 다룹니다.
  * executor가 서버에서 다시 확인한 값으로 만들며, 개인정보와 idempotency key는 포함하지 않습니다.
  */
 export type ReservationDraft = Readonly<{
   status: 'awaiting_user_confirmation';
   place: VoicePlaceFacts;
-  availability: VoiceAvailabilityFacts & Readonly<{ productType: 'GENERAL'; productId: null; productName: null }>;
+  availability: VoiceAvailabilityFacts;
   quantity: number;
   date: VoiceLocalDate;
   timezone: string;
   confirmation: Readonly<ReservationConfirmation>;
   /** Original displayed selection linked to the canonical availability read; no bearer/quote token. */
   source: Readonly<{
-    placeId: number; availabilityId: number; productId: null;
+    placeId: number; availabilityId: number;
     availabilityDataUpdatedAt: number;
   }>;
 }>;
@@ -85,6 +102,8 @@ export type VoiceCommandOutput = {
   getPlaceDetails: Readonly<{ place: VoicePlaceFacts }>;
   getAvailabilities: Readonly<{ placeId: number; date: VoiceLocalDate; quantity: number; availabilities: readonly VoiceAvailabilityFacts[] }>;
   prepareReservation: Readonly<{ draft: ReservationDraft }>;
+  updateReservationBooker: Readonly<{ placeId: number; fields: Readonly<Partial<import('../../booking').BookerInput>> }>;
+  navigateToPage: Readonly<{ target: VoiceNavigationTarget; navigationRequested: true }>;
   cancelVoiceSession: Readonly<{ sessionStopped: true }>;
 };
 export type CommandFailureCode = 'LOCATION_REQUIRED' | 'ID_NOT_IN_CONTEXT' | 'STALE_CONTEXT'

@@ -102,7 +102,7 @@ export default function PlacePhotoViewer({
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
-  background-color: ${({ theme }) => theme.colors.textStrong};
+  background-color: ${({ theme }) => theme.colors.background};
 `;
 
 const TopBar = styled.View`
@@ -114,7 +114,7 @@ const TopBar = styled.View`
 `;
 
 const Counter = styled(AppText)`
-  color: ${({ theme }) => theme.colors.onPrimary};
+  color: ${({ theme }) => theme.colors.textStrong};
   font-size: ${({ theme }) => theme.typography.body.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
@@ -125,11 +125,11 @@ const CloseButton = styled.Pressable`
   align-items: center;
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.textAlternative};
+  background-color: ${({ theme }) => theme.colors.backgroundNeutral};
 `;
 
 const CloseText = styled(AppText)`
-  color: ${({ theme }) => theme.colors.onPrimary};
+  color: ${({ theme }) => theme.colors.textStrong};
   font-size: 32px;
   line-height: 36px;
 `;
@@ -159,11 +159,11 @@ const NavigationButton = styled.Pressable`
   align-items: center;
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.textAlternative};
+  background-color: ${({ theme }) => theme.colors.backgroundNeutral};
 `;
 
 const NavigationText = styled(AppText)`
-  color: ${({ theme }) => theme.colors.onPrimary};
+  color: ${({ theme }) => theme.colors.textStrong};
   font-size: 42px;
   line-height: 46px;
 `;

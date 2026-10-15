@@ -31,10 +31,11 @@ function setup() {
     if (path.endsWith('/quote') && quoteFailure) throw quoteFailure;
     if (failure) throw failure;
     if (delay) return { data: await delay };
-    return { data: path === '/places/' ? places : path.endsWith('/availabilities') ? slots : path.endsWith('/quote') ? quote : detail };
+    return { data: path === '/places' ? places : path.endsWith('/availabilities') ? slots : path.endsWith('/quote') ? quote : detail };
   } } as unknown as ApiTransport;
   const client = createApiClient(transport);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+  const navigation = jest.fn(() => true);
   const results: AppCommandResult[] = [];
   let contextRevision = 1, accountRevision: string | null = 'account', monotonic = 0;
   let location: { latitude: number; longitude: number } | null = { latitude: 37.5, longitude: 127 };
@@ -44,7 +45,7 @@ function setup() {
   let transportDelay: Promise<void> | undefined;
   const dispatcher = commands.createVoiceCommandDispatcher({
     runtime: () => ({ queryClient, accountRevision, contextRevision, location, locationPermission, radiusKm: 5,
-      timezone, now: () => now, monotonic: () => monotonic, session: controller.getIdentity(), placeListEnabled: true }),
+      navigateToPage: navigation, timezone, now: () => now, monotonic: () => monotonic, session: controller.getIdentity(), placeListEnabled: true }),
     publish: result => results.push(result), stopSession: () => controller.close(),
     queries: { list: params => commands.voiceReadQueries.list(params, createPlaceExplorationApi(client)),
       detail: id => commands.voiceReadQueries.detail(id, createPlaceDetailApi(client)),
@@ -59,7 +60,7 @@ function setup() {
   });
   const unsubscribe = controller.subscribe(() => { if (controller.getSnapshot().phase === 'closed') dispatcher.clear(); });
   cleanups.push(() => { unsubscribe(); controller.dispose(); dispatcher.clear(); queryClient.clear(); });
-  return { calls, queryClient, controller, dispatcher, results, deliveries,
+  return { navigation, calls, queryClient, controller, dispatcher, results, deliveries,
     async send(value = search()) { next = value; await controller.send('input'); return results.at(-1); },
     setTransportDelay: (v: Promise<void>) => { transportDelay = v; },
     setPlaces: (v: unknown) => { places = v; }, setDetail: (v: unknown) => { detail = v; }, setSlots: (v: unknown) => { slots = v; },
@@ -85,7 +86,7 @@ test('search reuses canonical keys, category and bounded list params; projects o
   const x = setup(); await x.controller.start();
   const result = await x.send(search({ touristCategory: 'CAFE' }));
   expect(result?.outcome).toEqual({ status: 'succeeded', data: { places: [facts], coverage: 'bounded_candidates' } });
-  expect(x.calls[0]).toMatchObject({ path: '/places/', params: { page: 1, limit: 12, latitude: 37.5, longitude: 127, radiusKm: 5, sort: 'NEAREST', touristCategory: 'CAFE' } });
+  expect(x.calls[0]).toMatchObject({ path: '/places', params: { page: 1, limit: 12, latitude: 37.5, longitude: 127, radiusKm: 5, sort: 'NEAREST', touristCategory: 'CAFE' } });
   expect(x.calls[0].params).not.toHaveProperty('date');
   expect(x.queryClient.getQueryData(reservationQueryKeys.availabilities(1, {}))).toEqual([slot()]);
   expect(JSON.stringify(result)).not.toMatch(/latitude|longitude|price|cancellation/);
@@ -131,14 +132,14 @@ test('an unknown place is rejected before any detail/availability lookup', async
   expect((await x.send(command('getAvailabilities', { placeId: 99, date: '2026-09-20', quantity: 2 })))?.outcome).toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
   expect(x.calls).toHaveLength(0);
 });
-test('details and availability reuse search provenance; preserve server order, products and full intervals', async () => {
+test('details and availability reuse search provenance; preserve place-only server order and full intervals', async () => {
   const x = setup(); await x.controller.start(); await x.send();
   expect((await x.send(command('getPlaceDetails', { placeId: 1 })))?.outcome).toEqual({ status: 'succeeded', data: { place: facts } });
   x.queryClient.removeQueries({ queryKey: reservationQueryKeys.availabilities(1, {}) });
   x.setSlots([slot({ id: 12, productType: 'CLASS', productId: 2, productName: 'class' }), slot({ id: 11, productType: 'TICKET', productId: 3, productName: 'ticket' }), slot(), slot({ id: 15, startsAt: '2026-09-20T15:00:00Z', endsAt: '2026-09-20T16:00:00Z' })]);
   const result = await x.send(command('getAvailabilities', { placeId: 1, date: '2026-09-20', quantity: 2 }));
-  expect(result?.outcome).toMatchObject({ status: 'succeeded', data: { availabilities: [{ id: 12 }, { id: 11 }, { id: 10 }] } });
-  expect(x.dispatcher.provenance.availability()?.slots.map(s => s.id)).toEqual([12, 11, 10]);
+  expect(result?.outcome).toMatchObject({ status: 'succeeded', data: { availabilities: [{ id: 10 }] } });
+  expect(x.dispatcher.provenance.availability()?.slots.map(s => s.id)).toEqual([10]);
   const before = x.calls.length;
   expect((await x.send(command('prepareReservation', { placeId: 1, availabilityId: 10, quantity: 2 })))?.outcome.status).toBe('succeeded');
   expect(x.calls).toHaveLength(before + 3); expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
@@ -161,7 +162,7 @@ test('a newer generation suppresses late read publication and provenance', async
   resolve({ places: [{ id: 1 }] }); await first;
   expect(x.results).toHaveLength(0); expect(x.dispatcher.provenance.places()).toBeUndefined();
 });
-test.each([[401, 'AUTHENTICATION_REQUIRED'], [403, 'FORBIDDEN'], [404, 'NOT_FOUND'], [429, 'RATE_LIMITED'], [503, 'SERVER_ERROR']] as const)('sanitizes HTTP %s', async (status, code) => {
+test.each([[401, 'AUTHENTICATION_REQUIRED'], [403, 'FORBIDDEN'], [404, 'INVALID_SERVER_RESPONSE'], [429, 'RATE_LIMITED'], [503, 'SERVER_ERROR']] as const)('sanitizes HTTP %s', async (status, code) => {
   const x = setup(); x.setFailure(new ApiError('JWT prompt coordinates secret', { status, responseBody: 'secret' })); await x.controller.start();
   expect((await x.send())?.outcome).toEqual({ status: 'rejected', code }); expect(JSON.stringify(x.results)).not.toContain('secret');
 });
@@ -265,12 +266,12 @@ test('old cancellation delivery cannot end a new epoch', async () => {
   expect(x.controller.getSnapshot().phase).toBe('ready');
 });
 
-test('nullable product names remain unknown facts, never invented general admission names', async () => {
+test('legacy product slots are excluded rather than converted to place reservations', async () => {
   const x = setup(); await x.controller.start(); await x.send();
   x.queryClient.removeQueries({ queryKey: reservationQueryKeys.availabilities(1, {}) });
   x.setSlots([slot({ productType: 'TICKET', productId: 5, productName: null })]);
   expect((await x.send(command('getAvailabilities', { placeId: 1, date: '2026-09-20', quantity: 2 })))?.outcome)
-    .toMatchObject({ status: 'succeeded', data: { availabilities: [{ productType: 'TICKET', productName: null }] } });
+    .toMatchObject({ status: 'succeeded', data: { availabilities: [] } });
 });
 
 test('a failed new search cannot leave IDs from the previous search authorized', async () => {
@@ -309,9 +310,9 @@ test('draft uses fresh canonical reads and exact server quote, strips authority,
   const result = await x.send(prepare());
   expect(result?.outcome).toMatchObject({ status: 'succeeded', data: { draft: {
     status: 'awaiting_user_confirmation', date: '2026-09-20', timezone: 'Asia/Seoul', quantity: 2,
-    availability: { id: 10, placeId: 1, productId: null, remainingCapacity: 2 },
-    source: { placeId: 1, availabilityId: 10, productId: null },
-    confirmation: { availabilityId: 10, quantity: 2, totalAmountMinor: 2050, currency: 'KRW' },
+    availability: { id: 10, placeId: 1, remainingCapacity: 2 },
+    source: { placeId: 1, availabilityId: 10 },
+    confirmation: { availabilityId: 10, quantity: 2, timezone: 'Asia/Seoul' },
   } } });
   expect(x.calls.slice(before).map(c => c.path)).toEqual(['/places/1/availabilities', '/places/1', '/places/1/availabilities/10/quote']);
   expect(x.calls.at(-1)?.params).toEqual({ quantity: 2 });
@@ -335,12 +336,22 @@ test.each([
   [[slot({ remainingCapacity: 1 })], 'AVAILABILITY_UNAVAILABLE'],
   [[slot({ status: 'INACTIVE' })], 'AVAILABILITY_UNAVAILABLE'],
   [[slot({ startsAt: '2026-09-20T04:30:00Z' })], 'STALE_CONTEXT'],
-  [[slot({ productType: 'TICKET', productId: 9, productName: 'Ticket' })], 'STALE_CONTEXT'],
+  [[slot({ endsAt: '2026-09-20T15:00:00.001+09:00' })], 'STALE_CONTEXT'],
+  [[slot({ productType: 'TICKET', productId: 9, productName: 'Ticket' })], 'AVAILABILITY_UNAVAILABLE'],
 ] as const)('changed/unavailable displayed slot invalidates draft without quoting', async (fresh, code) => {
   const x = await selected(); x.setSlots(fresh);
   expect((await x.send(prepare()))?.outcome).toEqual({ status: 'rejected', code });
   expect(x.calls.some(c => c.path.endsWith('/quote'))).toBe(false);
   expect(x.dispatcher.provenance.availability()).toBeUndefined();
+});
+
+test('equivalent UTC and KST slot times survive the AI draft freshness recheck', async () => {
+  const x = await selected();
+  x.setSlots([slot({ startsAt: '2026-09-20T14:00:00+09:00', endsAt: '2026-09-20T15:00:00.000+09:00' })]);
+  const result = await x.send(prepare());
+  expect(result?.outcome.status).toBe('succeeded');
+  expect(x.calls.some(c => c.path.endsWith('/quote'))).toBe(true);
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
 });
 
 test.each(['TICKET', 'CLASS'])('identified but unsupported %s never gets a reservation quote', async productType => {
@@ -349,7 +360,7 @@ test.each(['TICKET', 'CLASS'])('identified but unsupported %s never gets a reser
   x.queryClient.removeQueries({ queryKey: reservationQueryKeys.availabilities(1, {}) });
   await x.send(command('getAvailabilities', { placeId: 1, date: '2026-09-20', quantity: 2 }, 'product-slots'));
   const before = x.calls.length;
-  expect((await x.send(prepare()))?.outcome).toEqual({ status: 'rejected', code: 'UNSUPPORTED_PRODUCT' });
+  expect((await x.send(prepare()))?.outcome).toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
   expect(x.calls).toHaveLength(before);
 });
 
@@ -394,6 +405,35 @@ test('user-owned quote tokens are removed from shared cache after preparation', 
 
 const generalSearch = (args = {}, id = 'general-search') => command('searchNearbyPlaces', { useCurrentLocation: true, ...args }, id);
 
+test('restaurant discovery uses the general category without requiring a tourism FOOD tag', async () => {
+  const x = setup();
+  x.setPlaces({ places: [{ ...facts, id: 70095, name: '용짬뽕', category: 'RESTAURANT', touristCategories: [] }] });
+  await x.controller.start();
+  expect(await x.send(generalSearch({ category: 'RESTAURANT' }))).toMatchObject({ outcome: { status: 'succeeded',
+    data: { places: [expect.objectContaining({ id: 70095, touristCategories: [] })] } } });
+  expect(x.calls[0].params).toEqual({ category: 'RESTAURANT', latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 3, sort: 'NEAREST' });
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
+test('explicit general category and tourism tag are passed separately without conversion', async () => {
+  const x = setup(); await x.controller.start();
+  await x.send(generalSearch({ category: 'RESTAURANT', touristCategory: 'FOOD' }));
+  expect(x.calls[0].params).toMatchObject({ category: 'RESTAURANT', touristCategory: 'FOOD' });
+});
+
+test('keyword discovery passes the keyword and app coordinates without any reservation reads', async () => {
+  const x = setup();
+  x.setPlaces({ places: [1, 2, 3].map(id => ({ ...facts, id, name: `갈비탕 ${id}` })) });
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: ' 갈비탕 ', limit: 2 }))).toMatchObject({ outcome: {
+    status: 'succeeded', data: { places: [expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 })] },
+  } });
+  expect(x.calls).toEqual([expect.objectContaining({ path: '/places', params: {
+    keyword: '갈비탕', latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 2, sort: 'NEAREST',
+  } })]);
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
 test('general discovery without category or booking conditions reads actual places, displays at most three and never checks availability', async () => {
   const x = setup();
   x.setPlaces({ places: [1, 2, 3, 4].map(id => ({ ...facts, id, name: `Place ${id}` })) });
@@ -401,7 +441,7 @@ test('general discovery without category or booking conditions reads actual plac
   const result = await x.send(generalSearch());
   expect(result).toMatchObject({ command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: {
     places: [expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 }), expect.objectContaining({ id: 3 })], coverage: 'nearest_places' } } });
-  expect(x.calls).toEqual([expect.objectContaining({ path: '/places/', params: {
+  expect(x.calls).toEqual([expect.objectContaining({ path: '/places', params: {
     latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 3, sort: 'NEAREST' } })]);
   expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
   const count = x.calls.length;
@@ -445,4 +485,112 @@ test('general discovery projects server distance while refusing malformed distan
   x.setPlaces({ places: [{ ...facts, distanceMeters: -10 }] });
   expect(await x.send(generalSearch({ touristCategory: 'FOOD' }, 'bad-distance')))
     .toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
+});
+
+test('name or menu searches do not exclude untagged restaurants with inferred tourism categories', async () => {
+  const x = setup();
+  x.setPlaces({ places: [{ ...facts, id: 70095, name: '용짬뽕', category: 'RESTAURANT', touristCategories: [] }] });
+  await x.controller.start();
+  const result = await x.send(generalSearch({ keyword: ' 용짬뽕 ', touristCategory: 'FOOD' }));
+  expect(result).toMatchObject({ outcome: { status: 'succeeded', data: { places: [{ id: 70095, name: '용짬뽕', touristCategories: [] }] } } });
+  expect(x.calls[0]).toMatchObject({ path: '/places', params: { keyword: '용짬뽕', limit: 3, latitude: 37.5, longitude: 127, radiusKm: 5 } });
+  expect(x.calls[0].params).not.toHaveProperty('touristCategory');
+});
+
+test('a failed search route remains a request failure instead of implying a missing place', async () => {
+  const x = setup();
+  x.setFailure(new ApiError('route unavailable', { status: 404, code: 'RESOURCE_NOT_FOUND' }));
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: '용짬뽕' }))).toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
+});
+
+
+test.each(['map', 'search', 'favorites', 'reservations', 'myPage', 'settings'])('navigation to %s needs no location and performs no domain request', async page => {
+  const x = setup(); x.setLocation(null); x.setPermission('denied'); await x.controller.start();
+  const result = await x.send(command('navigateToPage', { page }, 'navigate'));
+  expect(result?.outcome).toEqual({ status: 'succeeded', data: { target: { page }, navigationRequested: true } });
+  expect(x.navigation).toHaveBeenCalledTimes(1); expect(x.navigation).toHaveBeenCalledWith({ page });
+  expect(x.calls).toEqual([]);
+  await x.dispatcher.consume(command('navigateToPage', { page }, 'navigate'), x.deliveries[0]);
+  expect(x.navigation).toHaveBeenCalledTimes(1);
+});
+
+test('detail navigation asks for an ambiguous target and rejects untrusted IDs', async () => {
+  const x = setup(); await x.controller.start();
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail' })))?.outcome)
+    .toEqual({ status: 'clarification_required', field: 'placeId' });
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: 99 }, 'bad-id')))?.outcome)
+    .toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+  expect(x.navigation).not.toHaveBeenCalled(); expect(x.calls).toEqual([]);
+});
+
+test('detail navigation rereads verified search facts before opening the existing surface', async () => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  x.calls.length = 0; x.queryClient.invalidateQueries({ queryKey: placeQueryKeys.detail(1) });
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: 1 })))?.outcome.status).toBe('succeeded');
+  expect(x.navigation).toHaveBeenCalledWith({ page: 'placeDetail', placeId: 1 });
+  expect(x.calls.map(c => c.path)).toEqual(['/places/1']);
+});
+
+test('router refusal returns an app rejection rather than success', async () => {
+  const x = setup(); x.navigation.mockReturnValue(false); await x.controller.start();
+  expect((await x.send(command('navigateToPage', { page: 'settings' })))?.outcome)
+    .toEqual({ status: 'rejected', code: 'FORBIDDEN' });
+});
+
+test('logout during detail verification prevents late navigation', async () => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  x.queryClient.invalidateQueries({ queryKey: placeQueryKeys.detail(1) });
+  let resolve!: (value: unknown) => void;
+  x.setDelay(new Promise(r => { resolve = r; }));
+  const pending = x.send(command('navigateToPage', { page: 'placeDetail', placeId: 1 }));
+  await Promise.resolve(); x.logout(); resolve(facts); await pending;
+  expect(x.navigation).not.toHaveBeenCalled();
+});
+
+
+test.each([[404, 'NOT_FOUND'], [403, 'FORBIDDEN']] as const)('detail navigation never opens a %s response', async (status, code) => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  x.setFailure(new ApiError('unavailable', { status }));
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: 1 })))?.outcome)
+    .toEqual({ status: 'rejected', code });
+  expect(x.navigation).not.toHaveBeenCalled();
+});
+
+
+test('booking page requires a verified place but no date, quantity, availability or quote', async () => {
+  const x = setup(); await x.controller.start();
+  expect((await x.send(command('navigateToPage', { page: 'createReservation' }, 'missing')))?.outcome)
+    .toEqual({ status: 'clarification_required', field: 'placeId' });
+  expect((await x.send(command('navigateToPage', { page: 'createReservation', placeId: 99 }, 'untrusted')))?.outcome)
+    .toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+  expect(x.navigation).not.toHaveBeenCalled();
+  await x.send(search()); x.calls.length = 0;
+  expect((await x.send(command('navigateToPage', { page: 'createReservation', placeId: 1 }, 'booking')))?.outcome.status).toBe('succeeded');
+  expect(x.navigation).toHaveBeenCalledWith({ page: 'createReservation', placeId: 1 });
+  expect(x.calls.map(c => c.path)).toEqual(['/places/1']);
+});
+
+
+test.each(['placeDetail', 'createReservation'] as const)('%s refuses a re-read response for a different place', async page => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  x.setDetail({ ...facts, id: 99 });
+  expect((await x.send(command('navigateToPage', { page, placeId: 1 })))?.outcome)
+    .toEqual({ status: 'rejected', code: 'INVALID_SERVER_RESPONSE' });
+  expect(x.navigation).not.toHaveBeenCalled();
+});
+
+test.each(['close', 'background', 'context', 'replacement'] as const)('%s while verifying a booking place prevents late navigation', async reason => {
+  const x = setup(); await x.controller.start(); await x.send(search());
+  let complete!: (value: unknown) => void;
+  x.setDelay(new Promise(resolve => { complete = resolve; })); x.calls.length = 0;
+  const pending = x.send(command('navigateToPage', { page: 'createReservation', placeId: 1 }, 'old-booking'));
+  await new Promise<void>(resolve => setImmediate(resolve));
+  expect(x.calls.map(c => c.path)).toContain('/places/1');
+  if (reason === 'close') await x.controller.close();
+  else if (reason === 'background') x.controller.setForeground(false);
+  else if (reason === 'context') x.changeContext();
+  else await x.send(command('navigateToPage', { page: 'settings' }, 'new-settings'));
+  complete(facts); await pending;
+  expect(x.navigation.mock.calls).toEqual(reason === 'replacement' ? [[{ page: 'settings' }]] : []);
 });

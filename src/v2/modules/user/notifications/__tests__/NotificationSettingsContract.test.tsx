@@ -38,16 +38,13 @@ test('optional category values are unknown and disabled, never defaulted to fals
   expect(toggle.props.accessibilityHint).toContain('올바른 설정값');
 });
 
-test('GET initializes categories; unsupported design toggles never save or request permission', async () => {
+test('GET initializes real categories and hides unsupported design toggles', async () => {
   const adapter = permission();
   const view = await renderWithProviders(<NotificationSettingsScreen onBack={jest.fn()} permissionAdapter={adapter} />);
   expect(await screen.findByRole('switch', { name: '핫플레이스 알림' })).not.toBeChecked();
   expect(screen.getByRole('switch', { name: '좋아요 알림' })).toBeChecked();
   for (const key of ['pushAll', 'firstRecordTrending', 'recordNewTags', 'favoriteMoodChange', 'frequentAreaHotPlace', 'todayMissionArea', 'weeklyReport', 'nightNotifications', 'marketingEvents']) {
-    const toggle = screen.getByTestId(`notification-setting-${key}`);
-    expect(toggle).toBeDisabled();
-    expect(toggle.props.accessibilityHint).toBeTruthy();
-    await view.user.press(toggle);
+    expect(screen.queryByTestId(`notification-setting-${key}`)).toBeNull();
   }
   expect(notificationApi.updateNotificationSettings).not.toHaveBeenCalled();
   expect(adapter.request).not.toHaveBeenCalled();
@@ -138,25 +135,10 @@ test('same-field duplicate presses are blocked while a different field queues sa
   ]);
 });
 
-test.each([{}, { quietHoursStart: null, quietHoursEnd: null }, { quietHoursStart: '25:10:00' }, { timezone: 'Not/AZone' }])(
-  'quiet hours handles incomplete runtime values without inventing defaults: %j', async (override) => {
-    jest.mocked(notificationApi.getNotificationSettings).mockResolvedValue(
-      (Object.keys(override).length ? { ...initial, ...override } : { quietHoursEnabled: true }) as typeof initial,
-    );
-    await renderWithProviders(<NotificationSettingsScreen onBack={jest.fn()} permissionAdapter={permission()} />);
-    expect(await screen.findByText('시간 또는 시간대 정보가 없거나 올바르지 않습니다.')).toBeVisible();
-    expect(screen.getByTestId('notification-setting-quietHoursEnabled')).toBeDisabled();
-    expect(notificationApi.updateNotificationSettings).not.toHaveBeenCalled();
-  },
-);
-
-test.each(['ko', 'en'] as const)('%s dark mode presents locale quiet hours and explains read-only policy', async (language) => {
+test.each(['ko', 'en'] as const)('%s dark mode hides unavailable quiet-hour editing', async language => {
   await renderWithProviders(<NotificationSettingsScreen onBack={jest.fn()} permissionAdapter={permission()} />, { language, appearancePreference: 'DARK' });
-  const quiet = await screen.findByTestId('notification-setting-quietHoursEnabled');
-  expect(quiet).toBeDisabled();
-  const start = new Intl.DateTimeFormat(language, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(new Date(Date.UTC(2000, 0, 1, 22, 0, 30)));
-  expect(screen.getByText(new RegExp(start))).toBeVisible();
-  expect(quiet.props.accessibilityHint).not.toContain('notificationSettings.');
+  await screen.findByTestId('notification-setting-newHotplaceEnabled');
+  expect(screen.queryByTestId('notification-setting-quietHoursEnabled')).toBeNull();
   expect(screen.getByTestId('v2-notification-settings-screen')).toHaveStyle({ backgroundColor: '#0F0F11' });
 });
 

@@ -1,10 +1,11 @@
 import { useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
+import type { VoiceSessionApi } from '../api/voiceSessionApi';
 import { AppState } from 'react-native';
 import { createVoiceSessionController, type VoiceEnvelopeConsumer } from '../model/voiceSession';
 
 /** Host supplies its current authenticated account identity; never a JWT. No automatic session start. */
-export function useVoiceSession(accountId: string | null, onEnvelope: VoiceEnvelopeConsumer) {
-  const controller = useMemo(() => createVoiceSessionController(onEnvelope), [accountId, onEnvelope]);
+export function useVoiceSession(accountId: string | null, onEnvelope: VoiceEnvelopeConsumer, api?: VoiceSessionApi) {
+  const controller = useMemo(() => createVoiceSessionController(onEnvelope, api), [accountId, onEnvelope, api]);
   useLayoutEffect(() => {
     controller.setAuthenticated(accountId !== null);
     controller.setForeground(AppState.currentState === 'active');

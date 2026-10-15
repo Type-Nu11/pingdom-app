@@ -168,14 +168,8 @@ export function createApiClient(transport?: ApiTransport): ApiClient {
       const startedAt = Date.now();
 
       try {
-        // The places collection needs the deployed proxy's slash workaround.
-        // Other collections must keep their slashless OpenAPI routes.
-        const canonicalPath = path.replace(
-          /^\/(places)(?=[?#]|$)/,
-          '/$1/',
-        );
         const response = await getTransport().get<TResponse>(
-          canonicalPath,
+          path,
           await withAuthorization(options),
         );
         return response.data;

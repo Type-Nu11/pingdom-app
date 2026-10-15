@@ -52,6 +52,7 @@ export function createVoiceSessionController(
   };
   function invalidate(error: VoiceSessionErrorCode | null = null, phase: VoiceSessionState['phase'] = 'closed') {
     clearTimeout(expiryTimer); expiryTimer = undefined;
+    api.reset?.();
     retryInput = undefined; expiresAt = 0; expiryDeadline = 0;
     epoch = Symbol('voice-session'); generation++;
     turn?.abort(); turn = undefined;
@@ -137,36 +138,42 @@ export function createVoiceSessionController(
     try {
       if (!input.text.trim() || input.text.length > 2000) throw new VoiceSessionError('INVALID_INPUT');
       if (ledger.size >= VOICE_LEDGER_LIMIT) throw new VoiceSessionError('LEDGER_FULL');
-      const envelope = await request(s => api.send(session.sessionId, input, s), currentTurn.signal, deadline);
+      let nextEnvelope: ProviderEnvelope | undefined = await request(s => api.send(session.sessionId, input, s), currentTurn.signal, deadline);
       received = true;
-      if (!current()) return;
-      if (performance.now() >= deadline) throw new VoiceSessionError('TIMEOUT');
-      const payload = fingerprint(envelope);
-      const existing = ledger.get(envelope.id);
-      if (existing) {
-        if (existing.fingerprint !== payload) throw new VoiceSessionError('REPLAY_CONFLICT');
-        // The same delivery is never sent to the consumer twice, even across generations.
-        await request(() => existing.result, currentTurn.signal, deadline);
-      } else {
-        const context: VoiceDeliveryContext = Object.freeze({ epoch: captured, generation: revision, sessionId: session.sessionId, envelopeId: envelope.id, deadline, signal: currentTurn.signal, isCurrent: current,
-          claimExecution: (candidate: ProviderEnvelope) => {
-            if (!current()) return false;
-            const entry = ledger.get(envelope.id);
-            if (!entry || candidate.id !== envelope.id || entry.fingerprint !== fingerprint(candidate)) throw new VoiceSessionError('REPLAY_CONFLICT');
-            if (entry.executionClaimed) return false;
-            entry.executionClaimed = true;
-            return true;
-          },
-        });
-        // Claim synchronously BEFORE consumer invocation, including reentrant consumers.
-        let resolve!: () => void; let reject!: (e: unknown) => void;
-        const result = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
-        // Attach before invoking a reentrant consumer, which may abort this turn.
-        void result.catch(() => {});
-        ledger.set(envelope.id, { fingerprint: payload, result, executionClaimed: false });
-        try { Promise.resolve(onEnvelope(envelope, context)).then(resolve, () => reject(new VoiceSessionError('DELIVERY_FAILED'))); }
-        catch { reject(new VoiceSessionError('DELIVERY_FAILED')); }
-        await request(() => result, currentTurn.signal, deadline);
+      while (nextEnvelope) {
+        const envelope = nextEnvelope;
+        if (ledger.size >= VOICE_LEDGER_LIMIT) throw new VoiceSessionError('LEDGER_FULL');
+        if (!current()) return;
+        if (performance.now() >= deadline) throw new VoiceSessionError('TIMEOUT');
+        const payload = fingerprint(envelope);
+        const existing = ledger.get(envelope.id);
+        if (existing) {
+          if (existing.fingerprint !== payload) throw new VoiceSessionError('REPLAY_CONFLICT');
+          // The same delivery is never sent to the consumer twice, even across generations.
+          await request(() => existing.result, currentTurn.signal, deadline);
+        } else {
+          const context: VoiceDeliveryContext = Object.freeze({ epoch: captured, generation: revision, sessionId: session.sessionId, envelopeId: envelope.id, deadline, signal: currentTurn.signal, isCurrent: current,
+            claimExecution: (candidate: ProviderEnvelope) => {
+              if (!current()) return false;
+              const entry = ledger.get(envelope.id);
+              if (!entry || candidate.id !== envelope.id || entry.fingerprint !== fingerprint(candidate)) throw new VoiceSessionError('REPLAY_CONFLICT');
+              if (entry.executionClaimed) return false;
+              entry.executionClaimed = true;
+              return true;
+            },
+          });
+          // Claim synchronously BEFORE consumer invocation, including reentrant consumers.
+          let resolve!: () => void; let reject!: (e: unknown) => void;
+          const result = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
+          // Attach before invoking a reentrant consumer, which may abort this turn.
+          void result.catch(() => {});
+          ledger.set(envelope.id, { fingerprint: payload, result, executionClaimed: false });
+          try { Promise.resolve(onEnvelope(envelope, context)).then(resolve, () => reject(new VoiceSessionError('DELIVERY_FAILED'))); }
+          catch { reject(new VoiceSessionError('DELIVERY_FAILED')); }
+          await request(() => result, currentTurn.signal, deadline);
+        }
+        if (!current()) return;
+        nextEnvelope = api.next ? await request(s => api.next!(session.sessionId, s), currentTurn.signal, deadline) : undefined;
       }
       if (current()) publish('ready');
     } catch (e) {
@@ -229,7 +236,7 @@ export function createVoiceSessionController(
       if (Date.now() < saved.at || performance.now() < saved.monotonicAt) throw new VoiceSessionError('RETRY_BACKOFF');
       return transmit(saved.body, signal, saved.attempt + 1);
     },
-    cancel() { retryInput = undefined; generation++; turn?.abort(); pending.forEach(c => c.abort()); publish(dto ? 'ready' : 'closed'); },
+    cancel() { api.reset?.(); retryInput = undefined; generation++; turn?.abort(); pending.forEach(c => c.abort()); publish(dto ? 'ready' : 'closed'); },
     async close(signal?: AbortSignal) {
       const id = dto?.sessionId;
       invalidate(); // Suppress late responses immediately, before server acknowledgement.
