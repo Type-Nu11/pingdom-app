@@ -2,6 +2,24 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApiClient } from '../apiClient.ts';
 
+test('AI failure diagnostics do not disclose lowercase session IDs or credential-shaped metadata', async () => {
+  const previous = globalThis.__DEV__;
+  globalThis.__DEV__ = true;
+  const logs = [];
+  const original = console.warn;
+  console.warn = (...args) => logs.push(args);
+  try {
+    const privateValue = 'eyJhbGciOiJIUzI1NiJ9.private.signature';
+    const client = createApiClient({ get: async () => { throw {
+      isAxiosError: true, code: privateValue,
+      response: { status: 503, data: { code: privateValue, traceId: privateValue }, headers: { 'x-request-id': privateValue } },
+    }; } });
+    await assert.rejects(client.get('/ai/sessions/private-session/messages'));
+    assert.equal(JSON.parse(logs[0][1]).route, '/ai/sessions/:id/messages');
+    assert.equal(JSON.stringify(logs).includes('private'), false);
+  } finally { console.warn = original; globalThis.__DEV__ = previous; }
+});
+
 test('failed requests expose diagnostic metadata without credentials or payload values', async () => {
   const previous = globalThis.__DEV__;
   globalThis.__DEV__ = true;
@@ -20,7 +38,7 @@ test('failed requests expose diagnostic metadata without credentials or payload 
     assert.equal(entry.method, 'GET');
     assert.equal(entry.status, 503);
     assert.equal(entry.kind, 'http');
-    assert.equal(entry.traceId, 'trace-123');
+    assert.equal(entry.traceId, undefined);
     assert.equal(entry.host, 'api.example.com');
     assert.ok(entry.elapsedMs >= 0);
     assert.equal(JSON.stringify(logs).includes('secret'), false);

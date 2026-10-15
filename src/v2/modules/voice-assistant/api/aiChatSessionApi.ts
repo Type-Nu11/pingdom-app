@@ -154,7 +154,7 @@ function diagnosticFailure(error: unknown) {
   const failure = toApiError(error);
   const body = diagnosticObject(diagnosticJson(failure.responseData));
   const detail = diagnosticObject(body?.error) ?? body;
-  const safe = (value: unknown) => typeof value === 'string' && /^[a-zA-Z0-9_.:-]{1,100}$/.test(value) ? value : undefined;
+  const safe = (value: unknown, allowed: readonly string[]) => typeof value === 'string' && allowed.includes(value) ? value : undefined;
   const generation = detail?.failed_generation;
   let decoded = diagnosticJson(generation);
   if (typeof generation === 'string' && !decoded && generation.length <= VOICE_RESPONSE_LIMIT) {
@@ -163,8 +163,10 @@ function diagnosticFailure(error: unknown) {
   }
   const generated = diagnosticObject(decoded);
   const calls = Array.isArray(decoded) ? decoded : Array.isArray(generated?.tool_calls) ? generated.tool_calls : generated ? [generated] : [];
-  return { status: failure.status ?? null, code: safe(detail?.code ?? failure.code), type: safe(detail?.type),
-    traceId: safe(failure.traceId), hasFailedGeneration: generation !== undefined,
+  return { status: failure.status ?? null,
+    code: safe(detail?.code ?? failure.code, ['tool_use_failed', 'rate_limit_exceeded', 'invalid_api_key']) ?? voiceSessionError(error).code,
+    type: safe(detail?.type, ['invalid_request_error', 'authentication_error', 'permission_error', 'rate_limit_error', 'api_error', 'overloaded_error']),
+    hasFailedGeneration: generation !== undefined,
     generationParsed: calls.length > 0, calls: calls.slice(0, 8).map(diagnosticCall) };
 }
 
