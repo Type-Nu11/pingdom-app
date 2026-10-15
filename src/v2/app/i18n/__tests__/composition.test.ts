@@ -36,6 +36,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     delete baseline[language].translation.routes;
     // #392 adds the reviewed menu price conversion copy.
     delete baseline[language].translation.placeMenu.exchange;
+    // Reviewed expanded place sheet product title and photo-viewer accessibility copy.
+    delete baseline[language].translation.placeProduct;
     // #393 adds the reviewed first-run tutorial catalog.
     delete baseline[language].translation.mapTutorial;
     // #390 reviews only shared error presentation and uncertain reservation outcomes.

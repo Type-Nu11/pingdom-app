@@ -3,8 +3,8 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
-import DownAsset from '../../../../../assets/v2/icons/place/Down.svg';
-import TicketAsset from '../../../../../assets/v2/icons/place/Tiket.svg';
+import DownAsset from '../../../../../assets/v2/icons/place/detail-download.svg';
+import TicketAsset from '../../../../../assets/v2/icons/place/detail-ticket.svg';
 
 import {
   Button,
@@ -306,7 +306,7 @@ export default function PlaceCouponCta({
               testID={`v2-place-offer-row-${offer.id}`}
             >
               <CompactTicketIcon>
-                <TicketAsset height={24} width={24} />
+                <TicketAsset />
               </CompactTicketIcon>
               <CompactOfferBody>
                 <CompactOfferTitle numberOfLines={1}>{offer.title}</CompactOfferTitle>
@@ -315,7 +315,7 @@ export default function PlaceCouponCta({
                 </CompactOfferPeriod>
               </CompactOfferBody>
               <CompactIssueIcon accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                {isActiveIssue ? <ActivityIndicator size="small" /> : <DownAsset height={17} width={14} />}
+                {isActiveIssue ? <ActivityIndicator size="small" /> : <DownAsset />}
               </CompactIssueIcon>
             </CompactOfferRow>
           );
@@ -554,12 +554,13 @@ const OfferChoiceText = styled(AppText)<{ $selected: boolean }>`
 const CompactSection = styled.View`
   border-top-color: ${({ theme }) => theme.colors.backgroundNeutral};
   border-top-width: 8px;
-  padding: 20px 24px;
+  padding: 16px 24px;
 `;
 
 const CompactSectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: 14px;
+  font-size: 18px;
+  line-height: 24px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
@@ -571,18 +572,18 @@ const CompactLoadingRow = styled.View`
 
 const CompactOfferRow = styled.Pressable`
   align-items: center;
-  background-color: ${({ theme }) => theme.colors.surfaceMuted};
-  border-radius: 10px;
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
+  border-radius: 12px;
   flex-direction: row;
   gap: 10px;
-  margin-top: 10px;
-  min-height: 62px;
-  padding: 10px 12px;
+  margin-top: 16px;
+  min-height: 64px;
+  padding: 12px;
 `;
 
 const CompactTicketIcon = styled.View`
   align-items: center;
-  background-color: ${({ theme }) => theme.colors.primarySoft};
+  background-color: ${({ theme }) => theme.colors.primaryAssistive};
   border-radius: 8px;
   height: 36px;
   justify-content: center;
@@ -596,14 +597,16 @@ const CompactOfferBody = styled.View`
 
 const CompactOfferTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 21px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
 const CompactOfferPeriod = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 10px;
-  margin-top: 3px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 16px;
+  margin-top: 4px;
 `;
 
 const CompactIssueIcon = styled.View`

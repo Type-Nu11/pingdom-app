@@ -1,0 +1,1 @@
+export { placeProductResources } from './productResources';
