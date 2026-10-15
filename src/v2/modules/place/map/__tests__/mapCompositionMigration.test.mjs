@@ -192,7 +192,7 @@ test('production V2 map owns opt-in assistant FAB and modal; settings has no inp
   const screen = read('../screens/MapScreen.tsx');
   const overlay = read('../presentation/components/MapTopOverlay.tsx');
   const settings = read('../../../user/settings/screens/SettingsScreen.tsx');
-  assert.match(screen, /useMapAssistantEntry\(env\.featureFlags\.voiceAssistant, isFocused\)/);
+  assert.match(screen, /useMapAssistantEntry\(env\.featureFlags\.voiceAssistant, isFocused,\s*canQueryBookmarks && profile\?\.id \? String\(profile\.id\) : null, !isSearchOpen\)/);
   assert.match(screen, /onAssistantPress=\{assistant\.enabled && !isSearchOpen \? assistant\.open : undefined\}/);
   assert.match(screen, /assistantSheetTop=\{sheetTranslateY\}/);
   assert.match(screen, /<MapAssistantModal visible=\{assistant\.isOpen\} onClose=\{assistant\.close\}/);
