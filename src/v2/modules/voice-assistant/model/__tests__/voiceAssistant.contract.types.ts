@@ -9,7 +9,7 @@ export type ContractCoverage = [
   AssertNever<Exclude<VoiceCommandName, keyof VoiceCommandOutput>>,
   AssertNever<Exclude<keyof VoiceCommandOutput, VoiceCommandName>>,
   AssertNever<Extract<ProviderEnvelope, { kind: 'command_result' }>>,
-  AssertNever<Exclude<ReservationDraft['availability']['productType'], AvailabilityList[number]['productType']>>,
+  AssertNever<Extract<keyof ReservationDraft['availability'], 'productType' | 'productId' | 'productName'>>,
 ];
 
 // Compiled by npm run typecheck; these functions are never executed.

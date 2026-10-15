@@ -1,33 +1,12 @@
-import type { AssertNever } from '../../../../shared/model';
 import type { Availability } from './reservationAvailability';
 
-/**
- * Every availability names a reservation target through `productType`:
- *
- * - `GENERAL` books the place itself; there is no separate product, so a null or
- *   missing `productId` is normal and the place name is the reservation target.
- * - `TICKET` / `CLASS` book a specific merchant product (an admission pass, an
- *   experience). They need at least a product name, which the current server
- *   contract does not carry.
- *
- * The list is kept in lockstep with the generated contract by the assertions
- * below, so a server-side rename or addition breaks the build here rather than
- * silently changing behaviour.
+/** Migration guard for old responses while #1793 is not yet published.
+ * New slots have no product fields. Explicit legacy product slots stay blocked;
+ * this does not convert an old TICKET/CLASS slot into a place reservation.
  */
 export const RESERVATION_PRODUCT_TYPES = ['GENERAL', 'TICKET', 'CLASS'] as const;
 
 export type ReservationProductType = (typeof RESERVATION_PRODUCT_TYPES)[number];
-
-type EveryContractProductTypeIsListed = AssertNever<
-  Exclude<Availability['productType'], ReservationProductType>
->;
-type EveryListedProductTypeIsInContract = AssertNever<
-  Exclude<ReservationProductType, Availability['productType']>
->;
-export type ReservationProductContractAssertions = [
-  EveryContractProductTypeIsListed,
-  EveryListedProductTypeIsInContract,
-];
 
 /**
  * i18n keys for the two "cannot be reserved yet" notices. They live beside the
@@ -45,13 +24,12 @@ export const AVAILABILITY_BLOCKED_REASON_KEYS = {
  * `unknownType` are shown as disabled rows with an explicit reason so they read
  * as "not bookable yet" rather than an empty list or a network error.
  *
- * When the server contract gains `productName`, `blockedProduct` becomes the
- * seam where a `product` presentation (type + name) is added.
+ * Legacy product slots remain disabled during the contract transition.
  */
 export type AvailabilityPresentation =
   | {
     kind: 'place';
-    productType: 'GENERAL';
+    productType?: 'GENERAL';
     availability: Availability;
   }
   | {
@@ -77,6 +55,13 @@ export function selectAvailabilityPresentation(
   const rawProductType = availability.productType as string | null | undefined;
 
   switch (rawProductType) {
+    // #1793 removes product fields. Absence is the new place-only contract.
+    case undefined:
+      if (availability.productId != null || availability.productName != null) {
+        return { kind: 'unknownType', rawProductType: null, availability,
+          reasonKey: AVAILABILITY_BLOCKED_REASON_KEYS.unknownType };
+      }
+      return { kind: 'place', availability };
     case 'GENERAL':
       return { kind: 'place', productType: 'GENERAL', availability };
     case 'TICKET':

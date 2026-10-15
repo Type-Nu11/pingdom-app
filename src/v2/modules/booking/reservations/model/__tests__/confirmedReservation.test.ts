@@ -100,9 +100,9 @@ test('continuous confirmation submits only once and persists before sending', as
   expect(h.create).toHaveBeenCalledTimes(1); expect(h.storage.write).toHaveBeenCalledTimes(1);
   expect(jest.mocked(h.storage.write).mock.invocationCallOrder[0]).toBeLessThan(h.create.mock.invocationCallOrder[0]);
 });
-test.each(['price', 'policy', 'version'] as const)('%s change requires another explicit confirmation', async change => {
+test.each(['policy', 'version'] as const)('%s change requires another explicit confirmation', async change => {
   const h = harness(); await h.controller.prepare(selection);
-  h.getQuote.mockImplementation(async () => { const q = quote(); if (change === 'price') Object.assign(q.confirmation!, { unitAmountMinor: 2000, totalAmountMinor: 4050, refundableAmountMinor: 4050 });
+  h.getQuote.mockImplementation(async () => { const q = quote();
     if (change === 'policy') Object.assign(q.confirmation!, { cancellable: false, cancellationDeadline: null, refundableAmountMinor: 0 });
     if (change === 'version') q.confirmation!.conditionsVersion = 2; return q; });
   await h.controller.confirm(booker); expect(h.create).not.toHaveBeenCalled();
@@ -155,4 +155,32 @@ test('expiry while persisting the intent blocks the first HTTP write', async () 
   const write = h.storage.write;
   jest.mocked(h.storage.write).mockImplementationOnce(async intent => { await write(intent); h.advance(300001); });
   await h.controller.confirm(booker); expect(h.create).not.toHaveBeenCalled(); expect(h.record()).toBeNull();
+});
+
+test('#1793 place-only responses complete confirmation and creation without product or monetary fields', async () => {
+  const h = harness();
+  const { productType: _type, productId: _id, productName: _name, ...newSlot } = slot;
+  newSlot.reservationTerms = { timezone: 'Asia/Seoul', cancellable: true, cancellationCutoffMinutes: 60 };
+  h.list.mockResolvedValue([newSlot]);
+  h.getQuote.mockImplementation(async () => ({
+    confirmationToken: quote().confirmationToken, remainingCapacity: 3,
+    confirmation: {
+      placeId: 1, placeName: 'Cafe', availabilityId: 10,
+      startsAt: slot.startsAt, endsAt: slot.endsAt, quantity: 2, timezone: 'Asia/Seoul',
+      cancellable: true, cancellationDeadline: '2026-10-10T04:00:00Z',
+      conditionsVersion: 1, expiresAt: new Date(initialNow + 300000).toISOString(),
+    },
+  }));
+  h.create.mockImplementation(async () => {
+    const { productType: _legacyType, productId: _legacyId, ...result } = created(h.record()!);
+    return result;
+  });
+  await h.controller.prepare({ ...selection, availability: newSlot });
+  expect(h.controller.getSnapshot().phase).toBe('review');
+  await h.controller.confirm(booker);
+  expect(h.controller.getSnapshot().phase).toBe('success');
+  expect(h.create).toHaveBeenCalledTimes(1);
+  expect(Object.keys(h.create.mock.calls[0][0]).sort()).toEqual([
+    'availabilityId', 'bookerName', 'bookerPhone', 'confirmationToken', 'idempotencyKey', 'quantity', 'requestNote',
+  ]);
 });

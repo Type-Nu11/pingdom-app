@@ -17,12 +17,29 @@ export type ListOwnedReservationsParams = OperationQuery<'listOwnedPlaceReservat
 // The live `/places/{placeId}/availabilities` operation takes no query params.
 export type ListAvailabilitiesParams = Record<string, never>;
 export type CreateReservationBody = ReservationPaymentOperationRequestBody<'createReservation'>;
-export type AvailabilityList = ReservationPaymentOperationResponse<'listPlaceAvailabilities', 200>;
-export type ReservationPage = ReservationPaymentOperationResponse<'listMyReservations', 200>;
-export type Reservation = ReservationPaymentOperationResponse<'createReservation', 201>;
-export type ReservationDetail = ReservationPaymentOperationResponse<'getMyReservation', 200>;
-export type ReservationQuote = ReservationPaymentOperationResponse<'getReservationQuote', 200>;
-export type ReservationConfirmation = NonNullable<ReservationQuote['confirmation']>;
+type PublishedAvailability = ReservationPaymentOperationResponse<'listPlaceAvailabilities', 200>[number];
+type LegacyProductFields = 'productType' | 'productId' | 'productName';
+// #1793 is merged but the published app OpenAPI still describes the old contract.
+// Keep that snapshot truthful and explicitly bridge the removed response fields
+// until deployment. Legacy fields are input compatibility only, never inferred.
+export type AvailabilityList = Array<Omit<PublishedAvailability, LegacyProductFields | 'reservationTerms'>
+  & Partial<Pick<PublishedAvailability, LegacyProductFields>> & {
+    reservationTerms?: Omit<NonNullable<PublishedAvailability['reservationTerms']>, 'unitAmountMinor' | 'additionalAmountMinor' | 'currency'>
+      & Partial<Pick<NonNullable<PublishedAvailability['reservationTerms']>, 'unitAmountMinor' | 'additionalAmountMinor' | 'currency'>> | null;
+  }>;
+type PublishedReservationPage = ReservationPaymentOperationResponse<'listMyReservations', 200>;
+export type ReservationPage = Omit<PublishedReservationPage, 'reservations'> & { reservations: Reservation[] };
+type PublishedReservation = ReservationPaymentOperationResponse<'createReservation', 201>;
+export type Reservation = Omit<PublishedReservation, 'productType' | 'productId' | 'confirmation'>
+  & Partial<Pick<PublishedReservation, 'productType' | 'productId'>> & { confirmation?: ReservationConfirmation | null };
+export type ReservationDetail = Reservation;
+type PublishedQuote = ReservationPaymentOperationResponse<'getReservationQuote', 200>;
+type PublishedConfirmation = NonNullable<PublishedQuote['confirmation']>;
+type SchedulingFields = 'placeId' | 'placeName' | 'availabilityId' | 'startsAt' | 'endsAt' | 'quantity' | 'timezone'
+  | 'cancellable' | 'cancellationDeadline' | 'conditionsVersion' | 'expiresAt';
+export type ReservationConfirmation = Pick<PublishedConfirmation, SchedulingFields>
+  & Partial<Omit<PublishedConfirmation, SchedulingFields>>;
+export type ReservationQuote = Omit<PublishedQuote, 'confirmation'> & { confirmation?: ReservationConfirmation | null };
 
 // The live server responds with `totalElements`; the merchant-owner list on the
 // older `mvp` contract still says `totalCount`. Normalize so callers can rely on

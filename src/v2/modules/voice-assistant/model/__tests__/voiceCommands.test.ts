@@ -132,14 +132,14 @@ test('an unknown place is rejected before any detail/availability lookup', async
   expect((await x.send(command('getAvailabilities', { placeId: 99, date: '2026-09-20', quantity: 2 })))?.outcome).toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
   expect(x.calls).toHaveLength(0);
 });
-test('details and availability reuse search provenance; preserve server order, products and full intervals', async () => {
+test('details and availability reuse search provenance; preserve place-only server order and full intervals', async () => {
   const x = setup(); await x.controller.start(); await x.send();
   expect((await x.send(command('getPlaceDetails', { placeId: 1 })))?.outcome).toEqual({ status: 'succeeded', data: { place: facts } });
   x.queryClient.removeQueries({ queryKey: reservationQueryKeys.availabilities(1, {}) });
   x.setSlots([slot({ id: 12, productType: 'CLASS', productId: 2, productName: 'class' }), slot({ id: 11, productType: 'TICKET', productId: 3, productName: 'ticket' }), slot(), slot({ id: 15, startsAt: '2026-09-20T15:00:00Z', endsAt: '2026-09-20T16:00:00Z' })]);
   const result = await x.send(command('getAvailabilities', { placeId: 1, date: '2026-09-20', quantity: 2 }));
-  expect(result?.outcome).toMatchObject({ status: 'succeeded', data: { availabilities: [{ id: 12 }, { id: 11 }, { id: 10 }] } });
-  expect(x.dispatcher.provenance.availability()?.slots.map(s => s.id)).toEqual([12, 11, 10]);
+  expect(result?.outcome).toMatchObject({ status: 'succeeded', data: { availabilities: [{ id: 10 }] } });
+  expect(x.dispatcher.provenance.availability()?.slots.map(s => s.id)).toEqual([10]);
   const before = x.calls.length;
   expect((await x.send(command('prepareReservation', { placeId: 1, availabilityId: 10, quantity: 2 })))?.outcome.status).toBe('succeeded');
   expect(x.calls).toHaveLength(before + 3); expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
@@ -266,12 +266,12 @@ test('old cancellation delivery cannot end a new epoch', async () => {
   expect(x.controller.getSnapshot().phase).toBe('ready');
 });
 
-test('nullable product names remain unknown facts, never invented general admission names', async () => {
+test('legacy product slots are excluded rather than converted to place reservations', async () => {
   const x = setup(); await x.controller.start(); await x.send();
   x.queryClient.removeQueries({ queryKey: reservationQueryKeys.availabilities(1, {}) });
   x.setSlots([slot({ productType: 'TICKET', productId: 5, productName: null })]);
   expect((await x.send(command('getAvailabilities', { placeId: 1, date: '2026-09-20', quantity: 2 })))?.outcome)
-    .toMatchObject({ status: 'succeeded', data: { availabilities: [{ productType: 'TICKET', productName: null }] } });
+    .toMatchObject({ status: 'succeeded', data: { availabilities: [] } });
 });
 
 test('a failed new search cannot leave IDs from the previous search authorized', async () => {
@@ -310,9 +310,9 @@ test('draft uses fresh canonical reads and exact server quote, strips authority,
   const result = await x.send(prepare());
   expect(result?.outcome).toMatchObject({ status: 'succeeded', data: { draft: {
     status: 'awaiting_user_confirmation', date: '2026-09-20', timezone: 'Asia/Seoul', quantity: 2,
-    availability: { id: 10, placeId: 1, productId: null, remainingCapacity: 2 },
-    source: { placeId: 1, availabilityId: 10, productId: null },
-    confirmation: { availabilityId: 10, quantity: 2, totalAmountMinor: 2050, currency: 'KRW' },
+    availability: { id: 10, placeId: 1, remainingCapacity: 2 },
+    source: { placeId: 1, availabilityId: 10 },
+    confirmation: { availabilityId: 10, quantity: 2, timezone: 'Asia/Seoul' },
   } } });
   expect(x.calls.slice(before).map(c => c.path)).toEqual(['/places/1/availabilities', '/places/1', '/places/1/availabilities/10/quote']);
   expect(x.calls.at(-1)?.params).toEqual({ quantity: 2 });
@@ -337,7 +337,7 @@ test.each([
   [[slot({ status: 'INACTIVE' })], 'AVAILABILITY_UNAVAILABLE'],
   [[slot({ startsAt: '2026-09-20T04:30:00Z' })], 'STALE_CONTEXT'],
   [[slot({ endsAt: '2026-09-20T15:00:00.001+09:00' })], 'STALE_CONTEXT'],
-  [[slot({ productType: 'TICKET', productId: 9, productName: 'Ticket' })], 'STALE_CONTEXT'],
+  [[slot({ productType: 'TICKET', productId: 9, productName: 'Ticket' })], 'AVAILABILITY_UNAVAILABLE'],
 ] as const)('changed/unavailable displayed slot invalidates draft without quoting', async (fresh, code) => {
   const x = await selected(); x.setSlots(fresh);
   expect((await x.send(prepare()))?.outcome).toEqual({ status: 'rejected', code });
@@ -360,7 +360,7 @@ test.each(['TICKET', 'CLASS'])('identified but unsupported %s never gets a reser
   x.queryClient.removeQueries({ queryKey: reservationQueryKeys.availabilities(1, {}) });
   await x.send(command('getAvailabilities', { placeId: 1, date: '2026-09-20', quantity: 2 }, 'product-slots'));
   const before = x.calls.length;
-  expect((await x.send(prepare()))?.outcome).toEqual({ status: 'rejected', code: 'UNSUPPORTED_PRODUCT' });
+  expect((await x.send(prepare()))?.outcome).toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
   expect(x.calls).toHaveLength(before);
 });
 

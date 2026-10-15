@@ -2,6 +2,7 @@ import { parseServerInstant, areServerInstantsEqual } from '../../../../shared/m
 import { ApiError } from '../../../../shared/api';
 import type { CreateReservationBody, Reservation, ReservationConfirmation, ReservationQuote } from '../api/reservationApi';
 import { type Availability, createReservationIdempotencyKey } from './reservationAvailability';
+import { isSelectableAvailability } from './reservationProduct';
 import { validateReservationQuote } from './reservationConfirmation';
 import { type BookerInput, validateBookerInput, toBookerRequestFields } from './reservationBooker';
 
@@ -38,14 +39,14 @@ const comparable = (c: Readonly<ReservationConfirmation>) => {
   // Normalize only for comparison; keep server facts and persisted retry bodies intact.
   // Invalid values stay distinct from valid/null timestamps and cannot verify a result.
   const timeFields = new Set(['startsAt', 'endsAt', 'cancellationDeadline']);
-  return JSON.stringify(Object.fromEntries(Object.entries(terms).map(([key, value]) => {
+  return JSON.stringify(Object.fromEntries(Object.entries(terms).filter(([key]) => ['placeId', 'placeName', 'availabilityId', 'startsAt', 'endsAt', 'quantity', 'timezone', 'cancellable', 'cancellationDeadline', 'conditionsVersion'].includes(key)).map(([key, value]) => {
     const instant = timeFields.has(key) ? parseServerInstant(value) : null;
     return [key, instant === null ? value : new Date(instant).toISOString()] as const;
   }).sort(([a], [b]) => a.localeCompare(b))));
 };
 export function isSelectableConfirmedSlot(slot: Availability, quantity: number, now: number): boolean {
   const start = parseServerInstant(slot.startsAt), end = parseServerInstant(slot.endsAt);
-  return slot.productType === 'GENERAL' && slot.productId === null && slot.productName === null
+  return isSelectableAvailability(slot)
     && slot.status === 'ACTIVE' && Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= 12
     && Number.isSafeInteger(slot.remainingCapacity) && slot.remainingCapacity >= quantity
     && start !== null && end !== null && start > now && end > start;
@@ -55,8 +56,7 @@ function matchesCreated(r: Reservation, intent: ReservationIntent): boolean {
     && String(r.touristUserId) === intent.accountId
     && r.bookerName === intent.body.bookerName && r.bookerPhone === intent.body.bookerPhone
     && (r.requestNote ?? '') === (intent.body.requestNote ?? '')
-    && r.quantity === intent.body.quantity && r.productType === intent.confirmation.productType
-    && r.productId === intent.confirmation.productId && !!r.confirmation
+    && r.quantity === intent.body.quantity && !!r.confirmation
     && comparable(r.confirmation) === comparable(intent.confirmation)
     && areServerInstantsEqual(r.reservationStartsAt, intent.confirmation.startsAt)
     && areServerInstantsEqual(r.reservationEndsAt, intent.confirmation.endsAt)

@@ -35,6 +35,6 @@ test('missing policy is a recoverable failure and does not display a default fre
     schemaVersion: 1, kind: 'command_result', source: 'app', id: 'app-result-test', commandId: 'prepare',
     command: 'prepareReservation', outcome: { status: 'rejected', code: 'QUOTE_TERMS_UNAVAILABLE' },
   } }} />, { language: 'ko' });
-  expect(screen.getByRole('alert')).toHaveTextContent(/가격과 취소 조건이 서버에 설정되지 않았습니다/);
+  expect(screen.getByRole('alert')).toHaveTextContent(/이 시간의 취소 조건이 아직 설정되지 않았습니다/);
   expect(screen.queryByTestId('voice-reservation-draft')).toBeNull();
 });

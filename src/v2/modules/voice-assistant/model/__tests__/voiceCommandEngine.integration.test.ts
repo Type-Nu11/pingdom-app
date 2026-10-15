@@ -158,7 +158,7 @@ test.each([10, 999])('prepare only reads a quote for published availability ID; 
   await x.send({ ...fixtures.prepare, args: { ...fixtures.prepare.args, availabilityId } });
   if (availabilityId === 10) {
     expect(x.results.at(-1)?.outcome).toMatchObject({ status: 'succeeded', data: { draft: {
-      source: { placeId: 1, availabilityId: 10, productId: null }, confirmation: { totalAmountMinor: 2050, currency: 'KRW' },
+      source: { placeId: 1, availabilityId: 10 }, confirmation: { quantity: 2, timezone: 'Asia/Seoul' },
     } } });
     expect(x.reads).toHaveLength(readCount + 3);
     expect(x.reads.at(-1)).toMatchObject({ path: '/places/1/availabilities/10/quote', params: { quantity: 2 } });

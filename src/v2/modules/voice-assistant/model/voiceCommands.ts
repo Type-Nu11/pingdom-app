@@ -68,18 +68,18 @@ function slots(value: unknown, placeId: number, quantity: number, range: { start
   const seen = new Set<number>();
   return value.flatMap((s: AvailabilityList[number]) => {
     if (!s || !validId(s.id) || seen.has(s.id) || s.placeId !== placeId || !validId(s.placeId)
-      || !['GENERAL', 'TICKET', 'CLASS'].includes(s.productType) || !['ACTIVE', 'INACTIVE'].includes(s.status)
+      || !['ACTIVE', 'INACTIVE'].includes(s.status)
       || !Number.isSafeInteger(s.remainingCapacity) || s.remainingCapacity < 0
       || !Number.isSafeInteger(s.totalCapacity) || s.totalCapacity < s.remainingCapacity
-      || (s.productType === 'GENERAL' ? s.productId !== null || s.productName !== null
-        : !validId(s.productId) || (s.productName !== null && typeof s.productName !== 'string'))) return invalid();
+      || (s.productType !== undefined && !['GENERAL', 'TICKET', 'CLASS'].includes(s.productType))) return invalid();
+    if (!isSelectableAvailability(s)) return [];
     seen.add(s.id);
     const start = serverInstant(s.startsAt), end = serverInstant(s.endsAt);
     if (start >= end) return invalid();
     if (s.status !== 'ACTIVE' || end <= now || s.remainingCapacity < quantity || start >= range.end || end <= range.start) return [];
-    return [Object.freeze({ id: s.id, placeId: s.placeId, productType: s.productType, productId: s.productId, productName: s.productName,
+    return [Object.freeze({ id: s.id, placeId: s.placeId,
       startsAt: s.startsAt, endsAt: s.endsAt, remainingCapacity: s.remainingCapacity, status: s.status })];
-  }); // Server order is preserved, including TICKET/CLASS. No reservation capability is implied.
+  }); // Preserve server order among place-only reservation slots.
 }
 function metadata(ex: Execution, ids: readonly number[], query: { queryKey: VoiceQueryOptions<unknown>['queryKey']; dataUpdatedAt: number }): VoicePlaceProvenance {
   return Object.freeze({ ...ex.scope, placeIds: Object.freeze([...ids]), ...query,
@@ -196,8 +196,6 @@ function requireAvailability(request: Request<'prepareReservation'>, ex: Executi
     throw new VoiceCommandError('ID_NOT_IN_CONTEXT');
   }
   if (p.quantity !== request.args.quantity) throw new VoiceCommandError('STALE_CONTEXT');
-  const selected = p.slots.find(s => s.id === request.args.availabilityId)!;
-  if (selected.productType !== 'GENERAL') throw new VoiceCommandError('UNSUPPORTED_PRODUCT');
 }
 const prepareReservation: VoiceCommandHandler<'prepareReservation'> = async (request, ex) => {
   const p = ex.provenance.availability()!;
@@ -209,8 +207,7 @@ const prepareReservation: VoiceCommandHandler<'prepareReservation'> = async (req
   const range = voiceTimeRange(p.date, ex.runtime.timezone, ex.runtime.now());
   const fresh = slots(result.data, placeId, quantity, range, ex.runtime.now()).find(s => s.id === availabilityId);
   if (!fresh || serverInstant(fresh.startsAt) <= ex.runtime.now()) throw new VoiceCommandError('AVAILABILITY_UNAVAILABLE');
-  if (fresh.productType !== selected.productType || fresh.productId !== selected.productId || fresh.productName !== selected.productName
-    || !areServerInstantsEqual(fresh.startsAt, selected.startsAt) || !areServerInstantsEqual(fresh.endsAt, selected.endsAt)) {
+  if (!areServerInstantsEqual(fresh.startsAt, selected.startsAt) || !areServerInstantsEqual(fresh.endsAt, selected.endsAt)) {
     throw new VoiceCommandError('STALE_CONTEXT');
   }
   const place = projectVoicePlace((await ex.query(ex.queries.detail(placeId))).data, placeId);

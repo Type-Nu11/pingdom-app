@@ -100,7 +100,6 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
   if (result.command === 'getPlaceDetails' && result.outcome.status === 'succeeded') return places([result.outcome.data.place]);
   if (result.command === 'getAvailabilities' && result.outcome.status === 'succeeded') return <>
     {copy('slots')}{result.outcome.data.availabilities.length ? result.outcome.data.availabilities.map(slot => <Block key={slot.id}>
-      {slot.productName !== null && <Copy>{slot.productName}</Copy>}<Copy>{slot.productType}</Copy>
       <Copy>{slot.startsAt} – {slot.endsAt}</Copy><Copy>{t('voiceAssistant.command.capacity', { count: slot.remainingCapacity })}</Copy>
     </Block>) : <Copy testID="voice-command-empty">{t('voiceAssistant.command.empty')}</Copy>}
   </>;

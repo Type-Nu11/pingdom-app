@@ -76,22 +76,22 @@ export type ProviderEnvelope = CommandRequest
 export type VoicePlaceFacts = Readonly<Pick<PlaceDetail, 'id' | 'name' | 'address' | 'touristCategories' | 'operatingStatus'>
   & Pick<NonNullable<PlaceList['places']>[number], 'distanceMeters'>>;
 export type VoiceAvailabilityFacts = Readonly<Pick<AvailabilityList[number],
-  'id' | 'placeId' | 'productId' | 'productType' | 'productName' | 'startsAt' | 'endsAt' | 'remainingCapacity' | 'status'>>;
+  'id' | 'placeId' | 'startsAt' | 'endsAt' | 'remainingCapacity' | 'status'>>;
 /**
- * 예약 요청 body가 아닌 확인 대기용 정보입니다. 기존 앱 정책에 맞춰 GENERAL만 허용합니다.
+ * 예약 요청 body가 아닌 확인 대기용 정보입니다. 장소·시간·인원과 취소 조건을 다룹니다.
  * executor가 서버에서 다시 확인한 값으로 만들며, 개인정보와 idempotency key는 포함하지 않습니다.
  */
 export type ReservationDraft = Readonly<{
   status: 'awaiting_user_confirmation';
   place: VoicePlaceFacts;
-  availability: VoiceAvailabilityFacts & Readonly<{ productType: 'GENERAL'; productId: null; productName: null }>;
+  availability: VoiceAvailabilityFacts;
   quantity: number;
   date: VoiceLocalDate;
   timezone: string;
   confirmation: Readonly<ReservationConfirmation>;
   /** Original displayed selection linked to the canonical availability read; no bearer/quote token. */
   source: Readonly<{
-    placeId: number; availabilityId: number; productId: null;
+    placeId: number; availabilityId: number;
     availabilityDataUpdatedAt: number;
   }>;
 }>;
