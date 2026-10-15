@@ -53,6 +53,11 @@ const CHINESE_UNTRANSLATED_ALLOWLIST = [
 // - untranslatedAllowlist: values intentionally kept in their original form (brand names, units,
 //   formatting-only placeholders and fixed display labels).
 const LANGUAGE_RULES = {
+  th: {
+    nativeScript: /[\u0E00-\u0E7F]/u,
+    forbiddenScripts: [HANGUL, KANA, HAN],
+    untranslatedAllowlist: new Set(LATIN_BRAND_AND_UNIT_KEYS),
+  },
   ja: {
     forbiddenScripts: [HANGUL],
     nativeScript: JAPANESE_SCRIPT,

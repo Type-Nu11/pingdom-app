@@ -31,4 +31,9 @@ export const placeProductResources = {
     "title": "Produtos",
     "imageDetail": "Ampliar a foto do produto {{name}}"
   }
+,
+  th: {
+    "title": "สินค้า",
+    "imageDetail": "ขยายรูปสินค้า {{name}}"
+  },
 } as const;

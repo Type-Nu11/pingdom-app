@@ -192,4 +192,44 @@ export const offerStatusResources = {
       statuses: { CLOSED: 'Encerrada', DRAFT: 'Rascunho', PUBLISHED: 'Disponível', UNKNOWN: 'Status a confirmar' },
     },
   },
+
+  th: {
+    "offer": {
+      "cta": {
+        "ended": "ข้อเสนอสิ้นสุดแล้ว",
+        "issue": "รับคูปอง",
+        "notStarted": "ยังไม่เริ่ม",
+        "soldOut": "รับหมดแล้ว",
+        "unavailable": "ไม่สามารถรับได้"
+      },
+      "eligibility": {
+        "ACTIVE_TRAVEL_SCHEDULE": "บัญชีที่มีการเดินทางที่ใช้งานอยู่",
+        "PUBLIC": "ทุกคน",
+        "UNKNOWN": "ต้องตรวจสอบเงื่อนไข"
+      },
+      "expiry": {
+        "ISSUE_PLUS_DAYS": "ใช้ได้ตามจำนวนวันที่กำหนดหลังออกคูปอง",
+        "ISSUE_PLUS_DAYS_CAPPED_BY_OFFER_END": "ใช้ได้ตามจำนวนวันที่กำหนดหลังออกคูปอง แต่ไม่เกินวันสิ้นสุดข้อเสนอ",
+        "OFFER_END": "ใช้ได้จนกว่าข้อเสนอจะสิ้นสุด",
+        "UNKNOWN": "ต้องตรวจสอบอายุการใช้งาน"
+      },
+      "inventory": {
+        "LIMITED": "จำนวนจำกัด",
+        "UNKNOWN": "ต้องตรวจสอบจำนวน",
+        "UNLIMITED": "ไม่จำกัดจำนวน"
+      },
+      "remaining": {
+        "limited_one": "เหลือ {{count}}",
+        "limited_other": "เหลือ {{count}}",
+        "unknown": "ไม่ได้ระบุจำนวนที่เหลือ",
+        "unlimited": "ไม่จำกัดจำนวน"
+      },
+      "statuses": {
+        "CLOSED": "ปิดแล้ว",
+        "DRAFT": "ฉบับร่าง",
+        "PUBLISHED": "ว่าง",
+        "UNKNOWN": "ต้องตรวจสอบสถานะ"
+      }
+    }
+  },
 } as const;

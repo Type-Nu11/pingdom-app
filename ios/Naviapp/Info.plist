@@ -42,6 +42,7 @@
 		<string>vi</string>
 		<string>es</string>
 		<string>pt-BR</string>
+		<string>th</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>

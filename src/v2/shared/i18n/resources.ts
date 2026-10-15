@@ -1,9 +1,11 @@
+import { thaiSharedResources } from './th';
+
 export const resources = {
   en: {
     translation: {
       selectLanguage: {
         title: 'Select Language', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
-        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean', ja: '日本語', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)', vi: 'Vietnamese', es: 'Spanish', 'pt-BR': 'Portuguese (Brazil)' }, progress: 'Step {{current}} of {{total}}',
+        logoAccessibilityLabel: 'PingDom logo', options: { en: 'English', ko: 'Korean', ja: '日本語', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)', vi: 'Vietnamese', es: 'Spanish', 'pt-BR': 'Portuguese (Brazil)', th: 'Thai' }, progress: 'Step {{current}} of {{total}}',
       },
       selectCountry: {
         title: 'Select Country', subtitle: "We'll tell you the best route!", button: 'Continue', search: 'Search...',
@@ -14,7 +16,12 @@ export const resources = {
         male: 'Male', female: 'Female', other: 'Prefer not to say',
       },
       countries: {
-        us: 'United States', cn: 'China', jp: 'Japan', th: 'Thailand', vn: 'Vietnam', kr: 'South Korea',
+        us: 'United States',
+        cn: 'China',
+        jp: 'Japan',
+        th: 'Thailand',
+        vn: 'Vietnam',
+        kr: 'South Korea',
       },
       loginForeign: {
         title: 'Only Pingdom', subtitle: "Let's find hidden\nplaces in Korea!", button: 'Get Started',
@@ -904,7 +911,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: '언어 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기',
-        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어', ja: '日本語', 'zh-CN': '중국어(간체)', 'zh-TW': '중국어(번체)', vi: '베트남어', es: '스페인어', 'pt-BR': '포르투갈어(브라질)' }, progress: '총 {{total}}단계 중 {{current}}단계',
+        logoAccessibilityLabel: '핑덤 로고', options: { en: '영어', ko: '한국어', ja: '日本語', 'zh-CN': '중국어(간체)', 'zh-TW': '중국어(번체)', vi: '베트남어', es: '스페인어', 'pt-BR': '포르투갈어(브라질)', th: '태국어' }, progress: '총 {{total}}단계 중 {{current}}단계',
       },
       selectCountry: { title: '국가 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속', search: '검색하기' },
       selectAge: { title: '생년 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속' },
@@ -912,7 +919,14 @@ export const resources = {
         title: '성별 선택', subtitle: '최적의 경로를 알려드릴게요!', button: '계속',
         male: '남성', female: '여성', other: '비공개',
       },
-      countries: { us: '미국', cn: '중국', jp: '일본', th: '태국', vn: '베트남', kr: '대한민국' },
+      countries: {
+        us: '미국',
+        cn: '중국',
+        jp: '일본',
+        th: '태국',
+        vn: '베트남',
+        kr: '대한민국',
+      },
       loginForeign: { title: '오직 핑덤', subtitle: '한국의 숨은 장소를\n찾아보세요!', button: '시작하기' },
       experience: {
         common: { back: '지도로 돌아가기', close: '닫기', loading: '불러오는 중입니다. 잠시 기다려 주세요.' },
@@ -1758,7 +1772,7 @@ export const resources = {
     translation: {
       selectLanguage: {
         title: '言語を選択', subtitle: '最適なルートをご案内します！', button: '次へ', search: '検索...',
-        logoAccessibilityLabel: 'PingDomのロゴ', options: { en: '英語', ko: '韓国語', ja: '日本語', 'zh-CN': '中国語（簡体字）', 'zh-TW': '中国語（繁体字）', vi: 'ベトナム語', es: 'スペイン語', 'pt-BR': 'ポルトガル語（ブラジル）' }, progress: '全{{total}}ステップ中{{current}}ステップ目',
+        logoAccessibilityLabel: 'PingDomのロゴ', options: { en: '英語', ko: '韓国語', ja: '日本語', 'zh-CN': '中国語（簡体字）', 'zh-TW': '中国語（繁体字）', vi: 'ベトナム語', es: 'スペイン語', 'pt-BR': 'ポルトガル語（ブラジル）', th: 'タイ語' }, progress: '全{{total}}ステップ中{{current}}ステップ目',
       },
       selectCountry: { title: '国を選択', subtitle: '最適なルートをご案内します！', button: '次へ', search: '検索...' },
       selectAge: { title: '生まれた年を選択', subtitle: '最適なルートをご案内します！', button: '次へ' },
@@ -1766,7 +1780,14 @@ export const resources = {
         title: '性別を選択', subtitle: '最適なルートをご案内します！', button: '次へ',
         male: '男性', female: '女性', other: '回答しない',
       },
-      countries: { us: 'アメリカ', cn: '中国', jp: '日本', th: 'タイ', vn: 'ベトナム', kr: '韓国' },
+      countries: {
+        us: 'アメリカ',
+        cn: '中国',
+        jp: '日本',
+        th: 'タイ',
+        vn: 'ベトナム',
+        kr: '韓国',
+      },
       loginForeign: { title: 'PingDomだけ', subtitle: '韓国の隠れた名所を\n見つけよう！', button: 'はじめる' },
       experience: {
         common: { back: '地図に戻る', close: '閉じる', loading: '読み込んでいます。しばらくお待ちください。' },
@@ -2657,13 +2678,20 @@ export const resources = {
         button: '继续',
         search: '搜索…',
         logoAccessibilityLabel: 'PingDom 标志',
-        options: { en: '英语', ko: '韩语', ja: '日语', 'zh-CN': '简体中文', 'zh-TW': '繁体中文', vi: '越南语', es: '西班牙语', 'pt-BR': '葡萄牙语（巴西）' },
+        options: { en: '英语', ko: '韩语', ja: '日语', 'zh-CN': '简体中文', 'zh-TW': '繁体中文', vi: '越南语', es: '西班牙语', 'pt-BR': '葡萄牙语（巴西）', th: '泰语' },
         progress: '第 {{current}} 步，共 {{total}} 步',
       },
       selectCountry: { title: '选择国家', subtitle: '我们会为你提供最佳路线！', button: '继续', search: '搜索…' },
       selectAge: { title: '选择出生年份', subtitle: '我们会为你提供最佳路线！', button: '继续' },
       selectGender: { title: '选择性别', subtitle: '我们会为你提供最佳路线！', button: '继续', male: '男', female: '女', other: '不愿透露' },
-      countries: { us: '美国', cn: '中国', jp: '日本', th: '泰国', vn: '越南', kr: '韩国' },
+      countries: {
+        us: '美国',
+        cn: '中国',
+        jp: '日本',
+        th: '泰国',
+        vn: '越南',
+        kr: '韩国',
+      },
       loginForeign: { title: '只在 PingDom', subtitle: '一起发现韩国的\n隐藏好去处吧！', button: '开始使用' },
       experience: {
         common: { back: '返回地图', close: '关闭', loading: '正在加载，请稍候。' },
@@ -3489,13 +3517,20 @@ export const resources = {
         button: '繼續',
         search: '搜尋…',
         logoAccessibilityLabel: 'PingDom 標誌',
-        options: { en: '英文', ko: '韓文', ja: '日文', 'zh-CN': '簡體中文', 'zh-TW': '繁體中文', vi: '越南文', es: '西班牙文', 'pt-BR': '葡萄牙文（巴西）' },
+        options: { en: '英文', ko: '韓文', ja: '日文', 'zh-CN': '簡體中文', 'zh-TW': '繁體中文', vi: '越南文', es: '西班牙文', 'pt-BR': '葡萄牙文（巴西）', th: '泰語' },
         progress: '第 {{current}} 步，共 {{total}} 步',
       },
       selectCountry: { title: '選擇國家', subtitle: '我們會為你提供最佳路線！', button: '繼續', search: '搜尋…' },
       selectAge: { title: '選擇出生年份', subtitle: '我們會為你提供最佳路線！', button: '繼續' },
       selectGender: { title: '選擇性別', subtitle: '我們會為你提供最佳路線！', button: '繼續', male: '男性', female: '女性', other: '不願透露' },
-      countries: { us: '美國', cn: '中國', jp: '日本', th: '泰國', vn: '越南', kr: '韓國' },
+      countries: {
+        us: '美國',
+        cn: '中國',
+        jp: '日本',
+        th: '泰國',
+        vn: '越南',
+        kr: '韓國',
+      },
       loginForeign: { title: '只在 PingDom', subtitle: '一起發掘韓國的\n私房景點吧！', button: '開始使用' },
       experience: {
         common: { back: '返回地圖', close: '關閉', loading: '正在載入，請稍候。' },
@@ -4321,7 +4356,7 @@ export const resources = {
         button: 'Tiếp tục',
         search: 'Tìm kiếm...',
         logoAccessibilityLabel: 'Logo PingDom',
-        options: { en: 'Tiếng Anh', ko: 'Tiếng Hàn', ja: 'Tiếng Nhật', 'zh-CN': 'Tiếng Trung (Giản thể)', 'zh-TW': 'Tiếng Trung (Phồn thể)', vi: 'Tiếng Việt', es: 'Tiếng Tây Ban Nha', 'pt-BR': 'Tiếng Bồ Đào Nha (Brazil)' },
+        options: { en: 'Tiếng Anh', ko: 'Tiếng Hàn', ja: 'Tiếng Nhật', 'zh-CN': 'Tiếng Trung (Giản thể)', 'zh-TW': 'Tiếng Trung (Phồn thể)', vi: 'Tiếng Việt', es: 'Tiếng Tây Ban Nha', 'pt-BR': 'Tiếng Bồ Đào Nha (Brazil)', th: 'Tiếng Thái' },
         progress: 'Bước {{current}}/{{total}}',
       },
       selectCountry: { title: 'Chọn quốc gia', subtitle: 'Chúng tôi sẽ chỉ cho bạn lộ trình tốt nhất!', button: 'Tiếp tục', search: 'Tìm kiếm...' },
@@ -4334,7 +4369,14 @@ export const resources = {
         female: 'Nữ',
         other: 'Không muốn tiết lộ',
       },
-      countries: { us: 'Hoa Kỳ', cn: 'Trung Quốc', jp: 'Nhật Bản', th: 'Thái Lan', vn: 'Việt Nam', kr: 'Hàn Quốc' },
+      countries: {
+        us: 'Hoa Kỳ',
+        cn: 'Trung Quốc',
+        jp: 'Nhật Bản',
+        th: 'Thái Lan',
+        vn: 'Việt Nam',
+        kr: 'Hàn Quốc',
+      },
       loginForeign: { title: 'Chỉ có ở PingDom', subtitle: 'Cùng tìm những địa điểm\nẩn mình ở Hàn Quốc!', button: 'Bắt đầu' },
       experience: {
         common: { back: 'Quay lại bản đồ', close: 'Đóng', loading: 'Đang tải. Vui lòng chờ.' },
@@ -5264,7 +5306,7 @@ export const resources = {
         button: 'Continuar',
         search: 'Buscar...',
         logoAccessibilityLabel: 'Logotipo de PingDom',
-        options: { en: 'Inglés', ko: 'Coreano', ja: 'Japonés', 'zh-CN': 'Chino (simplificado)', 'zh-TW': 'Chino (tradicional)', vi: 'Vietnamita', es: 'Español', 'pt-BR': 'Portugués (Brasil)' },
+        options: { en: 'Inglés', ko: 'Coreano', ja: 'Japonés', 'zh-CN': 'Chino (simplificado)', 'zh-TW': 'Chino (tradicional)', vi: 'Vietnamita', es: 'Español', 'pt-BR': 'Portugués (Brasil)', th: 'Tailandés' },
         progress: 'Paso {{current}} de {{total}}',
       },
       selectCountry: { title: 'Selecciona el país', subtitle: '¡Te mostraremos la mejor ruta!', button: 'Continuar', search: 'Buscar...' },
@@ -5277,7 +5319,14 @@ export const resources = {
         female: 'Mujer',
         other: 'Prefiero no decirlo',
       },
-      countries: { us: 'Estados Unidos', cn: 'China', jp: 'Japón', th: 'Tailandia', vn: 'Vietnam', kr: 'Corea del Sur' },
+      countries: {
+        us: 'Estados Unidos',
+        cn: 'China',
+        jp: 'Japón',
+        th: 'Tailandia',
+        vn: 'Vietnam',
+        kr: 'Corea del Sur',
+      },
       loginForeign: { title: 'Solo en PingDom', subtitle: '¡Descubramos lugares\nocultos de Corea!', button: 'Comenzar' },
       experience: {
         common: { back: 'Volver al mapa', close: 'Cerrar', loading: 'Cargando. Espera un momento.' },
@@ -6222,7 +6271,7 @@ export const resources = {
         button: 'Continuar',
         search: 'Buscar...',
         logoAccessibilityLabel: 'Logotipo do PingDom',
-        options: { en: 'Inglês', ko: 'Coreano', ja: 'Japonês', 'zh-CN': 'Chinês (simplificado)', 'zh-TW': 'Chinês (tradicional)', vi: 'Vietnamita', es: 'Espanhol', 'pt-BR': 'Português (Brasil)' },
+        options: { en: 'Inglês', ko: 'Coreano', ja: 'Japonês', 'zh-CN': 'Chinês (simplificado)', 'zh-TW': 'Chinês (tradicional)', vi: 'Vietnamita', es: 'Espanhol', 'pt-BR': 'Português (Brasil)', th: 'Tailandês' },
         progress: 'Etapa {{current}} de {{total}}',
       },
       selectCountry: { title: 'Selecione o país', subtitle: 'Vamos mostrar a melhor rota para você!', button: 'Continuar', search: 'Buscar...' },
@@ -6235,7 +6284,14 @@ export const resources = {
         female: 'Feminino',
         other: 'Prefiro não informar',
       },
-      countries: { us: 'Estados Unidos', cn: 'China', jp: 'Japão', th: 'Tailândia', vn: 'Vietnã', kr: 'Coreia do Sul' },
+      countries: {
+        us: 'Estados Unidos',
+        cn: 'China',
+        jp: 'Japão',
+        th: 'Tailândia',
+        vn: 'Vietnã',
+        kr: 'Coreia do Sul',
+      },
       loginForeign: { title: 'Só no PingDom', subtitle: 'Vamos descobrir lugares\nescondidos na Coreia!', button: 'Começar' },
       experience: {
         common: { back: 'Voltar ao mapa', close: 'Fechar', loading: 'Carregando. Aguarde.' },
@@ -7165,8 +7221,9 @@ export const resources = {
       },
     },
   },
+  th: { translation: thaiSharedResources },
 } as const;
 
-export const supportedLanguages = ['en', 'ko', 'ja', 'zh-CN', 'zh-TW', 'vi', 'es', 'pt-BR'] as const;
+export const supportedLanguages = ['en', 'ko', 'ja', 'zh-CN', 'zh-TW', 'vi', 'es', 'pt-BR', 'th'] as const;
 
 export type SupportedLanguage = (typeof supportedLanguages)[number];

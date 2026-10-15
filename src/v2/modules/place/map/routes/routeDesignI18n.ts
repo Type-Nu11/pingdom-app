@@ -112,4 +112,18 @@ export const routeDesignResources = {
     "detailsHint": "Abre os detalhes dos trechos da rota selecionada."
   }
 ,
+  th: {
+    "best": "ดีที่สุด",
+    "alternative": "เส้นทางอื่น",
+    "walkUnavailable": "ยังไม่มีเส้นทางเดินให้บริการ",
+    "departure": "ออกเดินทาง {{time}}",
+    "estimate": "โดยประมาณ",
+    "providerEstimate": "TMAP · เส้นทางโดยประมาณ",
+    "transitRecommended": "ขนส่งสาธารณะ · เส้นทางแนะนำ",
+    "transfer": "เปลี่ยนสาย",
+    "startGuidance": "เริ่มนำทาง",
+    "showMap": "แสดงเส้นทางบนแผนที่",
+    "mapHint": "แสดงเส้นทางที่เลือกบนแผนที่",
+    "detailsHint": "เปิดรายละเอียดแต่ละช่วงของเส้นทางที่เลือก"
+  },
 } as const;

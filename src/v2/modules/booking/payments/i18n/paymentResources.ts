@@ -75,4 +75,17 @@ export const paymentResources = {
       },
     },
   },
+
+  th: {
+    "payment": {
+      "statuses": {
+        "FAILED": "การชำระเงินล้มเหลว",
+        "PAID": "ชำระเงินแล้ว",
+        "PROCESSING": "กำลังชำระเงิน",
+        "REFUNDED": "คืนเงินแล้ว",
+        "REFUND_PROCESSING": "กำลังคืนเงิน",
+        "UNKNOWN": "ต้องตรวจสอบสถานะ"
+      }
+    }
+  },
 } as const;
