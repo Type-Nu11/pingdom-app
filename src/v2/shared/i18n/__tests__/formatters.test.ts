@@ -11,6 +11,19 @@ import {
 
 const digits = (value: string) => value.replace(/[^\d]/g, '');
 
+test('Thai relative time stays Thai when Hermes lacks Intl.RelativeTimeFormat', () => {
+  const descriptor = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+  Object.defineProperty(Intl, 'RelativeTimeFormat', { configurable: true, value: undefined });
+  try {
+    expect(formatRelativeMinutes(0, 'th')).toBe('ตอนนี้');
+    expect(formatRelativeMinutes(18, 'th-TH')).toBe('18 นาทีที่แล้ว');
+    expect(formatRelativeMinutes(120, 'th')).toBe('2 ชั่วโมงที่แล้ว');
+    expect(formatRelativeMinutes(2880, 'th')).toBe('2 วันที่แล้ว');
+  } finally {
+    if (descriptor) Object.defineProperty(Intl, 'RelativeTimeFormat', descriptor);
+  }
+});
+
 describe('#389 Japanese formatting', () => {
   test('ja and ja-JP resolve to the ja-JP locale without changing ko/en', () => {
     expect(resolveLocale('ja')).toBe('ja-JP');

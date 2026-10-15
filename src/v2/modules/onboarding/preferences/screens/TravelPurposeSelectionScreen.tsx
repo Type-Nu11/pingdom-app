@@ -34,7 +34,7 @@ import {
 const DEFAULT_CURRENT_STEP = 6;
 const DEFAULT_TOTAL_STEPS = 7;
 
-const contentScrollContainer = { flexGrow: 1, paddingBottom: 16 } as const;
+const contentScrollContainer = { flexGrow: 1, justifyContent: 'center', paddingVertical: 16 } as const;
 
 const ICON_COMPONENTS = {
   art_svg: ArtIcon,

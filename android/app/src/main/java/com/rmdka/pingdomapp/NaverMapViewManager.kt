@@ -89,6 +89,9 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
     @ReactProp(name = "routeCoordinates")
     fun setRouteCoordinates(view: NaverMapView, points: ReadableArray?) { view.setRouteCoordinates(points) }
 
+    @ReactProp(name = "routeSegments")
+    fun setRouteSegments(view: NaverMapView, segments: ReadableArray?) { view.setRouteSegments(segments) }
+
     @ReactProp(name = "markers")
     fun setMarkers(view: NaverMapView, markers: ReadableArray?) {
         view.setMarkers(markers)

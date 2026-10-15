@@ -304,4 +304,54 @@ export const mapTutorialResources = {
     },
     profile: { prompt: 'Toque em <accent>Minha página</accent>.', body: 'Gerencie seu perfil e suas datas de viagem\ne veja os lugares que você verificou.' },
   },
+
+  th: {
+    "name": "Pingdy",
+    "title": "รู้จัก Pingdy",
+    "guest": "นักเดินทาง",
+    "close": "ปิดบทแนะนำ",
+    "previous": "เคล็ดลับก่อนหน้า",
+    "next": "เคล็ดลับถัดไป",
+    "finish": "จบบทแนะนำ",
+    "progress": "ขั้นตอนที่ {{current}} จาก {{total}}",
+    "welcome": {
+      "greeting": "สวัสดี {{username}}!",
+      "introduction": "พร้อมช่วยให้การเดินทางของคุณง่ายขึ้น",
+      "agent": "ฉันคือ <accent>Pingdy</accent> ผู้ช่วย AI ของคุณ",
+      "help": "ตั้งแต่ค้นหาสถานที่ไปจนถึงเตรียมการจอง\nฉันช่วยคุณได้ผ่านการสนทนา",
+      "start": "มาแนะนำการใช้งานแบบสั้น ๆ กัน!"
+    },
+    "map": {
+      "prompt": "แตะ<accent>ปุ่มแผนที่</accent>",
+      "body": "ค้นพบหมุดรอบตัวคุณและสถานที่ยอดนิยม\nในพื้นที่ของคุณและทั่วประเทศ"
+    },
+    "favorites": {
+      "prompt": "แตะ<accent>ปุ่มรายการโปรด</accent>",
+      "body": "บันทึกสถานที่ที่คุณสนใจ\nแล้วกลับมาดูได้ทุกเมื่อที่ต้องการ"
+    },
+    "community": {
+      "prompt": "แตะ<accent>ปุ่มชุมชน</accent>",
+      "body": "สำรวจประสบการณ์ของนักเดินทางคนอื่น\nและแท็กสถานที่เพื่อแชร์เรื่องราวของคุณ"
+    },
+    "reservations": {
+      "prompt": "แตะ<accent>ปุ่มการจอง</accent>",
+      "body": "ตรวจสอบเวลาว่างของสถานที่ที่คุณชอบ\nแล้วจองวันที่และเวลาที่สะดวก"
+    },
+    "recommendations": {
+      "prompt": "แตะ<accent>ปุ่มแนะนำ</accent>",
+      "body": "{{username}} ค้นพบสถานที่ที่เหมาะกับคุณ\nตามความสนใจและกิจกรรมของคุณ"
+    },
+    "verification": {
+      "prompt": "แตะ<accent>ปุ่มยืนยัน</accent>",
+      "body": "รีวิวสถานที่ที่คุณเคยไป\nและยืนยันประสบการณ์เพื่อช่วยให้\nนักเดินทางคนอื่นไปได้อย่างมั่นใจ"
+    },
+    "categories": {
+      "prompt": "แตะ<accent>หมวดหมู่</accent>",
+      "body": "เลือกอาหาร ดนตรี หรือหมวดหมู่อื่น\nเพื่อดูเฉพาะหมุดที่ตรงกัน"
+    },
+    "profile": {
+      "prompt": "แตะ<accent>หน้าของฉัน</accent>",
+      "body": "จัดการโปรไฟล์และวันเดินทาง\nและดูสถานที่ที่คุณยืนยันการเยี่ยมชมแล้ว"
+    }
+  },
 } as const;

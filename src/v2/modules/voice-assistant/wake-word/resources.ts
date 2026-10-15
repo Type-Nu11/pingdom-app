@@ -49,4 +49,10 @@ export const wakeWordResources = {
     hint: 'Funciona apenas com o aplicativo e o mapa em primeiro plano. Pausa durante a entrada de IA.',
     states: { unavailable: 'A detecção não está disponível neste dispositivo.', disabled: 'Palavra de ativação desativada', initializing: 'Preparando a escuta', listening: 'Ouvindo “Hey Pingdy”', detected: 'Palavra de ativação detectada', cooldown: 'Preparando a próxima chamada', suspended: 'Escuta pausada', error: 'A escuta parou. Confira as permissões e o uso do áudio.' },
   },
+  th: {
+    title: 'เรียกด้วย “Hey Pingdy”', cancel: 'ยกเลิก', enable: 'เปิดการฟังคำปลุก', stop: 'หยุดฟังคำปลุก',
+    notice: 'ขณะเปิดแผนที่ ไมโครโฟนจะตรวจจับคำปลุกภาษาอังกฤษ “Hey Pingdy” บนอุปกรณ์ของคุณ เสียงก่อนตรวจจับจะไม่ถูกบันทึกหรือส่งไปยังเซิร์ฟเวอร์ หลังตรวจจับและเปิดช่องป้อนข้อมูล AI คำขอที่คุณพูดจะถูกส่งตามประกาศ AI ที่มีอยู่ คุณสามารถหยุดฟังคำปลุกได้ทุกเมื่อ',
+    hint: 'ทำงานเฉพาะเมื่อแอปและแผนที่เปิดใช้งานอยู่ การตรวจจับคำปลุกจะหยุดชั่วคราวระหว่างป้อนข้อมูล AI',
+    states: { unavailable: 'อุปกรณ์นี้ไม่รองรับการตรวจจับคำปลุก', disabled: 'ปิดการฟังคำปลุก', initializing: 'กำลังเตรียมฟังคำปลุก', listening: 'กำลังฟัง “Hey Pingdy”', detected: 'ตรวจพบคำปลุก', cooldown: 'กำลังเตรียมการเรียกครั้งถัดไป', suspended: 'หยุดฟังคำปลุกชั่วคราว', error: 'การฟังคำปลุกหยุดแล้ว โปรดตรวจสอบสิทธิ์และการใช้งานเสียง' },
+  },
 };

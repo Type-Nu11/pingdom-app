@@ -6,6 +6,7 @@ import { useOnboardingEntry } from '../hooks/useOnboardingEntry';
 import {
   createOnboardingCompletion,
   ONBOARDING_COMPLETION_VERSION,
+  SUPPORTED_ONBOARDING_COUNTRIES,
 } from '../model/onboardingEntry';
 import {
   ONBOARDING_COMPLETION_STORAGE_KEY,
@@ -116,4 +117,11 @@ describe('onboarding completion storage', () => {
       kind: 'completed',
     });
   });
+});
+
+
+test.each(SUPPORTED_ONBOARDING_COUNTRIES)('nationality %s survives completion storage without being changed', async country => {
+  const completion = createOnboardingCompletion({ ...signupContext, country });
+  await persistOnboardingCompletion(completion);
+  expect(await restoreOnboardingCompletion()).toEqual({ kind: 'restored', completion });
 });

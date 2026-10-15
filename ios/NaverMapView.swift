@@ -21,10 +21,12 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     private var icons: [String: NMFOverlayImage] = [:]
     private let userMarker = NMFMarker()
     private var routeLine: NMFPolylineOverlay?
+    private var segmentLines: [NMFPolylineOverlay] = []
     private var routeDirty = false
     private var routeAnchor: NMGLatLng?
     @objc var onRouteAnchor: RCTDirectEventBlock?
     @objc var routeCoordinates: NSArray? { didSet { routeDirty = true } }
+    @objc var routeSegments: NSArray? { didSet { routeDirty = true } }
     private var markersDirty = true
     private var lastCamera: (lat: Double, lng: Double, zoom: Double)?
     private var lastFollowUser = false
@@ -151,6 +153,8 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         if routeDirty {
             routeLine?.mapView = nil
             routeLine = nil
+            segmentLines.forEach { $0.mapView = nil }
+            segmentLines.removeAll()
             routeAnchor = nil
             let raw = routeCoordinates ?? []
             let points = raw.compactMap { value -> NMGLatLng? in
@@ -159,7 +163,30 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
                       validCoordinate(lat, lng) else { return nil }
                 return NMGLatLng(lat: lat, lng: lng)
             }
-            if points.count == raw.count, points.count >= 2,
+            if let segments = routeSegments, segments.count > 0 {
+                var anchorPoints: [NMGLatLng] = []
+                for case let segment as NSDictionary in segments {
+                    guard let path = segment["path"] as? [NSDictionary] else { continue }
+                    let vertices = path.compactMap { item -> NMGLatLng? in
+                        guard let lat = item["lat"] as? Double, let lng = item["lng"] as? Double,
+                              validCoordinate(lat, lng) else { return nil }
+                        return NMGLatLng(lat: lat, lng: lng)
+                    }
+                    guard vertices.count == path.count, vertices.count >= 2,
+                          vertices.contains(where: { $0.lat != vertices[0].lat || $0.lng != vertices[0].lng }) else { continue }
+                    let line = NMFPolylineOverlay()
+                    line.line = NMGLineString(points: vertices)
+                    line.color = routeColor(segment["color"] as? String)
+                    line.capType = .round
+                    line.joinType = .round
+                    line.globalZIndex = -100000
+                    line.zIndex = 1
+                    line.mapView = mapView
+                    segmentLines.append(line)
+                    if vertices.count > anchorPoints.count { anchorPoints = vertices }
+                }
+                if !anchorPoints.isEmpty { routeAnchor = anchorPoints[anchorPoints.count / 2] }
+            } else if points.count == raw.count, points.count >= 2,
                points.contains(where: { $0.lat != points[0].lat || $0.lng != points[0].lng }) {
                 // The adapter supplies bounded curves; round joins avoid faceting thick segments.
                 let line = NMFPolylineOverlay()
@@ -260,16 +287,27 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
 
     deinit {
         routeLine?.mapView = nil
+        segmentLines.forEach { $0.mapView = nil }
         mapView.removeCameraDelegate(delegate: self)
         placeMarkers.values.forEach { $0.touchHandler = nil; $0.mapView = nil }
         userMarker.mapView = nil
     }
     private func updateRouteStyle() {
-        guard let line = routeLine else { return }
         let zoom = mapView.cameraPosition.zoom
         let detail = min(1, max(0, (zoom - 14) / 3))
         let lineWidth = CGFloat(8 + detail)
-        if line.width != lineWidth { line.width = lineWidth }
+        for line in segmentLines + (routeLine.map { [$0] } ?? []) {
+            if line.width != lineWidth { line.width = lineWidth }
+        }
+    }
+
+    private func routeColor(_ value: String?) -> UIColor {
+        guard let value, value.range(of: "^#[0-9a-fA-F]{6}$", options: .regularExpression) != nil,
+              let rgb = UInt32(value.dropFirst(), radix: 16) else {
+            return UIColor(red: 1, green: 25.0 / 255, blue: 86.0 / 255, alpha: 1)
+        }
+        return UIColor(red: CGFloat((rgb >> 16) & 255) / 255, green: CGFloat((rgb >> 8) & 255) / 255,
+                       blue: CGFloat(rgb & 255) / 255, alpha: 1)
     }
 
     private func makeUserLocationImage() -> UIImage {

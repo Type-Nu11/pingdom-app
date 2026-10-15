@@ -1,16 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { findCarRoute } from '../api/routesApi';
-import { createRouteSession, type RouteState } from '../model/routeState';
+import { findCarRoute, type CarRoute } from '../api/routesApi';
+import type { RouteCooldown } from '../model/routeState';
+import { useRouteQuery } from './useRouteQuery';
 
-export function useCarRoute(selectionKey: string) {
-  const [result, setResult] = useState<{ id: symbol; state: RouteState } | null>(null);
-  const session = useMemo(() => {
-    const id = Symbol(selectionKey);
-    return { id, ...createRouteSession(state => setResult({ id, state })) };
-  }, [selectionKey]);
-  useEffect(() => session.dispose, [session]);
+export function useCarRoute(selectionKey: string, cooldown?: RouteCooldown) {
+  const session = useRouteQuery<CarRoute>(selectionKey, cooldown);
   return {
-    state: result?.id === session.id ? result.state : { kind: 'idle' } as RouteState,
+    state: session.state,
     request: (origin: unknown, destination: unknown) => session.request(signal => findCarRoute(origin, destination, signal)),
     cancel: session.cancel,
   };

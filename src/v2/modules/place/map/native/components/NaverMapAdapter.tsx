@@ -5,6 +5,7 @@ import styled, { useTheme } from 'styled-components/native';
 import NaverMapNativeView, {
   type NaverMapNativeMarker,
   type NaverMapCameraFit,
+  type NaverMapRouteSegment,
 } from '../../../../../shared/native/NaverMapNativeView';
 import type { Coordinate } from '../../camera/model/map.types';
 import { smoothRouteCorners } from '../model/smoothRouteCorners';
@@ -17,6 +18,7 @@ export type NaverMapAdapterProps = {
   followUser?: boolean;
   markers: NaverMapNativeMarker[];
   routeCoordinates?: Coordinate[];
+  routeSegments?: NaverMapRouteSegment[];
   onRouteAnchor?: (point: { x: number; y: number }) => void;
   onCameraGesture?: () => void;
   onCameraIdle?: (coordinate: Coordinate) => void;
@@ -43,6 +45,7 @@ export default function NaverMapAdapter({
   followUser = false,
   markers,
   routeCoordinates,
+  routeSegments,
   onCameraGesture,
   onRouteAnchor,
   onCameraIdle,
@@ -67,6 +70,7 @@ export default function NaverMapAdapter({
       followUser={followUser}
       markers={markers}
       routeCoordinates={displayRoute}
+      routeSegments={routeSegments}
       onCameraGesture={onCameraGesture}
       onRouteAnchor={(event) => onRouteAnchor?.(event.nativeEvent)}
       nightMode={theme.colorScheme === 'dark'}

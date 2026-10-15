@@ -6,10 +6,11 @@ export function resolveProductionRootState(
   isAuthHydrating: boolean,
   isLoggedIn: boolean,
   onboardingState: OnboardingEntryState,
+  hasAuthenticated = false,
 ): ProductionRootState {
   if (isAuthHydrating || onboardingState.kind === 'hydrating') return 'loading';
   if (isLoggedIn) return 'main';
-  return onboardingState.kind === 'completed' ? 'auth' : 'onboarding';
+  return onboardingState.kind === 'completed' || hasAuthenticated ? 'auth' : 'onboarding';
 }
 
 export function canDeliverProtectedIntent(

@@ -8,7 +8,7 @@ const mockBootstrap = jest.fn(async () => {});
 const mockHydrate = jest.fn(async () => {});
 const mockMapHydrate = jest.fn(async () => {});
 const mockClearVisitSession = jest.fn();
-let mockSession = { isHydrating: true, isLoggedIn: false, bootstrapAuth: mockBootstrap };
+let mockSession = { isHydrating: true, isLoggedIn: false, hasAuthenticated: false, bootstrapAuth: mockBootstrap };
 let mockOnboarding: { kind: string; completion?: object } = { kind: 'hydrating' };
 let mockStartupPermissions = { ready: true, notificationsGranted: true };
 
@@ -19,8 +19,8 @@ jest.mock('../../app/store/authStore', () => ({
 }));
 jest.mock('../../app/navigation/AuthNavigator', () => ({
   __esModule: true,
-  default: ({ completion }: { completion?: object }) => require('react').createElement(
-    require('react-native').Text, null, completion ? 'auth landing' : 'first onboarding',
+  default: ({ completion, returningUser }: { completion?: object; returningUser?: boolean }) => require('react').createElement(
+    require('react-native').Text, null, completion || returningUser ? 'auth landing' : 'first onboarding',
   ),
 }));
 jest.mock('../../app/navigation/MainNavigator', () => ({
@@ -42,7 +42,7 @@ jest.mock('../../v2/modules/place/visit-verification/session', () => ({
 }));
 
 beforeEach(() => {
-  mockSession = { isHydrating: true, isLoggedIn: false, bootstrapAuth: mockBootstrap };
+  mockSession = { isHydrating: true, isLoggedIn: false, hasAuthenticated: false, bootstrapAuth: mockBootstrap };
   mockOnboarding = { kind: 'hydrating' };
   mockStartupPermissions = { ready: true, notificationsGranted: true };
 });
@@ -89,6 +89,18 @@ test('logout/refresh failure removes protected navigation, queries and active vi
   expect(view.queryClient.getQueryCache().getAll()).toHaveLength(0);
   expect(mockClearVisitSession).toHaveBeenCalledTimes(1);
   mockSession = { ...mockSession, isHydrating: false };
+  await view.rerender(<RootNavigator />);
+  expect(await screen.findByText('auth landing')).toBeVisible();
+  expect(screen.queryByText('first onboarding')).toBeNull();
+});
+
+
+test('a returning legacy account with no onboarding completion exits to auth landing on logout', async () => {
+  mockSession = { ...mockSession, isHydrating: false, isLoggedIn: true, hasAuthenticated: true };
+  mockOnboarding = { kind: 'incomplete' };
+  const view = await renderWithProviders(<RootNavigator />);
+  expect(await screen.findByText('protected map')).toBeVisible();
+  mockSession = { ...mockSession, isLoggedIn: false };
   await view.rerender(<RootNavigator />);
   expect(await screen.findByText('auth landing')).toBeVisible();
   expect(screen.queryByText('first onboarding')).toBeNull();

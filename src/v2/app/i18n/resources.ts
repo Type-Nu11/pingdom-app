@@ -117,4 +117,15 @@ export const resources = {
     placeProduct: placeProductResources['pt-BR'],
     ...withBookingStatuses(withOnboarding(sharedResources['pt-BR'].translation, onboardingResources['pt-BR']), { ...offerStatusResources['pt-BR'], ...paymentResources['pt-BR'] }),
   } },
+  th: { translation: {
+    routes: routeResources.th,
+    mapTutorial: mapTutorialResources.th,
+    ...offerCouponResources.th,
+    ...reservationResources.th,
+    community: communityResources.th,
+    visitVerification: visitVerificationResources.th,
+    voiceAssistant: voiceAssistantResources.th,
+    placeProduct: placeProductResources.th,
+    ...withBookingStatuses(withOnboarding(sharedResources.th.translation, onboardingResources.th), { ...offerStatusResources.th, ...paymentResources.th }),
+  } },
 } as const;
