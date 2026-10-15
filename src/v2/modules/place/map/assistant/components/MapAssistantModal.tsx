@@ -18,7 +18,7 @@ export default function MapAssistantModal({ visible, onClose, context }: Props) 
   // Stay in the map's window so keyboard resizing and safe-area coordinates agree.
   return (
     <Overlay testID="map-assistant-modal" accessibilityViewIsModal onAccessibilityEscape={onClose}>
-      {context ? <VoiceCommandScreen context={context} onClose={onClose} sheetBackdrop={sheetBackdrop} /> : <VoiceAssistantScreen onClose={onClose} sheetBackdrop={sheetBackdrop} autoStart />}
+      {context ? <VoiceCommandScreen animateEntrance context={context} onClose={onClose} sheetBackdrop={sheetBackdrop} /> : <VoiceAssistantScreen animateEntrance onClose={onClose} sheetBackdrop={sheetBackdrop} autoStart />}
     </Overlay>
   );
 }

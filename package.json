@@ -62,7 +62,9 @@
     "test:v2-routes": "jest --runInBand src/v2/modules/place/map/routes/__tests__",
     "sync:ai-chat-openapi": "node scripts/sync-ai-chat-openapi.mjs",
     "generate:ai-chat-api-types": "openapi-typescript docs/api/ai-chat.openapi.json --empty-objects-unknown -o src/v2/shared/api/generated/aiChat.ts",
-    "check:ai-chat-api-types": "node scripts/check-generated-ai-chat-api-types.mjs"
+    "check:ai-chat-api-types": "node scripts/check-generated-ai-chat-api-types.mjs",
+    "prepare:wake-word": "python3 scripts/prepare-wake-word.py",
+    "check:wake-word": "python3 scripts/prepare-wake-word.py --check"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

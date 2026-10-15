@@ -4,6 +4,8 @@ import type { VoiceReservationFlow } from '../hooks/useVoiceReservation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Keyboard, Linking, ScrollView, type TextInput as NativeTextInput } from 'react-native';
 import { KeyboardAvoidingView, KeyboardProvider } from 'react-native-keyboard-controller';
+import Animated from 'react-native-reanimated';
+import { useAssistantEntrance } from '../hooks/useAssistantEntrance';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
@@ -26,6 +28,7 @@ export type VoiceAssistantScreenProps = {
   onClose: () => void;
   adapter?: SpeechInputAdapter;
   autoStart?: boolean;
+  animateEntrance?: boolean;
   commandState?: VoiceCommandViewState;
   onCommandCancel?: () => void;
   onCommandFeedbackDismiss?: () => void;
@@ -42,8 +45,9 @@ export type VoiceAssistantScreenProps = {
   | { serverSubmission: true; onFinalInput: OnFinalInput }
 );
 
-export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul', reservationFlow, sheetBackdrop, onShowReservationPlace }: VoiceAssistantScreenProps) {
+export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, animateEntrance = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul', reservationFlow, sheetBackdrop, onShowReservationPlace }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
+  const entrance = useAssistantEntrance(animateEntrance);
   const reservationVisible = !!reservationFlow && (!!reservationFlow.place || ['unknown', 'submitting', 'checking', 'success'].includes(reservationFlow.state.phase) || (reservationFlow.state.phase === 'error' && reservationFlow.state.code === 'storage'));
   const reservationLocked = !!reservationFlow && (reservationFlow.loading || ['loading', 'checking', 'submitting', 'unknown'].includes(reservationFlow.state.phase));
   const theme = useTheme();
@@ -220,10 +224,13 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     <KeyboardProvider><Screen testID="voice-assistant-screen" accessibilityViewIsModal onAccessibilityEscape={close}>
       <Backdrop accessibilityRole="button"
         accessibilityLabel={t('voiceAssistant.close')} accessible={!showDetails} onPress={close} />
-      <AssistantEdgeGlow speaking={state.phase === 'listening' && state.speaking} />
+      <EntranceGlow testID="assistant-entrance-glow" style={entrance.glowStyle} pointerEvents="none"
+        accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <AssistantEdgeGlow reducedMotion={entrance.reducedMotion} speaking={state.phase === 'listening' && state.speaking} />
+      </EntranceGlow>
       <SafeArea edges={['top', 'left', 'right']} pointerEvents="box-none">
         <KeyboardAvoidingView testID="voice-assistant-keyboard-layout" behavior="padding" style={{ flex: 1 }} pointerEvents="box-none">
-        <KeyboardLayout pointerEvents="box-none" style={{ paddingBottom: Math.max(insets.bottom, 24) + 12 }}>
+        <KeyboardLayout testID="assistant-entrance-input" pointerEvents="box-none" style={[{ paddingBottom: Math.max(insets.bottom, 24) + 12 }, entrance.inputStyle]}>
           {showDetails ? <Sheet $glass={!!sheetBackdrop} $question={true} $results={resultsMode} $picker={pickerVisible || reservationVisible} testID="voice-assistant-details">
             {sheetBackdrop}
             <SheetHeading>
@@ -286,7 +293,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
 const Screen = styled.View`flex: 1; background-color: transparent;`;
 const Backdrop = styled.Pressable`position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px; background-color: rgba(0, 0, 0, 0.5);`;
 const SafeArea = styled(SafeAreaView)`flex: 1;`;
-const KeyboardLayout = styled.View`flex: 1; width: 100%; max-width: 640px; align-self: center; justify-content: flex-end; padding-horizontal: 8px;`;
+const EntranceGlow = styled(Animated.View)`position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;`;
+const KeyboardLayout = styled(Animated.View)`flex: 1; width: 100%; max-width: 640px; align-self: center; justify-content: flex-end; padding-horizontal: 8px;`;
 const MicrophoneButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center; margin-right: -10px;`;
 const RecordingButton = styled.Pressable`height: 44px; flex-direction: row; align-items: center; gap: 12px; margin-right: 0px;`;
 const Waveform = styled.View`height: 24px; flex-direction: row; align-items: center; gap: 3px;`;

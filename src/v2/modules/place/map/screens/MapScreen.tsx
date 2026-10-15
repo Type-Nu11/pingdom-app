@@ -194,7 +194,6 @@ export default function MapScreen({
     feedbackActive.current = isFocused;
     return () => { feedbackActive.current = false; };
   }, [isFocused]);
-  const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused);
   const { i18n, t } = useTranslation();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -324,6 +323,8 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [manualCameraCenter, setManualCameraCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused,
+    canQueryBookmarks && profile?.id ? String(profile.id) : null, !isSearchOpen);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
   const [reservationEntryPlace, setReservationEntryPlace] = useState<DecisionPlace | null>(null);
@@ -1417,6 +1418,7 @@ export default function MapScreen({
       </MapGlassBackdrop>
       <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}
         onContinue={assistant.continueToAssistant} />
+
     </View>
     </MapTutorialProvider>
   );

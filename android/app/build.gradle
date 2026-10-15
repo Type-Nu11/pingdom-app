@@ -115,6 +115,7 @@ def kakaoNativeAppKey = System.getenv("KAKAO_NATIVE_APP_KEY") ?: readEnvValue("K
 def naverMapClientId = System.getenv("NAVER_MAP_CLIENT_ID") ?: readEnvValue("NAVER_MAP_CLIENT_ID") ?: ""
 
 android {
+    sourceSets.main.assets.srcDir "$rootDir/../native/wake-word/assets"
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -188,6 +189,7 @@ android {
 }
 
 dependencies {
+    implementation files("$rootDir/../native/wake-word/vendor/sherpa-onnx-kws-1.13.8.aar")
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation 'com.kakao.maps.open:android:2.13.1'
@@ -240,3 +242,9 @@ tasks.configureEach { task ->
         task.dependsOn(verifyPingdomDebugKey)
     }
 }
+
+def verifyWakeWordAssets = tasks.register('verifyWakeWordAssets', Exec) {
+    workingDir rootDir.parentFile
+    commandLine 'python3', 'scripts/prepare-wake-word.py', '--platform', 'android', '--check'
+}
+tasks.named('preBuild').configure { dependsOn(verifyWakeWordAssets) }

@@ -16,8 +16,10 @@ import {
 import { AppThemeProvider } from '../shared/theme';
 import AppErrorBoundary from './AppErrorBoundary';
 import { createQueryClient } from './queryClient';
+import { WakeWordProvider, useSherpaWakeWordAdapter, type WakeWordAdapter } from '../modules/voice-assistant';
 
-export default function AppProviders({ children }: PropsWithChildren) {
+export default function AppProviders({ children, wakeWordAdapter }: PropsWithChildren<{ wakeWordAdapter?: WakeWordAdapter }>) {
+  const sherpaWakeWordAdapter = useSherpaWakeWordAdapter(wakeWordAdapter === undefined);
   const [queryClient] = useState(createQueryClient);
   const [isI18nReady, setIsI18nReady] = useState(false);
   const fontStatus = useAppFonts();
@@ -64,7 +66,11 @@ export default function AppProviders({ children }: PropsWithChildren) {
           {isBootReady ? (
             <I18nextProvider i18n={i18n}>
               <AppErrorBoundary>
-                <QueryClientProvider client={queryClient}><PlaceMapComposition>{children}</PlaceMapComposition></QueryClientProvider>
+                <QueryClientProvider client={queryClient}>
+                  <WakeWordProvider adapter={wakeWordAdapter ?? sherpaWakeWordAdapter}>
+                    <PlaceMapComposition>{children}</PlaceMapComposition>
+                  </WakeWordProvider>
+                </QueryClientProvider>
               </AppErrorBoundary>
             </I18nextProvider>
           ) : null}
