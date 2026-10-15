@@ -33,7 +33,7 @@ import MapPickerPin from '../assets/map_picker_pin.svg';
 const MAP_PICKER_PIN_WIDTH = 24;
 const MAP_PICKER_PIN_HEIGHT = 45.7139 * (24 / 40);
 
-type Props = { initialEndpointRole?: EndpointRole; destination: RouteDestination; location: LocationState; onClose: () => void; onRefreshLocation: () => void; recentSearchOwner?: RecentSearchOwner };
+type Props = { initialEndpointRole?: EndpointRole; destination: RouteDestination | null; location: LocationState; onClose: () => void; onRefreshLocation: () => void; recentSearchOwner?: RecentSearchOwner };
 export default function CarRoutePreview({ initialEndpointRole = 'destination', destination: initialDestination, location, onClose, onRefreshLocation, recentSearchOwner }: Props) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -52,13 +52,15 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   function snapshotCurrentLocation(): RouteDestination | null {
     return endpointCoordinate(currentPoint) ? { ...currentPoint!, isCurrentLocation: false, name: t('routes.selectedLocation') } : null;
   }
-  // Only a null origin follows live GPS. A destination uses the selection-time fix.
-  // A null destination waits for the first available fix, then stays fixed.
-  const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>(() => initialEndpointRole === 'origin' ? [initialDestination, snapshotCurrentLocation()] : [null, initialDestination]);
+  // Null means an empty field. Only an explicit current-location marker follows GPS.
+  const currentSelection: RouteDestination = { placeId: 0, name: t('routes.currentLocation'), isCurrentLocation: true };
+  const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>(() => !initialDestination
+    ? [null, null] : initialEndpointRole === 'origin'
+      ? [initialDestination, snapshotCurrentLocation() ?? currentSelection] : [currentSelection, initialDestination]);
   const [endpointRevision, setEndpointRevision] = useState(0);
   const [editing, setEditing] = useState<EndpointRole | null>(null);
   const [mapPicking, setMapPicking] = useState(false);
-  const [camera, setCamera] = useState<{ center: { lat: number; lng: number }; zoom: number; revision: number; fit?: NaverMapCameraFit }>({ center: endpointCoordinate(initialDestination) ?? DEFAULT_MAP_CENTER, zoom: 14, revision: 0 });
+  const [camera, setCamera] = useState<{ center: { lat: number; lng: number }; zoom: number; revision: number; fit?: NaverMapCameraFit }>({ center: endpointCoordinate(initialDestination) ?? endpointCoordinate(currentPoint) ?? DEFAULT_MAP_CENTER, zoom: 14, revision: 0 });
   const [mapPoint, setMapPoint] = useState(camera.center);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const manualCamera = useRef(false);
@@ -69,10 +71,10 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const externalBusy = useRef(false);
   const [openingExternal, setOpeningExternal] = useState(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; startGeneration.current += 1; }; }, []);
-  const origin = selections[0] ?? currentPoint;
-  const destination = selections[1] ?? snapshotCurrentLocation();
+  const origin = selections[0]?.isCurrentLocation ? currentPoint : selections[0];
+  const destination = selections[1]?.isCurrentLocation ? snapshotCurrentLocation() : selections[1];
   useEffect(() => {
-    if (!selections[1] && destination) setSelections(previous => previous[1] ? previous : [previous[0], destination]);
+    if (selections[1]?.isCurrentLocation && destination) setSelections(previous => previous[1]?.isCurrentLocation ? [previous[0], destination] : previous);
   }, [selections, destination]);
   const destinationCoordinate = endpointCoordinate(destination);
   const originCoordinate = endpointCoordinate(origin);
@@ -100,11 +102,11 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
     if (!manualCamera.current) setCamera(previous => ({ ...fitRoutePreviewCamera(ready.path, viewport.width, viewport.height, sheetHeight + Math.max(8, insets.bottom), insets.top), revision: previous.revision + 1 }));
   }, [ready, viewport, sheetHeight, insets, tracking.tracking]);
   useEffect(() => {
-    if (selections.some(point => point === null) && (location.status !== 'granted' || !endpointCoordinate(currentPoint))) route.cancel();
+    if (selections.some(point => point?.isCurrentLocation) && (location.status !== 'granted' || !endpointCoordinate(currentPoint))) route.cancel();
     // Permission loss must dispose the previous path; GPS updates do not trigger new requests.
   }, [location.status, !!endpointCoordinate(currentPoint), selections]);
 
-  const stateKey = !destinationCoordinate ? 'missing-destination'
+  const stateKey = !selections[0] || !selections[1] ? 'empty' : !destinationCoordinate ? 'missing-destination'
     : mode !== 'car' ? 'unsupported'
       : !originCoordinate ? location.status !== 'granted' ? `location-${location.status}` : 'location-failed' : route.state.kind;
   const canRequest = mode === 'car' && !!destinationCoordinate && !!originCoordinate;
@@ -193,11 +195,11 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
     closeNotice();
     route.cancel(); setAnchor(null); fittedPath.current = null;
     fittedEndpoints.current = false; manualCamera.current = false;
-    setSelections([next[0], next[1] ?? snapshotCurrentLocation()]); setEndpointRevision(value => value + 1);
+    setSelections([next[0], next[1]?.isCurrentLocation ? snapshotCurrentLocation() ?? next[1] : next[1]]); setEndpointRevision(value => value + 1);
   }
   function selectEndpoint(point: RouteDestination | null) {
     const next: typeof selections = [...selections];
-    next[editing === 'origin' ? 0 : 1] = point;
+    next[editing === 'origin' ? 0 : 1] = point ?? currentSelection;
     changeEndpoints(next); setEditing(null); setMapPicking(false);
   }
   function shareDestination() {
@@ -278,7 +280,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
             if (mode !== value) { closeNotice(); route.cancel(); setAnchor(null); setMode(value); }
             else if (value === 'car' && canRequest && route.state.kind !== 'loading' && route.state.kind !== 'ready') request();
           }}
-          onEditEndpoint={setEditing} onSwapEndpoints={() => changeEndpoints([selections[1], selections[0]])}
+          onEditEndpoint={setEditing} onSwapEndpoints={() => changeEndpoints([destination, origin ?? selections[0]])}
           onClose={onClose} onShare={shareDestination}
           onStart={() => { void startTracking(); }}
           onRequest={request} onCancel={route.cancel} onRefreshLocation={onRefreshLocation}

@@ -7,6 +7,7 @@ import type { VoiceNavigationTarget } from '../../../voice-assistant';
 import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
 import MapAssistantModal from '../assistant/components/MapAssistantModal';
 import MapAssistantIntro from '../assistant/components/MapAssistantIntro';
+import MapAssistantButton from '../assistant/components/MapAssistantButton';
 import { MapTutorialProvider } from '../tutorial/MapTutorialProvider';
 import { MapTutorialTarget } from '../tutorial/context';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -202,6 +203,7 @@ export default function MapScreen({
   const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation();
   const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
+  const [emptyRouteOpen, setEmptyRouteOpen] = useState(false);
   const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
   const [externalRouteRole, setExternalRouteRole] = useState<'origin' | 'destination' | null>(null);
   const [externalCardHeight, setExternalCardHeight] = useState(EXTERNAL_PLACE_CARD_ESTIMATED_HEIGHT);
@@ -324,7 +326,7 @@ export default function MapScreen({
   const [manualCameraCenter, setManualCameraCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused,
-    canQueryBookmarks && profile?.id ? String(profile.id) : null, !isSearchOpen);
+    canQueryBookmarks && profile?.id ? String(profile.id) : null, !isSearchOpen && !emptyRouteOpen);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
   const [reservationEntryPlace, setReservationEntryPlace] = useState<DecisionPlace | null>(null);
@@ -592,6 +594,7 @@ export default function MapScreen({
     placeId: selectedPlace.id,
     userLocation: center ? { latitude: center.lat, longitude: center.lng } : null,
   }) : null, [center, selectedPlace]);
+  useEffect(() => { if (!isFocused) setEmptyRouteOpen(false); }, [isFocused]);
   useEffect(() => {
     setRoutePreviewPlaceId(null);
   }, [selectedPlaceActionTarget?.placeId, isFocused]);
@@ -1080,6 +1083,10 @@ export default function MapScreen({
           zoomLevel={mapZoomLevel}
         />
       </View>
+      {isFocused && emptyRouteOpen && (
+        <CarRoutePreview destination={null} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={() => setEmptyRouteOpen(false)} onRefreshLocation={() => { void location.refresh(); }} />
+      )}
       {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
         <CarRoutePreview key={`${routeEndpointRole}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
           initialEndpointRole={routeEndpointRole} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
@@ -1095,10 +1102,10 @@ export default function MapScreen({
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
           onLocatePress={handleLocatePress}
-          onAssistantPress={assistant.enabled && !isSearchOpen ? assistant.open : undefined}
-          assistantDisabled={assistant.isBusy}
-          assistantSheetTop={sheetTranslateY}
-          assistantRestingTop={snapPoint === 'collapsed' ? collapsedTranslateY : snapPoint === 'expanded' ? expandedTranslateY : mediumTranslateY}
+          onDirectionsPress={!isSearchOpen ? () => setEmptyRouteOpen(true) : undefined}
+          directionsDisabled={assistant.isBusy}
+          directionsSheetTop={sheetTranslateY}
+          directionsRestingTop={snapPoint === 'collapsed' ? collapsedTranslateY : snapPoint === 'expanded' ? expandedTranslateY : mediumTranslateY}
           onProfilePress={onOpenProfile}
           onQueryChange={handleQueryChange}
           onRefreshMap={handleMapRefresh}
@@ -1352,6 +1359,25 @@ export default function MapScreen({
             />
           </View>
         )}
+      {assistant.enabled && !isSearchOpen && !emptyRouteOpen && mapSection === 'map'
+        && content.type === 'home' && (
+        <Animated.View
+          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
+          accessibilityElementsHidden={snapPoint === 'expanded'}
+          importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
+          style={{
+            bottom: fullSheetHeight + 8,
+            left: 12,
+            opacity: verificationCtaOpacity,
+            position: 'absolute',
+            transform: [{ translateY: sheetTranslateY }],
+            zIndex: 60,
+          }}
+          testID="map-assistant-sheet-button-motion"
+        >
+          <MapAssistantButton disabled={assistant.isBusy || snapPoint === 'expanded'} onPress={assistant.open} />
+        </Animated.View>
+      )}
       {/* The community frames (Figma 4698:11054 etc.) keep the map clear of the
           visit-verification CTA; the sheet carries its own write action there. */}
       {!isSearchOpen && content.type !== 'place-preview' && !externalPlace && mapSection !== 'community' && onOpenVisitVerification ? (

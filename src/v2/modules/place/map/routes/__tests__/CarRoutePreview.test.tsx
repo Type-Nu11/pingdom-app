@@ -640,3 +640,33 @@ test('precise foreground fixes drive tracking and its subscription is removed on
   await user.press(screen.getByTestId('route-tracking-stop'));
   expect(mockRemoveLocationWatch).toHaveBeenCalledTimes(1);
 });
+
+
+test('main directions entry keeps both endpoints empty across GPS updates and does not query', async () => {
+  const view = await renderWithProviders(<CarRoutePreview {...props} destination={null} />, { language: 'en' });
+  expect(screen.getByTestId('route-origin-row')).toHaveTextContent(/Set origin/);
+  expect(screen.getByTestId('route-destination-row')).toHaveTextContent(/Set destination/);
+  expect(findCarRoute).not.toHaveBeenCalled();
+  expect(mockMapProps.markers).toHaveLength(0);
+  await view.rerender(<CarRoutePreview {...props} destination={null}
+    location={{ ...location, coordinate: { ...location.coordinate, lat: 37.51 } }} />);
+  await fireEvent(screen.getByTestId('route-origin-row'), 'accessibilityAction', { nativeEvent: { actionName: 'swap' } });
+  expect(screen.getByTestId('route-origin-row')).toHaveTextContent(/Set origin/);
+  expect(screen.getByTestId('route-destination-row')).toHaveTextContent(/Set destination/);
+  expect(findCarRoute).not.toHaveBeenCalled();
+});
+
+test('empty planner searches editable endpoints and queries only after both are selected', async () => {
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} destination={null} />, { language: 'en' });
+  await user.press(screen.getByTestId('route-destination-row'));
+  await user.press(screen.getByRole('button', { name: 'Saved cafe' }));
+  expect(screen.getByTestId('route-destination-row')).toHaveTextContent(/Saved cafe/);
+  expect(screen.getByTestId('route-origin-row')).toHaveTextContent(/Set origin/);
+  expect(findCarRoute).not.toHaveBeenCalled();
+  await user.press(screen.getByTestId('route-origin-row'));
+  await fireEvent.changeText(screen.getByTestId('route-endpoint-search'), 'New place');
+  await user.press(await screen.findByText('New place'));
+  await waitFor(() => expect(findCarRoute).toHaveBeenCalledWith(
+    expect.objectContaining({ name: 'New place', latitude: 37.9 }),
+    expect.objectContaining({ name: 'Saved cafe', latitude: 37.7 }), expect.any(AbortSignal)));
+});

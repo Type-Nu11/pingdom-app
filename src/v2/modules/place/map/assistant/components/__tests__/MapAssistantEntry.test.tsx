@@ -1,11 +1,12 @@
 import React from 'react';
+import MapAssistantButton from '../MapAssistantButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Animated, AppState } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import * as SafeArea from 'react-native-safe-area-context';
+import { darkColors, lightColors, darkLiquidGlass, lightLiquidGlass } from '../../../../../../shared/theme';
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
-import { darkColors, lightColors } from '../../../../../../shared/theme';
 import { MAP_ASSISTANT_INTRO_SEEN_KEY, useMapAssistantEntry } from '../../hooks/useMapAssistantEntry';
 import MapTopOverlay from '../../../presentation/components/MapTopOverlay';
 import MapAssistantModal from '../MapAssistantModal';
@@ -18,12 +19,16 @@ const overlayProps = {
   activeCategory: 'all' as const, onCategoryChange: jest.fn(), onLocatePress: locate,
   onQueryChange: jest.fn(), onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(), query: '',
 };
+// Exercise the real bottom-sheet AI entry separately from the directions control.
 function Harness({ enabled = true, focused = true, expanded = false, searching = false }) {
   const entry = useMapAssistantEntry(enabled, focused);
   return <NavigationContext.Provider value={navigation as never}>
     <MapTopOverlay {...overlayProps} showCategories={!expanded}
-      onAssistantPress={entry.enabled && !searching ? entry.open : undefined}
-      assistantDisabled={entry.isBusy} assistantSheetTop={sheetTop} assistantRestingTop={400} />
+      onDirectionsPress={entry.enabled && !searching ? () => {} : undefined}
+      directionsDisabled={entry.isBusy} directionsSheetTop={sheetTop} directionsRestingTop={400} />
+    {entry.enabled && !searching && !expanded && (
+      <MapAssistantButton disabled={entry.isBusy} onPress={entry.open} />
+    )}
     <MapAssistantModal visible={entry.isOpen} onClose={entry.close} />
     <MapAssistantIntro visible={entry.isNoticeOpen} onClose={entry.close}
       onContinue={entry.continueToAssistant} />
@@ -43,7 +48,8 @@ afterEach(() => { (AppState as { currentState: string }).currentState = original
 test('flag off has no FAB or session; location remains usable', async () => {
   await renderWithProviders(<Harness enabled={false} />);
   await layout();
-  expect(screen.queryByTestId('map-assistant-fab')).toBeNull();
+  expect(screen.queryByTestId('map-directions-button')).toBeNull();
+  expect(screen.queryByTestId('map-assistant-button')).toBeNull();
   expect(screen.queryByTestId('voice-assistant-screen')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: '내 위치' }));
   expect(locate).toHaveBeenCalledTimes(1);
@@ -141,16 +147,23 @@ test('leaving the map during first-use lookup cannot show a late intro', async (
   } finally { read.mockRestore(); }
 });
 
-test.each(['LIGHT', 'DARK'] as const)('%s FAB uses theme, 48 dp target and separate vertical slot below locate', async appearancePreference => {
-  const colors = appearancePreference === 'LIGHT' ? lightColors : darkColors;
+test.each(['LIGHT', 'DARK'] as const)('%s directions action uses theme, 44 dp target and separate vertical slot below locate', async appearancePreference => {
   await renderWithProviders(<Harness />, { appearancePreference });
   await layout();
-  expect(screen.getByTestId('map-assistant-fab')).toHaveStyle({ height: 48, width: 48, backgroundColor: colors.surfaceElevated, borderColor: colors.borderEmphasis });
-  expect(screen.getByText('AI')).toHaveStyle({ color: colors.textStrong, fontFamily: expect.stringMatching(/^Pretendard/) });
-  expect(screen.getByTestId('map-assistant-slot')).toHaveStyle({ marginTop: 8 });
+  expect(screen.getByTestId('map-directions-button')).toHaveStyle({ height: 44, width: 44 });
+  expect(screen.getByTestId('map-directions-icon').props.color).toBe(appearancePreference === 'DARK' ? darkColors.text : lightColors.text);
+  expect(screen.getByTestId('map-directions-glass').props.tintColor).toBe(appearancePreference === 'DARK' ? darkLiquidGlass.navigation.softTint : lightLiquidGlass.navigation.softTint);
+  expect(screen.getByTestId('map-directions-icon-frame')).toHaveStyle({ width: 24, height: 24, transform: [{ translateY: 2 }, { translateX: 2 }] });
+  expect(screen.queryByText('AI')).toBeNull();
+  const artwork = screen.getByTestId('map-assistant-button-artwork');
+  expect(artwork.props.color).toBe(appearancePreference === 'DARK' ? darkColors.text : lightColors.text);
+  expect(artwork.props.fill).toBe(appearancePreference === 'DARK' ? darkColors.surfaceElevated : lightColors.surfaceElevated);
+  expect(artwork).toHaveStyle({ left: -20, top: -16 });
+  expect(screen.getByTestId('map-assistant-button')).toHaveStyle({ width: 44, height: 44 });
+  expect(screen.getByTestId('map-directions-slot')).toHaveStyle({ marginTop: 12 });
   expect(screen.getByTestId('map-locate-button')).toHaveStyle({ width: 44, height: 44 });
   const text = JSON.stringify(screen.toJSON());
-  expect(text.indexOf('map-locate-button')).toBeLessThan(text.indexOf('map-assistant-fab'));
+  expect(text.indexOf('map-locate-button')).toBeLessThan(text.indexOf('map-directions-button'));
   await fireEvent.press(screen.getByRole('button', { name: '내 위치' }));
   await fireEvent.press(screen.getByRole('button', { name: '내 위치' }));
   expect(locate).toHaveBeenCalledTimes(2);
@@ -160,19 +173,20 @@ test.each(['LIGHT', 'DARK'] as const)('%s FAB uses theme, 48 dp target and separ
 test('English FAB has a translated accessibility label', async () => {
   await renderWithProviders(<Harness />, { language: 'en' });
   await layout();
+  expect(screen.getByRole('button', { name: 'Directions' })).toBeEnabled();
   expect(screen.getByRole('button', { name: 'Open AI assistant' })).toBeEnabled();
 });
 
 test('sheet drag hides FAB visually and from touch/accessibility before overlap; restores afterward', async () => {
   await renderWithProviders(<Harness />);
   await layout(270);
-  expect(screen.getByRole('button', { name: 'AI 어시스턴트 열기' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '길찾기' })).toBeEnabled();
   await act(() => sheetTop.setValue(277));
-  expect(screen.queryByRole('button', { name: 'AI 어시스턴트 열기' })).toBeNull();
-  expect(screen.getByTestId('map-assistant-slot', { includeHiddenElements: true }).props.pointerEvents).toBe('none');
-  expect(screen.getByTestId('map-assistant-fab', { includeHiddenElements: true })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: '길찾기' })).toBeNull();
+  expect(screen.getByTestId('map-directions-slot', { includeHiddenElements: true }).props.pointerEvents).toBe('none');
+  expect(screen.getByTestId('map-directions-button', { includeHiddenElements: true })).toBeDisabled();
   await act(() => sheetTop.setValue(400));
-  expect(screen.getByRole('button', { name: 'AI 어시스턴트 열기' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '길찾기' })).toBeEnabled();
 });
 
 test('Safe Area is part of measured overlay; large bottom inset cannot expose an offscreen FAB', async () => {
@@ -181,14 +195,15 @@ test('Safe Area is part of measured overlay; large bottom inset cannot expose an
   await renderWithProviders(<Harness />);
   expect(screen.getByTestId('map-top-safe-overlay').props.edges).toEqual(['top', 'left', 'right']);
   await layout(270);
-  expect(screen.getByRole('button', { name: 'AI 어시스턴트 열기' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '길찾기' })).toBeEnabled();
   await layout(320);
-  expect(screen.queryByRole('button', { name: 'AI 어시스턴트 열기' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '길찾기' })).toBeNull();
 });
 
 test.each([{ expanded: true }, { searching: true }, { focused: false }])('covered/inactive map removes FAB: %j', async props => {
   await renderWithProviders(<Harness {...props} />);
-  expect(screen.queryByTestId('map-assistant-fab')).toBeNull();
+  expect(screen.queryByTestId('map-directions-button')).toBeNull();
+  expect(screen.queryByTestId('map-assistant-button')).toBeNull();
 });
 
 test.each(['flag', 'focus'] as const)('%s loss closes the modal and releases the open lock', async reason => {
@@ -210,4 +225,24 @@ test('unmount detaches the sheet listener', async () => {
   remove.mockClear();
   await view.unmount();
   expect(remove).toHaveBeenCalledTimes(1);
+});
+
+test.each(['LIGHT', 'DARK'] as const)('%s buttons show Figma press feedback and restore without opening on touch down', async appearancePreference => {
+  await renderWithProviders(<Harness />, { appearancePreference });
+  await layout();
+  const colors = appearancePreference === 'DARK' ? darkColors : lightColors;
+  const directions = screen.getByRole('button', { name: '길찾기' });
+  await fireEvent(directions, 'pressIn');
+  expect(screen.getByTestId('map-directions-icon').props.color).toBe(colors.primary);
+  expect(screen.queryByTestId('voice-assistant-screen')).toBeNull();
+  await fireEvent(directions, 'pressOut');
+  expect(screen.getByTestId('map-directions-icon').props.color).toBe(colors.text);
+  const assistant = screen.getByRole('button', { name: 'AI 어시스턴트 열기' });
+  await fireEvent(assistant, 'pressIn');
+  expect(screen.getByTestId('map-assistant-button-pressed-artwork')).toHaveStyle({ left: -20, top: -16 });
+  expect(screen.queryByTestId('map-assistant-button-artwork')).toBeNull();
+  expect(screen.queryByTestId('voice-assistant-screen')).toBeNull();
+  await fireEvent(assistant, 'pressOut');
+  expect(screen.getByTestId('map-assistant-button-artwork')).toBeTruthy();
+  expect(screen.queryByTestId('map-assistant-button-pressed-artwork')).toBeNull();
 });
