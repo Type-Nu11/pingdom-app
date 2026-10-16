@@ -93,5 +93,5 @@ const RowLabel = styled(AppText)<{ $selected: boolean }>`
 const StateRow = styled.View`height: 52px; align-items: center; justify-content: center;`;
 const StateColumn = styled.View`align-items: flex-start; gap: 8px; padding: 12px 8px;`;
 const StateText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
-const RetryButton = styled.Pressable`padding: 6px 14px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary};`;
+const RetryButton = styled.Pressable`padding: 6px 14px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primaryAction};`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; ${({ theme }) => textStyleCss(theme.typography.captionBold)}`;

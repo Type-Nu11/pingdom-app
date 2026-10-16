@@ -405,7 +405,7 @@ const CategoryChip = styled.Pressable<{ $selected: boolean }>`
   background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.liquidGlass.category.tint)};
 `;
 const CategoryLabel = styled(AppText)<{ $selected: boolean }>`
-  color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.textAlternative)};
+  color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};
   ${({ theme }) => textStyleCss(theme.typography.labelMedium)}
 `;
 
@@ -421,7 +421,7 @@ const EmptyText = styled(AppText)`margin-top: ${({ theme }) => theme.spacing.xl}
 
 const FooterState = styled.View`align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px;`;
 const FooterErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
-const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primary}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
+const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primaryAction}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
 const WriteFabAnchor = styled(Animated.View)`position: absolute; right: 24px;`;
@@ -431,7 +431,7 @@ const WriteFab = styled.Pressable`
   height: 48px;
   border-radius: 24px;
   overflow: hidden;
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ theme }) => theme.colors.primaryAction};
 `;
 const WriteFabSurface = styled(GlassSurface)`
   height: 48px;

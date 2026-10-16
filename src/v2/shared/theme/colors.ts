@@ -3,7 +3,7 @@ export const lightColors = {
   border: '#E4E4E5', borderEmphasis: '#767680', calendarSaturday: '#008BFF', calendarSunday: '#FF383C',
   danger: '#EE2B2B', dangerSoft: '#FFF0F0', disabled: '#D1D4D5', focus: '#FF4A75',
   info: '#168CFF', infoSoft: '#E8F4FF', inputBackground: '#F8F8F8', onDisabled: '#767680',
-  onPrimary: '#21000A', overlay: 'rgba(17, 17, 20, 0.48)', primary: '#FF1956',
+  onPrimary: '#FFFFFF', overlay: 'rgba(17, 17, 20, 0.48)', primary: '#FF1956', primaryAction: '#E3174B', primaryActionPressed: '#C91443',
   primaryAssistive: '#FFC9D3', primaryAssistiveSoft: '#FFF2F5', primaryPressed: '#E9164E', primaryRange: 'rgba(255, 201, 211, 0.48)',
   primarySelected: 'rgba(255, 25, 86, 0.08)', primarySoft: '#FFF0F4', scrim: 'rgba(0, 0, 0, 0.62)',
   selectedBorder: '#FE5E84', selectedSurface: '#FAEDF0', selectedTabSurface: 'rgba(228, 228, 229, 0.56)',
@@ -25,7 +25,7 @@ export const darkColors = {
   border: '#34343A', borderEmphasis: '#7D7D88', calendarSaturday: '#66B8FF', calendarSunday: '#FF7D86',
   danger: '#FF5A5A', dangerSoft: '#3B1D22', disabled: '#38383F', focus: '#FF1956',
   info: '#3FA3FF', infoSoft: '#162B3E', inputBackground: '#1C1C20', onDisabled: '#A4A4AD',
-  onPrimary: '#21000A', overlay: 'rgba(0, 0, 0, 0.68)', primary: '#FF1956',
+  onPrimary: '#FFFFFF', overlay: 'rgba(0, 0, 0, 0.68)', primary: '#FF1956', primaryAction: '#E3174B', primaryActionPressed: '#C91443',
   primaryAssistiveSoft: '#241419', primaryAssistive: '#3A1422', primaryPressed: '#FF4A75', primaryRange: 'rgba(255, 25, 86, 0.18)',
   primarySelected: 'rgba(255, 25, 86, 0.12)', primarySoft: '#3A1422', scrim: 'rgba(0, 0, 0, 0.72)',
   selectedBorder: '#FF4A75', selectedSurface: '#3A1422', selectedTabSurface: 'rgba(38, 38, 43, 0.72)',
@@ -35,7 +35,7 @@ export const darkColors = {
   textSecondary: '#A9A9B2', textStrong: '#FFFFFF', warning: '#FFD43B', warningSoft: '#3A2A16',
   fillAlternative: '#2E2E33', fillNeutral: '#222226', fillSupport: '#26262B', labelNeutral: '#D2D2D6', labelNormal: '#F4F4F5',
   labelStrong: '#FFFFFF', lineAlternative: '#202024', lineNeutral: '#2A2A2F', secondaryAlternative: '#3E4043', secondaryNormal: '#55575A',
-  glassFill: 'rgba(28, 28, 32, 0.56)', statusInfo: '#3FA3FF', labelAssistive: '#85858F', onboardingIconSurface: '#2A2A30', primaryAlternative: '#FF4A75', primaryAlternativeTint: 'rgba(255, 74, 117, 0.28)', primaryTint: 'rgba(255, 25, 86, 0.14)', fillNormal: '#1C1C20', glassStroke: 'rgba(255, 255, 255, 0.10)', primaryGlow: 'rgba(255, 25, 86, 0.18)', shadowFloat: 'rgba(0, 0, 0, 0.40)', overlayDim: 'rgba(0, 0, 0, 0.4)', overlayStrong: 'rgba(0, 0, 0, 0.6)', labelDisabled: '#3C3C41', glassFillRaised: 'rgba(38, 38, 43, 0.72)',
+  glassFill: 'rgba(64, 64, 72, 0.82)', statusInfo: '#3FA3FF', labelAssistive: '#85858F', onboardingIconSurface: '#2A2A30', primaryAlternative: '#FF4A75', primaryAlternativeTint: 'rgba(255, 74, 117, 0.28)', primaryTint: 'rgba(255, 25, 86, 0.14)', fillNormal: '#1C1C20', glassStroke: 'rgba(255, 255, 255, 0.20)', primaryGlow: 'rgba(255, 25, 86, 0.18)', shadowFloat: 'rgba(0, 0, 0, 0.40)', overlayDim: 'rgba(0, 0, 0, 0.4)', overlayStrong: 'rgba(0, 0, 0, 0.6)', labelDisabled: '#3C3C41', glassFillRaised: 'rgba(80, 80, 92, 0.84)',
 } as const satisfies ThemeColors;
 
 // Transitional alias while fixed light consumers are migrated to useTheme.

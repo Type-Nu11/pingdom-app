@@ -2,7 +2,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
-import { darkColors, lightColors } from '../../../../../../shared/theme';
+import { darkColors, lightColors, darkLiquidGlass, lightLiquidGlass } from '../../../../../../shared/theme';
 import MapTopOverlay from '../MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../../styles/MapTopOverlay.styles';
 
@@ -27,11 +27,12 @@ const props = {
 describe('MapTopOverlay', () => {
   test.each(['LIGHT', 'DARK', 'SYSTEM'] as const)('%s에서 선택 상태와 테마 대비를 유지한다', async (appearancePreference) => {
     const colors = appearancePreference === 'LIGHT' ? lightColors : darkColors;
+    const glass = appearancePreference === 'LIGHT' ? lightLiquidGlass : darkLiquidGlass;
     await renderWithProviders(<MapTopOverlay {...props} activeCategory="food" />, {
       appearancePreference, colorScheme: 'dark',
     });
     expect(screen.getByRole('button', { name: '음식점', selected: true })).toHaveStyle({ borderTopLeftRadius: 16, borderBottomRightRadius: 16 });
-    expect(screen.getByText('음식점')).toHaveStyle({ color: colors.primary });
+    expect(screen.getByText('음식점')).toHaveStyle({ color: glass.category.activeForeground });
     expect(screen.getByText('전체')).toHaveStyle({ color: colors.textAlternative });
     expect(screen.getByText('검색하기')).toHaveStyle({ fontSize: 18, fontFamily: 'PretendardStdVariable-Medium' });
   });
@@ -71,7 +72,7 @@ describe('MapTopOverlay', () => {
     }
   });
 
-  test('카테고리는 Pretendard Medium을 사용하고 선택한 라벨과 테두리만 분홍색으로 바뀐다', async () => {
+  test('카테고리는 Pretendard Medium과 테마별 선택 글자색 및 분홍 테두리를 사용한다', async () => {
     const view = await renderWithProviders(<MapTopOverlay {...props} />);
     expect(screen.getByText('음식점')).toHaveStyle({ fontSize: 14, fontFamily: 'PretendardStdVariable-Medium', lineHeight: 18.2,
     });
@@ -83,7 +84,7 @@ describe('MapTopOverlay', () => {
     expect(screen.getByRole('button', { name: '음식점', selected: true })).toBeVisible();
     expect(screen.getByRole('button', { name: '음식점' })).toHaveStyle({ borderColor: 'rgba(255, 74, 117, 0.88)' });
     expect(screen.getByRole('button', { name: '전체' })).toHaveStyle({ borderColor: 'transparent' });
-    expect(screen.getByText('음식점')).toHaveStyle({ color: '#FF1956' });
+    expect(screen.getByText('음식점')).toHaveStyle({ color: lightLiquidGlass.category.activeForeground });
     expect(screen.getByText('전체')).toHaveStyle({ color: '#5E5E66' });
   });
 

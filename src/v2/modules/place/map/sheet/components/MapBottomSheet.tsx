@@ -2854,7 +2854,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     top: 10,
     zIndex: 3,
   },
-  bookmarkPillActive: { backgroundColor: colors.primary },
+  bookmarkPillActive: { backgroundColor: colors.primaryAction },
   bookmarkPillText: { color: colors.primary, fontSize: 12, fontWeight: '900' },
   bookmarkPillTextActive: { color: colors.onPrimary },
   categoryChip: {
@@ -2982,7 +2982,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   recommendationSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 5 },
   recommendationTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900' },
   recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  retryButton: { backgroundColor: colors.primary, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  retryButton: { backgroundColor: colors.primaryAction, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
   retryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   externalBadge: {
     alignSelf: 'flex-start',

@@ -189,7 +189,7 @@ export const CategoryIconFrame = styled.View`
 `;
 
 export const CategoryLabel = styled(Text).attrs({ maxFontSizeMultiplier: 1, numberOfLines: 1 })<{ $active: boolean }>`
-  color: ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.textAlternative)};
+  color: ${({ $active, theme }) => ($active ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};
   font-size: ${MAP_TOP_OVERLAY_METRICS.categoryLabelSize}px;
   font-weight: 500;
   line-height: 18.2px;

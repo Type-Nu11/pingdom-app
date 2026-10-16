@@ -33,10 +33,12 @@ describe('semantic themes', () => {
     ['light body', lightTheme.colors.text, lightTheme.colors.background, 4.5],
     ['light strong', lightTheme.colors.textStrong, lightTheme.colors.surface, 4.5],
     ['light muted', lightTheme.colors.textMuted, lightTheme.colors.background, 4.5],
-    ['light on primary', lightTheme.colors.onPrimary, lightTheme.colors.primary, 4.5],
+    ['light on primary', lightTheme.colors.onPrimary, lightTheme.colors.primaryAction, 4.5],
     ['dark body', darkTheme.colors.text, darkTheme.colors.background, 4.5],
     ['dark strong', darkTheme.colors.textStrong, darkTheme.colors.surface, 4.5],
-    ['dark on primary', darkTheme.colors.onPrimary, darkTheme.colors.primary, 4.5],
+    ['dark on primary', darkTheme.colors.onPrimary, darkTheme.colors.primaryAction, 4.5],
+    ['light pressed primary', lightTheme.colors.onPrimary, lightTheme.colors.primaryActionPressed, 4.5],
+    ['dark pressed primary', darkTheme.colors.onPrimary, darkTheme.colors.primaryActionPressed, 4.5],
     ['dark border', darkTheme.colors.borderEmphasis, darkTheme.colors.surface, 3],
   ] as const)('%s contrast is at least %s:1', (_name, foreground, background, minimum) => {
     expect(contrast(foreground, background)).toBeGreaterThanOrEqual(minimum);
@@ -58,4 +60,21 @@ describe('Figma text styles', () => {
   test('textStyleCss renders size, weight and line height declarations', () => {
     expect(textStyleCss(lightTheme.typography.labelMedium)).toBe('font-size: 14px; font-weight: 500; line-height: 18px;');
   });
+});
+
+test.each([
+  ['header', darkTheme.liquidGlass.header.tint],
+  ['category', darkTheme.liquidGlass.category.tint],
+  ['Android category', darkTheme.liquidGlass.category.androidTint],
+  ['navigation', darkTheme.liquidGlass.navigation.tint],
+  ['floating navigation', darkTheme.liquidGlass.navigation.softTint],
+])('dark %s glass is visibly raised above the app background', (_name, tint) => {
+  const [r, g, b, alpha] = tint.match(/[\d.]+/g)!.map(Number);
+  const base = darkTheme.colors.background.match(/[a-f\d]{2}/gi)!.map(value => parseInt(value, 16));
+  const composite = '#' + [r, g, b].map((channel, i) => Math.round(channel * alpha + base[i] * (1 - alpha)).toString(16).padStart(2, '0')).join('');
+  expect(contrast(composite, darkTheme.colors.background)).toBeGreaterThanOrEqual(1.5);
+});
+
+test('dark selected glass controls use white foreground on the brighter pink tint', () => {
+  expect(darkTheme.liquidGlass.category).toMatchObject({ activeForeground: '#FFFFFF' });
 });

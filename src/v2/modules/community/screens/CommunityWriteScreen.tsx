@@ -433,7 +433,7 @@ const CategoryChip = styled.Pressable<{ $selected: boolean }>`
   background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.colors.backgroundAssistive)};
 `;
 const CategoryChipLabel = styled(AppText)<{ $selected: boolean }>`
-  color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.textAlternative)};
+  color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};
   ${({ theme }) => textStyleCss(theme.typography.labelMedium)}
 `;
 
@@ -460,9 +460,9 @@ const AddPlaceLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textS
 
 const ErrorBanner = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.dangerSoft};`;
 const ErrorBannerText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const BannerButton = styled.Pressable`align-self: flex-start; padding: 8px 16px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary};`;
+const BannerButton = styled.Pressable`align-self: flex-start; padding: 8px 16px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primaryAction};`;
 const BannerButtonLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
 const SubmitBar = styled.View`padding: 0 24px 16px;`;
-const SubmitButton = styled.Pressable<{ $enabled: boolean }>`height: 64px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $enabled, theme }) => ($enabled ? theme.colors.primary : theme.colors.disabled)};`;
+const SubmitButton = styled.Pressable<{ $enabled: boolean }>`height: 64px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $enabled, theme }) => ($enabled ? theme.colors.primaryAction : theme.colors.disabled)};`;
 const SubmitLabel = styled(AppText)<{ $enabled: boolean }>`color: ${({ $enabled, theme }) => ($enabled ? theme.colors.textInverse : theme.colors.onDisabled)}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;

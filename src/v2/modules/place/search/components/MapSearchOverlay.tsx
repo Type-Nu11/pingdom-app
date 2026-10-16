@@ -568,7 +568,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   },
   recommendButton: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryAction,
     borderRadius: 18,
     height: 75,
     justifyContent: 'center',

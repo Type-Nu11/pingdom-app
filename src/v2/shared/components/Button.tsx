@@ -113,8 +113,8 @@ function getButtonPalette(
   }
 
   return {
-    background: pressed ? theme.colors.primaryPressed : theme.colors.primary,
-    border: pressed ? theme.colors.primaryPressed : theme.colors.primary,
+    background: pressed ? theme.colors.primaryActionPressed : theme.colors.primaryAction,
+    border: pressed ? theme.colors.primaryActionPressed : theme.colors.primaryAction,
     content: theme.colors.onPrimary,
   };
 }

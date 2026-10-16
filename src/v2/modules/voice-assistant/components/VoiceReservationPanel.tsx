@@ -140,7 +140,7 @@ const Slot = styled.Pressable<{ $selected: boolean }>`padding: 12px 16px; gap: 6
   background-color: ${({ theme, $selected }) => $selected ? theme.liquidGlass.category.activeTint : theme.liquidGlass.category.tint};
   opacity: ${({ disabled }) => disabled ? 0.4 : 1};`;
 const SlotLabel = styled(Text)<{ $selected: boolean }>`font-size: 16px; line-height: 21px; font-weight: 700;
-  color: ${({ theme, $selected }) => $selected ? theme.colors.primary : theme.colors.textStrong};`;
+  color: ${({ theme, $selected }) => $selected ? theme.liquidGlass.category.activeForeground : theme.colors.textStrong};`;
 const TimeConfirm = styled.Pressable`min-height: 48px; padding: 12px 16px; border-radius: 24px; align-items: center; justify-content: center;
   background-color: ${({ theme }) => theme.colors.primary}; opacity: ${({ disabled }) => disabled ? 0.4 : 1};`;
 const TimeConfirmText = styled(Text)`font-size: 16px; line-height: 21px; font-weight: 700; color: #ffffff; text-align: center;`;

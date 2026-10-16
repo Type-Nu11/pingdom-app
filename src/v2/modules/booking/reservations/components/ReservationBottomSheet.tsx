@@ -341,7 +341,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   nearbyRail: { gap: 16, paddingBottom: 4, paddingTop: 2 },
   pressed: { opacity: 0.72 },
   reservationCardItem: { marginBottom: 4 },
-  retryButton: { backgroundColor: colors.primary, borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
+  retryButton: { backgroundColor: colors.primaryAction, borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   savedImage: { borderRightColor: colors.borderEmphasis, borderRightWidth: 1, flex: 1, height: '100%' },
   savedImageFallback: { alignItems: 'center', backgroundColor: colors.surfaceMuted, justifyContent: 'center' },
