@@ -58,11 +58,13 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   }
   // Null means an empty field. Only an explicit current-location marker follows GPS.
   const currentSelection: RouteDestination = { placeId: 0, name: t('routes.currentLocation'), isCurrentLocation: true };
+  // Departing from a place keeps it as the origin and leaves the destination for the user to pick.
+  const departsFromPlace = !!initialDestination && initialEndpointRole === 'origin';
   const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>(() => !initialDestination
-    ? [null, null] : initialEndpointRole === 'origin'
-      ? [initialDestination, snapshotCurrentLocation() ?? currentSelection] : [currentSelection, initialDestination]);
+    ? [null, null] : departsFromPlace ? [initialDestination, null] : [currentSelection, initialDestination]);
   const [endpointRevision, setEndpointRevision] = useState(0);
-  const [editing, setEditing] = useState<EndpointRole | null>(null);
+  // Figma 8892:11110: the departure entry opens straight into the destination editor.
+  const [editing, setEditing] = useState<EndpointRole | null>(departsFromPlace ? 'destination' : null);
   const [mapPicking, setMapPicking] = useState(false);
   const [camera, setCamera] = useState<{ center: { lat: number; lng: number }; zoom: number; revision: number; fit?: NaverMapCameraFit }>({ center: endpointCoordinate(initialDestination) ?? endpointCoordinate(currentPoint) ?? DEFAULT_MAP_CENTER, zoom: 14, revision: 0 });
   const [mapPoint, setMapPoint] = useState(camera.center);
