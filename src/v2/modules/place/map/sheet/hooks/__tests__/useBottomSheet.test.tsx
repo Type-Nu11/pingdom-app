@@ -68,6 +68,40 @@ describe('useBottomSheet', () => {
     await act(() => jest.runAllTimers());
   });
 
+  test('상세 전환으로 테두리 애니메이션이 취소되어도 시트 이동은 끝까지 진행한다', async () => {
+    // Use RN's real cancellation semantics; AnimatedMock ignores stopTogether.
+    const implementation = jest.requireActual('react-native/Libraries/Animated/AnimatedImplementation').default;
+    jest.spyOn(Animated, 'parallel').mockImplementation(implementation.parallel);
+    const animations: Array<{
+      finish: (finished: boolean) => void;
+      stop: jest.Mock;
+    }> = [];
+    jest.spyOn(Animated, 'spring').mockImplementation((value, config) => {
+      let onEnd: ((result: { finished: boolean }) => void) | undefined;
+      const finish = (finished: boolean) => {
+        if (finished) (value as Animated.Value).setValue(config.toValue as number);
+        onEnd?.({ finished });
+      };
+      const stop = jest.fn(() => finish(false));
+      animations.push({ finish, stop });
+      return {
+        start: (callback) => { onEnd = callback; },
+        stop,
+        reset: jest.fn(),
+      };
+    });
+    const { result } = await renderHook(() => useBottomSheet({
+      collapsedTranslateY: 680, mediumTranslateY: 524,
+    }));
+
+    await act(() => result.current.snapTo('expanded'));
+    await act(() => animations[1].stop());
+
+    expect(animations[0].stop).not.toHaveBeenCalled();
+    await act(() => animations[0].finish(true));
+    expect((result.current.sheetTranslateY as unknown as { __getValue: () => number }).__getValue()).toBe(0);
+  });
+
   test('즉시 전환은 대기 중인 스냅을 취소하고 변경된 높이에 정착한다', async () => {
     const spring = jest.spyOn(Animated, 'spring');
     const { result } = await renderHook(() => {
