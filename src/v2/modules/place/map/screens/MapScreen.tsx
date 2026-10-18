@@ -1061,11 +1061,12 @@ export default function MapScreen({
     >
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <MapGlassBackdrop active={mapGlassActive}>
-      <StatusBar
+      {isFocused && <StatusBar
+        hidden={false}
         backgroundColor={isExpandedPlaceDetail ? theme.colors.background : 'transparent'}
         barStyle={theme.colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         translucent
-      />
+      />}
       <View style={styles.mapBackground}>
         <MapCanvas
           centerLat={mapCenterLat}
