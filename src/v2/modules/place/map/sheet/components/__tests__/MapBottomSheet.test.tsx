@@ -190,7 +190,8 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryByTestId('place-photo-viewer')).not.toBeOnTheScreen();
   });
 
-  test('쿠폰 콘텐츠는 미리보기 액션 없이 상세에서만 렌더링한다', async () => {
+  test.each(['LIGHT', 'DARK'] as const)('%s 상세는 빈 리뷰에서도 전체 화면을 불투명하게 채우고 쿠폰은 상세에서만 렌더링한다', async (appearancePreference) => {
+    const colors = appearancePreference === 'DARK' ? darkColors : lightColors;
     const selectedPlace = places[0];
     const commonProps = {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
@@ -214,11 +215,13 @@ describe('MapBottomSheet recommendations', () => {
     };
     const result = await renderWithProviders(
       <MapBottomSheet {...commonProps} snapPoint="medium" />,
+      { appearancePreference },
     );
 
     expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
     expect(screen.queryByText('실서버 쿠폰 발급 영역')).not.toBeOnTheScreen();
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 8, paddingRight: 8 });
+    expect(screen.getByTestId('map-sheet-chrome')).toBeOnTheScreen();
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
@@ -231,6 +234,14 @@ describe('MapBottomSheet recommendations', () => {
       height: 2,
       width: 40,
     });
+    await fireEvent.press(screen.getByRole('tab', { name: '리뷰' }));
+    expect(screen.getByText('등록된 리뷰 정보가 없어요.')).toBeVisible();
+    expect(screen.queryByTestId('map-sheet-chrome')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ backgroundColor: colors.background, flexGrow: 1 });
+    expect(screen.getByTestId('map-expanded-place-scroll')).toHaveStyle({ backgroundColor: colors.background, flexGrow: 1 });
+    expect(screen.getByTestId('map-expanded-place-scroll').props.contentContainerStyle).toEqual(
+      expect.arrayContaining([expect.objectContaining({ flexGrow: 1, backgroundColor: colors.background })]),
+    );
   });
 
   test('장소 상세 영업 상태를 한 줄 요약으로 한국어·영어·fallback 렌더링한다', async () => {

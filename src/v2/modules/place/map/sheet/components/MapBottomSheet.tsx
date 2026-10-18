@@ -1922,7 +1922,7 @@ const ExpandedPlaceContent = ({
   return (
     <>
     <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-    <ScrollView
+    <GlassStyles.ExpandedPlaceScroll
       contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
       testID="map-expanded-place-scroll"
@@ -2244,7 +2244,7 @@ const ExpandedPlaceContent = ({
           </View>
         </View>
       )}
-    </ScrollView>
+    </GlassStyles.ExpandedPlaceScroll>
     </>
   );
 };
@@ -2412,8 +2412,9 @@ export default function MapBottomSheet({
     <GlassStyles.BottomSheetContainer
       style={{ height, transform: [{ translateY: sheetTranslateY }] }}
     >
-      <GlassStyles.SheetChromeShadow
+      {!isExpandedPlaceDetail ? <GlassStyles.SheetChromeShadow
         pointerEvents="none"
+        testID="map-sheet-chrome"
         style={[
           {
             boxShadow: themedGlass.sheet.shadow,
@@ -2448,8 +2449,8 @@ export default function MapBottomSheet({
             topRimOnly
           />
         </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow>
-      <GlassStyles.SheetInner $inset={isExpandedPlaceDetail ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
+      </GlassStyles.SheetChromeShadow> : null}
+      <GlassStyles.SheetInner $opaque={isExpandedPlaceDetail} $inset={isExpandedPlaceDetail ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -2686,7 +2687,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   detailAmenityRow: { columnGap: 16, flexDirection: 'row' },
   detailBackText: { color: colors.textMuted, fontSize: 34, fontWeight: '300', lineHeight: 36, marginTop: -4 },
   detailCategory: { color: colors.text, flexShrink: 0, fontSize: 18, fontWeight: '500', includeFontPadding: false, lineHeight: 24, marginLeft: 4 },
-  detailContent: { backgroundColor: colors.background, paddingBottom: 48 },
+  detailContent: { backgroundColor: colors.background, flexGrow: 1, paddingBottom: 48 },
   detailCouponBody: { flex: 1 },
   detailCouponIcon: {
     alignItems: 'center',
