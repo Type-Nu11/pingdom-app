@@ -1,6 +1,6 @@
 import React from 'react';
 import { Linking } from 'react-native';
-import { act, screen, waitFor } from '@testing-library/react-native';
+import { act, screen, waitFor, within } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../app/testing/testProviders';
 import { ApiError } from '../../../shared/api';
@@ -47,6 +47,23 @@ describe('CommunityWriteScreen', () => {
       isFetching: false,
       refetch: jest.fn(),
     } as never);
+  });
+
+  test('등록 버튼은 작성 내용 맨 아래에서 함께 스크롤된다', async () => {
+    await renderScreen();
+    expect(within(screen.getByTestId('v2-community-write-content')).getByTestId('v2-community-write-submit')).toBeOnTheScreen();
+  });
+
+  test('장소 검색은 작성 화면과 공간을 나누지 않고 닫으면 입력을 복원한다', async () => {
+    const { user } = await renderScreen();
+    await fillValidGeneralForm(user);
+    await user.press(screen.getByTestId('v2-community-write-add-place'));
+    expect(screen.getByTestId('v2-community-place-picker')).toBeOnTheScreen();
+    expect(screen.queryByTestId('v2-community-write-submit')).toBeNull();
+    expect(screen.queryByTestId('v2-community-write-screen')).toBeNull();
+    await user.press(screen.getByRole('button', { name: '닫기' }));
+    expect(screen.getByTestId('v2-community-write-title').props.value).toBe('제목입니다');
+    expect(screen.getByTestId('v2-community-write-body').props.value).toBe('본문입니다');
   });
 
   test('장소 태그 제목 옆에 선택한 카테고리 이름을 보여준다', async () => {

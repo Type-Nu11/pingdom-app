@@ -1,7 +1,7 @@
 import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView } from 'react-native';
+import { ActivityIndicator, BackHandler, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
@@ -173,6 +173,31 @@ export default function CommunityWriteScreen({
   // rather than just left to fail again.
   const isBlockedByAuthorization = bannerKind === 'authorization';
 
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      Keyboard.dismiss();
+      setPickerOpen(false);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [pickerOpen]);
+
+  if (pickerOpen) {
+    return (
+      <CommunityPlacePicker
+        onClose={() => { Keyboard.dismiss(); setPickerOpen(false); }}
+        onSelect={(place) => {
+          setPlaceTags((current) => (
+            current.some((tag) => tag.id === place.id) ? current : [...current, place]
+          ));
+          Keyboard.dismiss();
+          setPickerOpen(false);
+        }}
+      />
+    );
+  }
+
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-write-screen">
       <Header>
@@ -187,7 +212,7 @@ export default function CommunityWriteScreen({
       </Header>
 
       <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef}>
+        <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef} testID="v2-community-write-content">
           <Section $gap={16}>
             <SectionHead>
               <SectionTitle>{t('community.write_screen.categoryLabel')}</SectionTitle>
@@ -328,7 +353,7 @@ export default function CommunityWriteScreen({
             <AddPlaceButton
               accessibilityLabel={t('community.write_screen.addPlace')}
               accessibilityRole="button"
-              onPress={() => setPickerOpen(true)}
+              onPress={() => { Keyboard.dismiss(); setPickerOpen(true); }}
               testID="v2-community-write-add-place"
             >
               <AddPlaceLabel>{`+ ${t('community.write_screen.addPlace')}`}</AddPlaceLabel>
@@ -367,43 +392,30 @@ export default function CommunityWriteScreen({
               </ErrorBanner>
             </Section>
           ) : null}
+          <SubmitBar>
+            <SubmitButton
+              $enabled={isValid && photosReady && !isBlockedByAuthorization}
+              accessibilityRole="button"
+              accessibilityState={{
+                busy: createPost.isPending,
+                disabled: createPost.isPending || !selectedCategoryId || isBlockedByAuthorization,
+              }}
+              disabled={createPost.isPending || !selectedCategoryId || isBlockedByAuthorization}
+              onPress={submit}
+              testID="v2-community-write-submit"
+            >
+              {createPost.isPending ? (
+                <ActivityIndicator
+                  accessibilityLabel={t('community.write_screen.submitBusy')}
+                  color={theme.colors.onPrimary}
+                />
+              ) : (
+                <SubmitLabel $enabled={isValid && photosReady && !isBlockedByAuthorization}>{t('community.write_screen.submit')}</SubmitLabel>
+              )}
+            </SubmitButton>
+          </SubmitBar>
         </Content>
-
-        <SubmitBar>
-          <SubmitButton
-            $enabled={isValid && photosReady && !isBlockedByAuthorization}
-            accessibilityRole="button"
-            accessibilityState={{
-              busy: createPost.isPending,
-              disabled: createPost.isPending || !selectedCategoryId || isBlockedByAuthorization,
-            }}
-            disabled={createPost.isPending || !selectedCategoryId || isBlockedByAuthorization}
-            onPress={submit}
-            testID="v2-community-write-submit"
-          >
-            {createPost.isPending ? (
-              <ActivityIndicator
-                accessibilityLabel={t('community.write_screen.submitBusy')}
-                color={theme.colors.onPrimary}
-              />
-            ) : (
-              <SubmitLabel $enabled={isValid && photosReady && !isBlockedByAuthorization}>{t('community.write_screen.submit')}</SubmitLabel>
-            )}
-          </SubmitButton>
-        </SubmitBar>
       </KeyboardArea>
-
-      {pickerOpen ? (
-        <CommunityPlacePicker
-          onClose={() => setPickerOpen(false)}
-          onSelect={(place) => {
-            setPlaceTags((current) => (
-              current.some((tag) => tag.id === place.id) ? current : [...current, place]
-            ));
-            setPickerOpen(false);
-          }}
-        />
-      ) : null}
     </Screen>
   );
 }

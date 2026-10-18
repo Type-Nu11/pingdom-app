@@ -329,7 +329,7 @@ export default function CommunityBottomSheet({
             style={{ boxShadow: themedGlass.search.shadow }}
             testID="v2-community-sheet-write-fab"
           >
-            <WriteFabSurface pointerEvents="none" tintColor={themedGlass.primaryCta.tint}>
+            <WriteFabSurface pointerEvents="none" tintColor={theme.colors.primary}>
               <AddPlusIcon height={24} width={24} />
               <WriteFabLabel>{t('community.write')}</WriteFabLabel>
             </WriteFabSurface>
@@ -431,7 +431,7 @@ const WriteFab = styled.Pressable`
   height: 48px;
   border-radius: 24px;
   overflow: hidden;
-  background-color: ${({ theme }) => theme.colors.primaryAction};
+  background-color: ${({ theme }) => theme.colors.primary};
 `;
 const WriteFabSurface = styled(GlassSurface)`
   height: 48px;
