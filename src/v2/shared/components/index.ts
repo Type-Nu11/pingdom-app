@@ -16,6 +16,8 @@ export { default as Skeleton, SkeletonBlock, SkeletonGroup } from './Skeleton';
 export type { SkeletonVariant } from './Skeleton';
 export { ReviewFeatureTags } from './ReviewFeatureTags';
 export type { ReviewFeatureTagsProps, ReviewFeatureTagsVariant } from './ReviewFeatureTags';
+export { SettingToggle } from './SettingToggle';
+export type { SettingToggleProps } from './SettingToggle';
 export { default as StatusBadge } from './StatusBadge';
 export type { StatusBadgeProps, StatusBadgeTone } from './StatusBadge';
 export { default as Surface } from './Surface';
