@@ -27,6 +27,7 @@ import {
   Animated,
   GestureResponderHandlers,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -449,7 +450,7 @@ const formatPreviewLocation = (place: DecisionPlace, language: string) => {
   return [distance, address].filter(Boolean).join(' · ');
 };
 
-const PlaceArtwork = ({
+const PlaceArtwork = React.memo(({
   blurBottom = false,
   imageUrl,
   variant = 'trend',
@@ -505,16 +506,18 @@ const PlaceArtwork = ({
       <Animated.Image
         onError={() => setHasImageError(true)}
         onLoad={handleLoad}
+        resizeMethod="resize"
         resizeMode="cover"
         source={imageSource}
         style={styles.artworkImage}
-        testID={blurBottom ? 'recommendation-featured-image' : undefined}
+        testID={blurBottom ? 'recommendation-featured-image' : 'place-artwork-image'}
       />
       {blurBottom ? (
         <View pointerEvents="none" style={styles.artworkBlurClip}>
           <Image
             blurRadius={2}
             onError={() => setHasImageError(true)}
+            resizeMethod="resize"
             resizeMode="cover"
             source={imageSource}
             style={styles.artworkBlurImage}
@@ -524,7 +527,7 @@ const PlaceArtwork = ({
       ) : null}
     </Animated.View>
   );
-};
+});
 
 const RecommendationCardPressable = ({
   accessibilityLabel,
@@ -812,7 +815,8 @@ const PlaceTrendCard = ({
     onPress={onPress}
     style={({ pressed }) => [styles.homeTrendCard, pressed && styles.pressed]}
   >
-    <PlaceArtwork blurBottom imageUrl={imageUrl} />
+    {/* Android's bitmap blur duplicates every thumbnail; the scrim supplies contrast. */}
+    <PlaceArtwork blurBottom={Platform.OS !== 'android'} imageUrl={imageUrl} />
     <CardScrim />
     <Pressable
       accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -873,7 +877,7 @@ export const ExpandedPlaceCard = ({
     onPress={onPress}
     style={({ pressed }) => [styles.homeGridCard, size, pressed && styles.pressed]}
   >
-    <PlaceArtwork blurBottom imageUrl={imageUrl} variant="grid" />
+    <PlaceArtwork blurBottom={Platform.OS !== 'android'} imageUrl={imageUrl} variant="grid" />
     <CardScrim />
     <Pressable
       accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}

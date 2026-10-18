@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, Text, type GestureResponderHandlers } from 'react-native';
+import { Animated, Platform, Text, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
@@ -1514,6 +1514,22 @@ describe('MapBottomSheet recommendations', () => {
     sheetTranslateY: new Animated.Value(0),
     snapPoint: 'expanded' as const,
     ...overrides,
+  });
+
+  test('Android 전국 전체 카드는 중복 블러 비트맵 없이 표시 크기로 이미지를 디코딩한다', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
+    const feedPlaces = Array.from({ length: 20 }, (_, index) => ({
+      ...categoryFixture(200 + index, `트렌드 ${index}`, index % 2 ? 'FOOD' : 'POPUP'),
+      imageUrl: `https://example.com/trend-${index}.jpg`,
+    }));
+    const view = await renderWithProviders(<MapBottomSheet {...categoryProps(feedPlaces)} />);
+    await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+    await view.user.press(screen.getByRole('tab', { name: '전체' }));
+    expect(screen.queryAllByTestId('recommendation-featured-blur-image')).toHaveLength(0);
+    const images = screen.getAllByTestId('place-artwork-image');
+    expect(images).toHaveLength(14);
+    images.forEach(image => expect(image.props.resizeMethod).toBe('resize'));
+    expect(screen.getAllByText('트렌드 1').length).toBeGreaterThan(0);
   });
 
   test('production search errors are distinct from empty results and preserve rows on refresh failure', async () => {
