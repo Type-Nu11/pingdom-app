@@ -68,7 +68,7 @@ export default function RoutePlannerSheet(props: Props) {
     return <Action testID={testID} accessibilityRole="button" accessibilityLabel={label}
       accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
       style={{ backgroundColor: primary ? theme.colors.primary : theme.colors.surfaceMuted, opacity: disabled ? 0.45 : 1 }}>
-      <Text style={{ color: primary ? '#FFFFFF' : ink, fontSize: 14, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
+      <Text style={{ color: primary ? theme.colors.staticWhite : ink, fontSize: 14, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
     </Action>;
   }
   return <SheetPosition testID="route-planner-sheet" onLayout={props.onLayout}
@@ -84,7 +84,7 @@ export default function RoutePlannerSheet(props: Props) {
             const Icon = selected ? selectedIcons[mode] : icons[mode];
             return <ModeTab key={mode} accessibilityRole="tab" accessibilityLabel={t(`routes.modes.${mode}`)}
               accessibilityState={{ selected }} onPress={() => props.onMode(mode)}
-              style={{ backgroundColor: selected ? raised : 'transparent' }}><Icon /></ModeTab>;
+              style={{ backgroundColor: selected ? raised : 'transparent' }}><Icon color={selected ? theme.colors.primary : theme.colors.labelAssistive} /></ModeTab>;
           })}
         </ModeTrack>
         <RouteEndpointRows originDenied={denied} origin={props.origin} destination={props.destination} onDragging={setDragging}

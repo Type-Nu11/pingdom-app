@@ -294,7 +294,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
             <Text accessibilityRole="header" style={{ color: theme.colors.textStrong, fontSize: 18, fontWeight: '700' }}>{t('routes.editor.mapHint')}</Text>
             <Pressable testID="route-map-confirm" accessibilityRole="button" accessibilityLabel={t('routes.editor.confirmMap')}
               onPress={() => selectEndpoint({ placeId: 0, name: t('routes.editor.mapPoint'), latitude: mapPoint.lat, longitude: mapPoint.lng })}
-              style={{ minHeight: 44, justifyContent: 'center', borderRadius: 16, backgroundColor: theme.colors.primary }}><Text style={{ color: '#FFFFFF', textAlign: 'center' }}>{t('routes.editor.confirmMap')}</Text></Pressable>
+              style={{ minHeight: 44, justifyContent: 'center', borderRadius: 16, backgroundColor: theme.colors.primary }}><Text style={{ color: theme.colors.staticWhite, textAlign: 'center' }}>{t('routes.editor.confirmMap')}</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={t('routes.cancel')} onPress={() => setMapPicking(false)} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: theme.colors.textStrong, textAlign: 'center' }}>{t('routes.cancel')}</Text></Pressable>
           </GlassSurface>
         </> : editing ? <RouteEndpointEditor role={editing} origin={origin} destination={destination} recentSearchOwner={recentSearchOwner}
