@@ -306,6 +306,44 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByText('영업시간 정보 없음')).toBeVisible();
   });
 
+  test.each([
+    ['LIGHT', 'medium', '영업 중', 'positive', lightColors.statusSuccess],
+    ['LIGHT', 'expanded', '영업 종료', 'negative', lightColors.statusError],
+    ['DARK', 'medium', '영업 종료', 'negative', darkColors.statusError],
+    ['DARK', 'expanded', '영업 중', 'positive', darkColors.statusSuccess],
+  ] as const)('%s %s 시트의 영업 상태(%s)를 Status 토큰 색으로 표시한다', async (
+    appearancePreference, snapPoint, statusText, tone, color,
+  ) => {
+    const selectedPlace = places[0];
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700} mediumTranslateY={300} onBackHome={jest.fn()}
+        onCreateReservation={jest.fn()} onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()} onGoNowPress={jest.fn()} onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()} onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)} panHandlers={{} as GestureResponderHandlers}
+        places={places} previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: statusText,
+            verifiedEvidenceCount: 23,
+            operatingSummary: {
+              detailText: null, fullText: statusText, kind: tone === 'positive' ? 'open' : 'closed',
+              statusText, tone, transitionDay: null, transitionTime: null,
+            },
+          },
+        }}
+        recommendationPlaces={[]} recommendationsState="ready" selectedPlace={selectedPlace}
+        sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint={snapPoint}
+      />,
+      { appearancePreference, language: 'ko' },
+    );
+
+    expect(screen.getAllByText(statusText).at(-1)).toHaveStyle({ color, fontFamily: 'PretendardStdVariable-Medium' });
+  });
+
   test('정보 탭 리뷰 요약은 요약 태그를 보여주고 모두 보기를 누르면 이동 없이 전체 리뷰를 펼친다', async () => {
     const selectedPlace = places[0];
     const onDetailPress = jest.fn();

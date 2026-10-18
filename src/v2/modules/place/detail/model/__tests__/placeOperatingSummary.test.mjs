@@ -178,3 +178,21 @@ test('기기 timezone 변경과 무관하게 Asia/Seoul 날짜와 요일을 사�
   assert.deepEqual(implicitSeoul, explicitSeoul);
   assert.equal(explicitSeoul.transitionTime, '20:00');
 });
+
+test('영업 중은 positive, 영업 종료는 negative 톤으로 Status 색상을 고른다', () => {
+  const tones = Object.fromEntries([
+    'open', 'closed', 'before-open', 'closed-today', 'temporarily-closed', 'permanently-closed', 'unknown',
+  ].map((kind) => [kind, formatPlaceOperatingSummary(
+    { kind, transitionDay: null, transitionTime: null },
+    translate('ko'),
+  ).tone]));
+  assert.deepEqual(tones, {
+    open: 'positive',
+    closed: 'negative',
+    'before-open': 'neutral',
+    'closed-today': 'warning',
+    'temporarily-closed': 'warning',
+    'permanently-closed': 'neutral',
+    unknown: 'neutral',
+  });
+});

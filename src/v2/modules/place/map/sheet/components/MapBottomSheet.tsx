@@ -1545,9 +1545,20 @@ const PreviewContent = ({
                 </AppText>
               ) : null}
               {fallbackContent.statusEmphasis ? (
-                <AppText style={styles.previewStatusEmphasis}>
-                  {verificationSummary ? ' · ' : ''}
-                  {fallbackContent.statusEmphasis}
+                <AppText style={styles.previewStatusTail}>
+                  {verificationSummary ? <AppText style={styles.previewStatusSeparator}>{' · '}</AppText> : null}
+                  <AppText style={[
+                    styles.previewStatusEmphasis,
+                    fallbackContent.operatingSummary?.tone === 'positive'
+                      ? styles.detailOperatingPositive
+                      : fallbackContent.operatingSummary?.tone === 'negative'
+                        ? styles.detailOperatingNegative
+                        : fallbackContent.operatingSummary?.tone === 'warning'
+                          ? styles.detailOperatingWarning
+                          : styles.detailOperatingNeutral,
+                  ]}>
+                    {fallbackContent.statusEmphasis}
+                  </AppText>
                 </AppText>
               ) : null}
             </View>
@@ -2076,9 +2087,11 @@ const ExpandedPlaceContent = ({
                       styles.detailOperatingStatus,
                       fallbackContent.operatingSummary?.tone === 'positive'
                         ? styles.detailOperatingPositive
-                        : fallbackContent.operatingSummary?.tone === 'warning'
-                          ? styles.detailOperatingWarning
-                          : styles.detailOperatingNeutral,
+                        : fallbackContent.operatingSummary?.tone === 'negative'
+                          ? styles.detailOperatingNegative
+                          : fallbackContent.operatingSummary?.tone === 'warning'
+                            ? styles.detailOperatingWarning
+                            : styles.detailOperatingNeutral,
                     ]}>
                       {fallbackContent.operatingSummary?.statusText
                         ?? fallbackContent.statusEmphasis}
@@ -2737,8 +2750,9 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     minHeight: 105,
     paddingVertical: 12,
   },
+  detailOperatingNegative: { color: colors.statusError },
   detailOperatingNeutral: { color: colors.textSecondary },
-  detailOperatingPositive: { color: colors.success },
+  detailOperatingPositive: { color: colors.statusSuccess },
   detailOperatingStatus: { fontWeight: '500' },
   detailOperatingWarning: { color: colors.warning },
   detailPhoto: { borderRadius: 16, height: 182, overflow: 'hidden', width: 242 },
@@ -3098,7 +3112,9 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   previewName: { color: colors.textStrong, flexShrink: 1, fontSize: 21, fontWeight: '900', includeFontPadding: false, lineHeight: 27, minWidth: 0 },
   previewParkingIcon: { borderRadius: 5 },
   previewStatus: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600' },
-  previewStatusEmphasis: { color: colors.success, fontWeight: '800' },
+  previewStatusEmphasis: { fontWeight: '500' },
+  previewStatusSeparator: { color: colors.textSecondary, fontWeight: '700' },
+  previewStatusTail: { fontSize: 13 },
   previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 6 },
   previewSummary: { flex: 1, minWidth: 0, paddingTop: 11 },
   previewTitleRow: { alignItems: 'center', flexDirection: 'row', minWidth: 0, paddingRight: 4 },
