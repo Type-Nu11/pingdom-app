@@ -45,6 +45,7 @@ import {
 } from '../../../booking/reservations';
 import MapCanvas from '../native/components/MapCanvas';
 import MapGlassBackdrop from '../presentation/components/MapGlassBackdrop';
+import { useMapGlassActivity } from '../presentation/hooks/useMapGlassActivity';
 import MapSearchOverlay from '../../search/components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../presentation/components/MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../presentation/styles/MapTopOverlay.styles';
@@ -191,6 +192,7 @@ export default function MapScreen({
   const CommunityBottomSheet = useMapCommunitySheet();
   const theme = useTheme();
   const isFocused = useIsFocused();
+  const mapGlassActive = useMapGlassActivity(isFocused);
   const feedbackActive = useRef(isFocused);
   useEffect(() => {
     feedbackActive.current = isFocused;
@@ -1058,7 +1060,7 @@ export default function MapScreen({
       username={profile?.username}
     >
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <MapGlassBackdrop active={isFocused}>
+      <MapGlassBackdrop active={mapGlassActive}>
       <StatusBar
         backgroundColor={isExpandedPlaceDetail ? theme.colors.background : 'transparent'}
         barStyle={theme.colorScheme === 'dark' ? 'light-content' : 'dark-content'}
