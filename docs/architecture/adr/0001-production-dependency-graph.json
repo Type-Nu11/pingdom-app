@@ -2085,7 +2085,7 @@
     {"source":"src/v2/modules/place/visit-verification/components/VisitPlaceCard.tsx","target":"src/v2/modules/place/visit-verification/hooks/useVisitVerificationCandidates.ts","typeOnly":true},
     {"source":"src/v2/modules/place/visit-verification/components/VisitVerificationMapCta.tsx","target":"src/v2/shared/components/Typography.tsx","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/components/VisitVerificationMapCta.tsx","target":"src/assets/v2/icons/place/gamju.svg","typeOnly":false},
-    {"source":"src/v2/modules/place/visit-verification/components/VisitVerificationMapCta.tsx","target":"src/v2/modules/place/map/presentation/index.ts","typeOnly":false},
+    {"source":"src/v2/modules/place/visit-verification/components/VisitVerificationMapCta.tsx","target":"src/v2/shared/theme/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/hooks/useForegroundVisitVerification.ts","target":"src/v2/shared/location/foregroundPermission.ts","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/hooks/useForegroundVisitVerification.ts","target":"src/v2/shared/location/currentLocation.ts","typeOnly":false},
     {"source":"src/v2/modules/place/visit-verification/hooks/useForegroundVisitVerification.ts","target":"src/v2/modules/place/visit-verification/api/visitVerificationApi.ts","typeOnly":false},
