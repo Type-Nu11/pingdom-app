@@ -23,11 +23,11 @@ test('map home composes independent local and national feeds without reusing mar
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
 
   assert.match(screen, /useLocalHotPlaces\(\s*localHotRequest/);
-  assert.match(screen, /useNationalTrends\(canQueryRankedFeeds, \{/);
+  assert.match(screen, /useNationalTrends\(isFocused && canQueryRankedFeeds, \{/);
   assert.match(screen, /period: 'WEEK'/);
   assert.match(screen, /localFeed=\{localFeed\}/);
   assert.match(screen, /nationalFeed=\{nationalFeed\}/);
-  assert.match(screen, /markers: apiMarkers,[\s\S]*places: apiPlaces,[\s\S]*usePlaces\(\{\}, env\.featureFlags\.placeList, markerViewport\)/);
+  assert.match(screen, /markers: apiMarkers,[\s\S]*places: apiPlaces,[\s\S]*usePlaces\(\{\}, isFocused && env\.featureFlags\.placeList, markerViewport\)/);
   assert.match(bottomSheet, /const selectedFeed = feed === 'local' \? localFeed : nationalFeed/);
   assert.doesNotMatch(bottomSheet, /\[\.\.\.places\]\.reverse\(\)|shownPlaces/);
 });

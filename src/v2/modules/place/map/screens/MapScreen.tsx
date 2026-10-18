@@ -45,6 +45,7 @@ import {
 } from '../../../booking/reservations';
 import MapCanvas from '../native/components/MapCanvas';
 import MapGlassBackdrop from '../presentation/components/MapGlassBackdrop';
+import { useMapGlassActivity } from '../presentation/hooks/useMapGlassActivity';
 import MapSearchOverlay from '../../search/components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../presentation/components/MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../presentation/styles/MapTopOverlay.styles';
@@ -56,6 +57,7 @@ import {
 } from '../../exploration';
 import { usePlaceBookmark } from '../../exploration';
 import { useCurrentLocation } from '../location/hooks/useCurrentLocation';
+import { useNearbyQueryCoordinate } from '../location/hooks/useNearbyQueryCoordinate';
 import {
   usePlaceActions,
   type PlaceActionFeedback,
@@ -191,6 +193,7 @@ export default function MapScreen({
   const CommunityBottomSheet = useMapCommunitySheet();
   const theme = useTheme();
   const isFocused = useIsFocused();
+  const mapGlassActive = useMapGlassActivity(isFocused);
   const feedbackActive = useRef(isFocused);
   useEffect(() => {
     feedbackActive.current = isFocused;
@@ -202,7 +205,7 @@ export default function MapScreen({
   const reservationNavigationLock = useRef(false);
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
-  const location = useCurrentLocation();
+  const location = useCurrentLocation(isFocused);
   const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
   const [emptyRouteOpen, setEmptyRouteOpen] = useState(false);
   const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
@@ -211,18 +214,19 @@ export default function MapScreen({
   const center = location.coordinate;
   const userLat = center?.lat;
   const userLng = center?.lng;
+  const feedCoordinate = useNearbyQueryCoordinate(center);
   const localHotRequest = {
-    latitude: userLat,
-    longitude: userLng,
+    latitude: feedCoordinate?.lat,
+    longitude: feedCoordinate?.lng,
     page: 1,
     limit: 20,
   } as const;
   const hasValidLocalHotLocation = selectLocalHotParams(localHotRequest) !== null;
   const localHotQuery = useLocalHotPlaces(
     localHotRequest,
-    canQueryRankedFeeds && location.status === 'granted',
+    isFocused && canQueryRankedFeeds && location.status === 'granted',
   );
-  const nationalTrendsQuery = useNationalTrends(canQueryRankedFeeds, {
+  const nationalTrendsQuery = useNationalTrends(isFocused && canQueryRankedFeeds, {
     period: 'WEEK',
     page: 1,
     limit: 20,
@@ -297,7 +301,7 @@ export default function MapScreen({
     markers: apiMarkers,
     places: apiPlaces,
     refetch: refetchPlaces,
-  } = usePlaces({}, env.featureFlags.placeList, markerViewport);
+  } = usePlaces({}, isFocused && env.featureFlags.placeList, markerViewport);
   const {
     appliedActivityIntent,
     appliedTravelPurposes,
@@ -309,11 +313,11 @@ export default function MapScreen({
     recommendationVersion,
     refetch: refetchRecommendations,
   } = usePlaceRecommendations({
-    latitude: userLat ?? Number.NaN,
+    latitude: feedCoordinate?.lat ?? Number.NaN,
     limit: 8,
-    longitude: userLng ?? Number.NaN,
+    longitude: feedCoordinate?.lng ?? Number.NaN,
     radiusKm: recommendationRadiusKm,
-  });
+  }, isFocused);
   const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
   const recommendationExplanation = useRecommendationExplanation(
     recommendationRequestId ?? '',
@@ -1062,12 +1066,13 @@ export default function MapScreen({
       username={profile?.username}
     >
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <MapGlassBackdrop active={isFocused}>
-      <StatusBar
+      <MapGlassBackdrop active={mapGlassActive}>
+      {isFocused && <StatusBar
+        hidden={false}
         backgroundColor={isExpandedPlaceDetail ? theme.colors.background : 'transparent'}
         barStyle={theme.colorScheme === 'dark' ? 'light-content' : 'dark-content'}
         translucent
-      />
+      />}
       <View style={styles.mapBackground}>
         <MapCanvas
           centerLat={mapCenterLat}

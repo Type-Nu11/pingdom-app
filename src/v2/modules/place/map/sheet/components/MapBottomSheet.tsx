@@ -30,7 +30,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   Text as NativeText,
   type TextProps,
   useWindowDimensions,
@@ -1915,7 +1914,7 @@ const ExpandedPlaceContent = ({
   place: DecisionPlace;
 }) => {
   const { t } = useTranslation();
-  const { colors, colorScheme } = useTheme();
+  const { colors } = useTheme();
   const styles = useMapSheetStyles();
   const insets = useSafeAreaInsets();
   const imageUrls = fallbackContent?.imageUrls.length
@@ -1939,7 +1938,6 @@ const ExpandedPlaceContent = ({
 
   return (
     <>
-    <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
     <GlassStyles.ExpandedPlaceScroll
       contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}

@@ -126,7 +126,9 @@ export const useBottomSheet = ({
           toValue: nextValue,
           useNativeDriver: false,
         }),
-      ]).start();
+      // Expanded place detail unmounts the glass chrome. Its detached animated
+      // value may stop, but that must not cancel the sheet's translation.
+      ], { stopTogether: false }).start();
       return;
     }
     sheetTranslateY.setValue(nextValue);
