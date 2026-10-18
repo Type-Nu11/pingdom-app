@@ -60,7 +60,7 @@ android/build/
 # ios
 ios/build/
 ios/Pods/
-ios/Naviapp.xcworkspace/
+ios/*.xcworkspace/xcuserdata/
 
 # native secrets
 ios/Config/Secrets.xcconfig
