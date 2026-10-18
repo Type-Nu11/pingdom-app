@@ -78,3 +78,15 @@ test.each([
 test('dark selected glass controls use white foreground on the brighter pink tint', () => {
   expect(darkTheme.liquidGlass.category).toMatchObject({ activeForeground: '#FFFFFF' });
 });
+
+test.each([
+  ['statusSuccess', '#20C831', '#3FD957'],
+  ['statusError', '#EE2B2B', '#FF5A5A'],
+  ['staticWhite', '#FFFFFF', '#FFFFFF'],
+  ['staticBlack', '#000000', '#000000'],
+  ['shadowFloat', 'rgba(0, 0, 0, 0.12)', 'rgba(0, 0, 0, 0.40)'],
+  ['shadowKnob', 'rgba(0, 0, 0, 0.16)', 'rgba(0, 0, 0, 0.40)'],
+] as const)('%s follows the Figma Light/Dark variable values', (key, light, dark) => {
+  expect(lightTheme.colors[key]).toBe(light);
+  expect(darkTheme.colors[key]).toBe(dark);
+});
