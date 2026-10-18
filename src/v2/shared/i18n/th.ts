@@ -886,7 +886,7 @@ export const thaiSharedResources = {
       "light": "โหมดสว่าง",
       "section": "รูปแบบการแสดงผล",
       "selected": "เลือกแล้ว",
-      "system": "ใช้การตั้งค่าระบบ",
+      "system": "ใช้ธีมของระบบ",
       "title": "รูปแบบการแสดงผล"
     },
     "language": {
