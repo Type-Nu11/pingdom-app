@@ -312,7 +312,7 @@ export default function MyPageScreen({
         </Section>
 
         <Section $borderWidth={0}>
-          <SectionContent>
+          <PlacesSectionContent>
             <SectionHeaderRow accessibilityRole="button" onPress={onOpenVerifiedPlaces}>
               <SectionTitle>{t('myPage.verifiedPlaces.title')}</SectionTitle>
               <ChevronIcon height={24} width={24} />
@@ -352,7 +352,7 @@ export default function MyPageScreen({
                 <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText>
               </Slot>
             )}
-          </SectionContent>
+          </PlacesSectionContent>
         </Section>
       </Content>
     </Screen>
@@ -546,9 +546,25 @@ const StatValue = styled(AppText)`
   font-weight: 700;
 `;
 
+// Figma 4951:6708: 12px between the section title and the cards.
+const PlacesSectionContent = styled(SectionContent)`
+  gap: 12px;
+`;
+
+// The horizontal scroller clips its content, so it bleeds past the section padding and
+// reserves room for the card shadow (y4 b20) without moving the cards themselves.
+const CARD_SHADOW_ROOM = { bottom: 24, side: 24, top: 16 } as const;
+
 const PlacesScroll = styled.ScrollView.attrs({
-  contentContainerStyle: { gap: 16 },
-})``;
+  contentContainerStyle: {
+    gap: 16,
+    paddingBottom: CARD_SHADOW_ROOM.bottom,
+    paddingHorizontal: CARD_SHADOW_ROOM.side,
+    paddingTop: CARD_SHADOW_ROOM.top,
+  },
+})`
+  margin: -${CARD_SHADOW_ROOM.top}px -${CARD_SHADOW_ROOM.side}px -${CARD_SHADOW_ROOM.bottom}px;
+`;
 
 const EmptyPlacesText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};

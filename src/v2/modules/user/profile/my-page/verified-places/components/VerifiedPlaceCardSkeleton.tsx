@@ -4,7 +4,11 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
 
-import { VERIFIED_PLACE_CARD_WIDTH, VERIFIED_PLACE_CARD_HEIGHT } from '../model/verifiedPlaceLayout';
+import {
+  VERIFIED_PLACE_CARD_HEIGHT,
+  VERIFIED_PLACE_CARD_RADIUS,
+  VERIFIED_PLACE_CARD_WIDTH,
+} from '../model/verifiedPlaceLayout';
 
 /**
  * Holds a verified place slot while its place detail loads, so the list keeps a
@@ -34,7 +38,7 @@ const Card = styled.View`
   flex-grow: 0;
   flex-shrink: 0;
   justify-content: flex-end;
-  border-radius: ${({ theme }) => theme.radius.lg}px;
+  border-radius: ${VERIFIED_PLACE_CARD_RADIUS}px;
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.surfaceMuted};
 `;
