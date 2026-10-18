@@ -6,9 +6,9 @@ function setup() {
     createDetector: jest.fn(async () => detector) };
   const adapter = createLocalWakeWordAdapter(runtime);
   const abort = new AbortController();
-  const detected = jest.fn(); const error = jest.fn();
-  const session = adapter.createSession({ signal: abort.signal, onDetected: detected, onError: error });
-  return { detector, runtime, adapter, abort, detected, error, session };
+  const detected = jest.fn(); const error = jest.fn(); const suspended = jest.fn();
+  const session = adapter.createSession({ signal: abort.signal, onDetected: detected, onSuspended: suspended, onError: error });
+  return { detector, runtime, adapter, abort, detected, suspended, error, session };
 }
 
 test('native model loaded after cancellation is disposed without starting capture', async () => {
@@ -54,10 +54,12 @@ test('native detections/errors after stop cannot activate or interrupt another s
   const create = jest.spyOn(x.runtime, 'createDetector');
   await x.session.start();
   const callbacks = create.mock.calls[0][0];
-  callbacks.onDetected();
+  callbacks.onDetected(); callbacks.onSuspended?.();
   expect(x.detected).toHaveBeenCalledTimes(1);
+  expect(x.suspended).toHaveBeenCalledTimes(1);
   await x.session.stop();
-  callbacks.onDetected(); callbacks.onError('interrupted');
+  callbacks.onDetected(); callbacks.onError('interrupted'); callbacks.onSuspended?.();
   expect(x.detected).toHaveBeenCalledTimes(1);
   expect(x.error).not.toHaveBeenCalled();
+  expect(x.suspended).toHaveBeenCalledTimes(1);
 });

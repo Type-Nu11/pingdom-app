@@ -226,7 +226,7 @@ RCT_REMAP_METHOD(dispose, disposeSession:(NSString *)session resolver:(RCTPromis
   else resolve(nil);
 }
 
-- (void)interrupt {
+- (void)interruptWithSuspension:(BOOL)suspended {
   _interrupted.store(true);
   _capturing.store(false);
   dispatch_async(_queue, ^{
@@ -234,10 +234,12 @@ RCT_REMAP_METHOD(dispose, disposeSession:(NSString *)session resolver:(RCTPromis
     if (!session) return;
     NSError *error = nil;
     BOOL released = [self releaseResources:&error];
-    [self emit:@"error" session:session reason:released ? @"interrupted" : @"release"];
+    if (released && suspended) [self emit:@"suspended" session:session reason:nil];
+    else [self emit:@"error" session:session reason:released ? @"interrupted" : @"release"];
   });
 }
-- (void)background:(NSNotification *)notification { _foreground.store(false); [self interrupt]; }
+- (void)interrupt { [self interruptWithSuspension:NO]; }
+- (void)background:(NSNotification *)notification { _foreground.store(false); [self interruptWithSuspension:YES]; }
 - (void)foreground:(NSNotification *)notification { _foreground.store(true); }
 - (void)audioInterrupted:(NSNotification *)notification {
   if ([notification.userInfo[AVAudioSessionInterruptionTypeKey] unsignedIntegerValue] == AVAudioSessionInterruptionTypeBegan) [self interrupt];
