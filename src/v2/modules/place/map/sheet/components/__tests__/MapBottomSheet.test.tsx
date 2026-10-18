@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import React from 'react';
 import { Animated, Platform, Text, type GestureResponderHandlers } from 'react-native';
 
@@ -21,6 +21,7 @@ import MapBottomSheet, {
   type MapPreviewFallbackContent,
 } from '../MapBottomSheet';
 import type { ExternalMapPlace } from '../../../selection/model/externalPlace';
+import { MapTutorialContext } from '../../../tutorial/context';
 
 jest.mock('../../../../detail', () => ({
   ...jest.requireActual('../../../../detail'),
@@ -1555,6 +1556,16 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy();
   });
 
+  test.each(['LIGHT', 'DARK'] as const)('%s 전체 카테고리는 지도 내비게이션과 같은 아이콘을 사용하고 별도 검은 원을 채우지 않는다', async (appearancePreference) => {
+    const view = await renderWithProviders(<MapBottomSheet {...categoryProps([])} />, { appearancePreference });
+    const all = () => screen.getByRole('tab', { name: '전체' });
+    expect(within(all()).getByTestId('map-category-all-outline')).toHaveProp('fill', null);
+    await view.user.press(all());
+    expect(within(all()).queryByTestId('map-category-all-outline')).toBeNull();
+    expect(within(all()).getByTestId('map-category-all-filled')).toHaveProp('color',
+      (appearancePreference === 'DARK' ? darkColors : lightColors).primary);
+  });
+
   test('deep-linked place failure shows recovery without falling into the home feed', async () => {
     const base = categoryProps([], { content: { type: 'place-preview', placeId: 77 }, selectedPlace: null, detailError: new Error('secret'), onRetryDetail: jest.fn() });
     await renderWithProviders(<MapBottomSheet {...base} />);
@@ -1633,6 +1644,23 @@ describe('MapBottomSheet recommendations', () => {
       await view.user.press(screen.getByRole('button', { name: '다시 시도' }));
       expect(retry).toHaveBeenCalledTimes(1);
     }
+  });
+
+  test('튜토리얼 중 지역 권한 안내만 숨기고 전국 트렌드는 유지하며 종료 후 안내를 복원한다', async () => {
+    const props = categoryProps([], {
+      localFeed: rankedFeed([], 'location-denied'),
+      nationalFeed: rankedFeed(rankedPlaces),
+    });
+    const tree = (suppressLocationStatus: boolean) => <MapTutorialContext.Provider value={{
+      suppressLocationStatus, activeTarget: null, register: jest.fn(), refresh: jest.fn(),
+    }}><MapBottomSheet {...props} /></MapTutorialContext.Provider>;
+    const view = await renderWithProviders(tree(true));
+    expect(screen.queryByTestId('map-home-feed-state-location-denied')).toBeNull();
+    await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+    expect(screen.getAllByText(rankedPlaces[0].name).length).toBeGreaterThan(0);
+    await view.rerender(tree(false));
+    await view.user.press(screen.getByRole('tab', { name: '우리 지역 핫플' }));
+    expect(screen.getByTestId('map-home-feed-state-location-denied')).toBeOnTheScreen();
   });
 
   test('지역 오류와 전국 오류·retry가 서로 덮어쓰지 않고 영어 문구도 독립적으로 표시된다', async () => {

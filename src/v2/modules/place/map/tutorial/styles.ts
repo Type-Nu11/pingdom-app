@@ -1,7 +1,6 @@
 import { Animated } from 'react-native';
 import styled from 'styled-components/native';
 import { Text } from '../../../../shared/components/Typography';
-import GlassSurface from '../presentation/components/GlassSurface';
 
 export const Overlay = styled.View`
   position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;
@@ -17,7 +16,15 @@ export const CardShadow = styled(Animated.View)`
   border-radius: 24px;
   box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.12);
 `;
-export const Card = styled(GlassSurface)`border-radius: 24px; overflow: hidden;`;
+export const Card = styled.View`
+  border-radius: 24px; overflow: hidden; flex-shrink: 1;
+  background-color: ${({ theme }) => theme.colors.surface};
+`;
+export const Pointer = styled.View`
+  position: absolute; width: 0px; height: 0px;
+  border-left-width: 10px; border-right-width: 10px;
+  border-left-color: transparent; border-right-color: transparent;
+`;
 export const Progress = styled.View`
   height: 19px; flex-direction: row; gap: 6px; align-items: center; justify-content: center;
 `;

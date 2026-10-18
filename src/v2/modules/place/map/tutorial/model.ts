@@ -31,6 +31,16 @@ export function getTutorialCardPlacement({
     const top = Math.max(safeTop, Math.min(target.y + target.height + 24, height - safeBottom - minimumHeight));
     return { top, bottom: undefined, maxHeight: Math.max(0, height - top - safeBottom) };
   }
+  if (step === 'verification') {
+    const aboveSpace = target.y - 24 - safeTop;
+    const belowTop = target.y + target.height + 24;
+    const belowSpace = height - safeBottom - belowTop;
+    // A complete header, body and padding need more than the 160px minimum.
+    // Prefer the space below a high button instead of clipping the guide above it.
+    if (aboveSpace < 260 && belowSpace > aboveSpace) {
+      return { top: belowTop, bottom: undefined, maxHeight: Math.max(0, belowSpace) };
+    }
+  }
   // Navigation tabs (56px) and the recommendation button (64px) share a
   // centerline, not a top edge. Keep the guide fixed across these five steps.
   const navigationStep = ['map', 'favorites', 'community', 'reservations', 'recommendations'].includes(step);

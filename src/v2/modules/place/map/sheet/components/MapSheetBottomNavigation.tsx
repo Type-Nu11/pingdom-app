@@ -9,7 +9,7 @@ import { useTheme } from 'styled-components/native';
 import CheckInAsset from '../../../../../../assets/v2/icons/place/checkin_svg.svg';
 import CommunityActiveAsset from '../../../../../../assets/v2/icons/place/community-active.svg';
 import CommunityInactiveAsset from '../../../../../../assets/v2/icons/place/community-inactive.svg';
-import MapAsset from '../../../../../../assets/v2/icons/place/maping_svg.svg';
+import MapNavigationIcon from './MapNavigationIcon';
 import PlaceRecommendAsset from '../../../../../../assets/v2/icons/place/placerecommend.svg';
 import { FavoriteIcon } from '../../../../../shared/components';
 import { lightLiquidGlass, type AppTheme } from '../../../../../shared/theme';
@@ -52,20 +52,6 @@ type Props = {
   sheetTranslateY: Animated.Value;
 };
 
-const InactiveMapIcon = ({ color }: { color: string }) => (
-  // Reuse maping_svg.svg's outer contour, without its filled body or center hole.
-  // The padded viewBox leaves room for the outline instead of clipping its edges.
-  <Svg height={24} viewBox="-1 -1 20 23" width={21}>
-    <Path
-      d="M9 0C11.3869 0 13.6764 0.934087 15.3643 2.59668C17.0521 4.25932 18 6.51489 18 8.86621C17.9999 11.2174 17.052 13.4722 15.3643 15.1348L9 20.4004L2.63672 15.1348C1.80101 14.3116 1.13787 13.3343 0.685547 12.2588C0.233268 11.1833 5.22794e-05 10.0304 0 8.86621C0 7.70194 0.233217 6.54829 0.685547 5.47266C1.13787 4.3972 1.80105 3.41978 2.63672 2.59668C4.32447 0.934296 6.61328 6.38185e-05 9 0Z"
-      fill="none"
-      stroke={color}
-      strokeLinejoin="round"
-      strokeWidth={1.8}
-      testID="map-navigation-map-outline"
-    />
-  </Svg>
-);
 
 const ActiveReservationIcon = ({ colors, foreground }: { colors: AppTheme['colors']; foreground: string }) => (
   <Svg height={24} viewBox="0 0 24 24" width={24}>
@@ -167,9 +153,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
           {tabs.map(({ id, label, onPress }) => {
             const active = selectedTab === id;
             const icon = id === 'map'
-              ? active
-                ? <MapAsset color={colors.primary} height={24} width={21} />
-                : <InactiveMapIcon color={colors.text} />
+              ? <MapNavigationIcon selected={active} color={active ? colors.primary : colors.text} />
               : id === 'favorites'
                 ? <FavoriteIcon selected={active} size={24} />
                 : id === 'community'

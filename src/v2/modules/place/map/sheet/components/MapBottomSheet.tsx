@@ -45,6 +45,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMapTutorial } from '../../tutorial/context';
 import GroupAsset from '../../../../../../assets/v2/icons/place/Group.svg';
 import ParkAsset from '../../../../../../assets/v2/icons/place/Park.svg';
 import ArtAsset from '../../../../../../assets/v2/icons/place/art_svg.svg';
@@ -56,6 +57,7 @@ import FoodAsset from '../../../../../../assets/v2/icons/place/food_svg.svg';
 import HeritageAsset from '../../../../../../assets/v2/icons/place/heritage.svg';
 import HotPlaceAsset from '../../../../../../assets/v2/icons/place/hotplace.svg';
 import MapAsset from '../../../../../../assets/v2/icons/place/maping_svg.svg';
+import MapNavigationIcon from './MapNavigationIcon';
 import MusicAsset from '../../../../../../assets/v2/icons/place/music_svg.svg';
 import PopupAsset from '../../../../../../assets/v2/icons/place/popup_svg.svg';
 import RecommendationTitleAsset from '../../../../../../assets/v2/icons/place/Subtract.svg';
@@ -315,7 +317,7 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
 
   switch (category) {
     case 'all':
-      return <MapPinIcon active={active} size={18} />;
+      return <MapNavigationIcon selected={active} color={color} size={18} testID="map-category-all" />;
     case 'popup':
       return <PopupAsset color={color} height={19} width={20} />;
     case 'music':
@@ -1090,6 +1092,8 @@ const EmptyCard = ({
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
+  const { suppressLocationStatus } = useMapTutorial();
+  if (suppressLocationStatus && ['location-denied', 'location-pending', 'invalid-location'].includes(state)) return null;
   const copyState = state === 'ready' ? 'empty' : state;
   const isCategoryEmpty = copyState === 'category-empty';
   const nationalCopy = feed === 'national' && ['empty', 'error', 'loading'].includes(copyState);
