@@ -70,7 +70,7 @@ function SettingsRow({
       <RowLabel $destructive={destructive} $disabled={disabled}>{label}</RowLabel>
       <RowTrailing>
         {value ? <RowValue numberOfLines={1}>{value}</RowValue> : null}
-        {actionable ? <ChevronIcon height={20} width={20} /> : null}
+        {actionable ? <ChevronIcon height={24} width={24} /> : null}
       </RowTrailing>
     </Row>
   );
@@ -242,7 +242,7 @@ export default function SettingsScreen({
   );
 }
 
-const CONTENT_CONTAINER_STYLE = { paddingBottom: 40 };
+const CONTENT_CONTAINER_STYLE = { paddingBottom: 0 };
 
 const Screen = styled(SafeAreaView)`
   background-color: ${({ theme }) => theme.colors.background};
@@ -288,30 +288,30 @@ const SectionInner = styled.View`
   padding: 0 16px;
 `;
 
+// Figma Setting (5941:6143): Headline2/Bold section titles over Setting/MenuRow rows.
 const SectionTitle = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 23px;
+  color: ${({ theme }) => theme.colors.labelStrong};
+  font-size: ${({ theme }) => theme.typography.headline2Bold.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline2Bold.fontWeight};
+  line-height: ${({ theme }) => theme.typography.headline2Bold.lineHeight}px;
   margin-bottom: 4px;
 `;
 
 const Row = styled.Pressable`
   align-items: center;
   flex-direction: row;
-  min-height: 48px;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 14px 0;
 `;
 
 const RowLabel = styled(AppText)<{ $destructive?: boolean; $disabled?: boolean }>`
   color: ${({ $destructive, $disabled, theme }) => (
-    $destructive ? theme.colors.danger : $disabled ? theme.colors.textDisabled : theme.colors.textStrong
+    $destructive ? theme.colors.danger : $disabled ? theme.colors.textDisabled : theme.colors.labelNormal
   )};
   flex-shrink: 1;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 22px;
+  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyMedium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.bodyMedium.lineHeight}px;
 `;
 
 const RowTrailing = styled.View`
@@ -323,28 +323,30 @@ const RowTrailing = styled.View`
 `;
 
 const RowValue = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.labelAssistive};
   flex-shrink: 1;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: ${({ theme }) => theme.typography.bodyRegular.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyRegular.fontWeight};
+  line-height: ${({ theme }) => theme.typography.bodyRegular.lineHeight}px;
 `;
 
 const FooterActions = styled.View`
   align-items: flex-start;
   gap: 4px;
-  padding: 12px 16px 0;
+  padding: 16px 16px 32px;
 `;
 const FooterButton = styled.Pressable`
   align-items: flex-start;
   justify-content: center;
-  min-height: 48px;
+  min-height: 52px;
   width: 100%;
 `;
 const FooterLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 14px;
+  color: ${({ theme }) => theme.colors.labelAssistive};
+  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyMedium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.bodyMedium.lineHeight}px;
 `;
-const DangerLabel = styled(AppText)`
-  color: ${({ theme }) => theme.colors.danger};
-  font-size: 14px;
+const DangerLabel = styled(FooterLabel)`
+  color: ${({ theme }) => theme.colors.statusError};
 `;
