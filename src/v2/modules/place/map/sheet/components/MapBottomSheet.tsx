@@ -176,6 +176,8 @@ type MapBottomSheetProps = {
   bookmarkPendingPlaceIds?: Record<string, boolean>;
   isBookmarkStateLoading?: boolean;
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   content: BottomSheetContent;
   couponContent?: React.ReactNode;
   height: number;
@@ -1252,9 +1254,9 @@ const RecommendationContent = ({
       showsVerticalScrollIndicator={false}
       testID="recommendation-content-scroll"
     >
-      <View style={styles.recommendationHeader}>
+      <View style={styles.recommendationHeader} testID="recommendation-header">
         <View style={styles.recommendationTitleRow}>
-          <RecommendationTitleAsset height={22} width={22} />
+          <RecommendationTitleAsset height={20} width={20} />
           <AppText style={styles.recommendationTitle}>{t('map.sheet.recommendationTitle')}</AppText>
         </View>
         <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationSubtitle}>
@@ -1265,7 +1267,8 @@ const RecommendationContent = ({
         {state === 'ready' ? (
           <>
           <ScrollView
-            contentContainerStyle={styles.recommendationCardRow}
+            contentContainerStyle={[styles.recommendationCardRow, expandedInteractionsEnabled && styles.recommendationCardRowExpanded]}
+            testID="recommendation-card-row"
             horizontal
             nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
@@ -2277,6 +2280,7 @@ export default function MapBottomSheet({
   bookmarkPendingPlaceIds = {},
   bookmarkedPlaceIds,
   collapsedTranslateY,
+  expandedTranslateY = 0,
   content,
   couponContent,
   height,
@@ -2412,7 +2416,10 @@ export default function MapBottomSheet({
     outputRange: [1, 0],
   });
   // Expanded sheet goes full-bleed: resting gap and bottom corners collapse to 0.
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
+  // External place cards never rise above medium, so their chrome keeps the resting inset.
+  const chromeGapRange = expandedTranslateY < mediumTranslateY
+    ? [expandedTranslateY, mediumTranslateY]
+    : [0, Math.max(mediumTranslateY, 1)];
   const chromeGap = sheetChromeBottom.interpolate({
     extrapolate: 'clamp',
     inputRange: chromeGapRange,
@@ -2467,7 +2474,7 @@ export default function MapBottomSheet({
           />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow> : null}
-      <GlassStyles.SheetInner $opaque={isExpandedPlaceDetail} $inset={isExpandedPlaceDetail ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
+      <GlassStyles.SheetInner $opaque={isExpandedPlaceDetail} $inset={isExpandedPlaceDetail || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -2989,12 +2996,15 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   bookmarkPressed: { opacity: 0.64 },
   recommendationContent: { paddingBottom: 108 },
-  recommendationCardRow: { gap: 12, paddingBottom: 10, paddingHorizontal: 8, paddingTop: 12 },
+  recommendationCardRow: { gap: 12, paddingBottom: 10, paddingHorizontal: 16, paddingTop: 12 },
+  // Figma keeps the cards 24dp from the screen edge in both states (7973:10445, 7973:10640).
+  recommendationCardRowExpanded: { paddingHorizontal: 24 },
   recommendationContext: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 4 },
   recommendationGridRows: { gap: 12 },
-  recommendationGridScroll: { gap: 12, paddingHorizontal: 8 },
-  recommendationGridTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 8 },
-  recommendationHeader: { paddingHorizontal: 8, paddingTop: 5 },
+  recommendationGridScroll: { gap: 12, paddingHorizontal: 24 },
+  recommendationGridTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 16 },
+  // Figma PlaceRecommend (7973:10494): title text 13dp below the handle, 16dp from the sheet edge.
+  recommendationHeader: { paddingHorizontal: 16 },
   recommendationReason: { color: colors.text, flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
   reservationPlaceCard: { height: 214, minHeight: 214, width: 164 },
   reservationPlaceCardArtwork: { borderRadius: 16, height: 164 },
@@ -3002,9 +3012,9 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   reservationPlaceCardName: { fontSize: 16, lineHeight: 21, paddingRight: 30 },
   recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5, maxWidth: '100%' },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
-  recommendationSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 5 },
-  recommendationTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900' },
-  recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  recommendationSubtitle: { color: colors.textSecondary, fontSize: 14, includeFontPadding: false, lineHeight: 18, marginTop: 4 },
+  recommendationTitle: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', includeFontPadding: false, lineHeight: 26 },
+  recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   retryButton: { backgroundColor: colors.primaryAction, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
   retryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   externalBadge: {

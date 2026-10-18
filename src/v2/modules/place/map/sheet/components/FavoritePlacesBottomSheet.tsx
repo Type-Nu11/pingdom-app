@@ -38,6 +38,8 @@ type FavoriteCategory = 'all' | 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 
 
 type FavoritePlacesBottomSheetProps = {
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   height: number;
   imageUrlsByPlaceId: Record<string, string[]>;
   hasNextPage: boolean;
@@ -183,6 +185,7 @@ const FavoritePlaceRow = ({
 
 export default function FavoritePlacesBottomSheet({
   collapsedTranslateY,
+  expandedTranslateY = 0,
   hasNextPage,
   height,
   imageUrlsByPlaceId,
@@ -235,7 +238,7 @@ export default function FavoritePlacesBottomSheet({
     inputRange: [mediumTranslateY, contentFadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
+  const chromeGapRange = [expandedTranslateY, Math.max(mediumTranslateY, expandedTranslateY + 1)];
   const chromeGap = sheetChromeBottom.interpolate({
     extrapolate: 'clamp',
     inputRange: chromeGapRange,
@@ -272,7 +275,7 @@ export default function FavoritePlacesBottomSheet({
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
 
-      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
+      <GlassStyles.SheetInner $clipContent $inset={snapPoint === 'expanded' ? 0 : SHEET_RESTING_GAP} testID="favorites-sheet-inner">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
             accessibilityLabel={t('map.favorites.adjust')}
@@ -287,6 +290,8 @@ export default function FavoritePlacesBottomSheet({
           pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
           style={[styles.content, { opacity: contentOpacity }]}
         >
+          {/* The title and chips are a drag area too; horizontal chip swipes still scroll. */}
+          <View {...panHandlers} testID="favorites-sheet-header">
           <View style={styles.titleRow}>
             <AppText style={styles.title}>{t('map.navigation.favorites')}</AppText>
           </View>
@@ -313,6 +318,7 @@ export default function FavoritePlacesBottomSheet({
               );
             })}
           </ScrollView>
+          </View>
 
           <Animated.View style={[styles.listViewport, { height: listHeight }]}>
             <ScrollView

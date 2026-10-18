@@ -7,6 +7,8 @@ export type MapReservationSheetProps = {
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds: Record<string, boolean>;
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   height: number;
   isBookmarkStateLoading: boolean;
   isNearbyLoading?: boolean;

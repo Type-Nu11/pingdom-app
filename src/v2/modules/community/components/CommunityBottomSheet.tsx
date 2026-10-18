@@ -35,7 +35,7 @@ const NAVIGATION_BAR_HEIGHT = 64;
 const WRITE_FAB_NAVIGATION_GAP = 12;
 const PAGE_LIMIT = 20;
 function CategorySkeleton() {
-  return <Skeleton variant="chips" style={{ paddingHorizontal: 16 }} testID="v2-community-categories-loading" />;
+  return <Skeleton variant="chips" style={{ marginTop: 16 - TITLE_ROW_CENTER_OFFSET, paddingHorizontal: 16 }} testID="v2-community-categories-loading" />;
 }
 
 function PostListSkeleton() {
@@ -52,6 +52,8 @@ const FILTER_MENU_GAP = 8;
 
 export type CommunityBottomSheetProps = {
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   height: number;
   mediumTranslateY: number;
   onHandlePress: () => void;
@@ -69,6 +71,7 @@ export type CommunityBottomSheetProps = {
 
 export default function CommunityBottomSheet({
   collapsedTranslateY,
+  expandedTranslateY = 0,
   height,
   mediumTranslateY,
   onHandlePress,
@@ -128,7 +131,7 @@ export default function CommunityBottomSheet({
     inputRange: [mediumTranslateY, fadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
+  const chromeGapRange = [expandedTranslateY, Math.max(mediumTranslateY, expandedTranslateY + 1)];
   const chromeGap = sheetChromeBottom.interpolate({
     extrapolate: 'clamp',
     inputRange: chromeGapRange,
@@ -217,14 +220,19 @@ export default function CommunityBottomSheet({
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
 
-      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
+      <GlassStyles.SheetInner $clipContent $inset={snapPoint === 'expanded' ? 0 : SHEET_RESTING_GAP} testID="v2-community-sheet-inner">
         <HandleArea {...panHandlers}>
           <HandleButton accessibilityLabel={t('community.sheetAdjust')} accessibilityRole="adjustable" onPress={onHandlePress}>
             <Handle />
           </HandleButton>
         </HandleArea>
 
-        <Animated.View pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={{ flex: 1, opacity }}>
+        <Animated.View
+          pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
+          style={{ flex: 1, marginTop: -TITLE_ROW_CENTER_OFFSET, opacity }}
+        >
+          {/* The title row and chips are a drag area too; taps and horizontal chip swipes still work. */}
+          <View {...panHandlers} testID="v2-community-sheet-header">
           <TitleRow>
             <Title accessibilityRole="header">{t('community.title')}</Title>
             <FilterButton
@@ -274,6 +282,8 @@ export default function CommunityBottomSheet({
               })}
             </CategoryScroll>
           )}
+
+          </View>
 
           <ListViewport style={snapPoint === 'medium' ? MEDIUM_VIEWPORT_STYLE : undefined}>
             {categoriesQuery.isError ? (
@@ -381,6 +391,9 @@ const HandleArea = styled(View)`align-items: center; height: 19px;`;
 const HandleButton = styled(Pressable)`align-items: center; height: 19px; padding-top: 6px; width: 160px;`;
 const Handle = styled.View`background-color: ${({ theme }) => theme.colors.secondaryNormal}; border-radius: 3px; height: 5px; width: 56px;`;
 
+// The 44dp filter button centres the title, so the content starts 9dp higher to keep the
+// title text 13dp below the handle like every other page sheet (Figma Saved/PlaceRecommend).
+const TITLE_ROW_CENTER_OFFSET = (44 - 26) / 2;
 const TitleRow = styled.View`height: 44px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 16px;`;
 // Figma filter button (8241:45578): 44px `Glass/FillRaised` circle with the
 // 24px `Interface / Slider_03` glyph and the shared 0/4/20 6% drop shadow.
@@ -394,7 +407,8 @@ const FilterButton = styled(Pressable)`
 `;
 const Title = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
 
-const CategoryScroll = styled.ScrollView`flex-grow: 0; height: 34px; overflow: visible;`;
+// Chips start 16dp below the title text, matching the favorites sheet.
+const CategoryScroll = styled.ScrollView`flex-grow: 0; height: 34px; margin-top: ${16 - TITLE_ROW_CENTER_OFFSET}px; overflow: visible;`;
 const CategoryChip = styled.Pressable<{ $selected: boolean }>`
   height: 34px;
   justify-content: center;
