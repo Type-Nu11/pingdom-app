@@ -107,3 +107,21 @@ test('refresh failure keeps favorites and offers query recovery', async () => {
   await view.user.press(screen.getByText('다시 시도'));
   expect(retry).toHaveBeenCalledTimes(1);
 });
+
+test.each([
+  ['medium', 8],
+  ['expanded', 0],
+] as const)('%s 시트 내용은 Figma처럼 시트 가장자리에서 16dp(중간은 시트 8dp 안쪽)에 놓인다', async (snapPoint, inset) => {
+  await renderWithProviders(
+    <FavoritePlacesBottomSheet {...props} expandedTranslateY={130} snapPoint={snapPoint} />,
+  );
+  expect(screen.getByTestId('favorites-sheet-inner')).toHaveStyle({ paddingLeft: inset, paddingRight: inset });
+});
+
+test('제목과 칩 영역도 시트 드래그를 시작할 수 있다', async () => {
+  const onMoveShouldSetResponderCapture = jest.fn();
+  await renderWithProviders(
+    <FavoritePlacesBottomSheet {...props} panHandlers={{ onMoveShouldSetResponderCapture } as GestureResponderHandlers} />,
+  );
+  expect(screen.getByTestId('favorites-sheet-header').props.onMoveShouldSetResponderCapture).toBe(onMoveShouldSetResponderCapture);
+});

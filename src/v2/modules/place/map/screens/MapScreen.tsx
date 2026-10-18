@@ -49,6 +49,7 @@ import MapSearchOverlay from '../../search/components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../presentation/components/MapTopOverlay';
 import { MAP_TOP_OVERLAY_METRICS } from '../presentation/styles/MapTopOverlay.styles';
 import { useBottomSheet } from '../sheet/hooks/useBottomSheet';
+import { getPageEntrySnapPoint, useMapSheetStore } from '../sheet/store/mapSheetStore';
 import {
   useBookmarkedPlaceMembership,
   useBookmarkedPlaces,
@@ -439,9 +440,13 @@ export default function MapScreen({
   const { jumpTo, panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
     collapsedTranslateY,
     expandedTranslateY,
-    initialSnapPoint: 'medium',
+    initialSnapPoint: getPageEntrySnapPoint(useMapSheetStore.getState().snapPoint),
     mediumTranslateY,
   });
+  useEffect(() => {
+    // Place details keep their own height; only the shared page sheet is remembered.
+    if (isBottomNavigationSheet) useMapSheetStore.getState().setSnapPoint(snapPoint);
+  }, [isBottomNavigationSheet, snapPoint]);
   const verificationCtaOpacity = sheetTranslateY.interpolate({
     inputRange: [
       expandedTranslateY,
@@ -890,8 +895,9 @@ export default function MapScreen({
   const openMapSection = useCallback((nextSection: 'community' | 'favorites' | 'map' | 'reservations') => {
     setContent({ type: 'home' });
     setMapSection(nextSection);
-    jumpTo('medium');
-  }, [jumpTo]);
+    // A raised sheet stays raised on the next page instead of dropping back to medium.
+    jumpTo(getPageEntrySnapPoint(snapPoint));
+  }, [jumpTo, snapPoint]);
   const assistantNavigationLock = useRef<string | null>(null);
   useEffect(() => { if (!assistant.isOpen) assistantNavigationLock.current = null; }, [assistant.isOpen]);
   const navigateAssistantPage = useCallback((target: VoiceNavigationTarget) => {
@@ -1131,6 +1137,7 @@ export default function MapScreen({
         {mapSection === 'community' ? (
           <CommunityBottomSheet
             collapsedTranslateY={collapsedTranslateY}
+            expandedTranslateY={expandedTranslateY}
             height={fullSheetHeight}
             mediumTranslateY={mediumTranslateY}
             onHandlePress={() => {
@@ -1160,6 +1167,7 @@ export default function MapScreen({
         ) : mapSection === 'favorites' ? (
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
+            expandedTranslateY={expandedTranslateY}
             hasNextPage={Boolean(hasNextFavoritePage)}
             height={fullSheetHeight}
             imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
@@ -1209,6 +1217,7 @@ export default function MapScreen({
             bookmarkedPlaceIds={bookmarkedPlaceIds}
             bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
             collapsedTranslateY={collapsedTranslateY}
+            expandedTranslateY={expandedTranslateY}
             height={fullSheetHeight}
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             isNearbyLoading={reservationDiscoveryEnabled && (
@@ -1254,6 +1263,7 @@ export default function MapScreen({
             bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             collapsedTranslateY={collapsedTranslateY}
+            expandedTranslateY={expandedTranslateY}
             content={content}
             couponContent={selectedPlace ? (
               <PlaceCouponCta

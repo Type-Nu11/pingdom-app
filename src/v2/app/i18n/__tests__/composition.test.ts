@@ -97,6 +97,9 @@ test('preserves assembled translations outside reviewed feature copy changes', (
       korean: language === 'ko' ? '한국어' : 'Korean',
       ...languageRest,
     };
+    // #402 renames the appearance system option to the reviewed "system theme" wording;
+    // AppearanceSettingsScreen tests cover the label in every language.
+    baseline[language].translation.settings.appearance.system = language === 'ko' ? '시스템 설정 사용' : 'Use system setting';
     // #389 moves the My Trip weekday header out of the component.
     delete baseline[language].translation.myPage.travel.weekdays;
     // #419 adds the card copy for search results that are not PingDom places.

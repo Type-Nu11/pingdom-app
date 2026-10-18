@@ -14,8 +14,8 @@ export function RouteTimeBubble({ mode, duration, label, tailOffset }: {
   return <>
     <Bubble style={{ backgroundColor: theme.colors.primaryAlternative }}>
       <Icon /><Labels>
-        <Text style={{ color: '#FFFFFF', fontSize: 16, lineHeight: 20.8, fontWeight: '700' }}>{duration}</Text>
-        <Text style={{ color: '#FFFFFF', fontSize: 12, lineHeight: 15.6, fontWeight: '500' }}>{label}</Text>
+        <Text style={{ color: theme.colors.staticWhite, fontSize: 16, lineHeight: 20.8, fontWeight: '700' }}>{duration}</Text>
+        <Text style={{ color: theme.colors.staticWhite, fontSize: 12, lineHeight: 15.6, fontWeight: '500' }}>{label}</Text>
       </Labels>
     </Bubble>
     <Tail style={{ marginLeft: tailOffset, backgroundColor: theme.colors.primaryAlternative }} />

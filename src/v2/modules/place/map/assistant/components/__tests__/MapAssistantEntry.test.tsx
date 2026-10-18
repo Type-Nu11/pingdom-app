@@ -156,7 +156,8 @@ test.each(['LIGHT', 'DARK'] as const)('%s directions action uses theme, 44 dp ta
   expect(screen.getByTestId('map-directions-icon-frame')).toHaveStyle({ width: 24, height: 24, transform: [{ translateY: 2 }, { translateX: 2 }] });
   expect(screen.queryByText('AI')).toBeNull();
   const artwork = screen.getByTestId('map-assistant-button-artwork');
-  expect(artwork.props.color).toBe(appearancePreference === 'DARK' ? darkColors.text : lightColors.text);
+  // Figma Pingdy AI Button glyph is Label/Neutral; the circle takes the themed surface in both states.
+  expect(artwork.props.color).toBe(appearancePreference === 'DARK' ? darkColors.labelNeutral : lightColors.labelNeutral);
   expect(artwork.props.fill).toBe(appearancePreference === 'DARK' ? darkColors.surfaceElevated : lightColors.surfaceElevated);
   expect(artwork).toHaveStyle({ left: -20, top: -16 });
   expect(screen.getByTestId('map-assistant-button')).toHaveStyle({ width: 44, height: 44 });

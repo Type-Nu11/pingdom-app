@@ -306,6 +306,44 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByText('영업시간 정보 없음')).toBeVisible();
   });
 
+  test.each([
+    ['LIGHT', 'medium', '영업 중', 'positive', lightColors.statusSuccess],
+    ['LIGHT', 'expanded', '영업 종료', 'negative', lightColors.statusError],
+    ['DARK', 'medium', '영업 종료', 'negative', darkColors.statusError],
+    ['DARK', 'expanded', '영업 중', 'positive', darkColors.statusSuccess],
+  ] as const)('%s %s 시트의 영업 상태(%s)를 Status 토큰 색으로 표시한다', async (
+    appearancePreference, snapPoint, statusText, tone, color,
+  ) => {
+    const selectedPlace = places[0];
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700} mediumTranslateY={300} onBackHome={jest.fn()}
+        onCreateReservation={jest.fn()} onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()} onGoNowPress={jest.fn()} onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()} onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)} panHandlers={{} as GestureResponderHandlers}
+        places={places} previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: statusText,
+            verifiedEvidenceCount: 23,
+            operatingSummary: {
+              detailText: null, fullText: statusText, kind: tone === 'positive' ? 'open' : 'closed',
+              statusText, tone, transitionDay: null, transitionTime: null,
+            },
+          },
+        }}
+        recommendationPlaces={[]} recommendationsState="ready" selectedPlace={selectedPlace}
+        sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint={snapPoint}
+      />,
+      { appearancePreference, language: 'ko' },
+    );
+
+    expect(screen.getAllByText(statusText).at(-1)).toHaveStyle({ color, fontFamily: 'PretendardStdVariable-Medium' });
+  });
+
   test('정보 탭 리뷰 요약은 요약 태그를 보여주고 모두 보기를 누르면 이동 없이 전체 리뷰를 펼친다', async () => {
     const selectedPlace = places[0];
     const onDetailPress = jest.fn();
@@ -1107,6 +1145,56 @@ describe('MapBottomSheet recommendations', () => {
       .toEqual(expect.objectContaining({ paddingBottom: 116 }));
   });
 
+  test.each([
+    ['medium', 8, 16],
+    ['expanded', 0, 24],
+  ] as const)('%s 추천 시트 제목은 시트 가장자리 16dp, 카드는 화면 가장자리 24dp에 맞춘다', async (snapPoint, inset, cardPadding) => {
+    const commonProps = {
+      activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
+      content: { type: 'recommendations' } as const, expandedTranslateY: 130,
+      height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
+      onDetailPress: jest.fn(), onFilterPress: jest.fn(),
+      onGoNowPress: jest.fn(), onHandlePress: jest.fn(), onPlacePress: jest.fn(),
+      onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined),
+      panHandlers: {} as GestureResponderHandlers, places: [], recommendationPlaces: places,
+      recommendationsState: 'ready' as const, selectedPlace: null,
+      sheetChromeBottom: new Animated.Value(0), sheetTranslateY: new Animated.Value(0),
+    };
+    await renderWithProviders(<MapBottomSheet {...commonProps} snapPoint={snapPoint} />);
+
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: inset, paddingRight: inset });
+    const title = screen.getByText('나만을 위한 추천 장소');
+    expect(title).toHaveStyle({ color: lightColors.labelStrong, fontSize: 20, lineHeight: 26 });
+    expect(screen.getByTestId('recommendation-header')).toHaveStyle({ paddingHorizontal: 16 });
+    const cardRowStyle = [screen.getByTestId('recommendation-card-row').props.contentContainerStyle].flat()
+      .reduce((merged, item) => ({ ...merged, ...(item || {}) }), {});
+    expect(cardRowStyle).toMatchObject({ paddingHorizontal: cardPadding });
+    expect(screen.getByText(/좋아할만한 장소를 추천해드려요/)).toHaveStyle({
+      color: lightColors.textSecondary, fontSize: 14, lineHeight: 18, marginTop: 4,
+    });
+  });
+
+  test('지도 홈 피드는 펼쳐도 기존 콘텐츠 여백(8dp)을 유지한다', async () => {
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'home' }} expandedTranslateY={130}
+        height={700} localFeed={rankedFeed([])} mediumTranslateY={300} nationalFeed={rankedFeed([])}
+        onBackHome={jest.fn()} onDetailPress={jest.fn()} onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()} onHandlePress={jest.fn()} onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers} places={places} recommendationPlaces={[]}
+        recommendationsState="ready" selectedPlace={null}
+        sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded"
+      />,
+    );
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 8 });
+  });
+
   test('추천 목록 헤더에 별도 위치 안내 문구를 표시하지 않는다', async () => {
     const commonProps = {
       activeFilters: [],
@@ -1559,7 +1647,9 @@ describe('MapBottomSheet recommendations', () => {
   test.each(['LIGHT', 'DARK'] as const)('%s 전체 카테고리는 지도 내비게이션과 같은 아이콘을 사용하고 별도 검은 원을 채우지 않는다', async (appearancePreference) => {
     const view = await renderWithProviders(<MapBottomSheet {...categoryProps([])} />, { appearancePreference });
     const all = () => screen.getByRole('tab', { name: '전체' });
-    expect(within(all()).getByTestId('map-category-all-outline')).toHaveProp('fill', null);
+    // Unselected is the Figma map ring (maping_outline.svg), never a filled silhouette.
+    expect(within(all()).getByTestId('map-category-all-outline')).toHaveProp('color',
+      (appearancePreference === 'DARK' ? darkColors : lightColors).textSecondary);
     await view.user.press(all());
     expect(within(all()).queryByTestId('map-category-all-outline')).toBeNull();
     expect(within(all()).getByTestId('map-category-all-filled')).toHaveProp('color',

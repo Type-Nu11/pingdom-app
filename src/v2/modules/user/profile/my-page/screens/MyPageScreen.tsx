@@ -17,6 +17,7 @@ import { useCoupons } from '../../../../booking/offers-coupons';
 import { useReservations } from '../../../../booking/reservations';
 import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../travel/schedules';
 import { ApiErrorState, ErrorState, LoadingState, ProfileAvatar } from '../../../../../shared/components';
+import { useHeaderGlassIconColors } from '../../../../../shared/components/headerGlassIcon';
 import { getProfileImageUri } from '../../model/profileImageUri';
 import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../travel/components/TravelCalendar';
@@ -61,6 +62,7 @@ export default function MyPageScreen({
   onOpenVerifiedPlaces,
 }: MyPageScreenProps) {
   const { t } = useTranslation();
+  const headerIconColors = useHeaderGlassIconColors();
   const {
     error: profileError,
     isFetching: isProfileFetching,
@@ -187,7 +189,7 @@ export default function MyPageScreen({
       <Content testID="v2-my-page-scroll" contentContainerStyle={CONTENT_CONTAINER_STYLE}>
         <TopBar testID="v2-my-page-header">
           <IconButton accessibilityLabel={t('myPage.back')} accessibilityRole="button" hitSlop={8} onPress={onBack}>
-            <BackIcon testID="v2-my-page-back-icon" height={84} style={BACK_ICON_STYLE} width={80} />
+            <BackIcon {...headerIconColors} testID="v2-my-page-back-icon" height={84} style={BACK_ICON_STYLE} width={80} />
           </IconButton>
           <TopBarTitle numberOfLines={1}>{t('myPage.title')}</TopBarTitle>
           <IconButton
@@ -196,7 +198,7 @@ export default function MyPageScreen({
             hitSlop={8}
             onPress={onOpenSettings}
           >
-            <SettingsIcon testID="v2-my-page-settings-icon" height={84} style={SETTINGS_ICON_STYLE} width={80} />
+            <SettingsIcon {...headerIconColors} testID="v2-my-page-settings-icon" height={84} style={SETTINGS_ICON_STYLE} width={80} />
           </IconButton>
         </TopBar>
 
@@ -312,7 +314,7 @@ export default function MyPageScreen({
         </Section>
 
         <Section $borderWidth={0}>
-          <SectionContent>
+          <PlacesSectionContent>
             <SectionHeaderRow accessibilityRole="button" onPress={onOpenVerifiedPlaces}>
               <SectionTitle>{t('myPage.verifiedPlaces.title')}</SectionTitle>
               <ChevronIcon height={24} width={24} />
@@ -352,7 +354,7 @@ export default function MyPageScreen({
                 <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText>
               </Slot>
             )}
-          </SectionContent>
+          </PlacesSectionContent>
         </Section>
       </Content>
     </Screen>
@@ -546,9 +548,25 @@ const StatValue = styled(AppText)`
   font-weight: 700;
 `;
 
+// Figma 4951:6708: 12px between the section title and the cards.
+const PlacesSectionContent = styled(SectionContent)`
+  gap: 12px;
+`;
+
+// The horizontal scroller clips its content, so it bleeds past the section padding and
+// reserves room for the card shadow (y4 b20) without moving the cards themselves.
+const CARD_SHADOW_ROOM = { bottom: 24, side: 24, top: 16 } as const;
+
 const PlacesScroll = styled.ScrollView.attrs({
-  contentContainerStyle: { gap: 16 },
-})``;
+  contentContainerStyle: {
+    gap: 16,
+    paddingBottom: CARD_SHADOW_ROOM.bottom,
+    paddingHorizontal: CARD_SHADOW_ROOM.side,
+    paddingTop: CARD_SHADOW_ROOM.top,
+  },
+})`
+  margin: -${CARD_SHADOW_ROOM.top}px -${CARD_SHADOW_ROOM.side}px -${CARD_SHADOW_ROOM.bottom}px;
+`;
 
 const EmptyPlacesText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};

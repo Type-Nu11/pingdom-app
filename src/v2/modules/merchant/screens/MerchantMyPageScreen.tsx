@@ -7,6 +7,7 @@ import styled from 'styled-components/native';
 
 import BackIcon from '../../../shared/assets/icons/back.svg';
 import SettingsIcon from '../../../shared/assets/icons/settings.svg';
+import { useHeaderGlassIconColors } from '../../../shared/components/headerGlassIcon';
 import { ProfileAvatar } from '../../../shared/components';
 import EventCard from '../components/EventCard';
 import MerchantReviewCard from '../components/MerchantReviewCard';
@@ -43,6 +44,7 @@ export default function MerchantMyPageScreen({
   store,
 }: MerchantMyPageScreenProps) {
   const { t } = useTranslation();
+  const headerIconColors = useHeaderGlassIconColors();
 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-merchant-my-page-screen">
@@ -54,7 +56,7 @@ export default function MerchantMyPageScreen({
             hitSlop={8}
             onPress={onBack}
           >
-            <BackIcon height={44} width={44} />
+            <BackIcon {...headerIconColors} height={44} width={44} />
           </IconButton>
           <TopBarTitle>{t('merchantMyPage.title')}</TopBarTitle>
           <IconButton
@@ -63,7 +65,7 @@ export default function MerchantMyPageScreen({
             hitSlop={8}
             onPress={onOpenSettings}
           >
-            <SettingsIcon height={44} width={44} />
+            <SettingsIcon {...headerIconColors} height={44} width={44} />
           </IconButton>
         </TopBar>
 

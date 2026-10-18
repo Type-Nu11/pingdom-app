@@ -3,14 +3,15 @@ import React, { createContext, memo, useContext, useMemo, useRef } from 'react';
 import { Animated, PanResponder, Platform, Pressable, Text, View, type PlatformOSType } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 import { useTheme } from 'styled-components/native';
 
 import CheckInAsset from '../../../../../../assets/v2/icons/place/checkin_svg.svg';
+import CheckInSelectedAsset from '../../../../../../assets/v2/icons/place/checkin_selected.svg';
 import CommunityActiveAsset from '../../../../../../assets/v2/icons/place/community-active.svg';
 import CommunityInactiveAsset from '../../../../../../assets/v2/icons/place/community-inactive.svg';
 import MapNavigationIcon from './MapNavigationIcon';
 import PlaceRecommendAsset from '../../../../../../assets/v2/icons/place/placerecommend.svg';
+import PlaceRecommendSelectedAsset from '../../../../../../assets/v2/icons/place/placerecommend_selected.svg';
 import { FavoriteIcon } from '../../../../../shared/components';
 import { lightLiquidGlass, type AppTheme } from '../../../../../shared/theme';
 import FrostedSurface from '../../presentation/components/FrostedSurface';
@@ -21,6 +22,8 @@ const NavigationHiddenContext = createContext(false);
 export const MapSheetNavigationHiddenProvider = NavigationHiddenContext.Provider;
 
 const NAVIGATION_SIDE_INSET = 24;
+// Figma Footer (7813:7003): 75px tabs overlap by 10px, so their centres sit 65px apart.
+const NAVIGATION_TAB_OVERLAP = 10;
 
 export type MapSheetNavigationTab = 'community' | 'favorites' | 'map' | 'recommendations' | 'reservations';
 
@@ -52,13 +55,6 @@ type Props = {
   sheetTranslateY: Animated.Value;
 };
 
-
-const ActiveReservationIcon = ({ colors, foreground }: { colors: AppTheme['colors']; foreground: string }) => (
-  <Svg height={24} viewBox="0 0 24 24" width={24}>
-    <Path d="M3 10.2 12 2l9 8.2v8.3A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5Z" fill={colors.primary} />
-    <Path d="m8.2 12.4 2.4 2.4 5.2-5.2" fill="none" stroke={foreground} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" testID="map-navigation-reservation-check" />
-  </Svg>
-);
 
 const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
   activeTab,
@@ -150,22 +146,28 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
           testID="map-navigation-glass"
           tintColor={liquidGlass.navigation.tint}
         />
-          {tabs.map(({ id, label, onPress }) => {
+          {tabs.map(({ id, label, onPress }, index) => {
             const active = selectedTab === id;
+            // Figma icons render 1:1 inside a 28px box: map 18×20.4, star 25×24, chat and house 28.
             const icon = id === 'map'
-              ? <MapNavigationIcon selected={active} color={active ? colors.primary : colors.text} />
+              ? <MapNavigationIcon selected={active} color={active ? colors.primary : colors.labelNeutral} size={21} />
               : id === 'favorites'
-                ? <FavoriteIcon selected={active} size={24} />
+                ? <FavoriteIcon idleColor={colors.labelNeutral} selected={active} size={24} />
                 : id === 'community'
                   ? active
-                    ? <CommunityActiveAsset height={24} width={24} />
-                    : <CommunityInactiveAsset color={colors.text} height={24} width={24} />
+                    ? <CommunityActiveAsset height={28} width={28} />
+                    : <CommunityInactiveAsset color={colors.labelNeutral} height={28} width={28} />
                   : active
-                    ? <ActiveReservationIcon colors={colors} foreground={liquidGlass.primaryCta.foreground} />
-                    : <CheckInAsset color={colors.text} height={24} width={23} />;
+                    ? <CheckInSelectedAsset color={colors.primary} height={28} testID="map-navigation-reservations-selected-icon" width={28} />
+                    : <CheckInAsset color={colors.labelNeutral} height={22} width={21} />;
 
             return (
-              <MapTutorialTarget id={id} key={id} style={{ flex: 1 }}>
+              <MapTutorialTarget
+                id={id}
+                key={id}
+                style={index < tabs.length - 1 ? styles.navTabOverlap : styles.navTab}
+                testID={`map-navigation-${id}-tab`}
+              >
               <Pressable
                 accessibilityLabel={label}
                 accessibilityRole="tab"
@@ -178,7 +180,10 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 <View
                   style={[
                     styles.navItemSurface,
-                    { backgroundColor: getMapSheetTabSurfaceColor(active, liquidGlass) },
+                    {
+                      backgroundColor: getMapSheetTabSurfaceColor(active, liquidGlass),
+                      borderColor: active ? colors.glassStroke : 'transparent',
+                    },
                   ]}
                   testID={`map-navigation-${id}-surface`}
                 >
@@ -209,15 +214,21 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
             rimColor={liquidGlass.navigation.rim}
             style={styles.sendButtonGlass}
             testID="map-navigation-recommendations-surface"
-            tintColor={selectedTab === 'recommendations'
-                ? liquidGlass.navigation.selectedTint
-                : liquidGlass.navigation.tint}
+            tintColor={liquidGlass.navigation.tint}
           >
-            <PlaceRecommendAsset
-              color={selectedTab === 'recommendations' ? colors.primary : colors.text}
-              height={24}
-              width={24}
-            />
+            {selectedTab === 'recommendations' ? (
+              <>
+                <View pointerEvents="none" style={styles.sendButtonSelected} testID="map-navigation-recommendations-selected" />
+                <PlaceRecommendSelectedAsset
+                  color={colors.primary}
+                  height={24}
+                  testID="map-navigation-recommendations-selected-icon"
+                  width={24}
+                />
+              </>
+            ) : (
+              <PlaceRecommendAsset color={colors.labelNeutral} height={24} width={24} />
+            )}
           </FrostedSurface>
       </Pressable>
       </MapTutorialTarget>
@@ -233,8 +244,12 @@ const createStyles = (
 ): Record<string, object> => ({
   navIcon: { alignItems: 'center', height: 28, justifyContent: 'center', width: 28 },
   navItem: { alignItems: 'center', flex: 1, justifyContent: 'center' },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 2, height: 56, justifyContent: 'center', width: '100%', maxWidth: 78 },
-  navLabel: { color: colors.text, fontSize: 10, fontWeight: '500', lineHeight: 13 },
+  // The 1px border is always reserved so the dark Glass/Stroke does not shift the 7px icon inset.
+  // Figma places tab content about 1px right of centre (icons at x=25–29.5 in a 75px tab).
+  navItemSurface: { alignItems: 'center', borderRadius: 28, borderWidth: 1, height: 56, paddingLeft: 2, paddingTop: 6, width: '100%', maxWidth: 78 },
+  navLabel: { color: colors.labelNeutral, fontSize: 10, fontWeight: '500', lineHeight: 13 },
+  navTab: { flex: 1 },
+  navTabOverlap: { flex: 1, marginRight: -NAVIGATION_TAB_OVERLAP },
   navLabelActive: { color: colors.primary, fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 4 },
   navigationGlass: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: 32, overflow: 'hidden' },
@@ -255,4 +270,15 @@ const createStyles = (
     width: 64,
   },
   sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
+  sendButtonSelected: {
+    backgroundColor: liquidGlass.navigation.selectedTint,
+    borderColor: colors.glassStroke,
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    left: 4,
+    position: 'absolute',
+    top: 4,
+    width: 56,
+  },
 });

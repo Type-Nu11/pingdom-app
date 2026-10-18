@@ -2,7 +2,7 @@ import { Animated, PanResponder, type PanResponderCallbacks, type PanResponderGe
 import { useState } from 'react';
 import { act, renderHook } from '@testing-library/react-native';
 
-import { shouldClaimVerticalDrag, useBottomSheet } from '../useBottomSheet';
+import { resolveReleaseSnapPoint, shouldClaimVerticalDrag, useBottomSheet } from '../useBottomSheet';
 
 describe('useBottomSheet', () => {
   beforeEach(() => jest.useFakeTimers());
@@ -26,6 +26,28 @@ describe('useBottomSheet', () => {
     expect(shouldClaimVerticalDrag({ dx: 2, dy: -9 })).toBe(true);
     expect(shouldClaimVerticalDrag({ dx: 20, dy: 12 })).toBe(false);
     expect(shouldClaimVerticalDrag({ dx: 12, dy: 12 })).toBe(false);
+  });
+
+  test('대각선에 가까운 이동은 가로 스크롤에 양보하도록 수직 우세(1.2배)일 때만 가로챈다', () => {
+    expect(shouldClaimVerticalDrag({ dx: 10, dy: 11 })).toBe(false);
+    expect(shouldClaimVerticalDrag({ dx: 10, dy: 13 })).toBe(true);
+  });
+
+  describe('놓았을 때 스냅 판정', () => {
+    const values = { collapsed: 780, expanded: 130, medium: 480 } as const;
+
+    test.each([
+      ['중간에서 짧고 빠른 위 스와이프는 펼친다', 'medium', -20, -0.5, 'expanded'],
+      ['중간에서 간격의 20% 이상 천천히 올리면 펼친다', 'medium', -75, -0.05, 'expanded'],
+      ['중간에서 20% 미만으로 천천히 올리면 제자리로 돌아온다', 'medium', -60, -0.05, 'medium'],
+      ['펼친 상태에서 짧고 빠른 아래 스와이프는 중간으로 내린다', 'expanded', 20, 0.5, 'medium'],
+      ['접힌 상태에서 짧고 빠른 위 스와이프는 중간으로 올린다', 'collapsed', -20, -0.5, 'medium'],
+      ['중간에서 짧고 빠른 아래 스와이프는 접히지 않는다', 'medium', 40, 0.8, 'medium'],
+      ['중간에서 48dp 이상 빠르게 내리면 접는다', 'medium', 50, 0.8, 'collapsed'],
+      ['접힌 상태에서 중간을 지나 끝까지 끌어 올리면 가장 가까운 펼침으로 간다', 'collapsed', -600, -0.2, 'expanded'],
+    ] as const)('%s', (_name, from, dy, vy, expected) => {
+      expect(resolveReleaseSnapPoint(from, values, values[from], { dy, vy })).toBe(expected);
+    });
   });
 
   test.each([12, 24, 40])('중간 높이에서 짧은 %sdp 드래그는 속도가 빨라도 화면 밖으로 접히지 않는다', async (dy) => {

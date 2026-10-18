@@ -20,7 +20,22 @@ test.each([157.5, 171, 230])('카드와 스켈레톤 폭 %s 및 이미지와 그
   expect(screen.getByTestId('v2-verified-place-card-skeleton')).toHaveStyle({ width, height: 222 });
   expect(screen.getByTestId('v2-verified-place-card-image')).toHaveStyle({ width: '100%', height: '100%' });
   expect(screen.getByTestId('v2-verified-place-card-gradient').props).toMatchObject({ width: '100%', height: '100%' });
-  expect(screen.getByTestId('v2-verified-place-card-overlay')).toHaveStyle({ left: 0, right: 0, minHeight: 105 });
+  expect(screen.getByTestId('v2-verified-place-card-overlay')).toHaveStyle({ left: 0, right: 0, paddingTop: 35, paddingBottom: 12 });
+});
+
+test.each([
+  ['LIGHT', 'rgba(0, 0, 0, 0.12)'],
+  ['DARK', 'rgba(0, 0, 0, 0.40)'],
+] as const)('%s 모드에서 카드 아래 Shadow/Float 그림자와 사진 위 흰 글자를 쓴다', async (appearancePreference, shadow) => {
+  await renderWithProviders(<VerifiedPlaceCard {...props} />, { appearancePreference });
+  expect(screen.getByTestId('v2-verified-place-card-shadow')).toHaveStyle({
+    borderBottomLeftRadius: 16,
+    boxShadow: `0px 4px 20px 0px ${shadow}`,
+  });
+  expect(screen.getByTestId('v2-verified-place-card')).toHaveStyle({ borderTopLeftRadius: 16, overflow: 'hidden' });
+  expect(screen.getByText(props.name)).toHaveStyle({ color: '#FFFFFF', fontFamily: 'PretendardStdVariable-Bold', fontSize: 16, lineHeight: 21 });
+  expect(screen.getByText(props.address)).toHaveStyle({ color: '#FFFFFF', fontFamily: 'PretendardStdVariable-Medium', fontSize: 12, lineHeight: 16 });
+  expect(screen.getByTestId('favorite-icon')).toHaveProp('color', '#FFFFFF');
 });
 
 test('즐겨찾기 중첩 클릭은 전파를 막고 카드 클릭은 그대로 동작한다', async () => {

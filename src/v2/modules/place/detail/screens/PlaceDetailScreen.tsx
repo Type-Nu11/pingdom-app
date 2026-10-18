@@ -28,6 +28,7 @@ import { usePlaceDetail } from '../hooks/usePlaceDetail';
 import {
   formatPlaceOperatingSummary,
   selectPlaceOperatingSummary,
+  type PlaceOperatingSummaryText,
 } from '../model/placeOperatingSummary';
 import { getOperatingStatusPresentation } from '../model/placePresentation';
 
@@ -148,12 +149,14 @@ const Body = styled(AppText)`
 
 const OperatingLine = styled(Body)``;
 
-const OperatingStatus = styled(AppText)<{ $tone: 'positive' | 'neutral' | 'warning' }>`
+const OperatingStatus = styled(AppText)<{ $tone: PlaceOperatingSummaryText['tone'] }>`
   color: ${({ $tone, theme }) => $tone === 'positive'
-    ? theme.colors.success
-    : $tone === 'warning'
-      ? theme.colors.warning
-      : theme.colors.textMuted};
+    ? theme.colors.statusSuccess
+    : $tone === 'negative'
+      ? theme.colors.statusError
+      : $tone === 'warning'
+        ? theme.colors.warning
+        : theme.colors.textMuted};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 

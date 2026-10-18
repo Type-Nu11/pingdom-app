@@ -28,7 +28,7 @@ export function RouteSummaryCard({ duration, subtitle, meta, recommended, onStar
         accessibilityLabel={actionLabel ?? t('routes.start')} accessibilityHint={actionHint}
         disabled={disabled || !onStart} accessibilityState={{ disabled: disabled || !onStart }} onPress={onStart}
         style={{ backgroundColor: theme.colors.primary, opacity: disabled || !onStart ? 0.45 : 1 }}>
-        <StartIcon /><Text style={{ color: '#FFFFFF', fontSize: 16, lineHeight: 20.8, fontWeight: '700' }}>{t('routes.start')}</Text>
+        <StartIcon /><Text style={{ color: theme.colors.staticWhite, fontSize: 16, lineHeight: 20.8, fontWeight: '700' }}>{t('routes.start')}</Text>
       </Start>
     </Top>
     {children}

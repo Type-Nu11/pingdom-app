@@ -50,6 +50,8 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
   const last = index === MAP_TUTORIAL_STEPS.length - 1;
   const values = { username: username?.trim() || t('mapTutorial.guest') };
   const foreground = { color: colors.textStrong };
+  // Glass/FillRaised arrow circle and Label/Alternative glyphs, with the dark-only Glass/Stroke.
+  const arrowColors = { color: colors.textAlternative, fill: colors.glassFillRaised, stroke: colors.glassStroke };
   const accent = <S.Accent style={{ color: colors.primary }} />;
   const { top, bottom, maxHeight } = getTutorialCardPlacement({ step, target, height,
     topInset: insets.top, bottomInset: insets.bottom });
@@ -68,11 +70,11 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
     <S.Actions style={step === 'welcome' ? { justifyContent: 'flex-end' } : { gap: 12 }}>
                 {index > 0 ? <S.Arrow accessibilityLabel={t('mapTutorial.previous')} accessibilityRole="button"
                   disabled={busy} hitSlop={6} onPress={onPrevious} testID="map-tutorial-previous">
-                  <S.ArrowAsset pointerEvents="none" style={{ transform: [{ scaleX: -1 }] }}><Next /></S.ArrowAsset>
+                  <S.ArrowAsset pointerEvents="none" style={{ transform: [{ scaleX: -1 }] }}><Next {...arrowColors} /></S.ArrowAsset>
                 </S.Arrow>  : null}
                 {!last ? <S.Arrow accessibilityLabel={t('mapTutorial.next')} accessibilityRole="button"
                   disabled={busy} hitSlop={6} onPress={onNext} testID="map-tutorial-next">
-                  <S.ArrowAsset pointerEvents="none"><Next /></S.ArrowAsset>
+                  <S.ArrowAsset pointerEvents="none"><Next {...arrowColors} /></S.ArrowAsset>
                 </S.Arrow>  : null}
               </S.Actions>
   );
@@ -148,7 +150,7 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
                 <S.HeaderControls>
                 {step !== 'welcome' ? actions : null}
                 <S.CloseButton accessibilityLabel={t('mapTutorial.close')} accessibilityRole="button" hitSlop={6}
-                  disabled={busy} onPress={onClose} testID="map-tutorial-close"><Close /></S.CloseButton>
+                  disabled={busy} onPress={onClose} testID="map-tutorial-close"><Close color={colors.textAlternative} /></S.CloseButton>
                 </S.HeaderControls>
               </S.Header>
               <View accessibilityLiveRegion="polite" key={step} testID={`map-tutorial-step-${step}`}>

@@ -40,14 +40,15 @@ export const Body = styled(Text)`font-size: 16px; font-weight: 500; line-height:
 export const Accent = styled(Body)`font-weight: 700;`;
 export const Welcome = styled.View`gap: 20px;`;
 export const Lines = styled.View`gap: 4px;`;
-export const CloseButton = styled.Pressable`
+export const CloseButton = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.navigation.shadow } }))`
   width: 32px; height: 32px; border-radius: 32px; align-items: center; justify-content: center;
-  background-color: ${({ theme }) => theme.colorScheme === 'dark' ? '#FFFFFF' : 'rgba(255, 255, 255, 0.56)'}; box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.06);
+  background-color: ${({ theme }) => theme.colors.glassFillRaised};
+  border-width: 1px; border-color: ${({ theme }) => theme.colors.glassStroke};
 `;
 export const Actions = styled.View`flex-direction: row; justify-content: space-between;`;
 export const Arrow = styled.Pressable`
   width: 32px; height: 32px; border-radius: 16px;
-  background-color: ${({ theme }) => theme.colorScheme === 'dark' ? '#FFFFFF' : 'transparent'};
+  background-color: transparent;
 `;
 export const ArrowSpace = styled.View`width: 32px; height: 32px;`;
 export const ArrowAsset = styled.View`
