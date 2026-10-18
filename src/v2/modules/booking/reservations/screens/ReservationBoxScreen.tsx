@@ -8,6 +8,7 @@ import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
 import SettingsIcon from '../../../../shared/assets/icons/settings.svg';
+import { useHeaderGlassIconColors } from '../../../../shared/components/headerGlassIcon';
 import { ApiErrorState } from '../../../../shared/components';
 import ReservationRecordCard from '../components/ReservationRecordCard';
 import { useReservations } from '../hooks/useReservations';
@@ -22,6 +23,7 @@ type Props = {
 export default function ReservationBoxScreen({ onBack, onOpenReservation, onOpenSettings }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const headerIconColors = useHeaderGlassIconColors();
   const reservations = useReservations({ limit: 100, page: 1 });
   const items = reservations.data?.reservations ?? [];
   const totalCount = reservations.data?.totalElements ?? items.length;
@@ -30,11 +32,11 @@ export default function ReservationBoxScreen({ onBack, onOpenReservation, onOpen
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-reservation-box-screen">
       <TopBar>
         <IconButton accessibilityLabel={t('reservation.common.back')} accessibilityRole="button" onPress={onBack}>
-          <BackIcon height={44} width={44} />
+          <BackIcon {...headerIconColors} height={44} width={44} />
         </IconButton>
         <Title accessibilityRole="header">{t('reservation.box.title')}</Title>
         <IconButton accessibilityLabel={t('reservation.box.settings')} accessibilityRole="button" onPress={onOpenSettings}>
-          <SettingsIcon height={44} width={44} />
+          <SettingsIcon {...headerIconColors} height={44} width={44} />
         </IconButton>
       </TopBar>
 

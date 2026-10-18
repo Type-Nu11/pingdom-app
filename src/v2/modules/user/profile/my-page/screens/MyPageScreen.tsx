@@ -17,6 +17,7 @@ import { useCoupons } from '../../../../booking/offers-coupons';
 import { useReservations } from '../../../../booking/reservations';
 import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../travel/schedules';
 import { ApiErrorState, ErrorState, LoadingState, ProfileAvatar } from '../../../../../shared/components';
+import { useHeaderGlassIconColors } from '../../../../../shared/components/headerGlassIcon';
 import { getProfileImageUri } from '../../model/profileImageUri';
 import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../travel/components/TravelCalendar';
@@ -61,6 +62,7 @@ export default function MyPageScreen({
   onOpenVerifiedPlaces,
 }: MyPageScreenProps) {
   const { t } = useTranslation();
+  const headerIconColors = useHeaderGlassIconColors();
   const {
     error: profileError,
     isFetching: isProfileFetching,
@@ -187,7 +189,7 @@ export default function MyPageScreen({
       <Content testID="v2-my-page-scroll" contentContainerStyle={CONTENT_CONTAINER_STYLE}>
         <TopBar testID="v2-my-page-header">
           <IconButton accessibilityLabel={t('myPage.back')} accessibilityRole="button" hitSlop={8} onPress={onBack}>
-            <BackIcon testID="v2-my-page-back-icon" height={84} style={BACK_ICON_STYLE} width={80} />
+            <BackIcon {...headerIconColors} testID="v2-my-page-back-icon" height={84} style={BACK_ICON_STYLE} width={80} />
           </IconButton>
           <TopBarTitle numberOfLines={1}>{t('myPage.title')}</TopBarTitle>
           <IconButton
@@ -196,7 +198,7 @@ export default function MyPageScreen({
             hitSlop={8}
             onPress={onOpenSettings}
           >
-            <SettingsIcon testID="v2-my-page-settings-icon" height={84} style={SETTINGS_ICON_STYLE} width={80} />
+            <SettingsIcon {...headerIconColors} testID="v2-my-page-settings-icon" height={84} style={SETTINGS_ICON_STYLE} width={80} />
           </IconButton>
         </TopBar>
 

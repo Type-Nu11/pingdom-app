@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
 import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
+import { useHeaderGlassIconColors } from '../../../../shared/components/headerGlassIcon';
 import { ApiErrorState, LoadingState } from '../../../../shared/components';
 import {
   formatReservationWindow,
@@ -24,6 +25,7 @@ export default function ReservationDetailScreen({
   reservationId,
 }: ReservationDetailScreenProps) {
   const { i18n, t } = useTranslation();
+  const headerIconColors = useHeaderGlassIconColors();
   const reservationQuery = useReservationDetail(reservationId);
 
   if (reservationQuery.isPending) {
@@ -63,7 +65,7 @@ export default function ReservationDetailScreen({
           hitSlop={12}
           onPress={onBack}
         >
-          <BackIcon width={44} height={44} />
+          <BackIcon {...headerIconColors} width={44} height={44} />
         </BackButton>
         <Title accessibilityRole="header">{t('reservation.detail.title')}</Title>
         <HeaderSpacer />

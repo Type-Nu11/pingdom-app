@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
+import { useHeaderGlassIconColors } from '../../../../shared/components/headerGlassIcon';
 import PendingReservationIcon from '../../../../../assets/v2/icons/smRlavy.svg';
 import { reservationSubmitErrorKey, shouldRefreshReservationAvailability } from '../model/reservationError';
 import { useReservationPlaceSummary } from '../hooks/useReservationPlaceSummary';
@@ -58,6 +59,7 @@ type CreateReservationScreenProps = {
 export default function CreateReservationScreen({ navigation, now: providedNow, route }: CreateReservationScreenProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const headerIconColors = useHeaderGlassIconColors();
   const now = useRef(providedNow ?? new Date()).current;
   const initializedFromAvailability = useRef(false);
   const submissionGuard = useRef(false);
@@ -245,7 +247,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
             accessibilityRole="button"
             onPress={navigation.goBack}
           >
-            <BackIcon height={44} width={44} />
+            <BackIcon {...headerIconColors} height={44} width={44} />
           </SuccessBackButton>
         </SuccessHeader>
         <SuccessContent accessibilityLiveRegion="polite">
@@ -281,7 +283,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-create-reservation-screen">
       <Header>
-        <BackButton accessibilityLabel={t('reservation.common.back')} accessibilityRole="button" onPress={navigation.goBack}><BackIcon width={44} height={44} /></BackButton>
+        <BackButton accessibilityLabel={t('reservation.common.back')} accessibilityRole="button" onPress={navigation.goBack}><BackIcon {...headerIconColors} width={44} height={44} /></BackButton>
         <HeaderTitle>{t('reservation.create.title')}</HeaderTitle><HeaderSpacer />
       </Header>
       <Form keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
