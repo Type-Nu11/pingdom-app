@@ -77,7 +77,7 @@ RCT_EXPORT_MODULE(PingdomWakeWord)
     if (![hex isEqual:manifest[@"files"][name]]) return NO;
   }
   NSString *keywords = [NSString stringWithContentsOfFile:[self path:@"keywords.txt"] encoding:NSUTF8StringEncoding error:nil];
-  _verified = [keywords isEqualToString:@"HH EY1 P IH1 NG D IY0 @Hey_Pingdy\n"];
+  _verified = [keywords isEqualToString:@"HH EY1 P IH1 NG D IY0 @Hey_Pingdy\nh ēi p íng d í @Hey_Pingdy\nh ēi p ìn d ì @Hey_Pingdy\n"];
   return _verified;
 }
 
