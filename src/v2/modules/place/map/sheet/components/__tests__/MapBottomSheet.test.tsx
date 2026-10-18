@@ -1597,7 +1597,9 @@ describe('MapBottomSheet recommendations', () => {
   test.each(['LIGHT', 'DARK'] as const)('%s 전체 카테고리는 지도 내비게이션과 같은 아이콘을 사용하고 별도 검은 원을 채우지 않는다', async (appearancePreference) => {
     const view = await renderWithProviders(<MapBottomSheet {...categoryProps([])} />, { appearancePreference });
     const all = () => screen.getByRole('tab', { name: '전체' });
-    expect(within(all()).getByTestId('map-category-all-outline')).toHaveProp('fill', null);
+    // Unselected is the Figma map ring (maping_outline.svg), never a filled silhouette.
+    expect(within(all()).getByTestId('map-category-all-outline')).toHaveProp('color',
+      (appearancePreference === 'DARK' ? darkColors : lightColors).textSecondary);
     await view.user.press(all());
     expect(within(all()).queryByTestId('map-category-all-outline')).toBeNull();
     expect(within(all()).getByTestId('map-category-all-filled')).toHaveProp('color',

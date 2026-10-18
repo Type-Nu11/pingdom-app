@@ -23,7 +23,10 @@ test('다른 탭을 누르는 동안에도 실제 선택된 탭만 강조한다'
   expect(screen.getByRole('tab', { name: '지도', selected: true })).toBeVisible();
   expect(screen.getByTestId('map-navigation-map-surface')).toHaveStyle({
     backgroundColor: 'rgba(228, 228, 229, 0.64)',
+    borderWidth: 1,
     height: 56,
+    paddingLeft: 2,
+    paddingTop: 6,
     width: '100%',
     maxWidth: 78,
   });
@@ -45,17 +48,34 @@ test('다른 탭에서는 지도 아이콘 내부를 비우고 지도 선택 시
   );
   const outline = () => screen.queryByTestId('map-navigation-map-outline');
 
-  expect(outline()).toHaveProp('fill', null);
-  expect(outline()).toHaveProp('stroke', { type: 0, payload: processColor('#3B3B40') });
+  // Figma 18×20.4 icon drawn 1:1 in its 18×21 box.
+  expect(outline()).toHaveProp('color', '#3B3B40');
+  expect(outline()).toHaveProp('height', 21);
+  expect(outline()).toHaveProp('width', 18);
   expect(screen.getByRole('tab', { name: '지도', selected: false })).toBeVisible();
 
   await view.rerender(<MapSheetBottomNavigation activeTab="map" sheetTranslateY={sheetTranslateY} />);
   expect(outline()).toBeNull();
+  expect(screen.getByTestId('map-navigation-map-filled')).toHaveProp('color', '#FF1956');
   expect(screen.getByRole('tab', { name: '지도', selected: true })).toBeVisible();
 
   await view.rerender(<MapSheetBottomNavigation activeTab="recommendations" sheetTranslateY={sheetTranslateY} />);
-  expect(outline()).toHaveProp('fill', null);
-  expect(outline()).toHaveProp('stroke', { type: 0, payload: processColor('#3B3B40') });
+  expect(outline()).toHaveProp('color', '#3B3B40');
+});
+
+test('Figma Footer처럼 75px 탭이 10px씩 겹치고 비선택 아이콘·라벨은 Label/Neutral을 쓴다', async () => {
+  await renderWithProviders(
+    <MapSheetBottomNavigation activeTab="map" sheetTranslateY={new Animated.Value(0)} />,
+    { appearancePreference: 'DARK' },
+  );
+  const tab = (id: string) => screen.getByTestId(`map-navigation-${id}-tab`);
+  expect(tab('map')).toHaveStyle({ flex: 1, marginRight: -10 });
+  expect(tab('reservations')).toHaveStyle({ flex: 1 });
+  expect(tab('reservations')).not.toHaveStyle({ marginRight: -10 });
+  expect(screen.getByTestId('map-navigation-map-surface')).toHaveStyle({ borderColor: 'rgba(255, 255, 255, 0.20)' });
+  expect(screen.getByTestId('map-navigation-favorites-surface')).toHaveStyle({ borderColor: 'transparent' });
+  expect(screen.getByText('즐겨찾기')).toHaveStyle({ color: '#D2D2D6' });
+  expect(screen.getByText('지도')).toHaveStyle({ color: '#FF1956' });
 });
 
 test('iOS 홈 인디케이터와 Android 시스템 내비게이션 영역 위에 하단 메뉴를 배치한다', () => {
@@ -132,8 +152,39 @@ test('시트 내부 하단바를 숨겨도 화면이 소유한 하단바는 유�
   expect(screen.getAllByRole('tab')).toHaveLength(5);
 });
 
-test('예약 선택 아이콘의 체크는 밝은 전경색으로 표시한다', async () => {
-  await renderWithProviders(<MapSheetBottomNavigation activeTab="reservations" sheetTranslateY={new Animated.Value(0)} />);
-  expect(screen.getByTestId('map-navigation-reservation-check')).toHaveProp('stroke', { type: 0, payload: processColor('#F6F6F7') });
+test.each(['LIGHT', 'DARK'] as const)('%s 예약 선택은 Figma checkIn(28px, 체크 컷아웃) 채움 아이콘으로 표시한다', async appearancePreference => {
+  await renderWithProviders(
+    <MapSheetBottomNavigation activeTab="reservations" sheetTranslateY={new Animated.Value(0)} />,
+    { appearancePreference },
+  );
+  const icon = screen.getByTestId('map-navigation-reservations-selected-icon');
+  expect(icon).toHaveProp('color', '#FF1956');
+  expect(icon).toHaveProp('width', 28);
+  expect(icon).toHaveProp('height', 28);
   expect(screen.getByTestId('map-navigation-reservations-surface')).toHaveStyle({ width: '100%', maxWidth: 78 });
+});
+
+test.each([
+  ['LIGHT', 'rgba(228, 228, 229, 0.64)', 'rgba(255, 255, 255, 0)'],
+  ['DARK', 'rgba(255, 255, 255, 0.16)', 'rgba(255, 255, 255, 0.20)'],
+] as const)('%s 장소추천 선택은 내부를 채운 아이콘과 안쪽 원형 선택면으로 표시한다', async (appearancePreference, surface, stroke) => {
+  const view = await renderWithProviders(
+    <MapSheetBottomNavigation activeTab="map" sheetTranslateY={new Animated.Value(0)} />,
+    { appearancePreference },
+  );
+  expect(screen.queryByTestId('map-navigation-recommendations-selected-icon')).toBeNull();
+  expect(screen.queryByTestId('map-navigation-recommendations-selected')).toBeNull();
+
+  await view.rerender(<MapSheetBottomNavigation activeTab="recommendations" sheetTranslateY={new Animated.Value(0)} />);
+  expect(screen.getByTestId('map-navigation-recommendations-selected-icon')).toHaveProp('color', '#FF1956');
+  expect(screen.getByTestId('map-navigation-recommendations-selected')).toHaveStyle({
+    backgroundColor: surface,
+    borderColor: stroke,
+    borderWidth: 1,
+    height: 56,
+    left: 4,
+    top: 4,
+    width: 56,
+  });
+  expect(screen.getByRole('tab', { name: '장소추천', selected: true })).toBeVisible();
 });
