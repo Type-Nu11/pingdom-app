@@ -300,21 +300,24 @@ const RecordingButton = styled.Pressable`height: 44px; flex-direction: row; alig
 const Waveform = styled.View`height: 24px; flex-direction: row; align-items: center; gap: 3px;`;
 const WaveBar = styled.View<{ $height: number; $strong?: boolean }>`
   width: 3px; height: ${({ $height }) => $height}px; border-radius: 2px;
-  background-color: ${({ $strong }) => $strong ? '#ff1956' : '#ff4a75'};
+  background-color: ${({ $strong, theme }) => $strong ? theme.colors.primary : theme.colors.primaryAlternative};
 `;
 const Sheet = styled.View.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.sheet.shadow } }))<{ $glass: boolean; $question: boolean; $results: boolean; $picker: boolean }>`
   width: 100%; max-width: 386px; max-height: ${({ $picker }) => $picker ? 85 : 78}%; align-self: center; padding-top: 6px; padding-bottom: 12px;
   height: auto;
   gap: ${({ $question }) => $question ? 16 : 8}px; border-radius: 36px; overflow: ${({ $question }) => $question ? 'hidden' : 'visible'}; background-color: ${({ theme, $glass }) => $glass ? 'transparent' : theme.liquidGlass.sheet.tint};
 `;
-const Grabber = styled.View`width: 56px; height: 5px; border-radius: 3px; align-self: center; background-color: #bfc1c1;`;
+const Grabber = styled.View`width: 56px; height: 5px; border-radius: 3px; align-self: center; background-color: ${({ theme }) => theme.colors.secondaryNormal};`;
 const SheetHeading = styled.View`gap: 8px;`;
 const Header = styled.View<{ $question: boolean }>`height: ${({ $question }) => $question ? 32 : 40}px; padding-horizontal: 16px; flex-direction: row; align-items: center; justify-content: space-between;`;
 const Title = styled.View`flex-direction: row; align-items: center; gap: 8px;`;
 const TitleText = styled(Text)`color: ${({ theme }) => theme.colors.textStrong}; font-size: 24px; line-height: 31px; font-weight: 700;`;
-const CloseButton = styled.Pressable.attrs({ style: { boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)' } })`
+// Glass/FillRaised circle; dark mode adds the 1px Glass/Stroke so it keeps its edge on the sheet.
+const CloseButton = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: theme.liquidGlass.navigation.shadow } }))`
   width: 32px; height: 32px; border-radius: 16px; align-items: center; justify-content: center;
-  background-color: rgba(255, 255, 255, 0.56);
+  background-color: ${({ theme }) => theme.colors.glassFillRaised};
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.glassStroke};
 `;
 const Content = styled(ScrollView)<{ $results: boolean }>`
   flex-grow: 0;

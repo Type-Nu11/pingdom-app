@@ -21,7 +21,8 @@ export default function MapAssistantButton({ disabled = false, onPress }: Props)
         pointerEvents="none" highlightOpacity={liquidGlass.navigation.highlightOpacity}
         rimColor={liquidGlass.navigation.rim} tintColor={liquidGlass.navigation.softTint} />
       {/* Figma 10018:40595: 44 dp circle at (20,16) within the 84 dp shadow viewport. */}
-      <Artwork width={84} height={84} color={colors.text} fill={colors.surfaceElevated}
+      {/* The circle takes the themed surface and the glyph Label/Neutral, so both states flip in dark. */}
+      <Artwork width={84} height={84} color={colors.labelNeutral} fill={colors.surfaceElevated}
         pointerEvents="none" style={{ position: 'absolute', left: -20, top: -16 }}
         testID={pressed && !disabled ? "map-assistant-button-pressed-artwork" : "map-assistant-button-artwork"} />
     </Button>
