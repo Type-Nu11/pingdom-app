@@ -14,8 +14,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 자동차 추천 경로 조회
-         * @description WGS84 출발·도착 좌표로 NAVER Directions 5 traoptimal 경로 1개를 조회합니다. JWT 인증 필수이며 공급자 키는 서버에서 관리합니다. 경유지·미래 출발 시각·복수 경로·도보·대중교통·자전거는 지원하지 않습니다. 거리 m, 소요시간 초(밀리초 올림), 전체 경로 좌표를 반환하며 저장·캐시·자동 재시도를 하지 않습니다. 기본 사용자당 10회/분, IP당 100회/분이며 설정에 따라 달라질 수 있습니다.
+         * 자동차·대중교통·보행자 추천 경로 조회
+         * @description WGS84 출발·도착 좌표로 자동차는 NAVER Directions, 대중교통·보행자는 TMAP 경로를 조회합니다. JWT 인증 필수이며 공급자 키는 서버에서 관리합니다. 자전거는 지원하지 않습니다. 응답은 저장하지 않으며 자동 재시도를 하지 않습니다. 기본 사용자당 10회/분, IP당 100회/분이며 설정에 따라 달라질 수 있습니다.
          */
         post: operations["findRoute"];
         delete?: never;
@@ -41,6 +41,37 @@ export interface components {
              */
             code?: string | null;
         };
+        Itinerary: {
+            /** Format: int64 */
+            totalTimeSeconds?: number;
+            /** Format: int64 */
+            totalDistanceMeters?: number;
+            /** Format: int32 */
+            transferCount?: number;
+            /** Format: int64 */
+            totalWalkDistanceMeters?: number;
+            /** Format: int64 */
+            totalWalkTimeSeconds?: number;
+            /** Format: int64 */
+            totalFare?: number;
+            legs?: components["schemas"]["Leg"][];
+        };
+        Leg: {
+            mode?: string;
+            /** Format: int64 */
+            distanceMeters?: number;
+            /** Format: int64 */
+            durationSeconds?: number;
+            routeName?: string;
+            routeId?: string;
+            routeColor?: string;
+            /** Format: int32 */
+            routeType?: number;
+            start?: components["schemas"]["Stop"];
+            end?: components["schemas"]["Stop"];
+            path?: components["schemas"]["RouteCoordinate"][];
+            stations?: components["schemas"]["Stop"][];
+        };
         RouteCoordinate: {
             /**
              * Format: double
@@ -55,15 +86,16 @@ export interface components {
              */
             longitude: number;
         };
-        /** @description 현재 조회 시점의 자동차 추천 경로 요청. 동일 출발·도착 좌표는 허용하지 않습니다. */
+        /** @description 현재 조회 시점의 자동차·대중교통·보행자 추천 경로 요청. 동일 출발·도착 좌표는 허용하지 않습니다. */
         RouteRequest: {
             origin: components["schemas"]["RouteCoordinate"];
             destination: components["schemas"]["RouteCoordinate"];
             /**
-             * @description car만 지원. walk/transit/bike는 422, 그 밖의 값은 400
-             * @example car
+             * @description car, transit 또는 walk 지원. bike는 422, 그 밖의 값은 400
+             * @example walk
+             * @enum {string}
              */
-            mode: string;
+            mode: "car" | "transit" | "walk";
         };
         /** @description NAVER traoptimal 첫 번째 실제 자동차 경로. 입력 좌표와 도로 위 시작·끝 좌표는 다를 수 있습니다. */
         RouteResponse: {
@@ -91,6 +123,65 @@ export interface components {
             durationSeconds: number;
             /** @description 출발→도착 순서의 도로 형상 전체. 직선 대체·끝점 덮어쓰기를 하지 않습니다. */
             path?: components["schemas"]["RouteCoordinate"][];
+        };
+        /** @description 공급자가 제공한 순서의 보행 구간 안내 */
+        Step: {
+            /** @description 보행 안내 문구 */
+            instruction?: string;
+            /**
+             * Format: int64
+             * @description 구간 거리(m)
+             */
+            distanceMeters?: number;
+            /**
+             * Format: int64
+             * @description 구간 예상 소요시간(초)
+             */
+            durationSeconds?: number;
+            path?: components["schemas"]["RouteCoordinate"][];
+        };
+        Stop: {
+            name?: string;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
+            stationId?: string;
+        };
+        /** @description TMAP 대중교통 추천 경로 목록 */
+        TransitRouteResponse: {
+            /** @example transit */
+            mode?: string;
+            /** @example tmap */
+            provider?: string;
+            itineraries?: components["schemas"]["Itinerary"][];
+        };
+        /** @description TMAP 보행자 추천 경로 */
+        WalkingRouteResponse: {
+            /**
+             * @example walk
+             * @enum {string}
+             */
+            mode: "walk";
+            /**
+             * @example tmap
+             * @enum {string}
+             */
+            provider: "tmap";
+            /**
+             * Format: int64
+             * @description 공급자가 계산한 총거리(m)
+             */
+            distanceMeters: number;
+            /**
+             * Format: int64
+             * @description 예상 소요시간(초)
+             */
+            durationSeconds: number;
+            /** @description 출발→도착 순서의 전체 보행 경로 */
+            path?: components["schemas"]["RouteCoordinate"][];
+            /** @description 공급자가 제공한 순서의 보행 구간 안내 */
+            steps?: components["schemas"]["Step"][];
         };
     };
     responses: never;
@@ -127,13 +218,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 실제 도로 형상 경로 */
+            /** @description 자동차, 대중교통 또는 보행자 경로 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["RouteResponse"];
+                    "*/*": components["schemas"]["RouteResponse"] | components["schemas"]["TransitRouteResponse"] | components["schemas"]["WalkingRouteResponse"];
                 };
             };
             /** @description INVALID_ROUTE_REQUEST: 누락·문자열·비유한 좌표, 범위 오류, 동일 좌표, 알 수 없는 mode */

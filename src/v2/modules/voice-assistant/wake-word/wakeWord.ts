@@ -13,7 +13,7 @@ export interface WakeWordSession {
 export interface WakeWordAdapter {
   readonly available: boolean;
   requestPermission(): Promise<MicrophonePermission>;
-  createSession(options: { signal: AbortSignal; onDetected(): void; onError(error: WakeWordError): void }): WakeWordSession;
+  createSession(options: { signal: AbortSignal; onDetected(): void; onSuspended?(): void; onError(error: WakeWordError): void }): WakeWordSession;
 }
 export const unavailableWakeWordAdapter: WakeWordAdapter = {
   available: false,
@@ -80,6 +80,13 @@ export function createWakeWordController(adapter: WakeWordAdapter, onDetected: (
           });
         },
         onError(error) { if (live(id)) fail(error); },
+        onSuspended() {
+          if (!live(id)) return;
+          // Native lifecycle notifications can arrive before JS AppState changes.
+          conditions = { ...conditions, foreground: false };
+          void release();
+          update({ phase: 'suspended' });
+        },
       });
       session = owned;
       await owned.start();

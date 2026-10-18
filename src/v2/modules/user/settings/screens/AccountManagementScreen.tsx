@@ -33,12 +33,12 @@ export default function AccountManagementScreen({ onBack, onOpenDetail }: Accoun
         </SettingsSection> : null}
         <AccountInformation />
         <SettingsSection title={t('settings.account.sections.activity')}>
-          <SettingsRow label={t('settings.support.reviewCount')} value={count(reviews.isLoading, reviews.isError, reviews.serverReviewCount)}
+          <SettingsRow label={t('settings.support.reviewCount')} valueLoading={reviews.isLoading} value={count(reviews.isLoading, reviews.isError, reviews.serverReviewCount)}
             onPress={reviews.isError ? () => { void reviews.refetch(); } : undefined} />
           <SettingsRow label={t('settings.account.items.coupons')}
-            value={count(coupons.isLoading, coupons.isError, coupons.data?.totalElements)}
+            valueLoading={coupons.isLoading} value={count(coupons.isLoading, coupons.isError, coupons.data?.totalElements)}
             onPress={() => onOpenDetail(SETTINGS_DETAIL_IDS.Coupons)} />
-          <SettingsRow label={t('settings.support.checkInCount')} value={count(checkIns.isLoading, checkIns.isError, checkIns.data?.serverTotalElements)}
+          <SettingsRow label={t('settings.support.checkInCount')} valueLoading={checkIns.isLoading} value={count(checkIns.isLoading, checkIns.isError, checkIns.data?.serverTotalElements)}
             onPress={checkIns.isError ? () => { void checkIns.refetch(); } : undefined} />
         </SettingsSection>
       </SettingsList>

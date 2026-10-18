@@ -110,7 +110,7 @@ export default function VisitVerificationReviewScreen({
         <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackIcon color={theme.colors.textAlternative} height={44} width={44} /></BackButton>
         <Title accessibilityRole="header">{t('visitVerification.title')}</Title><HeaderSpacer />
       </Header>
-      {place.isLoading ? <LoadingState description={t('visitVerification.placeLoading')} fill /> : place.isError ? (
+      {place.isLoading ? <LoadingState variant="place" description={t('visitVerification.placeLoading')} fill /> : place.isError ? (
         <ApiErrorState error={place.error} fill onBack={onBack} onRetry={() => void place.refetch()} />
       ) : place.data ? (
         <KeyboardArea testID="visit-review-keyboard" keyboardVerticalOffset={insets.top} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -201,7 +201,7 @@ const PickerCount = styled(AppText)`color: ${({ theme }) => theme.colors.textAlt
 // Figma lays the chip list out 370pt wide, 16pt past the section's right padding.
 const Chips = styled.View`flex-direction: row; flex-wrap: wrap; gap: ${({ theme }) => theme.spacing.sm}px; margin-right: -${({ theme }) => theme.spacing.md}px;`;
 const Chip = styled.Pressable<{ $selected: boolean }>`max-width: 100%; height: 34px; flex-direction: row; align-items: center; justify-content: center; gap: ${({ $selected }) => $selected ? 10 : 6}px; padding: 0 15px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.liquidGlass.category.activeBorder : 'transparent'}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.liquidGlass.category.activeTint : theme.colors.backgroundAssistive};`;
-const ChipText = styled(AppText)<{ $selected: boolean }>`flex-shrink: 1; color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textAlternative}; font-size: ${({ theme }) => theme.typography.labelMedium.fontSize}px; font-weight: ${({ theme }) => theme.typography.labelMedium.fontWeight}; line-height: ${({ theme }) => theme.typography.labelMedium.lineHeight}px;`;
+const ChipText = styled(AppText)<{ $selected: boolean }>`flex-shrink: 1; color: ${({ $selected, theme }) => $selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative}; font-size: ${({ theme }) => theme.typography.labelMedium.fontSize}px; font-weight: ${({ theme }) => theme.typography.labelMedium.fontWeight}; line-height: ${({ theme }) => theme.typography.labelMedium.lineHeight}px;`;
 const ReviewInput = styled(AppTextInput)`min-height: 139px; padding: 10px 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.labelMedium.fontSize}px; font-weight: ${({ theme }) => theme.typography.labelMedium.fontWeight}; line-height: ${({ theme }) => theme.typography.labelMedium.lineHeight}px;`;
 const InlineMessage = styled(AppText)`margin: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px 0; color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; line-height: 18px;`;
 const SubmitBar = styled.View`flex-shrink: 0; padding: 0 24px 16px; background-color: ${({ theme }) => theme.colors.surface};`;

@@ -27,7 +27,7 @@ export function createSherpaWakeWordRuntime(native: SherpaWakeWordNative, events
   return {
     ready, requestPermission,
     isAudioAvailable: () => native.isAudioAvailable(),
-    async createDetector({ signal, phrase, onDetected, onError }) {
+    async createDetector({ signal, phrase, onDetected, onSuspended, onError }) {
       if (!ready || signal.aborted || phrase !== SHERPA_WAKE_WORD.phrase) throw new Error('WAKE_WORD_UNAVAILABLE');
       const id = `pingdom-kws-${runtimeId}-${++sequence}`;
       let disposed = false;
@@ -36,6 +36,7 @@ export function createSherpaWakeWordRuntime(native: SherpaWakeWordNative, events
         const event = value as Record<string, unknown>;
         if (event.sessionId !== id) return;
         if (event.type === 'detected' && event.keyword === SHERPA_WAKE_WORD.keyword) onDetected();
+        if (event.type === 'suspended') onSuspended?.();
         if (event.type === 'error') onError(event.reason === 'interrupted' || event.reason === 'release' ? event.reason : 'engine');
       });
       const dispose = async () => {

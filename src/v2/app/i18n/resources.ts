@@ -1,3 +1,4 @@
+import { authErrorResources } from '../../modules/user/account/auth/i18n';
 import { placeProductResources } from '../../modules/place/menus/i18n';
 import { routeResources } from '../../modules/place/map/routes';
 import { onboardingResources } from '../../modules/onboarding/i18n';
@@ -30,6 +31,7 @@ function withOnboarding<Base extends Record<string, unknown>, Copy>(base: Base, 
 // Keep the previous spread precedence: common copy wins on overlapping keys.
 export const resources = {
   en: { translation: {
+    authErrors: authErrorResources.en,
     routes: routeResources.en,
     mapTutorial: mapTutorialResources.en,
     ...offerCouponResources.en,
@@ -41,6 +43,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.en.translation, onboardingResources.en), { ...offerStatusResources.en, ...paymentResources.en }),
   } },
   ko: { translation: {
+    authErrors: authErrorResources.ko,
     routes: routeResources.ko,
     mapTutorial: mapTutorialResources.ko,
     ...offerCouponResources.ko,
@@ -52,6 +55,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.ko.translation, onboardingResources.ko), { ...offerStatusResources.ko, ...paymentResources.ko }),
   } },
   ja: { translation: {
+    authErrors: authErrorResources.ja,
     routes: routeResources.ja,
     mapTutorial: mapTutorialResources.ja,
     ...offerCouponResources.ja,
@@ -63,6 +67,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.ja.translation, onboardingResources.ja), { ...offerStatusResources.ja, ...paymentResources.ja }),
   } },
   'zh-CN': { translation: {
+    authErrors: authErrorResources['zh-CN'],
     routes: routeResources['zh-CN'],
     mapTutorial: mapTutorialResources['zh-CN'],
     ...offerCouponResources['zh-CN'],
@@ -74,6 +79,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources['zh-CN'].translation, onboardingResources['zh-CN']), { ...offerStatusResources['zh-CN'], ...paymentResources['zh-CN'] }),
   } },
   'zh-TW': { translation: {
+    authErrors: authErrorResources['zh-TW'],
     routes: routeResources['zh-TW'],
     mapTutorial: mapTutorialResources['zh-TW'],
     ...offerCouponResources['zh-TW'],
@@ -85,6 +91,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources['zh-TW'].translation, onboardingResources['zh-TW']), { ...offerStatusResources['zh-TW'], ...paymentResources['zh-TW'] }),
   } },
   vi: { translation: {
+    authErrors: authErrorResources.vi,
     routes: routeResources.vi,
     mapTutorial: mapTutorialResources.vi,
     ...offerCouponResources.vi,
@@ -96,6 +103,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.vi.translation, onboardingResources.vi), { ...offerStatusResources.vi, ...paymentResources.vi }),
   } },
   es: { translation: {
+    authErrors: authErrorResources.es,
     routes: routeResources.es,
     mapTutorial: mapTutorialResources.es,
     ...offerCouponResources.es,
@@ -107,6 +115,7 @@ export const resources = {
     ...withBookingStatuses(withOnboarding(sharedResources.es.translation, onboardingResources.es), { ...offerStatusResources.es, ...paymentResources.es }),
   } },
   'pt-BR': { translation: {
+    authErrors: authErrorResources['pt-BR'],
     routes: routeResources['pt-BR'],
     mapTutorial: mapTutorialResources['pt-BR'],
     ...offerCouponResources['pt-BR'],
@@ -116,5 +125,17 @@ export const resources = {
     voiceAssistant: voiceAssistantResources['pt-BR'],
     placeProduct: placeProductResources['pt-BR'],
     ...withBookingStatuses(withOnboarding(sharedResources['pt-BR'].translation, onboardingResources['pt-BR']), { ...offerStatusResources['pt-BR'], ...paymentResources['pt-BR'] }),
+  } },
+  th: { translation: {
+    authErrors: authErrorResources.th,
+    routes: routeResources.th,
+    mapTutorial: mapTutorialResources.th,
+    ...offerCouponResources.th,
+    ...reservationResources.th,
+    community: communityResources.th,
+    visitVerification: visitVerificationResources.th,
+    voiceAssistant: voiceAssistantResources.th,
+    placeProduct: placeProductResources.th,
+    ...withBookingStatuses(withOnboarding(sharedResources.th.translation, onboardingResources.th), { ...offerStatusResources.th, ...paymentResources.th }),
   } },
 } as const;

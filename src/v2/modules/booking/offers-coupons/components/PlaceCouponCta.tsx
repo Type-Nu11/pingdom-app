@@ -1,3 +1,4 @@
+import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
@@ -129,14 +130,14 @@ export default function PlaceCouponCta({
         <CompactSection accessibilityRole="summary" testID="v2-place-offer-compact-loading">
           <CompactSectionTitle>{t('map.detail.coupon')}</CompactSectionTitle>
           <CompactLoadingRow>
-            <ActivityIndicator accessibilityLabel={t('placeOffers.loading')} />
+            <Skeleton variant="reservation" count={1} accessibilityLabel={t('placeOffers.loading')} style={{ width: '100%' }} />
           </CompactLoadingRow>
         </CompactSection>
       );
     }
     return (
       <Wrapper accessibilityRole="summary">
-        <LoadingState description={t('placeOffers.loading')} />
+        <LoadingState variant="reservation" description={t('placeOffers.loading')} />
       </Wrapper>
     );
   }

@@ -6,7 +6,7 @@ import type { OnboardingCountry } from '../../../entry/model/onboardingEntry';
 import CountrySelectionScreen from '../CountrySelectionScreen';
 
 describe('CountrySelectionScreen', () => {
-  test.each(['US', 'CN', 'JP', 'TH', 'VN', 'KR'] as const)(
+  test.each(['US', 'CN', 'JP', 'TH', 'VN', 'KR', 'AR', 'BR', 'CA', 'ES', 'GB', 'PT', 'SG'] as const)(
     '%s 선택 시 다른 국가로 바꾸지 않고 그대로 전달한다',
     async (code: OnboardingCountry) => {
       const onNext = jest.fn();
@@ -26,8 +26,8 @@ describe('CountrySelectionScreen', () => {
       language: 'en',
     });
 
-    expect(['US', 'CN', 'JP', 'TH', 'VN', 'KR'].map((code) => screen.getByTestId(`country-option-${code}`)))
-      .toHaveLength(6);
+    expect(['US', 'CN', 'JP', 'TH', 'VN', 'KR', 'AR', 'BR', 'CA', 'ES', 'GB', 'PT', 'SG'].map((code) => screen.getByTestId(`country-option-${code}`)))
+      .toHaveLength(13);
     expect(screen.getByTestId('country-continue')).toBeEnabled();
   });
 
@@ -41,4 +41,16 @@ describe('CountrySelectionScreen', () => {
     await fireEvent.changeText(screen.getByTestId('country-search-input'), '');
     expect(screen.getByTestId('country-option-US')).toBeVisible();
   });
+});
+
+
+test('new nationalities can be searched by localized names and retain their selected code', async () => {
+  const onNext = jest.fn();
+  await renderWithProviders(<CountrySelectionScreen onBack={jest.fn()} onNext={onNext} />, { language: 'ko' });
+  await fireEvent.changeText(screen.getByTestId('country-search-input'), '영국');
+  expect(screen.getByTestId('country-option-GB')).toHaveTextContent(/영국/);
+  expect(screen.queryByTestId('country-option-US')).toBeNull();
+  await fireEvent.press(screen.getByTestId('country-option-GB'));
+  await fireEvent.press(screen.getByTestId('country-continue'));
+  expect(onNext).toHaveBeenCalledWith('GB');
 });

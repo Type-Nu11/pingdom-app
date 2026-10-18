@@ -1,3 +1,4 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -126,7 +127,7 @@ export function VoiceReservationPanel({ flow, request, timezone = 'Asia/Seoul', 
       </Terms>
       {action('confirm', () => { void flow.confirm(booker); }, locked, 'voice-reservation-confirm')}
     </>}
-    {busy && <Row accessibilityLiveRegion="polite"><ActivityIndicator /><Copy>{label('checking')}</Copy></Row>}
+    {busy && (s.phase === 'submitting' ? <Row accessibilityLiveRegion="polite"><ActivityIndicator /><Copy>{label('checking')}</Copy></Row> : <Skeleton variant="slots" accessibilityLabel={label('checking')} />)}
     {confirmation && action('cancel', flow.clearSelection, s.phase === 'submitting')}
   </Panel>;
 }
@@ -139,7 +140,7 @@ const Slot = styled.Pressable<{ $selected: boolean }>`padding: 12px 16px; gap: 6
   background-color: ${({ theme, $selected }) => $selected ? theme.liquidGlass.category.activeTint : theme.liquidGlass.category.tint};
   opacity: ${({ disabled }) => disabled ? 0.4 : 1};`;
 const SlotLabel = styled(Text)<{ $selected: boolean }>`font-size: 16px; line-height: 21px; font-weight: 700;
-  color: ${({ theme, $selected }) => $selected ? theme.colors.primary : theme.colors.textStrong};`;
+  color: ${({ theme, $selected }) => $selected ? theme.liquidGlass.category.activeForeground : theme.colors.textStrong};`;
 const TimeConfirm = styled.Pressable`min-height: 48px; padding: 12px 16px; border-radius: 24px; align-items: center; justify-content: center;
   background-color: ${({ theme }) => theme.colors.primary}; opacity: ${({ disabled }) => disabled ? 0.4 : 1};`;
 const TimeConfirmText = styled(Text)`font-size: 16px; line-height: 21px; font-weight: 700; color: #ffffff; text-align: center;`;

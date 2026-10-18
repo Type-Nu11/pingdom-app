@@ -14,9 +14,12 @@ import { destinationDistance } from '../model/routeTracking';
 import { routeMetrics } from '../model/routePresentation';
 import { formatDistance } from '../../../../../shared/i18n/formatters';
 import CarIcon from '../assets/mode_car_selected.svg';
+import WalkIcon from '../assets/mode_walk_selected.svg';
+import TransitIcon from '../assets/mode_transit.svg';
 import MyLocationIcon from '../assets/tracking_location.svg';
 
 type Props = {
+  mode?: 'car' | 'walk' | 'transit';
   name: string; destination: Coordinate; coordinate: Coordinate | null; state: RouteState; arrived: boolean;
   following: boolean; preview?: boolean; topInset: number; bottomInset: number; maxHeight: number; deniedPermanently: boolean;
   onStop: () => void; onFollow: () => void; onRefresh: () => void; onSettings: () => void;
@@ -54,7 +57,7 @@ export default function RouteTrackingSheet(props: Props) {
             <Maneuver>
               <ManeuverIcon accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
                 style={{ backgroundColor: theme.liquidGlass.category.activeTint }}>
-                {loading ? <ActivityIndicator color={theme.colors.primary} /> : <CarIcon />}
+                {loading ? <ActivityIndicator color={theme.colors.primary} /> : props.mode === 'walk' ? <WalkIcon /> : props.mode === 'transit' ? <TransitIcon /> : <CarIcon />}
               </ManeuverIcon>
               {distance ? <GuidanceText testID="route-tracking-distance" accessible accessibilityLabel={t('routes.tracking.distance', { distance })}>
                 <Text style={[theme.typography.title1Bold, { color: ink }]}>{distance}</Text>

@@ -7,8 +7,10 @@ import { endpointCoordinate } from '../model/routePreparation';
 import type { RouteDestination } from '../model/routeUi';
 import { watchCurrentLocation } from '../../location/services/locationService';
 import { freshTrackingCoordinate, isTrackingArrival } from '../model/routeTracking';
+import type { NaverMapRouteSegment, NaverMapNativeMarker } from '../../../../../shared/native/NaverMapNativeView';
 
-type Tracking = { destination: RouteDestination; state: RouteState; arrived: boolean; previewOrigin?: Coordinate };
+type TrackingPresentation = { mode: 'car' | 'walk' | 'transit'; routeSegments?: NaverMapRouteSegment[]; markers: NaverMapNativeMarker[] };
+type Tracking = { destination: RouteDestination; state: RouteState; arrived: boolean; previewOrigin?: Coordinate; presentation?: TrackingPresentation };
 
 export function useRouteTracking(location: LocationState) {
   const [preciseCoordinate, setPreciseCoordinate] = useState<Coordinate | null>(null);
@@ -56,11 +58,13 @@ export function useRouteTracking(location: LocationState) {
   }, [tracking, coordinate, destinationCoordinate]);
   return {
     tracking, coordinate,
-    start(origin: RouteDestination, destination: RouteDestination, existingRoute?: CarRoute, initialCoordinate?: Coordinate, previewOrigin?: Coordinate) {
+    start(origin: RouteDestination, destination: RouteDestination, existingRoute?: CarRoute, initialCoordinate?: Coordinate, previewOrigin?: Coordinate, presentation?: TrackingPresentation) {
+      // Non-car guidance must retain the selected provider result, never query a car route.
+      if (!existingRoute && presentation && presentation.mode !== 'car') return;
       session.cancel();
       setNow(Date.now());
       setPreciseCoordinate(initialCoordinate ?? null);
-      setTracking({ destination: { ...destination }, arrived: false, previewOrigin,
+      setTracking({ destination: { ...destination }, arrived: false, previewOrigin, presentation,
         state: existingRoute ? { kind: 'ready', route: existingRoute } : { kind: 'loading' } });
       if (!existingRoute) void session.request(signal => findCarRoute(origin, destination, signal));
     },

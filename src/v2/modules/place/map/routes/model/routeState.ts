@@ -2,7 +2,8 @@ import { toApiError } from '../../../../../shared/api/ApiError';
 import type { CarRoute } from '../api/routesApi';
 export type RouteFailure = 'authentication' | 'forbidden' | 'rate-limited' | 'unavailable' | 'timeout'
   | 'no-route' | 'unsupported' | 'invalid-coordinate' | 'network' | 'error' | 'canceled';
-export type RouteState = { kind: 'idle' | 'loading' } | { kind: 'ready'; route: CarRoute } | { kind: RouteFailure };
+export type RouteState<T = CarRoute> = { kind: 'idle' | 'loading' } | { kind: 'ready'; route: T } | { kind: RouteFailure };
+export type RouteCooldown = { retryAt: number };
 export function routeFailure(error: unknown): RouteFailure {
   const failure = toApiError(error);
   if (failure.code === 'ERR_CANCELED') return 'canceled';
@@ -20,16 +21,15 @@ export function routeFailure(error: unknown): RouteFailure {
 }
 
 /** In-memory, latest-request-wins session. No cache, persistence or automatic retry. */
-export function createRouteSession(publish: (state: RouteState) => void) {
+export function createRouteSession<T = CarRoute>(publish: (state: RouteState<T>) => void, cooldown: RouteCooldown = { retryAt: 0 }) {
   let generation = 0;
-  let retryAt = 0;
   let controller: AbortController | undefined;
   function invalidate() { generation += 1; controller?.abort(); controller = undefined; }
   return {
     cancel() { invalidate(); publish({ kind: 'canceled' }); },
     dispose: invalidate,
-    async request(load: (signal: AbortSignal) => Promise<CarRoute>) {
-      if (Date.now() < retryAt) { publish({ kind: 'rate-limited' }); return; }
+    async request(load: (signal: AbortSignal) => Promise<T>) {
+      if (Date.now() < cooldown.retryAt) { publish({ kind: 'rate-limited' }); return; }
       invalidate();
       const current = generation;
       controller = new AbortController();
@@ -41,7 +41,7 @@ export function createRouteSession(publish: (state: RouteState) => void) {
       } catch (error) {
         if (!signal.aborted && current === generation) {
           const failure = toApiError(error);
-          if (failure.status === 429) retryAt = Date.now() + (failure.retryAfterSeconds ?? 60) * 1000;
+          if (failure.status === 429) cooldown.retryAt = Date.now() + (failure.retryAfterSeconds ?? 60) * 1000;
           publish({ kind: routeFailure(failure) });
         }
       } finally {

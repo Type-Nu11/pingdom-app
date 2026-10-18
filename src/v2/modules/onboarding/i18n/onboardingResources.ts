@@ -361,4 +361,64 @@ export const onboardingResources = {
       title: 'Selecione o objetivo da viagem',
     },
   },
+
+  th: {
+    "preferenceFlow": {
+      "loading": "กำลังกู้คืนการตั้งค่าการเดินทางที่บันทึกไว้...",
+      "restoreError": "ไม่สามารถกู้คืนการตั้งค่าที่บันทึกไว้ได้ คุณสามารถเลือกใหม่แล้วดำเนินการต่อได้",
+      "saveError": "ไม่สามารถบันทึกสิ่งที่คุณเลือกได้ โปรดลองกดดำเนินการต่ออีกครั้ง"
+    },
+    "preferences": {
+      "currentNeeds": {
+        "attendEvent": "กิจกรรม",
+        "cafe": "คาเฟ่",
+        "eat": "อาหาร",
+        "explore": "สำรวจ",
+        "nightlife": "ท่องราตรี",
+        "shop": "ช้อปปิ้ง"
+      },
+      "travelPurposes": {
+        "beauty": "ความงาม",
+        "cafe": "คาเฟ่",
+        "exhibition": "นิทรรศการ",
+        "fashion": "แฟชั่น",
+        "food": "อาหาร",
+        "kPop": "ดนตรี",
+        "other": "อื่น ๆ",
+        "popUp": "ป๊อปอัป"
+      }
+    },
+    "travelScheduleScreen": {
+      "back": "ย้อนกลับ",
+      "calendar": "ปฏิทินวันเดินทาง",
+      "continue": "ดำเนินการต่อ",
+      "description": "โปรดเลือกวันเริ่มต้นและวันสิ้นสุด",
+      "emptyDate": "ยังไม่ได้เลือก",
+      "endDate": "วันสิ้นสุด",
+      "invalidRange": "โปรดตรวจสอบวันที่และเลือกช่วงวันที่ที่ถูกต้องอีกครั้ง",
+      "nextMonth": "เดือนถัดไป",
+      "previousMonth": "เดือนก่อนหน้า",
+      "progress": "ความคืบหน้าการตั้งค่าเริ่มต้น",
+      "progressValue": "ขั้นตอนที่ {{current}} จาก {{total}}",
+      "startDate": "วันเริ่มต้น",
+      "title": "เลือกวันเดินทาง",
+      "weekdays": {
+        "fri": "ศ.",
+        "mon": "จ.",
+        "sat": "ส.",
+        "sun": "อา.",
+        "thu": "พฤ.",
+        "tue": "อ.",
+        "wed": "พ."
+      }
+    },
+    "travelPurposeScreen": {
+      "back": "ย้อนกลับ",
+      "continue": "ดำเนินการต่อ",
+      "description": "เราจะแนะนำสถานที่ยอดนิยมที่ตรงกับความสนใจของคุณ",
+      "progress": "ความคืบหน้าการตั้งค่าเริ่มต้น",
+      "progressValue": "ขั้นตอนที่ {{current}} จาก {{total}}",
+      "title": "เลือกจุดประสงค์การเดินทาง"
+    }
+  },
 } as const;

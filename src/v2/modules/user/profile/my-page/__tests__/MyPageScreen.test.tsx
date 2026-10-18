@@ -164,7 +164,7 @@ describe('MyPageScreen', () => {
     jest.spyOn(profileApi, 'getProfile').mockImplementation(() => new Promise(() => {}));
     const { i18n, queryClient } = await renderMyPage();
     await waitFor(() => expect(queryClient.isFetching()).toBe(1));
-    expect(screen.getByText(i18n.t('myPage.profileLoading'))).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: i18n.t('myPage.profileLoading') })).toBeTruthy();
     expect(screen.getByRole('button', { name: i18n.t('myPage.settings') })).toBeTruthy();
     expect(screen.queryByText(PROFILE.username)).toBeNull();
   });

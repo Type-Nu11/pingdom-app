@@ -1035,4 +1035,188 @@ export const communityResources = {
       discard: { title: 'Descartar esta publicação?', body: 'O que você escreveu não será salvo.', cancel: 'Continuar editando', confirm: 'Descartar' },
     },
   },
+
+  th: {
+    "countries": {
+      "KR": "เกาหลีใต้",
+      "US": "สหรัฐอเมริกา",
+      "JP": "ญี่ปุ่น",
+      "VN": "เวียดนาม",
+      "CN": "จีน",
+      "TH": "ไทย"
+    },
+    "filter": {
+      "open": "กรองตามประเทศ",
+      "dismiss": "ปิดตัวกรองประเทศ",
+      "hintSelect": "แสดงโพสต์จากประเทศนี้",
+      "hintClear": "ล้างตัวกรองประเทศ",
+      "loading": "กำลังโหลดประเทศ…",
+      "loadError": "ไม่สามารถโหลดประเทศได้",
+      "retry": "ลองใหม่"
+    },
+    "title": "ชุมชน",
+    "categories": {
+      "all": "ทั้งหมด",
+      "spot": "สถานที่น่าไป",
+      "diary": "ไดอารี่",
+      "ledger": "ค่าใช้จ่าย"
+    },
+    "sheetAdjust": "ปรับแผงชุมชน",
+    "write": "เขียน",
+    "moreOptions": "ตัวเลือกเพิ่มเติม",
+    "notInterested": "ไม่สนใจ",
+    "report": "รายงาน",
+    "empty": "ยังไม่มีโพสต์",
+    "author": "woo_sm",
+    "like": "ถูกใจ",
+    "comment": "ความคิดเห็น",
+    "list": {
+      "views": "ยอดดู {{count}}",
+      "likesA11y": "ถูกใจ {{count}}",
+      "commentsA11y": "ความคิดเห็น {{count}}",
+      "photosA11y": "รูปภาพ {{count}}",
+      "loading": "กำลังโหลดโพสต์…",
+      "nextPageError": "ไม่สามารถโหลดโพสต์เพิ่มเติมได้",
+      "nextPageRetry": "ลองใหม่"
+    },
+    "detail": {
+      "photos": {
+        "galleryA11y": "รูปภาพในโพสต์ {{count}} รูป",
+        "photoA11y": "รูปภาพในโพสต์ที่ {{index}} จาก {{total}}"
+      },
+      "back": "ย้อนกลับ",
+      "settings": "ตัวเลือกโพสต์",
+      "placeTagPrefix": "ดูสถานที่",
+      "placeDeleted": "สถานที่นี้ถูกลบแล้ว",
+      "placeCard": {
+        "a11yLabel": "สถานที่ที่เชื่อมโยง {{name}}",
+        "a11yHint": "เปิดรายละเอียดสถานที่",
+        "announceFailure": "ไม่สามารถเปิดสถานที่นี้ได้",
+        "errors": {
+          "unavailable": "ขณะนี้ไม่สามารถเปิดสถานที่นี้ได้"
+        }
+      },
+      "comments": {
+        "reply": "ตอบกลับ",
+        "replyA11y": "ตอบกลับ {{author}}",
+        "likeA11y": "ถูกใจความคิดเห็น {{count}}",
+        "likeHintLike": "แตะสองครั้งเพื่อถูกใจความคิดเห็นนี้",
+        "likeHintUnlike": "แตะสองครั้งเพื่อเลิกถูกใจ",
+        "announceLikeFailure": "ไม่สามารถอัปเดตการถูกใจได้ โปรดลองอีกครั้ง",
+        "announceReplySuccess": "โพสต์คำตอบของคุณแล้ว",
+        "headerLabel": "ความคิดเห็น",
+        "authorBadge": "ผู้เขียน",
+        "count": "ความคิดเห็น {{count}}",
+        "jumpA11yLabel": "ไปที่ความคิดเห็น {{count}} รายการ",
+        "loading": "กำลังโหลดความคิดเห็น…",
+        "empty": "ยังไม่มีความคิดเห็น มาแสดงความคิดเห็นเป็นคนแรกกัน!",
+        "errorRetry": "ลองใหม่",
+        "nextPageError": "ไม่สามารถโหลดความคิดเห็นเพิ่มเติมได้",
+        "nextPageRetry": "ลองใหม่",
+        "loadMore": "แสดงความคิดเห็นเพิ่มเติม {{count}} รายการ",
+        "a11yLabel": "{{author}}, {{time}}, {{content}}",
+        "announceSuccess": "โพสต์ความคิดเห็นของคุณแล้ว",
+        "announceFailure": "ไม่สามารถโพสต์ความคิดเห็นของคุณได้"
+      },
+      "like": {
+        "count_one": "ถูกใจ {{count}}",
+        "count_other": "ถูกใจ {{count}}",
+        "a11yLabel_one": "ถูกใจ {{count}}",
+        "a11yLabel_other": "ถูกใจ {{count}}",
+        "hintLike": "แตะสองครั้งเพื่อถูกใจ",
+        "hintUnlike": "แตะสองครั้งเพื่อเลิกถูกใจ",
+        "retryLabel": "ลองใหม่",
+        "announceLiked": "ถูกใจแล้ว",
+        "announceUnliked": "เลิกถูกใจแล้ว",
+        "announceFailure": "เกิดข้อผิดพลาด โปรดลองอีกครั้ง"
+      },
+      "commentInput": {
+        "replyingTo": "กำลังตอบกลับ {{author}}",
+        "cancelReply": "ยกเลิกการตอบกลับ",
+        "replyPlaceholder": "เขียนคำตอบ",
+        "label": "เขียนความคิดเห็น",
+        "placeholder": "แสดงความคิดเห็น",
+        "send": "โพสต์ความคิดเห็น",
+        "sendBusy": "กำลังโพสต์ความคิดเห็น…",
+        "counter": "{{count}}/{{max}}",
+        "validation": {
+          "required": "โปรดป้อนความคิดเห็น",
+          "tooLong": "ความคิดเห็นต้องไม่เกิน 1,000 ตัวอักษร"
+        },
+        "errors": {
+          "parentNotFound": "ความคิดเห็นที่คุณกำลังตอบกลับไม่มีอยู่แล้ว",
+          "networkDuplicateWarning": "หากความคิดเห็นถูกส่งไปแล้ว โปรดตรวจสอบรายการก่อนลองอีกครั้ง",
+          "retry": "ลองใหม่",
+          "signIn": "เข้าสู่ระบบอีกครั้ง",
+          "postNotFound": "ไม่พบโพสต์นี้ อาจถูกลบไปแล้ว"
+        }
+      }
+    },
+    "write_screen": {
+      "photos": {
+        "counter": "{{count}}/{{max}}",
+        "addA11y": "เพิ่มรูปภาพ แนบแล้ว {{count}} จาก {{max}} รูป",
+        "limitReached": "คุณแนบรูปภาพครบสูงสุด {{max}} รูปแล้ว",
+        "photoA11y": "รูปภาพที่แนบ {{index}}",
+        "remove": "ลบรูปภาพ {{index}}",
+        "uploading": "กำลังอัปโหลดรูปภาพ {{index}}",
+        "retry": "ลองใหม่",
+        "retryA11y": "ลองอัปโหลดรูปภาพ {{index}} อีกครั้ง",
+        "uploadFailed": "บางรูปอัปโหลดไม่สำเร็จ โปรดลองอีกครั้งหรือลบรูปเหล่านั้น",
+        "unsupported": "แนบได้เฉพาะรูป JPEG และ PNG โปรดลบรูปที่ไม่รองรับ",
+        "tooLarge": "รูปภาพต้องมีขนาดไม่เกิน 10 MB โปรดลบรูปที่มีขนาดใหญ่เกินไป",
+        "uploadInProgress": "โปรดรอให้อัปโหลดรูปภาพเสร็จ",
+        "permissionDenied": "อนุญาตการเข้าถึงรูปภาพในการตั้งค่าเพื่อแนบรูปภาพ",
+        "openSettings": "เปิดการตั้งค่า"
+      },
+      "title": "เขียนโพสต์",
+      "back": "ยกเลิก",
+      "categoryLabel": "หมวดหมู่",
+      "categoryHint": "เลือกหมวดหมู่ที่ตรงกับโพสต์ของคุณ",
+      "titleLabel": "โพสต์",
+      "titlePlaceholder": "ป้อนชื่อเรื่อง",
+      "bodyLabel": "เนื้อหา",
+      "bodyPlaceholder": "แชร์เรื่องราวของคุณกับชุมชน",
+      "guideText": "โพสต์ที่มีคำหยาบ การหมิ่นประมาท หรือโฆษณาอาจถูกลบตามนโยบายของเรา",
+      "photoSection": "รูปภาพ",
+      "photoCount": "สูงสุด {{count}} รูป",
+      "addPhotos": "เพิ่มรูปภาพ",
+      "placeTagTitle": "แท็กสถานที่",
+      "placeTagHint": "บอกเราว่าโพสต์นี้เกี่ยวกับสถานที่ใด",
+      "addPlace": "เพิ่มสถานที่",
+      "removePlace": "ลบ {{name}}",
+      "submit": "โพสต์",
+      "submitBusy": "กำลังโพสต์…",
+      "validation": {
+        "titleRequired": "โปรดป้อนชื่อเรื่อง",
+        "titleTooLong": "ชื่อเรื่องต้องไม่เกิน 50 ตัวอักษร",
+        "bodyRequired": "โปรดป้อนเนื้อหา",
+        "contentTooLong": "เนื้อหาต้องไม่เกิน 5,000 ตัวอักษร",
+        "tagRequired": "โปรดเลือกอย่างน้อยหนึ่งหมวดหมู่",
+        "categoryRequired": "โปรดเลือกหมวดหมู่",
+        "placeRequired": "โปรดเพิ่มสถานที่อย่างน้อยหนึ่งแห่งสำหรับหมวดหมู่สถานที่"
+      },
+      "placePicker": {
+        "close": "ปิด",
+        "placeholder": "ค้นหาสถานที่",
+        "prompt": "ค้นหาสถานที่ที่ลงทะเบียนไว้เพื่อแท็ก",
+        "empty": "ไม่พบสถานที่ที่ตรงกัน",
+        "error": "ไม่สามารถโหลดสถานที่ได้",
+        "retry": "ลองใหม่",
+        "disabled": "ขณะนี้ไม่สามารถค้นหาสถานที่ได้"
+      },
+      "errors": {
+        "placeNotFound": "ไม่พบหนึ่งในสถานที่ที่เชื่อมโยง โปรดลบออกแล้วเลือกสถานที่อื่น",
+        "networkDuplicateWarning": "หากโพสต์ถูกส่งไปแล้ว โปรดตรวจสอบรายการก่อนลองอีกครั้ง",
+        "retry": "ลองใหม่",
+        "signIn": "เข้าสู่ระบบอีกครั้ง"
+      },
+      "discard": {
+        "title": "ทิ้งโพสต์นี้หรือไม่?",
+        "body": "สิ่งที่คุณเขียนจะไม่ถูกบันทึก",
+        "cancel": "แก้ไขต่อ",
+        "confirm": "ทิ้ง"
+      }
+    }
+  },
 } as const;

@@ -2,12 +2,12 @@ import { createWakeWordController, type WakeWordAdapter, type WakeWordConditions
 
 const active: WakeWordConditions = { foreground: true, focused: true, accountId: 'one', assistantBusy: false };
 function setup() {
-  const sessions: Array<{ detected: () => void; error: () => void; signal: AbortSignal; start: jest.Mock; stop: jest.Mock }> = [];
+  const sessions: Array<{ detected: () => void; suspended: () => void; error: () => void; signal: AbortSignal; start: jest.Mock; stop: jest.Mock }> = [];
   const adapter: WakeWordAdapter = {
     available: true,
     requestPermission: async () => 'granted',
-    createSession({ signal, onDetected, onError }) {
-      const item = { detected: onDetected, error: () => onError('interrupted'), signal, start: jest.fn(async () => {}), stop: jest.fn(async () => {}) };
+    createSession({ signal, onDetected, onSuspended, onError }) {
+      const item = { detected: onDetected, suspended: () => onSuspended?.(), error: () => onError('interrupted'), signal, start: jest.fn(async () => {}), stop: jest.fn(async () => {}) };
       sessions.push(item);
       return item;
     },
@@ -88,6 +88,40 @@ test('interruption requires explicit re-enable and does not restart on focus cha
   x.controller.setConditions(active);
   await x.controller.settle();
   expect(x.controller.getSnapshot().phase).toBe('error');
+  expect(x.sessions).toHaveLength(1);
+  await x.controller.dispose();
+});
+
+test('native background notification before JS AppState preserves opt-in and resumes only on return', async () => {
+  const x = setup();
+  await x.controller.enable();
+  x.sessions[0].suspended();
+  await x.controller.settle();
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'suspended', enabled: true, error: null });
+  expect(x.sessions[0].stop).toHaveBeenCalledTimes(1);
+  expect(x.sessions).toHaveLength(1);
+  x.sessions[0].detected();
+  x.sessions[0].error();
+  expect(x.open).not.toHaveBeenCalled();
+  x.controller.setConditions({ ...active, foreground: false });
+  await x.controller.settle();
+  expect(x.sessions).toHaveLength(1);
+  x.controller.setConditions(active);
+  await x.controller.settle();
+  expect(x.sessions).toHaveLength(2);
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'listening', enabled: true });
+  await x.controller.dispose();
+});
+
+test('background suspension still fails closed when native microphone release fails', async () => {
+  const x = setup();
+  await x.controller.enable();
+  x.sessions[0].stop.mockRejectedValue(new Error('release failed'));
+  x.sessions[0].suspended();
+  await x.controller.settle();
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'error', enabled: false, error: 'release' });
+  x.controller.setConditions(active);
+  await x.controller.settle();
   expect(x.sessions).toHaveLength(1);
   await x.controller.dispose();
 });

@@ -16,7 +16,7 @@ describe('PlaceListExampleScreen', () => {
 
     await renderWithProviders(<PlaceListExampleScreen />);
 
-    expect(screen.getByText('장소를 불러오는 중입니다...')).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: '장소를 불러오는 중입니다...' })).toBeVisible();
   });
 
   test('성공했지만 장소가 없으면 빈 상태를 보여준다', async () => {

@@ -76,5 +76,5 @@ const Column = styled(ScrollView)`flex: 1; height: 170px;`;
 const WheelRow = styled.Pressable`height: 34px; align-items: center; justify-content: center;`;
 const WheelLabel = styled(Text)<{ $selected: boolean; $distance: number }>`font-size: ${({ $selected }) => $selected ? 18 : 16}px;
   line-height: 24px; font-weight: ${({ $selected }) => $selected ? 700 : 500};
-  color: ${({ theme, $selected, $distance }) => $selected ? theme.colors.primary : ($distance > 1 ? theme.colors.textAlternative : theme.colors.text)};
+  color: ${({ theme, $selected, $distance }) => $selected ? theme.liquidGlass.category.activeForeground : ($distance > 1 ? theme.colors.textAlternative : theme.colors.text)};
   opacity: ${({ $selected, $distance }) => $selected ? 1 : $distance > 1 ? 0.4 : 0.7};`;

@@ -1,29 +1,32 @@
 import { apiClient } from '../../../../../shared/api/apiClient';
 import { ApiError } from '../../../../../shared/api/ApiError';
 import type { ApiClient } from '../../../../../shared/api/transport';
-import type { paths } from '../../../../../shared/api/generated/routes';
+import type { components, paths } from '../../../../../shared/api/generated/routes';
 import type { Coordinate } from '../../camera/model/map.types';
 import { hasRouteDestinationCoordinates } from '../model/routeUi';
 
 type Operation = paths['/routes']['post'];
 export type RouteRequest = Operation['requestBody']['content']['application/json'] & { mode: 'car' };
-export type RouteResponse = Operation['responses'][200]['content']['*/*'];
+export type RouteResponse = components['schemas']['RouteResponse'];
 export type CarRoute = { path: Coordinate[]; distanceMeters: number; durationSeconds: number };
 
-export function routeRequest(origin: unknown, destination: unknown): RouteRequest {
+export function routeRequest(origin: unknown, destination: unknown): RouteRequest;
+export function routeRequest(origin: unknown, destination: unknown, mode: 'transit'): Omit<RouteRequest, 'mode'> & { mode: 'transit' };
+export function routeRequest(origin: unknown, destination: unknown, mode: 'walk'): Omit<RouteRequest, 'mode'> & { mode: 'walk' };
+export function routeRequest(origin: unknown, destination: unknown, mode: 'car' | 'transit' | 'walk' = 'car') {
   if (!hasRouteDestinationCoordinates(origin) || !hasRouteDestinationCoordinates(destination)
     || (origin.latitude === destination.latitude && origin.longitude === destination.longitude)) {
     throw new ApiError('Invalid route coordinates', { code: 'INVALID_ROUTE_REQUEST' });
   }
   return {
     origin: { latitude: origin.latitude, longitude: origin.longitude },
-    destination: { latitude: destination.latitude, longitude: destination.longitude }, mode: 'car',
+    destination: { latitude: destination.latitude, longitude: destination.longitude }, mode,
   };
 }
 
-export function mapRouteResponse(raw: unknown): CarRoute {
-  const value = raw as RouteResponse | null;
-  if (value?.mode !== 'car' || value.provider !== 'naver'
+export function mapRouteResponse(raw: unknown, mode: 'car' | 'walk' = 'car'): CarRoute {
+  const value = raw as RouteResponse | components['schemas']['WalkingRouteResponse'] | null;
+  if (value?.mode !== mode || value.provider !== (mode === 'car' ? 'naver' : 'tmap')
     || !Number.isSafeInteger(value.distanceMeters) || value.distanceMeters < 0
     || !Number.isSafeInteger(value.durationSeconds) || value.durationSeconds < 0) {
     throw new ApiError('Invalid route response', { code: 'INVALID_ROUTE_RESPONSE' });

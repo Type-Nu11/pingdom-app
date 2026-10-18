@@ -41,7 +41,7 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
     >
       <Surface
         pointerEvents="none"
-        tintColor={theme.liquidGlass.primaryCta.tint}
+        tintColor={theme.colors.primary}
         style={{ boxShadow: theme.liquidGlass.search.shadow }}
         testID="visit-verification-map-cta-glass"
       >
@@ -57,7 +57,7 @@ const Container = styled.Pressable`
   min-width: 120px;
   border-radius: 24px;
   overflow: hidden;
-  background-color: ${({ theme }) => theme.liquidGlass.primaryCta.tint};
+  background-color: ${({ theme }) => theme.colors.primary};
 `;
 const Surface = styled(GlassSurface)`
   height: 48px;

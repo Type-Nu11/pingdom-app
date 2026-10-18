@@ -13,6 +13,8 @@ type UseBottomSheetParams = {
 const SNAP_ORDER: BottomSheetSnapPoint[] = ['expanded', 'medium', 'collapsed'];
 // Preserve button presses while a finger moves slightly inside the touch target.
 const VERTICAL_DRAG_THRESHOLD = 8;
+// Release velocity alone is noisy on short drags; require an intentional swipe.
+const SNAP_FLICK_MIN_DISTANCE = 48;
 export const shouldClaimVerticalDrag = (gesture: { dx: number; dy: number }) => (
   Math.abs(gesture.dy) > VERTICAL_DRAG_THRESHOLD && Math.abs(gesture.dy) > Math.abs(gesture.dx)
 );
@@ -72,6 +74,7 @@ export const useBottomSheet = ({
         Animated.spring(sheetTranslateY, {
           damping: 26,
           mass: 0.82,
+          overshootClamping: true,
           stiffness: 240,
           toValue: nextValue,
           useNativeDriver: true,
@@ -79,6 +82,7 @@ export const useBottomSheet = ({
         Animated.spring(sheetChromeBottom, {
           damping: 26,
           mass: 0.82,
+          overshootClamping: true,
           stiffness: 240,
           toValue: nextValue,
           useNativeDriver: false,
@@ -116,13 +120,13 @@ export const useBottomSheet = ({
         values.collapsed,
       );
 
-      if (gesture.vy < -0.45) {
+      if (gesture.vy < -0.45 && gesture.dy <= -SNAP_FLICK_MIN_DISTANCE) {
         const currentIndex = SNAP_ORDER.indexOf(snapPointRef.current);
         snapTo(SNAP_ORDER[Math.max(0, currentIndex - 1)]);
         return;
       }
 
-      if (gesture.vy > 0.45) {
+      if (gesture.vy > 0.45 && gesture.dy >= SNAP_FLICK_MIN_DISTANCE) {
         const currentIndex = SNAP_ORDER.indexOf(snapPointRef.current);
         snapTo(SNAP_ORDER[Math.min(SNAP_ORDER.length - 1, currentIndex + 1)]);
         return;

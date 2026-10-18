@@ -25,6 +25,7 @@ const matchesLanguage = (language: string) => (locale: ParsedLocale) => locale.l
 // Every supported language declares its own locale mapping here, so a locale that no
 // definition claims falls through to the existing profile/device/default order.
 const LANGUAGE_DEFINITIONS: Record<SupportedLanguage, LanguageDefinition> = {
+  th: { aliases: ['thai', 'ภาษาไทย', '태국어'], matchesLocale: matchesLanguage('th') },
   en: { aliases: ['english', '영어'], matchesLocale: matchesLanguage('en') },
   ko: { aliases: ['korean', '한국어'], matchesLocale: matchesLanguage('ko') },
   ja: { aliases: ['japanese', '日本語', '일본어'], matchesLocale: matchesLanguage('ja') },

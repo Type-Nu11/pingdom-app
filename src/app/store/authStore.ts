@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { hydrateAuthTokens, persistTokens, removeTokens } from '../../shared/api/authTokens';
 import { normalizeAuthTokens, type AuthTokens } from '../../shared/api/authStorage';
+import { rememberAuthenticatedEntry, restoreAuthenticatedEntry } from './authEntryStorage';
 
 export type AuthState = {
   accessToken: string | null;
   isLoggedIn: boolean;
   isHydrating: boolean;
+  hasAuthenticated: boolean;
 };
 
 type AuthActions = {
@@ -29,17 +31,21 @@ export function configureBeforeLogout(handler: BeforeLogoutHandler): () => void 
   };
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   accessToken: null,
   isLoggedIn: false,
   isHydrating: true,
+  hasAuthenticated: false,
 
   bootstrapAuth: async () => {
     set({ isHydrating: true });
 
     try {
+      const returningUser = await restoreAuthenticatedEntry();
+      set({ hasAuthenticated: get().hasAuthenticated || returningUser });
       const tokens = await hydrateAuthTokens();
       const hasCompleteSession = Boolean(tokens?.accessToken);
+      if (hasCompleteSession) await rememberAuthenticatedEntry();
 
       if (tokens && !hasCompleteSession) {
         await removeTokens();
@@ -48,6 +54,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       set({
         accessToken: hasCompleteSession ? tokens?.accessToken ?? null : null,
         isLoggedIn: hasCompleteSession,
+        hasAuthenticated: get().hasAuthenticated || hasCompleteSession,
         isHydrating: false,
       });
     } catch {
@@ -67,9 +74,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
 
     await persistTokens(normalizedTokens);
+    await rememberAuthenticatedEntry();
     set({
       accessToken: normalizedTokens.accessToken,
       isLoggedIn: true,
+      hasAuthenticated: true,
       isHydrating: false,
     });
   },
@@ -80,7 +89,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
     if (isLogoutInProgress) return;
 
     isLogoutInProgress = true;
-    set({ isHydrating: true, isLoggedIn: false });
+    const returningUser = get().hasAuthenticated || get().isLoggedIn || !!get().accessToken;
+    set({ isHydrating: true, isLoggedIn: false, hasAuthenticated: returningUser });
 
     try {
       try {
@@ -90,6 +100,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         console.warn('Before logout cleanup failed:', error);
       }
 
+      if (returningUser) await rememberAuthenticatedEntry();
       await removeTokens();
       set({
         accessToken: null,
@@ -103,8 +114,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
 }));
 
 export function getAuthState(): AuthState {
-  const { accessToken, isLoggedIn, isHydrating } = useAuthStore.getState();
-  return { accessToken, isLoggedIn, isHydrating };
+  const { accessToken, isLoggedIn, isHydrating, hasAuthenticated } = useAuthStore.getState();
+  return { accessToken, isLoggedIn, isHydrating, hasAuthenticated };
 }
 
 export function subscribeAuth(listener: () => void): () => void {
@@ -135,9 +146,12 @@ export async function clearExpiredSession(): Promise<void> {
   if (isLogoutInProgress) return;
 
   isLogoutInProgress = true;
-  useAuthStore.setState({ accessToken: null, isHydrating: true, isLoggedIn: false });
+  const previous = useAuthStore.getState();
+  const returningUser = previous.hasAuthenticated || previous.isLoggedIn || !!previous.accessToken;
+  useAuthStore.setState({ accessToken: null, isHydrating: true, isLoggedIn: false, hasAuthenticated: returningUser });
 
   try {
+    if (returningUser) await rememberAuthenticatedEntry();
     await removeTokens();
   } finally {
     useAuthStore.setState({ accessToken: null, isHydrating: false, isLoggedIn: false });

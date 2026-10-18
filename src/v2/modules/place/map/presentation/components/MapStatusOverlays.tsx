@@ -1,3 +1,4 @@
+import Skeleton from '../../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React from 'react';
 import { ActivityIndicator, Linking } from 'react-native';
@@ -75,8 +76,7 @@ export function MapDataStatusOverlay({
   if (isLoading) {
     return (
       <MapCard accessibilityLiveRegion="polite" testID="v2-map-loading">
-        <ActivityIndicator color={theme.colors.primary} />
-        <BodyText>{t('map.data.loading')}</BodyText>
+        <Skeleton variant="place" accessibilityLabel={t('map.data.loading')} />
       </MapCard>
     );
   }

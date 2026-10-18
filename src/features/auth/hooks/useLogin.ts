@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { loginWithTokens } from '../../../app/store/authStore';
 import { authApi } from '../api/authApi';
 import type { LoginRequest } from '../model/auth.types';
+import { getAuthErrorKey } from '../../../v2/modules/user/account/auth';
 
 export const useLogin = () => {
   const { t } = useTranslation();
@@ -18,9 +19,7 @@ export const useLogin = () => {
       await loginWithTokens(tokens);
       return true;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('auth.login.unknownError');
-      setErrorMessage(message);
+      setErrorMessage(t(getAuthErrorKey(error, 'login')));
       return false;
     } finally {
       setIsSubmitting(false);

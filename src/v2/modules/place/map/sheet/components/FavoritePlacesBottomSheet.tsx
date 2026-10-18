@@ -1,3 +1,4 @@
+import Skeleton from '../../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import ApiErrorState from '../../../../../shared/components/ApiErrorState';
@@ -306,7 +307,7 @@ export default function FavoritePlacesBottomSheet({
                   onPress={() => setActiveCategory(id)}
                   style={[styles.categoryChip, active && styles.categoryChipActive]}
                 >
-                  {Icon ? <Icon color={active ? colors.primary : colors.textAlternative} height={18} width={iconWidth} /> : null}
+                  {Icon ? <Icon color={active ? theme.liquidGlass.category.activeForeground : colors.textAlternative} height={18} width={iconWidth} /> : null}
                   <AppText style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</AppText>
                 </Pressable>
               );
@@ -331,9 +332,7 @@ export default function FavoritePlacesBottomSheet({
                   place={place}
                 />
               )) : isLoading ? (
-                <View style={styles.emptyState}>
-                  <AppText style={styles.emptyTitle}>{t('map.favorites.loading')}</AppText>
-                </View>
+                <Skeleton accessibilityLabel={t('map.favorites.loading')} />
               ) : isUnauthorized ? (
                 <View style={styles.emptyState}>
                   <AppText style={styles.emptyTitle}>{t('map.favorites.sessionTitle')}</AppText>
@@ -392,7 +391,7 @@ const createStyles = ({ colors, liquidGlass: glass }: AppTheme): Record<string, 
   categoryChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
   categoryContent: { gap: 8, paddingBottom: 10, paddingHorizontal: 16, paddingTop: 16 },
   categoryLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18, includeFontPadding: false },
-  categoryLabelActive: { color: colors.primary },
+  categoryLabelActive: { color: glass.category.activeForeground },
   categoryScroll: { flexGrow: 0, height: 62, overflow: 'hidden' },
   content: { flex: 1 },
   emptyBody: { color: colors.textMuted, fontSize: 13, marginTop: 5 },
@@ -406,7 +405,7 @@ const createStyles = ({ colors, liquidGlass: glass }: AppTheme): Record<string, 
   list: { flex: 1 },
   listContent: { paddingBottom: 12, paddingHorizontal: 16 },
   listViewport: { overflow: 'hidden' },
-  loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primary, borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
+  loadMoreButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primaryAction, borderRadius: 18, marginBottom: 18, paddingHorizontal: 20, paddingVertical: 9 },
   loadMoreError: { color: colors.textMuted, fontSize: 13 },
   loadMoreState: { alignItems: 'center', gap: 8 },
   moreButton: { alignItems: 'center', height: 24, justifyContent: 'center', width: 3 },

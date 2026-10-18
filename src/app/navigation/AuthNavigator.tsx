@@ -36,13 +36,14 @@ function goBackOrOpenOnboarding(
 
 type AuthNavigatorProps = Readonly<{
   completion?: OnboardingCompletion;
+  returningUser?: boolean;
   onComplete: (
     signupContext: Omit<SignupOnboardingContext, 'entryVariant'>,
   ) => Promise<void>;
 }>;
 
-const AuthNavigator = ({ completion, onComplete }: AuthNavigatorProps) => {
-  const initialRouteName = getAuthInitialRoute(completion);
+const AuthNavigator = ({ completion, onComplete, returningUser = false }: AuthNavigatorProps) => {
+  const initialRouteName = getAuthInitialRoute(completion, returningUser);
 
   return (
     <Stack.Navigator
@@ -53,7 +54,7 @@ const AuthNavigator = ({ completion, onComplete }: AuthNavigatorProps) => {
         {({ navigation }) => (
           <OnboardingFlow
             onComplete={async (signupContext) => {
-              const isRevisitingCompletedOnboarding = completion !== undefined;
+              const isRevisitingCompletedOnboarding = completion !== undefined || returningUser;
 
               await onComplete(signupContext);
 
@@ -69,11 +70,11 @@ const AuthNavigator = ({ completion, onComplete }: AuthNavigatorProps) => {
       </Stack.Screen>
       <Stack.Screen name={AUTH_ROUTES.AuthLanding}>
         {({ navigation }) => {
-          if (!completion) return null;
+          if (!completion && !returningUser) return null;
 
           return (
             <AuthLandingScreen
-              entryVariant={completion.signupContext.entryVariant}
+              entryVariant={completion?.signupContext.entryVariant ?? 'foreign'}
               onBack={() => goBackOrOpenOnboarding(navigation)}
               onLogin={() => navigation.navigate(AUTH_ROUTES.Login)}
               onSignup={() => navigation.navigate(AUTH_ROUTES.Signup)}

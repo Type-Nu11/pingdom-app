@@ -79,10 +79,7 @@ const RELATIVE_FALLBACKS: Record<string, {
   vi: { format: (value, unit) => `${value} ${unit} trước`, now: 'bây giờ', units: { day: 'ngày', hour: 'giờ', minute: 'phút' } },
   es: { format: (value, unit) => `hace ${value} ${unit}`, now: 'ahora', units: { day: 'd', hour: 'h', minute: 'min' } },
   'pt-BR': { format: (value, unit) => `há ${value} ${unit}`, now: 'agora', units: { day: 'd', hour: 'h', minute: 'min' } },
-};
-
-const RELATIVE_NOW_ONLY: Record<string, string> = {
-  th: 'ตอนนี้',
+  th: { format: (value, unit) => `${value} ${unit}ที่แล้ว`, now: 'ตอนนี้', units: { day: 'วัน', hour: 'ชั่วโมง', minute: 'นาที' } },
 };
 
 const formatRelativeMinutesFallback = (minutesAgo: number, language: string) => {
@@ -90,7 +87,7 @@ const formatRelativeMinutesFallback = (minutesAgo: number, language: string) => 
   const baseLanguage = language.toLowerCase().split('-')[0];
   const fallback = RELATIVE_FALLBACKS[resolveLocale(language)] ?? RELATIVE_FALLBACKS[baseLanguage] ?? RELATIVE_FALLBACKS.en;
 
-  if (value === 0) return RELATIVE_NOW_ONLY[baseLanguage] ?? fallback.now;
+  if (value === 0) return fallback.now;
   return fallback.format(value, fallback.units[unit]);
 };
 

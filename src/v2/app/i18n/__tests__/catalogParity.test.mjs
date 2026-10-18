@@ -53,6 +53,11 @@ const CHINESE_UNTRANSLATED_ALLOWLIST = [
 // - untranslatedAllowlist: values intentionally kept in their original form (brand names, units,
 //   formatting-only placeholders and fixed display labels).
 const LANGUAGE_RULES = {
+  th: {
+    nativeScript: /[\u0E00-\u0E7F]/u,
+    forbiddenScripts: [HANGUL, KANA, HAN],
+    untranslatedAllowlist: new Set(LATIN_BRAND_AND_UNIT_KEYS),
+  },
   ja: {
     forbiddenScripts: [HANGUL],
     nativeScript: JAPANESE_SCRIPT,
@@ -84,6 +89,7 @@ const LANGUAGE_RULES = {
     // Brand names plus loanwords Vietnamese keeps as written (Email, Pop-up, OK).
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
+      'countries.ar', 'countries.br', 'countries.ca', 'countries.sg',
       'auth.signup.email',
       'map.search.confirm',
       'onboarding.preferences.travelPurposes.popUp',
@@ -97,6 +103,7 @@ const LANGUAGE_RULES = {
     // Brand names plus words Spanish spells like English (China, Vietnam, Info, Pop-up, Check-ins).
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
+      'countries.ar', 'countries.pt',
       'community.countries.CN',
       'community.countries.VN',
       'countries.cn',
@@ -115,6 +122,7 @@ const LANGUAGE_RULES = {
     // Brand names plus words Brazilian Portuguese spells like English (China, Status, Info, OK, Pop-up).
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
+      'countries.ar', 'countries.pt',
       'community.countries.CN',
       'countries.cn',
       'map.categories.popup',

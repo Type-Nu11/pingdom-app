@@ -72,7 +72,11 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
   const validateStep1 = () => {
     const trimmedEmail = email.trim();
     const newErrors: FieldError = {
-      username: username.trim() ? undefined : t('auth.validation.usernameRequired'),
+      username: !username.trim()
+        ? t('auth.validation.usernameRequired')
+        : username.trim().length < 4 || username.trim().length > 50
+          ? t('myPage.profileEdit.usernameLengthInvalid')
+          : undefined,
       email: !trimmedEmail
         ? t('auth.validation.emailRequired')
         : /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedEmail)
@@ -166,10 +170,11 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
                     value={username}
                     onChangeText={(v) => { setUsername(v); setErrors((e) => ({ ...e, username: undefined })); }}
                     autoCapitalize="none"
+                    autoCorrect={false}
                   />
                 </View>
-                <Text style={[styles.helper, errors.username ? styles.helperVisible : styles.helperHidden]}>
-                  {errors.username ?? ' '}
+                <Text style={[styles.helper, errors.username ? styles.helperVisible : styles.helperHint]}>
+                  {errors.username ?? t('myPage.profileEdit.usernameLengthInvalid')}
                 </Text>
               </View>
 
@@ -244,10 +249,20 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
                   value={password}
                   onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined })); }}
                   secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
                 {password.length > 0 && (
-                  <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
-                    <SvgXml xml={showPassword ? OPEN_EYE_SVG : CLOSED_EYE_SVG} width={20} height={16} />
+                  <Pressable
+                    style={styles.visibilityButton}
+                    onPress={() => setShowPassword((v) => !v)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t(showPassword ? 'myPage.profileEdit.hidePassword' : 'myPage.profileEdit.showPassword', { field: t('auth.signup.password') })}
+                    accessibilityState={{ selected: showPassword }}
+                  >
+                    <View pointerEvents="none">
+                      <SvgXml xml={showPassword ? OPEN_EYE_SVG : CLOSED_EYE_SVG} width={20} height={16} />
+                    </View>
                   </Pressable>
                 )}
               </View>
@@ -266,10 +281,20 @@ export default function SignUpDetailsScreen({ onBack, onboardingData }: SignUpDe
                   value={passwordConfirm}
                   onChangeText={(v) => { setPasswordConfirm(v); setErrors((e) => ({ ...e, passwordConfirm: undefined })); }}
                   secureTextEntry={!showPasswordConfirm}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
                 {passwordConfirm.length > 0 && (
-                  <Pressable onPress={() => setShowPasswordConfirm((v) => !v)} hitSlop={8}>
-                    <SvgXml xml={showPasswordConfirm ? OPEN_EYE_SVG : CLOSED_EYE_SVG} width={20} height={16} />
+                  <Pressable
+                    style={styles.visibilityButton}
+                    onPress={() => setShowPasswordConfirm((v) => !v)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t(showPasswordConfirm ? 'myPage.profileEdit.hidePassword' : 'myPage.profileEdit.showPassword', { field: t('auth.signup.passwordConfirm') })}
+                    accessibilityState={{ selected: showPasswordConfirm }}
+                  >
+                    <View pointerEvents="none">
+                      <SvgXml xml={showPasswordConfirm ? OPEN_EYE_SVG : CLOSED_EYE_SVG} width={20} height={16} />
+                    </View>
                   </Pressable>
                 )}
               </View>
@@ -373,6 +398,15 @@ const styles = StyleSheet.create({
   },
   helperVisible: {
     color: ERROR,
+  },
+  helperHint: {
+    color: colors.labelDim,
+  },
+  visibilityButton: {
+    width: 44,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   helperHidden: {
     color: 'transparent',

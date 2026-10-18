@@ -1,3 +1,4 @@
+import Skeleton, { SkeletonGroup, SkeletonBlock } from '../../../../../shared/components/Skeleton';
 import DetailBackAsset from '../../../../../../assets/v2/icons/place/detail-back.svg';
 import DetailBookmarkAsset from '../../../../../../assets/v2/icons/place/detail-bookmark.svg';
 import DetailShareAsset from '../../../../../../assets/v2/icons/place/detail-share.svg';
@@ -26,6 +27,7 @@ import {
   Animated,
   GestureResponderHandlers,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -450,7 +452,7 @@ const formatPreviewLocation = (place: DecisionPlace, language: string) => {
   return [distance, address].filter(Boolean).join(' · ');
 };
 
-const PlaceArtwork = ({
+const PlaceArtwork = React.memo(({
   blurBottom = false,
   imageUrl,
   variant = 'trend',
@@ -506,16 +508,18 @@ const PlaceArtwork = ({
       <Animated.Image
         onError={() => setHasImageError(true)}
         onLoad={handleLoad}
+        resizeMethod="resize"
         resizeMode="cover"
         source={imageSource}
         style={styles.artworkImage}
-        testID={blurBottom ? 'recommendation-featured-image' : undefined}
+        testID={blurBottom ? 'recommendation-featured-image' : 'place-artwork-image'}
       />
       {blurBottom ? (
         <View pointerEvents="none" style={styles.artworkBlurClip}>
           <Image
             blurRadius={2}
             onError={() => setHasImageError(true)}
+            resizeMethod="resize"
             resizeMode="cover"
             source={imageSource}
             style={styles.artworkBlurImage}
@@ -525,7 +529,7 @@ const PlaceArtwork = ({
       ) : null}
     </Animated.View>
   );
-};
+});
 
 const RecommendationCardPressable = ({
   accessibilityLabel,
@@ -813,7 +817,8 @@ const PlaceTrendCard = ({
     onPress={onPress}
     style={({ pressed }) => [styles.homeTrendCard, pressed && styles.pressed]}
   >
-    <PlaceArtwork blurBottom imageUrl={imageUrl} />
+    {/* Android's bitmap blur duplicates every thumbnail; the scrim supplies contrast. */}
+    <PlaceArtwork blurBottom={Platform.OS !== 'android'} imageUrl={imageUrl} />
     <CardScrim />
     <Pressable
       accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -874,7 +879,7 @@ export const ExpandedPlaceCard = ({
     onPress={onPress}
     style={({ pressed }) => [styles.homeGridCard, size, pressed && styles.pressed]}
   >
-    <PlaceArtwork blurBottom imageUrl={imageUrl} variant="grid" />
+    <PlaceArtwork blurBottom={Platform.OS !== 'android'} imageUrl={imageUrl} variant="grid" />
     <CardScrim />
     <Pressable
       accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
@@ -1100,6 +1105,8 @@ const EmptyCard = ({
     ? null
     : nationalCopy ? `map.sheet.state.national${nationalState}Body` : `map.sheet.state.${copyState}Body`;
   const accessibilityLabel = t(titleKey);
+  if (copyState === 'loading') return <Skeleton variant="list" count={variant === 'row' ? 1 : 3}
+    accessibilityLabel={accessibilityLabel} testID="map-home-feed-state-loading" style={{ width: '100%', padding: 16 }} />;
   const retryable = ![
     'category-empty',
     'disabled',
@@ -1118,7 +1125,7 @@ const EmptyCard = ({
       style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
       testID={`map-home-feed-state-${copyState}`}
     >
-      <View style={styles.emptyCardIcon}>{copyState === 'loading' || copyState === 'location-pending'
+      <View style={styles.emptyCardIcon}>{copyState === 'location-pending'
         ? <MapPinIcon active size={24} /> : <UnavailableStateIcon size={64} />}</View>
       <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
       {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
@@ -1145,13 +1152,15 @@ const RecommendationState = ({
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
+  if (state === 'loading') return <Skeleton accessibilityLabel={t('map.sheet.state.recommendationLoadingTitle')}
+    testID="recommendation-state-loading" style={{ padding: 16 }} />;
   return (
   <View
     accessibilityLiveRegion="polite"
     style={styles.recommendationState}
     testID={`recommendation-state-${state}`}
   >
-    {state !== 'loading' ? <UnavailableStateIcon size={64} /> : null}
+    <UnavailableStateIcon size={64} />
     <AppText style={styles.emptyCardTitle}>
       {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Title`)}
     </AppText>
@@ -1624,7 +1633,14 @@ const PreviewContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        {imageUrls.map((url, index) => (
+        {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
+          <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <SkeletonBlock width={242} height={182} radius={16} />
+              <SkeletonBlock width={184} height={182} radius={16} />
+            </View>
+          </SkeletonGroup>
+        ) : imageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={t('map.detail.imageDetail', { count: index + 1, name: place.name })}
             accessibilityRole="button"
@@ -1910,7 +1926,7 @@ const ExpandedPlaceContent = ({
   return (
     <>
     <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-    <ScrollView
+    <GlassStyles.ExpandedPlaceScroll
       contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
       testID="map-expanded-place-scroll"
@@ -2001,7 +2017,14 @@ const ExpandedPlaceContent = ({
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        {imageUrls.map((url, index) => (
+        {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
+          <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <SkeletonBlock width={242} height={182} radius={16} />
+              <SkeletonBlock width={184} height={182} radius={16} />
+            </View>
+          </SkeletonGroup>
+        ) : imageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={url
               ? t('map.detail.imageDetail', { count: index + 1, name: place.name })
@@ -2210,7 +2233,7 @@ const ExpandedPlaceContent = ({
                 <AppText style={styles.detailEmptyText}>{t('map.detail.reviewError')}</AppText>
               </Pressable>
             ) : fallbackContent?.reviewState === 'loading' ? (
-              <AppText accessibilityLiveRegion="polite" style={styles.detailEmptyText}>{t('map.detail.reviewLoading')}</AppText>
+              <Skeleton variant="comments" accessibilityLabel={t('map.detail.reviewLoading')} />
             ) : fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
               <DetailReviewItem
                 key={`${review.author}-${review.createdAt}-${index}`}
@@ -2225,7 +2248,7 @@ const ExpandedPlaceContent = ({
           </View>
         </View>
       )}
-    </ScrollView>
+    </GlassStyles.ExpandedPlaceScroll>
     </>
   );
 };
@@ -2393,8 +2416,9 @@ export default function MapBottomSheet({
     <GlassStyles.BottomSheetContainer
       style={{ height, transform: [{ translateY: sheetTranslateY }] }}
     >
-      <GlassStyles.SheetChromeShadow
+      {!isExpandedPlaceDetail ? <GlassStyles.SheetChromeShadow
         pointerEvents="none"
+        testID="map-sheet-chrome"
         style={[
           {
             boxShadow: themedGlass.sheet.shadow,
@@ -2429,8 +2453,8 @@ export default function MapBottomSheet({
             topRimOnly
           />
         </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow>
-      <GlassStyles.SheetInner $inset={isExpandedPlaceDetail ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
+      </GlassStyles.SheetChromeShadow> : null}
+      <GlassStyles.SheetInner $opaque={isExpandedPlaceDetail} $inset={isExpandedPlaceDetail ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -2459,7 +2483,7 @@ export default function MapBottomSheet({
         testID="map-sheet-content"
       >
       {content.type === 'place-preview' && detailError ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
-      {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
+      {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState variant="place" description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
           <ExpandedPlaceContent
             activeAction={activePreviewAction}
@@ -2563,7 +2587,7 @@ export default function MapBottomSheet({
           {resultsError ? <ApiErrorState error={resultsError} busy={resultsBusy} onRetry={onRetryResults} /> : null}
           {places.length > 0 ? places.map((place) => (
             <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
-          )) : resultsLoading ? <LoadingState description={t('placeDetail.loading')} /> : resultsError ? null : <EmptyCard />}
+          )) : resultsLoading ? <LoadingState variant="place" description={t('placeDetail.loading')} /> : resultsError ? null : <EmptyCard />}
         </ScrollView>
       ) : content.type === 'recommendations' ? (
         <RecommendationContent
@@ -2667,7 +2691,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   detailAmenityRow: { columnGap: 16, flexDirection: 'row' },
   detailBackText: { color: colors.textMuted, fontSize: 34, fontWeight: '300', lineHeight: 36, marginTop: -4 },
   detailCategory: { color: colors.text, flexShrink: 0, fontSize: 18, fontWeight: '500', includeFontPadding: false, lineHeight: 24, marginLeft: 4 },
-  detailContent: { backgroundColor: colors.background, paddingBottom: 48 },
+  detailContent: { backgroundColor: colors.background, flexGrow: 1, paddingBottom: 48 },
   detailCouponBody: { flex: 1 },
   detailCouponIcon: {
     alignItems: 'center',
@@ -2839,7 +2863,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     top: 10,
     zIndex: 3,
   },
-  bookmarkPillActive: { backgroundColor: colors.primary },
+  bookmarkPillActive: { backgroundColor: colors.primaryAction },
   bookmarkPillText: { color: colors.primary, fontSize: 12, fontWeight: '900' },
   bookmarkPillTextActive: { color: colors.onPrimary },
   categoryChip: {
@@ -2967,7 +2991,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   recommendationSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 5 },
   recommendationTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900' },
   recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  retryButton: { backgroundColor: colors.primary, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  retryButton: { backgroundColor: colors.primaryAction, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
   retryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   externalBadge: {
     alignSelf: 'flex-start',

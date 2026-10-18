@@ -54,7 +54,7 @@ export default function CouponDetailContainer(props: CouponDetailContainerProps)
   if (couponQuery.isLoading) {
     return (
       <Screen edges={['top', 'right', 'bottom', 'left']}>
-        <LoadingState description={t('myPage.couponDetail.loading')} fill />
+        <LoadingState variant="detail" description={t('myPage.couponDetail.loading')} fill />
       </Screen>
     );
   }

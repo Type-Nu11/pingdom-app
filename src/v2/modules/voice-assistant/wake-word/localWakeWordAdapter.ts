@@ -13,7 +13,7 @@ export type LocalWakeWordRuntime = {
   readonly ready: boolean;
   requestPermission(): Promise<MicrophonePermission>;
   isAudioAvailable(): Promise<boolean>;
-  createDetector(options: { phrase: 'Hey Pingdy'; signal: AbortSignal; onDetected(): void; onError(error: WakeWordError): void }): Promise<LocalKeywordDetector>;
+  createDetector(options: { phrase: 'Hey Pingdy'; signal: AbortSignal; onDetected(): void; onSuspended?(): void; onError(error: WakeWordError): void }): Promise<LocalKeywordDetector>;
 };
 
 /** Native driver injection keeps provider keys/models out of JS/env and supports
@@ -22,7 +22,7 @@ export function createLocalWakeWordAdapter(runtime: LocalWakeWordRuntime): WakeW
   return {
     get available() { return runtime.ready; },
     requestPermission: () => runtime.requestPermission(),
-    createSession({ signal, onDetected, onError }) {
+    createSession({ signal, onDetected, onSuspended, onError }) {
       let detector: LocalKeywordDetector | undefined;
       let stopped = false;
       let startup: Promise<void> | undefined;
@@ -49,6 +49,7 @@ export function createLocalWakeWordAdapter(runtime: LocalWakeWordRuntime): WakeW
             if (!isLive()) return;
             detector = await runtime.createDetector({ phrase: 'Hey Pingdy', signal,
               onDetected: () => { if (isLive()) onDetected(); },
+              onSuspended: () => { if (isLive()) onSuspended?.(); },
               onError: error => { if (isLive()) onError(error); },
             });
             if (isLive()) await detector.start();

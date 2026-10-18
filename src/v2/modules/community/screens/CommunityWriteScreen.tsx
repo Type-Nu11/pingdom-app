@@ -1,6 +1,7 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView } from 'react-native';
+import { ActivityIndicator, BackHandler, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
@@ -172,6 +173,31 @@ export default function CommunityWriteScreen({
   // rather than just left to fail again.
   const isBlockedByAuthorization = bannerKind === 'authorization';
 
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      Keyboard.dismiss();
+      setPickerOpen(false);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [pickerOpen]);
+
+  if (pickerOpen) {
+    return (
+      <CommunityPlacePicker
+        onClose={() => { Keyboard.dismiss(); setPickerOpen(false); }}
+        onSelect={(place) => {
+          setPlaceTags((current) => (
+            current.some((tag) => tag.id === place.id) ? current : [...current, place]
+          ));
+          Keyboard.dismiss();
+          setPickerOpen(false);
+        }}
+      />
+    );
+  }
+
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-write-screen">
       <Header>
@@ -186,14 +212,14 @@ export default function CommunityWriteScreen({
       </Header>
 
       <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef}>
+        <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef} testID="v2-community-write-content">
           <Section $gap={16}>
             <SectionHead>
               <SectionTitle>{t('community.write_screen.categoryLabel')}</SectionTitle>
               <SectionSubtitle>{t('community.write_screen.categoryHint')}</SectionSubtitle>
             </SectionHead>
             {categoriesQuery.isLoading ? (
-              <ActivityIndicator color={theme.colors.primary} testID="v2-community-write-categories-loading" />
+              <Skeleton variant="chips" accessibilityLabel={t('experience.common.loading')} testID="v2-community-write-categories-loading" />
             ) : categoriesQuery.isError ? (
               <InlineErrorRow testID="v2-community-write-categories-error">
                 <ValidationText>{t('common.apiError.generic.description')}</ValidationText>
@@ -327,7 +353,7 @@ export default function CommunityWriteScreen({
             <AddPlaceButton
               accessibilityLabel={t('community.write_screen.addPlace')}
               accessibilityRole="button"
-              onPress={() => setPickerOpen(true)}
+              onPress={() => { Keyboard.dismiss(); setPickerOpen(true); }}
               testID="v2-community-write-add-place"
             >
               <AddPlaceLabel>{`+ ${t('community.write_screen.addPlace')}`}</AddPlaceLabel>
@@ -366,43 +392,30 @@ export default function CommunityWriteScreen({
               </ErrorBanner>
             </Section>
           ) : null}
+          <SubmitBar>
+            <SubmitButton
+              $enabled={isValid && photosReady && !isBlockedByAuthorization}
+              accessibilityRole="button"
+              accessibilityState={{
+                busy: createPost.isPending,
+                disabled: createPost.isPending || !selectedCategoryId || isBlockedByAuthorization,
+              }}
+              disabled={createPost.isPending || !selectedCategoryId || isBlockedByAuthorization}
+              onPress={submit}
+              testID="v2-community-write-submit"
+            >
+              {createPost.isPending ? (
+                <ActivityIndicator
+                  accessibilityLabel={t('community.write_screen.submitBusy')}
+                  color={theme.colors.onPrimary}
+                />
+              ) : (
+                <SubmitLabel $enabled={isValid && photosReady && !isBlockedByAuthorization}>{t('community.write_screen.submit')}</SubmitLabel>
+              )}
+            </SubmitButton>
+          </SubmitBar>
         </Content>
-
-        <SubmitBar>
-          <SubmitButton
-            $enabled={isValid && photosReady && !isBlockedByAuthorization}
-            accessibilityRole="button"
-            accessibilityState={{
-              busy: createPost.isPending,
-              disabled: createPost.isPending || !selectedCategoryId || isBlockedByAuthorization,
-            }}
-            disabled={createPost.isPending || !selectedCategoryId || isBlockedByAuthorization}
-            onPress={submit}
-            testID="v2-community-write-submit"
-          >
-            {createPost.isPending ? (
-              <ActivityIndicator
-                accessibilityLabel={t('community.write_screen.submitBusy')}
-                color={theme.colors.onPrimary}
-              />
-            ) : (
-              <SubmitLabel $enabled={isValid && photosReady && !isBlockedByAuthorization}>{t('community.write_screen.submit')}</SubmitLabel>
-            )}
-          </SubmitButton>
-        </SubmitBar>
       </KeyboardArea>
-
-      {pickerOpen ? (
-        <CommunityPlacePicker
-          onClose={() => setPickerOpen(false)}
-          onSelect={(place) => {
-            setPlaceTags((current) => (
-              current.some((tag) => tag.id === place.id) ? current : [...current, place]
-            ));
-            setPickerOpen(false);
-          }}
-        />
-      ) : null}
     </Screen>
   );
 }
@@ -432,7 +445,7 @@ const CategoryChip = styled.Pressable<{ $selected: boolean }>`
   background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.colors.backgroundAssistive)};
 `;
 const CategoryChipLabel = styled(AppText)<{ $selected: boolean }>`
-  color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.textAlternative)};
+  color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};
   ${({ theme }) => textStyleCss(theme.typography.labelMedium)}
 `;
 
@@ -459,9 +472,9 @@ const AddPlaceLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textS
 
 const ErrorBanner = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.dangerSoft};`;
 const ErrorBannerText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const BannerButton = styled.Pressable`align-self: flex-start; padding: 8px 16px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary};`;
+const BannerButton = styled.Pressable`align-self: flex-start; padding: 8px 16px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primaryAction};`;
 const BannerButtonLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
 const SubmitBar = styled.View`padding: 0 24px 16px;`;
-const SubmitButton = styled.Pressable<{ $enabled: boolean }>`height: 64px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $enabled, theme }) => ($enabled ? theme.colors.primary : theme.colors.disabled)};`;
+const SubmitButton = styled.Pressable<{ $enabled: boolean }>`height: 64px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $enabled, theme }) => ($enabled ? theme.colors.primaryAction : theme.colors.disabled)};`;
 const SubmitLabel = styled(AppText)<{ $enabled: boolean }>`color: ${({ $enabled, theme }) => ($enabled ? theme.colors.textInverse : theme.colors.onDisabled)}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;

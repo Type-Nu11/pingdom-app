@@ -170,7 +170,7 @@ const ActionBase = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: 
 `;
 const PrimaryAction = styled(ActionBase)`background-color: ${({ theme }) => theme.liquidGlass.category.activeTint}; border-width: 1px; border-color: ${({ theme }) => theme.liquidGlass.category.activeBorder};`;
 const ActionChip = styled(ActionBase)`background-color: ${({ theme }) => theme.liquidGlass.category.tint};`;
-const PrimaryActionText = styled(Text)`color: ${({ theme }) => theme.colors.primary}; font-size: 14px; line-height: 18px; font-weight: 500;`;
+const PrimaryActionText = styled(Text)`color: ${({ theme }) => theme.liquidGlass.category.activeForeground}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const ActionText = styled(Text)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const Block = styled.View`gap: 4px; padding: 12px 0;`;
 const Copy = styled(Text)`color: ${({ theme }) => theme.colors.text}; font-size: 16px; line-height: 21px;`;
@@ -180,4 +180,4 @@ const RetryButton = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow:
   background-color: ${({ theme }) => theme.liquidGlass.category.activeTint};
   border-width: 1px; border-color: ${({ theme }) => theme.liquidGlass.category.activeBorder};
 `;
-const RetryText = styled(Text)`color: ${({ theme }) => theme.colors.primary}; font-size: 14px; line-height: 18px; font-weight: 500;`;
+const RetryText = styled(Text)`color: ${({ theme }) => theme.liquidGlass.category.activeForeground}; font-size: 14px; line-height: 18px; font-weight: 500;`;

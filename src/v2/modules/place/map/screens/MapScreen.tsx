@@ -1,4 +1,4 @@
-import { MapSheetBottomNavigation, MapSheetNavigationHiddenProvider } from '../sheet';
+import { MapSheetBottomNavigation, MapSheetNavigationHiddenProvider, getMapSheetCollapsedVisibleHeight } from '../sheet';
 import CarRoutePreview from '../routes/components/CarRoutePreview';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
@@ -426,7 +426,10 @@ export default function MapScreen({
       Math.round(height * 0.56),
     );
   const collapsedVisibleHeight = Math.min(
-    Math.round(101 * designScale) + SHEET_RESTING_GAP,
+    Math.max(
+      Math.round(101 * designScale) + SHEET_RESTING_GAP,
+      getMapSheetCollapsedVisibleHeight(insets.bottom),
+    ),
     Math.max(0, mediumVisibleHeight - 1),
   );
   const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;

@@ -1,5 +1,6 @@
+import Skeleton from '../../../../../shared/components/Skeleton';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, ScrollView, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
 import { Text, TextInput } from '../../../../../shared/components/Typography';
@@ -92,7 +93,7 @@ export default function RouteEndpointEditor(props: Props) {
         </View>
         {query.trim() ? <View style={{ gap: 8 }}>
           <Text accessibilityRole="header" style={{ color: ink, fontSize: 18, fontWeight: '700' }}>{t('routes.editor.results')}</Text>
-          {query.trim() !== keyword || search.isLoading ? <ActivityIndicator accessibilityLabel={t('routes.editor.loading')} color={theme.colors.primary} />
+          {query.trim() !== keyword || search.isLoading ? <Skeleton accessibilityLabel={t('routes.editor.loading')} />
             : search.isError ? <View>{button(t('routes.editor.retry'), () => { void search.refetch(); })}<Text style={{ color: muted }}>{t('routes.editor.searchFailed')}</Text></View>
               : !results.length ? <Text style={{ color: muted }}>{t('routes.editor.emptySearch')}</Text>
                 : results.map(p => <Pressable key={p.id} accessibilityRole="button" onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.coordinate.lat, longitude: p.coordinate.lng, category: toMarkerCategory(p.category) })}
@@ -104,7 +105,7 @@ export default function RouteEndpointEditor(props: Props) {
             <Text accessibilityRole="header" style={{ color: ink, fontSize: 18, fontWeight: '700' }}>{t('routes.editor.saved')}</Text>
             <Pressable accessibilityRole="button" onPress={() => { setShowAll(true); if (saved.hasNextPage && !saved.isFetchingNextPage) void saved.fetchNextPage(); }} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: muted, fontSize: 12 }}>{t('routes.editor.all')}</Text></Pressable>
           </View>
-          {saved.isLoading ? <ActivityIndicator color={theme.colors.primary} /> : saved.isError ? button(t('routes.editor.retrySaved'), () => { void saved.refetch(); }) : !savedPlaces.length ? <Text style={{ color: muted }}>{t('routes.editor.emptySaved')}</Text> :
+          {saved.isLoading ? <Skeleton count={2} accessibilityLabel={t('routes.editor.loading')} /> : saved.isError ? button(t('routes.editor.retrySaved'), () => { void saved.refetch(); }) : !savedPlaces.length ? <Text style={{ color: muted }}>{t('routes.editor.emptySaved')}</Text> :
             <ScrollView horizontal={!showAll} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: showAll ? 0 : 24 }}>
               {savedPlaces.map(p => <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={p.name}
                 onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude, category: toMarkerCategory(p.category) })}

@@ -1,13 +1,13 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Animated, type LayoutChangeEvent } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, type LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
 import ChevronRightIcon from '../../../../assets/v2/icons/community/chevron-right.svg';
 import { getApiErrorUx } from '../../../shared/api';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
-import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
 import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityComment } from '../api/communityApi';
 import { useToggleCommentLike, type useInfiniteComments } from '../hooks/useCommunity';
@@ -26,23 +26,8 @@ export type CommentsSectionProps = {
   postId: number;
 };
 
-const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2'] as const;
-
 function CommentsSkeleton() {
-  const pulse = useSharedPulse();
-  return (
-    <SkeletonList testID="v2-community-comments-loading">
-      {SKELETON_KEYS.map((key) => (
-        <Animated.View key={key} style={{ flexDirection: 'row', gap: 10, opacity: pulse }}>
-          <SkeletonAvatar />
-          <SkeletonLines>
-            <SkeletonLine $width={120} />
-            <SkeletonLine $width={220} />
-          </SkeletonLines>
-        </Animated.View>
-      ))}
-    </SkeletonList>
-  );
+  return <Skeleton variant="comments" testID="v2-community-comments-loading" />;
 }
 
 export default function CommentsSection({
@@ -209,10 +194,5 @@ const ChevronDown = styled.View`transform: rotate(90deg);`;
 
 const FooterState = styled.View`align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.sm}px 0;`;
 const FooterErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
-const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primary}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
+const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primaryAction}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
-
-const SkeletonList = styled.View`gap: ${({ theme }) => theme.spacing.md}px;`;
-const SkeletonAvatar = styled.View`width: 32px; height: 32px; border-radius: 16px; background-color: ${({ theme }) => theme.colors.border};`;
-const SkeletonLines = styled.View`flex: 1; gap: 6px; padding-top: 2px;`;
-const SkeletonLine = styled.View<{ $width: number }>`height: 12px; width: ${({ $width }) => $width}px; border-radius: ${({ theme }) => theme.radius.sm}px; background-color: ${({ theme }) => theme.colors.border};`;

@@ -12,6 +12,8 @@ export { default as Input } from './Input';
 export type { InputProps } from './Input';
 export { default as LoadingState } from './LoadingState';
 export type { LoadingStateProps } from './LoadingState';
+export { default as Skeleton, SkeletonBlock, SkeletonGroup } from './Skeleton';
+export type { SkeletonVariant } from './Skeleton';
 export { ReviewFeatureTags } from './ReviewFeatureTags';
 export type { ReviewFeatureTagsProps, ReviewFeatureTagsVariant } from './ReviewFeatureTags';
 export { default as StatusBadge } from './StatusBadge';

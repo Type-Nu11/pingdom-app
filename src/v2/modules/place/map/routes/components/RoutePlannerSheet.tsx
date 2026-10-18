@@ -1,3 +1,4 @@
+import { SkeletonGroup } from '../../../../../shared/components/Skeleton';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, View, type LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +20,10 @@ import RouteEndpointRows, { type EndpointRole } from './RouteEndpointRows';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import StartIcon from '../assets/start.svg';
 import RouteWarningIcon from '../assets/route_warning.svg';
+import type { TransitItinerary } from '../api/transitRoutesApi';
+import { TransitRouteResult } from './TransitRouteResult';
+import { WalkRouteResult, type WalkRouteSummary } from './WalkRouteResult';
+import type { RoutePages } from './RouteSummaryCard';
 
 type Props = {
   origin: RouteDestination | null; destination: RouteDestination | null; mode: RouteMode; stateKey: string; ready: CarRoute | null;
@@ -28,6 +33,8 @@ type Props = {
   onClose: () => void; onShare: () => void; onRequest: () => void; onCancel: () => void;
   onExternal: () => void; onRefreshLocation: () => void; onSettings: () => void;
   onEditEndpoint: (role: EndpointRole) => void; onSwapEndpoints: () => void;
+  transit?: { itinerary: TransitItinerary; alternatives?: TransitItinerary[]; index: number; count: number; estimateAt?: number; onSelect: (index: number) => void; onStart: () => void };
+  walk?: { summary: WalkRouteSummary; onStart: () => void; pages?: RoutePages };
 };
 const modes = ['transit', 'walk', 'car', 'bike'] as const;
 const icons = { transit: TransitInactiveIcon, walk: WalkIcon, car: CarIcon, bike: BikeIcon };
@@ -49,6 +56,14 @@ export default function RoutePlannerSheet(props: Props) {
   const idle = props.stateKey === 'idle' || props.stateKey === 'canceled' || props.stateKey === 'empty';
   const denied = props.stateKey === 'location-denied';
   const noRoute = props.stateKey === 'no-route';
+  const isTransit = props.mode === 'transit';
+  const isWalk = props.mode === 'walk';
+  const requestLabel = t(isWalk ? 'routes.walking.request' : isTransit ? 'routes.transit.request' : 'routes.request');
+  const statusLabel = isWalk && ['idle', 'loading', 'no-route', 'canceled'].includes(props.stateKey)
+    ? t(`routes.walking.${props.stateKey === 'no-route' ? 'noRoute' : props.stateKey === 'canceled' ? 'idle' : props.stateKey}`)
+    : isTransit && ['idle', 'loading', 'no-route', 'canceled'].includes(props.stateKey)
+    ? t(`routes.transit.${props.stateKey === 'no-route' ? 'noRoute' : props.stateKey === 'canceled' ? 'idle' : props.stateKey}`)
+    : t(`routes.states.${props.stateKey}`);
   function action(label: string, onPress: () => void, testID?: string, disabled = false, primary = false) {
     return <Action testID={testID} accessibilityRole="button" accessibilityLabel={label}
       accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
@@ -74,7 +89,7 @@ export default function RoutePlannerSheet(props: Props) {
         </ModeTrack>
         <RouteEndpointRows originDenied={denied} origin={props.origin} destination={props.destination} onDragging={setDragging}
           onEdit={props.onEditEndpoint} onSwap={props.onSwapEndpoints} />
-        {metrics && props.ready ? <Result testID="route-status"
+        {props.mode === 'walk' && props.walk ? <WalkRouteResult {...props.walk} /> : props.transit ? <TransitRouteResult {...props.transit} /> : metrics && props.ready ? <Result testID="route-status"
           style={{ backgroundColor: raised }}>
           <View accessible accessibilityLabel={routeSummary(props.ready, language, t)} style={{ flex: 1, minWidth: 0, gap: 2 }}>
             <Text style={{ color: ink, fontSize: 28, lineHeight: 36.4, fontWeight: '700' }}>{metrics.duration}</Text>
@@ -86,33 +101,33 @@ export default function RoutePlannerSheet(props: Props) {
             <StartIcon /><StartText>{t('routes.start')}</StartText>
           </Start>
         </Result> : loading ? <StateCard style={{ backgroundColor: raised, padding: 16, gap: 10 }}>
-          <SkeletonRow accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <SkeletonGroup accessibilityLabel={statusLabel} style={{ alignSelf: 'stretch' }}><SkeletonRow>
             <View style={{ gap: 8, flex: 1, minWidth: 0 }}>
               {[{ width: 96, height: 28 }, { width: 160, height: 14 }, { width: 200, height: 12 }].map((size, index) => <Skeleton key={index} style={{ ...size, maxWidth: '100%', borderRadius: size.height / 2, backgroundColor: skeletonColor }} />)}
             </View>
             <Skeleton testID="route-loading-cta" style={{ width: 88, height: 48, borderRadius: 24, backgroundColor: skeletonColor }} />
-          </SkeletonRow>
+          </SkeletonRow></SkeletonGroup>
           <Skeleton testID="route-loading-bar" style={{ alignSelf: 'stretch', height: 22, borderRadius: 11, backgroundColor: theme.colors.fillNeutral }} />
           <View style={{ flexDirection: 'row', alignSelf: 'stretch', alignItems: 'center', gap: 6 }}><ActivityIndicator size="small" color={theme.colors.primary} />
-            <Text testID="route-status" accessibilityLiveRegion="polite" style={{ flex: 1, color: theme.colors.primary, fontSize: 12, fontWeight: '500' }}>{t(`routes.states.${props.stateKey}`)}</Text></View>
+            <Text testID="route-status" accessibilityLiveRegion="polite" style={{ flex: 1, color: theme.colors.primary, fontSize: 12, fontWeight: '500' }}>{statusLabel}</Text></View>
           {props.stateKey === 'loading' && action(t('routes.cancel'), props.onCancel)}
         </StateCard> : <StateCard style={{ backgroundColor: raised }}>
           {(denied || noRoute) ? <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><RouteWarningIcon /></View> : !idle && <UnavailableStateIcon size={44} />}
-          <Text style={{ color: ink, fontSize: 18, lineHeight: 23.4, fontWeight: '700', textAlign: 'center' }}>{t(denied ? 'routes.permissionTitle' : noRoute ? 'routes.noRouteTitle' : idle ? 'routes.findRoute' : props.stateKey === 'unsupported' ? 'routes.externalTitle' : 'routes.cannotFind')}</Text>
-          <Text testID="route-status" accessibilityLiveRegion="polite" style={{ color: muted, fontSize: 14, lineHeight: 20, textAlign: 'center' }}>{t(`routes.states.${props.stateKey}`)}</Text>
+          <Text style={{ color: ink, fontSize: 18, lineHeight: 23.4, fontWeight: '700', textAlign: 'center' }}>{t(denied ? 'routes.permissionTitle' : noRoute ? isWalk ? 'routes.walking.noRoute' : isTransit ? 'routes.transit.noRouteTitle' : 'routes.noRouteTitle' : idle ? isWalk ? 'routes.walking.request' : isTransit ? 'routes.transit.request' : 'routes.findRoute' : props.stateKey === 'unsupported' ? 'routes.externalTitle' : 'routes.cannotFind')}</Text>
+          <Text testID="route-status" accessibilityLiveRegion="polite" style={{ color: muted, fontSize: 14, lineHeight: 20, textAlign: 'center' }}>{statusLabel}</Text>
           {denied ? <ActionRow>
             {action(t('routes.directInput'), () => props.onEditEndpoint('origin'), 'route-direct-input')}
             {action(t(props.deniedPermanently ? 'routes.settings' : 'routes.location'), props.deniedPermanently ? props.onSettings : props.onRefreshLocation, 'route-permission-recovery', false, true)}
           </ActionRow> : noRoute ? <ActionRow>
             {action(t('routes.editPlaces'), () => props.onEditEndpoint('destination'))}
-            {action(t('routes.request'), props.onRequest, 'route-request', !props.canRequest, true)}
-          </ActionRow> : props.mode === 'car' && action(t('routes.request'), props.onRequest, 'route-request', !props.canRequest, true)}
+            {action(requestLabel, props.onRequest, 'route-request', !props.canRequest, true)}
+          </ActionRow> : (props.mode === 'car' || props.mode === 'walk' || isTransit) && action(requestLabel, props.onRequest, 'route-request', !props.canRequest, true)}
           {!props.hasOrigin && !denied && <ActionRow>
             {action(t('routes.location'), props.onRefreshLocation)}
             {props.deniedPermanently && action(t('routes.settings'), props.onSettings, undefined, false, true)}
           </ActionRow>}
         </StateCard>}
-        {!props.ready && !loading && <Footer>{action(t('routes.external'), props.onExternal, 'route-external', !props.canOpenExternal)}</Footer>}
+        {!props.ready && !props.transit && !(props.mode === 'walk' && props.walk) && !loading && <Footer>{action(t('routes.external'), props.onExternal, 'route-external', !props.canOpenExternal)}</Footer>}
       </SheetContent>
     </SheetGlass>
   </SheetPosition>;

@@ -45,9 +45,15 @@ export const SheetGlass = styled(FrostedSurface)`
   overflow: hidden;
 `;
 
-export const SheetInner = styled.View<{ $clipContent?: boolean; $inset: number }>`
+export const SheetInner = styled.View<{ $clipContent?: boolean; $inset: number; $opaque?: boolean }>`
   flex: 1;
+  background-color: ${({ $opaque, theme }) => ($opaque ? theme.colors.background : 'transparent')};
   padding-right: ${({ $inset }) => $inset}px;
   padding-left: ${({ $inset }) => $inset}px;
   overflow: ${({ $clipContent }) => ($clipContent ? 'hidden' : 'visible')};
+`;
+
+export const ExpandedPlaceScroll = styled.ScrollView`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
 `;

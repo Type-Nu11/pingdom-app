@@ -115,6 +115,6 @@ const Quantity = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow: th
   align-items: center; justify-content: center; opacity: ${({ disabled }) => disabled ? 0.4 : 1}; border-width: 1px;
   border-color: ${({ theme, $selected }) => $selected ? theme.liquidGlass.category.activeBorder : 'transparent'};
   background-color: ${({ theme, $selected }) => $selected ? theme.liquidGlass.category.activeTint : theme.liquidGlass.category.tint};`;
-const QuantityText = styled(Text)<{ $selected: boolean }>`font-size: 14px; line-height: 18px; font-weight: 500; color: ${({ theme, $selected }) => $selected ? theme.colors.primary : theme.colors.textAlternative};`;
+const QuantityText = styled(Text)<{ $selected: boolean }>`font-size: 14px; line-height: 18px; font-weight: 500; color: ${({ theme, $selected }) => $selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative};`;
 const Confirm = styled.Pressable`height: 48px; border-radius: 24px; align-items: center; justify-content: center; background-color: ${({ theme }) => theme.colors.primary}; opacity: ${({ disabled }) => disabled ? 0.4 : 1};`;
 const ConfirmText = styled(Text)`font-size: 16px; line-height: 21px; color: #ffffff; font-weight: 700;`;

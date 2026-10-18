@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, Text, type GestureResponderHandlers } from 'react-native';
+import { Animated, Platform, Text, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
@@ -191,7 +191,8 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryByTestId('place-photo-viewer')).not.toBeOnTheScreen();
   });
 
-  test('쿠폰 콘텐츠는 미리보기 액션 없이 상세에서만 렌더링한다', async () => {
+  test.each(['LIGHT', 'DARK'] as const)('%s 상세는 빈 리뷰에서도 전체 화면을 불투명하게 채우고 쿠폰은 상세에서만 렌더링한다', async (appearancePreference) => {
+    const colors = appearancePreference === 'DARK' ? darkColors : lightColors;
     const selectedPlace = places[0];
     const commonProps = {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
@@ -215,11 +216,13 @@ describe('MapBottomSheet recommendations', () => {
     };
     const result = await renderWithProviders(
       <MapBottomSheet {...commonProps} snapPoint="medium" />,
+      { appearancePreference },
     );
 
     expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
     expect(screen.queryByText('실서버 쿠폰 발급 영역')).not.toBeOnTheScreen();
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 8, paddingRight: 8 });
+    expect(screen.getByTestId('map-sheet-chrome')).toBeOnTheScreen();
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
@@ -232,6 +235,14 @@ describe('MapBottomSheet recommendations', () => {
       height: 2,
       width: 40,
     });
+    await fireEvent.press(screen.getByRole('tab', { name: '리뷰' }));
+    expect(screen.getByText('등록된 리뷰 정보가 없어요.')).toBeVisible();
+    expect(screen.queryByTestId('map-sheet-chrome')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ backgroundColor: colors.background, flexGrow: 1 });
+    expect(screen.getByTestId('map-expanded-place-scroll')).toHaveStyle({ backgroundColor: colors.background, flexGrow: 1 });
+    expect(screen.getByTestId('map-expanded-place-scroll').props.contentContainerStyle).toEqual(
+      expect.arrayContaining([expect.objectContaining({ flexGrow: 1, backgroundColor: colors.background })]),
+    );
   });
 
   test('장소 상세 영업 상태를 한 줄 요약으로 한국어·영어·fallback 렌더링한다', async () => {
@@ -1130,7 +1141,7 @@ describe('MapBottomSheet recommendations', () => {
       />,
     );
 
-    expect(screen.getByText('나만을 위한 추천 장소를 불러오고 있어요')).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: '나만을 위한 추천 장소를 불러오고 있어요' })).toBeVisible();
     expect(screen.queryByText('현재 위치와 가까운 장소입니다')).not.toBeOnTheScreen();
     await loading.unmount();
 
@@ -1517,6 +1528,22 @@ describe('MapBottomSheet recommendations', () => {
     ...overrides,
   });
 
+  test('Android 전국 전체 카드는 중복 블러 비트맵 없이 표시 크기로 이미지를 디코딩한다', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
+    const feedPlaces = Array.from({ length: 20 }, (_, index) => ({
+      ...categoryFixture(200 + index, `트렌드 ${index}`, index % 2 ? 'FOOD' : 'POPUP'),
+      imageUrl: `https://example.com/trend-${index}.jpg`,
+    }));
+    const view = await renderWithProviders(<MapBottomSheet {...categoryProps(feedPlaces)} />);
+    await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+    await view.user.press(screen.getByRole('tab', { name: '전체' }));
+    expect(screen.queryAllByTestId('recommendation-featured-blur-image')).toHaveLength(0);
+    const images = screen.getAllByTestId('place-artwork-image');
+    expect(images).toHaveLength(14);
+    images.forEach(image => expect(image.props.resizeMethod).toBe('resize'));
+    expect(screen.getAllByText('트렌드 1').length).toBeGreaterThan(0);
+  });
+
   test('production search errors are distinct from empty results and preserve rows on refresh failure', async () => {
     const retry = jest.fn().mockResolvedValue({});
     const base = categoryProps([], { content: { type: 'results', query: 'cafe' }, places: [], resultsError: new Error('secret'), onRetryResults: retry });
@@ -1611,7 +1638,7 @@ describe('MapBottomSheet recommendations', () => {
       <MapBottomSheet {...categoryProps([], { localFeed: rankedFeed([], placesState, retry) })} />,
     );
 
-    expect(screen.getByText(message)).toBeVisible();
+    expect(placesState === 'loading' ? screen.getByRole('progressbar', { name: message }) : screen.getByText(message)).toBeVisible();
     expect(screen.queryByText('이 카테고리에 해당하는 장소가 없어요')).not.toBeOnTheScreen();
     if (placesState === 'error') {
       await view.user.press(screen.getByRole('button', { name: '다시 시도' }));

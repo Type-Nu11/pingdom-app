@@ -306,7 +306,7 @@ export default function MapTopOverlay({
                             testID={`map-category-icon-${id}`}
                           >
                             <Icon
-                              color={isActive ? colors.primary : colors.textAlternative}
+                              color={isActive ? liquidGlass.category.activeForeground : colors.textAlternative}
                               height={iconSize.drawingHeight ?? iconSize.height}
                               width={iconSize.drawingWidth ?? iconSize.width}
                             />

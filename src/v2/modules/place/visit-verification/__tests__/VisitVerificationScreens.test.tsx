@@ -95,11 +95,11 @@ test('floating CTA uses the Figma 120 by 48 pill without an Android drop shadow'
   expect(view.getByTestId('visit-verification-map-cta')).not.toHaveStyle({ elevation: 3 });
 });
 
-test.each(['LIGHT', 'DARK'] as const)('floating CTA keeps bright semibold text on a translucent %s surface', async (appearancePreference) => {
+test.each(['LIGHT', 'DARK'] as const)('floating CTA keeps bright semibold text on the Figma primary base in %s', async (appearancePreference) => {
   const view = await renderWithProviders(<VisitVerificationMapCta label="검증하기" onPress={jest.fn()} />, { appearancePreference });
   expect(view.getByText('검증하기')).toHaveStyle({ color: '#F6F6F7', fontSize: 16, fontFamily: 'PretendardStdVariable-SemiBold', lineHeight: 21 });
   expect(view.getByTestId('visit-verification-map-cta')).toHaveStyle({
-    backgroundColor: appearancePreference === 'LIGHT' ? 'rgba(255, 25, 86, 0.56)' : 'rgba(255, 25, 86, 0.72)',
+    backgroundColor: '#FF1956',
   });
   expect(view.getByTestId('visit-verification-map-cta-glass')).toBeOnTheScreen();
 });
@@ -497,7 +497,7 @@ test.each(['loading', 'error'] as const)('review place %s does not allow submiss
   const view = await renderFeature(<VisitVerificationReviewScreen placeId={17} onBack={jest.fn()} onComplete={jest.fn()} />);
   expect(view.queryByTestId('visit-submit')).toBeNull();
   if (state === 'error') { await fireEvent.press(view.getByText('다시 시도')); expect(refetch).toHaveBeenCalledTimes(1); }
-  else expect(view.getByText('장소 정보를 불러오는 중이에요...')).toBeVisible();
+  else expect(view.getByRole('progressbar', { name: '장소 정보를 불러오는 중이에요...' })).toBeVisible();
 });
 
 test('review creation failure keeps the draft and announces the error', async () => {
@@ -521,7 +521,7 @@ test.each([false, true])('list loading state nextPage=%s stays distinct from emp
   const view = await renderFeature(<VisitVerificationPlacesScreen onBack={jest.fn()} onSelectPlace={jest.fn()} />);
   expect(view.queryByTestId('visit-verification-empty')).toBeNull();
   if (nextPage) expect(view.getByTestId('visit-verification-next-loading')).toBeVisible();
-  else expect(view.getByText('장소 정보를 불러오는 중이에요...')).toBeVisible();
+  else expect(view.getByRole('progressbar', { name: '장소 정보를 불러오는 중이에요...' })).toBeVisible();
 });
 
 test('iOS keyboard events reserve space below the scrollable draft and CTA', async () => {

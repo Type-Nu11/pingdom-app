@@ -20,7 +20,7 @@ ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSou
 ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true'
 ENV['RCT_HERMES_V1_ENABLED'] ||= '1' if podfile_properties['expo.useHermesV1'] == 'true'
 platform :ios, podfile_properties['ios.deploymentTarget'] || '15.5'
-project 'Naviapp.xcodeproj'
+project 'PingDom.xcodeproj'
 use_modular_headers!
 
 # Sync the map SDK identifier from .env at pod installation (CI env takes precedence).
@@ -32,7 +32,7 @@ File.write(File.join(__dir__, 'Config', 'NaverMap.generated.xcconfig'), "NAVER_M
 
 prepare_react_native_project!
 
-target 'Naviapp' do
+target 'PingDom' do
   use_expo_modules!
   pod 'KakaoMapsSDK'
   pod 'NMapsMap', '3.24.0'

@@ -8,6 +8,11 @@ import hashlib
 import json
 from pathlib import Path
 
+FULL_PHRASE_KEYWORDS = [
+    'HH EY1 P IH1 NG D IY0 @Hey_Pingdy',
+    'h ēi p íng d í @Hey_Pingdy',
+    'h ēi p ìn d ì @Hey_Pingdy',
+]
 
 def sha256(path):
     with path.open('rb') as source:
@@ -26,10 +31,10 @@ def verify_model(root):
         if Path(name).name != name or sha256(assets / name) != digest:
             raise ValueError(f'Model integrity failure: {name}')
     keywords = (assets / 'keywords.txt').read_text().splitlines()
-    if keywords != ['HH EY1 P IH1 NG D IY0 @Hey_Pingdy']:
+    if keywords != FULL_PHRASE_KEYWORDS:
         raise ValueError('Partial wake-word registration is not allowed')
     tokens = {line.rsplit(' ', 1)[0] for line in (assets / 'tokens.txt').read_text().splitlines()}
-    if not set(keywords[0].split()[:-1]) <= tokens:
+    if not {token for keyword in keywords for token in keyword.split()[:-1]} <= tokens:
         raise ValueError('A pronunciation token is absent from the selected model')
     for notice in ['LICENSE-APACHE-2.0.txt', 'NOTICE.txt', 'LICENSE-ONNX-RUNTIME.txt', 'THIRD-PARTY-NOTICES-ONNX-RUNTIME.txt']:
         if not (assets / notice).is_file():

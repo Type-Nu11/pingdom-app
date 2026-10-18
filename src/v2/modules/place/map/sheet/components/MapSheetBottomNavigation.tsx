@@ -31,11 +31,15 @@ export const getMapSheetTabSurfaceColor = (
   return active ? liquidGlass.navigation.selectedTint : 'transparent';
 };
 
-// Figma pins the bar 16px above the screen edge. iOS follows it and lets the bar
-// sit over the home-indicator area; Android keeps clear of a visible system
-// navigation bar, which would otherwise cover the tabs.
+// Place the Figma spacing above the system safe area so neither Android's
+// navigation buttons nor the iOS home indicator overlap the app's controls.
 export const getMapSheetNavigationBottom = (bottomInset: number, platform: PlatformOSType = Platform.OS) => (
-  platform === 'ios' ? 16 : Math.max(16, bottomInset + 10)
+  Math.max(16, bottomInset + (platform === 'ios' ? 16 : 10))
+);
+
+// The collapsed sheet's entire handle must stay above the fixed navigation bar.
+export const getMapSheetCollapsedVisibleHeight = (bottomInset: number, platform: PlatformOSType = Platform.OS) => (
+  getMapSheetNavigationBottom(bottomInset, platform) + 64 + 20 + 8
 );
 
 type Props = {
@@ -134,15 +138,18 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
       ]}
     >
       <View {...swipe.panHandlers} ref={bar} onLayout={event => { bounds.current.width = event.nativeEvent.layout.width; measureBar(); }} collapsable={false} style={styles.navigationShadow} testID="map-navigation-swipe">
+        <View style={styles.navigationBar} testID="map-navigation-bar">
         <FrostedSurface
           bottomShade={false}
           cornerRadius={32}
           glassEffectStyle="regular"
           highlightOpacity={liquidGlass.navigation.highlightOpacity}
           rimColor={liquidGlass.navigation.rim}
-          style={styles.navigationBar}
+          pointerEvents="none"
+          style={styles.navigationGlass}
+          testID="map-navigation-glass"
           tintColor={liquidGlass.navigation.tint}
-        >
+        />
           {tabs.map(({ id, label, onPress }) => {
             const active = selectedTab === id;
             const icon = id === 'map'
@@ -182,7 +189,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
               </MapTutorialTarget>
             );
           })}
-        </FrostedSurface>
+        </View>
       </View>
       <MapTutorialTarget id="recommendations">
       <Pressable
@@ -230,6 +237,7 @@ const createStyles = (
   navLabel: { color: colors.text, fontSize: 10, fontWeight: '500', lineHeight: 13 },
   navLabelActive: { color: colors.primary, fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 4 },
+  navigationGlass: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: 32, overflow: 'hidden' },
   navigationRow: { flexDirection: 'row', gap: 12, left: NAVIGATION_SIDE_INSET, position: 'absolute', right: NAVIGATION_SIDE_INSET },
   navigationShadow: {
     backgroundColor: liquidGlass.shadowFill,

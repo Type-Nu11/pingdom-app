@@ -51,5 +51,5 @@ const PlaceName = styled(Text)`flex-shrink: 1; font-size: 20px; line-height: 26p
 const Section = styled.View`gap: 16px; padding-bottom: 16px; border-bottom-width: 8px; border-bottom-color: ${({ theme }) => theme.colors.fillNormal};`;
 const Heading = styled(Text)`font-size: 18px; line-height: 24px; font-weight: 700; color: ${({ theme }) => theme.colors.textStrong};`;
 const Selection = styled.Pressable`align-self: flex-start; padding: 8px 16px; border-radius: 16px; border-width: 1px; border-color: ${({ theme }) => theme.liquidGlass.category.activeBorder}; background-color: ${({ theme }) => theme.liquidGlass.category.activeTint}; opacity: ${({ disabled }) => disabled ? 0.4 : 1};`;
-const SelectedValue = styled(Text)`font-size: 14px; line-height: 18px; font-weight: 500; color: ${({ theme }) => theme.colors.primary};`;
-const Edit = styled(SelectedValue)`color: ${({ theme }) => theme.colors.primary};`;
+const SelectedValue = styled(Text)`font-size: 14px; line-height: 18px; font-weight: 500; color: ${({ theme }) => theme.liquidGlass.category.activeForeground};`;
+const Edit = styled(SelectedValue)`color: ${({ theme }) => theme.liquidGlass.category.activeForeground};`;

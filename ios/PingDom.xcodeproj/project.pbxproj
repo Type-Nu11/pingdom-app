@@ -15,7 +15,7 @@
 		211A11F12F9000010066590E /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 211A11F42F9000010066590E /* InfoPlist.strings */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		4E22484701EF4F5CAE5CF5B0 /* NaverMapViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 1810883A1C144FEB9EA70C81 /* NaverMapViewManager.m */; };
-		76D32FCE9C026EBD3AC8B2C4 /* libPods-Naviapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 11020DC6118E4AA4D211D86E /* libPods-Naviapp.a */; };
+		76D32FCE9C026EBD3AC8B2C4 /* libPods-PingDom.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 11020DC6118E4AA4D211D86E /* libPods-PingDom.a */; };
 		77C8FBC2CC737EDBC8206BEA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */; };
 		A82DF619FB064D0D8857F030 /* NaverMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE462A20150D4775982540AF /* NaverMapView.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
@@ -26,31 +26,31 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		11020DC6118E4AA4D211D86E /* libPods-Naviapp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Naviapp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07F961A680F5B00A75B9A /* Naviapp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Naviapp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Naviapp/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Naviapp/Info.plist; sourceTree = "<group>"; };
+		11020DC6118E4AA4D211D86E /* libPods-PingDom.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PingDom.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07F961A680F5B00A75B9A /* PingDom.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PingDom.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = PingDom/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = PingDom/Info.plist; sourceTree = "<group>"; };
 		141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KakaoMapViewManager.m; sourceTree = "<group>"; };
 		141E64F02F8CAEE20066590E /* KakaoMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KakaoMapView.swift; sourceTree = "<group>"; };
 		141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KakaoMapViewManager.swift; sourceTree = "<group>"; };
-		1810883A1C144FEB9EA70C81 /* NaverMapViewManager.m */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.objc; name = NaverMapViewManager.m; path = NaverMapViewManager.m; sourceTree = "<group>"; };
-		211A11F22F9000010066590E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Naviapp/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		211A11F32F9000010066590E /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = Naviapp/ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Naviapp/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		84FF0E2D0DB9224FD3B8C2CC /* Pods-Naviapp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Naviapp.debug.xcconfig"; path = "Target Support Files/Pods-Naviapp/Pods-Naviapp.debug.xcconfig"; sourceTree = "<group>"; };
-		879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Naviapp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		9AC6FEAFD537F849A219296B /* Pods-Naviapp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Naviapp.release.xcconfig"; path = "Target Support Files/Pods-Naviapp/Pods-Naviapp.release.xcconfig"; sourceTree = "<group>"; };
+		1810883A1C144FEB9EA70C81 /* NaverMapViewManager.m */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.objc; path = NaverMapViewManager.m; sourceTree = "<group>"; };
+		211A11F22F9000010066590E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = PingDom/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		211A11F32F9000010066590E /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = PingDom/ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-PingDom/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		84FF0E2D0DB9224FD3B8C2CC /* Pods-PingDom.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingDom.debug.xcconfig"; path = "Target Support Files/Pods-PingDom/Pods-PingDom.debug.xcconfig"; sourceTree = "<group>"; };
+		879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = PingDom/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		9AC6FEAFD537F849A219296B /* Pods-PingDom.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingDom.release.xcconfig"; path = "Target Support Files/Pods-PingDom/Pods-PingDom.release.xcconfig"; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5C /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5D /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Naviapp/SplashScreen.storyboard; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = PingDom/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		D0F1A0022F8DB0000066590E /* MLKitTranslation.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MLKitTranslation.m; sourceTree = "<group>"; };
 		D0F1A0042F8DB0000066590E /* MLKitTranslation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLKitTranslation.swift; sourceTree = "<group>"; };
-		DF2F727BD5E148AC90F26588 /* NaverMapViewManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = NaverMapViewManager.swift; path = NaverMapViewManager.swift; sourceTree = "<group>"; };
+		DF2F727BD5E148AC90F26588 /* NaverMapViewManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = NaverMapViewManager.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Naviapp/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* Naviapp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Naviapp-Bridging-Header.h"; path = "Naviapp/Naviapp-Bridging-Header.h"; sourceTree = "<group>"; };
-		FE462A20150D4775982540AF /* NaverMapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = NaverMapView.swift; path = NaverMapView.swift; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = PingDom/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* PingDom-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "PingDom-Bridging-Header.h"; path = "PingDom/PingDom-Bridging-Header.h"; sourceTree = "<group>"; };
+		FE462A20150D4775982540AF /* NaverMapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = NaverMapView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,14 +58,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				76D32FCE9C026EBD3AC8B2C4 /* libPods-Naviapp.a in Frameworks */,
+				76D32FCE9C026EBD3AC8B2C4 /* libPods-PingDom.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		06E6A97DC040B1CE5318ED4B /* Naviapp */ = {
+		06E6A97DC040B1CE5318ED4B /* PingDom */ = {
 			isa = PBXGroup;
 			children = (
 				6E54384E53F01D78613C9CD6 /* ExpoModulesProvider.swift */,
@@ -73,10 +73,10 @@
 				DF2F727BD5E148AC90F26588 /* NaverMapViewManager.swift */,
 				1810883A1C144FEB9EA70C81 /* NaverMapViewManager.m */,
 			);
-			name = Naviapp;
+			name = PingDom;
 			sourceTree = "<group>";
 		};
-		13B07FAE1A68108700A75B9A /* Naviapp */ = {
+		13B07FAE1A68108700A75B9A /* PingDom */ = {
 			isa = PBXGroup;
 			children = (
 				141E64EE2F8CAED80066590E /* KakaoMapViewManager.m */,
@@ -85,7 +85,7 @@
 				141E64F22F8CAEEC0066590E /* KakaoMapViewManager.swift */,
 				D0F1A0042F8DB0000066590E /* MLKitTranslation.swift */,
 				141E64F02F8CAEE20066590E /* KakaoMapView.swift */,
-				F11748442D0722820044C1D9 /* Naviapp-Bridging-Header.h */,
+				F11748442D0722820044C1D9 /* PingDom-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -93,14 +93,14 @@
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				879B5DDA5F8D8D32F5838EA5 /* PrivacyInfo.xcprivacy */,
 			);
-			name = Naviapp;
+			name = PingDom;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				11020DC6118E4AA4D211D86E /* libPods-Naviapp.a */,
+				11020DC6118E4AA4D211D86E /* libPods-PingDom.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -108,8 +108,8 @@
 		5434C0B1FD37466A9E41A5E2 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				84FF0E2D0DB9224FD3B8C2CC /* Pods-Naviapp.debug.xcconfig */,
-				9AC6FEAFD537F849A219296B /* Pods-Naviapp.release.xcconfig */,
+				84FF0E2D0DB9224FD3B8C2CC /* Pods-PingDom.debug.xcconfig */,
+				9AC6FEAFD537F849A219296B /* Pods-PingDom.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -117,7 +117,7 @@
 		66EF9C04B6727F09AF1343B6 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				06E6A97DC040B1CE5318ED4B /* Naviapp */,
+				06E6A97DC040B1CE5318ED4B /* PingDom */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -132,7 +132,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* Naviapp */,
+				13B07FAE1A68108700A75B9A /* PingDom */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -148,7 +148,7 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* Naviapp.app */,
+				13B07F961A680F5B00A75B9A /* PingDom.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -168,15 +168,15 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = Naviapp/Supporting;
+			path = PingDom/Supporting;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* Naviapp */ = {
+		13B07F861A680F5B00A75B9A /* PingDom */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Naviapp" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "PingDom" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
 				1BE8A8AFD37CC5B5D6D6B499 /* [Expo] Configure project */,
@@ -192,9 +192,9 @@
 			);
 			dependencies = (
 			);
-			name = Naviapp;
-			productName = Naviapp;
-			productReference = 13B07F961A680F5B00A75B9A /* Naviapp.app */;
+			name = PingDom;
+			productName = PingDom;
+			productReference = 13B07F961A680F5B00A75B9A /* PingDom.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -206,13 +206,12 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						DevelopmentTeam = 2N6MZG4VJH;
 						LastSwiftMigration = 1250;
 						ProvisioningStyle = Automatic;
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Naviapp" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "PingDom" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -226,7 +225,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* Naviapp */,
+				13B07F861A680F5B00A75B9A /* PingDom */,
 			);
 		};
 /* End PBXProject section */
@@ -279,7 +278,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Naviapp-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-PingDom-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -297,18 +296,18 @@
 			inputPaths = (
 				"$(SRCROOT)/.xcode.env",
 				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/Naviapp/Naviapp.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-Naviapp/expo-configure-project.sh",
+				"$(SRCROOT)/PingDom/PingDom.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-PingDom/expo-configure-project.sh",
 			);
 			name = "[Expo] Configure project";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-Naviapp/ExpoModulesProvider.swift",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-PingDom/ExpoModulesProvider.swift",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Naviapp/expo-configure-project.sh\"\n";
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-PingDom/expo-configure-project.sh\"\n";
 		};
 		6B77D1909106B41C65D9316C /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -316,7 +315,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-PingDom/Pods-PingDom-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/KakaoMapsSDK/KakaoMapsSDK.framework/KakaoMapsSDK",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/NMapsGeometry/NMapsGeometry.framework/NMapsGeometry",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/NMapsMap/NMapsMap.framework/NMapsMap",
@@ -335,7 +334,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PingDom/Pods-PingDom-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
@@ -344,7 +343,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-PingDom/Pods-PingDom-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
@@ -401,7 +400,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Naviapp/Pods-Naviapp-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PingDom/Pods-PingDom-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		9C3835D60C05D8F1735710EC /* [CP-User] [RNFB] Core Configuration */ = {
@@ -458,17 +457,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Naviapp/Naviapp.entitlements;
+				CODE_SIGN_ENTITLEMENTS = PingDom/PingDom.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2N6MZG4VJH;
+				DEVELOPMENT_TEAM = 55DQH9TG73;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = Naviapp/Info.plist;
+				INFOPLIST_FILE = PingDom/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -482,8 +481,8 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rmdka.pingdomapp;
-				PRODUCT_NAME = Naviapp;
-				SWIFT_OBJC_BRIDGING_HEADER = "Naviapp/Naviapp-Bridging-Header.h";
+				PRODUCT_NAME = PingDom;
+				SWIFT_OBJC_BRIDGING_HEADER = "PingDom/PingDom-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -497,12 +496,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Naviapp/Naviapp.entitlements;
+				CODE_SIGN_ENTITLEMENTS = PingDom/PingDom.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2N6MZG4VJH;
-				INFOPLIST_FILE = Naviapp/Info.plist;
+				INFOPLIST_FILE = PingDom/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -516,8 +515,8 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rmdka.pingdomapp;
-				PRODUCT_NAME = Naviapp;
-				SWIFT_OBJC_BRIDGING_HEADER = "Naviapp/Naviapp-Bridging-Header.h";
+				PRODUCT_NAME = PingDom;
+				SWIFT_OBJC_BRIDGING_HEADER = "PingDom/PingDom-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -649,7 +648,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Naviapp" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "PingDom" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -658,7 +657,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Naviapp" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "PingDom" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
