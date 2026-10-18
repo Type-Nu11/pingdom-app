@@ -1,4 +1,4 @@
-import { Animated } from 'react-native';
+import { Animated, PanResponder, type PanResponderCallbacks, type PanResponderGestureState, type GestureResponderEvent } from 'react-native';
 import { useState } from 'react';
 import { act, renderHook } from '@testing-library/react-native';
 
@@ -26,6 +26,25 @@ describe('useBottomSheet', () => {
     expect(shouldClaimVerticalDrag({ dx: 2, dy: -9 })).toBe(true);
     expect(shouldClaimVerticalDrag({ dx: 20, dy: 12 })).toBe(false);
     expect(shouldClaimVerticalDrag({ dx: 12, dy: 12 })).toBe(false);
+  });
+
+  test.each([12, 24, 40])('중간 높이에서 짧은 %sdp 드래그는 속도가 빨라도 화면 밖으로 접히지 않는다', async (dy) => {
+    const create = jest.spyOn(PanResponder, 'create');
+    const { result } = await renderHook(() => useBottomSheet({ collapsedTranslateY: 680, mediumTranslateY: 400 }));
+    const callbacks: PanResponderCallbacks = create.mock.calls[0][0];
+    await act(() => callbacks.onPanResponderRelease?.({} as GestureResponderEvent, { dy, vy: 0.8 } as PanResponderGestureState));
+    expect(result.current.snapPoint).toBe('medium');
+  });
+
+  test('충분히 길게 내리면 접히고 스프링은 하단 경계를 넘지 않는다', async () => {
+    const create = jest.spyOn(PanResponder, 'create');
+    const spring = jest.spyOn(Animated, 'spring');
+    const { result } = await renderHook(() => useBottomSheet({ collapsedTranslateY: 680, mediumTranslateY: 400 }));
+    const callbacks: PanResponderCallbacks = create.mock.calls[0][0];
+    await act(() => callbacks.onPanResponderRelease?.({} as GestureResponderEvent, { dy: 100, vy: 0.8 } as PanResponderGestureState));
+    expect(result.current.snapPoint).toBe('collapsed');
+    expect(spring.mock.calls).toHaveLength(2);
+    spring.mock.calls.forEach(([, config]) => expect(config.overshootClamping).toBe(true));
   });
 
   test('홈에서 상세로 높이를 바꾸며 열 때 새 좌표로만 애니메이션한다', async () => {
