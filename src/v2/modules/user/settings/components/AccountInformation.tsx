@@ -1,3 +1,4 @@
+import Skeleton from '../../../../shared/components/Skeleton';
 import React from 'react';
 import ApiErrorState from '../../../../shared/components/ApiErrorState';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +10,7 @@ export default function AccountInformation() {
   const { profile, error, isFetching, isLoading, isError, refetch } = useProfile();
   return <SettingsSection title={t('settings.account.loginSection')}>
     {isError ? <ApiErrorState error={error} busy={isFetching} onRetry={() => refetch({ cancelRefetch: false })} /> : null}
-    {isError && !profile ? null : isLoading || !profile ? (
+    {isError && !profile ? null : isLoading ? <Skeleton variant="settings" count={2} accessibilityLabel={t('settings.support.loading')} /> : !profile ? (
       <SettingsRow label={t(`settings.support.${isLoading ? 'loading' : isError ? 'error' : 'empty'}`)}
         onPress={isError ? () => { void refetch(); } : undefined} />
     ) : <>

@@ -375,7 +375,7 @@ const FeedbackButton = styled.Pressable.attrs(({ theme }) => ({ style: { boxShad
 `;
 const FeedbackRetry = styled(FeedbackButton)`background-color: ${({ theme }) => theme.liquidGlass.category.activeTint}; border-width: 1px; border-color: ${({ theme }) => theme.liquidGlass.category.activeBorder};`;
 const FeedbackDismiss = styled(FeedbackButton)`background-color: ${({ theme }) => theme.liquidGlass.category.tint};`;
-const FeedbackRetryText = styled(Text)`color: ${({ theme }) => theme.colors.primary}; font-size: 14px; line-height: 18px; font-weight: 500;`;
+const FeedbackRetryText = styled(Text)`color: ${({ theme }) => theme.liquidGlass.category.activeForeground}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const FeedbackDismissText = styled(Text)`color: ${({ theme }) => theme.colors.textAlternative}; font-size: 14px; line-height: 18px; font-weight: 500;`;
 const Action = styled.Pressable`
   min-height: 48px;

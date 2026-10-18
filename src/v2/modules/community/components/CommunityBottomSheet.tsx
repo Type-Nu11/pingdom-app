@@ -1,3 +1,4 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useMemo, useRef, useState } from 'react';
 import {
@@ -20,7 +21,6 @@ import { getMapSheetNavigationBottom, MapSheetBottomNavigation } from '../../pla
 import { GlassSurface } from '../../place/map/presentation';
 import type { BottomSheetSnapPoint } from '../../place/map/sheet';
 import ApiErrorState from '../../../shared/components/ApiErrorState';
-import { useSharedPulse } from '../../../shared/hooks/useSharedPulse';
 import { textStyleCss } from '../../../shared/theme/typography';
 import { useCategories, useCommunityFeed, useCountries } from '../hooks/useCommunity';
 import type { CommunityPostSummary } from '../api/communityApi';
@@ -34,35 +34,12 @@ const SHEET_RESTING_GAP = 8;
 const NAVIGATION_BAR_HEIGHT = 64;
 const WRITE_FAB_NAVIGATION_GAP = 12;
 const PAGE_LIMIT = 20;
-const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3', 'skeleton-4'] as const;
-
-// Each skeleton owns its own pulse subscription, scoped to its own (brief)
-// mounted lifetime, rather than the whole sheet subscribing to the shared
-// animation loop for as long as it's open.
 function CategorySkeleton() {
-  const pulse = useSharedPulse();
-  return (
-    <CategorySkeletonRow testID="v2-community-categories-loading">
-      <Animated.View style={{ flexDirection: 'row', gap: 8, opacity: pulse }}>
-        <CategorySkeletonChip />
-        <CategorySkeletonChip />
-        <CategorySkeletonChip />
-      </Animated.View>
-    </CategorySkeletonRow>
-  );
+  return <Skeleton variant="chips" style={{ paddingHorizontal: 16 }} testID="v2-community-categories-loading" />;
 }
 
 function PostListSkeleton() {
-  const pulse = useSharedPulse();
-  return (
-    <SkeletonList testID="v2-community-list-loading">
-      {SKELETON_KEYS.map((key) => (
-        <Animated.View key={key} style={{ opacity: pulse }}>
-          <SkeletonRow />
-        </Animated.View>
-      ))}
-    </SkeletonList>
-  );
+  return <Skeleton variant="post-list" style={{ padding: 16 }} testID="v2-community-list-loading" />;
 }
 
 // The sheet unmounts when the map switches to another tab (see MapScreen), so
@@ -352,7 +329,7 @@ export default function CommunityBottomSheet({
             style={{ boxShadow: themedGlass.search.shadow }}
             testID="v2-community-sheet-write-fab"
           >
-            <WriteFabSurface pointerEvents="none" tintColor={themedGlass.primaryCta.tint}>
+            <WriteFabSurface pointerEvents="none" tintColor={theme.colors.primary}>
               <AddPlusIcon height={24} width={24} />
               <WriteFabLabel>{t('community.write')}</WriteFabLabel>
             </WriteFabSurface>
@@ -428,12 +405,10 @@ const CategoryChip = styled.Pressable<{ $selected: boolean }>`
   background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.liquidGlass.category.tint)};
 `;
 const CategoryLabel = styled(AppText)<{ $selected: boolean }>`
-  color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.textAlternative)};
+  color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};
   ${({ theme }) => textStyleCss(theme.typography.labelMedium)}
 `;
 
-const CategorySkeletonRow = styled.View`height: 34px; justify-content: center; padding: 0 16px;`;
-const CategorySkeletonChip = styled.View`width: 64px; height: 34px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.border};`;
 
 // Figma lets the feed run underneath the glass bottom navigation; the list's
 // bottom padding still lets the last card scroll clear of it.
@@ -443,12 +418,10 @@ const ListViewport = styled.View`flex: 1; overflow: hidden;`;
 const ErrorViewport = styled.View`flex: 1; justify-content: flex-start;`;
 const EmptyText = styled(AppText)`margin-top: ${({ theme }) => theme.spacing.xl}px; text-align: center; color: ${({ theme }) => theme.colors.textMuted};`;
 
-const SkeletonList = styled.View`gap: 14px; padding: ${({ theme }) => theme.spacing.md}px 16px;`;
-const SkeletonRow = styled.View`height: 26px; border-radius: ${({ theme }) => theme.radius.sm}px; background-color: ${({ theme }) => theme.colors.border};`;
 
 const FooterState = styled.View`align-items: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px;`;
 const FooterErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
-const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primary}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
+const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primaryAction}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
 const WriteFabAnchor = styled(Animated.View)`position: absolute; right: 24px;`;

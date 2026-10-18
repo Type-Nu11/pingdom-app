@@ -225,7 +225,7 @@ describe('V2 reservation screens', () => {
     } as unknown as ReturnType<typeof useAvailabilities>);
 
     await renderReservationScreen(createScreen());
-    expect(screen.getByText('예약 가능 일정을 불러오는 중이에요…')).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: '예약 가능 일정을 불러오는 중이에요…' })).toBeVisible();
     expect(screen.queryByText('이 장소에 등록된 예약 가능 일정이 없습니다.')).not.toBeOnTheScreen();
   });
 

@@ -199,6 +199,7 @@ describe('CommunityBottomSheet Figma layout', () => {
 
     await rerender(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} snapPoint="expanded" />);
     expect(screen.getByTestId('v2-community-sheet-write-fab')).toBeTruthy();
+    expect(screen.getByTestId('v2-community-sheet-write-fab')).toHaveStyle({ backgroundColor: '#FF1956' });
   });
 });
 

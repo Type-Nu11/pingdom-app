@@ -11,12 +11,16 @@ SPEC.loader.exec_module(MODULE)
 
 
 class WakeWordAssetsTest(unittest.TestCase):
-    def fixture(self, root, keywords='HH EY1 P IH1 NG D IY0 @Hey_Pingdy\n'):
+    def fixture(self, root, keywords=None):
+        if keywords is None:
+            keywords = ('HH EY1 P IH1 NG D IY0 @Hey_Pingdy\n'
+                        'h ēi p íng d í @Hey_Pingdy\n'
+                        'h ēi p ìn d ì @Hey_Pingdy\n')
         assets = root / 'assets/pingdom-wake-word'
         assets.mkdir(parents=True)
         (assets / 'encoder.onnx').write_bytes(b'fixture model')
         (assets / 'keywords.txt').write_text(keywords)
-        (assets / 'tokens.txt').write_text('HH 1\nEY1 2\nP 3\nIH1 4\nNG 5\nD 6\nIY0 7\n')
+        (assets / 'tokens.txt').write_text('HH 1\nEY1 2\nP 3\nIH1 4\nNG 5\nD 6\nIY0 7\nh 8\nēi 9\np 10\níng 11\nd 12\ní 13\nìn 14\nì 15\n')
         manifest = {'modelId': 'sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20', 'engineVersion': '1.13.8',
                     'phrase': 'Hey Pingdy', 'keyword': 'Hey_Pingdy', 'files': {
             p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in assets.iterdir()}}
@@ -35,6 +39,12 @@ class WakeWordAssetsTest(unittest.TestCase):
             (assets / 'encoder.onnx').write_bytes(b'tampered')
             with self.assertRaisesRegex(ValueError, 'integrity'):
                 MODULE.verify_model(root)
+
+    def test_full_phrase_korean_acoustic_variants_are_accepted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            MODULE.verify_model(root)
 
     def test_partial_phrase_is_rejected_even_with_matching_hash(self):
         with tempfile.TemporaryDirectory() as directory:

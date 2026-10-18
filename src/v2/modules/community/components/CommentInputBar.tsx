@@ -126,7 +126,7 @@ const Field = styled(AppTextInput)`
 const SendButton = styled.Pressable`
   width: 44px; height: 44px; align-items: center; justify-content: center;
   border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ theme }) => theme.colors.primaryAction};
 `;
 const ReplyBanner = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 8px;`;
 const ReplyText = styled(AppText)`flex: 1; color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.captionMedium)}`;

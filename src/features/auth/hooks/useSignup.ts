@@ -1,32 +1,8 @@
-import axios from 'axios';
+import { getAuthErrorKey } from '../../../v2/modules/user/account/auth';
 import { useState } from 'react';
-import { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/authApi';
 import type { SignupRequest, SignupResponse } from '../model/auth.types';
-
-type SignupErrorResponse = {
-  message?: string;
-  errors?: Record<string, string>;
-  code?: string;
-};
-
-function toSignupErrorMessage(error: unknown, t: TFunction): string {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as SignupErrorResponse | undefined;
-    const fieldErrors = data?.errors ? Object.values(data.errors).filter(Boolean) : [];
-
-    if (fieldErrors.length > 0) {
-      return fieldErrors.join('\n');
-    }
-
-    if (typeof data?.message === 'string' && data.message.trim()) {
-      return data.message;
-    }
-  }
-
-  return error instanceof Error ? error.message : t('auth.signup.unknownError');
-}
 
 export const useSignup = () => {
   const { t } = useTranslation();
@@ -40,7 +16,7 @@ export const useSignup = () => {
     try {
       return await authApi.signup(payload);
     } catch (error) {
-      setErrorMessage(toSignupErrorMessage(error, t));
+      setErrorMessage(t(getAuthErrorKey(error, 'signup')));
       return null;
     } finally {
       setIsSubmitting(false);

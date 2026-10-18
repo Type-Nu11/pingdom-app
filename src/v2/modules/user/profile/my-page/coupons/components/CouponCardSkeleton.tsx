@@ -1,9 +1,8 @@
+import { SkeletonGroup } from '../../../../../../shared/components/Skeleton';
 import React from 'react';
-import { Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
-import { useSharedPulse } from '../../../../../../shared/hooks/useSharedPulse';
 
 /**
  * Holds a coupon slot while the coupon list loads, so the screen shows its shape
@@ -11,15 +10,12 @@ import { useSharedPulse } from '../../../../../../shared/hooks/useSharedPulse';
  */
 export default function CouponCardSkeleton() {
   const { t } = useTranslation();
-  const opacity = useSharedPulse();
 
   return (
     <Card
-      accessibilityLabel={t('myPage.couponBox.loading')}
-      accessibilityRole="progressbar"
       testID="v2-coupon-card-skeleton"
     >
-      <Animated.View style={{ opacity }}>
+      <SkeletonGroup accessibilityLabel={t('myPage.couponBox.loading')}>
         <PlaceBar />
         <TitleRow>
           <IconBar />
@@ -27,7 +23,7 @@ export default function CouponCardSkeleton() {
         </TitleRow>
         <DescriptionBar />
         <PeriodBar />
-      </Animated.View>
+      </SkeletonGroup>
     </Card>
   );
 }

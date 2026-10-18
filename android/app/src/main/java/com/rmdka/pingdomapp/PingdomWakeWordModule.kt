@@ -73,7 +73,7 @@ class PingdomWakeWordModule(private val context: ReactApplicationContext) :
             check(digest.digest().joinToString("") { "%02x".format(it) } == hashes.getString(name))
         }
         check(context.assets.open("$ASSETS/keywords.txt").bufferedReader().use { it.readText() }
-            == "HH EY1 P IH1 NG D IY0 @Hey_Pingdy\n")
+            == "HH EY1 P IH1 NG D IY0 @Hey_Pingdy\nh ēi p íng d í @Hey_Pingdy\nh ēi p ìn d ì @Hey_Pingdy\n")
         verified = true
     }
 

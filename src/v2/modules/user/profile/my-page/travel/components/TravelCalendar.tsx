@@ -267,7 +267,7 @@ const DayBadge = styled.View`
   height: 100%;
   aspect-ratio: 1;
   border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ theme }) => theme.colors.primaryAction};
 `;
 
 const DayBadgeText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`

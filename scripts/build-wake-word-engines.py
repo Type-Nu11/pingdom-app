@@ -129,6 +129,15 @@ def ios(source, repackage=False):
     stamp('ios', [path for path in sorted(output.rglob('*')) if path.is_file()])
 
 
+def source_archive_filter(member, destination):
+    # The pinned upstream archive contains developer-local links in Go examples.
+    # They are not native build inputs; retain data_filter for every other entry.
+    if (member.issym() and Path(member.name).parts[1:4] == ('scripts', 'go', '_internal')
+            and Path(member.linkname).is_absolute()):
+        return None
+    return tarfile.data_filter(member, destination)
+
+
 def build(platform):
     CACHE.mkdir(parents=True, exist_ok=True)
     VENDOR.mkdir(parents=True, exist_ok=True)
@@ -136,7 +145,7 @@ def build(platform):
     if not (source / 'CMakeLists.txt').is_file():
         extracted = CACHE / 'source-unpack'
         with tarfile.open(fetch('source')) as archive:
-            archive.extractall(extracted, filter='data')
+            archive.extractall(extracted, filter=source_archive_filter)
         shutil.move(next(extracted.iterdir()), source)
     for target in (['android', 'ios'] if platform == 'all' else [platform]):
         (android if target == 'android' else ios)(source)

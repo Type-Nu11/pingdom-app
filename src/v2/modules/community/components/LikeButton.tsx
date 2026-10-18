@@ -160,5 +160,5 @@ const TextSkeleton = styled.View`width: 48px; height: 14px; border-radius: ${({ 
 
 const ErrorRow = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px;`;
 const ErrorText = styled(AppText)`flex-shrink: 1; color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const RetryButton = styled.Pressable`align-self: flex-start; padding: 6px 14px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primary};`;
+const RetryButton = styled.Pressable`align-self: flex-start; padding: 6px 14px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primaryAction};`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;

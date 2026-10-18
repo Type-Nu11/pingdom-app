@@ -131,7 +131,7 @@ test('iOS declares every supported language so the device-language fallback can 
   // language is reported as English, which silently disables the device-language fallback.
   const iosLocalization = { 'zh-CN': 'zh-Hans', 'zh-TW': 'zh-Hant' };
   const expected = supportedLanguages.map((language) => iosLocalization[language] ?? language).sort();
-  const plist = readFileSync(resolve(repositoryRoot, 'ios/Naviapp/Info.plist'), 'utf8');
+  const plist = readFileSync(resolve(repositoryRoot, 'ios/PingDom/Info.plist'), 'utf8');
   const declared = plist.match(/<key>CFBundleLocalizations<\/key>\s*<array>([\s\S]*?)<\/array>/)?.[1] ?? '';
   assert.deepEqual([...declared.matchAll(/<string>([^<]+)<\/string>/g)].map((match) => match[1]).sort(), expected);
   const appConfig = JSON.parse(readFileSync(resolve(repositoryRoot, 'app.json'), 'utf8'));

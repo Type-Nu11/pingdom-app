@@ -1,22 +1,16 @@
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
-import { useTheme } from 'styled-components/native';
-
-import StateLayout from './StateLayout';
+import Skeleton, { type SkeletonVariant } from './Skeleton';
 
 export type LoadingStateProps = {
   description?: string;
   fill?: boolean;
+  variant?: SkeletonVariant;
+  count?: number;
 };
 
-export default function LoadingState({ description, fill = false }: LoadingStateProps) {
-  const theme = useTheme();
-
+export default function LoadingState({ description, fill = false, variant = 'list', count }: LoadingStateProps) {
   return (
-    <StateLayout
-      description={description}
-      fill={fill}
-      visual={<ActivityIndicator color={theme.colors.primary} />}
-    />
+    <Skeleton accessibilityLabel={description} variant={variant} count={count}
+      style={{ width: '100%', padding: 16, ...(fill ? { flex: 1 } : { flexShrink: 0 }) }} />
   );
 }

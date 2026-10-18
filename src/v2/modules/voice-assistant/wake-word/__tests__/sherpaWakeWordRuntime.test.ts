@@ -67,3 +67,18 @@ test('native audio interruption is forwarded without replaying a detection', asy
   await detector.dispose(); await detector.dispose();
   expect(x.native.dispose).toHaveBeenCalledTimes(1);
 });
+
+test('native background suspension is distinct from audio errors and ignores stale sessions', async () => {
+  const x = setup();
+  const suspended = jest.fn();
+  const detector = await x.runtime.createDetector({ ...x.options, onSuspended: suspended });
+  const id = (x.native.initialize as jest.Mock).mock.calls[0][0];
+  x.emit({ sessionId: 'old-session', type: 'suspended' });
+  expect(suspended).not.toHaveBeenCalled();
+  x.emit({ sessionId: id, type: 'suspended' });
+  expect(suspended).toHaveBeenCalledTimes(1);
+  expect(x.error).not.toHaveBeenCalled();
+  await detector.dispose();
+  x.emit({ sessionId: id, type: 'suspended' });
+  expect(suspended).toHaveBeenCalledTimes(1);
+});

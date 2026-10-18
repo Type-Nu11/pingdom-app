@@ -119,7 +119,7 @@ describe('PlaceMenuSection', () => {
     await renderWithProviders(<PlaceMenuSection placeId={17} />);
 
     expect(screen.getByTestId('place-menu-loading')).toBeTruthy();
-    expect(screen.getByText('메뉴를 불러오는 중입니다…')).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: '메뉴를 불러오는 중입니다…' })).toBeTruthy();
   });
 
   test('renders server order, nullable fields, price zero, sold-out text, and image fallback', async () => {

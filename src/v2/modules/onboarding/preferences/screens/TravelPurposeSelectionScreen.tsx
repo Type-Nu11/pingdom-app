@@ -121,11 +121,13 @@ function TravelPurposeOption({
           </OptionIcon>
         </Animated.View>
         <OptionLabel>{label}</OptionLabel>
-        {selected ? (
-          <CheckCircle aria-hidden>
-            <CheckIcon height={10} width={14} />
-          </CheckCircle>
-        ) : null}
+        <CheckSlot aria-hidden>
+          {selected ? (
+            <CheckCircle>
+              <CheckIcon height={10} width={14} />
+            </CheckCircle>
+          ) : null}
+        </CheckSlot>
       </Option>
     </OptionSurface>
   );
@@ -323,12 +325,15 @@ const Option = styled.Pressable`
   flex-direction: row;
   align-items: center;
   gap: 13px;
-  padding: 15px ${({ theme }) => theme.spacing.md}px;
+  padding: 12px ${({ theme }) => theme.spacing.md}px;
   border-radius: 16px;
 `;
 
-// Figma draws each icon at its own size, so the box wraps the asset.
+// Preserve each asset's intrinsic size inside a shared column so labels align.
 const OptionIcon = styled.View`
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
 `;
@@ -340,6 +345,14 @@ const OptionLabel = styled(AppText)`
   font-size: ${({ theme }) => theme.typography.onboardingAction.fontSize}px;
   font-weight: ${({ theme }) => theme.typography.onboardingAction.fontWeight};
   line-height: ${({ theme }) => theme.typography.onboardingAction.lineHeight}px;
+`;
+
+const CheckSlot = styled.View`
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
 `;
 
 const CheckCircle = styled.View`

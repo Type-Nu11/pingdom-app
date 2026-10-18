@@ -1,4 +1,6 @@
 export { authApi, createAuthApi } from './api/authApi';
+export { getAuthErrorKey } from './model/authErrorPresentation';
+export type { AuthOperation } from './model/authErrorPresentation';
 export {
   createEmailResendMutationOptions,
   createPasswordResetConfirmMutationOptions,

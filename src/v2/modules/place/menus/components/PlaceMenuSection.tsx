@@ -1,6 +1,7 @@
+import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
@@ -138,10 +139,7 @@ export default function PlaceMenuSection({ placeId, presentation = 'default', on
     return (
       <Section $expanded={expanded} accessibilityRole="summary" testID="place-menu-loading">
         <SectionTitle $expanded={expanded}>{t(expanded ? 'placeProduct.title' : 'placeMenu.title')}</SectionTitle>
-        <StateRow accessibilityLiveRegion="polite">
-          <ActivityIndicator accessibilityLabel={t('placeMenu.loading')} />
-          <StateText>{t('placeMenu.loading')}</StateText>
-        </StateRow>
+        <Skeleton variant="menu" count={expanded ? 3 : 2} accessibilityLabel={t('placeMenu.loading')} />
       </Section>
     );
   }

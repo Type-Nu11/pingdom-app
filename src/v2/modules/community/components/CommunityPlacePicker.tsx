@@ -1,6 +1,7 @@
+import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useState } from 'react';
-import { ActivityIndicator, FlatList } from 'react-native';
+import { FlatList } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
@@ -62,9 +63,7 @@ export default function CommunityPlacePicker({ onClose, onSelect }: CommunityPla
           <StateText>{t('community.write_screen.placePicker.prompt')}</StateText>
         </StateBox>
       ) : autocomplete.isFetching ? (
-        <StateBox testID="v2-community-place-picker-loading">
-          <ActivityIndicator color={theme.colors.primary} />
-        </StateBox>
+        <Skeleton accessibilityLabel={t('map.searchOverlay.loading')} testID="v2-community-place-picker-loading" style={{ padding: 16 }} />
       ) : autocomplete.isError ? (
         <StateBox testID="v2-community-place-picker-error">
           <StateText>{t('community.write_screen.placePicker.error')}</StateText>

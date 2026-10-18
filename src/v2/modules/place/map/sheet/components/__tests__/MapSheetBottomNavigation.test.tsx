@@ -6,6 +6,7 @@ import { renderWithProviders } from '../../../../../../app/testing/testProviders
 import MapSheetBottomNavigation, {
   MapSheetNavigationHiddenProvider,
   getMapSheetNavigationBottom,
+  getMapSheetCollapsedVisibleHeight,
   getMapSheetTabSurfaceColor,
 } from '../MapSheetBottomNavigation';
 
@@ -57,12 +58,22 @@ test('다른 탭에서는 지도 아이콘 내부를 비우고 지도 선택 시
   expect(outline()).toHaveProp('stroke', { type: 0, payload: processColor('#3B3B40') });
 });
 
-test('iOS는 Figma처럼 화면 아래 16px에 두고 Android는 시스템 내비게이션 영역을 피한다', () => {
+test('iOS 홈 인디케이터와 Android 시스템 내비게이션 영역 위에 하단 메뉴를 배치한다', () => {
   expect(getMapSheetNavigationBottom(0, 'ios')).toBe(16);
-  expect(getMapSheetNavigationBottom(34, 'ios')).toBe(16);
+  expect(getMapSheetNavigationBottom(34, 'ios')).toBe(50);
   expect(getMapSheetNavigationBottom(0, 'android')).toBe(16);
   expect(getMapSheetNavigationBottom(6, 'android')).toBe(16);
   expect(getMapSheetNavigationBottom(48, 'android')).toBe(58);
+});
+
+test.each([0, 6, 24, 48])('접힌 시트도 Android 하단 여백 %sdp에서 손잡이가 고정 메뉴 위에 남는다', bottomInset => {
+  const visibleHeight = getMapSheetCollapsedVisibleHeight(bottomInset, 'android');
+  const navigationTopFromBottom = getMapSheetNavigationBottom(bottomInset, 'android') + 64;
+  expect(visibleHeight - 20).toBeGreaterThanOrEqual(navigationTopFromBottom + 8);
+});
+
+test('iOS 홈 인디케이터가 있어도 접힌 손잡이가 메뉴에 가려지지 않는다', () => {
+  expect(getMapSheetCollapsedVisibleHeight(34, 'ios')).toBe(142);
 });
 
 test('Android elevation 대신 Figma의 6% 확산 그림자를 사용한다', async () => {

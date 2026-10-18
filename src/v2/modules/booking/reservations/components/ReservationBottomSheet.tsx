@@ -1,3 +1,4 @@
+import Skeleton from '../../../../shared/components/Skeleton';
 import { ApiErrorState } from '../../../../shared/components';
 import ReservationRecordCard from './ReservationRecordCard';
 import { Text as AppText } from '../../../../shared/components/Typography';
@@ -5,7 +6,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
-  ActivityIndicator,
   Animated,
   GestureResponderHandlers,
   Image,
@@ -144,10 +144,7 @@ function NearbyReservationRail({
 
   if (isLoading && places.length === 0) {
     return (
-      <View style={styles.nearbyEmpty} testID="nearby-reservations-loading">
-        <ActivityIndicator color={colors.primary} />
-        <AppText style={styles.nearbyEmptyText}>{t('reservation.list.nearbyLoading')}</AppText>
-      </View>
+      <Skeleton variant="list" count={2} accessibilityLabel={t('reservation.list.nearbyLoading')} testID="nearby-reservations-loading" />
     );
   }
 
@@ -289,7 +286,7 @@ export default function ReservationBottomSheet({
                   <AppText style={styles.savedTitle}>{t('reservation.list.savedTitle')}</AppText>
                   {reservations.isError && reservations.data ? <ApiErrorState error={reservations.error} busy={reservations.isFetching} onRetry={() => reservations.refetch({ cancelRefetch: false })} /> : null}
                   {reservations.isLoading ? (
-                    <View style={styles.state} testID="reservations-loading"><AppText style={styles.stateTitle}>{t('reservation.list.loading')}</AppText></View>
+                    <Skeleton variant="reservation" accessibilityLabel={t('reservation.list.loading')} testID="reservations-loading" />
                   ) : reservations.isError && !reservations.data ? (
                     <View style={styles.state} testID="reservations-error">
                       <ApiErrorState error={reservations.error} busy={reservations.isFetching} onRetry={() => reservations.refetch({ cancelRefetch: false })} />
@@ -344,7 +341,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   nearbyRail: { gap: 16, paddingBottom: 4, paddingTop: 2 },
   pressed: { opacity: 0.72 },
   reservationCardItem: { marginBottom: 4 },
-  retryButton: { backgroundColor: colors.primary, borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
+  retryButton: { backgroundColor: colors.primaryAction, borderRadius: 18, marginTop: 14, paddingHorizontal: 18, paddingVertical: 9 },
   retryLabel: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   savedImage: { borderRightColor: colors.borderEmphasis, borderRightWidth: 1, flex: 1, height: '100%' },
   savedImageFallback: { alignItems: 'center', backgroundColor: colors.surfaceMuted, justifyContent: 'center' },
