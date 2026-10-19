@@ -300,7 +300,7 @@ export default function ReservationBottomSheet({
 
 const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   content: { flex: 1 },
-  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
+  handle: { backgroundColor: colors.secondaryNormal, borderRadius: 3, height: 5, width: 56 },
   // Same handle geometry as the other page sheets: handle 6dp from the top, content 13dp below it.
   handleArea: { alignItems: 'center', height: 19, justifyContent: 'flex-start' },
   handleButton: { alignItems: 'center', height: 19, paddingTop: 6, width: 96 },

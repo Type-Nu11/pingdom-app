@@ -15,6 +15,7 @@ export default function MapSheetSurface({ children, sheetChromeBottom, expandedT
   const gap = sheetChromeBottom.interpolate({ inputRange: range, outputRange: [0, 8], extrapolate: 'clamp' });
   const bottom = Animated.add(sheetChromeBottom, gap);
   const radius = sheetChromeBottom.interpolate({ inputRange: range, outputRange: [0, liquidGlass.sheet.bottomRadius], extrapolate: 'clamp' });
+  const expandedFillOpacity = sheetChromeBottom.interpolate({ inputRange: range, outputRange: [1, 0], extrapolate: 'clamp' });
   const corners = {
     borderTopLeftRadius: opaque ? 0 : liquidGlass.sheet.topRadius,
     borderTopRightRadius: opaque ? 0 : liquidGlass.sheet.topRadius,
@@ -28,6 +29,7 @@ export default function MapSheetSurface({ children, sheetChromeBottom, expandedT
         <Styles.SheetGlass cornerRadius={liquidGlass.sheet.topRadius} glassEffectStyle="regular"
           highlightHeight={40} highlightOpacity={liquidGlass.sheet.highlightOpacity}
           rimColor={liquidGlass.sheet.rim} tintColor={liquidGlass.sheet.tint} topRimOnly />
+        <Styles.SheetExpandedFill pointerEvents="none" style={{ opacity: expandedFillOpacity }} testID="sheet-expanded-fill" />
       </Styles.SheetChrome>
     </Styles.SheetChromeShadow>
     <Styles.SheetContentViewport style={{ ...bounds, ...corners }} testID={`${testID}-content-viewport`}>

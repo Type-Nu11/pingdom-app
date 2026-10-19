@@ -15,7 +15,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Keyboard,
-  Platform,
   StatusBar,
   useWindowDimensions,
   View,
@@ -48,7 +47,7 @@ import MapGlassBackdrop from '../presentation/components/MapGlassBackdrop';
 import { useMapGlassActivity } from '../presentation/hooks/useMapGlassActivity';
 import MapSearchOverlay from '../../search/components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../presentation/components/MapTopOverlay';
-import { MAP_TOP_OVERLAY_METRICS } from '../presentation/styles/MapTopOverlay.styles';
+import { MAP_TOP_OVERLAY_METRICS, MAP_TOP_OVERLAY_SAFE_TOP_PADDING } from '../presentation/styles/MapTopOverlay.styles';
 import { useBottomSheet } from '../sheet/hooks/useBottomSheet';
 import { getPageEntrySnapPoint, useMapSheetStore } from '../sheet/store/mapSheetStore';
 import {
@@ -411,7 +410,7 @@ export default function MapScreen({
 
   // Both overlays share this edge-to-edge root. Avoid measureInWindow during
   // SafeAreaView updates: Android can report the previous frame's status-bar offset.
-  const expandedSheetTop = insets.top + MAP_TOP_OVERLAY_METRICS.headerTopPadding
+  const expandedSheetTop = insets.top + MAP_TOP_OVERLAY_SAFE_TOP_PADDING
     + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
   const externalPlace = mapSection === 'map' && content.type === 'external-place' ? content.place : null;

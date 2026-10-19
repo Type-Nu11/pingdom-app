@@ -34,7 +34,7 @@ const NAVIGATION_BAR_HEIGHT = 64;
 const WRITE_FAB_NAVIGATION_GAP = 12;
 const PAGE_LIMIT = 20;
 function CategorySkeleton() {
-  return <Skeleton variant="chips" style={{ marginTop: 16 - TITLE_ROW_CENTER_OFFSET, paddingHorizontal: 16 }} testID="v2-community-categories-loading" />;
+  return <Skeleton variant="chips" style={{ paddingHorizontal: 16 }} testID="v2-community-categories-loading" />;
 }
 
 function PostListSkeleton() {
@@ -137,6 +137,9 @@ export default function CommunityBottomSheet({
   // tag for an item the server returned without one.
   const now = new Date();
   const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
+  // Half-sheet chips float as glass (Shadow/Float); the expanded page uses flat chips.
+  const isExpanded = snapPoint === 'expanded';
+  const chipShadowStyle = isExpanded ? undefined : { boxShadow: themedGlass.category.shadow };
 
   const openCountryMenu = () => {
     const fallbackTop = insets.top + 160;
@@ -189,7 +192,7 @@ export default function CommunityBottomSheet({
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
+      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
         <HandleArea {...panHandlers}>
           <HandleButton accessibilityLabel={t('community.sheetAdjust')} accessibilityRole="adjustable" onPress={onHandlePress}>
             <Handle />
@@ -198,7 +201,7 @@ export default function CommunityBottomSheet({
 
         <Animated.View
           pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
-          style={{ flex: 1, marginTop: -TITLE_ROW_CENTER_OFFSET, opacity }}
+          style={{ flex: 1, opacity }}
         >
           {/* The title row and chips are a drag area too; taps and horizontal chip swipes still work. */}
           <View {...panHandlers} testID="v2-community-sheet-header">
@@ -222,11 +225,12 @@ export default function CommunityBottomSheet({
           ) : categoriesQuery.isError ? null : (
             <CategoryScroll contentContainerStyle={CATEGORY_CONTENT_STYLE} horizontal showsHorizontalScrollIndicator={false}>
               <CategoryChip
+                $expanded={isExpanded}
                 $selected={selectedCategoryId === null}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: selectedCategoryId === null }}
                 onPress={() => setSelectedCategoryId(null)}
-                style={{ boxShadow: themedGlass.category.shadow }}
+                style={chipShadowStyle}
                 testID="v2-community-sheet-category-all"
               >
                 <CategoryLabel $selected={selectedCategoryId === null}>{t('community.categories.all')}</CategoryLabel>
@@ -235,9 +239,10 @@ export default function CommunityBottomSheet({
                 const selected = category.categoryId === selectedCategoryId;
                 return (
                   <CategoryChip
+                    $expanded={isExpanded}
                     $selected={selected}
                     accessibilityRole="tab"
-                    style={{ boxShadow: themedGlass.category.shadow }}
+                    style={chipShadowStyle}
                     accessibilityState={{ selected }}
                     key={category.categoryId}
                     onPress={() => {
@@ -360,9 +365,6 @@ const HandleArea = styled(View)`align-items: center; height: 19px;`;
 const HandleButton = styled(Pressable)`align-items: center; height: 19px; padding-top: 6px; width: 160px;`;
 const Handle = styled.View`background-color: ${({ theme }) => theme.colors.secondaryNormal}; border-radius: 3px; height: 5px; width: 56px;`;
 
-// The 44dp filter button centres the title, so the content starts 9dp higher to keep the
-// title text 13dp below the handle like every other page sheet (Figma Saved/PlaceRecommend).
-const TITLE_ROW_CENTER_OFFSET = (44 - 26) / 2;
 const TitleRow = styled.View`height: 44px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 16px;`;
 // Figma filter button (8241:45578): 44px `Glass/FillRaised` circle with the
 // 24px `Interface / Slider_03` glyph and the shared 0/4/20 6% drop shadow.
@@ -376,16 +378,23 @@ const FilterButton = styled(Pressable)`
 `;
 const Title = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
 
-// Chips start 16dp below the title text, matching the favorites sheet.
-const CategoryScroll = styled.ScrollView`flex-grow: 0; height: 34px; margin-top: ${16 - TITLE_ROW_CENTER_OFFSET}px; overflow: visible;`;
-const CategoryChip = styled.Pressable<{ $selected: boolean }>`
+// Figma Community (10250:35439/35556): the 44px title row sits right under the handle
+// and the chip row follows it with no gap.
+const CategoryScroll = styled.ScrollView`flex-grow: 0; height: 34px; overflow: visible;`;
+// Figma Community (10250:35439) glass chips vs Community-Up (10250:35556) flat
+// chips: Background/Normal with a 1px Fill/Neutral stroke when unselected.
+const CategoryChip = styled.Pressable<{ $expanded: boolean; $selected: boolean }>`
   height: 34px;
   justify-content: center;
   padding: 0 11px;
   border-width: 1px;
-  border-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeBorder : theme.liquidGlass.category.border)};
+  border-color: ${({ $expanded, $selected, theme }) => (
+    $selected ? theme.liquidGlass.category.activeBorder : $expanded ? theme.colors.fillNeutral : theme.liquidGlass.category.border
+  )};
   border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.liquidGlass.category.tint)};
+  background-color: ${({ $expanded, $selected, theme }) => (
+    $selected ? theme.liquidGlass.category.activeTint : $expanded ? theme.colors.background : theme.liquidGlass.category.tint
+  )};
 `;
 const CategoryLabel = styled(AppText)<{ $selected: boolean }>`
   color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};

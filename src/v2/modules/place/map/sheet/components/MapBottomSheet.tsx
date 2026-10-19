@@ -338,14 +338,16 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
 };
 
 const FeedSegment = ({
+  expanded = false,
   feed,
   onChange,
 }: {
+  expanded?: boolean;
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
 }) => {
   const { t } = useTranslation();
-  const { colors, liquidGlass: themedGlass } = useTheme();
+  const { colors } = useTheme();
   const styles = useMapSheetStyles();
   const [segmentWidth, setSegmentWidth] = useState(0);
   const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
@@ -362,66 +364,86 @@ const FeedSegment = ({
     return () => animation?.stop();
   }, [feed, indicatorProgress, reduceMotion]);
 
+  const segmentContent = (
+    <>
+      {indicatorWidth > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.segmentIndicator,
+            {
+              backgroundColor: expanded ? colors.background : colors.glassFillRaised,
+              transform: [{
+                translateX: indicatorProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, indicatorWidth],
+                }),
+              }],
+              width: indicatorWidth,
+            },
+          ]}
+          testID="feed-segment-indicator"
+        />
+      ) : null}
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'local' }}
+        onPress={() => onChange('local')}
+        style={styles.segment}
+      >
+        <HotPlaceAsset
+          color={feed === 'local' ? colors.primary : colors.labelAssistive}
+          height={20}
+          width={16}
+        />
+        <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+          {t('map.sheet.localHotPlaces')}
+        </AppText>
+      </Pressable>
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'national' }}
+        onPress={() => onChange('national')}
+        style={styles.segment}
+      >
+        <MapAsset
+          color={feed === 'national' ? colors.primary : colors.labelAssistive}
+          height={20}
+          width={18}
+        />
+        <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+          {t('map.sheet.nationwideTrends')}
+        </AppText>
+      </Pressable>
+    </>
+  );
+
+  // Figma Component 2: the floating sheet (4525:25520) uses a Glass/FillSubtle track with a
+  // Glass/FillRaised thumb; the -Up frame (4683:7488) a flat Fill/Alternative track with a
+  // Background/Normal thumb and no shadow, spanning the full-width sheet minus 8px.
   return (
-    <View style={styles.segmentInset}>
-      <View style={styles.segmentShadow}>
-        <GlassSurface
-          glassEffectStyle="regular"
-          intensity={56}
-          onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
-          style={styles.segmentOuter}
-          testID="feed-segment-control"
-          tintColor={themedGlass.navigation.tint}
-        >
-          {indicatorWidth > 0 ? (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.segmentIndicator,
-                {
-                  transform: [{
-                    translateX: indicatorProgress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, indicatorWidth],
-                    }),
-                  }],
-                  width: indicatorWidth,
-                },
-              ]}
-              testID="feed-segment-indicator"
-            />
-          ) : null}
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: feed === 'local' }}
-            onPress={() => onChange('local')}
-            style={styles.segment}
+    <View style={expanded ? undefined : styles.segmentInset} testID="feed-segment-inset">
+      <View style={expanded ? styles.segmentFrame : styles.segmentShadow}>
+        {expanded ? (
+          <View
+            onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
+            style={[styles.segmentOuter, { backgroundColor: colors.fillAlternative }]}
+            testID="feed-segment-control"
           >
-            <HotPlaceAsset
-              color={feed === 'local' ? colors.primary : colors.textMuted}
-              height={20}
-              width={16}
-            />
-            <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-              {t('map.sheet.localHotPlaces')}
-            </AppText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: feed === 'national' }}
-            onPress={() => onChange('national')}
-            style={styles.segment}
+            {segmentContent}
+          </View>
+        ) : (
+          <GlassSurface
+            glassEffectStyle="regular"
+            intensity={56}
+            onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
+            style={styles.segmentOuter}
+            testID="feed-segment-control"
+            tintColor={colors.glassFillSubtle}
           >
-            <MapAsset
-              color={feed === 'national' ? colors.primary : colors.textMuted}
-              height={20}
-              width={18}
-            />
-            <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-              {t('map.sheet.nationwideTrends')}
-            </AppText>
-          </Pressable>
-        </GlassSurface>
+            {segmentContent}
+          </GlassSurface>
+        )}
       </View>
     </View>
   );
@@ -989,7 +1011,7 @@ const ExpandedHomeContent = ({
       style={styles.expandedScroll}
       testID="expanded-home-scroll"
     >
-      <FeedSegment feed={feed} onChange={onFeedChange} />
+      <FeedSegment expanded={expandedInteractionsEnabled} feed={feed} onChange={onFeedChange} />
       <FadeSlideTransition
         direction={feed === 'local' ? 0 : 1}
         stateKey={feed}
@@ -2946,7 +2968,7 @@ const createStyles = (colors: AppTheme['colors'], glass: AppTheme['liquidGlass']
   homeTrendCardBody: { bottom: 0, left: 0, paddingBottom: 13, paddingHorizontal: 14, position: 'absolute', right: 0 },
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
-  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
+  handle: { backgroundColor: colors.secondaryNormal, borderRadius: 3, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 20, justifyContent: 'center', zIndex: 4 },
   handleButton: { alignItems: 'center', height: 20, justifyContent: 'center', width: 160 },
   homeHandleArea: { height: HOME_SHEET_HANDLE_HEIGHT },
@@ -3107,7 +3129,7 @@ const createStyles = (colors: AppTheme['colors'], glass: AppTheme['liquidGlass']
     zIndex: 1,
   },
   segmentLabel: {
-    color: colors.textMuted,
+    color: colors.labelAssistive,
     // Lets a long translated label shrink inside its half instead of running under the other tab.
     flexShrink: 1,
     fontSize: 16,
@@ -3119,7 +3141,6 @@ const createStyles = (colors: AppTheme['colors'], glass: AppTheme['liquidGlass']
     paddingHorizontal: 8,
   },
   segmentIndicator: {
-    backgroundColor: colors.selectedTabSurface,
     borderRadius: 20,
     bottom: 4,
     left: 4,
@@ -3137,10 +3158,11 @@ const createStyles = (colors: AppTheme['colors'], glass: AppTheme['liquidGlass']
     padding: 4,
     width: '100%',
   },
+  segmentFrame: { alignSelf: 'center', borderRadius: 24, width: '100%' },
   segmentShadow: {
     alignSelf: 'center',
     borderRadius: 24,
-    boxShadow: `0px 4px 20px -4px ${colors.shadow}`,
+    boxShadow: `0px 4px 20px -4px ${colors.shadowFloat}`,
     width: '100%',
   },
   sheetContent: { flex: 1 },

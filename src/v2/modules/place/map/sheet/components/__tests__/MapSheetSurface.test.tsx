@@ -2,6 +2,7 @@ import React from 'react';
 import { Animated, View } from 'react-native';
 import { screen, within } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
+import { darkColors, lightColors } from '../../../../../../shared/theme';
 import MapSheetSurface from '../MapSheetSurface';
 
 test.each(['LIGHT', 'DARK'] as const)('%s shares chrome and content bounds through drag offsets', async appearancePreference => {
@@ -14,6 +15,10 @@ test.each(['LIGHT', 'DARK'] as const)('%s shares chrome and content bounds throu
       borderBottomLeftRadius: Math.min(bottom / 300, 1) * 48,
       borderBottomRightRadius: Math.min(bottom / 300, 1) * 48 };
     expect(screen.getByTestId('sheet-chrome')).toHaveStyle(expected);
+    expect(screen.getByTestId('sheet-expanded-fill')).toHaveStyle({
+      opacity: 1 - Math.min(bottom / 300, 1),
+      backgroundColor: (appearancePreference === 'DARK' ? darkColors : lightColors).backgroundAssistive,
+    });
     const viewport = screen.getByTestId('sheet-content-viewport');
     expect(viewport).toHaveStyle({ ...expected, overflow: 'hidden', position: 'absolute' });
     expect(within(viewport).getByTestId('content')).toBeTruthy();

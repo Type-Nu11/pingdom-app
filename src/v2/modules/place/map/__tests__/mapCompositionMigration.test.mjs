@@ -120,7 +120,8 @@ test('expanded sheet stops below the search header and temporarily hides map cat
   const expandedTop = screen.match(/const expandedSheetTop =[\s\S]*?;/)?.[0] ?? '';
 
   assert.match(expandedTop, /MAP_TOP_OVERLAY_METRICS\.headerHeight/);
-  assert.match(expandedTop, /insets\.top/);
+  assert.match(expandedTop, /insets\.top \+ MAP_TOP_OVERLAY_SAFE_TOP_PADDING/);
+  assert.doesNotMatch(expandedTop, /Platform\.OS/);
   assert.match(expandedTop, /SHEET_RESTING_GAP/);
   assert.match(screen, /Math\.round\(viewportHeight\)/);
   assert.doesNotMatch(screen, /\.measureInWindow\(/);
