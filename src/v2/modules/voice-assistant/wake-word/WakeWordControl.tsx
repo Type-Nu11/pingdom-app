@@ -1,5 +1,6 @@
+import { useAppDialog } from '../../../shared/components/AppDialogProvider';
 import React from 'react';
-import { Alert, Switch } from 'react-native';
+import { Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 import { Text } from '../../../shared/components/Typography';
@@ -16,8 +17,9 @@ export function WakeWordControl({ state, available = true, onEnable, onDisable }
   state: WakeWordSnapshot; available?: boolean; onEnable(): Promise<void>; onDisable(): Promise<void>;
 }) {
   const { t } = useTranslation();
+  const dialog = useAppDialog();
   const theme = useTheme();
-  const enable = () => Alert.alert(t('voiceAssistant.wakeWord.title'), t('voiceAssistant.wakeWord.notice'), [
+  const enable = () => dialog.show(t('voiceAssistant.wakeWord.title'), t('voiceAssistant.wakeWord.notice'), [
     { text: t('voiceAssistant.wakeWord.cancel'), style: 'cancel' },
     { text: t('voiceAssistant.wakeWord.enable'), onPress: () => { void onEnable(); } },
   ]);
