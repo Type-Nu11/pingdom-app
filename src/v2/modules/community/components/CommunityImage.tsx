@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Image } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Image, type ImageURISource } from 'react-native';
 import styled from 'styled-components/native';
 
 import PhotoIcon from '../../../../assets/v2/icons/community/photo-picker.svg';
+import { appVersion } from '../../../shared/config';
 
 export type CommunityImageProps = {
   accessibilityLabel?: string;
@@ -17,6 +18,24 @@ export type CommunityImageProps = {
 
 const FALLBACK_ICON_MAX = 28;
 
+function imageSource(uri: string): ImageURISource {
+  try {
+    const url = new URL(uri);
+    // Wikimedia rejects generic native HTTP clients. Identify PingDom per its
+    // User-Agent policy; keep other providers and local image requests intact.
+    if (url.protocol === 'https:' &&
+        (url.hostname === 'thumb.wikimedia.org' || url.hostname === 'upload.wikimedia.org')) {
+      return {
+        uri,
+        headers: { 'User-Agent': `PingDom/${appVersion} (https://github.com/Type-Nu11/pingdom-app)` },
+      };
+    }
+  } catch {
+    // Let the native image loader handle invalid or platform-specific URIs.
+  }
+  return { uri };
+}
+
 // A remote community photo in a fixed box. A missing URL or a failed load
 // falls back to the muted photo tile the other V2 place cards use, so a broken
 // image never leaves a blank hole in the layout.
@@ -30,6 +49,7 @@ export default function CommunityImage({
   width,
 }: CommunityImageProps) {
   const [failed, setFailed] = useState(false);
+  const source = useMemo(() => uri ? imageSource(uri) : undefined, [uri]);
   useEffect(() => setFailed(false), [uri]);
 
   if (!uri || failed) {
@@ -60,7 +80,7 @@ export default function CommunityImage({
       accessible={Boolean(accessibilityLabel)}
       onError={() => setFailed(true)}
       resizeMode="cover"
-      source={{ uri }}
+      source={source}
       testID={testID}
     />
   );

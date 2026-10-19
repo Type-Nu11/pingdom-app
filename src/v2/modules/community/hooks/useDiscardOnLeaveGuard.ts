@@ -1,5 +1,5 @@
+import { useAppDialog } from '../../../shared/components/AppDialogProvider';
 import { useEffect, useRef } from 'react';
-import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 type BeforeRemoveEvent<Action> = {
@@ -24,23 +24,24 @@ export type LeaveGuardNavigation<Action = unknown> = {
 export function useDiscardOnLeaveGuard<Action>(navigation: LeaveGuardNavigation<Action>) {
   const hasUnsavedInput = useRef(false);
   const { t } = useTranslation();
+  const dialog = useAppDialog();
 
   useEffect(() => navigation.addListener('beforeRemove', (event) => {
     if (!hasUnsavedInput.current) return;
     event.preventDefault();
-    Alert.alert(
+    dialog.show(
       t('community.write_screen.discard.title'),
       t('community.write_screen.discard.body'),
       [
         { style: 'cancel', text: t('community.write_screen.discard.cancel') },
         {
-          onPress: () => navigation.dispatch(event.data.action),
+          onPress: () => { hasUnsavedInput.current = false; navigation.dispatch(event.data.action); },
           style: 'destructive',
           text: t('community.write_screen.discard.confirm'),
         },
       ],
     );
-  }), [navigation, t]);
+  }), [dialog, navigation, t]);
 
   return hasUnsavedInput;
 }
