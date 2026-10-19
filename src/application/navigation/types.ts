@@ -46,11 +46,15 @@ export const MAIN_ROUTES = {
   CheckIn: 'CheckIn',
   CommunityDetail: 'CommunityDetail',
   CommunityWrite: 'CommunityWrite',
+  CommunityEdit: 'CommunityEdit',
+  MyCommunityPosts: 'MyCommunityPosts',
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   Map: 'Map',
   Merchant: 'Merchant',
   MyPage: 'MyPage',
+  MyReview: 'MyReview',
+  MyReviewEdit: 'MyReviewEdit',
   Profile: 'Profile',
   ProfileEdit: 'ProfileEdit',
   VerifiedPlaces: 'VerifiedPlaces',
@@ -85,6 +89,8 @@ export type MainStackParamList = {
   CommunityDetail: {
     postId: PostId;
   };
+  MyCommunityPosts: undefined;
+  CommunityEdit: { postId: PostId };
   CommunityWrite: {
     initialCategoryId?: string;
   } | undefined;
@@ -99,6 +105,8 @@ export type MainStackParamList = {
     placeName?: string;
   };
   MyPage: undefined;
+  MyReview: { reviewId: number };
+  MyReviewEdit: { reviewId: number };
   Profile: undefined;
   ProfileEdit: undefined;
   VerifiedPlaces: undefined;

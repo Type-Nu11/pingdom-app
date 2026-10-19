@@ -70,7 +70,7 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
           <List
             ListHeaderComponent={checkInsQuery.isError && !checkInsQuery.isFetchNextPageError && sessionErrorPhase(checkInsQuery.error) !== 'no-place' ? <ApiErrorState error={checkInsQuery.error} busy={checkInsQuery.isFetching} onRetry={() => checkInsQuery.refetch({ cancelRefetch: false })} /> : null}
             data={candidates}
-            keyExtractor={(item) => String(item.checkInId)}
+            keyExtractor={(item) => String(item.placeId)}
             onEndReached={() => {
               if (checkInsQuery.hasNextPage && !checkInsQuery.isFetchingNextPage) {
                 void checkInsQuery.fetchNextPage();

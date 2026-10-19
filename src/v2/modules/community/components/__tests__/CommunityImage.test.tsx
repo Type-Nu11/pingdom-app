@@ -2,10 +2,35 @@ import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
+import { appVersion } from '../../../../shared/config';
 import CommunityImage from '../CommunityImage';
 import PhotoCountBadge from '../PhotoCountBadge';
 
 describe('CommunityImage', () => {
+  test.each(['thumb.wikimedia.org', 'upload.wikimedia.org'])(
+    'identifies the app when requesting an image from %s', async host => {
+      const uri = `https://${host}/wikipedia/commons/photo.jpg`;
+      await renderWithProviders(
+        <CommunityImage height={80} radius={12} testID="photo" uri={uri} width={80} />,
+      );
+      expect(screen.getByTestId('photo').props.source).toEqual({
+        uri,
+        headers: { 'User-Agent': `PingDom/${appVersion} (https://github.com/Type-Nu11/pingdom-app)` },
+      });
+    },
+  );
+
+  test.each([
+    'https://thumb.wikimedia.org.other.test/photo.jpg',
+    'http://thumb.wikimedia.org/photo.jpg',
+    'file:///photo.jpg',
+  ])('preserves other image requests: %s', async uri => {
+    await renderWithProviders(
+      <CommunityImage height={80} radius={12} testID="photo" uri={uri} width={80} />,
+    );
+    expect(screen.getByTestId('photo').props.source).toEqual({ uri });
+  });
+
   test('renders the remote photo at the requested box size', async () => {
     await renderWithProviders(
       <CommunityImage height={80} radius={12} testID="photo" uri="https://cdn.test/a.jpg" width={80} />,

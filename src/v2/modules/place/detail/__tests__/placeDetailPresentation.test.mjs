@@ -163,7 +163,7 @@ test('presentation uses the latest server operating boolean and keeps notice tex
   assert.notEqual(result.notice, result.operatingSummary.kind);
 });
 
-test('images are exploration-first, stable, clean, and de-duplicated before card fallback', () => {
+test('gallery images are stable, clean, de-duplicated and exclude the separate card thumbnail', () => {
   const resources = {
     ...baseResources,
     card: ready({ ...baseResources.card.data, imageUrl: 'https://cdn/card.jpg' }),
@@ -176,9 +176,22 @@ test('images are exploration-first, stable, clean, and de-duplicated before card
   };
   const result = buildPlaceDetailPresentation(70069, resources);
   assert.deepEqual(result.imageUrls, [
-    'https://cdn/a.jpg', 'https://cdn/b.jpg', 'https://cdn/card.jpg',
+    'https://cdn/a.jpg', 'https://cdn/b.jpg',
   ]);
   assert.equal(result.imageState, 'ready');
+});
+
+test('one gallery photo stays one photo; card thumbnail is used only without gallery photos', () => {
+  const resources = {
+    ...baseResources,
+    card: ready({ ...baseResources.card.data, imageUrl: 'https://cdn/stale-thumbnail.jpg' }),
+    media: ready({ placeId: 70069, media: [{ id: 1, displayOrder: 0, imageUrl: 'https://cdn/actual.jpg' }] }),
+  };
+  assert.deepEqual(buildPlaceDetailPresentation(70069, resources).imageUrls, ['https://cdn/actual.jpg']);
+  assert.deepEqual(buildPlaceDetailPresentation(70069, { ...resources, media: ready({ placeId: 70069, media: [] }) }).imageUrls,
+    ['https://cdn/stale-thumbnail.jpg']);
+  assert.deepEqual(buildPlaceDetailPresentation(70069, { ...resources, media: failed() }).imageUrls,
+    ['https://cdn/stale-thumbnail.jpg']);
 });
 
 
@@ -253,4 +266,18 @@ test('review authors retain server user IDs and never invent an identity for mis
     ] }),
   });
   assert.deepEqual(result.reviews.map(review => review.userId), [42, 43, null, null]);
+});
+
+
+test('장소 전체 추천 태그 집계를 페이지보다 우선하고 참여 인원과 리뷰 수를 구분한다', () => {
+  const result = buildPlaceDetailPresentation(17, {
+    ...baseResources,
+    reviews: ready({ content: [], totalElements: 1 }),
+    reviewSummary: ready({ placeId: 17, totalReviewCount: 7, participantCount: 1,
+      reasonCounts: [{ reason: 'CLEAN', count: 1 }, { reason: 'PARKING', count: 0 }] }),
+  });
+  assert.equal(result.reviewTotal, 7);
+  assert.equal(result.reviewParticipantCount, 1);
+  assert.equal(result.reviewHighlightsComplete, true);
+  assert.deepEqual(result.reviewHighlights, [{ reason: 'clean', count: 1 }]);
 });

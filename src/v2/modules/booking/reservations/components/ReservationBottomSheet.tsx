@@ -29,12 +29,9 @@ import { normalizePlaceCategory } from '../../../place/map/sheet';
 import { usePlaceExplorationMediaList } from '../../../place/exploration';
 import * as GlassStyles from '../../../place/map/sheet';
 import { useReservations } from '..';
-import { liquidGlass } from '../../../../shared/theme/liquidGlass';
 import { useTheme } from 'styled-components/native';
 import type { AppTheme } from '../../../../shared/theme';
 
-const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 
@@ -200,12 +197,13 @@ export default function ReservationBottomSheet({
   onToggleBookmark,
   panHandlers,
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
 }: MapReservationSheetProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { colors, liquidGlass: themedGlass } = theme;
+  const { colors } = theme;
   const styles = React.useMemo(() => createStyles(colors), [colors]);
   const reservations = useReservations({ limit: 20, page: 1 });
   const items = reservations.data?.reservations ?? [];
@@ -223,48 +221,10 @@ export default function ReservationBottomSheet({
     inputRange: [mediumTranslateY, fadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
-  const chromeGapRange = [expandedTranslateY, Math.max(mediumTranslateY, expandedTranslateY + 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_BOTTOM_RADIUS],
-  });
-  const expandedFillOpacity = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [1, 0],
-  });
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        style={{ boxShadow: themedGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={themedGlass.sheet.rim}
-          style={{ borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius }}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={themedGlass.sheet.tint}
-            topRimOnly
-          />
-          <GlassStyles.SheetExpandedFill pointerEvents="none" style={{ opacity: expandedFillOpacity }} testID="sheet-expanded-fill" />
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow>
-
-      <GlassStyles.SheetInner $clipContent $inset={snapPoint === 'expanded' ? 0 : SHEET_RESTING_GAP} testID="reservation-sheet-inner">
+    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
+      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="reservation-sheet-inner" testID="reservations-sheet">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable accessibilityLabel={t('reservation.list.panelAdjust')} accessibilityRole="adjustable" onPress={onHandlePress} style={styles.handleButton}>
             <View style={styles.handle} />
@@ -325,7 +285,7 @@ export default function ReservationBottomSheet({
             </ScrollView>
           </View>
         </Animated.View>
-      </GlassStyles.SheetInner>
+      </GlassStyles.MapSheetSurface>
       <MapSheetBottomNavigation
         activeTab="reservations"
         onOpenCommunity={onOpenCommunity}

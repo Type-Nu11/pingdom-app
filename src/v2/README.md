@@ -38,6 +38,13 @@ Production and development providers use that initializer; the app test provider
 that same resource object. Shared owns language hydration, base copy and formatters.
 The shared test-provider path is a test-only compatibility entrypoint until #362 for the two frozen V1 tests.
 
+## 앱 확인창 및 지도 시트 경계
+
+- 안내·확인·취소·재시도는 `shared/components/AppDialogProvider`의 `useAppDialog()`를 사용합니다. 실제 production provider에도 연결되어 있습니다.
+- 사용자 정의 창은 `AppModal`과 공통 `Button` 및 테마 토큰을 사용합니다. 새 RN `Alert`, `ActionSheetIOS`, `ToastAndroid`, raw `Modal`은 `check:v2-design`이 차단합니다. OS 권한·사진 선택·공유 화면은 운영체제 소유입니다.
+- 장소·즐겨찾기·커뮤니티·예약의 배경과 콘텐츠 경계는 `MapSheetSurface`가 함께 소유합니다. 화면에서 배경과 clipping viewport를 따로 조립하지 않습니다. 내비게이션·FAB·메뉴는 surface 밖에 둡니다.
+- `npm run check:v2`에는 디자인 검사 및 해당 검사 회귀 테스트가 포함됩니다.
+
 ## Feature data flow
 
 Feature data flows from `Screen` to `Hook` to `API`. The reference implementation lives in

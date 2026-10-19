@@ -21,6 +21,8 @@ export type OverflowAnchor = { bottom: number };
 export type PostCardProps = {
   /** Category the list was fetched for; used when the item carries none. */
   categoryName?: string;
+  ownerActions?: React.ReactNode;
+  showDivider?: boolean;
   now: Date;
   onOpenOverflow: (anchor: OverflowAnchor) => void;
   onPress: () => void;
@@ -34,7 +36,7 @@ const isCount = (value: number | null | undefined): value is number => (
 // Figma `FeedItem/Post` (8082:37094). Every block below the title is driven by
 // the list response: a field the server omits is left out, never zero-filled.
 // A post has exactly one category, so the tag row shows a single tag.
-export default function PostCard({ categoryName, now, onOpenOverflow, onPress, post }: PostCardProps) {
+export default function PostCard({ categoryName, ownerActions, showDivider = true, now, onOpenOverflow, onPress, post }: PostCardProps) {
   const { i18n, t } = useTranslation();
   const theme = useTheme();
   const overflowRef = useRef<View>(null);
@@ -69,6 +71,7 @@ export default function PostCard({ categoryName, now, onOpenOverflow, onPress, p
 
   return (
     <Card
+      $showDivider={showDivider}
       accessibilityLabel={post.title}
       accessibilityRole="button"
       onPress={onPress}
@@ -80,7 +83,7 @@ export default function PostCard({ categoryName, now, onOpenOverflow, onPress, p
             <CategoryTag label={tagLabel} testID={`v2-community-post-${post.postId}-tag`} />
           ) : null}
         </Tags>
-        <OverflowButton
+        {ownerActions ?? <OverflowButton
           accessibilityLabel={t('community.moreOptions')}
           accessibilityRole="button"
           hitSlop={8}
@@ -89,7 +92,7 @@ export default function PostCard({ categoryName, now, onOpenOverflow, onPress, p
           testID={`v2-community-post-${post.postId}-overflow`}
         >
           <EtcVerticalIcon color={theme.colors.labelNeutral} height={23.4} width={24.0021} />
-        </OverflowButton>
+        </OverflowButton>}
       </TagRow>
 
       <Body $hasThumbnail={Boolean(post.imageUrl)}>
@@ -154,11 +157,11 @@ export default function PostCard({ categoryName, now, onOpenOverflow, onPress, p
 // Figma `FeedItem/Post`: 16px vertical padding around a 24px tag row, the
 // body and an 18px meta row, 8px apart — 170px tall with a thumbnail.
 // The 1px divider is part of the 170px, so the bottom padding gives it up.
-const Card = styled.Pressable`
+const Card = styled.Pressable<{ $showDivider: boolean }>`
   width: 100%;
   gap: 8px;
-  padding: 16px 0 15px;
-  border-bottom-width: 1px;
+  padding: 16px 0 ${({ $showDivider }) => $showDivider ? 15 : 16}px;
+  border-bottom-width: ${({ $showDivider }) => $showDivider ? 1 : 0}px;
   border-bottom-color: ${({ theme }) => theme.colors.border};
 `;
 

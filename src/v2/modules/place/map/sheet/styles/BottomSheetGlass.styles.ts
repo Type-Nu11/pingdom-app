@@ -45,8 +45,15 @@ export const SheetGlass = styled(FrostedSurface)`
   overflow: hidden;
 `;
 
-// Figma *-Up frames draw the raised page sheet as a solid Secondary/Assistive surface,
-// so this layer fades in over the glass as the sheet approaches its expanded snap.
+// The native content viewport follows the same animated bounds as the glass.
+// Clipping only the background cannot contain photos or other overflowing children.
+export const SheetContentViewport = styled(Animated.View)`
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+`;
+
+// Expanded Figma pages use a solid assistive surface over the resting glass.
 export const SheetExpandedFill = styled(Animated.View)`
   position: absolute;
   top: 0;

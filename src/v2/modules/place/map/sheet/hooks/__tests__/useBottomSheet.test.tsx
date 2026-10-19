@@ -42,15 +42,17 @@ describe('useBottomSheet', () => {
       ['중간에서 20% 미만으로 천천히 올리면 제자리로 돌아온다', 'medium', -60, -0.05, 'medium'],
       ['펼친 상태에서 짧고 빠른 아래 스와이프는 중간으로 내린다', 'expanded', 20, 0.5, 'medium'],
       ['접힌 상태에서 짧고 빠른 위 스와이프는 중간으로 올린다', 'collapsed', -20, -0.5, 'medium'],
-      ['중간에서 짧고 빠른 아래 스와이프는 접히지 않는다', 'medium', 40, 0.8, 'medium'],
-      ['중간에서 48dp 이상 빠르게 내리면 접는다', 'medium', 50, 0.8, 'collapsed'],
+      ['중간에서 32dp 미만의 아래 스와이프는 접히지 않는다', 'medium', 31, 0.8, 'medium'],
+      ['중간에서 32dp를 빠르게 내리면 접는다', 'medium', 32, 0.35, 'collapsed'],
+      ['중간에서 32dp를 느리게 내리면 제자리로 돌아온다', 'medium', 32, 0.1, 'medium'],
+      ['중간에서 충분히 빠르게 내리면 접는다', 'medium', 50, 0.8, 'collapsed'],
       ['접힌 상태에서 중간을 지나 끝까지 끌어 올리면 가장 가까운 펼침으로 간다', 'collapsed', -600, -0.2, 'expanded'],
     ] as const)('%s', (_name, from, dy, vy, expected) => {
       expect(resolveReleaseSnapPoint(from, values, values[from], { dy, vy })).toBe(expected);
     });
   });
 
-  test.each([12, 24, 40])('중간 높이에서 짧은 %sdp 드래그는 속도가 빨라도 화면 밖으로 접히지 않는다', async (dy) => {
+  test.each([12, 24, 31])('중간 높이에서 짧은 %sdp 드래그는 속도가 빨라도 화면 밖으로 접히지 않는다', async (dy) => {
     const create = jest.spyOn(PanResponder, 'create');
     const { result } = await renderHook(() => useBottomSheet({ collapsedTranslateY: 680, mediumTranslateY: 400 }));
     const callbacks: PanResponderCallbacks = create.mock.calls[0][0];
@@ -65,8 +67,28 @@ describe('useBottomSheet', () => {
     const callbacks: PanResponderCallbacks = create.mock.calls[0][0];
     await act(() => callbacks.onPanResponderRelease?.({} as GestureResponderEvent, { dy: 100, vy: 0.8 } as PanResponderGestureState));
     expect(result.current.snapPoint).toBe('collapsed');
-    expect(spring.mock.calls).toHaveLength(2);
+    expect(spring.mock.calls).toHaveLength(1);
     spring.mock.calls.forEach(([, config]) => expect(config.overshootClamping).toBe(true));
+  });
+
+  test('잡고 있는 동안 손가락 이동량을 즉시 반영하고 스크롤에 드래그를 넘기지 않는다', async () => {
+    const create = jest.spyOn(PanResponder, 'create');
+    const spring = jest.spyOn(Animated, 'spring');
+    const { result } = await renderHook(() => useBottomSheet({
+      collapsedTranslateY: 780, expandedTranslateY: 130, mediumTranslateY: 480,
+    }));
+    const callbacks = create.mock.calls[0][0];
+    const event = {} as GestureResponderEvent;
+    await act(() => callbacks.onPanResponderGrant?.(event, {} as PanResponderGestureState));
+    for (const dy of [-20, -90, -50, 30]) {
+      await act(() => callbacks.onPanResponderMove?.(event, { dy } as PanResponderGestureState));
+      expect((result.current.sheetTranslateY as unknown as { __getValue: () => number }).__getValue())
+        .toBe(480 + dy);
+    }
+    expect(callbacks.onPanResponderTerminationRequest?.(event, {} as PanResponderGestureState)).toBe(false);
+    expect(spring).not.toHaveBeenCalled();
+    await act(() => callbacks.onPanResponderRelease?.(event, { dy: 30, vy: 0.1 } as PanResponderGestureState));
+    expect(spring).toHaveBeenCalledTimes(1);
   });
 
   test('홈에서 상세로 높이를 바꾸며 열 때 새 좌표로만 애니메이션한다', async () => {
@@ -82,7 +104,7 @@ describe('useBottomSheet', () => {
       result.current.sheet.snapTo('medium');
     });
 
-    expect(spring).toHaveBeenCalledTimes(2);
+    expect(spring).toHaveBeenCalledTimes(1);
     for (const [, config] of spring.mock.calls) {
       expect(config.toValue).toBe(524);
     }
@@ -90,38 +112,16 @@ describe('useBottomSheet', () => {
     await act(() => jest.runAllTimers());
   });
 
-  test('상세 전환으로 테두리 애니메이션이 취소되어도 시트 이동은 끝까지 진행한다', async () => {
-    // Use RN's real cancellation semantics; AnimatedMock ignores stopTogether.
-    const implementation = jest.requireActual('react-native/Libraries/Animated/AnimatedImplementation').default;
-    jest.spyOn(Animated, 'parallel').mockImplementation(implementation.parallel);
-    const animations: Array<{
-      finish: (finished: boolean) => void;
-      stop: jest.Mock;
-    }> = [];
-    jest.spyOn(Animated, 'spring').mockImplementation((value, config) => {
-      let onEnd: ((result: { finished: boolean }) => void) | undefined;
-      const finish = (finished: boolean) => {
-        if (finished) (value as Animated.Value).setValue(config.toValue as number);
-        onEnd?.({ finished });
-      };
-      const stop = jest.fn(() => finish(false));
-      animations.push({ finish, stop });
-      return {
-        start: (callback) => { onEnd = callback; },
-        stop,
-        reset: jest.fn(),
-      };
-    });
+  test('시트 이동과 배경 잘라내기는 같은 위치 값과 단일 스프링을 사용한다', async () => {
+    const spring = jest.spyOn(Animated, 'spring');
     const { result } = await renderHook(() => useBottomSheet({
       collapsedTranslateY: 680, mediumTranslateY: 524,
     }));
-
+    expect(result.current.sheetTranslateY).toBe(result.current.sheetChromeBottom);
     await act(() => result.current.snapTo('expanded'));
-    await act(() => animations[1].stop());
-
-    expect(animations[0].stop).not.toHaveBeenCalled();
-    await act(() => animations[0].finish(true));
-    expect((result.current.sheetTranslateY as unknown as { __getValue: () => number }).__getValue()).toBe(0);
+    expect(spring).toHaveBeenCalledTimes(1);
+    expect(spring).toHaveBeenCalledWith(result.current.sheetTranslateY,
+      expect.objectContaining({ toValue: 0, useNativeDriver: false }));
   });
 
   test('즉시 전환은 대기 중인 스냅을 취소하고 변경된 높이에 정착한다', async () => {
@@ -160,4 +160,23 @@ describe('useBottomSheet', () => {
     expect((result.current.sheetChromeBottom as unknown as { __getValue: () => number }).__getValue())
       .toBe(320);
   });
+  test('내리는 도중 펼침 좌표를 재측정해도 현재 이동 위치를 덮어쓰지 않는다', async () => {
+    jest.spyOn(Animated, 'spring').mockImplementation(() => ({
+      start: jest.fn(), stop: jest.fn(), reset: jest.fn(),
+    }));
+    const { result } = await renderHook(() => {
+      const [expandedTranslateY, setExpandedTranslateY] = useState(130);
+      const sheet = useBottomSheet({ collapsedTranslateY: 780, mediumTranslateY: 480,
+        initialSnapPoint: 'expanded', expandedTranslateY });
+      return { sheet, setExpandedTranslateY };
+    });
+    await act(() => result.current.sheet.snapTo('medium'));
+    const position = jest.spyOn(result.current.sheet.sheetTranslateY, 'setValue');
+    const chrome = jest.spyOn(result.current.sheet.sheetChromeBottom, 'setValue');
+    await act(() => result.current.setExpandedTranslateY(138));
+    expect(position).not.toHaveBeenCalled();
+    expect(chrome).not.toHaveBeenCalled();
+    expect(result.current.sheet.snapPoint).toBe('medium');
+  });
+
 });

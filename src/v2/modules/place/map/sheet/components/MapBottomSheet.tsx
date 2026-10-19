@@ -1,3 +1,10 @@
+import { useContentDeletion } from '../../../../../shared/components/useContentDeletion';
+import { useDeletePlaceReview } from '../../../visit-verification';
+import { ReviewReasonIcon } from '../../../../../shared/components/ReviewReasonIcon';
+import OwnerContentActions from '../../../../../shared/components/OwnerContentActions';
+import TranslationAttribution, { useTranslationAttribution } from '../../../translation/TranslationAttribution';
+import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
+import PlaceNameTranslation from '../../../translation/PlaceNameTranslation';
 import Skeleton, { SkeletonGroup, SkeletonBlock } from '../../../../../shared/components/Skeleton';
 import DetailBackAsset from '../../../../../../assets/v2/icons/place/detail-back.svg';
 import DetailBookmarkAsset from '../../../../../../assets/v2/icons/place/detail-bookmark.svg';
@@ -27,6 +34,7 @@ import {
   Animated,
   GestureResponderHandlers,
   Image,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -75,9 +83,9 @@ import type { PlaceOperatingSummaryText } from '../../../detail';
 import type { ReservationCtaState } from '../../../../booking';
 import GlassSurface from '../../presentation/components/GlassSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
+import MapSheetSurface from './MapSheetSurface';
 import { formatDistance as formatLocalizedDistance } from '../../../../../shared/i18n/formatters';
 import { lightColors } from '../../../../../shared/theme/colors';
-import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
 import { useTheme } from 'styled-components/native';
 import type { AppTheme } from '../../../../../shared/theme';
 import { normalizePlaceCategory } from '../../../core/placeCategory';
@@ -109,6 +117,7 @@ export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
 
 export type MapPreviewFallbackContent = {
   amenities: Array<'english' | 'parking'>;
+  topReviewReasons?: ReviewReasonKey[];
   coupons?: Array<{ period: string; title: string }>;
   englishName?: string;
   events?: Array<{ period: string; title: string }>;
@@ -123,10 +132,16 @@ export type MapPreviewFallbackContent = {
   reviewCount?: number;
   reservation?: ReservationCtaState;
   reviewState?: 'empty' | 'error' | 'loading' | 'ready';
-  reviewHighlights?: Array<{ count: number; label: string }>;
+  reviewHighlights?: Array<{ count: number; label: string; reason?: ReviewReasonKey }>;
+  reviewSampleSize?: number;
+  reviewHighlightsComplete?: boolean;
   reviewParticipantCount?: number;
   reviews?: Array<{
     author: string;
+    placeId?: number;
+    isOwnReview?: boolean;
+    onEdit?: () => void;
+    reviewId?: number;
     avatarUrl?: string;
     createdAt: string;
     imageUrls?: string[];
@@ -234,15 +249,13 @@ type MapBottomSheetProps = {
   onRetryResults?: () => unknown;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
   userName?: string;
 };
 
-type IconProps = {
-  active?: boolean;
-  size?: number;
-};
+
 
 type SheetCategory = MapHomeCategory;
 
@@ -255,7 +268,6 @@ const useMapSheetStyles = () => {
 
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 const HOME_SHEET_VISIBLE_HEIGHT = 386;
 const HOME_SHEET_HANDLE_HEIGHT = 19;
 
@@ -271,21 +283,6 @@ const CATEGORY_OPTIONS: Array<{ id: SheetCategory }> = [
   { id: 'popup' }, { id: 'music' }, { id: 'food' }, { id: 'fashion' }, { id: 'beauty' },
   { id: 'art' }, { id: 'cafe' }, { id: 'heritage' }, { id: 'etc' },
 ];
-
-export const MapPinIcon = ({ active = false, size = 24 }: IconProps) => {
-  const themedColors = useTheme().colors ?? lightColors;
-  const color = active ? themedColors.primary : themedColors.text;
-  return <Svg height={size} viewBox="0 0 24 24" width={size}>
-    <Path
-      d="M12 22s7-6.1 7-13A7 7 0 0 0 5 9c0 6.9 7 13 7 13Z"
-      fill={active ? color : 'none'}
-      stroke={color}
-      strokeLinejoin="round"
-      strokeWidth="2"
-    />
-    <Circle cx="12" cy="9" fill={active ? themedColors.onPrimary : 'none'} r="2.4" stroke={active ? themedColors.onPrimary : color} strokeWidth="1.5" />
-  </Svg>
-};
 
 const CardScrim = () => (
   <View pointerEvents="none" style={styles.cardScrim}>
@@ -343,12 +340,16 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
 
 const FeedSegment = ({
   expanded = false,
+  sheetPanHandlers,
   feed,
   onChange,
+  onTouchStart,
 }: {
   expanded?: boolean;
+  sheetPanHandlers: GestureResponderHandlers;
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
+  onTouchStart: () => void;
 }) => {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -357,8 +358,63 @@ const FeedSegment = ({
   const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
   const reduceMotion = useReducedMotion();
   const indicatorWidth = Math.max(0, (segmentWidth - 8) / 2);
+  const trackRef = useRef<View>(null);
+  const trackLeft = useRef<number | null>(null);
+  const dragging = useRef(false);
+  const dragPosition = useRef(0);
+  const current = useRef({ feed, onChange, segmentWidth });
+  current.current = { feed, onChange, segmentWidth };
+  const selectAtFinger = (pageX: number) => {
+    if (trackLeft.current === null || current.current.segmentWidth <= 8) return;
+    const width = current.current.segmentWidth;
+    const x = pageX - trackLeft.current;
+    // The thumb follows the finger; content changes as soon as it crosses halves.
+    indicatorProgress.stopAnimation();
+    indicatorProgress.setValue(Math.max(0, Math.min(1, (x - width / 4) / (width / 2))));
+    const next = x < width / 2 ? 'local' : 'national';
+    if (next !== current.current.feed) {
+      current.current.feed = next;
+      current.current.onChange(next);
+    }
+  };
+  const horizontalDrag = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponderCapture: () => {
+      trackLeft.current = null;
+      trackRef.current?.measureInWindow((x) => {
+        trackLeft.current = x;
+        if (dragging.current) selectAtFinger(dragPosition.current);
+      });
+      return false;
+    },
+    onMoveShouldSetPanResponderCapture: (_, gesture) => (
+      Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2
+    ),
+    onPanResponderGrant: (_, gesture) => {
+      dragging.current = true;
+      dragPosition.current = gesture.moveX;
+      selectAtFinger(gesture.moveX);
+    },
+    onPanResponderMove: (_, gesture) => {
+      dragPosition.current = gesture.moveX;
+      selectAtFinger(gesture.moveX);
+    },
+    onPanResponderRelease: () => {
+      dragging.current = false;
+      runTimingMotion(indicatorProgress, current.current.feed === 'local' ? 0 : 1, {
+        duration: MOTION_DURATION.transition, reduceMotion, useNativeDriver: true,
+      });
+    },
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderTerminate: () => {
+      dragging.current = false;
+      indicatorProgress.setValue(current.current.feed === 'local' ? 0 : 1);
+    },
+  // Mutable selection and layout are read through refs during an active touch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [indicatorProgress, reduceMotion]);
 
   useEffect(() => {
+    if (dragging.current) return;
     const animation = runTimingMotion(indicatorProgress, feed === 'local' ? 0 : 1, {
       duration: MOTION_DURATION.transition,
       reduceMotion,
@@ -426,8 +482,9 @@ const FeedSegment = ({
   // Glass/FillRaised thumb; the -Up frame (4683:7488) a flat Fill/Alternative track with a
   // Background/Normal thumb and no shadow, spanning the full-width sheet minus 8px.
   return (
-    <View style={expanded ? undefined : styles.segmentInset} testID="feed-segment-inset">
-      <View style={expanded ? styles.segmentFrame : styles.segmentShadow}>
+    <View {...sheetPanHandlers} onTouchStart={onTouchStart} style={expanded ? undefined : styles.segmentInset} testID="feed-segment-inset">
+      <View {...horizontalDrag.panHandlers} ref={trackRef} collapsable={false}
+        style={expanded ? styles.segmentFrame : styles.segmentShadow} testID="feed-segment-drag-track">
         {expanded ? (
           <View
             onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
@@ -507,7 +564,7 @@ const PlaceArtwork = React.memo(({
         accessibilityLabel={fallbackMessage}
         style={[styles.artwork, styles.artworkFallback, variant === 'grid' && styles.gridArtwork]}
       >
-        <MapPinIcon active size={24} />
+        <UnavailableStateIcon size={64} />
         <AppText style={styles.artworkFallbackText}>{fallbackMessage}</AppText>
       </View>
     );
@@ -685,7 +742,7 @@ const RecommendationBookmarkButton = ({
   );
 };
 
-const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+const PreviewArtwork = ({ imageUrl, onLoadError }: { imageUrl?: string; onLoadError?: () => void }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   const [hasImageError, setHasImageError] = useState(false);
@@ -699,7 +756,7 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
 
     return (
       <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
-        <MapPinIcon active size={28} />
+        <UnavailableStateIcon size={88} />
         <AppText style={styles.previewArtworkFallbackText}>{fallbackMessage}</AppText>
       </View>
     );
@@ -708,13 +765,30 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
   return (
     <Image
       accessibilityLabel={t('map.sheet.image')}
-      onError={() => setHasImageError(true)}
+      onError={() => { if (onLoadError) onLoadError(); else setHasImageError(true); }}
       resizeMode="cover"
       source={{ uri: imageUrl }}
       style={styles.previewArtwork}
     />
   );
 };
+
+// Failed gallery entries disappear instead of becoming another photo-shaped error card.
+function useVisiblePlacePhotos(placeId: number | string, sources: readonly (string | undefined)[]) {
+  const urls = [...new Set(sources.filter((url): url is string => Boolean(url?.trim())))];
+  const key = JSON.stringify([placeId, urls]);
+  const currentKey = useRef(key);
+  currentKey.current = key;
+  const [failed, setFailed] = useState<{ key: string; urls: string[] }>({ key, urls: [] });
+  const failedUrls = failed.key === key ? failed.urls : [];
+  return {
+    urls: urls.filter(url => !failedUrls.includes(url)),
+    remove: (url: string) => {
+      if (currentKey.current !== key) return;
+      setFailed(previous => ({ key, urls: [...new Set([...(previous.key === key ? previous.urls : []), url])] }));
+    },
+  };
+}
 
 export const RecommendationFeaturedCard = ({
   bookmarked,
@@ -938,6 +1012,7 @@ const ExpandedHomeContent = ({
   activeCategory,
   bookmarkPendingPlaceIds,
   feed,
+  sheetPanHandlers,
   expandedInteractionsEnabled,
   expandedOnlyOpacity,
   onCategoryChange,
@@ -954,6 +1029,7 @@ const ExpandedHomeContent = ({
   activeCategory: SheetCategory;
   bookmarkPendingPlaceIds: Record<string, boolean>;
   feed: 'local' | 'national';
+  sheetPanHandlers: GestureResponderHandlers;
   expandedInteractionsEnabled: boolean;
   expandedOnlyOpacity: Animated.AnimatedInterpolation<number>;
   onCategoryChange: (category: SheetCategory) => void;
@@ -996,6 +1072,8 @@ const ExpandedHomeContent = ({
 
   return (
     <View {...feedPanHandlers} style={styles.expandedScroll} testID="map-feed-swipe">
+    {/* Keep the sheet grip outside the native vertical scroll responder. */}
+    <FeedSegment sheetPanHandlers={sheetPanHandlers} expanded={expandedInteractionsEnabled} feed={feed} onChange={onFeedChange} onTouchStart={blockHorizontalSwipe} />
     <ScrollView
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
@@ -1005,7 +1083,6 @@ const ExpandedHomeContent = ({
       style={styles.expandedScroll}
       testID="expanded-home-scroll"
     >
-      <FeedSegment expanded={expandedInteractionsEnabled} feed={feed} onChange={onFeedChange} />
       <FadeSlideTransition
         direction={feed === 'local' ? 0 : 1}
         stateKey={feed}
@@ -1156,8 +1233,7 @@ const EmptyCard = ({
       style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
       testID={`map-home-feed-state-${copyState}`}
     >
-      <View style={styles.emptyCardIcon}>{copyState === 'location-pending'
-        ? <MapPinIcon active size={24} /> : <UnavailableStateIcon size={64} />}</View>
+      <View style={styles.emptyCardIcon}><UnavailableStateIcon size={64} /></View>
       <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
       {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
       {retryable && onRetry ? (
@@ -1376,7 +1452,7 @@ const ResultRow = ({
   const styles = useMapSheetStyles();
   return (
   <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
-    <View style={styles.resultThumbnail}><MapPinIcon active size={25} /></View>
+    <View style={styles.resultThumbnail}><UnavailableStateIcon size={40} /></View>
     <View style={styles.resultTextBody}>
       <AppText numberOfLines={1} style={styles.resultName}>{place.name}</AppText>
       <AppText numberOfLines={1} style={styles.resultAddress}>{place.address}</AppText>
@@ -1386,11 +1462,21 @@ const ResultRow = ({
   );
 };
 
+const TopReviewFeatures = ({ content }: { content: MapPreviewFallbackContent }) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  return <View testID="place-top-review-features">
+    <ReviewFeatureTags reasons={content.topReviewReasons?.slice(0, 2) ?? []} variant="full" appearance="placeDetail" testID="place-top-review-tags" />
+    {!content.reviewHighlightsComplete && (content.reviewSampleSize ?? 0) > 0
+      ? <AppText style={styles.detailReviewCount}>{t('placeReviewSummary.partialBasis', { count: content.reviewSampleSize })}</AppText> : null}
+  </View>;
+};
+
 const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking'; expanded?: boolean }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   return (
-  <View style={expanded ? styles.detailAmenity : styles.previewAmenityChip}>
+  <View testID={`place-preview-amenity-${type}`} style={expanded ? styles.detailAmenity : styles.previewAmenityChip}>
     {expanded ? <View style={styles.detailAmenityIcon} testID={`map-detail-amenity-${type}`}>
       {type === 'english' ? <View style={styles.detailGlobeLayers}><DetailGlobeBaseAsset /><DetailGlobeLinesAsset style={styles.detailGlobeLines} /></View> : <DetailParkingAsset />}
     </View> : type === 'english'
@@ -1401,14 +1487,15 @@ const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking
   );
 };
 
-const ReviewHighlightIcon = ({ label }: { label: string }) => {
+const ReviewHighlightIcon = ({ label, reason: explicitReason }: { label: string; reason?: ReviewReasonKey }) => {
   const { t } = useTranslation();
-  const reason = (Object.keys(REASON_CODES) as ReviewReasonKey[]).find(key => t(reviewReasonLabelKey(key)) === label);
+  const reason = explicitReason ?? (Object.keys(REASON_CODES) as ReviewReasonKey[]).find(key => t(reviewReasonLabelKey(key)) === label);
   if (reason === 'photoSpot') return <DetailReviewPhotoAsset />;
   if (reason === 'clean') return <DetailReviewCleanAsset />;
   if (reason === 'multilingual') return <View style={{ width: 18, height: 18 }}><DetailReviewMultilingualBaseAsset /><DetailReviewMultilingualLinesAsset style={{ position: 'absolute', left: 0.35, top: 0 }} /></View>;
   if (reason === 'kind') return <DetailReviewKindAsset />;
   if (reason === 'delicious') return <DetailReviewDeliciousAsset />;
+  if (reason) return <ReviewReasonIcon reason={reason} height={18} />;
   return null;
 };
 
@@ -1472,6 +1559,7 @@ const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind
 const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, expanded = false, kind, label, onPress }: { expanded?: boolean; accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => {
   const styles = useMapSheetStyles();
   return <Pressable
+    hitSlop={expanded ? undefined : { top: 5, bottom: 5 }}
     accessibilityHint={accessibilityHint}
     accessibilityLabel={label}
     accessibilityRole={onPress && !disabled ? 'button' : undefined}
@@ -1517,6 +1605,7 @@ const PreviewContent = ({
   pending,
   placeActionBusy,
   place,
+  sheetPanHandlers,
 }: {
   activeAction: PreviewActionKind | null;
   bookmarked: boolean;
@@ -1536,19 +1625,21 @@ const PreviewContent = ({
   pending: boolean;
   placeActionBusy?: 'directions' | 'share' | null;
   place: DecisionPlace;
+  sheetPanHandlers: GestureResponderHandlers;
 }) => {
   const { i18n, t } = useTranslation();
   const styles = useMapSheetStyles();
+  const translationAttribution = useTranslationAttribution(place.name);
   const sheetColors = useTheme().colors ?? lightColors;
   const { width: windowWidth } = useWindowDimensions();
-  const imageUrls = fallbackContent?.imageUrls.length
+  const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
-    : [imageUrl];
-  const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
+    : [imageUrl]);
+  const validImageUrls = photos.urls;
   const contentWidth = Math.min(windowWidth, 480) - 32;
   const primaryImageWidth = Math.min(242, contentWidth);
   const imageHeight = primaryImageWidth * 182 / 242;
-  const secondaryImageWidth = Math.min(184, Math.max(150, Math.round(contentWidth * 0.46)));
+
   const reservation = fallbackContent?.reservation ?? {
     kind: 'loading', disabled: true,
   };
@@ -1557,31 +1648,36 @@ const PreviewContent = ({
     onSelectAction(action);
     callback?.();
   };
-  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+  const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
+    ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
+      !fallbackContent.reviewHighlightsComplete && (fallbackContent.reviewSampleSize ?? 0) > 0
+        ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
+    ].filter(Boolean).join(' · ')
     : fallbackContent?.statusDescription;
 
   return (
-    <View style={styles.previewContent}>
-      <View style={styles.previewHeader}>
-        <Pressable
-          accessibilityLabel={t('map.detail.preview', { name: place.name })}
-          accessibilityRole="button"
-          onPress={onDetail}
-          style={styles.previewSummary}
-        >
-          <View style={styles.previewTitleRow}>
-            <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</AppText>
-            <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>
-          </View>
-          {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
-            <View style={styles.previewStatusRow}>
-              {verificationSummary ? (
-                <AppText numberOfLines={1} style={styles.previewStatus}>
-                  {verificationSummary}
-                </AppText>
-              ) : null}
-              {fallbackContent.statusEmphasis ? (
+    <View style={[styles.previewContent, styles.placePreviewContent]} testID="place-preview-content">
+      <View {...sheetPanHandlers} style={styles.previewHeader} testID="place-preview-drag-header">
+        <View style={styles.previewSummary}>
+          <PlaceNameTranslation
+            attributionPlacement="photos"
+            onTranslationChange={translationAttribution.onTranslationChange}
+            original={place.name}
+            maxNameLength={10}
+            inlineCategory
+            nameStyle={styles.previewName}
+            onNamePress={onDetail}
+            category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
+          />
+          <Pressable accessibilityLabel={t('map.detail.preview', { name: place.name })} accessibilityRole="button" onPress={onDetail}>
+            {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
+              <View style={styles.previewStatusRow}>
+                {verificationSummary ? (
+                  <AppText numberOfLines={1} style={styles.previewStatus}>
+                    {verificationSummary}
+                  </AppText>
+                ) : null}
+                {fallbackContent.statusEmphasis ? (
                 <AppText style={styles.previewStatusTail}>
                   {verificationSummary ? <AppText style={styles.previewStatusSeparator}>{' · '}</AppText> : null}
                   <AppText style={[
@@ -1597,13 +1693,14 @@ const PreviewContent = ({
                     {fallbackContent.statusEmphasis}
                   </AppText>
                 </AppText>
-              ) : null}
-            </View>
-          ) : null}
-          <AppText accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
-            {formatPreviewLocation(place, i18n.language)}
-          </AppText>
-        </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+            <AppText accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
+              {formatPreviewLocation(place, i18n.language)}
+            </AppText>
+          </Pressable>
+        </View>
         <Pressable
           accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
           accessibilityRole="button"
@@ -1627,13 +1724,17 @@ const PreviewContent = ({
           <CloseMediumAsset color={sheetColors.textAlternative} height={19} width={19} />
         </Pressable>
       </View>
-      {fallbackContent?.amenities.length ? (
+      <View style={styles.previewControls}>
+      {fallbackContent?.topReviewReasons?.length ? (
+        <TopReviewFeatures content={fallbackContent} />
+      ) : fallbackContent?.amenities.length ? (
         <View style={styles.previewAmenityRow}>
           {fallbackContent.amenities.map((amenity) => <PreviewAmenity key={amenity} type={amenity} />)}
         </View>
       ) : null}
       <ScrollView
-        contentContainerStyle={styles.previewActionRow}
+        contentContainerStyle={[styles.previewActionRow, styles.previewControlsActionRow]}
+        style={styles.previewActionViewport}
         horizontal
         showsHorizontalScrollIndicator={false}
       >
@@ -1678,6 +1779,8 @@ const PreviewContent = ({
           <AppText style={styles.detailEmptyText}>{t('map.detail.imageError')}</AppText>
         </Pressable>
       ) : null}
+      </View>
+      <View style={{ gap: 8 }} testID="place-preview-photos-section">
       <ScrollView
         contentContainerStyle={styles.previewImageRow}
         horizontal
@@ -1685,12 +1788,12 @@ const PreviewContent = ({
       >
         {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
           <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <SkeletonBlock width={242} height={182} radius={16} />
-              <SkeletonBlock width={184} height={182} radius={16} />
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
+              <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
             </View>
           </SkeletonGroup>
-        ) : imageUrls.map((url, index) => (
+        ) : validImageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={t('map.detail.imageDetail', { count: index + 1, name: place.name })}
             accessibilityRole="button"
@@ -1704,13 +1807,15 @@ const PreviewContent = ({
             }}
             style={[
               styles.previewImagePanel,
-              { height: imageHeight, width: index === 0 ? primaryImageWidth : secondaryImageWidth },
+              { height: imageHeight, width: primaryImageWidth },
             ]}
           >
-            <PreviewArtwork imageUrl={url} />
+            <PreviewArtwork imageUrl={url} onLoadError={() => photos.remove(url)} />
           </Pressable>
         ))}
       </ScrollView>
+      <TranslationAttribution visible={translationAttribution.visible} testID="place-preview-translation-attribution" />
+      </View>
     </View>
   );
 };
@@ -1750,7 +1855,7 @@ const ExternalPlaceContent = ({
     >
       <View style={styles.externalHeader}>
         <View style={styles.previewSummary}>
-          <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</AppText>
+          <PlaceNameTranslation original={place.name} maxNameLength={10} nameStyle={styles.previewName} />
           <View style={styles.externalBadge}>
             <AppText numberOfLines={1} style={styles.externalBadgeText}>{t('map.externalPlace.badge')}</AppText>
           </View>
@@ -1821,6 +1926,8 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
 
+  const deletion = useDeletePlaceReview(review.placeId, review.reviewId);
+  const deleteAction = useContentDeletion(() => deletion.mutateAsync(), undefined, `${review.placeId}:${review.reviewId}`);
   return (
     <View style={styles.detailReviewItem}>
       <View style={styles.detailReviewerRow}>
@@ -1829,6 +1936,7 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
           <AppText style={styles.detailReviewerName}>{review.author}</AppText>
           <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
         </View>
+        {review.isOwnReview ? <OwnerContentActions busy={deleteAction.busy} onDelete={review.placeId && review.reviewId ? deleteAction.confirm : undefined} key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} onEdit={review.onEdit} /> : null}
       </View>
       <AppText
         ellipsizeMode="tail"
@@ -1929,6 +2037,7 @@ const ExpandedPlaceContent = ({
   pending,
   placeActionBusy,
   place,
+  sheetPanHandlers,
 }: {
   activeAction: PreviewActionKind | null;
   activeTab: PlaceDetailTab;
@@ -1951,15 +2060,16 @@ const ExpandedPlaceContent = ({
   pending: boolean;
   placeActionBusy?: 'directions' | 'share' | null;
   place: DecisionPlace;
+  sheetPanHandlers: GestureResponderHandlers;
 }) => {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMapSheetStyles();
-  const insets = useSafeAreaInsets();
-  const imageUrls = fallbackContent?.imageUrls.length
+  const translationAttribution = useTranslationAttribution(place.name);
+  const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
-    : [imageUrl];
-  const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
+    : [imageUrl]);
+  const validImageUrls = photos.urls;
   const reservation = fallbackContent?.reservation ?? {
     kind: 'loading', disabled: true,
   };
@@ -1968,11 +2078,15 @@ const ExpandedPlaceContent = ({
     onSelectAction(action);
     callback?.();
   };
+  const insets = useSafeAreaInsets();
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
   const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
-  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+  const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
+    ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
+      !fallbackContent.reviewHighlightsComplete && (fallbackContent.reviewSampleSize ?? 0) > 0
+        ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
+    ].filter(Boolean).join(' · ')
     : fallbackContent?.statusDescription || fallbackContent?.englishName;
 
   return (
@@ -1982,7 +2096,7 @@ const ExpandedPlaceContent = ({
       showsVerticalScrollIndicator={false}
       testID="map-expanded-place-scroll"
     >
-      <View style={styles.detailTopBar} testID="map-detail-top-bar">
+      <View {...sheetPanHandlers} style={styles.detailTopBar} testID="map-detail-top-bar">
         <Pressable
           accessibilityLabel={t('map.detail.back')}
           accessibilityRole="button"
@@ -2006,11 +2120,14 @@ const ExpandedPlaceContent = ({
         </Pressable>
       </View>
 
-      <View style={styles.detailHeading}>
-        <View style={styles.detailTitleRow}>
-          <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={2} style={styles.detailTitle}>{place.name}</AppText>
-          <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>
-        </View>
+      <View {...sheetPanHandlers} style={styles.detailHeading} testID="place-detail-drag-heading">
+        <PlaceNameTranslation
+            attributionPlacement="photos"
+            onTranslationChange={translationAttribution.onTranslationChange}
+          original={place.name}
+          nameStyle={styles.detailTitle}
+          category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
+        />
         {verificationSummary ? (
           <AppText style={styles.detailVerified}>{verificationSummary}</AppText>
         ) : null}
@@ -2075,7 +2192,7 @@ const ExpandedPlaceContent = ({
               <SkeletonBlock width={184} height={182} radius={16} />
             </View>
           </SkeletonGroup>
-        ) : imageUrls.map((url, index) => (
+        ) : validImageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={url
               ? t('map.detail.imageDetail', { count: index + 1, name: place.name })
@@ -2087,10 +2204,12 @@ const ExpandedPlaceContent = ({
               : undefined}
             style={[styles.detailPhoto, index === 0 && styles.detailPhotoPrimary]}
           >
-            <PreviewArtwork imageUrl={url} />
+            <PreviewArtwork imageUrl={url} onLoadError={() => photos.remove(url)} />
           </Pressable>
         ))}
       </ScrollView>
+
+      <TranslationAttribution visible={translationAttribution.visible} testID="place-detail-translation-attribution" />
 
       <View style={styles.detailTabs}>
         {(['info', 'reviews'] as const).map((tab) => (
@@ -2148,7 +2267,9 @@ const ExpandedPlaceContent = ({
                 ) : null}
               </>
             ) : null}
-            {fallbackContent?.amenities.length ? (
+            {fallbackContent?.topReviewReasons?.length ? (
+              <TopReviewFeatures content={fallbackContent} />
+            ) : fallbackContent?.amenities.length ? (
               <View style={styles.detailAmenityRow}>
                 {fallbackContent.amenities.map((amenity) => (
                   <PreviewAmenity key={amenity} type={amenity} expanded />
@@ -2214,31 +2335,44 @@ const ExpandedPlaceContent = ({
         </View>
       ) : (
         <View>
-          {fallbackContent?.reviewHighlights?.length ? (
-            <View style={styles.detailReviewSection}>
+          <View style={styles.detailReviewSection} testID="place-review-highlights">
             <AppText style={styles.detailReviewTitle}>
               {t('map.detail.reviewHighlights')}
-              {fallbackContent?.reviewParticipantCount ? (
+              {fallbackContent?.reviewParticipantCount !== undefined && fallbackContent?.reviewState !== 'error' && fallbackContent?.reviewState !== 'loading' ? (
                 <AppText style={styles.detailReviewCount}> {t('map.detail.participantCount', { count: fallbackContent.reviewParticipantCount })}</AppText>
               ) : null}
             </AppText>
-            {fallbackContent.reviewHighlights.map((highlight, index, items) => {
+            {fallbackContent?.reviewState !== 'error' && fallbackContent?.reviewState !== 'loading'
+              && (fallbackContent?.reviewSampleSize ?? 0) > 0
+              && (!fallbackContent?.reviewHighlightsComplete || fallbackContent?.reviewParticipantCount === undefined) ? (
+              <AppText style={styles.detailReviewCount} testID="place-review-highlights-basis">
+                {t(fallbackContent?.reviewHighlightsComplete ? 'placeReviewSummary.reviewBasis' : 'placeReviewSummary.partialBasis', { count: fallbackContent?.reviewSampleSize })}
+              </AppText>
+            ) : null}
+            {fallbackContent?.reviewState === 'loading' ? (
+              <Skeleton variant="comments" accessibilityLabel={t('placeReviewSummary.loading')} />
+            ) : fallbackContent?.reviewState === 'error' ? (
+              <Pressable accessibilityRole="button" onPress={onRetryReviews}><AppText style={styles.detailEmptyText}>{t('placeReviewSummary.error')}</AppText></Pressable>
+            ) : fallbackContent?.reviewHighlights?.length ? fallbackContent.reviewHighlights.map((highlight, index, items) => {
               const maxCount = Math.max(...items.map((item) => item.count), 1);
               const scoreRatio = Math.min(1, Math.max(0, highlight.count / maxCount));
               const strongest = index === 0;
               return (
-                <View key={highlight.label} style={styles.detailHighlightRow}>
+                <View key={highlight.reason ?? highlight.label} style={styles.detailHighlightRow} accessible
+                  testID={`place-review-highlight-${highlight.reason ?? index}`} accessibilityRole="progressbar"
+                  accessibilityLabel={highlight.label} accessibilityValue={{ min: 0, max: maxCount, now: highlight.count }}>
                   <View
+                    testID={`place-review-highlight-fill-${highlight.reason ?? index}`}
                     style={[
                       styles.detailHighlightFill,
                       {
                         backgroundColor: strongest ? colors.primaryAlternative : index === 1 ? colors.primaryAssistive : colors.primaryAssistiveSoft,
-                        width: `${Math.max(24, scoreRatio * 100)}%`,
+                        width: `${scoreRatio * 100}%`,
                       },
                     ]}
                   />
                   <View style={styles.detailHighlightLabelRow}>
-                    <ReviewHighlightIcon label={highlight.label} />
+                    <ReviewHighlightIcon label={highlight.label} reason={highlight.reason} />
                     <AppText style={[styles.detailHighlightLabel, strongest && styles.detailHighlightCountOnStrong]}>{highlight.label}</AppText>
                   </View>
                   <AppText
@@ -2251,9 +2385,8 @@ const ExpandedPlaceContent = ({
                   </AppText>
                 </View>
               );
-            })}
-            </View>
-          ) : null}
+            }) : <AppText style={styles.detailEmptyText}>{t('placeReviewSummary.empty')}</AppText>}
+          </View>
 
           {reviewImageUrls.length ? (
             <View style={styles.detailReviewSection}>
@@ -2357,14 +2490,14 @@ export default function MapBottomSheet({
   selectedPlace,
   detailError, detailBusy, onRetryDetail, resultsError, resultsLoading, resultsBusy, onRetryResults,
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
   userName,
 }: MapBottomSheetProps) {
   const activeTheme = useTheme();
   const themedColors = activeTheme.colors;
-  const themedGlass = activeTheme.liquidGlass;
-  const styles = useMemo(() => createStyles(themedColors), [themedColors]);
+  const styles = useMemo(() => createStyles(themedColors, activeTheme.liquidGlass), [themedColors, activeTheme.liquidGlass]);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [feed, setFeed] = useState<'local' | 'national'>('local');
@@ -2452,72 +2585,11 @@ export default function MapBottomSheet({
     inputRange: [Math.max(0, mediumTranslateY - 96), mediumTranslateY],
     outputRange: [1, 0],
   });
-  // Expanded sheet goes full-bleed: resting gap and bottom corners collapse to 0.
-  // External place cards never rise above medium, so their chrome keeps the resting inset.
-  const chromeGapRange = expandedTranslateY < mediumTranslateY
-    ? [expandedTranslateY, mediumTranslateY]
-    : [0, Math.max(mediumTranslateY, 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_BOTTOM_RADIUS],
-  });
-  const expandedFillOpacity = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [1, 0],
-  });
-
   return (
     <GlassStyles.BottomSheetContainer
-      style={{ height, transform: [{ translateY: sheetTranslateY }] }}
+      style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}
     >
-      {!isExpandedPlaceDetail ? <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        testID="map-sheet-chrome"
-        style={[
-          {
-            boxShadow: themedGlass.sheet.shadow,
-            borderBottomLeftRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
-            borderBottomRightRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
-            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            borderTopRightRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            bottom: chromeBottomInset,
-            left: chromeGap,
-            right: chromeGap,
-          },
-        ]}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={isExpandedPlaceDetail ? 'transparent' : themedGlass.sheet.rim}
-          style={[
-            {
-              borderBottomLeftRadius: chromeBottomRadius,
-              borderBottomRightRadius: chromeBottomRadius,
-              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-              borderTopRightRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            },
-          ]}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={isExpandedPlaceDetail ? themedColors.surface : themedGlass.sheet.tint}
-            topRimOnly
-          />
-          {isExpandedPlaceDetail ? null : <GlassStyles.SheetExpandedFill pointerEvents="none" style={{ opacity: expandedFillOpacity }} testID="sheet-expanded-fill" />}
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow> : null}
-      <GlassStyles.SheetInner $opaque={isExpandedPlaceDetail} $inset={isExpandedPlaceDetail || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} contentInset={content.type === 'place-preview' || content.type === 'external-place' || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : 8} testID="map-sheet">
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -2545,10 +2617,12 @@ export default function MapBottomSheet({
         ]}
         testID="map-sheet-content"
       >
-      {content.type === 'place-preview' && detailError ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
+      {/* Keep loaded place data available when an offline refresh fails. */}
+      {content.type === 'place-preview' && detailError && !selectedPlace ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
       {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState variant="place" description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
           <ExpandedPlaceContent
+            sheetPanHandlers={panHandlers}
             activeAction={activePreviewAction}
             activeTab={activePlaceDetailTab}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
@@ -2588,6 +2662,7 @@ export default function MapBottomSheet({
           />
         ) : (
           <PreviewContent
+            sheetPanHandlers={panHandlers}
             activeAction={activePreviewAction}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
@@ -2670,6 +2745,7 @@ export default function MapBottomSheet({
         />
       ) : (
         <ExpandedHomeContent
+          sheetPanHandlers={panHandlers}
           activeCategory={activeCategory}
           bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
           expandedInteractionsEnabled={snapPoint === 'expanded'}
@@ -2688,7 +2764,7 @@ export default function MapBottomSheet({
         />
       )}
       </Animated.View>
-      </GlassStyles.SheetInner>
+      </MapSheetSurface>
 
       {content.type !== 'place-preview' && content.type !== 'external-place' ? (
         <MapSheetBottomNavigation
@@ -3087,6 +3163,10 @@ const createStyles = (
   externalNoticeText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
   externalSource: { color: colors.textMuted, fontSize: 12, fontWeight: '600', includeFontPadding: false, lineHeight: 16, marginTop: 4 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
+  placePreviewContent: { rowGap: 14 },
+  previewControls: { rowGap: 8 },
+  previewActionViewport: { overflow: 'visible', flexGrow: 0 },
+  previewControlsActionRow: { paddingBottom: 0 },
   // Figma PingSelected chips (5191:39646): 34px map pills — Glass/Fill + Shadow/Float,
   // selected Glass/Selected + Glass/SelectedStroke, Label/Medium text, 8px apart.
   previewActionChip: {
@@ -3135,11 +3215,8 @@ const createStyles = (
   previewAmenityText: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18 },
   previewArtwork: { height: '100%', width: '100%' },
   previewArtworkFallback: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
+    alignItems: 'center', backgroundColor: colors.primarySoft,
+    height: '100%', justifyContent: 'center', width: '100%',
   },
   previewArtworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
   // Figma Component 18 (5175:37945): 32px Glass/FillRaised circles, 12px apart.
@@ -3162,7 +3239,7 @@ const createStyles = (
     width: 32,
   },
   previewContent: { paddingHorizontal: 16 },
-  previewHeader: { alignItems: 'flex-start', flexDirection: 'row', paddingBottom: 14 },
+  previewHeader: { alignItems: 'flex-start', flexDirection: 'row' },
   previewImagePanel: {
     backgroundColor: colors.primarySoft,
     borderRadius: 17,
@@ -3170,7 +3247,7 @@ const createStyles = (
     overflow: 'hidden',
     width: 180,
   },
-  previewImageRow: { columnGap: 16, paddingBottom: 110, paddingRight: 16 },
+  previewImageRow: { columnGap: 16, paddingRight: 16 },
   previewName: { color: colors.labelStrong, flexShrink: 1, fontSize: 24, fontWeight: '700', includeFontPadding: false, lineHeight: 31, minWidth: 0 },
   previewParkingIcon: { borderRadius: 5 },
   // Figma 5175:37753: Body/Regular status line 4px under the 32px title row.

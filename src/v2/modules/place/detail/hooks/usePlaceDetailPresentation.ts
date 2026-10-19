@@ -6,7 +6,7 @@ import {
   usePlaceOperatingNotices,
   usePlaceVisitDecision,
 } from '../../exploration';
-import { createPlaceReviewsQueryOptions } from '../../visit-verification';
+import { createPlaceReviewSummaryQueryOptions, createPlaceReviewsQueryOptions } from '../../visit-verification';
 import {
   buildPlaceDetailPresentation,
   type ResourceState,
@@ -42,6 +42,8 @@ export function usePlaceDetailPresentation(
     enabled: active,
   });
 
+  const reviewSummary = useQuery({ ...createPlaceReviewSummaryQueryOptions(placeId), enabled: active });
+
   const presentation = active ? buildPlaceDetailPresentation(placeId, {
     availabilities: asResource(availabilities),
     card: asResource(card),
@@ -49,6 +51,7 @@ export function usePlaceDetailPresentation(
     media: asResource(media),
     notices: asResource(notices),
     reviews: asResource(reviews),
+    reviewSummary: asResource(reviewSummary),
     visitDecision: asResource(visitDecision),
   }) : null;
 
@@ -61,6 +64,6 @@ export function usePlaceDetailPresentation(
     presentation,
     refetchAvailability: availabilities.refetch,
     refetchMedia: media.refetch,
-    refetchReviews: reviews.refetch,
+    refetchReviews: () => Promise.all([reviews.refetch(), reviewSummary.refetch()]),
   };
 }

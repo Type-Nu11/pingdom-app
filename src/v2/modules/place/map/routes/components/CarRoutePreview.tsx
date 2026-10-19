@@ -23,7 +23,6 @@ import RoutePlannerSheet from './RoutePlannerSheet';
 import MyLocationIcon from '../assets/my_location.svg';
 import { RouteTimeBubble } from './RouteTimeBubble';
 import type { RouteDestination, RouteMode } from '../model/routeUi';
-import { openNaverRoute } from '../services/openNaverRoute';
 import RouteEndpointEditor from './RouteEndpointEditor';
 import RouteTrackingSheet from './RouteTrackingSheet';
 import { useRouteTracking } from '../hooks/useRouteTracking';
@@ -74,8 +73,6 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const trackingCenter = useRef<Coordinate | null>(null);
   const fittedEndpoints = useRef(false);
   const mounted = useRef(true);
-  const externalBusy = useRef(false);
-  const [openingExternal, setOpeningExternal] = useState(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; startGeneration.current += 1; }; }, []);
   const origin = selections[0]?.isCurrentLocation ? currentPoint : selections[0];
   const destination = selections[1]?.isCurrentLocation ? snapshotCurrentLocation() : selections[1];
@@ -137,20 +134,6 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
     : mode === 'bike' ? 'unsupported'
       : !originCoordinate ? location.status !== 'granted' ? `location-${location.status}` : 'location-failed' : activeState.kind;
   const canRequest = (mode !== 'bike') && !!destinationCoordinate && !!originCoordinate;
-  async function openExternal() {
-    if (externalBusy.current) return;
-    externalBusy.current = true; setOpeningExternal(true);
-    try {
-      if (!destination) return;
-      const outcome = await openNaverRoute(destination, originCoordinate ? origin : null, mode);
-      if (!mounted.current || outcome === 'opened') return;
-      setNotice({ message: t(outcome === 'not-installed' ? 'routes.notInstalled'
-        : outcome === 'invalid' ? 'routes.states.missing-destination' : 'routes.openFailed') });
-    } finally {
-      externalBusy.current = false;
-      if (mounted.current) setOpeningExternal(false);
-    }
-  }
   function request() {
     manualCamera.current = false; fittedPath.current = null; setAnchor(null);
     if (mode === 'transit') void transit.request(origin, destination);
@@ -303,7 +286,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
           onMap={() => setMapPicking(true)} /> : <RoutePlannerSheet origin={origin} destination={destination} mode={mode} stateKey={stateKey} ready={ready}
           bottomInset={insets.bottom} maxHeight={Math.max(240, viewport.height - insets.top - 70)}
           onLayout={event => setSheetHeight(event.nativeEvent.layout.height)} hasOrigin={!!originCoordinate}
-          canRequest={canRequest} canOpenExternal={!!destinationCoordinate && !openingExternal}
+          canRequest={canRequest}
           deniedPermanently={location.status === 'denied' && !location.canAskAgain}
           onMode={value => {
             if (mode !== value) { closeNotice(); cancelRequests(); setAnchor(null); setMode(value); }
@@ -319,7 +302,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
             onSelect: index => { manualCamera.current = false; setAnchor(null); setTransitSelection({ source: transitResult, index }); },
             onStart: () => { void startTracking(); } } : undefined}
           onRequest={request} onCancel={cancelRequests} onRefreshLocation={onRefreshLocation}
-          onSettings={() => { void Linking.openSettings().catch(() => undefined); }} onExternal={() => { void openExternal(); }} />}
+          onSettings={() => { void Linking.openSettings().catch(() => undefined); }} />}
       </MapGlassBackdrop>
       </View>
       {notice && <RouteNotice title={t('routes.tracking.start')} {...notice} onClose={closeNotice}

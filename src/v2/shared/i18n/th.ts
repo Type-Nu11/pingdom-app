@@ -177,6 +177,7 @@ export const thaiSharedResources = {
   "common": {
     "missingTranslation": "ไม่มีคำแปล",
     "navigation": {
+      "confirm": "ตกลง",
       "back": "ย้อนกลับ",
       "close": "ปิด",
       "exitHint": "กดย้อนกลับอีกครั้งเพื่อออกจากแอป",

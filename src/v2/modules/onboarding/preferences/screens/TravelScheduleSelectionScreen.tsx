@@ -189,10 +189,11 @@ export default function TravelScheduleSelectionScreen({
                 return (
                   <DayCell
                     key={date}
-                    $inRange={inRange}
-                    $roundedLeft={roundedLeft}
-                    $roundedRight={roundedRight}
+                    $selected={selected}
                   >
+                    {inRange ? <RangeBackground pointerEvents="none"
+                      $start={date === validStart} $end={date === validEnd}
+                      $roundedLeft={roundedLeft} $roundedRight={roundedRight} /> : null}
                     <DayButton
                       $selected={selected}
                       accessibilityLabel={formatAccessibleTravelDate(date, i18n.language)}
@@ -363,25 +364,35 @@ const EmptyDay = styled.View`
   height: 48px;
 `;
 
-const DayCell = styled.View<{
-  $inRange: boolean;
+const DayCell = styled.View<{ $selected: boolean }>`
+  width: 14.2857%;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  z-index: ${({ $selected }) => ($selected ? 1 : 0)};
+`;
+
+// Endpoint fills begin at the circle's center and stay behind the selected date.
+const RangeBackground = styled.View<{
+  $start: boolean;
+  $end: boolean;
   $roundedLeft: boolean;
   $roundedRight: boolean;
 }>`
-  width: 14.2857%;
-  height: 48px;
-  align-items: flex-start;
-  justify-content: center;
-  border-top-left-radius: ${({ $roundedLeft, theme }) =>
-    $roundedLeft ? theme.radius.full : theme.radius.none}px;
-  border-bottom-left-radius: ${({ $roundedLeft, theme }) =>
-    $roundedLeft ? theme.radius.full : theme.radius.none}px;
-  border-top-right-radius: ${({ $roundedRight, theme }) =>
-    $roundedRight ? theme.radius.full : theme.radius.none}px;
-  border-bottom-right-radius: ${({ $roundedRight, theme }) =>
-    $roundedRight ? theme.radius.full : theme.radius.none}px;
-  background-color: ${({ $inRange, theme }) =>
-    $inRange ? theme.colors.primaryRange : 'transparent'};
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: ${({ $start }) => ($start ? '50%' : '0px')};
+  right: ${({ $end }) => ($end ? '50%' : '0px')};
+  border-top-left-radius: ${({ $roundedLeft, $start, theme }) =>
+    $roundedLeft && !$start ? theme.radius.full : theme.radius.none}px;
+  border-bottom-left-radius: ${({ $roundedLeft, $start, theme }) =>
+    $roundedLeft && !$start ? theme.radius.full : theme.radius.none}px;
+  border-top-right-radius: ${({ $roundedRight, $end, theme }) =>
+    $roundedRight && !$end ? theme.radius.full : theme.radius.none}px;
+  border-bottom-right-radius: ${({ $roundedRight, $end, theme }) =>
+    $roundedRight && !$end ? theme.radius.full : theme.radius.none}px;
+  background-color: ${({ theme }) => theme.colors.primaryRange};
 `;
 
 const DayButton = styled.Pressable<{ $selected: boolean }>`

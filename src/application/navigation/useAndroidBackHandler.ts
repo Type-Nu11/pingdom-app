@@ -4,7 +4,8 @@ import type {
 } from '@react-navigation/native';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BackHandler, Platform, ToastAndroid } from 'react-native';
+import { BackHandler, Platform } from 'react-native';
+import { useAppDialog } from '../../v2/shared/components/AppDialogProvider';
 import { runAndroidBackOverride } from '../../v2/shared/navigation/androidBackOverride';
 import { getAndroidBackAction } from './androidBack';
 
@@ -12,6 +13,7 @@ export function useAndroidBackHandler<ParamList extends ParamListBase>(
   navigationRef: NavigationContainerRefWithCurrent<ParamList>,
 ) {
   const { t } = useTranslation();
+  const dialog = useAppDialog();
   const lastRootBackPressAt = useRef(0);
 
   useEffect(() => {
@@ -42,10 +44,10 @@ export function useAndroidBackHandler<ParamList extends ParamListBase>(
       }
 
       lastRootBackPressAt.current = now;
-      ToastAndroid.show(t('common.navigation.exitHint'), ToastAndroid.SHORT);
+      dialog.toast(t('common.navigation.exitHint'));
       return true;
     });
 
     return () => subscription.remove();
-  }, [navigationRef, t]);
+  }, [dialog, navigationRef, t]);
 }

@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+import type { AppDialogAction } from '../../../../shared/components/AppDialogProvider';
 import { renderHook } from '@testing-library/react-native';
 
 import { useDiscardOnLeaveGuard, type LeaveGuardNavigation } from '../useDiscardOnLeaveGuard';
@@ -24,7 +24,7 @@ function createNavigation() {
 
 describe('useDiscardOnLeaveGuard', () => {
   beforeEach(() => {
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -38,7 +38,7 @@ describe('useDiscardOnLeaveGuard', () => {
     const preventDefault = fireBeforeRemove();
 
     expect(preventDefault).not.toHaveBeenCalled();
-    expect(Alert.alert).not.toHaveBeenCalled();
+    expect(mockDialog.show).not.toHaveBeenCalled();
   });
 
   test('입력이 있으면 이탈을 막고 폐기 확인을 띄운다', async () => {
@@ -49,7 +49,7 @@ describe('useDiscardOnLeaveGuard', () => {
     const preventDefault = fireBeforeRemove('GO_BACK');
 
     expect(preventDefault).toHaveBeenCalledTimes(1);
-    expect(Alert.alert).toHaveBeenCalledTimes(1);
+    expect(mockDialog.show).toHaveBeenCalledTimes(1);
     expect(navigation.dispatch).not.toHaveBeenCalled();
   });
 
@@ -59,7 +59,7 @@ describe('useDiscardOnLeaveGuard', () => {
     result.current.current = true;
 
     fireBeforeRemove('GO_BACK');
-    const [, , buttons] = jest.mocked(Alert.alert).mock.calls[0];
+    const [, , buttons] = jest.mocked(mockDialog.show).mock.calls[0];
     const confirmButton = buttons?.find((button) => button.style === 'destructive');
     confirmButton?.onPress?.();
 
@@ -75,7 +75,7 @@ describe('useDiscardOnLeaveGuard', () => {
     const preventDefault = fireBeforeRemove();
 
     expect(preventDefault).not.toHaveBeenCalled();
-    expect(Alert.alert).not.toHaveBeenCalled();
+    expect(mockDialog.show).not.toHaveBeenCalled();
   });
 
   test('취소를 누르면 이탈 액션을 실행하지 않는다', async () => {
@@ -84,10 +84,15 @@ describe('useDiscardOnLeaveGuard', () => {
     result.current.current = true;
 
     fireBeforeRemove('GO_BACK');
-    const [, , buttons] = jest.mocked(Alert.alert).mock.calls[0];
+    const [, , buttons] = jest.mocked(mockDialog.show).mock.calls[0];
     const cancelButton = buttons?.find((button) => button.style === 'cancel');
 
     expect(cancelButton?.onPress).toBeUndefined();
     expect(navigation.dispatch).not.toHaveBeenCalled();
   });
 });
+
+const mockDialog = { show: jest.fn<void, [string, string?, AppDialogAction[]?, { cancelable?: boolean; onDismiss?: () => void }?]>() };
+jest.mock('../../../../shared/components/AppDialogProvider', () => ({
+  ...jest.requireActual('../../../../shared/components/AppDialogProvider'), useAppDialog: () => mockDialog,
+}));

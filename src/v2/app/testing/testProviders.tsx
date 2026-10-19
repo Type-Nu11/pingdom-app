@@ -1,4 +1,5 @@
 import '../configureDomainMocks';
+import { AppDialogProvider } from '../../shared/components/AppDialogProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   render,
@@ -82,7 +83,7 @@ export async function createTestWrapper(options: TestProviderOptions = {}) {
             fontFamily="Pretendard"
             systemSchemeOverride={options.colorScheme ?? 'light'}
           >
-            {children}
+            <AppDialogProvider>{children}</AppDialogProvider>
           </AppThemeProvider>
         </I18nextProvider>
       </QueryClientProvider>

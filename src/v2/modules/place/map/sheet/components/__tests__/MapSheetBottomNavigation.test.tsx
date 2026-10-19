@@ -129,15 +129,41 @@ test('누른 채 오른쪽으로 움직이면 즐겨찾기·커뮤니티·예약
     expect(handler.onMoveShouldSetPanResponderCapture?.(event, gesture(68, 40, 40))).toBe(false);
     expect(handler.onMoveShouldSetPanResponderCapture?.(event, gesture(148, 80, 3))).toBe(true);
     await act(() => handler.onPanResponderGrant?.(event, gesture(68)));
+    expect(screen.getByTestId('map-navigation-drag-indicator')).toBeVisible();
+    await act(() => handler.onPanResponderMove?.(event, gesture(140)));
+    expect(selected).not.toHaveBeenCalled();
+    expect(screen.getByTestId('map-navigation-drag-indicator')).toHaveStyle({
+      transform: [{ translateX: 77 }],
+    });
+    await act(() => handler.onPanResponderMove?.(event, gesture(150)));
+    expect(screen.getByTestId('map-navigation-drag-indicator')).toHaveStyle({
+      transform: [{ translateX: 87 }],
+    });
     for (const [x, label] of [[148, '즐겨찾기'], [228, '커뮤니티'], [308, '예약'], [228, '커뮤니티'], [148, '즐겨찾기'], [68, '지도']] as const) {
       await act(() => handler.onPanResponderMove?.(event, gesture(x)));
+      await act(() => new Promise(resolve => setTimeout(resolve, 120)));
       expect(screen.getByRole('tab', { name: label, selected: true })).toBeVisible();
       // Moving inside the same tab must not navigate or restart requests again.
       await act(() => handler.onPanResponderMove?.(event, gesture(x + 1)));
     }
     await act(() => handler.onPanResponderRelease?.(event, gesture(68)));
+    expect(screen.queryByTestId('map-navigation-drag-indicator')).toBeNull();
     expect(selected.mock.calls.map(([tab]) => tab)).toEqual(['favorites', 'community', 'reservations', 'community', 'favorites', 'map']);
     expect(create).toHaveBeenCalledTimes(1);
+    selected.mockClear();
+    await act(() => handler.onPanResponderGrant?.(event, gesture(68)));
+    for (const x of [148, 228, 308]) {
+      await act(() => handler.onPanResponderMove?.(event, gesture(x)));
+      await act(() => new Promise(resolve => setTimeout(resolve, 10)));
+    }
+    expect(selected).not.toHaveBeenCalled();
+    await act(() => new Promise(resolve => setTimeout(resolve, 120)));
+    expect(selected.mock.calls.map(([tab]) => tab)).toEqual(['reservations']);
+    // Terminating a later drag must cancel its pending page switch.
+    await act(() => handler.onPanResponderMove?.(event, gesture(148)));
+    await act(() => handler.onPanResponderTerminate?.(event, gesture(148)));
+    await act(() => new Promise(resolve => setTimeout(resolve, 120)));
+    expect(selected).toHaveBeenCalledTimes(1);
   } finally { create.mockRestore(); }
 });
 

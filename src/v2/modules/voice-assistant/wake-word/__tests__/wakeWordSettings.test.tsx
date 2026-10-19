@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, AppState } from 'react-native';
+import { AppState } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { WakeWordProvider } from '../WakeWordProvider';
@@ -25,11 +25,12 @@ test('settings opt-in survives map unmount, captures only on map, and settings o
   function App({ map }: { map: boolean }) {
     return <WakeWordProvider adapter={adapter}><WakeWordSettingsControl />{map ? <Map /> : null}</WakeWordProvider>;
   }
-  const alert = jest.spyOn(Alert, 'alert');
   const view = await renderWithProviders(<App map={false} />, { language: 'ko' });
   await fireEvent(screen.getByRole('switch'), 'valueChange', true);
   expect(adapter.requestPermission).not.toHaveBeenCalled();
-  await act(() => alert.mock.calls[0][2]![1].onPress?.());
+  const didDismiss = screen.getByTestId('app-dialog-host').props.onDismiss;
+  await fireEvent.press(screen.getByTestId('app-dialog-action-1'));
+  await act(didDismiss);
   expect(screen.getByRole('switch', { checked: true })).toBeOnTheScreen();
   expect(callbacks).toHaveLength(0);
   await view.rerender(<App map />);

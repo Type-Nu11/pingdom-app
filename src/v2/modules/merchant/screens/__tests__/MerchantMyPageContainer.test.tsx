@@ -1,5 +1,5 @@
+import type { AppDialogAction } from '../../../../shared/components/AppDialogProvider';
 import React from 'react';
-import { Alert } from 'react-native';
 import { screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
@@ -163,7 +163,7 @@ describe('MerchantMyPageContainer', () => {
       status: 'CLOSED',
       title: '여름 맞이 냉짬뽕 무료 이벤트',
     });
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_title, _body, buttons) => {
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation((_title, _body, buttons) => {
       const confirm = buttons?.find((button) => button.style === 'destructive');
       confirm?.onPress?.();
     });
@@ -177,3 +177,8 @@ describe('MerchantMyPageContainer', () => {
     expect(alertSpy).toHaveBeenCalled();
   });
 });
+
+const mockDialog = { show: jest.fn<void, [string, string?, AppDialogAction[]?, { cancelable?: boolean; onDismiss?: () => void }?]>() };
+jest.mock('../../../../shared/components/AppDialogProvider', () => ({
+  ...jest.requireActual('../../../../shared/components/AppDialogProvider'), useAppDialog: () => mockDialog,
+}));

@@ -1,3 +1,4 @@
+import { useAppDialog } from '../../../../shared/components/AppDialogProvider';
 import { MapSheetBottomNavigation, MapSheetNavigationHiddenProvider, getMapSheetCollapsedVisibleHeight } from '../sheet';
 import CarRoutePreview from '../routes/components/CarRoutePreview';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
@@ -14,7 +15,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Keyboard,
-  Alert,
   StatusBar,
   useWindowDimensions,
   View,
@@ -149,6 +149,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 });
 
 type MapScreenProps = {
+  onEditReview?: (reviewId: number) => void;
   canQueryBookmarks?: boolean;
   canQueryRankedFeeds?: boolean;
   initialSection?: 'community' | 'favorites' | 'map' | 'reservations';
@@ -175,6 +176,7 @@ type MapScreenProps = {
 const PLACE_PREVIEW_SHEET_HEIGHT = 393;
 
 export default function MapScreen({
+  onEditReview,
   canQueryBookmarks = true,
   canQueryRankedFeeds = canQueryBookmarks,
   initialSection = 'map',
@@ -202,8 +204,10 @@ export default function MapScreen({
     return () => { feedbackActive.current = false; };
   }, [isFocused]);
   const { i18n, t } = useTranslation();
+  const dialog = useAppDialog();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const [viewportHeight, setViewportHeight] = useState(height);
   const reservationNavigationLock = useRef(false);
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
@@ -407,9 +411,8 @@ export default function MapScreen({
     toggleRankedPlaceBookmark,
   } = usePlaceBookmark();
 
-  // Figma *-Up frames (e.g. 10250:35556): the expanded sheet starts 8px below the search
-  // header, so the header stays fully visible. Both platforms draw edge-to-edge, so the
-  // sheet shares the window origin with the header and the top inset must be added.
+  // Both overlays share this edge-to-edge root. Avoid measureInWindow during
+  // SafeAreaView updates: Android can report the previous frame's status-bar offset.
   const expandedSheetTop = insets.top + MAP_TOP_OVERLAY_SAFE_TOP_PADDING
     + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
@@ -417,7 +420,7 @@ export default function MapScreen({
   const externalPlaceKey = externalPlace ? getExternalPlaceKey(externalPlace) : null;
   // All bottom-navigation tabs share the map home resting height.
   // Place previews and search retain their separate detail layout.
-  const fullSheetHeight = Math.round(height);
+  const fullSheetHeight = Math.round(viewportHeight);
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const isBottomNavigationSheet = mapSection !== 'map'
     || content.type === 'home' || content.type === 'recommendations';
@@ -426,7 +429,8 @@ export default function MapScreen({
     : Math.min(
       (externalPlace
         ? EXTERNAL_PLACE_SHEET_HANDLE_HEIGHT + Math.ceil(externalCardHeight) + insets.bottom
-        : PLACE_PREVIEW_SHEET_HEIGHT) + SHEET_RESTING_GAP,
+        // Keep room for review tags and translation attribution added to the design card.
+        : Math.max(PLACE_PREVIEW_SHEET_HEIGHT, Math.round(442 * designScale))) + SHEET_RESTING_GAP,
       Math.round(height * 0.56),
     );
   const collapsedVisibleHeight = Math.min(
@@ -610,8 +614,8 @@ export default function MapScreen({
     setRoutePreviewPlaceId(null);
   }, [selectedPlaceActionTarget?.placeId, isFocused]);
   const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
-    Alert.alert(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
-  }, [t]);
+    dialog.show(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
+  }, [dialog, t]);
   const {
     busyAction: placeActionBusy,
     share: shareSelectedPlace,
@@ -699,6 +703,7 @@ export default function MapScreen({
     return {
       [String(selectedPlace.id)]: {
         amenities: [],
+        topReviewReasons: selectedPlacePresentation.reviewHighlights.slice(0, 2).map(item => item.reason),
         coupons: selectedPlacePresentation.coupons,
         englishName: selectedPlacePresentation.englishName ?? undefined,
         events: selectedPlacePresentation.events,
@@ -710,12 +715,23 @@ export default function MapScreen({
         phone: selectedPlacePresentation.merchant?.contactPhone ?? undefined,
         reservation: selectedPlacePresentation.reservation,
         reviewCount: selectedPlacePresentation.reviewTotal ?? undefined,
+        reviewHighlights: selectedPlacePresentation.reviewHighlights.map(item => ({
+          ...item, label: t(`visitVerification.reasons.${item.reason}`),
+        })),
+        reviewParticipantCount: selectedPlacePresentation.reviewParticipantCount ?? undefined,
+        reviewSampleSize: selectedPlacePresentation.reviewSampleSize,
+        reviewHighlightsComplete: selectedPlacePresentation.reviewHighlightsComplete,
         reviewState: selectedPlacePresentation.reviewState,
         roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
         reviews: selectedPlacePresentation.reviews.map((review) => ({
           author: review.userId !== null && review.userId === profile?.id
             ? profile.username?.trim() || t(review.authorKey)
             : t(review.authorKey),
+          placeId: selectedPlace.id,
+          reviewId: review.reviewId ?? undefined,
+          isOwnReview: review.reviewId !== null && review.userId !== null && review.userId === profile?.id,
+          onEdit: review.reviewId !== null && review.userId === profile?.id && onEditReview
+            ? () => { if (review.reviewId !== null) onEditReview(review.reviewId); } : undefined,
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
           reasons: review.reasons,
@@ -731,7 +747,7 @@ export default function MapScreen({
         verifiedEvidenceCount: selectedPlacePresentation.verifiedEvidenceCount ?? undefined,
       },
     };
-  }, [selectedPlace, selectedPlacePresentation, profile?.id, profile?.username, t]);
+  }, [selectedPlace, selectedPlacePresentation, profile?.id, profile?.username, t, onEditReview]);
   useEffect(() => {
     if (
       content.type !== 'place-preview'
@@ -1015,7 +1031,7 @@ export default function MapScreen({
     });
   }, [content, handleBackHome, isSearchOpen, mapSection, snapPoint, snapTo]));
   const handleGoNow = (place: DecisionPlace) => {
-    Alert.alert(
+    dialog.show(
       t('map.decision.goNow'),
       t('map.decision.goNowMessage', { placeName: place.name }),
       [{ text: t('map.search.confirm') }],
@@ -1027,7 +1043,7 @@ export default function MapScreen({
     } catch (error) {
       const messageKey = getBookmarkErrorMessage(error);
       if (!feedbackActive.current || !messageKey) return;
-      Alert.alert(
+      dialog.show(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
         t(messageKey),
       );
@@ -1042,7 +1058,7 @@ export default function MapScreen({
     } catch (error) {
       const messageKey = getBookmarkErrorMessage(error);
       if (!feedbackActive.current || !messageKey) return;
-      Alert.alert(
+      dialog.show(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
         t(messageKey),
       );
@@ -1064,7 +1080,8 @@ export default function MapScreen({
         && !assistant.isBusy && snapPoint === 'medium' && !openedBookmarkedPlaceId}
       username={profile?.username}
     >
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <MapGlassBackdrop active={mapGlassActive}>
       {isFocused && <StatusBar
         hidden={false}
@@ -1133,9 +1150,9 @@ export default function MapScreen({
           showCategories={snapPoint !== 'expanded'}
         />
         <MapSheetNavigationHiddenProvider value={true}>
-        <View
+        <Animated.View
           pointerEvents="box-none"
-          style={styles.sectionTransition}
+          style={[styles.sectionTransition, { transform: [{ translateY: sheetTranslateY }] }]}
           testID={`map-section-transition-${mapSection}`}
         >
         {mapSection === 'community' ? (
@@ -1143,6 +1160,7 @@ export default function MapScreen({
             collapsedTranslateY={collapsedTranslateY}
             expandedTranslateY={expandedTranslateY}
             height={fullSheetHeight}
+            parentOwnsMotion
             mediumTranslateY={mediumTranslateY}
             onHandlePress={() => {
               if (snapPoint === 'collapsed') snapTo('medium');
@@ -1174,6 +1192,7 @@ export default function MapScreen({
             expandedTranslateY={expandedTranslateY}
             hasNextPage={Boolean(hasNextFavoritePage)}
             height={fullSheetHeight}
+            parentOwnsMotion
             imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
             error={favoritesError}
             isFetching={isFavoritesFetching}
@@ -1223,6 +1242,7 @@ export default function MapScreen({
             collapsedTranslateY={collapsedTranslateY}
             expandedTranslateY={expandedTranslateY}
             height={fullSheetHeight}
+            parentOwnsMotion
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             isNearbyLoading={reservationDiscoveryEnabled && (
               isNearbyReservationCandidatesLoading || isNearbyReservationsLoading
@@ -1279,6 +1299,7 @@ export default function MapScreen({
             ) : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
+            parentOwnsMotion
             localFeed={localFeed}
             mediumTranslateY={mediumTranslateY}
             nationalFeed={nationalFeed}
@@ -1360,7 +1381,47 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
-        </View>
+      {assistant.enabled && !isSearchOpen && !emptyRouteOpen && (
+        <Animated.View
+          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
+          accessibilityElementsHidden={snapPoint === 'expanded'}
+          importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
+          style={{
+            bottom: fullSheetHeight + 8,
+            left: 12,
+            opacity: verificationCtaOpacity,
+            position: 'absolute',
+            zIndex: 60,
+          }}
+          testID="map-assistant-sheet-button-motion"
+        >
+          <MapAssistantButton disabled={assistant.isBusy || snapPoint === 'expanded'} onPress={assistant.open} />
+        </Animated.View>
+      )}
+      {/* Map actions stay available above every resting sheet, including place previews. */}
+      {!isSearchOpen && !emptyRouteOpen && onOpenVisitVerification ? (
+        <Animated.View
+          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
+          style={{
+            bottom: fullSheetHeight + 8,
+            opacity: verificationCtaOpacity,
+            position: 'absolute',
+            right: 12,
+            zIndex: 60,
+          }}
+          accessibilityElementsHidden={snapPoint === 'expanded'}
+          importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
+          testID="visit-verification-map-cta-motion"
+        >
+          <MapTutorialTarget id="verification">
+          <VisitVerificationMapCta
+            label={t('visitVerification.title')}
+            onPress={onOpenVisitVerification}
+          />
+          </MapTutorialTarget>
+        </Animated.View>
+      ) : null}
+        </Animated.View>
         </MapSheetNavigationHiddenProvider>
         {(mapSection !== 'map' || (content.type !== 'place-preview' && content.type !== 'external-place')) && (
           <View pointerEvents="box-none" style={styles.navigationOverlay}>
@@ -1377,48 +1438,6 @@ export default function MapScreen({
             />
           </View>
         )}
-      {assistant.enabled && !isSearchOpen && !emptyRouteOpen && mapSection === 'map'
-        && content.type === 'home' && (
-        <Animated.View
-          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
-          accessibilityElementsHidden={snapPoint === 'expanded'}
-          importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
-          style={{
-            bottom: fullSheetHeight + 8,
-            left: 12,
-            opacity: verificationCtaOpacity,
-            position: 'absolute',
-            transform: [{ translateY: sheetTranslateY }],
-            zIndex: 60,
-          }}
-          testID="map-assistant-sheet-button-motion"
-        >
-          <MapAssistantButton disabled={assistant.isBusy || snapPoint === 'expanded'} onPress={assistant.open} />
-        </Animated.View>
-      )}
-      {/* The community frames (Figma 4698:11054 etc.) keep the map clear of the
-          visit-verification CTA; the sheet carries its own write action there. */}
-      {!isSearchOpen && content.type !== 'place-preview' && !externalPlace && mapSection !== 'community' && onOpenVisitVerification ? (
-        <Animated.View
-          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
-          style={{
-            bottom: fullSheetHeight + 8,
-            opacity: verificationCtaOpacity,
-            position: 'absolute',
-            right: 12,
-            transform: [{ translateY: sheetTranslateY }],
-            zIndex: 60,
-          }}
-          testID="visit-verification-map-cta-motion"
-        >
-          <MapTutorialTarget id="verification">
-          <VisitVerificationMapCta
-            label={t('visitVerification.title')}
-            onPress={onOpenVisitVerification}
-          />
-          </MapTutorialTarget>
-        </Animated.View>
-      ) : null}
       {isSearchOpen ? (
         <MapSearchOverlay
           centerLat={center?.lat}
@@ -1472,6 +1491,7 @@ const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right:
 const styles: Record<string, object> = {
   container: { flex: 1 },
   mapBackground: absoluteFill,
-  sectionTransition: { ...absoluteFill, zIndex: 50 },
+  // Include the floating actions above the sheet in the moving parent hit area.
+  sectionTransition: { ...absoluteFill, top: -64, zIndex: 50 },
   navigationOverlay: { ...absoluteFill, zIndex: 60 },
 };

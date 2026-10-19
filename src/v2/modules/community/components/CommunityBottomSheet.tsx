@@ -29,7 +29,6 @@ import CountryFilterMenu from './CountryFilterMenu';
 import PostCard from './PostCard';
 import PostOverflowMenu from './PostOverflowMenu';
 
-const SHEET_RESTING_GAP = 8;
 // Figma `FAB/Write` sits 12px above the 64px bottom navigation bar.
 const NAVIGATION_BAR_HEIGHT = 64;
 const WRITE_FAB_NAVIGATION_GAP = 12;
@@ -65,6 +64,7 @@ export type CommunityBottomSheetProps = {
   onOpenWrite: (categoryId?: string) => void;
   panHandlers: GestureResponderHandlers;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
 };
@@ -83,6 +83,7 @@ export default function CommunityBottomSheet({
   onOpenWrite,
   panHandlers,
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
 }: CommunityBottomSheetProps) {
@@ -130,23 +131,6 @@ export default function CommunityBottomSheet({
     extrapolate: 'clamp',
     inputRange: [mediumTranslateY, fadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
-  });
-  const chromeGapRange = [expandedTranslateY, Math.max(mediumTranslateY, expandedTranslateY + 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, themedGlass.sheet.bottomRadius],
-  });
-  const expandedFillOpacity = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [1, 0],
   });
 
   // Each item carries its own category; the selected category only backs the
@@ -207,31 +191,8 @@ export default function CommunityBottomSheet({
   };
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        style={{ boxShadow: themedGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={themedGlass.sheet.rim}
-          style={{ borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius }}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={themedGlass.sheet.tint}
-            topRimOnly
-          />
-          <GlassStyles.SheetExpandedFill pointerEvents="none" style={{ opacity: expandedFillOpacity }} testID="sheet-expanded-fill" />
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow>
-
-      {/* Figma Community-Up (10250:35556) keeps the 386px content column inside the
-          full-width sheet, so the 8px inset stays while expanded (content at x=24). */}
-      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP} testID="v2-community-sheet-inner">
+    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
+      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
         <HandleArea {...panHandlers}>
           <HandleButton accessibilityLabel={t('community.sheetAdjust')} accessibilityRole="adjustable" onPress={onHandlePress}>
             <Handle />
@@ -334,7 +295,7 @@ export default function CommunityBottomSheet({
             )}
           </ListViewport>
         </Animated.View>
-      </GlassStyles.SheetInner>
+      </GlassStyles.MapSheetSurface>
 
       {snapPoint === 'expanded' ? (
         // Pinned to the screen like MapSheetBottomNavigation: the sheet

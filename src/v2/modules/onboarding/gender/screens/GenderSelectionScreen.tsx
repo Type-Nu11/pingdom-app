@@ -86,12 +86,10 @@ const Screen = styled.View`
   background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;
 
-// Figma keeps this frame's content 24px from the left edge at 370px wide.
 const Body = styled.View`
   flex: 1;
-  width: 394px;
-  max-width: 100%;
-  padding: 16px 0 51px 24px;
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px
+    51px;
 `;
 
 const Options = styled.View`

@@ -68,6 +68,20 @@ export function uniquePlaceIdsInServerOrder(
   return [...new Set(checkIns.map((checkIn) => checkIn.placeId))];
 }
 
+/** This is a place picker, so multiple visits to one place share one card. */
+export function latestCheckInPerPlace<T extends { placeId: number; observedAt: string }>(checkIns: readonly T[]): T[] {
+  const places = new Map<number, T>();
+  for (const checkIn of checkIns) {
+    const previous = places.get(checkIn.placeId);
+    const time = Date.parse(checkIn.observedAt);
+    const previousTime = previous ? Date.parse(previous.observedAt) : Number.NaN;
+    if (!previous || (Number.isFinite(time) && (!Number.isFinite(previousTime) || time > previousTime))) {
+      places.set(checkIn.placeId, checkIn);
+    }
+  }
+  return [...places.values()];
+}
+
 export function selectCandidateImageUrls(
   cardImageUrl: string | null,
   media: readonly { displayOrder: number; imageUrl: string; thumbnailUrl: string | null }[],
