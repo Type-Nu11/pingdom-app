@@ -133,3 +133,12 @@ test('제목과 칩 영역도 시트 드래그를 시작할 수 있다', async (
   );
   expect(screen.getByTestId('favorites-sheet-header').props.onMoveShouldSetResponderCapture).toBe(onMoveShouldSetResponderCapture);
 });
+
+test.each(['LIGHT', 'DARK'] as const)('%s 즐겨찾기는 칩 그림자를 부드럽게 그리고 시트 경계 안에서만 표시한다', async appearancePreference => {
+  await renderWithProviders(<FavoritePlacesBottomSheet {...props} />, { appearancePreference });
+  expect(screen.getByTestId('favorites-category-scroll')).toHaveStyle({ overflow: 'visible' });
+  expect(screen.getByRole('tab', { name: '전체' })).toHaveStyle({
+    boxShadow: `0px 2px 8px -2px ${appearancePreference === 'LIGHT' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.40)'}`,
+  });
+  expect(screen.getByTestId('favorites-sheet-content-viewport')).toHaveStyle({ overflow: 'hidden' });
+});

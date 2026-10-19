@@ -266,6 +266,7 @@ export default function FavoritePlacesBottomSheet({
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.categoryScroll}
+            testID="favorites-category-scroll"
           >
             {categories.map(({ Icon, id, iconWidth = 21 }) => {
               const active = activeCategory === id;
@@ -358,13 +359,13 @@ export default function FavoritePlacesBottomSheet({
 const createStyles = ({ colors, liquidGlass: glass }: AppTheme): Record<string, object> => ({
   categoryChip: {
     alignItems: 'center', backgroundColor: glass.category.tint, borderColor: glass.sheet.rim,
-    boxShadow: glass.category.shadow, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 12,
+    boxShadow: `0px 2px 8px -2px ${colors.shadowFloat}`, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 12,
   },
   categoryChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
   categoryContent: { gap: 8, paddingBottom: 10, paddingHorizontal: 16, paddingTop: 16 },
   categoryLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18, includeFontPadding: false },
   categoryLabelActive: { color: glass.category.activeForeground },
-  categoryScroll: { flexGrow: 0, height: 62, overflow: 'hidden' },
+  categoryScroll: { flexGrow: 0, height: 62, overflow: 'visible' },
   content: { flex: 1 },
   emptyBody: { color: colors.textMuted, fontSize: 13, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingTop: 12 },
