@@ -1,5 +1,5 @@
+import { useAppDialog } from '../../../shared/components/AppDialogProvider';
 import React, { useMemo } from 'react';
-import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
@@ -34,6 +34,7 @@ export default function MerchantMyPageContainer({
   username,
 }: MerchantMyPageContainerProps) {
   const { i18n, t } = useTranslation();
+  const dialog = useAppDialog();
 
   const merchantProfileQuery = useMerchantOwnerProfile();
   const placeId = merchantProfileQuery.data?.placeIds[0];
@@ -85,7 +86,7 @@ export default function MerchantMyPageContainer({
   );
 
   const handleDeleteEvent = (eventId: string) => {
-    Alert.alert(
+    dialog.show(
       t('merchantMyPage.events.closeConfirmTitle'),
       t('merchantMyPage.events.closeConfirmBody'),
       [
@@ -93,7 +94,7 @@ export default function MerchantMyPageContainer({
         {
           onPress: () => {
             closeOffer.mutate(Number(eventId), {
-              onError: () => Alert.alert(t('merchantMyPage.events.closeFailed')),
+              onError: () => dialog.show(t('merchantMyPage.events.closeFailed')),
             });
           },
           style: 'destructive',
