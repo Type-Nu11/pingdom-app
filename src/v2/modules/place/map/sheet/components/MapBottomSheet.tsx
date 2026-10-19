@@ -114,6 +114,7 @@ export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
 
 export type MapPreviewFallbackContent = {
   amenities: Array<'english' | 'parking'>;
+  topReviewReasons?: ReviewReasonKey[];
   coupons?: Array<{ period: string; title: string }>;
   englishName?: string;
   events?: Array<{ period: string; title: string }>;
@@ -1363,6 +1364,16 @@ const ResultRow = ({
   );
 };
 
+const TopReviewFeatures = ({ content }: { content: MapPreviewFallbackContent }) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  return <View testID="place-top-review-features">
+    <ReviewFeatureTags reasons={content.topReviewReasons?.slice(0, 2) ?? []} variant="full" appearance="placeDetail" testID="place-top-review-tags" />
+    {!content.reviewHighlightsComplete && (content.reviewSampleSize ?? 0) > 0
+      ? <AppText style={styles.detailReviewCount}>{t('placeReviewSummary.partialBasis', { count: content.reviewSampleSize })}</AppText> : null}
+  </View>;
+};
+
 const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking'; expanded?: boolean }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
@@ -1508,8 +1519,11 @@ const PreviewContent = ({
     onSelectAction(action);
     callback?.();
   };
-  const verificationSummary = typeof fallbackContent?.reviewCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.reviewCount })
+  const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
+    ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
+      !fallbackContent.reviewHighlightsComplete && (fallbackContent.reviewSampleSize ?? 0) > 0
+        ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
+    ].filter(Boolean).join(' · ')
     : fallbackContent?.statusDescription;
 
   return (
@@ -1579,7 +1593,9 @@ const PreviewContent = ({
         </Pressable>
       </View>
       <View style={styles.previewControls}>
-      {fallbackContent?.amenities.length ? (
+      {fallbackContent?.topReviewReasons?.length ? (
+        <TopReviewFeatures content={fallbackContent} />
+      ) : fallbackContent?.amenities.length ? (
         <View style={styles.previewAmenityRow}>
           {fallbackContent.amenities.map((amenity) => <PreviewAmenity key={amenity} type={amenity} />)}
         </View>
@@ -1928,8 +1944,11 @@ const ExpandedPlaceContent = ({
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
   const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
-  const verificationSummary = typeof fallbackContent?.reviewCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.reviewCount })
+  const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
+    ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
+      !fallbackContent.reviewHighlightsComplete && (fallbackContent.reviewSampleSize ?? 0) > 0
+        ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
+    ].filter(Boolean).join(' · ')
     : fallbackContent?.statusDescription || fallbackContent?.englishName;
 
   return (
@@ -2110,7 +2129,9 @@ const ExpandedPlaceContent = ({
                 ) : null}
               </>
             ) : null}
-            {fallbackContent?.amenities.length ? (
+            {fallbackContent?.topReviewReasons?.length ? (
+              <TopReviewFeatures content={fallbackContent} />
+            ) : fallbackContent?.amenities.length ? (
               <View style={styles.detailAmenityRow}>
                 {fallbackContent.amenities.map((amenity) => (
                   <PreviewAmenity key={amenity} type={amenity} expanded />

@@ -1646,17 +1646,30 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByLabelText(`${place.name} 사진 1장 중 1번째`)).toBeVisible();
   });
 
-  test.each(['medium', 'expanded'] as const)('%s counts reviews as verification participation rather than evidence count', async snapPoint => {
+  test.each(['medium', 'expanded'] as const)('%s counts unique review authors instead of reviews or evidence', async snapPoint => {
     const place = places[0];
     await renderWithProviders(<MapBottomSheet {...categoryProps([], {
       content: { type: 'place-preview', placeId: place.id }, selectedPlace: place, snapPoint,
       previewFallbackContentByPlaceId: {
         [String(place.id)]: { amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '',
-          verifiedEvidenceCount: 0, reviewCount: 1, reviewState: 'ready' },
+          verifiedEvidenceCount: 23, reviewCount: 7, reviewParticipantCount: 1, reviewHighlightsComplete: true, reviewSampleSize: 7, reviewState: 'ready' },
       },
     })} />);
     expect(screen.getByText('1명이 검증했어요!')).toBeVisible();
-    expect(screen.queryByText('0명이 검증했어요!')).toBeNull();
+    expect(screen.queryByText('7명이 검증했어요!')).toBeNull();
+    expect(screen.queryByText('23명이 검증했어요!')).toBeNull();
+  });
+
+  test.each(['medium', 'expanded'] as const)('%s never treats review totals as unknown author counts', async snapPoint => {
+    const place = places[0];
+    await renderWithProviders(<MapBottomSheet {...categoryProps([], {
+      content: { type: 'place-preview', placeId: place.id }, selectedPlace: place, snapPoint,
+      previewFallbackContentByPlaceId: {
+        [String(place.id)]: { amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '',
+          reviewCount: 7, reviewState: 'ready' },
+      },
+    })} />);
+    expect(screen.queryByText('7명이 검증했어요!')).toBeNull();
   });
 
   test('Android 전국 전체 카드는 중복 블러 비트맵 없이 표시 크기로 이미지를 디코딩한다', async () => {
@@ -1893,4 +1906,16 @@ test('추천 태그가 없어도 섹션과 빈 상태를 표시하며 실패를 
   await view.rerender(reviewHighlightsSheet({ ...base, reviewState: 'error' }));
   expect(screen.getByText('추천 항목 집계를 불러오지 못했어요. 눌러서 다시 시도해 주세요.')).toBeVisible();
   expect(screen.queryByText('아직 선택된 추천 태그가 없어요.')).toBeNull();
+});
+
+test('장소 요약은 추천 태그 상위 두 개를 편의기능 위치에 표시하고 일부 리뷰 기준을 밝힌다', async () => {
+  await renderWithProviders(reviewHighlightsSheet({
+    amenities: ['english', 'parking'], imageUrls: [], statusDescription: '', statusEmphasis: '', reviewState: 'ready',
+    topReviewReasons: ['clean', 'kind', 'photoSpot'], reviewSampleSize: 4, reviewHighlightsComplete: false,
+  }));
+  expect(screen.getByTestId('place-top-review-tags-clean')).toBeTruthy();
+  expect(screen.getByTestId('place-top-review-tags-kind')).toBeTruthy();
+  expect(screen.queryByTestId('place-top-review-tags-photoSpot')).toBeNull();
+  expect(screen.queryByTestId('map-detail-amenity-english')).toBeNull();
+  expect(screen.getByText('불러온 리뷰 4개 기준 · 전체 집계 아님')).toBeTruthy();
 });

@@ -703,6 +703,7 @@ export default function MapScreen({
     return {
       [String(selectedPlace.id)]: {
         amenities: [],
+        topReviewReasons: selectedPlacePresentation.reviewHighlights.slice(0, 2).map(item => item.reason),
         coupons: selectedPlacePresentation.coupons,
         englishName: selectedPlacePresentation.englishName ?? undefined,
         events: selectedPlacePresentation.events,

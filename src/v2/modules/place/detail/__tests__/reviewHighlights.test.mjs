@@ -57,3 +57,11 @@ test('빈 데이터와 서버 페이지 정보가 없는 응답도 가짜 태그
   assert.equal(summarizeReviewHighlights([review(1, 10, ['CLEAN'])]).complete, false);
   assert.equal(summarizeReviewHighlights([review(1, 10, ['CLEAN'])], { totalElements: 1, number: 1 }).complete, false);
 });
+
+test('같은 작성자의 리뷰 7개는 검증 인원 1명으로 집계한다', () => {
+  const records = Array.from({ length: 7 }, (_, index) => review(index + 1, 10, ['CLEAN']));
+  const summary = summarizeReviewHighlights(records, { totalElements: 7, number: 0 });
+  assert.equal(summary.participantCount, 1);
+  assert.equal(summary.sampleSize, 7);
+  assert.equal(summary.complete, true);
+});
