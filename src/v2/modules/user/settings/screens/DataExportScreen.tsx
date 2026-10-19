@@ -1,11 +1,12 @@
+import { useAppDialog } from '../../../../shared/components/AppDialogProvider';
 import React, { useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useDownloadUserDataExport } from '../../account';
 import { SettingsList, SettingsRow, SettingsScreenLayout, SettingsSection, SettingsTopBar } from '../components/SettingsLayout';
 
 export default function DataExportScreen({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation();
+  const dialog = useAppDialog();
   const download = useDownloadUserDataExport();
   const locked = useRef(false);
   const [state, setState] = useState<'idle' | 'loading' | 'prepared' | 'cancelled' | 'error'>('idle');
@@ -19,7 +20,7 @@ export default function DataExportScreen({ onBack }: { onBack: () => void }) {
     if (locked.current) return;
     locked.current = true;
     const cancel = () => { locked.current = false; setState('cancelled'); };
-    Alert.alert(t('settings.export.title'), t('settings.export.confirm'), [
+    dialog.show(t('settings.export.title'), t('settings.export.confirm'), [
       { text: t('settings.export.cancel'), style: 'cancel', onPress: cancel },
       { text: t('settings.export.download'), onPress: () => { void start(); } },
     ], { cancelable: true, onDismiss: cancel });
