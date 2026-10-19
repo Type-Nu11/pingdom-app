@@ -12,6 +12,7 @@ import type {
 } from '../../exploration';
 import {
   selectCandidateImageUrls,
+  latestCheckInPerPlace,
   uniquePlaceIdsInServerOrder,
 } from '../model/visitVerification';
 
@@ -33,11 +34,10 @@ export type VisitVerificationCandidate = {
 export function useVisitVerificationCandidates() {
   const checkInsQuery = useInfiniteCheckIns(PAGE_LIMIT);
   const checkIns = useMemo(
-    () => checkInsQuery.data?.pages.flatMap((page) => page.checkIns ?? []) ?? [],
+    () => latestCheckInPerPlace(checkInsQuery.data?.pages.flatMap((page) => page.checkIns ?? []) ?? []),
     [checkInsQuery.data?.pages],
   );
-  // Preserve the server's check-in order and every check-in ID because the server does not
-  // publish a same-place eligibility policy. Stable place keys deduplicate enrichment requests.
+  // Preserve place order and use the latest visit for each place across all loaded pages.
   const placeIds = useMemo(
     () => uniquePlaceIdsInServerOrder(checkIns),
     [checkIns],
