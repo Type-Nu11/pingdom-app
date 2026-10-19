@@ -45,6 +45,17 @@ export const SheetGlass = styled(FrostedSurface)`
   overflow: hidden;
 `;
 
+// Figma *-Up frames draw the raised page sheet as a solid Secondary/Assistive surface,
+// so this layer fades in over the glass as the sheet approaches its expanded snap.
+export const SheetExpandedFill = styled(Animated.View)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
+`;
+
 export const SheetInner = styled.View<{ $clipContent?: boolean; $inset: number; $opaque?: boolean }>`
   flex: 1;
   background-color: ${({ $opaque, theme }) => ($opaque ? theme.colors.background : 'transparent')};

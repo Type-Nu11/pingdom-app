@@ -262,3 +262,20 @@ test.each([
   await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />);
   expect(screen.getByTestId('reservation-sheet-inner')).toHaveStyle({ paddingLeft: inset });
 });
+
+test.each([
+  ['expanded', 130, 1],
+  ['medium', 300, 0],
+] as const)('%s 예약 시트는 Figma -Up 프레임처럼 펼친 상태에서만 불투명 Secondary/Assistive 면을 깐다', async (snapPoint, chromeBottom, opacity) => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  await renderReservations(
+    <ReservationBottomSheet
+      {...bottomSheet}
+      {...navigation}
+      expandedTranslateY={130}
+      sheetChromeBottom={new Animated.Value(chromeBottom)}
+      snapPoint={snapPoint}
+    />,
+  );
+  expect(screen.getByTestId('sheet-expanded-fill')).toHaveStyle({ backgroundColor: theme.colors.backgroundAssistive, opacity });
+});

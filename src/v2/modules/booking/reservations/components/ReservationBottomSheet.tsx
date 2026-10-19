@@ -235,6 +235,11 @@ export default function ReservationBottomSheet({
     inputRange: chromeGapRange,
     outputRange: [0, SHEET_BOTTOM_RADIUS],
   });
+  const expandedFillOpacity = sheetChromeBottom.interpolate({
+    extrapolate: 'clamp',
+    inputRange: chromeGapRange,
+    outputRange: [1, 0],
+  });
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
@@ -255,6 +260,7 @@ export default function ReservationBottomSheet({
             tintColor={themedGlass.sheet.tint}
             topRimOnly
           />
+          <GlassStyles.SheetExpandedFill pointerEvents="none" style={{ opacity: expandedFillOpacity }} testID="sheet-expanded-fill" />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
 
@@ -334,7 +340,7 @@ export default function ReservationBottomSheet({
 
 const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   content: { flex: 1 },
-  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
+  handle: { backgroundColor: colors.secondaryNormal, borderRadius: 3, height: 5, width: 56 },
   // Same handle geometry as the other page sheets: handle 6dp from the top, content 13dp below it.
   handleArea: { alignItems: 'center', height: 19, justifyContent: 'flex-start' },
   handleButton: { alignItems: 'center', height: 19, paddingTop: 6, width: 96 },
