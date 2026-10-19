@@ -155,7 +155,8 @@ test('place preview keeps header actions tappable and aligns category beside the
   assert.match(bottomSheet, /<View style=\{styles\.previewHeader\}>/);
   assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
   assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{16\}/);
-  assert.match(bottomSheet, /t\('map\.detail\.verifiedCount'/);
+  assert.match(bottomSheet, /t\('map\.detail\.reviewCount'/);
+  assert.match(bottomSheet, /t\('map\.detail\.verifiedCount', \{ count: fallbackContent\.reviewCount \}/);
 });
 
 test('place actions retain selection across sheet expansion and expanded detail removes every radius', () => {

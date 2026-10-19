@@ -1500,8 +1500,8 @@ const PreviewContent = ({
     onSelectAction(action);
     callback?.();
   };
-  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+  const verificationSummary = typeof fallbackContent?.reviewCount === 'number'
+    ? t('map.detail.verifiedCount', { count: fallbackContent.reviewCount })
     : fallbackContent?.statusDescription;
 
   return (
@@ -1919,8 +1919,8 @@ const ExpandedPlaceContent = ({
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
   const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
-  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+  const verificationSummary = typeof fallbackContent?.reviewCount === 'number'
+    ? t('map.detail.verifiedCount', { count: fallbackContent.reviewCount })
     : fallbackContent?.statusDescription || fallbackContent?.englishName;
 
   return (

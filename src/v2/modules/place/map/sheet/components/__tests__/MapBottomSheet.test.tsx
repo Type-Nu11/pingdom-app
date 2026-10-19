@@ -235,7 +235,7 @@ describe('MapBottomSheet recommendations', () => {
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
-    expect(screen.getByText('23명이 검증했어요!')).toBeVisible();
+    expect(screen.queryByText('23명이 검증했어요!')).toBeNull();
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ width: '100%', paddingLeft: 0, paddingRight: 0 });
     expect(screen.getByLabelText(selectedPlace.name)).toHaveStyle({ fontSize: 24, lineHeight: 31 });
     expect(screen.getByRole('tab', { name: '정보' })).toHaveStyle({ height: 56 });
@@ -1642,6 +1642,19 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryByRole('button', { name: `${place.name} 사진 2 상세 보기` })).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: `${place.name} 사진 1 상세 보기` }));
     expect(screen.getByLabelText(`${place.name} 사진 1장 중 1번째`)).toBeVisible();
+  });
+
+  test.each(['medium', 'expanded'] as const)('%s counts reviews as verification participation rather than evidence count', async snapPoint => {
+    const place = places[0];
+    await renderWithProviders(<MapBottomSheet {...categoryProps([], {
+      content: { type: 'place-preview', placeId: place.id }, selectedPlace: place, snapPoint,
+      previewFallbackContentByPlaceId: {
+        [String(place.id)]: { amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '',
+          verifiedEvidenceCount: 0, reviewCount: 1, reviewState: 'ready' },
+      },
+    })} />);
+    expect(screen.getByText('1명이 검증했어요!')).toBeVisible();
+    expect(screen.queryByText('0명이 검증했어요!')).toBeNull();
   });
 
   test('Android 전국 전체 카드는 중복 블러 비트맵 없이 표시 크기로 이미지를 디코딩한다', async () => {
