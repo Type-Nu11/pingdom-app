@@ -4,6 +4,7 @@ import { Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { ApiError } from '../../../../shared/api';
+import { lightColors, lightLiquidGlass } from '../../../../shared/theme';
 import { useCategories, useCommunityFeed, useCountries } from '../../hooks/useCommunity';
 import type { CommunityPostPage, ListCategoriesResponse } from '../../api/communityApi';
 import CommunityBottomSheet from '../CommunityBottomSheet';
@@ -228,7 +229,7 @@ describe('CommunityBottomSheet header alignment', () => {
     jest.mocked(useCommunityFeed).mockReturnValue(postsResult());
   });
 
-  test('필터 버튼과 중앙 정렬된 제목이 다른 페이지 시트처럼 핸들 아래 13dp에서 시작하고 헤더도 드래그 영역이다', async () => {
+  test('44dp 제목 행이 핸들 바로 아래에서 시작하고 헤더도 드래그 영역이다', async () => {
     const onMoveShouldSetResponderCapture = jest.fn();
     await renderSheet(
       <CommunityBottomSheet
@@ -239,18 +240,34 @@ describe('CommunityBottomSheet header alignment', () => {
     );
     const header = screen.getByTestId('v2-community-sheet-header');
     expect(header.props.onMoveShouldSetResponderCapture).toBe(onMoveShouldSetResponderCapture);
-    // 44dp row centred on the 26dp title: the row starts 9dp higher than the content top.
-    expect(header.parent).toHaveStyle({ marginTop: -9 });
+    // Figma Community (10250:35439): the title row follows the 19dp handle area directly.
+    expect(header.parent).not.toHaveStyle({ marginTop: -9 });
     expect(screen.getByRole('header', { name: '커뮤니티' })).toHaveStyle({ fontSize: 20, lineHeight: 26 });
   });
 
   test.each([
     ['medium', 8],
-    ['expanded', 0],
-  ] as const)('%s 커뮤니티 시트 내용은 펼치면 시트와 함께 전폭이 된다', async (snapPoint, inset) => {
+    ['expanded', 8],
+  ] as const)('%s 커뮤니티 시트 내용은 386dp 열 안에서 화면 좌우 24dp에 정렬된다', async (snapPoint, inset) => {
     await renderSheet(
       <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />,
     );
     expect(screen.getByTestId('v2-community-sheet-inner')).toHaveStyle({ paddingLeft: inset });
+  });
+
+  test('하프 칩은 글래스, 펼친 시트 칩은 Background/Normal + Fill/Neutral 테두리로 그림자 없이 그린다', async () => {
+    const half = await renderSheet(
+      <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint="medium" />,
+    );
+    const halfChip = screen.getByTestId('v2-community-sheet-category-TRAVEL');
+    expect(halfChip).toHaveStyle({ backgroundColor: lightLiquidGlass.category.tint, boxShadow: lightLiquidGlass.category.shadow });
+    half.unmount();
+
+    await renderSheet(
+      <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint="expanded" />,
+    );
+    const flatChip = screen.getByTestId('v2-community-sheet-category-TRAVEL');
+    expect(flatChip).toHaveStyle({ backgroundColor: lightColors.background, borderColor: lightColors.fillNeutral });
+    expect(flatChip).not.toHaveStyle({ boxShadow: lightLiquidGlass.category.shadow });
   });
 });
