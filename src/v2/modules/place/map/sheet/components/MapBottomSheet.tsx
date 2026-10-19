@@ -1,3 +1,5 @@
+import { ReviewReasonIcon } from '../../../../../shared/components/ReviewReasonIcon';
+import OwnerContentActions from '../../../../../shared/components/OwnerContentActions';
 import TranslationAttribution, { useTranslationAttribution } from '../../../translation/TranslationAttribution';
 import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
 import PreviewCloseAsset from '../../../../../../assets/v2/icons/community/close-medium.svg';
@@ -126,10 +128,14 @@ export type MapPreviewFallbackContent = {
   reviewCount?: number;
   reservation?: ReservationCtaState;
   reviewState?: 'empty' | 'error' | 'loading' | 'ready';
-  reviewHighlights?: Array<{ count: number; label: string }>;
+  reviewHighlights?: Array<{ count: number; label: string; reason?: ReviewReasonKey }>;
+  reviewSampleSize?: number;
+  reviewHighlightsComplete?: boolean;
   reviewParticipantCount?: number;
   reviews?: Array<{
     author: string;
+    isOwnReview?: boolean;
+    reviewId?: number;
     avatarUrl?: string;
     createdAt: string;
     imageUrls?: string[];
@@ -1371,14 +1377,15 @@ const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking
   );
 };
 
-const ReviewHighlightIcon = ({ label }: { label: string }) => {
+const ReviewHighlightIcon = ({ label, reason: explicitReason }: { label: string; reason?: ReviewReasonKey }) => {
   const { t } = useTranslation();
-  const reason = (Object.keys(REASON_CODES) as ReviewReasonKey[]).find(key => t(reviewReasonLabelKey(key)) === label);
+  const reason = explicitReason ?? (Object.keys(REASON_CODES) as ReviewReasonKey[]).find(key => t(reviewReasonLabelKey(key)) === label);
   if (reason === 'photoSpot') return <DetailReviewPhotoAsset />;
   if (reason === 'clean') return <DetailReviewCleanAsset />;
   if (reason === 'multilingual') return <View style={{ width: 18, height: 18 }}><DetailReviewMultilingualBaseAsset /><DetailReviewMultilingualLinesAsset style={{ position: 'absolute', left: 0.35, top: 0 }} /></View>;
   if (reason === 'kind') return <DetailReviewKindAsset />;
   if (reason === 'delicious') return <DetailReviewDeliciousAsset />;
+  if (reason) return <ReviewReasonIcon reason={reason} height={18} />;
   return null;
 };
 
@@ -1776,6 +1783,7 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
           <AppText style={styles.detailReviewerName}>{review.author}</AppText>
           <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
         </View>
+        {review.isOwnReview ? <OwnerContentActions key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} /> : null}
       </View>
       <AppText
         ellipsizeMode="tail"
@@ -2167,31 +2175,44 @@ const ExpandedPlaceContent = ({
         </View>
       ) : (
         <View>
-          {fallbackContent?.reviewHighlights?.length ? (
-            <View style={styles.detailReviewSection}>
+          <View style={styles.detailReviewSection} testID="place-review-highlights">
             <AppText style={styles.detailReviewTitle}>
               {t('map.detail.reviewHighlights')}
-              {fallbackContent?.reviewParticipantCount ? (
+              {fallbackContent?.reviewParticipantCount !== undefined && fallbackContent?.reviewState !== 'error' && fallbackContent?.reviewState !== 'loading' ? (
                 <AppText style={styles.detailReviewCount}> {t('map.detail.participantCount', { count: fallbackContent.reviewParticipantCount })}</AppText>
               ) : null}
             </AppText>
-            {fallbackContent.reviewHighlights.map((highlight, index, items) => {
+            {fallbackContent?.reviewState !== 'error' && fallbackContent?.reviewState !== 'loading'
+              && (fallbackContent?.reviewSampleSize ?? 0) > 0
+              && (!fallbackContent?.reviewHighlightsComplete || fallbackContent?.reviewParticipantCount === undefined) ? (
+              <AppText style={styles.detailReviewCount} testID="place-review-highlights-basis">
+                {t(fallbackContent?.reviewHighlightsComplete ? 'placeReviewSummary.reviewBasis' : 'placeReviewSummary.partialBasis', { count: fallbackContent?.reviewSampleSize })}
+              </AppText>
+            ) : null}
+            {fallbackContent?.reviewState === 'loading' ? (
+              <Skeleton variant="comments" accessibilityLabel={t('placeReviewSummary.loading')} />
+            ) : fallbackContent?.reviewState === 'error' ? (
+              <Pressable accessibilityRole="button" onPress={onRetryReviews}><AppText style={styles.detailEmptyText}>{t('placeReviewSummary.error')}</AppText></Pressable>
+            ) : fallbackContent?.reviewHighlights?.length ? fallbackContent.reviewHighlights.map((highlight, index, items) => {
               const maxCount = Math.max(...items.map((item) => item.count), 1);
               const scoreRatio = Math.min(1, Math.max(0, highlight.count / maxCount));
               const strongest = index === 0;
               return (
-                <View key={highlight.label} style={styles.detailHighlightRow}>
+                <View key={highlight.reason ?? highlight.label} style={styles.detailHighlightRow} accessible
+                  testID={`place-review-highlight-${highlight.reason ?? index}`} accessibilityRole="progressbar"
+                  accessibilityLabel={highlight.label} accessibilityValue={{ min: 0, max: maxCount, now: highlight.count }}>
                   <View
+                    testID={`place-review-highlight-fill-${highlight.reason ?? index}`}
                     style={[
                       styles.detailHighlightFill,
                       {
                         backgroundColor: strongest ? colors.primaryAlternative : index === 1 ? colors.primaryAssistive : colors.primaryAssistiveSoft,
-                        width: `${Math.max(24, scoreRatio * 100)}%`,
+                        width: `${scoreRatio * 100}%`,
                       },
                     ]}
                   />
                   <View style={styles.detailHighlightLabelRow}>
-                    <ReviewHighlightIcon label={highlight.label} />
+                    <ReviewHighlightIcon label={highlight.label} reason={highlight.reason} />
                     <AppText style={[styles.detailHighlightLabel, strongest && styles.detailHighlightCountOnStrong]}>{highlight.label}</AppText>
                   </View>
                   <AppText
@@ -2204,9 +2225,8 @@ const ExpandedPlaceContent = ({
                   </AppText>
                 </View>
               );
-            })}
-            </View>
-          ) : null}
+            }) : <AppText style={styles.detailEmptyText}>{t('placeReviewSummary.empty')}</AppText>}
+          </View>
 
           {reviewImageUrls.length ? (
             <View style={styles.detailReviewSection}>

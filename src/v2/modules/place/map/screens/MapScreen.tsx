@@ -712,12 +712,20 @@ export default function MapScreen({
         phone: selectedPlacePresentation.merchant?.contactPhone ?? undefined,
         reservation: selectedPlacePresentation.reservation,
         reviewCount: selectedPlacePresentation.reviewTotal ?? undefined,
+        reviewHighlights: selectedPlacePresentation.reviewHighlights.map(item => ({
+          ...item, label: t(`visitVerification.reasons.${item.reason}`),
+        })),
+        reviewParticipantCount: selectedPlacePresentation.reviewParticipantCount ?? undefined,
+        reviewSampleSize: selectedPlacePresentation.reviewSampleSize,
+        reviewHighlightsComplete: selectedPlacePresentation.reviewHighlightsComplete,
         reviewState: selectedPlacePresentation.reviewState,
         roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
         reviews: selectedPlacePresentation.reviews.map((review) => ({
           author: review.userId !== null && review.userId === profile?.id
             ? profile.username?.trim() || t(review.authorKey)
             : t(review.authorKey),
+          reviewId: review.reviewId ?? undefined,
+          isOwnReview: review.reviewId !== null && review.userId !== null && review.userId === profile?.id,
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
           reasons: review.reasons,

@@ -358,6 +358,7 @@ describe('MapBottomSheet recommendations', () => {
     const onDetailPress = jest.fn();
     const review = (n: number, reasons: ReviewReasonKey[]) => ({
       author: `작성자${n}`, createdAt: '2026-09-03', reasons, text: `리뷰 본문 ${n}`,
+      isOwnReview: n === 1, reviewId: n,
     });
     await renderWithProviders(
       <MapBottomSheet
@@ -388,6 +389,7 @@ describe('MapBottomSheet recommendations', () => {
       { language: 'ko' },
     );
     expect(screen.getByText('리뷰 본문 1')).toBeVisible();
+    expect(screen.getAllByTestId('owner-content-more')).toHaveLength(1);
     expect(screen.getByText('리뷰 본문 3')).toBeVisible();
     expect(screen.queryByText('리뷰 본문 4')).not.toBeOnTheScreen();
     expect(screen.getByText('맛있어요')).toBeVisible();
@@ -1844,4 +1846,51 @@ describe('MapBottomSheet recommendations', () => {
     await act(async () => view.i18n.changeLanguage('en'));
     expect(screen.getByRole('status', { name: 'No places found in this category.' })).toBeVisible();
   });
+});
+
+function reviewHighlightsSheet(fallback: MapPreviewFallbackContent) {
+  const selectedPlace = places[0];
+  return <MapBottomSheet
+    activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+    content={{ type: 'place-preview', placeId: selectedPlace.id }} height={700} mediumTranslateY={300}
+    onBackHome={jest.fn()} onCreateReservation={jest.fn()} onDetailPress={jest.fn()}
+    onFilterPress={jest.fn()} onGoNowPress={jest.fn()} onHandlePress={jest.fn()}
+    onPlacePress={jest.fn()} onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+    onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()} onToggleBookmark={jest.fn(async () => undefined)}
+    panHandlers={{} as GestureResponderHandlers} places={places}
+    previewFallbackContentByPlaceId={{ [String(selectedPlace.id)]: fallback }}
+    recommendationPlaces={[]} recommendationsState="ready" selectedPlace={selectedPlace}
+    sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded" />;
+}
+
+test.each(['LIGHT', 'DARK'] as const)('%s 리뷰 탭은 추천 집계와 정확한 비율을 보여주며 부분 집계임을 알린다', async appearancePreference => {
+  await renderWithProviders(reviewHighlightsSheet({
+    amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '', reviewState: 'ready',
+    reviewCount: 284, reviewSampleSize: 4, reviewParticipantCount: 3, reviewHighlightsComplete: false,
+    reviewHighlights: [
+      { reason: 'clean', label: '매장이 깨끗해요', count: 3 },
+      { reason: 'parking', label: '주차하기 편해요', count: 1 },
+    ],
+  }), { appearancePreference });
+  await fireEvent.press(screen.getByText('리뷰'));
+  expect(screen.getByTestId('place-review-highlights')).toBeVisible();
+  expect(screen.getByText(/이런 점을 좋아해요!/)).toBeVisible();
+  expect(screen.getByText(/3명 참여/)).toBeVisible();
+  expect(screen.queryByText(/284명 참여/)).toBeNull();
+  expect(screen.getByText('불러온 리뷰 4개 기준 · 전체 집계 아님')).toBeVisible();
+  expect(screen.getByRole('progressbar', { name: '매장이 깨끗해요' }).props.accessibilityValue).toEqual({ min: 0, max: 3, now: 3 });
+  const smaller = screen.getByTestId('place-review-highlight-parking');
+  expect(smaller.props.accessibilityValue).toEqual({ min: 0, max: 3, now: 1 });
+  expect(screen.getByTestId('place-review-highlight-fill-clean')).toHaveStyle({ width: '100%' });
+  expect(screen.getByTestId('place-review-highlight-fill-parking')).toHaveStyle({ width: `${(1 / 3) * 100}%` });
+});
+
+test('추천 태그가 없어도 섹션과 빈 상태를 표시하며 실패를 0으로 숨기지 않는다', async () => {
+  const base: MapPreviewFallbackContent = { amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '', reviewState: 'ready', reviewHighlights: [] };
+  const view = await renderWithProviders(reviewHighlightsSheet(base));
+  await fireEvent.press(screen.getByText('리뷰'));
+  expect(screen.getByText('아직 선택된 추천 태그가 없어요.')).toBeVisible();
+  await view.rerender(reviewHighlightsSheet({ ...base, reviewState: 'error' }));
+  expect(screen.getByText('추천 항목 집계를 불러오지 못했어요. 눌러서 다시 시도해 주세요.')).toBeVisible();
+  expect(screen.queryByText('아직 선택된 추천 태그가 없어요.')).toBeNull();
 });

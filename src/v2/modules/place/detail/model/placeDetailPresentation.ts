@@ -1,3 +1,4 @@
+import { summarizeReviewHighlights } from './reviewHighlights';
 import { reviewReasonsFromResponse, type ReviewReasonKey } from '../../../../shared/api/reviewReasons';
 import type { PlaceReviewPage } from '../../visit-verification';
 import type {
@@ -49,6 +50,7 @@ export type PlaceDetailPresentation = {
   reservation: ReservationCtaState;
   reviewState: 'empty' | 'error' | 'loading' | 'ready';
   reviews: Array<{
+    reviewId: number | null;
     userId: number | null;
     authorKey: 'placeDetail.review.anonymousUser';
     createdAt: string;
@@ -57,6 +59,10 @@ export type PlaceDetailPresentation = {
     text: string;
   }>;
   reviewTotal: number | null;
+  reviewHighlights: Array<{ reason: ReviewReasonKey; count: number }>;
+  reviewParticipantCount: number | null;
+  reviewSampleSize: number;
+  reviewHighlightsComplete: boolean;
   roadAddress: string | null;
   jibunAddress: string | null;
   touristSummary: string | null;
@@ -109,7 +115,7 @@ export function buildPlaceDetailPresentation(
   const imageUrls = [...new Set((mediaUrls.length ? mediaUrls : [clean(card?.imageUrl)]).filter(
     (url): url is string => Boolean(url),
   ))];
-  const reviewItems = (resources.reviews.data?.content ?? []).filter(
+  const reviewItems = (resources.reviews.isError || resources.reviews.isPending ? [] : resources.reviews.data?.content ?? []).filter(
     (review) => review.placeId === undefined || review.placeId === placeId,
   );
   const owner = base?.merchantOwner;
@@ -125,6 +131,7 @@ export function buildPlaceDetailPresentation(
     websiteUrl: clean(merchantInformation?.websiteUrl),
   } : null;
 
+  const reviewSummary = summarizeReviewHighlights(reviewItems, resources.reviews.data);
   return {
     address: clean(base?.address) ?? clean(card?.address),
     category: clean(card?.category) ?? base?.touristCategories?.[0] ?? null,
@@ -164,6 +171,7 @@ export function buildPlaceDetailPresentation(
       : resources.reviews.isError ? 'error'
         : reviewItems.length ? 'ready' : 'empty',
     reviews: reviewItems.map((review) => ({
+      reviewId: typeof review.reviewId === 'number' && Number.isSafeInteger(review.reviewId) && review.reviewId > 0 ? review.reviewId : null,
       userId: typeof review.userId === 'number' && Number.isSafeInteger(review.userId) && review.userId > 0 ? review.userId : null,
       authorKey: 'placeDetail.review.anonymousUser',
       createdAt: clean(review.createdAt) ?? '',
@@ -171,6 +179,10 @@ export function buildPlaceDetailPresentation(
       reasons: reviewReasonsFromResponse(review),
       text: clean(review.content) ?? '',
     })),
+    reviewHighlights: reviewSummary.highlights,
+    reviewParticipantCount: reviewSummary.participantCount,
+    reviewSampleSize: reviewSummary.sampleSize,
+    reviewHighlightsComplete: reviewSummary.complete,
     reviewTotal: resources.reviews.isError || resources.reviews.isPending
       ? null : Math.max(0, resources.reviews.data?.totalElements ?? reviewItems.length),
     roadAddress: clean(base?.roadAddress) ?? clean(card?.roadAddress),
