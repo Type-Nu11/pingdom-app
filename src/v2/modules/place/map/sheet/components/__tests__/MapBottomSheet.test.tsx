@@ -1307,6 +1307,9 @@ describe('MapBottomSheet recommendations', () => {
       top: 4,
       width: 181,
     });
+    // Figma 4525:25520: Glass/FillRaised thumb on a Glass/FillSubtle track, 8px inside the floating sheet.
+    expect(screen.getByTestId('feed-segment-indicator')).toHaveStyle({ backgroundColor: lightColors.glassFillRaised });
+    expect(screen.getByTestId('feed-segment-inset')).toHaveStyle({ paddingHorizontal: 8 });
     expect(screen.getByRole('button', { name: '추천 장소 1, 테스트 주소 1' })).toHaveStyle({
       height: 182,
       width: 242,
