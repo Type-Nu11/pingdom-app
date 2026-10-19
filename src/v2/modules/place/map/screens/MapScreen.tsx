@@ -15,7 +15,6 @@ import {
   Animated,
   Keyboard,
   Alert,
-  Platform,
   StatusBar,
   useWindowDimensions,
   View,
@@ -48,7 +47,7 @@ import MapGlassBackdrop from '../presentation/components/MapGlassBackdrop';
 import { useMapGlassActivity } from '../presentation/hooks/useMapGlassActivity';
 import MapSearchOverlay from '../../search/components/MapSearchOverlay';
 import MapTopOverlay, { type MapCategoryId } from '../presentation/components/MapTopOverlay';
-import { MAP_TOP_OVERLAY_METRICS } from '../presentation/styles/MapTopOverlay.styles';
+import { MAP_TOP_OVERLAY_METRICS, MAP_TOP_OVERLAY_SAFE_TOP_PADDING } from '../presentation/styles/MapTopOverlay.styles';
 import { useBottomSheet } from '../sheet/hooks/useBottomSheet';
 import { getPageEntrySnapPoint, useMapSheetStore } from '../sheet/store/mapSheetStore';
 import {
@@ -405,14 +404,11 @@ export default function MapScreen({
     toggleRankedPlaceBookmark,
   } = usePlaceBookmark();
 
-  // Bottom-sheet coordinates already begin below the translucent status-bar layer on Android.
-  // Align the expanded sheet with the bottom of the search header instead of leaving the
-  // category-overlay gap above it. On iOS the sheet shares the window origin with the
-  // header (which sits below the status bar), so the Figma layout — header, then an 8px
-  // gap — needs the top inset added or the expanded sheet covers the search bar.
-  const expandedSheetTop = Platform.OS === 'ios'
-    ? insets.top + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP
-    : MAP_TOP_OVERLAY_METRICS.headerHeight + 2;
+  // Figma *-Up frames (e.g. 10250:35556): the expanded sheet starts 8px below the search
+  // header, so the header stays fully visible. Both platforms draw edge-to-edge, so the
+  // sheet shares the window origin with the header and the top inset must be added.
+  const expandedSheetTop = insets.top + MAP_TOP_OVERLAY_SAFE_TOP_PADDING
+    + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
   const externalPlace = mapSection === 'map' && content.type === 'external-place' ? content.place : null;
   const externalPlaceKey = externalPlace ? getExternalPlaceKey(externalPlace) : null;
