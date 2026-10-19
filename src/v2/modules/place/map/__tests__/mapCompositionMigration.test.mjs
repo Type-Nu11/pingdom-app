@@ -23,11 +23,11 @@ test('map home composes independent local and national feeds without reusing mar
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
 
   assert.match(screen, /useLocalHotPlaces\(\s*localHotRequest/);
-  assert.match(screen, /useNationalTrends\(canQueryRankedFeeds, \{/);
+  assert.match(screen, /useNationalTrends\(isFocused && canQueryRankedFeeds, \{/);
   assert.match(screen, /period: 'WEEK'/);
   assert.match(screen, /localFeed=\{localFeed\}/);
   assert.match(screen, /nationalFeed=\{nationalFeed\}/);
-  assert.match(screen, /markers: apiMarkers,[\s\S]*places: apiPlaces,[\s\S]*usePlaces\(\{\}, env\.featureFlags\.placeList, markerViewport\)/);
+  assert.match(screen, /markers: apiMarkers,[\s\S]*places: apiPlaces,[\s\S]*usePlaces\(\{\}, isFocused && env\.featureFlags\.placeList, markerViewport\)/);
   assert.match(bottomSheet, /const selectedFeed = feed === 'local' \? localFeed : nationalFeed/);
   assert.doesNotMatch(bottomSheet, /\[\.\.\.places\]\.reverse\(\)|shownPlaces/);
 });
@@ -58,7 +58,8 @@ test('navigation omits touch highlighting while place buttons retain pressed fee
   const navigation = read('../sheet/components/MapSheetBottomNavigation.tsx');
 
   assert.doesNotMatch(navigation, /setPressedTab|navigation\.pressedTint/);
-  assert.match(navigation, /getMapSheetTabSurfaceColor\(active, liquidGlass\)/);
+  assert.match(navigation, /getMapSheetTabSurfaceColor\(active && !isDragging, liquidGlass\)/);
+  assert.match(navigation, /testID="map-navigation-drag-indicator"/);
   assert.match(sheet, /style=\{\(\{ pressed \}\) => \[styles\.previewBookmarkButton, pressed && styles\.pressed\]\}/);
   assert.match(sheet, /onPress=\{onPress\}/);
 });
@@ -100,7 +101,10 @@ test('map section changes do not fade the whole sheet or preserve expanded place
   assert.match(screen, /const openMapSection = useCallback/);
   assert.match(screen, /setContent\(\{ type: 'home' \}\)/);
   assert.match(screen, /jumpTo\('medium'\)/);
-  assert.match(bottomSheet, /tintColor=\{isExpandedPlaceDetail \? themedColors\.surface : themedGlass\.sheet\.tint\}/);
+  assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);
+  const surface = read('../sheet/components/MapSheetSurface.tsx');
+  assert.doesNotMatch(surface, /!opaque && <Styles\.SheetChromeShadow/);
+  assert.match(surface, /opacity: opaque \? 0 : 1/);
 });
 
 test('dismissing an expanded place resets the home sheet without an intermediate stretched frame', () => {
@@ -117,12 +121,14 @@ test('expanded sheet stops below the search header and temporarily hides map cat
   const expandedTop = screen.match(/const expandedSheetTop =[\s\S]*?;/)?.[0] ?? '';
 
   assert.match(expandedTop, /MAP_TOP_OVERLAY_METRICS\.headerHeight/);
-  // Android sheet coordinates start below the status bar, so only the iOS branch
-  // (which shares the window origin with the header) may add the top inset.
-  const [iosBranch = '', androidBranch = ''] = expandedTop.split(':');
-  assert.match(iosBranch, /Platform\.OS === 'ios'[\s\S]*insets\.top/);
-  assert.doesNotMatch(androidBranch, /insets\.top/);
+  assert.match(expandedTop, /insets\.top \+ MAP_TOP_OVERLAY_SAFE_TOP_PADDING/);
+  assert.doesNotMatch(expandedTop, /Platform\.OS/);
+  assert.match(expandedTop, /SHEET_RESTING_GAP/);
+  assert.match(screen, /Math\.round\(viewportHeight\)/);
+  assert.doesNotMatch(screen, /\.measureInWindow\(/);
   assert.doesNotMatch(expandedTop, /categoryHeight/);
+  assert.match(screen, /const expandedTranslateY = isPlacePreview \? 0 : externalPlace \? mediumTranslateY : expandedSheetTop;/);
+
   assert.match(screen, /showCategories=\{snapPoint !== 'expanded'\}/);
 });
 
@@ -150,21 +156,28 @@ test('the small visible handle keeps resting sheet content available as a drag s
 test('place preview keeps header actions tappable and aligns category beside the title', () => {
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
 
-  assert.match(bottomSheet, /<View style=\{styles\.previewHeader\}>/);
+  assert.match(bottomSheet, /<View \{\.\.\.sheetPanHandlers\} style=\{styles\.previewHeader\}/);
   assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
-  assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{22\}/);
-  assert.match(bottomSheet, /t\('map\.detail\.verifiedCount'/);
+  // Figma Component 18: 16px star inside a 32px circle.
+  assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{16\}/);
+  assert.match(bottomSheet, /t\('map\.detail\.reviewCount'/);
+  assert.match(bottomSheet, /t\('map\.detail\.verifiedCount', \{ count: fallbackContent\.reviewParticipantCount \}/);
 });
 
 test('place actions retain selection across sheet expansion and expanded detail removes every radius', () => {
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
 
   assert.match(bottomSheet, /activePreviewAction/);
-  assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: colors\.primarySoft, borderColor: colors\.selectedBorder/);
+  // Figma PingSelected chips (5191:39647): selected Glass/Selected + Glass/SelectedStroke.
+  assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: glass\.category\.activeTint, borderColor: glass\.category\.activeBorder/);
   assert.match(bottomSheet, /activeAction=\{activePreviewAction\}/);
-  assert.match(bottomSheet, /borderBottomLeftRadius: isExpandedPlaceDetail \? 0/);
-  assert.match(bottomSheet, /borderBottomRightRadius: isExpandedPlaceDetail \? 0/);
-  assert.match(bottomSheet, /cornerRadius=\{isExpandedPlaceDetail \? 0 : themedGlass\.sheet\.topRadius\}/);
+  assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);
+  const surface = read('../sheet/components/MapSheetSurface.tsx');
+  assert.match(surface, /borderBottomLeftRadius: opaque \? 0 : radius/);
+  assert.match(surface, /borderBottomRightRadius: opaque \? 0 : radius/);
+  assert.match(surface, /borderTopLeftRadius: opaque \? 0/);
+  assert.match(surface, /borderTopRightRadius: opaque \? 0/);
+
 });
 
 test('the production map detail uses the compact Offer list before menus', () => {
@@ -208,4 +221,13 @@ test('marker details open without a settling animation before their buttons can 
   const markerPress = screen.slice(screen.indexOf('const handleMarkerPress ='), screen.indexOf('const handlePlacePress ='));
   assert.match(markerPress, /jumpTo\('medium'\)/);
   assert.doesNotMatch(markerPress, /snapTo\('medium'\)/);
+});
+
+
+test('sheet and floating actions move under one parent instead of separate transforms', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  assert.match(screen, /style=\{\[styles\.sectionTransition, \{ transform: \[\{ translateY: sheetTranslateY \}\] \}\]\}/);
+  assert.equal((screen.match(/parentOwnsMotion/g) ?? []).length, 4);
+  const actions = screen.slice(screen.indexOf('{assistant.enabled && !isSearchOpen'), screen.indexOf('{isSearchOpen ? ('));
+  assert.doesNotMatch(actions, /transform: \[\{ translateY: sheetTranslateY/);
 });

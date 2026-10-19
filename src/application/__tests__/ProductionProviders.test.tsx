@@ -7,6 +7,11 @@ import { initializeI18n } from '../../v2/shared/i18n';
 import { theme } from '../../v2/shared/theme';
 import ProductionProviders from '../ProductionProviders';
 import { useForegroundWakeWord, type WakeWordAdapter } from '../../v2/modules/voice-assistant';
+import { useAppDialog } from '../../v2/shared/components/AppDialogProvider';
+import { i18n } from '../../v2/app/i18n';
+import { resources } from '../../v2/app/i18n/resources';
+import { Pressable } from 'react-native';
+import { fireEvent } from '@testing-library/react-native';
 
 const mockUseFonts = jest.fn();
 const mockWakeWordAdapter: WakeWordAdapter = {
@@ -39,9 +44,21 @@ const FontProbe = styled.Text`
 const mockedInitializeI18n = jest.mocked(initializeI18n);
 
 describe('ProductionProviders font initialization', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.init({ resources, lng: 'ko', initAsync: false, interpolation: { escapeValue: false } });
     mockUseFonts.mockReturnValue([true, null]);
     mockedInitializeI18n.mockResolvedValue(undefined);
+  });
+
+  test('실제 앱 실행 경로에 PingDom 확인창을 제공한다', async () => {
+    function DialogProbe() {
+      const dialog = useAppDialog();
+      return <Pressable accessibilityLabel="open-dialog" onPress={() => dialog.show('앱 디자인 확인창')} />;
+    }
+    await render(<ProductionProviders><DialogProbe /></ProductionProviders>);
+    await fireEvent.press(await screen.findByLabelText('open-dialog'));
+    expect(screen.getByTestId('app-dialog')).toBeVisible();
+    expect(screen.getByText('앱 디자인 확인창')).toBeVisible();
   });
 
   test('실제 앱 실행 경로에서 네이티브 호출어 어댑터를 하위 화면에 주입한다', async () => {

@@ -62,6 +62,7 @@ test('one exploration media item is rendered as one image instead of thumbnail d
     id: 18,
     name: '경복궁',
     address: '서울 종로구 사직로 161',
+    imageUrl: 'https://cdn.example.test/stale-card-thumbnail.jpg',
   }, undefined, undefined, null, undefined, {
     placeId: 18,
     media: [{

@@ -1,5 +1,6 @@
+import type { AppDialogAction } from '../../../../shared/components/AppDialogProvider';
 import React from 'react';
-import { Alert, Linking } from 'react-native';
+import { Linking } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -30,7 +31,7 @@ function alertMessages(spy: jest.SpyInstance) {
   return spy.mock.calls.map((call) => call[0] as string);
 }
 
-// The photo source picker is an Alert; pick one of its buttons the way a user would.
+// Exercise the dialog actions; shared dialog rendering is verified separately.
 async function chooseAvatarOption(
   user: ReturnType<typeof import('@testing-library/react-native').userEvent.setup>,
   alertSpy: jest.SpyInstance,
@@ -133,7 +134,7 @@ describe('ProfileEditScreen', () => {
   test('새 비밀번호가 8자 미만이면 요청을 보내지 않는다', async () => {
     jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
     const changePassword = jest.spyOn(profileApi, 'changePassword');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
 
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
@@ -149,7 +150,7 @@ describe('ProfileEditScreen', () => {
   test('새 비밀번호와 확인이 다르면 요청을 보내지 않는다', async () => {
     jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
     const changePassword = jest.spyOn(profileApi, 'changePassword');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
 
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
@@ -166,7 +167,7 @@ describe('ProfileEditScreen', () => {
   test('현재 비밀번호 없이 새 비밀번호만 입력하면 막는다', async () => {
     jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
     const changePassword = jest.spyOn(profileApi, 'changePassword');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
 
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
@@ -237,7 +238,7 @@ describe('ProfileEditScreen', () => {
   test('비밀번호 API 오류 코드는 인증 토큰 오류와 현재 비밀번호 오류를 혼동하지 않는다', async () => {
     jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
     const changePassword = jest.spyOn(profileApi, 'changePassword');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
     await screen.findByDisplayValue('pingdom_user');
@@ -268,7 +269,7 @@ describe('ProfileEditScreen', () => {
       }),
     );
     const changePassword = jest.spyOn(profileApi, 'changePassword');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
     await renameUsername(user);
@@ -293,7 +294,7 @@ describe('ProfileEditScreen', () => {
         status: 400,
       }),
     );
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
     const onBack = jest.fn();
     const { queryClient, user } = await renderWithProviders(
       <ProfileEditScreen onBack={onBack} />,
@@ -346,7 +347,7 @@ describe('ProfileEditScreen', () => {
   test('아이디는 서버 계약의 4~50자 범위를 벗어나면 요청하지 않는다', async () => {
     jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
     const changeUsername = jest.spyOn(profileApi, 'changeUsername');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
     await renameUsername(user, 'abc');
@@ -361,7 +362,7 @@ describe('ProfileEditScreen', () => {
     const permission = jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync);
     const launchPicker = jest.mocked(ImagePicker.launchImageLibraryAsync);
     const changeImage = jest.spyOn(profileApi, 'changeProfileImage');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
     permission.mockResolvedValueOnce({ granted: false } as never);
@@ -385,7 +386,7 @@ describe('ProfileEditScreen', () => {
       canceled: false,
     } as never);
     const changeImage = jest.spyOn(profileApi, 'changeProfileImage');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
     await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
@@ -407,7 +408,7 @@ describe('ProfileEditScreen', () => {
         canceled: false,
       } as never);
     const changeImage = jest.spyOn(profileApi, 'changeProfileImage');
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
     const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
 
     await screen.findByTestId('v2-profile-edit-avatar-image');
@@ -450,7 +451,7 @@ describe('ProfileEditScreen', () => {
     async function setupWithImage() {
       jest.spyOn(profileApi, 'getProfile')
         .mockResolvedValue({ ...PROFILE, profileImageUrl: 'https://cdn/old.jpg' });
-      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
       const view = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
       await screen.findByTestId('v2-profile-edit-avatar-image');
       return { ...view, alertSpy };
@@ -642,3 +643,8 @@ describe('ProfileEditScreen', () => {
     expect(onBack).toHaveBeenCalled();
   });
 });
+
+const mockDialog = { show: jest.fn<void, [string, string?, AppDialogAction[]?, { cancelable?: boolean; onDismiss?: () => void }?]>() };
+jest.mock('../../../../shared/components/AppDialogProvider', () => ({
+  ...jest.requireActual('../../../../shared/components/AppDialogProvider'), useAppDialog: () => mockDialog,
+}));

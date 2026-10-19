@@ -54,6 +54,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     case 'age':
       return (
         <BirthYearSelectionScreen
+          initialYear={birthYear}
           onBack={() => setStep('country')}
           onNext={(year) => {
             setBirthYear(year);

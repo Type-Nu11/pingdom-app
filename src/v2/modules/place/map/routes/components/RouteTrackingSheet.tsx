@@ -57,7 +57,7 @@ export default function RouteTrackingSheet(props: Props) {
             <Maneuver>
               <ManeuverIcon accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
                 style={{ backgroundColor: theme.liquidGlass.category.activeTint }}>
-                {loading ? <ActivityIndicator color={theme.colors.primary} /> : props.mode === 'walk' ? <WalkIcon /> : props.mode === 'transit' ? <TransitIcon /> : <CarIcon />}
+                {loading ? <ActivityIndicator color={theme.colors.primary} /> : props.mode === 'walk' ? <WalkIcon color={theme.colors.primary} /> : props.mode === 'transit' ? <TransitIcon color={theme.colors.primary} /> : <CarIcon color={theme.colors.primary} />}
               </ManeuverIcon>
               {distance ? <GuidanceText testID="route-tracking-distance" accessible accessibilityLabel={t('routes.tracking.distance', { distance })}>
                 <Text style={[theme.typography.title1Bold, { color: ink }]}>{distance}</Text>

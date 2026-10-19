@@ -1,5 +1,5 @@
 import { Text as AppText } from '../../../../../../shared/components/Typography';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,8 @@ import styled from 'styled-components/native';
 
 import { createPlaceDetailQueryOptions } from '../../../../../place/detail';
 import { usePlaceExplorationMediaList } from '../../../../../place/exploration';
-import { useInfiniteCheckIns } from '../../../../../place/check-ins';
+import { useInfiniteMyReviews } from '../../../hooks/useProfile';
+import { myVerifiedReviews } from '../model/myVerifiedReviews';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../../hooks/useBookmarks';
 import { ErrorState, HeaderBackButton } from '../../../../../../shared/components';
 import VerifiedPlaceCard from '../components/VerifiedPlaceCard';
@@ -23,26 +24,25 @@ import { getVerifiedPlaceGridCardWidth, VERIFIED_PLACE_GRID_GAP, VERIFIED_PLACE_
 
 export type VerifiedPlacesScreenProps = {
   onBack: () => void;
-  onOpenPlace: (placeId: number) => void;
+  onOpenReview: (reviewId: number) => void;
 };
 
-export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPlacesScreenProps) {
+export default function VerifiedPlacesScreen({ onBack, onOpenReview }: VerifiedPlacesScreenProps) {
   const { t } = useTranslation();
   const [listWidth, setListWidth] = useState(0);
   const cardWidth = getVerifiedPlaceGridCardWidth(listWidth);
-  // Each check-in costs one place detail request, so a page here is a fan-out of
-  // the same size. A page of 10 keeps that burst to roughly one screen's worth
-  // of cards instead of loading two screens ahead.
-  const checkInsQuery = useInfiniteCheckIns(VERIFIED_PLACES_PAGE_SIZE);
+  const reviewsQuery = useInfiniteMyReviews();
   const { bookmarkedPlaceIds } = useBookmarkedPlaceIds();
   const toggleBookmark = useToggleBookmark();
 
-  const placeIds = useMemo(() => {
-    const ids = (checkInsQuery.data?.pages ?? [])
-      .flatMap((page) => page.checkIns)
-      .map((checkIn) => checkIn.placeId);
-    return Array.from(new Set(ids));
-  }, [checkInsQuery.data]);
+  const reviews = useMemo(() => myVerifiedReviews(
+    reviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [],
+  ), [reviewsQuery.data]);
+  const { fetchNextPage, hasNextPage, isFetching, isError } = reviewsQuery;
+  useEffect(() => {
+    if (!reviews.length && hasNextPage && !isFetching && !isError) void fetchNextPage();
+  }, [reviews.length, hasNextPage, isFetching, isError, fetchNextPage]);
+  const placeIds = reviews.map((review) => review.placeId);
 
   const placeDetailQueries = useQueries({
     queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
@@ -52,12 +52,12 @@ export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPl
   const listState = toVerifiedPlaceListState(
     toVerifiedPlaceEntries(placeIds, placeDetailQueries),
   );
-  const listData: VerifiedPlaceEntry[] = checkInsQuery.isLoading
+  const listData: VerifiedPlaceEntry[] = reviewsQuery.isLoading
     ? SKELETON_ENTRIES
     : listState.kind === 'ready' ? listState.entries : [];
 
   const retry = () => {
-    void checkInsQuery.refetch();
+    void reviewsQuery.refetch();
     placeDetailQueries.forEach((query) => void query.refetch());
   };
 
@@ -69,7 +69,7 @@ export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPl
         <Spacer />
       </TopBar>
 
-      {checkInsQuery.isError || listState.kind === 'error' ? (
+      {reviewsQuery.isError || listState.kind === 'error' ? (
         <ErrorState
           actionLabel={t('myPage.retry')}
           description={t('myPage.verifiedPlaces.error')}
@@ -89,8 +89,8 @@ export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPl
         ListEmptyComponent={cardWidth !== null ? <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText> : null}
         numColumns={2}
         onEndReached={() => {
-          if (checkInsQuery.hasNextPage && !checkInsQuery.isFetchingNextPage) {
-            void checkInsQuery.fetchNextPage();
+          if (reviewsQuery.hasNextPage && !reviewsQuery.isFetchingNextPage) {
+            void reviewsQuery.fetchNextPage();
           }
         }}
         onEndReachedThreshold={0.5}
@@ -102,7 +102,10 @@ export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPl
               favorited={bookmarkedPlaceIds.has(entry.placeId)}
               imageUrl={imageUrlsByPlaceId[String(entry.placeId)]?.[0] ?? null}
               name={entry.place.name}
-              onPress={() => onOpenPlace(entry.placeId)}
+              onPress={() => {
+                const review = reviews.find((item) => item.placeId === entry.placeId);
+                if (review) onOpenReview(review.reviewId);
+              }}
               onToggleFavorite={() => toggleBookmark.mutate({
                 nextBookmarked: !bookmarkedPlaceIds.has(entry.placeId),
                 placeId: entry.placeId,
@@ -118,10 +121,8 @@ export default function VerifiedPlacesScreen({ onBack, onOpenPlace }: VerifiedPl
   );
 }
 
-const VERIFIED_PLACES_PAGE_SIZE = 10;
-
 // Negative ids cannot collide with a real place id, so the skeleton placeholders
-// keep stable FlatList keys while the first check-in page loads.
+// keep stable FlatList keys while the first review page loads.
 const SKELETON_ENTRIES: VerifiedPlaceEntry[] = [-1, -2, -3, -4].map((placeId) => ({
   isError: false,
   isLoading: true,

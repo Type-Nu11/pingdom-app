@@ -75,6 +75,15 @@ async function renderReservations(ui: ReactElement, language: 'ko' | 'en' = 'ko'
 }
 
 describe('ReservationBottomSheet', () => {
+  test('목록을 배경과 동일한 하단 경계와 모서리 안에 가둔다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult());
+    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} sheetChromeBottom={new Animated.Value(300)} />);
+    expect(screen.getByTestId('reservations-sheet-content-viewport')).toHaveStyle({
+      position: 'absolute', overflow: 'hidden', top: 0, bottom: 308, left: 8, right: 8,
+      borderBottomLeftRadius: 48, borderBottomRightRadius: 48,
+    });
+  });
+
   test('loading, empty, error 상태를 구분한다', async () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({ isLoading: true }));
     const view = await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
@@ -236,4 +245,46 @@ test('nearby lookup failure is not rendered as a successful empty list', async (
   expect(screen.queryByTestId('nearby-reservations-empty')).toBeNull();
   await userEvent.setup().press(screen.getByText('다시 시도'));
   expect(retry).toHaveBeenCalledTimes(1);
+});
+
+test('예약 시트 제목은 다른 페이지 시트와 같이 핸들 아래 13dp에서 Headline1/Bold로 시작한다', async () => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  const onMoveShouldSetResponderCapture = jest.fn();
+  await renderReservations(
+    <ReservationBottomSheet
+      {...bottomSheet}
+      {...navigation}
+      panHandlers={{ onMoveShouldSetResponderCapture } as GestureResponderHandlers}
+    />,
+  );
+  expect(screen.getByLabelText('예약 패널 크기 조절')).toHaveStyle({ height: 19, paddingTop: 6 });
+  expect(screen.getByRole('header')).toHaveStyle({ color: '#000000', fontSize: 20, lineHeight: 26 });
+  expect(screen.getByText('현재 예약 가능 장소를 찾아드려요!')).toHaveStyle({ fontSize: 14, lineHeight: 18, marginTop: 4 });
+  expect(screen.getByTestId('reservation-sheet-header').props.onMoveShouldSetResponderCapture).toBe(onMoveShouldSetResponderCapture);
+});
+
+test.each([
+  ['medium', 8],
+  ['expanded', 0],
+] as const)('%s 예약 시트는 펼치면 시트와 함께 전폭이 되어 내용이 가장자리에서 16dp에 놓인다', async (snapPoint, inset) => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />);
+  expect(screen.getByTestId('reservation-sheet-inner')).toHaveStyle({ paddingLeft: inset });
+});
+
+test.each([
+  ['expanded', 130, 1],
+  ['medium', 300, 0],
+] as const)('%s 예약 시트는 Figma -Up 프레임처럼 펼친 상태에서만 불투명 Secondary/Assistive 면을 깐다', async (snapPoint, chromeBottom, opacity) => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  await renderReservations(
+    <ReservationBottomSheet
+      {...bottomSheet}
+      {...navigation}
+      expandedTranslateY={130}
+      sheetChromeBottom={new Animated.Value(chromeBottom)}
+      snapPoint={snapPoint}
+    />,
+  );
+  expect(screen.getByTestId('sheet-expanded-fill')).toHaveStyle({ backgroundColor: theme.colors.backgroundAssistive, opacity });
 });

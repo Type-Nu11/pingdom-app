@@ -177,6 +177,7 @@ export const thaiSharedResources = {
   "common": {
     "missingTranslation": "ไม่มีคำแปล",
     "navigation": {
+      "confirm": "ตกลง",
       "back": "ย้อนกลับ",
       "close": "ปิด",
       "exitHint": "กดย้อนกลับอีกครั้งเพื่อออกจากแอป",
@@ -886,7 +887,7 @@ export const thaiSharedResources = {
       "light": "โหมดสว่าง",
       "section": "รูปแบบการแสดงผล",
       "selected": "เลือกแล้ว",
-      "system": "ใช้การตั้งค่าระบบ",
+      "system": "ใช้ธีมของระบบ",
       "title": "รูปแบบการแสดงผล"
     },
     "language": {

@@ -37,3 +37,6 @@ export {
   clearActiveForegroundVisitVerificationSession,
   visitVerificationSessionQueryKeys,
 } from './model/visitVerificationSession';
+
+export { createPlaceReviewSummaryQueryOptions, useReviewEditMedia, useUpdatePlaceReview, useDeletePlaceReview } from './hooks/usePlaceReviews';
+export type { PlaceReviewSummary, UpdatePlaceReviewBody } from './api/visitVerificationApi';

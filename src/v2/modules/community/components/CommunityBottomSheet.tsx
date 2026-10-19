@@ -29,7 +29,6 @@ import CountryFilterMenu from './CountryFilterMenu';
 import PostCard from './PostCard';
 import PostOverflowMenu from './PostOverflowMenu';
 
-const SHEET_RESTING_GAP = 8;
 // Figma `FAB/Write` sits 12px above the 64px bottom navigation bar.
 const NAVIGATION_BAR_HEIGHT = 64;
 const WRITE_FAB_NAVIGATION_GAP = 12;
@@ -52,6 +51,8 @@ const FILTER_MENU_GAP = 8;
 
 export type CommunityBottomSheetProps = {
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   height: number;
   mediumTranslateY: number;
   onHandlePress: () => void;
@@ -63,12 +64,14 @@ export type CommunityBottomSheetProps = {
   onOpenWrite: (categoryId?: string) => void;
   panHandlers: GestureResponderHandlers;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
 };
 
 export default function CommunityBottomSheet({
   collapsedTranslateY,
+  expandedTranslateY = 0,
   height,
   mediumTranslateY,
   onHandlePress,
@@ -80,6 +83,7 @@ export default function CommunityBottomSheet({
   onOpenWrite,
   panHandlers,
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
 }: CommunityBottomSheetProps) {
@@ -128,23 +132,14 @@ export default function CommunityBottomSheet({
     inputRange: [mediumTranslateY, fadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, themedGlass.sheet.bottomRadius],
-  });
 
   // Each item carries its own category; the selected category only backs the
   // tag for an item the server returned without one.
   const now = new Date();
   const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
+  // Half-sheet chips float as glass (Shadow/Float); the expanded page uses flat chips.
+  const isExpanded = snapPoint === 'expanded';
+  const chipShadowStyle = isExpanded ? undefined : { boxShadow: themedGlass.category.shadow };
 
   const openCountryMenu = () => {
     const fallbackTop = insets.top + 160;
@@ -196,35 +191,20 @@ export default function CommunityBottomSheet({
   };
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        style={{ boxShadow: themedGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={themedGlass.sheet.rim}
-          style={{ borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius }}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={themedGlass.sheet.tint}
-            topRimOnly
-          />
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow>
-
-      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
+    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
+      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
         <HandleArea {...panHandlers}>
           <HandleButton accessibilityLabel={t('community.sheetAdjust')} accessibilityRole="adjustable" onPress={onHandlePress}>
             <Handle />
           </HandleButton>
         </HandleArea>
 
-        <Animated.View pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={{ flex: 1, opacity }}>
+        <Animated.View
+          pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
+          style={{ flex: 1, opacity }}
+        >
+          {/* The title row and chips are a drag area too; taps and horizontal chip swipes still work. */}
+          <View {...panHandlers} testID="v2-community-sheet-header">
           <TitleRow>
             <Title accessibilityRole="header">{t('community.title')}</Title>
             <FilterButton
@@ -245,11 +225,12 @@ export default function CommunityBottomSheet({
           ) : categoriesQuery.isError ? null : (
             <CategoryScroll contentContainerStyle={CATEGORY_CONTENT_STYLE} horizontal showsHorizontalScrollIndicator={false}>
               <CategoryChip
+                $expanded={isExpanded}
                 $selected={selectedCategoryId === null}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: selectedCategoryId === null }}
                 onPress={() => setSelectedCategoryId(null)}
-                style={{ boxShadow: themedGlass.category.shadow }}
+                style={chipShadowStyle}
                 testID="v2-community-sheet-category-all"
               >
                 <CategoryLabel $selected={selectedCategoryId === null}>{t('community.categories.all')}</CategoryLabel>
@@ -258,9 +239,10 @@ export default function CommunityBottomSheet({
                 const selected = category.categoryId === selectedCategoryId;
                 return (
                   <CategoryChip
+                    $expanded={isExpanded}
                     $selected={selected}
                     accessibilityRole="tab"
-                    style={{ boxShadow: themedGlass.category.shadow }}
+                    style={chipShadowStyle}
                     accessibilityState={{ selected }}
                     key={category.categoryId}
                     onPress={() => {
@@ -274,6 +256,8 @@ export default function CommunityBottomSheet({
               })}
             </CategoryScroll>
           )}
+
+          </View>
 
           <ListViewport style={snapPoint === 'medium' ? MEDIUM_VIEWPORT_STYLE : undefined}>
             {categoriesQuery.isError ? (
@@ -311,7 +295,7 @@ export default function CommunityBottomSheet({
             )}
           </ListViewport>
         </Animated.View>
-      </GlassStyles.SheetInner>
+      </GlassStyles.MapSheetSurface>
 
       {snapPoint === 'expanded' ? (
         // Pinned to the screen like MapSheetBottomNavigation: the sheet
@@ -394,15 +378,23 @@ const FilterButton = styled(Pressable)`
 `;
 const Title = styled(AppText)`color: ${({ theme }) => theme.colors.labelStrong}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;
 
+// Figma Community (10250:35439/35556): the 44px title row sits right under the handle
+// and the chip row follows it with no gap.
 const CategoryScroll = styled.ScrollView`flex-grow: 0; height: 34px; overflow: visible;`;
-const CategoryChip = styled.Pressable<{ $selected: boolean }>`
+// Figma Community (10250:35439) glass chips vs Community-Up (10250:35556) flat
+// chips: Background/Normal with a 1px Fill/Neutral stroke when unselected.
+const CategoryChip = styled.Pressable<{ $expanded: boolean; $selected: boolean }>`
   height: 34px;
   justify-content: center;
   padding: 0 11px;
   border-width: 1px;
-  border-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeBorder : theme.liquidGlass.category.border)};
+  border-color: ${({ $expanded, $selected, theme }) => (
+    $selected ? theme.liquidGlass.category.activeBorder : $expanded ? theme.colors.fillNeutral : theme.liquidGlass.category.border
+  )};
   border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.liquidGlass.category.tint)};
+  background-color: ${({ $expanded, $selected, theme }) => (
+    $selected ? theme.liquidGlass.category.activeTint : $expanded ? theme.colors.background : theme.liquidGlass.category.tint
+  )};
 `;
 const CategoryLabel = styled(AppText)<{ $selected: boolean }>`
   color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};

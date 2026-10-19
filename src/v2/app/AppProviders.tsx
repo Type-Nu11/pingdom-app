@@ -1,4 +1,5 @@
 import './configureDomainMocks';
+import { AppDialogProvider } from '../shared/components/AppDialogProvider';
 import { PlaceMapComposition } from './PlaceMapComposition';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import React, { type PropsWithChildren, useEffect, useState } from 'react';
@@ -68,7 +69,7 @@ export default function AppProviders({ children, wakeWordAdapter }: PropsWithChi
               <AppErrorBoundary>
                 <QueryClientProvider client={queryClient}>
                   <WakeWordProvider adapter={wakeWordAdapter ?? sherpaWakeWordAdapter}>
-                    <PlaceMapComposition>{children}</PlaceMapComposition>
+                    <AppDialogProvider><PlaceMapComposition>{children}</PlaceMapComposition></AppDialogProvider>
                   </WakeWordProvider>
                 </QueryClientProvider>
               </AppErrorBoundary>

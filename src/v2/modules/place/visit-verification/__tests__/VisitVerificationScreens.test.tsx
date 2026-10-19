@@ -100,8 +100,14 @@ test.each(['LIGHT', 'DARK'] as const)('floating CTA keeps bright semibold text o
   expect(view.getByText('검증하기')).toHaveStyle({ color: '#F6F6F7', fontSize: 16, fontFamily: 'PretendardStdVariable-SemiBold', lineHeight: 21 });
   expect(view.getByTestId('visit-verification-map-cta')).toHaveStyle({
     backgroundColor: '#FF1956',
+    // Shadow/Inset light value is kept in dark mode (ReviewButton exception).
+    boxShadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)',
   });
   expect(view.getByTestId('visit-verification-map-cta-glass')).toBeOnTheScreen();
+  expect(view.getByTestId('visit-verification-map-cta-glass')).toHaveStyle({
+    backgroundColor: 'rgba(255, 25, 86, 0.56)',
+    paddingLeft: 18,
+  });
 });
 
 test('recent visits render the normal empty state', async () => {

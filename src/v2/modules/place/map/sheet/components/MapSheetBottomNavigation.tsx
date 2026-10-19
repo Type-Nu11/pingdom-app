@@ -1,16 +1,17 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
-import React, { createContext, memo, useContext, useMemo, useRef } from 'react';
+import React, { createContext, memo, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Platform, Pressable, Text, View, type PlatformOSType } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 import { useTheme } from 'styled-components/native';
 
 import CheckInAsset from '../../../../../../assets/v2/icons/place/checkin_svg.svg';
+import CheckInSelectedAsset from '../../../../../../assets/v2/icons/place/checkin_selected.svg';
 import CommunityActiveAsset from '../../../../../../assets/v2/icons/place/community-active.svg';
 import CommunityInactiveAsset from '../../../../../../assets/v2/icons/place/community-inactive.svg';
-import MapAsset from '../../../../../../assets/v2/icons/place/maping_svg.svg';
+import MapNavigationIcon from './MapNavigationIcon';
 import PlaceRecommendAsset from '../../../../../../assets/v2/icons/place/placerecommend.svg';
+import PlaceRecommendSelectedAsset from '../../../../../../assets/v2/icons/place/placerecommend_selected.svg';
 import { FavoriteIcon } from '../../../../../shared/components';
 import { lightLiquidGlass, type AppTheme } from '../../../../../shared/theme';
 import FrostedSurface from '../../presentation/components/FrostedSurface';
@@ -21,6 +22,10 @@ const NavigationHiddenContext = createContext(false);
 export const MapSheetNavigationHiddenProvider = NavigationHiddenContext.Provider;
 
 const NAVIGATION_SIDE_INSET = 24;
+// Figma Footer (7813:7003): 75px tabs overlap by 10px, so their centres sit 65px apart.
+const NAVIGATION_TAB_OVERLAP = 10;
+// Keep the lightweight thumb immediate; do not mount every page crossed in a swipe.
+const DRAG_PAGE_SETTLE_MS = 100;
 
 export type MapSheetNavigationTab = 'community' | 'favorites' | 'map' | 'recommendations' | 'reservations';
 
@@ -31,10 +36,11 @@ export const getMapSheetTabSurfaceColor = (
   return active ? liquidGlass.navigation.selectedTint : 'transparent';
 };
 
-// Place the Figma spacing above the system safe area so neither Android's
-// navigation buttons nor the iOS home indicator overlap the app's controls.
+// Figma pins the bar 16px above the screen edge. iOS follows it and lets the bar
+// sit over the home-indicator area; Android keeps clear of a visible system
+// navigation bar, which would otherwise cover the tabs.
 export const getMapSheetNavigationBottom = (bottomInset: number, platform: PlatformOSType = Platform.OS) => (
-  Math.max(16, bottomInset + (platform === 'ios' ? 16 : 10))
+  platform === 'ios' ? 16 : Math.max(16, bottomInset + 10)
 );
 
 // The collapsed sheet's entire handle must stay above the fixed navigation bar.
@@ -52,27 +58,6 @@ type Props = {
   sheetTranslateY: Animated.Value;
 };
 
-const InactiveMapIcon = ({ color }: { color: string }) => (
-  // Reuse maping_svg.svg's outer contour, without its filled body or center hole.
-  // The padded viewBox leaves room for the outline instead of clipping its edges.
-  <Svg height={24} viewBox="-1 -1 20 23" width={21}>
-    <Path
-      d="M9 0C11.3869 0 13.6764 0.934087 15.3643 2.59668C17.0521 4.25932 18 6.51489 18 8.86621C17.9999 11.2174 17.052 13.4722 15.3643 15.1348L9 20.4004L2.63672 15.1348C1.80101 14.3116 1.13787 13.3343 0.685547 12.2588C0.233268 11.1833 5.22794e-05 10.0304 0 8.86621C0 7.70194 0.233217 6.54829 0.685547 5.47266C1.13787 4.3972 1.80105 3.41978 2.63672 2.59668C4.32447 0.934296 6.61328 6.38185e-05 9 0Z"
-      fill="none"
-      stroke={color}
-      strokeLinejoin="round"
-      strokeWidth={1.8}
-      testID="map-navigation-map-outline"
-    />
-  </Svg>
-);
-
-const ActiveReservationIcon = ({ colors, foreground }: { colors: AppTheme['colors']; foreground: string }) => (
-  <Svg height={24} viewBox="0 0 24 24" width={24}>
-    <Path d="M3 10.2 12 2l9 8.2v8.3A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5Z" fill={colors.primary} />
-    <Path d="m8.2 12.4 2.4 2.4 5.2-5.2" fill="none" stroke={foreground} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" testID="map-navigation-reservation-check" />
-  </Svg>
-);
 
 const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
   activeTab,
@@ -99,45 +84,76 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
   const bar = useRef<View>(null);
   const bounds = useRef({ left: NAVIGATION_SIDE_INSET, width: 0 });
   const dragging = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [barWidth, setBarWidth] = useState(0);
+  const dragIndicatorX = useRef(new Animated.Value(0)).current;
   const lastDragTab = useRef<MapSheetNavigationTab | null>(null);
+  const pendingPage = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigation = useRef({ activeTab, tabs });
   navigation.current = { activeTab, tabs };
+  const cancelPendingPage = () => {
+    if (pendingPage.current !== null) clearTimeout(pendingPage.current);
+    pendingPage.current = null;
+  };
+  useEffect(() => cancelPendingPage, []);
   const measureBar = () => bar.current?.measureInWindow((left, _top, width) => {
-    if (width > 8) bounds.current = { left, width };
+    if (width > 8) {
+      bounds.current = { left, width };
+      setBarWidth(width);
+    }
   });
   const swipe = useMemo(() => {
+    const openHoveredPage = () => {
+      cancelPendingPage();
+      const current = navigation.current;
+      const target = current.tabs.find(tab => tab.id === lastDragTab.current);
+      if (target && target.id !== current.activeTab) target.onPress?.();
+    };
     const selectAt = (pageX: number) => {
       const { left, width } = bounds.current;
       if (width <= 8 || !Number.isFinite(pageX)) return;
       const current = navigation.current;
+      const step = (width - 8 - NAVIGATION_TAB_OVERLAP) / current.tabs.length;
+      const tabWidth = step + NAVIGATION_TAB_OVERLAP;
+      const firstCenter = 4 + tabWidth / 2;
+      const x = pageX - left;
+      const center = Math.max(firstCenter, Math.min(firstCenter + step * (current.tabs.length - 1), x));
+      dragIndicatorX.setValue(center - Math.min(78, tabWidth) / 2);
       const index = Math.max(0, Math.min(current.tabs.length - 1,
-        Math.floor((pageX - left - 4) / ((width - 8) / current.tabs.length))));
+        Math.round((center - firstCenter) / step)));
       const tab = current.tabs[index];
       if (tab.id === lastDragTab.current) return;
       lastDragTab.current = tab.id;
-      if (tab.id !== current.activeTab) tab.onPress?.();
+      cancelPendingPage();
+      if (tab.id !== current.activeTab) {
+        pendingPage.current = setTimeout(openHoveredPage, DRAG_PAGE_SETTLE_MS);
+      }
     };
     const claim = (_: unknown, gesture: { dx: number; dy: number }) => (
       Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5
     );
     const finish = () => {
+      cancelPendingPage();
       dragging.current = false;
+      setIsDragging(false);
       lastDragTab.current = null;
     };
     return PanResponder.create({
+      onStartShouldSetPanResponderCapture: () => { measureBar(); return false; },
       onMoveShouldSetPanResponder: claim,
       onMoveShouldSetPanResponderCapture: claim,
       onPanResponderGrant: (_, gesture) => {
         dragging.current = true;
+        setIsDragging(true);
         lastDragTab.current = navigation.current.activeTab;
         selectAt(gesture.moveX);
       },
       onPanResponderMove: (_, gesture) => selectAt(gesture.moveX),
-      onPanResponderRelease: finish,
+      onPanResponderRelease: () => { openHoveredPage(); finish(); },
       onPanResponderTerminate: finish,
       onPanResponderTerminationRequest: () => false,
     });
-  }, []);
+  }, [dragIndicatorX]);
 
   if (hidden) return null;
 
@@ -151,12 +167,16 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
         },
       ]}
     >
-      <View {...swipe.panHandlers} ref={bar} onLayout={event => { bounds.current.width = event.nativeEvent.layout.width; measureBar(); }} collapsable={false} style={styles.navigationShadow} testID="map-navigation-swipe">
+      <View {...swipe.panHandlers} ref={bar} onLayout={event => {
+        bounds.current.width = event.nativeEvent.layout.width;
+        setBarWidth(event.nativeEvent.layout.width);
+        measureBar();
+      }} collapsable={false} style={styles.navigationShadow} testID="map-navigation-swipe">
         <View style={styles.navigationBar} testID="map-navigation-bar">
         <FrostedSurface
           bottomShade={false}
           cornerRadius={32}
-          glassEffectStyle="regular"
+          glassEffectStyle="clear"
           highlightOpacity={liquidGlass.navigation.highlightOpacity}
           rimColor={liquidGlass.navigation.rim}
           pointerEvents="none"
@@ -164,24 +184,37 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
           testID="map-navigation-glass"
           tintColor={liquidGlass.navigation.tint}
         />
-          {tabs.map(({ id, label, onPress }) => {
+          {isDragging && barWidth > 8 ? (
+            <Animated.View pointerEvents="none" testID="map-navigation-drag-indicator" style={{
+              position: 'absolute', left: 0, top: 4, height: 56,
+              width: Math.min(78, (barWidth - 8 - NAVIGATION_TAB_OVERLAP) / tabs.length + NAVIGATION_TAB_OVERLAP),
+              borderRadius: 28, borderWidth: 1, borderColor: colors.glassStroke,
+              backgroundColor: liquidGlass.navigation.selectedTint,
+              transform: [{ translateX: dragIndicatorX }],
+            }} />
+          ) : null}
+          {tabs.map(({ id, label, onPress }, index) => {
             const active = selectedTab === id;
+            // Figma icons render 1:1 inside a 28px box: map 18×20.4, star 25×24, chat and house 28.
             const icon = id === 'map'
-              ? active
-                ? <MapAsset color={colors.primary} height={24} width={21} />
-                : <InactiveMapIcon color={colors.text} />
+              ? <MapNavigationIcon selected={active} color={active ? colors.primary : colors.labelNeutral} size={21} />
               : id === 'favorites'
-                ? <FavoriteIcon selected={active} size={24} />
+                ? <FavoriteIcon idleColor={colors.labelNeutral} selected={active} size={24} />
                 : id === 'community'
                   ? active
-                    ? <CommunityActiveAsset height={24} width={24} />
-                    : <CommunityInactiveAsset color={colors.text} height={24} width={24} />
+                    ? <CommunityActiveAsset height={28} width={28} />
+                    : <CommunityInactiveAsset color={colors.labelNeutral} height={28} width={28} />
                   : active
-                    ? <ActiveReservationIcon colors={colors} foreground={liquidGlass.primaryCta.foreground} />
-                    : <CheckInAsset color={colors.text} height={24} width={23} />;
+                    ? <CheckInSelectedAsset color={colors.primary} height={28} testID="map-navigation-reservations-selected-icon" width={28} />
+                    : <CheckInAsset color={colors.labelNeutral} height={22} width={21} />;
 
             return (
-              <MapTutorialTarget id={id} key={id} style={{ flex: 1 }}>
+              <MapTutorialTarget
+                id={id}
+                key={id}
+                style={index < tabs.length - 1 ? styles.navTabOverlap : styles.navTab}
+                testID={`map-navigation-${id}-tab`}
+              >
               <Pressable
                 accessibilityLabel={label}
                 accessibilityRole="tab"
@@ -194,7 +227,10 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 <View
                   style={[
                     styles.navItemSurface,
-                    { backgroundColor: getMapSheetTabSurfaceColor(active, liquidGlass) },
+                    {
+                      backgroundColor: getMapSheetTabSurfaceColor(active && !isDragging, liquidGlass),
+                      borderColor: active && !isDragging ? colors.glassStroke : 'transparent',
+                    },
                   ]}
                   testID={`map-navigation-${id}-surface`}
                 >
@@ -219,21 +255,27 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
           <FrostedSurface
             bottomShade={false}
             cornerRadius={32}
-            glassEffectStyle="regular"
+            glassEffectStyle="clear"
             highlightOpacity={liquidGlass.navigation.highlightOpacity}
             pointerEvents="none"
             rimColor={liquidGlass.navigation.rim}
             style={styles.sendButtonGlass}
             testID="map-navigation-recommendations-surface"
-            tintColor={selectedTab === 'recommendations'
-                ? liquidGlass.navigation.selectedTint
-                : liquidGlass.navigation.tint}
+            tintColor={liquidGlass.navigation.tint}
           >
-            <PlaceRecommendAsset
-              color={selectedTab === 'recommendations' ? colors.primary : colors.text}
-              height={24}
-              width={24}
-            />
+            {selectedTab === 'recommendations' ? (
+              <>
+                <View pointerEvents="none" style={styles.sendButtonSelected} testID="map-navigation-recommendations-selected" />
+                <PlaceRecommendSelectedAsset
+                  color={colors.primary}
+                  height={24}
+                  testID="map-navigation-recommendations-selected-icon"
+                  width={24}
+                />
+              </>
+            ) : (
+              <PlaceRecommendAsset color={colors.labelNeutral} height={24} width={24} />
+            )}
           </FrostedSurface>
       </Pressable>
       </MapTutorialTarget>
@@ -249,8 +291,12 @@ const createStyles = (
 ): Record<string, object> => ({
   navIcon: { alignItems: 'center', height: 28, justifyContent: 'center', width: 28 },
   navItem: { alignItems: 'center', flex: 1, justifyContent: 'center' },
-  navItemSurface: { alignItems: 'center', borderRadius: 28, gap: 2, height: 56, justifyContent: 'center', width: '100%', maxWidth: 78 },
-  navLabel: { color: colors.text, fontSize: 10, fontWeight: '500', lineHeight: 13 },
+  // The 1px border is always reserved so the dark Glass/Stroke does not shift the 7px icon inset.
+  // Figma places tab content about 1px right of centre (icons at x=25–29.5 in a 75px tab).
+  navItemSurface: { alignItems: 'center', borderRadius: 28, borderWidth: 1, height: 56, paddingLeft: 2, paddingTop: 6, width: '100%', maxWidth: 78 },
+  navLabel: { color: colors.labelNeutral, fontSize: 10, fontWeight: '500', lineHeight: 13 },
+  navTab: { flex: 1 },
+  navTabOverlap: { flex: 1, marginRight: -NAVIGATION_TAB_OVERLAP },
   navLabelActive: { color: colors.primary, fontWeight: '700' },
   navigationBar: { borderRadius: 32, flex: 1, flexDirection: 'row', height: 64, overflow: 'hidden', padding: 4 },
   navigationGlass: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: 32, overflow: 'hidden' },
@@ -271,4 +317,15 @@ const createStyles = (
     width: 64,
   },
   sendButtonGlass: { alignItems: 'center', borderRadius: 32, height: 64, justifyContent: 'center', overflow: 'hidden', width: 64 },
+  sendButtonSelected: {
+    backgroundColor: liquidGlass.navigation.selectedTint,
+    borderColor: colors.glassStroke,
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    left: 4,
+    position: 'absolute',
+    top: 4,
+    width: 56,
+  },
 });

@@ -344,3 +344,19 @@ describe('#416 브라질 포르투갈어 언어 설정', () => {
     expect(screen.queryByText('Coreano')).not.toBeOnTheScreen();
   });
 });
+
+test.each([
+  ['LIGHT', '#000000', '#0C0C0D', '#767680', '#EE2B2B'],
+  ['DARK', '#FFFFFF', '#F4F4F5', '#85858F', '#FF5A5A'],
+] as const)('%s 설정 목록은 Figma Setting/MenuRow 글꼴과 토큰 색을 쓴다', async (appearancePreference, title, label, assistive, error) => {
+  await renderWithProviders(
+    <SettingsScreen onBack={jest.fn()} onLogout={jest.fn(async () => undefined)} onOpenProfileEdit={jest.fn()} />,
+    { appearancePreference },
+  );
+  expect(screen.getByText('환경설정')).toHaveStyle({ color: title, fontFamily: 'PretendardStdVariable-Bold', fontSize: 18, lineHeight: 23 });
+  expect(screen.getByText('화면 모드')).toHaveStyle({ color: label, fontFamily: 'PretendardStdVariable-Medium', fontSize: 16, lineHeight: 21 });
+  expect(screen.getByText(appearancePreference === 'DARK' ? '다크 모드' : '라이트 모드'))
+    .toHaveStyle({ color: assistive, fontSize: 16, lineHeight: 21 });
+  expect(screen.getByText('로그아웃')).toHaveStyle({ color: assistive, fontFamily: 'PretendardStdVariable-Medium', fontSize: 16 });
+  expect(screen.getByText('회원 탈퇴')).toHaveStyle({ color: error, fontSize: 16 });
+});

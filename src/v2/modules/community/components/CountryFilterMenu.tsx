@@ -21,7 +21,7 @@ export type CountryFilterMenuProps = {
   visible: boolean;
 };
 
-// Figma `alert` (8241:46792): the same 200px frosted card as the post overflow
+// Figma `alert` (9939:38239): a 200px frosted card with 24px corners,
 // menu, one 52px row per country with the active one in `Primary/Normal`. The
 // design has no "all countries" row, so tapping the active country clears it.
 export default function CountryFilterMenu({
@@ -39,7 +39,9 @@ export default function CountryFilterMenu({
   const theme = useTheme();
 
   return (
-    <AnchoredMenu dismissLabel={t('community.filter.dismiss')} onClose={onClose} position={position} visible={visible}>
+    <AnchoredMenu dismissLabel={t('community.filter.dismiss')} onClose={onClose} position={position} visible={visible}
+      cornerRadius={24} tintColor={theme.colorScheme === 'light' ? 'rgba(255,255,255,0.88)' : theme.liquidGlass.fallbackSurface}
+      testID="v2-community-country-menu">
       {isLoading ? (
         <Skeleton variant="text" accessibilityLabel={t('community.filter.loading')} testID="v2-community-country-loading" style={{ padding: 12 }} />
       ) : isError ? (
@@ -90,7 +92,6 @@ const RowLabel = styled(AppText)<{ $selected: boolean }>`
   ${({ theme }) => textStyleCss(theme.typography.bodyMedium)}
 `;
 
-const StateRow = styled.View`height: 52px; align-items: center; justify-content: center;`;
 const StateColumn = styled.View`align-items: flex-start; gap: 8px; padding: 12px 8px;`;
 const StateText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
 const RetryButton = styled.Pressable`padding: 6px 14px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primaryAction};`;

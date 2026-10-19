@@ -72,7 +72,7 @@ export interface paths {
         put?: never;
         /**
          * 게시글 이미지 업로드
-         * @description JPEG/PNG 10MiB 이하. 검증 후 메타데이터를 제거해 저장하며 최대 10개의 본인 imageId를 게시글에 입력 순서대로 연결합니다. 미사용 이미지는 24시간 후 삭제 Outbox로 정리합니다.
+         * @description JPEG/PNG 20MiB 이하. 검증 후 메타데이터를 제거해 저장하며 최대 10개의 본인 imageId를 게시글에 입력 순서대로 연결합니다. 미사용 이미지는 24시간 후 삭제 Outbox로 정리합니다.
          */
         post: operations["uploadImage"];
         delete?: never;
@@ -134,6 +134,34 @@ export interface paths {
          * @description 게시글 제목, 본문, 연결 장소의 현재 표시 정보를 조회합니다.
          */
         get: operations["getPost"];
+        put?: never;
+        post?: never;
+        /**
+         * 본인 커뮤니티 게시글 삭제
+         * @description 본인 글은 숨김 상태에서도 삭제할 수 있습니다. 삭제 후 공개/내 목록·상세·댓글·좋아요 접근은 불가하며 반복 삭제는 404입니다. 댓글·좋아요·신고 이력은 보존하고 장소 연결은 제거합니다. 사진은 DB 삭제와 S3 삭제 Outbox를 함께 기록하며 실제 파일 삭제는 비동기입니다.
+         */
+        delete: operations["deletePost"];
+        options?: never;
+        head?: never;
+        /**
+         * 본인 커뮤니티 게시글 부분 수정
+         * @description 공개된 본인 글만 수정합니다. 누락 필드는 유지하고 countryCode/region의 null은 초기화합니다. 다른 필드의 null과 빈 요청은 400입니다. placeIds/imageIds는 최종 전체 목록이며 []는 제거합니다. 같은 글의 기존 사진과 본인 미사용·미만료 업로드 ID를 순서대로 지정합니다. 사진은 최대 10장, 단일 카테고리 및 기존 작성 제약을 유지합니다. 실패 시 글·장소·사진 변경은 롤백됩니다.
+         */
+        patch: operations["updatePost"];
+        trace?: never;
+    };
+    "/users/me/community/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 내 커뮤니티 게시글 목록
+         * @description JWT 사용자 본인의 글만 createdAt DESC, postId DESC 순으로 조회합니다. 숨김 글은 hidden=true로 포함하고 삭제 글은 제외합니다. 숨김 글은 공개 상세·수정 불가, 삭제 가능합니다. 마이페이지 미리보기는 limit=2를 사용합니다. page는 1부터, limit은 1~100이며 기본 20입니다.
+         */
+        get: operations["listMyPosts"];
         put?: never;
         post?: never;
         delete?: never;
@@ -289,7 +317,7 @@ export interface components {
             categoryId?: string;
             /**
              * @description 카테고리 표시 이름
-             * @example 여행
+             * @example 다이어리
              */
             categoryName?: string;
         };
@@ -302,7 +330,7 @@ export interface components {
             categoryId?: string;
             /**
              * @description 화면 표시용 카테고리 이름
-             * @example 장소
+             * @example 스팟
              */
             categoryName?: string;
         };
@@ -455,7 +483,7 @@ export interface components {
              */
             content: string;
             /**
-             * @description 연결할 장소 ID 목록. 장소 카테고리에서는 1개 이상 필수입니다.
+             * @description 연결할 장소 ID 목록. 스팟(PLACE) 카테고리에서는 1개 이상 필수입니다.
              * @example [
              *       1,
              *       2
@@ -530,6 +558,11 @@ export interface components {
              * @description 정상 상세 요청 횟수. 사용자별 고유 조회가 아님
              */
             viewCount?: number;
+            /**
+             * Format: date-time
+             * @description 마지막 본인 수정 시각. 수정 이력이 없으면 null
+             */
+            updatedAt?: string | null;
         };
         /** @description 표시 순서대로 정렬된 게시글 사진. position은 0부터 시작 */
         CommunityPostImageItem: {
@@ -635,6 +668,54 @@ export interface components {
             commentCount?: number;
             category?: components["schemas"]["Category"];
         };
+        /** @description 본인 공개 게시글 부분 수정. 누락은 유지, countryCode/region의 null만 초기화하며 나머지 null은 400 */
+        CommunityPostUpdateRequest: {
+            /**
+             * @description 단일 카테고리 ID. 누락은 유지
+             * @example TRAVEL
+             */
+            categoryId?: string;
+            /**
+             * @description 제목. 공백만 있는 값 불가, 누락은 유지
+             * @example 수정한 여행 후기
+             */
+            title?: string;
+            /**
+             * @description 본문. 공백만 있는 값 불가, 누락은 유지
+             * @example 수정한 본문
+             */
+            content?: string;
+            /**
+             * @description 연결 장소 전체 목록. []는 제거, PLACE 카테고리는 1개 이상 필요
+             * @example []
+             */
+            placeIds?: number[];
+            /**
+             * @description 최종 사진 ID 순서. 같은 글의 기존 사진과 본인 미사용 업로드만 허용. []는 모두 삭제
+             * @example [
+             *       12,
+             *       11
+             *     ]
+             */
+            imageIds?: number[];
+            /**
+             * @description ISO alpha-2 국가 코드. 누락은 유지, null은 초기화
+             * @example KR
+             */
+            countryCode?: string | null;
+            /**
+             * @description 표시 지역. 누락은 유지, null 또는 공백은 초기화
+             * @example 서울
+             */
+            region?: string | null;
+        };
+        /** @description 게시글 수정 결과 */
+        CommunityPostUpdateResponse: {
+            /** Format: int64 */
+            postId?: number;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
         /** @description 커뮤니티 신고 요청 */
         CommunityReportCreateRequest: {
             /**
@@ -687,6 +768,43 @@ export interface components {
             contactEmail?: string;
             contactPhone?: string;
         } | null;
+        /** @description 내 게시글 목록. 숨김 글 포함, 삭제 글 제외. createdAt DESC, postId DESC 정렬 */
+        MyCommunityPostListResponse: {
+            posts?: components["schemas"]["MyCommunityPostSummary"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            limit?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            hasNext?: boolean;
+        };
+        /** @description 본인 게시글 카드. hidden=true인 글은 공개 상세 조회와 수정 불가, 삭제 가능 */
+        MyCommunityPostSummary: {
+            /** Format: int64 */
+            postId?: number;
+            title?: string;
+            contentPreview?: string;
+            imageUrl?: string;
+            /** Format: int64 */
+            imageCount?: number;
+            countryCode?: string;
+            region?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            /** Format: int64 */
+            viewCount?: number;
+            /** Format: int64 */
+            likeCount?: number;
+            /** Format: int64 */
+            commentCount?: number;
+            category?: components["schemas"]["Category"];
+            hidden?: boolean;
+        };
         /** @description 게시글에 연결된 장소 */
         Place: {
             /**
@@ -1277,6 +1395,165 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deletePost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                postId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 삭제 성공 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description JWT 없음 또는 무효 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description POST_NOT_FOUND: 타인·이미 삭제·없는 글 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updatePost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                postId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityPostUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description 수정 성공. postId와 updatedAt 반환 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityPostUpdateResponse"];
+                };
+            };
+            /** @description 입력 제약, INVALID_CATEGORY/COUNTRY/IMAGE, DUPLICATE_PLACE 또는 PLACE_REQUIRED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description JWT 없음 또는 무효 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description POST_NOT_FOUND: 타인·숨김·삭제·없는 글, PLACE_NOT_FOUND: 연결 장소 없음 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMyPosts: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 카드와 totalElements/totalPages/hasNext 반환 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MyCommunityPostListResponse"];
+                };
+            };
+            /** @description 페이지 범위 오류 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                };
+            };
+            /** @description JWT 없음 또는 무효 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

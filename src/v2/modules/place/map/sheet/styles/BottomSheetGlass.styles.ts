@@ -45,6 +45,24 @@ export const SheetGlass = styled(FrostedSurface)`
   overflow: hidden;
 `;
 
+// The native content viewport follows the same animated bounds as the glass.
+// Clipping only the background cannot contain photos or other overflowing children.
+export const SheetContentViewport = styled(Animated.View)`
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+`;
+
+// Expanded Figma pages use a solid assistive surface over the resting glass.
+export const SheetExpandedFill = styled(Animated.View)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: ${({ theme }) => theme.colors.backgroundAssistive};
+`;
+
 export const SheetInner = styled.View<{ $clipContent?: boolean; $inset: number; $opaque?: boolean }>`
   flex: 1;
   background-color: ${({ $opaque, theme }) => ($opaque ? theme.colors.background : 'transparent')};

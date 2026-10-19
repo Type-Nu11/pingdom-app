@@ -1,3 +1,4 @@
+import MapSheetSurface from './MapSheetSurface';
 import Skeleton from '../../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
@@ -30,7 +31,6 @@ import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapShee
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
 import { normalizePlaceCategory } from '../../../core/placeCategory';
 import { formatDistance as formatLocalizedDistance } from '../../../../../shared/i18n/formatters';
-import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
 import { useTheme } from 'styled-components/native';
 import type { AppTheme } from '../../../../../shared/theme';
 
@@ -38,6 +38,8 @@ type FavoriteCategory = 'all' | 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 
 
 type FavoritePlacesBottomSheetProps = {
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   height: number;
   imageUrlsByPlaceId: Record<string, string[]>;
   hasNextPage: boolean;
@@ -62,12 +64,11 @@ type FavoritePlacesBottomSheetProps = {
   places: DecisionPlace[];
   pendingPlaceIds?: Record<string, boolean>;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
 };
 
-const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 const categories: Array<{
   Icon?: React.ComponentType<{ color?: string; height: number; width: number }>;
   id: FavoriteCategory;
@@ -183,6 +184,7 @@ const FavoritePlaceRow = ({
 
 export default function FavoritePlacesBottomSheet({
   collapsedTranslateY,
+  expandedTranslateY = 0,
   hasNextPage,
   height,
   imageUrlsByPlaceId,
@@ -207,12 +209,13 @@ export default function FavoritePlacesBottomSheet({
   places,
   pendingPlaceIds = {},
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
 }: FavoritePlacesBottomSheetProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { colors, liquidGlass: themedGlass } = theme;
+  const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const footerSpace = getMapSheetNavigationBottom(insets.bottom) + 64 + 16;
@@ -235,44 +238,10 @@ export default function FavoritePlacesBottomSheet({
     inputRange: [mediumTranslateY, contentFadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_BOTTOM_RADIUS],
-  });
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        style={{ boxShadow: themedGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={themedGlass.sheet.rim}
-          style={[
-            { borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius },
-          ]}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={themedGlass.sheet.tint}
-            topRimOnly
-          />
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow>
-
-      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
+    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="favorites-sheet-inner" testID="favorites-sheet">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
             accessibilityLabel={t('map.favorites.adjust')}
@@ -287,6 +256,8 @@ export default function FavoritePlacesBottomSheet({
           pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
           style={[styles.content, { opacity: contentOpacity }]}
         >
+          {/* The title and chips are a drag area too; horizontal chip swipes still scroll. */}
+          <View {...panHandlers} testID="favorites-sheet-header">
           <View style={styles.titleRow}>
             <AppText style={styles.title}>{t('map.navigation.favorites')}</AppText>
           </View>
@@ -295,6 +266,7 @@ export default function FavoritePlacesBottomSheet({
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.categoryScroll}
+            testID="favorites-category-scroll"
           >
             {categories.map(({ Icon, id, iconWidth = 21 }) => {
               const active = activeCategory === id;
@@ -313,6 +285,7 @@ export default function FavoritePlacesBottomSheet({
               );
             })}
           </ScrollView>
+          </View>
 
           <Animated.View style={[styles.listViewport, { height: listHeight }]}>
             <ScrollView
@@ -369,7 +342,7 @@ export default function FavoritePlacesBottomSheet({
             </ScrollView>
           </Animated.View>
         </Animated.View>
-      </GlassStyles.SheetInner>
+      </MapSheetSurface>
 
       <MapSheetBottomNavigation
         activeTab="favorites"
@@ -386,18 +359,18 @@ export default function FavoritePlacesBottomSheet({
 const createStyles = ({ colors, liquidGlass: glass }: AppTheme): Record<string, object> => ({
   categoryChip: {
     alignItems: 'center', backgroundColor: glass.category.tint, borderColor: glass.sheet.rim,
-    boxShadow: glass.category.shadow, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 12,
+    boxShadow: `0px 2px 8px -2px ${colors.shadowFloat}`, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 12,
   },
   categoryChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
   categoryContent: { gap: 8, paddingBottom: 10, paddingHorizontal: 16, paddingTop: 16 },
   categoryLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18, includeFontPadding: false },
   categoryLabelActive: { color: glass.category.activeForeground },
-  categoryScroll: { flexGrow: 0, height: 62, overflow: 'hidden' },
+  categoryScroll: { flexGrow: 0, height: 62, overflow: 'visible' },
   content: { flex: 1 },
   emptyBody: { color: colors.textMuted, fontSize: 13, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingTop: 12 },
   emptyTitle: { color: colors.textStrong, fontSize: 17, fontWeight: '800', marginTop: 12 },
-  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 7, height: 5, width: 56 },
+  handle: { backgroundColor: colors.secondaryNormal, borderRadius: 7, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 19, justifyContent: 'flex-start' },
   handleButton: { alignItems: 'center', height: 19, paddingTop: 6, width: 96 },
   imagePlaceholder: { alignItems: 'center', backgroundColor: colors.surfaceMuted, justifyContent: 'center' },

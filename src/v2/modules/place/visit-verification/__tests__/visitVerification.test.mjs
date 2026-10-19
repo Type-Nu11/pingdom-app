@@ -314,6 +314,8 @@ test('successful review submission refreshes place reviews and the current user 
     ['v2', 'places', 'entity', 17, 'reviews'],
     ['v2', 'users', 'me', 'reviews'],
     ['v2', 'places', 'entity', 17, 'detail'],
+    ['v2', 'places', 'entity', 17, 'card'],
+    ['v2', 'places', 'entity', 17, 'visit-decision'],
     ['v2', 'places', 'entity', 17, 'verification-media'],
     ['v2', 'places', 'entity', 17, 'exploration-media'],
     ['v2', 'visit-verification-sessions'],

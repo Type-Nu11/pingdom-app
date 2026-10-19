@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components/native';
 
 import BackIcon from '../assets/icons/back.svg';
+import { useHeaderGlassIconColors } from './headerGlassIcon';
 
 type HeaderBackButtonProps = {
   accessibilityLabel: string;
@@ -10,6 +11,7 @@ type HeaderBackButtonProps = {
 };
 
 export function HeaderBackButton({ accessibilityLabel, onPress, testID }: HeaderBackButtonProps) {
+  const iconColors = useHeaderGlassIconColors();
   return (
     <Button
       accessibilityLabel={accessibilityLabel}
@@ -18,7 +20,7 @@ export function HeaderBackButton({ accessibilityLabel, onPress, testID }: Header
       onPress={onPress}
       testID={testID}
     >
-      <BackIcon height={84} style={ICON_STYLE} width={80} />
+      <BackIcon {...iconColors} height={84} style={ICON_STYLE} width={80} />
     </Button>
   );
 }

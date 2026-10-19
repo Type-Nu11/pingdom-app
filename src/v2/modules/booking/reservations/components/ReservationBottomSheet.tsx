@@ -29,12 +29,9 @@ import { normalizePlaceCategory } from '../../../place/map/sheet';
 import { usePlaceExplorationMediaList } from '../../../place/exploration';
 import * as GlassStyles from '../../../place/map/sheet';
 import { useReservations } from '..';
-import { liquidGlass } from '../../../../shared/theme/liquidGlass';
 import { useTheme } from 'styled-components/native';
 import type { AppTheme } from '../../../../shared/theme';
 
-const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 
@@ -182,6 +179,7 @@ export default function ReservationBottomSheet({
   bookmarkedPlaceIds,
   bookmarkPendingPlaceIds,
   collapsedTranslateY,
+  expandedTranslateY = 0,
   height,
   isBookmarkStateLoading,
   isNearbyLoading = false,
@@ -199,12 +197,13 @@ export default function ReservationBottomSheet({
   onToggleBookmark,
   panHandlers,
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
 }: MapReservationSheetProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { colors, liquidGlass: themedGlass } = theme;
+  const { colors } = theme;
   const styles = React.useMemo(() => createStyles(colors), [colors]);
   const reservations = useReservations({ limit: 20, page: 1 });
   const items = reservations.data?.reservations ?? [];
@@ -222,53 +221,24 @@ export default function ReservationBottomSheet({
     inputRange: [mediumTranslateY, fadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_BOTTOM_RADIUS],
-  });
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        style={{ boxShadow: themedGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={themedGlass.sheet.rim}
-          style={{ borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius }}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={themedGlass.sheet.tint}
-            topRimOnly
-          />
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow>
-
-      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
+    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
+      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="reservation-sheet-inner" testID="reservations-sheet">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable accessibilityLabel={t('reservation.list.panelAdjust')} accessibilityRole="adjustable" onPress={onHandlePress} style={styles.handleButton}>
             <View style={styles.handle} />
           </Pressable>
         </View>
         <Animated.View pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={[styles.content, { opacity }]}>
-          <View style={styles.titleRow}>
-            <MapAsset color={colors.primary} height={20} width={18} />
-            <AppText accessibilityRole="header" style={styles.title}>{t('reservation.list.nearbyTitle')}</AppText>
+          {/* The header below the handle is also a drag area, so the sheet follows a swipe there. */}
+          <View {...panHandlers} testID="reservation-sheet-header">
+            <View style={styles.titleRow}>
+              <MapAsset color={colors.primary} height={20} width={18} />
+              <AppText accessibilityRole="header" style={styles.title}>{t('reservation.list.nearbyTitle')}</AppText>
+            </View>
+            <AppText style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</AppText>
           </View>
-          <AppText style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</AppText>
           <View style={[styles.listViewport, snapPoint === 'medium' && styles.listViewportMedium]}>
             <ScrollView contentContainerStyle={styles.listContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {nearbyError ? <ApiErrorState error={nearbyError} busy={nearbyBusy} onRetry={onRetryNearby} /> : null}
@@ -315,7 +285,7 @@ export default function ReservationBottomSheet({
             </ScrollView>
           </View>
         </Animated.View>
-      </GlassStyles.SheetInner>
+      </GlassStyles.MapSheetSurface>
       <MapSheetBottomNavigation
         activeTab="reservations"
         onOpenCommunity={onOpenCommunity}
@@ -330,9 +300,10 @@ export default function ReservationBottomSheet({
 
 const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   content: { flex: 1 },
-  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
-  handleArea: { alignItems: 'center', height: 36, justifyContent: 'center' },
-  handleButton: { alignItems: 'center', height: 36, justifyContent: 'center', width: 96 },
+  handle: { backgroundColor: colors.secondaryNormal, borderRadius: 3, height: 5, width: 56 },
+  // Same handle geometry as the other page sheets: handle 6dp from the top, content 13dp below it.
+  handleArea: { alignItems: 'center', height: 19, justifyContent: 'flex-start' },
+  handleButton: { alignItems: 'center', height: 19, paddingTop: 6, width: 96 },
   listContent: { paddingBottom: 120, paddingHorizontal: 16, paddingTop: 2 },
   listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 250, marginBottom: 0 },
@@ -360,7 +331,8 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   stateBody: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
   stateMark: { color: colors.primary, fontSize: 20, fontWeight: '900' },
   stateTitle: { color: colors.textStrong, fontSize: 14, fontWeight: '800', marginTop: 6 },
-  subtitle: { color: colors.textSecondary, fontSize: 14, marginTop: 2, paddingHorizontal: 16 },
-  title: { color: colors.textStrong, fontSize: 20, fontWeight: '800', letterSpacing: -0.4 },
+  // Figma CheckIn (7969:9887): Headline1/Bold title, Label/Regular subtitle 4dp below.
+  subtitle: { color: colors.textSecondary, fontSize: 14, includeFontPadding: false, lineHeight: 18, marginTop: 4, paddingHorizontal: 16 },
+  title: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', includeFontPadding: false, lineHeight: 26 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
 });

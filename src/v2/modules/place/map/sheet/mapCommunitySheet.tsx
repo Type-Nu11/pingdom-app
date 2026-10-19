@@ -4,6 +4,8 @@ import type { BottomSheetSnapPoint } from './hooks/useBottomSheet';
 
 export type MapCommunitySheetProps = {
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   height: number;
   mediumTranslateY: number;
   onHandlePress: () => void;
@@ -15,6 +17,7 @@ export type MapCommunitySheetProps = {
   onOpenWrite: (categoryId?: string) => void;
   panHandlers: GestureResponderHandlers;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
 };

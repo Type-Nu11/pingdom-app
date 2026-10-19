@@ -102,7 +102,7 @@ export const resources = {
       },
       common: {
         missingTranslation: 'Translation unavailable',
-        navigation: { back: 'Go back', close: 'Close', exitHint: 'Press back again to exit the app.', retry: 'Try again' },
+        navigation: { confirm: 'OK', back: 'Go back', close: 'Close', exitHint: 'Press back again to exit the app.', retry: 'Try again' },
         unsupportedFeature: {
           description: 'This feature is not currently supported in the app.',
           title: 'Not available in the app',
@@ -637,7 +637,7 @@ export const resources = {
           light: 'Light mode',
           section: 'Appearance',
           selected: 'Selected',
-          system: 'Use system setting',
+          system: 'Use system theme',
           title: 'Appearance',
         },
         language: {
@@ -979,7 +979,7 @@ export const resources = {
       },
       common: {
         missingTranslation: '번역을 제공할 수 없습니다',
-        navigation: { back: '뒤로 가기', close: '닫기', exitHint: '뒤로가기를 한 번 더 누르면 앱이 종료됩니다.', retry: '다시 시도' },
+        navigation: { confirm: '확인', back: '뒤로 가기', close: '닫기', exitHint: '뒤로가기를 한 번 더 누르면 앱이 종료됩니다.', retry: '다시 시도' },
         unsupportedFeature: {
           description: '이 기능은 현재 앱에서 지원하지 않습니다.',
           title: '앱에서 제공하지 않는 기능',
@@ -1505,7 +1505,7 @@ export const resources = {
           light: '라이트 모드',
           section: '화면 모드',
           selected: '선택됨',
-          system: '시스템 설정 사용',
+          system: '시스템 테마 사용',
           title: '화면 모드',
         },
         language: {
@@ -1879,7 +1879,7 @@ export const resources = {
       },
       common: {
         missingTranslation: '翻訳がありません',
-        navigation: { back: '戻る', close: '閉じる', exitHint: 'もう一度「戻る」を押すとアプリを終了します。', retry: '再試行' },
+        navigation: { confirm: '確認', back: '戻る', close: '閉じる', exitHint: 'もう一度「戻る」を押すとアプリを終了します。', retry: '再試行' },
         unsupportedFeature: {
           description: 'この機能は現在アプリでサポートされていません。',
           title: 'アプリではご利用いただけません',
@@ -2414,7 +2414,7 @@ export const resources = {
           light: 'ライトモード',
           section: '外観',
           selected: '選択中',
-          system: 'システム設定を使用',
+          system: 'システムテーマを使用',
           title: '外観',
         },
         language: {
@@ -2825,7 +2825,7 @@ export const resources = {
       },
       common: {
         missingTranslation: '暂无翻译',
-        navigation: { back: '返回', close: '关闭', exitHint: '再按一次返回键即可退出应用。', retry: '重试' },
+        navigation: { confirm: '确定', back: '返回', close: '关闭', exitHint: '再按一次返回键即可退出应用。', retry: '重试' },
         unsupportedFeature: { description: '应用目前不支持此功能。', title: '应用内暂不提供' },
         apiError: {
           timeout: { title: '响应时间过长', description: '请检查网络连接后重新加载。' },
@@ -3325,7 +3325,7 @@ export const resources = {
           error: '无法下载。请重试。',
           prepared: '文件已准备好。应用无法确认你在分享界面中是保存还是取消。',
         },
-        appearance: { dark: '深色模式', description: '选择让 PingDom 跟随设备外观，或固定使用某种模式。', light: '浅色模式', section: '外观', selected: '已选择', system: '跟随系统设置', title: '外观' },
+        appearance: { dark: '深色模式', description: '选择让 PingDom 跟随设备外观，或固定使用某种模式。', light: '浅色模式', section: '外观', selected: '已选择', system: '跟随系统主题', title: '外观' },
         language: { description: '请选择 PingDom 使用的语言。', section: '语言', selected: '已选择', title: '语言设置' },
         account: {
           deleteDescription: '注销账号后，你留下的记录和 First Recorder 历史将被永久删除。',
@@ -3671,7 +3671,7 @@ export const resources = {
       },
       common: {
         missingTranslation: '暫無翻譯',
-        navigation: { back: '返回', close: '關閉', exitHint: '再按一次返回鍵即可結束 App。', retry: '再試一次' },
+        navigation: { confirm: '確定', back: '返回', close: '關閉', exitHint: '再按一次返回鍵即可結束 App。', retry: '再試一次' },
         unsupportedFeature: { description: 'App 目前不支援這項功能。', title: 'App 內暫不提供' },
         apiError: {
           timeout: { title: '回應時間過長', description: '請確認網路連線後重新載入。' },
@@ -4171,7 +4171,7 @@ export const resources = {
           error: '無法下載。請再試一次。',
           prepared: '檔案已準備好。App 無法確認你在分享畫面中是儲存還是取消。',
         },
-        appearance: { dark: '深色模式', description: '選擇讓 PingDom 跟隨裝置外觀，或固定使用某種模式。', light: '淺色模式', section: '外觀', selected: '已選取', system: '使用系統設定', title: '外觀' },
+        appearance: { dark: '深色模式', description: '選擇讓 PingDom 跟隨裝置外觀，或固定使用某種模式。', light: '淺色模式', section: '外觀', selected: '已選取', system: '使用系統主題', title: '外觀' },
         language: { description: '請選擇 PingDom 使用的語言。', section: '語言', selected: '已選取', title: '語言設定' },
         account: {
           deleteDescription: '刪除帳號後，你留下的紀錄與 First Recorder 歷程將永久刪除。',
@@ -4535,7 +4535,7 @@ export const resources = {
       },
       common: {
         missingTranslation: 'Chưa có bản dịch',
-        navigation: { back: 'Quay lại', close: 'Đóng', exitHint: 'Nhấn quay lại lần nữa để thoát ứng dụng.', retry: 'Thử lại' },
+        navigation: { confirm: 'Xác nhận', back: 'Quay lại', close: 'Đóng', exitHint: 'Nhấn quay lại lần nữa để thoát ứng dụng.', retry: 'Thử lại' },
         unsupportedFeature: { description: 'Tính năng này hiện chưa được hỗ trợ trong ứng dụng.', title: 'Chưa có trong ứng dụng' },
         apiError: {
           timeout: { title: 'Phản hồi mất quá nhiều thời gian', description: 'Hãy kiểm tra kết nối và thử tải lại.' },
@@ -5092,7 +5092,7 @@ export const resources = {
           light: 'Chế độ sáng',
           section: 'Giao diện',
           selected: 'Đã chọn',
-          system: 'Dùng cài đặt hệ thống',
+          system: 'Dùng chủ đề hệ thống',
           title: 'Giao diện',
         },
         language: { description: 'Chọn ngôn ngữ dùng trong toàn bộ PingDom.', section: 'Ngôn ngữ', selected: 'Đã chọn', title: 'Ngôn ngữ' },
@@ -5492,7 +5492,7 @@ export const resources = {
       },
       common: {
         missingTranslation: 'Traducción no disponible',
-        navigation: { back: 'Volver', close: 'Cerrar', exitHint: 'Presiona atrás otra vez para salir de la app.', retry: 'Reintentar' },
+        navigation: { confirm: 'Aceptar', back: 'Volver', close: 'Cerrar', exitHint: 'Presiona atrás otra vez para salir de la app.', retry: 'Reintentar' },
         unsupportedFeature: { description: 'Esta función no es compatible con la app por ahora.', title: 'No disponible en la app' },
         apiError: {
           timeout: { title: 'La respuesta está tardando demasiado', description: 'Revisa tu conexión e intenta cargar de nuevo.' },
@@ -6061,7 +6061,7 @@ export const resources = {
           light: 'Modo claro',
           section: 'Apariencia',
           selected: 'Seleccionado',
-          system: 'Ajuste del sistema',
+          system: 'Tema del sistema',
           title: 'Apariencia',
         },
         language: { description: 'Elige el idioma que se usa en todo PingDom.', section: 'Idioma', selected: 'Seleccionado', title: 'Idioma' },
@@ -6464,7 +6464,7 @@ export const resources = {
       },
       common: {
         missingTranslation: 'Tradução indisponível',
-        navigation: { back: 'Voltar', close: 'Fechar', exitHint: 'Pressione voltar novamente para sair do app.', retry: 'Tentar novamente' },
+        navigation: { confirm: 'Confirmar', back: 'Voltar', close: 'Fechar', exitHint: 'Pressione voltar novamente para sair do app.', retry: 'Tentar novamente' },
         unsupportedFeature: { description: 'Este recurso não é compatível com o app no momento.', title: 'Indisponível no app' },
         apiError: {
           timeout: { title: 'A resposta está demorando demais', description: 'Verifique sua conexão e tente carregar novamente.' },
@@ -7026,7 +7026,7 @@ export const resources = {
           light: 'Modo claro',
           section: 'Aparência',
           selected: 'Selecionado',
-          system: 'Padrão do sistema',
+          system: 'Tema do sistema',
           title: 'Aparência',
         },
         language: { description: 'Escolha o idioma usado em todo o PingDom.', section: 'Idioma', selected: 'Selecionado', title: 'Idioma' },

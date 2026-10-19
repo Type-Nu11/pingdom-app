@@ -1,4 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { selectMyReview } from '../model/myReview';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
 import { profileApi } from '../api/profileApi';
@@ -183,4 +185,26 @@ export function useChangeProfileImage() {
       await queryClient.invalidateQueries({ queryKey: key });
     },
   });
+}
+
+/** Authenticated authored reviews, shared by the preview and the full list. */
+export function useInfiniteMyReviews() {
+  return useInfiniteQuery({
+    queryKey: [...myReviewsQueryKeys.all, 'infinite'],
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => profileApi.listMyReviews({ limit: 20, page: pageParam }, signal),
+    getNextPageParam: (lastPage) => lastPage.hasNext ? lastPage.page + 1 : undefined,
+  });
+}
+
+/** IDs are resolved only through the authenticated user's review list. */
+export function useMyReview(reviewId: number) {
+  const query = useInfiniteMyReviews();
+  const { review, reasons } = selectMyReview(query.data?.pages.flatMap(page => page.reviews) ?? [], reviewId);
+  const { fetchNextPage, hasNextPage, isFetching, isError } = query;
+  useEffect(() => {
+    if (!review && hasNextPage && !isFetching && !isError) void fetchNextPage();
+  }, [review, hasNextPage, isFetching, isError, fetchNextPage]);
+  return { ...query, review, reasons,
+    isSearching: !review && (query.isLoading || query.isFetching || !!query.hasNextPage) };
 }

@@ -27,11 +27,11 @@ import type { RoutePages } from './RouteSummaryCard';
 
 type Props = {
   origin: RouteDestination | null; destination: RouteDestination | null; mode: RouteMode; stateKey: string; ready: CarRoute | null;
-  canRequest: boolean; canOpenExternal: boolean; bottomInset: number; maxHeight: number;
+  canRequest: boolean;  bottomInset: number; maxHeight: number;
   hasOrigin: boolean; deniedPermanently: boolean; onStart: () => void;
   onLayout: (event: LayoutChangeEvent) => void; onMode: (mode: RouteMode) => void;
   onClose: () => void; onShare: () => void; onRequest: () => void; onCancel: () => void;
-  onExternal: () => void; onRefreshLocation: () => void; onSettings: () => void;
+  onRefreshLocation: () => void; onSettings: () => void;
   onEditEndpoint: (role: EndpointRole) => void; onSwapEndpoints: () => void;
   transit?: { itinerary: TransitItinerary; alternatives?: TransitItinerary[]; index: number; count: number; estimateAt?: number; onSelect: (index: number) => void; onStart: () => void };
   walk?: { summary: WalkRouteSummary; onStart: () => void; pages?: RoutePages };
@@ -68,7 +68,7 @@ export default function RoutePlannerSheet(props: Props) {
     return <Action testID={testID} accessibilityRole="button" accessibilityLabel={label}
       accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
       style={{ backgroundColor: primary ? theme.colors.primary : theme.colors.surfaceMuted, opacity: disabled ? 0.45 : 1 }}>
-      <Text style={{ color: primary ? '#FFFFFF' : ink, fontSize: 14, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
+      <Text style={{ color: primary ? theme.colors.staticWhite : ink, fontSize: 14, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
     </Action>;
   }
   return <SheetPosition testID="route-planner-sheet" onLayout={props.onLayout}
@@ -84,7 +84,7 @@ export default function RoutePlannerSheet(props: Props) {
             const Icon = selected ? selectedIcons[mode] : icons[mode];
             return <ModeTab key={mode} accessibilityRole="tab" accessibilityLabel={t(`routes.modes.${mode}`)}
               accessibilityState={{ selected }} onPress={() => props.onMode(mode)}
-              style={{ backgroundColor: selected ? raised : 'transparent' }}><Icon /></ModeTab>;
+              style={{ backgroundColor: selected ? raised : 'transparent' }}><Icon color={selected ? theme.colors.primary : theme.colors.labelAssistive} /></ModeTab>;
           })}
         </ModeTrack>
         <RouteEndpointRows originDenied={denied} origin={props.origin} destination={props.destination} onDragging={setDragging}
@@ -127,7 +127,6 @@ export default function RoutePlannerSheet(props: Props) {
             {props.deniedPermanently && action(t('routes.settings'), props.onSettings, undefined, false, true)}
           </ActionRow>}
         </StateCard>}
-        {!props.ready && !props.transit && !(props.mode === 'walk' && props.walk) && !loading && <Footer>{action(t('routes.external'), props.onExternal, 'route-external', !props.canOpenExternal)}</Footer>}
       </SheetContent>
     </SheetGlass>
   </SheetPosition>;
@@ -206,9 +205,6 @@ const ActionRow = styled.View`
   flex-direction: row;
   gap: 8px;
   align-self: stretch;
-`;
-const Footer = styled.View`
-  gap: 8px;
 `;
 const Skeleton = View;
 const SkeletonRow = styled.View`

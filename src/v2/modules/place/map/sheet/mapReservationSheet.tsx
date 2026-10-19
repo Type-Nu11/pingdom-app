@@ -7,6 +7,8 @@ export type MapReservationSheetProps = {
   bookmarkedPlaceIds: Record<string, boolean>;
   bookmarkPendingPlaceIds: Record<string, boolean>;
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   height: number;
   isBookmarkStateLoading: boolean;
   isNearbyLoading?: boolean;
@@ -26,6 +28,7 @@ export type MapReservationSheetProps = {
   onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
   panHandlers: GestureResponderHandlers;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
 };

@@ -199,7 +199,8 @@ export function toPlaceCardViewModel(
       .map((item) => text(item?.imageUrl))
       .filter(Boolean)
     : [];
-  const imageUrls = [...new Set([...mediaUrls, text(card.imageUrl)])]
+  // Prefer the gallery; a separate card thumbnail must not become an extra photo.
+  const imageUrls = [...new Set(mediaUrls.length ? mediaUrls : [text(card.imageUrl)])]
     .filter(Boolean);
   const supportTags: MapPlaceSupportTag[] = [];
   if ((decision?.availableOffers?.offers?.length ?? 0) > 0) supportTags.push('coupon');

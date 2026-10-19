@@ -105,7 +105,7 @@ test.each([
   expect(await screen.findByText(message)).toBeVisible();
   expect(mockMapProps.routeSegments).toBeUndefined();
   expect(screen.getByTestId('route-request')).toBeVisible();
-  expect(screen.getByTestId('route-external')).toBeVisible();
+  expect(screen.queryByTestId('route-external')).toBeNull();
   expect(findTransitRoute).toHaveBeenCalledTimes(1);
 });
 
@@ -211,7 +211,7 @@ test('late walking responses are discarded when switching to transit', async () 
   expect(mockMapProps.routeCoordinates).toBeUndefined();
 });
 
-test('failed walking route offers retry and external navigation; bicycle stays external', async () => {
+test('failed walking route allows retry without an external navigation button', async () => {
   jest.mocked(findWalkingRoute).mockRejectedValueOnce(new ApiError('private', { code: 'ROUTE_NOT_FOUND', status: 422 }));
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
   await user.press(screen.getByRole('tab', { name: 'Walk' }));
@@ -221,11 +221,11 @@ test('failed walking route offers retry and external navigation; bicycle stays e
   expect(screen.getByTestId('walk-summary')).toHaveTextContent(/10 min/);
   await user.press(screen.getByRole('tab', { name: 'Bicycle' }));
   expect(screen.getByText('Use the NAVER Map app for this travel mode.')).toBeVisible();
-  await user.press(screen.getByTestId('route-external'));
-  expect(openNaverRoute).toHaveBeenLastCalledWith(destination, expect.objectContaining({ latitude: 37.5, longitude: 127 }), 'bike');
+  expect(screen.queryByTestId('route-external')).toBeNull();
+  expect(openNaverRoute).not.toHaveBeenCalled();
 });
 
-test('permission denial allows external origin omission and settings recovery', async () => {
+test('permission denial offers settings recovery without external navigation', async () => {
   const settings = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
   const refresh = jest.fn();
   const { user } = await renderWithProviders(<CarRoutePreview {...props} onRefreshLocation={refresh}
@@ -235,8 +235,8 @@ test('permission denial allows external origin omission and settings recovery', 
   await user.press(screen.getByRole('button', { name: 'Open location permission settings' }));
   expect(settings).toHaveBeenCalledTimes(1);
   expect(refresh).not.toHaveBeenCalled();
-  await user.press(screen.getByTestId('route-external'));
-  expect(openNaverRoute).toHaveBeenCalledWith(destination, null, 'car');
+  expect(screen.queryByTestId('route-external')).toBeNull();
+  expect(openNaverRoute).not.toHaveBeenCalled();
   expect(findCarRoute).not.toHaveBeenCalled();
   settings.mockRestore();
 });
@@ -286,7 +286,7 @@ test.each([
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
   expect(await screen.findByText(title as string)).toBeVisible();
   expect(screen.getByTestId('route-destination-row')).toBeEnabled();
-  expect(screen.getByTestId('route-external')).toBeEnabled();
+  expect(screen.queryByTestId('route-external')).toBeNull();
   expect(findCarRoute).toHaveBeenCalledTimes(1);
   await user.press(screen.getByTestId('route-request'));
   await waitFor(() => expect(mockMapProps.routeCoordinates).toEqual(route.path));
@@ -296,30 +296,19 @@ test('missing destination prevents internal and external requests', async () => 
   await renderWithProviders(<CarRoutePreview {...props} destination={{ ...destination, latitude: undefined }} />, { language: 'en' });
   expect(screen.getByText('Destination coordinates are missing.')).toBeVisible();
   expect(screen.getByTestId('route-request')).toBeDisabled();
-  expect(screen.getByTestId('route-external')).toBeDisabled();
+  expect(screen.queryByTestId('route-external')).toBeNull();
 });
 
-test('503 is an unavailable state with no geometry or automatic retry; external remains usable', async () => {
+test('503 is an unavailable state without geometry, automatic retry or external navigation', async () => {
   jest.mocked(findCarRoute).mockRejectedValue(new ApiError('private message', { status: 503 }));
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
   await screen.findByText('Route service is currently unavailable. Use the NAVER Map app.');
   expect(screen.queryByText('private message')).toBeNull();
   expect(findCarRoute).toHaveBeenCalledTimes(1);
   expect(mockMapProps.routeCoordinates).toBeUndefined();
-  expect(screen.getByTestId('route-external')).toBeEnabled();
+  expect(screen.queryByTestId('route-external')).toBeNull();
 });
 
-test('external app absence is separate from route lookup error', async () => {
-  jest.mocked(findWalkingRoute).mockRejectedValueOnce(new ApiError('no route', { code: 'ROUTE_NOT_FOUND' }));
-  jest.mocked(openNaverRoute).mockResolvedValueOnce('not-installed');
-  const alert = jest.spyOn(Alert, 'alert');
-  const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
-  await user.press(screen.getByRole('tab', { name: 'Walk' }));
-  await user.press(screen.getByTestId('route-external'));
-  expect(screen.getByText('Please install the NAVER Map app.')).toBeVisible();
-  expect(alert).not.toHaveBeenCalled();
-  expect(findCarRoute).toHaveBeenCalledTimes(1);
-});
 
 test('invalid live origin offers location recovery and never requests a route', async () => {
   const onRefreshLocation = jest.fn();
@@ -422,8 +411,29 @@ test('long press without crossing a row does not edit or swap endpoints', async 
 });
 
 
+test.each(['ko', 'en'] as const)('departure entry keeps the place as origin and opens the destination editor in %s', async language => {
+  jest.mocked(findCarRoute).mockResolvedValue(route);
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" location={liveLocation()} />, { language });
+  expect(screen.getByTestId('route-endpoint-editor')).toBeVisible();
+  expect(screen.getByLabelText(language === 'ko' ? '장소 검색' : 'Search places')).toBeVisible();
+  expect(screen.getByRole('button', {
+    name: language === 'ko' ? `출발 장소 편집, ${destination.name}` : `Edit Origin, ${destination.name}`,
+  })).toBeVisible();
+  // The destination stays empty until the user picks one; nothing is routed to the current location by default.
+  expect(findCarRoute).not.toHaveBeenCalled();
+  expect(mockMapProps.markers.map(marker => marker.id)).toEqual(['route-origin']);
+  await user.press(screen.getByRole('button', { name: 'Saved cafe' }));
+  expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
+  expect(findCarRoute).toHaveBeenLastCalledWith(
+    expect.objectContaining({ placeId: destination.placeId, latitude: destination.latitude, longitude: destination.longitude }),
+    expect.objectContaining({ placeId: 2, latitude: 37.7, longitude: 127.2 }),
+    expect.anything(),
+  );
+});
+
 test.each(['ko', 'en'] as const)('departure preview starts from the selected origin regardless of actual GPS in %s', async language => {
   const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" location={liveLocation()} />, { language });
+  await user.press(screen.getByRole('button', { name: language === 'ko' ? '현재 위치' : 'Current location' }));
   await user.press(screen.getByTestId('route-start'));
   expect(screen.getByTestId('route-tracking-sheet')).toBeVisible();
   expect(screen.getByText(language === 'ko' ? /출발지 기준 미리보기/ : /Preview from selected origin/)).toBeVisible();
@@ -447,10 +457,12 @@ test.each(['ko', 'en'] as const)('departure preview starts from the selected ori
 });
 
 test('departure entry without current location cannot route to a missing destination', async () => {
-  await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin"
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin"
     location={{ status: 'denied', coordinate: null, canAskAgain: false }} />, { language: 'en' });
+  await user.press(screen.getByRole('button', { name: 'Close place editor' }));
+  expect(screen.getByTestId('route-destination-row')).toHaveTextContent(/Set destination/);
   expect(screen.getByTestId('route-request')).toBeDisabled();
-  expect(screen.getByTestId('route-external')).toBeDisabled();
+  expect(screen.queryByTestId('route-external')).toBeNull();
   expect(findCarRoute).not.toHaveBeenCalled();
   expect(mockMapProps.markers.map(marker => marker.id)).toEqual(['route-origin']);
 });
@@ -627,6 +639,7 @@ test('a selected origin can start a preview without location permission and reta
 
 test('a selected origin near actual GPS still follows real movement', async () => {
   const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" location={liveLocation()} />, { language: 'en' });
+  await user.press(screen.getByRole('button', { name: 'Current location' }));
   await rerender(<CarRoutePreview {...props} initialEndpointRole="origin" location={liveLocation(37.6, 127.1)} />);
   await user.press(screen.getByTestId('route-start'));
   expect(mockMapProps.followUser).toBe(true);
@@ -686,7 +699,8 @@ test('starting revalidates stale GPS without discarding the preview or querying 
 test('selection-time destination preserves an in-flight route through GPS movement and permission loss', async () => {
   let resolve!: (value: typeof route) => void;
   jest.mocked(findCarRoute).mockImplementationOnce(() => new Promise(yes => { resolve = yes; }));
-  const { rerender } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" />, { language: 'en' });
+  const { rerender, user } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" />, { language: 'en' });
+  await user.press(screen.getByRole('button', { name: 'Current location' }));
   const signal = jest.mocked(findCarRoute).mock.calls[0][2];
   await rerender(<CarRoutePreview {...props} initialEndpointRole="origin" location={liveLocation(37.55, 127.05)} />);
   expect(signal.aborted).toBe(false);
@@ -699,7 +713,8 @@ test('selection-time destination preserves an in-flight route through GPS moveme
 });
 
 test('a destination waiting for GPS captures the first fix once', async () => {
-  const { rerender } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" location={{ status: 'loading', coordinate: null, canAskAgain: true }} />, { language: 'en' });
+  const { rerender, user } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" location={{ status: 'loading', coordinate: null, canAskAgain: true }} />, { language: 'en' });
+  await user.press(screen.getByRole('button', { name: 'Current location' }));
   expect(findCarRoute).not.toHaveBeenCalled();
   await rerender(<CarRoutePreview {...props} initialEndpointRole="origin" location={liveLocation()} />);
   expect(findCarRoute).toHaveBeenCalledTimes(1);
@@ -711,6 +726,7 @@ test('a destination waiting for GPS captures the first fix once', async () => {
 
 test('selecting current location in the destination editor replaces its snapshot only on explicit selection', async () => {
   const { user, rerender } = await renderWithProviders(<CarRoutePreview {...props} initialEndpointRole="origin" />, { language: 'en' });
+  await user.press(screen.getByRole('button', { name: 'Current location' }));
   await rerender(<CarRoutePreview {...props} initialEndpointRole="origin" location={liveLocation(37.55, 127.05)} />);
   await user.press(screen.getByTestId('route-destination-row'));
   await user.press(screen.getByRole('button', { name: 'Current location' }));

@@ -74,6 +74,8 @@ export async function invalidateReviewQueries(
     queryClient.invalidateQueries({ queryKey: placeQueryKeys.reviews(placeId) }),
     queryClient.invalidateQueries({ queryKey: myReviewsQueryKeys.all }),
     queryClient.invalidateQueries({ queryKey: placeQueryKeys.detail(placeId) }),
+    queryClient.invalidateQueries({ queryKey: placeQueryKeys.card(placeId) }),
+    queryClient.invalidateQueries({ queryKey: placeQueryKeys.visitDecision(placeId) }),
     queryClient.invalidateQueries({ queryKey: placeQueryKeys.verificationMedia(placeId) }),
     queryClient.invalidateQueries({ queryKey: placeQueryKeys.explorationMedia(placeId) }),
     queryClient.invalidateQueries({

@@ -23,7 +23,6 @@ import RoutePlannerSheet from './RoutePlannerSheet';
 import MyLocationIcon from '../assets/my_location.svg';
 import { RouteTimeBubble } from './RouteTimeBubble';
 import type { RouteDestination, RouteMode } from '../model/routeUi';
-import { openNaverRoute } from '../services/openNaverRoute';
 import RouteEndpointEditor from './RouteEndpointEditor';
 import RouteTrackingSheet from './RouteTrackingSheet';
 import { useRouteTracking } from '../hooks/useRouteTracking';
@@ -58,11 +57,13 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   }
   // Null means an empty field. Only an explicit current-location marker follows GPS.
   const currentSelection: RouteDestination = { placeId: 0, name: t('routes.currentLocation'), isCurrentLocation: true };
+  // Departing from a place keeps it as the origin and leaves the destination for the user to pick.
+  const departsFromPlace = !!initialDestination && initialEndpointRole === 'origin';
   const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>(() => !initialDestination
-    ? [null, null] : initialEndpointRole === 'origin'
-      ? [initialDestination, snapshotCurrentLocation() ?? currentSelection] : [currentSelection, initialDestination]);
+    ? [null, null] : departsFromPlace ? [initialDestination, null] : [currentSelection, initialDestination]);
   const [endpointRevision, setEndpointRevision] = useState(0);
-  const [editing, setEditing] = useState<EndpointRole | null>(null);
+  // Figma 8892:11110: the departure entry opens straight into the destination editor.
+  const [editing, setEditing] = useState<EndpointRole | null>(departsFromPlace ? 'destination' : null);
   const [mapPicking, setMapPicking] = useState(false);
   const [camera, setCamera] = useState<{ center: { lat: number; lng: number }; zoom: number; revision: number; fit?: NaverMapCameraFit }>({ center: endpointCoordinate(initialDestination) ?? endpointCoordinate(currentPoint) ?? DEFAULT_MAP_CENTER, zoom: 14, revision: 0 });
   const [mapPoint, setMapPoint] = useState(camera.center);
@@ -72,8 +73,6 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const trackingCenter = useRef<Coordinate | null>(null);
   const fittedEndpoints = useRef(false);
   const mounted = useRef(true);
-  const externalBusy = useRef(false);
-  const [openingExternal, setOpeningExternal] = useState(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; startGeneration.current += 1; }; }, []);
   const origin = selections[0]?.isCurrentLocation ? currentPoint : selections[0];
   const destination = selections[1]?.isCurrentLocation ? snapshotCurrentLocation() : selections[1];
@@ -135,20 +134,6 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
     : mode === 'bike' ? 'unsupported'
       : !originCoordinate ? location.status !== 'granted' ? `location-${location.status}` : 'location-failed' : activeState.kind;
   const canRequest = (mode !== 'bike') && !!destinationCoordinate && !!originCoordinate;
-  async function openExternal() {
-    if (externalBusy.current) return;
-    externalBusy.current = true; setOpeningExternal(true);
-    try {
-      if (!destination) return;
-      const outcome = await openNaverRoute(destination, originCoordinate ? origin : null, mode);
-      if (!mounted.current || outcome === 'opened') return;
-      setNotice({ message: t(outcome === 'not-installed' ? 'routes.notInstalled'
-        : outcome === 'invalid' ? 'routes.states.missing-destination' : 'routes.openFailed') });
-    } finally {
-      externalBusy.current = false;
-      if (mounted.current) setOpeningExternal(false);
-    }
-  }
   function request() {
     manualCamera.current = false; fittedPath.current = null; setAnchor(null);
     if (mode === 'transit') void transit.request(origin, destination);
@@ -292,7 +277,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
             <Text accessibilityRole="header" style={{ color: theme.colors.textStrong, fontSize: 18, fontWeight: '700' }}>{t('routes.editor.mapHint')}</Text>
             <Pressable testID="route-map-confirm" accessibilityRole="button" accessibilityLabel={t('routes.editor.confirmMap')}
               onPress={() => selectEndpoint({ placeId: 0, name: t('routes.editor.mapPoint'), latitude: mapPoint.lat, longitude: mapPoint.lng })}
-              style={{ minHeight: 44, justifyContent: 'center', borderRadius: 16, backgroundColor: theme.colors.primary }}><Text style={{ color: '#FFFFFF', textAlign: 'center' }}>{t('routes.editor.confirmMap')}</Text></Pressable>
+              style={{ minHeight: 44, justifyContent: 'center', borderRadius: 16, backgroundColor: theme.colors.primary }}><Text style={{ color: theme.colors.staticWhite, textAlign: 'center' }}>{t('routes.editor.confirmMap')}</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={t('routes.cancel')} onPress={() => setMapPicking(false)} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: theme.colors.textStrong, textAlign: 'center' }}>{t('routes.cancel')}</Text></Pressable>
           </GlassSurface>
         </> : editing ? <RouteEndpointEditor role={editing} origin={origin} destination={destination} recentSearchOwner={recentSearchOwner}
@@ -301,7 +286,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
           onMap={() => setMapPicking(true)} /> : <RoutePlannerSheet origin={origin} destination={destination} mode={mode} stateKey={stateKey} ready={ready}
           bottomInset={insets.bottom} maxHeight={Math.max(240, viewport.height - insets.top - 70)}
           onLayout={event => setSheetHeight(event.nativeEvent.layout.height)} hasOrigin={!!originCoordinate}
-          canRequest={canRequest} canOpenExternal={!!destinationCoordinate && !openingExternal}
+          canRequest={canRequest}
           deniedPermanently={location.status === 'denied' && !location.canAskAgain}
           onMode={value => {
             if (mode !== value) { closeNotice(); cancelRequests(); setAnchor(null); setMode(value); }
@@ -317,7 +302,7 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
             onSelect: index => { manualCamera.current = false; setAnchor(null); setTransitSelection({ source: transitResult, index }); },
             onStart: () => { void startTracking(); } } : undefined}
           onRequest={request} onCancel={cancelRequests} onRefreshLocation={onRefreshLocation}
-          onSettings={() => { void Linking.openSettings().catch(() => undefined); }} onExternal={() => { void openExternal(); }} />}
+          onSettings={() => { void Linking.openSettings().catch(() => undefined); }} />}
       </MapGlassBackdrop>
       </View>
       {notice && <RouteNotice title={t('routes.tracking.start')} {...notice} onClose={closeNotice}

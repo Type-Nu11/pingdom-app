@@ -1,6 +1,6 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, Platform, Text, type GestureResponderHandlers } from 'react-native';
+import { Animated, PanResponder, Platform, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
@@ -21,6 +21,7 @@ import MapBottomSheet, {
   type MapPreviewFallbackContent,
 } from '../MapBottomSheet';
 import type { ExternalMapPlace } from '../../../selection/model/externalPlace';
+import { MapTutorialContext } from '../../../tutorial/context';
 
 jest.mock('../../../../detail', () => ({
   ...jest.requireActual('../../../../detail'),
@@ -179,6 +180,10 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     expect(screen.getByRole('button', { name: '추천 장소 1 사진 1 상세 보기' })).toHaveStyle({ width: 242, height: 182 });
+    expect(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' })).toHaveStyle({ width: 242, height: 182 });
+    expect(screen.getByTestId('place-preview-content')).toHaveStyle({ rowGap: 14 });
+    expect(within(screen.getByTestId('place-preview-photos-section')).getByTestId('place-preview-translation-attribution')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('place-name-translation')).queryByLabelText('Translated by Google')).toBeNull();
     await user.press(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' }));
     expect(screen.getByTestId('place-photo-viewer')).toBeVisible();
     expect(screen.getByLabelText('추천 장소 1 사진 2장 중 2번째')).toBeVisible();
@@ -206,7 +211,7 @@ describe('MapBottomSheet recommendations', () => {
       places, recommendationPlaces: [], recommendationsState: 'ready' as const,
       previewFallbackContentByPlaceId: {
         [String(selectedPlace.id)]: {
-          amenities: [], coupons: [{ period: '2026.09.01~2026.09.30', title: '관광객 쿠폰' }],
+          amenities: ['english', 'parking'] as Array<'english' | 'parking'>, coupons: [{ period: '2026.09.01~2026.09.30', title: '관광객 쿠폰' }],
           imageUrls: [], statusDescription: '', statusEmphasis: '', verifiedEvidenceCount: 23,
         },
       },
@@ -220,12 +225,17 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
     expect(screen.queryByText('실서버 쿠폰 발급 영역')).not.toBeOnTheScreen();
-    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 8, paddingRight: 8 });
+    expect(screen.getByTestId('map-sheet-content-viewport')).toHaveStyle({ overflow: 'hidden', position: 'absolute', top: 0 });
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 0, paddingRight: 0 });
+    expect(within(screen.getByTestId('map-sheet-content-viewport')).getByTestId('place-name-translation')).toBeOnTheScreen();
     expect(screen.getByTestId('map-sheet-chrome')).toBeOnTheScreen();
+    expect(screen.getByTestId('place-preview-amenity-parking')).toHaveStyle({ height: 34, paddingHorizontal: 11, gap: 6 });
+    expect(screen.getByText('주차가능')).toHaveStyle({ fontSize: 14, lineHeight: 18 });
+    expect(screen.getByLabelText(selectedPlace.name)).toHaveStyle({ fontSize: 24, lineHeight: 31 });
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
-    expect(screen.getByText('23명이 검증했어요!')).toBeVisible();
+    expect(screen.queryByText('23명이 검증했어요!')).toBeNull();
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ width: '100%', paddingLeft: 0, paddingRight: 0 });
     expect(screen.getByLabelText(selectedPlace.name)).toHaveStyle({ fontSize: 24, lineHeight: 31 });
     expect(screen.getByRole('tab', { name: '정보' })).toHaveStyle({ height: 56 });
@@ -236,7 +246,7 @@ describe('MapBottomSheet recommendations', () => {
     });
     await fireEvent.press(screen.getByRole('tab', { name: '리뷰' }));
     expect(screen.getByText('등록된 리뷰 정보가 없어요.')).toBeVisible();
-    expect(screen.queryByTestId('map-sheet-chrome')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('map-sheet-chrome')).toHaveStyle({ opacity: 0 });
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ backgroundColor: colors.background, flexGrow: 1 });
     expect(screen.getByTestId('map-expanded-place-scroll')).toHaveStyle({ backgroundColor: colors.background, flexGrow: 1 });
     expect(screen.getByTestId('map-expanded-place-scroll').props.contentContainerStyle).toEqual(
@@ -305,11 +315,50 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByText('영업시간 정보 없음')).toBeVisible();
   });
 
+  test.each([
+    ['LIGHT', 'medium', '영업 중', 'positive', lightColors.statusSuccess],
+    ['LIGHT', 'expanded', '영업 종료', 'negative', lightColors.statusError],
+    ['DARK', 'medium', '영업 종료', 'negative', darkColors.statusError],
+    ['DARK', 'expanded', '영업 중', 'positive', darkColors.statusSuccess],
+  ] as const)('%s %s 시트의 영업 상태(%s)를 Status 토큰 색으로 표시한다', async (
+    appearancePreference, snapPoint, statusText, tone, color,
+  ) => {
+    const selectedPlace = places[0];
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: selectedPlace.id }}
+        height={700} mediumTranslateY={300} onBackHome={jest.fn()}
+        onCreateReservation={jest.fn()} onDetailPress={jest.fn()}
+        onFilterPress={jest.fn()} onGoNowPress={jest.fn()} onHandlePress={jest.fn()}
+        onPlacePress={jest.fn()} onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)} panHandlers={{} as GestureResponderHandlers}
+        places={places} previewFallbackContentByPlaceId={{
+          [String(selectedPlace.id)]: {
+            amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: statusText,
+            verifiedEvidenceCount: 23,
+            operatingSummary: {
+              detailText: null, fullText: statusText, kind: tone === 'positive' ? 'open' : 'closed',
+              statusText, tone, transitionDay: null, transitionTime: null,
+            },
+          },
+        }}
+        recommendationPlaces={[]} recommendationsState="ready" selectedPlace={selectedPlace}
+        sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint={snapPoint}
+      />,
+      { appearancePreference, language: 'ko' },
+    );
+
+    expect(screen.getAllByText(statusText).at(-1)).toHaveStyle({ color, fontFamily: 'PretendardStdVariable-Medium' });
+  });
+
   test('정보 탭 리뷰 요약은 요약 태그를 보여주고 모두 보기를 누르면 이동 없이 전체 리뷰를 펼친다', async () => {
     const selectedPlace = places[0];
     const onDetailPress = jest.fn();
     const review = (n: number, reasons: ReviewReasonKey[]) => ({
       author: `작성자${n}`, createdAt: '2026-09-03', reasons, text: `리뷰 본문 ${n}`,
+      isOwnReview: n === 1, reviewId: n,
     });
     await renderWithProviders(
       <MapBottomSheet
@@ -340,6 +389,7 @@ describe('MapBottomSheet recommendations', () => {
       { language: 'ko' },
     );
     expect(screen.getByText('리뷰 본문 1')).toBeVisible();
+    expect(screen.getAllByTestId('owner-content-more')).toHaveLength(1);
     expect(screen.getByText('리뷰 본문 3')).toBeVisible();
     expect(screen.queryByText('리뷰 본문 4')).not.toBeOnTheScreen();
     expect(screen.getByText('맛있어요')).toBeVisible();
@@ -397,6 +447,26 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getAllByText('사용자')[0]).toHaveStyle({ fontSize: 18 });
     expect(screen.getByText('태그 없는 리뷰')).toBeVisible();
     result.unmount();
+  });
+
+  test('추천 카드는 Figma Component 10처럼 164dp 사진 아래에 아이콘 없는 추천 이유와 거리를 둔다', async () => {
+    await renderWithProviders(
+      <RecommendationFeaturedCard
+        bookmarked={false}
+        designSize="recommendation"
+        imageUrl="https://example.com/place.jpg"
+        onPress={jest.fn()}
+        onToggleBookmark={jest.fn()}
+        pending={false}
+        place={places[0]}
+      />,
+    );
+
+    expect(screen.getByTestId('recommendation-card-1')).toHaveStyle({ height: 209, width: 164 });
+    expect(screen.getByText('테스트 추천 이유')).toHaveStyle({
+      color: lightColors.labelNeutral, fontSize: 16, lineHeight: 21,
+    });
+    expect(screen.getByText('여기서 1km')).toHaveStyle({ color: lightColors.textAlternative, fontSize: 14 });
   });
 
   test('긴 장소명과 실제 추천 이유를 말줄임하고 접근성·즐겨찾기 동작을 일관되게 유지한다', async () => {
@@ -668,8 +738,11 @@ describe('MapBottomSheet recommendations', () => {
     const bookmark = screen.getByTestId('place-preview-bookmark');
     const close = screen.getByTestId('place-preview-close');
     expect(screen.getByTestId('map-sheet-handle-target').props.hitSlop).toBeUndefined();
-    expect(bookmark).toHaveStyle({ height: 44, width: 44 });
-    expect(close).toHaveStyle({ height: 44, width: 44 });
+    // Figma Component 18: 32px circles; hitSlop keeps the 44px touch target.
+    expect(bookmark).toHaveStyle({ height: 32, width: 32 });
+    expect(close).toHaveStyle({ height: 32, width: 32 });
+    expect(bookmark.props.hitSlop).toBe(6);
+    expect(close.props.hitSlop).toBe(6);
     await result.user.press(bookmark);
     await result.user.press(close);
     expect(onToggleBookmark).toHaveBeenCalledWith(selectedPlace, true);
@@ -1106,6 +1179,56 @@ describe('MapBottomSheet recommendations', () => {
       .toEqual(expect.objectContaining({ paddingBottom: 116 }));
   });
 
+  test.each([
+    ['medium', 8, 16],
+    ['expanded', 0, 24],
+  ] as const)('%s 추천 시트 제목은 시트 가장자리 16dp, 카드는 화면 가장자리 24dp에 맞춘다', async (snapPoint, inset, cardPadding) => {
+    const commonProps = {
+      activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
+      content: { type: 'recommendations' } as const, expandedTranslateY: 130,
+      height: 700, mediumTranslateY: 300, onBackHome: jest.fn(),
+      onDetailPress: jest.fn(), onFilterPress: jest.fn(),
+      onGoNowPress: jest.fn(), onHandlePress: jest.fn(), onPlacePress: jest.fn(),
+      onQueryChange: jest.fn(), onRetryRecommendations: jest.fn(),
+      onSearchFocus: jest.fn(), onSubmitSearch: jest.fn(),
+      onToggleBookmark: jest.fn(async () => undefined),
+      panHandlers: {} as GestureResponderHandlers, places: [], recommendationPlaces: places,
+      recommendationsState: 'ready' as const, selectedPlace: null,
+      sheetChromeBottom: new Animated.Value(0), sheetTranslateY: new Animated.Value(0),
+    };
+    await renderWithProviders(<MapBottomSheet {...commonProps} snapPoint={snapPoint} />);
+
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: inset, paddingRight: inset });
+    const title = screen.getByText('나만을 위한 추천 장소');
+    expect(title).toHaveStyle({ color: lightColors.labelStrong, fontSize: 20, lineHeight: 26 });
+    expect(screen.getByTestId('recommendation-header')).toHaveStyle({ paddingHorizontal: 16 });
+    const cardRowStyle = [screen.getByTestId('recommendation-card-row').props.contentContainerStyle].flat()
+      .reduce((merged, item) => ({ ...merged, ...(item || {}) }), {});
+    expect(cardRowStyle).toMatchObject({ gap: 16, paddingHorizontal: cardPadding });
+    expect(screen.getByText(/좋아할만한 장소를 추천해드려요/)).toHaveStyle({
+      color: lightColors.textSecondary, fontSize: 14, lineHeight: 18, marginTop: 4,
+    });
+  });
+
+  test('지도 홈 피드는 펼쳐도 기존 콘텐츠 여백(8dp)을 유지한다', async () => {
+    await renderWithProviders(
+      <MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'home' }} expandedTranslateY={130}
+        height={700} localFeed={rankedFeed([])} mediumTranslateY={300} nationalFeed={rankedFeed([])}
+        onBackHome={jest.fn()} onDetailPress={jest.fn()} onFilterPress={jest.fn()}
+        onGoNowPress={jest.fn()} onHandlePress={jest.fn()} onPlacePress={jest.fn()}
+        onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+        onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{} as GestureResponderHandlers} places={places} recommendationPlaces={[]}
+        recommendationsState="ready" selectedPlace={null}
+        sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded"
+      />,
+    );
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 8 });
+  });
+
   test('추천 목록 헤더에 별도 위치 안내 문구를 표시하지 않는다', async () => {
     const commonProps = {
       activeFilters: [],
@@ -1218,6 +1341,9 @@ describe('MapBottomSheet recommendations', () => {
       top: 4,
       width: 181,
     });
+    // Figma 4525:25520: Glass/FillRaised thumb on a Glass/FillSubtle track, 8px inside the floating sheet.
+    expect(screen.getByTestId('feed-segment-indicator')).toHaveStyle({ backgroundColor: lightColors.glassFillRaised });
+    expect(screen.getByTestId('feed-segment-inset')).toHaveStyle({ paddingHorizontal: 8 });
     expect(screen.getByRole('button', { name: '추천 장소 1, 테스트 주소 1' })).toHaveStyle({
       height: 182,
       width: 242,
@@ -1527,6 +1653,51 @@ describe('MapBottomSheet recommendations', () => {
     ...overrides,
   });
 
+  test.each(['medium', 'expanded'] as const)('%s 장소 사진 로딩 실패 타일은 제거하고 정상 사진만 뷰어에 전달한다', async snapPoint => {
+    const place = places[0];
+    await renderWithProviders(<MapBottomSheet {...categoryProps([], {
+      content: { type: 'place-preview', placeId: place.id }, selectedPlace: place, snapPoint,
+      previewFallbackContentByPlaceId: {
+        [String(place.id)]: { amenities: [], statusDescription: '', statusEmphasis: '',
+          imageUrls: ['https://example.com/good.jpg', 'https://example.com/broken.jpg'] },
+      },
+    })} />);
+    const failed = screen.getAllByLabelText('장소 이미지').find(node => node.props.source?.uri === 'https://example.com/broken.jpg');
+    expect(failed).toBeTruthy();
+    await fireEvent(failed!, 'error');
+    expect(screen.queryAllByLabelText('장소 이미지')).toHaveLength(1);
+    expect(screen.queryByText('이미지를 불러오지 못했어요')).toBeNull();
+    expect(screen.queryByRole('button', { name: `${place.name} 사진 2 상세 보기` })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: `${place.name} 사진 1 상세 보기` }));
+    expect(screen.getByLabelText(`${place.name} 사진 1장 중 1번째`)).toBeVisible();
+  });
+
+  test.each(['medium', 'expanded'] as const)('%s counts unique review authors instead of reviews or evidence', async snapPoint => {
+    const place = places[0];
+    await renderWithProviders(<MapBottomSheet {...categoryProps([], {
+      content: { type: 'place-preview', placeId: place.id }, selectedPlace: place, snapPoint,
+      previewFallbackContentByPlaceId: {
+        [String(place.id)]: { amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '',
+          verifiedEvidenceCount: 23, reviewCount: 7, reviewParticipantCount: 1, reviewHighlightsComplete: true, reviewSampleSize: 7, reviewState: 'ready' },
+      },
+    })} />);
+    expect(screen.getByText('1명이 검증했어요!')).toBeVisible();
+    expect(screen.queryByText('7명이 검증했어요!')).toBeNull();
+    expect(screen.queryByText('23명이 검증했어요!')).toBeNull();
+  });
+
+  test.each(['medium', 'expanded'] as const)('%s never treats review totals as unknown author counts', async snapPoint => {
+    const place = places[0];
+    await renderWithProviders(<MapBottomSheet {...categoryProps([], {
+      content: { type: 'place-preview', placeId: place.id }, selectedPlace: place, snapPoint,
+      previewFallbackContentByPlaceId: {
+        [String(place.id)]: { amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '',
+          reviewCount: 7, reviewState: 'ready' },
+      },
+    })} />);
+    expect(screen.queryByText('7명이 검증했어요!')).toBeNull();
+  });
+
   test('Android 전국 전체 카드는 중복 블러 비트맵 없이 표시 크기로 이미지를 디코딩한다', async () => {
     jest.replaceProperty(Platform, 'OS', 'android');
     const feedPlaces = Array.from({ length: 20 }, (_, index) => ({
@@ -1553,6 +1724,31 @@ describe('MapBottomSheet recommendations', () => {
     await view.rerender(<MapBottomSheet {...base} places={places} />);
     expect(screen.getByText(places[0].name)).toBeTruthy();
     expect(screen.getByText('데이터를 불러오지 못했습니다')).toBeTruthy();
+  });
+
+  test.each(['LIGHT', 'DARK'] as const)('%s 전체 카테고리는 지도 내비게이션과 같은 아이콘을 사용하고 별도 검은 원을 채우지 않는다', async (appearancePreference) => {
+    const view = await renderWithProviders(<MapBottomSheet {...categoryProps([])} />, { appearancePreference });
+    const all = () => screen.getByRole('tab', { name: '전체' });
+    // Unselected is the Figma map ring (maping_outline.svg), never a filled silhouette.
+    expect(within(all()).getByTestId('map-category-all-outline')).toHaveProp('color',
+      (appearancePreference === 'DARK' ? darkColors : lightColors).textSecondary);
+    await view.user.press(all());
+    expect(within(all()).queryByTestId('map-category-all-outline')).toBeNull();
+    expect(within(all()).getByTestId('map-category-all-filled')).toHaveProp('color',
+      (appearancePreference === 'DARK' ? darkColors : lightColors).primary);
+  });
+
+  test('cached place keeps its translation controls when an offline refresh fails', async () => {
+    const place = places[0];
+    await renderWithProviders(<MapBottomSheet {...categoryProps([], {
+      content: { type: 'place-preview', placeId: place.id },
+      selectedPlace: place,
+      detailError: new Error('offline refresh failed'),
+      onRetryDetail: jest.fn(),
+    })} />);
+    expect(screen.getByTestId('place-name-translation')).toBeTruthy();
+    expect(screen.queryByText('데이터를 불러오지 못했습니다')).toBeNull();
+    expect(screen.getByLabelText(place.name)).toBeTruthy();
   });
 
   test('deep-linked place failure shows recovery without falling into the home feed', async () => {
@@ -1635,6 +1831,23 @@ describe('MapBottomSheet recommendations', () => {
     }
   });
 
+  test('튜토리얼 중 지역 권한 안내만 숨기고 전국 트렌드는 유지하며 종료 후 안내를 복원한다', async () => {
+    const props = categoryProps([], {
+      localFeed: rankedFeed([], 'location-denied'),
+      nationalFeed: rankedFeed(rankedPlaces),
+    });
+    const tree = (suppressLocationStatus: boolean) => <MapTutorialContext.Provider value={{
+      suppressLocationStatus, activeTarget: null, register: jest.fn(), refresh: jest.fn(),
+    }}><MapBottomSheet {...props} /></MapTutorialContext.Provider>;
+    const view = await renderWithProviders(tree(true));
+    expect(screen.queryByTestId('map-home-feed-state-location-denied')).toBeNull();
+    await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+    expect(screen.getAllByText(rankedPlaces[0].name).length).toBeGreaterThan(0);
+    await view.rerender(tree(false));
+    await view.user.press(screen.getByRole('tab', { name: '우리 지역 핫플' }));
+    expect(screen.getByTestId('map-home-feed-state-location-denied')).toBeOnTheScreen();
+  });
+
   test('지역 오류와 전국 오류·retry가 서로 덮어쓰지 않고 영어 문구도 독립적으로 표시된다', async () => {
     const localRetry = jest.fn();
     const nationalRetry = jest.fn();
@@ -1672,4 +1885,118 @@ describe('MapBottomSheet recommendations', () => {
     await act(async () => view.i18n.changeLanguage('en'));
     expect(screen.getByRole('status', { name: 'No places found in this category.' })).toBeVisible();
   });
+});
+
+function reviewHighlightsSheet(fallback: MapPreviewFallbackContent) {
+  const selectedPlace = places[0];
+  return <MapBottomSheet
+    activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+    content={{ type: 'place-preview', placeId: selectedPlace.id }} height={700} mediumTranslateY={300}
+    onBackHome={jest.fn()} onCreateReservation={jest.fn()} onDetailPress={jest.fn()}
+    onFilterPress={jest.fn()} onGoNowPress={jest.fn()} onHandlePress={jest.fn()}
+    onPlacePress={jest.fn()} onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()}
+    onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()} onToggleBookmark={jest.fn(async () => undefined)}
+    panHandlers={{} as GestureResponderHandlers} places={places}
+    previewFallbackContentByPlaceId={{ [String(selectedPlace.id)]: fallback }}
+    recommendationPlaces={[]} recommendationsState="ready" selectedPlace={selectedPlace}
+    sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded" />;
+}
+
+test.each(['LIGHT', 'DARK'] as const)('%s 리뷰 탭은 추천 집계와 정확한 비율을 보여주며 부분 집계임을 알린다', async appearancePreference => {
+  await renderWithProviders(reviewHighlightsSheet({
+    amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '', reviewState: 'ready',
+    reviewCount: 284, reviewSampleSize: 4, reviewParticipantCount: 3, reviewHighlightsComplete: false,
+    reviewHighlights: [
+      { reason: 'clean', label: '매장이 깨끗해요', count: 3 },
+      { reason: 'parking', label: '주차하기 편해요', count: 1 },
+    ],
+  }), { appearancePreference });
+  await fireEvent.press(screen.getByText('리뷰'));
+  expect(screen.getByTestId('place-review-highlights')).toBeVisible();
+  expect(screen.getByText(/이런 점을 좋아해요!/)).toBeVisible();
+  expect(screen.getByText(/3명 참여/)).toBeVisible();
+  expect(screen.queryByText(/284명 참여/)).toBeNull();
+  expect(screen.getByText('불러온 리뷰 4개 기준 · 전체 집계 아님')).toBeVisible();
+  expect(screen.getByRole('progressbar', { name: '매장이 깨끗해요' }).props.accessibilityValue).toEqual({ min: 0, max: 3, now: 3 });
+  const smaller = screen.getByTestId('place-review-highlight-parking');
+  expect(smaller.props.accessibilityValue).toEqual({ min: 0, max: 3, now: 1 });
+  expect(screen.getByTestId('place-review-highlight-fill-clean')).toHaveStyle({ width: '100%' });
+  expect(screen.getByTestId('place-review-highlight-fill-parking')).toHaveStyle({ width: `${(1 / 3) * 100}%` });
+});
+
+test('추천 태그가 없어도 섹션과 빈 상태를 표시하며 실패를 0으로 숨기지 않는다', async () => {
+  const base: MapPreviewFallbackContent = { amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '', reviewState: 'ready', reviewHighlights: [] };
+  const view = await renderWithProviders(reviewHighlightsSheet(base));
+  await fireEvent.press(screen.getByText('리뷰'));
+  expect(screen.getByText('아직 선택된 추천 태그가 없어요.')).toBeVisible();
+  await view.rerender(reviewHighlightsSheet({ ...base, reviewState: 'error' }));
+  expect(screen.getByText('추천 항목 집계를 불러오지 못했어요. 눌러서 다시 시도해 주세요.')).toBeVisible();
+  expect(screen.queryByText('아직 선택된 추천 태그가 없어요.')).toBeNull();
+});
+
+test('장소 요약은 추천 태그 상위 두 개를 편의기능 위치에 표시하고 일부 리뷰 기준을 밝힌다', async () => {
+  await renderWithProviders(reviewHighlightsSheet({
+    amenities: ['english', 'parking'], imageUrls: [], statusDescription: '', statusEmphasis: '', reviewState: 'ready',
+    topReviewReasons: ['clean', 'kind', 'photoSpot'], reviewSampleSize: 4, reviewHighlightsComplete: false,
+  }));
+  expect(screen.getByTestId('place-top-review-tags-clean')).toBeTruthy();
+  expect(screen.getByTestId('place-top-review-tags-kind')).toBeTruthy();
+  expect(screen.queryByTestId('place-top-review-tags-photoSpot')).toBeNull();
+  expect(screen.queryByTestId('map-detail-amenity-english')).toBeNull();
+  expect(screen.getByText('불러온 리뷰 4개 기준 · 전체 집계 아님')).toBeTruthy();
+});
+
+test.each(['medium', 'expanded'] as const)('%s 피드 전환 바는 세로 시트 드래그를 전달하면서 탭 전환을 유지한다', async snapPoint => {
+  const create = jest.spyOn(PanResponder, 'create');
+  const capture = jest.fn(() => true);
+  const move = jest.fn();
+  const view = await renderWithProviders(<MapBottomSheet
+    activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+    content={{ type: 'home' }} height={700} mediumTranslateY={300}
+    onBackHome={jest.fn()} onDetailPress={jest.fn()} onFilterPress={jest.fn()}
+    onGoNowPress={jest.fn()} onHandlePress={jest.fn()} onPlacePress={jest.fn()}
+    onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()} onSearchFocus={jest.fn()}
+    onSubmitSearch={jest.fn()} onToggleBookmark={jest.fn(async () => undefined)}
+    panHandlers={{ onMoveShouldSetResponderCapture: capture, onResponderMove: move }}
+    places={places} recommendationPlaces={[]} recommendationsState="ready" selectedPlace={null}
+    sheetChromeBottom={new Animated.Value(snapPoint === 'expanded' ? 0 : 300)}
+    sheetTranslateY={new Animated.Value(snapPoint === 'expanded' ? 0 : 300)} snapPoint={snapPoint}
+  />);
+  const header = screen.getByTestId('feed-segment-inset');
+  expect(within(screen.getByTestId('expanded-home-scroll')).queryByTestId('feed-segment-inset')).toBeNull();
+  const event = { nativeEvent: { pageX: 100, pageY: 160, touches: [] } };
+  await fireEvent(header, 'moveShouldSetResponderCapture', event);
+  await fireEvent(header, 'responderMove', event);
+  expect(capture).toHaveBeenCalledWith(event);
+  expect(move).toHaveBeenCalledWith(event);
+  await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+  expect(screen.getByRole('tab', { name: '전국 트렌드', selected: true })).toBeTruthy();
+  expect(screen.getByTestId('expanded-home-scroll').props.onMoveShouldSetResponderCapture).toBeUndefined();
+  const track = screen.getByTestId('feed-segment-drag-track');
+  const feedSwipe = screen.getByTestId('map-feed-swipe');
+  const heldTouch = { nativeEvent: { pageX: 300, pageY: 50, touches: [{}] } };
+  await fireEvent(feedSwipe, 'startShouldSetResponderCapture', heldTouch);
+  await fireEvent(header, 'touchStart', heldTouch);
+  expect(feedSwipe.props.onMoveShouldSetResponderCapture({
+    nativeEvent: { pageX: 120, pageY: 50, touches: [{}] },
+  })).toBe(false);
+  // The mocked native View owns the ref used to measure screen coordinates.
+  const nativeTrack = track.unstable_fiber?.return?.stateNode as { measureInWindow: jest.Mock };
+  nativeTrack.measureInWindow.mockImplementation(callback => callback(20, 0, 360, 48));
+  await fireEvent(screen.getByTestId('feed-segment-control'), 'layout', {
+    nativeEvent: { layout: { width: 360, height: 48, x: 0, y: 0 } },
+  });
+  const callbacks = create.mock.calls[0][0];
+  const touch = {} as GestureResponderEvent;
+  const gesture = (moveX: number) => ({ moveX, dx: moveX - 300, dy: 0 } as PanResponderGestureState);
+  await act(() => callbacks.onStartShouldSetPanResponderCapture?.(touch, gesture(300)));
+  expect(callbacks.onMoveShouldSetPanResponderCapture?.(touch, gesture(120))).toBe(true);
+  await act(() => callbacks.onPanResponderGrant?.(touch, gesture(290)));
+  await act(() => callbacks.onPanResponderMove?.(touch, gesture(120)));
+  // No release: crossing halves must already switch the feed, in both directions.
+  expect(screen.getByRole('tab', { name: '우리 지역 핫플', selected: true })).toBeTruthy();
+  await act(() => callbacks.onPanResponderMove?.(touch, gesture(300)));
+  expect(screen.getByRole('tab', { name: '전국 트렌드', selected: true })).toBeTruthy();
+  await act(() => callbacks.onPanResponderRelease?.(touch, gesture(300)));
+  create.mockRestore();
 });

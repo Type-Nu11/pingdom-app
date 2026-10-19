@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, ScrollView, View } from 'react-native';
 import { useReducedMotion } from '../../../../shared/motion';
 import { Trans, useTranslation } from 'react-i18next';
@@ -50,29 +50,15 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
   const last = index === MAP_TUTORIAL_STEPS.length - 1;
   const values = { username: username?.trim() || t('mapTutorial.guest') };
   const foreground = { color: colors.textStrong };
+  // Glass/FillRaised arrow circle and Label/Alternative glyphs, with the dark-only Glass/Stroke.
+  const arrowColors = { color: colors.textAlternative, fill: colors.glassFillRaised, stroke: colors.glassStroke };
   const accent = <S.Accent style={{ color: colors.primary }} />;
   const { top, bottom, maxHeight } = getTutorialCardPlacement({ step, target, height,
     topInset: insets.top, bottomInset: insets.bottom });
-  const [cardHeight, setCardHeight] = useState(0);
-  const translateY = useRef(new Animated.Value(0)).current;
-  const positioned = useRef(false);
-  const destination = top !== undefined && bottom !== undefined
-    ? top + Math.max(0, height - top - bottom - cardHeight) / 2
-    : top ?? height - (bottom ?? 0) - cardHeight;
-  useEffect(() => {
-    if (!cardHeight) return;
-    if (!positioned.current || reduceMotion) {
-      translateY.setValue(destination);
-      positioned.current = true;
-      return;
-    }
-    const movement = Animated.timing(translateY, {
-      toValue: destination, duration: 750,
-      easing: Easing.out(Easing.cubic), useNativeDriver: true,
-    });
-    movement.start();
-    return () => movement.stop();
-  }, [cardHeight, destination, reduceMotion, translateY]);
+  const cardWidth = Math.min(360, width - insets.left - insets.right - 42);
+  const cardLeft = (width - cardWidth) / 2;
+  const verificationTarget = step === 'verification' && target;
+  const cardBelowTarget = top !== undefined && bottom === undefined;
   const line = (key: string) => <S.Body style={foreground}>
     <Trans i18nKey={key} values={values} components={{ accent }} />
   </S.Body>;
@@ -84,11 +70,11 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
     <S.Actions style={step === 'welcome' ? { justifyContent: 'flex-end' } : { gap: 12 }}>
                 {index > 0 ? <S.Arrow accessibilityLabel={t('mapTutorial.previous')} accessibilityRole="button"
                   disabled={busy} hitSlop={6} onPress={onPrevious} testID="map-tutorial-previous">
-                  <S.ArrowAsset pointerEvents="none" style={{ transform: [{ scaleX: -1 }] }}><Next /></S.ArrowAsset>
+                  <S.ArrowAsset pointerEvents="none" style={{ transform: [{ scaleX: -1 }] }}><Next {...arrowColors} /></S.ArrowAsset>
                 </S.Arrow>  : null}
                 {!last ? <S.Arrow accessibilityLabel={t('mapTutorial.next')} accessibilityRole="button"
                   disabled={busy} hitSlop={6} onPress={onNext} testID="map-tutorial-next">
-                  <S.ArrowAsset pointerEvents="none"><Next /></S.ArrowAsset>
+                  <S.ArrowAsset pointerEvents="none"><Next {...arrowColors} /></S.ArrowAsset>
                 </S.Arrow>  : null}
               </S.Actions>
   );
@@ -106,6 +92,16 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
         <Rect width={width} height={height}
           fill={colorScheme === 'dark' ? 'rgba(0,0,0,0.48)' : 'rgba(0,0,0,0.3)'}
           mask="url(#tutorial-spotlight)" />
+        {verificationTarget ? <Rect
+          x={target.x - 3} y={target.y - 3} width={target.width + 6} height={target.height + 6}
+          rx={Math.min(30, target.height / 2 + 3)} fill="transparent"
+          stroke="white" strokeWidth={7}
+        /> : null}
+        {verificationTarget ? <Rect
+          x={target.x - 3} y={target.y - 3} width={target.width + 6} height={target.height + 6}
+          rx={Math.min(30, target.height / 2 + 3)} fill="transparent"
+          stroke={colors.primary} strokeWidth={3}
+        /> : null}
         {target && colorScheme === 'dark' ? <Rect
           x={target.x + 1} y={target.y + 1}
           width={Math.max(0, target.width - 2)} height={Math.max(0, target.height - 2)}
@@ -115,7 +111,7 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
         /> : null}
       </Svg>
       {target ? <Pressable
-        accessibilityLabel={t(last ? 'mapTutorial.finish' : 'mapTutorial.next')}
+        accessibilityLabel={t(verificationTarget ? 'visitVerification.title' : last ? 'mapTutorial.finish' : 'mapTutorial.next')}
         accessibilityRole="button"
         disabled={busy}
         onPress={onNext}
@@ -124,18 +120,22 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
       /> : null}
       <S.CardPositioner
         pointerEvents={busy ? "none" : "box-none"}
-        style={{ top: 0, bottom: 0, justifyContent: 'flex-start', width: Math.min(360, width - insets.left - insets.right - 42),
-          left: (width - Math.min(360, width - insets.left - insets.right - 42)) / 2 }}
+        style={{ top, bottom, justifyContent: top !== undefined && bottom !== undefined ? 'center' : top !== undefined ? 'flex-start' : 'flex-end', width: cardWidth,
+          left: cardLeft }}
         testID="map-tutorial-card-position"
       >
-        <S.CardShadow testID="map-tutorial-card"
-          onLayout={event => setCardHeight(event.nativeEvent.layout.height)}
-          style={{ opacity: cardHeight ? 1 : 0, transform: [{ translateY }] }}>
-        <S.Card intensity={32} tintColor={colorScheme === 'dark' ? 'rgba(38,38,43,0.94)' : 'rgba(255,255,255,0.88)'}>
-          <ScrollView bounces={false} showsVerticalScrollIndicator={false}
+        <S.CardShadow testID="map-tutorial-card" style={{ maxHeight }}>
+        {verificationTarget ? <S.Pointer pointerEvents="none" testID="map-tutorial-pointer" style={{
+          left: Math.max(24, Math.min(cardWidth - 44, target.x + target.width / 2 - cardLeft - 10)),
+          ...(cardBelowTarget
+            ? { top: -10, borderBottomWidth: 10, borderBottomColor: colors.surface }
+            : { bottom: -10, borderTopWidth: 10, borderTopColor: colors.surface }),
+        }} /> : null}
+        <S.Card style={{ maxHeight }}>
+          <ScrollView bounces={false} showsVerticalScrollIndicator
             key={step}
             style={{ maxHeight }}
-            contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 20, gap: 6 }}>
+            contentContainerStyle={{ paddingTop: 16, paddingBottom: 24, paddingHorizontal: 20, gap: 6 }}>
             <S.Progress accessibilityRole="progressbar"
               accessibilityLabel={t('mapTutorial.progress', { current: index + 1, total: MAP_TUTORIAL_STEPS.length })}
               accessibilityValue={{ min: 1, max: MAP_TUTORIAL_STEPS.length, now: index + 1 }}
@@ -150,7 +150,7 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
                 <S.HeaderControls>
                 {step !== 'welcome' ? actions : null}
                 <S.CloseButton accessibilityLabel={t('mapTutorial.close')} accessibilityRole="button" hitSlop={6}
-                  disabled={busy} onPress={onClose} testID="map-tutorial-close"><Close /></S.CloseButton>
+                  disabled={busy} onPress={onClose} testID="map-tutorial-close"><Close color={colors.textAlternative} /></S.CloseButton>
                 </S.HeaderControls>
               </S.Header>
               <View accessibilityLiveRegion="polite" key={step} testID={`map-tutorial-step-${step}`}>
@@ -163,7 +163,9 @@ export function MapTutorialOverlay({ index, width, height, target, username, onC
                   {body('mapTutorial.welcome.help')}
                   {line('mapTutorial.welcome.start')}
                 </S.Welcome> : <S.Lines>
-                  {line(`mapTutorial.${step}.prompt`)}
+                  {line(verificationTarget
+                    ? `mapTutorial.verification.${cardBelowTarget ? 'promptAbove' : 'promptBelow'}`
+                    : `mapTutorial.${step}.prompt`)}
                   {body(`mapTutorial.${step}.body`)}
                 </S.Lines>}
               </View>

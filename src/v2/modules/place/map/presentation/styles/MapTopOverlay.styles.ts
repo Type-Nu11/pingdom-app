@@ -10,11 +10,15 @@ export const MAP_TOP_OVERLAY_METRICS = {
   categoryHeight: 34,
   categoryLabelSize: 14,
   headerHeight: 60,
+  headerTopPadding: Platform.OS === 'android' ? 3 : 1,
   profileIconSize: 44,
   searchHeight: 44,
   searchIconSize: 20,
   searchLabelSize: 18,
 } as const;
+
+// Extra offset between the safe-area top and the header card.
+export const MAP_TOP_OVERLAY_SAFE_TOP_PADDING = MAP_TOP_OVERLAY_METRICS.headerTopPadding;
 
 export const SafeOverlay = styled(SafeAreaView)`
   position: absolute;
@@ -22,7 +26,7 @@ export const SafeOverlay = styled(SafeAreaView)`
   right: 0;
   left: 0;
   z-index: 40;
-  padding-top: ${Platform.OS === 'android' ? 3 : 1}px;
+  padding-top: ${MAP_TOP_OVERLAY_SAFE_TOP_PADDING}px;
 `;
 
 export const Header = styled.View`

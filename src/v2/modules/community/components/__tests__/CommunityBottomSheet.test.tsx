@@ -1,9 +1,10 @@
 import React from 'react';
-import { screen } from '@testing-library/react-native';
+import { screen, within } from '@testing-library/react-native';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { ApiError } from '../../../../shared/api';
+import { lightColors, lightLiquidGlass } from '../../../../shared/theme';
 import { useCategories, useCommunityFeed, useCountries } from '../../hooks/useCommunity';
 import type { CommunityPostPage, ListCategoriesResponse } from '../../api/communityApi';
 import CommunityBottomSheet from '../CommunityBottomSheet';
@@ -149,6 +150,22 @@ describe('CommunityBottomSheet Figma layout', () => {
     }));
   });
 
+  test.each([0, 150, 300])('clips the list to the animated glass boundary at inset %s', async bottom => {
+    await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation}
+      sheetChromeBottom={new Animated.Value(bottom)} />);
+    const viewport = screen.getByTestId('community-sheet-content-viewport');
+    expect(viewport).toHaveStyle({ position: 'absolute', top: 0, overflow: 'hidden' });
+    const gap = Math.min(bottom / 300, 1) * 8;
+    expect(viewport).toHaveStyle({
+      bottom: bottom + gap, left: gap, right: gap,
+      borderTopLeftRadius: 36, borderTopRightRadius: 36,
+      borderBottomLeftRadius: Math.min(bottom / 300, 1) * 48,
+      borderBottomRightRadius: Math.min(bottom / 300, 1) * 48,
+    });
+    expect(within(viewport).getByTestId('v2-community-post-list')).toBeTruthy();
+    expect(within(viewport).queryByRole('tab', { name: '즐겨찾기' })).toBeNull();
+  });
+
   test('opens on the "전체" tab and tags a card only with the category its item carries', async () => {
     jest.mocked(useCommunityFeed).mockReturnValue(postsResult({
       data: {
@@ -218,5 +235,55 @@ describe('CommunityBottomSheet category failure', () => {
     expect(screen.getByTestId('v2-community-categories-error')).toBeTruthy();
     expect(screen.getByText('연결에 문제가 있습니다')).toBeTruthy();
     expect(screen.queryByTestId('v2-community-list-empty')).toBeNull();
+  });
+});
+
+describe('CommunityBottomSheet header alignment', () => {
+  beforeEach(() => {
+    jest.mocked(useCategories).mockReturnValue(categoriesResult());
+    jest.mocked(useCountries).mockReturnValue(countriesResult());
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult());
+  });
+
+  test('44dp 제목 행이 핸들 바로 아래에서 시작하고 헤더도 드래그 영역이다', async () => {
+    const onMoveShouldSetResponderCapture = jest.fn();
+    await renderSheet(
+      <CommunityBottomSheet
+        {...createBottomSheetProps()}
+        {...navigation}
+        panHandlers={{ onMoveShouldSetResponderCapture } as GestureResponderHandlers}
+      />,
+    );
+    const header = screen.getByTestId('v2-community-sheet-header');
+    expect(header.props.onMoveShouldSetResponderCapture).toBe(onMoveShouldSetResponderCapture);
+    // Figma Community (10250:35439): the title row follows the 19dp handle area directly.
+    expect(header.parent).not.toHaveStyle({ marginTop: -9 });
+    expect(screen.getByRole('header', { name: '커뮤니티' })).toHaveStyle({ fontSize: 20, lineHeight: 26 });
+  });
+
+  test.each([
+    ['medium', 8],
+    ['expanded', 8],
+  ] as const)('%s 커뮤니티 시트 내용은 386dp 열 안에서 화면 좌우 24dp에 정렬된다', async (snapPoint, inset) => {
+    await renderSheet(
+      <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />,
+    );
+    expect(screen.getByTestId('v2-community-sheet-inner')).toHaveStyle({ paddingLeft: inset });
+  });
+
+  test('하프 칩은 글래스, 펼친 시트 칩은 Background/Normal + Fill/Neutral 테두리로 그림자 없이 그린다', async () => {
+    const half = await renderSheet(
+      <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint="medium" />,
+    );
+    const halfChip = screen.getByTestId('v2-community-sheet-category-TRAVEL');
+    expect(halfChip).toHaveStyle({ backgroundColor: lightLiquidGlass.category.tint, boxShadow: lightLiquidGlass.category.shadow });
+    half.unmount();
+
+    await renderSheet(
+      <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint="expanded" />,
+    );
+    const flatChip = screen.getByTestId('v2-community-sheet-category-TRAVEL');
+    expect(flatChip).toHaveStyle({ backgroundColor: lightColors.background, borderColor: lightColors.fillNeutral });
+    expect(flatChip).not.toHaveStyle({ boxShadow: lightLiquidGlass.category.shadow });
   });
 });

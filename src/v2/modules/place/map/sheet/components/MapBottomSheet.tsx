@@ -1,3 +1,10 @@
+import { useContentDeletion } from '../../../../../shared/components/useContentDeletion';
+import { useDeletePlaceReview } from '../../../visit-verification';
+import { ReviewReasonIcon } from '../../../../../shared/components/ReviewReasonIcon';
+import OwnerContentActions from '../../../../../shared/components/OwnerContentActions';
+import TranslationAttribution, { useTranslationAttribution } from '../../../translation/TranslationAttribution';
+import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
+import PlaceNameTranslation from '../../../translation/PlaceNameTranslation';
 import Skeleton, { SkeletonGroup, SkeletonBlock } from '../../../../../shared/components/Skeleton';
 import DetailBackAsset from '../../../../../../assets/v2/icons/place/detail-back.svg';
 import DetailBookmarkAsset from '../../../../../../assets/v2/icons/place/detail-bookmark.svg';
@@ -27,10 +34,10 @@ import {
   Animated,
   GestureResponderHandlers,
   Image,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   Text as NativeText,
   type TextProps,
   useWindowDimensions,
@@ -45,6 +52,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMapTutorial } from '../../tutorial/context';
 import GroupAsset from '../../../../../../assets/v2/icons/place/Group.svg';
 import ParkAsset from '../../../../../../assets/v2/icons/place/Park.svg';
 import ArtAsset from '../../../../../../assets/v2/icons/place/art_svg.svg';
@@ -56,9 +64,11 @@ import FoodAsset from '../../../../../../assets/v2/icons/place/food_svg.svg';
 import HeritageAsset from '../../../../../../assets/v2/icons/place/heritage.svg';
 import HotPlaceAsset from '../../../../../../assets/v2/icons/place/hotplace.svg';
 import MapAsset from '../../../../../../assets/v2/icons/place/maping_svg.svg';
+import MapNavigationIcon from './MapNavigationIcon';
 import MusicAsset from '../../../../../../assets/v2/icons/place/music_svg.svg';
 import PopupAsset from '../../../../../../assets/v2/icons/place/popup_svg.svg';
 import RecommendationTitleAsset from '../../../../../../assets/v2/icons/place/Subtract.svg';
+import CloseMediumAsset from '../../../../../../assets/v2/icons/community/close-medium.svg';
 import {
   FadeSlideTransition,
   MOTION_DURATION,
@@ -73,9 +83,9 @@ import type { PlaceOperatingSummaryText } from '../../../detail';
 import type { ReservationCtaState } from '../../../../booking';
 import GlassSurface from '../../presentation/components/GlassSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
+import MapSheetSurface from './MapSheetSurface';
 import { formatDistance as formatLocalizedDistance } from '../../../../../shared/i18n/formatters';
 import { lightColors } from '../../../../../shared/theme/colors';
-import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
 import { useTheme } from 'styled-components/native';
 import type { AppTheme } from '../../../../../shared/theme';
 import { normalizePlaceCategory } from '../../../core/placeCategory';
@@ -107,6 +117,7 @@ export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
 
 export type MapPreviewFallbackContent = {
   amenities: Array<'english' | 'parking'>;
+  topReviewReasons?: ReviewReasonKey[];
   coupons?: Array<{ period: string; title: string }>;
   englishName?: string;
   events?: Array<{ period: string; title: string }>;
@@ -121,10 +132,16 @@ export type MapPreviewFallbackContent = {
   reviewCount?: number;
   reservation?: ReservationCtaState;
   reviewState?: 'empty' | 'error' | 'loading' | 'ready';
-  reviewHighlights?: Array<{ count: number; label: string }>;
+  reviewHighlights?: Array<{ count: number; label: string; reason?: ReviewReasonKey }>;
+  reviewSampleSize?: number;
+  reviewHighlightsComplete?: boolean;
   reviewParticipantCount?: number;
   reviews?: Array<{
     author: string;
+    placeId?: number;
+    isOwnReview?: boolean;
+    onEdit?: () => void;
+    reviewId?: number;
     avatarUrl?: string;
     createdAt: string;
     imageUrls?: string[];
@@ -174,6 +191,8 @@ type MapBottomSheetProps = {
   bookmarkPendingPlaceIds?: Record<string, boolean>;
   isBookmarkStateLoading?: boolean;
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   content: BottomSheetContent;
   couponContent?: React.ReactNode;
   height: number;
@@ -230,28 +249,25 @@ type MapBottomSheetProps = {
   onRetryResults?: () => unknown;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
   userName?: string;
 };
 
-type IconProps = {
-  active?: boolean;
-  size?: number;
-};
+
 
 type SheetCategory = MapHomeCategory;
 
 // Keep the Figma typography stable when an Android device uses a larger system font scale.
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 const useMapSheetStyles = () => {
-  const { colors } = useTheme();
-  return useMemo(() => createStyles(colors), [colors]);
+  const { colors, liquidGlass: themedGlass } = useTheme();
+  return useMemo(() => createStyles(colors, themedGlass), [colors, themedGlass]);
 };
 
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 const HOME_SHEET_VISIBLE_HEIGHT = 386;
 const HOME_SHEET_HANDLE_HEIGHT = 19;
 
@@ -267,21 +283,6 @@ const CATEGORY_OPTIONS: Array<{ id: SheetCategory }> = [
   { id: 'popup' }, { id: 'music' }, { id: 'food' }, { id: 'fashion' }, { id: 'beauty' },
   { id: 'art' }, { id: 'cafe' }, { id: 'heritage' }, { id: 'etc' },
 ];
-
-export const MapPinIcon = ({ active = false, size = 24 }: IconProps) => {
-  const themedColors = useTheme().colors ?? lightColors;
-  const color = active ? themedColors.primary : themedColors.text;
-  return <Svg height={size} viewBox="0 0 24 24" width={size}>
-    <Path
-      d="M12 22s7-6.1 7-13A7 7 0 0 0 5 9c0 6.9 7 13 7 13Z"
-      fill={active ? color : 'none'}
-      stroke={color}
-      strokeLinejoin="round"
-      strokeWidth="2"
-    />
-    <Circle cx="12" cy="9" fill={active ? themedColors.onPrimary : 'none'} r="2.4" stroke={active ? themedColors.onPrimary : color} strokeWidth="1.5" />
-  </Svg>
-};
 
 const CardScrim = () => (
   <View pointerEvents="none" style={styles.cardScrim}>
@@ -315,7 +316,7 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
 
   switch (category) {
     case 'all':
-      return <MapPinIcon active={active} size={18} />;
+      return <MapNavigationIcon selected={active} color={color} size={18} testID="map-category-all" />;
     case 'popup':
       return <PopupAsset color={color} height={19} width={20} />;
     case 'music':
@@ -338,21 +339,82 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
 };
 
 const FeedSegment = ({
+  expanded = false,
+  sheetPanHandlers,
   feed,
   onChange,
+  onTouchStart,
 }: {
+  expanded?: boolean;
+  sheetPanHandlers: GestureResponderHandlers;
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
+  onTouchStart: () => void;
 }) => {
   const { t } = useTranslation();
-  const { colors, liquidGlass: themedGlass } = useTheme();
+  const { colors } = useTheme();
   const styles = useMapSheetStyles();
   const [segmentWidth, setSegmentWidth] = useState(0);
   const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
   const reduceMotion = useReducedMotion();
   const indicatorWidth = Math.max(0, (segmentWidth - 8) / 2);
+  const trackRef = useRef<View>(null);
+  const trackLeft = useRef<number | null>(null);
+  const dragging = useRef(false);
+  const dragPosition = useRef(0);
+  const current = useRef({ feed, onChange, segmentWidth });
+  current.current = { feed, onChange, segmentWidth };
+  const selectAtFinger = (pageX: number) => {
+    if (trackLeft.current === null || current.current.segmentWidth <= 8) return;
+    const width = current.current.segmentWidth;
+    const x = pageX - trackLeft.current;
+    // The thumb follows the finger; content changes as soon as it crosses halves.
+    indicatorProgress.stopAnimation();
+    indicatorProgress.setValue(Math.max(0, Math.min(1, (x - width / 4) / (width / 2))));
+    const next = x < width / 2 ? 'local' : 'national';
+    if (next !== current.current.feed) {
+      current.current.feed = next;
+      current.current.onChange(next);
+    }
+  };
+  const horizontalDrag = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponderCapture: () => {
+      trackLeft.current = null;
+      trackRef.current?.measureInWindow((x) => {
+        trackLeft.current = x;
+        if (dragging.current) selectAtFinger(dragPosition.current);
+      });
+      return false;
+    },
+    onMoveShouldSetPanResponderCapture: (_, gesture) => (
+      Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2
+    ),
+    onPanResponderGrant: (_, gesture) => {
+      dragging.current = true;
+      dragPosition.current = gesture.moveX;
+      selectAtFinger(gesture.moveX);
+    },
+    onPanResponderMove: (_, gesture) => {
+      dragPosition.current = gesture.moveX;
+      selectAtFinger(gesture.moveX);
+    },
+    onPanResponderRelease: () => {
+      dragging.current = false;
+      runTimingMotion(indicatorProgress, current.current.feed === 'local' ? 0 : 1, {
+        duration: MOTION_DURATION.transition, reduceMotion, useNativeDriver: true,
+      });
+    },
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderTerminate: () => {
+      dragging.current = false;
+      indicatorProgress.setValue(current.current.feed === 'local' ? 0 : 1);
+    },
+  // Mutable selection and layout are read through refs during an active touch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [indicatorProgress, reduceMotion]);
 
   useEffect(() => {
+    if (dragging.current) return;
     const animation = runTimingMotion(indicatorProgress, feed === 'local' ? 0 : 1, {
       duration: MOTION_DURATION.transition,
       reduceMotion,
@@ -362,66 +424,87 @@ const FeedSegment = ({
     return () => animation?.stop();
   }, [feed, indicatorProgress, reduceMotion]);
 
+  const segmentContent = (
+    <>
+      {indicatorWidth > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.segmentIndicator,
+            {
+              backgroundColor: expanded ? colors.background : colors.glassFillRaised,
+              transform: [{
+                translateX: indicatorProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, indicatorWidth],
+                }),
+              }],
+              width: indicatorWidth,
+            },
+          ]}
+          testID="feed-segment-indicator"
+        />
+      ) : null}
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'local' }}
+        onPress={() => onChange('local')}
+        style={styles.segment}
+      >
+        <HotPlaceAsset
+          color={feed === 'local' ? colors.primary : colors.labelAssistive}
+          height={20}
+          width={16}
+        />
+        <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+          {t('map.sheet.localHotPlaces')}
+        </AppText>
+      </Pressable>
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'national' }}
+        onPress={() => onChange('national')}
+        style={styles.segment}
+      >
+        <MapAsset
+          color={feed === 'national' ? colors.primary : colors.labelAssistive}
+          height={20}
+          width={18}
+        />
+        <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+          {t('map.sheet.nationwideTrends')}
+        </AppText>
+      </Pressable>
+    </>
+  );
+
+  // Figma Component 2: the floating sheet (4525:25520) uses a Glass/FillSubtle track with a
+  // Glass/FillRaised thumb; the -Up frame (4683:7488) a flat Fill/Alternative track with a
+  // Background/Normal thumb and no shadow, spanning the full-width sheet minus 8px.
   return (
-    <View style={styles.segmentInset}>
-      <View style={styles.segmentShadow}>
-        <GlassSurface
-          glassEffectStyle="regular"
-          intensity={56}
-          onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
-          style={styles.segmentOuter}
-          testID="feed-segment-control"
-          tintColor={themedGlass.navigation.tint}
-        >
-          {indicatorWidth > 0 ? (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.segmentIndicator,
-                {
-                  transform: [{
-                    translateX: indicatorProgress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, indicatorWidth],
-                    }),
-                  }],
-                  width: indicatorWidth,
-                },
-              ]}
-              testID="feed-segment-indicator"
-            />
-          ) : null}
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: feed === 'local' }}
-            onPress={() => onChange('local')}
-            style={styles.segment}
+    <View {...sheetPanHandlers} onTouchStart={onTouchStart} style={expanded ? undefined : styles.segmentInset} testID="feed-segment-inset">
+      <View {...horizontalDrag.panHandlers} ref={trackRef} collapsable={false}
+        style={expanded ? styles.segmentFrame : styles.segmentShadow} testID="feed-segment-drag-track">
+        {expanded ? (
+          <View
+            onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
+            style={[styles.segmentOuter, { backgroundColor: colors.fillAlternative }]}
+            testID="feed-segment-control"
           >
-            <HotPlaceAsset
-              color={feed === 'local' ? colors.primary : colors.textMuted}
-              height={20}
-              width={16}
-            />
-            <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
-              {t('map.sheet.localHotPlaces')}
-            </AppText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: feed === 'national' }}
-            onPress={() => onChange('national')}
-            style={styles.segment}
+            {segmentContent}
+          </View>
+        ) : (
+          <GlassSurface
+            glassEffectStyle="regular"
+            intensity={56}
+            onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
+            style={styles.segmentOuter}
+            testID="feed-segment-control"
+            tintColor={colors.glassFillSubtle}
           >
-            <MapAsset
-              color={feed === 'national' ? colors.primary : colors.textMuted}
-              height={20}
-              width={18}
-            />
-            <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
-              {t('map.sheet.nationwideTrends')}
-            </AppText>
-          </Pressable>
-        </GlassSurface>
+            {segmentContent}
+          </GlassSurface>
+        )}
       </View>
     </View>
   );
@@ -481,7 +564,7 @@ const PlaceArtwork = React.memo(({
         accessibilityLabel={fallbackMessage}
         style={[styles.artwork, styles.artworkFallback, variant === 'grid' && styles.gridArtwork]}
       >
-        <MapPinIcon active size={24} />
+        <UnavailableStateIcon size={64} />
         <AppText style={styles.artworkFallbackText}>{fallbackMessage}</AppText>
       </View>
     );
@@ -659,7 +742,7 @@ const RecommendationBookmarkButton = ({
   );
 };
 
-const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+const PreviewArtwork = ({ imageUrl, onLoadError }: { imageUrl?: string; onLoadError?: () => void }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   const [hasImageError, setHasImageError] = useState(false);
@@ -673,7 +756,7 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
 
     return (
       <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
-        <MapPinIcon active size={28} />
+        <UnavailableStateIcon size={88} />
         <AppText style={styles.previewArtworkFallbackText}>{fallbackMessage}</AppText>
       </View>
     );
@@ -682,13 +765,30 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
   return (
     <Image
       accessibilityLabel={t('map.sheet.image')}
-      onError={() => setHasImageError(true)}
+      onError={() => { if (onLoadError) onLoadError(); else setHasImageError(true); }}
       resizeMode="cover"
       source={{ uri: imageUrl }}
       style={styles.previewArtwork}
     />
   );
 };
+
+// Failed gallery entries disappear instead of becoming another photo-shaped error card.
+function useVisiblePlacePhotos(placeId: number | string, sources: readonly (string | undefined)[]) {
+  const urls = [...new Set(sources.filter((url): url is string => Boolean(url?.trim())))];
+  const key = JSON.stringify([placeId, urls]);
+  const currentKey = useRef(key);
+  currentKey.current = key;
+  const [failed, setFailed] = useState<{ key: string; urls: string[] }>({ key, urls: [] });
+  const failedUrls = failed.key === key ? failed.urls : [];
+  return {
+    urls: urls.filter(url => !failedUrls.includes(url)),
+    remove: (url: string) => {
+      if (currentKey.current !== key) return;
+      setFailed(previous => ({ key, urls: [...new Set([...(previous.key === key ? previous.urls : []), url])] }));
+    },
+  };
+}
 
 export const RecommendationFeaturedCard = ({
   bookmarked,
@@ -700,7 +800,7 @@ export const RecommendationFeaturedCard = ({
   place,
 }: {
   bookmarked: boolean;
-  designSize?: 'default' | 'reservation';
+  designSize?: 'default' | 'recommendation' | 'reservation';
   imageUrl?: string;
   onPress: () => void;
   onToggleBookmark: () => Promise<void> | void;
@@ -710,16 +810,19 @@ export const RecommendationFeaturedCard = ({
   const { i18n, t } = useTranslation();
   const styles = useMapSheetStyles();
   const distance = formatDistance(place, i18n.language);
+  // Figma Component 10 (5062:31880) is shared by the recommendation and reservation rows.
+  const isFigmaCard = designSize !== 'default';
+  const isRecommendation = designSize === 'recommendation';
   return (
     <RecommendationCardPressable
       accessibilityLabel={[place.name, place.recommendationReason, distance]
         .filter(Boolean)
         .join(', ')}
       onPress={onPress}
-      style={[styles.placeCard, designSize === 'reservation' && styles.reservationPlaceCard]}
+      style={[styles.placeCard, isFigmaCard && styles.reservationPlaceCard, isRecommendation && styles.recommendationPlaceCard]}
       testID={`recommendation-card-${place.id}`}
     >
-      <View style={[styles.placeCardArtwork, designSize === 'reservation' && styles.reservationPlaceCardArtwork]}>
+      <View style={[styles.placeCardArtwork, isFigmaCard && styles.reservationPlaceCardArtwork]}>
         <PlaceArtwork blurBottom imageUrl={imageUrl} />
         <CardScrim />
         <RecommendationBookmarkButton
@@ -729,12 +832,16 @@ export const RecommendationFeaturedCard = ({
           style={styles.cardBookmarkStar}
         />
         <View style={styles.placeCardBody}>
-          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, designSize === 'reservation' && styles.reservationPlaceCardName]}>
+          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, isFigmaCard && styles.reservationPlaceCardName]}>
             {place.name || t('map.sheet.placeMissing')}
           </AppText>
         </View>
       </View>
-      {place.recommendationReason ? (
+      {place.recommendationReason && isRecommendation ? (
+        <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationCardReason}>
+          {place.recommendationReason}
+        </AppText>
+      ) : place.recommendationReason ? (
         <View style={styles.recommendationMetaRow}>
           <RecommendationMetaIcon />
           <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationReason}>
@@ -742,7 +849,7 @@ export const RecommendationFeaturedCard = ({
           </AppText>
         </View>
       ) : null}
-      <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, designSize === 'reservation' && styles.reservationPlaceCardDistance]}>
+      <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, isFigmaCard && styles.reservationPlaceCardDistance, isRecommendation && styles.recommendationCardDistance]}>
         {t('map.sheet.distanceAway', { distance })}
       </AppText>
     </RecommendationCardPressable>
@@ -905,6 +1012,7 @@ const ExpandedHomeContent = ({
   activeCategory,
   bookmarkPendingPlaceIds,
   feed,
+  sheetPanHandlers,
   expandedInteractionsEnabled,
   expandedOnlyOpacity,
   onCategoryChange,
@@ -921,6 +1029,7 @@ const ExpandedHomeContent = ({
   activeCategory: SheetCategory;
   bookmarkPendingPlaceIds: Record<string, boolean>;
   feed: 'local' | 'national';
+  sheetPanHandlers: GestureResponderHandlers;
   expandedInteractionsEnabled: boolean;
   expandedOnlyOpacity: Animated.AnimatedInterpolation<number>;
   onCategoryChange: (category: SheetCategory) => void;
@@ -963,6 +1072,8 @@ const ExpandedHomeContent = ({
 
   return (
     <View {...feedPanHandlers} style={styles.expandedScroll} testID="map-feed-swipe">
+    {/* Keep the sheet grip outside the native vertical scroll responder. */}
+    <FeedSegment sheetPanHandlers={sheetPanHandlers} expanded={expandedInteractionsEnabled} feed={feed} onChange={onFeedChange} onTouchStart={blockHorizontalSwipe} />
     <ScrollView
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
@@ -972,7 +1083,6 @@ const ExpandedHomeContent = ({
       style={styles.expandedScroll}
       testID="expanded-home-scroll"
     >
-      <FeedSegment feed={feed} onChange={onFeedChange} />
       <FadeSlideTransition
         direction={feed === 'local' ? 0 : 1}
         stateKey={feed}
@@ -1090,6 +1200,8 @@ const EmptyCard = ({
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
+  const { suppressLocationStatus } = useMapTutorial();
+  if (suppressLocationStatus && ['location-denied', 'location-pending', 'invalid-location'].includes(state)) return null;
   const copyState = state === 'ready' ? 'empty' : state;
   const isCategoryEmpty = copyState === 'category-empty';
   const nationalCopy = feed === 'national' && ['empty', 'error', 'loading'].includes(copyState);
@@ -1121,8 +1233,7 @@ const EmptyCard = ({
       style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
       testID={`map-home-feed-state-${copyState}`}
     >
-      <View style={styles.emptyCardIcon}>{copyState === 'location-pending'
-        ? <MapPinIcon active size={24} /> : <UnavailableStateIcon size={64} />}</View>
+      <View style={styles.emptyCardIcon}><UnavailableStateIcon size={64} /></View>
       <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
       {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
       {retryable && onRetry ? (
@@ -1248,9 +1359,9 @@ const RecommendationContent = ({
       showsVerticalScrollIndicator={false}
       testID="recommendation-content-scroll"
     >
-      <View style={styles.recommendationHeader}>
+      <View style={styles.recommendationHeader} testID="recommendation-header">
         <View style={styles.recommendationTitleRow}>
-          <RecommendationTitleAsset height={22} width={22} />
+          <RecommendationTitleAsset height={20} width={20} />
           <AppText style={styles.recommendationTitle}>{t('map.sheet.recommendationTitle')}</AppText>
         </View>
         <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationSubtitle}>
@@ -1261,7 +1372,8 @@ const RecommendationContent = ({
         {state === 'ready' ? (
           <>
           <ScrollView
-            contentContainerStyle={styles.recommendationCardRow}
+            contentContainerStyle={[styles.recommendationCardRow, expandedInteractionsEnabled && styles.recommendationCardRowExpanded]}
+            testID="recommendation-card-row"
             horizontal
             nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
@@ -1269,6 +1381,7 @@ const RecommendationContent = ({
             {featuredPlaces.map((place) => (
               <RecommendationFeaturedCard
                 bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                designSize="recommendation"
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
                 key={`recommendation-featured-${place.id}`}
                 onPress={() => onPlacePress(place)}
@@ -1339,7 +1452,7 @@ const ResultRow = ({
   const styles = useMapSheetStyles();
   return (
   <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
-    <View style={styles.resultThumbnail}><MapPinIcon active size={25} /></View>
+    <View style={styles.resultThumbnail}><UnavailableStateIcon size={40} /></View>
     <View style={styles.resultTextBody}>
       <AppText numberOfLines={1} style={styles.resultName}>{place.name}</AppText>
       <AppText numberOfLines={1} style={styles.resultAddress}>{place.address}</AppText>
@@ -1349,29 +1462,40 @@ const ResultRow = ({
   );
 };
 
+const TopReviewFeatures = ({ content }: { content: MapPreviewFallbackContent }) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  return <View testID="place-top-review-features">
+    <ReviewFeatureTags reasons={content.topReviewReasons?.slice(0, 2) ?? []} variant="full" appearance="placeDetail" testID="place-top-review-tags" />
+    {!content.reviewHighlightsComplete && (content.reviewSampleSize ?? 0) > 0
+      ? <AppText style={styles.detailReviewCount}>{t('placeReviewSummary.partialBasis', { count: content.reviewSampleSize })}</AppText> : null}
+  </View>;
+};
+
 const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking'; expanded?: boolean }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   return (
-  <View style={expanded ? styles.detailAmenity : styles.previewAmenityChip}>
+  <View testID={`place-preview-amenity-${type}`} style={expanded ? styles.detailAmenity : styles.previewAmenityChip}>
     {expanded ? <View style={styles.detailAmenityIcon} testID={`map-detail-amenity-${type}`}>
       {type === 'english' ? <View style={styles.detailGlobeLayers}><DetailGlobeBaseAsset /><DetailGlobeLinesAsset style={styles.detailGlobeLines} /></View> : <DetailParkingAsset />}
     </View> : type === 'english'
-      ? <GroupAsset height={20} width={20} />
-      : <ParkAsset height={20} width={20} />}
+      ? <GroupAsset height={16} width={16} />
+      : <ParkAsset height={16} width={16} />}
     <AppText style={expanded ? styles.detailAmenityText : styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</AppText>
   </View>
   );
 };
 
-const ReviewHighlightIcon = ({ label }: { label: string }) => {
+const ReviewHighlightIcon = ({ label, reason: explicitReason }: { label: string; reason?: ReviewReasonKey }) => {
   const { t } = useTranslation();
-  const reason = (Object.keys(REASON_CODES) as ReviewReasonKey[]).find(key => t(reviewReasonLabelKey(key)) === label);
+  const reason = explicitReason ?? (Object.keys(REASON_CODES) as ReviewReasonKey[]).find(key => t(reviewReasonLabelKey(key)) === label);
   if (reason === 'photoSpot') return <DetailReviewPhotoAsset />;
   if (reason === 'clean') return <DetailReviewCleanAsset />;
   if (reason === 'multilingual') return <View style={{ width: 18, height: 18 }}><DetailReviewMultilingualBaseAsset /><DetailReviewMultilingualLinesAsset style={{ position: 'absolute', left: 0.35, top: 0 }} /></View>;
   if (reason === 'kind') return <DetailReviewKindAsset />;
   if (reason === 'delicious') return <DetailReviewDeliciousAsset />;
+  if (reason) return <ReviewReasonIcon reason={reason} height={18} />;
   return null;
 };
 
@@ -1400,7 +1524,7 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
 type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
 const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind; expanded?: boolean }) => {
-  const color = (useTheme().colors ?? lightColors).textSecondary;
+  const color = (useTheme().colors ?? lightColors).textAlternative;
   if (expanded) {
     if (kind === 'share') return <DetailShareAsset />;
     if (kind === 'reservation') return <DetailReservationAsset />;
@@ -1409,14 +1533,14 @@ const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind
   }
   if (kind === 'share') {
     return (
-      <Svg height={13} viewBox="0 0 16 16" width={13}>
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
         <Path d="M6 3H3.8A1.8 1.8 0 0 0 2 4.8v7.4A1.8 1.8 0 0 0 3.8 14h7.4a1.8 1.8 0 0 0 1.8-1.8V10M8 2h6v6M14 2 7.5 8.5" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
     );
   }
   if (kind === 'reservation') {
     return (
-      <Svg height={13} viewBox="0 0 16 16" width={13}>
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
         <Path d="M3 4.2A1.7 1.7 0 0 1 4.7 2.5h6.6A1.7 1.7 0 0 1 13 4.2v7.1a1.7 1.7 0 0 1-1.7 1.7H4.7A1.7 1.7 0 0 1 3 11.3V4.2Z" fill="none" stroke={color} strokeWidth={1.4} />
         <Path d="m6 8 1.3 1.3L10.4 6" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
@@ -1424,7 +1548,7 @@ const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind
   }
   if (kind === 'directions') {
     return (
-      <Svg height={14} viewBox="0 0 16 16" width={14}>
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
         <Path d="m2.2 2.7 11.6 4.7-5 1.2-1.4 4.7-5.2-10.6Z" fill="none" stroke={color} strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
     );
@@ -1435,6 +1559,7 @@ const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind
 const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, expanded = false, kind, label, onPress }: { expanded?: boolean; accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => {
   const styles = useMapSheetStyles();
   return <Pressable
+    hitSlop={expanded ? undefined : { top: 5, bottom: 5 }}
     accessibilityHint={accessibilityHint}
     accessibilityLabel={label}
     accessibilityRole={onPress && !disabled ? 'button' : undefined}
@@ -1458,6 +1583,9 @@ const formatPreviewCategory = (category: string) => {
   return normalized === 'game' ? 'popup' : normalized;
 };
 
+// Figma draws the preview icon buttons at 32px; the slop keeps a 44px touch target.
+const PREVIEW_ICON_BUTTON_HIT_SLOP = 6;
+
 const PreviewContent = ({
   activeAction,
   bookmarked,
@@ -1477,6 +1605,7 @@ const PreviewContent = ({
   pending,
   placeActionBusy,
   place,
+  sheetPanHandlers,
 }: {
   activeAction: PreviewActionKind | null;
   bookmarked: boolean;
@@ -1496,18 +1625,21 @@ const PreviewContent = ({
   pending: boolean;
   placeActionBusy?: 'directions' | 'share' | null;
   place: DecisionPlace;
+  sheetPanHandlers: GestureResponderHandlers;
 }) => {
   const { i18n, t } = useTranslation();
   const styles = useMapSheetStyles();
+  const translationAttribution = useTranslationAttribution(place.name);
+  const sheetColors = useTheme().colors ?? lightColors;
   const { width: windowWidth } = useWindowDimensions();
-  const imageUrls = fallbackContent?.imageUrls.length
+  const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
-    : [imageUrl];
-  const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
+    : [imageUrl]);
+  const validImageUrls = photos.urls;
   const contentWidth = Math.min(windowWidth, 480) - 32;
   const primaryImageWidth = Math.min(242, contentWidth);
   const imageHeight = primaryImageWidth * 182 / 242;
-  const secondaryImageWidth = Math.min(184, Math.max(150, Math.round(contentWidth * 0.46)));
+
   const reservation = fallbackContent?.reservation ?? {
     kind: 'loading', disabled: true,
   };
@@ -1516,70 +1648,93 @@ const PreviewContent = ({
     onSelectAction(action);
     callback?.();
   };
-  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+  const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
+    ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
+      !fallbackContent.reviewHighlightsComplete && (fallbackContent.reviewSampleSize ?? 0) > 0
+        ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
+    ].filter(Boolean).join(' · ')
     : fallbackContent?.statusDescription;
 
   return (
-    <View style={styles.previewContent}>
-      <View style={styles.previewHeader}>
-        <Pressable
-          accessibilityLabel={t('map.detail.preview', { name: place.name })}
-          accessibilityRole="button"
-          onPress={onDetail}
-          style={styles.previewSummary}
-        >
-          <View style={styles.previewTitleRow}>
-            <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</AppText>
-            <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>
-          </View>
-          {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
-            <View style={styles.previewStatusRow}>
-              {verificationSummary ? (
-                <AppText numberOfLines={1} style={styles.previewStatus}>
-                  {verificationSummary}
+    <View style={[styles.previewContent, styles.placePreviewContent]} testID="place-preview-content">
+      <View {...sheetPanHandlers} style={styles.previewHeader} testID="place-preview-drag-header">
+        <View style={styles.previewSummary}>
+          <PlaceNameTranslation
+            attributionPlacement="photos"
+            onTranslationChange={translationAttribution.onTranslationChange}
+            original={place.name}
+            maxNameLength={10}
+            inlineCategory
+            nameStyle={styles.previewName}
+            onNamePress={onDetail}
+            category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
+          />
+          <Pressable accessibilityLabel={t('map.detail.preview', { name: place.name })} accessibilityRole="button" onPress={onDetail}>
+            {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
+              <View style={styles.previewStatusRow}>
+                {verificationSummary ? (
+                  <AppText numberOfLines={1} style={styles.previewStatus}>
+                    {verificationSummary}
+                  </AppText>
+                ) : null}
+                {fallbackContent.statusEmphasis ? (
+                <AppText style={styles.previewStatusTail}>
+                  {verificationSummary ? <AppText style={styles.previewStatusSeparator}>{' · '}</AppText> : null}
+                  <AppText style={[
+                    styles.previewStatusEmphasis,
+                    fallbackContent.operatingSummary?.tone === 'positive'
+                      ? styles.detailOperatingPositive
+                      : fallbackContent.operatingSummary?.tone === 'negative'
+                        ? styles.detailOperatingNegative
+                        : fallbackContent.operatingSummary?.tone === 'warning'
+                          ? styles.detailOperatingWarning
+                          : styles.detailOperatingNeutral,
+                  ]}>
+                    {fallbackContent.statusEmphasis}
+                  </AppText>
                 </AppText>
-              ) : null}
-              {fallbackContent.statusEmphasis ? (
-                <AppText style={styles.previewStatusEmphasis}>
-                  {verificationSummary ? ' · ' : ''}
-                  {fallbackContent.statusEmphasis}
-                </AppText>
-              ) : null}
-            </View>
-          ) : null}
-          <AppText accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
-            {formatPreviewLocation(place, i18n.language)}
-          </AppText>
-        </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+            <AppText accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
+              {formatPreviewLocation(place, i18n.language)}
+            </AppText>
+          </Pressable>
+        </View>
         <Pressable
           accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
           accessibilityRole="button"
           accessibilityState={{ busy: pending, disabled: pending, selected: bookmarked }}
           disabled={pending}
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
           onPress={onToggleBookmark}
           style={({ pressed }) => [styles.previewBookmarkButton, pressed && styles.pressed]}
           testID="place-preview-bookmark"
         >
-          <BookmarkStar selected={bookmarked} size={22} />
+          <BookmarkStar selected={bookmarked} size={16} />
         </Pressable>
         <Pressable
           accessibilityLabel={t('map.card.dismiss')}
           accessibilityRole="button"
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
           onPress={onBack}
           style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
           testID="place-preview-close"
         >
-          <AppText style={styles.previewCloseText}>×</AppText>
+          <CloseMediumAsset color={sheetColors.textAlternative} height={19} width={19} />
         </Pressable>
       </View>
-      {fallbackContent?.amenities.length ? (
+      <View style={styles.previewControls}>
+      {fallbackContent?.topReviewReasons?.length ? (
+        <TopReviewFeatures content={fallbackContent} />
+      ) : fallbackContent?.amenities.length ? (
         <View style={styles.previewAmenityRow}>
           {fallbackContent.amenities.map((amenity) => <PreviewAmenity key={amenity} type={amenity} />)}
         </View>
       ) : null}
       <ScrollView
-        contentContainerStyle={styles.previewActionRow}
+        contentContainerStyle={[styles.previewActionRow, styles.previewControlsActionRow]}
+        style={styles.previewActionViewport}
         horizontal
         showsHorizontalScrollIndicator={false}
       >
@@ -1624,6 +1779,8 @@ const PreviewContent = ({
           <AppText style={styles.detailEmptyText}>{t('map.detail.imageError')}</AppText>
         </Pressable>
       ) : null}
+      </View>
+      <View style={{ gap: 8 }} testID="place-preview-photos-section">
       <ScrollView
         contentContainerStyle={styles.previewImageRow}
         horizontal
@@ -1631,12 +1788,12 @@ const PreviewContent = ({
       >
         {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
           <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <SkeletonBlock width={242} height={182} radius={16} />
-              <SkeletonBlock width={184} height={182} radius={16} />
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
+              <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
             </View>
           </SkeletonGroup>
-        ) : imageUrls.map((url, index) => (
+        ) : validImageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={t('map.detail.imageDetail', { count: index + 1, name: place.name })}
             accessibilityRole="button"
@@ -1650,13 +1807,15 @@ const PreviewContent = ({
             }}
             style={[
               styles.previewImagePanel,
-              { height: imageHeight, width: index === 0 ? primaryImageWidth : secondaryImageWidth },
+              { height: imageHeight, width: primaryImageWidth },
             ]}
           >
-            <PreviewArtwork imageUrl={url} />
+            <PreviewArtwork imageUrl={url} onLoadError={() => photos.remove(url)} />
           </Pressable>
         ))}
       </ScrollView>
+      <TranslationAttribution visible={translationAttribution.visible} testID="place-preview-translation-attribution" />
+      </View>
     </View>
   );
 };
@@ -1682,6 +1841,7 @@ const ExternalPlaceContent = ({
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
+  const sheetColors = useTheme().colors ?? lightColors;
   const selectAction = (action: PreviewActionKind, callback?: () => void) => {
     onSelectAction(action);
     callback?.();
@@ -1695,7 +1855,7 @@ const ExternalPlaceContent = ({
     >
       <View style={styles.externalHeader}>
         <View style={styles.previewSummary}>
-          <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</AppText>
+          <PlaceNameTranslation original={place.name} maxNameLength={10} nameStyle={styles.previewName} />
           <View style={styles.externalBadge}>
             <AppText numberOfLines={1} style={styles.externalBadgeText}>{t('map.externalPlace.badge')}</AppText>
           </View>
@@ -1709,11 +1869,12 @@ const ExternalPlaceContent = ({
         <Pressable
           accessibilityLabel={t('map.card.dismiss')}
           accessibilityRole="button"
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
           onPress={onBack}
           style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
           testID="external-place-close"
         >
-          <AppText style={styles.previewCloseText}>×</AppText>
+          <CloseMediumAsset color={sheetColors.textAlternative} height={19} width={19} />
         </Pressable>
       </View>
       <View style={styles.externalNotice}>
@@ -1765,6 +1926,8 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
 
+  const deletion = useDeletePlaceReview(review.placeId, review.reviewId);
+  const deleteAction = useContentDeletion(() => deletion.mutateAsync(), undefined, `${review.placeId}:${review.reviewId}`);
   return (
     <View style={styles.detailReviewItem}>
       <View style={styles.detailReviewerRow}>
@@ -1773,6 +1936,7 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
           <AppText style={styles.detailReviewerName}>{review.author}</AppText>
           <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
         </View>
+        {review.isOwnReview ? <OwnerContentActions busy={deleteAction.busy} onDelete={review.placeId && review.reviewId ? deleteAction.confirm : undefined} key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} onEdit={review.onEdit} /> : null}
       </View>
       <AppText
         ellipsizeMode="tail"
@@ -1873,6 +2037,7 @@ const ExpandedPlaceContent = ({
   pending,
   placeActionBusy,
   place,
+  sheetPanHandlers,
 }: {
   activeAction: PreviewActionKind | null;
   activeTab: PlaceDetailTab;
@@ -1895,15 +2060,16 @@ const ExpandedPlaceContent = ({
   pending: boolean;
   placeActionBusy?: 'directions' | 'share' | null;
   place: DecisionPlace;
+  sheetPanHandlers: GestureResponderHandlers;
 }) => {
   const { t } = useTranslation();
-  const { colors, colorScheme } = useTheme();
+  const { colors } = useTheme();
   const styles = useMapSheetStyles();
-  const insets = useSafeAreaInsets();
-  const imageUrls = fallbackContent?.imageUrls.length
+  const translationAttribution = useTranslationAttribution(place.name);
+  const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
-    : [imageUrl];
-  const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
+    : [imageUrl]);
+  const validImageUrls = photos.urls;
   const reservation = fallbackContent?.reservation ?? {
     kind: 'loading', disabled: true,
   };
@@ -1912,22 +2078,25 @@ const ExpandedPlaceContent = ({
     onSelectAction(action);
     callback?.();
   };
+  const insets = useSafeAreaInsets();
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
   const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
-  const verificationSummary = typeof fallbackContent?.verifiedEvidenceCount === 'number'
-    ? t('map.detail.verifiedCount', { count: fallbackContent.verifiedEvidenceCount })
+  const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
+    ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
+      !fallbackContent.reviewHighlightsComplete && (fallbackContent.reviewSampleSize ?? 0) > 0
+        ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
+    ].filter(Boolean).join(' · ')
     : fallbackContent?.statusDescription || fallbackContent?.englishName;
 
   return (
     <>
-    <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
     <GlassStyles.ExpandedPlaceScroll
       contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
       testID="map-expanded-place-scroll"
     >
-      <View style={styles.detailTopBar} testID="map-detail-top-bar">
+      <View {...sheetPanHandlers} style={styles.detailTopBar} testID="map-detail-top-bar">
         <Pressable
           accessibilityLabel={t('map.detail.back')}
           accessibilityRole="button"
@@ -1951,11 +2120,14 @@ const ExpandedPlaceContent = ({
         </Pressable>
       </View>
 
-      <View style={styles.detailHeading}>
-        <View style={styles.detailTitleRow}>
-          <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={2} style={styles.detailTitle}>{place.name}</AppText>
-          <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>
-        </View>
+      <View {...sheetPanHandlers} style={styles.detailHeading} testID="place-detail-drag-heading">
+        <PlaceNameTranslation
+            attributionPlacement="photos"
+            onTranslationChange={translationAttribution.onTranslationChange}
+          original={place.name}
+          nameStyle={styles.detailTitle}
+          category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
+        />
         {verificationSummary ? (
           <AppText style={styles.detailVerified}>{verificationSummary}</AppText>
         ) : null}
@@ -2020,7 +2192,7 @@ const ExpandedPlaceContent = ({
               <SkeletonBlock width={184} height={182} radius={16} />
             </View>
           </SkeletonGroup>
-        ) : imageUrls.map((url, index) => (
+        ) : validImageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={url
               ? t('map.detail.imageDetail', { count: index + 1, name: place.name })
@@ -2032,10 +2204,12 @@ const ExpandedPlaceContent = ({
               : undefined}
             style={[styles.detailPhoto, index === 0 && styles.detailPhotoPrimary]}
           >
-            <PreviewArtwork imageUrl={url} />
+            <PreviewArtwork imageUrl={url} onLoadError={() => photos.remove(url)} />
           </Pressable>
         ))}
       </ScrollView>
+
+      <TranslationAttribution visible={translationAttribution.visible} testID="place-detail-translation-attribution" />
 
       <View style={styles.detailTabs}>
         {(['info', 'reviews'] as const).map((tab) => (
@@ -2072,9 +2246,11 @@ const ExpandedPlaceContent = ({
                       styles.detailOperatingStatus,
                       fallbackContent.operatingSummary?.tone === 'positive'
                         ? styles.detailOperatingPositive
-                        : fallbackContent.operatingSummary?.tone === 'warning'
-                          ? styles.detailOperatingWarning
-                          : styles.detailOperatingNeutral,
+                        : fallbackContent.operatingSummary?.tone === 'negative'
+                          ? styles.detailOperatingNegative
+                          : fallbackContent.operatingSummary?.tone === 'warning'
+                            ? styles.detailOperatingWarning
+                            : styles.detailOperatingNeutral,
                     ]}>
                       {fallbackContent.operatingSummary?.statusText
                         ?? fallbackContent.statusEmphasis}
@@ -2091,7 +2267,9 @@ const ExpandedPlaceContent = ({
                 ) : null}
               </>
             ) : null}
-            {fallbackContent?.amenities.length ? (
+            {fallbackContent?.topReviewReasons?.length ? (
+              <TopReviewFeatures content={fallbackContent} />
+            ) : fallbackContent?.amenities.length ? (
               <View style={styles.detailAmenityRow}>
                 {fallbackContent.amenities.map((amenity) => (
                   <PreviewAmenity key={amenity} type={amenity} expanded />
@@ -2157,31 +2335,44 @@ const ExpandedPlaceContent = ({
         </View>
       ) : (
         <View>
-          {fallbackContent?.reviewHighlights?.length ? (
-            <View style={styles.detailReviewSection}>
+          <View style={styles.detailReviewSection} testID="place-review-highlights">
             <AppText style={styles.detailReviewTitle}>
               {t('map.detail.reviewHighlights')}
-              {fallbackContent?.reviewParticipantCount ? (
+              {fallbackContent?.reviewParticipantCount !== undefined && fallbackContent?.reviewState !== 'error' && fallbackContent?.reviewState !== 'loading' ? (
                 <AppText style={styles.detailReviewCount}> {t('map.detail.participantCount', { count: fallbackContent.reviewParticipantCount })}</AppText>
               ) : null}
             </AppText>
-            {fallbackContent.reviewHighlights.map((highlight, index, items) => {
+            {fallbackContent?.reviewState !== 'error' && fallbackContent?.reviewState !== 'loading'
+              && (fallbackContent?.reviewSampleSize ?? 0) > 0
+              && (!fallbackContent?.reviewHighlightsComplete || fallbackContent?.reviewParticipantCount === undefined) ? (
+              <AppText style={styles.detailReviewCount} testID="place-review-highlights-basis">
+                {t(fallbackContent?.reviewHighlightsComplete ? 'placeReviewSummary.reviewBasis' : 'placeReviewSummary.partialBasis', { count: fallbackContent?.reviewSampleSize })}
+              </AppText>
+            ) : null}
+            {fallbackContent?.reviewState === 'loading' ? (
+              <Skeleton variant="comments" accessibilityLabel={t('placeReviewSummary.loading')} />
+            ) : fallbackContent?.reviewState === 'error' ? (
+              <Pressable accessibilityRole="button" onPress={onRetryReviews}><AppText style={styles.detailEmptyText}>{t('placeReviewSummary.error')}</AppText></Pressable>
+            ) : fallbackContent?.reviewHighlights?.length ? fallbackContent.reviewHighlights.map((highlight, index, items) => {
               const maxCount = Math.max(...items.map((item) => item.count), 1);
               const scoreRatio = Math.min(1, Math.max(0, highlight.count / maxCount));
               const strongest = index === 0;
               return (
-                <View key={highlight.label} style={styles.detailHighlightRow}>
+                <View key={highlight.reason ?? highlight.label} style={styles.detailHighlightRow} accessible
+                  testID={`place-review-highlight-${highlight.reason ?? index}`} accessibilityRole="progressbar"
+                  accessibilityLabel={highlight.label} accessibilityValue={{ min: 0, max: maxCount, now: highlight.count }}>
                   <View
+                    testID={`place-review-highlight-fill-${highlight.reason ?? index}`}
                     style={[
                       styles.detailHighlightFill,
                       {
                         backgroundColor: strongest ? colors.primaryAlternative : index === 1 ? colors.primaryAssistive : colors.primaryAssistiveSoft,
-                        width: `${Math.max(24, scoreRatio * 100)}%`,
+                        width: `${scoreRatio * 100}%`,
                       },
                     ]}
                   />
                   <View style={styles.detailHighlightLabelRow}>
-                    <ReviewHighlightIcon label={highlight.label} />
+                    <ReviewHighlightIcon label={highlight.label} reason={highlight.reason} />
                     <AppText style={[styles.detailHighlightLabel, strongest && styles.detailHighlightCountOnStrong]}>{highlight.label}</AppText>
                   </View>
                   <AppText
@@ -2194,9 +2385,8 @@ const ExpandedPlaceContent = ({
                   </AppText>
                 </View>
               );
-            })}
-            </View>
-          ) : null}
+            }) : <AppText style={styles.detailEmptyText}>{t('placeReviewSummary.empty')}</AppText>}
+          </View>
 
           {reviewImageUrls.length ? (
             <View style={styles.detailReviewSection}>
@@ -2260,6 +2450,7 @@ export default function MapBottomSheet({
   bookmarkPendingPlaceIds = {},
   bookmarkedPlaceIds,
   collapsedTranslateY,
+  expandedTranslateY = 0,
   content,
   couponContent,
   height,
@@ -2299,14 +2490,14 @@ export default function MapBottomSheet({
   selectedPlace,
   detailError, detailBusy, onRetryDetail, resultsError, resultsLoading, resultsBusy, onRetryResults,
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
   userName,
 }: MapBottomSheetProps) {
   const activeTheme = useTheme();
   const themedColors = activeTheme.colors;
-  const themedGlass = activeTheme.liquidGlass;
-  const styles = useMemo(() => createStyles(themedColors), [themedColors]);
+  const styles = useMemo(() => createStyles(themedColors, activeTheme.liquidGlass), [themedColors, activeTheme.liquidGlass]);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [feed, setFeed] = useState<'local' | 'national'>('local');
@@ -2394,63 +2585,11 @@ export default function MapBottomSheet({
     inputRange: [Math.max(0, mediumTranslateY - 96), mediumTranslateY],
     outputRange: [1, 0],
   });
-  // Expanded sheet goes full-bleed: resting gap and bottom corners collapse to 0.
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_BOTTOM_RADIUS],
-  });
-
   return (
     <GlassStyles.BottomSheetContainer
-      style={{ height, transform: [{ translateY: sheetTranslateY }] }}
+      style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}
     >
-      {!isExpandedPlaceDetail ? <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        testID="map-sheet-chrome"
-        style={[
-          {
-            boxShadow: themedGlass.sheet.shadow,
-            borderBottomLeftRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
-            borderBottomRightRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
-            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            borderTopRightRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            bottom: chromeBottomInset,
-            left: chromeGap,
-            right: chromeGap,
-          },
-        ]}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={isExpandedPlaceDetail ? 'transparent' : themedGlass.sheet.rim}
-          style={[
-            {
-              borderBottomLeftRadius: chromeBottomRadius,
-              borderBottomRightRadius: chromeBottomRadius,
-              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-              borderTopRightRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            },
-          ]}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={isExpandedPlaceDetail ? themedColors.surface : themedGlass.sheet.tint}
-            topRimOnly
-          />
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow> : null}
-      <GlassStyles.SheetInner $opaque={isExpandedPlaceDetail} $inset={isExpandedPlaceDetail ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} contentInset={content.type === 'place-preview' || content.type === 'external-place' || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : 8} testID="map-sheet">
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -2478,10 +2617,12 @@ export default function MapBottomSheet({
         ]}
         testID="map-sheet-content"
       >
-      {content.type === 'place-preview' && detailError ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
+      {/* Keep loaded place data available when an offline refresh fails. */}
+      {content.type === 'place-preview' && detailError && !selectedPlace ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
       {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState variant="place" description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
           <ExpandedPlaceContent
+            sheetPanHandlers={panHandlers}
             activeAction={activePreviewAction}
             activeTab={activePlaceDetailTab}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
@@ -2521,6 +2662,7 @@ export default function MapBottomSheet({
           />
         ) : (
           <PreviewContent
+            sheetPanHandlers={panHandlers}
             activeAction={activePreviewAction}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
@@ -2603,6 +2745,7 @@ export default function MapBottomSheet({
         />
       ) : (
         <ExpandedHomeContent
+          sheetPanHandlers={panHandlers}
           activeCategory={activeCategory}
           bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
           expandedInteractionsEnabled={snapPoint === 'expanded'}
@@ -2621,7 +2764,7 @@ export default function MapBottomSheet({
         />
       )}
       </Animated.View>
-      </GlassStyles.SheetInner>
+      </MapSheetSurface>
 
       {content.type !== 'place-preview' && content.type !== 'external-place' ? (
         <MapSheetBottomNavigation
@@ -2646,7 +2789,10 @@ export default function MapBottomSheet({
 }
 
 const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
-const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
+const createStyles = (
+  colors: AppTheme['colors'],
+  glass: AppTheme['liquidGlass'] = liquidGlass,
+): Record<string, object> => ({
   artwork: {
     backgroundColor: colors.surfaceMuted,
     height: '100%',
@@ -2733,8 +2879,9 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     minHeight: 105,
     paddingVertical: 12,
   },
+  detailOperatingNegative: { color: colors.statusError },
   detailOperatingNeutral: { color: colors.textSecondary },
-  detailOperatingPositive: { color: colors.success },
+  detailOperatingPositive: { color: colors.statusSuccess },
   detailOperatingStatus: { fontWeight: '500' },
   detailOperatingWarning: { color: colors.warning },
   detailPhoto: { borderRadius: 16, height: 182, overflow: 'hidden', width: 242 },
@@ -2887,28 +3034,25 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     paddingTop: 14,
   },
   gridArtwork: { height: '100%' },
+  // Figma Post (5069:32278): 242x182, 16px radius, no drop shadow.
   gridCard: {
-    backgroundColor: '#161616',
-    borderRadius: 13,
-    height: 172,
+    backgroundColor: colors.staticBlack,
+    borderRadius: 16,
+    height: 182,
     overflow: 'hidden',
-    shadowColor: '#12161D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.09,
-    shadowRadius: 9,
-    width: 228,
+    width: 242,
   },
   gridCardBody: {
     bottom: 0,
     left: 0,
-    paddingBottom: 9,
-    paddingHorizontal: 10,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
     position: 'absolute',
     right: 0,
   },
-  gridCardDistance: { color: 'rgba(255,255,255,0.9)', flexShrink: 1, fontSize: 9, marginTop: 1, maxWidth: '100%', paddingRight: 24 },
-  gridCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 24 },
-  gridBookmarkStar: { bottom: 7, padding: 4, position: 'absolute', right: 7, zIndex: 3 },
+  gridCardDistance: { color: colors.fillAlternative, flexShrink: 1, fontSize: 12, fontWeight: '500', lineHeight: 16, maxWidth: '100%', paddingRight: 40 },
+  gridCardName: { color: colors.backgroundAssistive, flexShrink: 1, fontSize: 16, fontWeight: '700', lineHeight: 21, maxWidth: '100%', paddingRight: 40 },
+  gridBookmarkStar: { bottom: 12, padding: 4, position: 'absolute', right: 8, zIndex: 3 },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2936,7 +3080,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   homeTrendCardBody: { bottom: 0, left: 0, paddingBottom: 13, paddingHorizontal: 14, position: 'absolute', right: 0 },
   homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
   homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
-  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 3, height: 5, width: 56 },
+  handle: { backgroundColor: colors.secondaryNormal, borderRadius: 3, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 20, justifyContent: 'center', zIndex: 4 },
   handleButton: { alignItems: 'center', height: 20, justifyContent: 'center', width: 160 },
   homeHandleArea: { height: HOME_SHEET_HANDLE_HEIGHT },
@@ -2971,22 +3115,30 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   bookmarkPressed: { opacity: 0.64 },
   recommendationContent: { paddingBottom: 108 },
-  recommendationCardRow: { gap: 12, paddingBottom: 10, paddingHorizontal: 8, paddingTop: 12 },
+  recommendationCardRow: { gap: 16, paddingBottom: 16, paddingHorizontal: 16, paddingTop: 12 },
+  // Figma keeps the cards 24dp from the screen edge in both states (7973:10445, 7973:10640).
+  recommendationCardRowExpanded: { paddingHorizontal: 24 },
   recommendationContext: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 4 },
-  recommendationGridRows: { gap: 12 },
-  recommendationGridScroll: { gap: 12, paddingHorizontal: 8 },
-  recommendationGridTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 8 },
-  recommendationHeader: { paddingHorizontal: 8, paddingTop: 5 },
+  // Figma PlaceRecommend-Up (5408:26180): 16px gaps, Headline1/Bold title 14px above the cards.
+  recommendationGridRows: { gap: 16 },
+  recommendationGridScroll: { gap: 16, paddingHorizontal: 24 },
+  recommendationGridTitle: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', lineHeight: 26, marginBottom: 14, marginTop: 2, paddingHorizontal: 16 },
+  // Figma PlaceRecommend (7973:10494): title text 13dp below the handle, 16dp from the sheet edge.
+  recommendationHeader: { paddingHorizontal: 16 },
   recommendationReason: { color: colors.text, flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
   reservationPlaceCard: { height: 214, minHeight: 214, width: 164 },
   reservationPlaceCardArtwork: { borderRadius: 16, height: 164 },
   reservationPlaceCardDistance: { fontSize: 14, marginTop: 1 },
   reservationPlaceCardName: { fontSize: 16, lineHeight: 21, paddingRight: 30 },
+  // Figma 5062:31879: Body/Medium reason and Label/Regular distance, 8px under the artwork.
+  recommendationPlaceCard: { height: 209, minHeight: 209 },
+  recommendationCardReason: { color: colors.labelNeutral, fontSize: 16, fontWeight: '500', lineHeight: 21, marginTop: 10 },
+  recommendationCardDistance: { color: colors.textAlternative, fontWeight: '400', lineHeight: 18, marginTop: 0 },
   recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5, maxWidth: '100%' },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
-  recommendationSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 5 },
-  recommendationTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900' },
-  recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  recommendationSubtitle: { color: colors.textSecondary, fontSize: 14, includeFontPadding: false, lineHeight: 18, marginTop: 4 },
+  recommendationTitle: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', includeFontPadding: false, lineHeight: 26 },
+  recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   retryButton: { backgroundColor: colors.primaryAction, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
   retryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   externalBadge: {
@@ -3011,33 +3163,43 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   externalNoticeText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
   externalSource: { color: colors.textMuted, fontSize: 12, fontWeight: '600', includeFontPadding: false, lineHeight: 16, marginTop: 4 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
+  placePreviewContent: { rowGap: 14 },
+  previewControls: { rowGap: 8 },
+  previewActionViewport: { overflow: 'visible', flexGrow: 0 },
+  previewControlsActionRow: { paddingBottom: 0 },
+  // Figma PingSelected chips (5191:39646): 34px map pills — Glass/Fill + Shadow/Float,
+  // selected Glass/Selected + Glass/SelectedStroke, Label/Medium text, 8px apart.
   previewActionChip: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderRadius: 18,
+    backgroundColor: glass.category.tint,
+    borderColor: glass.category.border,
+    borderRadius: 17,
     borderWidth: 1,
+    boxShadow: glass.category.shadow,
     flexDirection: 'row',
-    gap: 4,
-    height: 36,
+    gap: 6,
+    height: 34,
     justifyContent: 'center',
-    minWidth: 58,
-    paddingHorizontal: 12,
+    minWidth: 57,
+    paddingHorizontal: 15,
   },
-  previewActionChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.selectedBorder },
-  previewActionRow: { columnGap: 7, paddingBottom: 12, paddingHorizontal: 1 },
-  previewActionText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  previewActionChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
+  previewActionRow: { columnGap: 8, paddingBottom: 14 },
+  previewActionText: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18 },
   previewActionTextActive: { color: colors.primary },
-  previewAddress: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600', includeFontPadding: false, lineHeight: 18, marginTop: 4, minWidth: 0 },
+  // Figma 5175:37756: Body/Regular address, directly under the status line.
+  previewAddress: { color: colors.labelNeutral, flexShrink: 1, fontSize: 16, fontWeight: '400', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
+  // Figma 5253:42974: 34px info chips, 16px icon 12px from the edge, Label/Medium text.
   previewAmenityChip: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderRadius: 16,
+    backgroundColor: glass.category.tint,
+    borderColor: glass.category.border,
+    borderRadius: 17,
     borderWidth: 1,
+    boxShadow: glass.category.shadow,
     flexDirection: 'row',
-    gap: 5,
-    height: 32,
+    gap: 6,
+    height: 34,
     paddingHorizontal: 11,
   },
   previewAmenityIcon: {
@@ -3049,40 +3211,35 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     width: 20,
   },
   previewAmenityIconText: { color: colors.textInverse, fontSize: 13, fontWeight: '900', lineHeight: 16 },
-  previewAmenityRow: { columnGap: 7, flexDirection: 'row', paddingBottom: 10 },
-  previewAmenityText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  previewAmenityRow: { columnGap: 8, flexDirection: 'row', paddingBottom: 8 },
+  previewAmenityText: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18 },
   previewArtwork: { height: '100%', width: '100%' },
   previewArtworkFallback: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
+    alignItems: 'center', backgroundColor: colors.primarySoft,
+    height: '100%', justifyContent: 'center', width: '100%',
   },
   previewArtworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
+  // Figma Component 18 (5175:37945): 32px Glass/FillRaised circles, 12px apart.
   previewBookmarkButton: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: 20,
-    height: 44,
+    backgroundColor: colors.glassFillRaised,
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
-    marginRight: 4,
-    marginTop: 9,
-    width: 44,
+    marginRight: 12,
+    width: 32,
   },
-  previewCategory: { color: colors.textSecondary, flexShrink: 0, fontSize: 13, fontWeight: '700', includeFontPadding: false, lineHeight: 19, marginLeft: 6 },
+  previewCategory: { color: colors.labelNeutral, flexShrink: 0, fontSize: 18, fontWeight: '500', includeFontPadding: false, lineHeight: 23, marginLeft: 4 },
   previewCloseButton: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: 20,
-    height: 44,
+    backgroundColor: colors.glassFillRaised,
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
-    marginTop: 9,
-    width: 44,
+    width: 32,
   },
-  previewCloseText: { color: colors.textSecondary, fontSize: 25, fontWeight: '300', lineHeight: 29 },
   previewContent: { paddingHorizontal: 16 },
-  previewHeader: { alignItems: 'flex-start', flexDirection: 'row', minHeight: 102 },
+  previewHeader: { alignItems: 'flex-start', flexDirection: 'row' },
   previewImagePanel: {
     backgroundColor: colors.primarySoft,
     borderRadius: 17,
@@ -3090,14 +3247,17 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     overflow: 'hidden',
     width: 180,
   },
-  previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
-  previewName: { color: colors.textStrong, flexShrink: 1, fontSize: 21, fontWeight: '900', includeFontPadding: false, lineHeight: 27, minWidth: 0 },
+  previewImageRow: { columnGap: 16, paddingRight: 16 },
+  previewName: { color: colors.labelStrong, flexShrink: 1, fontSize: 24, fontWeight: '700', includeFontPadding: false, lineHeight: 31, minWidth: 0 },
   previewParkingIcon: { borderRadius: 5 },
-  previewStatus: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600' },
-  previewStatusEmphasis: { color: colors.success, fontWeight: '800' },
-  previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 6 },
-  previewSummary: { flex: 1, minWidth: 0, paddingTop: 11 },
-  previewTitleRow: { alignItems: 'center', flexDirection: 'row', minWidth: 0, paddingRight: 4 },
+  // Figma 5175:37753: Body/Regular status line 4px under the 32px title row.
+  previewStatus: { color: colors.textAlternative, flexShrink: 1, fontSize: 16, fontWeight: '400', lineHeight: 21 },
+  previewStatusEmphasis: { fontWeight: '500' },
+  previewStatusSeparator: { color: colors.textAlternative, fontWeight: '400' },
+  previewStatusTail: { fontSize: 16, lineHeight: 21 },
+  previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 4 },
+  previewSummary: { flex: 1, minWidth: 0 },
+  previewTitleRow: { alignItems: 'center', flexDirection: 'row', height: 32, minWidth: 0, paddingRight: 4 },
   resultAddress: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
   resultDistance: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
   resultName: { color: colors.textStrong, fontSize: 14, fontWeight: '800' },
@@ -3133,7 +3293,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     zIndex: 1,
   },
   segmentLabel: {
-    color: colors.textMuted,
+    color: colors.labelAssistive,
     // Lets a long translated label shrink inside its half instead of running under the other tab.
     flexShrink: 1,
     fontSize: 16,
@@ -3145,7 +3305,6 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     paddingHorizontal: 8,
   },
   segmentIndicator: {
-    backgroundColor: colors.selectedTabSurface,
     borderRadius: 20,
     bottom: 4,
     left: 4,
@@ -3163,10 +3322,11 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     padding: 4,
     width: '100%',
   },
+  segmentFrame: { alignSelf: 'center', borderRadius: 24, width: '100%' },
   segmentShadow: {
     alignSelf: 'center',
     borderRadius: 24,
-    boxShadow: `0px 4px 20px -4px ${colors.shadow}`,
+    boxShadow: `0px 4px 20px -4px ${colors.shadowFloat}`,
     width: '100%',
   },
   sheetContent: { flex: 1 },

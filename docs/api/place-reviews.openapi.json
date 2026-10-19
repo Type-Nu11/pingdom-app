@@ -1,0 +1,561 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "OpenAPI definition - place reviews contract",
+    "version": "v0"
+  },
+  "x-source": {
+    "checkedAt": "2026-10-19T10:49:58.596Z",
+    "location": "https://www.typenull.xyz/v3/api-docs/common",
+    "sha256": "c6d9ce6f826bb2719b7805216e8312e8cb5128f70bd4628f8669592c3a8aa78c"
+  },
+  "paths": {
+    "/places/{placeId}/reviews/{reviewId}": {
+      "patch": {
+        "tags": [
+          "장소 리뷰"
+        ],
+        "summary": "본인 장소 리뷰 수정",
+        "description": "누락·null은 유지합니다. 사진 ID 배열은 최종 순서이며 []는 전체 제거입니다. 숨김은 유지하고 삭제 심사 중 수정은 거절합니다.",
+        "operationId": "updateReview",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceReviewUpdateRequest"
+              },
+              "example": {
+                "content": "안내가 친절합니다.",
+                "recommendReasons": [
+                  "FRIENDLY",
+                  "CLEAN"
+                ],
+                "reviewMediaIds": [
+                  12,
+                  9
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "수정된 리뷰. 기존 작성 응답과 동일한 계약",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: 값·개수·중복 오류. INVALID_REQUEST_BODY: JSON 형식·추천 코드 오류",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_TOKEN: 인증 필요",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PLACE_REVIEW_MEDIA_FORBIDDEN: 타인 또는 다른 장소 사진",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리뷰가 없거나 다른 장소·타인·삭제된 리뷰: PLACE_REVIEW_NOT_FOUND. 사진 없음: PLACE_REVIEW_MEDIA_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "삭제 심사 중 또는 이미 연결·만료된 신규 사진",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "PLACE_REVIEW_UPDATE_PENDING_DELETION",
+                  "message": "삭제 심사 중인 리뷰는 수정할 수 없습니다."
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "장소 리뷰"
+        ],
+        "summary": "본인 장소 리뷰 삭제",
+        "description": "본인 리뷰를 논리 삭제합니다. 숨김·심사 중·이미 삭제된 본인 리뷰도 204입니다. 방문 인증·체크인 및 심사 증거는 보존하며 재작성은 기존 작성 정책을 따릅니다.",
+        "operationId": "deleteReview",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "삭제 완료 또는 본인이 이미 삭제한 리뷰"
+          },
+          "401": {
+            "description": "INVALID_TOKEN: 인증 필요",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "PLACE_REVIEW_NOT_FOUND: 없는 리뷰·다른 장소·타인 리뷰",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/places/{placeId}/reviews/summary": {
+      "get": {
+        "tags": [
+          "장소 리뷰"
+        ],
+        "summary": "장소 리뷰 전체 추천 태그 집계 조회",
+        "description": "일반 리뷰 목록과 동일하게 인증이 필요하며 VISIBLE 리뷰만 집계합니다. 페이지·limit·요청 body는 없습니다.\ntotalReviewCount는 전체 공개 리뷰 건수, participantCount와 태그 count는 유효 태그를 선택한 고유 작성자 수입니다.\n한 작성자의 여러 공개 리뷰는 태그 합집합으로 계산하며 최신 리뷰만 고르는 정책은 사용하지 않습니다.\n복수 recommendReasons가 있으면 단일 recommendReason을 무시하고, 비어 있을 때만 정확히 일치하는 지원 단일 코드를 사용합니다.\n알 수 없는 태그와 작성자가 없는 값은 참여·태그 인원에서 제외하지만 해당 공개 리뷰는 전체 리뷰 건수에 포함합니다.\n7개 태그를 FRIENDLY, EASY_TO_FIND, GOOD_FOOD, MULTILINGUAL_SUPPORT, PARKING, PHOTO_SPOT, CLEAN 순서로 0건까지 반환합니다.\n캐시 없이 하나의 SQL 시점에서 조회하므로 작성·수정·삭제·숨김·복구가 커밋된 뒤 다음 조회에 반영됩니다.\n",
+        "operationId": "getReviewSummary",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "description": "장소 ID. 존재하지 않는 ID는 404로 응답합니다.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 17
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "전체 집계. 리뷰가 없는 장소는 건수·인원·모든 태그가 0입니다.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceReviewSummaryResponse"
+                },
+                "example": {
+                  "placeId": 17,
+                  "totalReviewCount": 3,
+                  "participantCount": 2,
+                  "reasonCounts": [
+                    {
+                      "reason": "FRIENDLY",
+                      "count": 1
+                    },
+                    {
+                      "reason": "EASY_TO_FIND",
+                      "count": 0
+                    },
+                    {
+                      "reason": "GOOD_FOOD",
+                      "count": 1
+                    },
+                    {
+                      "reason": "MULTILINGUAL_SUPPORT",
+                      "count": 0
+                    },
+                    {
+                      "reason": "PARKING",
+                      "count": 0
+                    },
+                    {
+                      "reason": "PHOTO_SPOT",
+                      "count": 2
+                    },
+                    {
+                      "reason": "CLEAN",
+                      "count": 1
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "숫자가 아니거나 Long 범위를 벗어난 장소 ID: INVALID_REQUEST_PARAMETER",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 없음·잘못된 토큰: INVALID_TOKEN / 만료 토큰: EXPIRED_TOKEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "존재하지 않는 장소(0·음수 포함): PLACE_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "집계 조회 실패: INTERNAL_SERVER_ERROR",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "에러 메시지",
+            "example": "유효하지 않은 토큰입니다."
+          },
+          "code": {
+            "type": "string",
+            "description": "도메인 에러 코드. 일부 공통 검증 오류에서는 제공되지 않을 수 있습니다.",
+            "nullable": true,
+            "example": "INVALID_TOKEN"
+          }
+        },
+        "description": "에러 응답"
+      },
+      "PlaceReviewMediaResponse": {
+        "type": "object",
+        "properties": {
+          "reviewMediaId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          }
+        },
+        "description": "리뷰에 연결된 검증 완료 사진"
+      },
+      "PlaceReviewResponse": {
+        "type": "object",
+        "properties": {
+          "reviewId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "placeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recommendReason": {
+            "type": "string"
+          },
+          "recommendReasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "FRIENDLY",
+                "EASY_TO_FIND",
+                "GOOD_FOOD",
+                "MULTILINGUAL_SUPPORT",
+                "PARKING",
+                "PHOTO_SPOT",
+                "CLEAN"
+              ]
+            }
+          },
+          "content": {
+            "type": "string"
+          },
+          "imageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reviewMedia": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceReviewMediaResponse"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PlaceReviewSummaryResponse": {
+        "required": [
+          "participantCount",
+          "placeId",
+          "reasonCounts",
+          "totalReviewCount"
+        ],
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "integer",
+            "description": "장소 ID",
+            "format": "int64",
+            "example": 17
+          },
+          "totalReviewCount": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "VISIBLE 리뷰 전체 건수. 유효 태그나 작성자가 없는 과거 리뷰도 포함합니다.",
+            "format": "int64",
+            "example": 3
+          },
+          "participantCount": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "유효 추천 태그를 하나 이상 선택한 고유 작성자 수. 같은 작성자의 여러 공개 리뷰는 합쳐 계산합니다.",
+            "format": "int64",
+            "example": 2
+          },
+          "reasonCounts": {
+            "type": "array",
+            "description": "7개 지원 코드를 enum 선언 순서로 모두 반환하며 0건 태그도 포함합니다. 태그별 수의 합은 참여 인원보다 클 수 있습니다.",
+            "items": {
+              "$ref": "#/components/schemas/ReasonCount"
+            }
+          }
+        },
+        "description": "장소 전체 공개 리뷰 집계. 리뷰 건수와 추천 태그를 선택한 고유 작성자 수를 구분합니다."
+      },
+      "PlaceReviewUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "recommendReason": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string",
+            "description": "기존 단일 추천 이유. recommendReasons와 함께 입력할 수 없습니다.",
+            "deprecated": true
+          },
+          "recommendReasons": {
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array",
+            "description": "추천 이유 코드 1~5개. 중복 불가, 요청 순서 유지. 첫 코드가 recommendReason에도 반영됩니다.",
+            "items": {
+              "type": "string",
+              "description": "추천 이유 코드 1~5개. 중복 불가, 요청 순서 유지. 첫 코드가 recommendReason에도 반영됩니다.",
+              "enum": [
+                "FRIENDLY",
+                "EASY_TO_FIND",
+                "GOOD_FOOD",
+                "MULTILINGUAL_SUPPORT",
+                "PARKING",
+                "PHOTO_SPOT",
+                "CLEAN"
+              ]
+            }
+          },
+          "content": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "pattern": "(?s).*\\S.*",
+            "type": "string"
+          },
+          "reviewMediaIds": {
+            "maxItems": 3,
+            "minItems": 0,
+            "type": "array",
+            "description": "최종 사진 ID 순서. 본인의 동일 리뷰 연결 사진과 동일 장소의 미연결·미만료 업로드만 허용합니다. null은 기존 사진 유지, []는 전체 제거입니다.",
+            "items": {
+              "type": "integer",
+              "description": "최종 사진 ID 순서. 본인의 동일 리뷰 연결 사진과 동일 장소의 미연결·미만료 업로드만 허용합니다. null은 기존 사진 유지, []는 전체 제거입니다.",
+              "format": "int64"
+            }
+          },
+          "imageUrls": {
+            "maxItems": 0,
+            "minItems": 0,
+            "type": "array",
+            "description": "임의 URL은 입력할 수 없습니다. 생략하거나 빈 배열을 사용합니다.",
+            "deprecated": true,
+            "items": {
+              "type": "string",
+              "description": "임의 URL은 입력할 수 없습니다. 생략하거나 빈 배열을 사용합니다.",
+              "deprecated": true
+            }
+          }
+        },
+        "description": "본인 리뷰 부분 수정. 누락·null 필드는 유지합니다. 사진 ID 배열은 유지할 기존 사진과 신규 업로드의 최종 순서이며 빈 배열은 모든 사진을 제거합니다."
+      },
+      "ReasonCount": {
+        "required": [
+          "count",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "추천 태그 코드",
+            "example": "FRIENDLY",
+            "enum": [
+              "FRIENDLY",
+              "EASY_TO_FIND",
+              "GOOD_FOOD",
+              "MULTILINGUAL_SUPPORT",
+              "PARKING",
+              "PHOTO_SPOT",
+              "CLEAN"
+            ]
+          },
+          "count": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "이 태그를 선택한 고유 작성자 수. 같은 작성자의 반복 태그와 여러 리뷰는 중복 계산하지 않습니다.",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "7개 지원 코드를 enum 선언 순서로 모두 반환하며 0건 태그도 포함합니다. 태그별 수의 합은 참여 인원보다 클 수 있습니다."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

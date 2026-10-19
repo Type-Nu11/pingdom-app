@@ -1,22 +1,24 @@
+import { useAppDialog } from '../../../../../shared/components/AppDialogProvider';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
-import { useMyReviews, useProfile } from '../../hooks/useProfile';
+import { useInfiniteMyReviews, useProfile } from '../../hooks/useProfile';
 import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
 import { getInitialCalendarMonth, getTravelScheduleSelectionState, selectTravelDate } from '../../../../travel/calendar';
 import type { TravelDateInput } from '../../../../travel/calendar';
 import { createPlaceDetailQueryOptions } from '../../../../place/detail';
 import { usePlaceExplorationMediaList } from '../../../../place/exploration';
-import { useCheckIns } from '../../../../place/check-ins';
+import { myVerifiedReviews } from '../verified-places/model/myVerifiedReviews';
 import { useCoupons } from '../../../../booking/offers-coupons';
 import { useReservations } from '../../../../booking/reservations';
 import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../travel/schedules';
 import { ApiErrorState, ErrorState, LoadingState, ProfileAvatar } from '../../../../../shared/components';
+import { useHeaderGlassIconColors } from '../../../../../shared/components/headerGlassIcon';
 import { getProfileImageUri } from '../../model/profileImageUri';
 import MyPageStatValue from '../components/MyPageStatValue';
 import TravelCalendar from '../travel/components/TravelCalendar';
@@ -32,8 +34,8 @@ import ChevronIcon from '../../../../../shared/assets/icons/chevron-right-24.svg
 import DividerIcon from '../../../../../shared/assets/icons/divider.svg';
 import SettingsIcon from '../../../../../shared/assets/icons/settings.svg';
 
-const VERIFIED_PLACES_LIMIT = 4;
-const SKELETON_KEYS = ['skeleton-0', 'skeleton-1', 'skeleton-2', 'skeleton-3'] as const;
+const VERIFIED_PLACES_LIMIT = 2;
+const SKELETON_KEYS = ['skeleton-0', 'skeleton-1'] as const;
 
 // Loading, error and empty slots reserve the height of the content they stand in
 // for, so resolving a section does not shift everything below it.
@@ -42,25 +44,29 @@ const TRAVEL_CALENDAR_HEIGHT = 320;
 const VERIFIED_PLACE_CARD_HEIGHT = 222;
 
 export type MyPageScreenProps = {
+  authoredPostsContent?: React.ReactNode;
   onBack: () => void;
   onOpenCoupons: () => void;
   onOpenProfileEdit: () => void;
-  onOpenPlace: (placeId: number) => void;
+  onOpenReview: (reviewId: number) => void;
   onOpenReservations: () => void;
   onOpenSettings: () => void;
   onOpenVerifiedPlaces: () => void;
 };
 
 export default function MyPageScreen({
+  authoredPostsContent,
   onBack,
   onOpenCoupons,
   onOpenProfileEdit,
-  onOpenPlace,
+  onOpenReview,
   onOpenReservations,
   onOpenSettings,
   onOpenVerifiedPlaces,
 }: MyPageScreenProps) {
   const { t } = useTranslation();
+  const dialog = useAppDialog();
+  const headerIconColors = useHeaderGlassIconColors();
   const {
     error: profileError,
     isFetching: isProfileFetching,
@@ -71,11 +77,26 @@ export default function MyPageScreen({
   } = useProfile();
   const reservationsQuery = useReservations();
   const couponsQuery = useCoupons();
-  const reviewsQuery = useMyReviews({ limit: 1, page: 1 });
+  const authoredReviews = useInfiniteMyReviews();
+  const reviewsQuery = {
+    ...authoredReviews,
+    reviewCount: authoredReviews.data?.pages[0]?.totalElements ?? 0,
+  };
+  const { width: windowWidth } = useWindowDimensions();
+  const [placesWidth, setPlacesWidth] = useState<number | null>(null);
+  const cardWidth = Math.max(1, ((placesWidth ?? windowWidth - 48) - 4) / 2);
+  const verifiedReviews = useMemo(() => myVerifiedReviews(
+    authoredReviews.data?.pages.flatMap((page) => page.reviews) ?? [],
+  ), [authoredReviews.data]);
+  const { fetchNextPage, hasNextPage, isFetching, isError } = authoredReviews;
+  useEffect(() => {
+    if (verifiedReviews.length < VERIFIED_PLACES_LIMIT && hasNextPage && !isFetching && !isError) {
+      void fetchNextPage();
+    }
+  }, [verifiedReviews.length, hasNextPage, isFetching, isError, fetchNextPage]);
   const travelSchedulesQuery = useTravelSchedules();
   const createTravelScheduleMutation = useCreateTravelSchedule();
   const updateTravelScheduleMutation = useUpdateTravelSchedule();
-  const checkInsQuery = useCheckIns({ limit: VERIFIED_PLACES_LIMIT });
   const todayTravelDate = useMemo(() => getTodayServerTravelDate(), []);
 
   const featuredSchedule = useMemo(
@@ -137,7 +158,7 @@ export default function MyPageScreen({
     const mutationOptions = {
       onError: (error: unknown) => {
         setDraftTravelDateInput(serverTravelDateInput);
-        Alert.alert(t(getTravelUpdateErrorKey(error)));
+        dialog.show(t(getTravelUpdateErrorKey(error)));
       },
       onSettled: () => {
         travelUpdateLocked.current = false;
@@ -155,10 +176,8 @@ export default function MyPageScreen({
     createTravelScheduleMutation.mutate(body, mutationOptions);
   };
 
-  const placeIds = useMemo(() => {
-    const ids = (checkInsQuery.data?.checkIns ?? []).map((checkIn) => checkIn.placeId);
-    return Array.from(new Set(ids));
-  }, [checkInsQuery.data]);
+  const previewReviews = verifiedReviews.slice(0, VERIFIED_PLACES_LIMIT);
+  const placeIds = previewReviews.map((review) => review.placeId);
 
   const placeDetailQueries = useQueries({
     queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
@@ -168,10 +187,10 @@ export default function MyPageScreen({
   const verifiedPlaceListState = toVerifiedPlaceListState(
     toVerifiedPlaceEntries(placeIds, placeDetailQueries),
   );
-  const isLoadingCheckIns = checkInsQuery.isLoading;
+  const isLoadingReviews = authoredReviews.isLoading;
 
   const retryVerifiedPlaces = () => {
-    void checkInsQuery.refetch();
+    void authoredReviews.refetch();
     placeDetailQueries.forEach((query) => void query.refetch());
   };
 
@@ -187,7 +206,7 @@ export default function MyPageScreen({
       <Content testID="v2-my-page-scroll" contentContainerStyle={CONTENT_CONTAINER_STYLE}>
         <TopBar testID="v2-my-page-header">
           <IconButton accessibilityLabel={t('myPage.back')} accessibilityRole="button" hitSlop={8} onPress={onBack}>
-            <BackIcon testID="v2-my-page-back-icon" height={84} style={BACK_ICON_STYLE} width={80} />
+            <BackIcon {...headerIconColors} testID="v2-my-page-back-icon" height={84} style={BACK_ICON_STYLE} width={80} />
           </IconButton>
           <TopBarTitle numberOfLines={1}>{t('myPage.title')}</TopBarTitle>
           <IconButton
@@ -196,7 +215,7 @@ export default function MyPageScreen({
             hitSlop={8}
             onPress={onOpenSettings}
           >
-            <SettingsIcon testID="v2-my-page-settings-icon" height={84} style={SETTINGS_ICON_STYLE} width={80} />
+            <SettingsIcon {...headerIconColors} testID="v2-my-page-settings-icon" height={84} style={SETTINGS_ICON_STYLE} width={80} />
           </IconButton>
         </TopBar>
 
@@ -311,17 +330,17 @@ export default function MyPageScreen({
           </TravelSectionContent>
         </Section>
 
-        <Section $borderWidth={0}>
-          <SectionContent>
+        <Section $borderWidth={8}>
+          <PlacesSectionContent onLayout={({ nativeEvent }) => setPlacesWidth(nativeEvent.layout.width - 48)}>
             <SectionHeaderRow accessibilityRole="button" onPress={onOpenVerifiedPlaces}>
               <SectionTitle>{t('myPage.verifiedPlaces.title')}</SectionTitle>
               <ChevronIcon height={24} width={24} />
             </SectionHeaderRow>
-            {isLoadingCheckIns ? (
-              <PlacesScroll horizontal showsHorizontalScrollIndicator={false}>
-                {SKELETON_KEYS.map((key) => <VerifiedPlaceCardSkeleton key={key} />)}
-              </PlacesScroll>
-            ) : checkInsQuery.isError || verifiedPlaceListState.kind === 'error' ? (
+            {isLoadingReviews ? (
+              <PlacesRow testID="v2-my-page-verified-row">
+                {SKELETON_KEYS.map((key) => <VerifiedPlaceCardSkeleton key={key} width={cardWidth} />)}
+              </PlacesRow>
+            ) : authoredReviews.isError || verifiedPlaceListState.kind === 'error' ? (
               <Slot $minHeight={VERIFIED_PLACE_CARD_HEIGHT}>
                 <ErrorState
                   actionLabel={t('myPage.retry')}
@@ -330,29 +349,42 @@ export default function MyPageScreen({
                 />
               </Slot>
             ) : verifiedPlaceListState.kind === 'ready' ? (
-              <PlacesScroll horizontal showsHorizontalScrollIndicator={false}>
+              <PlacesRow testID="v2-my-page-verified-row">
                 {verifiedPlaceListState.entries.map((entry) => (
                   entry.place ? (
                     <VerifiedPlaceCard
+                      width={cardWidth}
                       address={entry.place.address}
                       favorited={bookmarkedPlaceIds.has(entry.placeId)}
                       imageUrl={imageUrlsByPlaceId[String(entry.placeId)]?.[0] ?? null}
                       key={entry.placeId}
                       name={entry.place.name}
-                      onPress={() => onOpenPlace(entry.placeId)}
+                      onPress={() => {
+                        const review = previewReviews.find((item) => item.placeId === entry.placeId);
+                        if (review) onOpenReview(review.reviewId);
+                      }}
                       onToggleFavorite={() => toggleFavorite(entry.placeId)}
                     />
                   ) : (
-                    <VerifiedPlaceCardSkeleton key={entry.placeId} />
+                    <VerifiedPlaceCardSkeleton key={entry.placeId} width={cardWidth} />
                   )
                 ))}
-              </PlacesScroll>
+              </PlacesRow>
             ) : (
               <Slot $minHeight={VERIFIED_PLACE_CARD_HEIGHT}>
                 <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText>
               </Slot>
             )}
-          </SectionContent>
+          </PlacesSectionContent>
+        </Section>
+        <Section $borderWidth={0} testID="v2-my-page-authored-posts">
+          {authoredPostsContent ?? <SectionContent>
+            <SectionHeaderRow accessibilityRole="button" accessibilityState={{ disabled: true }} disabled>
+              <SectionTitle>{t('myPageActivity.postsTitle')}</SectionTitle>
+              <ChevronIcon height={24} width={24} />
+            </SectionHeaderRow>
+            <EmptyPlacesText>{t('myPageActivity.postsUnavailable')}</EmptyPlacesText>
+          </SectionContent>}
         </Section>
       </Content>
     </Screen>
@@ -415,7 +447,8 @@ const SectionContent = styled.View`
 
 const SectionTitle = styled(AppText)`
   color: ${({ theme }) => theme.colors.textStrong};
-  font-size: 20px;
+  font-size: 18px;
+  line-height: 23.4px;
   font-weight: 700;
 `;
 
@@ -441,7 +474,7 @@ const TravelSectionContent = styled.View`
   padding: 0 ${({ theme }) => theme.spacing.lg}px;
 `;
 
-const SectionHeaderRow = styled.Pressable`
+const SectionHeaderRow = styled.Pressable.attrs({ hitSlop: 10 })`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -546,9 +579,15 @@ const StatValue = styled(AppText)`
   font-weight: 700;
 `;
 
-const PlacesScroll = styled.ScrollView.attrs({
-  contentContainerStyle: { gap: 16 },
-})``;
+// Figma 4951:6708: 12px between the section title and the cards.
+const PlacesSectionContent = styled(SectionContent)`
+  gap: 12px;
+`;
+
+const PlacesRow = styled.View`
+  flex-direction: row;
+  gap: 4px;
+`;
 
 const EmptyPlacesText = styled(AppText)`
   color: ${({ theme }) => theme.colors.textMuted};
