@@ -647,7 +647,7 @@ const RecommendationBookmarkButton = ({
   );
 };
 
-const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
+const PreviewArtwork = ({ imageUrl, onLoadError }: { imageUrl?: string; onLoadError?: () => void }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   const [hasImageError, setHasImageError] = useState(false);
@@ -670,13 +670,30 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
   return (
     <Image
       accessibilityLabel={t('map.sheet.image')}
-      onError={() => setHasImageError(true)}
+      onError={() => { if (onLoadError) onLoadError(); else setHasImageError(true); }}
       resizeMode="cover"
       source={{ uri: imageUrl }}
       style={styles.previewArtwork}
     />
   );
 };
+
+// Failed gallery entries disappear instead of becoming another photo-shaped error card.
+function useVisiblePlacePhotos(placeId: number | string, sources: readonly (string | undefined)[]) {
+  const urls = [...new Set(sources.filter((url): url is string => Boolean(url?.trim())))];
+  const key = JSON.stringify([placeId, urls]);
+  const currentKey = useRef(key);
+  currentKey.current = key;
+  const [failed, setFailed] = useState<{ key: string; urls: string[] }>({ key, urls: [] });
+  const failedUrls = failed.key === key ? failed.urls : [];
+  return {
+    urls: urls.filter(url => !failedUrls.includes(url)),
+    remove: (url: string) => {
+      if (currentKey.current !== key) return;
+      setFailed(previous => ({ key, urls: [...new Set([...(previous.key === key ? previous.urls : []), url])] }));
+    },
+  };
+}
 
 export const RecommendationFeaturedCard = ({
   bookmarked,
@@ -1467,10 +1484,10 @@ const PreviewContent = ({
   const translationAttribution = useTranslationAttribution(place.name);
   const { colors } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
-  const imageUrls = fallbackContent?.imageUrls.length
+  const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
-    : [imageUrl];
-  const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
+    : [imageUrl]);
+  const validImageUrls = photos.urls;
   const contentWidth = Math.min(windowWidth, 480) - 32;
   const primaryImageWidth = Math.min(242, contentWidth);
   const imageHeight = primaryImageWidth * 182 / 242;
@@ -1620,7 +1637,7 @@ const PreviewContent = ({
               <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
             </View>
           </SkeletonGroup>
-        ) : imageUrls.map((url, index) => (
+        ) : validImageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={t('map.detail.imageDetail', { count: index + 1, name: place.name })}
             accessibilityRole="button"
@@ -1637,7 +1654,7 @@ const PreviewContent = ({
               { height: imageHeight, width: primaryImageWidth },
             ]}
           >
-            <PreviewArtwork imageUrl={url} />
+            <PreviewArtwork imageUrl={url} onLoadError={() => photos.remove(url)} />
           </Pressable>
         ))}
       </ScrollView>
@@ -1887,10 +1904,10 @@ const ExpandedPlaceContent = ({
   const styles = useMapSheetStyles();
   const translationAttribution = useTranslationAttribution(place.name);
   const insets = useSafeAreaInsets();
-  const imageUrls = fallbackContent?.imageUrls.length
+  const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
-    : [imageUrl];
-  const validImageUrls = imageUrls.filter((url): url is string => Boolean(url));
+    : [imageUrl]);
+  const validImageUrls = photos.urls;
   const reservation = fallbackContent?.reservation ?? {
     kind: 'loading', disabled: true,
   };
@@ -2009,7 +2026,7 @@ const ExpandedPlaceContent = ({
               <SkeletonBlock width={184} height={182} radius={16} />
             </View>
           </SkeletonGroup>
-        ) : imageUrls.map((url, index) => (
+        ) : validImageUrls.map((url, index) => (
           <Pressable
             accessibilityLabel={url
               ? t('map.detail.imageDetail', { count: index + 1, name: place.name })
@@ -2021,7 +2038,7 @@ const ExpandedPlaceContent = ({
               : undefined}
             style={[styles.detailPhoto, index === 0 && styles.detailPhotoPrimary]}
           >
-            <PreviewArtwork imageUrl={url} />
+            <PreviewArtwork imageUrl={url} onLoadError={() => photos.remove(url)} />
           </Pressable>
         ))}
       </ScrollView>

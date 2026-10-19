@@ -1625,6 +1625,25 @@ describe('MapBottomSheet recommendations', () => {
     ...overrides,
   });
 
+  test.each(['medium', 'expanded'] as const)('%s 장소 사진 로딩 실패 타일은 제거하고 정상 사진만 뷰어에 전달한다', async snapPoint => {
+    const place = places[0];
+    await renderWithProviders(<MapBottomSheet {...categoryProps([], {
+      content: { type: 'place-preview', placeId: place.id }, selectedPlace: place, snapPoint,
+      previewFallbackContentByPlaceId: {
+        [String(place.id)]: { amenities: [], statusDescription: '', statusEmphasis: '',
+          imageUrls: ['https://example.com/good.jpg', 'https://example.com/broken.jpg'] },
+      },
+    })} />);
+    const failed = screen.getAllByLabelText('장소 이미지').find(node => node.props.source?.uri === 'https://example.com/broken.jpg');
+    expect(failed).toBeTruthy();
+    await fireEvent(failed!, 'error');
+    expect(screen.queryAllByLabelText('장소 이미지')).toHaveLength(1);
+    expect(screen.queryByText('이미지를 불러오지 못했어요')).toBeNull();
+    expect(screen.queryByRole('button', { name: `${place.name} 사진 2 상세 보기` })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: `${place.name} 사진 1 상세 보기` }));
+    expect(screen.getByLabelText(`${place.name} 사진 1장 중 1번째`)).toBeVisible();
+  });
+
   test('Android 전국 전체 카드는 중복 블러 비트맵 없이 표시 크기로 이미지를 디코딩한다', async () => {
     jest.replaceProperty(Platform, 'OS', 'android');
     const feedPlaces = Array.from({ length: 20 }, (_, index) => ({

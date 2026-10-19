@@ -105,7 +105,8 @@ export function buildPlaceDetailPresentation(
     .sort((left, right) => (left.displayOrder - right.displayOrder) || (left.id - right.id))
     .map((item) => clean(item.imageUrl))
     .filter((url): url is string => Boolean(url));
-  const imageUrls = [...new Set([...mediaUrls, clean(card?.imageUrl)].filter(
+  // The card image is a fallback thumbnail, not an additional gallery photo.
+  const imageUrls = [...new Set((mediaUrls.length ? mediaUrls : [clean(card?.imageUrl)]).filter(
     (url): url is string => Boolean(url),
   ))];
   const reviewItems = (resources.reviews.data?.content ?? []).filter(
