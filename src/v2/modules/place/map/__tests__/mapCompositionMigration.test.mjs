@@ -100,7 +100,9 @@ test('map section changes do not fade the whole sheet or preserve expanded place
   assert.match(screen, /const openMapSection = useCallback/);
   assert.match(screen, /setContent\(\{ type: 'home' \}\)/);
   assert.match(screen, /jumpTo\('medium'\)/);
-  assert.match(bottomSheet, /tintColor=\{isExpandedPlaceDetail \? themedColors\.surface : themedGlass\.sheet\.tint\}/);
+  assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);
+  const surface = read('../sheet/components/MapSheetSurface.tsx');
+  assert.match(surface, /!opaque && <Styles\.SheetChromeShadow/);
 });
 
 test('dismissing an expanded place resets the home sheet without an intermediate stretched frame', () => {
@@ -152,7 +154,7 @@ test('place preview keeps header actions tappable and aligns category beside the
 
   assert.match(bottomSheet, /<View style=\{styles\.previewHeader\}>/);
   assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
-  assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{22\}/);
+  assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{16\}/);
   assert.match(bottomSheet, /t\('map\.detail\.verifiedCount'/);
 });
 
@@ -160,11 +162,15 @@ test('place actions retain selection across sheet expansion and expanded detail 
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
 
   assert.match(bottomSheet, /activePreviewAction/);
-  assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: colors\.primarySoft, borderColor: colors\.selectedBorder/);
+  assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: glass\.category\.activeTint, borderColor: glass\.category\.activeBorder/);
   assert.match(bottomSheet, /activeAction=\{activePreviewAction\}/);
-  assert.match(bottomSheet, /borderBottomLeftRadius: isExpandedPlaceDetail \? 0/);
-  assert.match(bottomSheet, /borderBottomRightRadius: isExpandedPlaceDetail \? 0/);
-  assert.match(bottomSheet, /cornerRadius=\{isExpandedPlaceDetail \? 0 : themedGlass\.sheet\.topRadius\}/);
+  assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);
+  const surface = read('../sheet/components/MapSheetSurface.tsx');
+  assert.match(surface, /borderBottomLeftRadius: opaque \? 0 : radius/);
+  assert.match(surface, /borderBottomRightRadius: opaque \? 0 : radius/);
+  assert.match(surface, /borderTopLeftRadius: opaque \? 0/);
+  assert.match(surface, /borderTopRightRadius: opaque \? 0/);
+
 });
 
 test('the production map detail uses the compact Offer list before menus', () => {

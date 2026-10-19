@@ -29,7 +29,6 @@ import CountryFilterMenu from './CountryFilterMenu';
 import PostCard from './PostCard';
 import PostOverflowMenu from './PostOverflowMenu';
 
-const SHEET_RESTING_GAP = 8;
 // Figma `FAB/Write` sits 12px above the 64px bottom navigation bar.
 const NAVIGATION_BAR_HEIGHT = 64;
 const WRITE_FAB_NAVIGATION_GAP = 12;
@@ -128,18 +127,6 @@ export default function CommunityBottomSheet({
     inputRange: [mediumTranslateY, fadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, themedGlass.sheet.bottomRadius],
-  });
 
   // Each item carries its own category; the selected category only backs the
   // tag for an item the server returned without one.
@@ -197,27 +184,7 @@ export default function CommunityBottomSheet({
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        style={{ boxShadow: themedGlass.sheet.shadow, bottom: chromeBottomInset, left: chromeGap, right: chromeGap }}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={themedGlass.sheet.rim}
-          style={{ borderBottomLeftRadius: chromeBottomRadius, borderBottomRightRadius: chromeBottomRadius }}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={themedGlass.sheet.tint}
-            topRimOnly
-          />
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow>
-
-      <GlassStyles.SheetInner $clipContent $inset={SHEET_RESTING_GAP}>
+      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} mediumTranslateY={mediumTranslateY} testID="community-sheet">
         <HandleArea {...panHandlers}>
           <HandleButton accessibilityLabel={t('community.sheetAdjust')} accessibilityRole="adjustable" onPress={onHandlePress}>
             <Handle />
@@ -311,7 +278,7 @@ export default function CommunityBottomSheet({
             )}
           </ListViewport>
         </Animated.View>
-      </GlassStyles.SheetInner>
+      </GlassStyles.MapSheetSurface>
 
       {snapPoint === 'expanded' ? (
         // Pinned to the screen like MapSheetBottomNavigation: the sheet

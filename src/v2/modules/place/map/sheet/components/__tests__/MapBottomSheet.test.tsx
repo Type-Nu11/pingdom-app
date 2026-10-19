@@ -180,6 +180,10 @@ describe('MapBottomSheet recommendations', () => {
     );
 
     expect(screen.getByRole('button', { name: '추천 장소 1 사진 1 상세 보기' })).toHaveStyle({ width: 242, height: 182 });
+    expect(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' })).toHaveStyle({ width: 242, height: 182 });
+    expect(screen.getByTestId('place-preview-content')).toHaveStyle({ rowGap: 14 });
+    expect(within(screen.getByTestId('place-preview-photos-section')).getByTestId('place-preview-translation-attribution')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('place-name-translation')).queryByLabelText('Translated by Google')).toBeNull();
     await user.press(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' }));
     expect(screen.getByTestId('place-photo-viewer')).toBeVisible();
     expect(screen.getByLabelText('추천 장소 1 사진 2장 중 2번째')).toBeVisible();
@@ -207,7 +211,7 @@ describe('MapBottomSheet recommendations', () => {
       places, recommendationPlaces: [], recommendationsState: 'ready' as const,
       previewFallbackContentByPlaceId: {
         [String(selectedPlace.id)]: {
-          amenities: [], coupons: [{ period: '2026.09.01~2026.09.30', title: '관광객 쿠폰' }],
+          amenities: ['english', 'parking'] as Array<'english' | 'parking'>, coupons: [{ period: '2026.09.01~2026.09.30', title: '관광객 쿠폰' }],
           imageUrls: [], statusDescription: '', statusEmphasis: '', verifiedEvidenceCount: 23,
         },
       },
@@ -221,8 +225,13 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.queryByRole('button', { name: '쿠폰 받기' })).not.toBeOnTheScreen();
     expect(screen.queryByText('실서버 쿠폰 발급 영역')).not.toBeOnTheScreen();
-    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 8, paddingRight: 8 });
+    expect(screen.getByTestId('map-sheet-content-viewport')).toHaveStyle({ overflow: 'hidden', position: 'absolute', top: 0 });
+    expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: 0, paddingRight: 0 });
+    expect(within(screen.getByTestId('map-sheet-content-viewport')).getByTestId('place-name-translation')).toBeOnTheScreen();
     expect(screen.getByTestId('map-sheet-chrome')).toBeOnTheScreen();
+    expect(screen.getByTestId('place-preview-amenity-parking')).toHaveStyle({ minHeight: 34, paddingHorizontal: 12, gap: 6 });
+    expect(screen.getByText('주차가능')).toHaveStyle({ fontSize: 14, lineHeight: 18 });
+    expect(screen.getByLabelText(selectedPlace.name)).toHaveStyle({ fontSize: 24, lineHeight: 31 });
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
@@ -1564,6 +1573,19 @@ describe('MapBottomSheet recommendations', () => {
     expect(within(all()).queryByTestId('map-category-all-outline')).toBeNull();
     expect(within(all()).getByTestId('map-category-all-filled')).toHaveProp('color',
       (appearancePreference === 'DARK' ? darkColors : lightColors).primary);
+  });
+
+  test('cached place keeps its translation controls when an offline refresh fails', async () => {
+    const place = places[0];
+    await renderWithProviders(<MapBottomSheet {...categoryProps([], {
+      content: { type: 'place-preview', placeId: place.id },
+      selectedPlace: place,
+      detailError: new Error('offline refresh failed'),
+      onRetryDetail: jest.fn(),
+    })} />);
+    expect(screen.getByTestId('place-name-translation')).toBeTruthy();
+    expect(screen.queryByText('데이터를 불러오지 못했습니다')).toBeNull();
+    expect(screen.getByLabelText(place.name)).toBeTruthy();
   });
 
   test('deep-linked place failure shows recovery without falling into the home feed', async () => {

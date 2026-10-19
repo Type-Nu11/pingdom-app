@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen } from '@testing-library/react-native';
+import { screen, within } from '@testing-library/react-native';
 import { Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
@@ -147,6 +147,22 @@ describe('CommunityBottomSheet Figma layout', () => {
     jest.mocked(useCommunityFeed).mockReturnValue(postsResult({
       data: { pages: [postPage({ posts: [{ postId: 7, title: '성수 팝업 후기' }], totalCount: 1, totalPages: 1 })], pageParams: [1] },
     }));
+  });
+
+  test.each([0, 150, 300])('clips the list to the animated glass boundary at inset %s', async bottom => {
+    await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation}
+      sheetChromeBottom={new Animated.Value(bottom)} />);
+    const viewport = screen.getByTestId('community-sheet-content-viewport');
+    expect(viewport).toHaveStyle({ position: 'absolute', top: 0, overflow: 'hidden' });
+    const gap = Math.min(bottom / 300, 1) * 8;
+    expect(viewport).toHaveStyle({
+      bottom: bottom + gap, left: gap, right: gap,
+      borderTopLeftRadius: 36, borderTopRightRadius: 36,
+      borderBottomLeftRadius: Math.min(bottom / 300, 1) * 48,
+      borderBottomRightRadius: Math.min(bottom / 300, 1) * 48,
+    });
+    expect(within(viewport).getByTestId('v2-community-post-list')).toBeTruthy();
+    expect(within(viewport).queryByRole('tab', { name: '즐겨찾기' })).toBeNull();
   });
 
   test('opens on the "전체" tab and tags a card only with the category its item carries', async () => {

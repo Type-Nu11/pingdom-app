@@ -70,6 +70,14 @@ const props = {
 };
 
 describe('FavoritePlacesBottomSheet categories', () => {
+  test('목록을 배경과 동일한 하단 경계와 모서리 안에 가둔다', async () => {
+    await renderWithProviders(<FavoritePlacesBottomSheet {...props} sheetChromeBottom={new Animated.Value(300)} />);
+    expect(screen.getByTestId('favorites-sheet-content-viewport')).toHaveStyle({
+      position: 'absolute', overflow: 'hidden', top: 0, bottom: 308, left: 8, right: 8,
+      borderBottomLeftRadius: 48, borderBottomRightRadius: 48,
+    });
+  });
+
   test('내 장소에서 지도와 동일한 전체 카테고리 탭을 제공한다', async () => {
     await renderWithProviders(<FavoritePlacesBottomSheet {...props} />);
 

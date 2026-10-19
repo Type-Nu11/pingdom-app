@@ -45,6 +45,14 @@ export const SheetGlass = styled(FrostedSurface)`
   overflow: hidden;
 `;
 
+// The native content viewport follows the same animated bounds as the glass.
+// Clipping only the background cannot contain photos or other overflowing children.
+export const SheetContentViewport = styled(Animated.View)`
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+`;
+
 export const SheetInner = styled.View<{ $clipContent?: boolean; $inset: number; $opaque?: boolean }>`
   flex: 1;
   background-color: ${({ $opaque, theme }) => ($opaque ? theme.colors.background : 'transparent')};

@@ -1,3 +1,7 @@
+import TranslationAttribution, { useTranslationAttribution } from '../../../translation/TranslationAttribution';
+import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
+import PreviewCloseAsset from '../../../../../../assets/v2/icons/community/close-medium.svg';
+import PlaceNameTranslation from '../../../translation/PlaceNameTranslation';
 import Skeleton, { SkeletonGroup, SkeletonBlock } from '../../../../../shared/components/Skeleton';
 import DetailBackAsset from '../../../../../../assets/v2/icons/place/detail-back.svg';
 import DetailBookmarkAsset from '../../../../../../assets/v2/icons/place/detail-bookmark.svg';
@@ -75,9 +79,9 @@ import type { PlaceOperatingSummaryText } from '../../../detail';
 import type { ReservationCtaState } from '../../../../booking';
 import GlassSurface from '../../presentation/components/GlassSurface';
 import * as GlassStyles from '../styles/BottomSheetGlass.styles';
+import MapSheetSurface from './MapSheetSurface';
 import { formatDistance as formatLocalizedDistance } from '../../../../../shared/i18n/formatters';
 import { lightColors } from '../../../../../shared/theme/colors';
-import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
 import { useTheme } from 'styled-components/native';
 import type { AppTheme } from '../../../../../shared/theme';
 import { normalizePlaceCategory } from '../../../core/placeCategory';
@@ -237,23 +241,19 @@ type MapBottomSheetProps = {
   userName?: string;
 };
 
-type IconProps = {
-  active?: boolean;
-  size?: number;
-};
+
 
 type SheetCategory = MapHomeCategory;
 
 // Keep the Figma typography stable when an Android device uses a larger system font scale.
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 const useMapSheetStyles = () => {
-  const { colors } = useTheme();
-  return useMemo(() => createStyles(colors), [colors]);
+  const { colors, liquidGlass } = useTheme();
+  return useMemo(() => createStyles(colors, liquidGlass), [colors, liquidGlass]);
 };
 
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
 const SHEET_RESTING_GAP = 8;
-const SHEET_BOTTOM_RADIUS = liquidGlass.sheet.bottomRadius;
 const HOME_SHEET_VISIBLE_HEIGHT = 386;
 const HOME_SHEET_HANDLE_HEIGHT = 19;
 
@@ -269,21 +269,6 @@ const CATEGORY_OPTIONS: Array<{ id: SheetCategory }> = [
   { id: 'popup' }, { id: 'music' }, { id: 'food' }, { id: 'fashion' }, { id: 'beauty' },
   { id: 'art' }, { id: 'cafe' }, { id: 'heritage' }, { id: 'etc' },
 ];
-
-export const MapPinIcon = ({ active = false, size = 24 }: IconProps) => {
-  const themedColors = useTheme().colors ?? lightColors;
-  const color = active ? themedColors.primary : themedColors.text;
-  return <Svg height={size} viewBox="0 0 24 24" width={size}>
-    <Path
-      d="M12 22s7-6.1 7-13A7 7 0 0 0 5 9c0 6.9 7 13 7 13Z"
-      fill={active ? color : 'none'}
-      stroke={color}
-      strokeLinejoin="round"
-      strokeWidth="2"
-    />
-    <Circle cx="12" cy="9" fill={active ? themedColors.onPrimary : 'none'} r="2.4" stroke={active ? themedColors.onPrimary : color} strokeWidth="1.5" />
-  </Svg>
-};
 
 const CardScrim = () => (
   <View pointerEvents="none" style={styles.cardScrim}>
@@ -483,7 +468,7 @@ const PlaceArtwork = React.memo(({
         accessibilityLabel={fallbackMessage}
         style={[styles.artwork, styles.artworkFallback, variant === 'grid' && styles.gridArtwork]}
       >
-        <MapPinIcon active size={24} />
+        <UnavailableStateIcon size={64} />
         <AppText style={styles.artworkFallbackText}>{fallbackMessage}</AppText>
       </View>
     );
@@ -675,7 +660,7 @@ const PreviewArtwork = ({ imageUrl }: { imageUrl?: string }) => {
 
     return (
       <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
-        <MapPinIcon active size={28} />
+        <UnavailableStateIcon size={88} />
         <AppText style={styles.previewArtworkFallbackText}>{fallbackMessage}</AppText>
       </View>
     );
@@ -1125,8 +1110,7 @@ const EmptyCard = ({
       style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
       testID={`map-home-feed-state-${copyState}`}
     >
-      <View style={styles.emptyCardIcon}>{copyState === 'location-pending'
-        ? <MapPinIcon active size={24} /> : <UnavailableStateIcon size={64} />}</View>
+      <View style={styles.emptyCardIcon}><UnavailableStateIcon size={64} /></View>
       <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
       {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
       {retryable && onRetry ? (
@@ -1343,7 +1327,7 @@ const ResultRow = ({
   const styles = useMapSheetStyles();
   return (
   <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
-    <View style={styles.resultThumbnail}><MapPinIcon active size={25} /></View>
+    <View style={styles.resultThumbnail}><UnavailableStateIcon size={40} /></View>
     <View style={styles.resultTextBody}>
       <AppText numberOfLines={1} style={styles.resultName}>{place.name}</AppText>
       <AppText numberOfLines={1} style={styles.resultAddress}>{place.address}</AppText>
@@ -1357,12 +1341,12 @@ const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   return (
-  <View style={expanded ? styles.detailAmenity : styles.previewAmenityChip}>
+  <View testID={`place-preview-amenity-${type}`} style={expanded ? styles.detailAmenity : styles.previewAmenityChip}>
     {expanded ? <View style={styles.detailAmenityIcon} testID={`map-detail-amenity-${type}`}>
       {type === 'english' ? <View style={styles.detailGlobeLayers}><DetailGlobeBaseAsset /><DetailGlobeLinesAsset style={styles.detailGlobeLines} /></View> : <DetailParkingAsset />}
     </View> : type === 'english'
-      ? <GroupAsset height={20} width={20} />
-      : <ParkAsset height={20} width={20} />}
+      ? <GroupAsset />
+      : <ParkAsset />}
     <AppText style={expanded ? styles.detailAmenityText : styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</AppText>
   </View>
   );
@@ -1403,42 +1387,17 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
 
 type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
-const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind; expanded?: boolean }) => {
-  const color = (useTheme().colors ?? lightColors).textSecondary;
-  if (expanded) {
-    if (kind === 'share') return <DetailShareAsset />;
-    if (kind === 'reservation') return <DetailReservationAsset />;
-    if (kind === 'directions') return <DetailDirectionsAsset />;
-    return null;
-  }
-  if (kind === 'share') {
-    return (
-      <Svg height={13} viewBox="0 0 16 16" width={13}>
-        <Path d="M6 3H3.8A1.8 1.8 0 0 0 2 4.8v7.4A1.8 1.8 0 0 0 3.8 14h7.4a1.8 1.8 0 0 0 1.8-1.8V10M8 2h6v6M14 2 7.5 8.5" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
-      </Svg>
-    );
-  }
-  if (kind === 'reservation') {
-    return (
-      <Svg height={13} viewBox="0 0 16 16" width={13}>
-        <Path d="M3 4.2A1.7 1.7 0 0 1 4.7 2.5h6.6A1.7 1.7 0 0 1 13 4.2v7.1a1.7 1.7 0 0 1-1.7 1.7H4.7A1.7 1.7 0 0 1 3 11.3V4.2Z" fill="none" stroke={color} strokeWidth={1.4} />
-        <Path d="m6 8 1.3 1.3L10.4 6" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
-      </Svg>
-    );
-  }
-  if (kind === 'directions') {
-    return (
-      <Svg height={14} viewBox="0 0 16 16" width={14}>
-        <Path d="m2.2 2.7 11.6 4.7-5 1.2-1.4 4.7-5.2-10.6Z" fill="none" stroke={color} strokeLinejoin="round" strokeWidth={1.4} />
-      </Svg>
-    );
-  }
+const PreviewActionIcon = ({ kind }: { kind: PreviewActionKind; expanded?: boolean }) => {
+  if (kind === 'share') return <DetailShareAsset />;
+  if (kind === 'reservation') return <DetailReservationAsset />;
+  if (kind === 'directions') return <DetailDirectionsAsset />;
   return null;
 };
 
 const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, expanded = false, kind, label, onPress }: { expanded?: boolean; accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => {
   const styles = useMapSheetStyles();
   return <Pressable
+    hitSlop={expanded ? undefined : { top: 5, bottom: 5 }}
     accessibilityHint={accessibilityHint}
     accessibilityLabel={label}
     accessibilityRole={onPress && !disabled ? 'button' : undefined}
@@ -1503,6 +1462,8 @@ const PreviewContent = ({
 }) => {
   const { i18n, t } = useTranslation();
   const styles = useMapSheetStyles();
+  const translationAttribution = useTranslationAttribution(place.name);
+  const { colors } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
@@ -1511,7 +1472,7 @@ const PreviewContent = ({
   const contentWidth = Math.min(windowWidth, 480) - 32;
   const primaryImageWidth = Math.min(242, contentWidth);
   const imageHeight = primaryImageWidth * 182 / 242;
-  const secondaryImageWidth = Math.min(184, Math.max(150, Math.round(contentWidth * 0.46)));
+
   const reservation = fallbackContent?.reservation ?? {
     kind: 'loading', disabled: true,
   };
@@ -1525,37 +1486,39 @@ const PreviewContent = ({
     : fallbackContent?.statusDescription;
 
   return (
-    <View style={styles.previewContent}>
+    <View style={[styles.previewContent, styles.placePreviewContent]} testID="place-preview-content">
       <View style={styles.previewHeader}>
-        <Pressable
-          accessibilityLabel={t('map.detail.preview', { name: place.name })}
-          accessibilityRole="button"
-          onPress={onDetail}
-          style={styles.previewSummary}
-        >
-          <View style={styles.previewTitleRow}>
-            <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</AppText>
-            <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>
-          </View>
-          {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
-            <View style={styles.previewStatusRow}>
-              {verificationSummary ? (
-                <AppText numberOfLines={1} style={styles.previewStatus}>
-                  {verificationSummary}
-                </AppText>
-              ) : null}
-              {fallbackContent.statusEmphasis ? (
-                <AppText style={styles.previewStatusEmphasis}>
-                  {verificationSummary ? ' · ' : ''}
-                  {fallbackContent.statusEmphasis}
-                </AppText>
-              ) : null}
-            </View>
-          ) : null}
-          <AppText accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
-            {formatPreviewLocation(place, i18n.language)}
-          </AppText>
-        </Pressable>
+        <View style={styles.previewSummary}>
+          <PlaceNameTranslation
+            attributionPlacement="photos"
+            onTranslationChange={translationAttribution.onTranslationChange}
+            original={place.name}
+            inlineCategory
+            nameStyle={styles.previewName}
+            onNamePress={onDetail}
+            category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
+          />
+          <Pressable accessibilityLabel={t('map.detail.preview', { name: place.name })} accessibilityRole="button" onPress={onDetail}>
+            {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
+              <View style={styles.previewStatusRow}>
+                {verificationSummary ? (
+                  <AppText numberOfLines={1} style={styles.previewStatus}>
+                    {verificationSummary}
+                  </AppText>
+                ) : null}
+                {fallbackContent.statusEmphasis ? (
+                  <AppText style={styles.previewStatusEmphasis}>
+                    {verificationSummary ? ' · ' : ''}
+                    {fallbackContent.statusEmphasis}
+                  </AppText>
+                ) : null}
+              </View>
+            ) : null}
+            <AppText accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
+              {formatPreviewLocation(place, i18n.language)}
+            </AppText>
+          </Pressable>
+        </View>
         <Pressable
           accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
           accessibilityRole="button"
@@ -1565,7 +1528,7 @@ const PreviewContent = ({
           style={({ pressed }) => [styles.previewBookmarkButton, pressed && styles.pressed]}
           testID="place-preview-bookmark"
         >
-          <BookmarkStar selected={bookmarked} size={22} />
+          <View style={styles.previewHeaderButtonSurface}><BookmarkStar selected={bookmarked} size={16} /></View>
         </Pressable>
         <Pressable
           accessibilityLabel={t('map.card.dismiss')}
@@ -1574,16 +1537,18 @@ const PreviewContent = ({
           style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
           testID="place-preview-close"
         >
-          <AppText style={styles.previewCloseText}>×</AppText>
+          <View style={styles.previewHeaderButtonSurface}><PreviewCloseAsset color={colors.textSecondary} /></View>
         </Pressable>
       </View>
+      <View style={styles.previewControls}>
       {fallbackContent?.amenities.length ? (
         <View style={styles.previewAmenityRow}>
           {fallbackContent.amenities.map((amenity) => <PreviewAmenity key={amenity} type={amenity} />)}
         </View>
       ) : null}
       <ScrollView
-        contentContainerStyle={styles.previewActionRow}
+        contentContainerStyle={[styles.previewActionRow, styles.previewControlsActionRow]}
+        style={styles.previewActionViewport}
         horizontal
         showsHorizontalScrollIndicator={false}
       >
@@ -1628,6 +1593,8 @@ const PreviewContent = ({
           <AppText style={styles.detailEmptyText}>{t('map.detail.imageError')}</AppText>
         </Pressable>
       ) : null}
+      </View>
+      <View style={{ gap: 8 }} testID="place-preview-photos-section">
       <ScrollView
         contentContainerStyle={styles.previewImageRow}
         horizontal
@@ -1635,9 +1602,9 @@ const PreviewContent = ({
       >
         {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
           <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <SkeletonBlock width={242} height={182} radius={16} />
-              <SkeletonBlock width={184} height={182} radius={16} />
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
+              <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
             </View>
           </SkeletonGroup>
         ) : imageUrls.map((url, index) => (
@@ -1654,13 +1621,15 @@ const PreviewContent = ({
             }}
             style={[
               styles.previewImagePanel,
-              { height: imageHeight, width: index === 0 ? primaryImageWidth : secondaryImageWidth },
+              { height: imageHeight, width: primaryImageWidth },
             ]}
           >
             <PreviewArtwork imageUrl={url} />
           </Pressable>
         ))}
       </ScrollView>
+      <TranslationAttribution visible={translationAttribution.visible} testID="place-preview-translation-attribution" />
+      </View>
     </View>
   );
 };
@@ -1699,7 +1668,7 @@ const ExternalPlaceContent = ({
     >
       <View style={styles.externalHeader}>
         <View style={styles.previewSummary}>
-          <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.previewName}>{place.name}</AppText>
+          <PlaceNameTranslation original={place.name} nameStyle={styles.previewName} />
           <View style={styles.externalBadge}>
             <AppText numberOfLines={1} style={styles.externalBadgeText}>{t('map.externalPlace.badge')}</AppText>
           </View>
@@ -1903,6 +1872,7 @@ const ExpandedPlaceContent = ({
   const { t } = useTranslation();
   const { colors, colorScheme } = useTheme();
   const styles = useMapSheetStyles();
+  const translationAttribution = useTranslationAttribution(place.name);
   const insets = useSafeAreaInsets();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
@@ -1956,10 +1926,13 @@ const ExpandedPlaceContent = ({
       </View>
 
       <View style={styles.detailHeading}>
-        <View style={styles.detailTitleRow}>
-          <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={2} style={styles.detailTitle}>{place.name}</AppText>
-          <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>
-        </View>
+        <PlaceNameTranslation
+            attributionPlacement="photos"
+            onTranslationChange={translationAttribution.onTranslationChange}
+          original={place.name}
+          nameStyle={styles.detailTitle}
+          category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
+        />
         {verificationSummary ? (
           <AppText style={styles.detailVerified}>{verificationSummary}</AppText>
         ) : null}
@@ -2040,6 +2013,8 @@ const ExpandedPlaceContent = ({
           </Pressable>
         ))}
       </ScrollView>
+
+      <TranslationAttribution visible={translationAttribution.visible} testID="place-detail-translation-attribution" />
 
       <View style={styles.detailTabs}>
         {(['info', 'reviews'] as const).map((tab) => (
@@ -2309,8 +2284,7 @@ export default function MapBottomSheet({
 }: MapBottomSheetProps) {
   const activeTheme = useTheme();
   const themedColors = activeTheme.colors;
-  const themedGlass = activeTheme.liquidGlass;
-  const styles = useMemo(() => createStyles(themedColors), [themedColors]);
+  const styles = useMemo(() => createStyles(themedColors, activeTheme.liquidGlass), [themedColors, activeTheme.liquidGlass]);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [feed, setFeed] = useState<'local' | 'national'>('local');
@@ -2398,63 +2372,11 @@ export default function MapBottomSheet({
     inputRange: [Math.max(0, mediumTranslateY - 96), mediumTranslateY],
     outputRange: [1, 0],
   });
-  // Expanded sheet goes full-bleed: resting gap and bottom corners collapse to 0.
-  const chromeGapRange = [0, Math.max(mediumTranslateY, 1)];
-  const chromeGap = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_RESTING_GAP],
-  });
-  const chromeBottomInset = Animated.add(sheetChromeBottom, chromeGap);
-  const chromeBottomRadius = sheetChromeBottom.interpolate({
-    extrapolate: 'clamp',
-    inputRange: chromeGapRange,
-    outputRange: [0, SHEET_BOTTOM_RADIUS],
-  });
-
   return (
     <GlassStyles.BottomSheetContainer
       style={{ height, transform: [{ translateY: sheetTranslateY }] }}
     >
-      {!isExpandedPlaceDetail ? <GlassStyles.SheetChromeShadow
-        pointerEvents="none"
-        testID="map-sheet-chrome"
-        style={[
-          {
-            boxShadow: themedGlass.sheet.shadow,
-            borderBottomLeftRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
-            borderBottomRightRadius: isExpandedPlaceDetail ? 0 : SHEET_BOTTOM_RADIUS,
-            borderTopLeftRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            borderTopRightRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            bottom: chromeBottomInset,
-            left: chromeGap,
-            right: chromeGap,
-          },
-        ]}
-      >
-        <GlassStyles.SheetChrome
-          $borderColor={isExpandedPlaceDetail ? 'transparent' : themedGlass.sheet.rim}
-          style={[
-            {
-              borderBottomLeftRadius: chromeBottomRadius,
-              borderBottomRightRadius: chromeBottomRadius,
-              borderTopLeftRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-              borderTopRightRadius: isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius,
-            },
-          ]}
-        >
-          <GlassStyles.SheetGlass
-            cornerRadius={isExpandedPlaceDetail ? 0 : themedGlass.sheet.topRadius}
-            glassEffectStyle="regular"
-            highlightHeight={40}
-            highlightOpacity={themedGlass.sheet.highlightOpacity}
-            rimColor={themedGlass.sheet.rim}
-            tintColor={isExpandedPlaceDetail ? themedColors.surface : themedGlass.sheet.tint}
-            topRimOnly
-          />
-        </GlassStyles.SheetChrome>
-      </GlassStyles.SheetChromeShadow> : null}
-      <GlassStyles.SheetInner $opaque={isExpandedPlaceDetail} $inset={isExpandedPlaceDetail ? 0 : SHEET_RESTING_GAP} testID="map-sheet-inner" style={isExpandedPlaceDetail ? { width: '100%' } : undefined}>
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} testID="map-sheet">
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -2482,7 +2404,8 @@ export default function MapBottomSheet({
         ]}
         testID="map-sheet-content"
       >
-      {content.type === 'place-preview' && detailError ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
+      {/* Keep loaded place data available when an offline refresh fails. */}
+      {content.type === 'place-preview' && detailError && !selectedPlace ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
       {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState variant="place" description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
           <ExpandedPlaceContent
@@ -2625,7 +2548,7 @@ export default function MapBottomSheet({
         />
       )}
       </Animated.View>
-      </GlassStyles.SheetInner>
+      </MapSheetSurface>
 
       {content.type !== 'place-preview' && content.type !== 'external-place' ? (
         <MapSheetBottomNavigation
@@ -2650,7 +2573,7 @@ export default function MapBottomSheet({
 }
 
 const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
-const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
+const createStyles = (colors: AppTheme['colors'], glass: AppTheme['liquidGlass'] = liquidGlass): Record<string, object> => ({
   artwork: {
     backgroundColor: colors.surfaceMuted,
     height: '100%',
@@ -3015,92 +2938,51 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   externalNoticeText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
   externalSource: { color: colors.textMuted, fontSize: 12, fontWeight: '600', includeFontPadding: false, lineHeight: 16, marginTop: 4 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
+  placePreviewContent: { rowGap: 14 },
   previewActionChip: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    height: 36,
-    justifyContent: 'center',
-    minWidth: 58,
-    paddingHorizontal: 12,
+    alignItems: 'center', backgroundColor: glass.category.tint,
+    borderColor: 'transparent', borderRadius: 16, borderWidth: 1,
+    boxShadow: glass.category.shadow, flexDirection: 'row', gap: 6,
+    minHeight: 34, justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 7,
   },
-  previewActionChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.selectedBorder },
-  previewActionRow: { columnGap: 7, paddingBottom: 12, paddingHorizontal: 1 },
-  previewActionText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  previewActionChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
+  previewActionRow: { columnGap: 8, paddingBottom: 12 },
+  previewControls: { rowGap: 8 },
+  previewActionViewport: { overflow: 'visible', flexGrow: 0 },
+  previewControlsActionRow: { paddingBottom: 0 },
+  previewActionText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500', lineHeight: 18 },
   previewActionTextActive: { color: colors.primary },
-  previewAddress: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600', includeFontPadding: false, lineHeight: 18, marginTop: 4, minWidth: 0 },
+  previewAddress: { color: colors.textSecondary, flexShrink: 1, fontSize: 16, fontWeight: '400', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
   previewAmenityChip: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 5,
-    height: 32,
-    paddingHorizontal: 11,
+    alignItems: 'center', backgroundColor: glass.category.tint,
+    borderRadius: 16, boxShadow: glass.category.shadow, flexDirection: 'row',
+    gap: 6, minHeight: 34, paddingHorizontal: 12, paddingVertical: 8,
   },
-  previewAmenityIcon: {
-    alignItems: 'center',
-    backgroundColor: '#2398EF',
-    borderRadius: 10,
-    height: 20,
-    justifyContent: 'center',
-    width: 20,
-  },
-  previewAmenityIconText: { color: colors.textInverse, fontSize: 13, fontWeight: '900', lineHeight: 16 },
-  previewAmenityRow: { columnGap: 7, flexDirection: 'row', paddingBottom: 10 },
-  previewAmenityText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  previewAmenityRow: { gap: 8, flexDirection: 'row', flexWrap: 'wrap' },
+  previewAmenityText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500', lineHeight: 18 },
   previewArtwork: { height: '100%', width: '100%' },
   previewArtworkFallback: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%',
+    alignItems: 'center', backgroundColor: colors.primarySoft,
+    height: '100%', justifyContent: 'center', width: '100%',
   },
   previewArtworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
-  previewBookmarkButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: 20,
-    height: 44,
-    justifyContent: 'center',
-    marginRight: 4,
-    marginTop: 9,
-    width: 44,
-  },
-  previewCategory: { color: colors.textSecondary, flexShrink: 0, fontSize: 13, fontWeight: '700', includeFontPadding: false, lineHeight: 19, marginLeft: 6 },
-  previewCloseButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: 20,
-    height: 44,
-    justifyContent: 'center',
-    marginTop: 9,
-    width: 44,
+  previewBookmarkButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 },
+  previewCategory: { color: colors.textSecondary, fontSize: 18, fontWeight: '500', includeFontPadding: false, lineHeight: 24 },
+  previewCloseButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 },
+  previewHeaderButtonSurface: {
+    alignItems: 'center', backgroundColor: colors.glassFillRaised, borderRadius: 16,
+    boxShadow: glass.navigation.shadow, height: 32, justifyContent: 'center', width: 32,
   },
   previewCloseText: { color: colors.textSecondary, fontSize: 25, fontWeight: '300', lineHeight: 29 },
   previewContent: { paddingHorizontal: 16 },
-  previewHeader: { alignItems: 'flex-start', flexDirection: 'row', minHeight: 102 },
-  previewImagePanel: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: 17,
-    height: 174,
-    overflow: 'hidden',
-    width: 180,
-  },
-  previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
-  previewName: { color: colors.textStrong, flexShrink: 1, fontSize: 21, fontWeight: '900', includeFontPadding: false, lineHeight: 27, minWidth: 0 },
-  previewParkingIcon: { borderRadius: 5 },
-  previewStatus: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600' },
-  previewStatusEmphasis: { color: colors.success, fontWeight: '800' },
-  previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 6 },
-  previewSummary: { flex: 1, minWidth: 0, paddingTop: 11 },
+  previewHeader: { alignItems: 'flex-start', flexDirection: 'row' },
+  previewImagePanel: { backgroundColor: colors.primarySoft, borderRadius: 16, overflow: 'hidden' },
+  previewImageRow: { columnGap: 16, paddingRight: 16 },
+  previewName: { color: colors.textStrong, flexShrink: 1, fontSize: 24, fontWeight: '700', includeFontPadding: false, lineHeight: 31, minWidth: 0 },
+  previewStatus: { color: colors.textSecondary, flexShrink: 1, fontSize: 16, fontWeight: '400', lineHeight: 21 },
+  previewStatusEmphasis: { color: colors.success, fontSize: 16, fontWeight: '500', lineHeight: 21 },
+  previewStatusRow: { alignItems: 'center', flexDirection: 'row' },
+  previewSummary: { flex: 1, minWidth: 0 },
   previewTitleRow: { alignItems: 'center', flexDirection: 'row', minWidth: 0, paddingRight: 4 },
   resultAddress: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
   resultDistance: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },

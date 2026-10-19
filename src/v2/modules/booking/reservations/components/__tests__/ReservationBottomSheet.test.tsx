@@ -75,6 +75,15 @@ async function renderReservations(ui: ReactElement, language: 'ko' | 'en' = 'ko'
 }
 
 describe('ReservationBottomSheet', () => {
+  test('목록을 배경과 동일한 하단 경계와 모서리 안에 가둔다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult());
+    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} sheetChromeBottom={new Animated.Value(300)} />);
+    expect(screen.getByTestId('reservations-sheet-content-viewport')).toHaveStyle({
+      position: 'absolute', overflow: 'hidden', top: 0, bottom: 308, left: 8, right: 8,
+      borderBottomLeftRadius: 48, borderBottomRightRadius: 48,
+    });
+  });
+
   test('loading, empty, error 상태를 구분한다', async () => {
     jest.mocked(useReservations).mockReturnValue(queryResult({ isLoading: true }));
     const view = await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);

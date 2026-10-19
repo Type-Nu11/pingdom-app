@@ -1,3 +1,4 @@
+import { useAppDialog } from '../../../../shared/components/AppDialogProvider';
 import { MapSheetBottomNavigation, MapSheetNavigationHiddenProvider, getMapSheetCollapsedVisibleHeight } from '../sheet';
 import CarRoutePreview from '../routes/components/CarRoutePreview';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
@@ -14,7 +15,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Keyboard,
-  Alert,
   Platform,
   StatusBar,
   useWindowDimensions,
@@ -196,6 +196,7 @@ export default function MapScreen({
     return () => { feedbackActive.current = false; };
   }, [isFocused]);
   const { i18n, t } = useTranslation();
+  const dialog = useAppDialog();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reservationNavigationLock = useRef(false);
@@ -602,8 +603,8 @@ export default function MapScreen({
     setRoutePreviewPlaceId(null);
   }, [selectedPlaceActionTarget?.placeId, isFocused]);
   const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
-    Alert.alert(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
-  }, [t]);
+    dialog.show(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
+  }, [dialog, t]);
   const {
     busyAction: placeActionBusy,
     share: shareSelectedPlace,
@@ -1006,7 +1007,7 @@ export default function MapScreen({
     });
   }, [content, handleBackHome, isSearchOpen, mapSection, snapPoint, snapTo]));
   const handleGoNow = (place: DecisionPlace) => {
-    Alert.alert(
+    dialog.show(
       t('map.decision.goNow'),
       t('map.decision.goNowMessage', { placeName: place.name }),
       [{ text: t('map.search.confirm') }],
@@ -1018,7 +1019,7 @@ export default function MapScreen({
     } catch (error) {
       const messageKey = getBookmarkErrorMessage(error);
       if (!feedbackActive.current || !messageKey) return;
-      Alert.alert(
+      dialog.show(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
         t(messageKey),
       );
@@ -1033,7 +1034,7 @@ export default function MapScreen({
     } catch (error) {
       const messageKey = getBookmarkErrorMessage(error);
       if (!feedbackActive.current || !messageKey) return;
-      Alert.alert(
+      dialog.show(
         t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
         t(messageKey),
       );
@@ -1363,8 +1364,7 @@ export default function MapScreen({
             />
           </View>
         )}
-      {assistant.enabled && !isSearchOpen && !emptyRouteOpen && mapSection === 'map'
-        && content.type === 'home' && (
+      {assistant.enabled && !isSearchOpen && !emptyRouteOpen && (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
           accessibilityElementsHidden={snapPoint === 'expanded'}
@@ -1382,9 +1382,8 @@ export default function MapScreen({
           <MapAssistantButton disabled={assistant.isBusy || snapPoint === 'expanded'} onPress={assistant.open} />
         </Animated.View>
       )}
-      {/* The community frames (Figma 4698:11054 etc.) keep the map clear of the
-          visit-verification CTA; the sheet carries its own write action there. */}
-      {!isSearchOpen && content.type !== 'place-preview' && !externalPlace && mapSection !== 'community' && onOpenVisitVerification ? (
+      {/* Map actions stay available above every resting sheet, including place previews. */}
+      {!isSearchOpen && !emptyRouteOpen && onOpenVisitVerification ? (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
           style={{
@@ -1395,6 +1394,8 @@ export default function MapScreen({
             transform: [{ translateY: sheetTranslateY }],
             zIndex: 60,
           }}
+          accessibilityElementsHidden={snapPoint === 'expanded'}
+          importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
           testID="visit-verification-map-cta-motion"
         >
           <MapTutorialTarget id="verification">
