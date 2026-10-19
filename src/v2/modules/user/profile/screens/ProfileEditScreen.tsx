@@ -1,6 +1,7 @@
+import { useAppDialog, type AppDialogAction } from '../../../../shared/components/AppDialogProvider';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Alert, Linking, type AlertButton } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
@@ -32,6 +33,7 @@ export type ProfileEditScreenProps = {
 
 export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   const { t } = useTranslation();
+  const dialog = useAppDialog();
   const { colors } = useTheme();
   const { error: profileError, isFetching, refetch, isError: isProfileError, isLoading: isProfileLoading, profile } = useProfile();
 
@@ -87,7 +89,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
 
   const showAvatarError = (error: unknown, source: ProfileImageSource) => {
     if (error instanceof ProfileImagePermissionError) {
-      Alert.alert(
+      dialog.show(
         t(source === 'camera'
           ? 'myPage.profileEdit.avatarCameraPermissionDenied'
           : 'myPage.profileEdit.avatarPermissionDenied'),
@@ -107,22 +109,22 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
       ? 'typeUnsupported'
       : getProfileImageApiErrorKind(error);
     if (kind === 'typeUnsupported') {
-      Alert.alert(t('myPage.profileEdit.avatarTypeUnsupported'));
+      dialog.show(t('myPage.profileEdit.avatarTypeUnsupported'));
       return;
     }
     if (kind === 'tooLarge') {
-      Alert.alert(t('myPage.profileEdit.avatarFileTooLarge'));
+      dialog.show(t('myPage.profileEdit.avatarFileTooLarge'));
       return;
     }
 
-    const buttons: AlertButton[] = [{ style: 'cancel', text: t('myPage.profileEdit.avatarCancel') }];
+    const buttons: AppDialogAction[] = [{ style: 'cancel', text: t('myPage.profileEdit.avatarCancel') }];
     if (changeProfileImage.canRetry()) {
       buttons.push({
         onPress: () => { void retryAvatarChange(source); },
         text: t('myPage.profileEdit.avatarRetry'),
       });
     }
-    Alert.alert(t('myPage.profileEdit.avatarChangeFailed'), undefined, buttons);
+    dialog.show(t('myPage.profileEdit.avatarChangeFailed'), undefined, buttons);
   };
 
   const startAvatarChange = async (source: ProfileImageSource) => {
@@ -146,7 +148,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     avatarSheetOpen.current = true;
     const closeSheet = () => { avatarSheetOpen.current = false; };
 
-    Alert.alert(
+    dialog.show(
       t('myPage.profileEdit.avatarSheetTitle'),
       undefined,
       [
@@ -182,26 +184,26 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
     const wantsUsernameChange = Boolean(trimmedUsername) && trimmedUsername !== profile?.username;
 
     if (!trimmedUsername) {
-      Alert.alert(t('myPage.profileEdit.usernameRequired'));
+      dialog.show(t('myPage.profileEdit.usernameRequired'));
       return;
     }
 
     if (trimmedUsername.length < 4 || trimmedUsername.length > 50) {
-      Alert.alert(t('myPage.profileEdit.usernameLengthInvalid'));
+      dialog.show(t('myPage.profileEdit.usernameLengthInvalid'));
       return;
     }
 
     if (wantsPasswordChange) {
       if (!currentPassword) {
-        Alert.alert(t('myPage.profileEdit.currentPasswordRequired'));
+        dialog.show(t('myPage.profileEdit.currentPasswordRequired'));
         return;
       }
       if (newPassword.length < 8) {
-        Alert.alert(t('myPage.profileEdit.passwordTooShort'));
+        dialog.show(t('myPage.profileEdit.passwordTooShort'));
         return;
       }
       if (newPassword !== confirmPassword) {
-        Alert.alert(t('myPage.profileEdit.passwordMismatch'));
+        dialog.show(t('myPage.profileEdit.passwordMismatch'));
         return;
       }
     }
@@ -228,7 +230,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
       const failedOperation = saveError?.operation ?? (wantsPasswordChange ? 'password' : 'username');
 
       if (failedOperation === 'username') {
-        Alert.alert(getUsernameErrorMessage(
+        dialog.show(getUsernameErrorMessage(
           originalError,
           t('myPage.profileEdit.usernameChangeFailed'),
         ));
@@ -240,7 +242,7 @@ export default function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
         fallback: t('myPage.profileEdit.passwordChangeFailed'),
         mismatch: t('myPage.profileEdit.passwordMismatch'),
       });
-      Alert.alert(
+      dialog.show(
         saveError?.usernameChanged
           ? t('myPage.profileEdit.passwordChangePartialFailure', { reason: passwordErrorMessage })
           : passwordErrorMessage,

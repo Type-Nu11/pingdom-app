@@ -1,6 +1,6 @@
+import { useAppDialog } from '../../../../../shared/components/AppDialogProvider';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -61,6 +61,7 @@ export default function MyPageScreen({
   onOpenVerifiedPlaces,
 }: MyPageScreenProps) {
   const { t } = useTranslation();
+  const dialog = useAppDialog();
   const {
     error: profileError,
     isFetching: isProfileFetching,
@@ -137,7 +138,7 @@ export default function MyPageScreen({
     const mutationOptions = {
       onError: (error: unknown) => {
         setDraftTravelDateInput(serverTravelDateInput);
-        Alert.alert(t(getTravelUpdateErrorKey(error)));
+        dialog.show(t(getTravelUpdateErrorKey(error)));
       },
       onSettled: () => {
         travelUpdateLocked.current = false;

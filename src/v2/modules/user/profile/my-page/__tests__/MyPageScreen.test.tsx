@@ -1,5 +1,4 @@
 import React from 'react';
-import { Alert } from 'react-native';
 import { screen, waitFor } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
@@ -411,7 +410,6 @@ describe('MyPageScreen', () => {
       }],
     } as never);
     jest.spyOn(travelScheduleApi, 'updateTravelSchedule').mockRejectedValue(new Error('실패'));
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
 
     const { user } = await renderMyPage();
 
@@ -421,7 +419,7 @@ describe('MyPageScreen', () => {
     await waitFor(() => {
       expect(screen.getByTestId(`v2-my-page-calendar-day-${dates.existingStartDate}`).props.accessibilityState)
         .toEqual(expect.objectContaining({ selected: true }));
-      expect(alert).toHaveBeenCalledWith('여행 날짜를 저장하지 못했어요.');
+      expect(screen.getByText('여행 날짜를 저장하지 못했어요.')).toBeVisible();
     });
   });
 
