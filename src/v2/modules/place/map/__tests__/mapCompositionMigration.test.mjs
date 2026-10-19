@@ -158,6 +158,7 @@ test('place preview keeps header actions tappable and aligns category beside the
 
   assert.match(bottomSheet, /<View \{\.\.\.sheetPanHandlers\} style=\{styles\.previewHeader\}/);
   assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
+  // Figma Component 18: 16px star inside a 32px circle.
   assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{16\}/);
   assert.match(bottomSheet, /t\('map\.detail\.reviewCount'/);
   assert.match(bottomSheet, /t\('map\.detail\.verifiedCount', \{ count: fallbackContent\.reviewParticipantCount \}/);
@@ -167,6 +168,7 @@ test('place actions retain selection across sheet expansion and expanded detail 
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
 
   assert.match(bottomSheet, /activePreviewAction/);
+  // Figma PingSelected chips (5191:39647): selected Glass/Selected + Glass/SelectedStroke.
   assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: glass\.category\.activeTint, borderColor: glass\.category\.activeBorder/);
   assert.match(bottomSheet, /activeAction=\{activePreviewAction\}/);
   assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);

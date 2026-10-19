@@ -172,6 +172,9 @@ type MapScreenProps = {
   openedBookmarkedPlaceId?: number | null;
 };
 
+// Figma PingSelected Sheet (5142:37371): the place preview card is 393px tall, 8px above the screen edge.
+const PLACE_PREVIEW_SHEET_HEIGHT = 393;
+
 export default function MapScreen({
   onEditReview,
   canQueryBookmarks = true,
@@ -426,7 +429,8 @@ export default function MapScreen({
     : Math.min(
       (externalPlace
         ? EXTERNAL_PLACE_SHEET_HANDLE_HEIGHT + Math.ceil(externalCardHeight) + insets.bottom
-        : Math.round(442 * designScale)) + SHEET_RESTING_GAP,
+        // Keep room for review tags and translation attribution added to the design card.
+        : Math.max(PLACE_PREVIEW_SHEET_HEIGHT, Math.round(442 * designScale))) + SHEET_RESTING_GAP,
       Math.round(height * 0.56),
     );
   const collapsedVisibleHeight = Math.min(
