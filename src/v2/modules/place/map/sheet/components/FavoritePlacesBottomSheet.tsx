@@ -250,6 +250,11 @@ export default function FavoritePlacesBottomSheet({
     inputRange: chromeGapRange,
     outputRange: [0, SHEET_BOTTOM_RADIUS],
   });
+  const expandedFillOpacity = sheetChromeBottom.interpolate({
+    extrapolate: 'clamp',
+    inputRange: chromeGapRange,
+    outputRange: [1, 0],
+  });
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
@@ -272,6 +277,7 @@ export default function FavoritePlacesBottomSheet({
             tintColor={themedGlass.sheet.tint}
             topRimOnly
           />
+          <GlassStyles.SheetExpandedFill pointerEvents="none" style={{ opacity: expandedFillOpacity }} testID="sheet-expanded-fill" />
         </GlassStyles.SheetChrome>
       </GlassStyles.SheetChromeShadow>
 
@@ -403,7 +409,7 @@ const createStyles = ({ colors, liquidGlass: glass }: AppTheme): Record<string, 
   emptyBody: { color: colors.textMuted, fontSize: 13, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingTop: 12 },
   emptyTitle: { color: colors.textStrong, fontSize: 17, fontWeight: '800', marginTop: 12 },
-  handle: { backgroundColor: colors.borderEmphasis, borderRadius: 7, height: 5, width: 56 },
+  handle: { backgroundColor: colors.secondaryNormal, borderRadius: 7, height: 5, width: 56 },
   handleArea: { alignItems: 'center', height: 19, justifyContent: 'flex-start' },
   handleButton: { alignItems: 'center', height: 19, paddingTop: 6, width: 96 },
   imagePlaceholder: { alignItems: 'center', backgroundColor: colors.surfaceMuted, justifyContent: 'center' },
