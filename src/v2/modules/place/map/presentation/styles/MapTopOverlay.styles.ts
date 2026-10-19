@@ -10,6 +10,7 @@ export const MAP_TOP_OVERLAY_METRICS = {
   categoryHeight: 34,
   categoryLabelSize: 14,
   headerHeight: 60,
+  headerTopPadding: Platform.OS === 'android' ? 3 : 1,
   profileIconSize: 44,
   searchHeight: 44,
   searchIconSize: 20,
@@ -22,7 +23,7 @@ export const SafeOverlay = styled(SafeAreaView)`
   right: 0;
   left: 0;
   z-index: 40;
-  padding-top: ${Platform.OS === 'android' ? 3 : 1}px;
+  padding-top: ${MAP_TOP_OVERLAY_METRICS.headerTopPadding}px;
 `;
 
 export const Header = styled.View`

@@ -246,7 +246,7 @@ describe('MapBottomSheet recommendations', () => {
     });
     await fireEvent.press(screen.getByRole('tab', { name: '리뷰' }));
     expect(screen.getByText('등록된 리뷰 정보가 없어요.')).toBeVisible();
-    expect(screen.queryByTestId('map-sheet-chrome')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('map-sheet-chrome')).toHaveStyle({ opacity: 0 });
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ backgroundColor: colors.background, flexGrow: 1 });
     expect(screen.getByTestId('map-expanded-place-scroll')).toHaveStyle({ backgroundColor: colors.background, flexGrow: 1 });
     expect(screen.getByTestId('map-expanded-place-scroll').props.contentContainerStyle).toEqual(

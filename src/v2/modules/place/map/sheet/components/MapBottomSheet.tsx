@@ -245,6 +245,7 @@ type MapBottomSheetProps = {
   onRetryResults?: () => unknown;
   selectedPlace: DecisionPlace | null;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
   userName?: string;
@@ -1929,7 +1930,6 @@ const ExpandedPlaceContent = ({
   const { colors } = useTheme();
   const styles = useMapSheetStyles();
   const translationAttribution = useTranslationAttribution(place.name);
-  const insets = useSafeAreaInsets();
   const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
     : [imageUrl]);
@@ -1942,6 +1942,7 @@ const ExpandedPlaceContent = ({
     onSelectAction(action);
     callback?.();
   };
+  const insets = useSafeAreaInsets();
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
   const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
@@ -2353,6 +2354,7 @@ export default function MapBottomSheet({
   selectedPlace,
   detailError, detailBusy, onRetryDetail, resultsError, resultsLoading, resultsBusy, onRetryResults,
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
   userName,
@@ -2449,7 +2451,7 @@ export default function MapBottomSheet({
   });
   return (
     <GlassStyles.BottomSheetContainer
-      style={{ height, transform: [{ translateY: sheetTranslateY }] }}
+      style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}
     >
       <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} contentInset={content.type === 'place-preview' || content.type === 'external-place' || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : 8} testID="map-sheet">
       {!isExpandedPlaceDetail ? (

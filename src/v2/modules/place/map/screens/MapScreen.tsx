@@ -205,6 +205,7 @@ export default function MapScreen({
   const dialog = useAppDialog();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const [viewportHeight, setViewportHeight] = useState(height);
   const reservationNavigationLock = useRef(false);
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
@@ -408,20 +409,16 @@ export default function MapScreen({
     toggleRankedPlaceBookmark,
   } = usePlaceBookmark();
 
-  // Bottom-sheet coordinates already begin below the translucent status-bar layer on Android.
-  // Align the expanded sheet with the bottom of the search header instead of leaving the
-  // category-overlay gap above it. On iOS the sheet shares the window origin with the
-  // header (which sits below the status bar), so the Figma layout — header, then an 8px
-  // gap — needs the top inset added or the expanded sheet covers the search bar.
-  const expandedSheetTop = Platform.OS === 'ios'
-    ? insets.top + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP
-    : MAP_TOP_OVERLAY_METRICS.headerHeight + 2;
+  // Both overlays share this edge-to-edge root. Avoid measureInWindow during
+  // SafeAreaView updates: Android can report the previous frame's status-bar offset.
+  const expandedSheetTop = insets.top + MAP_TOP_OVERLAY_METRICS.headerTopPadding
+    + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
   const externalPlace = mapSection === 'map' && content.type === 'external-place' ? content.place : null;
   const externalPlaceKey = externalPlace ? getExternalPlaceKey(externalPlace) : null;
   // All bottom-navigation tabs share the map home resting height.
   // Place previews and search retain their separate detail layout.
-  const fullSheetHeight = Math.round(height);
+  const fullSheetHeight = Math.round(viewportHeight);
   const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
   const isBottomNavigationSheet = mapSection !== 'map'
     || content.type === 'home' || content.type === 'recommendations';
@@ -1079,7 +1076,8 @@ export default function MapScreen({
         && !assistant.isBusy && snapPoint === 'medium' && !openedBookmarkedPlaceId}
       username={profile?.username}
     >
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <MapGlassBackdrop active={mapGlassActive}>
       {isFocused && <StatusBar
         hidden={false}
@@ -1148,9 +1146,9 @@ export default function MapScreen({
           showCategories={snapPoint !== 'expanded'}
         />
         <MapSheetNavigationHiddenProvider value={true}>
-        <View
+        <Animated.View
           pointerEvents="box-none"
-          style={styles.sectionTransition}
+          style={[styles.sectionTransition, { transform: [{ translateY: sheetTranslateY }] }]}
           testID={`map-section-transition-${mapSection}`}
         >
         {mapSection === 'community' ? (
@@ -1158,6 +1156,7 @@ export default function MapScreen({
             collapsedTranslateY={collapsedTranslateY}
             expandedTranslateY={expandedTranslateY}
             height={fullSheetHeight}
+            parentOwnsMotion
             mediumTranslateY={mediumTranslateY}
             onHandlePress={() => {
               if (snapPoint === 'collapsed') snapTo('medium');
@@ -1189,6 +1188,7 @@ export default function MapScreen({
             expandedTranslateY={expandedTranslateY}
             hasNextPage={Boolean(hasNextFavoritePage)}
             height={fullSheetHeight}
+            parentOwnsMotion
             imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
             error={favoritesError}
             isFetching={isFavoritesFetching}
@@ -1238,6 +1238,7 @@ export default function MapScreen({
             collapsedTranslateY={collapsedTranslateY}
             expandedTranslateY={expandedTranslateY}
             height={fullSheetHeight}
+            parentOwnsMotion
             isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
             isNearbyLoading={reservationDiscoveryEnabled && (
               isNearbyReservationCandidatesLoading || isNearbyReservationsLoading
@@ -1294,6 +1295,7 @@ export default function MapScreen({
             ) : undefined}
             explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
             height={fullSheetHeight}
+            parentOwnsMotion
             localFeed={localFeed}
             mediumTranslateY={mediumTranslateY}
             nationalFeed={nationalFeed}
@@ -1375,23 +1377,6 @@ export default function MapScreen({
             userName={profile?.username}
           />
         )}
-        </View>
-        </MapSheetNavigationHiddenProvider>
-        {(mapSection !== 'map' || (content.type !== 'place-preview' && content.type !== 'external-place')) && (
-          <View pointerEvents="box-none" style={styles.navigationOverlay}>
-            <MapSheetBottomNavigation
-              activeTab={mapSection === 'map' && content.type === 'recommendations' ? 'recommendations' : mapSection}
-              onOpenMap={() => openMapSection('map')}
-              onOpenFavorites={() => openMapSection('favorites')}
-              onOpenCommunity={() => openMapSection('community')}
-              onOpenReservations={() => openMapSection('reservations')}
-              onOpenRecommendations={() => {
-                setMapSection('map'); setContent({ type: 'recommendations' }); snapTo('expanded');
-              }}
-              sheetTranslateY={navigationOffset}
-            />
-          </View>
-        )}
       {assistant.enabled && !isSearchOpen && !emptyRouteOpen && (
         <Animated.View
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
@@ -1402,7 +1387,6 @@ export default function MapScreen({
             left: 12,
             opacity: verificationCtaOpacity,
             position: 'absolute',
-            transform: [{ translateY: sheetTranslateY }],
             zIndex: 60,
           }}
           testID="map-assistant-sheet-button-motion"
@@ -1419,7 +1403,6 @@ export default function MapScreen({
             opacity: verificationCtaOpacity,
             position: 'absolute',
             right: 12,
-            transform: [{ translateY: sheetTranslateY }],
             zIndex: 60,
           }}
           accessibilityElementsHidden={snapPoint === 'expanded'}
@@ -1434,6 +1417,23 @@ export default function MapScreen({
           </MapTutorialTarget>
         </Animated.View>
       ) : null}
+        </Animated.View>
+        </MapSheetNavigationHiddenProvider>
+        {(mapSection !== 'map' || (content.type !== 'place-preview' && content.type !== 'external-place')) && (
+          <View pointerEvents="box-none" style={styles.navigationOverlay}>
+            <MapSheetBottomNavigation
+              activeTab={mapSection === 'map' && content.type === 'recommendations' ? 'recommendations' : mapSection}
+              onOpenMap={() => openMapSection('map')}
+              onOpenFavorites={() => openMapSection('favorites')}
+              onOpenCommunity={() => openMapSection('community')}
+              onOpenReservations={() => openMapSection('reservations')}
+              onOpenRecommendations={() => {
+                setMapSection('map'); setContent({ type: 'recommendations' }); snapTo('expanded');
+              }}
+              sheetTranslateY={navigationOffset}
+            />
+          </View>
+        )}
       {isSearchOpen ? (
         <MapSearchOverlay
           centerLat={center?.lat}
@@ -1487,6 +1487,7 @@ const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right:
 const styles: Record<string, object> = {
   container: { flex: 1 },
   mapBackground: absoluteFill,
-  sectionTransition: { ...absoluteFill, zIndex: 50 },
+  // Include the floating actions above the sheet in the moving parent hit area.
+  sectionTransition: { ...absoluteFill, top: -64, zIndex: 50 },
   navigationOverlay: { ...absoluteFill, zIndex: 60 },
 };

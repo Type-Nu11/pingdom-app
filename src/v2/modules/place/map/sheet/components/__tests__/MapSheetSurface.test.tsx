@@ -21,14 +21,21 @@ test.each(['LIGHT', 'DARK'] as const)('%s shares chrome and content bounds throu
   }
 });
 
-test('opaque detail is full bleed immediately even while the previous snap is animating', async () => {
-  await renderWithProviders(<MapSheetSurface testID="sheet" opaque sheetChromeBottom={new Animated.Value(300)} mediumTranslateY={300}>
-    <View />
-  </MapSheetSurface>);
-  expect(screen.queryByTestId('sheet-chrome')).toBeNull();
-  expect(screen.getByTestId('sheet-content-viewport')).toHaveStyle({ bottom: 0, left: 0, right: 0,
+test('opaque detail retains the chrome instance and clips to the current drag offset', async () => {
+  const offset = new Animated.Value(300);
+  const tree = (opaque: boolean) => <MapSheetSurface testID="sheet" opaque={opaque}
+    sheetChromeBottom={offset} mediumTranslateY={300}><View /></MapSheetSurface>;
+  const view = await renderWithProviders(tree(false));
+  const chrome = screen.getByTestId('sheet-chrome');
+  await view.rerender(tree(true));
+  expect(screen.getByTestId('sheet-chrome')).toBe(chrome);
+  expect(chrome).toHaveStyle({ opacity: 0 });
+  expect(screen.getByTestId('sheet-content-viewport')).toHaveStyle({ bottom: 300, left: 0, right: 0,
     borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 });
   expect(screen.getByTestId('sheet-inner')).toHaveStyle({ width: '100%', paddingLeft: 0, paddingRight: 0 });
+  await view.rerender(tree(false));
+  expect(screen.getByTestId('sheet-chrome')).toBe(chrome);
+  expect(chrome).toHaveStyle({ opacity: 1 });
 });
 
 test('nonzero expanded offset keeps chrome and content on the same full-width boundary', async () => {

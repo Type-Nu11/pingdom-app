@@ -64,6 +64,7 @@ type FavoritePlacesBottomSheetProps = {
   places: DecisionPlace[];
   pendingPlaceIds?: Record<string, boolean>;
   sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
   sheetTranslateY: Animated.Value;
   snapPoint: BottomSheetSnapPoint;
 };
@@ -208,6 +209,7 @@ export default function FavoritePlacesBottomSheet({
   places,
   pendingPlaceIds = {},
   sheetChromeBottom,
+  parentOwnsMotion = false,
   sheetTranslateY,
   snapPoint,
 }: FavoritePlacesBottomSheetProps) {
@@ -238,7 +240,7 @@ export default function FavoritePlacesBottomSheet({
   });
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
+    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
       <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="favorites-sheet-inner" testID="favorites-sheet">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable

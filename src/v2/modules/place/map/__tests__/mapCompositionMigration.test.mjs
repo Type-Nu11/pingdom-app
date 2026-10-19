@@ -102,7 +102,8 @@ test('map section changes do not fade the whole sheet or preserve expanded place
   assert.match(screen, /jumpTo\('medium'\)/);
   assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);
   const surface = read('../sheet/components/MapSheetSurface.tsx');
-  assert.match(surface, /!opaque && <Styles\.SheetChromeShadow/);
+  assert.doesNotMatch(surface, /!opaque && <Styles\.SheetChromeShadow/);
+  assert.match(surface, /opacity: opaque \? 0 : 1/);
 });
 
 test('dismissing an expanded place resets the home sheet without an intermediate stretched frame', () => {
@@ -119,12 +120,13 @@ test('expanded sheet stops below the search header and temporarily hides map cat
   const expandedTop = screen.match(/const expandedSheetTop =[\s\S]*?;/)?.[0] ?? '';
 
   assert.match(expandedTop, /MAP_TOP_OVERLAY_METRICS\.headerHeight/);
-  // Android sheet coordinates start below the status bar, so only the iOS branch
-  // (which shares the window origin with the header) may add the top inset.
-  const [iosBranch = '', androidBranch = ''] = expandedTop.split(':');
-  assert.match(iosBranch, /Platform\.OS === 'ios'[\s\S]*insets\.top/);
-  assert.doesNotMatch(androidBranch, /insets\.top/);
+  assert.match(expandedTop, /insets\.top/);
+  assert.match(expandedTop, /SHEET_RESTING_GAP/);
+  assert.match(screen, /Math\.round\(viewportHeight\)/);
+  assert.doesNotMatch(screen, /\.measureInWindow\(/);
   assert.doesNotMatch(expandedTop, /categoryHeight/);
+  assert.match(screen, /const expandedTranslateY = isPlacePreview \? 0 : externalPlace \? mediumTranslateY : expandedSheetTop;/);
+
   assert.match(screen, /showCategories=\{snapPoint !== 'expanded'\}/);
 });
 
@@ -156,7 +158,7 @@ test('place preview keeps header actions tappable and aligns category beside the
   assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
   assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{16\}/);
   assert.match(bottomSheet, /t\('map\.detail\.reviewCount'/);
-  assert.match(bottomSheet, /t\('map\.detail\.verifiedCount', \{ count: fallbackContent\.reviewCount \}/);
+  assert.match(bottomSheet, /t\('map\.detail\.verifiedCount', \{ count: fallbackContent\.reviewParticipantCount \}/);
 });
 
 test('place actions retain selection across sheet expansion and expanded detail removes every radius', () => {
@@ -215,4 +217,13 @@ test('marker details open without a settling animation before their buttons can 
   const markerPress = screen.slice(screen.indexOf('const handleMarkerPress ='), screen.indexOf('const handlePlacePress ='));
   assert.match(markerPress, /jumpTo\('medium'\)/);
   assert.doesNotMatch(markerPress, /snapTo\('medium'\)/);
+});
+
+
+test('sheet and floating actions move under one parent instead of separate transforms', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  assert.match(screen, /style=\{\[styles\.sectionTransition, \{ transform: \[\{ translateY: sheetTranslateY \}\] \}\]\}/);
+  assert.equal((screen.match(/parentOwnsMotion/g) ?? []).length, 4);
+  const actions = screen.slice(screen.indexOf('{assistant.enabled && !isSearchOpen'), screen.indexOf('{isSearchOpen ? ('));
+  assert.doesNotMatch(actions, /transform: \[\{ translateY: sheetTranslateY/);
 });

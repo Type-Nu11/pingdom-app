@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder } from 'react-native';
 
 export type BottomSheetSnapPoint = 'collapsed' | 'medium' | 'expanded';
@@ -73,11 +73,14 @@ export const useBottomSheet = ({
   snapValuesRef.current = snapValues;
 
   const sheetTranslateY = useRef(new Animated.Value(snapValues[initialSnapPoint])).current;
-  const sheetChromeBottom = useRef(new Animated.Value(snapValues[initialSnapPoint])).current;
+  // Layout clipping and translation must follow exactly the same frame.
+  // Layout properties require the JS driver, so do not split this into two springs.
+  const sheetChromeBottom = sheetTranslateY;
   const sheetOffsetY = useRef(snapValues[initialSnapPoint]);
   const snapPointRef = useRef<BottomSheetSnapPoint>(initialSnapPoint);
   const [snapPoint, setSnapPoint] = useState<BottomSheetSnapPoint>(initialSnapPoint);
 
+  const appliedTarget = useRef(snapValues[initialSnapPoint]);
   const pendingSnap = useRef(false);
   const [snapRequest, setSnapRequest] = useState(0);
 
@@ -94,52 +97,40 @@ export const useBottomSheet = ({
     pendingSnap.current = false;
     const nextValue = snapValuesRef.current[nextSnapPoint];
 
-    sheetChromeBottom.stopAnimation();
     sheetTranslateY.stopAnimation();
     sheetOffsetY.current = nextValue;
+    appliedTarget.current = nextValue;
     snapPointRef.current = nextSnapPoint;
     setSnapPoint(nextSnapPoint);
     sheetTranslateY.setValue(nextValue);
-    sheetChromeBottom.setValue(nextValue);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const nextValue = snapValues[snapPointRef.current];
-
+    // Measuring another snap point must not interrupt the current gesture/spring.
+    if (!pendingSnap.current && appliedTarget.current === nextValue) return;
+    appliedTarget.current = nextValue;
     sheetOffsetY.current = nextValue;
     if (pendingSnap.current) {
       pendingSnap.current = false;
-      Animated.parallel([
-        Animated.spring(sheetTranslateY, {
-          damping: 26,
-          mass: 0.82,
-          overshootClamping: true,
-          stiffness: 240,
-          toValue: nextValue,
-          useNativeDriver: true,
-        }),
-        Animated.spring(sheetChromeBottom, {
-          damping: 26,
-          mass: 0.82,
-          overshootClamping: true,
-          stiffness: 240,
-          toValue: nextValue,
-          useNativeDriver: false,
-        }),
-      // Expanded place detail unmounts the glass chrome. Its detached animated
-      // value may stop, but that must not cancel the sheet's translation.
-      ], { stopTogether: false }).start();
+      Animated.spring(sheetTranslateY, {
+        damping: 26,
+        mass: 0.82,
+        overshootClamping: true,
+        velocity: 0,
+        stiffness: 240,
+        toValue: nextValue,
+        useNativeDriver: false,
+      }).start();
       return;
     }
     sheetTranslateY.setValue(nextValue);
-    sheetChromeBottom.setValue(nextValue);
   }, [sheetChromeBottom, sheetTranslateY, snapRequest, snapValues]);
 
   const panResponder = useMemo(() => PanResponder.create({
     onMoveShouldSetPanResponder: (_, gesture) => shouldClaimVerticalDrag(gesture),
     onMoveShouldSetPanResponderCapture: (_, gesture) => shouldClaimVerticalDrag(gesture),
     onPanResponderGrant: () => {
-      sheetChromeBottom.stopAnimation();
       sheetTranslateY.stopAnimation((value) => {
         sheetOffsetY.current = value;
       });
@@ -152,7 +143,6 @@ export const useBottomSheet = ({
       );
 
       sheetTranslateY.setValue(nextValue);
-      sheetChromeBottom.setValue(nextValue);
     },
     onPanResponderRelease: (_, gesture) => {
       snapTo(resolveReleaseSnapPoint(snapPointRef.current, snapValuesRef.current, sheetOffsetY.current, gesture));
