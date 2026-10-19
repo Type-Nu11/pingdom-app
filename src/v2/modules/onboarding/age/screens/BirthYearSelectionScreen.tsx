@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { ScrollView, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import styled from 'styled-components/native';
 
 import OnboardingCtaButton from '../../components/OnboardingCtaButton';
@@ -19,23 +19,64 @@ const ROW_SHIFT: Record<number, number> = { 0: 0, 1: 5, 2: 3 };
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - 1939 }, (_, index) => 1940 + index);
+// Android truncates snapToInterval to integer physical pixels. At densities
+// such as 2.8125, repeating the truncated interval drifts away from Yoga's
+// actual row positions. Convert each absolute row offset independently.
+const YEAR_OFFSETS = YEARS.map((_, index) => index * ITEM_HEIGHT);
 const DEFAULT_YEAR = 2000;
 const DEFAULT_INDEX = YEARS.indexOf(DEFAULT_YEAR);
+const WHEEL_PADDING = { paddingVertical: PAD * ITEM_HEIGHT };
+const SETTLE_DELAY_MS = 120;
+function indexAtOffset(offset: number) {
+  return Math.max(0, Math.min(Math.round(offset / ITEM_HEIGHT), YEARS.length - 1));
+}
 
 export type BirthYearSelectionScreenProps = Readonly<{
   onBack: () => void;
   onNext: (birthYear: number) => void;
+  initialYear?: number;
 }>;
 
-export default function BirthYearSelectionScreen({ onBack, onNext }: BirthYearSelectionScreenProps) {
+export default function BirthYearSelectionScreen({ onBack, onNext, initialYear = DEFAULT_YEAR }: BirthYearSelectionScreenProps) {
   const { t } = useTranslation();
-  const [selectedIndex, setSelectedIndex] = useState(DEFAULT_INDEX);
+  const initialIndex = useRef(Number.isInteger(initialYear) ? indexAtOffset((initialYear - YEARS[0]) * ITEM_HEIGHT) : DEFAULT_INDEX);
+  const initialOffset = useRef({ x: 0, y: initialIndex.current * ITEM_HEIGHT });
+  const wheel = useRef<ScrollView>(null);
+  const offset = useRef(initialOffset.current.y);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex.current);
+  const [scrolling, setScrolling] = useState(false);
   const progressText = t('selectLanguage.progress', { current: CURRENT_STEP, total: TOTAL_STEPS });
 
-  const handleScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(event.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-    setSelectedIndex(Math.max(0, Math.min(index, YEARS.length - 1)));
+  const clearSettleTimer = useCallback(() => {
+    if (settleTimer.current !== null) clearTimeout(settleTimer.current);
+    settleTimer.current = null;
   }, []);
+  useEffect(() => clearSettleTimer, [clearSettleTimer]);
+  const settle = useCallback((finalOffset = offset.current) => {
+    clearSettleTimer();
+    if (!Number.isFinite(finalOffset)) return;
+    const index = indexAtOffset(finalOffset);
+    offset.current = index * ITEM_HEIGHT;
+    // The highlight and submitted year must use the same settled row. Native
+    // snapping can end between rows, especially when a fling is interrupted.
+    wheel.current?.scrollTo({ y: offset.current, animated: false });
+    setSelectedIndex(index);
+    setScrolling(false);
+  }, [clearSettleTimer]);
+  const scheduleSettle = useCallback(() => {
+    clearSettleTimer();
+    // A drag without momentum does not reliably emit onMomentumScrollEnd.
+    settleTimer.current = setTimeout(() => settle(), SETTLE_DELAY_MS);
+  }, [clearSettleTimer, settle]);
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const nextOffset = event.nativeEvent.contentOffset.y;
+    if (!Number.isFinite(nextOffset)) return;
+    offset.current = nextOffset;
+    setSelectedIndex(indexAtOffset(nextOffset));
+    if (settleTimer.current !== null) scheduleSettle();
+  };
+  const beginScroll = () => { clearSettleTimer(); setScrolling(true); };
 
   return (
     <Screen testID="birth-year-screen">
@@ -53,13 +94,23 @@ export default function BirthYearSelectionScreen({ onBack, onNext }: BirthYearSe
           <WheelInner>
             <SelectionBox pointerEvents="none" />
             <Wheel
-              contentContainerStyle={{ paddingVertical: PAD * ITEM_HEIGHT }}
-              contentOffset={{ x: 0, y: DEFAULT_INDEX * ITEM_HEIGHT }}
+              ref={wheel}
+              contentContainerStyle={WHEEL_PADDING}
+              contentOffset={initialOffset.current}
+              contentInsetAdjustmentBehavior="never"
+              automaticallyAdjustContentInsets={false}
+              bounces={false}
+              overScrollMode="never"
               decelerationRate="fast"
-              onMomentumScrollEnd={handleScrollEnd}
-              onScrollEndDrag={handleScrollEnd}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              onScrollBeginDrag={beginScroll}
+              onMomentumScrollBegin={beginScroll}
+              onMomentumScrollEnd={event => settle(event.nativeEvent.contentOffset.y)}
+              onScrollEndDrag={event => { handleScroll(event); scheduleSettle(); }}
               showsVerticalScrollIndicator={false}
-              snapToInterval={ITEM_HEIGHT}
+              snapToOffsets={YEAR_OFFSETS}
+              snapToAlignment="start"
               testID="birth-year-wheel"
             >
               {YEARS.map((year, index) => (
@@ -78,6 +129,7 @@ export default function BirthYearSelectionScreen({ onBack, onNext }: BirthYearSe
         </WheelOuter>
         <Spacer />
         <OnboardingCtaButton
+          disabled={scrolling}
           label={t('selectAge.button')}
           onPress={() => onNext(YEARS[selectedIndex])}
           testID="birth-year-continue"
@@ -128,7 +180,7 @@ const SelectionBox = styled.View`
   border-color: ${({ theme }) => theme.colors.primaryAlternative};
 `;
 
-const Wheel = styled.ScrollView`
+const Wheel = styled(ScrollView)`
   height: ${WHEEL_HEIGHT}px;
 `;
 
