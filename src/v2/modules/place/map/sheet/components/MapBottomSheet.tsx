@@ -725,7 +725,7 @@ export const RecommendationFeaturedCard = ({
   place,
 }: {
   bookmarked: boolean;
-  designSize?: 'default' | 'reservation';
+  designSize?: 'default' | 'recommendation' | 'reservation';
   imageUrl?: string;
   onPress: () => void;
   onToggleBookmark: () => Promise<void> | void;
@@ -735,16 +735,19 @@ export const RecommendationFeaturedCard = ({
   const { i18n, t } = useTranslation();
   const styles = useMapSheetStyles();
   const distance = formatDistance(place, i18n.language);
+  // Figma Component 10 (5062:31880) is shared by the recommendation and reservation rows.
+  const isFigmaCard = designSize !== 'default';
+  const isRecommendation = designSize === 'recommendation';
   return (
     <RecommendationCardPressable
       accessibilityLabel={[place.name, place.recommendationReason, distance]
         .filter(Boolean)
         .join(', ')}
       onPress={onPress}
-      style={[styles.placeCard, designSize === 'reservation' && styles.reservationPlaceCard]}
+      style={[styles.placeCard, isFigmaCard && styles.reservationPlaceCard, isRecommendation && styles.recommendationPlaceCard]}
       testID={`recommendation-card-${place.id}`}
     >
-      <View style={[styles.placeCardArtwork, designSize === 'reservation' && styles.reservationPlaceCardArtwork]}>
+      <View style={[styles.placeCardArtwork, isFigmaCard && styles.reservationPlaceCardArtwork]}>
         <PlaceArtwork blurBottom imageUrl={imageUrl} />
         <CardScrim />
         <RecommendationBookmarkButton
@@ -754,12 +757,16 @@ export const RecommendationFeaturedCard = ({
           style={styles.cardBookmarkStar}
         />
         <View style={styles.placeCardBody}>
-          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, designSize === 'reservation' && styles.reservationPlaceCardName]}>
+          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, isFigmaCard && styles.reservationPlaceCardName]}>
             {place.name || t('map.sheet.placeMissing')}
           </AppText>
         </View>
       </View>
-      {place.recommendationReason ? (
+      {place.recommendationReason && isRecommendation ? (
+        <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationCardReason}>
+          {place.recommendationReason}
+        </AppText>
+      ) : place.recommendationReason ? (
         <View style={styles.recommendationMetaRow}>
           <RecommendationMetaIcon />
           <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationReason}>
@@ -767,7 +774,7 @@ export const RecommendationFeaturedCard = ({
           </AppText>
         </View>
       ) : null}
-      <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, designSize === 'reservation' && styles.reservationPlaceCardDistance]}>
+      <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, isFigmaCard && styles.reservationPlaceCardDistance, isRecommendation && styles.recommendationCardDistance]}>
         {t('map.sheet.distanceAway', { distance })}
       </AppText>
     </RecommendationCardPressable>
@@ -1297,6 +1304,7 @@ const RecommendationContent = ({
             {featuredPlaces.map((place) => (
               <RecommendationFeaturedCard
                 bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                designSize="recommendation"
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
                 key={`recommendation-featured-${place.id}`}
                 onPress={() => onPlacePress(place)}
@@ -2938,28 +2946,25 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     paddingTop: 14,
   },
   gridArtwork: { height: '100%' },
+  // Figma Post (5069:32278): 242x182, 16px radius, no drop shadow.
   gridCard: {
-    backgroundColor: '#161616',
-    borderRadius: 13,
-    height: 172,
+    backgroundColor: colors.staticBlack,
+    borderRadius: 16,
+    height: 182,
     overflow: 'hidden',
-    shadowColor: '#12161D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.09,
-    shadowRadius: 9,
-    width: 228,
+    width: 242,
   },
   gridCardBody: {
     bottom: 0,
     left: 0,
-    paddingBottom: 9,
-    paddingHorizontal: 10,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
     position: 'absolute',
     right: 0,
   },
-  gridCardDistance: { color: 'rgba(255,255,255,0.9)', flexShrink: 1, fontSize: 9, marginTop: 1, maxWidth: '100%', paddingRight: 24 },
-  gridCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 24 },
-  gridBookmarkStar: { bottom: 7, padding: 4, position: 'absolute', right: 7, zIndex: 3 },
+  gridCardDistance: { color: colors.fillAlternative, flexShrink: 1, fontSize: 12, fontWeight: '500', lineHeight: 16, maxWidth: '100%', paddingRight: 40 },
+  gridCardName: { color: colors.backgroundAssistive, flexShrink: 1, fontSize: 16, fontWeight: '700', lineHeight: 21, maxWidth: '100%', paddingRight: 40 },
+  gridBookmarkStar: { bottom: 12, padding: 4, position: 'absolute', right: 8, zIndex: 3 },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -3022,13 +3027,14 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   bookmarkPressed: { opacity: 0.64 },
   recommendationContent: { paddingBottom: 108 },
-  recommendationCardRow: { gap: 12, paddingBottom: 10, paddingHorizontal: 16, paddingTop: 12 },
+  recommendationCardRow: { gap: 16, paddingBottom: 16, paddingHorizontal: 16, paddingTop: 12 },
   // Figma keeps the cards 24dp from the screen edge in both states (7973:10445, 7973:10640).
   recommendationCardRowExpanded: { paddingHorizontal: 24 },
   recommendationContext: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 4 },
-  recommendationGridRows: { gap: 12 },
-  recommendationGridScroll: { gap: 12, paddingHorizontal: 24 },
-  recommendationGridTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 16 },
+  // Figma PlaceRecommend-Up (5408:26180): 16px gaps, Headline1/Bold title 14px above the cards.
+  recommendationGridRows: { gap: 16 },
+  recommendationGridScroll: { gap: 16, paddingHorizontal: 24 },
+  recommendationGridTitle: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', lineHeight: 26, marginBottom: 14, marginTop: 2, paddingHorizontal: 16 },
   // Figma PlaceRecommend (7973:10494): title text 13dp below the handle, 16dp from the sheet edge.
   recommendationHeader: { paddingHorizontal: 16 },
   recommendationReason: { color: colors.text, flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
@@ -3036,6 +3042,10 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   reservationPlaceCardArtwork: { borderRadius: 16, height: 164 },
   reservationPlaceCardDistance: { fontSize: 14, marginTop: 1 },
   reservationPlaceCardName: { fontSize: 16, lineHeight: 21, paddingRight: 30 },
+  // Figma 5062:31879: Body/Medium reason and Label/Regular distance, 8px under the artwork.
+  recommendationPlaceCard: { height: 209, minHeight: 209 },
+  recommendationCardReason: { color: colors.labelNeutral, fontSize: 16, fontWeight: '500', lineHeight: 21, marginTop: 10 },
+  recommendationCardDistance: { color: colors.textAlternative, fontWeight: '400', lineHeight: 18, marginTop: 0 },
   recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5, maxWidth: '100%' },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
   recommendationSubtitle: { color: colors.textSecondary, fontSize: 14, includeFontPadding: false, lineHeight: 18, marginTop: 4 },
