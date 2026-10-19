@@ -12,7 +12,7 @@ import GuideDot from '../assets/icons/edit-guide-dot.svg';
 import PhotoIcon from '../../../assets/v2/icons/community/photo-picker.svg';
 import CloseIcon from '../../../assets/v2/icons/community/close-small.svg';
 
-export type EditPhoto = { key: string; uri: string };
+export type EditPhoto = { key: string; uri: string; serverId?: number };
 export type EditOption = { id: string; label: string; icon?: React.ReactNode };
 export type ContentEditDraft = { title?: string; content: string; selectedIds: string[]; photos: EditPhoto[] };
 export type EditPhotoPicker = (remaining: number) => Promise<{ status: 'selected' | 'cancelled' | 'denied'; uris: string[] }>;
@@ -22,7 +22,7 @@ type Props = {
   initialSelectedIds: string[]; initialContent: string; initialTitle?: string; initialPhotos: EditPhoto[];
   maxPhotos: number; maxContentLength: number; maxTitleLength?: number; selectionLimit?: number;
   children?: React.ReactNode; extraDirty?: boolean; onBack: () => void; onDirtyChange?: (dirty: boolean) => void;
-  pickPhotos: EditPhotoPicker; onSubmit?: (draft: ContentEditDraft) => void;
+  pickPhotos: EditPhotoPicker; busy?: boolean; onSubmit?: (draft: ContentEditDraft) => void;
 };
 
 /** Shared Figma edit layout; drafts and local attachments never mutate server originals. */
@@ -46,7 +46,7 @@ export default function ContentEditForm(props: Props) {
   const invalid = !content.trim() || content.length > props.maxContentLength || !selectedIds.length
     || (title !== undefined && (!title.trim() || title.length > (props.maxTitleLength ?? 50)));
   const pick = async () => {
-    if (pickingLocked.current || photos.length >= props.maxPhotos) return;
+    if (props.busy || pickingLocked.current || photos.length >= props.maxPhotos) return;
     pickingLocked.current = true; setPicking(true);
     try {
       const result = await props.pickPhotos(Math.max(0, props.maxPhotos - photos.length));
@@ -65,18 +65,19 @@ export default function ContentEditForm(props: Props) {
     finally { pickingLocked.current = false; if (mounted.current) setPicking(false); }
   };
   const select = (id: string) => {
+    if (props.busy) return;
     if ((props.selectionLimit ?? 1) === 1) { setSelectedIds([id]); return; }
     setSelectedIds(current => current.includes(id) ? current.filter(value => value !== id)
       : current.length < (props.selectionLimit ?? 1) ? [...current, id] : current);
   };
   const submit = () => {
     setShowErrors(true);
-    if (invalid || pickingLocked.current) return;
+    if (props.busy || invalid || pickingLocked.current) return;
     if (props.onSubmit) props.onSubmit({ title, content, selectedIds, photos });
     else dialog.toast(t('editContent.saveUnavailable'));
   };
   return <Screen edges={['top', 'bottom', 'left', 'right']} testID="content-edit-screen">
-    <Header><HeaderBackButton accessibilityLabel={t('editContent.back')} onPress={props.onBack} />
+    <Header><HeaderBackButton accessibilityLabel={t('editContent.back')} onPress={() => { if (!props.busy) props.onBack(); }} />
       <Heading numberOfLines={2}>{props.heading}</Heading><Spacer /></Header>
     <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={insets.top}>
       <Content keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={SCROLL_CONTENT}>
@@ -90,9 +91,9 @@ export default function ContentEditForm(props: Props) {
         </Section>
         <Section>
           <SectionTitle>{t('editContent.contentTitle')}</SectionTitle>
-          {title !== undefined ? <TitleInput accessibilityLabel={t('editContent.titleField')} value={title}
+          {title !== undefined ? <TitleInput accessibilityLabel={t('editContent.titleField')} value={title} editable={!props.busy}
             onChangeText={setTitle} maxLength={props.maxTitleLength ?? 50} testID="content-edit-title" /> : null}
-          <BodyInput accessibilityLabel={t('editContent.bodyField')} value={content} multiline textAlignVertical="top"
+          <BodyInput accessibilityLabel={t('editContent.bodyField')} value={content} editable={!props.busy} multiline textAlignVertical="top"
             onChangeText={setContent} maxLength={props.maxContentLength} testID="content-edit-body" />
           <GuideRow><GuideDot /><Guide>{t('editContent.guide')}</Guide></GuideRow>
         </Section>
@@ -101,13 +102,13 @@ export default function ContentEditForm(props: Props) {
           <PhotoRow horizontal contentContainerStyle={PHOTO_ROW} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
             <PhotoPicker accessibilityRole="button" accessibilityLabel={t('editContent.addPhotos')}
               accessibilityState={{ disabled: picking || photos.length >= props.maxPhotos, busy: picking }}
-              disabled={picking || photos.length >= props.maxPhotos} onPress={() => void pick()}>
+              disabled={props.busy || picking || photos.length >= props.maxPhotos} onPress={() => void pick()}>
               <PhotoIcon /><Hint>{photos.length}/{props.maxPhotos}</Hint>
             </PhotoPicker>
             {photos.map((photo, index) => <PhotoFrame key={photo.key}>
               <Photo source={{ uri: photo.uri }} accessibilityLabel={t('editContent.photo', { index: index + 1 })} />
               <Remove accessibilityRole="button" accessibilityLabel={t('editContent.removePhoto', { index: index + 1 })}
-                hitSlop={12} onPress={() => setPhotos(current => current.filter(item => item.key !== photo.key))}><CloseIcon /></Remove>
+                disabled={props.busy} hitSlop={12} onPress={() => setPhotos(current => current.filter(item => item.key !== photo.key))}><CloseIcon /></Remove>
             </PhotoFrame>)}
           </PhotoRow>
         </Section>
@@ -116,7 +117,7 @@ export default function ContentEditForm(props: Props) {
           {!props.onSubmit ? <Notice>{t('editContent.saveUnavailable')}</Notice> : null}
           {showErrors && invalid ? <ErrorText accessibilityRole="alert">{t('editContent.required')}</ErrorText> : null}
           <Button fullWidth shape="pill" size="onboarding" label={t('editContent.save')} onPress={submit}
-            disabled={picking} testID="content-edit-submit" />
+            loading={props.busy} disabled={picking || props.busy} testID="content-edit-submit" />
         </Footer>
       </Content>
     </KeyboardArea>

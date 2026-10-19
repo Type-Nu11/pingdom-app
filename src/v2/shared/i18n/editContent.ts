@@ -1,5 +1,17 @@
 export const editContentResources = {
   "en": {
+    "cancel": "Cancel",
+    "operationFailed": "Could not complete the request. Please try again.",
+    "deleteConfirm": "Delete this content?",
+    "deleteDescription": "Deleted content cannot be restored.",
+    "saved": "Your changes were saved.",
+    "deleted": "Deleted.",
+    "hidden": "Hidden post",
+    "emptyPosts": "No posts yet.",
+    "myPosts": "My posts",
+    "loadMore": "Load more",
+    "placeRequired": "Choose at least one place.",
+
     "postHeading": "Edit post",
     "reviewHeading": "Edit review",
     "category": "Category",
@@ -27,6 +39,18 @@ export const editContentResources = {
     "notAuthor": "Sign in as the author to edit this content."
   },
   "ko": {
+    "cancel": "취소",
+    "operationFailed": "요청을 처리하지 못했어요. 다시 시도해 주세요.",
+    "deleteConfirm": "삭제하시겠어요?",
+    "deleteDescription": "삭제한 내용은 되돌릴 수 없어요.",
+    "saved": "수정 내용을 저장했어요.",
+    "deleted": "삭제했어요.",
+    "hidden": "숨김 처리된 글",
+    "emptyPosts": "작성한 글이 없어요.",
+    "myPosts": "내가 작성한 글",
+    "loadMore": "더 보기",
+    "placeRequired": "장소를 하나 이상 선택해 주세요.",
+
     "postHeading": "글 수정하기",
     "reviewHeading": "리뷰 수정하기",
     "category": "카테고리",
@@ -54,6 +78,18 @@ export const editContentResources = {
     "notAuthor": "작성자 본인으로 로그인해야 수정할 수 있어요."
   },
   "ja": {
+    "cancel": "キャンセル",
+    "operationFailed": "リクエストを処理できませんでした。もう一度お試しください。",
+    "deleteConfirm": "削除しますか？",
+    "deleteDescription": "削除した内容は復元できません。",
+    "saved": "変更を保存しました。",
+    "deleted": "削除しました。",
+    "hidden": "非表示の投稿",
+    "emptyPosts": "投稿がありません。",
+    "myPosts": "自分の投稿",
+    "loadMore": "もっと見る",
+    "placeRequired": "場所を1つ以上選択してください。",
+
     "postHeading": "投稿を編集",
     "reviewHeading": "レビューを編集",
     "category": "カテゴリー",
@@ -81,6 +117,18 @@ export const editContentResources = {
     "notAuthor": "編集するには投稿者としてログインしてください。"
   },
   "zh-CN": {
+    "cancel": "取消",
+    "operationFailed": "无法完成请求，请重试。",
+    "deleteConfirm": "确定删除吗？",
+    "deleteDescription": "删除后无法恢复。",
+    "saved": "更改已保存。",
+    "deleted": "已删除。",
+    "hidden": "已隐藏的帖子",
+    "emptyPosts": "暂无帖子。",
+    "myPosts": "我的帖子",
+    "loadMore": "加载更多",
+    "placeRequired": "请至少选择一个地点。",
+
     "postHeading": "编辑帖子",
     "reviewHeading": "编辑评价",
     "category": "分类",
@@ -108,6 +156,18 @@ export const editContentResources = {
     "notAuthor": "请以作者身份登录后编辑。"
   },
   "zh-TW": {
+    "cancel": "取消",
+    "operationFailed": "無法完成請求，請重試。",
+    "deleteConfirm": "確定刪除嗎？",
+    "deleteDescription": "刪除後無法還原。",
+    "saved": "變更已儲存。",
+    "deleted": "已刪除。",
+    "hidden": "已隱藏的貼文",
+    "emptyPosts": "尚無貼文。",
+    "myPosts": "我的貼文",
+    "loadMore": "載入更多",
+    "placeRequired": "請至少選擇一個地點。",
+
     "postHeading": "編輯貼文",
     "reviewHeading": "編輯評論",
     "category": "分類",
@@ -135,6 +195,18 @@ export const editContentResources = {
     "notAuthor": "請以作者身分登入後編輯。"
   },
   "vi": {
+    "cancel": "Hủy",
+    "operationFailed": "Không thể xử lý yêu cầu. Vui lòng thử lại.",
+    "deleteConfirm": "Xóa nội dung này?",
+    "deleteDescription": "Không thể khôi phục nội dung đã xóa.",
+    "saved": "Đã lưu thay đổi.",
+    "deleted": "Đã xóa.",
+    "hidden": "Bài viết bị ẩn",
+    "emptyPosts": "Chưa có bài viết.",
+    "myPosts": "Bài viết của tôi",
+    "loadMore": "Xem thêm",
+    "placeRequired": "Chọn ít nhất một địa điểm.",
+
     "postHeading": "Sửa bài viết",
     "reviewHeading": "Sửa đánh giá",
     "category": "Danh mục",
@@ -162,6 +234,18 @@ export const editContentResources = {
     "notAuthor": "Đăng nhập với tư cách tác giả để chỉnh sửa."
   },
   "es": {
+    "cancel": "Cancelar",
+    "operationFailed": "No se pudo completar la solicitud. Inténtalo de nuevo.",
+    "deleteConfirm": "¿Eliminar este contenido?",
+    "deleteDescription": "El contenido eliminado no se puede recuperar.",
+    "saved": "Cambios guardados.",
+    "deleted": "Eliminado.",
+    "hidden": "Publicación oculta",
+    "emptyPosts": "Todavía no hay publicaciones.",
+    "myPosts": "Mis publicaciones",
+    "loadMore": "Cargar más",
+    "placeRequired": "Selecciona al menos un lugar.",
+
     "postHeading": "Editar publicación",
     "reviewHeading": "Editar reseña",
     "category": "Categoría",
@@ -189,6 +273,12 @@ export const editContentResources = {
     "notAuthor": "Inicia sesión como autor para editar."
   },
   "pt-BR": {
+    "cancel": "Cancelar",
+    "operationFailed": "Não foi possível concluir a solicitação. Tente novamente.",
+    "deleteConfirm": "Excluir este conteúdo?", "deleteDescription": "O conteúdo excluído não pode ser recuperado.",
+    "saved": "Alterações salvas.", "deleted": "Excluído.", "hidden": "Publicação oculta",
+    "emptyPosts": "Nenhuma publicação ainda.", "myPosts": "Minhas publicações", "loadMore": "Carregar mais",
+    "placeRequired": "Selecione pelo menos um lugar.",
     "postHeading": "Editar publicação",
     "reviewHeading": "Editar avaliação",
     "category": "Categoria",
@@ -216,6 +306,18 @@ export const editContentResources = {
     "notAuthor": "Entre como autor para editar."
   },
   "th": {
+    "cancel": "ยกเลิก",
+    "operationFailed": "ไม่สามารถดำเนินการตามคำขอได้ โปรดลองอีกครั้ง",
+    "deleteConfirm": "ต้องการลบเนื้อหานี้หรือไม่?",
+    "deleteDescription": "เนื้อหาที่ลบแล้วไม่สามารถกู้คืนได้",
+    "saved": "บันทึกการเปลี่ยนแปลงแล้ว",
+    "deleted": "ลบแล้ว",
+    "hidden": "โพสต์ที่ถูกซ่อน",
+    "emptyPosts": "ยังไม่มีโพสต์",
+    "myPosts": "โพสต์ของฉัน",
+    "loadMore": "โหลดเพิ่มเติม",
+    "placeRequired": "เลือกสถานที่อย่างน้อยหนึ่งแห่ง",
+
     "postHeading": "แก้ไขโพสต์",
     "reviewHeading": "แก้ไขรีวิว",
     "category": "หมวดหมู่",

@@ -62,7 +62,7 @@ test('조회 실패는 빈 목록 대신 재시도를 제공한다', async () =>
 });
 
 test('본인 리뷰 메뉴의 수정하기는 해당 리뷰 ID를 넘긴다', async () => {
-  jest.spyOn(View.prototype, 'measureInWindow').mockImplementation(callback => callback(330, 100, 44, 44));
+  jest.spyOn(View.prototype, 'measure').mockImplementation(callback => callback(0, 0, 44, 44, 330, 100));
   jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue(page([review]));
   const onEdit = jest.fn();
   const { user } = await renderWithProviders(<MyReviewScreen reviewId={111} onBack={jest.fn()} onEdit={onEdit} />);
