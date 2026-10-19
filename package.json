@@ -7,7 +7,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "check:v2": "node scripts/check-v2-boundaries.mjs && npm run test:v2-boundaries",
+    "check:v2": "node scripts/check-v2-boundaries.mjs && npm run check:v2-design && npm run test:v2-boundaries",
     "test:v2-boundaries": "node --test scripts/__tests__/v2Boundaries.test.mjs",
     "audit:v2-boundaries": "node scripts/v2-boundaries/audit.mjs",
     "check:v1-changes": "node scripts/check-v1-change-policy.mjs",
@@ -64,7 +64,8 @@
     "generate:ai-chat-api-types": "openapi-typescript docs/api/ai-chat.openapi.json --empty-objects-unknown -o src/v2/shared/api/generated/aiChat.ts",
     "check:ai-chat-api-types": "node scripts/check-generated-ai-chat-api-types.mjs",
     "prepare:wake-word": "python3 scripts/prepare-wake-word.py",
-    "check:wake-word": "python3 scripts/prepare-wake-word.py --check"
+    "check:wake-word": "python3 scripts/prepare-wake-word.py --check",
+    "check:v2-design": "node scripts/check-v2-design.mjs && node --test scripts/__tests__/v2Design.test.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
