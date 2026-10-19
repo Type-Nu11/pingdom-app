@@ -438,6 +438,26 @@ describe('MapBottomSheet recommendations', () => {
     result.unmount();
   });
 
+  test('추천 카드는 Figma Component 10처럼 164dp 사진 아래에 아이콘 없는 추천 이유와 거리를 둔다', async () => {
+    await renderWithProviders(
+      <RecommendationFeaturedCard
+        bookmarked={false}
+        designSize="recommendation"
+        imageUrl="https://example.com/place.jpg"
+        onPress={jest.fn()}
+        onToggleBookmark={jest.fn()}
+        pending={false}
+        place={places[0]}
+      />,
+    );
+
+    expect(screen.getByTestId('recommendation-card-1')).toHaveStyle({ height: 209, width: 164 });
+    expect(screen.getByText('테스트 추천 이유')).toHaveStyle({
+      color: lightColors.labelNeutral, fontSize: 16, lineHeight: 21,
+    });
+    expect(screen.getByText('여기서 1km')).toHaveStyle({ color: lightColors.textAlternative, fontSize: 14 });
+  });
+
   test('긴 장소명과 실제 추천 이유를 말줄임하고 접근성·즐겨찾기 동작을 일관되게 유지한다', async () => {
     const longName = '이름이 매우 긴 추천 장소 '.repeat(8);
     const longReason = '사용자의 여행 취향과 현재 위치를 반영한 추천 이유 '.repeat(8);
@@ -707,8 +727,11 @@ describe('MapBottomSheet recommendations', () => {
     const bookmark = screen.getByTestId('place-preview-bookmark');
     const close = screen.getByTestId('place-preview-close');
     expect(screen.getByTestId('map-sheet-handle-target').props.hitSlop).toBeUndefined();
-    expect(bookmark).toHaveStyle({ height: 44, width: 44 });
-    expect(close).toHaveStyle({ height: 44, width: 44 });
+    // Figma Component 18: 32px circles; hitSlop keeps the 44px touch target.
+    expect(bookmark).toHaveStyle({ height: 32, width: 32 });
+    expect(close).toHaveStyle({ height: 32, width: 32 });
+    expect(bookmark.props.hitSlop).toBe(6);
+    expect(close.props.hitSlop).toBe(6);
     await result.user.press(bookmark);
     await result.user.press(close);
     expect(onToggleBookmark).toHaveBeenCalledWith(selectedPlace, true);
@@ -1170,7 +1193,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('recommendation-header')).toHaveStyle({ paddingHorizontal: 16 });
     const cardRowStyle = [screen.getByTestId('recommendation-card-row').props.contentContainerStyle].flat()
       .reduce((merged, item) => ({ ...merged, ...(item || {}) }), {});
-    expect(cardRowStyle).toMatchObject({ paddingHorizontal: cardPadding });
+    expect(cardRowStyle).toMatchObject({ gap: 16, paddingHorizontal: cardPadding });
     expect(screen.getByText(/좋아할만한 장소를 추천해드려요/)).toHaveStyle({
       color: lightColors.textSecondary, fontSize: 14, lineHeight: 18, marginTop: 4,
     });
