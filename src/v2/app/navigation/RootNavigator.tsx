@@ -9,7 +9,7 @@ import { useNotificationOpenSync } from '../../modules/user/notifications/lifecy
 import type { NotificationRoute } from '../../modules/user/notifications/routing';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../modules/user/settings';
 import HomeScreen from '../home/screens/HomeScreen';
-import { CommunityDetailScreen, CommunityEditScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../modules/community';
+import { MyCommunityPostsScreen, MyCommunityPostsPreview, CommunityDetailScreen, CommunityEditScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../modules/community';
 import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
@@ -138,6 +138,8 @@ function CommunityWriteRouteScreen({ navigation, route }: V2ScreenProps<'Communi
 function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
   return (
     <MyPageScreen
+          authoredPostsContent={<MyCommunityPostsPreview onOpenList={() => navigation.navigate(V2_ROUTES.MyCommunityPosts)}
+            onOpenPost={(postId: number) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })} onEditPost={(postId: number) => navigation.navigate(V2_ROUTES.CommunityEdit, { postId })} />}
       onBack={navigation.goBack}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
@@ -153,6 +155,10 @@ function VerifiedPlacesRouteScreen({ navigation }: V2ScreenProps<'VerifiedPlaces
   const { profile } = useProfile();
   if (!profile || profile.role === 'MERCHANT_OWNER') return null;
   return <VerifiedPlacesScreen onBack={navigation.goBack} onOpenReview={(reviewId) => navigation.navigate(V2_ROUTES.MyReview, { reviewId })} />;
+}
+
+function MyCommunityPostsRouteScreen({ navigation }: V2ScreenProps<'MyCommunityPosts'>) {
+  return <MyCommunityPostsScreen onBack={navigation.goBack} onOpenPost={(postId: number) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })} onEditPost={(postId: number) => navigation.navigate(V2_ROUTES.CommunityEdit, { postId })} />;
 }
 
 function CommunityEditRouteScreen({ navigation, route }: V2ScreenProps<'CommunityEdit'>) {
@@ -328,7 +334,8 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
         <Stack.Screen name={V2_ROUTES.CommunityDetail} component={CommunityDetailRouteScreen} />
         <Stack.Screen name={V2_ROUTES.CommunityWrite} component={CommunityWriteRouteScreen} />
-        <Stack.Screen name={V2_ROUTES.CommunityEdit} component={CommunityEditRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyCommunityPosts} component={MyCommunityPostsRouteScreen} />
+      <Stack.Screen name={V2_ROUTES.CommunityEdit} component={CommunityEditRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyReviewEdit} component={MyReviewEditRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Map} component={MapRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />

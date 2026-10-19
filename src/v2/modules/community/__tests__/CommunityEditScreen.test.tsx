@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../app/testing/testProviders';
 import { profileApi } from '../../user/profile/__tests__';
 import { communityApi } from '../api/communityApi';
@@ -55,4 +55,34 @@ test.each([undefined, 0, -1])('사용자 ID가 %s이면 작성자 정보 누락�
   await renderWithProviders(<CommunityEditScreen postId={7} onBack={jest.fn()} />);
   expect(await screen.findByText('작성자 본인으로 로그인해야 수정할 수 있어요.')).toBeTruthy();
   expect(screen.queryByTestId('content-edit-screen')).toBeNull();
+});
+
+
+test('실제 수정 API로 사진 전체 제거를 저장하고 성공 후에만 뒤로 이동한다', async () => {
+  const update = jest.spyOn(communityApi, 'updatePost').mockResolvedValue({ postId: 7, updatedAt: '2026-10-19T10:00:00Z' });
+  const onBack = jest.fn(); const onDirtyChange = jest.fn();
+  await renderWithProviders(<CommunityEditScreen postId={7} onBack={onBack} onDirtyChange={onDirtyChange} />);
+  await screen.findByTestId('content-edit-screen');
+  await fireEvent.changeText(screen.getByLabelText('본문'), '수정 본문');
+  await fireEvent.press(screen.getByRole('button', { name: '사진 1 삭제' }));
+  await fireEvent.press(screen.getByTestId('content-edit-submit'));
+  await waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
+  expect(update).toHaveBeenCalledWith(7, { title: '내가 작성한 실제 글', content: '수정 본문', categoryId: 'PLACE', imageIds: [] });
+  expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+});
+
+test('수정 실패 시 원본을 유지하고 편집한 본문으로 재시도할 수 있다', async () => {
+  const update = jest.spyOn(communityApi, 'updatePost').mockRejectedValueOnce(new Error('network')).mockResolvedValue({ postId: 7 });
+  const onBack = jest.fn();
+  await renderWithProviders(<CommunityEditScreen postId={7} onBack={onBack} />);
+  await screen.findByTestId('content-edit-screen');
+  await fireEvent.changeText(screen.getByLabelText('본문'), '보존할 초안');
+  await fireEvent.press(screen.getByTestId('content-edit-submit'));
+  await screen.findByTestId('app-toast');
+  expect(onBack).not.toHaveBeenCalled();
+  expect(screen.getByLabelText('본문').props.value).toBe('보존할 초안');
+  await fireEvent.press(screen.getByTestId('content-edit-submit'));
+  await waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
+  expect(update).toHaveBeenCalledTimes(2);
+  expect(update.mock.calls[1][1]).not.toHaveProperty('imageIds');
 });

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled from 'styled-components/native';
 import { MapScreen } from '../../v2/modules/place/map';
-import { CommunityDetailScreen, CommunityEditScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../v2/modules/community';
+import { MyCommunityPostsScreen, MyCommunityPostsPreview, CommunityDetailScreen, CommunityEditScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../v2/modules/community';
 import { ReservationDetailScreen } from '../../v2/modules/booking/reservations/routes';
 import { ReservationBoxScreen } from '../../v2/modules/booking/reservations/routes';
 import { CreateReservationScreen } from '../../v2/modules/booking/reservations/routes';
@@ -184,6 +184,8 @@ export function createProductionMainNavigator({
     return (
       <V2ScreenBoundary>
         <MyPageScreen
+          authoredPostsContent={<MyCommunityPostsPreview onOpenList={() => navigation.navigate(MAIN_ROUTES.MyCommunityPosts)}
+            onOpenPost={(value: number) => { const postId = parsePostId(value); if (postId) navigation.navigate(MAIN_ROUTES.CommunityDetail, { postId }); }} onEditPost={(value: number) => { const postId = parsePostId(value); if (postId) navigation.navigate(MAIN_ROUTES.CommunityEdit, { postId }); }} />}
           onBack={navigation.goBack}
           onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
           onOpenProfileEdit={openProfileEdit}
@@ -266,6 +268,10 @@ export function createProductionMainNavigator({
       </V2ScreenBoundary>
     );
   };
+
+  const MyCommunityPostsRouteScreen = ({ navigation }: MainScreenProps<'MyCommunityPosts'>) => (
+    <MyCommunityPostsScreen onBack={navigation.goBack} onOpenPost={(value: number) => { const postId = parsePostId(value); if (postId) navigation.navigate(MAIN_ROUTES.CommunityDetail, { postId }); }} onEditPost={(value: number) => { const postId = parsePostId(value); if (postId) navigation.navigate(MAIN_ROUTES.CommunityEdit, { postId }); }} />
+  );
 
   const CommunityEditRouteScreen = ({ navigation, route }: MainScreenProps<'CommunityEdit'>) => {
     const dirty = useDiscardOnLeaveGuard(navigation);
@@ -433,6 +439,7 @@ export function createProductionMainNavigator({
       <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CommunityDetail} component={CommunityDetailRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CommunityWrite} component={CommunityWriteRouteScreen} />
+      <Stack.Screen name={MAIN_ROUTES.MyCommunityPosts} component={MyCommunityPostsRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CommunityEdit} component={CommunityEditRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.MyReviewEdit} component={MyReviewEditRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CouponBox} component={CouponBoxRouteScreen} />

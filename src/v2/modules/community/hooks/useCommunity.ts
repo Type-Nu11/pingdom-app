@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   type InfiniteData,
   type QueryClient,
@@ -16,8 +17,11 @@ import {
   type CommunityPostDetail,
   type CommunityPostPage,
   type CommunityPostSummary,
+  type MyPost,
+  type CommunityImageFile,
   type CreateCommentBody,
   type CreatePostBody,
+  type UpdatePostBody,
   type ListCommentsParams,
   type ListPostsByCategoryParams,
   type ListPostsParams,
@@ -26,13 +30,14 @@ import {
 
 import { applyOptimisticCommentLike } from '../model/commentThread';
 
-export type { CommunityPostDetail, CommunityPostSummary };
+export type { CommunityPostDetail, CommunityPostSummary, MyPost };
 
 type CommunityApi = typeof communityApi;
 
 export const communityQueryKeys = {
   allPostsInfinite: (params: ListPostsParams) => ['v2', 'community', 'posts', 'all', 'infinite', params] as const,
   allPostsRoot: ['v2', 'community', 'posts', 'all'] as const,
+  mineRoot: ['v2', 'community', 'mine'] as const,
   categories: ['v2', 'community', 'categories'] as const,
   countries: ['v2', 'community', 'countries'] as const,
   comments: (postId: number, params: ListCommentsParams) => ['v2', 'community', 'posts', postId, 'comments', params] as const,
@@ -268,6 +273,7 @@ export function useCreatePost(api: Pick<CommunityApi, 'createPost'> = communityA
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: communityQueryKeys.postsRoot(variables.categoryId) }),
         queryClient.invalidateQueries({ queryKey: communityQueryKeys.allPostsRoot }),
+        queryClient.invalidateQueries({ queryKey: communityQueryKeys.mineRoot }),
       ]);
     },
   });
@@ -454,4 +460,61 @@ export function useReportComment(
   return useMutation({
     mutationFn: (body: ReportBody) => api.reportComment(postId, commentId, body),
   });
+}
+
+
+export function useMyCommunityPosts(limit = 20) {
+  return useInfiniteQuery({
+    queryKey: [...communityQueryKeys.mineRoot, limit], initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => communityApi.listMyPosts({ page: pageParam, limit }, signal),
+    getNextPageParam: (page, _pages, pageParam) => page.hasNext ? pageParam + 1 : undefined,
+  });
+}
+
+async function invalidatePostLists(client: QueryClient) {
+  await client.invalidateQueries({ predicate: query => {
+    const key = query.queryKey;
+    return key[0] === 'v2' && key[1] === 'community'
+      && (key[2] === 'mine' || (key[2] === 'categories' && key[4] === 'posts') || (key[2] === 'posts' && key[3] === 'all'));
+  } });
+}
+
+export function useUpdatePost(postId: number) {
+  const client = useQueryClient();
+  return useMutation({ mutationFn: (body: UpdatePostBody) => communityApi.updatePost(postId, body), retry: false,
+    onSuccess: async () => { await Promise.all([
+      client.invalidateQueries({ queryKey: communityQueryKeys.post(postId) }), invalidatePostLists(client),
+    ]); },
+  });
+}
+
+export function useDeletePost(postId: number) {
+  const client = useQueryClient();
+  return useMutation({ mutationFn: () => communityApi.deletePost(postId), retry: false,
+    onSuccess: async () => {
+      await client.cancelQueries({ predicate: query => {
+        const key = query.queryKey;
+        return key[0] === 'v2' && key[1] === 'community' && (key[2] === 'mine'
+          || (key[2] === 'categories' && key[4] === 'posts')
+          || (key[2] === 'posts' && (key[3] === 'all' || key[3] === postId || (key[3] === 'detail' && key[4] === postId))));
+      } });
+      client.setQueriesData({ queryKey: ['v2', 'community'] }, (data: unknown) => {
+        if (!data || typeof data !== 'object' || !('pages' in data) || !Array.isArray(data.pages)) return data;
+        return { ...data, pages: data.pages.map((page: { posts?: CommunityPostSummary[] }) => page.posts ? ({
+          ...page, posts: page.posts.filter(post => post.postId !== postId),
+        }) : page) };
+      });
+      client.removeQueries({ queryKey: communityQueryKeys.post(postId), exact: true });
+      client.removeQueries({ queryKey: communityQueryKeys.commentsRoot(postId) });
+      client.removeQueries({ queryKey: communityQueryKeys.likeStatus(postId) });
+      await invalidatePostLists(client);
+    },
+  });
+}
+
+export function useCommunityEditMedia() {
+  return useMemo(() => ({
+    upload: async (source: CommunityImageFile) => (await communityApi.uploadImage(source)).imageId!,
+    discard: (id: number) => communityApi.deleteImage(id),
+  }), []);
 }

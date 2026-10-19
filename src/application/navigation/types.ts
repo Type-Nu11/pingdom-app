@@ -47,6 +47,7 @@ export const MAIN_ROUTES = {
   CommunityDetail: 'CommunityDetail',
   CommunityWrite: 'CommunityWrite',
   CommunityEdit: 'CommunityEdit',
+  MyCommunityPosts: 'MyCommunityPosts',
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   Map: 'Map',
@@ -88,6 +89,7 @@ export type MainStackParamList = {
   CommunityDetail: {
     postId: PostId;
   };
+  MyCommunityPosts: undefined;
   CommunityEdit: { postId: PostId };
   CommunityWrite: {
     initialCategoryId?: string;

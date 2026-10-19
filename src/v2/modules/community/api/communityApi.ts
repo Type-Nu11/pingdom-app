@@ -38,6 +38,9 @@ export type CommunityImageUpload = CommunityOperationResponse<'uploadImage', 201
 export type CommunityImageFile = { name: string; type: string; uri: string };
 
 export type CreatePostBody = CommunityOperationRequestBody<'createPost'>;
+export type UpdatePostBody = CommunityOperationRequestBody<'updatePost'>;
+export type MyPostsPage = CommunityOperationResponse<'listMyPosts', 200>;
+export type MyPost = CommunitySchema<'MyCommunityPostSummary'>;
 export type CreatePostResponse = CommunityOperationResponse<'createPost', 201>;
 
 export type CommunityPostDetail = CommunityOperationResponse<'getPost', 200>;
@@ -77,6 +80,12 @@ export function createCommunityApi(client: ApiClient = apiClient) {
 
     createPost: (body: CreatePostBody, signal?: AbortSignal): Promise<CreatePostResponse> =>
       client.post<CreatePostResponse, CreatePostBody>('/community/posts', body, { signal }),
+
+    updatePost: (postId: number, body: UpdatePostBody) =>
+      client.patch<CommunityOperationResponse<'updatePost', 200>, UpdatePostBody>(`/community/posts/${postId}`, body),
+    deletePost: (postId: number) => client.delete<void>(`/community/posts/${postId}`),
+    listMyPosts: (params: CommunityOperationQuery<'listMyPosts'> = {}, signal?: AbortSignal) =>
+      client.get<MyPostsPage>('/users/me/community/posts', { params, signal }),
 
     uploadImage: (file: CommunityImageFile, signal?: AbortSignal): Promise<CommunityImageUpload> => {
       const formData = new FormData();

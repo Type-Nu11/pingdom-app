@@ -1,3 +1,4 @@
+import { useContentDeletion } from '../../../shared/components/useContentDeletion';
 import { canManageCommunityPost } from '../model/postOwnership';
 import { useProfile } from '../../user/profile';
 import OwnerContentActions from '../../../shared/components/OwnerContentActions';
@@ -23,7 +24,7 @@ import HeaderIconButton from '../components/HeaderIconButton';
 import LikeButton from '../components/LikeButton';
 import PostAuthor from '../components/PostAuthor';
 import PostPhotoGallery from '../components/PostPhotoGallery';
-import { useCreateComment, useInfiniteComments, usePost, type CommunityPostDetail } from '../hooks/useCommunity';
+import { useCreateComment, useInfiniteComments, usePost, useDeletePost, type CommunityPostDetail } from '../hooks/useCommunity';
 import { replyParentId } from '../model/commentThread';
 import { useCommunityPlaceEntry } from '../hooks/useCommunityPlaceEntry';
 import { validateCommentContent } from '../model/commentForm';
@@ -165,6 +166,8 @@ export default function CommunityDetailScreen({ onBack, onEditPost, onOpenPlace,
   const { t } = useTranslation();
   const theme = useTheme();
   const postQuery = usePost(postId);
+  const deletion = useDeletePost(postId);
+  const deleteAction = useContentDeletion(() => deletion.mutateAsync(), onBack, postId);
   const commentsQuery = useInfiniteComments(postId, {}, { enabled: postQuery.isSuccess });
   const createComment = useCreateComment(postId);
   const placeEntry = useCommunityPlaceEntry(postId);
@@ -286,7 +289,7 @@ export default function CommunityDetailScreen({ onBack, onEditPost, onOpenPlace,
         />
         <HeaderSpacer />
         {canManageCommunityPost(postQuery.data?.author?.authorId, profile?.id)
-          ? <OwnerContentActions key={postId} onEdit={onEditPost ? () => onEditPost(postId) : undefined} />
+          ? <OwnerContentActions busy={deleteAction.busy} onDelete={deleteAction.confirm} key={postId} onEdit={onEditPost ? () => onEditPost(postId) : undefined} />
           : <HeaderIconButton Icon={MoreButtonIcon} accessibilityLabel={t('community.detail.settings')} accessibilityRole="button" />}
       </Header>
 

@@ -16,12 +16,13 @@ const TARGET_OPERATIONS = new Map([
   ['/community/categories/{categoryId}/posts', [['get', 'findByCategory', 'listPostsByCategory']]],
   ['/community/countries', [['get', 'countries', 'listCountries']]],
   ['/community/images', [['post', 'upload_1', 'uploadImage']]],
-  ['/community/images/{imageId}', [['delete', 'delete', 'deleteImage']]],
+  ['/community/images/{imageId}', [['delete', 'delete_1', 'deleteImage']]],
   ['/community/posts', [
     ['get', 'findAll', 'listPosts'],
     ['post', 'create_1', 'createPost'],
   ]],
-  ['/community/posts/{postId}', [['get', 'findDetail', 'getPost']]],
+  ['/community/posts/{postId}', [['get', 'findDetail', 'getPost'], ['patch', 'update_1', 'updatePost'], ['delete', 'delete', 'deletePost']]],
+  ['/users/me/community/posts', [['get', 'findOwn', 'listMyPosts']]],
   ['/community/posts/{postId}/comments', [
     ['get', 'findAll_1', 'listComments'],
     ['post', 'create_2', 'createComment'],

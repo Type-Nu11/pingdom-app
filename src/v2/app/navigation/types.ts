@@ -10,6 +10,7 @@ export const V2_ROUTES = {
   CommunityDetail: 'CommunityDetail',
   CommunityWrite: 'CommunityWrite',
   CommunityEdit: 'CommunityEdit',
+  MyCommunityPosts: 'MyCommunityPosts',
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   CreateReservation: 'CreateReservation',
@@ -36,6 +37,7 @@ export type V2StackParamList = {
   CommunityDetail: {
     postId: number;
   };
+  MyCommunityPosts: undefined;
   CommunityEdit: { postId: number };
   CommunityWrite: { initialCategoryId?: string } | undefined;
   CouponBox: undefined;

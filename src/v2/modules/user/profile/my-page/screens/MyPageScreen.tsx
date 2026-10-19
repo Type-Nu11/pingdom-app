@@ -44,6 +44,7 @@ const TRAVEL_CALENDAR_HEIGHT = 320;
 const VERIFIED_PLACE_CARD_HEIGHT = 222;
 
 export type MyPageScreenProps = {
+  authoredPostsContent?: React.ReactNode;
   onBack: () => void;
   onOpenCoupons: () => void;
   onOpenProfileEdit: () => void;
@@ -54,6 +55,7 @@ export type MyPageScreenProps = {
 };
 
 export default function MyPageScreen({
+  authoredPostsContent,
   onBack,
   onOpenCoupons,
   onOpenProfileEdit,
@@ -376,13 +378,13 @@ export default function MyPageScreen({
           </PlacesSectionContent>
         </Section>
         <Section $borderWidth={0} testID="v2-my-page-authored-posts">
-          <SectionContent>
+          {authoredPostsContent ?? <SectionContent>
             <SectionHeaderRow accessibilityRole="button" accessibilityState={{ disabled: true }} disabled>
               <SectionTitle>{t('myPageActivity.postsTitle')}</SectionTitle>
               <ChevronIcon height={24} width={24} />
             </SectionHeaderRow>
             <EmptyPlacesText>{t('myPageActivity.postsUnavailable')}</EmptyPlacesText>
-          </SectionContent>
+          </SectionContent>}
         </Section>
       </Content>
     </Screen>
