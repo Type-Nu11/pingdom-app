@@ -112,6 +112,64 @@ class MLKitTranslationModule(
             }
     }
 
+    // V2 model management never translates or implicitly downloads text.
+    @ReactMethod
+    fun getOfflineModels(promise: Promise) {
+        RemoteModelManager.getInstance().getDownloadedModels(TranslateRemoteModel::class.java)
+            .addOnSuccessListener { models ->
+                val result = Arguments.createArray()
+                models.forEach { result.pushString(it.language) }
+                promise.resolve(result)
+            }.addOnFailureListener { promise.reject("MODEL_STATUS_FAILED", it) }
+    }
+
+    @ReactMethod
+    fun downloadOfflineModel(language: String, promise: Promise) {
+        val code = TranslateLanguage.fromLanguageTag(language)
+        if (code == null || code != language) {
+            promise.reject("UNSUPPORTED_LANGUAGE", "Unsupported language")
+            return
+        }
+        RemoteModelManager.getInstance().download(
+            TranslateRemoteModel.Builder(code).build(), DownloadConditions.Builder().requireWifi().build()
+        ).addOnSuccessListener { promise.resolve(null) }
+            .addOnFailureListener { promise.reject("MODEL_DOWNLOAD_FAILED", it) }
+    }
+
+    @ReactMethod
+    fun deleteOfflineModel(language: String, promise: Promise) {
+        val code = TranslateLanguage.fromLanguageTag(language)
+        if (code == null || code != language || code == TranslateLanguage.ENGLISH) {
+            promise.reject("UNSUPPORTED_LANGUAGE", "Unsupported model deletion")
+            return
+        }
+        RemoteModelManager.getInstance().deleteDownloadedModel(TranslateRemoteModel.Builder(code).build())
+            .addOnSuccessListener { promise.resolve(null) }
+            .addOnFailureListener { promise.reject("MODEL_DELETE_FAILED", it) }
+    }
+
+    @ReactMethod
+    fun translateOffline(text: String, target: String, promise: Promise) {
+        val code = TranslateLanguage.fromLanguageTag(target)
+        if (code == null || code != target || code == TranslateLanguage.KOREAN) {
+            promise.reject("UNSUPPORTED_LANGUAGE", "Unsupported target")
+            return
+        }
+        RemoteModelManager.getInstance().getDownloadedModels(TranslateRemoteModel::class.java)
+            .addOnSuccessListener { models ->
+                val installed = models.map { it.language }.toSet() + TranslateLanguage.ENGLISH
+                if (TranslateLanguage.KOREAN !in installed || code !in installed) {
+                    promise.reject("MODEL_DOWNLOAD_REQUIRED", "Download models first")
+                    return@addOnSuccessListener
+                }
+                val translator = Translation.getClient(TranslatorOptions.Builder()
+                    .setSourceLanguage(TranslateLanguage.KOREAN).setTargetLanguage(code).build())
+                translator.translate(text)
+                    .addOnSuccessListener { result -> translator.close(); promise.resolve(result) }
+                    .addOnFailureListener { error -> translator.close(); promise.reject("TRANSLATION_FAILED", error) }
+            }.addOnFailureListener { promise.reject("MODEL_STATUS_FAILED", it) }
+    }
+
     private fun createPlan(
         sourceLanguage: String,
         targetLanguage: String,
