@@ -1928,6 +1928,7 @@
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/place/music_svg.svg","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/place/popup_svg.svg","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/place/Subtract.svg","typeOnly":false},
+    {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/assets/v2/icons/community/close-medium.svg","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/v2/shared/motion/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/v2/shared/components/index.ts","typeOnly":false},
     {"source":"src/v2/modules/place/map/sheet/components/MapBottomSheet.tsx","target":"src/v2/modules/place/map/sheet/hooks/useBottomSheet.ts","typeOnly":true},

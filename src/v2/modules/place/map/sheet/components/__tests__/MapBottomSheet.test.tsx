@@ -727,8 +727,11 @@ describe('MapBottomSheet recommendations', () => {
     const bookmark = screen.getByTestId('place-preview-bookmark');
     const close = screen.getByTestId('place-preview-close');
     expect(screen.getByTestId('map-sheet-handle-target').props.hitSlop).toBeUndefined();
-    expect(bookmark).toHaveStyle({ height: 44, width: 44 });
-    expect(close).toHaveStyle({ height: 44, width: 44 });
+    // Figma Component 18: 32px circles; hitSlop keeps the 44px touch target.
+    expect(bookmark).toHaveStyle({ height: 32, width: 32 });
+    expect(close).toHaveStyle({ height: 32, width: 32 });
+    expect(bookmark.props.hitSlop).toBe(6);
+    expect(close.props.hitSlop).toBe(6);
     await result.user.press(bookmark);
     await result.user.press(close);
     expect(onToggleBookmark).toHaveBeenCalledWith(selectedPlace, true);
