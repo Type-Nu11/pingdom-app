@@ -32,6 +32,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
   // Catalogs added after ko/en (#389 ja, #413 zh-CN/zh-TW, ...) have their key parity checked separately.
   for (const added of addedLanguages) delete baseline[added];
   for (const language of ['ko', 'en']) {
+    // Shared PingDom dialogs add an explicit localized confirmation action.
+    delete baseline[language].translation.common.navigation.confirm;
     // Auth failure copy is reviewed separately in authErrorPresentation.test.ts.
     delete baseline[language].translation.authErrors;
     // Reviewed additional onboarding nationality options.

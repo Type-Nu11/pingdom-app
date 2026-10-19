@@ -1,4 +1,5 @@
 import { PlaceMapComposition } from '../v2/app/PlaceMapComposition';
+import { AppDialogProvider } from '../v2/shared/components/AppDialogProvider';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import React, { type PropsWithChildren, useEffect, useState } from 'react';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
@@ -61,7 +62,7 @@ export default function ProductionProviders({ children }: PropsWithChildren) {
               <AppErrorBoundary>
                 <QueryClientProvider client={queryClient}>
                   <WakeWordProvider adapter={wakeWordAdapter}>
-                    <PlaceMapComposition>{children}</PlaceMapComposition>
+                    <AppDialogProvider><PlaceMapComposition>{children}</PlaceMapComposition></AppDialogProvider>
                   </WakeWordProvider>
                 </QueryClientProvider>
               </AppErrorBoundary>

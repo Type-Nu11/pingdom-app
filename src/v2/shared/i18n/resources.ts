@@ -102,7 +102,7 @@ export const resources = {
       },
       common: {
         missingTranslation: 'Translation unavailable',
-        navigation: { back: 'Go back', close: 'Close', exitHint: 'Press back again to exit the app.', retry: 'Try again' },
+        navigation: { confirm: 'OK', back: 'Go back', close: 'Close', exitHint: 'Press back again to exit the app.', retry: 'Try again' },
         unsupportedFeature: {
           description: 'This feature is not currently supported in the app.',
           title: 'Not available in the app',
@@ -979,7 +979,7 @@ export const resources = {
       },
       common: {
         missingTranslation: '번역을 제공할 수 없습니다',
-        navigation: { back: '뒤로 가기', close: '닫기', exitHint: '뒤로가기를 한 번 더 누르면 앱이 종료됩니다.', retry: '다시 시도' },
+        navigation: { confirm: '확인', back: '뒤로 가기', close: '닫기', exitHint: '뒤로가기를 한 번 더 누르면 앱이 종료됩니다.', retry: '다시 시도' },
         unsupportedFeature: {
           description: '이 기능은 현재 앱에서 지원하지 않습니다.',
           title: '앱에서 제공하지 않는 기능',
@@ -1879,7 +1879,7 @@ export const resources = {
       },
       common: {
         missingTranslation: '翻訳がありません',
-        navigation: { back: '戻る', close: '閉じる', exitHint: 'もう一度「戻る」を押すとアプリを終了します。', retry: '再試行' },
+        navigation: { confirm: '確認', back: '戻る', close: '閉じる', exitHint: 'もう一度「戻る」を押すとアプリを終了します。', retry: '再試行' },
         unsupportedFeature: {
           description: 'この機能は現在アプリでサポートされていません。',
           title: 'アプリではご利用いただけません',
@@ -2825,7 +2825,7 @@ export const resources = {
       },
       common: {
         missingTranslation: '暂无翻译',
-        navigation: { back: '返回', close: '关闭', exitHint: '再按一次返回键即可退出应用。', retry: '重试' },
+        navigation: { confirm: '确定', back: '返回', close: '关闭', exitHint: '再按一次返回键即可退出应用。', retry: '重试' },
         unsupportedFeature: { description: '应用目前不支持此功能。', title: '应用内暂不提供' },
         apiError: {
           timeout: { title: '响应时间过长', description: '请检查网络连接后重新加载。' },
@@ -3671,7 +3671,7 @@ export const resources = {
       },
       common: {
         missingTranslation: '暫無翻譯',
-        navigation: { back: '返回', close: '關閉', exitHint: '再按一次返回鍵即可結束 App。', retry: '再試一次' },
+        navigation: { confirm: '確定', back: '返回', close: '關閉', exitHint: '再按一次返回鍵即可結束 App。', retry: '再試一次' },
         unsupportedFeature: { description: 'App 目前不支援這項功能。', title: 'App 內暫不提供' },
         apiError: {
           timeout: { title: '回應時間過長', description: '請確認網路連線後重新載入。' },
@@ -4535,7 +4535,7 @@ export const resources = {
       },
       common: {
         missingTranslation: 'Chưa có bản dịch',
-        navigation: { back: 'Quay lại', close: 'Đóng', exitHint: 'Nhấn quay lại lần nữa để thoát ứng dụng.', retry: 'Thử lại' },
+        navigation: { confirm: 'Xác nhận', back: 'Quay lại', close: 'Đóng', exitHint: 'Nhấn quay lại lần nữa để thoát ứng dụng.', retry: 'Thử lại' },
         unsupportedFeature: { description: 'Tính năng này hiện chưa được hỗ trợ trong ứng dụng.', title: 'Chưa có trong ứng dụng' },
         apiError: {
           timeout: { title: 'Phản hồi mất quá nhiều thời gian', description: 'Hãy kiểm tra kết nối và thử tải lại.' },
@@ -5492,7 +5492,7 @@ export const resources = {
       },
       common: {
         missingTranslation: 'Traducción no disponible',
-        navigation: { back: 'Volver', close: 'Cerrar', exitHint: 'Presiona atrás otra vez para salir de la app.', retry: 'Reintentar' },
+        navigation: { confirm: 'Aceptar', back: 'Volver', close: 'Cerrar', exitHint: 'Presiona atrás otra vez para salir de la app.', retry: 'Reintentar' },
         unsupportedFeature: { description: 'Esta función no es compatible con la app por ahora.', title: 'No disponible en la app' },
         apiError: {
           timeout: { title: 'La respuesta está tardando demasiado', description: 'Revisa tu conexión e intenta cargar de nuevo.' },
@@ -6464,7 +6464,7 @@ export const resources = {
       },
       common: {
         missingTranslation: 'Tradução indisponível',
-        navigation: { back: 'Voltar', close: 'Fechar', exitHint: 'Pressione voltar novamente para sair do app.', retry: 'Tentar novamente' },
+        navigation: { confirm: 'Confirmar', back: 'Voltar', close: 'Fechar', exitHint: 'Pressione voltar novamente para sair do app.', retry: 'Tentar novamente' },
         unsupportedFeature: { description: 'Este recurso não é compatível com o app no momento.', title: 'Indisponível no app' },
         apiError: {
           timeout: { title: 'A resposta está demorando demais', description: 'Verifique sua conexão e tente carregar novamente.' },
