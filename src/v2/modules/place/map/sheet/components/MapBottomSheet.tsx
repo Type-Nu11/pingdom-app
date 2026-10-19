@@ -60,6 +60,7 @@ import MapNavigationIcon from './MapNavigationIcon';
 import MusicAsset from '../../../../../../assets/v2/icons/place/music_svg.svg';
 import PopupAsset from '../../../../../../assets/v2/icons/place/popup_svg.svg';
 import RecommendationTitleAsset from '../../../../../../assets/v2/icons/place/Subtract.svg';
+import CloseMediumAsset from '../../../../../../assets/v2/icons/community/close-medium.svg';
 import {
   FadeSlideTransition,
   MOTION_DURATION,
@@ -248,8 +249,8 @@ type SheetCategory = MapHomeCategory;
 // Keep the Figma typography stable when an Android device uses a larger system font scale.
 const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
 const useMapSheetStyles = () => {
-  const { colors } = useTheme();
-  return useMemo(() => createStyles(colors), [colors]);
+  const { colors, liquidGlass: themedGlass } = useTheme();
+  return useMemo(() => createStyles(colors, themedGlass), [colors, themedGlass]);
 };
 
 // Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
@@ -725,7 +726,7 @@ export const RecommendationFeaturedCard = ({
   place,
 }: {
   bookmarked: boolean;
-  designSize?: 'default' | 'reservation';
+  designSize?: 'default' | 'recommendation' | 'reservation';
   imageUrl?: string;
   onPress: () => void;
   onToggleBookmark: () => Promise<void> | void;
@@ -735,16 +736,19 @@ export const RecommendationFeaturedCard = ({
   const { i18n, t } = useTranslation();
   const styles = useMapSheetStyles();
   const distance = formatDistance(place, i18n.language);
+  // Figma Component 10 (5062:31880) is shared by the recommendation and reservation rows.
+  const isFigmaCard = designSize !== 'default';
+  const isRecommendation = designSize === 'recommendation';
   return (
     <RecommendationCardPressable
       accessibilityLabel={[place.name, place.recommendationReason, distance]
         .filter(Boolean)
         .join(', ')}
       onPress={onPress}
-      style={[styles.placeCard, designSize === 'reservation' && styles.reservationPlaceCard]}
+      style={[styles.placeCard, isFigmaCard && styles.reservationPlaceCard, isRecommendation && styles.recommendationPlaceCard]}
       testID={`recommendation-card-${place.id}`}
     >
-      <View style={[styles.placeCardArtwork, designSize === 'reservation' && styles.reservationPlaceCardArtwork]}>
+      <View style={[styles.placeCardArtwork, isFigmaCard && styles.reservationPlaceCardArtwork]}>
         <PlaceArtwork blurBottom imageUrl={imageUrl} />
         <CardScrim />
         <RecommendationBookmarkButton
@@ -754,12 +758,16 @@ export const RecommendationFeaturedCard = ({
           style={styles.cardBookmarkStar}
         />
         <View style={styles.placeCardBody}>
-          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, designSize === 'reservation' && styles.reservationPlaceCardName]}>
+          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, isFigmaCard && styles.reservationPlaceCardName]}>
             {place.name || t('map.sheet.placeMissing')}
           </AppText>
         </View>
       </View>
-      {place.recommendationReason ? (
+      {place.recommendationReason && isRecommendation ? (
+        <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationCardReason}>
+          {place.recommendationReason}
+        </AppText>
+      ) : place.recommendationReason ? (
         <View style={styles.recommendationMetaRow}>
           <RecommendationMetaIcon />
           <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationReason}>
@@ -767,7 +775,7 @@ export const RecommendationFeaturedCard = ({
           </AppText>
         </View>
       ) : null}
-      <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, designSize === 'reservation' && styles.reservationPlaceCardDistance]}>
+      <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, isFigmaCard && styles.reservationPlaceCardDistance, isRecommendation && styles.recommendationCardDistance]}>
         {t('map.sheet.distanceAway', { distance })}
       </AppText>
     </RecommendationCardPressable>
@@ -1297,6 +1305,7 @@ const RecommendationContent = ({
             {featuredPlaces.map((place) => (
               <RecommendationFeaturedCard
                 bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                designSize="recommendation"
                 imageUrl={imageUrlsByPlaceId[String(place.id)]}
                 key={`recommendation-featured-${place.id}`}
                 onPress={() => onPlacePress(place)}
@@ -1385,8 +1394,8 @@ const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking
     {expanded ? <View style={styles.detailAmenityIcon} testID={`map-detail-amenity-${type}`}>
       {type === 'english' ? <View style={styles.detailGlobeLayers}><DetailGlobeBaseAsset /><DetailGlobeLinesAsset style={styles.detailGlobeLines} /></View> : <DetailParkingAsset />}
     </View> : type === 'english'
-      ? <GroupAsset height={20} width={20} />
-      : <ParkAsset height={20} width={20} />}
+      ? <GroupAsset height={16} width={16} />
+      : <ParkAsset height={16} width={16} />}
     <AppText style={expanded ? styles.detailAmenityText : styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</AppText>
   </View>
   );
@@ -1428,7 +1437,7 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
 type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
 
 const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind; expanded?: boolean }) => {
-  const color = (useTheme().colors ?? lightColors).textSecondary;
+  const color = (useTheme().colors ?? lightColors).textAlternative;
   if (expanded) {
     if (kind === 'share') return <DetailShareAsset />;
     if (kind === 'reservation') return <DetailReservationAsset />;
@@ -1437,14 +1446,14 @@ const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind
   }
   if (kind === 'share') {
     return (
-      <Svg height={13} viewBox="0 0 16 16" width={13}>
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
         <Path d="M6 3H3.8A1.8 1.8 0 0 0 2 4.8v7.4A1.8 1.8 0 0 0 3.8 14h7.4a1.8 1.8 0 0 0 1.8-1.8V10M8 2h6v6M14 2 7.5 8.5" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
     );
   }
   if (kind === 'reservation') {
     return (
-      <Svg height={13} viewBox="0 0 16 16" width={13}>
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
         <Path d="M3 4.2A1.7 1.7 0 0 1 4.7 2.5h6.6A1.7 1.7 0 0 1 13 4.2v7.1a1.7 1.7 0 0 1-1.7 1.7H4.7A1.7 1.7 0 0 1 3 11.3V4.2Z" fill="none" stroke={color} strokeWidth={1.4} />
         <Path d="m6 8 1.3 1.3L10.4 6" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
@@ -1452,7 +1461,7 @@ const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind
   }
   if (kind === 'directions') {
     return (
-      <Svg height={14} viewBox="0 0 16 16" width={14}>
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
         <Path d="m2.2 2.7 11.6 4.7-5 1.2-1.4 4.7-5.2-10.6Z" fill="none" stroke={color} strokeLinejoin="round" strokeWidth={1.4} />
       </Svg>
     );
@@ -1485,6 +1494,9 @@ const formatPreviewCategory = (category: string) => {
   const normalized = normalizePlaceCategory(category);
   return normalized === 'game' ? 'popup' : normalized;
 };
+
+// Figma draws the preview icon buttons at 32px; the slop keeps a 44px touch target.
+const PREVIEW_ICON_BUTTON_HIT_SLOP = 6;
 
 const PreviewContent = ({
   activeAction,
@@ -1527,6 +1539,7 @@ const PreviewContent = ({
 }) => {
   const { i18n, t } = useTranslation();
   const styles = useMapSheetStyles();
+  const sheetColors = useTheme().colors ?? lightColors;
   const { width: windowWidth } = useWindowDimensions();
   const imageUrls = fallbackContent?.imageUrls.length
     ? fallbackContent.imageUrls
@@ -1596,20 +1609,22 @@ const PreviewContent = ({
           accessibilityRole="button"
           accessibilityState={{ busy: pending, disabled: pending, selected: bookmarked }}
           disabled={pending}
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
           onPress={onToggleBookmark}
           style={({ pressed }) => [styles.previewBookmarkButton, pressed && styles.pressed]}
           testID="place-preview-bookmark"
         >
-          <BookmarkStar selected={bookmarked} size={22} />
+          <BookmarkStar selected={bookmarked} size={16} />
         </Pressable>
         <Pressable
           accessibilityLabel={t('map.card.dismiss')}
           accessibilityRole="button"
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
           onPress={onBack}
           style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
           testID="place-preview-close"
         >
-          <AppText style={styles.previewCloseText}>×</AppText>
+          <CloseMediumAsset color={sheetColors.textAlternative} height={19} width={19} />
         </Pressable>
       </View>
       {fallbackContent?.amenities.length ? (
@@ -1721,6 +1736,7 @@ const ExternalPlaceContent = ({
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
+  const sheetColors = useTheme().colors ?? lightColors;
   const selectAction = (action: PreviewActionKind, callback?: () => void) => {
     onSelectAction(action);
     callback?.();
@@ -1748,11 +1764,12 @@ const ExternalPlaceContent = ({
         <Pressable
           accessibilityLabel={t('map.card.dismiss')}
           accessibilityRole="button"
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
           onPress={onBack}
           style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
           testID="external-place-close"
         >
-          <AppText style={styles.previewCloseText}>×</AppText>
+          <CloseMediumAsset color={sheetColors.textAlternative} height={19} width={19} />
         </Pressable>
       </View>
       <View style={styles.externalNotice}>
@@ -2696,7 +2713,10 @@ export default function MapBottomSheet({
 }
 
 const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
-const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
+const createStyles = (
+  colors: AppTheme['colors'],
+  glass: AppTheme['liquidGlass'] = liquidGlass,
+): Record<string, object> => ({
   artwork: {
     backgroundColor: colors.surfaceMuted,
     height: '100%',
@@ -2938,28 +2958,25 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     paddingTop: 14,
   },
   gridArtwork: { height: '100%' },
+  // Figma Post (5069:32278): 242x182, 16px radius, no drop shadow.
   gridCard: {
-    backgroundColor: '#161616',
-    borderRadius: 13,
-    height: 172,
+    backgroundColor: colors.staticBlack,
+    borderRadius: 16,
+    height: 182,
     overflow: 'hidden',
-    shadowColor: '#12161D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.09,
-    shadowRadius: 9,
-    width: 228,
+    width: 242,
   },
   gridCardBody: {
     bottom: 0,
     left: 0,
-    paddingBottom: 9,
-    paddingHorizontal: 10,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
     position: 'absolute',
     right: 0,
   },
-  gridCardDistance: { color: 'rgba(255,255,255,0.9)', flexShrink: 1, fontSize: 9, marginTop: 1, maxWidth: '100%', paddingRight: 24 },
-  gridCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 24 },
-  gridBookmarkStar: { bottom: 7, padding: 4, position: 'absolute', right: 7, zIndex: 3 },
+  gridCardDistance: { color: colors.fillAlternative, flexShrink: 1, fontSize: 12, fontWeight: '500', lineHeight: 16, maxWidth: '100%', paddingRight: 40 },
+  gridCardName: { color: colors.backgroundAssistive, flexShrink: 1, fontSize: 16, fontWeight: '700', lineHeight: 21, maxWidth: '100%', paddingRight: 40 },
+  gridBookmarkStar: { bottom: 12, padding: 4, position: 'absolute', right: 8, zIndex: 3 },
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -3022,13 +3039,14 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   bookmarkPressed: { opacity: 0.64 },
   recommendationContent: { paddingBottom: 108 },
-  recommendationCardRow: { gap: 12, paddingBottom: 10, paddingHorizontal: 16, paddingTop: 12 },
+  recommendationCardRow: { gap: 16, paddingBottom: 16, paddingHorizontal: 16, paddingTop: 12 },
   // Figma keeps the cards 24dp from the screen edge in both states (7973:10445, 7973:10640).
   recommendationCardRowExpanded: { paddingHorizontal: 24 },
   recommendationContext: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 4 },
-  recommendationGridRows: { gap: 12 },
-  recommendationGridScroll: { gap: 12, paddingHorizontal: 24 },
-  recommendationGridTitle: { color: colors.textStrong, fontSize: 20, fontWeight: '900', marginBottom: 15, marginTop: 2, paddingHorizontal: 16 },
+  // Figma PlaceRecommend-Up (5408:26180): 16px gaps, Headline1/Bold title 14px above the cards.
+  recommendationGridRows: { gap: 16 },
+  recommendationGridScroll: { gap: 16, paddingHorizontal: 24 },
+  recommendationGridTitle: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', lineHeight: 26, marginBottom: 14, marginTop: 2, paddingHorizontal: 16 },
   // Figma PlaceRecommend (7973:10494): title text 13dp below the handle, 16dp from the sheet edge.
   recommendationHeader: { paddingHorizontal: 16 },
   recommendationReason: { color: colors.text, flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
@@ -3036,6 +3054,10 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   reservationPlaceCardArtwork: { borderRadius: 16, height: 164 },
   reservationPlaceCardDistance: { fontSize: 14, marginTop: 1 },
   reservationPlaceCardName: { fontSize: 16, lineHeight: 21, paddingRight: 30 },
+  // Figma 5062:31879: Body/Medium reason and Label/Regular distance, 8px under the artwork.
+  recommendationPlaceCard: { height: 209, minHeight: 209 },
+  recommendationCardReason: { color: colors.labelNeutral, fontSize: 16, fontWeight: '500', lineHeight: 21, marginTop: 10 },
+  recommendationCardDistance: { color: colors.textAlternative, fontWeight: '400', lineHeight: 18, marginTop: 0 },
   recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5, maxWidth: '100%' },
   recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
   recommendationSubtitle: { color: colors.textSecondary, fontSize: 14, includeFontPadding: false, lineHeight: 18, marginTop: 4 },
@@ -3065,33 +3087,39 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   externalNoticeText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
   externalSource: { color: colors.textMuted, fontSize: 12, fontWeight: '600', includeFontPadding: false, lineHeight: 16, marginTop: 4 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
+  // Figma PingSelected chips (5191:39646): 34px map pills — Glass/Fill + Shadow/Float,
+  // selected Glass/Selected + Glass/SelectedStroke, Label/Medium text, 8px apart.
   previewActionChip: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderRadius: 18,
+    backgroundColor: glass.category.tint,
+    borderColor: glass.category.border,
+    borderRadius: 17,
     borderWidth: 1,
+    boxShadow: glass.category.shadow,
     flexDirection: 'row',
-    gap: 4,
-    height: 36,
+    gap: 6,
+    height: 34,
     justifyContent: 'center',
-    minWidth: 58,
-    paddingHorizontal: 12,
+    minWidth: 57,
+    paddingHorizontal: 15,
   },
-  previewActionChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.selectedBorder },
-  previewActionRow: { columnGap: 7, paddingBottom: 12, paddingHorizontal: 1 },
-  previewActionText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  previewActionChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
+  previewActionRow: { columnGap: 8, paddingBottom: 14 },
+  previewActionText: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18 },
   previewActionTextActive: { color: colors.primary },
-  previewAddress: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600', includeFontPadding: false, lineHeight: 18, marginTop: 4, minWidth: 0 },
+  // Figma 5175:37756: Body/Regular address, directly under the status line.
+  previewAddress: { color: colors.labelNeutral, flexShrink: 1, fontSize: 16, fontWeight: '400', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
+  // Figma 5253:42974: 34px info chips, 16px icon 12px from the edge, Label/Medium text.
   previewAmenityChip: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderRadius: 16,
+    backgroundColor: glass.category.tint,
+    borderColor: glass.category.border,
+    borderRadius: 17,
     borderWidth: 1,
+    boxShadow: glass.category.shadow,
     flexDirection: 'row',
-    gap: 5,
-    height: 32,
+    gap: 6,
+    height: 34,
     paddingHorizontal: 11,
   },
   previewAmenityIcon: {
@@ -3103,8 +3131,8 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     width: 20,
   },
   previewAmenityIconText: { color: colors.textInverse, fontSize: 13, fontWeight: '900', lineHeight: 16 },
-  previewAmenityRow: { columnGap: 7, flexDirection: 'row', paddingBottom: 10 },
-  previewAmenityText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  previewAmenityRow: { columnGap: 8, flexDirection: 'row', paddingBottom: 8 },
+  previewAmenityText: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18 },
   previewArtwork: { height: '100%', width: '100%' },
   previewArtworkFallback: {
     alignItems: 'center',
@@ -3114,29 +3142,27 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     width: '100%',
   },
   previewArtworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
+  // Figma Component 18 (5175:37945): 32px Glass/FillRaised circles, 12px apart.
   previewBookmarkButton: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: 20,
-    height: 44,
+    backgroundColor: colors.glassFillRaised,
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
-    marginRight: 4,
-    marginTop: 9,
-    width: 44,
+    marginRight: 12,
+    width: 32,
   },
-  previewCategory: { color: colors.textSecondary, flexShrink: 0, fontSize: 13, fontWeight: '700', includeFontPadding: false, lineHeight: 19, marginLeft: 6 },
+  previewCategory: { color: colors.labelNeutral, flexShrink: 0, fontSize: 18, fontWeight: '500', includeFontPadding: false, lineHeight: 23, marginLeft: 4 },
   previewCloseButton: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: 20,
-    height: 44,
+    backgroundColor: colors.glassFillRaised,
+    borderRadius: 16,
+    height: 32,
     justifyContent: 'center',
-    marginTop: 9,
-    width: 44,
+    width: 32,
   },
-  previewCloseText: { color: colors.textSecondary, fontSize: 25, fontWeight: '300', lineHeight: 29 },
   previewContent: { paddingHorizontal: 16 },
-  previewHeader: { alignItems: 'flex-start', flexDirection: 'row', minHeight: 102 },
+  previewHeader: { alignItems: 'flex-start', flexDirection: 'row', paddingBottom: 14 },
   previewImagePanel: {
     backgroundColor: colors.primarySoft,
     borderRadius: 17,
@@ -3144,16 +3170,17 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     overflow: 'hidden',
     width: 180,
   },
-  previewImageRow: { columnGap: 12, paddingBottom: 110, paddingRight: 16 },
-  previewName: { color: colors.textStrong, flexShrink: 1, fontSize: 21, fontWeight: '900', includeFontPadding: false, lineHeight: 27, minWidth: 0 },
+  previewImageRow: { columnGap: 16, paddingBottom: 110, paddingRight: 16 },
+  previewName: { color: colors.labelStrong, flexShrink: 1, fontSize: 24, fontWeight: '700', includeFontPadding: false, lineHeight: 31, minWidth: 0 },
   previewParkingIcon: { borderRadius: 5 },
-  previewStatus: { color: colors.textSecondary, flexShrink: 1, fontSize: 13, fontWeight: '600' },
+  // Figma 5175:37753: Body/Regular status line 4px under the 32px title row.
+  previewStatus: { color: colors.textAlternative, flexShrink: 1, fontSize: 16, fontWeight: '400', lineHeight: 21 },
   previewStatusEmphasis: { fontWeight: '500' },
-  previewStatusSeparator: { color: colors.textSecondary, fontWeight: '700' },
-  previewStatusTail: { fontSize: 13 },
-  previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 6 },
-  previewSummary: { flex: 1, minWidth: 0, paddingTop: 11 },
-  previewTitleRow: { alignItems: 'center', flexDirection: 'row', minWidth: 0, paddingRight: 4 },
+  previewStatusSeparator: { color: colors.textAlternative, fontWeight: '400' },
+  previewStatusTail: { fontSize: 16, lineHeight: 21 },
+  previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 4 },
+  previewSummary: { flex: 1, minWidth: 0 },
+  previewTitleRow: { alignItems: 'center', flexDirection: 'row', height: 32, minWidth: 0, paddingRight: 4 },
   resultAddress: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
   resultDistance: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
   resultName: { color: colors.textStrong, fontSize: 14, fontWeight: '800' },
