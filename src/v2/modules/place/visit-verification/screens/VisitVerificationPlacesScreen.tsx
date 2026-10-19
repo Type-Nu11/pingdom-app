@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
+import { useHeaderGlassIconColors } from '../../../../shared/components/headerGlassIcon';
 import NoNearbyPlaceIcon from '../../../../../assets/v2/icons/smRlavy.svg';
 import { ApiErrorState, Button, LoadingState } from '../../../../shared/components';
 import VisitPlaceCard from '../components/VisitPlaceCard';
@@ -22,6 +23,7 @@ type Props = {
 export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const headerIconColors = useHeaderGlassIconColors();
   const { candidates, checkInsQuery } = useVisitVerificationCandidates();
   const locationPermission = useLocationPermissionStatus();
   const retryNextPage = () => void checkInsQuery.fetchNextPage();
@@ -29,7 +31,7 @@ export default function VisitVerificationPlacesScreen({ onBack, onSelectPlace }:
   return (
     <Screen edges={['top', 'right', 'bottom', 'left']}>
       <Header>
-        <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackIcon width={44} height={44} /></BackButton>
+        <BackButton accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}><BackIcon {...headerIconColors} width={44} height={44} /></BackButton>
         {candidates.length > 0 || checkInsQuery.isLoading || checkInsQuery.isError ? (
           <>
             <Title accessibilityRole="header">{t('visitVerification.title')}</Title>

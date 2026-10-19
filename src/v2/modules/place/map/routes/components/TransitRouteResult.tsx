@@ -49,7 +49,7 @@ function SegmentBar({ itinerary }: { itinerary: TransitItinerary }) {
         style={{ flexGrow: leg.durationSeconds ?? 1, backgroundColor: walk ? 'transparent' : transitLegColor(leg), minWidth: walk ? index === 0 ? 56 : 40 : 44 }}>
         {(!walk || index === 0) && <SegmentIcon style={{ backgroundColor: transitLegColor(leg) }}><LegIcon mode={leg.mode} /></SegmentIcon>}
         <Text numberOfLines={1} style={{ flex: 1, minWidth: 0, textAlign: 'center', fontSize: 12, lineHeight: 15.6,
-          fontWeight: walk ? '500' : '700', color: walk ? theme.colors.labelAssistive : '#FFFFFF' }}>{duration}</Text>
+          fontWeight: walk ? '500' : '700', color: walk ? theme.colors.labelAssistive : theme.colors.staticWhite }}>{duration}</Text>
       </BarSegment>;
     })}
   </Bar>;

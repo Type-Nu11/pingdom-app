@@ -236,3 +236,37 @@ describe('CommunityBottomSheet category failure', () => {
     expect(screen.queryByTestId('v2-community-list-empty')).toBeNull();
   });
 });
+
+describe('CommunityBottomSheet header alignment', () => {
+  beforeEach(() => {
+    jest.mocked(useCategories).mockReturnValue(categoriesResult());
+    jest.mocked(useCountries).mockReturnValue(countriesResult());
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult());
+  });
+
+  test('필터 버튼과 중앙 정렬된 제목이 다른 페이지 시트처럼 핸들 아래 13dp에서 시작하고 헤더도 드래그 영역이다', async () => {
+    const onMoveShouldSetResponderCapture = jest.fn();
+    await renderSheet(
+      <CommunityBottomSheet
+        {...createBottomSheetProps()}
+        {...navigation}
+        panHandlers={{ onMoveShouldSetResponderCapture } as GestureResponderHandlers}
+      />,
+    );
+    const header = screen.getByTestId('v2-community-sheet-header');
+    expect(header.props.onMoveShouldSetResponderCapture).toBe(onMoveShouldSetResponderCapture);
+    // 44dp row centred on the 26dp title: the row starts 9dp higher than the content top.
+    expect(header.parent).toHaveStyle({ marginTop: -9 });
+    expect(screen.getByRole('header', { name: '커뮤니티' })).toHaveStyle({ fontSize: 20, lineHeight: 26 });
+  });
+
+  test.each([
+    ['medium', 8],
+    ['expanded', 0],
+  ] as const)('%s 커뮤니티 시트 내용은 펼치면 시트와 함께 전폭이 된다', async (snapPoint, inset) => {
+    await renderSheet(
+      <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />,
+    );
+    expect(screen.getByTestId('v2-community-sheet-inner')).toHaveStyle({ paddingLeft: inset });
+  });
+});

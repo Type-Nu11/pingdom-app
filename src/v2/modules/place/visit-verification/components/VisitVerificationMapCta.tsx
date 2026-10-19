@@ -1,10 +1,10 @@
 import { Text as AppText } from '../../../../shared/components/Typography';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import styled, { useTheme } from 'styled-components/native';
+import styled, { ThemeProvider, useTheme } from 'styled-components/native';
 
 import VerificationIcon from '../../../../../assets/v2/icons/place/gamju.svg';
-import { GlassSurface } from '../../map/presentation';
+import { createTheme } from '../../../../shared/theme';
 
 type Props = {
   label: string;
@@ -15,7 +15,9 @@ type Props = {
 const NAVIGATION_LOCK_MS = 500;
 
 export default function VisitVerificationMapCta({ label, onPress, style }: Props) {
-  const theme = useTheme();
+  const { typography } = useTheme();
+  // Figma Component 24/ReviewButton (6002:29749) keeps its light values in dark mode too.
+  const theme = useMemo(() => createTheme(typography.body.fontFamily, 'light'), [typography.body.fontFamily]);
   const navigationLocked = useRef(false);
   const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -24,6 +26,7 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
   }, []);
 
   return (
+    <ThemeProvider theme={theme}>
     <Container
       accessibilityLabel={label}
       accessibilityRole="button"
@@ -41,7 +44,6 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
     >
       <Surface
         pointerEvents="none"
-        tintColor={theme.colors.primary}
         style={{ boxShadow: theme.liquidGlass.search.shadow }}
         testID="visit-verification-map-cta-glass"
       >
@@ -49,6 +51,7 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
         <Label>{label}</Label>
       </Surface>
     </Container>
+    </ThemeProvider>
   );
 }
 
@@ -59,14 +62,17 @@ const Container = styled.Pressable`
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.primary};
 `;
-const Surface = styled(GlassSurface)`
+// Glass/PrimaryCTA over the Primary/Normal base, as layered in Figma. Native liquid glass
+// re-tints the opaque pink base and renders it noticeably darker than #FF1956 on iOS 26.
+const Surface = styled.View`
+  background-color: ${({ theme }) => theme.liquidGlass.primaryCta.tint};
   height: 48px;
   min-width: 120px;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 0 14px;
+  padding: 0 18px;
   border-radius: 24px;
 `;
 const Label = styled(AppText)`

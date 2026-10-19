@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled, { useTheme } from 'styled-components/native';
 
 import BackIcon from '../../../../../assets/v2/icons/header/back.svg';
+import { useHeaderGlassIconColors } from '../../../../shared/components/headerGlassIcon';
 import NoNearbyPlaceIcon from '../../../../../assets/v2/icons/smRlavy.svg';
 import { Button } from '../../../../shared/components';
 import {
@@ -49,6 +50,7 @@ export default function VisitVerificationSessionScreen({
 }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const headerIconColors = useHeaderGlassIconColors();
   const controller = useVisitVerificationSessionController(
     mode === 'foreground' ? { mode: 'foreground' } : { mode: 'place', placeId: placeId! },
   );
@@ -90,7 +92,7 @@ export default function VisitVerificationSessionScreen({
       <Screen edges={['top', 'right', 'bottom', 'left']}>
         <NoPlaceHeader>
           <NoPlaceBack accessibilityLabel={t('visitVerification.back')} accessibilityRole="button" onPress={onBack}>
-            <BackIcon height={44} width={44} />
+            <BackIcon {...headerIconColors} height={44} width={44} />
           </NoPlaceBack>
         </NoPlaceHeader>
         <NoPlaceContent accessibilityLiveRegion="polite" testID="visit-verification-foreground-no-place">

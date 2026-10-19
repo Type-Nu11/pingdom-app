@@ -1,7 +1,7 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="72" height="72" viewBox="0 0 72 72" fill="rgba(255,255,255,0.56)" stroke="none" color="#5E5E66" xmlns="http://www.w3.org/2000/svg">
 <g id="X" filter="url(#filter0_d_0_7)">
-<rect x="20" y="16" width="32" height="32" rx="16" fill="white" fill-opacity="0.56" shape-rendering="crispEdges"/>
-<path id="Vector" d="M33 25L40 32L33 39" stroke="#5E5E66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="20" y="16" width="32" height="32" rx="16" stroke-width="1" shape-rendering="crispEdges"/>
+<path id="Vector" d="M33 25L40 32L33 39" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 <defs>
 <filter id="filter0_d_0_7" x="0" y="0" width="72" height="72" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">

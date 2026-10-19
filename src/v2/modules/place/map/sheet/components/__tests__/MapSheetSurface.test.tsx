@@ -30,3 +30,17 @@ test('opaque detail is full bleed immediately even while the previous snap is an
     borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 });
   expect(screen.getByTestId('sheet-inner')).toHaveStyle({ width: '100%', paddingLeft: 0, paddingRight: 0 });
 });
+
+test('nonzero expanded offset keeps chrome and content on the same full-width boundary', async () => {
+  for (const [bottom, gap] of [[130, 0], [215, 4], [300, 8]] as const) {
+    const view = await renderWithProviders(<MapSheetSurface testID="sheet" expandedTranslateY={130}
+      sheetChromeBottom={new Animated.Value(bottom)} mediumTranslateY={300}>
+      <View testID="content" />
+    </MapSheetSurface>);
+    const expected = { bottom: bottom + gap, left: gap, right: gap,
+      borderBottomLeftRadius: gap * 6, borderBottomRightRadius: gap * 6 };
+    expect(screen.getByTestId('sheet-chrome')).toHaveStyle(expected);
+    expect(screen.getByTestId('sheet-content-viewport')).toHaveStyle({ ...expected, overflow: 'hidden' });
+    await view.unmount();
+  }
+});

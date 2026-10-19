@@ -1,7 +1,8 @@
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
-import styled, { useTheme } from 'styled-components/native';
+import styled from 'styled-components/native';
+
+import { SettingToggle } from '../../../../shared/components';
 
 export type NotificationSettingToggleProps = {
   description?: string;
@@ -14,6 +15,7 @@ export type NotificationSettingToggleProps = {
   value?: boolean;
 };
 
+/** Figma Setting/ToggleRow (5939:24205): label, optional description and Setting/Toggle. */
 export default function NotificationSettingToggle({
   description,
   disabled = false,
@@ -24,8 +26,6 @@ export default function NotificationSettingToggle({
   testID,
   value,
 }: NotificationSettingToggleProps) {
-  const theme = useTheme();
-
   return (
     <Container>
       <Row>
@@ -33,26 +33,15 @@ export default function NotificationSettingToggle({
           <Label>{label}</Label>
           {description ? <Description>{description}</Description> : null}
         </Copy>
-        <Toggle
-          $enabled={value === true}
+        <SettingToggle
           accessibilityHint={errorMessage ?? description}
           accessibilityLabel={label}
-          accessibilityRole="switch"
-          accessibilityState={{ busy: isLoading, checked: value, disabled: disabled || isLoading }}
-          disabled={disabled || isLoading}
-          hitSlop={8}
-          onPress={() => { if (!disabled && !isLoading) onValueChange?.(!value); }}
+          disabled={disabled}
+          isLoading={isLoading}
+          onValueChange={onValueChange}
           testID={testID}
-        >
-          <Thumb $enabled={value === true}>
-            {isLoading ? (
-              <ActivityIndicator
-                color={value ? theme.colors.primary : theme.colors.textMuted}
-                size="small"
-              />
-            ) : null}
-          </Thumb>
-        </Toggle>
+          value={value}
+        />
       </Row>
       {errorMessage ? (
         <ErrorMessage accessibilityRole="alert" accessibilityLiveRegion="polite" testID={`${testID}-error`}>{errorMessage}</ErrorMessage>
@@ -66,56 +55,29 @@ const Container = styled.View`
 `;
 
 const Row = styled.View`
-  min-height: 61px;
   flex-direction: row;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md}px;
+  padding: 12px 0;
 `;
 
 const Copy = styled.View`
   flex: 1;
-  gap: 2px;
+  gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
 const Label = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textStrong};
-  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
-  font-weight: 500;
-  line-height: ${({ theme }) => theme.typography.body.lineHeight}px;
+  color: ${({ theme }) => theme.colors.labelNormal};
+  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyMedium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.bodyMedium.lineHeight}px;
 `;
 
 const Description = styled(AppText)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.caption.fontWeight};
-  line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
-`;
-
-const Toggle = styled.Pressable<{ $enabled: boolean }>`
-  width: 58px;
-  height: 36px;
-  flex-shrink: 0;
-  justify-content: center;
-  padding: 2px;
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ $enabled, theme }) => (
-    $enabled ? theme.colors.primary : theme.colors.disabled
-  )};
-`;
-
-const Thumb = styled.View<{ $enabled: boolean }>`
-  width: 32px;
-  height: 32px;
-  align-items: center;
-  justify-content: center;
-  align-self: ${({ $enabled }) => ($enabled ? 'flex-end' : 'flex-start')};
-  border-radius: ${({ theme }) => theme.radius.full}px;
-  background-color: ${({ theme }) => theme.colors.surface};
-  shadow-color: ${({ theme }) => theme.colors.shadow};
-  shadow-offset: 0 1px;
-  shadow-opacity: 0.15;
-  shadow-radius: 2px;
-  elevation: 2;
+  color: ${({ theme }) => theme.colors.labelAssistive};
+  font-size: ${({ theme }) => theme.typography.captionRegular.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.captionRegular.fontWeight};
+  line-height: ${({ theme }) => theme.typography.captionRegular.lineHeight}px;
 `;
 
 const ErrorMessage = styled(AppText)`

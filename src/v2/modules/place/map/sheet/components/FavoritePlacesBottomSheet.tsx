@@ -38,6 +38,8 @@ type FavoriteCategory = 'all' | 'art' | 'beauty' | 'cafe' | 'etc' | 'fashion' | 
 
 type FavoritePlacesBottomSheetProps = {
   collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
   height: number;
   imageUrlsByPlaceId: Record<string, string[]>;
   hasNextPage: boolean;
@@ -181,6 +183,7 @@ const FavoritePlaceRow = ({
 
 export default function FavoritePlacesBottomSheet({
   collapsedTranslateY,
+  expandedTranslateY = 0,
   hasNextPage,
   height,
   imageUrlsByPlaceId,
@@ -236,7 +239,7 @@ export default function FavoritePlacesBottomSheet({
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: [{ translateY: sheetTranslateY }] }}>
-      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} mediumTranslateY={mediumTranslateY} testID="favorites-sheet">
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="favorites-sheet-inner" testID="favorites-sheet">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
             accessibilityLabel={t('map.favorites.adjust')}
@@ -251,6 +254,8 @@ export default function FavoritePlacesBottomSheet({
           pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
           style={[styles.content, { opacity: contentOpacity }]}
         >
+          {/* The title and chips are a drag area too; horizontal chip swipes still scroll. */}
+          <View {...panHandlers} testID="favorites-sheet-header">
           <View style={styles.titleRow}>
             <AppText style={styles.title}>{t('map.navigation.favorites')}</AppText>
           </View>
@@ -277,6 +282,7 @@ export default function FavoritePlacesBottomSheet({
               );
             })}
           </ScrollView>
+          </View>
 
           <Animated.View style={[styles.listViewport, { height: listHeight }]}>
             <ScrollView

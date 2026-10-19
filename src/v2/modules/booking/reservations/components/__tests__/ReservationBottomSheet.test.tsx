@@ -246,3 +246,28 @@ test('nearby lookup failure is not rendered as a successful empty list', async (
   await userEvent.setup().press(screen.getByText('다시 시도'));
   expect(retry).toHaveBeenCalledTimes(1);
 });
+
+test('예약 시트 제목은 다른 페이지 시트와 같이 핸들 아래 13dp에서 Headline1/Bold로 시작한다', async () => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  const onMoveShouldSetResponderCapture = jest.fn();
+  await renderReservations(
+    <ReservationBottomSheet
+      {...bottomSheet}
+      {...navigation}
+      panHandlers={{ onMoveShouldSetResponderCapture } as GestureResponderHandlers}
+    />,
+  );
+  expect(screen.getByLabelText('예약 패널 크기 조절')).toHaveStyle({ height: 19, paddingTop: 6 });
+  expect(screen.getByRole('header')).toHaveStyle({ color: '#000000', fontSize: 20, lineHeight: 26 });
+  expect(screen.getByText('현재 예약 가능 장소를 찾아드려요!')).toHaveStyle({ fontSize: 14, lineHeight: 18, marginTop: 4 });
+  expect(screen.getByTestId('reservation-sheet-header').props.onMoveShouldSetResponderCapture).toBe(onMoveShouldSetResponderCapture);
+});
+
+test.each([
+  ['medium', 8],
+  ['expanded', 0],
+] as const)('%s 예약 시트는 펼치면 시트와 함께 전폭이 되어 내용이 가장자리에서 16dp에 놓인다', async (snapPoint, inset) => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />);
+  expect(screen.getByTestId('reservation-sheet-inner')).toHaveStyle({ paddingLeft: inset });
+});

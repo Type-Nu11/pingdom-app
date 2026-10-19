@@ -14,7 +14,7 @@ export const placeRecommendationQueryKeys = {
   list: (params: GetPlaceRecommendationsRequest) => recommendationQueryKeys.list(params),
 };
 
-export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) => {
+export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest, enabled = true) => {
   const queryParams = useMemo(() => ({
     latitude: params.latitude,
     limit: params.limit ?? 10,
@@ -30,7 +30,7 @@ export const usePlaceRecommendations = (params: GetPlaceRecommendationsRequest) 
   ]);
   const recommendationsQuery = useQuery({
     ...createPlaceRecommendationsQueryOptions(queryParams),
-    enabled: Number.isFinite(queryParams.latitude) && Number.isFinite(queryParams.longitude),
+    enabled: enabled && Number.isFinite(queryParams.latitude) && Number.isFinite(queryParams.longitude),
     queryKey: placeRecommendationQueryKeys.list(queryParams),
   });
   const places = useMemo(

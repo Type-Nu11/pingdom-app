@@ -22,7 +22,7 @@ export default function MapGlassBackdrop({ active, children }: Props) {
   if (!MapGlassBackdropNativeView) return <>{children}</>;
 
   return (
-    <MapGlassBackdropContext.Provider value={targetRef}>
+    <MapGlassBackdropContext.Provider value={active ? targetRef : undefined}>
       <BackdropTarget
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"

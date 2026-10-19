@@ -35,7 +35,7 @@ export type PlaceOperatingSummaryText = PlaceOperatingSummary & {
   detailText: string | null;
   fullText: string;
   statusText: string;
-  tone: 'positive' | 'neutral' | 'warning';
+  tone: 'positive' | 'negative' | 'neutral' | 'warning';
 };
 
 type OperatingTranslationKey =
@@ -250,10 +250,13 @@ export function formatPlaceOperatingSummary(
     detailText,
     fullText: detailText ? `${statusText} · ${detailText}` : statusText,
     statusText,
+    // Open reads as Status/Success and Closed as Status/Error (Figma 7969:8998, 7967:9396).
     tone: summary.kind === 'open'
       ? 'positive'
-      : summary.kind === 'temporarily-closed' || summary.kind === 'closed-today'
-        ? 'warning'
-        : 'neutral',
+      : summary.kind === 'closed'
+        ? 'negative'
+        : summary.kind === 'temporarily-closed' || summary.kind === 'closed-today'
+          ? 'warning'
+          : 'neutral',
   };
 }

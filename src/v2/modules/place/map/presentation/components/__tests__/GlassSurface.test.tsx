@@ -191,6 +191,18 @@ test('지도를 비활성화하면 공유 배경 캡처도 비활성화한다', 
   expect(screen.getByText('지도 콘텐츠')).toBeVisible();
 });
 
+test('숨겨진 지도는 블러도 해제하고 다시 활성화하면 같은 콘텐츠에서 복원한다', async () => {
+  jest.replaceProperty(Platform, 'OS', 'android');
+  const content = <GlassSurface><Text>지도 버튼</Text></GlassSurface>;
+  const { rerender } = await render(<MapGlassBackdrop active>{content}</MapGlassBackdrop>);
+  expect(screen.getByTestId('glass-blur')).toBeTruthy();
+  await rerender(<MapGlassBackdrop active={false}>{content}</MapGlassBackdrop>);
+  expect(screen.queryByTestId('glass-blur')).toBeNull();
+  expect(screen.getByText('지도 버튼')).toBeVisible();
+  await rerender(<MapGlassBackdrop active>{content}</MapGlassBackdrop>);
+  expect(screen.getByTestId('glass-blur')).toBeTruthy();
+});
+
 test('dark theme synchronizes native glass, blur, and opaque fallback defaults', async () => {
   jest.replaceProperty(Platform, 'OS', 'ios');
   await renderWithProviders(<GlassSurface testID="dark-glass" />, {
