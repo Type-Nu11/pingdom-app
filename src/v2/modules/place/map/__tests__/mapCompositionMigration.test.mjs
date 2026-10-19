@@ -58,7 +58,8 @@ test('navigation omits touch highlighting while place buttons retain pressed fee
   const navigation = read('../sheet/components/MapSheetBottomNavigation.tsx');
 
   assert.doesNotMatch(navigation, /setPressedTab|navigation\.pressedTint/);
-  assert.match(navigation, /getMapSheetTabSurfaceColor\(active, liquidGlass\)/);
+  assert.match(navigation, /getMapSheetTabSurfaceColor\(active && !isDragging, liquidGlass\)/);
+  assert.match(navigation, /testID="map-navigation-drag-indicator"/);
   assert.match(sheet, /style=\{\(\{ pressed \}\) => \[styles\.previewBookmarkButton, pressed && styles\.pressed\]\}/);
   assert.match(sheet, /onPress=\{onPress\}/);
 });

@@ -1,5 +1,5 @@
 import { Text as AppText } from '../../../../../shared/components/Typography';
-import React, { createContext, memo, useContext, useMemo, useRef } from 'react';
+import React, { createContext, memo, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Platform, Pressable, Text, View, type PlatformOSType } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,8 @@ export const MapSheetNavigationHiddenProvider = NavigationHiddenContext.Provider
 const NAVIGATION_SIDE_INSET = 24;
 // Figma Footer (7813:7003): 75px tabs overlap by 10px, so their centres sit 65px apart.
 const NAVIGATION_TAB_OVERLAP = 10;
+// Keep the lightweight thumb immediate; do not mount every page crossed in a swipe.
+const DRAG_PAGE_SETTLE_MS = 100;
 
 export type MapSheetNavigationTab = 'community' | 'favorites' | 'map' | 'recommendations' | 'reservations';
 
@@ -82,45 +84,76 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
   const bar = useRef<View>(null);
   const bounds = useRef({ left: NAVIGATION_SIDE_INSET, width: 0 });
   const dragging = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [barWidth, setBarWidth] = useState(0);
+  const dragIndicatorX = useRef(new Animated.Value(0)).current;
   const lastDragTab = useRef<MapSheetNavigationTab | null>(null);
+  const pendingPage = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigation = useRef({ activeTab, tabs });
   navigation.current = { activeTab, tabs };
+  const cancelPendingPage = () => {
+    if (pendingPage.current !== null) clearTimeout(pendingPage.current);
+    pendingPage.current = null;
+  };
+  useEffect(() => cancelPendingPage, []);
   const measureBar = () => bar.current?.measureInWindow((left, _top, width) => {
-    if (width > 8) bounds.current = { left, width };
+    if (width > 8) {
+      bounds.current = { left, width };
+      setBarWidth(width);
+    }
   });
   const swipe = useMemo(() => {
+    const openHoveredPage = () => {
+      cancelPendingPage();
+      const current = navigation.current;
+      const target = current.tabs.find(tab => tab.id === lastDragTab.current);
+      if (target && target.id !== current.activeTab) target.onPress?.();
+    };
     const selectAt = (pageX: number) => {
       const { left, width } = bounds.current;
       if (width <= 8 || !Number.isFinite(pageX)) return;
       const current = navigation.current;
+      const step = (width - 8 - NAVIGATION_TAB_OVERLAP) / current.tabs.length;
+      const tabWidth = step + NAVIGATION_TAB_OVERLAP;
+      const firstCenter = 4 + tabWidth / 2;
+      const x = pageX - left;
+      const center = Math.max(firstCenter, Math.min(firstCenter + step * (current.tabs.length - 1), x));
+      dragIndicatorX.setValue(center - Math.min(78, tabWidth) / 2);
       const index = Math.max(0, Math.min(current.tabs.length - 1,
-        Math.floor((pageX - left - 4) / ((width - 8) / current.tabs.length))));
+        Math.round((center - firstCenter) / step)));
       const tab = current.tabs[index];
       if (tab.id === lastDragTab.current) return;
       lastDragTab.current = tab.id;
-      if (tab.id !== current.activeTab) tab.onPress?.();
+      cancelPendingPage();
+      if (tab.id !== current.activeTab) {
+        pendingPage.current = setTimeout(openHoveredPage, DRAG_PAGE_SETTLE_MS);
+      }
     };
     const claim = (_: unknown, gesture: { dx: number; dy: number }) => (
       Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5
     );
     const finish = () => {
+      cancelPendingPage();
       dragging.current = false;
+      setIsDragging(false);
       lastDragTab.current = null;
     };
     return PanResponder.create({
+      onStartShouldSetPanResponderCapture: () => { measureBar(); return false; },
       onMoveShouldSetPanResponder: claim,
       onMoveShouldSetPanResponderCapture: claim,
       onPanResponderGrant: (_, gesture) => {
         dragging.current = true;
+        setIsDragging(true);
         lastDragTab.current = navigation.current.activeTab;
         selectAt(gesture.moveX);
       },
       onPanResponderMove: (_, gesture) => selectAt(gesture.moveX),
-      onPanResponderRelease: finish,
+      onPanResponderRelease: () => { openHoveredPage(); finish(); },
       onPanResponderTerminate: finish,
       onPanResponderTerminationRequest: () => false,
     });
-  }, []);
+  }, [dragIndicatorX]);
 
   if (hidden) return null;
 
@@ -134,7 +167,11 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
         },
       ]}
     >
-      <View {...swipe.panHandlers} ref={bar} onLayout={event => { bounds.current.width = event.nativeEvent.layout.width; measureBar(); }} collapsable={false} style={styles.navigationShadow} testID="map-navigation-swipe">
+      <View {...swipe.panHandlers} ref={bar} onLayout={event => {
+        bounds.current.width = event.nativeEvent.layout.width;
+        setBarWidth(event.nativeEvent.layout.width);
+        measureBar();
+      }} collapsable={false} style={styles.navigationShadow} testID="map-navigation-swipe">
         <View style={styles.navigationBar} testID="map-navigation-bar">
         <FrostedSurface
           bottomShade={false}
@@ -147,6 +184,15 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
           testID="map-navigation-glass"
           tintColor={liquidGlass.navigation.tint}
         />
+          {isDragging && barWidth > 8 ? (
+            <Animated.View pointerEvents="none" testID="map-navigation-drag-indicator" style={{
+              position: 'absolute', left: 0, top: 4, height: 56,
+              width: Math.min(78, (barWidth - 8 - NAVIGATION_TAB_OVERLAP) / tabs.length + NAVIGATION_TAB_OVERLAP),
+              borderRadius: 28, borderWidth: 1, borderColor: colors.glassStroke,
+              backgroundColor: liquidGlass.navigation.selectedTint,
+              transform: [{ translateX: dragIndicatorX }],
+            }} />
+          ) : null}
           {tabs.map(({ id, label, onPress }, index) => {
             const active = selectedTab === id;
             // Figma icons render 1:1 inside a 28px box: map 18×20.4, star 25×24, chat and house 28.
@@ -182,8 +228,8 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                   style={[
                     styles.navItemSurface,
                     {
-                      backgroundColor: getMapSheetTabSurfaceColor(active, liquidGlass),
-                      borderColor: active ? colors.glassStroke : 'transparent',
+                      backgroundColor: getMapSheetTabSurfaceColor(active && !isDragging, liquidGlass),
+                      borderColor: active && !isDragging ? colors.glassStroke : 'transparent',
                     },
                   ]}
                   testID={`map-navigation-${id}-surface`}
