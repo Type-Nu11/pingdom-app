@@ -3,18 +3,18 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react-nativ
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { bookmarkApi } from '../../api/bookmarkApi';
-import { checkInApi } from '../../../../../place/check-ins';
+import { profileApi } from '../../../api/profileApi';
 import { placeDetailApi } from '../../../../../place/detail';
 import { placeExplorationApi } from '../../../../../place/exploration';
 import VerifiedPlacesScreen from '../screens/VerifiedPlacesScreen';
 
-function checkInPage(placeIds: number[]) {
+function reviewPage(placeIds: number[]) {
   return {
-    checkIns: placeIds.map((placeId, index) => ({ id: index + 1, placeId })),
+    reviews: placeIds.map((placeId) => ({ reviewId: placeId + 100, placeId, content: '내 리뷰', imageUrls: [], createdAt: '2026-10-19', recommendReason: '', visibilityStatus: 'VISIBLE' })),
     hasNext: false,
     limit: 10,
     page: 1,
-    totalCount: placeIds.length,
+    totalElements: placeIds.length,
     totalPages: 1,
   } as never;
 }
@@ -42,9 +42,9 @@ async function measureList(width = 402) {
 
 describe('VerifiedPlacesScreen', () => {
   test.each([375, 402])('폭 %s에서 홀수 마지막 카드도 같은 열 폭을 사용한다', async (width) => {
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([11, 22, 33]));
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue(reviewPage([11, 22, 33]));
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockImplementation(async (id) => place(id, `장소 ${id}`));
-    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenReview={jest.fn()} />);
     await measureList(width);
     await waitFor(() => expect(screen.getAllByTestId('v2-verified-place-card')).toHaveLength(3));
     for (const card of screen.getAllByTestId('v2-verified-place-card')) {
@@ -53,12 +53,12 @@ describe('VerifiedPlacesScreen', () => {
   });
 
   test.each([375, 402])('측정 전에는 카드를 숨기고 %s에서 로딩 슬롯과 실제 카드 폭을 유지한다', async (width) => {
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([11, 22, 33]));
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue(reviewPage([11, 22, 33]));
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockImplementation(async (id) => {
       if (id === 22) return new Promise(() => {});
       return place(id, `장소 ${id}`);
     });
-    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenReview={jest.fn()} />);
     expect(screen.queryAllByTestId('v2-verified-place-card')).toHaveLength(0);
     expect(screen.queryAllByTestId('v2-verified-place-card-skeleton')).toHaveLength(0);
     await measureList(width);
@@ -74,27 +74,27 @@ describe('VerifiedPlacesScreen', () => {
     expect(screen.queryAllByTestId('v2-verified-place-card')).toHaveLength(0);
   });
 
-  test('체크인이 없으면 빈 상태를 보여준다', async () => {
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([]));
+  test('리뷰이 없으면 빈 상태를 보여준다', async () => {
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue(reviewPage([]));
 
-    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenReview={jest.fn()} />);
     await measureList();
 
     await waitFor(() => expect(screen.getByText('아직 검증한 장소가 없어요')).toBeTruthy());
   });
 
-  test('체크인 조회가 실패하면 오류와 재시도를 보여준다', async () => {
-    jest.spyOn(checkInApi, 'listCheckIns').mockRejectedValue(new Error('실패'));
+  test('리뷰 조회가 실패하면 오류와 재시도를 보여준다', async () => {
+    jest.spyOn(profileApi, 'listMyReviews').mockRejectedValue(new Error('실패'));
 
-    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenReview={jest.fn()} />);
     await measureList();
 
     await waitFor(() => expect(screen.getByText('인증한 장소를 불러오지 못했어요.')).toBeTruthy());
     expect(screen.getByText('다시 시도')).toBeTruthy();
   });
 
-  test('장소 조회 순서와 무관하게 체크인 순서대로 보여준다', async () => {
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([11, 22, 33]));
+  test('장소 조회 순서와 무관하게 리뷰 순서대로 보여준다', async () => {
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue(reviewPage([11, 22, 33]));
     // 첫 장소를 가장 늦게 응답시켜 순서가 흔들리는지 본다.
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockImplementation(async (placeId) => {
       if (placeId === 11) {
@@ -105,7 +105,7 @@ describe('VerifiedPlacesScreen', () => {
       return place(33, '남강');
     });
 
-    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenReview={jest.fn()} />);
     await measureList();
 
     await waitFor(() => expect(screen.getByText('촉석루')).toBeTruthy());
@@ -118,11 +118,11 @@ describe('VerifiedPlacesScreen', () => {
   });
 
   test('검증 장소 카드가 서버 이미지를 표시하고 해당 장소를 연다', async () => {
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([11]));
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue(reviewPage([11]));
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockResolvedValue(place(11, '촉석루'));
-    const onOpenPlace = jest.fn();
+    const onOpenReview = jest.fn();
     const { user } = await renderWithProviders(
-      <VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={onOpenPlace} />,
+      <VerifiedPlacesScreen onBack={jest.fn()} onOpenReview={onOpenReview} />,
     );
 
     await measureList();
@@ -131,14 +131,14 @@ describe('VerifiedPlacesScreen', () => {
       uri: 'https://cdn.test/11.jpg',
     });
     await user.press(card);
-    expect(onOpenPlace).toHaveBeenCalledWith(11);
+    expect(onOpenReview).toHaveBeenCalledWith(111);
   });
 
   test('모든 장소 조회가 실패하면 빈 상태가 아니라 오류를 보여준다', async () => {
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue(checkInPage([11, 22]));
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue(reviewPage([11, 22]));
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockRejectedValue(new Error('실패'));
 
-    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenPlace={jest.fn()} />);
+    await renderWithProviders(<VerifiedPlacesScreen onBack={jest.fn()} onOpenReview={jest.fn()} />);
     await measureList();
 
     await waitFor(() => expect(screen.getByText('인증한 장소를 불러오지 못했어요.')).toBeTruthy());

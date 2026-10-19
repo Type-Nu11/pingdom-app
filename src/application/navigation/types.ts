@@ -51,6 +51,7 @@ export const MAIN_ROUTES = {
   Map: 'Map',
   Merchant: 'Merchant',
   MyPage: 'MyPage',
+  MyReview: 'MyReview',
   Profile: 'Profile',
   ProfileEdit: 'ProfileEdit',
   VerifiedPlaces: 'VerifiedPlaces',
@@ -99,6 +100,7 @@ export type MainStackParamList = {
     placeName?: string;
   };
   MyPage: undefined;
+  MyReview: { reviewId: number };
   Profile: undefined;
   ProfileEdit: undefined;
   VerifiedPlaces: undefined;

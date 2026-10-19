@@ -9,7 +9,7 @@ import { ReservationBoxScreen } from '../../v2/modules/booking/reservations/rout
 import { CreateReservationScreen } from '../../v2/modules/booking/reservations/routes';
 import { CouponBoxScreen } from '../../v2/modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../v2/modules/user/profile/my-page';
-import { MyPageScreen } from '../../v2/modules/user/profile/my-page';
+import { MyPageScreen, MyReviewScreen } from '../../v2/modules/user/profile/my-page';
 import { ProfileEditScreen } from '../../v2/modules/user/profile';
 import { VerifiedPlacesScreen } from '../../v2/modules/user/profile/my-page';
 import { MerchantMyPageContainer } from '../../v2/modules/merchant';
@@ -186,10 +186,7 @@ export function createProductionMainNavigator({
           onBack={navigation.goBack}
           onOpenCoupons={() => navigation.navigate(MAIN_ROUTES.CouponBox)}
           onOpenProfileEdit={openProfileEdit}
-          onOpenPlace={(value) => {
-            const placeId = parsePlaceId(value);
-            if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
-          }}
+          onOpenReview={(reviewId) => navigation.navigate(MAIN_ROUTES.MyReview, { reviewId })}
           onOpenReservations={() => navigation.navigate(MAIN_ROUTES.ReservationBox)}
           onOpenSettings={() => navigation.navigate(MAIN_ROUTES.Settings)}
           onOpenVerifiedPlaces={() => navigation.navigate(MAIN_ROUTES.VerifiedPlaces)}
@@ -261,15 +258,16 @@ export function createProductionMainNavigator({
         ) : profile ? (
           <VerifiedPlacesScreen
             onBack={navigation.goBack}
-            onOpenPlace={(value) => {
-              const placeId = parsePlaceId(value);
-              if (placeId) navigation.navigate(MAIN_ROUTES.Map, { focusedPlaceId: placeId });
-            }}
+            onOpenReview={(reviewId) => navigation.navigate(MAIN_ROUTES.MyReview, { reviewId })}
           />
         ) : null}
       </V2ScreenBoundary>
     );
   };
+
+  const MyReviewRouteScreen = ({ navigation, route }: MainScreenProps<'MyReview'>) => (
+    <V2ScreenBoundary><MyReviewScreen onBack={navigation.goBack} reviewId={route.params.reviewId} /></V2ScreenBoundary>
+  );
 
   const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
     const logout = useAuthStore((state) => state.logout);
@@ -432,6 +430,7 @@ export function createProductionMainNavigator({
       <Stack.Screen name={MAIN_ROUTES.MyPage} component={MyPageRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
+      <Stack.Screen name={MAIN_ROUTES.MyReview} component={MyReviewRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.Profile} component={ProfileAliasRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.Settings} component={SettingsRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />

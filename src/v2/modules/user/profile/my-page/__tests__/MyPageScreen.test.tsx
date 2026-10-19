@@ -6,6 +6,7 @@ import { profileApi } from '../../api/profileApi';
 import type { Profile } from '../../model/profile.types';
 import { bookmarkApi } from '../api/bookmarkApi';
 import { checkInApi } from '../../../../place/check-ins';
+import { fireEvent } from '@testing-library/react-native';
 import { offerCouponApi } from '../../../../booking/offers-coupons/__tests__';
 import { placeDetailApi } from '../../../../place/detail';
 import { placeExplorationApi } from '../../../../place/exploration';
@@ -30,7 +31,7 @@ function renderMyPage() {
       onBack={jest.fn()}
       onOpenCoupons={jest.fn()}
       onOpenProfileEdit={jest.fn()}
-      onOpenPlace={jest.fn()}
+      onOpenReview={jest.fn()}
       onOpenReservations={jest.fn()}
       onOpenSettings={jest.fn()}
       onOpenVerifiedPlaces={jest.fn()}
@@ -55,7 +56,7 @@ function calendarDatesFromNow(monthOffset: number) {
 function mockEverythingEmpty() {
   jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
   jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue({
-    hasNext: false, limit: 1, page: 1, reviews: [], totalElements: 7, totalPages: 1,
+    hasNext: false, limit: 20, page: 1, reviews: [], totalElements: 7, totalPages: 1,
   });
   jest.spyOn(reservationApi, 'listReservations').mockResolvedValue({ totalElements: 3 } as never);
   jest.spyOn(offerCouponApi, 'listCoupons').mockResolvedValue({ totalElements: 5 } as never);
@@ -83,7 +84,7 @@ describe('MyPageScreen', () => {
     const { user, i18n, queryClient } = await renderWithProviders(
       <MyPageScreen onBack={onBack} onOpenSettings={onOpenSettings}
         onOpenProfileEdit={onOpenProfileEdit} onOpenCoupons={jest.fn()}
-        onOpenPlace={jest.fn()} onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />,
+        onOpenReview={jest.fn()} onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />,
       { language },
     );
     await screen.findByText(PROFILE.username);
@@ -129,7 +130,7 @@ describe('MyPageScreen', () => {
     mockEverythingEmpty();
     const theme = appearancePreference === 'DARK' ? darkTheme : lightTheme;
     const { i18n, queryClient } = await renderWithProviders(<MyPageScreen onBack={jest.fn()} onOpenSettings={jest.fn()}
-      onOpenProfileEdit={jest.fn()} onOpenCoupons={jest.fn()} onOpenPlace={jest.fn()}
+      onOpenProfileEdit={jest.fn()} onOpenCoupons={jest.fn()} onOpenReview={jest.fn()}
       onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />, { appearancePreference });
     await screen.findByText(PROFILE.username);
     await waitFor(() => expect(queryClient.isFetching()).toBe(0));
@@ -142,7 +143,7 @@ describe('MyPageScreen', () => {
     const { i18n, queryClient } = await renderWithProviders(
       <MyPageScreen onBack={jest.fn()} onOpenSettings={jest.fn()}
         onOpenProfileEdit={jest.fn()} onOpenCoupons={jest.fn()}
-        onOpenPlace={jest.fn()} onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />,
+        onOpenReview={jest.fn()} onOpenReservations={jest.fn()} onOpenVerifiedPlaces={jest.fn()} />,
       { language: 'ja' },
     );
     await screen.findByText(PROFILE.username);
@@ -178,7 +179,7 @@ describe('MyPageScreen', () => {
     expect(screen.getByTestId('v2-my-page-stat-reviews')).toHaveTextContent('7');
     expect(screen.getByTestId('v2-my-page-stat-coupons')).toHaveTextContent('5');
     expect(profileApi.listMyReviews).toHaveBeenCalledWith(
-      { limit: 1, page: 1 },
+      { limit: 20, page: 1 },
       expect.anything(),
     );
   });
@@ -191,7 +192,7 @@ describe('MyPageScreen', () => {
         onBack={jest.fn()}
         onOpenCoupons={jest.fn()}
         onOpenProfileEdit={jest.fn()}
-        onOpenPlace={jest.fn()}
+        onOpenReview={jest.fn()}
         onOpenReservations={onOpenReservations}
         onOpenSettings={jest.fn()}
         onOpenVerifiedPlaces={jest.fn()}
@@ -223,7 +224,7 @@ describe('MyPageScreen', () => {
         onBack={jest.fn()}
         onOpenCoupons={jest.fn()}
         onOpenProfileEdit={onOpenProfileEdit}
-        onOpenPlace={jest.fn()}
+        onOpenReview={jest.fn()}
         onOpenReservations={jest.fn()}
         onOpenSettings={jest.fn()}
         onOpenVerifiedPlaces={jest.fn()}
@@ -238,16 +239,17 @@ describe('MyPageScreen', () => {
     expect(profileApi.getProfile).toHaveBeenCalledTimes(2);
   });
 
-  test('캐러셀 로딩 카드도 177×222를 유지한다', async () => {
+  test('미리보기는 두 개의 로딩 슬롯을 유지한다', async () => {
     mockEverythingEmpty();
-    jest.spyOn(checkInApi, 'listCheckIns').mockImplementation(() => new Promise(() => {}));
+    jest.spyOn(profileApi, 'listMyReviews').mockImplementation(() => new Promise(() => {}));
     await renderMyPage();
+    expect(screen.getAllByTestId('v2-verified-place-card-skeleton')).toHaveLength(2);
     for (const card of screen.getAllByTestId('v2-verified-place-card-skeleton')) {
-      expect(card).toHaveStyle({ width: 177, height: 222 });
+      expect(card).toHaveStyle({ height: 222 });
     }
   });
 
-  test('체크인이 없으면 빈 상태 문구를 보여준다', async () => {
+  test('리뷰가 없으면 빈 상태 문구를 보여준다', async () => {
     mockEverythingEmpty();
 
     await renderMyPage();
@@ -257,12 +259,12 @@ describe('MyPageScreen', () => {
     }));
   });
 
-  test('체크인은 있는데 장소 조회가 모두 실패하면 "없음"이 아니라 오류를 보여준다', async () => {
+  test('리뷰는 있는데 장소 조회가 모두 실패하면 "없음"이 아니라 오류를 보여준다', async () => {
     mockEverythingEmpty();
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue({
-      checkIns: [{ id: 1, placeId: 11 }, { id: 2, placeId: 22 }],
-      hasNext: false, limit: 4, page: 1, totalCount: 2, totalPages: 1,
-    } as never);
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue({
+      hasNext: false, limit: 20, page: 1, totalElements: 2, totalPages: 1,
+      reviews: [{ placeId: 11, reviewId: 111, content: '내 리뷰', imageUrls: [], createdAt: '2026-10-19', recommendReason: '', visibilityStatus: 'VISIBLE' },{ placeId: 22, reviewId: 122, content: '내 리뷰', imageUrls: [], createdAt: '2026-10-19', recommendReason: '', visibilityStatus: 'VISIBLE' }],
+    });
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockRejectedValue(new Error('실패'));
 
     await renderMyPage();
@@ -273,10 +275,10 @@ describe('MyPageScreen', () => {
 
   test('장소 조회가 일부만 실패하면 성공한 장소를 보여준다', async () => {
     mockEverythingEmpty();
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue({
-      checkIns: [{ id: 1, placeId: 11 }, { id: 2, placeId: 22 }],
-      hasNext: false, limit: 4, page: 1, totalCount: 2, totalPages: 1,
-    } as never);
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue({
+      hasNext: false, limit: 20, page: 1, totalElements: 2, totalPages: 1,
+      reviews: [{ placeId: 11, reviewId: 111, content: '내 리뷰', imageUrls: [], createdAt: '2026-10-19', recommendReason: '', visibilityStatus: 'VISIBLE' },{ placeId: 22, reviewId: 122, content: '내 리뷰', imageUrls: [], createdAt: '2026-10-19', recommendReason: '', visibilityStatus: 'VISIBLE' }],
+    });
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockImplementation(async (placeId) => {
       if (placeId === 22) throw new Error('실패');
       return { address: '진주시', id: 11, name: '촉석루', thumbnailUrl: null } as never;
@@ -288,21 +290,21 @@ describe('MyPageScreen', () => {
     expect(screen.queryByText('인증한 장소를 불러오지 못했어요.')).toBeNull();
   });
 
-  test('검증 장소의 서버 미디어를 보여주고 누르면 해당 장소를 연다', async () => {
+  test('검증 장소의 서버 미디어를 보여주고 누르면 내 리뷰를 연다', async () => {
     mockEverythingEmpty();
-    jest.spyOn(checkInApi, 'listCheckIns').mockResolvedValue({
-      checkIns: [{ id: 1, placeId: 11 }],
-      hasNext: false, limit: 4, page: 1, totalCount: 1, totalPages: 1,
-    } as never);
+    jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue({
+      hasNext: false, limit: 20, page: 1, totalElements: 1, totalPages: 1,
+      reviews: [{ placeId: 11, reviewId: 111, content: '내 리뷰', imageUrls: [], createdAt: '2026-10-19', recommendReason: '', visibilityStatus: 'VISIBLE' }],
+    });
     jest.spyOn(placeDetailApi, 'getPlaceDetail').mockResolvedValue({
       address: '진주시', id: 11, name: '촉석루',
     } as never);
-    const onOpenPlace = jest.fn();
+    const onOpenReview = jest.fn();
     const { user } = await renderWithProviders(
       <MyPageScreen
         onBack={jest.fn()}
         onOpenCoupons={jest.fn()}
-        onOpenPlace={onOpenPlace}
+        onOpenReview={onOpenReview}
         onOpenProfileEdit={jest.fn()}
         onOpenReservations={jest.fn()}
         onOpenSettings={jest.fn()}
@@ -311,16 +313,14 @@ describe('MyPageScreen', () => {
     );
 
     const card = await screen.findByTestId('v2-verified-place-card');
-    expect(card).toHaveStyle({ width: 177, height: 222 });
-    let ancestor = card.parent;
-    while (ancestor && !ancestor.props.horizontal) ancestor = ancestor.parent;
-    expect(ancestor?.props.horizontal).toBe(true);
+    expect(card).toHaveStyle({ height: 222 });
+    expect(screen.getByTestId('v2-my-page-verified-row')).toHaveStyle({ gap: 4, flexDirection: 'row' });
     expect(screen.getByLabelText('촉석루, 진주시')).toBeTruthy();
     expect(screen.getByTestId('v2-verified-place-card-image').props.source).toEqual({
       uri: 'https://cdn.test/11.jpg',
     });
     await user.press(card);
-    expect(onOpenPlace).toHaveBeenCalledWith(11);
+    expect(onOpenReview).toHaveBeenCalledWith(111);
   });
 
   test('달력에서 시작일과 종료일을 누르면 해당 여행 일정을 변경한다', async () => {
@@ -465,4 +465,54 @@ test('a successful empty profile is distinct from a failed request', async () =>
   await renderMyPage();
   await waitFor(() => expect(screen.getByText('프로필 정보 없음')).toBeTruthy());
   expect(screen.queryByText('데이터를 불러오지 못했습니다')).toBeNull();
+});
+
+test('내 리뷰를 장소별로 묶어 최대 두 장만 표시하고 402px 화면에 맞춘다', async () => {
+  mockEverythingEmpty();
+  const reviews = [11, 11, 22, 33].map((placeId, index) => ({
+    placeId, reviewId: 100 + index, content: '내 리뷰', imageUrls: [],
+    createdAt: '2026-10-19', recommendReason: '', visibilityStatus: 'VISIBLE' as const,
+  }));
+  jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue({
+    hasNext: false, limit: 20, page: 1, reviews, totalElements: 4, totalPages: 1,
+  });
+  const details = jest.spyOn(placeDetailApi, 'getPlaceDetail').mockImplementation(async (id) => ({
+    id, name: `장소 ${id}`, address: '대구',
+  } as never));
+  const { user } = await renderMyPage();
+  await waitFor(() => expect(screen.getAllByTestId('v2-verified-place-card')).toHaveLength(2));
+  const row = screen.getByTestId('v2-my-page-verified-row');
+  // The section's layout includes its 24px padding on each side.
+  let section = row.parent;
+  while (section && !section.props.onLayout) section = section.parent;
+  await fireEvent(section!, 'layout', { nativeEvent: { layout: { width: 402 } } });
+  for (const card of screen.getAllByTestId('v2-verified-place-card')) {
+    expect(card).toHaveStyle({ width: 175, height: 222 });
+  }
+  expect(screen.queryByText('장소 33')).toBeNull();
+  expect(details.mock.calls.map(([id]) => id)).toEqual([11, 22]);
+  expect(checkInApi.listCheckIns).not.toHaveBeenCalled();
+  expect(screen.getByText('내가 작성한 글')).toBeTruthy();
+  const unavailable = screen.getByRole('button', { name: '내가 작성한 글', disabled: true });
+  await user.press(unavailable);
+  expect(screen.getByText('아직 내가 작성한 커뮤니티 글 조회를 지원하지 않아요.')).toBeTruthy();
+});
+
+test('첫 페이지가 같은 장소의 리뷰뿐이어도 다음 페이지에서 두 번째 장소를 찾는다', async () => {
+  mockEverythingEmpty();
+  const review = { placeId: 11, reviewId: 100, content: '내 리뷰', imageUrls: [],
+    createdAt: '2026-10-19', recommendReason: '', visibilityStatus: 'VISIBLE' as const };
+  const get = jest.spyOn(profileApi, 'listMyReviews').mockImplementation(async (params) => ({
+    hasNext: params?.page === 1, limit: 20, page: params?.page ?? 1, totalElements: 21, totalPages: 2,
+    reviews: params?.page === 1 ? Array.from({ length: 20 }, (_, index) => ({ ...review, reviewId: 100 + index }))
+      : [{ ...review, placeId: 22, reviewId: 200 }],
+  }));
+  jest.spyOn(placeDetailApi, 'getPlaceDetail').mockImplementation(async (id) => ({
+    id, name: `장소 ${id}`, address: '대구',
+  } as never));
+  await renderMyPage();
+  await screen.findByText('장소 22');
+  expect(get).toHaveBeenCalledTimes(2);
+  expect(screen.getAllByTestId('v2-verified-place-card')).toHaveLength(2);
+  expect(screen.getByTestId('v2-my-page-stat-reviews')).toHaveTextContent('21');
 });

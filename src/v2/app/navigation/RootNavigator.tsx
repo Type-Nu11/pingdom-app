@@ -13,7 +13,7 @@ import { CommunityDetailScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } f
 import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
-import { MyPageScreen } from '../../modules/user/profile/my-page';
+import { MyPageScreen, MyReviewScreen } from '../../modules/user/profile/my-page';
 import { useProfile } from '../../modules/user/profile';
 import { VerifiedPlacesScreen } from '../../modules/user/profile/my-page';
 import { ProfileEditScreen } from '../../modules/user/profile';
@@ -139,13 +139,10 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
       onBack={navigation.goBack}
       onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
       onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
-      onOpenPlace={(value) => {
-        const placeId = parsePlaceId(value);
-        if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
-      }}
+      onOpenReview={(reviewId) => navigation.navigate(V2_ROUTES.MyReview, { reviewId })}
       onOpenReservations={() => navigation.navigate(V2_ROUTES.ReservationBox)}
       onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
-      onOpenVerifiedPlaces={() => {}}
+      onOpenVerifiedPlaces={() => navigation.navigate(V2_ROUTES.VerifiedPlaces)}
     />
   );
 }
@@ -153,10 +150,11 @@ function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
 function VerifiedPlacesRouteScreen({ navigation }: V2ScreenProps<'VerifiedPlaces'>) {
   const { profile } = useProfile();
   if (!profile || profile.role === 'MERCHANT_OWNER') return null;
-  return <VerifiedPlacesScreen onBack={navigation.goBack} onOpenPlace={(value) => {
-    const placeId = parsePlaceId(value);
-    if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
-  }} />;
+  return <VerifiedPlacesScreen onBack={navigation.goBack} onOpenReview={(reviewId) => navigation.navigate(V2_ROUTES.MyReview, { reviewId })} />;
+}
+
+function MyReviewRouteScreen({ navigation, route }: V2ScreenProps<'MyReview'>) {
+  return <MyReviewScreen onBack={navigation.goBack} reviewId={route.params.reviewId} />;
 }
 
 function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
@@ -327,6 +325,7 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.ReservationBox} component={ReservationBoxRoute} />
         <Stack.Screen name={V2_ROUTES.ReservationDetail} component={ReservationDetailRoute} />
         <Stack.Screen name={V2_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyReview} component={MyReviewRouteScreen} />
         <Stack.Screen name={V2_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Settings} component={SettingsRouteScreen} />
         <Stack.Screen name={V2_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />

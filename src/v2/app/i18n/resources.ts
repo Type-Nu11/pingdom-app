@@ -1,4 +1,5 @@
 import { contentActionResources } from '../../shared/i18n/contentActions';
+import { myPageActivityResources } from '../../modules/user/profile/my-page/i18n';
 import { authErrorResources } from '../../modules/user/account/auth/i18n';
 import { placeProductResources } from '../../modules/place/menus/i18n';
 import { routeResources } from '../../modules/place/map/routes';
@@ -40,6 +41,7 @@ export const resources = {
     community: communityResources.en,
     visitVerification: visitVerificationResources.en,
     voiceAssistant: voiceAssistantResources.en,
+    myPageActivity: myPageActivityResources.en,
     contentActions: contentActionResources.en,
     placeProduct: placeProductResources.en,
     ...withBookingStatuses(withOnboarding(sharedResources.en.translation, onboardingResources.en), { ...offerStatusResources.en, ...paymentResources.en }),
@@ -53,6 +55,7 @@ export const resources = {
     community: communityResources.ko,
     visitVerification: visitVerificationResources.ko,
     voiceAssistant: voiceAssistantResources.ko,
+    myPageActivity: myPageActivityResources.ko,
     contentActions: contentActionResources.ko,
     placeProduct: placeProductResources.ko,
     ...withBookingStatuses(withOnboarding(sharedResources.ko.translation, onboardingResources.ko), { ...offerStatusResources.ko, ...paymentResources.ko }),
@@ -66,6 +69,7 @@ export const resources = {
     community: communityResources.ja,
     visitVerification: visitVerificationResources.ja,
     voiceAssistant: voiceAssistantResources.ja,
+    myPageActivity: myPageActivityResources.ja,
     contentActions: contentActionResources.ja,
     placeProduct: placeProductResources.ja,
     ...withBookingStatuses(withOnboarding(sharedResources.ja.translation, onboardingResources.ja), { ...offerStatusResources.ja, ...paymentResources.ja }),
@@ -79,6 +83,7 @@ export const resources = {
     community: communityResources['zh-CN'],
     visitVerification: visitVerificationResources['zh-CN'],
     voiceAssistant: voiceAssistantResources['zh-CN'],
+    myPageActivity: myPageActivityResources['zh-CN'],
     contentActions: contentActionResources['zh-CN'],
     placeProduct: placeProductResources['zh-CN'],
     ...withBookingStatuses(withOnboarding(sharedResources['zh-CN'].translation, onboardingResources['zh-CN']), { ...offerStatusResources['zh-CN'], ...paymentResources['zh-CN'] }),
@@ -92,6 +97,7 @@ export const resources = {
     community: communityResources['zh-TW'],
     visitVerification: visitVerificationResources['zh-TW'],
     voiceAssistant: voiceAssistantResources['zh-TW'],
+    myPageActivity: myPageActivityResources['zh-TW'],
     contentActions: contentActionResources['zh-TW'],
     placeProduct: placeProductResources['zh-TW'],
     ...withBookingStatuses(withOnboarding(sharedResources['zh-TW'].translation, onboardingResources['zh-TW']), { ...offerStatusResources['zh-TW'], ...paymentResources['zh-TW'] }),
@@ -105,6 +111,7 @@ export const resources = {
     community: communityResources.vi,
     visitVerification: visitVerificationResources.vi,
     voiceAssistant: voiceAssistantResources.vi,
+    myPageActivity: myPageActivityResources.vi,
     contentActions: contentActionResources.vi,
     placeProduct: placeProductResources.vi,
     ...withBookingStatuses(withOnboarding(sharedResources.vi.translation, onboardingResources.vi), { ...offerStatusResources.vi, ...paymentResources.vi }),
@@ -118,6 +125,7 @@ export const resources = {
     community: communityResources.es,
     visitVerification: visitVerificationResources.es,
     voiceAssistant: voiceAssistantResources.es,
+    myPageActivity: myPageActivityResources.es,
     contentActions: contentActionResources.es,
     placeProduct: placeProductResources.es,
     ...withBookingStatuses(withOnboarding(sharedResources.es.translation, onboardingResources.es), { ...offerStatusResources.es, ...paymentResources.es }),
@@ -131,6 +139,7 @@ export const resources = {
     community: communityResources['pt-BR'],
     visitVerification: visitVerificationResources['pt-BR'],
     voiceAssistant: voiceAssistantResources['pt-BR'],
+    myPageActivity: myPageActivityResources['pt-BR'],
     contentActions: contentActionResources['pt-BR'],
     placeProduct: placeProductResources['pt-BR'],
     ...withBookingStatuses(withOnboarding(sharedResources['pt-BR'].translation, onboardingResources['pt-BR']), { ...offerStatusResources['pt-BR'], ...paymentResources['pt-BR'] }),
@@ -144,6 +153,7 @@ export const resources = {
     community: communityResources.th,
     visitVerification: visitVerificationResources.th,
     voiceAssistant: voiceAssistantResources.th,
+    myPageActivity: myPageActivityResources.th,
     contentActions: contentActionResources.th,
     placeProduct: placeProductResources.th,
     ...withBookingStatuses(withOnboarding(sharedResources.th.translation, onboardingResources.th), { ...offerStatusResources.th, ...paymentResources.th }),

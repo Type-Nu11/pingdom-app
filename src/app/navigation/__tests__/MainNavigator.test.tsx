@@ -61,11 +61,11 @@ jest.mock('../../../v2/modules/user/profile/my-page/screens/MyPageScreen', () =>
     __esModule: true,
     default: ({
       onOpenProfileEdit,
-      onOpenPlace,
+      onOpenReview,
       onOpenSettings,
     }: {
       onOpenProfileEdit: () => void;
-      onOpenPlace: (placeId: number) => void;
+      onOpenReview: (reviewId: number) => void;
       onOpenSettings: () => void;
     }) => ReactLibrary.createElement(
       ReactNative.View,
@@ -80,7 +80,7 @@ jest.mock('../../../v2/modules/user/profile/my-page/screens/MyPageScreen', () =>
       ),
       ReactLibrary.createElement(
         ReactNative.Pressable,
-        { onPress: () => onOpenPlace(17), testID: 'current-my-page-place-entry' },
+        { onPress: () => onOpenReview(17), testID: 'current-my-page-place-entry' },
       ),
     ),
   };
@@ -374,7 +374,7 @@ describe('현재 지도 경계', () => {
     expect(screen.queryByText('검증한 장소')).toBeNull();
   });
 
-  test('마이페이지 검증 장소를 누르면 지도에서 해당 장소를 연다', async () => {
+  test('마이페이지 검증 장소를 누르면 해당 내 리뷰를 연다', async () => {
     const myPageRoute = {
       key: 'MyPage-test',
       name: MAIN_ROUTES.MyPage,
@@ -386,8 +386,8 @@ describe('현재 지도 경계', () => {
 
     await view.user.press(screen.getByTestId('current-my-page-place-entry'));
     expect(navigation.navigate).toHaveBeenCalledWith(
-      MAIN_ROUTES.Map,
-      { focusedPlaceId: 17 },
+      MAIN_ROUTES.MyReview,
+      { reviewId: 17 },
     );
   });
 });

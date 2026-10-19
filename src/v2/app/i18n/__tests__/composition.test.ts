@@ -37,6 +37,7 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     // Auth failure copy is reviewed separately in authErrorPresentation.test.ts.
     delete baseline[language].translation.authErrors;
     // Reviewed My Page authored-review navigation and explicit unsupported-post state.
+    delete baseline[language].translation.myPageActivity;
     delete baseline[language].translation.contentActions;
     // Reviewed additional onboarding nationality options.
     for (const country of ['ar', 'br', 'ca', 'es', 'gb', 'pt', 'sg']) delete baseline[language].translation.countries[country];

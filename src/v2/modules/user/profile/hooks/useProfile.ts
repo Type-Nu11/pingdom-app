@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
 import { profileApi } from '../api/profileApi';
@@ -182,5 +182,15 @@ export function useChangeProfileImage() {
       }
       await queryClient.invalidateQueries({ queryKey: key });
     },
+  });
+}
+
+/** Authenticated authored reviews, shared by the preview and the full list. */
+export function useInfiniteMyReviews() {
+  return useInfiniteQuery({
+    queryKey: [...myReviewsQueryKeys.all, 'infinite'],
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => profileApi.listMyReviews({ limit: 20, page: pageParam }, signal),
+    getNextPageParam: (lastPage) => lastPage.hasNext ? lastPage.page + 1 : undefined,
   });
 }
