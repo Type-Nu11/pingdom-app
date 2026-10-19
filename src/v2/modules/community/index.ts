@@ -49,3 +49,4 @@ export {
 } from './hooks/useCommunity';
 export { useDiscardOnLeaveGuard } from './hooks/useDiscardOnLeaveGuard';
 export type { LeaveGuardNavigation } from './hooks/useDiscardOnLeaveGuard';
+export { default as CommunityEditScreen } from './screens/CommunityEditScreen';

@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styled from 'styled-components/native';
 import { MapScreen } from '../../v2/modules/place/map';
-import { CommunityDetailScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../v2/modules/community';
+import { CommunityDetailScreen, CommunityEditScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../v2/modules/community';
 import { ReservationDetailScreen } from '../../v2/modules/booking/reservations/routes';
 import { ReservationBoxScreen } from '../../v2/modules/booking/reservations/routes';
 import { CreateReservationScreen } from '../../v2/modules/booking/reservations/routes';
 import { CouponBoxScreen } from '../../v2/modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../v2/modules/user/profile/my-page';
-import { MyPageScreen, MyReviewScreen } from '../../v2/modules/user/profile/my-page';
+import { MyPageScreen, MyReviewScreen, MyReviewEditScreen } from '../../v2/modules/user/profile/my-page';
 import { ProfileEditScreen } from '../../v2/modules/user/profile';
 import { VerifiedPlacesScreen } from '../../v2/modules/user/profile/my-page';
 import { MerchantMyPageContainer } from '../../v2/modules/merchant';
@@ -75,6 +75,7 @@ export function createProductionMainNavigator({
       <MapRouteContainer>
         <V2ScreenBoundary>
           <MapScreen
+            onEditReview={(reviewId) => navigation.navigate(MAIN_ROUTES.MyReviewEdit, { reviewId })}
             onNavigateAssistantPage={(target) => {
               if (!isLoggedIn || isAuthHydrating) return false;
               if (target.page === 'reservations') navigation.navigate(MAIN_ROUTES.ReservationBox);
@@ -198,6 +199,7 @@ export function createProductionMainNavigator({
   const CommunityDetailRouteScreen = ({ navigation, route }: MainScreenProps<'CommunityDetail'>) => (
     <V2ScreenBoundary>
       <CommunityDetailScreen
+        onEditPost={(value) => { const postId = parsePostId(value); if (postId) navigation.navigate(MAIN_ROUTES.CommunityEdit, { postId }); }}
         onBack={navigation.goBack}
         onOpenPlace={(value) => {
           const placeId = parsePlaceId(value);
@@ -265,8 +267,17 @@ export function createProductionMainNavigator({
     );
   };
 
+  const CommunityEditRouteScreen = ({ navigation, route }: MainScreenProps<'CommunityEdit'>) => {
+    const dirty = useDiscardOnLeaveGuard(navigation);
+    return <CommunityEditScreen postId={route.params.postId} onBack={navigation.goBack} onDirtyChange={value => { dirty.current = value; }} />;
+  };
+  const MyReviewEditRouteScreen = ({ navigation, route }: MainScreenProps<'MyReviewEdit'>) => {
+    const dirty = useDiscardOnLeaveGuard(navigation);
+    return <MyReviewEditScreen reviewId={route.params.reviewId} onBack={navigation.goBack} onDirtyChange={value => { dirty.current = value; }} />;
+  };
+
   const MyReviewRouteScreen = ({ navigation, route }: MainScreenProps<'MyReview'>) => (
-    <V2ScreenBoundary><MyReviewScreen onBack={navigation.goBack} reviewId={route.params.reviewId} /></V2ScreenBoundary>
+    <V2ScreenBoundary><MyReviewScreen onBack={navigation.goBack} reviewId={route.params.reviewId} onEdit={(reviewId) => navigation.navigate(MAIN_ROUTES.MyReviewEdit, { reviewId })} /></V2ScreenBoundary>
   );
 
   const SettingsRouteScreen = ({ navigation }: MainScreenProps<'Settings'>) => {
@@ -422,6 +433,8 @@ export function createProductionMainNavigator({
       <Stack.Screen name={MAIN_ROUTES.CheckIn} component={CheckInRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CommunityDetail} component={CommunityDetailRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CommunityWrite} component={CommunityWriteRouteScreen} />
+      <Stack.Screen name={MAIN_ROUTES.CommunityEdit} component={CommunityEditRouteScreen} />
+      <Stack.Screen name={MAIN_ROUTES.MyReviewEdit} component={MyReviewEditRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CouponDetail} component={CouponDetailRouteScreen} />
       <Stack.Screen name={MAIN_ROUTES.CreateReservation} component={CreateReservationRouteScreen} />

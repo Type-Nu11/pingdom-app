@@ -9,11 +9,11 @@ import { useNotificationOpenSync } from '../../modules/user/notifications/lifecy
 import type { NotificationRoute } from '../../modules/user/notifications/routing';
 import { useSettingsDetailRedirect, useSettingsNavigation } from '../../modules/user/settings';
 import HomeScreen from '../home/screens/HomeScreen';
-import { CommunityDetailScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../modules/community';
+import { CommunityDetailScreen, CommunityEditScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../modules/community';
 import { MapScreen } from '../../modules/place/map';
 import { CouponBoxScreen } from '../../modules/user/profile/my-page';
 import { CouponDetailContainer } from '../../modules/user/profile/my-page';
-import { MyPageScreen, MyReviewScreen } from '../../modules/user/profile/my-page';
+import { MyPageScreen, MyReviewScreen, MyReviewEditScreen } from '../../modules/user/profile/my-page';
 import { useProfile } from '../../modules/user/profile';
 import { VerifiedPlacesScreen } from '../../modules/user/profile/my-page';
 import { ProfileEditScreen } from '../../modules/user/profile';
@@ -56,6 +56,7 @@ function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
   const { profile } = useProfile();
   return (
     <MapScreen
+      onEditReview={(reviewId) => navigation.navigate(V2_ROUTES.MyReviewEdit, { reviewId })}
       onNavigateAssistantPage={(target) => {
         if (target.page === 'reservations') navigation.navigate(V2_ROUTES.ReservationBox);
         else if (target.page === 'myPage') navigation.navigate(V2_ROUTES.MyPage);
@@ -105,6 +106,7 @@ function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
 function CommunityDetailRouteScreen({ navigation, route }: V2ScreenProps<'CommunityDetail'>) {
   return (
     <CommunityDetailScreen
+      onEditPost={(postId) => navigation.navigate(V2_ROUTES.CommunityEdit, { postId })}
       onBack={navigation.goBack}
       onOpenPlace={(value) => {
         const placeId = parsePlaceId(value);
@@ -153,8 +155,17 @@ function VerifiedPlacesRouteScreen({ navigation }: V2ScreenProps<'VerifiedPlaces
   return <VerifiedPlacesScreen onBack={navigation.goBack} onOpenReview={(reviewId) => navigation.navigate(V2_ROUTES.MyReview, { reviewId })} />;
 }
 
+function CommunityEditRouteScreen({ navigation, route }: V2ScreenProps<'CommunityEdit'>) {
+  const dirty = useDiscardOnLeaveGuard(navigation);
+  return <CommunityEditScreen postId={route.params.postId} onBack={navigation.goBack} onDirtyChange={value => { dirty.current = value; }} />;
+}
+function MyReviewEditRouteScreen({ navigation, route }: V2ScreenProps<'MyReviewEdit'>) {
+  const dirty = useDiscardOnLeaveGuard(navigation);
+  return <MyReviewEditScreen reviewId={route.params.reviewId} onBack={navigation.goBack} onDirtyChange={value => { dirty.current = value; }} />;
+}
+
 function MyReviewRouteScreen({ navigation, route }: V2ScreenProps<'MyReview'>) {
-  return <MyReviewScreen onBack={navigation.goBack} reviewId={route.params.reviewId} />;
+  return <MyReviewScreen onBack={navigation.goBack} reviewId={route.params.reviewId} onEdit={(reviewId) => navigation.navigate(V2_ROUTES.MyReviewEdit, { reviewId })} />;
 }
 
 function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
@@ -317,6 +328,8 @@ export default function RootNavigator() {
         <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
         <Stack.Screen name={V2_ROUTES.CommunityDetail} component={CommunityDetailRouteScreen} />
         <Stack.Screen name={V2_ROUTES.CommunityWrite} component={CommunityWriteRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CommunityEdit} component={CommunityEditRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyReviewEdit} component={MyReviewEditRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Map} component={MapRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
         <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />

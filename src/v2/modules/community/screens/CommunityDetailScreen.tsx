@@ -1,3 +1,6 @@
+import { canManageCommunityPost } from '../model/postOwnership';
+import { useProfile } from '../../user/profile';
+import OwnerContentActions from '../../../shared/components/OwnerContentActions';
 import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useRef, useState } from 'react';
@@ -33,6 +36,7 @@ import type { PlaceEntryError } from '../model/placeEntryError';
 
 export type CommunityDetailScreenProps = {
   onBack: () => void;
+  onEditPost?: (postId: number) => void;
   onOpenPlace?: (placeId: number) => void;
   onSignIn?: () => void;
   postId: number;
@@ -156,7 +160,8 @@ function Places({
   );
 }
 
-export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, postId }: CommunityDetailScreenProps) {
+export default function CommunityDetailScreen({ onBack, onEditPost, onOpenPlace, onSignIn, postId }: CommunityDetailScreenProps) {
+  const { profile } = useProfile();
   const { t } = useTranslation();
   const theme = useTheme();
   const postQuery = usePost(postId);
@@ -280,7 +285,9 @@ export default function CommunityDetailScreen({ onBack, onOpenPlace, onSignIn, p
           onPress={onBack}
         />
         <HeaderSpacer />
-        <HeaderIconButton Icon={MoreButtonIcon} accessibilityLabel={t('community.detail.settings')} accessibilityRole="button" />
+        {canManageCommunityPost(postQuery.data?.author?.authorId, profile?.id)
+          ? <OwnerContentActions key={postId} onEdit={onEditPost ? () => onEditPost(postId) : undefined} />
+          : <HeaderIconButton Icon={MoreButtonIcon} accessibilityLabel={t('community.detail.settings')} accessibilityRole="button" />}
       </Header>
 
       {postQuery.isLoading ? (

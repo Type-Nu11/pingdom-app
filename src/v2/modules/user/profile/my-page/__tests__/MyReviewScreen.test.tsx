@@ -1,3 +1,4 @@
+import { View } from 'react-native';
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
@@ -58,4 +59,15 @@ test('조회 실패는 빈 목록 대신 재시도를 제공한다', async () =>
   await user.press(await screen.findByText('다시 시도'));
   expect(await screen.findByText(review.content)).toBeTruthy();
   await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+});
+
+test('본인 리뷰 메뉴의 수정하기는 해당 리뷰 ID를 넘긴다', async () => {
+  jest.spyOn(View.prototype, 'measureInWindow').mockImplementation(callback => callback(330, 100, 44, 44));
+  jest.spyOn(profileApi, 'listMyReviews').mockResolvedValue(page([review]));
+  const onEdit = jest.fn();
+  const { user } = await renderWithProviders(<MyReviewScreen reviewId={111} onBack={jest.fn()} onEdit={onEdit} />);
+  await screen.findByText(review.content);
+  await user.press(screen.getByRole('button', { name: '더보기' }));
+  await user.press(screen.getByRole('button', { name: '수정하기' }));
+  expect(onEdit).toHaveBeenCalledWith(111);
 });

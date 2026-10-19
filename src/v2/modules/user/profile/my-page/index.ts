@@ -3,3 +3,4 @@ export { default as CouponBoxScreen } from './coupons/screens/CouponBoxScreen';
 export { default as CouponDetailContainer } from './coupons/screens/CouponDetailContainer';
 export { default as VerifiedPlacesScreen } from './verified-places/screens/VerifiedPlacesScreen';
 export { default as MyReviewScreen } from './screens/MyReviewScreen';
+export { default as MyReviewEditScreen } from './screens/MyReviewEditScreen';

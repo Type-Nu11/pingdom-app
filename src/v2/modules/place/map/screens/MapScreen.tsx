@@ -150,6 +150,7 @@ const toDecisionPlace = (place: Place): DecisionPlace => ({
 });
 
 type MapScreenProps = {
+  onEditReview?: (reviewId: number) => void;
   canQueryBookmarks?: boolean;
   canQueryRankedFeeds?: boolean;
   initialSection?: 'community' | 'favorites' | 'map' | 'reservations';
@@ -173,6 +174,7 @@ type MapScreenProps = {
 };
 
 export default function MapScreen({
+  onEditReview,
   canQueryBookmarks = true,
   canQueryRankedFeeds = canQueryBookmarks,
   initialSection = 'map',
@@ -726,6 +728,8 @@ export default function MapScreen({
             : t(review.authorKey),
           reviewId: review.reviewId ?? undefined,
           isOwnReview: review.reviewId !== null && review.userId !== null && review.userId === profile?.id,
+          onEdit: review.reviewId !== null && review.userId === profile?.id && onEditReview
+            ? () => { if (review.reviewId !== null) onEditReview(review.reviewId); } : undefined,
           createdAt: review.createdAt,
           imageUrls: review.imageUrls,
           reasons: review.reasons,
@@ -741,7 +745,7 @@ export default function MapScreen({
         verifiedEvidenceCount: selectedPlacePresentation.verifiedEvidenceCount ?? undefined,
       },
     };
-  }, [selectedPlace, selectedPlacePresentation, profile?.id, profile?.username, t]);
+  }, [selectedPlace, selectedPlacePresentation, profile?.id, profile?.username, t, onEditReview]);
   useEffect(() => {
     if (
       content.type !== 'place-preview'

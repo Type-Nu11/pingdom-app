@@ -1,3 +1,4 @@
+import type { PlaceExplorationSchema } from '../../../../shared/api';
 export type UserRole = 'ADMIN' | 'MERCHANT_OWNER' | 'USER';
 
 export type Profile = {
@@ -45,6 +46,8 @@ export type MyPlaceReview = {
   imageUrls: string[];
   placeId: number;
   recommendReason: string;
+  recommendReasons?: PlaceExplorationSchema<'PlaceReviewResponse'>['recommendReasons'];
+  reviewMedia?: PlaceExplorationSchema<'PlaceReviewResponse'>['reviewMedia'];
   reviewId: number;
   visibilityStatus: MyPlaceReviewVisibilityStatus;
 };

@@ -39,6 +39,7 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     // Reviewed My Page authored-review navigation and explicit unsupported-post state.
     delete baseline[language].translation.myPageActivity;
     delete baseline[language].translation.contentActions;
+    delete baseline[language].translation.editContent;
     delete baseline[language].translation.placeReviewSummary;
     // Reviewed additional onboarding nationality options.
     for (const country of ['ar', 'br', 'ca', 'es', 'gb', 'pt', 'sg']) delete baseline[language].translation.countries[country];

@@ -135,6 +135,7 @@ export type MapPreviewFallbackContent = {
   reviews?: Array<{
     author: string;
     isOwnReview?: boolean;
+    onEdit?: () => void;
     reviewId?: number;
     avatarUrl?: string;
     createdAt: string;
@@ -1783,7 +1784,7 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
           <AppText style={styles.detailReviewerName}>{review.author}</AppText>
           <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
         </View>
-        {review.isOwnReview ? <OwnerContentActions key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} /> : null}
+        {review.isOwnReview ? <OwnerContentActions key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} onEdit={review.onEdit} /> : null}
       </View>
       <AppText
         ellipsizeMode="tail"

@@ -9,6 +9,7 @@ export type { PlaceId, CheckInId } from '../../modules/place/core';
 export const V2_ROUTES = {
   CommunityDetail: 'CommunityDetail',
   CommunityWrite: 'CommunityWrite',
+  CommunityEdit: 'CommunityEdit',
   CouponBox: 'CouponBox',
   CouponDetail: 'CouponDetail',
   CreateReservation: 'CreateReservation',
@@ -18,6 +19,7 @@ export const V2_ROUTES = {
   Map: 'Map',
   MyPage: 'MyPage',
   MyReview: 'MyReview',
+  MyReviewEdit: 'MyReviewEdit',
   ProfileEdit: 'ProfileEdit',
   VerifiedPlaces: 'VerifiedPlaces',
   NotificationSettings: 'NotificationSettings',
@@ -34,6 +36,7 @@ export type V2StackParamList = {
   CommunityDetail: {
     postId: number;
   };
+  CommunityEdit: { postId: number };
   CommunityWrite: { initialCategoryId?: string } | undefined;
   CouponBox: undefined;
   CouponDetail: {
@@ -53,6 +56,7 @@ export type V2StackParamList = {
   Map: undefined;
   MyPage: undefined;
   MyReview: { reviewId: number };
+  MyReviewEdit: { reviewId: number };
   ProfileEdit: undefined;
   VerifiedPlaces: undefined;
   AccountManagement: undefined;

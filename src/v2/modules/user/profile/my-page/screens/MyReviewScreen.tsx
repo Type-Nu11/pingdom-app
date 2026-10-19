@@ -1,22 +1,17 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import { ErrorState, HeaderBackButton, LoadingState } from '../../../../../shared/components';
 import OwnerContentActions from '../../../../../shared/components/OwnerContentActions';
-import { useInfiniteMyReviews } from '../../hooks/useProfile';
+import { useMyReview } from '../../hooks/useProfile';
 
 /** Resolve IDs exclusively through the signed-in user's reviews, never another visitor's review. */
-export default function MyReviewScreen({ onBack, reviewId }: { onBack: () => void; reviewId: number }) {
+export default function MyReviewScreen({ onBack, reviewId, onEdit }: { onBack: () => void; reviewId: number; onEdit?: (reviewId: number) => void }) {
   const { t, i18n } = useTranslation();
-  const query = useInfiniteMyReviews();
-  const review = query.data?.pages.flatMap((page) => page.reviews)
-    .find((item) => item.reviewId === reviewId && item.visibilityStatus !== 'DELETED');
-  const { fetchNextPage, hasNextPage, isFetching, isError } = query;
-  useEffect(() => {
-    if (!review && hasNextPage && !isFetching && !isError) void fetchNextPage();
-  }, [review, hasNextPage, isFetching, isError, fetchNextPage]);
+  const query = useMyReview(reviewId);
+  const { review } = query;
   const date = review ? new Date(review.createdAt) : null;
   const dateLabel = date && Number.isFinite(date.getTime())
     ? date.toLocaleDateString(i18n.language) : review?.createdAt;
@@ -26,7 +21,7 @@ export default function MyReviewScreen({ onBack, reviewId }: { onBack: () => voi
       <Header>
         <HeaderBackButton accessibilityLabel={t('myPage.back')} onPress={onBack} />
         <Title>{t('myPageActivity.reviewTitle')}</Title>
-        {review ? <OwnerContentActions key={review.reviewId} /> : <Spacer />}
+        {review ? <OwnerContentActions key={review.reviewId} onEdit={onEdit ? () => onEdit(review.reviewId) : undefined} /> : <Spacer />}
       </Header>
       {query.isError ? (
         <ErrorState fill actionLabel={t('myPage.retry')} description={t('myPage.verifiedPlaces.error')}
