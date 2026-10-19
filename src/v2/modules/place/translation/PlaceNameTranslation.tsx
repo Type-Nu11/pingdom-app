@@ -16,13 +16,14 @@ type Phase = 'idle' | 'checking' | 'downloading' | 'ready' | 'translating' | 'fa
 type Props = {
   original: string;
   nameStyle?: StyleProp<TextStyle>;
+  maxNameLength?: number;
   onNamePress?: () => void;
   category?: React.ReactNode;
   inlineCategory?: boolean;
   attributionPlacement?: 'title' | 'photos';
   onTranslationChange?: (state: TranslationDisplayState) => void;
 };
-export default function PlaceNameTranslation({ original, nameStyle, onNamePress, category, inlineCategory = false, attributionPlacement = 'title', onTranslationChange }: Props) {
+export default function PlaceNameTranslation({ original, nameStyle, maxNameLength, onNamePress, category, inlineCategory = false, attributionPlacement = 'title', onTranslationChange }: Props) {
   const { profile } = useProfile();
   const { i18n } = useTranslation();
   const { colors, typography } = useTheme();
@@ -44,6 +45,10 @@ export default function PlaceNameTranslation({ original, nameStyle, onNamePress,
   const modelName = (code: string) => code === 'ko' ? '한국어' : translationLanguages.find((item) => item.code === code)?.name ?? code;
   const validResult = result?.original === original && result?.target === target ? result : null;
   const isTranslated = Boolean(showResult && validResult);
+  const fullName = showResult && validResult ? validResult.text : original;
+  const characters = Array.from(fullName);
+  const displayName = maxNameLength && characters.length > maxNameLength
+    ? `${characters.slice(0, maxNameLength).join('')}…` : fullName;
   useLayoutEffect(() => { onTranslationChange?.({ original, translated: isTranslated }); }, [original, isTranslated, onTranslationChange]);
 
   useEffect(() => {
@@ -124,11 +129,11 @@ export default function PlaceNameTranslation({ original, nameStyle, onNamePress,
           onLongPress={() => setOpen(true)}
           accessibilityRole="button"
           ellipsizeMode="tail"
-          numberOfLines={2}
+          numberOfLines={maxNameLength ? 1 : undefined}
           onPress={onNamePress ?? (() => setOpen(true))}
           style={[{ color: colors.textStrong, fontSize: 21, lineHeight: 27 }, nameStyle, { flex: 1, minWidth: 0 }]}
         >
-          {showResult && validResult ? validResult.text : original}
+          {displayName}
           {inlineCategory && category ? <> {category}</> : null}
         </Text>
         {busy ? <ActivityIndicator accessibilityLabel={phase === 'downloading' ? copy.downloading : phase === 'translating' ? copy.translating : copy.checking} size="small" color={colors.primary} />

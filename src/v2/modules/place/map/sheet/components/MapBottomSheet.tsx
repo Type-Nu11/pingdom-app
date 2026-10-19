@@ -1534,6 +1534,7 @@ const PreviewContent = ({
             attributionPlacement="photos"
             onTranslationChange={translationAttribution.onTranslationChange}
             original={place.name}
+            maxNameLength={10}
             inlineCategory
             nameStyle={styles.previewName}
             onNamePress={onDetail}
@@ -1722,7 +1723,7 @@ const ExternalPlaceContent = ({
     >
       <View style={styles.externalHeader}>
         <View style={styles.previewSummary}>
-          <PlaceNameTranslation original={place.name} nameStyle={styles.previewName} />
+          <PlaceNameTranslation original={place.name} maxNameLength={10} nameStyle={styles.previewName} />
           <View style={styles.externalBadge}>
             <AppText numberOfLines={1} style={styles.externalBadgeText}>{t('map.externalPlace.badge')}</AppText>
           </View>
