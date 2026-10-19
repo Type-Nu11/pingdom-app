@@ -123,3 +123,5 @@ export type {
 } from './accountContract';
 
 export { configureDomainMockHandlers } from './mock/registry';
+
+export type { PlaceReviewsSchema, PlaceReviewsOperationRequestBody, PlaceReviewsOperationResponse } from './placeReviewsContract';

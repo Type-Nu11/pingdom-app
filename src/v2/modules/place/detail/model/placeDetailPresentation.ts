@@ -1,6 +1,6 @@
 import { summarizeReviewHighlights } from './reviewHighlights';
-import { reviewReasonsFromResponse, type ReviewReasonKey } from '../../../../shared/api/reviewReasons';
-import type { PlaceReviewPage } from '../../visit-verification';
+import { normalizeReviewReasons, reviewReasonsFromResponse, type ReviewReasonKey } from '../../../../shared/api/reviewReasons';
+import type { PlaceReviewPage, PlaceReviewSummary } from '../../visit-verification';
 import type {
   PlaceCard,
   PlaceExplorationMedia,
@@ -77,6 +77,7 @@ export type PlaceDetailPresentationResources = {
   media: ResourceState<PlaceExplorationMedia>;
   notices: ResourceState<PlaceOperatingNotices>;
   reviews: ResourceState<PlaceReviewPage>;
+  reviewSummary?: ResourceState<PlaceReviewSummary>;
   visitDecision: ResourceState<PlaceVisitDecision>;
 };
 
@@ -131,7 +132,15 @@ export function buildPlaceDetailPresentation(
     websiteUrl: clean(merchantInformation?.websiteUrl),
   } : null;
 
-  const reviewSummary = summarizeReviewHighlights(reviewItems, resources.reviews.data);
+  const loadedSummary = summarizeReviewHighlights(reviewItems, resources.reviews.data);
+  const remote = !resources.reviewSummary?.isError && !resources.reviewSummary?.isPending ? resources.reviewSummary?.data : undefined;
+  const reviewSummary = remote && remote.placeId === placeId ? {
+    highlights: remote.reasonCounts.flatMap(item => {
+      const reason = normalizeReviewReasons([item.reason])[0];
+      return reason && item.count > 0 ? [{ reason, count: item.count }] : [];
+    }).sort((left, right) => right.count - left.count),
+    participantCount: remote.participantCount, sampleSize: remote.totalReviewCount, complete: true,
+  } : loadedSummary;
   return {
     address: clean(base?.address) ?? clean(card?.address),
     category: clean(card?.category) ?? base?.touristCategories?.[0] ?? null,
@@ -183,7 +192,7 @@ export function buildPlaceDetailPresentation(
     reviewParticipantCount: reviewSummary.participantCount,
     reviewSampleSize: reviewSummary.sampleSize,
     reviewHighlightsComplete: reviewSummary.complete,
-    reviewTotal: resources.reviews.isError || resources.reviews.isPending
+    reviewTotal: remote?.placeId === placeId ? remote.totalReviewCount : resources.reviews.isError || resources.reviews.isPending
       ? null : Math.max(0, resources.reviews.data?.totalElements ?? reviewItems.length),
     roadAddress: clean(base?.roadAddress) ?? clean(card?.roadAddress),
     jibunAddress: clean(base?.jibunAddress),

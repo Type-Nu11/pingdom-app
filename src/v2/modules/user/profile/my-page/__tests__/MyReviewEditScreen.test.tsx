@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import { profileApi } from '../../api/profileApi';
 import { visitVerificationApi } from '../../../../place/visit-verification';
@@ -11,6 +11,7 @@ test('내 리뷰 본문·사진·복수 추천 이유로 채우고 카테고리 
     reviews: [{ reviewId: 111, placeId: 17, content: '실제 작성한 리뷰', recommendReason: 'FRIENDLY',
       recommendReasons: ['CLEAN', 'PARKING'], imageUrls: ['https://cdn.test/review.jpg'], createdAt: '2026-10-19', visibilityStatus: 'VISIBLE' }],
   });
+  const update = jest.spyOn(visitVerificationApi, 'updateReview').mockResolvedValue({ reviewId: 111, placeId: 17 });
   const create = jest.spyOn(visitVerificationApi, 'createReview');
   const remove = jest.spyOn(visitVerificationApi, 'cancelReviewMedia');
   await renderWithProviders(<MyReviewEditScreen reviewId={111} onBack={jest.fn()} />);
@@ -24,6 +25,7 @@ test('내 리뷰 본문·사진·복수 추천 이유로 채우고 카테고리 
   expect(screen.getByRole('checkbox', { name: '친절해요' })).not.toBeChecked();
   await fireEvent.press(screen.getByRole('button', { name: '사진 1 삭제' }));
   await fireEvent.press(screen.getByTestId('content-edit-submit'));
+  await waitFor(() => expect(update).toHaveBeenCalledWith(17, 111, { content: '실제 작성한 리뷰', recommendReasons: ['CLEAN', 'PARKING'], reviewMediaIds: [] }));
   expect(create).not.toHaveBeenCalled();
   expect(remove).not.toHaveBeenCalled();
 });

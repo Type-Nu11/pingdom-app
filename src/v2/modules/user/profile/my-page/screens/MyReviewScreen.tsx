@@ -1,3 +1,5 @@
+import { useContentDeletion } from '../../../../../shared/components/useContentDeletion';
+import { useDeletePlaceReview } from '../../../../place/visit-verification';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +14,8 @@ export default function MyReviewScreen({ onBack, reviewId, onEdit }: { onBack: (
   const { t, i18n } = useTranslation();
   const query = useMyReview(reviewId);
   const { review } = query;
+  const deletion = useDeletePlaceReview(review?.placeId, review?.reviewId);
+  const deleteAction = useContentDeletion(() => deletion.mutateAsync(), onBack, reviewId);
   const date = review ? new Date(review.createdAt) : null;
   const dateLabel = date && Number.isFinite(date.getTime())
     ? date.toLocaleDateString(i18n.language) : review?.createdAt;
@@ -21,7 +25,7 @@ export default function MyReviewScreen({ onBack, reviewId, onEdit }: { onBack: (
       <Header>
         <HeaderBackButton accessibilityLabel={t('myPage.back')} onPress={onBack} />
         <Title>{t('myPageActivity.reviewTitle')}</Title>
-        {review ? <OwnerContentActions key={review.reviewId} onEdit={onEdit ? () => onEdit(review.reviewId) : undefined} /> : <Spacer />}
+        {review ? <OwnerContentActions busy={deleteAction.busy} onDelete={deleteAction.confirm} key={review.reviewId} onEdit={onEdit ? () => onEdit(review.reviewId) : undefined} /> : <Spacer />}
       </Header>
       {query.isError ? (
         <ErrorState fill actionLabel={t('myPage.retry')} description={t('myPage.verifiedPlaces.error')}

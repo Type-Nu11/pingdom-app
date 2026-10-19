@@ -267,3 +267,17 @@ test('review authors retain server user IDs and never invent an identity for mis
   });
   assert.deepEqual(result.reviews.map(review => review.userId), [42, 43, null, null]);
 });
+
+
+test('장소 전체 추천 태그 집계를 페이지보다 우선하고 참여 인원과 리뷰 수를 구분한다', () => {
+  const result = buildPlaceDetailPresentation(17, {
+    ...baseResources,
+    reviews: ready({ content: [], totalElements: 1 }),
+    reviewSummary: ready({ placeId: 17, totalReviewCount: 7, participantCount: 1,
+      reasonCounts: [{ reason: 'CLEAN', count: 1 }, { reason: 'PARKING', count: 0 }] }),
+  });
+  assert.equal(result.reviewTotal, 7);
+  assert.equal(result.reviewParticipantCount, 1);
+  assert.equal(result.reviewHighlightsComplete, true);
+  assert.deepEqual(result.reviewHighlights, [{ reason: 'clean', count: 1 }]);
+});

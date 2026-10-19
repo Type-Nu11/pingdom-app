@@ -162,3 +162,13 @@ GET 및 네트워크 단절은 jitter가 있는 제한된 exponential backoff로
 ## 검토 게이트
 
 병합 전에 [REVIEW.md](./REVIEW.md)의 네 담당 영역이 모두 승인되어야 한다. 승인은 PR review 또는 해당 표에 리뷰 링크를 남기는 방식으로 증빙한다.
+
+
+### Authored community posts and place reviews
+
+Community PATCH/DELETE `/community/posts/{postId}` and GET `/users/me/community/posts` are included in `community.openapi.json`.
+The own-post list is one-based and supports `limit=2` for the My Page preview. Hidden posts may be deleted but cannot be opened through the public detail or edited.
+
+Review PATCH/DELETE `/places/{placeId}/reviews/{reviewId}` and GET `/places/{placeId}/reviews/summary` use a separate scoped `place-reviews.openapi.json` from `/v3/api-docs/common`, preserving the existing exploration operation IDs.
+Regenerate with `npm run sync:place-reviews-openapi -- <source>`, `npm run generate:place-reviews-api-types`, and check with `npm run check:place-reviews-api-types`.
+Edits preserve omitted fields, submit final attachment ID arrays, and upload only new local photos. Review summary participants are unique authors with valid recommendation tags, distinct from `totalReviewCount`.

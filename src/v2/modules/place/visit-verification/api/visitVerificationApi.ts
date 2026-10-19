@@ -2,6 +2,8 @@ import { reviewPhotoPart, type SelectedPhoto } from '../model/visitVerification'
 import {
   apiClient,
   type ApiClient,
+  type PlaceReviewsOperationRequestBody,
+  type PlaceReviewsOperationResponse,
   type PlaceExplorationOperationRequestBody,
   type PlaceExplorationOperationQuery,
   type PlaceExplorationOperationResponse,
@@ -23,6 +25,9 @@ export type PlaceReviewListParams =
   PlaceExplorationOperationQuery<'list_4'>;
 export type PlaceReviewPage =
   PlaceExplorationOperationResponse<'list_4', 200>;
+
+export type UpdatePlaceReviewBody = PlaceReviewsOperationRequestBody<'updateReview'>;
+export type PlaceReviewSummary = PlaceReviewsOperationResponse<'getReviewSummary', 200>;
 
 export function createVisitVerificationApi(client: ApiClient = apiClient) {
   return {
@@ -71,6 +76,11 @@ export function createVisitVerificationApi(client: ApiClient = apiClient) {
     },
     cancelReviewMedia: (placeId: number, reviewMediaId: number, signal?: AbortSignal): Promise<PlaceExplorationOperationResponse<'cancel_4', 204>> =>
       client.delete(`/places/${placeId}/reviews/media/${reviewMediaId}`, undefined, { signal }),
+    updateReview: (placeId: number, reviewId: number, body: UpdatePlaceReviewBody) =>
+      client.patch<PlaceReviewsOperationResponse<'updateReview', 200>, UpdatePlaceReviewBody>(`/places/${placeId}/reviews/${reviewId}`, body),
+    deleteReview: (placeId: number, reviewId: number) => client.delete<void>(`/places/${placeId}/reviews/${reviewId}`),
+    getReviewSummary: (placeId: number, signal?: AbortSignal) =>
+      client.get<PlaceReviewSummary>(`/places/${placeId}/reviews/summary`, { signal }),
     createReview: (
       placeId: number,
       body: CreatePlaceReviewBody,

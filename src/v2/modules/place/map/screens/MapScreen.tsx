@@ -724,6 +724,7 @@ export default function MapScreen({
           author: review.userId !== null && review.userId === profile?.id
             ? profile.username?.trim() || t(review.authorKey)
             : t(review.authorKey),
+          placeId: selectedPlace.id,
           reviewId: review.reviewId ?? undefined,
           isOwnReview: review.reviewId !== null && review.userId !== null && review.userId === profile?.id,
           onEdit: review.reviewId !== null && review.userId === profile?.id && onEditReview

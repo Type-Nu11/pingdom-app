@@ -1,3 +1,5 @@
+import { useContentDeletion } from '../../../../../shared/components/useContentDeletion';
+import { useDeletePlaceReview } from '../../../visit-verification';
 import { ReviewReasonIcon } from '../../../../../shared/components/ReviewReasonIcon';
 import OwnerContentActions from '../../../../../shared/components/OwnerContentActions';
 import TranslationAttribution, { useTranslationAttribution } from '../../../translation/TranslationAttribution';
@@ -135,6 +137,7 @@ export type MapPreviewFallbackContent = {
   reviewParticipantCount?: number;
   reviews?: Array<{
     author: string;
+    placeId?: number;
     isOwnReview?: boolean;
     onEdit?: () => void;
     reviewId?: number;
@@ -1794,6 +1797,8 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
 
+  const deletion = useDeletePlaceReview(review.placeId, review.reviewId);
+  const deleteAction = useContentDeletion(() => deletion.mutateAsync(), undefined, `${review.placeId}:${review.reviewId}`);
   return (
     <View style={styles.detailReviewItem}>
       <View style={styles.detailReviewerRow}>
@@ -1802,7 +1807,7 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
           <AppText style={styles.detailReviewerName}>{review.author}</AppText>
           <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
         </View>
-        {review.isOwnReview ? <OwnerContentActions key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} onEdit={review.onEdit} /> : null}
+        {review.isOwnReview ? <OwnerContentActions busy={deleteAction.busy} onDelete={review.placeId && review.reviewId ? deleteAction.confirm : undefined} key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} onEdit={review.onEdit} /> : null}
       </View>
       <AppText
         ellipsizeMode="tail"
