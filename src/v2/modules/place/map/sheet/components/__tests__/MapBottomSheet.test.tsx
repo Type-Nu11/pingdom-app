@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, Platform, Text, type GestureResponderHandlers } from 'react-native';
+import { Animated, PanResponder, Platform, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
@@ -1921,4 +1921,59 @@ test('장소 요약은 추천 태그 상위 두 개를 편의기능 위치에 �
   expect(screen.queryByTestId('place-top-review-tags-photoSpot')).toBeNull();
   expect(screen.queryByTestId('map-detail-amenity-english')).toBeNull();
   expect(screen.getByText('불러온 리뷰 4개 기준 · 전체 집계 아님')).toBeTruthy();
+});
+
+test.each(['medium', 'expanded'] as const)('%s 피드 전환 바는 세로 시트 드래그를 전달하면서 탭 전환을 유지한다', async snapPoint => {
+  const create = jest.spyOn(PanResponder, 'create');
+  const capture = jest.fn(() => true);
+  const move = jest.fn();
+  const view = await renderWithProviders(<MapBottomSheet
+    activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+    content={{ type: 'home' }} height={700} mediumTranslateY={300}
+    onBackHome={jest.fn()} onDetailPress={jest.fn()} onFilterPress={jest.fn()}
+    onGoNowPress={jest.fn()} onHandlePress={jest.fn()} onPlacePress={jest.fn()}
+    onQueryChange={jest.fn()} onRetryRecommendations={jest.fn()} onSearchFocus={jest.fn()}
+    onSubmitSearch={jest.fn()} onToggleBookmark={jest.fn(async () => undefined)}
+    panHandlers={{ onMoveShouldSetResponderCapture: capture, onResponderMove: move }}
+    places={places} recommendationPlaces={[]} recommendationsState="ready" selectedPlace={null}
+    sheetChromeBottom={new Animated.Value(snapPoint === 'expanded' ? 0 : 300)}
+    sheetTranslateY={new Animated.Value(snapPoint === 'expanded' ? 0 : 300)} snapPoint={snapPoint}
+  />);
+  const header = screen.getByTestId('feed-segment-inset');
+  expect(within(screen.getByTestId('expanded-home-scroll')).queryByTestId('feed-segment-inset')).toBeNull();
+  const event = { nativeEvent: { pageX: 100, pageY: 160, touches: [] } };
+  await fireEvent(header, 'moveShouldSetResponderCapture', event);
+  await fireEvent(header, 'responderMove', event);
+  expect(capture).toHaveBeenCalledWith(event);
+  expect(move).toHaveBeenCalledWith(event);
+  await view.user.press(screen.getByRole('tab', { name: '전국 트렌드' }));
+  expect(screen.getByRole('tab', { name: '전국 트렌드', selected: true })).toBeTruthy();
+  expect(screen.getByTestId('expanded-home-scroll').props.onMoveShouldSetResponderCapture).toBeUndefined();
+  const track = screen.getByTestId('feed-segment-drag-track');
+  const feedSwipe = screen.getByTestId('map-feed-swipe');
+  const heldTouch = { nativeEvent: { pageX: 300, pageY: 50, touches: [{}] } };
+  await fireEvent(feedSwipe, 'startShouldSetResponderCapture', heldTouch);
+  await fireEvent(header, 'touchStart', heldTouch);
+  expect(feedSwipe.props.onMoveShouldSetResponderCapture({
+    nativeEvent: { pageX: 120, pageY: 50, touches: [{}] },
+  })).toBe(false);
+  // The mocked native View owns the ref used to measure screen coordinates.
+  const nativeTrack = track.unstable_fiber?.return?.stateNode as { measureInWindow: jest.Mock };
+  nativeTrack.measureInWindow.mockImplementation(callback => callback(20, 0, 360, 48));
+  await fireEvent(screen.getByTestId('feed-segment-control'), 'layout', {
+    nativeEvent: { layout: { width: 360, height: 48, x: 0, y: 0 } },
+  });
+  const callbacks = create.mock.calls[0][0];
+  const touch = {} as GestureResponderEvent;
+  const gesture = (moveX: number) => ({ moveX, dx: moveX - 300, dy: 0 } as PanResponderGestureState);
+  await act(() => callbacks.onStartShouldSetPanResponderCapture?.(touch, gesture(300)));
+  expect(callbacks.onMoveShouldSetPanResponderCapture?.(touch, gesture(120))).toBe(true);
+  await act(() => callbacks.onPanResponderGrant?.(touch, gesture(290)));
+  await act(() => callbacks.onPanResponderMove?.(touch, gesture(120)));
+  // No release: crossing halves must already switch the feed, in both directions.
+  expect(screen.getByRole('tab', { name: '우리 지역 핫플', selected: true })).toBeTruthy();
+  await act(() => callbacks.onPanResponderMove?.(touch, gesture(300)));
+  expect(screen.getByRole('tab', { name: '전국 트렌드', selected: true })).toBeTruthy();
+  await act(() => callbacks.onPanResponderRelease?.(touch, gesture(300)));
+  create.mockRestore();
 });

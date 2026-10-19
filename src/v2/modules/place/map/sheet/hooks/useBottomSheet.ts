@@ -15,9 +15,9 @@ const SNAP_ORDER: BottomSheetSnapPoint[] = ['expanded', 'medium', 'collapsed'];
 const VERTICAL_DRAG_THRESHOLD = 8;
 // A drag must be clearly vertical so horizontal carousels keep their swipes.
 const DIRECTION_LOCK_RATIO = 1.2;
-// Collapsing hides the sheet behind the navigation, so it keeps a deliberate 48dp flick.
-const COLLAPSE_FLICK_MIN_DISTANCE = 48;
-const COLLAPSE_FLICK_MIN_VELOCITY = 0.45;
+// Keep a deliberate downward gesture, without requiring a long drag to tuck the sheet away.
+const COLLAPSE_FLICK_MIN_DISTANCE = 32;
+const COLLAPSE_FLICK_MIN_VELOCITY = 0.35;
 // Raising the sheet (or lowering it from expanded) should follow a short, quick swipe.
 const SNAP_FLICK_MIN_DISTANCE = 16;
 const SNAP_FLICK_MIN_VELOCITY = 0.3;
@@ -147,6 +147,9 @@ export const useBottomSheet = ({
     onPanResponderRelease: (_, gesture) => {
       snapTo(resolveReleaseSnapPoint(snapPointRef.current, snapValuesRef.current, sheetOffsetY.current, gesture));
     },
+    // Once a vertical sheet drag starts, a nested/parent scroll must not snap it
+    // back mid-gesture by taking over the responder.
+    onPanResponderTerminationRequest: () => false,
     onPanResponderTerminate: () => snapTo(snapPointRef.current),
   // PanResponder intentionally reads changing values through refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps

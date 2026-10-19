@@ -35,6 +35,7 @@ import {
   Animated,
   GestureResponderHandlers,
   Image,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -339,12 +340,16 @@ const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCa
 
 const FeedSegment = ({
   expanded = false,
+  sheetPanHandlers,
   feed,
   onChange,
+  onTouchStart,
 }: {
   expanded?: boolean;
+  sheetPanHandlers: GestureResponderHandlers;
   feed: 'local' | 'national';
   onChange: (feed: 'local' | 'national') => void;
+  onTouchStart: () => void;
 }) => {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -353,8 +358,63 @@ const FeedSegment = ({
   const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
   const reduceMotion = useReducedMotion();
   const indicatorWidth = Math.max(0, (segmentWidth - 8) / 2);
+  const trackRef = useRef<View>(null);
+  const trackLeft = useRef<number | null>(null);
+  const dragging = useRef(false);
+  const dragPosition = useRef(0);
+  const current = useRef({ feed, onChange, segmentWidth });
+  current.current = { feed, onChange, segmentWidth };
+  const selectAtFinger = (pageX: number) => {
+    if (trackLeft.current === null || current.current.segmentWidth <= 8) return;
+    const width = current.current.segmentWidth;
+    const x = pageX - trackLeft.current;
+    // The thumb follows the finger; content changes as soon as it crosses halves.
+    indicatorProgress.stopAnimation();
+    indicatorProgress.setValue(Math.max(0, Math.min(1, (x - width / 4) / (width / 2))));
+    const next = x < width / 2 ? 'local' : 'national';
+    if (next !== current.current.feed) {
+      current.current.feed = next;
+      current.current.onChange(next);
+    }
+  };
+  const horizontalDrag = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponderCapture: () => {
+      trackLeft.current = null;
+      trackRef.current?.measureInWindow((x) => {
+        trackLeft.current = x;
+        if (dragging.current) selectAtFinger(dragPosition.current);
+      });
+      return false;
+    },
+    onMoveShouldSetPanResponderCapture: (_, gesture) => (
+      Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2
+    ),
+    onPanResponderGrant: (_, gesture) => {
+      dragging.current = true;
+      dragPosition.current = gesture.moveX;
+      selectAtFinger(gesture.moveX);
+    },
+    onPanResponderMove: (_, gesture) => {
+      dragPosition.current = gesture.moveX;
+      selectAtFinger(gesture.moveX);
+    },
+    onPanResponderRelease: () => {
+      dragging.current = false;
+      runTimingMotion(indicatorProgress, current.current.feed === 'local' ? 0 : 1, {
+        duration: MOTION_DURATION.transition, reduceMotion, useNativeDriver: true,
+      });
+    },
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderTerminate: () => {
+      dragging.current = false;
+      indicatorProgress.setValue(current.current.feed === 'local' ? 0 : 1);
+    },
+  // Mutable selection and layout are read through refs during an active touch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [indicatorProgress, reduceMotion]);
 
   useEffect(() => {
+    if (dragging.current) return;
     const animation = runTimingMotion(indicatorProgress, feed === 'local' ? 0 : 1, {
       duration: MOTION_DURATION.transition,
       reduceMotion,
@@ -422,8 +482,9 @@ const FeedSegment = ({
   // Glass/FillRaised thumb; the -Up frame (4683:7488) a flat Fill/Alternative track with a
   // Background/Normal thumb and no shadow, spanning the full-width sheet minus 8px.
   return (
-    <View style={expanded ? undefined : styles.segmentInset} testID="feed-segment-inset">
-      <View style={expanded ? styles.segmentFrame : styles.segmentShadow}>
+    <View {...sheetPanHandlers} onTouchStart={onTouchStart} style={expanded ? undefined : styles.segmentInset} testID="feed-segment-inset">
+      <View {...horizontalDrag.panHandlers} ref={trackRef} collapsable={false}
+        style={expanded ? styles.segmentFrame : styles.segmentShadow} testID="feed-segment-drag-track">
         {expanded ? (
           <View
             onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
@@ -944,6 +1005,7 @@ const ExpandedHomeContent = ({
   activeCategory,
   bookmarkPendingPlaceIds,
   feed,
+  sheetPanHandlers,
   expandedInteractionsEnabled,
   expandedOnlyOpacity,
   onCategoryChange,
@@ -960,6 +1022,7 @@ const ExpandedHomeContent = ({
   activeCategory: SheetCategory;
   bookmarkPendingPlaceIds: Record<string, boolean>;
   feed: 'local' | 'national';
+  sheetPanHandlers: GestureResponderHandlers;
   expandedInteractionsEnabled: boolean;
   expandedOnlyOpacity: Animated.AnimatedInterpolation<number>;
   onCategoryChange: (category: SheetCategory) => void;
@@ -1002,6 +1065,8 @@ const ExpandedHomeContent = ({
 
   return (
     <View {...feedPanHandlers} style={styles.expandedScroll} testID="map-feed-swipe">
+    {/* Keep the sheet grip outside the native vertical scroll responder. */}
+    <FeedSegment sheetPanHandlers={sheetPanHandlers} expanded={expandedInteractionsEnabled} feed={feed} onChange={onFeedChange} onTouchStart={blockHorizontalSwipe} />
     <ScrollView
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled
@@ -1011,7 +1076,6 @@ const ExpandedHomeContent = ({
       style={styles.expandedScroll}
       testID="expanded-home-scroll"
     >
-      <FeedSegment expanded={expandedInteractionsEnabled} feed={feed} onChange={onFeedChange} />
       <FadeSlideTransition
         direction={feed === 'local' ? 0 : 1}
         stateKey={feed}
@@ -1504,6 +1568,7 @@ const PreviewContent = ({
   pending,
   placeActionBusy,
   place,
+  sheetPanHandlers,
 }: {
   activeAction: PreviewActionKind | null;
   bookmarked: boolean;
@@ -1523,6 +1588,7 @@ const PreviewContent = ({
   pending: boolean;
   placeActionBusy?: 'directions' | 'share' | null;
   place: DecisionPlace;
+  sheetPanHandlers: GestureResponderHandlers;
 }) => {
   const { i18n, t } = useTranslation();
   const styles = useMapSheetStyles();
@@ -1554,7 +1620,7 @@ const PreviewContent = ({
 
   return (
     <View style={[styles.previewContent, styles.placePreviewContent]} testID="place-preview-content">
-      <View style={styles.previewHeader}>
+      <View {...sheetPanHandlers} style={styles.previewHeader} testID="place-preview-drag-header">
         <View style={styles.previewSummary}>
           <PlaceNameTranslation
             attributionPlacement="photos"
@@ -1930,6 +1996,7 @@ const ExpandedPlaceContent = ({
   pending,
   placeActionBusy,
   place,
+  sheetPanHandlers,
 }: {
   activeAction: PreviewActionKind | null;
   activeTab: PlaceDetailTab;
@@ -1952,6 +2019,7 @@ const ExpandedPlaceContent = ({
   pending: boolean;
   placeActionBusy?: 'directions' | 'share' | null;
   place: DecisionPlace;
+  sheetPanHandlers: GestureResponderHandlers;
 }) => {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -1987,7 +2055,7 @@ const ExpandedPlaceContent = ({
       showsVerticalScrollIndicator={false}
       testID="map-expanded-place-scroll"
     >
-      <View style={styles.detailTopBar} testID="map-detail-top-bar">
+      <View {...sheetPanHandlers} style={styles.detailTopBar} testID="map-detail-top-bar">
         <Pressable
           accessibilityLabel={t('map.detail.back')}
           accessibilityRole="button"
@@ -2011,7 +2079,7 @@ const ExpandedPlaceContent = ({
         </Pressable>
       </View>
 
-      <View style={styles.detailHeading}>
+      <View {...sheetPanHandlers} style={styles.detailHeading} testID="place-detail-drag-heading">
         <PlaceNameTranslation
             attributionPlacement="photos"
             onTranslationChange={translationAttribution.onTranslationChange}
@@ -2513,6 +2581,7 @@ export default function MapBottomSheet({
       {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState variant="place" description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
           <ExpandedPlaceContent
+            sheetPanHandlers={panHandlers}
             activeAction={activePreviewAction}
             activeTab={activePlaceDetailTab}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
@@ -2552,6 +2621,7 @@ export default function MapBottomSheet({
           />
         ) : (
           <PreviewContent
+            sheetPanHandlers={panHandlers}
             activeAction={activePreviewAction}
             bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
             fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
@@ -2634,6 +2704,7 @@ export default function MapBottomSheet({
         />
       ) : (
         <ExpandedHomeContent
+          sheetPanHandlers={panHandlers}
           activeCategory={activeCategory}
           bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
           expandedInteractionsEnabled={snapPoint === 'expanded'}

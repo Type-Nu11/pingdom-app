@@ -155,7 +155,7 @@ test('the small visible handle keeps resting sheet content available as a drag s
 test('place preview keeps header actions tappable and aligns category beside the title', () => {
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
 
-  assert.match(bottomSheet, /<View style=\{styles\.previewHeader\}>/);
+  assert.match(bottomSheet, /<View \{\.\.\.sheetPanHandlers\} style=\{styles\.previewHeader\}/);
   assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
   assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{16\}/);
   assert.match(bottomSheet, /t\('map\.detail\.reviewCount'/);
