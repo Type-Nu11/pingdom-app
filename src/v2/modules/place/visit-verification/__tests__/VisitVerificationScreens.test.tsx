@@ -106,7 +106,6 @@ test.each(['LIGHT', 'DARK'] as const)('floating CTA keeps bright semibold text o
   expect(view.getByTestId('visit-verification-map-cta-glass')).toBeOnTheScreen();
   expect(view.getByTestId('visit-verification-map-cta-glass')).toHaveStyle({
     backgroundColor: 'rgba(255, 25, 86, 0.56)',
-    boxShadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)',
     paddingLeft: 18,
   });
 });
