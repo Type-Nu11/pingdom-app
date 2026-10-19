@@ -8,4 +8,4 @@ export { RecommendationFeaturedCard } from './components/MapBottomSheet';
 export type { DecisionPlace } from './components/MapBottomSheet';
 export { usePlacePreviewImages } from '../../detail';
 export { normalizePlaceCategory } from '../../core/placeCategory';
-export { BottomSheetContainer, SheetChromeShadow, SheetChrome, SheetGlass, SheetInner } from './styles/BottomSheetGlass.styles';
+export { BottomSheetContainer, SheetChromeShadow, SheetChrome, SheetExpandedFill, SheetGlass, SheetInner } from './styles/BottomSheetGlass.styles';

@@ -16,6 +16,7 @@ export const lightColors = {
   labelStrong: '#000000', lineAlternative: '#F6F6F7', lineNeutral: '#F2F2F3', secondaryAlternative: '#D1D4D5', secondaryNormal: '#BFC1C1',
   glassFill: 'rgba(255, 255, 255, 0.8)', statusInfo: '#008BFF', labelAssistive: '#767680', onboardingIconSurface: '#FFFFFF', primaryAlternative: '#FF4A75', primaryAlternativeTint: 'rgba(255, 74, 117, 0.36)', primaryTint: 'rgba(255, 25, 86, 0.08)', fillNormal: '#F2F2F3', glassStroke: 'rgba(255, 255, 255, 0)', primaryGlow: 'rgba(255, 25, 86, 0.21)', shadowFloat: 'rgba(0, 0, 0, 0.12)', overlayDim: 'rgba(0, 0, 0, 0.4)', overlayStrong: 'rgba(0, 0, 0, 0.6)', labelDisabled: '#EFEFEF', glassFillRaised: 'rgba(255, 255, 255, 0.56)',
   statusSuccess: '#20C831', statusError: '#EE2B2B', staticWhite: '#FFFFFF', staticBlack: '#000000', shadowKnob: 'rgba(0, 0, 0, 0.16)',
+  glassFillSubtle: 'rgba(228, 228, 229, 0.64)',
 } as const;
 
 export type ThemeColors = { [Key in keyof typeof lightColors]: string };
@@ -38,6 +39,7 @@ export const darkColors = {
   labelStrong: '#FFFFFF', lineAlternative: '#202024', lineNeutral: '#2A2A2F', secondaryAlternative: '#3E4043', secondaryNormal: '#55575A',
   glassFill: 'rgba(64, 64, 72, 0.82)', statusInfo: '#3FA3FF', labelAssistive: '#85858F', onboardingIconSurface: '#2A2A30', primaryAlternative: '#FF4A75', primaryAlternativeTint: 'rgba(255, 74, 117, 0.28)', primaryTint: 'rgba(255, 25, 86, 0.14)', fillNormal: '#1C1C20', glassStroke: 'rgba(255, 255, 255, 0.20)', primaryGlow: 'rgba(255, 25, 86, 0.18)', shadowFloat: 'rgba(0, 0, 0, 0.40)', overlayDim: 'rgba(0, 0, 0, 0.4)', overlayStrong: 'rgba(0, 0, 0, 0.6)', labelDisabled: '#3C3C41', glassFillRaised: 'rgba(80, 80, 92, 0.84)',
   statusSuccess: '#3FD957', statusError: '#FF5A5A', staticWhite: '#FFFFFF', staticBlack: '#000000', shadowKnob: 'rgba(0, 0, 0, 0.40)',
+  glassFillSubtle: 'rgba(255, 255, 255, 0.08)',
 } as const satisfies ThemeColors;
 
 // Transitional alias while fixed light consumers are migrated to useTheme.

@@ -34,10 +34,11 @@ export const getMapSheetTabSurfaceColor = (
   return active ? liquidGlass.navigation.selectedTint : 'transparent';
 };
 
-// Place the Figma spacing above the system safe area so neither Android's
-// navigation buttons nor the iOS home indicator overlap the app's controls.
+// Figma pins the bar 16px above the screen edge. iOS follows it and lets the bar
+// sit over the home-indicator area; Android keeps clear of a visible system
+// navigation bar, which would otherwise cover the tabs.
 export const getMapSheetNavigationBottom = (bottomInset: number, platform: PlatformOSType = Platform.OS) => (
-  Math.max(16, bottomInset + (platform === 'ios' ? 16 : 10))
+  platform === 'ios' ? 16 : Math.max(16, bottomInset + 10)
 );
 
 // The collapsed sheet's entire handle must stay above the fixed navigation bar.
@@ -138,7 +139,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
         <FrostedSurface
           bottomShade={false}
           cornerRadius={32}
-          glassEffectStyle="regular"
+          glassEffectStyle="clear"
           highlightOpacity={liquidGlass.navigation.highlightOpacity}
           rimColor={liquidGlass.navigation.rim}
           pointerEvents="none"
@@ -208,7 +209,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
           <FrostedSurface
             bottomShade={false}
             cornerRadius={32}
-            glassEffectStyle="regular"
+            glassEffectStyle="clear"
             highlightOpacity={liquidGlass.navigation.highlightOpacity}
             pointerEvents="none"
             rimColor={liquidGlass.navigation.rim}

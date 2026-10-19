@@ -16,13 +16,16 @@ export const MAP_TOP_OVERLAY_METRICS = {
   searchLabelSize: 18,
 } as const;
 
+// Extra offset between the safe-area top and the header card.
+export const MAP_TOP_OVERLAY_SAFE_TOP_PADDING = Platform.OS === 'android' ? 3 : 1;
+
 export const SafeOverlay = styled(SafeAreaView)`
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
   z-index: 40;
-  padding-top: ${Platform.OS === 'android' ? 3 : 1}px;
+  padding-top: ${MAP_TOP_OVERLAY_SAFE_TOP_PADDING}px;
 `;
 
 export const Header = styled.View`
