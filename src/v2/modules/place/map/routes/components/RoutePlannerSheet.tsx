@@ -15,7 +15,6 @@ import WalkIcon from '../assets/mode_walk.svg';
 import WalkSelectedIcon from '../assets/mode_walk_selected.svg';
 import CarIcon from '../assets/mode_car.svg';
 import CarSelectedIcon from '../assets/mode_car_selected.svg';
-import BikeIcon from '../assets/mode_bike.svg';
 import RouteEndpointRows, { type EndpointRole } from './RouteEndpointRows';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import StartIcon from '../assets/start.svg';
@@ -36,9 +35,9 @@ type Props = {
   transit?: { itinerary: TransitItinerary; alternatives?: TransitItinerary[]; index: number; count: number; estimateAt?: number; onSelect: (index: number) => void; onStart: () => void };
   walk?: { summary: WalkRouteSummary; onStart: () => void; pages?: RoutePages };
 };
-const modes = ['transit', 'walk', 'car', 'bike'] as const;
-const icons = { transit: TransitInactiveIcon, walk: WalkIcon, car: CarIcon, bike: BikeIcon };
-const selectedIcons = { transit: TransitIcon, walk: WalkSelectedIcon, car: CarSelectedIcon, bike: BikeIcon };
+const modes = ['transit', 'walk', 'car'] as const;
+const icons = { transit: TransitInactiveIcon, walk: WalkIcon, car: CarIcon };
+const selectedIcons = { transit: TransitIcon, walk: WalkSelectedIcon, car: CarSelectedIcon };
 
 /** Figma 8548:35327. Map imagery, routes and result values remain live data. */
 export default function RoutePlannerSheet(props: Props) {

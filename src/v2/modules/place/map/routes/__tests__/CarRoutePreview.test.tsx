@@ -219,8 +219,7 @@ test('failed walking route allows retry without an external navigation button', 
   expect(mockMapProps.routeCoordinates).toBeUndefined();
   await user.press(screen.getByTestId('route-request'));
   expect(screen.getByTestId('walk-summary')).toHaveTextContent(/10 min/);
-  await user.press(screen.getByRole('tab', { name: 'Bicycle' }));
-  expect(screen.getByText('Use the NAVER Map app for this travel mode.')).toBeVisible();
+  expect(screen.queryByRole('tab', { name: 'Bicycle' })).toBeNull();
   expect(screen.queryByTestId('route-external')).toBeNull();
   expect(openNaverRoute).not.toHaveBeenCalled();
 });
@@ -328,7 +327,7 @@ test.each(['light', 'dark'] as const)('Figma sheet uses icon tabs, real result v
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, {
     language: 'en', colorScheme, appearancePreference: colorScheme === 'dark' ? 'DARK' : 'LIGHT',
   });
-  expect(screen.getAllByRole('tab').map(tab => tab.props.accessibilityLabel)).toEqual(['Transit', 'Walk', 'Car', 'Bicycle']);
+  expect(screen.getAllByRole('tab').map(tab => tab.props.accessibilityLabel)).toEqual(['Transit', 'Walk', 'Car']);
   expect(screen.getByRole('tab', { name: 'Car' }).props.accessibilityState).toEqual({ selected: true });
   expect(screen.getByRole('header', { name: 'Route' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Share place' })).toBeVisible();
