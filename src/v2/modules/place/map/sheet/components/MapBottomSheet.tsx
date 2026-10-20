@@ -1,3 +1,5 @@
+import { SheetMotionView, clampSheetValue, useExpandedSheetOpacity, useSheetMotion, useSheetMotionStyle } from '../hooks/useSheetMotionStyle';
+import { useMapSheetScrollToTop } from '../hooks/useMapSheetScrollToTop';
 import { useContentDeletion } from '../../../../../shared/components/useContentDeletion';
 import { useDeletePlaceReview } from '../../../visit-verification';
 import { ReviewReasonIcon } from '../../../../../shared/components/ReviewReasonIcon';
@@ -354,6 +356,16 @@ const FeedSegment = ({
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMapSheetStyles();
+  const motion = useSheetMotion();
+  const expandedOffset = motion?.expandedTranslateY ?? 0;
+  const segmentInsetStyle = useSheetMotionStyle((position, medium) => {
+    'worklet';
+    return { paddingHorizontal: clampSheetValue(position, [expandedOffset, Math.max(expandedOffset + 1, medium)], [0, 8]) };
+  }, expanded ? {} : styles.segmentInset);
+  const segmentFillStyle = useSheetMotionStyle((position, medium) => {
+    'worklet';
+    return { opacity: clampSheetValue(position, [expandedOffset, Math.max(expandedOffset + 1, medium)], [1, 0]) };
+  }, { opacity: expanded ? 1 : 0 });
   const [segmentWidth, setSegmentWidth] = useState(0);
   const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
   const reduceMotion = useReducedMotion();
@@ -431,8 +443,10 @@ const FeedSegment = ({
           pointerEvents="none"
           style={[
             styles.segmentIndicator,
+            !expanded && Platform.OS === 'ios' && styles.segmentIndicatorRaised,
             {
-              backgroundColor: expanded ? colors.background : colors.glassFillRaised,
+              backgroundColor: expanded ? colors.background
+                : Platform.OS === 'ios' ? colors.surfaceElevated : colors.glassFillRaised,
               transform: [{
                 translateX: indicatorProgress.interpolate({
                   inputRange: [0, 1],
@@ -478,8 +492,27 @@ const FeedSegment = ({
     </>
   );
 
+  // Retain the same track and measured children throughout a drag. Switching
+  // GlassSurface/View after settling resets layout and visibly widens the tabs.
+  if (motion) return (
+    <SheetMotionView {...sheetPanHandlers} onTouchStart={onTouchStart}
+      style={segmentInsetStyle} testID="feed-segment-inset">
+      <View {...horizontalDrag.panHandlers} ref={trackRef} collapsable={false}
+        style={styles.segmentFrame} testID="feed-segment-drag-track">
+        <GlassSurface glassEffectStyle="regular" intensity={56}
+          onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)}
+          style={styles.segmentOuter} testID="feed-segment-control" tintColor={colors.glassFillSubtle}>
+          <SheetMotionView pointerEvents="none" testID="feed-segment-expanded-fill"
+            style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
+              backgroundColor: colors.fillAlternative }, segmentFillStyle]} />
+          {segmentContent}
+        </GlassSurface>
+      </View>
+    </SheetMotionView>
+  );
+
   // Figma Component 2: the floating sheet (4525:25520) uses a Glass/FillSubtle track with a
-  // Glass/FillRaised thumb; the -Up frame (4683:7488) a flat Fill/Alternative track with a
+  // Glass/FillRaised thumb (opaque on iOS for legibility); the -Up frame (4683:7488) a flat Fill/Alternative track with a
   // Background/Normal thumb and no shadow, spanning the full-width sheet minus 8px.
   return (
     <View {...sheetPanHandlers} onTouchStart={onTouchStart} style={expanded ? undefined : styles.segmentInset} testID="feed-segment-inset">
@@ -591,6 +624,7 @@ const PlaceArtwork = React.memo(({
         onLoad={handleLoad}
         resizeMethod="resize"
         resizeMode="cover"
+        fadeDuration={0}
         source={imageSource}
         style={styles.artworkImage}
         testID={blurBottom ? 'recommendation-featured-image' : 'place-artwork-image'}
@@ -602,6 +636,7 @@ const PlaceArtwork = React.memo(({
             onError={() => setHasImageError(true)}
             resizeMethod="resize"
             resizeMode="cover"
+            fadeDuration={0}
             source={imageSource}
             style={styles.artworkBlurImage}
             testID="recommendation-featured-blur-image"
@@ -766,7 +801,9 @@ const PreviewArtwork = ({ imageUrl, onLoadError }: { imageUrl?: string; onLoadEr
     <Image
       accessibilityLabel={t('map.sheet.image')}
       onError={() => { if (onLoadError) onLoadError(); else setHasImageError(true); }}
+      resizeMethod="resize"
       resizeMode="cover"
+      fadeDuration={0}
       source={{ uri: imageUrl }}
       style={styles.previewArtwork}
     />
@@ -973,7 +1010,7 @@ export const ExpandedPlaceCard = ({
   onToggleBookmark: () => void;
   pending: boolean;
   place: RankedPlaceViewModel;
-  size: { width: number; height: number };
+  size?: { width: number; height: number };
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
@@ -982,7 +1019,7 @@ export const ExpandedPlaceCard = ({
     accessibilityLabel={`${place.name}, ${place.address}`}
     accessibilityRole="button"
     onPress={onPress}
-    style={({ pressed }) => [styles.homeGridCard, size, pressed && styles.pressed]}
+    style={({ pressed }) => [styles.homeGridCard, size ?? styles.fluidHomeGridCard, pressed && styles.pressed]}
   >
     <PlaceArtwork blurBottom={Platform.OS !== 'android'} imageUrl={imageUrl} variant="grid" />
     <CardScrim />
@@ -1046,10 +1083,10 @@ const ExpandedHomeContent = ({
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   const scrollRef = useRef<ScrollView>(null);
-  const { width: windowWidth } = useWindowDimensions();
-  const [gridWidth, setGridWidth] = useState<number | null>(null);
-  const gridCardSize = getMapGridCardSize(gridWidth ?? windowWidth - SHEET_RESTING_GAP * 2);
+  useMapSheetScrollToTop(() => scrollRef.current?.scrollTo({ animated: true, y: 0 }));
   const { panHandlers: feedPanHandlers, blockHorizontalSwipe } = useMapFeedSwipe(feed, onFeedChange);
+  const expandedContentStyle = useExpandedSheetOpacity(expandedOnlyOpacity);
+  const motion = useSheetMotion();
   const [hasRenderedExpandedContent, setHasRenderedExpandedContent] = useState(
     expandedInteractionsEnabled,
   );
@@ -1059,7 +1096,8 @@ const ExpandedHomeContent = ({
     state ?? (places.length > 0 ? 'ready' : 'empty'),
   );
   const displayedPlaces = categoryResult.places;
-  const shouldRenderExpandedContent = expandedInteractionsEnabled || hasRenderedExpandedContent;
+  // The bounded eight-card grid must exist before the sheet reveals it.
+  const shouldRenderExpandedContent = Boolean(motion) || expandedInteractionsEnabled || hasRenderedExpandedContent;
 
   useEffect(() => {
     if (expandedInteractionsEnabled) setHasRenderedExpandedContent(true);
@@ -1119,9 +1157,9 @@ const ExpandedHomeContent = ({
         </ScrollView>}
 
         {shouldRenderExpandedContent && !restingScrollEnabled ? (
-          <Animated.View
+          <SheetMotionView
             pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
-            style={{ opacity: expandedOnlyOpacity }}
+            style={expandedContentStyle}
             testID="expanded-home-only-content"
           >
             <AppText style={styles.expandedTitle}>
@@ -1159,27 +1197,26 @@ const ExpandedHomeContent = ({
             </ScrollView>
 
             <View
-              onLayout={({ nativeEvent }) => setGridWidth(nativeEvent.layout.width)}
               style={styles.gridRow}
               testID="map-expanded-place-grid"
             >
-              {displayedPlaces.slice(0, 8).map((place) => (
-                <ExpandedPlaceCard
-                  bookmarked={place.bookmarked}
-                  imageUrl={place.imageUrl}
-                  key={`grid-${place.placeId}`}
-                  onPress={() => onPlacePress(place)}
-                  onToggleBookmark={() => void onToggleBookmark(
-                    place,
-                    !place.bookmarked,
-                  )}
-                  pending={Boolean(bookmarkPendingPlaceIds[String(place.placeId)])}
-                  place={place}
-                  size={gridCardSize}
-                />
-              ))}
+              {Array.from({ length: Math.ceil(Math.min(displayedPlaces.length, 8) / 2) }, (_, rowIndex) => {
+                const row = displayedPlaces.slice(rowIndex * 2, rowIndex * 2 + 2);
+                return <View key={row[0].placeId} style={styles.homeGridRow} testID={`map-expanded-grid-row-${rowIndex}`}>
+                  {row.map(place => <ExpandedPlaceCard
+                    bookmarked={place.bookmarked}
+                    imageUrl={place.imageUrl}
+                    key={`grid-${place.placeId}`}
+                    onPress={() => onPlacePress(place)}
+                    onToggleBookmark={() => void onToggleBookmark(place, !place.bookmarked)}
+                    pending={Boolean(bookmarkPendingPlaceIds[String(place.placeId)])}
+                    place={place}
+                  />)}
+                  {row.length === 1 ? <View style={styles.homeGridPlaceholder} /> : null}
+                </View>;
+              })}
             </View>
-          </Animated.View>
+          </SheetMotionView>
         ) : null}
       </FadeSlideTransition>
     </ScrollView>
@@ -1338,7 +1375,9 @@ const RecommendationContent = ({
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
   const scrollRef = useRef<ScrollView>(null);
+  useMapSheetScrollToTop(() => scrollRef.current?.scrollTo({ animated: true, y: 0 }));
   const featuredPlaces = places.slice(0, 3);
+  const expandedContentStyle = useExpandedSheetOpacity(expandedOnlyOpacity);
   const gridPlaces = places.slice(3);
   const gridRows = [
     gridPlaces.filter((_, index) => index % 2 === 0),
@@ -1395,9 +1434,9 @@ const RecommendationContent = ({
             ))}
           </ScrollView>
           {gridPlaces.length > 0 && !restingScrollEnabled ? (
-            <Animated.View
+            <SheetMotionView
               pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
-              style={{ opacity: expandedOnlyOpacity }}
+              style={expandedContentStyle}
               testID="expanded-recommendation-only-content"
             >
               <AppText style={styles.recommendationGridTitle}>
@@ -1430,7 +1469,7 @@ const RecommendationContent = ({
                   </ScrollView>
                 ))}
               </View>
-            </Animated.View>
+            </SheetMotionView>
           ) : null}
           </>
         ) : (
@@ -1514,7 +1553,9 @@ const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
   return (
     <Image
       onError={() => setHasError(true)}
+      resizeMethod="resize"
       resizeMode="cover"
+      fadeDuration={0}
       source={{ uri: url }}
       style={styles.detailReviewerAvatarImage}
     />
@@ -2585,6 +2626,13 @@ export default function MapBottomSheet({
     inputRange: [Math.max(0, mediumTranslateY - 96), mediumTranslateY],
     outputRange: [1, 0],
   });
+  const movingContentStyle = useSheetMotionStyle(position => {
+    'worklet';
+    return {
+      opacity: clampSheetValue(position, [mediumTranslateY, contentFadeStart, collapsedTranslateY], [1, 0.78, 0]),
+      transform: [{ translateY: clampSheetValue(position, [mediumTranslateY, collapsedTranslateY], [0, 22]) }],
+    };
+  }, { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] });
   return (
     <GlassStyles.BottomSheetContainer
       style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}
@@ -2607,13 +2655,13 @@ export default function MapBottomSheet({
         </View>
       ) : null}
 
-      <Animated.View
+      <SheetMotionView
         {...(snapPoint === 'expanded' || restingScrollEnabled ? {} : panHandlers)}
         pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
         style={[
           styles.sheetContent,
           restingScrollEnabled && { flex: 0, height: compactContentHeight },
-          { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] },
+          movingContentStyle,
         ]}
         testID="map-sheet-content"
       >
@@ -2763,7 +2811,7 @@ export default function MapBottomSheet({
           userName={userName?.trim() || 'user'}
         />
       )}
-      </Animated.View>
+      </SheetMotionView>
       </MapSheetSurface>
 
       {content.type !== 'place-preview' && content.type !== 'external-place' ? (
@@ -3054,11 +3102,13 @@ const createStyles = (
   gridCardName: { color: colors.backgroundAssistive, flexShrink: 1, fontSize: 16, fontWeight: '700', lineHeight: 21, maxWidth: '100%', paddingRight: 40 },
   gridBookmarkStar: { bottom: 12, padding: 4, position: 'absolute', right: 8, zIndex: 3 },
   gridRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 16,
     paddingHorizontal: 8,
   },
+  homeGridRow: { flexDirection: 'row', gap: 16 },
+  homeGridPlaceholder: { flex: 1, minWidth: 0 },
+  fluidHomeGridCard: { flex: 1, minWidth: 0, aspectRatio: 177 / 222 },
   homeGridCard: {
     backgroundColor: colors.surfaceMuted,
     borderColor: colors.border,
@@ -3310,6 +3360,11 @@ const createStyles = (
     left: 4,
     position: 'absolute',
     top: 4,
+  },
+  segmentIndicatorRaised: {
+    borderColor: colors.border,
+    borderWidth: 1,
+    boxShadow: `0px 1px 4px ${colors.shadowKnob}`,
   },
   feedTransition: { width: '100%' },
   segmentOuter: {

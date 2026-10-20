@@ -1,3 +1,4 @@
+export { SheetMotionView, clampSheetValue, useSheetMotionStyle } from './hooks/useSheetMotionStyle';
 export { MapReservationSheetProvider } from './mapReservationSheet';
 export type { MapReservationSheetProps } from './mapReservationSheet';
 export { MapCommunitySheetProvider } from './mapCommunitySheet';
@@ -11,3 +12,5 @@ export { normalizePlaceCategory } from '../../core/placeCategory';
 export { BottomSheetContainer, SheetChromeShadow, SheetChrome, SheetGlass, SheetExpandedFill, SheetContentViewport, SheetInner } from './styles/BottomSheetGlass.styles';
 
 export { default as MapSheetSurface } from './components/MapSheetSurface';
+
+export { MapSheetScrollToTopProvider, useMapSheetScrollToTop } from './hooks/useMapSheetScrollToTop';

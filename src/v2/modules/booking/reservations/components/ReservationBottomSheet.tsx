@@ -1,3 +1,4 @@
+import { useMapSheetScrollToTop, SheetMotionView, clampSheetValue, useSheetMotionStyle } from '../../../place/map/sheet';
 import Skeleton from '../../../../shared/components/Skeleton';
 import { ApiErrorState } from '../../../../shared/components';
 import ReservationRecordCard from './ReservationRecordCard';
@@ -61,7 +62,7 @@ function ReservationPlaceImage({ uri }: { uri?: string }) {
   if (!uri || failed) {
     return <View style={[styles.savedImage, styles.savedImageFallback]}><MyPlaceAsset height={30} width={30} /></View>;
   }
-  return <Image onError={() => setFailed(true)} resizeMode="cover" source={{ uri }} style={styles.savedImage} />;
+  return <Image resizeMethod="resize" onError={() => setFailed(true)} fadeDuration={0} resizeMode="cover" source={{ uri }} style={styles.savedImage} />;
 }
 
 function ReservationPlaceCard({
@@ -205,6 +206,8 @@ export default function ReservationBottomSheet({
   const theme = useTheme();
   const { colors } = theme;
   const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const scrollRef = React.useRef<ScrollView>(null);
+  useMapSheetScrollToTop(() => scrollRef.current?.scrollTo({ animated: true, y: 0 }));
   const reservations = useReservations({ limit: 20, page: 1 });
   const items = reservations.data?.reservations ?? [];
   const reservationPlaces = items.flatMap((reservation) => {
@@ -221,6 +224,10 @@ export default function ReservationBottomSheet({
     inputRange: [mediumTranslateY, fadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
+  const movingContentStyle = useSheetMotionStyle(position => {
+    'worklet';
+    return { opacity: clampSheetValue(position, [mediumTranslateY, fadeStart, collapsedTranslateY], [1, 0.78, 0]) };
+  }, { opacity });
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
@@ -230,17 +237,16 @@ export default function ReservationBottomSheet({
             <View style={styles.handle} />
           </Pressable>
         </View>
-        <Animated.View pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={[styles.content, { opacity }]}>
+        <SheetMotionView pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'} style={[styles.content, movingContentStyle]}>
           {/* The header below the handle is also a drag area, so the sheet follows a swipe there. */}
           <View {...panHandlers} testID="reservation-sheet-header">
             <View style={styles.titleRow}>
-              <MapAsset color={colors.primary} height={20} width={18} />
               <AppText accessibilityRole="header" style={styles.title}>{t('reservation.list.nearbyTitle')}</AppText>
             </View>
             <AppText style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</AppText>
           </View>
           <View style={[styles.listViewport, snapPoint === 'medium' && styles.listViewportMedium]}>
-            <ScrollView contentContainerStyle={styles.listContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+            <ScrollView ref={scrollRef} testID="reservation-place-scroll" contentContainerStyle={styles.listContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {nearbyError ? <ApiErrorState error={nearbyError} busy={nearbyBusy} onRetry={onRetryNearby} /> : null}
               {nearbyPlaces.length > 0 || !nearbyError ? <NearbyReservationRail
                 bookmarkedPlaceIds={bookmarkedPlaceIds}
@@ -284,7 +290,7 @@ export default function ReservationBottomSheet({
               ) : null}
             </ScrollView>
           </View>
-        </Animated.View>
+        </SheetMotionView>
       </GlassStyles.MapSheetSurface>
       <MapSheetBottomNavigation
         activeTab="reservations"
@@ -305,7 +311,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   handleArea: { alignItems: 'center', height: 19, justifyContent: 'flex-start' },
   handleButton: { alignItems: 'center', height: 19, paddingTop: 6, width: 96 },
   listContent: { paddingBottom: 120, paddingHorizontal: 16, paddingTop: 2 },
-  listViewport: { flex: 1, marginBottom: 92, overflow: 'hidden' },
+  listViewport: { flex: 1, overflow: 'hidden' },
   listViewportMedium: { flex: 0, height: 250, marginBottom: 0 },
   nearbyEmpty: { alignItems: 'center', minHeight: 72, justifyContent: 'center' },
   nearbyEmptyText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
@@ -334,5 +340,5 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
   // Figma CheckIn (7969:9887): Headline1/Bold title, Label/Regular subtitle 4dp below.
   subtitle: { color: colors.textSecondary, fontSize: 14, includeFontPadding: false, lineHeight: 18, marginTop: 4, paddingHorizontal: 16 },
   title: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', includeFontPadding: false, lineHeight: 26 },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
+  titleRow: { height: 44, alignItems: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
 });

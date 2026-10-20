@@ -4,6 +4,46 @@ import { screen, within } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
 import MapSheetSurface from '../MapSheetSurface';
+import { SheetMotionProvider } from '../../hooks/useSheetMotionStyle';
+import { useSharedValue } from 'react-native-reanimated';
+
+jest.mock('react-native-reanimated', () => ({
+  ...jest.requireActual('react-native-reanimated/mock'),
+  interpolate: jest.requireActual('react-native-reanimated/src/interpolation').interpolate,
+}));
+
+test('UI motion continuously sizes the viewport while retaining fixed-height glass', async () => {
+  function Sheet() {
+    const position = useSharedValue(150);
+    return <SheetMotionProvider value={{ position, mediumTranslateY: 300, height: 800, restingTranslateY: 150 }}>
+      <MapSheetSurface testID="sheet" sheetChromeBottom={new Animated.Value(600)} mediumTranslateY={300}><View /></MapSheetSurface>
+    </SheetMotionProvider>;
+  }
+  await renderWithProviders(<Sheet />);
+  for (const id of ['sheet-background-viewport', 'sheet-content-viewport']) {
+    expect(screen.getByTestId(id)).toHaveStyle({ bottom: 4, left: 4, right: 4, transform: [{ translateY: -150 }],
+      borderBottomLeftRadius: 24, borderBottomRightRadius: 24 });
+  }
+  expect(screen.getByTestId('sheet-chrome')).toHaveStyle({ height: 800, transform: [{ translateX: -4 }, { translateY: 150 }] });
+  expect(screen.getByTestId('sheet-content-position')).toHaveStyle({ height: 646, transform: [{ translateX: -4 }, { translateY: 150 }] });
+  expect(screen.getByTestId('sheet-expanded-fill')).toHaveStyle({ opacity: 0.5 });
+});
+
+test('settled snap changes do not resize a sheet at the same finger position', async () => {
+  function Sheet({ resting }: { resting: number }) {
+    const position = useSharedValue(215);
+    return <SheetMotionProvider value={{ position, mediumTranslateY: 300, height: 800, restingTranslateY: resting }}>
+      <MapSheetSurface testID="sheet" expandedTranslateY={130} sheetChromeBottom={new Animated.Value(300)} mediumTranslateY={300}><View /></MapSheetSurface>
+    </SheetMotionProvider>;
+  }
+  const view = await renderWithProviders(<Sheet resting={300} />);
+  const expected = { bottom: 4, left: 4, right: 4 };
+  expect(screen.getByTestId('sheet-content-viewport')).toHaveStyle(expected);
+  expect(screen.getByTestId('sheet-content-position')).toHaveStyle({ height: 581 });
+  await view.rerender(<Sheet resting={130} />);
+  expect(screen.getByTestId('sheet-content-viewport')).toHaveStyle(expected);
+  expect(screen.getByTestId('sheet-content-position')).toHaveStyle({ height: 581 });
+});
 
 test.each(['LIGHT', 'DARK'] as const)('%s shares chrome and content bounds through drag offsets', async appearancePreference => {
   for (const bottom of [0, 150, 300, 600]) {
@@ -55,4 +95,9 @@ test('nonzero expanded offset keeps chrome and content on the same full-width bo
     expect(screen.getByTestId('sheet-content-viewport')).toHaveStyle({ ...expected, overflow: 'hidden' });
     await view.unmount();
   }
+});
+
+test.each([[130, 0], [131, 1], [300, 1]] as const)('불투명 배경에 덮인 큰 블러는 %s 위치에서 opacity %s로 합성한다', async (offset, opacity) => {
+  await renderWithProviders(<MapSheetSurface testID="sheet" expandedTranslateY={130} mediumTranslateY={300} sheetChromeBottom={new Animated.Value(offset)}><View /></MapSheetSurface>);
+  expect(screen.getByTestId('sheet-background-glass')).toHaveStyle({ opacity });
 });

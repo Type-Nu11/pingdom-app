@@ -79,6 +79,8 @@ export default function CommunityImage({
       accessibilityLabel={accessibilityLabel}
       accessible={Boolean(accessibilityLabel)}
       onError={() => setFailed(true)}
+      resizeMethod="resize"
+      fadeDuration={0}
       resizeMode="cover"
       source={source}
       testID={testID}

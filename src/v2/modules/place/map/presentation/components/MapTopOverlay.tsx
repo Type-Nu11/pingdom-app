@@ -1,5 +1,7 @@
 import React from 'react';
-import { ActivityIndicator, Animated, PanResponder, View, useWindowDimensions } from 'react-native';
+import { useAnimatedReaction, runOnJS } from 'react-native-reanimated';
+import { useSheetMotion } from '../../sheet/hooks/useSheetMotionStyle';
+import { ActivityIndicator, Animated, PanResponder, Platform, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SearchAsset from '../../../../../../assets/v2/icons/search.svg';
@@ -94,7 +96,15 @@ export default function MapTopOverlay({
   // Keep the slot while hidden to avoid a layout/visibility feedback loop.
   const [overlayHeight, setOverlayHeight] = React.useState(0);
   const [directionsFits, setDirectionsFits] = React.useState(false);
+  const motionPosition = useSheetMotion()?.position;
+  const directionsEnabled = Boolean(onDirectionsPress);
+  useAnimatedReaction(() => motionPosition
+    ? directionsEnabled && overlayHeight > 0 && overlayHeight + 8 <= Math.min(motionPosition.value, windowHeight - insets.bottom)
+    : null, (fits, previous) => {
+    if (fits !== null && fits !== previous) runOnJS(setDirectionsFits)(fits);
+  });
   React.useEffect(() => {
+    if (motionPosition) return;
     if (!onDirectionsPress) {
       setDirectionsFits(false);
       return;
@@ -105,7 +115,7 @@ export default function MapTopOverlay({
     update(directionsRestingTop);
     const listener = directionsSheetTop?.addListener(({ value }) => update(value));
     return () => { if (listener) directionsSheetTop?.removeListener(listener); };
-  }, [directionsRestingTop, directionsSheetTop, insets.bottom, onDirectionsPress, overlayHeight, windowHeight]);
+  }, [directionsRestingTop, directionsSheetTop, insets.bottom, motionPosition, onDirectionsPress, overlayHeight, windowHeight]);
   const pullDistance = React.useRef(new Animated.Value(0)).current;
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [isLocatePressed, setIsLocatePressed] = React.useState(false);
@@ -210,6 +220,7 @@ export default function MapTopOverlay({
             />
             <S.SearchShadow>
               <S.SearchGlass
+                backdropBlurEnabled={Platform.OS !== 'android'}
                 bottomShade={false}
                 cornerRadius={liquidGlass.search.radius}
                 glassEffectStyle="regular"
@@ -292,6 +303,7 @@ export default function MapTopOverlay({
                   >
                     <S.CategoryChipClip>
                       <S.CategoryChipGlass
+                        material="frosted"
                         androidTintColor={isActive ? liquidGlass.category.androidActiveTint : liquidGlass.category.androidTint}
                         blurTint="default"
                         glassEffectStyle="clear"

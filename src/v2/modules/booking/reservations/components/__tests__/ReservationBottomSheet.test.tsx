@@ -1,6 +1,7 @@
+import { MapSheetScrollToTopProvider } from '../../../../place/map/sheet';
 import React, { type ReactElement, type PropsWithChildren } from 'react';
 import { render, screen, userEvent } from '@testing-library/react-native';
-import { Animated, type GestureResponderHandlers } from 'react-native';
+import { ScrollView, Animated, type GestureResponderHandlers } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
 import { ThemeProvider } from 'styled-components/native';
 
@@ -287,4 +288,15 @@ test.each([
     />,
   );
   expect(screen.getByTestId('sheet-expanded-fill')).toHaveStyle({ backgroundColor: theme.colors.backgroundAssistive, opacity });
+});
+
+test('더블 탭은 예약 목록도 처음으로 이동하고 목록은 네브바 뒤까지 이어진다', async () => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 } }));
+  const scroll = jest.spyOn(ScrollView.prototype, 'scrollTo');
+  const ui = (request: number) => <MapSheetScrollToTopProvider value={request}><ReservationBottomSheet {...expandedBottomSheet} {...navigation} /></MapSheetScrollToTopProvider>;
+  const view = await renderReservations(ui(0));
+  scroll.mockClear();
+  await view.rerender(ui(1));
+  expect(scroll).toHaveBeenCalledWith({ animated: true, y: 0 });
+  scroll.mockRestore();
 });

@@ -11,6 +11,44 @@ describe('useBottomSheet', () => {
     jest.useRealTimers();
     jest.restoreAllMocks();
   });
+  test('UI motion uses a shared position without starting a JS spring', async () => {
+    const create = jest.spyOn(PanResponder, 'create');
+    const spring = jest.spyOn(Animated, 'spring');
+    const { result } = await renderHook(() => useBottomSheet({
+      collapsedTranslateY: 780, expandedTranslateY: 130, mediumTranslateY: 480, uiThreadMotion: true,
+    }));
+    const callbacks = create.mock.calls[0][0];
+    const event = {} as GestureResponderEvent;
+    await act(() => callbacks.onPanResponderGrant?.(event, {} as PanResponderGestureState));
+    await act(() => callbacks.onPanResponderMove?.(event, { dy: -90 } as PanResponderGestureState));
+    expect(result.current.uiPosition.value).toBe(390);
+    expect((result.current.sheetTranslateY as unknown as { __getValue: () => number }).__getValue()).toBe(480);
+    await act(() => result.current.snapTo('expanded'));
+    expect(result.current.snapPoint).toBe('expanded');
+    expect(spring).not.toHaveBeenCalled();
+    await act(() => result.current.jumpTo('medium'));
+    expect(result.current.uiPosition.value).toBe(480);
+  });
+  test('UI motion keeps the current layout until settling and ignores an obsolete completion after a tab jump', async () => {
+    const completions: Array<(finished: boolean) => void> = [];
+    jest.spyOn(require('react-native-reanimated'), 'withSpring').mockImplementation((...args: unknown[]) => {
+      completions.push(args[2] as (finished: boolean) => void);
+      return args[0];
+    });
+    const { result } = await renderHook(() => useBottomSheet({
+      collapsedTranslateY: 780, expandedTranslateY: 130, mediumTranslateY: 480, uiThreadMotion: true,
+    }));
+    await act(() => result.current.snapTo('expanded'));
+    expect(result.current.snapPoint).toBe('expanded');
+    expect(result.current.presentedSnapPoint).toBe('medium');
+    await act(() => completions[0](true));
+    expect(result.current.presentedSnapPoint).toBe('expanded');
+    await act(() => result.current.snapTo('medium'));
+    expect(result.current.presentedSnapPoint).toBe('expanded');
+    await act(() => result.current.jumpTo('collapsed'));
+    await act(() => completions[1](true));
+    expect(result.current.presentedSnapPoint).toBe('collapsed');
+  });
   test('수직 이동만 바텀시트 드래그로 판정한다', () => {
     expect(shouldClaimVerticalDrag({ dx: 1, dy: -12 })).toBe(true);
     expect(shouldClaimVerticalDrag({ dx: 12, dy: -1 })).toBe(false);

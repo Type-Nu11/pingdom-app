@@ -50,6 +50,8 @@ export const getMapSheetCollapsedVisibleHeight = (bottomInset: number, platform:
 
 type Props = {
   activeTab: MapSheetNavigationTab;
+  blurTarget?: React.RefObject<View | null>;
+  onDoublePress?: (tab: MapSheetNavigationTab) => void;
   onOpenCommunity?: () => void;
   onOpenFavorites?: () => void;
   onOpenMap?: () => void;
@@ -61,6 +63,8 @@ type Props = {
 
 const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
   activeTab,
+  blurTarget,
+  onDoublePress,
   onOpenCommunity,
   onOpenFavorites,
   onOpenMap,
@@ -80,6 +84,20 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
     { id: 'community' as const, label: t('map.navigation.community'), onPress: onOpenCommunity },
     { id: 'reservations' as const, label: t('map.navigation.reservations'), onPress: onOpenReservations },
   ];
+  const lastTap = useRef<{ tab: MapSheetNavigationTab; time: number } | null>(null);
+  const pressTab = (tab: MapSheetNavigationTab, open?: () => void) => {
+    if (dragging.current) return;
+    if (!onDoublePress) { open?.(); return; }
+    const now = Date.now();
+    const previous = lastTap.current;
+    if (previous?.tab === tab && now - previous.time <= 350 && activeTab === tab) {
+      lastTap.current = null;
+      onDoublePress(tab);
+      return;
+    }
+    lastTap.current = { tab, time: now };
+    if (activeTab !== tab) open?.();
+  };
   const hidden = useContext(NavigationHiddenContext);
   const bar = useRef<View>(null);
   const bounds = useRef({ left: NAVIGATION_SIDE_INSET, width: 0 });
@@ -143,6 +161,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
       onMoveShouldSetPanResponder: claim,
       onMoveShouldSetPanResponderCapture: claim,
       onPanResponderGrant: (_, gesture) => {
+        lastTap.current = null;
         dragging.current = true;
         setIsDragging(true);
         lastDragTab.current = navigation.current.activeTab;
@@ -174,15 +193,18 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
       }} collapsable={false} style={styles.navigationShadow} testID="map-navigation-swipe">
         <View style={styles.navigationBar} testID="map-navigation-bar">
         <FrostedSurface
+          blurTarget={blurTarget}
           bottomShade={false}
           cornerRadius={32}
           glassEffectStyle="clear"
-          highlightOpacity={liquidGlass.navigation.highlightOpacity}
+          material="balanced"
+          intensity={36}
+          highlightOpacity={liquidGlass.navigation.highlightOpacity * 0.65}
           rimColor={liquidGlass.navigation.rim}
           pointerEvents="none"
           style={styles.navigationGlass}
           testID="map-navigation-glass"
-          tintColor={liquidGlass.navigation.tint}
+          tintColor={liquidGlass.navigation.softTint}
         />
           {isDragging && barWidth > 8 ? (
             <Animated.View pointerEvents="none" testID="map-navigation-drag-indicator" style={{
@@ -220,7 +242,7 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
                 key={id}
-                onPress={() => { if (!dragging.current) onPress?.(); }}
+                onPress={() => pressTab(id, onPress)}
                 style={styles.navItem}
                 testID={`map-navigation-${id}`}
               >
@@ -248,20 +270,23 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
         accessibilityLabel={t('map.navigation.recommendations')}
         accessibilityRole="tab"
         accessibilityState={{ selected: selectedTab === 'recommendations' }}
-        onPress={onOpenRecommendations}
+        onPress={() => pressTab('recommendations', onOpenRecommendations)}
         style={styles.sendButton}
         testID="map-navigation-recommendations"
       >
           <FrostedSurface
+            blurTarget={blurTarget}
             bottomShade={false}
             cornerRadius={32}
             glassEffectStyle="clear"
-            highlightOpacity={liquidGlass.navigation.highlightOpacity}
+            material="balanced"
+            intensity={36}
+            highlightOpacity={liquidGlass.navigation.highlightOpacity * 0.65}
             pointerEvents="none"
             rimColor={liquidGlass.navigation.rim}
             style={styles.sendButtonGlass}
             testID="map-navigation-recommendations-surface"
-            tintColor={liquidGlass.navigation.tint}
+            tintColor={liquidGlass.navigation.softTint}
           >
             {selectedTab === 'recommendations' ? (
               <>

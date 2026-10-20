@@ -16,6 +16,7 @@ type MapCanvasProps = {
   userLat?: number;
   userLng?: number;
   headingEnabled?: boolean;
+  renderingActive?: boolean;
   zoomLevel: number;
 };
 
@@ -33,12 +34,14 @@ const MapCanvas = ({
   userLat,
   userLng,
   headingEnabled,
+  renderingActive,
   zoomLevel,
 }: MapCanvasProps) => (
   <NaverMapAdapter
     center={{ lat: centerLat, lng: centerLng }}
     followUser={followUser}
     headingEnabled={headingEnabled}
+    renderingActive={renderingActive}
     markers={markers}
     onCameraGesture={onCameraGesture}
     onCameraIdle={onCameraIdle}

@@ -1,6 +1,7 @@
+import { MapSheetScrollToTopProvider } from '../../../place/map/sheet';
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
-import { Animated, type GestureResponderHandlers } from 'react-native';
+import { FlatList, Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { useCategories, useCommunityFeed, useCountries } from '../../hooks/useCommunity';
@@ -97,6 +98,17 @@ describe('CommunityBottomSheet interactions', () => {
   beforeEach(() => {
     jest.mocked(useCategories).mockReturnValue(categoriesResult());
     jest.mocked(useCountries).mockReturnValue(countriesResult());
+  });
+
+  test('더블 탭은 게시글 목록 스크롤을 처음으로 이동한다', async () => {
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult({ data: { pages: [postPage({ posts: [{ postId: 1, title: '글' }] })], pageParams: [1] } }));
+    const scroll = jest.spyOn(FlatList.prototype, 'scrollToOffset').mockImplementation(() => {});
+    const ui = (request: number) => <MapSheetScrollToTopProvider value={request}><CommunityBottomSheet {...createBottomSheetProps()} {...navigation} /></MapSheetScrollToTopProvider>;
+    const view = await renderSheet(ui(0));
+    scroll.mockClear();
+    await view.rerender(ui(1));
+    expect(scroll).toHaveBeenCalledWith({ animated: true, offset: 0 });
+    scroll.mockRestore();
   });
 
   test('카테고리를 누르면 해당 카테고리로 게시글 조회를 전환한다', async () => {

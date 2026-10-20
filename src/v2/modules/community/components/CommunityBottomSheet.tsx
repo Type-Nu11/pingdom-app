@@ -1,3 +1,4 @@
+import { useMapSheetScrollToTop, SheetMotionView, clampSheetValue, useSheetMotionStyle } from '../../place/map/sheet';
 import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../shared/components/Typography';
 import React, { useMemo, useRef, useState } from 'react';
@@ -102,7 +103,12 @@ export default function CommunityBottomSheet({
   const categoriesQuery = useCategories();
   const categories = categoriesQuery.data?.categories ?? [];
   const countriesQuery = useCountries();
+  const listRef = useRef<FlatList<CommunityPostSummary & { postId: number }>>(null);
   const feedKey = `${selectedCategoryId ?? ''}|${selectedCountryCode ?? ''}`;
+  useMapSheetScrollToTop(() => {
+    scrollOffsetByFeed[feedKey] = 0;
+    listRef.current?.scrollToOffset({ animated: true, offset: 0 });
+  });
 
   // Both filters are real query parameters and part of the query key, so
   // switching either one restarts the feed at page 1.
@@ -139,6 +145,14 @@ export default function CommunityBottomSheet({
   const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
   // Half-sheet chips float as glass (Shadow/Float); the expanded page uses flat chips.
   const isExpanded = snapPoint === 'expanded';
+  const movingContentStyle = useSheetMotionStyle(position => {
+    'worklet';
+    return { opacity: clampSheetValue(position, [mediumTranslateY, fadeStart, collapsedTranslateY], [1, 0.78, 0]) };
+  }, { opacity });
+  const writePositionStyle = useSheetMotionStyle(position => {
+    'worklet';
+    return { transform: [{ translateY: -position }] };
+  }, { transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }] });
   const chipShadowStyle = isExpanded ? undefined : { boxShadow: themedGlass.category.shadow };
 
   const openCountryMenu = () => {
@@ -192,16 +206,16 @@ export default function CommunityBottomSheet({
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
+      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
         <HandleArea {...panHandlers}>
           <HandleButton accessibilityLabel={t('community.sheetAdjust')} accessibilityRole="adjustable" onPress={onHandlePress}>
             <Handle />
           </HandleButton>
         </HandleArea>
 
-        <Animated.View
+        <SheetMotionView
           pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
-          style={{ flex: 1, opacity }}
+          style={[{ flex: 1 }, movingContentStyle]}
         >
           {/* The title row and chips are a drag area too; taps and horizontal chip swipes still work. */}
           <View {...panHandlers} testID="v2-community-sheet-header">
@@ -274,6 +288,7 @@ export default function CommunityBottomSheet({
               </ErrorViewport>
             ) : (
               <FlatList
+                ref={listRef}
                 contentContainerStyle={LIST_CONTENT_STYLE}
                 contentOffset={{ x: 0, y: scrollOffsetByFeed[feedKey] ?? 0 }}
                 data={posts}
@@ -294,17 +309,16 @@ export default function CommunityBottomSheet({
               />
             )}
           </ListViewport>
-        </Animated.View>
+        </SheetMotionView>
       </GlassStyles.MapSheetSurface>
 
       {snapPoint === 'expanded' ? (
         // Pinned to the screen like MapSheetBottomNavigation: the sheet
         // container is translated, so the FAB cancels that translation.
         <WriteFabAnchor
-          style={{
+          style={[{
             bottom: getMapSheetNavigationBottom(insets.bottom) + NAVIGATION_BAR_HEIGHT + WRITE_FAB_NAVIGATION_GAP,
-            transform: [{ translateY: Animated.multiply(sheetTranslateY, -1) }],
-          }}
+          }, writePositionStyle]}
         >
           <WriteFab
             accessibilityLabel={t('community.write')}
@@ -416,7 +430,7 @@ const FooterErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.tex
 const RetryButton = styled.Pressable`background-color: ${({ theme }) => theme.colors.primaryAction}; border-radius: ${({ theme }) => theme.radius.full}px; padding: 9px 18px;`;
 const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
 
-const WriteFabAnchor = styled(Animated.View)`position: absolute; right: 24px;`;
+const WriteFabAnchor = styled(SheetMotionView)`position: absolute; right: 24px;`;
 // Glass primary CTA over a solid `Primary/Normal` base: Figma's FAB renders
 // fully saturated, while native glass alone washes the 56% tint out.
 const WriteFab = styled.Pressable`

@@ -1,6 +1,7 @@
+import { MapSheetScrollToTopProvider } from '../../hooks/useMapSheetScrollToTop';
 import { screen } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, type GestureResponderHandlers } from 'react-native';
+import { ScrollView, Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import FavoritePlacesBottomSheet from '../FavoritePlacesBottomSheet';
@@ -141,4 +142,17 @@ test.each(['LIGHT', 'DARK'] as const)('%s 즐겨찾기는 칩 그림자를 부�
     boxShadow: `0px 2px 8px -2px ${appearancePreference === 'LIGHT' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.40)'}`,
   });
   expect(screen.getByTestId('favorites-sheet-content-viewport')).toHaveStyle({ overflow: 'hidden' });
+});
+
+test('더블 탭 요청은 즐겨찾기 필터를 유지하며 목록만 처음으로 이동한다', async () => {
+  const scroll = jest.spyOn(ScrollView.prototype, 'scrollTo');
+  const ui = (request: number) => <MapSheetScrollToTopProvider value={request}><FavoritePlacesBottomSheet {...props} /></MapSheetScrollToTopProvider>;
+  const view = await renderWithProviders(ui(0));
+  await view.user.press(screen.getByRole('tab', { name: '카페' }));
+  scroll.mockClear();
+  await view.rerender(ui(1));
+  expect(scroll).toHaveBeenCalledWith({ animated: true, y: 0 });
+  expect(screen.getByRole('tab', { name: '카페', selected: true })).toBeVisible();
+  expect(screen.getByTestId('favorites-place-scroll').props.contentContainerStyle).toEqual(expect.arrayContaining([expect.objectContaining({ paddingBottom: expect.any(Number) })]));
+  scroll.mockRestore();
 });

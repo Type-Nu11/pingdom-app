@@ -43,6 +43,19 @@ beforeEach(() => {
   jest.mocked(isLiquidGlassAvailable).mockReturnValue(true);
 });
 
+test('Android foreground content can override the map snapshot without changing other glass targets', async () => {
+  jest.replaceProperty(Platform, 'OS', 'android');
+  const contentTarget = { current: null } as React.RefObject<View | null>;
+  await render(<MapGlassBackdrop active>
+    <GlassSurface testID="navigation" blurTarget={contentTarget}><Text>커뮤니티 메뉴</Text></GlassSurface>
+    <GlassSurface testID="map-control"><Text>지도 도구</Text></GlassSurface>
+  </MapGlassBackdrop>);
+  const [navigation, mapControl] = screen.getAllByTestId('glass-blur');
+  expect(navigation.props.blurTarget).toBe(contentTarget);
+  expect(mapControl.props.blurTarget).not.toBe(contentTarget);
+  expect(mapControl.props.blurTarget).toBeDefined();
+});
+
 test('지원하는 iOS에서는 네이티브 Liquid Glass와 내부 버튼 동작을 유지한다', async () => {
   jest.replaceProperty(Platform, 'OS', 'ios');
   const onPress = jest.fn();
@@ -222,4 +235,15 @@ test('dark theme synchronizes native glass, blur, and opaque fallback defaults',
   expect(screen.getByTestId('dark-blur').children.at(-1)).toHaveStyle({
     backgroundColor: 'rgba(27, 27, 32, 0.96)',
   });
+});
+
+test('Android 불투명 표면이나 이미 블러가 있는 내부 표면은 블러를 중복 생성하지 않는다', async () => {
+  jest.replaceProperty(Platform, 'OS', 'android');
+  const view = await render(<MapGlassBackdrop active><GlassSurface tintColor="#FF1956"><Text>작성하기</Text></GlassSurface></MapGlassBackdrop>);
+  expect(screen.queryByTestId('glass-blur')).toBeNull();
+  expect(screen.getByText('작성하기')).toBeVisible();
+  await view.rerender(<MapGlassBackdrop active><GlassSurface backdropBlurEnabled={false}><Text>검색</Text></GlassSurface></MapGlassBackdrop>);
+  expect(screen.queryByTestId('glass-blur')).toBeNull();
+  await view.rerender(<MapGlassBackdrop active><GlassSurface><Text>네브바</Text></GlassSurface></MapGlassBackdrop>);
+  expect(screen.getByTestId('glass-blur')).toBeTruthy();
 });

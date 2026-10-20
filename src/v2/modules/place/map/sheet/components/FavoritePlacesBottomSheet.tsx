@@ -1,9 +1,11 @@
+import { SheetMotionView, clampSheetValue, useSheetMotionStyle } from '../hooks/useSheetMotionStyle';
+import { useMapSheetScrollToTop } from '../hooks/useMapSheetScrollToTop';
 import MapSheetSurface from './MapSheetSurface';
 import Skeleton from '../../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import ApiErrorState from '../../../../../shared/components/ApiErrorState';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -117,6 +119,8 @@ const FavoriteImage = ({ uri }: { uri?: string }) => {
   return (
     <Image
       onError={() => setHasError(true)}
+      resizeMethod="resize"
+      fadeDuration={0}
       resizeMode="cover"
       source={{ uri }}
       style={styles.placeImage}
@@ -218,9 +222,11 @@ export default function FavoritePlacesBottomSheet({
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  useMapSheetScrollToTop(() => scrollRef.current?.scrollTo({ animated: true, y: 0 }));
   const footerSpace = getMapSheetNavigationBottom(insets.bottom) + 64 + 16;
-  // Keep the scroll viewport above the fixed footer at every snap point and while dragging.
-  const availableListHeight = Math.max(0, height - 107 - footerSpace);
+  // Content runs behind the glass footer; bottom padding keeps the last row reachable.
+  const availableListHeight = Math.max(0, height - 125);
   const listHeight = sheetChromeBottom.interpolate({
     inputRange: [0, Math.max(1, availableListHeight)],
     outputRange: [availableListHeight, 0],
@@ -238,6 +244,14 @@ export default function FavoritePlacesBottomSheet({
     inputRange: [mediumTranslateY, contentFadeStart, collapsedTranslateY],
     outputRange: [1, 0.78, 0],
   });
+  const movingContentStyle = useSheetMotionStyle(position => {
+    'worklet';
+    return { opacity: clampSheetValue(position, [mediumTranslateY, contentFadeStart, collapsedTranslateY], [1, 0.78, 0]) };
+  }, { opacity: contentOpacity });
+  const listViewportStyle = useSheetMotionStyle((_position, _medium, resting) => {
+    'worklet';
+    return { height: clampSheetValue(resting, [0, Math.max(1, availableListHeight)], [availableListHeight, 0]) };
+  }, { height: listHeight });
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
@@ -252,9 +266,9 @@ export default function FavoritePlacesBottomSheet({
             <View style={styles.handle} />
           </Pressable>
         </View>
-        <Animated.View
+        <SheetMotionView
           pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
-          style={[styles.content, { opacity: contentOpacity }]}
+          style={[styles.content, movingContentStyle]}
         >
           {/* The title and chips are a drag area too; horizontal chip swipes still scroll. */}
           <View {...panHandlers} testID="favorites-sheet-header">
@@ -287,9 +301,11 @@ export default function FavoritePlacesBottomSheet({
           </ScrollView>
           </View>
 
-          <Animated.View style={[styles.listViewport, { height: listHeight }]}>
+          <SheetMotionView style={[styles.listViewport, listViewportStyle]}>
             <ScrollView
-              contentContainerStyle={styles.listContent}
+              ref={scrollRef}
+              testID="favorites-place-scroll"
+              contentContainerStyle={[styles.listContent, { paddingBottom: footerSpace }]}
               nestedScrollEnabled
               showsVerticalScrollIndicator={false}
               style={styles.list}
@@ -340,8 +356,8 @@ export default function FavoritePlacesBottomSheet({
                 </View>
               ) : null}
             </ScrollView>
-          </Animated.View>
-        </Animated.View>
+          </SheetMotionView>
+        </SheetMotionView>
       </MapSheetSurface>
 
       <MapSheetBottomNavigation
@@ -393,5 +409,5 @@ const createStyles = ({ colors, liquidGlass: glass }: AppTheme): Record<string, 
   pressed: { opacity: 0.72 },
   retryLabel: { color: colors.onPrimary, fontSize: 13, fontWeight: '800' },
   title: { color: colors.textStrong, fontSize: 20, fontWeight: '700', lineHeight: 26, includeFontPadding: false },
-  titleRow: { alignItems: 'center', flexDirection: 'row', paddingHorizontal: 16 },
+  titleRow: { height: 44, alignItems: 'center', flexDirection: 'row', paddingHorizontal: 16 },
 });

@@ -48,6 +48,8 @@ export type NaverMapNativeViewProps = ViewProps & {
   centerLat: number;
   centerLng: number;
   followUser?: boolean;
+  /** Android: zero restores the SDK default; cap only a covered background map. */
+  frameRateLimit?: number;
   /** 앱의 최종 테마가 dark이면 true. 양쪽 네이티브 브리지에서 Navi + 야간 모드로 반영한다. */
   nightMode?: boolean;
   markers?: NaverMapNativeMarker[];

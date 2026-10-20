@@ -263,12 +263,12 @@ describe('CommunityBottomSheet header alignment', () => {
 
   test.each([
     ['medium', 8],
-    ['expanded', 8],
-  ] as const)('%s 커뮤니티 시트 내용은 386dp 열 안에서 화면 좌우 24dp에 정렬된다', async (snapPoint, inset) => {
+    ['expanded', 0],
+  ] as const)('%s 커뮤니티 시트는 즐겨찾기·예약과 같은 내부 여백을 사용한다', async (snapPoint, inset) => {
     await renderSheet(
       <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />,
     );
-    expect(screen.getByTestId('v2-community-sheet-inner')).toHaveStyle({ paddingLeft: inset });
+    expect(screen.getByTestId('v2-community-sheet-inner')).toHaveStyle({ paddingLeft: inset, paddingRight: inset });
   });
 
   test('하프 칩은 글래스, 펼친 시트 칩은 Background/Normal + Fill/Neutral 테두리로 그림자 없이 그린다', async () => {

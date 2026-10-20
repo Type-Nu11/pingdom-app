@@ -1,6 +1,9 @@
+import { SheetMotionProvider } from '../../hooks/useSheetMotionStyle';
+import { useSharedValue } from 'react-native-reanimated';
+import { MapSheetScrollToTopProvider } from '../../hooks/useMapSheetScrollToTop';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, PanResponder, Platform, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
+import { Animated, PanResponder, Platform, ScrollView, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
@@ -1341,8 +1344,12 @@ describe('MapBottomSheet recommendations', () => {
       top: 4,
       width: 181,
     });
-    // Figma 4525:25520: Glass/FillRaised thumb on a Glass/FillSubtle track, 8px inside the floating sheet.
-    expect(screen.getByTestId('feed-segment-indicator')).toHaveStyle({ backgroundColor: lightColors.glassFillRaised });
+    // The iOS selected pill is opaque and outlined so its state stays visible over glass.
+    expect(screen.getByTestId('feed-segment-indicator')).toHaveStyle({
+      backgroundColor: lightColors.surfaceElevated,
+      borderColor: lightColors.border,
+      borderWidth: 1,
+    });
     expect(screen.getByTestId('feed-segment-inset')).toHaveStyle({ paddingHorizontal: 8 });
     expect(screen.getByRole('button', { name: '추천 장소 1, 테스트 주소 1' })).toHaveStyle({
       height: 182,
@@ -1488,15 +1495,12 @@ describe('MapBottomSheet recommendations', () => {
     await view.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('auto');
 
-    // Exercise the actual row measurement, not only the sizing helper. Horizontal
-    // preview cards remain 242x182 while grid cards respond to the sheet width.
-    for (const rowWidth of [359, 386]) {
-      await act(async () => fireEvent(screen.getByTestId('map-expanded-place-grid'), 'layout', {
-        nativeEvent: { layout: { x: 0, y: 0, width: rowWidth, height: 800 } },
-      }));
-      const cards = screen.getAllByRole('button', { name: `${rankedPlaces[0].name}, ${rankedPlaces[0].address}` });
-      expect(cards.at(-1)).toHaveStyle(getMapGridCardSize(rowWidth));
-    }
+    // Fixed pairs share the available width through flex instead of wrapping
+    // independently rounded dp widths on devices such as the Galaxy Note20.
+    expect(screen.getByTestId('map-expanded-place-grid')).toHaveStyle({ flexDirection: 'column', gap: 16, paddingHorizontal: 8 });
+    expect(screen.getByTestId('map-expanded-grid-row-0')).toHaveStyle({ flexDirection: 'row', gap: 16 });
+    const cards = screen.getAllByRole('button', { name: `${rankedPlaces[0].name}, ${rankedPlaces[0].address}` });
+    expect(cards.at(-1)).toHaveStyle({ flex: 1, minWidth: 0, aspectRatio: 177 / 222 });
 
     await view.rerender(<MapBottomSheet {...commonProps} snapPoint="medium" />);
     expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');
@@ -1530,6 +1534,21 @@ describe('MapBottomSheet recommendations', () => {
     );
     await view.user.press(screen.getAllByRole('button', { name: '추천 장소 1, 테스트 주소 1' })[0]);
     expect(onRankedPlacePress).toHaveBeenCalledWith(rankedPlaces[0]);
+
+    function MotionSheet({ expanded }: { expanded: boolean }) {
+      const position = useSharedValue(300);
+      return <SheetMotionProvider value={{ position, mediumTranslateY: 300, height: 800, restingTranslateY: expanded ? 0 : 300 }}>
+        <MapBottomSheet {...commonProps} snapPoint={expanded ? 'expanded' : 'medium'} />
+      </SheetMotionProvider>;
+    }
+    await view.rerender(<MotionSheet expanded={false} />);
+    // The grid is prepared behind the clip before the first raise, and the
+    // segment track survives settling instead of being replaced and remeasured.
+    expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');
+    const track = screen.getByTestId('feed-segment-control');
+    await view.rerender(<MotionSheet expanded />);
+    expect(screen.getByTestId('feed-segment-control')).toBe(track);
+    expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('auto');
   });
 
   test('장소 요청 실패를 빈 핫플 결과로 표시하지 않는다', async () => {
@@ -1653,6 +1672,17 @@ describe('MapBottomSheet recommendations', () => {
     ...overrides,
   });
 
+  test.each(['home', 'recommendations'] as const)('%s 더블 탭은 펼쳐진 시트 안의 스크롤도 처음으로 이동한다', async (type) => {
+    const scroll = jest.spyOn(ScrollView.prototype, 'scrollTo');
+    const props = categoryProps([], { content: { type } });
+    const ui = (request: number) => <MapSheetScrollToTopProvider value={request}><MapBottomSheet {...props} /></MapSheetScrollToTopProvider>;
+    const view = await renderWithProviders(ui(0));
+    scroll.mockClear();
+    await view.rerender(ui(1));
+    expect(scroll).toHaveBeenCalledWith({ animated: true, y: 0 });
+    scroll.mockRestore();
+  });
+
   test.each(['medium', 'expanded'] as const)('%s 장소 사진 로딩 실패 타일은 제거하고 정상 사진만 뷰어에 전달한다', async snapPoint => {
     const place = places[0];
     await renderWithProviders(<MapBottomSheet {...categoryProps([], {
@@ -1710,7 +1740,10 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryAllByTestId('recommendation-featured-blur-image')).toHaveLength(0);
     const images = screen.getAllByTestId('place-artwork-image');
     expect(images).toHaveLength(14);
-    images.forEach(image => expect(image.props.resizeMethod).toBe('resize'));
+    images.forEach(image => {
+      expect(image.props.resizeMethod).toBe('resize');
+      expect(image.props.fadeDuration).toBe(0);
+    });
     expect(screen.getAllByText('트렌드 1').length).toBeGreaterThan(0);
   });
 

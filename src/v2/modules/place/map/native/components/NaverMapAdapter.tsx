@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import { Platform, type StyleProp, type ViewStyle } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 
 import NaverMapNativeView, {
@@ -27,6 +27,7 @@ export type NaverMapAdapterProps = {
   style?: StyleProp<ViewStyle>;
   userCoordinate?: Coordinate;
   headingEnabled?: boolean;
+  renderingActive?: boolean;
   zoomLevel?: number;
 };
 
@@ -55,6 +56,7 @@ export default function NaverMapAdapter({
   style,
   userCoordinate,
   headingEnabled = true,
+  renderingActive = true,
   zoomLevel = 17,
 }: NaverMapAdapterProps) {
   // AppThemeProvider가 앱 설정(LIGHT/DARK/SYSTEM)과 기기 테마를 합쳐 결정한 테마를 읽는다.
@@ -62,7 +64,7 @@ export default function NaverMapAdapter({
   // 전달 경로: NaverMapNativeView → Android @ReactProp / iOS RCT_EXPORT_VIEW_PROPERTY
   // → 각 플랫폼 NaverMapView.applyProps() → 네이버 SDK 야간 모드.
   const theme = useTheme();
-  const userHeading = useDeviceHeading(headingEnabled && !!userCoordinate);
+  const userHeading = useDeviceHeading(renderingActive && headingEnabled && !!userCoordinate);
   const displayRoute = useMemo(() => smoothRouteCorners(routeCoordinates), [routeCoordinates]);
   return (
     <MapView
@@ -72,6 +74,7 @@ export default function NaverMapAdapter({
       centerLat={center.lat}
       centerLng={center.lng}
       followUser={followUser}
+      {...(Platform.OS === 'android' ? { frameRateLimit: renderingActive ? 0 : 15 } : {})}
       markers={markers}
       routeCoordinates={displayRoute}
       routeSegments={routeSegments}

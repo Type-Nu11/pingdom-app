@@ -1,5 +1,15 @@
 import styled from 'styled-components/native';
 import { BlurView } from 'expo-blur';
+import { GlassView } from 'expo-glass-effect';
+
+export const GlassNativeLayer = styled(GlassView)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0.4;
+`;
 
 export const GlassContainer = styled.View`
   overflow: hidden;

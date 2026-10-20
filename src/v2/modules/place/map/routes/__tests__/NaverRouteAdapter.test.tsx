@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import React from 'react';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
@@ -64,4 +65,21 @@ test('방향은 위치 이동과 별도로 네이티브 마커에 전달되고 �
   await rerender(<MapCanvas centerLat={37} centerLng={127} userLat={37} userLng={127}
     followUser markers={[]} onMarkerPress={jest.fn()} zoomLevel={17} headingEnabled={false} />);
   expect(useDeviceHeading).toHaveBeenLastCalledWith(false);
+});
+
+test('Android에서 가려진 지도만 저속으로 갱신하고 복귀하면 SDK 기본 속도를 복원한다', async () => {
+  jest.replaceProperty(Platform, 'OS', 'android');
+  const props = { center: { lat: 37, lng: 127 }, markers: [], userCoordinate: { lat: 37, lng: 127 } };
+  const view = await renderWithProviders(<NaverMapAdapter {...props} renderingActive={false} />);
+  expect(screen.getByTestId('v2-naver-map')).toHaveProp('frameRateLimit', 15);
+  expect(useDeviceHeading).toHaveBeenLastCalledWith(false);
+  await view.rerender(<NaverMapAdapter {...props} renderingActive />);
+  expect(screen.getByTestId('v2-naver-map')).toHaveProp('frameRateLimit', 0);
+  expect(useDeviceHeading).toHaveBeenLastCalledWith(true);
+});
+
+test('iOS에는 Android 전용 렌더링 옵션을 전달하지 않는다', async () => {
+  jest.replaceProperty(Platform, 'OS', 'ios');
+  await renderWithProviders(<NaverMapAdapter center={{ lat: 37, lng: 127 }} markers={[]} renderingActive={false} />);
+  expect(screen.getByTestId('v2-naver-map').props.frameRateLimit).toBeUndefined();
 });
