@@ -271,7 +271,7 @@ export const resources = {
           all: 'All', art: 'Exhibitions', beauty: 'Beauty', cafe: 'Cafe', etc: 'Other',
           fashion: 'Fashion', food: 'Restaurants', heritage: 'Cultural heritage', music: 'Music', popup: 'Pop-ups',
         },
-        navigation: { community: 'Community', favorites: 'Favorites', map: 'Map', recommendations: 'Recommendations', reservations: 'Reservations' },
+        navigation: { community: 'Community', favorites: 'Favorites', map: 'Map', recommendations: 'Recommendations', reservations: 'Booking' },
         favorites: {
           adjust: 'Resize favorites panel', emptyBody: 'Tap the star on a place you like to save it.',
           emptyTitle: 'No saved places', error: 'Could not load places', loadMore: 'Show more',

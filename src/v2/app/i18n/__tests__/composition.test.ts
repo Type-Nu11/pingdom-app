@@ -90,6 +90,8 @@ test('preserves assembled translations outside reviewed feature copy changes', (
     voiceAssistant.placeholder = language === 'ko' ? '요청을 입력해 주세요' : 'Type your request';
     delete baseline[language].translation.community;
     delete baseline[language].translation.map.navigation.community;
+    // Reviewed English navbar label is now Booking; ReservationBottomSheet covers it.
+    if (language === 'en') baseline[language].translation.map.navigation.reservations = 'Reservations';
     // #389 moves the reservation sheet distance copy out of the component.
     delete baseline[language].translation.reservation.list.distanceFar;
     delete baseline[language].translation.reservation.list.distanceNear;

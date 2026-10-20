@@ -225,7 +225,7 @@ describe('ReservationBottomSheet', () => {
     );
 
     expect(screen.getByText('Reservations near your current location')).toBeVisible();
-    expect(screen.getByRole('tab', { name: 'Reservations', selected: true })).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Booking', selected: true })).toBeVisible();
   });
 });
 
