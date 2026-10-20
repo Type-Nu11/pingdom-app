@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen } from '@testing-library/react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '../../../../../../../app/testing/testProviders';
 import { buildCalendarDays } from '../../../../../../travel/calendar';
@@ -7,6 +7,20 @@ import { isServerTravelDate, type ServerTravelDate } from '../../../../../../tra
 import TravelCalendar, { getCalendarHeight, getRangeCellState } from '../TravelCalendar';
 
 describe('TravelCalendar layout', () => {
+  test('길게 누르는 동안 미리 표시하고 손을 뗄 때 범위를 한 번 전달한다', async () => {
+    const onRangeSelect = jest.fn();
+    const onDatePress = jest.fn();
+    await renderWithProviders(<TravelCalendar highlightedRange={null}
+      initialMonth={{ month: 10, year: 2026 }} onDatePress={onDatePress} onRangeSelect={onRangeSelect} />);
+    await fireEvent(screen.getByTestId('v2-my-page-calendar-day-2026-10-24'), 'longPress');
+    expect(screen.getByTestId('v2-my-page-calendar-day-2026-10-24').props.accessibilityState.selected).toBe(true);
+    expect(onRangeSelect).not.toHaveBeenCalled();
+    await fireEvent(screen.getByTestId('v2-my-page-calendar-grid'), 'touchEnd', { nativeEvent: { pageX: -1, pageY: -1 } });
+    expect(onRangeSelect).toHaveBeenCalledTimes(1);
+    expect(onRangeSelect).toHaveBeenCalledWith({ startDate: '2026-10-24', endDate: '2026-10-24' });
+    expect(onDatePress).not.toHaveBeenCalled();
+  });
+
   test('요일과 날짜를 각 열의 중앙에 정렬한다', async () => {
     await renderWithProviders(
       <TravelCalendar

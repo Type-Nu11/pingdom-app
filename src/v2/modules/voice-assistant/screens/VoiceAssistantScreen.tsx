@@ -1,3 +1,4 @@
+import CalendarScrollView from '../../../shared/components/CalendarScrollView';
 import { isReservationSubmissionRequest } from '../model/reservationSubmission';
 import { VoiceReservationPanel } from '../components/VoiceReservationPanel';
 import type { VoiceReservationFlow } from '../hooks/useVoiceReservation';
@@ -321,7 +322,7 @@ const CloseButton = styled.Pressable.attrs(({ theme }) => ({ style: { boxShadow:
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.glassStroke};
 `;
-const Content = styled(ScrollView)<{ $results: boolean }>`
+const Content = styled(CalendarScrollView)<{ $results: boolean }>`
   flex-grow: 0;
   flex-shrink: 1;
   min-height: 0px;

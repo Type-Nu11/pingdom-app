@@ -2,6 +2,7 @@ import React, { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 import { Text } from '../../../shared/components/Typography';
+import { useCalendarDragSelection } from '../../../shared/hooks/useCalendarDragSelection';
 import { buildCalendarDays, shiftCalendarMonth, formatCalendarMonth } from '../../travel/calendar';
 import { VOICE_QUANTITY_LIMITS } from '../model/voiceAssistantCommand.types';
 import PreviousIcon from '../assets/picker-prev.svg';
@@ -49,6 +50,8 @@ export function VoiceClarificationPicker({ field, timezone, initialValue, disabl
   const monthKey = `${month.year}-${String(month.month).padStart(2, '0')}`;
   const valid = field === 'date' ? !!date && !dateDisabled(date) : field === 'timeRange' ? /^([01]\d|2[0-3]):[0-5]\d$/.test(time) && (availableTimes === undefined || availableTimes.includes(time))
     : quantity >= VOICE_QUANTITY_LIMITS.min && quantity <= VOICE_QUANTITY_LIMITS.max;
+  const drag = useCalendarDragSelection({ onPress: setDate, onCommit: (_, endpoint) => setDate(endpoint) });
+  const displayedDate = drag.endpoint ?? date;
   const days = buildCalendarDays(month);
   const selectedValue = field === 'date' ? date : field === 'timeRange' ? time : String(quantity);
   const displayValue = field === 'quantity' ? t('voiceAssistant.picker.people', { count: quantity })
@@ -68,10 +71,10 @@ export function VoiceClarificationPicker({ field, timezone, initialValue, disabl
           onPress={() => setMonth(current => shiftCalendarMonth(current, 1))}><NextIcon /></MonthArrow>
       </MonthRow>
       <Grid>{copy('weekdays').split(',').map(day => <DayLabel key={day}>{day}</DayLabel>)}</Grid>
-      <Grid>{days.map((day, index) => day ? <Day key={day.date} $last={index >= days.length - 7}
-        accessibilityRole="button" accessibilityLabel={day.date} accessibilityState={{ selected: date === day.date, disabled: dateDisabled(day.date) }}
-        disabled={dateDisabled(day.date)} onPress={() => setDate(day.date)}>
-        <DayCircle collapsable={false}>{date === day.date && <DaySelection testID={`voice-date-selection-${day.date}`} pointerEvents="none" />}<DayText $selected={date === day.date} $today={today === day.date} $disabled={dateDisabled(day.date)}>{day.day}</DayText></DayCircle>
+      <Grid {...drag.gridHandlers} testID="voice-date-grid">{days.map((day, index) => day ? <Day key={day.date} $last={index >= days.length - 7}
+        accessibilityRole="button" accessibilityLabel={day.date} accessibilityState={{ selected: displayedDate === day.date, disabled: dateDisabled(day.date) }}
+        disabled={dateDisabled(day.date)} {...drag.dayProps(day.date, dateDisabled(day.date))}>
+        <DayCircle collapsable={false}>{displayedDate === day.date && <DaySelection testID={`voice-date-selection-${day.date}`} pointerEvents="none" />}<DayText $selected={displayedDate === day.date} $today={today === day.date} $disabled={dateDisabled(day.date)}>{day.day}</DayText></DayCircle>
       </Day> : <DayGap key={index} $last={index >= days.length - 7} />)}</Grid>
     </Calendar>}
     {field === 'timeRange' && <VoiceTimeWheel value={time} disabled={disabled} availableTimes={availableTimes} onMoving={setMoving} onChange={setTime} />}

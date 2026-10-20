@@ -1,5 +1,7 @@
+import CalendarScrollView from '../../../../shared/components/CalendarScrollView';
 import { Text as AppText } from '../../../../shared/components/Typography';
 import React, { useMemo, useState } from 'react';
+import { useCalendarDragSelection } from '../../../../shared/hooks/useCalendarDragSelection';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -68,16 +70,16 @@ export default function TravelScheduleSelectionScreen({
     getInitialCalendarMonth(selectedSchedule));
   const selectionState = getTravelScheduleSelectionState(selectedSchedule);
   const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
-  const validRange = selectionState.kind === 'complete' ? selectionState.range : null;
-  const validStart = selectionState.kind === 'start-only'
+  const drag = useCalendarDragSelection<ServerTravelDate>({
+    onPress: (date) => onChange(selectTravelDate(selectedSchedule, date)),
+    onCommit: ({ startDate, endDate }) => onChange({ startDateText: startDate, endDateText: endDate }),
+  });
+  const validRange = drag.preview ?? (selectionState.kind === 'complete' ? selectionState.range : null);
+  const validStart = drag.preview?.startDate ?? (selectionState.kind === 'start-only'
     ? selectionState.startDate
-    : validRange?.startDate;
+    : validRange?.startDate);
   const validEnd = validRange?.endDate;
   const canContinue = selectionState.kind === 'complete';
-
-  const handleDatePress = (date: ServerTravelDate) => {
-    onChange(selectTravelDate(selectedSchedule, date));
-  };
 
   const renderDateValue = (value: string) => isServerTravelDate(value)
     ? formatDisplayTravelDate(value)
@@ -170,7 +172,7 @@ export default function TravelScheduleSelectionScreen({
               ))}
             </WeekdayRow>
 
-            <CalendarGrid>
+            <CalendarGrid {...drag.gridHandlers} testID="travel-schedule-calendar-grid">
               {calendarDays.map((calendarDay, index) => {
                 if (!calendarDay) {
                   return <EmptyDay key={`empty-${index}`} />;
@@ -181,8 +183,8 @@ export default function TravelScheduleSelectionScreen({
                 const inRange = Boolean(validRange
                   && date >= validRange.startDate
                   && date <= validRange.endDate);
-                const disabled = selectionState.kind === 'start-only'
-                  && date < selectionState.startDate;
+                const disabled = isContinuing || (!drag.preview && selectionState.kind === 'start-only'
+                  && date < selectionState.startDate);
                 const roundedLeft = inRange && (date === validStart || weekday === 0);
                 const roundedRight = inRange && (date === validEnd || weekday === 6);
 
@@ -200,7 +202,7 @@ export default function TravelScheduleSelectionScreen({
                       accessibilityRole="button"
                       accessibilityState={{ disabled, selected }}
                       disabled={disabled}
-                      onPress={() => handleDatePress(date)}
+                      {...drag.dayProps(date, disabled)}
                       testID={`travel-schedule-day-${date}`}
                     >
                       <DayText
@@ -237,7 +239,7 @@ const Screen = styled(SafeAreaView)`
   background-color: ${({ theme }) => theme.colors.backgroundAssistive};
 `;
 
-const ContentScroll = styled.ScrollView`
+const ContentScroll = styled(CalendarScrollView)`
   flex: 1;
 `;
 
