@@ -43,6 +43,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private var centerLng: Double? = null
     private var userLat: Double? = null
     private var userLng: Double? = null
+    private var userHeading: Double? = null
     private var releaseFollowAfterGesture = false
     private var followUser = true
     private var nightMode = false
@@ -184,6 +185,7 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun setCenterLng(value: Double) { centerLng = value }
     fun setUserLat(value: Double?) { userLat = value }
     fun setUserLng(value: Double?) { userLng = value }
+    fun setUserHeading(value: Double?) { userHeading = value }
     fun setZoomLevel(value: Int) { zoomLevel = value.coerceIn(0, 21) }
     fun setFollowUser(value: Boolean) { followUser = value }
     // SDK 준비 전에도 최신 테마를 보관한다. getMapAsync 완료 시 applyProps()가 반영한다.
@@ -314,6 +316,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         val validUser = validCoordinate(userLat, userLng)
         if (validUser) {
             userMarker.position = LatLng(userLat!!, userLng!!)
+            userMarker.isFlat = true
+            userHeading?.takeIf { it.isFinite() && it >= 0 }?.let { userMarker.angle = (it % 360).toFloat() }
             if (userMarker.map == null) {
                 userMarker.icon = OverlayImage.fromBitmap(createUserLocationBitmap())
                 userMarker.anchor = PointF(0.5f, userAnchorY())

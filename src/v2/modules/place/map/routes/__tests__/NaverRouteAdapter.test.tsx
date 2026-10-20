@@ -3,6 +3,8 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../app/testing/testProviders';
 import MapCanvas from '../../native/components/MapCanvas';
 import NaverMapAdapter from '../../native/components/NaverMapAdapter';
+import { useDeviceHeading } from '../../location/hooks/useDeviceHeading';
+jest.mock('../../location/hooks/useDeviceHeading', () => ({ useDeviceHeading: jest.fn(() => 90) }));
 jest.mock('../../../../../shared/native/NaverMapNativeView', () => ({
   __esModule: true, default: require('react-native').View,
 }));
@@ -52,4 +54,14 @@ test('main map forwards manual gestures so GPS tracking can be released', async 
     markers={[]} onMarkerPress={jest.fn()} zoomLevel={17} onCameraGesture={onCameraGesture} />);
   await fireEvent(screen.getByTestId('v2-naver-map'), 'cameraGesture', { nativeEvent: {} });
   expect(onCameraGesture).toHaveBeenCalledTimes(1);
+});
+
+test('방향은 위치 이동과 별도로 네이티브 마커에 전달되고 숨겨진 지도는 센서를 중지한다', async () => {
+  const { rerender } = await renderWithProviders(<MapCanvas centerLat={37} centerLng={127} userLat={37} userLng={127}
+    followUser markers={[]} onMarkerPress={jest.fn()} zoomLevel={17} headingEnabled />);
+  expect(screen.getByTestId('v2-naver-map').props.userHeading).toBe(90);
+  expect(useDeviceHeading).toHaveBeenLastCalledWith(true);
+  await rerender(<MapCanvas centerLat={37} centerLng={127} userLat={37} userLng={127}
+    followUser markers={[]} onMarkerPress={jest.fn()} zoomLevel={17} headingEnabled={false} />);
+  expect(useDeviceHeading).toHaveBeenLastCalledWith(false);
 });

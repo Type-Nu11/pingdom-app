@@ -75,6 +75,11 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
         view.setUserLng(userLng)
     }
 
+    @ReactProp(name = "userHeading", defaultDouble = Double.NaN)
+    fun setUserHeading(view: NaverMapView, userHeading: Double) {
+        view.setUserHeading(userHeading)
+    }
+
     @ReactProp(name = "followUser", defaultBoolean = true)
     fun setFollowUser(view: NaverMapView, followUser: Boolean) {
         view.setFollowUser(followUser)

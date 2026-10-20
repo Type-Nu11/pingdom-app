@@ -59,6 +59,8 @@ export type NaverMapNativeViewProps = ViewProps & {
   onMarkerPress?: (event: NaverMapMarkerPressEvent) => void;
   userLat?: number;
   userLng?: number;
+  /** Clockwise degrees from north, independent of GPS course. */
+  userHeading?: number;
   zoomLevel?: number;
 };
 

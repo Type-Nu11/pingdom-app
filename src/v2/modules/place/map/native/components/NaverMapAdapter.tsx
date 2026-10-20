@@ -9,6 +9,7 @@ import NaverMapNativeView, {
 } from '../../../../../shared/native/NaverMapNativeView';
 import type { Coordinate } from '../../camera/model/map.types';
 import { smoothRouteCorners } from '../model/smoothRouteCorners';
+import { useDeviceHeading } from '../../location/hooks/useDeviceHeading';
 
 export type NaverMapAdapterProps = {
   cameraFit?: NaverMapCameraFit;
@@ -25,6 +26,7 @@ export type NaverMapAdapterProps = {
   onMarkerSelect?: (markerId: string) => void;
   style?: StyleProp<ViewStyle>;
   userCoordinate?: Coordinate;
+  headingEnabled?: boolean;
   zoomLevel?: number;
 };
 
@@ -52,6 +54,7 @@ export default function NaverMapAdapter({
   onMarkerSelect,
   style,
   userCoordinate,
+  headingEnabled = true,
   zoomLevel = 17,
 }: NaverMapAdapterProps) {
   // AppThemeProvider가 앱 설정(LIGHT/DARK/SYSTEM)과 기기 테마를 합쳐 결정한 테마를 읽는다.
@@ -59,6 +62,7 @@ export default function NaverMapAdapter({
   // 전달 경로: NaverMapNativeView → Android @ReactProp / iOS RCT_EXPORT_VIEW_PROPERTY
   // → 각 플랫폼 NaverMapView.applyProps() → 네이버 SDK 야간 모드.
   const theme = useTheme();
+  const userHeading = useDeviceHeading(headingEnabled && !!userCoordinate);
   const displayRoute = useMemo(() => smoothRouteCorners(routeCoordinates), [routeCoordinates]);
   return (
     <MapView
@@ -80,6 +84,7 @@ export default function NaverMapAdapter({
       testID="v2-naver-map"
       userLat={userCoordinate?.lat}
       userLng={userCoordinate?.lng}
+      userHeading={userHeading}
       zoomLevel={zoomLevel}
     />
   );
